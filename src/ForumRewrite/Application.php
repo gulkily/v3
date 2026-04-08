@@ -7,7 +7,9 @@ namespace ForumRewrite;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
+use ForumRewrite\Write\LocalWriteService;
 use PDO;
+use RuntimeException;
 
 final class Application
 {
@@ -28,6 +30,21 @@ final class Application
 
         if ($path === '/api/set_identity_hint') {
             $this->handleSetIdentityHint($method, $query);
+            return;
+        }
+
+        if ($path === '/api/create_thread') {
+            $this->handleCreateThread($method, $query);
+            return;
+        }
+
+        if ($path === '/api/create_reply') {
+            $this->handleCreateReply($method, $query);
+            return;
+        }
+
+        if ($path === '/api/link_identity') {
+            $this->handleLinkIdentity($method, $query);
             return;
         }
 
@@ -193,7 +210,21 @@ final class Application
     private function ensureReadModel(): void
     {
         if (is_file($this->databasePath)) {
-            return;
+            $pdo = null;
+            try {
+                $pdo = $this->pdo();
+                $stmt = $pdo->prepare('SELECT value FROM metadata WHERE key = :key');
+                $stmt->execute(['key' => 'repository_root']);
+                $repositoryRoot = $stmt->fetchColumn();
+                $stmt = null;
+                $pdo = null;
+                if ($repositoryRoot === $this->repositoryRoot) {
+                    return;
+                }
+            } catch (\Throwable) {
+                $pdo = null;
+                // Rebuild if the database is missing metadata or has an older schema.
+            }
         }
 
         $builder = new ReadModelBuilder(
@@ -659,6 +690,102 @@ final class Application
 
         $_COOKIE['identity_hint'] = $hint;
         $this->sendText("identity_hint={$hint}\n", 200);
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleCreateThread(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->sendText("method not allowed\n", 405);
+            return;
+        }
+
+        $input = $this->requestData($query);
+        try {
+            $result = $this->writer()->createThread($input);
+            $this->sendText("status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\n", 200);
+        } catch (RuntimeException $exception) {
+            $this->sendText("error=" . $exception->getMessage() . "\n", 400);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleCreateReply(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->sendText("method not allowed\n", 405);
+            return;
+        }
+
+        $input = $this->requestData($query);
+        try {
+            $result = $this->writer()->createReply($input);
+            $this->sendText("status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\n", 200);
+        } catch (RuntimeException $exception) {
+            $this->sendText("error=" . $exception->getMessage() . "\n", 400);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleLinkIdentity(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->sendText("method not allowed\n", 405);
+            return;
+        }
+
+        $input = $this->requestData($query);
+        try {
+            $result = $this->writer()->linkIdentity($input);
+            $this->sendText(
+                "status=ok\nidentity_id={$result['identity_id']}\nprofile_slug={$result['profile_slug']}\nusername={$result['username']}\n",
+                200
+            );
+        } catch (RuntimeException $exception) {
+            $this->sendText("error=" . $exception->getMessage() . "\n", 400);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     * @return array<string, mixed>
+     */
+    private function requestData(array $query): array
+    {
+        $data = $query;
+
+        foreach ($_POST as $key => $value) {
+            $data[$key] = $value;
+        }
+
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+        if (str_starts_with($contentType, 'application/json')) {
+            $decoded = json_decode((string) file_get_contents('php://input'), true);
+            if (is_array($decoded)) {
+                foreach ($decoded as $key => $value) {
+                    if (is_string($key)) {
+                        $data[$key] = $value;
+                    }
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    private function writer(): LocalWriteService
+    {
+        return new LocalWriteService(
+            $this->repositoryRoot,
+            $this->databasePath,
+            new CanonicalRecordRepository($this->repositoryRoot),
+        );
     }
 
     private function pdo(): PDO

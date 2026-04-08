@@ -57,6 +57,7 @@ final class IdentityBootstrapRecordParser
 
         return new IdentityBootstrapRecord(
             $postId,
+            $record->headers['Username'] ?? 'guest',
             $identityId,
             $signerFingerprint,
             $record->headers['Bootstrap-By-Post'],

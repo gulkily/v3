@@ -8,7 +8,10 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 
 $projectRoot = dirname(__DIR__);
-$repositoryRoot = $argv[1] ?? ($projectRoot . '/tests/fixtures/parity_minimal_v1');
+$defaultRepositoryRoot = is_dir($projectRoot . '/state/local_repository')
+    ? $projectRoot . '/state/local_repository'
+    : $projectRoot . '/tests/fixtures/parity_minimal_v1';
+$repositoryRoot = $argv[1] ?? $defaultRepositoryRoot;
 $databasePath = $argv[2] ?? ($projectRoot . '/state/cache/post_index.sqlite3');
 
 $builder = new ReadModelBuilder(

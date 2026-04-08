@@ -113,6 +113,24 @@ final class LocalAppSmokeTest
         assertStringContains('openpgp-example', $account);
     }
 
+    public function testWriteApisAreDisabledAgainstCommittedFixtures(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_thread?subject=Blocked&body=Blocked'
+        );
+
+        assertStringContains('Write APIs are disabled against the committed fixture repository', $response);
+    }
+
     private function render(Application $application, string $path): string
     {
         return $this->renderMethod($application, 'GET', $path);

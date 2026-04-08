@@ -236,12 +236,14 @@ final class ReadModelBuilder
             }
 
             $publicKey = $this->canonicalRepository->loadPublicKey($publicKeyPath);
-            $fallbackLabel = 'guest-' . substr(strtolower($identity->signerFingerprint), 0, 8);
+            $username = $identity->username !== '' ? $identity->username : 'guest';
+            $usernameToken = strtolower($username);
+            $fallbackLabel = $username . '-' . substr(strtolower($identity->signerFingerprint), 0, 8);
             $profile = [
                 'identity_id' => $identity->identityId,
                 'profile_slug' => $identity->identitySlug(),
-                'username' => 'guest',
-                'username_token' => 'guest',
+                'username' => $username,
+                'username_token' => $usernameToken,
                 'fallback_label' => $fallbackLabel,
                 'signer_fingerprint' => $identity->signerFingerprint,
                 'bootstrap_post_id' => $identity->bootstrapByPost,
@@ -250,9 +252,9 @@ final class ReadModelBuilder
             ];
 
             $insertProfile->execute($profile);
-            if (!isset($profiles['guest'])) {
+            if (!isset($profiles[$usernameToken])) {
                 $insertUsernameRoute->execute([
-                    'username_token' => 'guest',
+                    'username_token' => $usernameToken,
                     'identity_id' => $identity->identityId,
                 ]);
             }
@@ -260,8 +262,8 @@ final class ReadModelBuilder
             $profiles[$identity->identityId] = [
                 'identity_id' => $identity->identityId,
                 'profile_slug' => $identity->identitySlug(),
-                'username' => 'guest',
-                'username_token' => 'guest',
+                'username' => $username,
+                'username_token' => $usernameToken,
                 'bootstrap_post_id' => $identity->bootstrapByPost,
                 'bootstrap_thread_id' => $identity->bootstrapByThread,
             ];

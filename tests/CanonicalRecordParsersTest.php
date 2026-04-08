@@ -76,6 +76,7 @@ final class CanonicalRecordParsersTest
         );
 
         assertSame('identity-openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $record->postId);
+        assertSame('guest', $record->username);
         assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $record->identityId);
         assertSame('openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $record->identitySlug());
         assertSame('root-001', $record->bootstrapByThread);

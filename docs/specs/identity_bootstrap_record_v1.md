@@ -35,6 +35,7 @@ The body is the ASCII-armored public key text tied to the identity.
 - `Post-ID`: canonical record ID, using the form `identity-openpgp-<lowercase-fingerprint>`
 - `Board-Tags`: must be `identity`
 - `Subject`: must be `identity bootstrap`
+- `Username`: the visible bootstrap username derived from the linked public key user ID
 - `Identity-ID`: canonical identity ID, using the form `openpgp:<lowercase-fingerprint>`
 - `Signer-Fingerprint`: normalized signer fingerprint in uppercase ASCII hex
 - `Bootstrap-By-Post`: post ID that created or first linked this identity
@@ -51,10 +52,16 @@ The body is the ASCII-armored public key text tied to the identity.
 
 - `Identity-ID` must be derived from `Signer-Fingerprint`.
 - `Post-ID` must be derived from `Identity-ID`.
+- `Username` should match the normalized visible username extracted from the stored public key user ID for newly written records.
 - The fingerprint derived from the public key body must match `Signer-Fingerprint`.
 - `Bootstrap-By-Thread` identifies the root thread for the bootstrap event.
 - `Bootstrap-By-Post` must refer to a post that belongs to `Bootstrap-By-Thread`.
 - The identity bootstrap record is append-only for V1. Post-bootstrap profile updates remain out of scope.
+
+## Legacy Compatibility
+
+- Older bootstrap records may omit `Username`.
+- When a legacy record omits `Username`, V1 readers should fall back to `guest`.
 
 ## Relationship To Public-Key Storage
 
