@@ -1,0 +1,96 @@
+:root {
+  --page-bg: #ffffff;
+  --ink: #0b3ea8;
+  --ink-soft: #315fb9;
+  --line: #b7c9ef;
+  --panel: #f7faff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  background: var(--page-bg);
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--ink);
+}
+
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.shell {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.site-header {
+  padding: 0.5rem 0 1rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.nav-link {
+  display: inline-block;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--line);
+  text-decoration: none;
+  background: #fff;
+}
+
+.nav-link.is-active {
+  background: var(--panel);
+}
+
+.main {
+  display: block;
+}
+
+.stack > * + * {
+  margin-top: 1rem;
+}
+
+.card {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 0.9rem;
+}
+
+.meta {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.body {
+  white-space: pre-wrap;
+}
+
+@media (min-width: 640px) {
+  .shell {
+    padding: 1.5rem;
+  }
+
+  .card {
+    padding: 1rem 1.1rem;
+  }
+}
