@@ -10,6 +10,12 @@ Rebuild the SQLite read model from the fixture repository:
 php scripts/rebuild_read_model.php
 ```
 
+Build Apache-friendly static HTML artifacts into `public/`:
+
+```bash
+php scripts/build_static_artifacts.php
+```
+
 Start the local PHP server:
 
 ```bash
@@ -19,7 +25,7 @@ php -S 127.0.0.1:8000 -t public public/router.php
 For Apache/shared-host deployment, `public/.htaccess` is now part of the intended runtime model:
 
 - serve existing files and directories directly
-- serve a sibling `*.html` artifact directly when it exists for a route
+- serve queryless cookie-free sibling `*.html` artifacts directly for `/`, `/instance/`, `/activity/`, `/threads/<id>`, `/posts/<id>`, and `/profiles/<slug>`
 - fall back to `public/index.php` when no static artifact exists
 
 That matches the planning assumption that Apache should serve static-safe anonymous HTML directly and use PHP only as fallback.
@@ -56,7 +62,10 @@ FORUM_REPOSITORY_ROOT=/home/wsl/v3/state/local_repository php -S 127.0.0.1:8000 
 
 Static HTML artifacts for anonymous queryless route hits default to `state/static_html`. Override that location with `FORUM_STATIC_HTML_ROOT=/path/to/static_html` if you want to test direct artifact serving.
 
-The current PHP front controller still supports the separate `FORUM_STATIC_HTML_ROOT` fallback path for local testing and for deployments that keep generated artifacts outside `public/`. The Apache `.htaccess` rule is the direct-serve path when artifacts are placed in `public/` alongside the PHP entrypoint.
+The current PHP front controller supports both layouts:
+
+- Apache/public sibling artifacts such as `public/threads/root-001.html`
+- the older separate `FORUM_STATIC_HTML_ROOT` fallback path for local testing or deployments that keep generated artifacts outside `public/`
 
 Set the local identity-hint cookie:
 

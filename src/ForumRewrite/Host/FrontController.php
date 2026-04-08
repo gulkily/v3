@@ -10,12 +10,16 @@ use Throwable;
 
 final class FrontController
 {
+    private readonly string $publicRoot;
+
     public function __construct(
         private readonly string $projectRoot,
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
         private readonly string $staticHtmlRoot,
+        ?string $publicRoot = null,
     ) {
+        $this->publicRoot = $publicRoot ?? ($projectRoot . '/public');
     }
 
     /**
@@ -90,19 +94,45 @@ final class FrontController
         }
 
         if ($path === '/' || $path === '') {
-            return $this->staticHtmlRoot . '/index.html';
+            return $this->firstExistingPath([
+                $this->publicRoot . '/index.html',
+                $this->staticHtmlRoot . '/index.html',
+            ]);
         }
 
         if ($path === '/instance/' || $path === '/instance') {
-            return $this->staticHtmlRoot . '/instance/index.html';
+            return $this->firstExistingPath([
+                $this->publicRoot . '/instance.html',
+                $this->staticHtmlRoot . '/instance/index.html',
+            ]);
         }
 
         if ($path === '/activity/' || $path === '/activity') {
-            return $this->staticHtmlRoot . '/activity/index.html';
+            return $this->firstExistingPath([
+                $this->publicRoot . '/activity.html',
+                $this->staticHtmlRoot . '/activity/index.html',
+            ]);
         }
 
         if (preg_match('#^/(threads|posts|profiles)/([^/]+)/?$#', $path, $matches) === 1) {
-            return $this->staticHtmlRoot . '/' . $matches[1] . '/' . $matches[2] . '/index.html';
+            return $this->firstExistingPath([
+                $this->publicRoot . '/' . $matches[1] . '/' . $matches[2] . '.html',
+                $this->staticHtmlRoot . '/' . $matches[1] . '/' . $matches[2] . '/index.html',
+            ]);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<string> $paths
+     */
+    private function firstExistingPath(array $paths): ?string
+    {
+        foreach ($paths as $path) {
+            if (is_file($path)) {
+                return $path;
+            }
         }
 
         return null;

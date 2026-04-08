@@ -8,9 +8,25 @@ RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
-# If a route has a sibling prebuilt HTML artifact, serve it without PHP.
-RewriteCond %{REQUEST_FILENAME}.html -f
-RewriteRule ^ %{REQUEST_URI}.html [L]
+# Serve prebuilt anonymous HTML artifacts directly when the route is queryless
+# and no cookies are present.
+RewriteCond %{REQUEST_METHOD} =GET
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Cookie} ^$
+RewriteCond %{DOCUMENT_ROOT}/index.html -f
+RewriteRule ^$ index.html [L]
+
+RewriteCond %{REQUEST_METHOD} =GET
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Cookie} ^$
+RewriteCond %{DOCUMENT_ROOT}/$1.html -f
+RewriteRule ^(instance|activity)/?$ $1.html [L]
+
+RewriteCond %{REQUEST_METHOD} =GET
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Cookie} ^$
+RewriteCond %{DOCUMENT_ROOT}/$1/$2.html -f
+RewriteRule ^(threads|posts|profiles)/([^/]+)/?$ $1/$2.html [L]
 
 # Otherwise route the request through the PHP front controller.
 RewriteRule ^ index.php [L]

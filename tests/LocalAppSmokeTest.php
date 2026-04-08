@@ -6,6 +6,7 @@ require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\Host\FrontController;
+use ForumRewrite\Host\StaticArtifactBuilder;
 
 final class LocalAppSmokeTest
 {
@@ -186,6 +187,39 @@ final class LocalAppSmokeTest
 
         assertStringContains('Configuration Error', $response);
         assertStringContains('Repository root does not exist', $response);
+    }
+
+    public function testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout(): void
+    {
+        @unlink($this->databasePath);
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-public-' . bin2hex(random_bytes(6));
+        mkdir($artifactRoot, 0777, true);
+
+        $builder = new StaticArtifactBuilder(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $artifactRoot,
+        );
+        $builder->build();
+
+        assertTrue(is_file($artifactRoot . '/index.html'));
+        assertTrue(is_file($artifactRoot . '/instance.html'));
+        assertTrue(is_file($artifactRoot . '/activity.html'));
+        assertTrue(is_file($artifactRoot . '/threads/root-001.html'));
+        assertTrue(is_file($artifactRoot . '/posts/root-001.html'));
+        assertTrue(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
+
+        $controller = new FrontController(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+            sys_get_temp_dir() . '/forum-rewrite-unused-static-' . bin2hex(random_bytes(6)),
+            $artifactRoot,
+        );
+
+        $response = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
+        assertStringContains('Hello world', $response);
     }
 
     private function render(Application $application, string $path): string
