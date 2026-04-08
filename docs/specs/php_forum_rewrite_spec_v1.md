@@ -162,6 +162,7 @@ All public HTML routes are PHP-owned:
 - One canonical primary nav contract
 - Reusable panels, grids, cards, and metadata rows
 - Stable route-level `active_section` or equivalent nav-state contract
+- The initial visual baseline should stay deliberately simple: blue text on a white background, basic spacing, and mobile-first layout defaults
 
 ### 8.3 No Dual Rendering Stacks
 

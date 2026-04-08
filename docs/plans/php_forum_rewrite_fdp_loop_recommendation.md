@@ -51,6 +51,7 @@ Use **Step 1 only for loops with genuine implementation uncertainty**. With the 
   - Generate prebuilt HTML artifacts for static-safe queryless routes
   - Define PHP fallback when prebuilt HTML is missing
   - Implement shared shell/nav/template contracts for these pages
+  - Keep the initial presentation intentionally minimal: blue text on white, basic boilerplate, and mobile-safe defaults before any richer design work
   - Add request tests and baseline cache eligibility tests
 - Why this is its own loop:
   - These are the hottest and most visible user-facing routes
