@@ -1,0 +1,6 @@
+Post-ID: root-001
+Board-Tags: general meta
+Subject: Hello world
+
+First line preview.
+Second line body.

@@ -1,0 +1,7 @@
+Post-ID: reply-001
+Board-Tags: general
+Thread-ID: root-001
+Parent-ID: root-001
+
+Reply body.
+Second line for context.
