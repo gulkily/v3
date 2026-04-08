@@ -5,7 +5,7 @@ This document defines a PHP-first rewrite of the forum application. It is intend
 ## 1. Goals
 
 - Serve the public site primarily from PHP.
-- Preserve the forum's core product shape: plain-text threads, replies, profiles, moderation, project info, and activity.
+- Preserve the forum's core product shape: plain-text threads, replies, profile reads, project info, and activity.
 - Keep canonical state in repository-backed ASCII text records.
 - Shift all hot read paths onto PHP-native indexed reads.
 - Make cache behavior, route ownership, and runtime boundaries explicit from the start.
@@ -27,22 +27,15 @@ This document defines a PHP-first rewrite of the forum application. It is intend
 - Post permalink: `/posts/<post-id>`
 - Project info: `/instance/`
 - Activity: `/activity/`
-- Moderation redirect: `/moderation/` -> `/activity/?view=moderation`
 - Public profile: `/profiles/<profile-slug>`
-- Self profile and profile-management pages
-- Task-related pages already exposed in the current product
+- Self profile and account-key bootstrap pages
 - Plain-text read APIs and RSS where already part of the product contract
 
 ### 3.2 Required Write Surfaces
 
 - Create thread
 - Create reply
-- Profile update
-- Username-related profile flows already in product scope
-- Merge-request/account flows already in product scope
-- Moderation submission
-- Task-status updates
-- Thread-title updates
+- Username capture during browser keypair generation
 
 ### 3.3 Required Static/Asset Surfaces
 
@@ -89,12 +82,7 @@ The system has three layers:
 V1 must support the existing conceptual record families:
 
 - Posts
-- Moderation records
 - Instance/public info
-- Profile updates
-- Merge requests / account-management records
-- Task-related record fields already in scope
-- Thread-title updates
 - Any existing canonical identity/bootstrap records needed by current product behavior
 
 ### 5.3 Repository Ownership
@@ -117,9 +105,6 @@ The read model must provide:
 - Indexed threads
 - Indexed root-thread metadata
 - Profile summaries
-- Moderation-visible state
-- Thread-title resolution
-- Task summaries
 - Activity feed items
 - Snapshot-ready board/thread/profile payloads for PHP rendering
 
@@ -135,11 +120,9 @@ The read model must provide:
 Use one or two SQLite databases:
 
 - `state/cache/post_index.sqlite3`
-  - canonical-derived posts, threads, profiles, moderation overlays
+  - canonical-derived posts, threads, profiles, and activity state
 - `state/cache/php_views.sqlite3`
-  - optional route/snapshot cache for pre-rendered or partially materialized PHP view payloads
-
-If one database is simpler operationally, prefer one database over multiple partially overlapping stores.
+  - route/snapshot cache for pre-rendered or partially materialized PHP view payloads
 
 ## 7. Route Ownership
 
@@ -153,10 +136,8 @@ All public HTML routes are PHP-owned:
 - `/instance/`
 - `/activity/`
 - `/profiles/...`
-- `/planning/...`
 - `/compose/...`
 - `/account/...`
-- `/operations/slow/`
 - `/assets/...`
 - `/favicon.ico`
 - `/llms.txt`
@@ -194,7 +175,7 @@ All public HTML routes are PHP-owned:
 Board reads must:
 
 - Load root threads from SQLite
-- Apply moderation/title/profile-derived overlays from indexed state
+- Apply title/profile-derived overlays from indexed state
 - Avoid reparsing canonical post files on request
 - Be cache-friendly for anonymous users
 
@@ -203,7 +184,7 @@ Board reads must:
 Thread and post reads must:
 
 - Materialize thread/post content from indexed rows
-- Resolve title, author/profile display, and moderation visibility from indexed state
+- Resolve title and author/profile display from indexed state
 - Avoid request-time full-repo scans
 
 ### 9.3 Project Info and Activity
@@ -215,7 +196,14 @@ Thread and post reads must:
 ### 9.4 Profiles
 
 - Public profile pages read from indexed profile summaries and related indexed post metadata
-- Self-profile/account pages may use dynamic reads initially if needed, but hot public reads should be fully indexed
+- Self-profile/account-key pages may use dynamic reads initially if needed, but hot public profile reads should be fully indexed
+
+### 9.5 Username Bootstrap
+
+- V1 does not include a separate profile-update surface for changing usernames after identity creation.
+- When the browser generates a new keypair, the UI should call standard `prompt()` to request a username.
+- If `prompt()` is unavailable, dismissed, or returns an unusable value, the client must fall back to `guest`.
+- The chosen value becomes the initial visible username tied to that keypair/bootstrap flow.
 
 ## 10. Write Path Requirements
 
@@ -249,7 +237,6 @@ Activity must support:
 
 - `all`
 - `content`
-- `moderation`
 - `code`
 
 ### 11.2 Backing Model
@@ -277,7 +264,6 @@ Activity must support:
 - Public instance facts
 - Project overview / operating assumptions
 - Direct links into activity views
-- Slow-operations visibility if that remains part of the product
 
 ## 13. Identity and Account Model
 
@@ -285,7 +271,7 @@ Activity must support:
 
 - Preserve the current key-first identity model.
 - Browser-held OpenPGP keys remain supported.
-- Public profile and merge/account semantics remain repository-backed.
+- Public profile and account-key bootstrap semantics remain repository-backed.
 
 ### 13.2 PHP Ownership
 
@@ -305,7 +291,7 @@ Use three explicit cache layers:
    - short TTL cache for safe public HTML routes
 
 3. Indexed snapshot cache
-   - SQLite-backed route payloads or snapshots derived from the read model
+   - SQLite-backed route payloads derived from the read model for PHP fallback rendering
 
 ### 14.2 Cache Eligibility
 
@@ -322,7 +308,6 @@ Examples:
 ### 14.3 Cache Invalidation
 
 - Canonical writes invalidate affected route families deterministically.
-- Index refresh and snapshot refresh should happen in the same transaction boundary where practical.
 - Prefer targeted invalidation over blanket cache clears.
 
 ## 15. Startup and Recovery
@@ -471,11 +456,10 @@ For hot public routes:
 - cache hit/miss source
 - read-model rebuild/recovery events
 - write-path step timing
-- slow-operation records
 
 ### 23.2 Operator Visibility
 
-- operator-facing pages or text outputs should show read-model state, cache state, and recent slow operations
+- operator-facing pages or text outputs should show read-model state and cache state
 
 ## 24. Migration Strategy
 
@@ -488,8 +472,7 @@ Recommended rewrite order:
 3. Hot public reads: board, thread, post, project info, activity
 4. Public profiles
 5. Write paths
-6. Account and merge-management surfaces
-7. Remove Python production dependency
+6. Remove Python production dependency
 
 ### 24.2 Cutover Rule
 
@@ -512,7 +495,7 @@ This rewrite specification is satisfied when:
 - Public reads use indexed PHP-native data instead of Python rendering fallbacks.
 - Canonical writes are validated, stored, committed, and read back through PHP.
 - Board, thread, post, project-info, activity, and profile routes are feature-complete relative to the current product slice.
-- Activity filters, RSS, project-info framing, and account/profile basics remain functional.
+- Activity filters, RSS, project-info framing, and account/key-bootstrap basics remain functional.
 - Automated request and cache tests cover the main route set.
 - Production no longer depends on Python request handling.
 
@@ -525,4 +508,3 @@ Before coding the rewrite, create:
 - a SQLite schema spec for the read model
 - a write-path failure-mode table
 - a cache invalidation matrix
-- a migration and cutover checklist
