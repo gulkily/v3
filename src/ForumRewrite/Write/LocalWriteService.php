@@ -16,6 +16,7 @@ final class LocalWriteService
     public function __construct(
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
+        private readonly string $artifactRoot,
         private readonly CanonicalRecordRepository $canonicalRepository,
         private readonly OpenPgpKeyInspector $keyInspector = new OpenPgpKeyInspector(),
     ) {
@@ -39,13 +40,17 @@ final class LocalWriteService
             . "\n{$body}";
 
         (new PostRecordParser())->parse($contents);
-        $this->writeFile('records/posts/' . $postId . '.txt', $contents);
+        $recordPath = 'records/posts/' . $postId . '.txt';
+        $this->writeFile($recordPath, $contents);
+        $commitSha = $this->commitCanonicalWrite([$recordPath], 'Create thread ' . $postId);
         $this->rebuildReadModel();
+        $this->invalidator()->invalidateBoardThread($postId);
 
         return [
             'status' => 'ok',
             'post_id' => $postId,
             'thread_id' => $postId,
+            'commit_sha' => $commitSha,
         ];
     }
 
@@ -76,13 +81,17 @@ final class LocalWriteService
             . "\n{$body}";
 
         (new PostRecordParser())->parse($contents);
-        $this->writeFile('records/posts/' . $postId . '.txt', $contents);
+        $recordPath = 'records/posts/' . $postId . '.txt';
+        $this->writeFile($recordPath, $contents);
+        $commitSha = $this->commitCanonicalWrite([$recordPath], 'Create reply ' . $postId);
         $this->rebuildReadModel();
+        $this->invalidator()->invalidateReply($threadId, $postId);
 
         return [
             'status' => 'ok',
             'post_id' => $postId,
             'thread_id' => $threadId,
+            'commit_sha' => $commitSha,
         ];
     }
 
@@ -111,8 +120,10 @@ final class LocalWriteService
         }
 
         $publicKeyPath = 'records/public-keys/openpgp-' . $fingerprintUpper . '.asc';
+        $writtenPaths = [];
         if (!is_file($this->repositoryRoot . '/' . $publicKeyPath)) {
             $this->writeFile($publicKeyPath, $publicKey);
+            $writtenPaths[] = $publicKeyPath;
         }
 
         $contents = "Post-ID: {$postId}\n"
@@ -127,13 +138,17 @@ final class LocalWriteService
 
         (new IdentityBootstrapRecordParser())->parse($contents);
         $this->writeFile($identityPath, $contents);
+        $writtenPaths[] = $identityPath;
+        $commitSha = $this->commitCanonicalWrite($writtenPaths, 'Link identity ' . $postId);
         $this->rebuildReadModel();
+        $this->invalidator()->invalidateProfile('openpgp-' . $fingerprintLower);
 
         return [
             'status' => 'ok',
             'identity_id' => $identityId,
             'profile_slug' => 'openpgp-' . $fingerprintLower,
             'username' => $username,
+            'commit_sha' => $commitSha,
         ];
     }
 
@@ -145,6 +160,25 @@ final class LocalWriteService
             new CanonicalRecordRepository($this->repositoryRoot),
         );
         $builder->rebuild();
+    }
+
+    /**
+     * @param list<string> $relativePaths
+     */
+    private function commitCanonicalWrite(array $relativePaths, string $message): string
+    {
+        if (!is_dir($this->repositoryRoot . '/.git')) {
+            throw new RuntimeException('Writable repository must be a git checkout before writes are allowed.');
+        }
+
+        $this->runGitCommand(array_merge(['add', '--'], $relativePaths), 'Unable to stage canonical write');
+        $this->runGitCommand([
+            '-c', 'user.name=Forum Rewrite',
+            '-c', 'user.email=forum-rewrite@example.invalid',
+            'commit', '-m', $message,
+        ], 'Unable to commit canonical write');
+
+        return trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read commit SHA'));
     }
 
     private function writeFile(string $relativePath, string $contents): void
@@ -166,6 +200,31 @@ final class LocalWriteService
         if (str_contains($this->repositoryRoot, '/tests/fixtures/')) {
             throw new RuntimeException('Write APIs are disabled against the committed fixture repository. Initialize a local writable copy and set FORUM_REPOSITORY_ROOT.');
         }
+    }
+
+    private function invalidator(): StaticArtifactInvalidator
+    {
+        return new StaticArtifactInvalidator($this->artifactRoot);
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    private function runGitCommand(array $args, string $failureMessage): string
+    {
+        $command = 'git';
+        foreach ($args as $arg) {
+            $command .= ' ' . escapeshellarg($arg);
+        }
+
+        $output = [];
+        $exitCode = 0;
+        exec('cd ' . escapeshellarg($this->repositoryRoot) . ' && ' . $command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException($failureMessage . ': ' . implode("\n", $output));
+        }
+
+        return implode("\n", $output);
     }
 
     private function generateRecordId(string $prefix): string

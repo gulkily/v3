@@ -7,6 +7,7 @@ require __DIR__ . '/../autoload.php';
 use ForumRewrite\Application;
 use ForumRewrite\Host\FrontController;
 use ForumRewrite\Host\StaticArtifactBuilder;
+use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 final class LocalAppSmokeTest
 {
@@ -222,6 +223,36 @@ final class LocalAppSmokeTest
         assertStringContains('Hello world', $response);
     }
 
+    public function testDefaultRepositoryBootstrapCreatesWritableLocalRepository(): void
+    {
+        $projectRoot = sys_get_temp_dir() . '/forum-rewrite-project-' . bin2hex(random_bytes(6));
+        mkdir($projectRoot . '/tests/fixtures/parity_minimal_v1', 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $projectRoot . '/tests/fixtures/parity_minimal_v1');
+
+        $repositoryRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot);
+
+        assertSame($projectRoot . '/state/local_repository', $repositoryRoot);
+        assertTrue(is_dir($repositoryRoot . '/records'));
+        assertTrue(is_dir($repositoryRoot . '/.git'));
+        assertTrue(is_file($repositoryRoot . '/records/posts/root-001.txt'));
+    }
+
+    public function testDefaultRepositoryBootstrapRepairsExistingLocalRepositoryWithoutGit(): void
+    {
+        $projectRoot = sys_get_temp_dir() . '/forum-rewrite-project-' . bin2hex(random_bytes(6));
+        mkdir($projectRoot . '/tests/fixtures/parity_minimal_v1', 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $projectRoot . '/tests/fixtures/parity_minimal_v1');
+        mkdir($projectRoot . '/state/local_repository', 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $projectRoot . '/state/local_repository');
+
+        $repositoryRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot);
+
+        assertSame($projectRoot . '/state/local_repository', $repositoryRoot);
+        assertTrue(is_dir($repositoryRoot . '/records'));
+        assertTrue(is_dir($repositoryRoot . '/.git'));
+        assertTrue(is_file($repositoryRoot . '/records/posts/root-001.txt'));
+    }
+
     private function render(Application $application, string $path): string
     {
         return $this->renderMethod($application, 'GET', $path);
@@ -242,6 +273,27 @@ final class LocalAppSmokeTest
         ob_start();
         $controller->handle($method, $path, $cookies);
         return (string) ob_get_clean();
+    }
+
+    private function copyDirectory(string $source, string $destination): void
+    {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            $targetPath = $destination . '/' . $iterator->getSubPathName();
+            if ($item->isDir()) {
+                if (!is_dir($targetPath)) {
+                    mkdir($targetPath, 0777, true);
+                }
+
+                continue;
+            }
+
+            copy($item->getPathname(), $targetPath);
+        }
     }
 }
 

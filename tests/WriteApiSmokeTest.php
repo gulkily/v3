@@ -8,10 +8,13 @@ use ForumRewrite\Application;
 
 final class WriteApiSmokeTest
 {
-    public function testCreateThreadAndReplyApisWriteCanonicalFilesAndRefreshReads(): void
+    public function testCreateThreadAndReplyApisWriteCanonicalFilesCommitAndInvalidateArtifacts(): void
     {
-        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
-        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->seedArtifacts($artifactRoot, [
+            '/index.html',
+        ]);
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
 
         $threadResponse = $this->renderMethod(
             $application,
@@ -19,7 +22,13 @@ final class WriteApiSmokeTest
             '/api/create_thread?board_tags=general&subject=New%20Thread&body=Thread%20body'
         );
         $threadId = $this->extractValue($threadResponse, 'thread_id');
+        $threadCommitSha = $this->extractValue($threadResponse, 'commit_sha');
         $threadPage = $this->renderMethod($application, 'GET', '/threads/' . $threadId);
+        $this->seedArtifacts($artifactRoot, [
+            '/threads/' . $threadId . '.html',
+            '/posts/' . $threadId . '.html',
+            '/index.html',
+        ]);
 
         $replyResponse = $this->renderMethod(
             $application,
@@ -27,23 +36,34 @@ final class WriteApiSmokeTest
             '/api/create_reply?thread_id=' . rawurlencode($threadId) . '&parent_id=' . rawurlencode($threadId) . '&body=Reply%20body'
         );
         $replyId = $this->extractValue($replyResponse, 'post_id');
+        $replyCommitSha = $this->extractValue($replyResponse, 'commit_sha');
         $postPage = $this->renderMethod($application, 'GET', '/posts/' . $replyId);
 
         assertStringContains('status=ok', $threadResponse);
+        assertTrue(strlen($threadCommitSha) === 40);
         assertTrue(is_file($repositoryRoot . '/records/posts/' . $threadId . '.txt'));
         assertStringContains('New Thread', $threadPage);
+        assertFalse(is_file($artifactRoot . '/index.html'));
         assertStringContains('status=ok', $replyResponse);
+        assertTrue(strlen($replyCommitSha) === 40);
         assertTrue(is_file($repositoryRoot . '/records/posts/' . $replyId . '.txt'));
         assertStringContains('Reply body', $postPage);
+        assertFalse(is_file($artifactRoot . '/threads/' . $threadId . '.html'));
+        assertFalse(is_file($artifactRoot . '/posts/' . $replyId . '.html'));
+        assertTrue(is_file($artifactRoot . '/posts/' . $threadId . '.html'));
+        assertSame($replyCommitSha, $this->gitOutput($repositoryRoot, 'rev-parse HEAD'));
     }
 
-    public function testLinkIdentityUsesPublicKeyUserIdForUsername(): void
+    public function testLinkIdentityUsesPublicKeyUserIdForUsernameAndInvalidatesProfileArtifact(): void
     {
-        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $this->deleteDirectoryContents($repositoryRoot . '/records/identity');
         $this->deleteDirectoryContents($repositoryRoot . '/records/public-keys');
+        $this->seedArtifacts($artifactRoot, [
+            '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html',
+        ]);
 
-        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         $_POST = [
             'public_key' => $this->readFixturePublicKey(),
         ];
@@ -53,6 +73,7 @@ final class WriteApiSmokeTest
             '/api/link_identity?bootstrap_post_id=root-001'
         );
         $_POST = [];
+        $commitSha = $this->extractValue($response, 'commit_sha');
 
         $profile = $this->renderMethod(
             $application,
@@ -63,19 +84,22 @@ final class WriteApiSmokeTest
 
         assertStringContains('status=ok', $response);
         assertStringContains('username=forum-user', $response);
+        assertTrue(strlen($commitSha) === 40);
         assertTrue(is_file($repositoryRoot . '/records/identity/identity-openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt'));
         assertTrue(is_file($repositoryRoot . '/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc'));
         assertStringContains('Visible username:</strong> forum-user', $profile);
         assertStringContains('Profile openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $usernameRoute);
+        assertFalse(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
+        assertSame($commitSha, $this->gitOutput($repositoryRoot, 'rev-parse HEAD'));
     }
 
     public function testHtmlComposeAndAccountFormsSubmitAgainstWritableRepo(): void
     {
-        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $this->deleteDirectoryContents($repositoryRoot . '/records/identity');
         $this->deleteDirectoryContents($repositoryRoot . '/records/public-keys');
 
-        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
 
         $_POST = [
             'board_tags' => 'general',
@@ -103,13 +127,40 @@ final class WriteApiSmokeTest
         $accountResponse = $this->renderMethod($application, 'POST', '/account/key/');
         $_POST = [];
 
+        assertStringContains('Redirecting', $threadResponse);
         assertStringContains('Created thread', $threadResponse);
+        assertStringContains('Commit ', $threadResponse);
         assertStringContains('Created reply', $replyResponse);
+        assertStringContains('Commit ', $replyResponse);
         assertStringContains('Linked identity', $accountResponse);
+        assertStringContains('Commit ', $accountResponse);
+    }
+
+    public function testWriteApiReportsGitFailureWithoutInvalidatingArtifacts(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-write-repo-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-write-db-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-write-public-' . bin2hex(random_bytes(6));
+        mkdir($artifactRoot, 0777, true);
+        $this->seedArtifacts($artifactRoot, [
+            '/index.html',
+        ]);
+
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_thread?board_tags=general&subject=New%20Thread&body=Thread%20body'
+        );
+
+        assertStringContains('error=Writable repository must be a git checkout before writes are allowed.', $response);
+        assertTrue(is_file($artifactRoot . '/index.html'));
     }
 
     /**
-     * @return array{string,string}
+     * @return array{string,string,string}
      */
     private function createTempEnvironment(): array
     {
@@ -117,8 +168,11 @@ final class WriteApiSmokeTest
         mkdir($repositoryRoot, 0777, true);
         $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-write-db-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-write-public-' . bin2hex(random_bytes(6));
+        mkdir($artifactRoot, 0777, true);
+        $this->initializeGitRepository($repositoryRoot);
 
-        return [$repositoryRoot, $databasePath];
+        return [$repositoryRoot, $databasePath, $artifactRoot];
     }
 
     private function readFixturePublicKey(): string
@@ -179,5 +233,54 @@ final class WriteApiSmokeTest
         foreach (glob($directory . '/*') ?: [] as $path) {
             @unlink($path);
         }
+    }
+
+    /**
+     * @param list<string> $relativePaths
+     */
+    private function seedArtifacts(string $artifactRoot, array $relativePaths): void
+    {
+        foreach ($relativePaths as $relativePath) {
+            $path = $artifactRoot . $relativePath;
+            $directory = dirname($path);
+            if (!is_dir($directory)) {
+                mkdir($directory, 0777, true);
+            }
+
+            file_put_contents($path, '<!doctype html><html><body>artifact</body></html>');
+        }
+    }
+
+    private function initializeGitRepository(string $repositoryRoot): void
+    {
+        $this->runCommand($repositoryRoot, 'git init');
+        $this->runCommand($repositoryRoot, 'git config user.name "Forum Rewrite"');
+        $this->runCommand($repositoryRoot, 'git config user.email "forum-rewrite@example.invalid"');
+        $this->runCommand($repositoryRoot, 'git add .');
+        $this->runCommand($repositoryRoot, 'git commit -m "Initialize test repository"');
+    }
+
+    private function gitOutput(string $repositoryRoot, string $command): string
+    {
+        return trim($this->runCommand($repositoryRoot, 'git ' . $command));
+    }
+
+    private function runCommand(string $workdir, string $command): string
+    {
+        $output = [];
+        $exitCode = 0;
+        exec('cd ' . escapeshellarg($workdir) . ' && ' . $command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Command failed: ' . $command . "\n" . implode("\n", $output));
+        }
+
+        return implode("\n", $output);
+    }
+}
+
+function assertFalse(bool $condition): void
+{
+    if ($condition) {
+        throw new RuntimeException('Failed asserting that condition is false.');
     }
 }

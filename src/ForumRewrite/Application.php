@@ -17,6 +17,7 @@ final class Application
         private readonly string $projectRoot,
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
+        private readonly ?string $artifactRoot = null,
     ) {
     }
 
@@ -755,7 +756,7 @@ final class Application
         $input = $this->requestData($query);
         try {
             $result = $this->writer()->createThread($input);
-            $this->sendText("status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\n", 200);
+            $this->sendText("status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\ncommit_sha={$result['commit_sha']}\n", 200);
         } catch (RuntimeException $exception) {
             $this->sendText("error=" . $exception->getMessage() . "\n", 400);
         }
@@ -774,7 +775,7 @@ final class Application
         $input = $this->requestData($query);
         try {
             $result = $this->writer()->createReply($input);
-            $this->sendText("status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\n", 200);
+            $this->sendText("status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\ncommit_sha={$result['commit_sha']}\n", 200);
         } catch (RuntimeException $exception) {
             $this->sendText("error=" . $exception->getMessage() . "\n", 400);
         }
@@ -794,7 +795,7 @@ final class Application
         try {
             $result = $this->writer()->linkIdentity($input);
             $this->sendText(
-                "status=ok\nidentity_id={$result['identity_id']}\nprofile_slug={$result['profile_slug']}\nusername={$result['username']}\n",
+                "status=ok\nidentity_id={$result['identity_id']}\nprofile_slug={$result['profile_slug']}\nusername={$result['username']}\ncommit_sha={$result['commit_sha']}\n",
                 200
             );
         } catch (RuntimeException $exception) {
@@ -834,6 +835,7 @@ final class Application
         return new LocalWriteService(
             $this->repositoryRoot,
             $this->databasePath,
+            $this->artifactRoot ?? ($this->projectRoot . '/public'),
             new CanonicalRecordRepository($this->repositoryRoot),
         );
     }
@@ -846,9 +848,11 @@ final class Application
         $input = $this->requestData($query);
         try {
             $result = $this->writer()->createThread($input);
-            $notice = 'Created thread ' . $result['thread_id'] . '. '
-                . '<a href="/threads/' . $this->escape($result['thread_id']) . '">Open thread</a>';
-            $this->sendHtml($this->renderComposeThreadPage($notice, null), 200);
+            $location = '/threads/' . $result['thread_id'];
+            $this->sendRedirect(
+                $location,
+                'Created thread ' . $result['thread_id'] . '. Commit ' . $result['commit_sha'] . '.'
+            );
         } catch (RuntimeException $exception) {
             $this->sendHtml($this->renderComposeThreadPage(null, $exception->getMessage()), 400);
         }
@@ -866,7 +870,8 @@ final class Application
         try {
             $result = $this->writer()->createReply($input);
             $notice = 'Created reply ' . $result['post_id'] . '. '
-                . '<a href="/posts/' . $this->escape($result['post_id']) . '">Open post</a>';
+                . '<a href="/posts/' . $this->escape($result['post_id']) . '">Open post</a>. '
+                . 'Commit ' . $this->escape($result['commit_sha']);
             $this->sendHtml($this->renderComposeReplyPage($threadId, $parentId, $notice, null), 200);
         } catch (RuntimeException $exception) {
             $this->sendHtml($this->renderComposeReplyPage($threadId, $parentId, null, $exception->getMessage()), 400);
@@ -882,7 +887,8 @@ final class Application
         try {
             $result = $this->writer()->linkIdentity($input);
             $notice = 'Linked identity ' . $result['identity_id'] . ' as ' . $result['username'] . '. '
-                . '<a href="/profiles/' . $this->escape($result['profile_slug']) . '">Open profile</a>';
+                . '<a href="/profiles/' . $this->escape($result['profile_slug']) . '">Open profile</a>. '
+                . 'Commit ' . $this->escape($result['commit_sha']);
             $this->sendHtml($this->renderAccountKeyPage($notice, null), 200);
         } catch (RuntimeException $exception) {
             $this->sendHtml($this->renderAccountKeyPage(null, $exception->getMessage()), 400);
@@ -918,6 +924,21 @@ final class Application
         http_response_code($statusCode);
         header('Content-Type: application/rss+xml; charset=utf-8');
         echo $xml;
+    }
+
+    private function sendRedirect(string $location, string $message, int $statusCode = 303): void
+    {
+        http_response_code($statusCode);
+        header('Location: ' . $location);
+        header('Content-Type: text/html; charset=utf-8');
+
+        echo $this->renderPage(
+            'Redirecting',
+            '<section class="stack"><h1>Redirecting</h1><article class="card"><p>'
+            . $this->escape($message)
+            . ' <a href="' . $this->escape($location) . '">Continue</a></p></article></section>',
+            'compose'
+        );
     }
 
     private function escape(string $value): string

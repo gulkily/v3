@@ -6,11 +6,10 @@ require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 $projectRoot = dirname(__DIR__);
-$defaultRepositoryRoot = is_dir($projectRoot . '/state/local_repository')
-    ? $projectRoot . '/state/local_repository'
-    : $projectRoot . '/tests/fixtures/parity_minimal_v1';
+$defaultRepositoryRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot);
 $repositoryRoot = $argv[1] ?? $defaultRepositoryRoot;
 $databasePath = $argv[2] ?? ($projectRoot . '/state/cache/post_index.sqlite3');
 

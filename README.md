@@ -4,7 +4,9 @@ Minimal local test slice for the rewrite spec.
 
 ## Local Run
 
-Rebuild the SQLite read model from the fixture repository:
+The default local runtime now bootstraps and uses `state/local_repository` automatically. On first run it copies the committed fixture seed into that writable git repo, so thread/reply/bootstrap writes work without setting `FORUM_REPOSITORY_ROOT`.
+
+Rebuild the SQLite read model:
 
 ```bash
 php scripts/rebuild_read_model.php
@@ -50,9 +52,9 @@ Open these routes:
 - `http://127.0.0.1:8000/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954`
 - `http://127.0.0.1:8000/llms.txt`
 
-The default server reads from [tests/fixtures/parity_minimal_v1](/home/wsl/v3/tests/fixtures/parity_minimal_v1). Override it with `FORUM_REPOSITORY_ROOT=/path/to/repo` if needed.
+The default server uses [state/local_repository](/home/wsl/v3/state/local_repository) when `FORUM_REPOSITORY_ROOT` is unset. Override it with `FORUM_REPOSITORY_ROOT=/path/to/repo` if needed.
 
-To enable local write testing without mutating the committed fixtures:
+If you want to initialize that writable repo explicitly ahead of time:
 
 ```bash
 php scripts/init_local_repository.php
