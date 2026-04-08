@@ -69,6 +69,45 @@ final class WriteApiSmokeTest
         assertStringContains('Profile openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $usernameRoute);
     }
 
+    public function testHtmlComposeAndAccountFormsSubmitAgainstWritableRepo(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->deleteDirectoryContents($repositoryRoot . '/records/identity');
+        $this->deleteDirectoryContents($repositoryRoot . '/records/public-keys');
+
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+        $_POST = [
+            'board_tags' => 'general',
+            'subject' => 'Form Thread',
+            'body' => 'Form body',
+        ];
+        $threadResponse = $this->renderMethod($application, 'POST', '/compose/thread');
+        $_POST = [];
+
+        $threadId = $this->extractHrefId($threadResponse, '/threads/');
+
+        $_POST = [
+            'thread_id' => $threadId,
+            'parent_id' => $threadId,
+            'board_tags' => 'general',
+            'body' => 'Form reply body',
+        ];
+        $replyResponse = $this->renderMethod($application, 'POST', '/compose/reply');
+        $_POST = [];
+
+        $_POST = [
+            'bootstrap_post_id' => 'root-001',
+            'public_key' => $this->readFixturePublicKey(),
+        ];
+        $accountResponse = $this->renderMethod($application, 'POST', '/account/key/');
+        $_POST = [];
+
+        assertStringContains('Created thread', $threadResponse);
+        assertStringContains('Created reply', $replyResponse);
+        assertStringContains('Linked identity', $accountResponse);
+    }
+
     /**
      * @return array{string,string}
      */
@@ -103,6 +142,15 @@ final class WriteApiSmokeTest
         }
 
         throw new RuntimeException('Missing response key: ' . $key);
+    }
+
+    private function extractHrefId(string $response, string $prefix): string
+    {
+        if (preg_match('#href="' . preg_quote($prefix, '#') . '([^"]+)"#', $response, $matches) !== 1) {
+            throw new RuntimeException('Missing href prefix: ' . $prefix);
+        }
+
+        return $matches[1];
     }
 
     private function copyDirectory(string $source, string $destination): void

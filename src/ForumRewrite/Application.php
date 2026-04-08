@@ -48,6 +48,21 @@ final class Application
             return;
         }
 
+        if ($path === '/compose/thread' && $method === 'POST') {
+            $this->handleComposeThreadSubmit($query);
+            return;
+        }
+
+        if ($path === '/compose/reply' && $method === 'POST') {
+            $this->handleComposeReplySubmit($query);
+            return;
+        }
+
+        if (($path === '/account/key/' || $path === '/account/key') && $method === 'POST') {
+            $this->handleAccountKeySubmit($query);
+            return;
+        }
+
         if ($method !== 'GET') {
             $this->sendHtml($this->renderPage('Method Not Allowed', '<p>Only GET is supported in the local test slice, except for the identity-hint cookie route.</p>', 'none'), 405);
             return;
@@ -383,10 +398,21 @@ final class Application
 
     private function renderComposeThread(): string
     {
+        return $this->renderComposeThreadPage();
+    }
+
+    private function renderComposeThreadPage(?string $notice = null, ?string $error = null): string
+    {
+        $feedback = $this->renderFeedback($notice, $error);
         $content = '<section class="stack"><h1>Compose Thread</h1><article class="card">'
-            . '<p>This local slice does not submit writes yet.</p>'
-            . '<p>Target API: <code>/api/create_thread</code></p>'
-            . '<form><label>Subject<input type="text" placeholder="Thread subject"></label><label>Body<textarea rows="7" placeholder="ASCII body"></textarea></label><button type="button">Create thread</button></form>'
+            . $feedback
+            . '<p>Posts are stored as canonical ASCII files and the SQLite read model rebuilds immediately.</p>'
+            . '<form method="post" class="stack">'
+            . '<label>Board tags<input type="text" name="board_tags" value="general"></label>'
+            . '<label>Subject<input type="text" name="subject" placeholder="Thread subject"></label>'
+            . '<label>Body<textarea name="body" rows="7" placeholder="ASCII body"></textarea></label>'
+            . '<button type="submit">Create thread</button>'
+            . '</form>'
             . '</article></section>';
 
         return $this->renderPage('Compose Thread', $content, 'compose');
@@ -394,11 +420,23 @@ final class Application
 
     private function renderComposeReply(string $threadId, string $parentId): string
     {
+        return $this->renderComposeReplyPage($threadId, $parentId);
+    }
+
+    private function renderComposeReplyPage(string $threadId, string $parentId, ?string $notice = null, ?string $error = null): string
+    {
+        $feedback = $this->renderFeedback($notice, $error);
         $content = '<section class="stack"><h1>Compose Reply</h1><article class="card">'
-            . '<p>This local slice does not submit writes yet.</p>'
+            . $feedback
             . '<p><strong>Thread ID:</strong> ' . $this->escape($threadId !== '' ? $threadId : 'missing') . '</p>'
             . '<p><strong>Parent ID:</strong> ' . $this->escape($parentId !== '' ? $parentId : 'missing') . '</p>'
-            . '<form><label>Body<textarea rows="7" placeholder="ASCII reply body"></textarea></label><button type="button">Create reply</button></form>'
+            . '<form method="post" class="stack">'
+            . '<input type="hidden" name="thread_id" value="' . $this->escape($threadId) . '">'
+            . '<input type="hidden" name="parent_id" value="' . $this->escape($parentId) . '">'
+            . '<label>Board tags<input type="text" name="board_tags" value="general"></label>'
+            . '<label>Body<textarea name="body" rows="7" placeholder="ASCII reply body"></textarea></label>'
+            . '<button type="submit">Create reply</button>'
+            . '</form>'
             . '</article></section>';
 
         return $this->renderPage('Compose Reply', $content, 'compose');
@@ -406,11 +444,22 @@ final class Application
 
     private function renderAccountKey(): string
     {
+        return $this->renderAccountKeyPage();
+    }
+
+    private function renderAccountKeyPage(?string $notice = null, ?string $error = null): string
+    {
         $identityHint = $_COOKIE['identity_hint'] ?? '';
+        $feedback = $this->renderFeedback($notice, $error);
         $content = '<section class="stack"><h1>Account Key</h1><article class="card">'
-            . '<p>Username capture and bootstrap writes remain to be implemented.</p>'
+            . $feedback
+            . '<p>Paste an armored public key to bootstrap an identity from its public key user ID.</p>'
             . '<p><strong>Identity hint cookie:</strong> ' . $this->escape($identityHint !== '' ? $identityHint : 'none') . '</p>'
-            . '<p>Planned API target: <code>/api/link_identity</code></p>'
+            . '<form method="post" class="stack">'
+            . '<label>Bootstrap post ID<input type="text" name="bootstrap_post_id" value="root-001"></label>'
+            . '<label>Public key<textarea name="public_key" rows="10" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----"></textarea></label>'
+            . '<button type="submit">Link identity</button>'
+            . '</form>'
             . '</article></section>';
 
         return $this->renderPage('Account Key', $content, 'account');
@@ -788,6 +837,57 @@ final class Application
         );
     }
 
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleComposeThreadSubmit(array $query): void
+    {
+        $input = $this->requestData($query);
+        try {
+            $result = $this->writer()->createThread($input);
+            $notice = 'Created thread ' . $result['thread_id'] . '. '
+                . '<a href="/threads/' . $this->escape($result['thread_id']) . '">Open thread</a>';
+            $this->sendHtml($this->renderComposeThreadPage($notice, null), 200);
+        } catch (RuntimeException $exception) {
+            $this->sendHtml($this->renderComposeThreadPage(null, $exception->getMessage()), 400);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleComposeReplySubmit(array $query): void
+    {
+        $input = $this->requestData($query);
+        $threadId = (string) ($input['thread_id'] ?? '');
+        $parentId = (string) ($input['parent_id'] ?? '');
+
+        try {
+            $result = $this->writer()->createReply($input);
+            $notice = 'Created reply ' . $result['post_id'] . '. '
+                . '<a href="/posts/' . $this->escape($result['post_id']) . '">Open post</a>';
+            $this->sendHtml($this->renderComposeReplyPage($threadId, $parentId, $notice, null), 200);
+        } catch (RuntimeException $exception) {
+            $this->sendHtml($this->renderComposeReplyPage($threadId, $parentId, null, $exception->getMessage()), 400);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleAccountKeySubmit(array $query): void
+    {
+        $input = $this->requestData($query);
+        try {
+            $result = $this->writer()->linkIdentity($input);
+            $notice = 'Linked identity ' . $result['identity_id'] . ' as ' . $result['username'] . '. '
+                . '<a href="/profiles/' . $this->escape($result['profile_slug']) . '">Open profile</a>';
+            $this->sendHtml($this->renderAccountKeyPage($notice, null), 200);
+        } catch (RuntimeException $exception) {
+            $this->sendHtml($this->renderAccountKeyPage(null, $exception->getMessage()), 400);
+        }
+    }
+
     private function pdo(): PDO
     {
         return (new ReadModelConnection($this->databasePath))->open();
@@ -827,5 +927,19 @@ final class Application
     private function escapeXml(string $value): string
     {
         return htmlspecialchars($value, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    private function renderFeedback(?string $notice, ?string $error): string
+    {
+        $html = '';
+        if ($notice !== null && $notice !== '') {
+            $html .= '<div class="feedback feedback-ok">' . $notice . '</div>';
+        }
+
+        if ($error !== null && $error !== '') {
+            $html .= '<div class="feedback feedback-error">' . $this->escape($error) . '</div>';
+        }
+
+        return $html;
     }
 }
