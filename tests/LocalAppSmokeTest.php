@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
+use ForumRewrite\Host\FrontController;
 
 final class LocalAppSmokeTest
 {
@@ -131,6 +132,62 @@ final class LocalAppSmokeTest
         assertStringContains('Write APIs are disabled against the committed fixture repository', $response);
     }
 
+    public function testFrontControllerServesStaticArtifactForAnonymousEligibleRoute(): void
+    {
+        @unlink($this->databasePath);
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        mkdir($staticHtmlRoot, 0777, true);
+        file_put_contents($staticHtmlRoot . '/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Board</h1></body></html>');
+
+        $controller = new FrontController(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $staticHtmlRoot,
+        );
+
+        $response = $this->renderFrontController($controller, 'GET', '/', []);
+
+        assertStringContains('Static Board', $response);
+        assertStringContains('route-source: static-html', $response);
+    }
+
+    public function testFrontControllerBypassesStaticArtifactWhenCookieIsPresent(): void
+    {
+        @unlink($this->databasePath);
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        mkdir($staticHtmlRoot, 0777, true);
+        file_put_contents($staticHtmlRoot . '/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Board</h1></body></html>');
+
+        $controller = new FrontController(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $staticHtmlRoot,
+        );
+
+        $response = $this->renderFrontController($controller, 'GET', '/', ['identity_hint' => 'guest']);
+
+        assertStringContains('Board', $response);
+        assertStringContains('route-source: php-fallback', $response);
+    }
+
+    public function testFrontControllerShowsConfigurationErrorForMissingRepository(): void
+    {
+        @unlink($this->databasePath);
+        $controller = new FrontController(
+            dirname(__DIR__),
+            sys_get_temp_dir() . '/forum-rewrite-missing-' . bin2hex(random_bytes(6)),
+            $this->databasePath,
+            sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6)),
+        );
+
+        $response = $this->renderFrontController($controller, 'GET', '/', []);
+
+        assertStringContains('Configuration Error', $response);
+        assertStringContains('Repository root does not exist', $response);
+    }
+
     private function render(Application $application, string $path): string
     {
         return $this->renderMethod($application, 'GET', $path);
@@ -140,6 +197,16 @@ final class LocalAppSmokeTest
     {
         ob_start();
         $application->handle($method, $path);
+        return (string) ob_get_clean();
+    }
+
+    /**
+     * @param array<string, string> $cookies
+     */
+    private function renderFrontController(FrontController $controller, string $method, string $path, array $cookies): string
+    {
+        ob_start();
+        $controller->handle($method, $path, $cookies);
         return (string) ob_get_clean();
     }
 }

@@ -1,0 +1,128 @@
+<?php
+
+declare(strict_types=1);
+
+namespace ForumRewrite\Host;
+
+use ForumRewrite\Application;
+use RuntimeException;
+use Throwable;
+
+final class FrontController
+{
+    public function __construct(
+        private readonly string $projectRoot,
+        private readonly string $repositoryRoot,
+        private readonly string $databasePath,
+        private readonly string $staticHtmlRoot,
+    ) {
+    }
+
+    /**
+     * @param array<string, string> $cookies
+     */
+    public function handle(string $method, string $requestUri, array $cookies = []): void
+    {
+        $configurationError = $this->configurationError();
+        if ($configurationError !== null) {
+            $this->sendHtml($this->renderConfigurationError($configurationError), 503);
+            return;
+        }
+
+        $staticArtifact = $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
+        if ($staticArtifact !== null && is_file($staticArtifact)) {
+            $contents = file_get_contents($staticArtifact);
+            if ($contents === false) {
+                throw new RuntimeException('Unable to read static HTML artifact: ' . $staticArtifact);
+            }
+
+            $this->sendHtml($contents, 200);
+            return;
+        }
+
+        try {
+            $application = new Application(
+                $this->projectRoot,
+                $this->repositoryRoot,
+                $this->databasePath,
+            );
+            $application->handle($method, $requestUri);
+        } catch (Throwable $throwable) {
+            $this->sendHtml($this->renderConfigurationError($throwable->getMessage()), 503);
+        }
+    }
+
+    private function configurationError(): ?string
+    {
+        if (!is_dir($this->repositoryRoot)) {
+            return 'Repository root does not exist: ' . $this->repositoryRoot;
+        }
+
+        if (!is_dir($this->repositoryRoot . '/records')) {
+            return 'Repository root is missing records/: ' . $this->repositoryRoot;
+        }
+
+        $databaseDirectory = dirname($this->databasePath);
+        if ($databaseDirectory !== '' && !is_dir($databaseDirectory) && !@mkdir($databaseDirectory, 0777, true) && !is_dir($databaseDirectory)) {
+            return 'Database directory is not writable: ' . $databaseDirectory;
+        }
+
+        if (!is_dir($this->staticHtmlRoot) && !@mkdir($this->staticHtmlRoot, 0777, true) && !is_dir($this->staticHtmlRoot)) {
+            return 'Static HTML directory is not writable: ' . $this->staticHtmlRoot;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<string, string> $cookies
+     */
+    private function resolveStaticArtifactPath(string $method, string $requestUri, array $cookies): ?string
+    {
+        if ($method !== 'GET' || $cookies !== []) {
+            return null;
+        }
+
+        $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+        $query = (string) (parse_url($requestUri, PHP_URL_QUERY) ?? '');
+        if ($query !== '') {
+            return null;
+        }
+
+        if ($path === '/' || $path === '') {
+            return $this->staticHtmlRoot . '/index.html';
+        }
+
+        if ($path === '/instance/' || $path === '/instance') {
+            return $this->staticHtmlRoot . '/instance/index.html';
+        }
+
+        if ($path === '/activity/' || $path === '/activity') {
+            return $this->staticHtmlRoot . '/activity/index.html';
+        }
+
+        if (preg_match('#^/(threads|posts|profiles)/([^/]+)/?$#', $path, $matches) === 1) {
+            return $this->staticHtmlRoot . '/' . $matches[1] . '/' . $matches[2] . '/index.html';
+        }
+
+        return null;
+    }
+
+    private function renderConfigurationError(string $details): string
+    {
+        return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+            . '<title>Configuration Error</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
+            . '<div class="shell"><header class="site-header"><p class="eyebrow">PHP Forum Rewrite</p></header>'
+            . '<main class="main"><section class="stack"><h1>Configuration Error</h1>'
+            . '<article class="card"><p>The PHP host configuration is incomplete or invalid.</p><p>'
+            . htmlspecialchars($details, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+            . '</p></article></section></main></div></body></html>';
+    }
+
+    private function sendHtml(string $html, int $statusCode): void
+    {
+        http_response_code($statusCode);
+        header('Content-Type: text/html; charset=utf-8');
+        echo $html;
+    }
+}

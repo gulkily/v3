@@ -142,6 +142,7 @@ Answer: Keep timing around static HTML hit/miss, PHP-native payload hit/miss, PH
 
 - What PHP runtime and extensions are available in production?
 Answer: Assume a conservative shared-host PHP setup with standard filesystem functions, JSON, SQLite/PDO SQLite, and `.htaccess` with `mod_rewrite`. Avoid unusual dependencies.
+Implementation note: `v3` should carry a checked-in `public/.htaccess` that serves existing files/directories first, serves sibling route `.html` artifacts directly when present, and falls back to `public/index.php` otherwise.
 - What deployment model will own startup rebuilds, permissions, and writable cache/state directories?
 Answer: Use a single checked-out repo plus writable sibling/state directories owned by the web user. Required writable areas are derived SQLite/index state, `_static_html/`, PHP microcache directory, and canonical `records/` families that accept writes. Startup rebuilds should be request-driven and deterministic rather than daemon-driven.
 - How is the repository checked out in production, and can PHP safely run the required git commands there?

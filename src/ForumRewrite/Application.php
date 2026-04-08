@@ -588,6 +588,7 @@ final class Application
         return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
             . '<title>' . $this->escape($title) . '</title>'
             . '<link rel="stylesheet" href="/assets/site.css"></head><body>'
+            . '<!-- route-source: php-fallback -->'
             . '<div class="shell"><header class="site-header"><p class="eyebrow">PHP Forum Rewrite</p><nav class="nav">' . $navHtml . '</nav></header>'
             . '<main class="main">' . $content . '</main></div></body></html>';
     }

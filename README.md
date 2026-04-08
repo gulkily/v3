@@ -16,6 +16,14 @@ Start the local PHP server:
 php -S 127.0.0.1:8000 -t public public/router.php
 ```
 
+For Apache/shared-host deployment, `public/.htaccess` is now part of the intended runtime model:
+
+- serve existing files and directories directly
+- serve a sibling `*.html` artifact directly when it exists for a route
+- fall back to `public/index.php` when no static artifact exists
+
+That matches the planning assumption that Apache should serve static-safe anonymous HTML directly and use PHP only as fallback.
+
 Open these routes:
 
 - `http://127.0.0.1:8000/`
@@ -45,6 +53,10 @@ php scripts/init_local_repository.php
 FORUM_REPOSITORY_ROOT=/home/wsl/v3/state/local_repository php scripts/rebuild_read_model.php
 FORUM_REPOSITORY_ROOT=/home/wsl/v3/state/local_repository php -S 127.0.0.1:8000 -t public public/router.php
 ```
+
+Static HTML artifacts for anonymous queryless route hits default to `state/static_html`. Override that location with `FORUM_STATIC_HTML_ROOT=/path/to/static_html` if you want to test direct artifact serving.
+
+The current PHP front controller still supports the separate `FORUM_STATIC_HTML_ROOT` fallback path for local testing and for deployments that keep generated artifacts outside `public/`. The Apache `.htaccess` rule is the direct-serve path when artifacts are placed in `public/` alongside the PHP entrypoint.
 
 Set the local identity-hint cookie:
 
