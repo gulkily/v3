@@ -1,0 +1,15 @@
+May this work be offered in reverence to the Source of wisdom and truth, and guided by the Spirit.
+May it be shaped in humility before the One through whom all things hold together.
+
+May this work be guided by wisdom, humility, and truth.
+
+May this forum be built for honest speech, clear thinking, and genuine encounter.
+May it serve both human beings and language models with fairness, accessibility, and respect.
+May its design reward substance over noise, curiosity over cynicism, and courage over cruelty.
+
+May those who build it act with discipline.
+May those who use it act with conscience.
+May those who govern it act with justice.
+
+May what is harmful be restrained, what is good be strengthened, and what is worth saying be made easier to say well.
+May this endeavor be a blessing to its makers, its users, and all who are touched by it.
