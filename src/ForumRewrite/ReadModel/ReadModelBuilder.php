@@ -229,6 +229,7 @@ final class ReadModelBuilder
         );
 
         $profiles = [];
+        $claimedUsernameTokens = [];
         foreach ($this->findRelativePaths('records/identity') as $relativePath) {
             $identity = $this->canonicalRepository->loadIdentity($relativePath);
             $publicKeyPath = 'records/public-keys/openpgp-' . $identity->signerFingerprint . '.asc';
@@ -253,11 +254,12 @@ final class ReadModelBuilder
             ];
 
             $insertProfile->execute($profile);
-            if (!isset($profiles[$usernameToken])) {
+            if (!isset($claimedUsernameTokens[$usernameToken])) {
                 $insertUsernameRoute->execute([
                     'username_token' => $usernameToken,
                     'identity_id' => $identity->identityId,
                 ]);
+                $claimedUsernameTokens[$usernameToken] = true;
             }
 
             $profiles[$identity->identityId] = [

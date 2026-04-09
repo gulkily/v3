@@ -191,6 +191,32 @@ final class WriteApiSmokeTest
         assertTrue(is_file($artifactRoot . '/index.html'));
     }
 
+    public function testLinkIdentityAllowsDuplicateUsernameTokensWithoutBreakingRebuild(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->deleteDirectoryContents($repositoryRoot . '/records/identity');
+        $this->deleteDirectoryContents($repositoryRoot . '/records/public-keys');
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $_POST = [
+            'public_key' => $this->generatePublicKey('forum-user'),
+        ];
+        $firstResponse = $this->renderMethod($application, 'POST', '/api/link_identity?bootstrap_post_id=root-001');
+        $_POST = [
+            'public_key' => $this->generatePublicKey('forum-user'),
+        ];
+        $secondResponse = $this->renderMethod($application, 'POST', '/api/link_identity?bootstrap_post_id=root-001');
+        $_POST = [];
+
+        $status = $this->renderMethod($application, 'GET', '/api/read_model_status');
+        $usernameRoute = $this->renderMethod($application, 'GET', '/user/forum-user');
+
+        assertStringContains('status=ok', $firstResponse);
+        assertStringContains('status=ok', $secondResponse);
+        assertStringContains('status=ready', $status);
+        assertStringContains('Profile openpgp-', $usernameRoute);
+    }
+
     /**
      * @return array{string,string,string}
      */
@@ -292,6 +318,27 @@ final class WriteApiSmokeTest
         $this->runCommand($repositoryRoot, 'git commit -m "Initialize test repository"');
     }
 
+    private function generatePublicKey(string $username): string
+    {
+        $home = sys_get_temp_dir() . '/forum-rewrite-gpg-home-' . bin2hex(random_bytes(6));
+        mkdir($home, 0700, true);
+        $homedir = escapeshellarg($home);
+        $this->runCommand(
+            $home,
+            'gpg --batch --no-tty --pinentry-mode loopback --passphrase "" --homedir '
+            . $homedir . ' --quick-generate-key ' . escapeshellarg($username) . ' ed25519 sign 0'
+        );
+
+        $publicKey = $this->runCommand(
+            $home,
+            'gpg --batch --no-tty --homedir ' . $homedir . ' --armor --export'
+        );
+
+        $this->deleteTree($home);
+
+        return trim($publicKey) . "\n";
+    }
+
     private function gitOutput(string $repositoryRoot, string $command): string
     {
         return trim($this->runCommand($repositoryRoot, 'git ' . $command));
@@ -307,6 +354,29 @@ final class WriteApiSmokeTest
         }
 
         return implode("\n", $output);
+    }
+
+    private function deleteTree(string $path): void
+    {
+        if (!is_dir($path)) {
+            return;
+        }
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            if ($item->isDir()) {
+                @rmdir($item->getPathname());
+                continue;
+            }
+
+            @unlink($item->getPathname());
+        }
+
+        @rmdir($path);
     }
 
 }
