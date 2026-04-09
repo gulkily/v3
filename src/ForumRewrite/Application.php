@@ -7,6 +7,9 @@ namespace ForumRewrite;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
+use ForumRewrite\ReadModel\ReadModelMetadata;
+use ForumRewrite\ReadModel\ReadModelStaleMarker;
+use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Write\LocalWriteService;
 use PDO;
 use RuntimeException;
@@ -160,6 +163,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/read_model_status') {
+            $this->sendText($this->renderReadModelStatus(), 200);
+            return;
+        }
+
         if (preg_match('#^/threads/([^/]+)/?$#', $path, $matches) === 1) {
             if (($query['format'] ?? null) === 'rss') {
                 $xml = $this->renderThreadRss($matches[1]);
@@ -225,30 +233,92 @@ final class Application
 
     private function ensureReadModel(): void
     {
-        if (is_file($this->databasePath)) {
+        $rebuildReason = 'missing_database';
+        if ($this->staleMarker()->exists()) {
+            $rebuildReason = 'stale_marker';
+        }
+
+        if (is_file($this->databasePath) && $rebuildReason !== 'stale_marker') {
             $pdo = null;
             try {
                 $pdo = $this->pdo();
-                $stmt = $pdo->prepare('SELECT value FROM metadata WHERE key = :key');
-                $stmt->execute(['key' => 'repository_root']);
-                $repositoryRoot = $stmt->fetchColumn();
-                $stmt = null;
+                $metadata = $this->readMetadata($pdo);
                 $pdo = null;
-                if ($repositoryRoot === $this->repositoryRoot) {
+
+                $currentRepositoryHead = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+                if (($metadata['repository_root'] ?? null) !== $this->repositoryRoot) {
+                    $rebuildReason = 'repository_root_mismatch';
+                } elseif (($metadata['schema_version'] ?? null) !== ReadModelMetadata::SCHEMA_VERSION) {
+                    $rebuildReason = 'schema_version_mismatch';
+                } elseif (($metadata['repository_head'] ?? null) !== $currentRepositoryHead) {
+                    $rebuildReason = 'repository_head_mismatch';
+                } else {
                     return;
                 }
             } catch (\Throwable) {
                 $pdo = null;
-                // Rebuild if the database is missing metadata or has an older schema.
+                $rebuildReason = 'metadata_unreadable';
             }
         }
 
-        $builder = new ReadModelBuilder(
-            $this->repositoryRoot,
-            $this->databasePath,
-            new CanonicalRecordRepository($this->repositoryRoot),
-        );
-        $builder->rebuild();
+        $this->executionLock()->withExclusiveLock(function () use ($rebuildReason): void {
+            if (is_file($this->databasePath)) {
+                try {
+                    $metadata = $this->readMetadata($this->pdo());
+                    $currentRepositoryHead = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+                    if (!$this->staleMarker()->exists()
+                        && ($metadata['repository_root'] ?? null) === $this->repositoryRoot
+                        && ($metadata['schema_version'] ?? null) === ReadModelMetadata::SCHEMA_VERSION
+                        && ($metadata['repository_head'] ?? null) === $currentRepositoryHead) {
+                        return;
+                    }
+                } catch (\Throwable) {
+                    // Rebuild while holding the lock if metadata is still unreadable.
+                }
+            }
+
+            $builder = new ReadModelBuilder(
+                $this->repositoryRoot,
+                $this->databasePath,
+                new CanonicalRecordRepository($this->repositoryRoot),
+                $rebuildReason,
+            );
+            $builder->rebuild();
+            $this->staleMarker()->clear();
+        });
+    }
+
+    private function renderReadModelStatus(): string
+    {
+        $metadata = [];
+        if (is_file($this->databasePath)) {
+            try {
+                $metadata = $this->readMetadata($this->pdo());
+            } catch (\Throwable) {
+                $metadata = [];
+            }
+        }
+
+        $currentRepositoryHead = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+        $staleMarker = $this->staleMarker()->read();
+        $status = (($metadata['repository_root'] ?? null) === $this->repositoryRoot)
+            && (($metadata['schema_version'] ?? null) === ReadModelMetadata::SCHEMA_VERSION)
+            && (($metadata['repository_head'] ?? null) === $currentRepositoryHead)
+            && $staleMarker === null
+            ? 'ready'
+            : 'stale';
+
+        return "status={$status}\n"
+            . 'schema_version=' . ($metadata['schema_version'] ?? 'missing') . "\n"
+            . 'repository_root=' . ($metadata['repository_root'] ?? 'missing') . "\n"
+            . 'repository_head=' . ($metadata['repository_head'] ?? 'missing') . "\n"
+            . 'current_repository_head=' . $currentRepositoryHead . "\n"
+            . 'rebuilt_at=' . ($metadata['rebuilt_at'] ?? 'missing') . "\n"
+            . 'lock_status=' . ($this->executionLock()->isLocked() ? 'locked' : 'unlocked') . "\n"
+            . 'stale_marker=' . ($staleMarker === null ? 'absent' : 'present') . "\n"
+            . 'stale_reason=' . ($staleMarker['reason'] ?? 'none') . "\n"
+            . 'stale_commit_sha=' . ($staleMarker['commit_sha'] ?? 'none') . "\n"
+            . 'rebuild_reason=' . ($metadata['rebuild_reason'] ?? 'missing') . "\n";
     }
 
     private function renderBoard(): string
@@ -921,6 +991,30 @@ final class Application
     private function pdo(): PDO
     {
         return (new ReadModelConnection($this->databasePath))->open();
+    }
+
+    private function executionLock(): ExecutionLock
+    {
+        return new ExecutionLock(dirname($this->databasePath) . '/forum-rewrite.lock');
+    }
+
+    private function staleMarker(): ReadModelStaleMarker
+    {
+        return new ReadModelStaleMarker($this->databasePath);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function readMetadata(PDO $pdo): array
+    {
+        $rows = $pdo->query('SELECT key, value FROM metadata')->fetchAll();
+        $metadata = [];
+        foreach ($rows as $row) {
+            $metadata[(string) $row['key']] = (string) $row['value'];
+        }
+
+        return $metadata;
     }
 
     private function notFound(): void

@@ -16,6 +16,7 @@ final class ReadModelBuilder
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
         private readonly CanonicalRecordRepository $canonicalRepository,
+        private readonly string $rebuildReason = 'manual',
     ) {
     }
 
@@ -350,8 +351,11 @@ final class ReadModelBuilder
     {
         $stmt = $pdo->prepare('INSERT INTO metadata (key, value) VALUES (:key, :value)');
         $metadata = [
+            'schema_version' => ReadModelMetadata::SCHEMA_VERSION,
             'repository_root' => $this->repositoryRoot,
+            'repository_head' => ReadModelMetadata::repositoryHead($this->repositoryRoot),
             'rebuilt_at' => gmdate('c'),
+            'rebuild_reason' => $this->rebuildReason,
         ];
 
         foreach ($metadata as $key => $value) {

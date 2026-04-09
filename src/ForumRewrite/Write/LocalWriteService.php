@@ -8,10 +8,12 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\ReadModel\ReadModelStaleMarker;
+use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use RuntimeException;
 
-final class LocalWriteService
+class LocalWriteService
 {
     public function __construct(
         private readonly string $repositoryRoot,
@@ -28,30 +30,32 @@ final class LocalWriteService
      */
     public function createThread(array $input): array
     {
-        $this->assertWritableRepository();
-        $postId = $this->generateRecordId('thread');
-        $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
-        $subject = $this->normalizeAsciiLine((string) ($input['subject'] ?? ''), 'subject');
-        $body = $this->normalizeAsciiBody((string) ($input['body'] ?? ''), 'body');
+        return $this->executionLock()->withExclusiveLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $postId = $this->generateRecordId('thread');
+            $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
+            $subject = $this->normalizeAsciiLine((string) ($input['subject'] ?? ''), 'subject');
+            $body = $this->normalizeAsciiBody((string) ($input['body'] ?? ''), 'body');
 
-        $contents = "Post-ID: {$postId}\n"
-            . "Board-Tags: {$boardTags}\n"
-            . ($subject !== '' ? "Subject: {$subject}\n" : '')
-            . "\n{$body}";
+            $contents = "Post-ID: {$postId}\n"
+                . "Board-Tags: {$boardTags}\n"
+                . ($subject !== '' ? "Subject: {$subject}\n" : '')
+                . "\n{$body}";
 
-        (new PostRecordParser())->parse($contents);
-        $recordPath = 'records/posts/' . $postId . '.txt';
-        $this->writeFile($recordPath, $contents);
-        $commitSha = $this->commitCanonicalWrite([$recordPath], 'Create thread ' . $postId);
-        $this->rebuildReadModel();
-        $this->invalidator()->invalidateBoardThread($postId);
+            (new PostRecordParser())->parse($contents);
+            $recordPath = 'records/posts/' . $postId . '.txt';
+            $this->writeFile($recordPath, $contents);
+            $commitSha = $this->commitCanonicalWrite([$recordPath], 'Create thread ' . $postId);
+            $this->refreshDerivedStateAfterCommit($commitSha);
+            $this->invalidator()->invalidateBoardThread($postId);
 
-        return [
-            'status' => 'ok',
-            'post_id' => $postId,
-            'thread_id' => $postId,
-            'commit_sha' => $commitSha,
-        ];
+            return [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $postId,
+                'commit_sha' => $commitSha,
+            ];
+        });
     }
 
     /**
@@ -60,39 +64,41 @@ final class LocalWriteService
      */
     public function createReply(array $input): array
     {
-        $this->assertWritableRepository();
-        $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
-        $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
-        $body = $this->normalizeAsciiBody((string) ($input['body'] ?? ''), 'body');
-        $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
+        return $this->executionLock()->withExclusiveLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
+            $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
+            $body = $this->normalizeAsciiBody((string) ($input['body'] ?? ''), 'body');
+            $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
 
-        $thread = $this->canonicalRepository->loadPost('records/posts/' . $threadId . '.txt');
-        $parent = $this->canonicalRepository->loadPost('records/posts/' . $parentId . '.txt');
-        $parentThreadId = $parent->threadId ?? $parent->postId;
-        if ($thread->postId !== $threadId || $parentThreadId !== $threadId) {
-            throw new RuntimeException('Parent post must belong to the target thread.');
-        }
+            $thread = $this->canonicalRepository->loadPost('records/posts/' . $threadId . '.txt');
+            $parent = $this->canonicalRepository->loadPost('records/posts/' . $parentId . '.txt');
+            $parentThreadId = $parent->threadId ?? $parent->postId;
+            if ($thread->postId !== $threadId || $parentThreadId !== $threadId) {
+                throw new RuntimeException('Parent post must belong to the target thread.');
+            }
 
-        $postId = $this->generateRecordId('reply');
-        $contents = "Post-ID: {$postId}\n"
-            . "Board-Tags: {$boardTags}\n"
-            . "Thread-ID: {$threadId}\n"
-            . "Parent-ID: {$parentId}\n"
-            . "\n{$body}";
+            $postId = $this->generateRecordId('reply');
+            $contents = "Post-ID: {$postId}\n"
+                . "Board-Tags: {$boardTags}\n"
+                . "Thread-ID: {$threadId}\n"
+                . "Parent-ID: {$parentId}\n"
+                . "\n{$body}";
 
-        (new PostRecordParser())->parse($contents);
-        $recordPath = 'records/posts/' . $postId . '.txt';
-        $this->writeFile($recordPath, $contents);
-        $commitSha = $this->commitCanonicalWrite([$recordPath], 'Create reply ' . $postId);
-        $this->rebuildReadModel();
-        $this->invalidator()->invalidateReply($threadId, $postId);
+            (new PostRecordParser())->parse($contents);
+            $recordPath = 'records/posts/' . $postId . '.txt';
+            $this->writeFile($recordPath, $contents);
+            $commitSha = $this->commitCanonicalWrite([$recordPath], 'Create reply ' . $postId);
+            $this->refreshDerivedStateAfterCommit($commitSha);
+            $this->invalidator()->invalidateReply($threadId, $postId);
 
-        return [
-            'status' => 'ok',
-            'post_id' => $postId,
-            'thread_id' => $threadId,
-            'commit_sha' => $commitSha,
-        ];
+            return [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'commit_sha' => $commitSha,
+            ];
+        });
     }
 
     /**
@@ -101,65 +107,87 @@ final class LocalWriteService
      */
     public function linkIdentity(array $input): array
     {
-        $this->assertWritableRepository();
-        $publicKey = $this->normalizeAsciiBody((string) ($input['public_key'] ?? ''), 'public_key');
-        $bootstrapPostId = $this->requireAsciiToken((string) ($input['bootstrap_post_id'] ?? ''), 'bootstrap_post_id');
-        $bootstrapPost = $this->canonicalRepository->loadPost('records/posts/' . $bootstrapPostId . '.txt');
-        $bootstrapThreadId = $bootstrapPost->threadId ?? $bootstrapPost->postId;
+        return $this->executionLock()->withExclusiveLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $publicKey = $this->normalizeAsciiBody((string) ($input['public_key'] ?? ''), 'public_key');
+            $bootstrapPostId = $this->requireAsciiToken((string) ($input['bootstrap_post_id'] ?? ''), 'bootstrap_post_id');
+            $bootstrapPost = $this->canonicalRepository->loadPost('records/posts/' . $bootstrapPostId . '.txt');
+            $bootstrapThreadId = $bootstrapPost->threadId ?? $bootstrapPost->postId;
 
-        $inspected = $this->keyInspector->inspect($publicKey);
-        $fingerprintUpper = $inspected['fingerprint'];
-        $fingerprintLower = strtolower($fingerprintUpper);
-        $username = $inspected['username'];
-        $identityId = 'openpgp:' . $fingerprintLower;
-        $postId = 'identity-openpgp-' . $fingerprintLower;
+            $inspected = $this->keyInspector->inspect($publicKey);
+            $fingerprintUpper = $inspected['fingerprint'];
+            $fingerprintLower = strtolower($fingerprintUpper);
+            $username = $inspected['username'];
+            $identityId = 'openpgp:' . $fingerprintLower;
+            $postId = 'identity-openpgp-' . $fingerprintLower;
 
-        $identityPath = 'records/identity/' . $postId . '.txt';
-        if (is_file($this->repositoryRoot . '/' . $identityPath)) {
-            throw new RuntimeException('Identity already exists for this fingerprint.');
-        }
+            $identityPath = 'records/identity/' . $postId . '.txt';
+            if (is_file($this->repositoryRoot . '/' . $identityPath)) {
+                throw new RuntimeException('Identity already exists for this fingerprint.');
+            }
 
-        $publicKeyPath = 'records/public-keys/openpgp-' . $fingerprintUpper . '.asc';
-        $writtenPaths = [];
-        if (!is_file($this->repositoryRoot . '/' . $publicKeyPath)) {
-            $this->writeFile($publicKeyPath, $publicKey);
-            $writtenPaths[] = $publicKeyPath;
-        }
+            $publicKeyPath = 'records/public-keys/openpgp-' . $fingerprintUpper . '.asc';
+            $writtenPaths = [];
+            if (!is_file($this->repositoryRoot . '/' . $publicKeyPath)) {
+                $this->writeFile($publicKeyPath, $publicKey);
+                $writtenPaths[] = $publicKeyPath;
+            }
 
-        $contents = "Post-ID: {$postId}\n"
-            . "Board-Tags: identity\n"
-            . "Subject: identity bootstrap\n"
-            . "Username: {$username}\n"
-            . "Identity-ID: {$identityId}\n"
-            . "Signer-Fingerprint: {$fingerprintUpper}\n"
-            . "Bootstrap-By-Post: {$bootstrapPostId}\n"
-            . "Bootstrap-By-Thread: {$bootstrapThreadId}\n"
-            . "\n{$publicKey}";
+            $contents = "Post-ID: {$postId}\n"
+                . "Board-Tags: identity\n"
+                . "Subject: identity bootstrap\n"
+                . "Username: {$username}\n"
+                . "Identity-ID: {$identityId}\n"
+                . "Signer-Fingerprint: {$fingerprintUpper}\n"
+                . "Bootstrap-By-Post: {$bootstrapPostId}\n"
+                . "Bootstrap-By-Thread: {$bootstrapThreadId}\n"
+                . "\n{$publicKey}";
 
-        (new IdentityBootstrapRecordParser())->parse($contents);
-        $this->writeFile($identityPath, $contents);
-        $writtenPaths[] = $identityPath;
-        $commitSha = $this->commitCanonicalWrite($writtenPaths, 'Link identity ' . $postId);
-        $this->rebuildReadModel();
-        $this->invalidator()->invalidateProfile('openpgp-' . $fingerprintLower);
+            (new IdentityBootstrapRecordParser())->parse($contents);
+            $this->writeFile($identityPath, $contents);
+            $writtenPaths[] = $identityPath;
+            $commitSha = $this->commitCanonicalWrite($writtenPaths, 'Link identity ' . $postId);
+            $this->refreshDerivedStateAfterCommit($commitSha);
+            $this->invalidator()->invalidateProfile('openpgp-' . $fingerprintLower);
 
-        return [
-            'status' => 'ok',
-            'identity_id' => $identityId,
-            'profile_slug' => 'openpgp-' . $fingerprintLower,
-            'username' => $username,
-            'commit_sha' => $commitSha,
-        ];
+            return [
+                'status' => 'ok',
+                'identity_id' => $identityId,
+                'profile_slug' => 'openpgp-' . $fingerprintLower,
+                'username' => $username,
+                'commit_sha' => $commitSha,
+            ];
+        });
     }
 
-    private function rebuildReadModel(): void
+    protected function rebuildReadModel(): void
     {
         $builder = new ReadModelBuilder(
             $this->repositoryRoot,
             $this->databasePath,
             new CanonicalRecordRepository($this->repositoryRoot),
+            'write_refresh',
         );
         $builder->rebuild();
+    }
+
+    private function refreshDerivedStateAfterCommit(string $commitSha): void
+    {
+        try {
+            $this->rebuildReadModel();
+            $this->staleMarker()->clear();
+        } catch (\Throwable $throwable) {
+            $this->staleMarker()->mark([
+                'reason' => 'write_refresh_failed',
+                'commit_sha' => $commitSha,
+                'failed_at' => gmdate('c'),
+                'message' => $throwable->getMessage(),
+            ]);
+
+            throw new RuntimeException(
+                'Canonical write committed at ' . $commitSha . ' but read-model refresh failed. Derived state marked stale.'
+            );
+        }
     }
 
     /**
@@ -205,6 +233,16 @@ final class LocalWriteService
     private function invalidator(): StaticArtifactInvalidator
     {
         return new StaticArtifactInvalidator($this->artifactRoot);
+    }
+
+    private function staleMarker(): ReadModelStaleMarker
+    {
+        return new ReadModelStaleMarker($this->databasePath);
+    }
+
+    private function executionLock(): ExecutionLock
+    {
+        return new ExecutionLock(dirname($this->databasePath) . '/forum-rewrite.lock');
     }
 
     /**

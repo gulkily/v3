@@ -5,6 +5,8 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
+use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
 {
@@ -159,6 +161,36 @@ final class WriteApiSmokeTest
         assertTrue(is_file($artifactRoot . '/index.html'));
     }
 
+    public function testWriteMarksDerivedStateStaleWhenRefreshFailsAfterCommit(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->seedArtifacts($artifactRoot, ['/index.html']);
+        $service = new class($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot)) extends LocalWriteService {
+            protected function rebuildReadModel(): void
+            {
+                throw new RuntimeException('simulated refresh failure');
+            }
+        };
+
+        try {
+            $service->createThread([
+                'board_tags' => 'general',
+                'subject' => 'New Thread',
+                'body' => 'Thread body',
+            ]);
+            throw new RuntimeException('Expected refresh failure.');
+        } catch (RuntimeException $exception) {
+            assertStringContains('Derived state marked stale', $exception->getMessage());
+        }
+
+        $staleMarkerPath = dirname($databasePath) . '/read_model_stale.json';
+        assertTrue(is_file($staleMarkerPath));
+        $staleMarker = json_decode((string) file_get_contents($staleMarkerPath), true, 512, JSON_THROW_ON_ERROR);
+        assertSame('write_refresh_failed', $staleMarker['reason'] ?? null);
+        assertTrue(strlen((string) ($staleMarker['commit_sha'] ?? '')) === 40);
+        assertTrue(is_file($artifactRoot . '/index.html'));
+    }
+
     /**
      * @return array{string,string,string}
      */
@@ -276,6 +308,7 @@ final class WriteApiSmokeTest
 
         return implode("\n", $output);
     }
+
 }
 
 function assertFalse(bool $condition): void

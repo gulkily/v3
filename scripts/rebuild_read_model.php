@@ -6,6 +6,7 @@ require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 $projectRoot = dirname(__DIR__);
@@ -13,11 +14,15 @@ $defaultRepositoryRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projec
 $repositoryRoot = $argv[1] ?? $defaultRepositoryRoot;
 $databasePath = $argv[2] ?? ($projectRoot . '/state/cache/post_index.sqlite3');
 
-$builder = new ReadModelBuilder(
-    $repositoryRoot,
-    $databasePath,
-    new CanonicalRecordRepository($repositoryRoot),
+(new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(
+    static function () use ($repositoryRoot, $databasePath): void {
+        $builder = new ReadModelBuilder(
+            $repositoryRoot,
+            $databasePath,
+            new CanonicalRecordRepository($repositoryRoot),
+        );
+        $builder->rebuild();
+    }
 );
-$builder->rebuild();
 
 fwrite(STDOUT, "Rebuilt read model at {$databasePath}\n");

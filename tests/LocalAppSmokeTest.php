@@ -7,6 +7,7 @@ require __DIR__ . '/../autoload.php';
 use ForumRewrite\Application;
 use ForumRewrite\Host\FrontController;
 use ForumRewrite\Host\StaticArtifactBuilder;
+use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 final class LocalAppSmokeTest
@@ -87,6 +88,7 @@ final class LocalAppSmokeTest
         $thread = $this->render($application, '/api/get_thread?thread_id=root-001');
         $post = $this->render($application, '/api/get_post?post_id=root-001');
         $profile = $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+        $readModelStatus = $this->render($application, '/api/read_model_status');
         $boardRss = $this->render($application, '/?format=rss');
         $threadRss = $this->render($application, '/threads/root-001?format=rss');
         $activityRss = $this->render($application, '/activity/?view=all&format=rss');
@@ -96,6 +98,10 @@ final class LocalAppSmokeTest
         assertStringContains('Thread-ID: root-001', $thread);
         assertStringContains('Post-ID: root-001', $post);
         assertStringContains('Profile-Slug: openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $profile);
+        assertStringContains('status=ready', $readModelStatus);
+        assertStringContains('lock_status=unlocked', $readModelStatus);
+        assertStringContains('stale_marker=absent', $readModelStatus);
+        assertStringContains('schema_version=2', $readModelStatus);
         assertStringContains('<rss version="2.0">', $boardRss);
         assertStringContains('<title>Hello world</title>', $threadRss);
         assertStringContains('<title>Activity all</title>', $activityRss);
@@ -256,6 +262,87 @@ final class LocalAppSmokeTest
         assertTrue(is_file($repositoryRoot . '/records/posts/root-001.txt'));
     }
 
+    public function testApplicationRebuildsWhenRepositoryHeadMetadataIsStale(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
+        $application = new Application(
+            dirname(__DIR__),
+            $repositoryRoot,
+            $databasePath,
+        );
+
+        $this->render($application, '/');
+
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $stmt = $pdo->prepare('UPDATE metadata SET value = :value WHERE key = :key');
+        $stmt->execute([
+            'key' => 'repository_head',
+            'value' => 'stale-head',
+        ]);
+
+        $status = $this->render($application, '/api/read_model_status');
+
+        assertStringContains('status=ready', $status);
+        assertStringContains('rebuild_reason=repository_head_mismatch', $status);
+        assertStringNotContains('repository_head=stale-head', $status);
+    }
+
+    public function testReadModelStatusReportsLockedWhenExecutionLockIsHeld(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
+        $application = new Application(
+            dirname(__DIR__),
+            $repositoryRoot,
+            $databasePath,
+        );
+
+        $this->render($application, '/');
+        $lock = new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock', 0);
+        $status = $lock->withExclusiveLock(fn () => $this->render($application, '/api/read_model_status'));
+
+        assertStringContains('status=ready', $status);
+        assertStringContains('lock_status=locked', $status);
+    }
+
+    public function testApplicationClearsStaleMarkerOnNextSuccessfulRead(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
+        $application = new Application(
+            dirname(__DIR__),
+            $repositoryRoot,
+            $databasePath,
+        );
+
+        $this->render($application, '/');
+        file_put_contents(
+            dirname($databasePath) . '/read_model_stale.json',
+            json_encode(['reason' => 'write_refresh_failed', 'commit_sha' => 'abc123'], JSON_THROW_ON_ERROR)
+        );
+
+        $status = $this->render($application, '/api/read_model_status');
+
+        assertStringContains('status=ready', $status);
+        assertStringContains('stale_marker=absent', $status);
+        assertStringContains('rebuild_reason=stale_marker', $status);
+    }
+
+    public function testExecutionLockTimesOutWhenAlreadyHeld(): void
+    {
+        $lockPath = sys_get_temp_dir() . '/forum-rewrite-lock-' . bin2hex(random_bytes(6)) . '.lock';
+        $primaryLock = new ExecutionLock($lockPath, 0);
+        $contendedLock = new ExecutionLock($lockPath, 0);
+
+        $primaryLock->withExclusiveLock(function () use ($contendedLock): void {
+            try {
+                $contendedLock->withExclusiveLock(static fn () => null);
+                throw new RuntimeException('Expected lock contention.');
+            } catch (RuntimeException $exception) {
+                assertStringContains('Timed out waiting for execution lock', $exception->getMessage());
+            }
+        });
+    }
+
     private function render(Application $application, string $path): string
     {
         return $this->renderMethod($application, 'GET', $path);
@@ -298,6 +385,23 @@ final class LocalAppSmokeTest
             copy($item->getPathname(), $targetPath);
         }
     }
+
+    /**
+     * @return array{string,string}
+     */
+    private function createGitBackedEnvironment(): array
+    {
+        $projectRoot = sys_get_temp_dir() . '/forum-rewrite-project-' . bin2hex(random_bytes(6));
+        $repositoryRoot = $projectRoot . '/state/local_repository';
+        mkdir($projectRoot . '/tests/fixtures/parity_minimal_v1', 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $projectRoot . '/tests/fixtures/parity_minimal_v1');
+        LocalRepositoryBootstrap::initializeLocalRepository($projectRoot, $repositoryRoot);
+
+        return [
+            $repositoryRoot,
+            $projectRoot . '/state/cache/post_index.sqlite3',
+        ];
+    }
 }
 
 function assertStringContains(string $needle, string $haystack): void
@@ -313,5 +417,12 @@ function assertOrdered(string $haystack, string $first, string $second): void
     $secondPos = strpos($haystack, $second);
     if ($firstPos === false || $secondPos === false || $firstPos >= $secondPos) {
         throw new RuntimeException('Failed asserting that output ordering is correct.');
+    }
+}
+
+function assertStringNotContains(string $needle, string $haystack): void
+{
+    if (str_contains($haystack, $needle)) {
+        throw new RuntimeException('Failed asserting that output does not contain: ' . $needle);
     }
 }
