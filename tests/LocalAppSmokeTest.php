@@ -66,6 +66,9 @@ final class LocalAppSmokeTest
         assertStringContains('Compose Thread', $composeThread);
         assertStringContains('Thread ID:', $composeReply);
         assertStringContains('identity hint cookie', strtolower($account));
+        assertStringContains('Generate Browser Key', $account);
+        assertStringContains('/assets/openpgp.min.js', $account);
+        assertStringContains('/assets/browser_signing.js', $account);
         assertStringContains('View: content', $activity);
         assertStringContains('GET /api/list_index', $llms);
     }

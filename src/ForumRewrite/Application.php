@@ -452,18 +452,36 @@ final class Application
     {
         $identityHint = $_COOKIE['identity_hint'] ?? '';
         $feedback = $this->renderFeedback($notice, $error);
-        $content = '<section class="stack"><h1>Account Key</h1><article class="card">'
+        $content = '<section class="stack" data-account-key-root><h1>Account Key</h1><article class="card">'
             . $feedback
-            . '<p>Paste an armored public key to bootstrap an identity from its public key user ID.</p>'
+            . '<p>Generate or import a browser-held OpenPGP keypair, then submit the public key to bootstrap an identity.</p>'
             . '<p><strong>Identity hint cookie:</strong> ' . $this->escape($identityHint !== '' ? $identityHint : 'none') . '</p>'
+            . '<div class="stack">'
+            . '<p class="meta" data-role="browser-key-status">No browser key action yet.</p>'
+            . '<div class="button-row">'
+            . '<button type="button" data-action="generate-browser-key">Generate Browser Key</button>'
+            . '<button type="button" data-action="load-browser-key">Load Saved Public Key</button>'
+            . '<button type="button" data-action="copy-public-key">Copy Public Key</button>'
+            . '<button type="button" data-action="copy-private-key">Copy Private Key</button>'
+            . '<button type="button" data-action="clear-browser-key">Clear Saved Keypair</button>'
+            . '</div>'
+            . '<p><strong>Saved browser username:</strong> <span data-role="username-field">guest</span></p>'
+            . '</div>'
             . '<form method="post" class="stack">'
             . '<label>Bootstrap post ID<input type="text" name="bootstrap_post_id" value="root-001"></label>'
-            . '<label>Public key<textarea name="public_key" rows="10" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----"></textarea></label>'
+            . '<label>Public key<textarea name="public_key" rows="10" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----" data-role="public-key-field"></textarea></label>'
             . '<button type="submit">Link identity</button>'
             . '</form>'
+            . '</article><article class="card"><h2>Browser Key Material</h2>'
+            . '<p class="meta">The private key stays in browser local storage unless you copy it out yourself.</p>'
+            . '<label>Saved public key<pre data-role="public-key-viewer">No browser public key saved yet.</pre></label>'
+            . '<label>Saved private key<pre data-role="private-key-viewer">No browser private key saved yet.</pre></label>'
             . '</article></section>';
 
-        return $this->renderPage('Account Key', $content, 'account');
+        return $this->renderPage('Account Key', $content, 'account', [
+            '/assets/openpgp.min.js',
+            '/assets/browser_signing.js',
+        ]);
     }
 
     private function renderApiIndex(): string
@@ -569,7 +587,7 @@ final class Application
         return "Local test slice\nGET /api/\nGET /api/list_index\nGET /api/get_thread\nGET /compose/thread\nGET /compose/reply\nGET /account/key/\nGET /instance/\n";
     }
 
-    private function renderPage(string $title, string $content, string $activeSection): string
+    private function renderPage(string $title, string $content, string $activeSection, array $scriptPaths = []): string
     {
         $nav = [
             '/' => ['Board', 'board'],
@@ -586,9 +604,14 @@ final class Application
             $navHtml .= '<a class="' . $class . '" href="' . $href . '">' . $this->escape($label) . '</a>';
         }
 
+        $scriptHtml = '';
+        foreach ($scriptPaths as $scriptPath) {
+            $scriptHtml .= '<script src="' . $this->escape($scriptPath) . '" defer></script>';
+        }
+
         return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
             . '<title>' . $this->escape($title) . '</title>'
-            . '<link rel="stylesheet" href="/assets/site.css"></head><body>'
+            . '<link rel="stylesheet" href="/assets/site.css">' . $scriptHtml . '</head><body>'
             . '<!-- route-source: php-fallback -->'
             . '<div class="shell"><header class="site-header"><p class="eyebrow">PHP Forum Rewrite</p><nav class="nav">' . $navHtml . '</nav></header>'
             . '<main class="main">' . $content . '</main></div></body></html>';
