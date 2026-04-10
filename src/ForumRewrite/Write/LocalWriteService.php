@@ -16,6 +16,8 @@ use RuntimeException;
 
 class LocalWriteService
 {
+    private const HIDDEN_BOOTSTRAP_BOARD_TAGS = 'identity internal';
+
     public function __construct(
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
@@ -115,9 +117,6 @@ class LocalWriteService
         return $this->executionLock()->withExclusiveLock(function () use ($input): array {
             $this->assertWritableRepository();
             $publicKey = $this->normalizeAsciiBody((string) ($input['public_key'] ?? ''), 'public_key');
-            $bootstrapPostId = $this->requireAsciiToken((string) ($input['bootstrap_post_id'] ?? ''), 'bootstrap_post_id');
-            $bootstrapPost = $this->canonicalRepository->loadPost('records/posts/' . $bootstrapPostId . '.txt');
-            $bootstrapThreadId = $bootstrapPost->threadId ?? $bootstrapPost->postId;
 
             $inspected = $this->keyInspector->inspect($publicKey);
             $fingerprintUpper = $inspected['fingerprint'];
@@ -131,8 +130,13 @@ class LocalWriteService
                 throw new RuntimeException('Identity already exists for this fingerprint.');
             }
 
+            [$bootstrapPostId, $bootstrapThreadId, $bootstrapPath] = $this->resolveBootstrapAnchor($input);
+
             $publicKeyPath = 'records/public-keys/openpgp-' . $fingerprintUpper . '.asc';
             $writtenPaths = [];
+            if ($bootstrapPath !== null) {
+                $writtenPaths[] = $bootstrapPath;
+            }
             if (!is_file($this->repositoryRoot . '/' . $publicKeyPath)) {
                 $this->writeFile($publicKeyPath, $publicKey);
                 $writtenPaths[] = $publicKeyPath;
@@ -160,6 +164,8 @@ class LocalWriteService
                 'identity_id' => $identityId,
                 'profile_slug' => 'openpgp-' . $fingerprintLower,
                 'username' => $username,
+                'bootstrap_post_id' => $bootstrapPostId,
+                'bootstrap_thread_id' => $bootstrapThreadId,
                 'commit_sha' => $commitSha,
             ];
         });
@@ -273,6 +279,33 @@ class LocalWriteService
     private function generateRecordId(string $prefix): string
     {
         return sprintf('%s-%s-%s', $prefix, gmdate('YmdHis'), substr(bin2hex(random_bytes(4)), 0, 8));
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array{string,string,?string}
+     */
+    private function resolveBootstrapAnchor(array $input): array
+    {
+        $providedBootstrapPostId = trim((string) ($input['bootstrap_post_id'] ?? ''));
+        if ($providedBootstrapPostId !== '') {
+            $bootstrapPostId = $this->requireAsciiToken($providedBootstrapPostId, 'bootstrap_post_id');
+            $bootstrapPost = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($bootstrapPostId));
+
+            return [$bootstrapPostId, $bootstrapPost->threadId ?? $bootstrapPost->postId, null];
+        }
+
+        $bootstrapPostId = $this->generateRecordId('bootstrap');
+        $contents = "Post-ID: {$bootstrapPostId}\n"
+            . 'Board-Tags: ' . self::HIDDEN_BOOTSTRAP_BOARD_TAGS . "\n"
+            . "Subject: account bootstrap\n"
+            . "\nAutomatic account bootstrap anchor.\n";
+
+        (new PostRecordParser())->parse($contents);
+        $bootstrapPath = CanonicalPathResolver::post($bootstrapPostId);
+        $this->writeFile($bootstrapPath, $contents);
+
+        return [$bootstrapPostId, $bootstrapPostId, $bootstrapPath];
     }
 
     /**

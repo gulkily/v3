@@ -17,6 +17,8 @@ use RuntimeException;
 
 final class Application
 {
+    private const HIDDEN_BOOTSTRAP_TAG = 'identity';
+
     public function __construct(
         private readonly string $projectRoot,
         private readonly string $repositoryRoot,
@@ -618,9 +620,14 @@ final class Application
      */
     private function fetchThreads(): array
     {
-        return $this->pdo()->query(
-            'SELECT root_post_id, subject, body_preview, reply_count FROM threads ORDER BY root_post_id DESC'
+        $rows = $this->pdo()->query(
+            'SELECT root_post_id, subject, body_preview, reply_count, board_tags_json FROM threads ORDER BY root_post_id DESC'
         )->fetchAll();
+
+        return array_values(array_filter(
+            $rows,
+            fn (array $thread): bool => !$this->isHiddenBootstrapBoardTagsJson((string) $thread['board_tags_json'])
+        ));
     }
 
     /**
@@ -686,7 +693,7 @@ final class Application
     private function fetchActivity(string $view): array
     {
         $view = $this->normalizeActivityView($view);
-        $sql = 'SELECT kind, post_id, thread_id, label FROM activity';
+        $sql = 'SELECT kind, post_id, thread_id, label, board_tags_json FROM activity';
         $params = [];
 
         if ($view === 'content') {
@@ -699,7 +706,12 @@ final class Application
         $stmt = $this->pdo()->prepare($sql);
         $stmt->execute($params);
 
-        return $stmt->fetchAll();
+        $rows = $stmt->fetchAll();
+
+        return array_values(array_filter(
+            $rows,
+            fn (array $item): bool => !$this->isHiddenBootstrapBoardTagsJson((string) $item['board_tags_json'])
+        ));
     }
 
     private function renderRssFeed(string $title, string $link, array $items): string
@@ -722,6 +734,16 @@ final class Application
     private function normalizeActivityView(string $view): string
     {
         return in_array($view, ['all', 'content', 'code'], true) ? $view : 'all';
+    }
+
+    private function isHiddenBootstrapBoardTagsJson(string $boardTagsJson): bool
+    {
+        $boardTags = json_decode($boardTagsJson, true);
+        if (!is_array($boardTags)) {
+            return false;
+        }
+
+        return in_array(self::HIDDEN_BOOTSTRAP_TAG, $boardTags, true);
     }
 
     /**
@@ -802,7 +824,7 @@ final class Application
         try {
             $result = $this->writer()->linkIdentity($input);
             $this->sendText(
-                "status=ok\nidentity_id={$result['identity_id']}\nprofile_slug={$result['profile_slug']}\nusername={$result['username']}\ncommit_sha={$result['commit_sha']}\n",
+                "status=ok\nidentity_id={$result['identity_id']}\nprofile_slug={$result['profile_slug']}\nusername={$result['username']}\nbootstrap_post_id={$result['bootstrap_post_id']}\nbootstrap_thread_id={$result['bootstrap_thread_id']}\ncommit_sha={$result['commit_sha']}\n",
                 200
             );
         } catch (RuntimeException $exception) {
@@ -895,6 +917,7 @@ final class Application
             $result = $this->writer()->linkIdentity($input);
             $notice = 'Linked identity ' . $result['identity_id'] . ' as ' . $result['username'] . '. '
                 . '<a href="/profiles/' . $this->escape($result['profile_slug']) . '">Open profile</a>. '
+                . '<a href="/posts/' . $this->escape($result['bootstrap_post_id']) . '">Open bootstrap post</a>. '
                 . 'Commit ' . $this->escape($result['commit_sha']);
             $this->sendHtml($this->renderAccountKeyPage($notice, null), 200);
         } catch (RuntimeException $exception) {

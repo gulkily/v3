@@ -58,7 +58,11 @@ After a keypair exists but before the compose form submits:
 - set the identity-hint cookie via `/api/set_identity_hint`
 - then continue the original thread/reply submission
 
-For V1, automatic compose bootstrap may use the existing stable bootstrap anchor post `root-001`.
+For the earlier bridge slice, automatic compose bootstrap could use the existing stable bootstrap anchor post `root-001`.
+
+Current implementation note:
+
+- normal identity bootstrap may now auto-create a hidden bootstrap post when no explicit `bootstrap_post_id` is supplied
 
 ### Failure handling
 

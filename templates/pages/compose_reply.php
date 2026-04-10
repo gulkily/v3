@@ -1,4 +1,4 @@
-<section class="stack" data-compose-root data-bootstrap-post-id="root-001">
+<section class="stack" data-compose-root>
   <h1>Compose Reply</h1>
   <article class="card">
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>

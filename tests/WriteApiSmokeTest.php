@@ -95,6 +95,42 @@ final class WriteApiSmokeTest
         assertSame($commitSha, $this->gitOutput($repositoryRoot, 'rev-parse HEAD'));
     }
 
+    public function testLinkIdentityAutoCreatesHiddenBootstrapPostWhenNoBootstrapPostIdIsProvided(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->deleteDirectoryContents($repositoryRoot . '/records/identity');
+        $this->deleteDirectoryContents($repositoryRoot . '/records/public-keys');
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $_POST = [
+            'public_key' => $this->readFixturePublicKey(),
+        ];
+        $response = $this->renderMethod($application, 'POST', '/api/link_identity');
+        $_POST = [];
+
+        $bootstrapPostId = $this->extractValue($response, 'bootstrap_post_id');
+        $bootstrapThreadId = $this->extractValue($response, 'bootstrap_thread_id');
+        $bootstrapRecord = (string) file_get_contents($repositoryRoot . '/records/posts/' . $bootstrapPostId . '.txt');
+        $board = $this->renderMethod($application, 'GET', '/');
+        $activity = $this->renderMethod($application, 'GET', '/activity/?view=all');
+        $bootstrapPostPage = $this->renderMethod($application, 'GET', '/posts/' . $bootstrapPostId);
+        $profile = $this->renderMethod(
+            $application,
+            'GET',
+            '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'
+        );
+
+        assertStringContains('status=ok', $response);
+        assertSame($bootstrapPostId, $bootstrapThreadId);
+        assertStringContains('Board-Tags: identity internal', $bootstrapRecord);
+        assertStringContains('Subject: account bootstrap', $bootstrapRecord);
+        assertStringNotContains($bootstrapPostId, $board);
+        assertStringNotContains($bootstrapPostId, $activity);
+        assertStringContains('Automatic account bootstrap anchor.', $bootstrapPostPage);
+        assertStringContains('Threads:</strong> 0', $profile);
+        assertStringContains('Posts:</strong> 0', $profile);
+    }
+
     public function testHtmlComposeAndAccountFormsSubmitAgainstWritableRepo(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -123,7 +159,6 @@ final class WriteApiSmokeTest
         $_POST = [];
 
         $_POST = [
-            'bootstrap_post_id' => 'root-001',
             'public_key' => $this->readFixturePublicKey(),
         ];
         $accountResponse = $this->renderMethod($application, 'POST', '/account/key/');
@@ -135,6 +170,7 @@ final class WriteApiSmokeTest
         assertStringContains('Created reply', $replyResponse);
         assertStringContains('Commit ', $replyResponse);
         assertStringContains('Linked identity', $accountResponse);
+        assertStringContains('Open bootstrap post', $accountResponse);
         assertStringContains('Commit ', $accountResponse);
     }
 

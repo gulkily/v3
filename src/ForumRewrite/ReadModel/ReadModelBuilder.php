@@ -12,6 +12,8 @@ use FilesystemIterator;
 
 final class ReadModelBuilder
 {
+    private const HIDDEN_BOOTSTRAP_TAG = 'identity';
+
     public function __construct(
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
@@ -129,7 +131,8 @@ final class ReadModelBuilder
                 kind TEXT NOT NULL,
                 post_id TEXT NOT NULL,
                 thread_id TEXT NOT NULL,
-                label TEXT NOT NULL
+                label TEXT NOT NULL,
+                board_tags_json TEXT NOT NULL
             )'
         );
     }
@@ -286,12 +289,6 @@ final class ReadModelBuilder
              SET author_identity_id = :author_identity_id, author_profile_slug = :author_profile_slug, author_label = :author_label
              WHERE post_id = :bootstrap_post_id OR author_identity_id = :author_identity_id'
         );
-        $countPosts = $pdo->prepare(
-            'SELECT COUNT(*) FROM posts WHERE author_identity_id = :author_identity_id'
-        );
-        $countThreads = $pdo->prepare(
-            'SELECT COUNT(*) FROM posts WHERE author_identity_id = :author_identity_id AND post_id = thread_id'
-        );
         $updateProfileCounts = $pdo->prepare(
             'UPDATE profiles
              SET post_count = :post_count, thread_count = :thread_count
@@ -306,15 +303,11 @@ final class ReadModelBuilder
                 'bootstrap_post_id' => $profile['bootstrap_post_id'],
             ]);
 
-            $countPosts->execute([
-                'author_identity_id' => $profile['identity_id'],
-            ]);
-            $countThreads->execute([
-                'author_identity_id' => $profile['identity_id'],
-            ]);
+            $visiblePostCount = $this->countVisibleRows($pdo, $profile['identity_id'], false);
+            $visibleThreadCount = $this->countVisibleRows($pdo, $profile['identity_id'], true);
             $updateProfileCounts->execute([
-                'post_count' => (int) $countPosts->fetchColumn(),
-                'thread_count' => (int) $countThreads->fetchColumn(),
+                'post_count' => $visiblePostCount,
+                'thread_count' => $visibleThreadCount,
                 'identity_id' => $profile['identity_id'],
             ]);
         }
@@ -346,10 +339,14 @@ final class ReadModelBuilder
     private function indexActivity(PDO $pdo, array $posts): void
     {
         $stmt = $pdo->prepare(
-            'INSERT INTO activity (kind, post_id, thread_id, label) VALUES (:kind, :post_id, :thread_id, :label)'
+            'INSERT INTO activity (kind, post_id, thread_id, label, board_tags_json) VALUES (:kind, :post_id, :thread_id, :label, :board_tags_json)'
         );
 
         foreach ($posts as $post) {
+            if ($this->isHiddenBootstrapBoardTagsJson($post['board_tags_json'])) {
+                continue;
+            }
+
             $kind = $post['post_id'] === $post['thread_id'] ? 'thread' : 'reply';
             $label = $post['subject'] ?? $this->preview($post['body']);
             $stmt->execute([
@@ -357,6 +354,7 @@ final class ReadModelBuilder
                 'post_id' => $post['post_id'],
                 'thread_id' => $post['thread_id'],
                 'label' => $label,
+                'board_tags_json' => $post['board_tags_json'],
             ]);
         }
     }
@@ -411,5 +409,39 @@ final class ReadModelBuilder
     {
         $line = strtok($body, "\n");
         return $line === false ? '' : $line;
+    }
+
+    private function countVisibleRows(PDO $pdo, string $identityId, bool $threadsOnly): int
+    {
+        $sql = 'SELECT board_tags_json FROM posts WHERE author_identity_id = :author_identity_id';
+        if ($threadsOnly) {
+            $sql .= ' AND post_id = thread_id';
+        }
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            'author_identity_id' => $identityId,
+        ]);
+
+        $visibleCount = 0;
+        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $boardTagsJson) {
+            if ($this->isHiddenBootstrapBoardTagsJson((string) $boardTagsJson)) {
+                continue;
+            }
+
+            $visibleCount++;
+        }
+
+        return $visibleCount;
+    }
+
+    private function isHiddenBootstrapBoardTagsJson(string $boardTagsJson): bool
+    {
+        $boardTags = json_decode($boardTagsJson, true);
+        if (!is_array($boardTags)) {
+            return false;
+        }
+
+        return in_array(self::HIDDEN_BOOTSTRAP_TAG, $boardTags, true);
     }
 }

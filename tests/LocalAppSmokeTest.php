@@ -74,6 +74,7 @@ final class LocalAppSmokeTest
         assertStringContains('Generate Browser Key', $account);
         assertStringContains('/assets/openpgp.min.js', $account);
         assertStringContains('/assets/browser_signing.js', $account);
+        assertStringNotContains('Bootstrap post ID', $account);
         assertStringContains('View: content', $activity);
         assertStringContains('GET /api/list_index', $llms);
     }
@@ -105,7 +106,7 @@ final class LocalAppSmokeTest
         assertStringContains('status=ready', $readModelStatus);
         assertStringContains('lock_status=unlocked', $readModelStatus);
         assertStringContains('stale_marker=absent', $readModelStatus);
-        assertStringContains('schema_version=2', $readModelStatus);
+        assertStringContains('schema_version=3', $readModelStatus);
         assertStringContains('<rss version="2.0">', $boardRss);
         assertStringContains('<title>Hello world</title>', $threadRss);
         assertStringContains('<title>Activity all</title>', $activityRss);

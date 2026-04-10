@@ -16,9 +16,8 @@
       <p><strong>Saved browser username:</strong> <span data-role="username-field">guest</span></p>
     </div>
     <form method="post" class="stack">
-      <label>Bootstrap post ID<input type="text" name="bootstrap_post_id" value="root-001"></label>
       <label>Public key<textarea name="public_key" rows="10" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----" data-role="public-key-field"></textarea></label>
-      <button type="submit">Link identity</button>
+      <button type="submit">Create account</button>
     </form>
   </article>
   <article class="card">

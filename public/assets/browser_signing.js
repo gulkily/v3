@@ -168,7 +168,7 @@
     return username;
   }
 
-  async function publishPublicKey(root, bootstrapPostId) {
+  async function publishPublicKey(root) {
     const publicKey = localStorage.getItem(storageKeys.publicKey) || "";
     const username = localStorage.getItem(storageKeys.username) || "guest";
     const fingerprint = await ensureStoredFingerprint();
@@ -176,7 +176,7 @@
       throw new Error("No browser public key is available to publish.");
     }
 
-    const response = await fetch(`/api/link_identity?bootstrap_post_id=${encodeURIComponent(bootstrapPostId)}`, {
+    const response = await fetch(`/api/link_identity`, {
       method: "POST",
       credentials: "same-origin",
       headers: {
@@ -217,7 +217,6 @@
   }
 
   async function ensureComposeIdentity(root, statusNode) {
-    const bootstrapPostId = root.getAttribute("data-bootstrap-post-id") || "root-001";
     const publishedFingerprint = localStorage.getItem(storageKeys.publishedFingerprint) || "";
 
     if (!hasBrowserKeypair()) {
@@ -230,7 +229,7 @@
     const fingerprint = await ensureStoredFingerprint();
     if (fingerprint === "" || publishedFingerprint !== fingerprint) {
       setStatus(statusNode, "Publishing your public key in the background...", "info");
-      await publishPublicKey(root, bootstrapPostId);
+      await publishPublicKey(root);
     } else {
       const username = localStorage.getItem(storageKeys.username) || "guest";
       await syncIdentityHint(username);

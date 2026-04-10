@@ -43,11 +43,11 @@ final class StaticArtifactBuilder
         $this->writeRouteArtifact($application, '/instance/', $this->artifactRoot . '/instance.html');
         $this->writeRouteArtifact($application, '/activity/', $this->artifactRoot . '/activity.html');
 
-        foreach ($this->fetchIds('SELECT root_post_id FROM threads ORDER BY root_post_id') as $threadId) {
+        foreach ($this->fetchVisibleThreadIds() as $threadId) {
             $this->writeRouteArtifact($application, '/threads/' . $threadId, $this->artifactRoot . '/threads/' . $threadId . '.html');
         }
 
-        foreach ($this->fetchIds('SELECT post_id FROM posts ORDER BY post_id') as $postId) {
+        foreach ($this->fetchVisiblePostIds() as $postId) {
             $this->writeRouteArtifact($application, '/posts/' . $postId, $this->artifactRoot . '/posts/' . $postId . '.html');
         }
 
@@ -68,6 +68,34 @@ final class StaticArtifactBuilder
         return $rows;
     }
 
+    /**
+     * @return list<string>
+     */
+    private function fetchVisibleThreadIds(): array
+    {
+        $pdo = (new ReadModelConnection($this->databasePath))->open();
+        $rows = $pdo->query('SELECT root_post_id, board_tags_json FROM threads ORDER BY root_post_id')->fetchAll();
+
+        return array_values(array_map(
+            static fn (array $row): string => (string) $row['root_post_id'],
+            array_filter($rows, fn (array $row): bool => !$this->isHiddenBootstrapBoardTagsJson((string) $row['board_tags_json']))
+        ));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function fetchVisiblePostIds(): array
+    {
+        $pdo = (new ReadModelConnection($this->databasePath))->open();
+        $rows = $pdo->query('SELECT post_id, board_tags_json FROM posts ORDER BY post_id')->fetchAll();
+
+        return array_values(array_map(
+            static fn (array $row): string => (string) $row['post_id'],
+            array_filter($rows, fn (array $row): bool => !$this->isHiddenBootstrapBoardTagsJson((string) $row['board_tags_json']))
+        ));
+    }
+
     private function writeRouteArtifact(Application $application, string $route, string $path): void
     {
         $directory = dirname($path);
@@ -79,5 +107,15 @@ final class StaticArtifactBuilder
         $application->handle('GET', $route);
         $contents = (string) ob_get_clean();
         file_put_contents($path, $contents);
+    }
+
+    private function isHiddenBootstrapBoardTagsJson(string $boardTagsJson): bool
+    {
+        $boardTags = json_decode($boardTagsJson, true);
+        if (!is_array($boardTags)) {
+            return false;
+        }
+
+        return in_array('identity', $boardTags, true);
     }
 }
