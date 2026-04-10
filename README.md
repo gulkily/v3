@@ -2,6 +2,16 @@
 
 Minimal local test slice for the rewrite spec.
 
+## Production Docs
+
+Production-facing deployment and operations docs now live here:
+
+- [Production Deploy Runbook](/home/wsl/v3/docs/runbooks/production_deploy.md)
+- [Operator Recovery Runbook](/home/wsl/v3/docs/runbooks/operator_recovery.md)
+- [Apache Vhost Example](/home/wsl/v3/docs/examples/apache_vhost.conf)
+- [Production Env Example](/home/wsl/v3/docs/examples/env.production.example)
+- [Production Deployment Checklist](/home/wsl/v3/docs/plans/php_production_deployment_checklist_v1.md)
+
 ## Local Run
 
 The default local runtime now bootstraps and uses `state/local_repository` automatically. On first run it copies the committed fixture seed into that writable git repo, so thread/reply/bootstrap writes work without setting `FORUM_REPOSITORY_ROOT`.
@@ -31,6 +41,8 @@ For Apache/shared-host deployment, `public/.htaccess` is now part of the intende
 - fall back to `public/index.php` when no static artifact exists
 
 That matches the planning assumption that Apache should serve static-safe anonymous HTML directly and use PHP only as fallback.
+
+The repo-owned deployment contract is now documented in the production runbook. What remains before a real production launch is mostly host-side validation on the actual Apache target.
 
 Open these routes:
 
