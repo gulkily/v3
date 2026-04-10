@@ -362,18 +362,14 @@ final class Application
             return null;
         }
 
-        $author = $post['author_profile_slug']
-            ? '<a href="/profiles/' . $this->escape($post['author_profile_slug']) . '">' . $this->escape($post['author_label']) . '</a>'
-            : $this->escape($post['author_label']);
-
-        $content = '<section class="stack">'
-            . '<h1>Post ' . $this->escape($post['post_id']) . '</h1>'
-            . '<p class="meta">Thread <a href="/threads/' . $this->escape($post['thread_id']) . '">' . $this->escape($post['thread_id']) . '</a></p>'
-            . '<p class="meta">Author ' . $author . '</p>'
-            . '<article class="card"><div class="body">' . nl2br($this->escape($post['body'])) . '</div></article>'
-            . '</section>';
-
-        return $this->renderPage('Post ' . $post['post_id'], $content, 'board');
+        return $this->renderer()->renderPageTemplate(
+            'post.php',
+            [
+                'post' => $post,
+            ],
+            'Post ' . $post['post_id'],
+            'board',
+        );
     }
 
     private function renderProfile(string $slug, bool $self = false): ?string
@@ -433,32 +429,29 @@ final class Application
         $pdo = $this->pdo();
         $instance = $pdo->query('SELECT * FROM instance_public WHERE singleton = 1')->fetch();
 
-        $content = '<section class="stack"><h1>Instance</h1><article class="card">'
-            . '<p><strong>Name:</strong> ' . $this->escape($instance['instance_name']) . '</p>'
-            . '<p><strong>Admin:</strong> ' . $this->escape($instance['admin_name']) . '</p>'
-            . '<p><strong>Contact:</strong> ' . $this->escape($instance['admin_contact']) . '</p>'
-            . '<p><strong>Installed:</strong> ' . $this->escape($instance['install_date']) . '</p>'
-            . '<p><strong>Retention:</strong> ' . $this->escape($instance['retention_policy']) . '</p>'
-            . '</article><article class="card"><div class="body">' . nl2br($this->escape($instance['body'])) . '</div></article></section>';
-
-        return $this->renderPage('Instance', $content, 'instance');
+        return $this->renderer()->renderPageTemplate(
+            'instance.php',
+            [
+                'instance' => $instance,
+            ],
+            'Instance',
+            'instance',
+        );
     }
 
     private function renderActivity(string $view): string
     {
         $view = $this->normalizeActivityView($view);
-        $items = $this->fetchActivity($view);
 
-        $content = '<section class="stack"><h1>Activity</h1><p class="meta">View: ' . $this->escape($view) . '</p>';
-        foreach ($items as $item) {
-            $content .= '<article class="card"><p class="meta">' . $this->escape($item['kind']) . '</p>'
-                . '<p><a href="/posts/' . $this->escape($item['post_id']) . '">' . $this->escape($item['post_id']) . '</a></p>'
-                . '<p>' . $this->escape($item['label']) . '</p>'
-                . '</article>';
-        }
-        $content .= '</section>';
-
-        return $this->renderPage('Activity', $content, 'activity');
+        return $this->renderer()->renderPageTemplate(
+            'activity.php',
+            [
+                'view' => $view,
+                'items' => $this->fetchActivity($view),
+            ],
+            'Activity',
+            'activity',
+        );
     }
 
     private function renderComposeThread(): string

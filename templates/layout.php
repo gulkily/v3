@@ -14,12 +14,7 @@
   <div class="shell">
     <header class="site-header">
       <p class="eyebrow">PHP Forum Rewrite</p>
-      <nav class="nav">
-<?php foreach ($navItems as $item): ?>
-<?php $class = $item['section'] === $activeSection ? 'nav-link is-active' : 'nav-link'; ?>
-        <a class="<?= $e($class) ?>" href="<?= $e($item['href']) ?>"><?= $e($item['label']) ?></a>
-<?php endforeach; ?>
-      </nav>
+<?= $partial('partials/nav.php') ?>
     </header>
     <main class="main">
 <?= $content ?>

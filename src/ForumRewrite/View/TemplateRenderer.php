@@ -73,6 +73,10 @@ final class TemplateRenderer
 
         $e = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $br = static fn (mixed $value): string => nl2br(htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+        $partial = fn (string $partialPath, array $partialData = []): string => $this->renderFile(
+            $partialPath,
+            array_merge($data, $partialData)
+        );
 
         extract($data, EXTR_SKIP);
 

@@ -7,10 +7,10 @@ This document describes how to move HTML out of application logic code while kee
 - Branch: `feature/template-extraction`
 - Status: in progress
 - Slice 1: completed
-- Slice 2: pending
+- Slice 2: completed
 - Slice 3: pending
 - Slice 4: pending
-- Verification: `php tests/run.php` passed after Slice 1
+- Verification: `php tests/run.php` passed after Slice 2
 
 ## Goals
 
@@ -129,7 +129,7 @@ This proves the rendering model and extracts the shared shell.
 - extract instance page
 - extract activity page
 - extract shared nav and post-card partials
-- status: pending
+- status: completed
 
 ### Slice 3
 
@@ -187,3 +187,9 @@ Start with the shared layout plus the board/thread pages first. They cover the c
   - moved board page into `templates/pages/board.php`
   - moved thread page into `templates/pages/thread.php`
   - kept non-migrated routes on the same shared layout while leaving their page markup in `Application.php`
+- Slice 2 completed:
+  - extracted `templates/partials/nav.php`
+  - extracted `templates/partials/post_card.php`
+  - moved post page into `templates/pages/post.php`
+  - moved instance page into `templates/pages/instance.php`
+  - moved activity page into `templates/pages/activity.php`
