@@ -164,6 +164,12 @@ Expected outcome:
 
 - approval/vouching behaves like a first-class production write flow
 
+Implementation status:
+
+- approval writes now commit structured reply posts through the normal git-backed write path
+- profile, bootstrap-thread, and direct post surfaces are invalidated after approval writes
+- smoke coverage now covers seeded approval, successful approval, permission denial, self-approval rejection, multiple approvals, and feed visibility rules
+
 ## Recommended Order
 
 1. define canonical approval reply contract and seed strategy
@@ -181,3 +187,7 @@ Instead of creating a separate approval datastore, V1 should:
 - record later approvals as structured replies on bootstrap threads
 - derive approved status during rebuild
 - expose a simple `Approve user` action only to already-approved users
+
+Current status:
+
+- all four planned slices are implemented on this branch

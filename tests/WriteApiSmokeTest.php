@@ -280,6 +280,99 @@ final class WriteApiSmokeTest
         assertStringContains('Profile openpgp-', $usernameRoute);
     }
 
+    public function testApprovedUserCanApproveAnotherUserAndApprovalStaysOutOfFeeds(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $target = $this->linkGeneratedIdentity($application, 'alice');
+        $targetProfileSlug = $target['profile_slug'];
+        $targetBootstrapThreadId = $target['bootstrap_thread_id'];
+        $targetBootstrapPostId = $target['bootstrap_post_id'];
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $profilePage = $this->renderMethod($application, 'GET', '/profiles/' . $targetProfileSlug);
+
+        $this->seedArtifacts($artifactRoot, [
+            '/profiles/' . $targetProfileSlug . '.html',
+        ]);
+        $postIdsBefore = $this->listCanonicalPostIds($repositoryRoot);
+        $approvalResponse = $this->renderMethod($application, 'POST', '/profiles/' . $targetProfileSlug . '/approve');
+        $postIdsAfter = $this->listCanonicalPostIds($repositoryRoot);
+        $approvalPostIds = array_values(array_diff($postIdsAfter, $postIdsBefore));
+        sort($approvalPostIds);
+        $approvalPostId = $approvalPostIds[0] ?? '';
+
+        $targetProfile = $this->renderMethod($application, 'GET', '/profiles/' . $targetProfileSlug);
+        $targetProfileApi = $this->renderMethod($application, 'GET', '/api/get_profile?profile_slug=' . rawurlencode($targetProfileSlug));
+        $board = $this->renderMethod($application, 'GET', '/');
+        $activity = $this->renderMethod($application, 'GET', '/activity/?view=all');
+        $bootstrapThread = $this->renderMethod($application, 'GET', '/threads/' . $targetBootstrapThreadId);
+        $_COOKIE = [];
+
+        assertStringContains('Approve user', $profilePage);
+        assertStringContains('Approved user alice', $approvalResponse);
+        assertSame(1, count($approvalPostIds));
+        assertStringContains('Approved: yes', $targetProfileApi);
+        assertStringContains('Approved:</strong> yes', $targetProfile);
+        assertFalse(is_file($artifactRoot . '/profiles/' . $targetProfileSlug . '.html'));
+        assertStringNotContains($approvalPostId, $board);
+        assertStringNotContains($approvalPostId, $activity);
+        assertStringContains($approvalPostId, $bootstrapThread);
+        assertStringContains('Approve-Identity-ID: ' . $target['identity_id'], $bootstrapThread);
+    }
+
+    public function testUnapprovedUserCannotApproveAndSelfApprovalIsRejected(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $alice = $this->linkGeneratedIdentity($application, 'alice');
+        $bob = $this->linkGeneratedIdentity($application, 'bob');
+
+        $_COOKIE = ['identity_hint' => 'alice'];
+        $unapprovedResponse = $this->renderMethod($application, 'POST', '/profiles/' . $bob['profile_slug'] . '/approve');
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $selfResponse = $this->renderMethod(
+            $application,
+            'POST',
+            '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954/approve'
+        );
+        $_COOKIE = [];
+
+        assertStringContains('Only approved users can approve other users.', $unapprovedResponse);
+        assertStringContains('Self-approval is not allowed.', $selfResponse);
+    }
+
+    public function testMultipleApprovalsAreAccepted(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $target = $this->linkGeneratedIdentity($application, 'alice');
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $this->renderMethod($application, 'POST', '/profiles/' . $target['profile_slug'] . '/approve');
+        $this->renderMethod($application, 'POST', '/profiles/' . $target['profile_slug'] . '/approve');
+        $_COOKIE = [];
+
+        $matchingApprovals = 0;
+        foreach (glob($repositoryRoot . '/records/posts/*.txt') ?: [] as $path) {
+            $contents = (string) file_get_contents($path);
+            if (str_contains($contents, 'Thread-ID: ' . $target['bootstrap_thread_id'])
+                && str_contains($contents, 'Parent-ID: ' . $target['bootstrap_post_id'])
+                && str_contains($contents, 'Approve-Identity-ID: ' . $target['identity_id'])) {
+                $matchingApprovals++;
+            }
+        }
+
+        $bootstrapThread = $this->renderMethod($application, 'GET', '/threads/' . $target['bootstrap_thread_id']);
+
+        assertSame(2, $matchingApprovals);
+        assertStringContains('Approve-Identity-ID: ' . $target['identity_id'], $bootstrapThread);
+    }
+
     /**
      * @return array{string,string,string}
      */
@@ -326,6 +419,40 @@ final class WriteApiSmokeTest
         }
 
         return $matches[1];
+    }
+
+    /**
+     * @return array{identity_id:string,profile_slug:string,bootstrap_post_id:string,bootstrap_thread_id:string}
+     */
+    private function linkGeneratedIdentity(Application $application, string $username): array
+    {
+        $_POST = [
+            'public_key' => $this->generatePublicKey($username),
+        ];
+        $response = $this->renderMethod($application, 'POST', '/api/link_identity');
+        $_POST = [];
+
+        return [
+            'identity_id' => $this->extractValue($response, 'identity_id'),
+            'profile_slug' => $this->extractValue($response, 'profile_slug'),
+            'bootstrap_post_id' => $this->extractValue($response, 'bootstrap_post_id'),
+            'bootstrap_thread_id' => $this->extractValue($response, 'bootstrap_thread_id'),
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function listCanonicalPostIds(string $repositoryRoot): array
+    {
+        $ids = [];
+        foreach (glob($repositoryRoot . '/records/posts/*.txt') ?: [] as $path) {
+            $ids[] = basename($path, '.txt');
+        }
+
+        sort($ids);
+
+        return $ids;
     }
 
     private function copyDirectory(string $source, string $destination): void

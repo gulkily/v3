@@ -65,6 +65,20 @@ The first supported typed root is `Thread-Type: task`. Task roots add:
 - For this slice, authoritative task state lives on the task root post. Future slices may
   add append-only task-update records instead of overloading replies.
 
+## Structured Approval Replies
+
+The retained approval/vouching slice reuses normal replies rather than inventing a separate approval record family.
+
+Approval replies use these additional conventions:
+
+- `Board-Tags` include both `identity` and `approval`
+- `Thread-ID` must match the target profile bootstrap thread
+- `Parent-ID` must match the target profile bootstrap post
+- `Author-Identity-ID` identifies the approving user
+- the body contains a deterministic line using the form `Approve-Identity-ID: openpgp:<lowercase-fingerprint>`
+
+These replies are canonical posts, but V1 readers treat them as hidden from board/activity feeds because they carry the `identity` tag.
+
 ## Example Thread Root
 
 ```text
@@ -100,4 +114,16 @@ Parent-ID: root-001
 Author-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954
 
 This is a reply.
+```
+
+## Example Approval Reply
+
+```text
+Post-ID: reply-approval-001
+Board-Tags: identity approval
+Thread-ID: bootstrap-20260410120000-a1b2c3d4
+Parent-ID: bootstrap-20260410120000-a1b2c3d4
+Author-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954
+
+Approve-Identity-ID: openpgp:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ```
