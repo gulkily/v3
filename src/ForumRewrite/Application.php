@@ -10,6 +10,7 @@ use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\Support\ExecutionLock;
+use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
 use PDO;
 use RuntimeException;
@@ -323,21 +324,14 @@ final class Application
 
     private function renderBoard(): string
     {
-        $threads = $this->fetchThreads();
-
-        $items = '';
-        foreach ($threads as $thread) {
-            $subject = $thread['subject'] ?: $thread['root_post_id'];
-            $items .= sprintf(
-                '<article class="card"><h2><a href="/threads/%1$s">%2$s</a></h2><p>%3$s</p><p class="meta">%4$d replies</p></article>',
-                $this->escape($thread['root_post_id']),
-                $this->escape($subject),
-                nl2br($this->escape($thread['body_preview'])),
-                (int) $thread['reply_count'],
-            );
-        }
-
-        return $this->renderPage('Board', '<section class="stack"><h1>Board</h1>' . $items . '</section>', 'board');
+        return $this->renderer()->renderPageTemplate(
+            'board.php',
+            [
+                'threads' => $this->fetchThreads(),
+            ],
+            'Board',
+            'board',
+        );
     }
 
     private function renderThread(string $threadId): ?string
@@ -347,17 +341,17 @@ final class Application
             return null;
         }
 
-        $items = '';
-        foreach ($this->fetchThreadPosts($threadId) as $post) {
-            $items .= $this->renderPostCard($post);
-        }
-
         $title = $threadRow['subject'] ?: $threadRow['root_post_id'];
 
-        return $this->renderPage(
+        return $this->renderer()->renderPageTemplate(
+            'thread.php',
+            [
+                'thread' => $threadRow,
+                'posts' => $this->fetchThreadPosts($threadId),
+                'title' => $title,
+            ],
             $title,
-            '<section class="stack"><h1>' . $this->escape($title) . '</h1><p class="meta">' . (int) $threadRow['reply_count'] . ' replies</p>' . $items . '</section>',
-            'board'
+            'board',
         );
     }
 
@@ -669,32 +663,12 @@ final class Application
 
     private function renderPage(string $title, string $content, string $activeSection, array $scriptPaths = []): string
     {
-        $nav = [
-            '/' => ['Board', 'board'],
-            '/activity/' => ['Activity', 'activity'],
-            '/compose/thread' => ['Compose', 'compose'],
-            '/account/key/' => ['Account', 'account'],
-            '/instance/' => ['Instance', 'instance'],
-            '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954' => ['Profile', 'profiles'],
-        ];
+        return $this->renderer()->renderLayout($title, $content, $activeSection, $scriptPaths);
+    }
 
-        $navHtml = '';
-        foreach ($nav as $href => [$label, $section]) {
-            $class = $section === $activeSection ? 'nav-link is-active' : 'nav-link';
-            $navHtml .= '<a class="' . $class . '" href="' . $href . '">' . $this->escape($label) . '</a>';
-        }
-
-        $scriptHtml = '';
-        foreach ($scriptPaths as $scriptPath) {
-            $scriptHtml .= '<script src="' . $this->escape($scriptPath) . '" defer></script>';
-        }
-
-        return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
-            . '<title>' . $this->escape($title) . '</title>'
-            . '<link rel="stylesheet" href="/assets/site.css">' . $scriptHtml . '</head><body>'
-            . '<!-- route-source: php-fallback -->'
-            . '<div class="shell"><header class="site-header"><p class="eyebrow">PHP Forum Rewrite</p><nav class="nav">' . $navHtml . '</nav></header>'
-            . '<main class="main">' . $content . '</main></div></body></html>';
+    private function renderer(): TemplateRenderer
+    {
+        return new TemplateRenderer($this->projectRoot . '/templates');
     }
 
     /**
