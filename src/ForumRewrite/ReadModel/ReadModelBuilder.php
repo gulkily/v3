@@ -37,7 +37,8 @@ final class ReadModelBuilder
 
         $posts = $this->indexPosts($pdo);
         $profiles = $this->indexProfiles($pdo);
-        $this->linkPostAuthors($pdo, $profiles);
+        $approvedIdentityIds = $this->deriveApprovedIdentityIds($profiles, $posts);
+        $this->linkPostAuthors($pdo, $profiles, $approvedIdentityIds);
         $this->indexInstance($pdo);
         $this->indexActivity($pdo, $posts);
         $this->writeMetadata($pdo);
@@ -101,6 +102,7 @@ final class ReadModelBuilder
                 bootstrap_post_id TEXT NOT NULL,
                 bootstrap_thread_id TEXT NOT NULL,
                 public_key TEXT NOT NULL,
+                is_approved INTEGER NOT NULL DEFAULT 0,
                 post_count INTEGER NOT NULL DEFAULT 0,
                 thread_count INTEGER NOT NULL DEFAULT 0
             )'
@@ -282,7 +284,7 @@ final class ReadModelBuilder
     /**
      * @param array<string, array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string}> $profiles
      */
-    private function linkPostAuthors(PDO $pdo, array $profiles): void
+    private function linkPostAuthors(PDO $pdo, array $profiles, array $approvedIdentityIds): void
     {
         $updatePost = $pdo->prepare(
             'UPDATE posts
@@ -291,9 +293,10 @@ final class ReadModelBuilder
         );
         $updateProfileCounts = $pdo->prepare(
             'UPDATE profiles
-             SET post_count = :post_count, thread_count = :thread_count
+             SET is_approved = :is_approved, post_count = :post_count, thread_count = :thread_count
              WHERE identity_id = :identity_id'
         );
+        $approvedLookup = array_fill_keys($approvedIdentityIds, true);
 
         foreach ($profiles as $profile) {
             $updatePost->execute([
@@ -306,6 +309,7 @@ final class ReadModelBuilder
             $visiblePostCount = $this->countVisibleRows($pdo, $profile['identity_id'], false);
             $visibleThreadCount = $this->countVisibleRows($pdo, $profile['identity_id'], true);
             $updateProfileCounts->execute([
+                'is_approved' => isset($approvedLookup[$profile['identity_id']]) ? 1 : 0,
                 'post_count' => $visiblePostCount,
                 'thread_count' => $visibleThreadCount,
                 'identity_id' => $profile['identity_id'],
@@ -409,6 +413,77 @@ final class ReadModelBuilder
     {
         $line = strtok($body, "\n");
         return $line === false ? '' : $line;
+    }
+
+    /**
+     * @param array<string, array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string}> $profiles
+     * @param array<int, array{post_id:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int}> $posts
+     * @return list<string>
+     */
+    private function deriveApprovedIdentityIds(array $profiles, array $posts): array
+    {
+        $approved = array_fill_keys($this->loadApprovalSeedIdentityIds(), true);
+
+        foreach ($posts as $post) {
+            $targetIdentityId = $this->extractApprovalTargetIdentityId($post);
+            if ($targetIdentityId === null || !isset($profiles[$targetIdentityId])) {
+                continue;
+            }
+
+            $approverIdentityId = $post['author_identity_id'];
+            if ($approverIdentityId === null || !isset($approved[$approverIdentityId])) {
+                continue;
+            }
+
+            if ($approverIdentityId === $targetIdentityId) {
+                continue;
+            }
+
+            $targetProfile = $profiles[$targetIdentityId];
+            if ($post['thread_id'] !== $targetProfile['bootstrap_thread_id']) {
+                continue;
+            }
+
+            if ($post['parent_id'] !== $targetProfile['bootstrap_post_id']) {
+                continue;
+            }
+
+            $approved[$targetIdentityId] = true;
+        }
+
+        return array_keys($approved);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function loadApprovalSeedIdentityIds(): array
+    {
+        $identityIds = [];
+        foreach ($this->findRelativePaths('records/approval-seeds') as $relativePath) {
+            $identityIds[] = $this->canonicalRepository->loadApprovalSeed($relativePath)->approvedIdentityId;
+        }
+
+        sort($identityIds);
+
+        return $identityIds;
+    }
+
+    /**
+     * @param array{post_id:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int} $post
+     */
+    private function extractApprovalTargetIdentityId(array $post): ?string
+    {
+        $boardTags = json_decode($post['board_tags_json'], true);
+        if (!is_array($boardTags) || !in_array('identity', $boardTags, true) || !in_array('approval', $boardTags, true)) {
+            return null;
+        }
+
+        if (preg_match('/^Approve-Identity-ID: (openpgp:[a-f0-9]{40})$/m', $post['body'], $matches) !== 1) {
+            return null;
+        }
+
+        return $matches[1];
     }
 
     private function countVisibleRows(PDO $pdo, string $identityId, bool $threadsOnly): int

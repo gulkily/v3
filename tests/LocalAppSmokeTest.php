@@ -110,10 +110,11 @@ final class LocalAppSmokeTest
         assertStringContains('Thread-ID: root-001', $thread);
         assertStringContains('Post-ID: root-001', $post);
         assertStringContains('Profile-Slug: openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $profile);
+        assertStringContains('Approved: yes', $profile);
         assertStringContains('status=ready', $readModelStatus);
         assertStringContains('lock_status=unlocked', $readModelStatus);
         assertStringContains('stale_marker=absent', $readModelStatus);
-        assertStringContains('schema_version=3', $readModelStatus);
+        assertStringContains('schema_version=4', $readModelStatus);
         assertStringContains('<rss version="2.0">', $boardRss);
         assertStringContains('<title>Hello world</title>', $threadRss);
         assertStringContains('<title>Activity all</title>', $activityRss);

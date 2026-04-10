@@ -102,6 +102,12 @@ Expected outcome:
 - approved status is rebuildable and queryable
 - feed behavior remains clean
 
+Implementation status:
+
+- profiles now derive `is_approved` during rebuild from approval seeds plus structured approval replies
+- approval validity is sequence-based and only counts when the approver is already approved
+- profile text API output now exposes `Approved: yes|no`
+
 ## Slice 3: Profile UI And Approve Action
 
 Focus:

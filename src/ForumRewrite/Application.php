@@ -573,7 +573,9 @@ final class Application
             return null;
         }
 
-        return "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n";
+        $approved = ((int) $profile['is_approved']) === 1 ? 'yes' : 'no';
+
+        return "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n";
     }
 
     private function renderBoardRss(): string
@@ -695,7 +697,7 @@ final class Application
     {
         $stmt = $this->pdo()->prepare(
             'SELECT identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint, bootstrap_post_id,
-                    bootstrap_thread_id, public_key, post_count, thread_count
+                    bootstrap_thread_id, public_key, is_approved, post_count, thread_count
              FROM profiles WHERE profile_slug = :profile_slug'
         );
         $stmt->execute(['profile_slug' => $slug]);
