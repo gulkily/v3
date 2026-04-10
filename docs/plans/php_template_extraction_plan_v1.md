@@ -5,12 +5,12 @@ This document describes how to move HTML out of application logic code while kee
 ## Progress
 
 - Branch: `feature/template-extraction`
-- Status: in progress
+- Status: completed
 - Slice 1: completed
 - Slice 2: completed
 - Slice 3: completed
-- Slice 4: pending
-- Verification: `php tests/run.php` passed after Slice 3
+- Slice 4: completed
+- Verification: `php tests/run.php` passed after Slice 4
 
 ## Goals
 
@@ -144,7 +144,7 @@ This proves the rendering model and extracts the shared shell.
 - remove obsolete inline HTML builders from `Application.php`
 - tighten helper boundaries
 - update tests if they rely on exact inline formatting
-- status: pending
+- status: completed
 
 ## Application Responsibilities After Refactor
 
@@ -198,3 +198,8 @@ Start with the shared layout plus the board/thread pages first. They cover the c
   - moved profile page into `templates/pages/profile.php`
   - moved account-key page into `templates/pages/account_key.php`
   - moved compose thread/reply pages into `templates/pages/compose_thread.php` and `templates/pages/compose_reply.php`
+- Slice 4 completed:
+  - removed the obsolete inline post-card builder from `Application.php`
+  - moved not-found, method-not-allowed, and redirect pages into templates
+  - kept RSS serialization in code while ending HTML page assembly inside `Application.php`
+  - verified the full suite after the final cleanup pass

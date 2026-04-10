@@ -69,7 +69,15 @@ final class Application
         }
 
         if ($method !== 'GET') {
-            $this->sendHtml($this->renderPage('Method Not Allowed', '<p>Only GET is supported in the local test slice, except for the identity-hint cookie route.</p>', 'none'), 405);
+            $this->sendHtml(
+                $this->renderMessagePage(
+                    'Method Not Allowed',
+                    'Method Not Allowed',
+                    'Only GET is supported in the local test slice, except for the identity-hint cookie route.',
+                    'none'
+                ),
+                405
+            );
             return;
         }
 
@@ -694,18 +702,6 @@ final class Application
         return $stmt->fetchAll();
     }
 
-    private function renderPostCard(array $post): string
-    {
-        $author = $post['author_profile_slug']
-            ? '<a href="/profiles/' . $this->escape((string) $post['author_profile_slug']) . '">' . $this->escape((string) $post['author_label']) . '</a>'
-            : $this->escape((string) $post['author_label']);
-
-        return '<article class="card">'
-            . '<p class="meta">Post <a href="/posts/' . $this->escape((string) $post['post_id']) . '">' . $this->escape((string) $post['post_id']) . '</a> by ' . $author . '</p>'
-            . '<div class="body">' . nl2br($this->escape((string) $post['body'])) . '</div>'
-            . '</article>';
-    }
-
     private function renderRssFeed(string $title, string $link, array $items): string
     {
         return '<?xml version="1.0" encoding="UTF-8"?>'
@@ -937,7 +933,15 @@ final class Application
 
     private function notFound(): void
     {
-        $this->sendHtml($this->renderPage('Not Found', '<p>The requested route does not exist in the local test slice.</p>', 'none'), 404);
+        $this->sendHtml(
+            $this->renderMessagePage(
+                'Not Found',
+                'Not Found',
+                'The requested route does not exist in the local test slice.',
+                'none'
+            ),
+            404
+        );
     }
 
     private function sendHtml(string $html, int $statusCode): void
@@ -967,11 +971,13 @@ final class Application
         header('Location: ' . $location);
         header('Content-Type: text/html; charset=utf-8');
 
-        echo $this->renderPage(
+        echo $this->renderer()->renderPageTemplate(
+            'redirect.php',
+            [
+                'location' => $location,
+                'message' => $message,
+            ],
             'Redirecting',
-            '<section class="stack"><h1>Redirecting</h1><article class="card"><p>'
-            . $this->escape($message)
-            . ' <a href="' . $this->escape($location) . '">Continue</a></p></article></section>',
             'compose'
         );
     }
@@ -984,6 +990,19 @@ final class Application
     private function escapeXml(string $value): string
     {
         return htmlspecialchars($value, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    private function renderMessagePage(string $title, string $heading, string $message, string $activeSection): string
+    {
+        return $this->renderer()->renderPageTemplate(
+            'message.php',
+            [
+                'heading' => $heading,
+                'message' => $message,
+            ],
+            $title,
+            $activeSection,
+        );
     }
 
 }
