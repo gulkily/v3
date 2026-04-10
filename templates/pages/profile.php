@@ -12,6 +12,15 @@
     <p><strong>Visible username:</strong> <?= $e($profile['username']) ?></p>
     <p><strong>Fallback label:</strong> <?= $e($profile['fallback_label']) ?></p>
     <p><strong>Approved:</strong> <?= ((int) $profile['is_approved']) === 1 ? 'yes' : 'no' ?></p>
+<?php if (((int) $profile['is_approved']) === 1 && ((string) ($profile['approved_by_label'] ?? '')) !== ''): ?>
+    <p><strong>Approved by:</strong>
+<?php if ((string) ($profile['approved_by_profile_slug'] ?? '') !== ''): ?>
+      <a href="/profiles/<?= $e($profile['approved_by_profile_slug']) ?>"><?= $e($profile['approved_by_label']) ?></a>
+<?php else: ?>
+      <?= $e($profile['approved_by_label']) ?>
+<?php endif; ?>
+    </p>
+<?php endif; ?>
     <p><strong>Bootstrap post:</strong> <a href="/posts/<?= $e($profile['bootstrap_post_id']) ?>"><?= $e($profile['bootstrap_post_id']) ?></a></p>
     <p><strong>Bootstrap thread:</strong> <a href="/threads/<?= $e($profile['bootstrap_thread_id']) ?>"><?= $e($profile['bootstrap_thread_id']) ?></a></p>
     <p><strong>Threads:</strong> <?= (int) $profile['thread_count'] ?></p>

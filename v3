@@ -7,6 +7,7 @@ COMMAND="${1:-}"
 if [[ -z "${COMMAND}" ]]; then
   cat <<'EOF'
 Usage:
+  ./v3 rebuild
   ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
 EOF
@@ -14,6 +15,10 @@ EOF
 fi
 
 case "${COMMAND}" in
+  rebuild)
+    shift
+    php "${ROOT}/scripts/rebuild_read_model.php" "$@"
+    ;;
   approval)
     shift
     php "${ROOT}/scripts/inject_approval.php" "$@"

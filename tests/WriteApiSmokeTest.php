@@ -50,6 +50,7 @@ final class WriteApiSmokeTest
         assertTrue(strlen($replyCommitSha) === 40);
         assertTrue(is_file($repositoryRoot . '/records/posts/' . $replyId . '.txt'));
         assertStringContains('Reply body', $postPage);
+        assertStringContains('Author guest', $postPage);
         assertFalse(is_file($artifactRoot . '/threads/' . $threadId . '.html'));
         assertFalse(is_file($artifactRoot . '/posts/' . $replyId . '.html'));
         assertTrue(is_file($artifactRoot . '/posts/' . $threadId . '.html'));
@@ -90,7 +91,9 @@ final class WriteApiSmokeTest
         assertTrue(is_file($repositoryRoot . '/records/identity/identity-openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt'));
         assertTrue(is_file($repositoryRoot . '/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc'));
         assertStringContains('Visible username:</strong> forum-user', $profile);
-        assertStringContains('Profile openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $usernameRoute);
+        assertStringContains('User forum-user', $usernameRoute);
+        assertStringContains('Approved Profiles', $usernameRoute);
+        assertStringContains('/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $usernameRoute);
         assertFalse(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
         assertSame($commitSha, $this->gitOutput($repositoryRoot, 'rev-parse HEAD'));
     }
@@ -199,6 +202,8 @@ final class WriteApiSmokeTest
 
         assertStringContains('status=ok', $threadResponse);
         assertStringContains('forum-user', $threadPage);
+        assertStringContains('/user/forum-user', $threadPage);
+        assertStringNotContains('(unapproved)', $threadPage);
         assertFalse(str_contains($threadPage, 'by guest'));
     }
 
@@ -278,7 +283,30 @@ final class WriteApiSmokeTest
         assertStringContains('status=ok', $firstResponse);
         assertStringContains('status=ok', $secondResponse);
         assertStringContains('status=ready', $status);
-        assertStringContains('Profile openpgp-', $usernameRoute);
+        assertStringContains('User forum-user', $usernameRoute);
+        assertStringContains('No approved profiles currently use this username.', $usernameRoute);
+        assertStringContains('Unapproved Profiles', $usernameRoute);
+    }
+
+    public function testUsernameRouteShowsUnapprovedProfilesWhenNoApprovedMatchesExist(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->deleteDirectoryContents($repositoryRoot . '/records/identity');
+        $this->deleteDirectoryContents($repositoryRoot . '/records/public-keys');
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $_POST = [
+            'public_key' => $this->generatePublicKey('forum-user'),
+        ];
+        $this->renderMethod($application, 'POST', '/api/link_identity?bootstrap_post_id=root-001');
+        $_POST = [];
+
+        $usernameRoute = $this->renderMethod($application, 'GET', '/user/forum-user');
+
+        assertStringContains('User forum-user', $usernameRoute);
+        assertStringContains('No approved profiles currently use this username.', $usernameRoute);
+        assertStringContains('Unapproved Profiles', $usernameRoute);
+        assertStringContains('/profiles/openpgp-', $usernameRoute);
     }
 
     public function testApprovedUserCanApproveAnotherUserAndApprovalStaysOutOfFeeds(): void
@@ -327,7 +355,11 @@ final class WriteApiSmokeTest
         assertStringContains('Approved user alice', $approvalLanding);
         assertStringContains('/posts/' . $approvalPostId, $approvalLanding);
         assertStringContains('Approved: yes', $targetProfileApi);
+        assertStringContains('Approved-By: guest', $targetProfileApi);
         assertStringContains('Approved:</strong> yes', $targetProfile);
+        assertStringContains('Approved by:</strong>', $targetProfile);
+        assertStringContains('/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $targetProfile);
+        assertStringContains('>guest</a>', $targetProfile);
         assertStringNotContains('Approve user', $approvalLanding);
         assertStringNotContains('Approve user', $targetProfile);
         assertFalse(is_file($artifactRoot . '/profiles/' . $targetProfileSlug . '.html'));

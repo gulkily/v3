@@ -465,22 +465,39 @@ final class Application
 
     private function renderUsername(string $username): ?string
     {
-        $pdo = $this->pdo();
-        $stmt = $pdo->prepare('SELECT identity_id FROM username_routes WHERE username_token = :username_token');
-        $stmt->execute(['username_token' => strtolower($username)]);
-        $route = $stmt->fetch();
-        if ($route === false) {
+        $usernameToken = strtolower($username);
+        $profiles = $this->fetchProfilesByUsernameToken($usernameToken);
+        if ($profiles === []) {
             return null;
         }
 
-        $profileStmt = $pdo->prepare('SELECT profile_slug FROM profiles WHERE identity_id = :identity_id');
-        $profileStmt->execute(['identity_id' => $route['identity_id']]);
-        $profile = $profileStmt->fetch();
-        if ($profile === false) {
-            return null;
-        }
+        $approvedProfiles = array_values(array_filter(
+            $profiles,
+            static fn (array $profile): bool => ((int) $profile['is_approved']) === 1
+        ));
+        $unapprovedProfiles = array_values(array_filter(
+            $profiles,
+            static fn (array $profile): bool => ((int) $profile['is_approved']) !== 1
+        ));
+        $approvedIdentityIds = array_values(array_map(
+            static fn (array $profile): string => (string) $profile['identity_id'],
+            $approvedProfiles
+        ));
 
-        return $this->renderProfile($profile['profile_slug']);
+        return $this->renderer()->renderPageTemplate(
+            'username.php',
+            [
+                'usernameToken' => $usernameToken,
+                'approvedProfiles' => $approvedProfiles,
+                'unapprovedProfiles' => $unapprovedProfiles,
+                'approvedThreadCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, true),
+                'approvedPostCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, false),
+                'approvedThreads' => $this->fetchVisibleAuthoredThreads($approvedIdentityIds),
+                'approvedPosts' => $this->fetchVisibleAuthoredPosts($approvedIdentityIds),
+            ],
+            'User ' . $usernameToken,
+            'profiles',
+        );
     }
 
     private function renderInstance(): string
@@ -650,7 +667,9 @@ final class Application
 
         $approved = ((int) $profile['is_approved']) === 1 ? 'yes' : 'no';
 
-        return "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n";
+        $approvedBy = ((int) $profile['is_approved']) === 1 ? (string) ($profile['approved_by_label'] ?? '') : '';
+
+        return "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nApproved-By: {$approvedBy}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n";
     }
 
     private function renderBoardRss(): string
@@ -742,8 +761,13 @@ final class Application
     private function fetchThreadPosts(string $threadId): array
     {
         $stmt = $this->pdo()->prepare(
-            'SELECT post_id, thread_id, parent_id, subject, body, author_label, author_profile_slug
-             FROM posts WHERE thread_id = :thread_id ORDER BY sequence_number ASC'
+            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_label,
+                    posts.author_profile_slug, profiles.username_token AS author_username_token,
+                    COALESCE(profiles.is_approved, 0) AS author_is_approved
+             FROM posts
+             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
+             WHERE posts.thread_id = :thread_id
+             ORDER BY posts.sequence_number ASC'
         );
         $stmt->execute(['thread_id' => $threadId]);
 
@@ -756,8 +780,12 @@ final class Application
     private function fetchPost(string $postId): ?array
     {
         $stmt = $this->pdo()->prepare(
-            'SELECT post_id, thread_id, parent_id, subject, body, author_label, author_profile_slug
-             FROM posts WHERE post_id = :post_id'
+            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_label,
+                    posts.author_profile_slug, profiles.username_token AS author_username_token,
+                    COALESCE(profiles.is_approved, 0) AS author_is_approved
+             FROM posts
+             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
+             WHERE posts.post_id = :post_id'
         );
         $stmt->execute(['post_id' => $postId]);
         $post = $stmt->fetch();
@@ -772,7 +800,8 @@ final class Application
     {
         $stmt = $this->pdo()->prepare(
             'SELECT identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint, bootstrap_post_id,
-                    bootstrap_thread_id, public_key, is_approved, post_count, thread_count
+                    bootstrap_thread_id, public_key, is_approved, approved_by_identity_id, approved_by_profile_slug,
+                    approved_by_label, post_count, thread_count
              FROM profiles WHERE profile_slug = :profile_slug'
         );
         $stmt->execute(['profile_slug' => $slug]);
@@ -788,13 +817,104 @@ final class Application
     {
         $stmt = $this->pdo()->prepare(
             'SELECT identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint, bootstrap_post_id,
-                    bootstrap_thread_id, public_key, is_approved, post_count, thread_count
+                    bootstrap_thread_id, public_key, is_approved, approved_by_identity_id, approved_by_profile_slug,
+                    approved_by_label, post_count, thread_count
              FROM profiles WHERE identity_id = :identity_id'
         );
         $stmt->execute(['identity_id' => $identityId]);
         $profile = $stmt->fetch();
 
         return $profile === false ? null : $profile;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchProfilesByUsernameToken(string $usernameToken): array
+    {
+        $stmt = $this->pdo()->prepare(
+            'SELECT identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint, bootstrap_post_id,
+                    bootstrap_thread_id, public_key, is_approved, approved_by_identity_id, approved_by_profile_slug,
+                    approved_by_label, post_count, thread_count
+             FROM profiles WHERE username_token = :username_token
+             ORDER BY is_approved DESC, profile_slug ASC'
+        );
+        $stmt->execute(['username_token' => $usernameToken]);
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * @param list<string> $identityIds
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchVisibleAuthoredThreads(array $identityIds): array
+    {
+        if ($identityIds === []) {
+            return [];
+        }
+
+        $stmt = $this->prepareIdentityListQuery(
+            'SELECT root_post_id, subject, body_preview, reply_count, last_post_id, board_tags_json
+             FROM threads
+             WHERE root_post_id IN (
+                 SELECT post_id FROM posts
+                 WHERE post_id = thread_id AND author_identity_id IN (%s)
+             )
+             ORDER BY root_post_id ASC',
+            $identityIds
+        );
+        $stmt->execute($identityIds);
+        $rows = $stmt->fetchAll();
+
+        return array_values(array_filter(
+            $rows,
+            fn (array $thread): bool => !$this->isHiddenBootstrapBoardTagsJson((string) $thread['board_tags_json'])
+        ));
+    }
+
+    /**
+     * @param list<string> $identityIds
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchVisibleAuthoredPosts(array $identityIds): array
+    {
+        if ($identityIds === []) {
+            return [];
+        }
+
+        $stmt = $this->prepareIdentityListQuery(
+            'SELECT post_id, thread_id, parent_id, subject, body, author_label, author_profile_slug, board_tags_json
+             FROM posts
+             WHERE author_identity_id IN (%s)
+             ORDER BY sequence_number ASC, post_id ASC',
+            $identityIds
+        );
+        $stmt->execute($identityIds);
+        $rows = $stmt->fetchAll();
+
+        return array_values(array_filter(
+            $rows,
+            fn (array $post): bool => !$this->isHiddenBootstrapBoardTagsJson((string) $post['board_tags_json'])
+        ));
+    }
+
+    /**
+     * @param list<string> $identityIds
+     */
+    private function countVisibleAuthoredRows(array $identityIds, bool $threadsOnly): int
+    {
+        return count($threadsOnly ? $this->fetchVisibleAuthoredThreads($identityIds) : $this->fetchVisibleAuthoredPosts($identityIds));
+    }
+
+    /**
+     * @param list<string> $identityIds
+     */
+    private function prepareIdentityListQuery(string $sql, array $identityIds): \PDOStatement
+    {
+        $placeholders = implode(', ', array_fill(0, count($identityIds), '?'));
+
+        return $this->pdo()->prepare(sprintf($sql, $placeholders));
     }
 
     /**

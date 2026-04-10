@@ -37,8 +37,8 @@ final class ReadModelBuilder
 
         $posts = $this->indexPosts($pdo);
         $profiles = $this->indexProfiles($pdo);
-        $approvedIdentityIds = $this->deriveApprovedIdentityIds($profiles, $posts);
-        $this->linkPostAuthors($pdo, $profiles, $approvedIdentityIds);
+        $approvalState = $this->deriveApprovalState($profiles, $posts);
+        $this->linkPostAuthors($pdo, $profiles, $approvalState);
         $this->indexInstance($pdo);
         $this->indexActivity($pdo, $posts);
         $this->writeMetadata($pdo);
@@ -103,6 +103,9 @@ final class ReadModelBuilder
                 bootstrap_thread_id TEXT NOT NULL,
                 public_key TEXT NOT NULL,
                 is_approved INTEGER NOT NULL DEFAULT 0,
+                approved_by_identity_id TEXT NULL,
+                approved_by_profile_slug TEXT NULL,
+                approved_by_label TEXT NULL,
                 post_count INTEGER NOT NULL DEFAULT 0,
                 thread_count INTEGER NOT NULL DEFAULT 0
             )'
@@ -283,8 +286,9 @@ final class ReadModelBuilder
 
     /**
      * @param array<string, array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string}> $profiles
+     * @param array<string, array{approved_by_identity_id:?string,approved_by_profile_slug:?string,approved_by_label:?string}> $approvalState
      */
-    private function linkPostAuthors(PDO $pdo, array $profiles, array $approvedIdentityIds): void
+    private function linkPostAuthors(PDO $pdo, array $profiles, array $approvalState): void
     {
         $updatePost = $pdo->prepare(
             'UPDATE posts
@@ -293,10 +297,14 @@ final class ReadModelBuilder
         );
         $updateProfileCounts = $pdo->prepare(
             'UPDATE profiles
-             SET is_approved = :is_approved, post_count = :post_count, thread_count = :thread_count
+             SET is_approved = :is_approved,
+                 approved_by_identity_id = :approved_by_identity_id,
+                 approved_by_profile_slug = :approved_by_profile_slug,
+                 approved_by_label = :approved_by_label,
+                 post_count = :post_count,
+                 thread_count = :thread_count
              WHERE identity_id = :identity_id'
         );
-        $approvedLookup = array_fill_keys($approvedIdentityIds, true);
 
         foreach ($profiles as $profile) {
             $updatePost->execute([
@@ -308,8 +316,16 @@ final class ReadModelBuilder
 
             $visiblePostCount = $this->countVisibleRows($pdo, $profile['identity_id'], false);
             $visibleThreadCount = $this->countVisibleRows($pdo, $profile['identity_id'], true);
+            $approval = $approvalState[$profile['identity_id']] ?? [
+                'approved_by_identity_id' => null,
+                'approved_by_profile_slug' => null,
+                'approved_by_label' => null,
+            ];
             $updateProfileCounts->execute([
-                'is_approved' => isset($approvedLookup[$profile['identity_id']]) ? 1 : 0,
+                'is_approved' => isset($approvalState[$profile['identity_id']]) ? 1 : 0,
+                'approved_by_identity_id' => $approval['approved_by_identity_id'],
+                'approved_by_profile_slug' => $approval['approved_by_profile_slug'],
+                'approved_by_label' => $approval['approved_by_label'],
                 'post_count' => $visiblePostCount,
                 'thread_count' => $visibleThreadCount,
                 'identity_id' => $profile['identity_id'],
@@ -418,11 +434,18 @@ final class ReadModelBuilder
     /**
      * @param array<string, array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string}> $profiles
      * @param array<int, array{post_id:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int}> $posts
-     * @return list<string>
+     * @return array<string, array{approved_by_identity_id:?string,approved_by_profile_slug:?string,approved_by_label:?string}>
      */
-    private function deriveApprovedIdentityIds(array $profiles, array $posts): array
+    private function deriveApprovalState(array $profiles, array $posts): array
     {
-        $approved = array_fill_keys($this->loadApprovalSeedIdentityIds(), true);
+        $approved = [];
+        foreach ($this->loadApprovalSeedIdentityIds() as $identityId) {
+            $approved[$identityId] = [
+                'approved_by_identity_id' => null,
+                'approved_by_profile_slug' => null,
+                'approved_by_label' => 'root',
+            ];
+        }
 
         foreach ($posts as $post) {
             $targetIdentityId = $this->extractApprovalTargetIdentityId($post);
@@ -448,10 +471,15 @@ final class ReadModelBuilder
                 continue;
             }
 
-            $approved[$targetIdentityId] = true;
+            $approverProfile = $profiles[$approverIdentityId] ?? null;
+            $approved[$targetIdentityId] = [
+                'approved_by_identity_id' => $approverIdentityId,
+                'approved_by_profile_slug' => $approverProfile['profile_slug'] ?? null,
+                'approved_by_label' => $approverProfile['username'] ?? $approverIdentityId,
+            ];
         }
 
-        return array_keys($approved);
+        return $approved;
     }
 
     /**
