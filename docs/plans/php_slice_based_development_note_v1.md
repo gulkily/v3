@@ -77,6 +77,13 @@ When needed, add a sixth step:
 
 6. record what still feels technical, temporary, or too exposed for end users
 
+There is also one practical collaboration rule for this repo:
+
+- treat scratch notes and ad hoc planning files as user-owned unless told otherwise
+- do not delete files such as `next.txt` just because they look temporary or untracked
+- if a scratch note is unrelated to the current slice, leave it alone
+- if a scratch note creates ambiguity, ask before removing or rewriting it
+
 ## Result
 
 This keeps the project understandable, keeps regressions smaller, and makes it easier to pause, review, or deploy with confidence.
