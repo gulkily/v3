@@ -1,9 +1,17 @@
 :root {
+  color-scheme: light dark;
   --page-bg: #ffffff;
   --ink: #0b3ea8;
   --ink-soft: #315fb9;
   --line: #b7c9ef;
   --panel: #f7faff;
+  --input-bg: #ffffff;
+  --button-bg: #f7faff;
+  --button-alt-bg: #eef5ff;
+  --feedback-ok-bg: #eef5ff;
+  --feedback-error-bg: #fff3f3;
+  --status-error: #8f1f1f;
+  --status-ok: #1f5e2e;
 }
 
 * {
@@ -37,16 +45,16 @@ button {
   padding: 0.65rem 0.7rem;
   font: inherit;
   color: var(--ink);
-  background: #fff;
+  background: var(--input-bg);
 }
 
 button {
   cursor: pointer;
-  background: var(--panel);
+  background: var(--button-bg);
 }
 
 button[type="button"] {
-  background: #eef5ff;
+  background: var(--button-alt-bg);
 }
 
 pre {
@@ -83,7 +91,7 @@ pre {
   padding: 0.45rem 0.7rem;
   border: 1px solid var(--line);
   text-decoration: none;
-  background: #fff;
+  background: var(--input-bg);
 }
 
 .nav-link.is-active {
@@ -110,11 +118,11 @@ pre {
 }
 
 .feedback-ok {
-  background: #eef5ff;
+  background: var(--feedback-ok-bg);
 }
 
 .feedback-error {
-  background: #fff3f3;
+  background: var(--feedback-error-bg);
 }
 
 .meta {
@@ -137,11 +145,28 @@ pre {
 }
 
 [data-role="browser-key-status"][data-kind="error"] {
-  color: #8f1f1f;
+  color: var(--status-error);
 }
 
 [data-role="browser-key-status"][data-kind="ok"] {
-  color: #1f5e2e;
+  color: var(--status-ok);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page-bg: #0b1220;
+    --ink: #d9e7ff;
+    --ink-soft: #9fb8e8;
+    --line: #344a73;
+    --panel: #111b31;
+    --input-bg: #0f1729;
+    --button-bg: #16233d;
+    --button-alt-bg: #1b2b49;
+    --feedback-ok-bg: #13263f;
+    --feedback-error-bg: #3a1a23;
+    --status-error: #ffb7c3;
+    --status-ok: #a7efb8;
+  }
 }
 
 @media (min-width: 640px) {
