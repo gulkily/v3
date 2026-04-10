@@ -132,6 +132,12 @@ Expected outcome:
 - approved users can vouch for others directly from profile pages
 - non-approved users do not see the control
 
+Implementation status:
+
+- profile pages now know the viewer profile from the `identity_hint` cookie
+- `Approve user` renders only for approved non-self viewers
+- profile approval writes record a structured hidden reply on the target bootstrap thread
+
 ## Slice 4: Production Hardening And Tests
 
 Focus:

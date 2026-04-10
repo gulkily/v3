@@ -70,6 +70,11 @@ final class Application
             return;
         }
 
+        if ($method === 'POST' && preg_match('#^/profiles/([^/]+)/approve/?$#', $path, $matches) === 1) {
+            $this->handleApproveUserSubmit($matches[1], $query);
+            return;
+        }
+
         if ($method !== 'GET') {
             $this->sendHtml(
                 $this->renderMessagePage(
@@ -394,12 +399,29 @@ final class Application
             return null;
         }
 
+        return $this->renderProfilePage($profile, $self);
+    }
+
+    /**
+     * @param array<string, mixed> $profile
+     */
+    private function renderProfilePage(array $profile, bool $self = false, ?string $notice = null, ?string $error = null): string
+    {
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $canApprove = $viewerProfile !== null
+            && ((int) $viewerProfile['is_approved']) === 1
+            && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id']);
+
         return $this->renderer()->renderPageTemplate(
             'profile.php',
             [
                 'profile' => $profile,
                 'self' => $self,
                 'identityHint' => $_COOKIE['identity_hint'] ?? '',
+                'notice' => $notice,
+                'error' => $error,
+                'viewerProfile' => $viewerProfile,
+                'canApprove' => $canApprove,
             ],
             'Profile ' . $profile['profile_slug'],
             'profiles',
@@ -707,6 +729,42 @@ final class Application
     }
 
     /**
+     * @return array<string, mixed>|null
+     */
+    private function fetchProfileByIdentityId(string $identityId): ?array
+    {
+        $stmt = $this->pdo()->prepare(
+            'SELECT identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint, bootstrap_post_id,
+                    bootstrap_thread_id, public_key, is_approved, post_count, thread_count
+             FROM profiles WHERE identity_id = :identity_id'
+        );
+        $stmt->execute(['identity_id' => $identityId]);
+        $profile = $stmt->fetch();
+
+        return $profile === false ? null : $profile;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function resolveViewerProfileFromIdentityHint(): ?array
+    {
+        $hint = strtolower(trim((string) ($_COOKIE['identity_hint'] ?? '')));
+        if ($hint === '') {
+            return null;
+        }
+
+        $stmt = $this->pdo()->prepare('SELECT identity_id FROM username_routes WHERE username_token = :username_token');
+        $stmt->execute(['username_token' => $hint]);
+        $route = $stmt->fetch();
+        if ($route === false) {
+            return null;
+        }
+
+        return $this->fetchProfileByIdentityId((string) $route['identity_id']);
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     private function fetchUserDirectoryProfiles(): array
@@ -956,6 +1014,46 @@ final class Application
             $this->sendHtml($this->renderAccountKeyPage($notice, null), 200);
         } catch (RuntimeException $exception) {
             $this->sendHtml($this->renderAccountKeyPage(null, $exception->getMessage()), 400);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleApproveUserSubmit(string $slug, array $query): void
+    {
+        $profile = $this->fetchProfileBySlug($slug);
+        if ($profile === null) {
+            $this->notFound();
+            return;
+        }
+
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        if ($viewerProfile === null || ((int) $viewerProfile['is_approved']) !== 1) {
+            $this->sendHtml($this->renderProfilePage($profile, false, null, 'Only approved users can approve other users.'), 403);
+            return;
+        }
+
+        if ((string) $viewerProfile['identity_id'] === (string) $profile['identity_id']) {
+            $this->sendHtml($this->renderProfilePage($profile, false, null, 'Self-approval is not allowed.'), 400);
+            return;
+        }
+
+        try {
+            $result = $this->writer()->approveUser([
+                'approver_identity_id' => (string) $viewerProfile['identity_id'],
+                'target_identity_id' => (string) $profile['identity_id'],
+                'target_profile_slug' => (string) $profile['profile_slug'],
+                'thread_id' => (string) $profile['bootstrap_thread_id'],
+                'parent_id' => (string) $profile['bootstrap_post_id'],
+            ]);
+            $updatedProfile = $this->fetchProfileBySlug($slug) ?? $profile;
+            $notice = 'Approved user ' . $this->escape($updatedProfile['username']) . '. '
+                . '<a href="/posts/' . $this->escape($result['post_id']) . '">Open approval post</a>. '
+                . 'Commit ' . $this->escape($result['commit_sha']);
+            $this->sendHtml($this->renderProfilePage($updatedProfile, false, $notice, null), 200);
+        } catch (RuntimeException $exception) {
+            $this->sendHtml($this->renderProfilePage($profile, false, null, $exception->getMessage()), 400);
         }
     }
 

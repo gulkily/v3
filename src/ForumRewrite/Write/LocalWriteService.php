@@ -171,6 +171,60 @@ class LocalWriteService
         });
     }
 
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, string>
+     */
+    public function approveUser(array $input): array
+    {
+        return $this->executionLock()->withExclusiveLock(function () use ($input): array {
+            $this->assertWritableRepository();
+
+            $approverIdentityId = $this->requireOpenPgpIdentityId((string) ($input['approver_identity_id'] ?? ''), 'approver_identity_id');
+            $targetIdentityId = $this->requireOpenPgpIdentityId((string) ($input['target_identity_id'] ?? ''), 'target_identity_id');
+            $targetProfileSlug = $this->requireAsciiToken((string) ($input['target_profile_slug'] ?? ''), 'target_profile_slug');
+            $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
+            $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
+
+            if ($approverIdentityId === $targetIdentityId) {
+                throw new RuntimeException('Self-approval is not allowed.');
+            }
+
+            $thread = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($threadId));
+            $parent = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($parentId));
+            $parentThreadId = $parent->threadId ?? $parent->postId;
+            if ($thread->postId !== $threadId || $parentThreadId !== $threadId || $parent->postId !== $parentId) {
+                throw new RuntimeException('Approval target bootstrap thread is invalid.');
+            }
+
+            $postId = $this->generateRecordId('reply');
+            $contents = "Post-ID: {$postId}\n"
+                . "Board-Tags: identity approval\n"
+                . "Thread-ID: {$threadId}\n"
+                . "Parent-ID: {$parentId}\n"
+                . "Author-Identity-ID: {$approverIdentityId}\n"
+                . "\nApprove-Identity-ID: {$targetIdentityId}\n";
+
+            (new PostRecordParser())->parse($contents);
+            $recordPath = CanonicalPathResolver::post($postId);
+            $this->writeFile($recordPath, $contents);
+            $commitSha = $this->commitCanonicalWrite(
+                [$recordPath],
+                'Approve user ' . $targetIdentityId . ' by ' . $approverIdentityId
+            );
+            $this->refreshDerivedStateAfterCommit($commitSha);
+            $this->invalidator()->invalidateApproval($targetProfileSlug, $threadId, $parentId, $postId);
+
+            return [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'target_identity_id' => $targetIdentityId,
+                'commit_sha' => $commitSha,
+            ];
+        });
+    }
+
     protected function rebuildReadModel(): void
     {
         $builder = new ReadModelBuilder(
@@ -318,19 +372,24 @@ class LocalWriteService
             return null;
         }
 
-        $identityId = $this->requireAsciiToken($value, 'author_identity_id');
+        return $this->requireOpenPgpIdentityId($value, 'author_identity_id');
+    }
+
+    private function requireOpenPgpIdentityId(string $value, string $field): string
+    {
+        $identityId = $this->requireAsciiToken($value, $field);
         if (!str_starts_with($identityId, 'openpgp:')) {
-            throw new RuntimeException('author_identity_id must use the retained openpgp identity form.');
+            throw new RuntimeException("{$field} must use the retained openpgp identity form.");
         }
 
         $fingerprint = substr($identityId, strlen('openpgp:'));
         if ($fingerprint === '' || preg_match('/[^a-f0-9]/', $fingerprint)) {
-            throw new RuntimeException('author_identity_id must use a lowercase OpenPGP fingerprint.');
+            throw new RuntimeException("{$field} must use a lowercase OpenPGP fingerprint.");
         }
 
         $identityPath = $this->repositoryRoot . '/' . CanonicalPathResolver::identity($fingerprint);
         if (!is_file($identityPath)) {
-            throw new RuntimeException('author_identity_id does not resolve to a known identity.');
+            throw new RuntimeException("{$field} does not resolve to a known identity.");
         }
 
         return $identityId;

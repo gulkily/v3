@@ -36,6 +36,16 @@ final class StaticArtifactInvalidator
         ]);
     }
 
+    public function invalidateApproval(string $profileSlug, string $threadId, string $parentPostId, string $approvalPostId): void
+    {
+        $this->deletePaths([
+            $this->artifactRoot . '/profiles/' . $profileSlug . '.html',
+            $this->artifactRoot . '/threads/' . $threadId . '.html',
+            $this->artifactRoot . '/posts/' . $parentPostId . '.html',
+            $this->artifactRoot . '/posts/' . $approvalPostId . '.html',
+        ]);
+    }
+
     /**
      * @param list<string> $paths
      */
