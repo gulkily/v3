@@ -1,9 +1,14 @@
 <section class="stack">
   <h1>Users</h1>
+<?php if ($showPendingLink): ?>
+  <article class="card">
+    <p><a href="/users/pending/">View users awaiting approval</a></p>
+  </article>
+<?php endif; ?>
 <?php if ($profiles === []): ?>
   <article class="card">
     <p>No visible users yet.</p>
-    <p class="meta">Profiles appear here after someone has visible threads or replies.</p>
+    <p class="meta">Approved profiles appear here after someone has visible threads or replies.</p>
   </article>
 <?php else: ?>
 <?php foreach ($profiles as $profile): ?>

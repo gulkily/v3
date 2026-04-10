@@ -164,6 +164,17 @@ pre {
   flex: 1 1 12rem;
 }
 
+.pending-approvals-action-cell {
+  white-space: nowrap;
+  width: 1%;
+}
+
+.pending-approvals-action-button {
+  width: auto;
+  min-width: 0;
+  margin-top: 0;
+}
+
 .key-material-gap {
   margin-top: 1rem;
 }

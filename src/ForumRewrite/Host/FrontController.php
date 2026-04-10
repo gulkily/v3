@@ -114,6 +114,10 @@ final class FrontController
             ]);
         }
 
+        if ($path === '/users/pending/' || $path === '/users/pending') {
+            return null;
+        }
+
         if ($path === '/users/' || $path === '/users') {
             return $this->firstExistingPath([
                 $this->publicRoot . '/users.html',

@@ -106,7 +106,10 @@ final class LocalAppSmokeTest
         $instance = $this->render($application, '/instance/');
         $profile = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         $username = $this->render($application, '/user/guest');
+        $_COOKIE = ['identity_hint' => 'guest'];
         $users = $this->render($application, '/users/');
+        $pendingUsers = $this->render($application, '/users/pending/');
+        $_COOKIE = [];
         $composeThread = $this->render($application, '/compose/thread');
         $composeReply = $this->render($application, '/compose/reply?thread_id=root-001&parent_id=root-001');
         $account = $this->render($application, '/account/key/');
@@ -126,6 +129,9 @@ final class LocalAppSmokeTest
         assertStringContains('Users', $users);
         assertStringContains('/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $users);
         assertStringContains('/user/guest', $users);
+        assertStringNotContains('/users/pending/', $users);
+        assertStringContains('Users Awaiting Approval', $pendingUsers);
+        assertStringContains('/assets/pending_approvals.js', $pendingUsers);
         assertStringContains('Compose Thread', $composeThread);
         assertStringContains('browser_signing.js', $composeThread);
         assertStringContains('Ready.', $composeThread);

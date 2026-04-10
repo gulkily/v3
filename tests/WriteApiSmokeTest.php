@@ -328,6 +328,8 @@ final class WriteApiSmokeTest
         assertStringContains('/posts/' . $approvalPostId, $approvalLanding);
         assertStringContains('Approved: yes', $targetProfileApi);
         assertStringContains('Approved:</strong> yes', $targetProfile);
+        assertStringNotContains('Approve user', $approvalLanding);
+        assertStringNotContains('Approve user', $targetProfile);
         assertFalse(is_file($artifactRoot . '/profiles/' . $targetProfileSlug . '.html'));
         assertStringNotContains($approvalPostId, $board);
         assertStringNotContains($approvalPostId, $activity);
@@ -375,7 +377,42 @@ final class WriteApiSmokeTest
         assertStringContains('Approve user', $byProfileSlug);
     }
 
-    public function testMultipleApprovalsAreAccepted(): void
+    public function testUserDirectoryShowsOnlyApprovedUsersAndPendingDirectoryRequiresApprovedViewer(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $approvedUsersWithoutPending = $this->renderMethod($application, 'GET', '/users/');
+
+        $approvedTarget = $this->linkGeneratedIdentity($application, 'alice');
+        $pendingTarget = $this->linkGeneratedIdentity($application, 'bob');
+
+        $this->renderMethod($application, 'POST', '/profiles/' . $approvedTarget['profile_slug'] . '/approve');
+        $approvedUsers = $this->renderMethod($application, 'GET', '/users/');
+        $pendingUsers = $this->renderMethod($application, 'GET', '/users/pending/');
+
+        $_COOKIE = ['identity_hint' => 'bob'];
+        $pendingUsersForbidden = $this->renderMethod($application, 'GET', '/users/pending/');
+        $_COOKIE = [];
+
+        assertStringNotContains('/users/pending/', $approvedUsersWithoutPending);
+        assertStringContains('alice', $approvedUsers);
+        assertStringNotContains('bob', $approvedUsers);
+        assertStringContains('/users/pending/', $approvedUsers);
+        assertStringContains('Users Awaiting Approval', $pendingUsers);
+        assertStringContains('bob', $pendingUsers);
+        assertStringNotContains('alice', $pendingUsers);
+        assertStringContains('<table>', $pendingUsers);
+        assertStringContains('Approve', $pendingUsers);
+        assertStringNotContains('Username route', $pendingUsers);
+        assertStringNotContains('Threads', $pendingUsers);
+        assertStringNotContains('Posts', $pendingUsers);
+        assertStringNotContains('Bootstrap thread', $pendingUsers);
+        assertStringContains('Only approved users can view the pending approval directory.', $pendingUsersForbidden);
+    }
+
+    public function testApproveUserApiApprovesPendingUser(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -383,8 +420,30 @@ final class WriteApiSmokeTest
         $target = $this->linkGeneratedIdentity($application, 'alice');
 
         $_COOKIE = ['identity_hint' => 'guest'];
-        $this->renderMethod($application, 'POST', '/profiles/' . $target['profile_slug'] . '/approve');
-        $this->renderMethod($application, 'POST', '/profiles/' . $target['profile_slug'] . '/approve');
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/approve_user?profile_slug=' . rawurlencode($target['profile_slug'])
+        );
+        $pendingUsersAfter = $this->renderMethod($application, 'GET', '/users/pending/');
+        $_COOKIE = [];
+
+        assertStringContains('status=ok', $response);
+        assertStringContains('profile_slug=' . $target['profile_slug'], $response);
+        assertStringContains('username=alice', $response);
+        assertStringContains('No users are awaiting approval.', $pendingUsersAfter);
+    }
+
+    public function testAlreadyApprovedUserCannotBeApprovedAgain(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $target = $this->linkGeneratedIdentity($application, 'alice');
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $firstResponse = $this->renderMethod($application, 'POST', '/profiles/' . $target['profile_slug'] . '/approve');
+        $secondResponse = $this->renderMethod($application, 'POST', '/profiles/' . $target['profile_slug'] . '/approve');
         $_COOKIE = [];
 
         $matchingApprovals = 0;
@@ -399,7 +458,9 @@ final class WriteApiSmokeTest
 
         $bootstrapThread = $this->renderMethod($application, 'GET', '/threads/' . $target['bootstrap_thread_id']);
 
-        assertSame(2, $matchingApprovals);
+        assertStringContains('Redirecting', $firstResponse);
+        assertStringContains('User is already approved.', $secondResponse);
+        assertSame(1, $matchingApprovals);
         assertStringContains('Approve-Identity-ID: ' . $target['identity_id'], $bootstrapThread);
     }
 

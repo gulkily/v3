@@ -55,6 +55,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/approve_user') {
+            $this->handleApproveUserApi($method, $query);
+            return;
+        }
+
         if ($path === '/compose/thread' && $method === 'POST') {
             $this->handleComposeThreadSubmit($query);
             return;
@@ -110,6 +115,11 @@ final class Application
             }
 
             $this->sendHtml($this->renderActivity((string) ($query['view'] ?? 'all')), 200);
+            return;
+        }
+
+        if ($path === '/users/pending/' || $path === '/users/pending') {
+            $this->handlePendingUserDirectory($method);
             return;
         }
 
@@ -413,6 +423,7 @@ final class Application
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
         $canApprove = $viewerProfile !== null
             && ((int) $viewerProfile['is_approved']) === 1
+            && ((int) $profile['is_approved']) !== 1
             && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id']);
 
         return $this->renderer()->renderPageTemplate(
@@ -509,13 +520,31 @@ final class Application
 
     private function renderUserDirectory(): string
     {
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+
         return $this->renderer()->renderPageTemplate(
             'users.php',
             [
-                'profiles' => $this->fetchUserDirectoryProfiles(),
+                'profiles' => $this->fetchApprovedUserDirectoryProfiles(),
+                'showPendingLink' => $viewerProfile !== null
+                    && ((int) $viewerProfile['is_approved']) === 1
+                    && $this->hasPendingUserDirectoryProfiles(),
             ],
             'Users',
             'profiles',
+        );
+    }
+
+    private function renderPendingUserDirectory(): string
+    {
+        return $this->renderer()->renderPageTemplate(
+            'users_pending.php',
+            [
+                'profiles' => $this->fetchPendingUserDirectoryProfiles(),
+            ],
+            'Users Awaiting Approval',
+            'profiles',
+            ['/assets/pending_approvals.js'],
         );
     }
 
@@ -795,16 +824,70 @@ final class Application
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function fetchUserDirectoryProfiles(): array
+    private function fetchApprovedUserDirectoryProfiles(): array
     {
         $stmt = $this->pdo()->query(
             'SELECT profile_slug, username, username_token, fallback_label, post_count, thread_count
              FROM profiles
-             WHERE post_count > 0 OR thread_count > 0
+             WHERE is_approved = 1
              ORDER BY thread_count DESC, post_count DESC, username_token ASC, profile_slug ASC'
         );
 
         return $stmt->fetchAll();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchPendingUserDirectoryProfiles(): array
+    {
+        $stmt = $this->pdo()->query(
+            'SELECT profile_slug, username, username_token, fallback_label, post_count, thread_count, bootstrap_post_id, bootstrap_thread_id
+             FROM profiles
+             WHERE is_approved = 0
+             ORDER BY thread_count DESC, post_count DESC, username_token ASC, profile_slug ASC'
+        );
+
+        return $stmt->fetchAll();
+    }
+
+    private function hasPendingUserDirectoryProfiles(): bool
+    {
+        $stmt = $this->pdo()->query('SELECT 1 FROM profiles WHERE is_approved = 0 LIMIT 1');
+
+        return $stmt->fetchColumn() !== false;
+    }
+
+    private function handlePendingUserDirectory(string $method): void
+    {
+        if ($method !== 'GET') {
+            $this->sendHtml(
+                $this->renderMessagePage(
+                    'Method Not Allowed',
+                    'Method Not Allowed',
+                    'Only GET is supported for the pending user directory.',
+                    'none'
+                ),
+                405
+            );
+            return;
+        }
+
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        if ($viewerProfile === null || ((int) $viewerProfile['is_approved']) !== 1) {
+            $this->sendHtml(
+                $this->renderMessagePage(
+                    'Forbidden',
+                    'Forbidden',
+                    'Only approved users can view the pending approval directory.',
+                    'profiles'
+                ),
+                403
+            );
+            return;
+        }
+
+        $this->sendHtml($this->renderPendingUserDirectory(), 200);
     }
 
     /**
@@ -954,6 +1037,33 @@ final class Application
 
     /**
      * @param array<string, mixed> $query
+     */
+    private function handleApproveUserApi(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->sendText("method not allowed\n", 405);
+            return;
+        }
+
+        $profileSlug = trim((string) ($this->requestData($query)['profile_slug'] ?? ''));
+        if ($profileSlug === '') {
+            $this->sendText("error=Missing profile_slug.\n", 400);
+            return;
+        }
+
+        try {
+            $result = $this->approveUserBySlug($profileSlug);
+            $this->sendText(
+                "status=ok\nprofile_slug={$result['profile_slug']}\nusername={$result['username']}\npost_id={$result['post_id']}\ncommit_sha={$result['commit_sha']}\n",
+                200
+            );
+        } catch (RuntimeException $exception) {
+            $this->sendText("error=" . $exception->getMessage() . "\n", 400);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
      * @return array<string, mixed>
      */
     private function requestData(array $query): array
@@ -1056,25 +1166,8 @@ final class Application
             return;
         }
 
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        if ($viewerProfile === null || ((int) $viewerProfile['is_approved']) !== 1) {
-            $this->sendHtml($this->renderProfilePage($profile, false, null, 'Only approved users can approve other users.'), 403);
-            return;
-        }
-
-        if ((string) $viewerProfile['identity_id'] === (string) $profile['identity_id']) {
-            $this->sendHtml($this->renderProfilePage($profile, false, null, 'Self-approval is not allowed.'), 400);
-            return;
-        }
-
         try {
-            $result = $this->writer()->approveUser([
-                'approver_identity_id' => (string) $viewerProfile['identity_id'],
-                'target_identity_id' => (string) $profile['identity_id'],
-                'target_profile_slug' => (string) $profile['profile_slug'],
-                'thread_id' => (string) $profile['bootstrap_thread_id'],
-                'parent_id' => (string) $profile['bootstrap_post_id'],
-            ]);
+            $result = $this->approveUserBySlug($slug);
             $location = '/profiles/' . rawurlencode((string) $profile['profile_slug'])
                 . '?approval=success&post_id=' . rawurlencode((string) $result['post_id'])
                 . '&commit=' . rawurlencode((string) $result['commit_sha']);
@@ -1082,6 +1175,45 @@ final class Application
         } catch (RuntimeException $exception) {
             $this->sendHtml($this->renderProfilePage($profile, false, null, $exception->getMessage()), 400);
         }
+    }
+
+    /**
+     * @return array{profile_slug:string,username:string,post_id:string,commit_sha:string}
+     */
+    private function approveUserBySlug(string $slug): array
+    {
+        $profile = $this->fetchProfileBySlug($slug);
+        if ($profile === null) {
+            throw new RuntimeException('Profile not found.');
+        }
+
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        if ($viewerProfile === null || ((int) $viewerProfile['is_approved']) !== 1) {
+            throw new RuntimeException('Only approved users can approve other users.');
+        }
+
+        if ((string) $viewerProfile['identity_id'] === (string) $profile['identity_id']) {
+            throw new RuntimeException('Self-approval is not allowed.');
+        }
+
+        if ((int) $profile['is_approved'] === 1) {
+            throw new RuntimeException('User is already approved.');
+        }
+
+        $result = $this->writer()->approveUser([
+            'approver_identity_id' => (string) $viewerProfile['identity_id'],
+            'target_identity_id' => (string) $profile['identity_id'],
+            'target_profile_slug' => (string) $profile['profile_slug'],
+            'thread_id' => (string) $profile['bootstrap_thread_id'],
+            'parent_id' => (string) $profile['bootstrap_post_id'],
+        ]);
+
+        return [
+            'profile_slug' => (string) $profile['profile_slug'],
+            'username' => (string) $profile['username'],
+            'post_id' => (string) $result['post_id'],
+            'commit_sha' => (string) $result['commit_sha'],
+        ];
     }
 
     private function pdo(): PDO
