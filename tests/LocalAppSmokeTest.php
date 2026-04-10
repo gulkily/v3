@@ -125,7 +125,18 @@ final class LocalAppSmokeTest
         assertStringContains('First line preview.', $post);
         assertStringContains('Author <a href="/user/guest">guest</a>', $post);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $post);
-        assertStringContains('Demo instance', $instance);
+        assertStringContains('zenmemes', $instance);
+        assertStringContains('/user/guest', $instance);
+        assertStringContains('/downloads/repository.tar.gz', $instance);
+        assertStringContains('/downloads/read_model.sqlite3', $instance);
+        assertStringContains('complete snapshots of the forum data', $instance);
+        assertStringContains('insurance policy of sorts', $instance);
+        assertStringContains('backup copy of the whole forum', $instance);
+        assertStringContains('sufficient to reconstruct the board', $instance);
+        assertStringContains('reduce trust requirements', $instance);
+        assertStringNotContains('Contact:', $instance);
+        assertStringNotContains('Retention:', $instance);
+        assertStringNotContains('Installed:', $instance);
         assertStringContains('Identity ID:', $profile);
         assertStringContains('Approved by:</strong>', $profile);
         assertStringContains('root', $profile);
@@ -134,8 +145,9 @@ final class LocalAppSmokeTest
         assertStringContains('Combined threads:', $username);
         assertStringContains('Combined posts:', $username);
         assertStringContains('Users', $users);
-        assertStringContains('/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $users);
         assertStringContains('/user/guest', $users);
+        assertStringNotContains('Username route:', $users);
+        assertStringNotContains('Profile:', $users);
         assertStringNotContains('/users/pending/', $users);
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertStringContains('/assets/pending_approvals.js', $pendingUsers);
@@ -187,6 +199,22 @@ final class LocalAppSmokeTest
         assertStringContains('<rss version="2.0">', $boardRss);
         assertStringContains('<title>Hello world</title>', $threadRss);
         assertStringContains('<title>Activity all</title>', $activityRss);
+    }
+
+    public function testInstanceDownloadRoutesReturnRepositoryArchiveAndSqliteDatabase(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $repoArchive = $this->renderMethod($application, 'GET', '/downloads/repository.tar.gz');
+        $sqliteDatabase = $this->renderMethod($application, 'GET', '/downloads/read_model.sqlite3');
+
+        assertSame("\x1f\x8b", substr($repoArchive, 0, 2));
+        assertStringContains('SQLite format 3', substr($sqliteDatabase, 0, 32));
     }
 
     public function testIdentityHintRouteSetsCookieValue(): void

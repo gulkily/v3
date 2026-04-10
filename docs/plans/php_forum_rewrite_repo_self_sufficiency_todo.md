@@ -85,3 +85,22 @@ Implementation should treat these local documents as the authority set:
 - [profile_read_contract_v1.md](/home/wsl/v3/docs/specs/profile_read_contract_v1.md)
 - [php_forum_rewrite_answered_questions.md](/home/wsl/v3/docs/plans/php_forum_rewrite_answered_questions.md)
 - [php_forum_rewrite_fdp_loop_recommendation.md](/home/wsl/v3/docs/plans/php_forum_rewrite_fdp_loop_recommendation.md)
+
+## Follow-Up: Licensing For Downloaded Archives
+
+The instance page now frames the downloadable repository and SQLite index as a continuity and anti-capture mechanism. To make that operationally real, the project should eventually define explicit licensing and reuse rights for both software and forum content.
+
+Open questions to resolve:
+
+- Should the software ship with a standard open-source license such as MIT or Apache-2.0?
+- What rights do users have to archive, mirror, migrate, republish, or restore forum content from downloaded snapshots?
+- Do contributor terms already grant the operator enough rights to license exported post content and metadata for preservation purposes?
+- Should emergency continuity rights be stated explicitly for cases where board governance changes without community consent?
+
+Recommended deliverables:
+
+1. Add a top-level `LICENSE` file for the software.
+2. Add a `CONTENT_LICENSE.md` or `DATA_POLICY.md` covering post content, metadata, exports, and archival rights.
+3. Add contributor-facing terms that explicitly permit preservation, replication, migration, and restoration of board content for continuity purposes.
+
+This is a product/legal policy task rather than a coding blocker, but it directly affects whether the download feature is only a technical backup or also a legally usable community safeguard.
