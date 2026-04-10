@@ -1,0 +1,4 @@
+Approved-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954
+Seed-Reason: initial approved fixture user
+
+Seed this identity as approved so later approval chains can begin from canonical data.

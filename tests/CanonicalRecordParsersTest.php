@@ -5,6 +5,7 @@ declare(strict_types=1);
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordParseException;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\ApprovalSeedRecordParser;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\InstancePublicRecordParser;
 use ForumRewrite\Canonical\PostRecordParser;
@@ -113,6 +114,16 @@ final class CanonicalRecordParsersTest
         assertTrue(str_contains($record->armoredKey, 'BEGIN PGP PUBLIC KEY BLOCK'));
     }
 
+    public function testParsesApprovalSeedFixture(): void
+    {
+        $record = (new ApprovalSeedRecordParser())->parse(
+            $this->readFixture('approval-seeds/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt')
+        );
+
+        assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $record->approvedIdentityId);
+        assertSame('initial approved fixture user', $record->seedReason);
+    }
+
     public function testParsesInstanceFixture(): void
     {
         $record = (new InstancePublicRecordParser())->parse($this->readFixture('instance/public.txt'));
@@ -128,11 +139,13 @@ final class CanonicalRecordParsersTest
         $post = $repository->loadPost('records/posts/root-001.txt');
         $identity = $repository->loadIdentity('records/identity/identity-openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt');
         $publicKey = $repository->loadPublicKey('records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc');
+        $approvalSeed = $repository->loadApprovalSeed('records/approval-seeds/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt');
         $instance = $repository->loadInstancePublic('records/instance/public.txt');
 
         assertSame('root-001', $post->postId);
         assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $identity->identityId);
         assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $publicKey->fingerprint);
+        assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $approvalSeed->approvedIdentityId);
         assertSame('Demo instance', $instance->headers['Instance-Name']);
     }
 
@@ -175,6 +188,10 @@ final class CanonicalRecordParsersTest
         assertSame(
             'records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc',
             CanonicalPathResolver::publicKey('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954')
+        );
+        assertSame(
+            'records/approval-seeds/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt',
+            CanonicalPathResolver::approvalSeed('0168ff20eb09c3ea6193bd3c92a73aa7d20a0954')
         );
         assertSame('records/instance/public.txt', CanonicalPathResolver::instancePublic());
     }

@@ -11,6 +11,7 @@ final class CanonicalRecordRepository
         private readonly PostRecordParser $postParser = new PostRecordParser(),
         private readonly IdentityBootstrapRecordParser $identityParser = new IdentityBootstrapRecordParser(),
         private readonly PublicKeyRecordParser $publicKeyParser = new PublicKeyRecordParser(),
+        private readonly ApprovalSeedRecordParser $approvalSeedParser = new ApprovalSeedRecordParser(),
         private readonly InstancePublicRecordParser $instanceParser = new InstancePublicRecordParser(),
     ) {
     }
@@ -60,6 +61,19 @@ final class CanonicalRecordRepository
         }
 
         return $this->instanceParser->parse($this->read($relativePath));
+    }
+
+    public function loadApprovalSeed(string $relativePath): ApprovalSeedRecord
+    {
+        $this->assertPathIsWithinFamily($relativePath, 'records/approval-seeds/');
+        $record = $this->approvalSeedParser->parse($this->read($relativePath));
+
+        $expectedPath = CanonicalPathResolver::approvalSeed(substr($record->approvedIdentityId, strlen('openpgp:')));
+        if ($relativePath !== $expectedPath) {
+            throw new CanonicalRecordParseException('Approval seed record path must match Approved-Identity-ID.');
+        }
+
+        return $record;
     }
 
     private function read(string $relativePath): string

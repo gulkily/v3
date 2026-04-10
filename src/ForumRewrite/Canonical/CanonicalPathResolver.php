@@ -21,6 +21,11 @@ final class CanonicalPathResolver
         return 'records/public-keys/openpgp-' . $uppercaseFingerprint . '.asc';
     }
 
+    public static function approvalSeed(string $lowercaseFingerprint): string
+    {
+        return 'records/approval-seeds/openpgp-' . $lowercaseFingerprint . '.txt';
+    }
+
     public static function instancePublic(): string
     {
         return 'records/instance/public.txt';
