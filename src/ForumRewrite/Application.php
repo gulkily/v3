@@ -379,29 +379,16 @@ final class Application
             return null;
         }
 
-        $identityHint = $_COOKIE['identity_hint'] ?? '';
-        $selfBanner = $self
-            ? '<article class="card"><p class="meta">Self profile mode</p><p>This route can show account-aware bootstrap context. Current cookie hint: '
-                . $this->escape($identityHint !== '' ? $identityHint : 'none') . '</p></article>'
-            : '';
-
-        $content = '<section class="stack">'
-            . '<h1>Profile ' . $this->escape($profile['profile_slug']) . '</h1>'
-            . $selfBanner
-            . '<article class="card">'
-            . '<p><strong>Identity ID:</strong> ' . $this->escape($profile['identity_id']) . '</p>'
-            . '<p><strong>Visible username:</strong> ' . $this->escape($profile['username']) . '</p>'
-            . '<p><strong>Fallback label:</strong> ' . $this->escape($profile['fallback_label']) . '</p>'
-            . '<p><strong>Bootstrap post:</strong> <a href="/posts/' . $this->escape($profile['bootstrap_post_id']) . '">' . $this->escape($profile['bootstrap_post_id']) . '</a></p>'
-            . '<p><strong>Bootstrap thread:</strong> <a href="/threads/' . $this->escape($profile['bootstrap_thread_id']) . '">' . $this->escape($profile['bootstrap_thread_id']) . '</a></p>'
-            . '<p><strong>Threads:</strong> ' . (int) $profile['thread_count'] . '</p>'
-            . '<p><strong>Posts:</strong> ' . (int) $profile['post_count'] . '</p>'
-            . '<p><strong>Username route:</strong> <a href="/user/' . $this->escape($profile['username_token']) . '">/user/' . $this->escape($profile['username_token']) . '</a></p>'
-            . '</article>'
-            . '<article class="card"><h2>Public key</h2><pre>' . $this->escape($profile['public_key']) . '</pre></article>'
-            . '</section>';
-
-        return $this->renderPage('Profile ' . $profile['profile_slug'], $content, 'profiles');
+        return $this->renderer()->renderPageTemplate(
+            'profile.php',
+            [
+                'profile' => $profile,
+                'self' => $self,
+                'identityHint' => $_COOKIE['identity_hint'] ?? '',
+            ],
+            'Profile ' . $profile['profile_slug'],
+            'profiles',
+        );
     }
 
     private function renderUsername(string $username): ?string
@@ -461,21 +448,10 @@ final class Application
 
     private function renderComposeThreadPage(?string $notice = null, ?string $error = null): string
     {
-        $feedback = $this->renderFeedback($notice, $error);
-        $content = '<section class="stack" data-compose-root data-bootstrap-post-id="root-001"><h1>Compose Thread</h1><article class="card">'
-            . $feedback
-            . '<p>Posts are stored as canonical ASCII files and the SQLite read model rebuilds immediately.</p>'
-            . '<p class="meta" data-role="compose-identity-status">Your username and keypair will be prepared automatically when you send your first post.</p>'
-            . '<form method="post" class="stack" data-compose-form data-compose-kind="thread">'
-            . '<input type="hidden" name="author_identity_id" value="">'
-            . '<label>Board tags<input type="text" name="board_tags" value="general"></label>'
-            . '<label>Subject<input type="text" name="subject" placeholder="Thread subject"></label>'
-            . '<label>Body<textarea name="body" rows="7" placeholder="ASCII body"></textarea></label>'
-            . '<button type="submit">Create thread</button>'
-            . '</form>'
-            . '</article></section>';
-
-        return $this->renderPage('Compose Thread', $content, 'compose', [
+        return $this->renderer()->renderPageTemplate('compose_thread.php', [
+            'notice' => $notice,
+            'error' => $error,
+        ], 'Compose Thread', 'compose', [
             '/assets/openpgp.min.js',
             '/assets/browser_signing.js',
         ]);
@@ -488,23 +464,12 @@ final class Application
 
     private function renderComposeReplyPage(string $threadId, string $parentId, ?string $notice = null, ?string $error = null): string
     {
-        $feedback = $this->renderFeedback($notice, $error);
-        $content = '<section class="stack" data-compose-root data-bootstrap-post-id="root-001"><h1>Compose Reply</h1><article class="card">'
-            . $feedback
-            . '<p><strong>Thread ID:</strong> ' . $this->escape($threadId !== '' ? $threadId : 'missing') . '</p>'
-            . '<p><strong>Parent ID:</strong> ' . $this->escape($parentId !== '' ? $parentId : 'missing') . '</p>'
-            . '<p class="meta" data-role="compose-identity-status">Your username and keypair will be prepared automatically when you send your first reply.</p>'
-            . '<form method="post" class="stack" data-compose-form data-compose-kind="reply">'
-            . '<input type="hidden" name="thread_id" value="' . $this->escape($threadId) . '">'
-            . '<input type="hidden" name="parent_id" value="' . $this->escape($parentId) . '">'
-            . '<input type="hidden" name="author_identity_id" value="">'
-            . '<label>Board tags<input type="text" name="board_tags" value="general"></label>'
-            . '<label>Body<textarea name="body" rows="7" placeholder="ASCII reply body"></textarea></label>'
-            . '<button type="submit">Create reply</button>'
-            . '</form>'
-            . '</article></section>';
-
-        return $this->renderPage('Compose Reply', $content, 'compose', [
+        return $this->renderer()->renderPageTemplate('compose_reply.php', [
+            'threadId' => $threadId,
+            'parentId' => $parentId,
+            'notice' => $notice,
+            'error' => $error,
+        ], 'Compose Reply', 'compose', [
             '/assets/openpgp.min.js',
             '/assets/browser_signing.js',
         ]);
@@ -517,35 +482,11 @@ final class Application
 
     private function renderAccountKeyPage(?string $notice = null, ?string $error = null): string
     {
-        $identityHint = $_COOKIE['identity_hint'] ?? '';
-        $feedback = $this->renderFeedback($notice, $error);
-        $content = '<section class="stack" data-account-key-root><h1>Account Key</h1><article class="card">'
-            . $feedback
-            . '<p>Generate or import a browser-held OpenPGP keypair, then submit the public key to bootstrap an identity.</p>'
-            . '<p><strong>Identity hint cookie:</strong> ' . $this->escape($identityHint !== '' ? $identityHint : 'none') . '</p>'
-            . '<div class="stack">'
-            . '<p class="meta" data-role="browser-key-status">No browser key action yet.</p>'
-            . '<div class="button-row">'
-            . '<button type="button" data-action="generate-browser-key">Generate Browser Key</button>'
-            . '<button type="button" data-action="load-browser-key">Load Saved Public Key</button>'
-            . '<button type="button" data-action="copy-public-key">Copy Public Key</button>'
-            . '<button type="button" data-action="copy-private-key">Copy Private Key</button>'
-            . '<button type="button" data-action="clear-browser-key">Clear Saved Keypair</button>'
-            . '</div>'
-            . '<p><strong>Saved browser username:</strong> <span data-role="username-field">guest</span></p>'
-            . '</div>'
-            . '<form method="post" class="stack">'
-            . '<label>Bootstrap post ID<input type="text" name="bootstrap_post_id" value="root-001"></label>'
-            . '<label>Public key<textarea name="public_key" rows="10" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----" data-role="public-key-field"></textarea></label>'
-            . '<button type="submit">Link identity</button>'
-            . '</form>'
-            . '</article><article class="card"><h2>Browser Key Material</h2>'
-            . '<p class="meta">The private key stays in browser local storage unless you copy it out yourself.</p>'
-            . '<label>Saved public key<pre data-role="public-key-viewer">No browser public key saved yet.</pre></label>'
-            . '<label>Saved private key<pre data-role="private-key-viewer">No browser private key saved yet.</pre></label>'
-            . '</article></section>';
-
-        return $this->renderPage('Account Key', $content, 'account', [
+        return $this->renderer()->renderPageTemplate('account_key.php', [
+            'identityHint' => $_COOKIE['identity_hint'] ?? '',
+            'notice' => $notice,
+            'error' => $error,
+        ], 'Account Key', 'account', [
             '/assets/openpgp.min.js',
             '/assets/browser_signing.js',
         ]);
@@ -1045,17 +986,4 @@ final class Application
         return htmlspecialchars($value, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
-    private function renderFeedback(?string $notice, ?string $error): string
-    {
-        $html = '';
-        if ($notice !== null && $notice !== '') {
-            $html .= '<div class="feedback feedback-ok">' . $notice . '</div>';
-        }
-
-        if ($error !== null && $error !== '') {
-            $html .= '<div class="feedback feedback-error">' . $this->escape($error) . '</div>';
-        }
-
-        return $html;
-    }
 }

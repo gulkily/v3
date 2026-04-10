@@ -8,9 +8,9 @@ This document describes how to move HTML out of application logic code while kee
 - Status: in progress
 - Slice 1: completed
 - Slice 2: completed
-- Slice 3: pending
+- Slice 3: completed
 - Slice 4: pending
-- Verification: `php tests/run.php` passed after Slice 2
+- Verification: `php tests/run.php` passed after Slice 3
 
 ## Goals
 
@@ -137,7 +137,7 @@ This proves the rendering model and extracts the shared shell.
 - extract account-key page
 - extract compose thread/reply pages
 - extract feedback partial
-- status: pending
+- status: completed
 
 ### Slice 4
 
@@ -193,3 +193,8 @@ Start with the shared layout plus the board/thread pages first. They cover the c
   - moved post page into `templates/pages/post.php`
   - moved instance page into `templates/pages/instance.php`
   - moved activity page into `templates/pages/activity.php`
+- Slice 3 completed:
+  - extracted `templates/partials/feedback.php`
+  - moved profile page into `templates/pages/profile.php`
+  - moved account-key page into `templates/pages/account_key.php`
+  - moved compose thread/reply pages into `templates/pages/compose_thread.php` and `templates/pages/compose_reply.php`

@@ -1,0 +1,17 @@
+<section class="stack" data-compose-root data-bootstrap-post-id="root-001">
+  <h1>Compose Reply</h1>
+  <article class="card">
+<?= $partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]) ?>
+    <p><strong>Thread ID:</strong> <?= $e($threadId !== '' ? $threadId : 'missing') ?></p>
+    <p><strong>Parent ID:</strong> <?= $e($parentId !== '' ? $parentId : 'missing') ?></p>
+    <p class="meta" data-role="compose-identity-status">Your username and keypair will be prepared automatically when you send your first reply.</p>
+    <form method="post" class="stack" data-compose-form data-compose-kind="reply">
+      <input type="hidden" name="thread_id" value="<?= $e($threadId) ?>">
+      <input type="hidden" name="parent_id" value="<?= $e($parentId) ?>">
+      <input type="hidden" name="author_identity_id" value="">
+      <label>Board tags<input type="text" name="board_tags" value="general"></label>
+      <label>Body<textarea name="body" rows="7" placeholder="ASCII reply body"></textarea></label>
+      <button type="submit">Create reply</button>
+    </form>
+  </article>
+</section>
