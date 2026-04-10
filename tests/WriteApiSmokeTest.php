@@ -169,8 +169,9 @@ final class WriteApiSmokeTest
         assertStringContains('Commit ', $threadResponse);
         assertStringContains('Created reply', $replyResponse);
         assertStringContains('Commit ', $replyResponse);
+        assertStringContains('Redirecting', $accountResponse);
         assertStringContains('Linked identity', $accountResponse);
-        assertStringContains('Open bootstrap post', $accountResponse);
+        assertStringContains('/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $accountResponse);
         assertStringContains('Commit ', $accountResponse);
     }
 
@@ -343,6 +344,23 @@ final class WriteApiSmokeTest
 
         assertStringContains('Only approved users can approve other users.', $unapprovedResponse);
         assertStringContains('Self-approval is not allowed.', $selfResponse);
+    }
+
+    public function testApprovedViewerResolvesFromIdentityIdAndProfileSlugHints(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $target = $this->linkGeneratedIdentity($application, 'alice');
+
+        $_COOKIE = ['identity_hint' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'];
+        $byIdentityId = $this->renderMethod($application, 'GET', '/profiles/' . $target['profile_slug']);
+
+        $_COOKIE = ['identity_hint' => 'openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'];
+        $byProfileSlug = $this->renderMethod($application, 'GET', '/profiles/' . $target['profile_slug']);
+        $_COOKIE = [];
+
+        assertStringContains('Approve user', $byIdentityId);
+        assertStringContains('Approve user', $byProfileSlug);
     }
 
     public function testMultipleApprovalsAreAccepted(): void

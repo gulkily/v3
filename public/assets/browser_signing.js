@@ -29,8 +29,17 @@
     return `openpgp:${fingerprint}`;
   }
 
-  async function syncIdentityHint(username) {
-    const query = new URLSearchParams({ identity_hint: username }).toString();
+  function preferredIdentityHint() {
+    const identityId = currentAuthorIdentityId();
+    if (identityId) {
+      return identityId;
+    }
+
+    return normalizeUsername(localStorage.getItem(storageKeys.username) || "guest");
+  }
+
+  async function syncIdentityHint(value) {
+    const query = new URLSearchParams({ identity_hint: value }).toString();
     await fetch(`/api/set_identity_hint?${query}`, {
       method: "POST",
       credentials: "same-origin",
@@ -182,7 +191,7 @@
     localStorage.setItem(storageKeys.publicKey, result.publicKey);
     localStorage.setItem(storageKeys.privateKey, result.privateKey);
     localStorage.setItem(storageKeys.fingerprint, fingerprint);
-    await syncIdentityHint(username);
+    await syncIdentityHint(preferredIdentityHint());
     renderSavedState(root);
 
     return username;
@@ -210,7 +219,7 @@
       if (fingerprint) {
         localStorage.setItem(storageKeys.publishedFingerprint, fingerprint);
       }
-      await syncIdentityHint(username);
+      await syncIdentityHint(preferredIdentityHint());
       renderSavedState(root);
       return;
     }
@@ -251,8 +260,7 @@
       setStatus(statusNode, "Publishing your public key in the background...", "info");
       await publishPublicKey(root);
     } else {
-      const username = localStorage.getItem(storageKeys.username) || "guest";
-      await syncIdentityHint(username);
+      await syncIdentityHint(preferredIdentityHint());
     }
   }
 
@@ -278,6 +286,9 @@
     const copyPrivateButton = root.querySelector('[data-action="copy-private-key"]');
 
     renderSavedState(root);
+    if (hasBrowserKeypair()) {
+      void syncIdentityHint(preferredIdentityHint());
+    }
 
     if (generateButton) {
       generateButton.addEventListener("click", async function () {
@@ -357,6 +368,10 @@
     const statusNode = root.querySelector('[data-role="compose-identity-status"]');
     if (!form) {
       return;
+    }
+
+    if (hasBrowserKeypair()) {
+      void syncIdentityHint(preferredIdentityHint());
     }
 
     let submitInFlight = false;

@@ -757,11 +757,15 @@ final class Application
         $stmt = $this->pdo()->prepare('SELECT identity_id FROM username_routes WHERE username_token = :username_token');
         $stmt->execute(['username_token' => $hint]);
         $route = $stmt->fetch();
-        if ($route === false) {
-            return null;
+        if ($route !== false) {
+            return $this->fetchProfileByIdentityId((string) $route['identity_id']);
         }
 
-        return $this->fetchProfileByIdentityId((string) $route['identity_id']);
+        if (str_starts_with($hint, 'openpgp:')) {
+            return $this->fetchProfileByIdentityId($hint);
+        }
+
+        return $this->fetchProfileBySlug($hint);
     }
 
     /**
@@ -1007,11 +1011,11 @@ final class Application
         $input = $this->requestData($query);
         try {
             $result = $this->writer()->linkIdentity($input);
-            $notice = 'Linked identity ' . $result['identity_id'] . ' as ' . $result['username'] . '. '
-                . '<a href="/profiles/' . $this->escape($result['profile_slug']) . '">Open profile</a>. '
-                . '<a href="/posts/' . $this->escape($result['bootstrap_post_id']) . '">Open bootstrap post</a>. '
-                . 'Commit ' . $this->escape($result['commit_sha']);
-            $this->sendHtml($this->renderAccountKeyPage($notice, null), 200);
+            $location = '/profiles/' . $result['profile_slug'];
+            $this->sendRedirect(
+                $location,
+                'Linked identity ' . $result['identity_id'] . ' as ' . $result['username'] . '. Commit ' . $result['commit_sha'] . '.'
+            );
         } catch (RuntimeException $exception) {
             $this->sendHtml($this->renderAccountKeyPage(null, $exception->getMessage()), 400);
         }
