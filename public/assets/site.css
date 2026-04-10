@@ -164,6 +164,18 @@ pre {
   flex: 1 1 12rem;
 }
 
+.key-material-gap {
+  margin-top: 1rem;
+}
+
+[data-role="public-key-viewer"],
+[data-role="private-key-viewer"] {
+  margin-top: 0.45rem;
+  padding: 0.75rem 0.8rem;
+  border: 1px solid var(--line);
+  background: var(--input-bg);
+}
+
 [data-role="browser-key-status"][data-kind="error"] {
   color: var(--status-error);
 }

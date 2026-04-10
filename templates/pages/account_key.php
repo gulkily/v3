@@ -29,7 +29,7 @@
 No browser public key saved yet.
       </pre>
     </label>
-    <label>Saved private key
+    <label class="key-material-gap">Saved private key
       <pre data-role="private-key-viewer">
 No browser private key saved yet.
       </pre>
