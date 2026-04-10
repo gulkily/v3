@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Host;
 
 use ForumRewrite\Application;
+use ForumRewrite\SiteConfig;
 use RuntimeException;
 use Throwable;
 
@@ -153,7 +154,9 @@ final class FrontController
     {
         return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
             . '<title>Configuration Error</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
-            . '<div class="shell"><header class="site-header"><p class="eyebrow">PHP Forum Rewrite</p></header>'
+            . '<div class="shell"><header class="site-header"><p class="eyebrow">'
+            . htmlspecialchars(SiteConfig::SITE_NAME, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+            . '</p></header>'
             . '<main class="main"><section class="stack"><h1>Configuration Error</h1>'
             . '<article class="card"><p>The PHP host configuration is incomplete or invalid.</p><p>'
             . htmlspecialchars($details, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')

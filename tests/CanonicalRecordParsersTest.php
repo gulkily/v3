@@ -128,8 +128,8 @@ final class CanonicalRecordParsersTest
     {
         $record = (new InstancePublicRecordParser())->parse($this->readFixture('instance/public.txt'));
 
-        assertSame('Demo instance', $record->headers['Instance-Name']);
-        assertSame("Demo instance summary.\n", $record->body);
+        assertSame('zenmemes', $record->headers['Instance-Name']);
+        assertSame("zenmemes summary.\n", $record->body);
     }
 
     public function testRepositoryLoadsFixtureRecordsByFamily(): void
@@ -146,7 +146,7 @@ final class CanonicalRecordParsersTest
         assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $identity->identityId);
         assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $publicKey->fingerprint);
         assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $approvalSeed->approvedIdentityId);
-        assertSame('Demo instance', $instance->headers['Instance-Name']);
+        assertSame('zenmemes', $instance->headers['Instance-Name']);
     }
 
     public function testRepositoryAcceptsLegacyLowercasePublicKeyPath(): void

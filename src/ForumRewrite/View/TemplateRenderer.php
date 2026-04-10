@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\View;
 
+use ForumRewrite\SiteConfig;
 use RuntimeException;
 
 final class TemplateRenderer
@@ -46,6 +47,7 @@ final class TemplateRenderer
             'activeSection' => $activeSection,
             'scriptPaths' => $scriptPaths,
             'routeSource' => $routeSource,
+            'siteName' => SiteConfig::SITE_NAME,
             'navItems' => [
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],
                 ['href' => '/activity/', 'label' => 'Activity', 'section' => 'activity'],

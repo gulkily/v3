@@ -14,6 +14,7 @@ use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
 use PDO;
 use RuntimeException;
+use PDOStatement;
 
 final class Application
 {
@@ -105,6 +106,16 @@ final class Application
 
         if ($path === '/instance/' || $path === '/instance') {
             $this->sendHtml($this->renderInstance(), 200);
+            return;
+        }
+
+        if ($path === '/downloads/repository.tar.gz') {
+            $this->handleRepositoryDownload($method);
+            return;
+        }
+
+        if ($path === '/downloads/read_model.sqlite3') {
+            $this->handleReadModelDatabaseDownload($method);
             return;
         }
 
@@ -502,13 +513,23 @@ final class Application
 
     private function renderInstance(): string
     {
-        $pdo = $this->pdo();
-        $instance = $pdo->query('SELECT * FROM instance_public WHERE singleton = 1')->fetch();
-
         return $this->renderer()->renderPageTemplate(
             'instance.php',
             [
-                'instance' => $instance,
+                'siteName' => SiteConfig::SITE_NAME,
+                'admins' => $this->fetchSeedApprovedUsers(),
+                'downloads' => [
+                    [
+                        'href' => '/downloads/repository.tar.gz',
+                        'label' => 'Content repository',
+                        'description' => 'Tarball of the full repository, including .git history.',
+                    ],
+                    [
+                        'href' => '/downloads/read_model.sqlite3',
+                        'label' => 'SQLite index database',
+                        'description' => 'Current read-model database for local indexing and queries.',
+                    ],
+                ],
             ],
             'Instance',
             'instance',
@@ -542,7 +563,7 @@ final class Application
         return $this->renderer()->renderPageTemplate(
             'users.php',
             [
-                'profiles' => $this->fetchApprovedUserDirectoryProfiles(),
+                'users' => $this->fetchApprovedUserDirectoryUsers(),
                 'showPendingLink' => $viewerProfile !== null
                     && ((int) $viewerProfile['is_approved']) === 1
                     && $this->hasPendingUserDirectoryProfiles(),
@@ -845,6 +866,22 @@ final class Application
     }
 
     /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchSeedApprovedUsers(): array
+    {
+        $stmt = $this->pdo()->query(
+            'SELECT username_token, MIN(username) AS username
+             FROM profiles
+             WHERE approved_by_label = \'root\'
+             GROUP BY username_token
+             ORDER BY username_token ASC'
+        );
+
+        return $stmt->fetchAll();
+    }
+
+    /**
      * @param list<string> $identityIds
      * @return array<int, array<string, mixed>>
      */
@@ -910,11 +947,97 @@ final class Application
     /**
      * @param list<string> $identityIds
      */
-    private function prepareIdentityListQuery(string $sql, array $identityIds): \PDOStatement
+    private function prepareIdentityListQuery(string $sql, array $identityIds): PDOStatement
     {
         $placeholders = implode(', ', array_fill(0, count($identityIds), '?'));
 
         return $this->pdo()->prepare(sprintf($sql, $placeholders));
+    }
+
+    private function handleRepositoryDownload(string $method): void
+    {
+        if ($method !== 'GET') {
+            $this->sendHtml($this->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported for downloads.', 'none'), 405);
+            return;
+        }
+
+        $archivePath = tempnam(sys_get_temp_dir(), 'forum-repo-');
+        if ($archivePath === false) {
+            throw new RuntimeException('Unable to create temporary archive path.');
+        }
+
+        $archiveTarget = $archivePath . '.tar.gz';
+        @unlink($archivePath);
+
+        $parent = dirname($this->repositoryRoot);
+        $base = basename($this->repositoryRoot);
+        $command = sprintf(
+            'tar -czf %s -C %s %s 2>&1',
+            escapeshellarg($archiveTarget),
+            escapeshellarg($parent),
+            escapeshellarg($base)
+        );
+        exec($command, $output, $exitCode);
+        if ($exitCode !== 0 || !is_file($archiveTarget)) {
+            @unlink($archiveTarget);
+            throw new RuntimeException('Unable to archive repository download.');
+        }
+
+        $this->sendDownload(
+            $archiveTarget,
+            'application/gzip',
+            SiteConfig::SITE_NAME . '-repository-' . $this->repositoryShortCommit() . '.tar.gz',
+            true
+        );
+    }
+
+    private function handleReadModelDatabaseDownload(string $method): void
+    {
+        if ($method !== 'GET') {
+            $this->sendHtml($this->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported for downloads.', 'none'), 405);
+            return;
+        }
+
+        if (!is_file($this->databasePath)) {
+            $this->sendHtml($this->renderMessagePage('Not Found', 'Not Found', 'Read-model database is not available yet.', 'instance'), 404);
+            return;
+        }
+
+        $this->sendDownload($this->databasePath, 'application/x-sqlite3', SiteConfig::SITE_NAME . '-read-model.sqlite3');
+    }
+
+    private function sendDownload(string $path, string $contentType, string $filename, bool $deleteAfterSend = false): void
+    {
+        $size = filesize($path);
+        if ($size === false) {
+            if ($deleteAfterSend) {
+                @unlink($path);
+            }
+            throw new RuntimeException('Unable to determine download size.');
+        }
+
+        http_response_code(200);
+        header('Content-Type: ' . $contentType);
+        header('Content-Disposition: attachment; filename="' . str_replace('"', '', $filename) . '"');
+        header('Content-Length: ' . (string) $size);
+        readfile($path);
+
+        if ($deleteAfterSend) {
+            @unlink($path);
+        }
+    }
+
+    private function repositoryShortCommit(): string
+    {
+        $command = sprintf('git -C %s rev-parse --short HEAD 2>&1', escapeshellarg($this->repositoryRoot));
+        exec($command, $output, $exitCode);
+        if ($exitCode !== 0) {
+            return 'unknown';
+        }
+
+        $shortCommit = trim(implode("\n", $output));
+
+        return $shortCommit !== '' ? $shortCommit : 'unknown';
     }
 
     /**
@@ -944,13 +1067,17 @@ final class Application
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function fetchApprovedUserDirectoryProfiles(): array
+    private function fetchApprovedUserDirectoryUsers(): array
     {
         $stmt = $this->pdo()->query(
-            'SELECT profile_slug, username, username_token, fallback_label, post_count, thread_count
+            'SELECT username_token, MIN(username) AS username,
+                    COUNT(*) AS approved_profile_count,
+                    SUM(thread_count) AS thread_count,
+                    SUM(post_count) AS post_count
              FROM profiles
              WHERE is_approved = 1
-             ORDER BY thread_count DESC, post_count DESC, username_token ASC, profile_slug ASC'
+             GROUP BY username_token
+             ORDER BY SUM(thread_count) DESC, SUM(post_count) DESC, username_token ASC'
         );
 
         return $stmt->fetchAll();

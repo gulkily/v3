@@ -1,7 +1,7 @@
-Instance-Name: Demo instance
+Instance-Name: zenmemes
 Admin-Name: Demo operator
 Admin-Contact: operator@example.invalid
 Retention-Policy: Keep canonical records in git.
 Install-Date: 2026-03-15
 
-Demo instance summary.
+zenmemes summary.

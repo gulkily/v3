@@ -431,6 +431,9 @@ final class WriteApiSmokeTest
         assertStringNotContains('/users/pending/', $approvedUsersWithoutPending);
         assertStringContains('alice', $approvedUsers);
         assertStringNotContains('bob', $approvedUsers);
+        assertStringContains('/user/alice', $approvedUsers);
+        assertStringNotContains('Profile:', $approvedUsers);
+        assertStringNotContains('Username route:', $approvedUsers);
         assertStringContains('/users/pending/', $approvedUsers);
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertStringContains('bob', $pendingUsers);
