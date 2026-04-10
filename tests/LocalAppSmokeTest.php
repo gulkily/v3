@@ -36,6 +36,61 @@ final class LocalAppSmokeTest
         assertTrue(is_file($this->databasePath));
     }
 
+    public function testInjectApprovalScriptSeedsIdentity(): void
+    {
+        [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $this->deleteDirectoryContents($repositoryRoot . '/records/approval-seeds');
+
+        $command = sprintf(
+            '%s approval seed %s %s %s %s',
+            escapeshellarg(__DIR__ . '/../v3'),
+            escapeshellarg('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'),
+            escapeshellarg('script seeded approval'),
+            escapeshellarg($repositoryRoot),
+            escapeshellarg($databasePath),
+        );
+        exec($command, $output, $exitCode);
+
+        $application = new Application($projectRoot, $repositoryRoot, $databasePath, $artifactRoot);
+        $profile = $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+
+        assertSame(0, $exitCode);
+        assertStringContains('Seeded approval for openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', implode("\n", $output));
+        assertTrue(is_file($repositoryRoot . '/records/approval-seeds/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt'));
+        assertStringContains('Approved: yes', $profile);
+    }
+
+    public function testInjectApprovalScriptApprovesExistingUser(): void
+    {
+        [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $application = new Application($projectRoot, $repositoryRoot, $databasePath, $artifactRoot);
+
+        $_POST = [
+            'public_key' => $this->generatePublicKey('alice'),
+        ];
+        $response = $this->renderMethod($application, 'POST', '/api/link_identity');
+        $_POST = [];
+        $targetIdentityId = $this->extractResponseValue($response, 'identity_id');
+        $targetProfileSlug = $this->extractResponseValue($response, 'profile_slug');
+
+        $command = sprintf(
+            '%s approval approve %s %s %s %s %s',
+            escapeshellarg(__DIR__ . '/../v3'),
+            escapeshellarg('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'),
+            escapeshellarg($targetIdentityId),
+            escapeshellarg($repositoryRoot),
+            escapeshellarg($databasePath),
+            escapeshellarg($artifactRoot),
+        );
+        exec($command, $output, $exitCode);
+
+        $profile = $this->render($application, '/api/get_profile?profile_slug=' . rawurlencode($targetProfileSlug));
+
+        assertSame(0, $exitCode);
+        assertStringContains('Approved ' . $targetIdentityId, implode("\n", $output));
+        assertStringContains('Approved: yes', $profile);
+    }
+
     public function testApplicationRendersCoreRoutes(): void
     {
         @unlink($this->databasePath);
@@ -73,12 +128,13 @@ final class LocalAppSmokeTest
         assertStringContains('/user/guest', $users);
         assertStringContains('Compose Thread', $composeThread);
         assertStringContains('browser_signing.js', $composeThread);
-        assertStringContains('prepared automatically when you send your first post', $composeThread);
+        assertStringContains('Ready.', $composeThread);
         assertStringContains('Thread ID:', $composeReply);
         assertStringContains('browser_signing.js', $composeReply);
-        assertStringContains('prepared automatically when you send your first reply', $composeReply);
+        assertStringContains('Ready.', $composeReply);
         assertStringContains('identity hint cookie', strtolower($account));
         assertStringContains('Generate Browser Key', $account);
+        assertStringContains('Saved browser identity:', $account);
         assertStringContains('/assets/openpgp.min.js', $account);
         assertStringContains('/assets/browser_signing.js', $account);
         assertStringNotContains('Bootstrap post ID', $account);
@@ -418,6 +474,101 @@ final class LocalAppSmokeTest
             $repositoryRoot,
             $projectRoot . '/state/cache/post_index.sqlite3',
         ];
+    }
+
+    /**
+     * @return array{string,string,string,string}
+     */
+    private function createGitBackedEnvironmentWithArtifacts(): array
+    {
+        $projectRoot = sys_get_temp_dir() . '/forum-rewrite-project-' . bin2hex(random_bytes(6));
+        $repositoryRoot = $projectRoot . '/state/local_repository';
+        $artifactRoot = $projectRoot . '/public';
+        mkdir($projectRoot . '/tests/fixtures/parity_minimal_v1', 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $projectRoot . '/tests/fixtures/parity_minimal_v1');
+        LocalRepositoryBootstrap::initializeLocalRepository($projectRoot, $repositoryRoot);
+        mkdir($artifactRoot, 0777, true);
+
+        return [
+            $projectRoot,
+            $repositoryRoot,
+            $projectRoot . '/state/cache/post_index.sqlite3',
+            $artifactRoot,
+        ];
+    }
+
+    private function deleteDirectoryContents(string $directory): void
+    {
+        foreach (glob($directory . '/*') ?: [] as $path) {
+            @unlink($path);
+        }
+    }
+
+    private function generatePublicKey(string $username): string
+    {
+        $home = sys_get_temp_dir() . '/forum-rewrite-gpg-home-' . bin2hex(random_bytes(6));
+        mkdir($home, 0700, true);
+        $homedir = escapeshellarg($home);
+        $this->runCommand(
+            $home,
+            'gpg --batch --no-tty --pinentry-mode loopback --passphrase "" --homedir '
+            . $homedir . ' --quick-generate-key ' . escapeshellarg($username) . ' ed25519 sign 0'
+        );
+
+        $publicKey = $this->runCommand(
+            $home,
+            'gpg --batch --no-tty --homedir ' . $homedir . ' --armor --export'
+        );
+
+        $this->deleteTree($home);
+
+        return trim($publicKey) . "\n";
+    }
+
+    private function extractResponseValue(string $response, string $key): string
+    {
+        foreach (explode("\n", trim($response)) as $line) {
+            if (str_starts_with($line, $key . '=')) {
+                return substr($line, strlen($key) + 1);
+            }
+        }
+
+        throw new RuntimeException('Missing response key: ' . $key);
+    }
+
+    private function runCommand(string $workdir, string $command): string
+    {
+        $output = [];
+        $exitCode = 0;
+        exec('cd ' . escapeshellarg($workdir) . ' && ' . $command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Command failed: ' . $command . "\n" . implode("\n", $output));
+        }
+
+        return implode("\n", $output);
+    }
+
+    private function deleteTree(string $path): void
+    {
+        if (!is_dir($path)) {
+            return;
+        }
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            if ($item->isDir()) {
+                @rmdir($item->getPathname());
+                continue;
+            }
+
+            @unlink($item->getPathname());
+        }
+
+        @rmdir($path);
     }
 }
 

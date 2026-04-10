@@ -106,6 +106,13 @@ curl -X POST --data-urlencode "public_key@tests/fixtures/parity_minimal_v1/recor
 curl -X POST --data-urlencode "public_key@tests/fixtures/parity_minimal_v1/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc" "http://127.0.0.1:8000/api/link_identity?bootstrap_post_id=root-001"
 ```
 
+Approval helper examples:
+
+```bash
+./v3 approval seed openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954
+./v3 approval approve openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954 openpgp:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+```
+
 ## Tests
 
 Run the current parser, rebuild, and app smoke tests:

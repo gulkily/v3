@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMMAND="${1:-}"
+
+if [[ -z "${COMMAND}" ]]; then
+  cat <<'EOF'
+Usage:
+  ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
+  ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
+EOF
+  exit 1
+fi
+
+case "${COMMAND}" in
+  approval)
+    shift
+    php "${ROOT}/scripts/inject_approval.php" "$@"
+    ;;
+  *)
+    echo "Unknown command: ${COMMAND}" >&2
+    echo "Run ./v3 with no arguments to see available commands." >&2
+    exit 1
+    ;;
+esac
