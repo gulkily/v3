@@ -61,7 +61,10 @@ final class LocalAppSmokeTest
         assertStringContains('Board', $board);
         assertStringContains('Hello world', $thread);
         assertOrdered($thread, 'Post <a href="/posts/root-001">root-001</a>', 'Post <a href="/posts/reply-001">reply-001</a>');
+        assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $thread);
+        assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=reply-001', $thread);
         assertStringContains('First line preview.', $post);
+        assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $post);
         assertStringContains('Demo instance', $instance);
         assertStringContains('Identity ID:', $profile);
         assertStringContains('Visible username:', $username);
