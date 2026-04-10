@@ -128,6 +128,7 @@ final class LocalAppSmokeTest
         assertStringContains('zenmemes', $instance);
         assertStringContains('/user/guest', $instance);
         assertStringContains('/downloads/repository.tar.gz', $instance);
+        assertStringContains('/downloads/repository.zip', $instance);
         assertStringContains('/downloads/read_model.sqlite3', $instance);
         assertStringContains('complete snapshots of the forum data', $instance);
         assertStringContains('insurance policy of sorts', $instance);
@@ -201,7 +202,7 @@ final class LocalAppSmokeTest
         assertStringContains('<title>Activity all</title>', $activityRss);
     }
 
-    public function testInstanceDownloadRoutesReturnRepositoryArchiveAndSqliteDatabase(): void
+    public function testInstanceDownloadRoutesReturnRepositoryArchivesAndSqliteDatabase(): void
     {
         @unlink($this->databasePath);
         $application = new Application(
@@ -211,9 +212,11 @@ final class LocalAppSmokeTest
         );
 
         $repoArchive = $this->renderMethod($application, 'GET', '/downloads/repository.tar.gz');
+        $repoZipArchive = $this->renderMethod($application, 'GET', '/downloads/repository.zip');
         $sqliteDatabase = $this->renderMethod($application, 'GET', '/downloads/read_model.sqlite3');
 
         assertSame("\x1f\x8b", substr($repoArchive, 0, 2));
+        assertSame("PK", substr($repoZipArchive, 0, 2));
         assertStringContains('SQLite format 3', substr($sqliteDatabase, 0, 32));
     }
 
