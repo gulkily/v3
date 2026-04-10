@@ -4,7 +4,7 @@
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
     <p><strong>Thread ID:</strong> <?= $e($threadId !== '' ? $threadId : 'missing') ?></p>
     <p><strong>Parent ID:</strong> <?= $e($parentId !== '' ? $parentId : 'missing') ?></p>
-    <p class="meta" data-role="compose-identity-status">Your username and keypair will be prepared automatically when you send your first reply.</p>
+    <p class="meta" data-role="compose-identity-status">Ready.</p>
     <form method="post" class="stack" data-compose-form data-compose-kind="reply">
       <input type="hidden" name="thread_id" value="<?= $e($threadId) ?>">
       <input type="hidden" name="parent_id" value="<?= $e($parentId) ?>">

@@ -74,10 +74,16 @@
     const publicKey = localStorage.getItem(storageKeys.publicKey) || "";
     const privateKey = localStorage.getItem(storageKeys.privateKey) || "";
     const username = localStorage.getItem(storageKeys.username) || "guest";
+    const fingerprint = (localStorage.getItem(storageKeys.fingerprint) || "")
+      .trim()
+      .toLowerCase();
     const publicKeyField = root.querySelector('[data-role="public-key-field"]');
     const usernameField = root.querySelector('[data-role="username-field"]');
     const privateKeyViewer = root.querySelector('[data-role="private-key-viewer"]');
     const publicKeyViewer = root.querySelector('[data-role="public-key-viewer"]');
+    const identityIdField = root.querySelector('[data-role="identity-id-field"]');
+    const profileLink = root.querySelector('[data-role="profile-link"]');
+    const profileLinkWrap = root.querySelector('[data-role="profile-link-wrap"]');
 
     if (publicKeyField && !publicKeyField.value) {
       publicKeyField.value = publicKey;
@@ -93,6 +99,20 @@
 
     if (publicKeyViewer) {
       publicKeyViewer.textContent = publicKey || "No browser public key saved yet.";
+    }
+
+    if (identityIdField) {
+      identityIdField.textContent = fingerprint ? `openpgp:${fingerprint}` : "none";
+    }
+
+    if (profileLink && profileLinkWrap) {
+      if (fingerprint) {
+        profileLink.href = `/profiles/openpgp-${fingerprint}`;
+        profileLinkWrap.hidden = false;
+      } else {
+        profileLink.href = "/account/key/";
+        profileLinkWrap.hidden = true;
+      }
     }
   }
 

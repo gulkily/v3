@@ -3,7 +3,7 @@
   <article class="card">
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
     <p>Posts are stored as canonical ASCII files and the SQLite read model rebuilds immediately.</p>
-    <p class="meta" data-role="compose-identity-status">Your username and keypair will be prepared automatically when you send your first post.</p>
+    <p class="meta" data-role="compose-identity-status">Ready.</p>
     <form method="post" class="stack" data-compose-form data-compose-kind="thread">
       <input type="hidden" name="author_identity_id" value="">
       <label>Board tags<input type="text" name="board_tags" value="general"></label>
