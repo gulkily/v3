@@ -36,6 +36,7 @@ final class PostRecordParser
 
         $threadId = $record->headers['Thread-ID'] ?? null;
         $parentId = $record->headers['Parent-ID'] ?? null;
+        $authorIdentityId = $record->headers['Author-Identity-ID'] ?? null;
         $threadType = $record->headers['Thread-Type'] ?? null;
 
         $boardTags = array_values(array_filter(explode(' ', $record->headers['Board-Tags']), static fn (string $tag): bool => $tag !== ''));
@@ -58,6 +59,10 @@ final class PostRecordParser
                     throw new CanonicalRecordParseException('Replies must not include typed root header: ' . $header);
                 }
             }
+        }
+
+        if ($authorIdentityId !== null && preg_match('/[^A-Za-z0-9._:-]/', $authorIdentityId)) {
+            throw new CanonicalRecordParseException('Author-Identity-ID must be an ASCII token when present.');
         }
 
         $taskStatus = null;
@@ -93,6 +98,7 @@ final class PostRecordParser
             $boardTags,
             $threadId,
             $parentId,
+            $authorIdentityId,
             $record->headers['Subject'] ?? null,
             $threadType,
             $taskStatus,

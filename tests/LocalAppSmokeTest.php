@@ -65,7 +65,11 @@ final class LocalAppSmokeTest
         assertStringContains('Identity ID:', $profile);
         assertStringContains('Visible username:', $username);
         assertStringContains('Compose Thread', $composeThread);
+        assertStringContains('browser_signing.js', $composeThread);
+        assertStringContains('prepared automatically when you send your first post', $composeThread);
         assertStringContains('Thread ID:', $composeReply);
+        assertStringContains('browser_signing.js', $composeReply);
+        assertStringContains('prepared automatically when you send your first reply', $composeReply);
         assertStringContains('identity hint cookie', strtolower($account));
         assertStringContains('Generate Browser Key', $account);
         assertStringContains('/assets/openpgp.min.js', $account);

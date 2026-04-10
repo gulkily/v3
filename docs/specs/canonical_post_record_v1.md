@@ -31,6 +31,7 @@ Key: Value
 
 - `Thread-ID`: required for replies, omitted for thread roots
 - `Parent-ID`: required for replies, omitted for thread roots
+- `Author-Identity-ID`: optional canonical identity reference for authored posts
 - `Subject`: optional, mainly useful for thread roots
 - `Thread-Type`: optional for thread roots, omitted for replies
 
@@ -58,6 +59,8 @@ The first supported typed root is `Thread-Type: task`. Task roots add:
 - A thread root is a post with no `Thread-ID` and no `Parent-ID`.
 - A reply references the thread root through `Thread-ID`.
 - A reply references its immediate parent through `Parent-ID`.
+- When `Author-Identity-ID` is present, it must be an ASCII token matching the retained identity form such as `openpgp:<lowercase-fingerprint>`.
+- When `Author-Identity-ID` is absent, readers fall back to anonymous author labeling such as `guest` unless another retained rule applies.
 - A typed root thread is still a normal thread root. Replies remain ordinary replies.
 - For this slice, authoritative task state lives on the task root post. Future slices may
   add append-only task-update records instead of overloading replies.
@@ -94,6 +97,7 @@ Post-ID: reply-001
 Board-Tags: general meta
 Thread-ID: root-001
 Parent-ID: root-001
+Author-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954
 
 This is a reply.
 ```

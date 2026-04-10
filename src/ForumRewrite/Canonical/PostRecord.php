@@ -16,6 +16,7 @@ final class PostRecord
         public readonly array $boardTags,
         public readonly ?string $threadId,
         public readonly ?string $parentId,
+        public readonly ?string $authorIdentityId,
         public readonly ?string $subject,
         public readonly ?string $threadType,
         public readonly ?string $taskStatus,

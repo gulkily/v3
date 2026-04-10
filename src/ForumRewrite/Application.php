@@ -475,10 +475,12 @@ final class Application
     private function renderComposeThreadPage(?string $notice = null, ?string $error = null): string
     {
         $feedback = $this->renderFeedback($notice, $error);
-        $content = '<section class="stack"><h1>Compose Thread</h1><article class="card">'
+        $content = '<section class="stack" data-compose-root data-bootstrap-post-id="root-001"><h1>Compose Thread</h1><article class="card">'
             . $feedback
             . '<p>Posts are stored as canonical ASCII files and the SQLite read model rebuilds immediately.</p>'
-            . '<form method="post" class="stack">'
+            . '<p class="meta" data-role="compose-identity-status">Your username and keypair will be prepared automatically when you send your first post.</p>'
+            . '<form method="post" class="stack" data-compose-form data-compose-kind="thread">'
+            . '<input type="hidden" name="author_identity_id" value="">'
             . '<label>Board tags<input type="text" name="board_tags" value="general"></label>'
             . '<label>Subject<input type="text" name="subject" placeholder="Thread subject"></label>'
             . '<label>Body<textarea name="body" rows="7" placeholder="ASCII body"></textarea></label>'
@@ -486,7 +488,10 @@ final class Application
             . '</form>'
             . '</article></section>';
 
-        return $this->renderPage('Compose Thread', $content, 'compose');
+        return $this->renderPage('Compose Thread', $content, 'compose', [
+            '/assets/openpgp.min.js',
+            '/assets/browser_signing.js',
+        ]);
     }
 
     private function renderComposeReply(string $threadId, string $parentId): string
@@ -497,20 +502,25 @@ final class Application
     private function renderComposeReplyPage(string $threadId, string $parentId, ?string $notice = null, ?string $error = null): string
     {
         $feedback = $this->renderFeedback($notice, $error);
-        $content = '<section class="stack"><h1>Compose Reply</h1><article class="card">'
+        $content = '<section class="stack" data-compose-root data-bootstrap-post-id="root-001"><h1>Compose Reply</h1><article class="card">'
             . $feedback
             . '<p><strong>Thread ID:</strong> ' . $this->escape($threadId !== '' ? $threadId : 'missing') . '</p>'
             . '<p><strong>Parent ID:</strong> ' . $this->escape($parentId !== '' ? $parentId : 'missing') . '</p>'
-            . '<form method="post" class="stack">'
+            . '<p class="meta" data-role="compose-identity-status">Your username and keypair will be prepared automatically when you send your first reply.</p>'
+            . '<form method="post" class="stack" data-compose-form data-compose-kind="reply">'
             . '<input type="hidden" name="thread_id" value="' . $this->escape($threadId) . '">'
             . '<input type="hidden" name="parent_id" value="' . $this->escape($parentId) . '">'
+            . '<input type="hidden" name="author_identity_id" value="">'
             . '<label>Board tags<input type="text" name="board_tags" value="general"></label>'
             . '<label>Body<textarea name="body" rows="7" placeholder="ASCII reply body"></textarea></label>'
             . '<button type="submit">Create reply</button>'
             . '</form>'
             . '</article></section>';
 
-        return $this->renderPage('Compose Reply', $content, 'compose');
+        return $this->renderPage('Compose Reply', $content, 'compose', [
+            '/assets/openpgp.min.js',
+            '/assets/browser_signing.js',
+        ]);
     }
 
     private function renderAccountKey(): string

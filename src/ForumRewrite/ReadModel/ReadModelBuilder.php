@@ -135,13 +135,13 @@ final class ReadModelBuilder
     }
 
     /**
-     * @return array<int, array{post_id:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,sequence_number:int}>
+     * @return array<int, array{post_id:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int}>
      */
     private function indexPosts(PDO $pdo): array
     {
         $insertPost = $pdo->prepare(
-            'INSERT INTO posts (post_id, thread_id, parent_id, subject, body, board_tags_json, thread_type, sequence_number)
-             VALUES (:post_id, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :sequence_number)'
+            'INSERT INTO posts (post_id, thread_id, parent_id, subject, body, board_tags_json, thread_type, author_identity_id, sequence_number)
+             VALUES (:post_id, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :author_identity_id, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
             'INSERT INTO threads (root_post_id, subject, body_preview, reply_count, last_post_id, board_tags_json)
@@ -162,6 +162,7 @@ final class ReadModelBuilder
                 'body' => $record->body,
                 'board_tags_json' => json_encode($record->boardTags, JSON_THROW_ON_ERROR),
                 'thread_type' => $record->threadType,
+                'author_identity_id' => $record->authorIdentityId,
                 'source_order' => $index + 1,
             ];
         }
@@ -283,11 +284,17 @@ final class ReadModelBuilder
         $updatePost = $pdo->prepare(
             'UPDATE posts
              SET author_identity_id = :author_identity_id, author_profile_slug = :author_profile_slug, author_label = :author_label
-             WHERE post_id = :post_id'
+             WHERE post_id = :bootstrap_post_id OR author_identity_id = :author_identity_id'
+        );
+        $countPosts = $pdo->prepare(
+            'SELECT COUNT(*) FROM posts WHERE author_identity_id = :author_identity_id'
+        );
+        $countThreads = $pdo->prepare(
+            'SELECT COUNT(*) FROM posts WHERE author_identity_id = :author_identity_id AND post_id = thread_id'
         );
         $updateProfileCounts = $pdo->prepare(
             'UPDATE profiles
-             SET post_count = post_count + :post_count, thread_count = thread_count + :thread_count
+             SET post_count = :post_count, thread_count = :thread_count
              WHERE identity_id = :identity_id'
         );
 
@@ -296,13 +303,18 @@ final class ReadModelBuilder
                 'author_identity_id' => $profile['identity_id'],
                 'author_profile_slug' => $profile['profile_slug'],
                 'author_label' => $profile['username'],
-                'post_id' => $profile['bootstrap_post_id'],
+                'bootstrap_post_id' => $profile['bootstrap_post_id'],
             ]);
 
-            $threadCount = $profile['bootstrap_post_id'] === $profile['bootstrap_thread_id'] ? 1 : 0;
+            $countPosts->execute([
+                'author_identity_id' => $profile['identity_id'],
+            ]);
+            $countThreads->execute([
+                'author_identity_id' => $profile['identity_id'],
+            ]);
             $updateProfileCounts->execute([
-                'post_count' => 1,
-                'thread_count' => $threadCount,
+                'post_count' => (int) $countPosts->fetchColumn(),
+                'thread_count' => (int) $countThreads->fetchColumn(),
                 'identity_id' => $profile['identity_id'],
             ]);
         }
@@ -329,7 +341,7 @@ final class ReadModelBuilder
     }
 
     /**
-     * @param array<int, array{post_id:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,sequence_number:int}> $posts
+     * @param array<int, array{post_id:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int}> $posts
      */
     private function indexActivity(PDO $pdo, array $posts): void
     {

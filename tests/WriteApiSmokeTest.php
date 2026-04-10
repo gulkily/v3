@@ -138,6 +138,33 @@ final class WriteApiSmokeTest
         assertStringContains('Commit ', $accountResponse);
     }
 
+    public function testCreateThreadUsesAuthorIdentityForRenderedAuthorLabel(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->deleteDirectoryContents($repositoryRoot . '/records/identity');
+        $this->deleteDirectoryContents($repositoryRoot . '/records/public-keys');
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $_POST = [
+            'public_key' => $this->readFixturePublicKey(),
+        ];
+        $identityResponse = $this->renderMethod($application, 'POST', '/api/link_identity?bootstrap_post_id=root-001');
+        $_POST = [];
+
+        $identityId = $this->extractValue($identityResponse, 'identity_id');
+        $threadResponse = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_thread?board_tags=general&subject=Signed%20Thread&body=Thread%20body&author_identity_id=' . rawurlencode($identityId)
+        );
+        $threadId = $this->extractValue($threadResponse, 'thread_id');
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/' . $threadId);
+
+        assertStringContains('status=ok', $threadResponse);
+        assertStringContains('forum-user', $threadPage);
+        assertFalse(str_contains($threadPage, 'by guest'));
+    }
+
     public function testWriteApiReportsGitFailureWithoutInvalidatingArtifacts(): void
     {
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-write-repo-' . bin2hex(random_bytes(6));

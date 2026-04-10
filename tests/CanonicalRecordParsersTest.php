@@ -42,7 +42,17 @@ final class CanonicalRecordParsersTest
         assertSame(['general'], $record->boardTags);
         assertSame('root-001', $record->threadId);
         assertSame('root-001', $record->parentId);
+        assertNullValue($record->authorIdentityId);
         assertTrue($record->isReply());
+    }
+
+    public function testParsesAuthoredReplyHeader(): void
+    {
+        $contents = "Post-ID: reply-002\nBoard-Tags: general\nThread-ID: root-001\nParent-ID: root-001\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\nBody.\n";
+
+        $record = (new PostRecordParser())->parse($contents);
+
+        assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $record->authorIdentityId);
     }
 
     public function testRejectsReplyWithTypedRootHeader(): void

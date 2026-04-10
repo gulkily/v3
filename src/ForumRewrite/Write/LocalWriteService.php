@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Write;
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\ReadModel\ReadModelBuilder;
@@ -36,9 +37,11 @@ class LocalWriteService
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $subject = $this->normalizeAsciiLine((string) ($input['subject'] ?? ''), 'subject');
             $body = $this->normalizeAsciiBody((string) ($input['body'] ?? ''), 'body');
+            $authorIdentityId = $this->resolveAuthorIdentityId($input);
 
             $contents = "Post-ID: {$postId}\n"
                 . "Board-Tags: {$boardTags}\n"
+                . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
                 . ($subject !== '' ? "Subject: {$subject}\n" : '')
                 . "\n{$body}";
 
@@ -70,6 +73,7 @@ class LocalWriteService
             $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
             $body = $this->normalizeAsciiBody((string) ($input['body'] ?? ''), 'body');
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
+            $authorIdentityId = $this->resolveAuthorIdentityId($input);
 
             $thread = $this->canonicalRepository->loadPost('records/posts/' . $threadId . '.txt');
             $parent = $this->canonicalRepository->loadPost('records/posts/' . $parentId . '.txt');
@@ -83,6 +87,7 @@ class LocalWriteService
                 . "Board-Tags: {$boardTags}\n"
                 . "Thread-ID: {$threadId}\n"
                 . "Parent-ID: {$parentId}\n"
+                . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
                 . "\n{$body}";
 
             (new PostRecordParser())->parse($contents);
@@ -268,6 +273,34 @@ class LocalWriteService
     private function generateRecordId(string $prefix): string
     {
         return sprintf('%s-%s-%s', $prefix, gmdate('YmdHis'), substr(bin2hex(random_bytes(4)), 0, 8));
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     */
+    private function resolveAuthorIdentityId(array $input): ?string
+    {
+        $value = trim((string) ($input['author_identity_id'] ?? ''));
+        if ($value === '') {
+            return null;
+        }
+
+        $identityId = $this->requireAsciiToken($value, 'author_identity_id');
+        if (!str_starts_with($identityId, 'openpgp:')) {
+            throw new RuntimeException('author_identity_id must use the retained openpgp identity form.');
+        }
+
+        $fingerprint = substr($identityId, strlen('openpgp:'));
+        if ($fingerprint === '' || preg_match('/[^a-f0-9]/', $fingerprint)) {
+            throw new RuntimeException('author_identity_id must use a lowercase OpenPGP fingerprint.');
+        }
+
+        $identityPath = $this->repositoryRoot . '/' . CanonicalPathResolver::identity($fingerprint);
+        if (!is_file($identityPath)) {
+            throw new RuntimeException('author_identity_id does not resolve to a known identity.');
+        }
+
+        return $identityId;
     }
 
     private function normalizeBoardTags(string $value): string

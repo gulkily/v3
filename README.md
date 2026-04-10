@@ -54,6 +54,13 @@ Open these routes:
 
 The default server uses [state/local_repository](/home/wsl/v3/state/local_repository) when `FORUM_REPOSITORY_ROOT` is unset. Override it with `FORUM_REPOSITORY_ROOT=/path/to/repo` if needed.
 
+Compose routes now use submit-time browser identity bootstrap for brand-new users:
+
+- no keypair is generated on page load
+- on the first real submit, the browser prompts for username, generates an OpenPGP keypair, publishes the public key in the background, sets the identity-hint cookie, and then continues the original post submit
+- existing browser-local keypairs skip regeneration
+- if browser generation/bootstrap fails, the draft stays intact and `/account/key/` remains the manual fallback
+
 If you want to initialize that writable repo explicitly ahead of time:
 
 ```bash
