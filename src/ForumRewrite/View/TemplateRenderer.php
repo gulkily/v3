@@ -77,6 +77,43 @@ final class TemplateRenderer
             $partialPath,
             array_merge($data, $partialData)
         );
+        $indent = static function (string $html, int $levels = 1, string $unit = '  '): string {
+            $prefix = str_repeat($unit, max(0, $levels));
+            $lines = explode("\n", $html);
+            $protectedTags = ['pre', 'textarea', 'script', 'style'];
+            $protectedDepth = 0;
+
+            foreach ($lines as $index => $line) {
+                $trimmed = ltrim($line);
+                if ($trimmed !== '') {
+                    foreach ($protectedTags as $tag) {
+                        if (preg_match('/^<\s*' . $tag . '\b/i', $trimmed) === 1) {
+                            $protectedDepth++;
+                            break;
+                        }
+                    }
+                }
+
+                if ($line !== '' && $protectedDepth === 0) {
+                    $lines[$index] = $prefix . $line;
+                }
+
+                if ($trimmed !== '') {
+                    foreach ($protectedTags as $tag) {
+                        if (preg_match('/<\/\s*' . $tag . '\s*>\s*$/i', $trimmed) === 1) {
+                            $protectedDepth = max(0, $protectedDepth - 1);
+                            break;
+                        }
+                    }
+                }
+
+                if ($line === '') {
+                    continue;
+                }
+            }
+
+            return implode("\n", $lines);
+        };
 
         extract($data, EXTR_SKIP);
 

@@ -1,7 +1,7 @@
 <section class="stack" data-account-key-root>
   <h1>Account Key</h1>
   <article class="card">
-<?= $partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]) ?>
+<?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
     <p>Generate or import a browser-held OpenPGP keypair, then submit the public key to bootstrap an identity.</p>
     <p><strong>Identity hint cookie:</strong> <?= $e($identityHint !== '' ? $identityHint : 'none') ?></p>
     <div class="stack">
@@ -24,7 +24,15 @@
   <article class="card">
     <h2>Browser Key Material</h2>
     <p class="meta">The private key stays in browser local storage unless you copy it out yourself.</p>
-    <label>Saved public key<pre data-role="public-key-viewer">No browser public key saved yet.</pre></label>
-    <label>Saved private key<pre data-role="private-key-viewer">No browser private key saved yet.</pre></label>
+    <label>Saved public key
+      <pre data-role="public-key-viewer">
+No browser public key saved yet.
+      </pre>
+    </label>
+    <label>Saved private key
+      <pre data-role="private-key-viewer">
+No browser private key saved yet.
+      </pre>
+    </label>
   </article>
 </section>

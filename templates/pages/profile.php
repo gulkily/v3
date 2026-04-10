@@ -18,6 +18,8 @@
   </article>
   <article class="card">
     <h2>Public key</h2>
-    <pre><?= $e($profile['public_key']) ?></pre>
+    <pre>
+<?= $e($profile['public_key']) ?>
+    </pre>
   </article>
 </section>

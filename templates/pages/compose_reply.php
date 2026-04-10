@@ -1,7 +1,7 @@
 <section class="stack" data-compose-root data-bootstrap-post-id="root-001">
   <h1>Compose Reply</h1>
   <article class="card">
-<?= $partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]) ?>
+<?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
     <p><strong>Thread ID:</strong> <?= $e($threadId !== '' ? $threadId : 'missing') ?></p>
     <p><strong>Parent ID:</strong> <?= $e($parentId !== '' ? $parentId : 'missing') ?></p>
     <p class="meta" data-role="compose-identity-status">Your username and keypair will be prepared automatically when you send your first reply.</p>

@@ -14,10 +14,10 @@
   <div class="shell">
     <header class="site-header">
       <p class="eyebrow">PHP Forum Rewrite</p>
-<?= $partial('partials/nav.php') ?>
+<?= $indent($partial('partials/nav.php'), 3) ?>
     </header>
     <main class="main">
-<?= $content ?>
+<?= $indent($content, 3) ?>
     </main>
   </div>
 </body>
