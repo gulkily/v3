@@ -304,6 +304,12 @@ final class WriteApiSmokeTest
         sort($approvalPostIds);
         $approvalPostId = $approvalPostIds[0] ?? '';
 
+        $approvalLanding = $this->renderMethod(
+            $application,
+            'GET',
+            '/profiles/' . rawurlencode($targetProfileSlug) . '?approval=success&post_id=' . rawurlencode($approvalPostId)
+                . '&commit=' . rawurlencode($this->latestCommitSha($repositoryRoot))
+        );
         $targetProfile = $this->renderMethod($application, 'GET', '/profiles/' . $targetProfileSlug);
         $targetProfileApi = $this->renderMethod($application, 'GET', '/api/get_profile?profile_slug=' . rawurlencode($targetProfileSlug));
         $board = $this->renderMethod($application, 'GET', '/');
@@ -312,8 +318,14 @@ final class WriteApiSmokeTest
         $_COOKIE = [];
 
         assertStringContains('Approve user', $profilePage);
-        assertStringContains('Approved user alice', $approvalResponse);
+        assertStringContains('Redirecting', $approvalResponse);
+        assertStringContains('Approved user alice.', $approvalResponse);
+        assertStringContains('/profiles/' . $targetProfileSlug, $approvalResponse);
+        assertStringContains('approval=success', $approvalResponse);
+        assertStringContains('post_id=' . $approvalPostId, $approvalResponse);
         assertSame(1, count($approvalPostIds));
+        assertStringContains('Approved user alice', $approvalLanding);
+        assertStringContains('/posts/' . $approvalPostId, $approvalLanding);
         assertStringContains('Approved: yes', $targetProfileApi);
         assertStringContains('Approved:</strong> yes', $targetProfile);
         assertFalse(is_file($artifactRoot . '/profiles/' . $targetProfileSlug . '.html'));
@@ -471,6 +483,18 @@ final class WriteApiSmokeTest
         sort($ids);
 
         return $ids;
+    }
+
+    private function latestCommitSha(string $repositoryRoot): string
+    {
+        $command = sprintf(
+            'git -C %s rev-parse HEAD 2>&1',
+            escapeshellarg($repositoryRoot)
+        );
+        exec($command, $output, $exitCode);
+        assertSame(0, $exitCode, implode("\n", $output));
+
+        return trim(implode("\n", $output));
     }
 
     private function copyDirectory(string $source, string $destination): void

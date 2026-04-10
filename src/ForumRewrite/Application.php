@@ -223,7 +223,7 @@ final class Application
         }
 
         if (preg_match('#^/profiles/([^/]+)/?$#', $path, $matches) === 1) {
-            $html = $this->renderProfile($matches[1], isset($query['self']));
+            $html = $this->renderProfile($matches[1], isset($query['self']), $query);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -392,14 +392,17 @@ final class Application
         );
     }
 
-    private function renderProfile(string $slug, bool $self = false): ?string
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function renderProfile(string $slug, bool $self = false, array $query = []): ?string
     {
         $profile = $this->fetchProfileBySlug($slug);
         if ($profile === null) {
             return null;
         }
 
-        return $this->renderProfilePage($profile, $self);
+        return $this->renderProfilePage($profile, $self, $this->profileNoticeFromQuery($profile, $query));
     }
 
     /**
@@ -426,6 +429,27 @@ final class Application
             'Profile ' . $profile['profile_slug'],
             'profiles',
         );
+    }
+
+    /**
+     * @param array<string, mixed> $profile
+     * @param array<string, mixed> $query
+     */
+    private function profileNoticeFromQuery(array $profile, array $query): ?string
+    {
+        if (($query['approval'] ?? null) !== 'success') {
+            return null;
+        }
+
+        $postId = (string) ($query['post_id'] ?? '');
+        $commitSha = (string) ($query['commit'] ?? '');
+        if (!preg_match('/^[A-Za-z0-9._-]+$/', $postId) || !preg_match('/^[a-f0-9]{40}$/', $commitSha)) {
+            return null;
+        }
+
+        return 'Approved user ' . $this->escape((string) $profile['username']) . '. '
+            . '<a href="/posts/' . $this->escape($postId) . '">Open approval post</a>. '
+            . 'Commit ' . $this->escape($commitSha);
     }
 
     private function renderUsername(string $username): ?string
@@ -1051,11 +1075,10 @@ final class Application
                 'thread_id' => (string) $profile['bootstrap_thread_id'],
                 'parent_id' => (string) $profile['bootstrap_post_id'],
             ]);
-            $updatedProfile = $this->fetchProfileBySlug($slug) ?? $profile;
-            $notice = 'Approved user ' . $this->escape($updatedProfile['username']) . '. '
-                . '<a href="/posts/' . $this->escape($result['post_id']) . '">Open approval post</a>. '
-                . 'Commit ' . $this->escape($result['commit_sha']);
-            $this->sendHtml($this->renderProfilePage($updatedProfile, false, $notice, null), 200);
+            $location = '/profiles/' . rawurlencode((string) $profile['profile_slug'])
+                . '?approval=success&post_id=' . rawurlencode((string) $result['post_id'])
+                . '&commit=' . rawurlencode((string) $result['commit_sha']);
+            $this->sendRedirect($location, 'Approved user ' . (string) $profile['username'] . '.');
         } catch (RuntimeException $exception) {
             $this->sendHtml($this->renderProfilePage($profile, false, null, $exception->getMessage()), 400);
         }
