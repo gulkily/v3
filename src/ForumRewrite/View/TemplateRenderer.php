@@ -49,14 +49,10 @@ final class TemplateRenderer
             'navItems' => [
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],
                 ['href' => '/activity/', 'label' => 'Activity', 'section' => 'activity'],
+                ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
                 ['href' => '/compose/thread', 'label' => 'Compose', 'section' => 'compose'],
                 ['href' => '/account/key/', 'label' => 'Account', 'section' => 'account'],
                 ['href' => '/instance/', 'label' => 'Instance', 'section' => 'instance'],
-                [
-                    'href' => '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
-                    'label' => 'Profile',
-                    'section' => 'profiles',
-                ],
             ],
         ]);
     }

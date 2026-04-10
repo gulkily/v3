@@ -51,6 +51,7 @@ final class LocalAppSmokeTest
         $instance = $this->render($application, '/instance/');
         $profile = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         $username = $this->render($application, '/user/guest');
+        $users = $this->render($application, '/users/');
         $composeThread = $this->render($application, '/compose/thread');
         $composeReply = $this->render($application, '/compose/reply?thread_id=root-001&parent_id=root-001');
         $account = $this->render($application, '/account/key/');
@@ -64,6 +65,9 @@ final class LocalAppSmokeTest
         assertStringContains('Demo instance', $instance);
         assertStringContains('Identity ID:', $profile);
         assertStringContains('Visible username:', $username);
+        assertStringContains('Users', $users);
+        assertStringContains('/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $users);
+        assertStringContains('/user/guest', $users);
         assertStringContains('Compose Thread', $composeThread);
         assertStringContains('browser_signing.js', $composeThread);
         assertStringContains('prepared automatically when you send your first post', $composeThread);
@@ -221,6 +225,7 @@ final class LocalAppSmokeTest
         assertTrue(is_file($artifactRoot . '/index.html'));
         assertTrue(is_file($artifactRoot . '/instance.html'));
         assertTrue(is_file($artifactRoot . '/activity.html'));
+        assertTrue(is_file($artifactRoot . '/users.html'));
         assertTrue(is_file($artifactRoot . '/threads/root-001.html'));
         assertTrue(is_file($artifactRoot . '/posts/root-001.html'));
         assertTrue(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
@@ -235,6 +240,9 @@ final class LocalAppSmokeTest
 
         $response = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
         assertStringContains('Hello world', $response);
+
+        $usersResponse = $this->renderFrontController($controller, 'GET', '/users/', []);
+        assertStringContains('Users', $usersResponse);
     }
 
     public function testDefaultRepositoryBootstrapCreatesWritableLocalRepository(): void

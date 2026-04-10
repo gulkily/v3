@@ -37,7 +37,7 @@ php -S 127.0.0.1:8000 -t public public/router.php
 For Apache/shared-host deployment, `public/.htaccess` is now part of the intended runtime model:
 
 - serve existing files and directories directly
-- serve queryless cookie-free sibling `*.html` artifacts directly for `/`, `/instance/`, `/activity/`, `/threads/<id>`, `/posts/<id>`, and `/profiles/<slug>`
+- serve queryless cookie-free sibling `*.html` artifacts directly for `/`, `/instance/`, `/activity/`, `/users/`, `/threads/<id>`, `/posts/<id>`, and `/profiles/<slug>`
 - fall back to `public/index.php` when no static artifact exists
 
 That matches the planning assumption that Apache should serve static-safe anonymous HTML directly and use PHP only as fallback.
@@ -50,6 +50,7 @@ Open these routes:
 - `http://127.0.0.1:8000/threads/root-001`
 - `http://127.0.0.1:8000/posts/root-001`
 - `http://127.0.0.1:8000/activity/`
+- `http://127.0.0.1:8000/users/`
 - `http://127.0.0.1:8000/activity/?view=all&format=rss`
 - `http://127.0.0.1:8000/instance/`
 - `http://127.0.0.1:8000/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954`

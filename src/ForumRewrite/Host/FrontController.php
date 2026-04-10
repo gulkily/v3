@@ -114,6 +114,13 @@ final class FrontController
             ]);
         }
 
+        if ($path === '/users/' || $path === '/users') {
+            return $this->firstExistingPath([
+                $this->publicRoot . '/users.html',
+                $this->staticHtmlRoot . '/users/index.html',
+            ]);
+        }
+
         if (preg_match('#^/(threads|posts|profiles)/([^/]+)/?$#', $path, $matches) === 1) {
             return $this->firstExistingPath([
                 $this->publicRoot . '/' . $matches[1] . '/' . $matches[2] . '.html',

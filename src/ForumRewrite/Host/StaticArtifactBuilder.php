@@ -42,6 +42,7 @@ final class StaticArtifactBuilder
         $this->writeRouteArtifact($application, '/', $this->artifactRoot . '/index.html');
         $this->writeRouteArtifact($application, '/instance/', $this->artifactRoot . '/instance.html');
         $this->writeRouteArtifact($application, '/activity/', $this->artifactRoot . '/activity.html');
+        $this->writeRouteArtifact($application, '/users/', $this->artifactRoot . '/users.html');
 
         foreach ($this->fetchVisibleThreadIds() as $threadId) {
             $this->writeRouteArtifact($application, '/threads/' . $threadId, $this->artifactRoot . '/threads/' . $threadId . '.html');

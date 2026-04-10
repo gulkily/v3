@@ -108,6 +108,11 @@ final class Application
             return;
         }
 
+        if ($path === '/users/' || $path === '/users') {
+            $this->sendHtml($this->renderUserDirectory(), 200);
+            return;
+        }
+
         if ($path === '/compose/thread') {
             $this->sendHtml($this->renderComposeThread(), 200);
             return;
@@ -456,6 +461,18 @@ final class Application
         return $this->renderComposeThreadPage();
     }
 
+    private function renderUserDirectory(): string
+    {
+        return $this->renderer()->renderPageTemplate(
+            'users.php',
+            [
+                'profiles' => $this->fetchUserDirectoryProfiles(),
+            ],
+            'Users',
+            'profiles',
+        );
+    }
+
     private function renderComposeThreadPage(?string $notice = null, ?string $error = null): string
     {
         return $this->renderer()->renderPageTemplate('compose_thread.php', [
@@ -685,6 +702,21 @@ final class Application
         $profile = $stmt->fetch();
 
         return $profile === false ? null : $profile;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchUserDirectoryProfiles(): array
+    {
+        $stmt = $this->pdo()->query(
+            'SELECT profile_slug, username, username_token, fallback_label, post_count, thread_count
+             FROM profiles
+             WHERE post_count > 0 OR thread_count > 0
+             ORDER BY thread_count DESC, post_count DESC, username_token ASC, profile_slug ASC'
+        );
+
+        return $stmt->fetchAll();
     }
 
     /**
