@@ -31,7 +31,7 @@ php scripts/build_static_artifacts.php
 Start the local PHP server:
 
 ```bash
-php -S 127.0.0.1:8000 -t public public/router.php
+./v3 start
 ```
 
 For Apache/shared-host deployment, `public/.htaccess` is now part of the intended runtime model:
@@ -79,7 +79,7 @@ If you want to initialize that writable repo explicitly ahead of time:
 ```bash
 php scripts/init_local_repository.php
 FORUM_REPOSITORY_ROOT=/home/wsl/v3/state/local_repository php scripts/rebuild_read_model.php
-FORUM_REPOSITORY_ROOT=/home/wsl/v3/state/local_repository php -S 127.0.0.1:8000 -t public public/router.php
+FORUM_REPOSITORY_ROOT=/home/wsl/v3/state/local_repository ./v3 start
 ```
 
 Static HTML artifacts for anonymous queryless route hits default to `state/static_html`. Override that location with `FORUM_STATIC_HTML_ROOT=/path/to/static_html` if you want to test direct artifact serving.
@@ -109,6 +109,7 @@ curl -X POST --data-urlencode "public_key@tests/fixtures/parity_minimal_v1/recor
 Approval helper examples:
 
 ```bash
+./v3 start
 ./v3 approval seed openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954
 ./v3 approval approve openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954 openpgp:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ```
