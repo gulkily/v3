@@ -5,14 +5,16 @@
     <p>Generate or import a browser-held OpenPGP keypair, then submit the public key to bootstrap an identity.</p>
     <p><strong>Identity hint cookie:</strong> <?= $e($identityHint !== '' ? $identityHint : 'none') ?></p>
     <div class="stack">
-      <p class="meta" data-role="browser-key-status">Ready.</p>
+      <p class="meta" data-role="browser-key-status">
+        <span data-role="browser-key-status-message">Ready.</span>
+        <a href="#" data-action="undo-clear-browser-key" hidden>Undo</a>
+      </p>
       <div class="button-row">
         <button type="button" data-action="generate-browser-key">Generate Browser Key</button>
         <button type="button" data-action="load-browser-key">Load Saved Public Key</button>
         <button type="button" data-action="copy-public-key">Copy Public Key</button>
         <button type="button" data-action="copy-private-key">Copy Private Key</button>
         <button type="button" data-action="clear-browser-key">Clear Saved Keypair</button>
-        <button type="button" data-action="undo-clear-browser-key" hidden>Undo Clear</button>
       </div>
       <p><strong>Saved browser username:</strong> <span data-role="username-field">guest</span></p>
       <p class="meta">

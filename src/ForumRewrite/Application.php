@@ -554,6 +554,38 @@ final class Application
             'activity.php',
             [
                 'view' => $view,
+                'viewOptions' => [
+                    [
+                        'label' => 'All Activity',
+                        'href' => '/activity/?view=all',
+                        'is_active' => $view === 'all',
+                    ],
+                    [
+                        'label' => 'Visible Content',
+                        'href' => '/activity/?view=content',
+                        'is_active' => $view === 'content',
+                    ],
+                    [
+                        'label' => 'Identity',
+                        'href' => '/activity/?view=identity',
+                        'is_active' => $view === 'identity',
+                    ],
+                    [
+                        'label' => 'Bootstraps',
+                        'href' => '/activity/?view=bootstrap',
+                        'is_active' => $view === 'bootstrap',
+                    ],
+                    [
+                        'label' => 'Approvals',
+                        'href' => '/activity/?view=approval',
+                        'is_active' => $view === 'approval',
+                    ],
+                    [
+                        'label' => 'RSS',
+                        'href' => '/activity/?view=' . rawurlencode($view) . '&format=rss',
+                        'is_active' => false,
+                    ],
+                ],
                 'items' => $this->fetchActivity($view),
             ],
             'Activity',
@@ -1182,25 +1214,45 @@ final class Application
     private function fetchActivity(string $view): array
     {
         $view = $this->normalizeActivityView($view);
-        $sql = 'SELECT kind, post_id, thread_id, label, board_tags_json FROM activity';
-        $params = [];
+        $rows = $this->pdo()->query(
+            'SELECT post_id, thread_id, subject, body, board_tags_json, sequence_number
+             FROM posts
+             ORDER BY sequence_number DESC'
+        )->fetchAll();
 
-        if ($view === 'content') {
-            $sql .= ' WHERE kind IN (\'thread\', \'reply\')';
-        } elseif ($view === 'code') {
-            $sql .= ' WHERE 1 = 0';
-        }
+        $items = array_map(function (array $post): array {
+            return [
+                'kind' => $post['post_id'] === $post['thread_id'] ? 'thread' : 'reply',
+                'post_id' => $post['post_id'],
+                'thread_id' => $post['thread_id'],
+                'label' => $post['subject'] ?? $this->preview((string) $post['body']),
+                'board_tags_json' => $post['board_tags_json'],
+                'sequence_number' => (int) $post['sequence_number'],
+            ];
+        }, $rows);
 
-        $sql .= ' ORDER BY id DESC';
-        $stmt = $this->pdo()->prepare($sql);
-        $stmt->execute($params);
+        usort($items, function (array $left, array $right): int {
+            $leftTimestamp = $this->activityTimestampSortKey((string) $left['post_id']);
+            $rightTimestamp = $this->activityTimestampSortKey((string) $right['post_id']);
+            if ($leftTimestamp !== $rightTimestamp) {
+                return $rightTimestamp <=> $leftTimestamp;
+            }
 
-        $rows = $stmt->fetchAll();
+            return ((int) $right['sequence_number']) <=> ((int) $left['sequence_number']);
+        });
 
-        return array_values(array_filter(
-            $rows,
-            fn (array $item): bool => !$this->isHiddenBootstrapBoardTagsJson((string) $item['board_tags_json'])
-        ));
+        return array_values(array_filter($items, function (array $item) use ($view): bool {
+            $boardTagsJson = (string) $item['board_tags_json'];
+
+            return match ($view) {
+                'all' => true,
+                'content' => !$this->isHiddenBootstrapBoardTagsJson($boardTagsJson),
+                'identity' => $this->hasBoardTag($boardTagsJson, 'identity'),
+                'bootstrap' => $this->hasBoardTag($boardTagsJson, 'identity') && $this->hasBoardTag($boardTagsJson, 'internal'),
+                'approval' => $this->hasBoardTag($boardTagsJson, 'identity') && $this->hasBoardTag($boardTagsJson, 'approval'),
+                default => true,
+            };
+        }));
     }
 
     private function renderRssFeed(string $title, string $link, array $items): string
@@ -1222,7 +1274,32 @@ final class Application
 
     private function normalizeActivityView(string $view): string
     {
-        return in_array($view, ['all', 'content', 'code'], true) ? $view : 'all';
+        return in_array($view, ['all', 'content', 'identity', 'bootstrap', 'approval'], true) ? $view : 'all';
+    }
+
+    private function preview(string $body): string
+    {
+        $line = strtok($body, "\n");
+        return $line === false ? '' : $line;
+    }
+
+    private function activityTimestampSortKey(string $postId): int
+    {
+        if (preg_match('/^[a-z]+-(\d{14})-[a-z0-9]+$/', $postId, $matches) !== 1) {
+            return 0;
+        }
+
+        return (int) $matches[1];
+    }
+
+    private function hasBoardTag(string $boardTagsJson, string $tag): bool
+    {
+        $boardTags = json_decode($boardTagsJson, true);
+        if (!is_array($boardTags)) {
+            return false;
+        }
+
+        return in_array($tag, $boardTags, true);
     }
 
     private function isHiddenBootstrapBoardTagsJson(string $boardTagsJson): bool

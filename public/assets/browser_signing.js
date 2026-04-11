@@ -6,44 +6,14 @@
     fingerprint: "forum_pki_fingerprint",
     publishedFingerprint: "forum_pki_published_fingerprint",
     composePromptCancelled: "forum_pki_compose_prompt_cancelled",
-    clearedKeypairBackup: "forum_pki_cleared_keypair_backup",
   };
+  let clearedKeypairBackup = null;
 
   function loadClearedKeypairBackup() {
-    if (!window.sessionStorage) {
-      return null;
-    }
-
-    const raw = sessionStorage.getItem(storageKeys.clearedKeypairBackup);
-    if (!raw) {
-      return null;
-    }
-
-    try {
-      const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== "object") {
-        return null;
-      }
-
-      return {
-        username: typeof parsed.username === "string" ? parsed.username : "",
-        publicKey: typeof parsed.publicKey === "string" ? parsed.publicKey : "",
-        privateKey: typeof parsed.privateKey === "string" ? parsed.privateKey : "",
-        fingerprint: typeof parsed.fingerprint === "string" ? parsed.fingerprint : "",
-        publishedFingerprint: typeof parsed.publishedFingerprint === "string" ? parsed.publishedFingerprint : "",
-        composePromptCancelled: typeof parsed.composePromptCancelled === "string" ? parsed.composePromptCancelled : "",
-      };
-    } catch (error) {
-      sessionStorage.removeItem(storageKeys.clearedKeypairBackup);
-      return null;
-    }
+    return clearedKeypairBackup;
   }
 
   function saveClearedKeypairBackup() {
-    if (!window.sessionStorage) {
-      return false;
-    }
-
     const backup = {
       username: localStorage.getItem(storageKeys.username) || "",
       publicKey: localStorage.getItem(storageKeys.publicKey) || "",
@@ -54,20 +24,16 @@
     };
 
     if (!backup.publicKey && !backup.privateKey) {
-      sessionStorage.removeItem(storageKeys.clearedKeypairBackup);
+      clearedKeypairBackup = null;
       return false;
     }
 
-    sessionStorage.setItem(storageKeys.clearedKeypairBackup, JSON.stringify(backup));
+    clearedKeypairBackup = backup;
     return true;
   }
 
   function clearClearedKeypairBackup() {
-    if (!window.sessionStorage) {
-      return;
-    }
-
-    sessionStorage.removeItem(storageKeys.clearedKeypairBackup);
+    clearedKeypairBackup = null;
   }
 
   function restoreClearedKeypairBackup() {
@@ -103,12 +69,12 @@
   }
 
   function renderUndoState(root) {
-    const undoButton = root.querySelector('[data-action="undo-clear-browser-key"]');
-    if (!undoButton) {
+    const undoLink = root.querySelector('[data-action="undo-clear-browser-key"]');
+    if (!undoLink) {
       return;
     }
 
-    undoButton.hidden = !loadClearedKeypairBackup();
+    undoLink.hidden = !loadClearedKeypairBackup();
   }
 
   function normalizeUsername(value) {
@@ -171,7 +137,12 @@
       return;
     }
 
-    node.textContent = message;
+    const messageNode = node.querySelector('[data-role="browser-key-status-message"]');
+    if (messageNode) {
+      messageNode.textContent = message;
+    } else {
+      node.textContent = message;
+    }
     node.dataset.kind = kind || "info";
   }
 
@@ -388,7 +359,7 @@
     const generateButton = root.querySelector('[data-action="generate-browser-key"]');
     const loadButton = root.querySelector('[data-action="load-browser-key"]');
     const clearButton = root.querySelector('[data-action="clear-browser-key"]');
-    const undoClearButton = root.querySelector('[data-action="undo-clear-browser-key"]');
+    const undoClearLink = root.querySelector('[data-action="undo-clear-browser-key"]');
     const copyPublicButton = root.querySelector('[data-action="copy-public-key"]');
     const copyPrivateButton = root.querySelector('[data-action="copy-private-key"]');
 
@@ -444,7 +415,7 @@
           }
 
           if (savedBackup) {
-            setStatus(statusNode, "Cleared the saved browser keypair from local storage. You can undo this on this tab.", "ok");
+            setStatus(statusNode, "Cleared the saved browser keypair from local storage.", "ok");
           } else {
             setStatus(statusNode, "Cleared the saved browser keypair from local storage.", "ok");
           }
@@ -454,8 +425,10 @@
       });
     }
 
-    if (undoClearButton) {
-      undoClearButton.addEventListener("click", async function () {
+    if (undoClearLink) {
+      undoClearLink.addEventListener("click", async function (event) {
+        event.preventDefault();
+
         try {
           const restored = restoreClearedKeypairBackup();
           if (!restored) {
