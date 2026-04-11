@@ -7,7 +7,9 @@
   <article class="card">
     <h2><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($subject) ?></a></h2>
     <p><?= $br($thread['body_preview']) ?></p>
-    <p class="meta"><?= (int) $thread['reply_count'] ?> replies</p>
+<?php if ((int) $thread['reply_count'] > 0): ?>
+    <p class="meta"><?= (int) $thread['reply_count'] ?> <?= (int) $thread['reply_count'] === 1 ? 'reply' : 'replies' ?></p>
+<?php endif; ?>
   </article>
 <?php endforeach; ?>
 </section>

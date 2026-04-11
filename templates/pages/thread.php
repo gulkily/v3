@@ -1,7 +1,9 @@
 <section class="stack">
   <article class="card">
     <h1><?= $e($title) ?></h1>
-    <p class="meta"><?= (int) $thread['reply_count'] ?> replies</p>
+<?php if ((int) $thread['reply_count'] > 0): ?>
+    <p class="meta"><?= (int) $thread['reply_count'] ?> <?= (int) $thread['reply_count'] === 1 ? 'reply' : 'replies' ?></p>
+<?php endif; ?>
     <p><a href="/compose/reply?thread_id=<?= $e($thread['root_post_id']) ?>&amp;parent_id=<?= $e($thread['root_post_id']) ?>">Reply to thread</a></p>
   </article>
 <?php foreach ($posts as $post): ?>
