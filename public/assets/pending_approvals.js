@@ -35,6 +35,8 @@
     const body = root.querySelector('[data-role="pending-approvals-body"]');
     const feedback = root.querySelector('[data-role="pending-approvals-feedback"]');
     const emptyState = root.querySelector('[data-role="pending-approvals-empty"]');
+    const tableCard = root.querySelector('[data-role="pending-approvals-table"]');
+    const tableElement = root.querySelector('[data-role="pending-approvals-table-element"]');
 
     root.addEventListener("click", async (event) => {
       const button = event.target instanceof Element
@@ -66,8 +68,16 @@
           row.remove();
         }
 
-        if (body && body.children.length === 0 && emptyState) {
-          emptyState.hidden = false;
+        if (body && body.children.length === 0) {
+          if (tableElement) {
+            tableElement.hidden = true;
+          }
+          if (tableCard) {
+            tableCard.hidden = true;
+          }
+          if (emptyState) {
+            emptyState.hidden = false;
+          }
         }
 
         setFeedback(feedback, `Approved user ${username}.`, "ok");

@@ -4,13 +4,11 @@
     <p><a href="/users/">Back to approved users</a></p>
   </article>
   <article class="card" data-role="pending-approvals-feedback" hidden></article>
-<?php if ($profiles === []): ?>
-  <article class="card" data-role="pending-approvals-empty">
+  <article class="card" data-role="pending-approvals-empty"<?= $profiles === [] ? '' : ' hidden' ?>>
     <p>No users are awaiting approval.</p>
   </article>
-<?php else: ?>
-  <article class="card">
-    <table>
+  <article class="card" data-role="pending-approvals-table"<?= $profiles === [] ? ' hidden' : '' ?>>
+    <table data-role="pending-approvals-table-element"<?= $profiles === [] ? ' hidden' : '' ?>>
       <thead>
         <tr>
           <th>User</th>
@@ -33,5 +31,4 @@
       </tbody>
     </table>
   </article>
-<?php endif; ?>
 </section>
