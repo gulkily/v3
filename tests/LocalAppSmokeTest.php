@@ -91,6 +91,22 @@ final class LocalAppSmokeTest
         assertStringContains('Approved: yes', $profile);
     }
 
+    public function testInjectApprovalScriptRejectsMissingApproveArguments(): void
+    {
+        $command = sprintf(
+            '%s approval approve 2>&1',
+            escapeshellarg(__DIR__ . '/../v3'),
+        );
+        exec($command, $output, $exitCode);
+
+        $combinedOutput = implode("\n", $output);
+
+        assertSame(1, $exitCode);
+        assertStringContains('Missing required argument: approver_identity_id.', $combinedOutput);
+        assertStringContains('Usage:', $combinedOutput);
+        assertStringNotContains('PHP Fatal error', $combinedOutput);
+    }
+
     public function testApplicationRendersCoreRoutes(): void
     {
         @unlink($this->databasePath);

@@ -15,35 +15,34 @@ $projectRoot = dirname(__DIR__);
 $defaultRepositoryRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot);
 $command = $argv[1] ?? '';
 
-if (!in_array($command, ['seed', 'approve'], true)) {
-    fwrite(
-        STDERR,
-        "Usage:\n"
-        . "  php scripts/inject_approval.php seed <identity_id> [seed_reason] [repository_root] [database_path]\n"
-        . "  php scripts/inject_approval.php approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]\n"
-    );
-    exit(1);
-}
+try {
+    if (!in_array($command, ['seed', 'approve'], true)) {
+        throw new RuntimeException('Missing or invalid command.');
+    }
 
-if ($command === 'seed') {
-    $identityId = trim((string) ($argv[2] ?? ''));
-    $seedReason = trim((string) ($argv[3] ?? 'initial approved user'));
+    if ($command === 'seed') {
+        $identityId = requireCliArgument($argv, 2, 'identity_id');
+        $seedReason = trim((string) ($argv[3] ?? 'initial approved user'));
+        $repositoryRoot = $argv[4] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $defaultRepositoryRoot);
+        $databasePath = $argv[5] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3'));
+
+        seedApprovedIdentity($repositoryRoot, $databasePath, $identityId, $seedReason);
+        fwrite(STDOUT, "Seeded approval for {$identityId}\n");
+        exit(0);
+    }
+
+    $approverIdentityId = requireCliArgument($argv, 2, 'approver_identity_id');
+    $targetIdentityId = requireCliArgument($argv, 3, 'target_identity_id');
     $repositoryRoot = $argv[4] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $defaultRepositoryRoot);
     $databasePath = $argv[5] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3'));
+    $artifactRoot = $argv[6] ?? (getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'));
 
-    seedApprovedIdentity($repositoryRoot, $databasePath, $identityId, $seedReason);
-    fwrite(STDOUT, "Seeded approval for {$identityId}\n");
-    exit(0);
+    approveExistingUser($repositoryRoot, $databasePath, $artifactRoot, $approverIdentityId, $targetIdentityId);
+    fwrite(STDOUT, "Approved {$targetIdentityId} using {$approverIdentityId}\n");
+} catch (Throwable $exception) {
+    fwrite(STDERR, 'Error: ' . $exception->getMessage() . "\n\n" . usageText());
+    exit(1);
 }
-
-$approverIdentityId = trim((string) ($argv[2] ?? ''));
-$targetIdentityId = trim((string) ($argv[3] ?? ''));
-$repositoryRoot = $argv[4] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $defaultRepositoryRoot);
-$databasePath = $argv[5] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3'));
-$artifactRoot = $argv[6] ?? (getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'));
-
-approveExistingUser($repositoryRoot, $databasePath, $artifactRoot, $approverIdentityId, $targetIdentityId);
-fwrite(STDOUT, "Approved {$targetIdentityId} using {$approverIdentityId}\n");
 
 /**
  * @return array{identity_id:string,profile_slug:string,bootstrap_post_id:string,bootstrap_thread_id:string}
@@ -156,6 +155,26 @@ function runGitCommand(string $repositoryRoot, array $args, string $failureMessa
     }
 
     return implode("\n", $output);
+}
+
+/**
+ * @param array<int, string> $argv
+ */
+function requireCliArgument(array $argv, int $index, string $name): string
+{
+    $value = trim((string) ($argv[$index] ?? ''));
+    if ($value === '') {
+        throw new RuntimeException('Missing required argument: ' . $name . '.');
+    }
+
+    return $value;
+}
+
+function usageText(): string
+{
+    return "Usage:\n"
+        . "  php scripts/inject_approval.php seed <identity_id> [seed_reason] [repository_root] [database_path]\n"
+        . "  php scripts/inject_approval.php approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]\n";
 }
 
 function normalizeIdentityId(string $identityId): string
