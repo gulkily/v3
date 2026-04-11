@@ -1,6 +1,6 @@
 <section class="stack" data-compose-root>
-  <h1>Compose Thread</h1>
   <article class="card">
+    <h1>Compose Thread</h1>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
     <p>Posts are stored as canonical ASCII files and the SQLite read model rebuilds immediately.</p>
     <p class="meta" data-role="compose-identity-status">Ready.</p>

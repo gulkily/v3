@@ -1,6 +1,6 @@
 <section class="stack" data-pending-approvals-root>
-  <h1>Users Awaiting Approval</h1>
   <article class="card">
+    <h1>Users Awaiting Approval</h1>
     <p><a href="/users/">Back to approved users</a></p>
   </article>
   <article class="card" data-role="pending-approvals-feedback" hidden></article>

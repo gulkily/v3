@@ -1,6 +1,8 @@
 <section class="stack">
-  <h1>Activity</h1>
-  <p class="meta">View: <?= $e($view) ?></p>
+  <article class="card">
+    <h1>Activity</h1>
+    <p class="meta">View: <?= $e($view) ?></p>
+  </article>
 <?php foreach ($items as $item): ?>
   <article class="card">
     <p class="meta"><?= $e($item['kind']) ?></p>

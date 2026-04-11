@@ -1,6 +1,6 @@
 <section class="stack" data-account-key-root>
-  <h1>Account Key</h1>
   <article class="card">
+    <h1>Account Key</h1>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
     <p>Generate or import a browser-held OpenPGP keypair, then submit the public key to bootstrap an identity.</p>
     <p><strong>Identity hint cookie:</strong> <?= $e($identityHint !== '' ? $identityHint : 'none') ?></p>
@@ -12,6 +12,7 @@
         <button type="button" data-action="copy-public-key">Copy Public Key</button>
         <button type="button" data-action="copy-private-key">Copy Private Key</button>
         <button type="button" data-action="clear-browser-key">Clear Saved Keypair</button>
+        <button type="button" data-action="undo-clear-browser-key" hidden>Undo Clear</button>
       </div>
       <p><strong>Saved browser username:</strong> <span data-role="username-field">guest</span></p>
       <p class="meta">

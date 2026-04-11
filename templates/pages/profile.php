@@ -1,6 +1,8 @@
 <section class="stack">
-  <h1>Profile <?= $e($profile['profile_slug']) ?></h1>
-<?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 1) ?>
+  <article class="card">
+    <h1>Profile <?= $e($profile['profile_slug']) ?></h1>
+<?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
+  </article>
 <?php if ($self): ?>
   <article class="card">
     <p class="meta">Self profile mode</p>

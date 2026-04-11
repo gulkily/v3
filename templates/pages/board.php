@@ -1,5 +1,7 @@
 <section class="stack">
-  <h1>Board</h1>
+  <article class="card">
+    <h1>Board</h1>
+  </article>
 <?php foreach ($threads as $thread): ?>
 <?php $subject = $thread['subject'] ?: $thread['root_post_id']; ?>
   <article class="card">

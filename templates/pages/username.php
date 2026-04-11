@@ -1,5 +1,7 @@
 <section class="stack">
-  <h1>User <?= $e($usernameToken) ?></h1>
+  <article class="card">
+    <h1>User <?= $e($usernameToken) ?></h1>
+  </article>
 
 <?php if ($approvedProfiles === []): ?>
   <article class="card">

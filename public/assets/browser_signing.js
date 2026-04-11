@@ -6,7 +6,110 @@
     fingerprint: "forum_pki_fingerprint",
     publishedFingerprint: "forum_pki_published_fingerprint",
     composePromptCancelled: "forum_pki_compose_prompt_cancelled",
+    clearedKeypairBackup: "forum_pki_cleared_keypair_backup",
   };
+
+  function loadClearedKeypairBackup() {
+    if (!window.sessionStorage) {
+      return null;
+    }
+
+    const raw = sessionStorage.getItem(storageKeys.clearedKeypairBackup);
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") {
+        return null;
+      }
+
+      return {
+        username: typeof parsed.username === "string" ? parsed.username : "",
+        publicKey: typeof parsed.publicKey === "string" ? parsed.publicKey : "",
+        privateKey: typeof parsed.privateKey === "string" ? parsed.privateKey : "",
+        fingerprint: typeof parsed.fingerprint === "string" ? parsed.fingerprint : "",
+        publishedFingerprint: typeof parsed.publishedFingerprint === "string" ? parsed.publishedFingerprint : "",
+        composePromptCancelled: typeof parsed.composePromptCancelled === "string" ? parsed.composePromptCancelled : "",
+      };
+    } catch (error) {
+      sessionStorage.removeItem(storageKeys.clearedKeypairBackup);
+      return null;
+    }
+  }
+
+  function saveClearedKeypairBackup() {
+    if (!window.sessionStorage) {
+      return false;
+    }
+
+    const backup = {
+      username: localStorage.getItem(storageKeys.username) || "",
+      publicKey: localStorage.getItem(storageKeys.publicKey) || "",
+      privateKey: localStorage.getItem(storageKeys.privateKey) || "",
+      fingerprint: localStorage.getItem(storageKeys.fingerprint) || "",
+      publishedFingerprint: localStorage.getItem(storageKeys.publishedFingerprint) || "",
+      composePromptCancelled: localStorage.getItem(storageKeys.composePromptCancelled) || "",
+    };
+
+    if (!backup.publicKey && !backup.privateKey) {
+      sessionStorage.removeItem(storageKeys.clearedKeypairBackup);
+      return false;
+    }
+
+    sessionStorage.setItem(storageKeys.clearedKeypairBackup, JSON.stringify(backup));
+    return true;
+  }
+
+  function clearClearedKeypairBackup() {
+    if (!window.sessionStorage) {
+      return;
+    }
+
+    sessionStorage.removeItem(storageKeys.clearedKeypairBackup);
+  }
+
+  function restoreClearedKeypairBackup() {
+    const backup = loadClearedKeypairBackup();
+    if (!backup || (!backup.publicKey && !backup.privateKey)) {
+      return false;
+    }
+
+    localStorage.setItem(storageKeys.username, backup.username || "guest");
+    localStorage.setItem(storageKeys.publicKey, backup.publicKey);
+    localStorage.setItem(storageKeys.privateKey, backup.privateKey);
+
+    if (backup.fingerprint) {
+      localStorage.setItem(storageKeys.fingerprint, backup.fingerprint);
+    } else {
+      localStorage.removeItem(storageKeys.fingerprint);
+    }
+
+    if (backup.publishedFingerprint) {
+      localStorage.setItem(storageKeys.publishedFingerprint, backup.publishedFingerprint);
+    } else {
+      localStorage.removeItem(storageKeys.publishedFingerprint);
+    }
+
+    if (backup.composePromptCancelled) {
+      localStorage.setItem(storageKeys.composePromptCancelled, backup.composePromptCancelled);
+    } else {
+      localStorage.removeItem(storageKeys.composePromptCancelled);
+    }
+
+    clearClearedKeypairBackup();
+    return true;
+  }
+
+  function renderUndoState(root) {
+    const undoButton = root.querySelector('[data-action="undo-clear-browser-key"]');
+    if (!undoButton) {
+      return;
+    }
+
+    undoButton.hidden = !loadClearedKeypairBackup();
+  }
 
   function normalizeUsername(value) {
     const normalized = String(value || "")
@@ -123,6 +226,8 @@
         profileLinkWrap.hidden = true;
       }
     }
+
+    renderUndoState(root);
   }
 
   async function promptForComposeUsername() {
@@ -191,6 +296,7 @@
     localStorage.setItem(storageKeys.publicKey, result.publicKey);
     localStorage.setItem(storageKeys.privateKey, result.privateKey);
     localStorage.setItem(storageKeys.fingerprint, fingerprint);
+    clearClearedKeypairBackup();
     await syncIdentityHint(preferredIdentityHint());
     renderSavedState(root);
 
@@ -282,6 +388,7 @@
     const generateButton = root.querySelector('[data-action="generate-browser-key"]');
     const loadButton = root.querySelector('[data-action="load-browser-key"]');
     const clearButton = root.querySelector('[data-action="clear-browser-key"]');
+    const undoClearButton = root.querySelector('[data-action="undo-clear-browser-key"]');
     const copyPublicButton = root.querySelector('[data-action="copy-public-key"]');
     const copyPrivateButton = root.querySelector('[data-action="copy-private-key"]');
 
@@ -321,18 +428,51 @@
     }
 
     if (clearButton) {
-      clearButton.addEventListener("click", function () {
-        localStorage.removeItem(storageKeys.username);
-        localStorage.removeItem(storageKeys.publicKey);
-        localStorage.removeItem(storageKeys.privateKey);
-        localStorage.removeItem(storageKeys.fingerprint);
-        localStorage.removeItem(storageKeys.publishedFingerprint);
-        localStorage.removeItem(storageKeys.composePromptCancelled);
-        renderSavedState(root);
-        if (publicKeyField) {
-          publicKeyField.value = "";
+      clearButton.addEventListener("click", async function () {
+        try {
+          const savedBackup = saveClearedKeypairBackup();
+          localStorage.removeItem(storageKeys.username);
+          localStorage.removeItem(storageKeys.publicKey);
+          localStorage.removeItem(storageKeys.privateKey);
+          localStorage.removeItem(storageKeys.fingerprint);
+          localStorage.removeItem(storageKeys.publishedFingerprint);
+          localStorage.removeItem(storageKeys.composePromptCancelled);
+          await syncIdentityHint(preferredIdentityHint());
+          renderSavedState(root);
+          if (publicKeyField) {
+            publicKeyField.value = "";
+          }
+
+          if (savedBackup) {
+            setStatus(statusNode, "Cleared the saved browser keypair from local storage. You can undo this on this tab.", "ok");
+          } else {
+            setStatus(statusNode, "Cleared the saved browser keypair from local storage.", "ok");
+          }
+        } catch (error) {
+          setStatus(statusNode, error instanceof Error ? error.message : "Unable to clear the saved browser keypair.", "error");
         }
-        setStatus(statusNode, "Cleared the saved browser keypair from local storage.", "ok");
+      });
+    }
+
+    if (undoClearButton) {
+      undoClearButton.addEventListener("click", async function () {
+        try {
+          const restored = restoreClearedKeypairBackup();
+          if (!restored) {
+            setStatus(statusNode, "No recently cleared browser keypair is available to restore.", "error");
+            renderSavedState(root);
+            return;
+          }
+
+          await syncIdentityHint(preferredIdentityHint());
+          renderSavedState(root);
+          if (publicKeyField) {
+            publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
+          }
+          setStatus(statusNode, "Restored the recently cleared browser keypair.", "ok");
+        } catch (error) {
+          setStatus(statusNode, error instanceof Error ? error.message : "Unable to restore the cleared browser keypair.", "error");
+        }
       });
     }
 
