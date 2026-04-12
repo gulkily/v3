@@ -71,17 +71,28 @@ Every resolved profile read must be able to surface at least:
 
 ## Username Route Resolution
 
-- `/user/<username>` resolves to the canonical profile currently associated with that username token.
+- `/user/<username>` resolves by normalized username token, not by a separate merge record family.
 - Username matching is case-insensitive after normalization to the route token.
 - If no profile currently resolves for the username token, the route returns `404 Not Found`.
-- The username route is an alternate public entrypoint, not a distinct profile type.
+- The username route is an aggregate public entrypoint for that username token, not a distinct profile type.
+- All approved profiles with the matching username token are grouped together on that route.
+- The route shows:
+  - the count of approved profiles using that username token
+  - combined visible thread and post totals across those approved profiles
+  - visible threads and posts authored by any of those approved identities
+  - a list of the approved profile slugs that participate in the aggregate
+- Unapproved profiles with the same username token are shown separately and do not contribute to the combined totals.
 
 ## Username Collision Handling
 
-- V1 must define one deterministic canonical profile for a colliding username token.
-- The selected canonical profile should be stable for a given indexed state.
-- The username route should render the canonical profile and may list other profiles with the same visible username.
-- Collision handling must remain deterministic and fully derivable from indexed profile state.
+- V1 does not merge colliding identities into one canonical identity record.
+- Each profile remains anchored to its own `Identity-ID` and canonical `/profiles/<profile-slug>` route.
+- The only "merge" behavior is read-side aggregation on `/user/<username>` and `/users/` for approved profiles that share the same normalized username token.
+- Approved collisions are intentionally treated as one visible user bucket for browse surfaces:
+  - `/user/<username>` aggregates their visible content and lists the participating approved profiles
+  - `/users/` groups approved profiles by `username_token` and sums their thread/post counts
+- Unapproved collisions remain separate pending profiles and are never folded into approved totals.
+- Collision handling remains deterministic and fully derivable from indexed profile state plus approval state.
 
 ## Derived Read-Model Requirements
 
@@ -90,6 +101,7 @@ The indexed profile model must materialize enough data to support:
 - profile lookup by identity slug
 - username lookup by normalized username token
 - current visible username per identity
+- approved-profile aggregation by normalized username token
 - fallback display label per identity
 - post and thread counts or equivalent summaries
 - public-key display data
@@ -109,6 +121,7 @@ Profile pages must:
 V1 profile reads do not require:
 
 - profile-update routes
+- merge record families
 - merge-management routes
 - moderation-derived profile suppression
 - historical username-claim browsing beyond the current visible username and deterministic collision handling

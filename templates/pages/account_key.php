@@ -12,7 +12,6 @@
           <p class="account-key-label">Signed in as</p>
           <p class="account-key-username" data-role="username-field">guest</p>
         </div>
-        <p>Your account lives in this browser. Use the same browser to keep your posts linked to this name.</p>
         <button type="button" class="account-key-primary-button" data-action="generate-browser-key">Set up this browser</button>
         <p class="meta account-key-simple-status" id="simple-status">Choose a name to set up this browser.</p>
       </div>
