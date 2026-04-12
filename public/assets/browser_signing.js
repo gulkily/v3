@@ -8,6 +8,70 @@
     composePromptCancelled: "forum_pki_compose_prompt_cancelled",
   };
   let clearedKeypairBackup = null;
+  const ASCII_COMPOSE_REPLACEMENTS = new Map([
+    ["\u2018", "'"],
+    ["\u2019", "'"],
+    ["\u201C", '"'],
+    ["\u201D", '"'],
+    ["\u2013", "-"],
+    ["\u2014", "-"],
+    ["\u2026", "..."],
+    ["\u00A0", " "],
+  ]);
+
+  function normalizeNewlines(text) {
+    return String(text || "").replace(/\r\n?/g, "\n");
+  }
+
+  function unsupportedComposeCharacters(text) {
+    const characters = [];
+    for (const character of text) {
+      if (!/^[\x00-\x7F]$/.test(character)) {
+        characters.push(character);
+      }
+    }
+    return characters;
+  }
+
+  function normalizeComposeAscii(text, options) {
+    const config = options || {};
+    const removeUnsupported = config.removeUnsupported === true;
+    let normalized = "";
+    let hadCorrections = false;
+
+    for (const character of normalizeNewlines(text)) {
+      const replacement = ASCII_COMPOSE_REPLACEMENTS.get(character);
+      if (replacement !== undefined) {
+        normalized += replacement;
+        hadCorrections = true;
+        continue;
+      }
+
+      normalized += character;
+    }
+
+    const unsupportedBeforeRemoval = unsupportedComposeCharacters(normalized);
+    if (removeUnsupported && unsupportedBeforeRemoval.length > 0) {
+      normalized = Array.from(normalized)
+        .filter(function (character) {
+          return /^[\x00-\x7F]$/.test(character);
+        })
+        .join("");
+    }
+
+    return {
+      text: normalized,
+      hadCorrections: hadCorrections,
+      unsupportedCount: removeUnsupported ? 0 : unsupportedBeforeRemoval.length,
+      removedUnsupportedCount: removeUnsupported ? unsupportedBeforeRemoval.length : 0,
+    };
+  }
+
+  if (typeof window !== "undefined") {
+    window.__forumComposeNormalization = {
+      normalizeComposeAscii: normalizeComposeAscii,
+    };
+  }
 
   function loadClearedKeypairBackup() {
     return clearedKeypairBackup;
