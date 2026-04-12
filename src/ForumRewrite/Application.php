@@ -144,6 +144,11 @@ final class Application
             return;
         }
 
+        if ($path === '/tools/' || $path === '/tools') {
+            $this->sendHtml($this->renderTools(), 200);
+            return;
+        }
+
         if ($path === '/compose/thread') {
             $this->sendHtml($this->renderComposeThread(), 200);
             return;
@@ -625,6 +630,16 @@ final class Application
             'Users Awaiting Approval',
             'profiles',
             ['/assets/pending_approvals.js'],
+        );
+    }
+
+    private function renderTools(): string
+    {
+        return $this->renderer()->renderPageTemplate(
+            'tools.php',
+            [],
+            'Tools',
+            'tools',
         );
     }
 
