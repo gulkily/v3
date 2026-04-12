@@ -629,6 +629,11 @@
       }
 
       try {
+        const normalizationResult = normalizeBodyInput();
+        if (normalizationResult.unsupportedCount > 0) {
+          throw new Error("Unsupported characters remain in the body. Remove them before submitting.");
+        }
+
         await ensureComposeIdentity(root, statusNode);
         ensureComposeAuthorIdentity(form);
         setStatus(statusNode, "Identity ready. Sending post...", "ok");
