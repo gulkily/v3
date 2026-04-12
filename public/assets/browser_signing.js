@@ -606,7 +606,7 @@
           false
         );
       } else if (result.unsupportedCount > 0) {
-        updateComposeNormalizationStatus("Unsupported characters remain in the body.", "error", true);
+        updateComposeNormalizationStatus("Unsupported characters remain in the body. Remove them to continue.", "error", true);
       } else if (result.hadCorrections) {
         updateComposeNormalizationStatus("", "", false);
       } else {
@@ -646,12 +646,16 @@
         submitter.disabled = true;
       }
 
-      try {
-        const normalizationResult = normalizeBodyInput();
-        if (normalizationResult.unsupportedCount > 0) {
-          throw new Error("Unsupported characters remain in the body. Remove them before submitting.");
+      const normalizationResult = normalizeBodyInput();
+      if (normalizationResult.unsupportedCount > 0) {
+        submitInFlight = false;
+        if (submitter && typeof submitter.disabled === "boolean") {
+          submitter.disabled = false;
         }
+        return;
+      }
 
+      try {
         await ensureComposeIdentity(root, statusNode);
         ensureComposeAuthorIdentity(form);
         setStatus(statusNode, "Identity ready. Sending post...", "ok");
