@@ -6,9 +6,9 @@
     <p class="meta" data-role="compose-identity-status">Ready.</p>
     <form method="post" class="stack" data-compose-form data-compose-kind="thread">
       <input type="hidden" name="author_identity_id" value="">
-      <label>Board tags<input type="text" name="board_tags" value="general"></label>
-      <label>Subject<input type="text" name="subject" placeholder="Thread subject"></label>
-      <label>Body<textarea name="body" rows="7" placeholder="ASCII body"></textarea></label>
+      <label>Board tags<input type="text" name="board_tags" value="<?= $e($boardTags) ?>"></label>
+      <label>Subject<input type="text" name="subject" placeholder="Thread subject" value="<?= $e($subject) ?>"></label>
+      <label>Body<textarea name="body" rows="7" placeholder="ASCII body"><?= $e($body) ?></textarea></label>
       <button type="submit">Create thread</button>
     </form>
   </article>

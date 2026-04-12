@@ -150,7 +150,14 @@ final class Application
         }
 
         if ($path === '/compose/thread') {
-            $this->sendHtml($this->renderComposeThread(), 200);
+            $this->sendHtml(
+                $this->renderComposeThread(
+                    (string) ($query['board_tags'] ?? 'general'),
+                    (string) ($query['subject'] ?? ''),
+                    (string) ($query['body'] ?? '')
+                ),
+                200
+            );
             return;
         }
 
@@ -598,9 +605,13 @@ final class Application
         );
     }
 
-    private function renderComposeThread(): string
+    private function renderComposeThread(
+        string $boardTags = 'general',
+        string $subject = '',
+        string $body = '',
+    ): string
     {
-        return $this->renderComposeThreadPage();
+        return $this->renderComposeThreadPage($boardTags, $subject, $body);
     }
 
     private function renderUserDirectory(): string
@@ -637,15 +648,58 @@ final class Application
     {
         return $this->renderer()->renderPageTemplate(
             'tools.php',
-            [],
+            [
+                'bookmarklets' => [
+                    [
+                        'label' => '+URL',
+                        'mode' => 'same-window',
+                        'description' => 'Open Compose Thread in this tab with the current page URL in the body.',
+                        'bookmarklet_kind' => 'url',
+                    ],
+                    [
+                        'label' => 'Clip',
+                        'mode' => 'same-window',
+                        'description' => 'Open Compose Thread in this tab with selected text plus source title and URL.',
+                        'bookmarklet_kind' => 'clip',
+                    ],
+                    [
+                        'label' => 'Rip',
+                        'mode' => 'same-window',
+                        'description' => 'Open Compose Thread in this tab with only the selected text.',
+                        'bookmarklet_kind' => 'selection',
+                    ],
+                    [
+                        'label' => 'Clip (New Window)',
+                        'mode' => 'new-window',
+                        'description' => 'Open Compose Thread in a new window with selected text plus source title and URL.',
+                        'bookmarklet_kind' => 'clip',
+                    ],
+                    [
+                        'label' => 'Rip (New Window)',
+                        'mode' => 'new-window',
+                        'description' => 'Open Compose Thread in a new window with only the selected text.',
+                        'bookmarklet_kind' => 'selection',
+                    ],
+                ],
+            ],
             'Tools',
             'tools',
+            ['/assets/tools_bookmarklets.js'],
         );
     }
 
-    private function renderComposeThreadPage(?string $notice = null, ?string $error = null): string
+    private function renderComposeThreadPage(
+        string $boardTags = 'general',
+        string $subject = '',
+        string $body = '',
+        ?string $notice = null,
+        ?string $error = null
+    ): string
     {
         return $this->renderer()->renderPageTemplate('compose_thread.php', [
+            'boardTags' => $boardTags !== '' ? $boardTags : 'general',
+            'subject' => $subject,
+            'body' => $body,
             'notice' => $notice,
             'error' => $error,
         ], 'Compose Thread', 'compose', [
@@ -1491,7 +1545,7 @@ final class Application
                 'Created thread ' . $result['thread_id'] . '. Commit ' . $result['commit_sha'] . '.'
             );
         } catch (RuntimeException $exception) {
-            $this->sendHtml($this->renderComposeThreadPage(null, $exception->getMessage()), 400);
+            $this->sendHtml($this->renderComposeThreadPage('general', '', '', null, $exception->getMessage()), 400);
         }
     }
 
