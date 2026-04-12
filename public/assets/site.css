@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --page-bg: #ffffff;
   --body-background: var(--page-bg);
   --ink: #0b3ea8;
@@ -677,7 +677,9 @@ pre {
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --body-background: var(--page-bg);
     --page-bg: #0b1220;
     --ink: #d9e7ff;
     --ink-soft: #9fb8e8;
@@ -690,6 +692,7 @@ pre {
     --feedback-error-bg: #3a1a23;
     --status-error: #ffb7c3;
     --status-ok: #a7efb8;
+    --status-warning: #f2c66d;
   }
 }
 
