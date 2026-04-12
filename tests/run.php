@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 $testFiles = [
+    __DIR__ . '/BrowserSigningNormalizationTest.php',
     __DIR__ . '/CanonicalRecordParsersTest.php',
     __DIR__ . '/LocalAppSmokeTest.php',
     __DIR__ . '/WriteApiSmokeTest.php',

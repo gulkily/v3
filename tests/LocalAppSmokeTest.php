@@ -242,6 +242,24 @@ final class LocalAppSmokeTest
         assertStringContains('>Saved Body</textarea>', $prefilledCompose);
     }
 
+    public function testComposePagesRenderNormalizationStatusAndRemoveAction(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $thread = $this->render($application, '/compose/thread');
+        $reply = $this->render($application, '/compose/reply?thread_id=root-001&parent_id=root-001');
+
+        assertStringContains('data-role="compose-normalization-status"', $thread);
+        assertStringContains('data-action="remove-unsupported-compose-characters"', $thread);
+        assertStringContains('data-role="compose-normalization-status"', $reply);
+        assertStringContains('data-action="remove-unsupported-compose-characters"', $reply);
+    }
+
     public function testInstanceDownloadRoutesReturnRepositoryArchivesAndSqliteDatabase(): void
     {
         @unlink($this->databasePath);
