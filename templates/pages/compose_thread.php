@@ -4,6 +4,10 @@
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
     <p>Posts are stored as canonical ASCII files and the SQLite read model rebuilds immediately.</p>
     <p class="meta" data-role="compose-identity-status">Ready.</p>
+    <p class="meta" data-role="compose-normalization-status"></p>
+    <div class="button-row" data-role="compose-normalization-actions" hidden>
+      <button type="button" data-action="remove-unsupported-compose-characters" disabled>Remove unsupported characters</button>
+    </div>
     <form method="post" class="stack" data-compose-form data-compose-kind="thread">
       <input type="hidden" name="author_identity_id" value="">
       <label>Board tags<input type="text" name="board_tags" value="<?= $e($boardTags) ?>"></label>

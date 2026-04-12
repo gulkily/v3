@@ -543,12 +543,76 @@
   function bindComposePage(root) {
     const form = root.querySelector("[data-compose-form]");
     const statusNode = root.querySelector('[data-role="compose-identity-status"]');
+    const bodyField = form ? form.querySelector('textarea[name="body"]') : null;
+    const normalizationStatusNode = root.querySelector('[data-role="compose-normalization-status"]');
+    const normalizationActions = root.querySelector('[data-role="compose-normalization-actions"]');
+    const removeUnsupportedButton = root.querySelector('[data-action="remove-unsupported-compose-characters"]');
     if (!form) {
       return;
     }
 
+    function updateComposeNormalizationStatus(message, kind) {
+      if (!normalizationStatusNode) {
+        return;
+      }
+
+      normalizationStatusNode.textContent = message || "";
+      normalizationStatusNode.dataset.kind = kind || "";
+    }
+
+    function normalizeBodyInput(options) {
+      if (!bodyField) {
+        return {
+          text: "",
+          hadCorrections: false,
+          unsupportedCount: 0,
+          removedUnsupportedCount: 0,
+        };
+      }
+
+      const result = normalizeComposeAscii(bodyField.value, options);
+      if (bodyField.value !== result.text) {
+        bodyField.value = result.text;
+      }
+
+      if (result.removedUnsupportedCount > 0) {
+        updateComposeNormalizationStatus(
+          "Removed " + result.removedUnsupportedCount + " unsupported character" + (result.removedUnsupportedCount === 1 ? "" : "s") + ".",
+          "ok"
+        );
+      } else if (result.unsupportedCount > 0) {
+        updateComposeNormalizationStatus("Unsupported characters remain in the body. Remove them before submitting.", "error");
+      } else if (result.hadCorrections) {
+        updateComposeNormalizationStatus("Converted common non-ASCII punctuation to ASCII.", "ok");
+      } else {
+        updateComposeNormalizationStatus("", "");
+      }
+
+      if (normalizationActions) {
+        normalizationActions.hidden = result.unsupportedCount === 0;
+      }
+      if (removeUnsupportedButton) {
+        removeUnsupportedButton.disabled = result.unsupportedCount === 0;
+      }
+
+      return result;
+    }
+
     if (hasBrowserKeypair()) {
       void syncIdentityHint(preferredIdentityHint());
+    }
+
+    if (bodyField) {
+      normalizeBodyInput();
+      bodyField.addEventListener("input", function () {
+        normalizeBodyInput();
+      });
+    }
+
+    if (removeUnsupportedButton) {
+      removeUnsupportedButton.addEventListener("click", function () {
+        normalizeBodyInput({ removeUnsupported: true });
+      });
     }
 
     let submitInFlight = false;

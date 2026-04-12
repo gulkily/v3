@@ -5,6 +5,10 @@
     <p><strong>Thread ID:</strong> <?= $e($threadId !== '' ? $threadId : 'missing') ?></p>
     <p><strong>Parent ID:</strong> <?= $e($parentId !== '' ? $parentId : 'missing') ?></p>
     <p class="meta" data-role="compose-identity-status">Ready.</p>
+    <p class="meta" data-role="compose-normalization-status"></p>
+    <div class="button-row" data-role="compose-normalization-actions" hidden>
+      <button type="button" data-action="remove-unsupported-compose-characters" disabled>Remove unsupported characters</button>
+    </div>
     <form method="post" class="stack" data-compose-form data-compose-kind="reply">
       <input type="hidden" name="thread_id" value="<?= $e($threadId) ?>">
       <input type="hidden" name="parent_id" value="<?= $e($parentId) ?>">
