@@ -254,10 +254,18 @@ final class LocalAppSmokeTest
         $thread = $this->render($application, '/compose/thread');
         $reply = $this->render($application, '/compose/reply?thread_id=root-001&parent_id=root-001');
 
+        assertStringContains('compose-normalization-inline', $thread);
         assertStringContains('data-role="compose-normalization-status"', $thread);
+        assertStringContains('data-role="compose-normalization-message"', $thread);
         assertStringContains('data-action="remove-unsupported-compose-characters"', $thread);
+        assertStringNotContains('data-role="compose-normalization-actions"', $thread);
+        assertStringContains('hidden', $thread);
+        assertStringContains('compose-normalization-inline', $reply);
         assertStringContains('data-role="compose-normalization-status"', $reply);
+        assertStringContains('data-role="compose-normalization-message"', $reply);
         assertStringContains('data-action="remove-unsupported-compose-characters"', $reply);
+        assertStringNotContains('data-role="compose-normalization-actions"', $reply);
+        assertStringContains('hidden', $reply);
     }
 
     public function testInstanceDownloadRoutesReturnRepositoryArchivesAndSqliteDatabase(): void
