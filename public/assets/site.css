@@ -186,6 +186,8 @@ button {
 }
 
 button {
+  appearance: none;
+  -webkit-appearance: none;
   cursor: pointer;
   background: var(--button-bg);
   font-family: var(--ui-font);
@@ -561,14 +563,6 @@ pre {
   font-family: var(--ui-font);
   font-size: 1.5rem;
   line-height: 1.2;
-}
-
-.account-key-primary-button {
-  width: 100%;
-  margin-top: 0;
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--page-bg);
 }
 
 .account-key-simple-status {
