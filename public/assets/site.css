@@ -577,6 +577,20 @@ pre {
   color: var(--status-ok);
 }
 
+.compose-normalization-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: -0.1rem 0 0;
+}
+
+.compose-normalization-inline-action {
+  width: auto;
+  margin-top: 0;
+  padding: 0.35rem 0.55rem;
+  white-space: nowrap;
+}
+
 .account-key-advanced {
   padding-top: 0.1rem;
   border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent 30%);

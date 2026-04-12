@@ -545,19 +545,43 @@
     const statusNode = root.querySelector('[data-role="compose-identity-status"]');
     const bodyField = form ? form.querySelector('textarea[name="body"]') : null;
     const normalizationStatusNode = root.querySelector('[data-role="compose-normalization-status"]');
-    const normalizationActions = root.querySelector('[data-role="compose-normalization-actions"]');
+    const normalizationMessageNode = root.querySelector('[data-role="compose-normalization-message"]');
     const removeUnsupportedButton = root.querySelector('[data-action="remove-unsupported-compose-characters"]');
     if (!form) {
       return;
     }
 
-    function updateComposeNormalizationStatus(message, kind) {
+    function updateComposeNormalizationStatus(message, kind, allowRemoval) {
       if (!normalizationStatusNode) {
         return;
       }
 
-      normalizationStatusNode.textContent = message || "";
+      if (!message) {
+        normalizationStatusNode.hidden = true;
+        normalizationStatusNode.dataset.kind = "";
+        if (normalizationMessageNode) {
+          normalizationMessageNode.textContent = "";
+        } else {
+          normalizationStatusNode.textContent = "";
+        }
+        if (removeUnsupportedButton) {
+          removeUnsupportedButton.hidden = true;
+          removeUnsupportedButton.disabled = true;
+        }
+        return;
+      }
+
+      normalizationStatusNode.hidden = false;
       normalizationStatusNode.dataset.kind = kind || "";
+      if (normalizationMessageNode) {
+        normalizationMessageNode.textContent = message;
+      } else {
+        normalizationStatusNode.textContent = message;
+      }
+      if (removeUnsupportedButton) {
+        removeUnsupportedButton.hidden = !allowRemoval;
+        removeUnsupportedButton.disabled = !allowRemoval;
+      }
     }
 
     function normalizeBodyInput(options) {
@@ -578,21 +602,15 @@
       if (result.removedUnsupportedCount > 0) {
         updateComposeNormalizationStatus(
           "Removed " + result.removedUnsupportedCount + " unsupported character" + (result.removedUnsupportedCount === 1 ? "" : "s") + ".",
-          "ok"
+          "ok",
+          false
         );
       } else if (result.unsupportedCount > 0) {
-        updateComposeNormalizationStatus("Unsupported characters remain in the body. Remove them before submitting.", "error");
+        updateComposeNormalizationStatus("Unsupported characters remain in the body.", "error", true);
       } else if (result.hadCorrections) {
-        updateComposeNormalizationStatus("Converted common non-ASCII punctuation to ASCII.", "ok");
+        updateComposeNormalizationStatus("", "", false);
       } else {
-        updateComposeNormalizationStatus("", "");
-      }
-
-      if (normalizationActions) {
-        normalizationActions.hidden = result.unsupportedCount === 0;
-      }
-      if (removeUnsupportedButton) {
-        removeUnsupportedButton.disabled = result.unsupportedCount === 0;
+        updateComposeNormalizationStatus("", "", false);
       }
 
       return result;
