@@ -174,8 +174,9 @@ final class LocalAppSmokeTest
         assertStringContains('Thread ID:', $composeReply);
         assertStringContains('browser_signing.js', $composeReply);
         assertStringContains('Ready.', $composeReply);
-        assertStringContains('identity hint cookie', strtolower($account));
-        assertStringContains('Generate Browser Key', $account);
+        assertStringContains('Advanced / technical details', $account);
+        assertStringContains('Set up this browser', $account);
+        assertStringContains('Link identity', $account);
         assertStringContains('Saved browser identity:', $account);
         assertStringContains('/assets/openpgp.min.js', $account);
         assertStringContains('/assets/browser_signing.js', $account);
