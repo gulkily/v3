@@ -219,6 +219,29 @@ final class LocalAppSmokeTest
         assertStringContains('<title>Activity all</title>', $activityRss);
     }
 
+    public function testToolsPageRendersBookmarkletsAndComposeThreadAcceptsPrefills(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $tools = $this->render($application, '/tools/');
+        $prefilledCompose = $this->render(
+            $application,
+            '/compose/thread?board_tags=general&subject=Saved%20Title&body=Saved%20Body'
+        );
+
+        assertStringContains('Tools', $tools);
+        assertStringContains('Clip (New Window)', $tools);
+        assertStringContains('/assets/tools_bookmarklets.js', $tools);
+        assertStringContains('data-bookmarklet-kind="clip"', $tools);
+        assertStringContains('value="Saved Title"', $prefilledCompose);
+        assertStringContains('>Saved Body</textarea>', $prefilledCompose);
+    }
+
     public function testInstanceDownloadRoutesReturnRepositoryArchivesAndSqliteDatabase(): void
     {
         @unlink($this->databasePath);

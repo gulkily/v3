@@ -23,3 +23,12 @@
   - Ran `php -r 'require __DIR__ . "/autoload.php"; $db = sys_get_temp_dir() . "/tools-stage2-compose-" . bin2hex(random_bytes(4)) . ".sqlite3"; @unlink($db); $app = new ForumRewrite\Application(__DIR__, __DIR__ . "/tests/fixtures/parity_minimal_v1", $db); ob_start(); $app->handle("GET", "/compose/thread?board_tags=general&subject=Saved%20Title&body=Saved%20Body"); $html = ob_get_clean(); echo (strpos($html, "value=\"Saved Title\"") !== false ? "COMPOSE_SUBJECT_OK\n" : "COMPOSE_SUBJECT_FAIL\n"); echo (strpos($html, ">Saved Body</textarea>") !== false ? "COMPOSE_BODY_OK\n" : "COMPOSE_BODY_FAIL\n");'` and got `COMPOSE_SUBJECT_OK` and `COMPOSE_BODY_OK`.
 - Notes:
   - The bookmarklet links are generated client-side so they capture the actual forum origin from the Tools page host instead of assuming a hard-coded deployment URL.
+
+## Stage 3 - Add smoke coverage for tools and prefills
+- Changes:
+  - Added `LocalAppSmokeTest::testToolsPageRendersBookmarkletsAndComposeThreadAcceptsPrefills()` to cover the Tools page bookmarklet surface and compose-thread prefill behavior.
+- Verification:
+  - Ran `php -l tests/LocalAppSmokeTest.php` and got no syntax errors.
+  - Ran `php -r 'require __DIR__ . "/tests/LocalAppSmokeTest.php"; $test = new LocalAppSmokeTest(); $test->testToolsPageRendersBookmarkletsAndComposeThreadAcceptsPrefills(); echo "STAGE3_TEST_OK\n";'` and got `STAGE3_TEST_OK`.
+- Notes:
+  - The stage-level verification runs the new smoke method directly because the repo test runner currently executes the full suite without method filtering, which makes targeted verification noisy when unrelated tests are already failing.
