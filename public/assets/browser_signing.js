@@ -606,7 +606,7 @@
           false
         );
       } else if (result.unsupportedCount > 0) {
-        updateComposeNormalizationStatus("Unsupported characters remain in the body. Remove them to continue.", "error", true);
+        updateComposeNormalizationStatus("Text contains unsupported characters.", "error", true);
       } else if (result.hadCorrections) {
         updateComposeNormalizationStatus("", "", false);
       } else {
