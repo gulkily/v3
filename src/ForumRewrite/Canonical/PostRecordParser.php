@@ -8,6 +8,7 @@ final class PostRecordParser
 {
     private const REQUIRED_HEADERS = [
         'Post-ID',
+        'Created-At',
         'Board-Tags',
     ];
 
@@ -38,6 +39,7 @@ final class PostRecordParser
         $parentId = $record->headers['Parent-ID'] ?? null;
         $authorIdentityId = $record->headers['Author-Identity-ID'] ?? null;
         $threadType = $record->headers['Thread-Type'] ?? null;
+        $createdAt = $this->parseCreatedAt($record->headers['Created-At']);
 
         $boardTags = array_values(array_filter(explode(' ', $record->headers['Board-Tags']), static fn (string $tag): bool => $tag !== ''));
         if ($boardTags === []) {
@@ -95,6 +97,7 @@ final class PostRecordParser
 
         return new PostRecord(
             $record->headers['Post-ID'],
+            $createdAt,
             $boardTags,
             $threadId,
             $parentId,
@@ -108,6 +111,25 @@ final class PostRecordParser
             $taskSources,
             $record->body,
         );
+    }
+
+    private function parseCreatedAt(string $value): string
+    {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $value) !== 1) {
+            throw new CanonicalRecordParseException('Created-At must use RFC 3339 UTC format like 2026-04-13T12:34:56Z.');
+        }
+
+        try {
+            $timestamp = new \DateTimeImmutable($value);
+        } catch (\Exception) {
+            throw new CanonicalRecordParseException('Created-At must be a valid UTC timestamp.');
+        }
+
+        if ($timestamp->format('Y-m-d\TH:i:s\Z') !== $value) {
+            throw new CanonicalRecordParseException('Created-At must be a valid UTC timestamp.');
+        }
+
+        return $value;
     }
 
     private function parseUnitDecimal(string $value, string $header): float

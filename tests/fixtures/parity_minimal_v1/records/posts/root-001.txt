@@ -1,4 +1,5 @@
 Post-ID: root-001
+Created-At: 2026-04-10T12:00:00Z
 Board-Tags: general meta
 Subject: Hello world
 

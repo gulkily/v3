@@ -27,6 +27,7 @@ final class CanonicalRecordParsersTest
         $record = (new PostRecordParser())->parse($this->readFixture('posts/root-001.txt'));
 
         assertSame('root-001', $record->postId);
+        assertSame('2026-04-10T12:00:00Z', $record->createdAt);
         assertSame(['general', 'meta'], $record->boardTags);
         assertNullValue($record->threadId);
         assertNullValue($record->parentId);
@@ -40,6 +41,7 @@ final class CanonicalRecordParsersTest
         $record = (new PostRecordParser())->parse($this->readFixture('posts/reply-001.txt'));
 
         assertSame('reply-001', $record->postId);
+        assertSame('2026-04-10T12:05:00Z', $record->createdAt);
         assertSame(['general'], $record->boardTags);
         assertSame('root-001', $record->threadId);
         assertSame('root-001', $record->parentId);
@@ -49,7 +51,7 @@ final class CanonicalRecordParsersTest
 
     public function testParsesAuthoredReplyHeader(): void
     {
-        $contents = "Post-ID: reply-002\nBoard-Tags: general\nThread-ID: root-001\nParent-ID: root-001\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\nBody.\n";
+        $contents = "Post-ID: reply-002\nCreated-At: 2026-04-10T12:06:00Z\nBoard-Tags: general\nThread-ID: root-001\nParent-ID: root-001\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\nBody.\n";
 
         $record = (new PostRecordParser())->parse($contents);
 
@@ -58,7 +60,7 @@ final class CanonicalRecordParsersTest
 
     public function testRejectsReplyWithTypedRootHeader(): void
     {
-        $contents = "Post-ID: reply-002\nBoard-Tags: general\nThread-ID: root-001\nParent-ID: root-001\nThread-Type: task\n\nBody.\n";
+        $contents = "Post-ID: reply-002\nCreated-At: 2026-04-10T12:06:00Z\nBoard-Tags: general\nThread-ID: root-001\nParent-ID: root-001\nThread-Type: task\n\nBody.\n";
 
         assertThrows(
             static fn () => (new PostRecordParser())->parse($contents),
@@ -68,7 +70,7 @@ final class CanonicalRecordParsersTest
 
     public function testParsesTypedTaskRoot(): void
     {
-        $contents = "Post-ID: T01\nBoard-Tags: planning\nSubject: Publish planning files\nThread-Type: task\nTask-Status: proposed\nTask-Presentability-Impact: 0.94\nTask-Implementation-Difficulty: 0.34\nTask-Depends-On: root-001 root-002\nTask-Sources: todo.txt; docs/plans/plan.md\n\nExpose raw planning files.\n";
+        $contents = "Post-ID: T01\nCreated-At: 2026-04-10T12:07:00Z\nBoard-Tags: planning\nSubject: Publish planning files\nThread-Type: task\nTask-Status: proposed\nTask-Presentability-Impact: 0.94\nTask-Implementation-Difficulty: 0.34\nTask-Depends-On: root-001 root-002\nTask-Sources: todo.txt; docs/plans/plan.md\n\nExpose raw planning files.\n";
 
         $record = (new PostRecordParser())->parse($contents);
 
@@ -78,6 +80,16 @@ final class CanonicalRecordParsersTest
         assertSame(0.34, $record->taskImplementationDifficulty);
         assertSame(['root-001', 'root-002'], $record->taskDependsOn);
         assertSame(['todo.txt', 'docs/plans/plan.md'], $record->taskSources);
+    }
+
+    public function testRejectsInvalidCreatedAtHeader(): void
+    {
+        $contents = "Post-ID: root-002\nCreated-At: 2026-04-10 12:00:00\nBoard-Tags: general\n\nBody.\n";
+
+        assertThrows(
+            static fn () => (new PostRecordParser())->parse($contents),
+            'Created-At must use RFC 3339 UTC format like 2026-04-13T12:34:56Z.'
+        );
     }
 
     public function testParsesIdentityFixture(): void

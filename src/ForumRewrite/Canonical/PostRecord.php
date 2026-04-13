@@ -13,6 +13,7 @@ final class PostRecord
      */
     public function __construct(
         public readonly string $postId,
+        public readonly string $createdAt,
         public readonly array $boardTags,
         public readonly ?string $threadId,
         public readonly ?string $parentId,

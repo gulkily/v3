@@ -40,8 +40,10 @@ class LocalWriteService
             $subject = $this->normalizeAsciiLine((string) ($input['subject'] ?? ''), 'subject');
             $body = $this->normalizeAsciiBody((string) ($input['body'] ?? ''), 'body');
             $authorIdentityId = $this->resolveAuthorIdentityId($input);
+            $createdAt = $this->canonicalTimestampNow();
 
             $contents = "Post-ID: {$postId}\n"
+                . "Created-At: {$createdAt}\n"
                 . "Board-Tags: {$boardTags}\n"
                 . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
                 . ($subject !== '' ? "Subject: {$subject}\n" : '')
@@ -76,6 +78,7 @@ class LocalWriteService
             $body = $this->normalizeAsciiBody((string) ($input['body'] ?? ''), 'body');
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $authorIdentityId = $this->resolveAuthorIdentityId($input);
+            $createdAt = $this->canonicalTimestampNow();
 
             $thread = $this->canonicalRepository->loadPost('records/posts/' . $threadId . '.txt');
             $parent = $this->canonicalRepository->loadPost('records/posts/' . $parentId . '.txt');
@@ -86,6 +89,7 @@ class LocalWriteService
 
             $postId = $this->generateRecordId('reply');
             $contents = "Post-ID: {$postId}\n"
+                . "Created-At: {$createdAt}\n"
                 . "Board-Tags: {$boardTags}\n"
                 . "Thread-ID: {$threadId}\n"
                 . "Parent-ID: {$parentId}\n"
@@ -198,7 +202,9 @@ class LocalWriteService
             }
 
             $postId = $this->generateRecordId('reply');
+            $createdAt = $this->canonicalTimestampNow();
             $contents = "Post-ID: {$postId}\n"
+                . "Created-At: {$createdAt}\n"
                 . "Board-Tags: identity approval\n"
                 . "Thread-ID: {$threadId}\n"
                 . "Parent-ID: {$parentId}\n"
@@ -335,6 +341,11 @@ class LocalWriteService
         return sprintf('%s-%s-%s', $prefix, gmdate('YmdHis'), substr(bin2hex(random_bytes(4)), 0, 8));
     }
 
+    private function canonicalTimestampNow(): string
+    {
+        return gmdate('Y-m-d\TH:i:s\Z');
+    }
+
     /**
      * @param array<string, mixed> $input
      * @return array{string,string,?string}
@@ -350,7 +361,9 @@ class LocalWriteService
         }
 
         $bootstrapPostId = $this->generateRecordId('bootstrap');
+        $createdAt = $this->canonicalTimestampNow();
         $contents = "Post-ID: {$bootstrapPostId}\n"
+            . "Created-At: {$createdAt}\n"
             . 'Board-Tags: ' . self::HIDDEN_BOOTSTRAP_BOARD_TAGS . "\n"
             . "Subject: account bootstrap\n"
             . "\nAutomatic account bootstrap anchor.\n";

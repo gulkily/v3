@@ -25,6 +25,7 @@ Key: Value
 ## Required Headers
 
 - `Post-ID`: unique identifier for the post within the repository
+- `Created-At`: RFC 3339 UTC timestamp such as `2026-04-10T12:00:00Z`
 - `Board-Tags`: space-separated board tags
 
 ## Conditional Headers
@@ -59,6 +60,7 @@ The first supported typed root is `Thread-Type: task`. Task roots add:
 - A thread root is a post with no `Thread-ID` and no `Parent-ID`.
 - A reply references the thread root through `Thread-ID`.
 - A reply references its immediate parent through `Parent-ID`.
+- `Created-At` is authoritative canonical time for the post and must not be inferred from file mtimes or git history.
 - When `Author-Identity-ID` is present, it must be an ASCII token matching the retained identity form such as `openpgp:<lowercase-fingerprint>`.
 - When `Author-Identity-ID` is absent, readers fall back to anonymous author labeling such as `guest` unless another retained rule applies.
 - A typed root thread is still a normal thread root. Replies remain ordinary replies.
@@ -83,6 +85,7 @@ These replies are canonical posts, but V1 readers treat them as hidden from boar
 
 ```text
 Post-ID: root-001
+Created-At: 2026-04-10T12:00:00Z
 Board-Tags: general meta
 Subject: First thread
 
@@ -93,6 +96,7 @@ Hello world.
 
 ```text
 Post-ID: T01
+Created-At: 2026-04-10T12:05:00Z
 Board-Tags: planning
 Subject: Publish raw planning files and debug views in the web UI
 Thread-Type: task
@@ -108,6 +112,7 @@ Expose todo.txt, ideas.txt, and raw object/debug views from the interface.
 
 ```text
 Post-ID: reply-001
+Created-At: 2026-04-10T12:06:00Z
 Board-Tags: general meta
 Thread-ID: root-001
 Parent-ID: root-001
@@ -120,6 +125,7 @@ This is a reply.
 
 ```text
 Post-ID: reply-approval-001
+Created-At: 2026-04-10T12:07:00Z
 Board-Tags: identity approval
 Thread-ID: bootstrap-20260410120000-a1b2c3d4
 Parent-ID: bootstrap-20260410120000-a1b2c3d4
