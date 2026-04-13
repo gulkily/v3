@@ -449,6 +449,8 @@ final class Application
     private function renderProfilePage(array $profile, bool $self = false, ?string $notice = null, ?string $error = null): string
     {
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $isOwnProfile = $viewerProfile !== null
+            && ((string) $viewerProfile['identity_id']) === ((string) $profile['identity_id']);
         $canApprove = $viewerProfile !== null
             && ((int) $viewerProfile['is_approved']) === 1
             && ((int) $profile['is_approved']) !== 1
@@ -470,6 +472,7 @@ final class Application
                 'notice' => $notice,
                 'error' => $error,
                 'viewerProfile' => $viewerProfile,
+                'isOwnProfile' => $isOwnProfile,
                 'canApprove' => $canApprove,
             ],
             $pageTitleLabel . ' - Profile',

@@ -14,6 +14,12 @@ if ($headingLabel === '') {
     <p class="meta">Profile <?= $e($profileSlug) ?></p>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
   </article>
+<?php if ($isOwnProfile): ?>
+  <article class="card">
+    <p><strong>This is your profile.</strong></p>
+    <p class="meta">Your current browser identity matches this profile.</p>
+  </article>
+<?php endif; ?>
 <?php if ($self): ?>
   <article class="card">
     <p class="meta">Self profile mode</p>
@@ -21,9 +27,7 @@ if ($headingLabel === '') {
   </article>
 <?php endif; ?>
   <article class="card">
-    <p><strong>Identity ID:</strong> <?= $e($profile['identity_id']) ?></p>
     <p><strong>Visible username:</strong> <?= $e($profile['username']) ?></p>
-    <p><strong>Fallback label:</strong> <?= $e($profile['fallback_label']) ?></p>
     <p><strong>Approved:</strong> <?= ((int) $profile['is_approved']) === 1 ? 'yes' : 'no' ?></p>
 <?php if (((int) $profile['is_approved']) === 1 && ((string) ($profile['approved_by_label'] ?? '')) !== ''): ?>
     <p><strong>Approved by:</strong>
@@ -34,8 +38,6 @@ if ($headingLabel === '') {
 <?php endif; ?>
     </p>
 <?php endif; ?>
-    <p><strong>Bootstrap post:</strong> <a href="/posts/<?= $e($profile['bootstrap_post_id']) ?>"><?= $e($profile['bootstrap_post_id']) ?></a></p>
-    <p><strong>Bootstrap thread:</strong> <a href="/threads/<?= $e($profile['bootstrap_thread_id']) ?>"><?= $e($profile['bootstrap_thread_id']) ?></a></p>
     <p><strong>Threads:</strong> <?= (int) $profile['thread_count'] ?></p>
     <p><strong>Posts:</strong> <?= (int) $profile['post_count'] ?></p>
     <p><strong>Username route:</strong> <a href="/user/<?= $e($profile['username_token']) ?>">/user/<?= $e($profile['username_token']) ?></a></p>
@@ -44,11 +46,36 @@ if ($headingLabel === '') {
       <button type="submit">Approve user</button>
     </form>
 <?php endif; ?>
-  </article>
-  <article class="card">
-    <h2>Public key</h2>
-    <pre>
+    <details class="account-key-advanced">
+      <summary>Advanced / technical details</summary>
+      <div class="stack">
+        <div>
+          <p class="account-key-label">Profile slug</p>
+          <p class="meta"><?= $e($profile['profile_slug']) ?></p>
+        </div>
+        <div>
+          <p class="account-key-label">Identity ID</p>
+          <p class="meta"><?= $e($profile['identity_id']) ?></p>
+        </div>
+        <div>
+          <p class="account-key-label">Fallback label</p>
+          <p class="meta"><?= $e($profile['fallback_label']) ?></p>
+        </div>
+        <div>
+          <p class="account-key-label">Bootstrap post</p>
+          <p><a href="/posts/<?= $e($profile['bootstrap_post_id']) ?>"><?= $e($profile['bootstrap_post_id']) ?></a></p>
+        </div>
+        <div>
+          <p class="account-key-label">Bootstrap thread</p>
+          <p><a href="/threads/<?= $e($profile['bootstrap_thread_id']) ?>"><?= $e($profile['bootstrap_thread_id']) ?></a></p>
+        </div>
+        <div>
+          <p class="account-key-label">Public key</p>
+          <pre>
 <?= $e($profile['public_key']) ?>
-    </pre>
+          </pre>
+        </div>
+      </div>
+    </details>
   </article>
 </section>
