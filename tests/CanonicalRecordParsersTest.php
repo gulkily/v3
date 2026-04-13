@@ -190,6 +190,28 @@ final class CanonicalRecordParsersTest
         );
     }
 
+    public function testRepositoryBackfillsLegacyPostTimestampFromGitHistory(): void
+    {
+        $tempRoot = $this->createTempFixtureRoot();
+        file_put_contents(
+            $tempRoot . '/records/posts/root-001.txt',
+            "Post-ID: root-001\nBoard-Tags: general meta\nSubject: Hello world\n\nFirst line preview.\nSecond line body.\n"
+        );
+
+        $this->runCommand($tempRoot, 'git init');
+        $this->runCommand($tempRoot, 'git config user.name "Forum Rewrite Tests"');
+        $this->runCommand($tempRoot, 'git config user.email "forum-rewrite-tests@example.invalid"');
+        $this->runCommand(
+            $tempRoot,
+            'git add records/posts/root-001.txt && GIT_AUTHOR_DATE=2026-04-10T12:00:00Z GIT_COMMITTER_DATE=2026-04-10T12:00:00Z git commit -m "Add legacy post"'
+        );
+
+        $repository = new CanonicalRecordRepository($tempRoot);
+        $record = $repository->loadPost('records/posts/root-001.txt');
+
+        assertSame('2026-04-10T12:00:00Z', $record->createdAt);
+    }
+
     public function testCanonicalPathResolverMatchesSpecs(): void
     {
         assertSame('records/posts/root-001.txt', CanonicalPathResolver::post('root-001'));
@@ -247,6 +269,16 @@ final class CanonicalRecordParsersTest
             }
 
             copy($item->getPathname(), $targetPath);
+        }
+    }
+
+    private function runCommand(string $cwd, string $command): void
+    {
+        $output = [];
+        $exitCode = 0;
+        exec('cd ' . escapeshellarg($cwd) . ' && ' . $command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Command failed: ' . implode("\n", $output));
         }
     }
 }

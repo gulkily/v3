@@ -19,7 +19,22 @@ final class CanonicalRecordRepository
     public function loadPost(string $relativePath): PostRecord
     {
         $this->assertPathIsWithinFamily($relativePath, 'records/posts/');
-        $record = $this->postParser->parse($this->read($relativePath));
+        $contents = $this->read($relativePath);
+
+        try {
+            $record = $this->postParser->parse($contents);
+        } catch (CanonicalRecordParseException $exception) {
+            if ($exception->getMessage() !== 'Missing required post header: Created-At') {
+                throw $exception;
+            }
+
+            $legacyCreatedAt = $this->resolveLegacyPostCreatedAt($relativePath);
+            if ($legacyCreatedAt === null) {
+                throw $exception;
+            }
+
+            $record = $this->postParser->parse($this->withCreatedAtHeader($contents, $legacyCreatedAt));
+        }
 
         $expectedPath = CanonicalPathResolver::post($record->postId);
         if ($relativePath !== $expectedPath) {
@@ -85,6 +100,70 @@ final class CanonicalRecordRepository
         }
 
         return $contents;
+    }
+
+    private function resolveLegacyPostCreatedAt(string $relativePath): ?string
+    {
+        $gitCreatedAt = $this->resolveLegacyPostCreatedAtFromGit($relativePath);
+        if ($gitCreatedAt !== null) {
+            return $gitCreatedAt;
+        }
+
+        $path = $this->repositoryRoot . '/' . ltrim($relativePath, '/');
+        $mtime = @filemtime($path);
+        if ($mtime !== false && $mtime > 0) {
+            return gmdate('Y-m-d\TH:i:s\Z', $mtime);
+        }
+
+        return null;
+    }
+
+    private function resolveLegacyPostCreatedAtFromGit(string $relativePath): ?string
+    {
+        if (!is_dir($this->repositoryRoot . '/.git')) {
+            return null;
+        }
+
+        $command = sprintf(
+            'git -C %s log --diff-filter=A --follow --format=%%aI -- %s 2>/dev/null',
+            escapeshellarg($this->repositoryRoot),
+            escapeshellarg($relativePath)
+        );
+        $output = [];
+        $exitCode = 0;
+        exec($command, $output, $exitCode);
+        if ($exitCode !== 0) {
+            return null;
+        }
+
+        $lines = array_values(array_filter(array_map('trim', $output), static fn (string $line): bool => $line !== ''));
+        if ($lines === []) {
+            return null;
+        }
+
+        $value = $lines[array_key_last($lines)];
+
+        try {
+            $timestamp = new \DateTimeImmutable($value);
+        } catch (\Exception) {
+            return null;
+        }
+
+        return $timestamp
+            ->setTimezone(new \DateTimeZone('UTC'))
+            ->format('Y-m-d\TH:i:s\Z');
+    }
+
+    private function withCreatedAtHeader(string $contents, string $createdAt): string
+    {
+        $separator = strpos($contents, "\n");
+        if ($separator === false) {
+            throw new CanonicalRecordParseException('Canonical text record must contain at least one header.');
+        }
+
+        return substr($contents, 0, $separator + 1)
+            . 'Created-At: ' . $createdAt . "\n"
+            . substr($contents, $separator + 1);
     }
 
     private function assertPathIsWithinFamily(string $relativePath, string $expectedPrefix): void
