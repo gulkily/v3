@@ -508,7 +508,7 @@ pre {
 }
 
 .body {
-  white-space: pre-wrap;
+  white-space: normal;
 }
 
 .button-row {
