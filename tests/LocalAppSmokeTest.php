@@ -135,13 +135,13 @@ final class LocalAppSmokeTest
         assertStringContains('Board', $board);
         assertStringContains('Hello world', $thread);
         assertStringContains('/user/guest', $thread);
-        assertStringContains('Started by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $thread);
+        assertStringContains('by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $thread);
         assertStringContains('Last activity <time datetime="2026-04-10T12:05:00Z">Apr 10, 2026 at 12:05 UTC</time>', $thread);
         assertOrdered($thread, 'Post <a href="/posts/root-001">root-001</a>', 'Post <a href="/posts/reply-001">reply-001</a>');
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $thread);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=reply-001', $thread);
         assertStringContains('First line preview.', $post);
-        assertStringContains('Posted by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $post);
+        assertStringContains('by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $post);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $post);
         assertStringContains('zenmemes', $instance);
         assertStringContains('/user/guest', $instance);
@@ -184,7 +184,7 @@ final class LocalAppSmokeTest
         assertStringContains('/assets/browser_signing.js', $account);
         assertStringNotContains('Bootstrap post ID', $account);
         assertStringContains('View: content', $activity);
-        assertStringContains('Posted by guest on <time datetime="2026-04-10T12:05:00Z">Apr 10, 2026 at 12:05 UTC</time>', $activity);
+        assertStringContains('by guest on <time datetime="2026-04-10T12:05:00Z">Apr 10, 2026 at 12:05 UTC</time>', $activity);
         assertStringContains('GET /api/list_index', $llms);
     }
 

@@ -1,7 +1,7 @@
 <section class="stack">
   <article class="card">
     <h1><?= $e($title) ?></h1>
-    <p class="meta"><?= $contentMeta($thread, 'root_post_created_at', 'Started') ?></p>
+    <p class="meta"><?= $contentMeta($thread, 'root_post_created_at', '') ?></p>
     <p class="meta"><?= $timeMeta('Last activity', (string) $thread['last_activity_at']) ?></p>
 <?php if ((int) $thread['reply_count'] > 0): ?>
     <p class="meta"><?= (int) $thread['reply_count'] ?> <?= (int) $thread['reply_count'] === 1 ? 'reply' : 'replies' ?></p>

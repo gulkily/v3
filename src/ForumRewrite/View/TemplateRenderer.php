@@ -159,12 +159,13 @@ final class TemplateRenderer
     {
         $authorHtml = $this->renderAuthorHtml($record, $escape);
         $timestampHtml = $this->renderTimestampHtml((string) ($record[$timeField] ?? ''), $escape);
+        $prefix = trim($timeLabel);
 
         if ($timestampHtml !== '') {
-            return $timeLabel . ' by ' . $authorHtml . ' on ' . $timestampHtml;
+            return ($prefix !== '' ? $prefix . ' ' : '') . 'by ' . $authorHtml . ' on ' . $timestampHtml;
         }
 
-        return $timeLabel . ' by ' . $authorHtml;
+        return ($prefix !== '' ? $prefix . ' ' : '') . 'by ' . $authorHtml;
     }
 
     /**

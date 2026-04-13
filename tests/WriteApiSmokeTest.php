@@ -52,7 +52,7 @@ final class WriteApiSmokeTest
         assertTrue(is_file($repositoryRoot . '/records/posts/' . $replyId . '.txt'));
         assertStringContains('Created-At: ', (string) file_get_contents($repositoryRoot . '/records/posts/' . $replyId . '.txt'));
         assertStringContains('Reply body', $postPage);
-        assertStringContains('Posted by guest on <time datetime="', $postPage);
+        assertStringContains('by guest on <time datetime="', $postPage);
         assertFalse(is_file($artifactRoot . '/threads/' . $threadId . '.html'));
         assertFalse(is_file($artifactRoot . '/posts/' . $replyId . '.html'));
         assertTrue(is_file($artifactRoot . '/posts/' . $threadId . '.html'));
@@ -205,7 +205,7 @@ final class WriteApiSmokeTest
         assertStringContains('status=ok', $threadResponse);
         assertStringContains('forum-user', $threadPage);
         assertStringContains('/user/forum-user', $threadPage);
-        assertStringContains('Started by <a href="/user/forum-user">forum-user</a> on <time datetime="', $threadPage);
+        assertStringContains('by <a href="/user/forum-user">forum-user</a> on <time datetime="', $threadPage);
         assertStringNotContains('(unapproved)', $threadPage);
         assertFalse(str_contains($threadPage, 'by guest'));
     }
