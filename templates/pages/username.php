@@ -19,12 +19,14 @@
 <?php if ($approvedThreads === []): ?>
     <p>No visible threads.</p>
 <?php else: ?>
-    <ul>
 <?php foreach ($approvedThreads as $thread): ?>
 <?php $subject = $thread['subject'] ?: $thread['root_post_id']; ?>
-      <li><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($subject) ?></a></li>
+    <article class="card">
+      <h3><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($subject) ?></a></h3>
+      <p class="meta"><?= $contentMeta($thread, 'root_post_created_at', 'Started') ?></p>
+      <p class="meta"><?= $timeMeta('Last activity', (string) $thread['last_activity_at']) ?></p>
+    </article>
 <?php endforeach; ?>
-    </ul>
 <?php endif; ?>
   </article>
 
@@ -33,11 +35,12 @@
 <?php if ($approvedPosts === []): ?>
     <p>No visible posts.</p>
 <?php else: ?>
-    <ul>
 <?php foreach ($approvedPosts as $post): ?>
-      <li><a href="/posts/<?= $e($post['post_id']) ?>"><?= $e($post['post_id']) ?></a></li>
+    <article class="card">
+      <p><a href="/posts/<?= $e($post['post_id']) ?>"><?= $e($post['post_id']) ?></a></p>
+      <p class="meta"><?= $contentMeta($post) ?></p>
+    </article>
 <?php endforeach; ?>
-    </ul>
 <?php endif; ?>
   </article>
 

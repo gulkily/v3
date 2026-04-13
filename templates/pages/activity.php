@@ -14,6 +14,7 @@
     <p class="meta"><?= $e($item['kind']) ?></p>
     <p><a href="/posts/<?= $e($item['post_id']) ?>"><?= $e($item['post_id']) ?></a></p>
     <p><?= $e($item['label']) ?></p>
+    <p class="meta"><?= $contentMeta($item) ?></p>
   </article>
 <?php endforeach; ?>
 </section>

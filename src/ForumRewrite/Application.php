@@ -879,8 +879,12 @@ final class Application
     private function fetchThreads(): array
     {
         $rows = $this->pdo()->query(
-            'SELECT root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, board_tags_json
+            'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
+                    threads.reply_count, threads.board_tags_json, posts.author_label, posts.author_profile_slug,
+                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM threads
+             JOIN posts ON posts.post_id = threads.root_post_id
+             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
              ORDER BY last_activity_at DESC, root_post_id DESC'
         )->fetchAll();
 
@@ -895,7 +899,15 @@ final class Application
      */
     private function fetchThread(string $threadId): ?array
     {
-        $stmt = $this->pdo()->prepare('SELECT * FROM threads WHERE root_post_id = :thread_id');
+        $stmt = $this->pdo()->prepare(
+            'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
+                    threads.reply_count, threads.last_post_id, threads.board_tags_json, posts.author_label, posts.author_profile_slug,
+                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
+             FROM threads
+             JOIN posts ON posts.post_id = threads.root_post_id
+             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
+             WHERE threads.root_post_id = :thread_id'
+        );
         $stmt->execute(['thread_id' => $threadId]);
         $thread = $stmt->fetch();
 
@@ -1020,9 +1032,13 @@ final class Application
         }
 
         $stmt = $this->prepareIdentityListQuery(
-            'SELECT root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json
+            'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
+                    threads.reply_count, threads.last_post_id, threads.board_tags_json, posts.author_label, posts.author_profile_slug,
+                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM threads
-             WHERE root_post_id IN (
+             JOIN posts ON posts.post_id = threads.root_post_id
+             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
+             WHERE threads.root_post_id IN (
                  SELECT post_id FROM posts
                  WHERE post_id = thread_id AND author_identity_id IN (%s)
              )
@@ -1049,8 +1065,11 @@ final class Application
         }
 
         $stmt = $this->prepareIdentityListQuery(
-            'SELECT post_id, created_at, thread_id, parent_id, subject, body, author_label, author_profile_slug, board_tags_json
+            'SELECT posts.post_id, posts.created_at, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_label,
+                    posts.author_profile_slug, profiles.username_token AS author_username_token,
+                    COALESCE(profiles.is_approved, 0) AS author_is_approved, posts.board_tags_json
              FROM posts
+             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
              WHERE author_identity_id IN (%s)
              ORDER BY created_at DESC, sequence_number DESC, post_id DESC',
             $identityIds
@@ -1301,9 +1320,13 @@ final class Application
     {
         $view = $this->normalizeActivityView($view);
         $rows = $this->pdo()->query(
-            'SELECT created_at, kind, post_id, thread_id, label, board_tags_json, id
+            'SELECT activity.created_at, activity.kind, activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
+                    activity.id, posts.author_label, posts.author_profile_slug,
+                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM activity
-             ORDER BY created_at DESC, id DESC'
+             JOIN posts ON posts.post_id = activity.post_id
+             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
+             ORDER BY activity.created_at DESC, activity.id DESC'
         )->fetchAll();
 
         $items = array_map(function (array $post): array {
@@ -1315,6 +1338,10 @@ final class Application
                 'label' => $post['label'],
                 'board_tags_json' => $post['board_tags_json'],
                 'id' => (int) $post['id'],
+                'author_label' => $post['author_label'],
+                'author_profile_slug' => $post['author_profile_slug'],
+                'author_username_token' => $post['author_username_token'],
+                'author_is_approved' => (int) $post['author_is_approved'],
             ];
         }, $rows);
 

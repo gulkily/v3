@@ -155,6 +155,13 @@ Expected outcome:
 
 - the site presents one coherent metadata language across its main read surfaces
 
+Implementation status:
+
+- board, thread, post, and activity pages now render through shared metadata helpers
+- duplicated author-link logic has been removed from `post.php` and `post_card.php`
+- username summary surfaces now show standardized started/posted metadata instead of bare links only
+- thread and board surfaces now expose both poster and time context, including last activity
+
 ## Slice 5: Tests And Regression Coverage
 
 Focus:
