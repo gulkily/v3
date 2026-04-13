@@ -67,6 +67,7 @@ final class ReadModelBuilder
         $pdo->exec(
             'CREATE TABLE posts (
                 post_id TEXT PRIMARY KEY,
+                created_at TEXT NOT NULL,
                 thread_id TEXT NOT NULL,
                 parent_id TEXT NULL,
                 subject TEXT NULL,
@@ -83,6 +84,8 @@ final class ReadModelBuilder
         $pdo->exec(
             'CREATE TABLE threads (
                 root_post_id TEXT PRIMARY KEY,
+                root_post_created_at TEXT NOT NULL,
+                last_activity_at TEXT NOT NULL,
                 subject TEXT NULL,
                 body_preview TEXT NOT NULL,
                 reply_count INTEGER NOT NULL,
@@ -133,6 +136,7 @@ final class ReadModelBuilder
         $pdo->exec(
             'CREATE TABLE activity (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TEXT NOT NULL,
                 kind TEXT NOT NULL,
                 post_id TEXT NOT NULL,
                 thread_id TEXT NOT NULL,
@@ -143,17 +147,17 @@ final class ReadModelBuilder
     }
 
     /**
-     * @return array<int, array{post_id:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int}>
+     * @return array<int, array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int}>
      */
     private function indexPosts(PDO $pdo): array
     {
         $insertPost = $pdo->prepare(
-            'INSERT INTO posts (post_id, thread_id, parent_id, subject, body, board_tags_json, thread_type, author_identity_id, sequence_number)
-             VALUES (:post_id, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :author_identity_id, :sequence_number)'
+            'INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, author_identity_id, sequence_number)
+             VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :author_identity_id, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
-            'INSERT INTO threads (root_post_id, subject, body_preview, reply_count, last_post_id, board_tags_json)
-             VALUES (:root_post_id, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json)'
+            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json)
+             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json)'
         );
 
         $paths = $this->findRelativePaths('records/posts');
@@ -164,6 +168,7 @@ final class ReadModelBuilder
             $threadId = $record->threadId ?? $record->postId;
             $parsedPosts[] = [
                 'post_id' => $record->postId,
+                'created_at' => $record->createdAt,
                 'thread_id' => $threadId,
                 'parent_id' => $record->parentId,
                 'subject' => $record->subject,
@@ -206,8 +211,20 @@ final class ReadModelBuilder
 
             $children = $threadChildren[$post['post_id']] ?? [$post['post_id']];
             $replyCount = count($children) - 1;
+            $lastActivityAt = $post['created_at'];
+            foreach ($posts as $candidate) {
+                if ($candidate['thread_id'] !== $post['post_id']) {
+                    continue;
+                }
+
+                if ($candidate['created_at'] > $lastActivityAt) {
+                    $lastActivityAt = $candidate['created_at'];
+                }
+            }
             $insertThread->execute([
                 'root_post_id' => $post['post_id'],
+                'root_post_created_at' => $post['created_at'],
+                'last_activity_at' => $lastActivityAt,
                 'subject' => $post['subject'],
                 'body_preview' => $this->preview($post['body']),
                 'reply_count' => $replyCount,
@@ -354,12 +371,12 @@ final class ReadModelBuilder
     }
 
     /**
-     * @param array<int, array{post_id:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int}> $posts
+     * @param array<int, array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int}> $posts
      */
     private function indexActivity(PDO $pdo, array $posts): void
     {
         $stmt = $pdo->prepare(
-            'INSERT INTO activity (kind, post_id, thread_id, label, board_tags_json) VALUES (:kind, :post_id, :thread_id, :label, :board_tags_json)'
+            'INSERT INTO activity (created_at, kind, post_id, thread_id, label, board_tags_json) VALUES (:created_at, :kind, :post_id, :thread_id, :label, :board_tags_json)'
         );
 
         foreach ($posts as $post) {
@@ -370,6 +387,7 @@ final class ReadModelBuilder
             $kind = $post['post_id'] === $post['thread_id'] ? 'thread' : 'reply';
             $label = $post['subject'] ?? $this->preview($post['body']);
             $stmt->execute([
+                'created_at' => $post['created_at'],
                 'kind' => $kind,
                 'post_id' => $post['post_id'],
                 'thread_id' => $post['thread_id'],
@@ -433,7 +451,7 @@ final class ReadModelBuilder
 
     /**
      * @param array<string, array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string}> $profiles
-     * @param array<int, array{post_id:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int}> $posts
+     * @param array<int, array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int}> $posts
      * @return array<string, array{approved_by_identity_id:?string,approved_by_profile_slug:?string,approved_by_label:?string}>
      */
     private function deriveApprovalState(array $profiles, array $posts): array
@@ -498,7 +516,7 @@ final class ReadModelBuilder
     }
 
     /**
-     * @param array{post_id:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int} $post
+     * @param array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int} $post
      */
     private function extractApprovalTargetIdentityId(array $post): ?string
     {

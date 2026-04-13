@@ -778,6 +778,8 @@ final class Application
 
         $lines = [
             'Thread-ID: ' . $thread['root_post_id'],
+            'Created-At: ' . $thread['root_post_created_at'],
+            'Last-Activity-At: ' . $thread['last_activity_at'],
             'Subject: ' . ($thread['subject'] ?: ''),
             'Reply-Count: ' . $thread['reply_count'],
             '',
@@ -797,7 +799,7 @@ final class Application
             return null;
         }
 
-        return "Post-ID: {$post['post_id']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\n\n{$post['body']}";
+        return "Post-ID: {$post['post_id']}\nCreated-At: {$post['created_at']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\n\n{$post['body']}";
     }
 
     private function renderApiGetProfile(string $slug): ?string
@@ -819,7 +821,7 @@ final class Application
         $items = [];
         foreach ($this->fetchThreads() as $thread) {
             $title = $thread['subject'] ?: $thread['root_post_id'];
-            $items[] = $this->renderRssItem($title, '/threads/' . $thread['root_post_id'], $thread['body_preview']);
+            $items[] = $this->renderRssItem($title, '/threads/' . $thread['root_post_id'], $thread['body_preview'], (string) $thread['last_activity_at']);
         }
 
         return $this->renderRssFeed('Board', '/?format=rss', $items);
@@ -837,7 +839,8 @@ final class Application
             $items[] = $this->renderRssItem(
                 $post['post_id'],
                 '/posts/' . $post['post_id'],
-                trim($post['body'])
+                trim($post['body']),
+                (string) $post['created_at']
             );
         }
 
@@ -849,7 +852,7 @@ final class Application
         $view = $this->normalizeActivityView($view);
         $items = [];
         foreach ($this->fetchActivity($view) as $item) {
-            $items[] = $this->renderRssItem($item['label'], '/posts/' . $item['post_id'], $item['kind']);
+            $items[] = $this->renderRssItem($item['label'], '/posts/' . $item['post_id'], $item['kind'], (string) $item['created_at']);
         }
 
         return $this->renderRssFeed('Activity ' . $view, '/activity/?view=' . rawurlencode($view) . '&format=rss', $items);
@@ -876,7 +879,9 @@ final class Application
     private function fetchThreads(): array
     {
         $rows = $this->pdo()->query(
-            'SELECT root_post_id, subject, body_preview, reply_count, board_tags_json FROM threads ORDER BY root_post_id DESC'
+            'SELECT root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, board_tags_json
+             FROM threads
+             ORDER BY last_activity_at DESC, root_post_id DESC'
         )->fetchAll();
 
         return array_values(array_filter(
@@ -904,6 +909,7 @@ final class Application
     {
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_label,
+                    posts.created_at,
                     posts.author_profile_slug, profiles.username_token AS author_username_token,
                     COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM posts
@@ -923,6 +929,7 @@ final class Application
     {
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_label,
+                    posts.created_at,
                     posts.author_profile_slug, profiles.username_token AS author_username_token,
                     COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM posts
@@ -1013,13 +1020,13 @@ final class Application
         }
 
         $stmt = $this->prepareIdentityListQuery(
-            'SELECT root_post_id, subject, body_preview, reply_count, last_post_id, board_tags_json
+            'SELECT root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json
              FROM threads
              WHERE root_post_id IN (
                  SELECT post_id FROM posts
                  WHERE post_id = thread_id AND author_identity_id IN (%s)
              )
-             ORDER BY root_post_id ASC',
+             ORDER BY last_activity_at DESC, root_post_id ASC',
             $identityIds
         );
         $stmt->execute($identityIds);
@@ -1042,10 +1049,10 @@ final class Application
         }
 
         $stmt = $this->prepareIdentityListQuery(
-            'SELECT post_id, thread_id, parent_id, subject, body, author_label, author_profile_slug, board_tags_json
+            'SELECT post_id, created_at, thread_id, parent_id, subject, body, author_label, author_profile_slug, board_tags_json
              FROM posts
              WHERE author_identity_id IN (%s)
-             ORDER BY sequence_number ASC, post_id ASC',
+             ORDER BY created_at DESC, sequence_number DESC, post_id DESC',
             $identityIds
         );
         $stmt->execute($identityIds);
@@ -1294,31 +1301,22 @@ final class Application
     {
         $view = $this->normalizeActivityView($view);
         $rows = $this->pdo()->query(
-            'SELECT post_id, thread_id, subject, body, board_tags_json, sequence_number
-             FROM posts
-             ORDER BY sequence_number DESC'
+            'SELECT created_at, kind, post_id, thread_id, label, board_tags_json, id
+             FROM activity
+             ORDER BY created_at DESC, id DESC'
         )->fetchAll();
 
         $items = array_map(function (array $post): array {
             return [
-                'kind' => $post['post_id'] === $post['thread_id'] ? 'thread' : 'reply',
+                'created_at' => $post['created_at'],
+                'kind' => $post['kind'],
                 'post_id' => $post['post_id'],
                 'thread_id' => $post['thread_id'],
-                'label' => $post['subject'] ?? $this->preview((string) $post['body']),
+                'label' => $post['label'],
                 'board_tags_json' => $post['board_tags_json'],
-                'sequence_number' => (int) $post['sequence_number'],
+                'id' => (int) $post['id'],
             ];
         }, $rows);
-
-        usort($items, function (array $left, array $right): int {
-            $leftTimestamp = $this->activityTimestampSortKey((string) $left['post_id']);
-            $rightTimestamp = $this->activityTimestampSortKey((string) $right['post_id']);
-            if ($leftTimestamp !== $rightTimestamp) {
-                return $rightTimestamp <=> $leftTimestamp;
-            }
-
-            return ((int) $right['sequence_number']) <=> ((int) $left['sequence_number']);
-        });
 
         return array_values(array_filter($items, function (array $item) use ($view): bool {
             $boardTagsJson = (string) $item['board_tags_json'];
@@ -1344,11 +1342,20 @@ final class Application
             . '</channel></rss>';
     }
 
-    private function renderRssItem(string $title, string $link, string $description): string
+    private function renderRssItem(string $title, string $link, string $description, ?string $publishedAt = null): string
     {
-        return '<item><title>' . $this->escapeXml($title) . '</title>'
+        $item = '<item><title>' . $this->escapeXml($title) . '</title>'
             . '<link>' . $this->escapeXml('http://localhost' . $link) . '</link>'
-            . '<description>' . $this->escapeXml($description) . '</description></item>';
+            . '<description>' . $this->escapeXml($description) . '</description>';
+
+        if ($publishedAt !== null && $publishedAt !== '') {
+            $timestamp = strtotime($publishedAt);
+            if ($timestamp !== false) {
+                $item .= '<pubDate>' . $this->escapeXml(gmdate(DATE_RSS, $timestamp)) . '</pubDate>';
+            }
+        }
+
+        return $item . '</item>';
     }
 
     private function normalizeActivityView(string $view): string
@@ -1360,15 +1367,6 @@ final class Application
     {
         $line = strtok($body, "\n");
         return $line === false ? '' : $line;
-    }
-
-    private function activityTimestampSortKey(string $postId): int
-    {
-        if (preg_match('/^[a-z]+-(\d{14})-[a-z0-9]+$/', $postId, $matches) !== 1) {
-            return 0;
-        }
-
-        return (int) $matches[1];
     }
 
     private function hasBoardTag(string $boardTagsJson, string $tag): bool

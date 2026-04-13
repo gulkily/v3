@@ -95,6 +95,13 @@ Expected outcome:
 
 - application fetch methods can return complete metadata without page-specific reconstruction
 
+Implementation status:
+
+- post `created_at` now indexes into the read model
+- thread rows now expose both root-post time and last-activity time
+- activity rows now carry canonical timestamps directly instead of guessing from post IDs
+- application fetch and text/RSS query outputs now expose canonical time fields
+
 ## Slice 3: Shared Display Primitive
 
 Focus:
