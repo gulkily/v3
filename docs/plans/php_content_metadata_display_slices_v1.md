@@ -129,6 +129,12 @@ Expected outcome:
 
 - author/timestamp rendering decisions live in one place instead of many templates
 
+Implementation status:
+
+- `TemplateRenderer` now exposes shared helpers for author links, friendly timestamps, combined content metadata lines, and standalone time metadata
+- approved, unapproved, and fallback author rendering now have a single canonical template path
+- friendly timestamp formatting now emits standardized `<time datetime=\"...\">...</time>` output
+
 ## Slice 4: Surface Adoption
 
 Focus:

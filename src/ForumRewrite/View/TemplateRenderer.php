@@ -72,6 +72,11 @@ final class TemplateRenderer
 
         $e = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $br = static fn (mixed $value): string => nl2br(htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+        $friendlyTimestamp = fn (?string $timestamp): string => $this->formatFriendlyTimestamp($timestamp);
+        $timestamp = fn (?string $timestamp): string => $this->renderTimestampHtml($timestamp, $e);
+        $author = fn (array $record): string => $this->renderAuthorHtml($record, $e);
+        $contentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e);
+        $timeMeta = fn (string $label, ?string $timestamp): string => $this->renderTimeMeta($label, $timestamp, $e);
         $partial = fn (string $partialPath, array $partialData = []): string => $this->renderFile(
             $partialPath,
             array_merge($data, $partialData)
@@ -120,5 +125,87 @@ final class TemplateRenderer
         require $path;
 
         return (string) ob_get_clean();
+    }
+
+    /**
+     * @param callable(mixed): string $escape
+     */
+    private function renderAuthorHtml(array $record, callable $escape): string
+    {
+        $authorLabel = trim((string) ($record['author_label'] ?? ''));
+        if ($authorLabel === '') {
+            $authorLabel = 'guest';
+        }
+
+        $authorProfileSlug = trim((string) ($record['author_profile_slug'] ?? ''));
+        $authorUsernameToken = trim((string) ($record['author_username_token'] ?? ''));
+        $authorIsApproved = ((int) ($record['author_is_approved'] ?? 0)) === 1;
+
+        if ($authorProfileSlug === '') {
+            return $escape($authorLabel);
+        }
+
+        if ($authorIsApproved && $authorUsernameToken !== '') {
+            return '<a href="/user/' . $escape($authorUsernameToken) . '">' . $escape($authorLabel) . '</a>';
+        }
+
+        return '<a href="/profiles/' . $escape($authorProfileSlug) . '">' . $escape($authorLabel) . '</a> <span class="meta">(unapproved)</span>';
+    }
+
+    /**
+     * @param callable(mixed): string $escape
+     */
+    private function renderContentMeta(array $record, string $timeField, string $timeLabel, callable $escape): string
+    {
+        $authorHtml = $this->renderAuthorHtml($record, $escape);
+        $timestampHtml = $this->renderTimestampHtml((string) ($record[$timeField] ?? ''), $escape);
+
+        if ($timestampHtml !== '') {
+            return $timeLabel . ' by ' . $authorHtml . ' on ' . $timestampHtml;
+        }
+
+        return $timeLabel . ' by ' . $authorHtml;
+    }
+
+    /**
+     * @param callable(mixed): string $escape
+     */
+    private function renderTimeMeta(string $label, ?string $timestamp, callable $escape): string
+    {
+        $timestampHtml = $this->renderTimestampHtml($timestamp, $escape);
+
+        return $timestampHtml !== '' ? $label . ' ' . $timestampHtml : $label;
+    }
+
+    private function formatFriendlyTimestamp(?string $timestamp): string
+    {
+        $value = trim((string) $timestamp);
+        if ($value === '') {
+            return '';
+        }
+
+        try {
+            $date = new \DateTimeImmutable($value);
+        } catch (\Exception) {
+            return $value;
+        }
+
+        $utc = new \DateTimeZone('UTC');
+        $date = $date->setTimezone($utc);
+
+        return $date->format('M j, Y \a\t H:i \U\T\C');
+    }
+
+    /**
+     * @param callable(mixed): string $escape
+     */
+    private function renderTimestampHtml(?string $timestamp, callable $escape): string
+    {
+        $value = trim((string) $timestamp);
+        if ($value === '') {
+            return '';
+        }
+
+        return '<time datetime="' . $escape($value) . '">' . $escape($this->formatFriendlyTimestamp($value)) . '</time>';
     }
 }
