@@ -669,13 +669,13 @@ final class Application
                         'bookmarklet_kind' => 'selection',
                     ],
                     [
-                        'label' => 'Clip (New Window)',
+                        'label' => 'Clip',
                         'mode' => 'new-window',
                         'description' => 'Open Compose Thread in a new window with selected text plus source title and URL.',
                         'bookmarklet_kind' => 'clip',
                     ],
                     [
-                        'label' => 'Rip (New Window)',
+                        'label' => 'Rip',
                         'mode' => 'new-window',
                         'description' => 'Open Compose Thread in a new window with only the selected text.',
                         'bookmarklet_kind' => 'selection',

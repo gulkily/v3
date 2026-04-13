@@ -235,7 +235,7 @@ final class LocalAppSmokeTest
         );
 
         assertStringContains('Tools', $tools);
-        assertStringContains('Clip (New Window)', $tools);
+        assertStringContains('Clip', $tools);
         assertStringContains('/assets/tools_bookmarklets.js', $tools);
         assertStringContains('data-bookmarklet-kind="clip"', $tools);
         assertStringContains('value="Saved Title"', $prefilledCompose);
