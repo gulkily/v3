@@ -24,7 +24,6 @@
     <article class="card">
       <h3><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($subject) ?></a></h3>
       <p class="meta"><?= $contentMeta($thread, 'root_post_created_at', '') ?></p>
-      <p class="meta"><?= $timeMeta('Last activity', (string) $thread['last_activity_at']) ?></p>
     </article>
 <?php endforeach; ?>
 <?php endif; ?>
