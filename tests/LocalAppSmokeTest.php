@@ -135,11 +135,13 @@ final class LocalAppSmokeTest
         assertStringContains('Board', $board);
         assertStringContains('Hello world', $thread);
         assertStringContains('/user/guest', $thread);
+        assertStringContains('Started by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $thread);
+        assertStringContains('Last activity <time datetime="2026-04-10T12:05:00Z">Apr 10, 2026 at 12:05 UTC</time>', $thread);
         assertOrdered($thread, 'Post <a href="/posts/root-001">root-001</a>', 'Post <a href="/posts/reply-001">reply-001</a>');
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $thread);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=reply-001', $thread);
         assertStringContains('First line preview.', $post);
-        assertStringContains('Author <a href="/user/guest">guest</a>', $post);
+        assertStringContains('Posted by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $post);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $post);
         assertStringContains('zenmemes', $instance);
         assertStringContains('/user/guest', $instance);
@@ -154,7 +156,7 @@ final class LocalAppSmokeTest
         assertStringNotContains('Contact:', $instance);
         assertStringNotContains('Retention:', $instance);
         assertStringNotContains('Installed:', $instance);
-        assertStringContains('Identity ID:', $profile);
+        assertStringContains('Identity ID', $profile);
         assertStringContains('Approved by:</strong>', $profile);
         assertStringContains('root', $profile);
         assertStringContains('User guest', $username);
@@ -182,6 +184,7 @@ final class LocalAppSmokeTest
         assertStringContains('/assets/browser_signing.js', $account);
         assertStringNotContains('Bootstrap post ID', $account);
         assertStringContains('View: content', $activity);
+        assertStringContains('Posted by guest on <time datetime="2026-04-10T12:05:00Z">Apr 10, 2026 at 12:05 UTC</time>', $activity);
         assertStringContains('GET /api/list_index', $llms);
     }
 
@@ -206,8 +209,11 @@ final class LocalAppSmokeTest
 
         assertStringContains('GET /api/get_thread?thread_id=<id>', $apiIndex);
         assertStringContains("root-001\tHello world\t1", $listIndex);
+        assertStringContains('Created-At: 2026-04-10T12:00:00Z', $thread);
+        assertStringContains('Last-Activity-At: 2026-04-10T12:05:00Z', $thread);
         assertStringContains('Thread-ID: root-001', $thread);
         assertStringContains('Post-ID: root-001', $post);
+        assertStringContains('Created-At: 2026-04-10T12:00:00Z', $post);
         assertStringContains('Profile-Slug: openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $profile);
         assertStringContains('Approved: yes', $profile);
         assertStringContains('status=ready', $readModelStatus);
@@ -216,6 +222,7 @@ final class LocalAppSmokeTest
         assertStringContains('schema_version=5', $readModelStatus);
         assertStringContains('<rss version="2.0">', $boardRss);
         assertStringContains('<title>Hello world</title>', $threadRss);
+        assertStringContains('<pubDate>Fri, 10 Apr 2026 12:05:00 +0000</pubDate>', $threadRss);
         assertStringContains('<title>Activity all</title>', $activityRss);
     }
 
@@ -682,25 +689,31 @@ final class LocalAppSmokeTest
     }
 }
 
-function assertStringContains(string $needle, string $haystack): void
-{
-    if (!str_contains($haystack, $needle)) {
-        throw new RuntimeException('Failed asserting that output contains: ' . $needle);
+if (!function_exists('assertStringContains')) {
+    function assertStringContains(string $needle, string $haystack): void
+    {
+        if (!str_contains($haystack, $needle)) {
+            throw new RuntimeException('Failed asserting that output contains: ' . $needle);
+        }
     }
 }
 
-function assertOrdered(string $haystack, string $first, string $second): void
-{
-    $firstPos = strpos($haystack, $first);
-    $secondPos = strpos($haystack, $second);
-    if ($firstPos === false || $secondPos === false || $firstPos >= $secondPos) {
-        throw new RuntimeException('Failed asserting that output ordering is correct.');
+if (!function_exists('assertOrdered')) {
+    function assertOrdered(string $haystack, string $first, string $second): void
+    {
+        $firstPos = strpos($haystack, $first);
+        $secondPos = strpos($haystack, $second);
+        if ($firstPos === false || $secondPos === false || $firstPos >= $secondPos) {
+            throw new RuntimeException('Failed asserting that output ordering is correct.');
+        }
     }
 }
 
-function assertStringNotContains(string $needle, string $haystack): void
-{
-    if (str_contains($haystack, $needle)) {
-        throw new RuntimeException('Failed asserting that output does not contain: ' . $needle);
+if (!function_exists('assertStringNotContains')) {
+    function assertStringNotContains(string $needle, string $haystack): void
+    {
+        if (str_contains($haystack, $needle)) {
+            throw new RuntimeException('Failed asserting that output does not contain: ' . $needle);
+        }
     }
 }

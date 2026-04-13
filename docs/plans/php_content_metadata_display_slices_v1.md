@@ -181,6 +181,12 @@ Expected outcome:
 
 - the standardized display survives future template and query changes
 
+Implementation status:
+
+- smoke coverage now asserts friendly metadata output on thread, post, activity, API, and RSS surfaces
+- write-path smoke coverage now checks that canonical post files include `Created-At`
+- the local PHP test runner can execute all test files without helper redeclaration fatals
+
 ## Optional Follow-On Improvements
 
 These are not required for the first retained slice.

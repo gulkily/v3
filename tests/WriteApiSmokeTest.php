@@ -44,13 +44,15 @@ final class WriteApiSmokeTest
         assertStringContains('status=ok', $threadResponse);
         assertTrue(strlen($threadCommitSha) === 40);
         assertTrue(is_file($repositoryRoot . '/records/posts/' . $threadId . '.txt'));
+        assertStringContains('Created-At: ', (string) file_get_contents($repositoryRoot . '/records/posts/' . $threadId . '.txt'));
         assertStringContains('New Thread', $threadPage);
         assertFalse(is_file($artifactRoot . '/index.html'));
         assertStringContains('status=ok', $replyResponse);
         assertTrue(strlen($replyCommitSha) === 40);
         assertTrue(is_file($repositoryRoot . '/records/posts/' . $replyId . '.txt'));
+        assertStringContains('Created-At: ', (string) file_get_contents($repositoryRoot . '/records/posts/' . $replyId . '.txt'));
         assertStringContains('Reply body', $postPage);
-        assertStringContains('Author guest', $postPage);
+        assertStringContains('Posted by guest on <time datetime="', $postPage);
         assertFalse(is_file($artifactRoot . '/threads/' . $threadId . '.html'));
         assertFalse(is_file($artifactRoot . '/posts/' . $replyId . '.html'));
         assertTrue(is_file($artifactRoot . '/posts/' . $threadId . '.html'));
@@ -203,6 +205,7 @@ final class WriteApiSmokeTest
         assertStringContains('status=ok', $threadResponse);
         assertStringContains('forum-user', $threadPage);
         assertStringContains('/user/forum-user', $threadPage);
+        assertStringContains('Started by <a href="/user/forum-user">forum-user</a> on <time datetime="', $threadPage);
         assertStringNotContains('(unapproved)', $threadPage);
         assertFalse(str_contains($threadPage, 'by guest'));
     }
@@ -438,7 +441,7 @@ final class WriteApiSmokeTest
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertStringContains('bob', $pendingUsers);
         assertStringNotContains('alice', $pendingUsers);
-        assertStringContains('<table>', $pendingUsers);
+        assertStringContains('<table ', $pendingUsers);
         assertStringContains('Approve', $pendingUsers);
         assertStringNotContains('Username route', $pendingUsers);
         assertStringNotContains('Threads', $pendingUsers);
@@ -709,9 +712,11 @@ final class WriteApiSmokeTest
 
 }
 
-function assertFalse(bool $condition): void
-{
-    if ($condition) {
-        throw new RuntimeException('Failed asserting that condition is false.');
+if (!function_exists('assertFalse')) {
+    function assertFalse(bool $condition): void
+    {
+        if ($condition) {
+            throw new RuntimeException('Failed asserting that condition is false.');
+        }
     }
 }

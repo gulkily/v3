@@ -251,38 +251,46 @@ final class CanonicalRecordParsersTest
     }
 }
 
-function assertSame(mixed $expected, mixed $actual): void
-{
-    if ($expected !== $actual) {
-        throw new RuntimeException('Failed asserting that values are identical.');
+if (!function_exists('assertSame')) {
+    function assertSame(mixed $expected, mixed $actual): void
+    {
+        if ($expected !== $actual) {
+            throw new RuntimeException('Failed asserting that values are identical.');
+        }
     }
 }
 
-function assertNullValue(mixed $actual): void
-{
-    if ($actual !== null) {
-        throw new RuntimeException('Failed asserting that value is null.');
+if (!function_exists('assertNullValue')) {
+    function assertNullValue(mixed $actual): void
+    {
+        if ($actual !== null) {
+            throw new RuntimeException('Failed asserting that value is null.');
+        }
     }
 }
 
-function assertTrue(bool $actual): void
-{
-    if ($actual !== true) {
-        throw new RuntimeException('Failed asserting that value is true.');
+if (!function_exists('assertTrue')) {
+    function assertTrue(bool $actual): void
+    {
+        if ($actual !== true) {
+            throw new RuntimeException('Failed asserting that value is true.');
+        }
     }
 }
 
-function assertThrows(callable $callback, string $expectedMessage): void
-{
-    try {
-        $callback();
-    } catch (CanonicalRecordParseException $exception) {
-        if ($exception->getMessage() !== $expectedMessage) {
-            throw new RuntimeException('Unexpected exception message: ' . $exception->getMessage());
+if (!function_exists('assertThrows')) {
+    function assertThrows(callable $callback, string $expectedMessage): void
+    {
+        try {
+            $callback();
+        } catch (CanonicalRecordParseException $exception) {
+            if ($exception->getMessage() !== $expectedMessage) {
+                throw new RuntimeException('Unexpected exception message: ' . $exception->getMessage());
+            }
+
+            return;
         }
 
-        return;
+        throw new RuntimeException('Expected CanonicalRecordParseException was not thrown.');
     }
-
-    throw new RuntimeException('Expected CanonicalRecordParseException was not thrown.');
 }
