@@ -1,6 +1,17 @@
+<?php
+$profileSlug = (string) $profile['profile_slug'];
+$headingLabel = trim((string) ($profile['username'] ?? ''));
+if ($headingLabel === '') {
+    $headingLabel = trim((string) ($profile['fallback_label'] ?? ''));
+}
+if ($headingLabel === '') {
+    $headingLabel = $profileSlug;
+}
+?>
 <section class="stack">
   <article class="card">
-    <h1>Profile <?= $e($profile['profile_slug']) ?></h1>
+    <h1><?= $e($headingLabel) ?></h1>
+    <p class="meta">Profile <?= $e($profileSlug) ?></p>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
   </article>
 <?php if ($self): ?>

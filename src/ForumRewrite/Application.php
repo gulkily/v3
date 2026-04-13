@@ -453,6 +453,13 @@ final class Application
             && ((int) $viewerProfile['is_approved']) === 1
             && ((int) $profile['is_approved']) !== 1
             && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id']);
+        $pageTitleLabel = trim((string) ($profile['username'] ?? ''));
+        if ($pageTitleLabel === '') {
+            $pageTitleLabel = trim((string) ($profile['fallback_label'] ?? ''));
+        }
+        if ($pageTitleLabel === '') {
+            $pageTitleLabel = (string) $profile['profile_slug'];
+        }
 
         return $this->renderer()->renderPageTemplate(
             'profile.php',
@@ -465,7 +472,7 @@ final class Application
                 'viewerProfile' => $viewerProfile,
                 'canApprove' => $canApprove,
             ],
-            'Profile ' . $profile['profile_slug'],
+            $pageTitleLabel . ' - Profile',
             'profiles',
         );
     }

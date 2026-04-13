@@ -337,6 +337,7 @@ pre {
   border: 1px solid var(--line);
   background: var(--panel);
   padding: 0.9rem;
+  overflow-wrap: anywhere;
 }
 
 :root[data-theme="chicago"] .shell {
