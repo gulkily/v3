@@ -723,13 +723,22 @@ final class Application
         return $this->renderComposeReplyPage($threadId, $parentId);
     }
 
-    private function renderComposeReplyPage(string $threadId, string $parentId, ?string $notice = null, ?string $error = null): string
+    private function renderComposeReplyPage(
+        string $threadId,
+        string $parentId,
+        ?string $notice = null,
+        ?string $error = null,
+        string $boardTags = 'general',
+        string $body = ''
+    ): string
     {
         return $this->renderer()->renderPageTemplate('compose_reply.php', [
             'threadId' => $threadId,
             'parentId' => $parentId,
             'notice' => $notice,
             'error' => $error,
+            'boardTags' => $boardTags !== '' ? $boardTags : 'general',
+            'body' => $body,
         ], 'Compose Reply', 'compose', [
             '/assets/openpgp.min.js',
             '/assets/browser_signing.js',
@@ -1580,7 +1589,16 @@ final class Application
                 'Created thread ' . $result['thread_id'] . '. Commit ' . $result['commit_sha'] . '.'
             );
         } catch (RuntimeException $exception) {
-            $this->sendHtml($this->renderComposeThreadPage('general', '', '', null, $exception->getMessage()), 400);
+            $this->sendHtml(
+                $this->renderComposeThreadPage(
+                    (string) ($input['board_tags'] ?? 'general'),
+                    (string) ($input['subject'] ?? ''),
+                    (string) ($input['body'] ?? ''),
+                    null,
+                    $exception->getMessage()
+                ),
+                400
+            );
         }
     }
 
@@ -1600,7 +1618,17 @@ final class Application
                 . 'Commit ' . $this->escape($result['commit_sha']);
             $this->sendHtml($this->renderComposeReplyPage($threadId, $parentId, $notice, null), 200);
         } catch (RuntimeException $exception) {
-            $this->sendHtml($this->renderComposeReplyPage($threadId, $parentId, null, $exception->getMessage()), 400);
+            $this->sendHtml(
+                $this->renderComposeReplyPage(
+                    $threadId,
+                    $parentId,
+                    null,
+                    $exception->getMessage(),
+                    (string) ($input['board_tags'] ?? 'general'),
+                    (string) ($input['body'] ?? '')
+                ),
+                400
+            );
         }
     }
 

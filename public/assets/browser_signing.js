@@ -6,6 +6,7 @@
     fingerprint: "forum_pki_fingerprint",
     publishedFingerprint: "forum_pki_published_fingerprint",
     composePromptCancelled: "forum_pki_compose_prompt_cancelled",
+    composeDraftPrefix: "forum_compose_draft",
   };
   let clearedKeypairBackup = null;
   const ASCII_COMPOSE_REPLACEMENTS = new Map([
@@ -65,6 +66,106 @@
       unsupportedCount: removeUnsupported ? 0 : unsupportedBeforeRemoval.length,
       removedUnsupportedCount: removeUnsupported ? unsupportedBeforeRemoval.length : 0,
     };
+  }
+
+  function composeDraftKey(form) {
+    const kind = form.dataset.composeKind || "compose";
+    if (kind === "reply") {
+      const threadIdField = form.querySelector('input[name="thread_id"]');
+      const parentIdField = form.querySelector('input[name="parent_id"]');
+      const threadId = threadIdField ? threadIdField.value : "";
+      const parentId = parentIdField ? parentIdField.value : "";
+      return `${storageKeys.composeDraftPrefix}:${kind}:${threadId}:${parentId}`;
+    }
+
+    return `${storageKeys.composeDraftPrefix}:${kind}`;
+  }
+
+  function composeDraftFields(form) {
+    return Array.from(form.querySelectorAll("input[name], textarea[name]")).filter(function (field) {
+      if (!field.name || field.name === "author_identity_id") {
+        return false;
+      }
+
+      if (field.tagName === "TEXTAREA") {
+        return true;
+      }
+
+      if (field.tagName !== "INPUT") {
+        return false;
+      }
+
+      const type = (field.getAttribute("type") || "text").toLowerCase();
+      return type !== "hidden" || field.name === "thread_id" || field.name === "parent_id";
+    });
+  }
+
+  function serializeComposeDraft(form) {
+    const fields = {};
+    composeDraftFields(form).forEach(function (field) {
+      fields[field.name] = field.value;
+    });
+
+    return {
+      fields: fields,
+      savedAt: Date.now(),
+    };
+  }
+
+  function saveComposeDraft(form) {
+    try {
+      localStorage.setItem(composeDraftKey(form), JSON.stringify(serializeComposeDraft(form)));
+    } catch (error) {
+    }
+  }
+
+  function loadComposeDraft(form) {
+    try {
+      const raw = localStorage.getItem(composeDraftKey(form));
+      if (!raw) {
+        return null;
+      }
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object" || !parsed.fields || typeof parsed.fields !== "object") {
+        return null;
+      }
+
+      return parsed;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function clearComposeDraft(form) {
+    try {
+      localStorage.removeItem(composeDraftKey(form));
+    } catch (error) {
+    }
+  }
+
+  function restoreComposeDraft(form) {
+    const draft = loadComposeDraft(form);
+    if (!draft) {
+      return false;
+    }
+
+    let restoredAny = false;
+    composeDraftFields(form).forEach(function (field) {
+      if (!Object.prototype.hasOwnProperty.call(draft.fields, field.name)) {
+        return;
+      }
+
+      const nextValue = String(draft.fields[field.name] || "");
+      if (field.value === nextValue) {
+        return;
+      }
+
+      field.value = nextValue;
+      restoredAny = true;
+    });
+
+    return restoredAny;
   }
 
   if (typeof window !== "undefined") {
@@ -543,15 +644,28 @@
   function bindComposePage(root) {
     const form = root.querySelector("[data-compose-form]");
     const statusNode = root.querySelector('[data-role="compose-identity-status"]');
-    const bodyField = form ? form.querySelector('textarea[name="body"]') : null;
+    const submitButtons = form ? Array.from(form.querySelectorAll('button[type="submit"], input[type="submit"]')) : [];
+    const textFields = form ? composeDraftFields(form).filter(function (field) {
+      if (field.tagName === "TEXTAREA") {
+        return true;
+      }
+
+      if (field.tagName !== "INPUT") {
+        return false;
+      }
+
+      const type = (field.getAttribute("type") || "text").toLowerCase();
+      return type === "text" || type === "search";
+    }) : [];
+    const fieldNormalizationStatusNodes = form ? Array.from(root.querySelectorAll('[data-role="compose-field-normalization-status"]')) : [];
+    const removeUnsupportedButtons = form ? Array.from(root.querySelectorAll('[data-action="remove-unsupported-compose-characters"]')) : [];
     const normalizationStatusNode = root.querySelector('[data-role="compose-normalization-status"]');
     const normalizationMessageNode = root.querySelector('[data-role="compose-normalization-message"]');
-    const removeUnsupportedButton = root.querySelector('[data-action="remove-unsupported-compose-characters"]');
     if (!form) {
       return;
     }
 
-    function updateComposeNormalizationStatus(message, kind, allowRemoval) {
+    function updateComposeNormalizationStatus(message, kind) {
       if (!normalizationStatusNode) {
         return;
       }
@@ -564,10 +678,6 @@
         } else {
           normalizationStatusNode.textContent = "";
         }
-        if (removeUnsupportedButton) {
-          removeUnsupportedButton.hidden = true;
-          removeUnsupportedButton.disabled = true;
-        }
         return;
       }
 
@@ -578,60 +688,215 @@
       } else {
         normalizationStatusNode.textContent = message;
       }
-      if (removeUnsupportedButton) {
-        removeUnsupportedButton.hidden = !allowRemoval;
-        removeUnsupportedButton.disabled = !allowRemoval;
+    }
+
+    function fieldStatusNode(field) {
+      return fieldNormalizationStatusNodes.find(function (node) {
+        return node.dataset.composeFieldStatusFor === field.name;
+      }) || null;
+    }
+
+    function fieldRemoveButton(field) {
+      return removeUnsupportedButtons.find(function (button) {
+        return button.dataset.composeFieldRemoveFor === field.name;
+      }) || null;
+    }
+
+    function clearFieldNormalizationStatuses() {
+      fieldNormalizationStatusNodes.forEach(function (node) {
+        node.hidden = true;
+        node.dataset.kind = "";
+        const messageNode = node.querySelector('[data-role="compose-field-normalization-message"]');
+        if (messageNode) {
+          messageNode.textContent = "";
+        } else {
+          node.textContent = "";
+        }
+      });
+
+      removeUnsupportedButtons.forEach(function (button) {
+        button.hidden = true;
+        button.disabled = true;
+      });
+    }
+
+    function updateFieldNormalizationStatus(field, message, kind, allowRemoval) {
+      const node = fieldStatusNode(field);
+      const button = fieldRemoveButton(field);
+      if (!node) {
+        return;
+      }
+
+      if (!message) {
+        node.hidden = true;
+        node.dataset.kind = "";
+        const emptyMessageNode = node.querySelector('[data-role="compose-field-normalization-message"]');
+        if (emptyMessageNode) {
+          emptyMessageNode.textContent = "";
+        } else {
+          node.textContent = "";
+        }
+        if (button) {
+          button.hidden = true;
+          button.disabled = true;
+        }
+        return;
+      }
+
+      node.hidden = false;
+      node.dataset.kind = kind || "";
+      const messageNode = node.querySelector('[data-role="compose-field-normalization-message"]');
+      if (messageNode) {
+        messageNode.textContent = message;
+      } else {
+        node.textContent = message;
+      }
+      if (button) {
+        button.hidden = !allowRemoval;
+        button.disabled = !allowRemoval;
       }
     }
 
-    function normalizeBodyInput(options) {
-      if (!bodyField) {
-        return {
-          text: "",
-          hadCorrections: false,
-          unsupportedCount: 0,
-          removedUnsupportedCount: 0,
-        };
-      }
+    function setSubmitButtonsDisabled(disabled) {
+      submitButtons.forEach(function (button) {
+        button.disabled = disabled;
+      });
+    }
 
-      const result = normalizeComposeAscii(bodyField.value, options);
-      if (bodyField.value !== result.text) {
-        bodyField.value = result.text;
-      }
-
-      if (result.removedUnsupportedCount > 0) {
-        updateComposeNormalizationStatus(
-          "Removed " + result.removedUnsupportedCount + " unsupported character" + (result.removedUnsupportedCount === 1 ? "" : "s") + ".",
-          "ok",
-          false
-        );
-      } else if (result.unsupportedCount > 0) {
-        updateComposeNormalizationStatus("Text contains unsupported characters.", "error", true);
-      } else if (result.hadCorrections) {
-        updateComposeNormalizationStatus("", "", false);
-      } else {
-        updateComposeNormalizationStatus("", "", false);
+    function normalizeComposeField(field, options) {
+      const result = normalizeComposeAscii(field.value, options);
+      if (field.value !== result.text) {
+        field.value = result.text;
       }
 
       return result;
+    }
+
+    function fieldLabel(field) {
+      return field.dataset.composeFieldLabel || field.name || "field";
+    }
+
+    function fieldByName(name) {
+      return textFields.find(function (field) {
+        return field.name === name;
+      }) || null;
+    }
+
+    function normalizeComposeFields(options) {
+      const config = options || {};
+      const removeUnsupported = config.removeUnsupported !== false;
+      const unsupportedFields = [];
+
+      clearFieldNormalizationStatuses();
+
+      textFields.forEach(function (field) {
+        const result = normalizeComposeField(field, { removeUnsupported: removeUnsupported });
+        if (result.unsupportedCount > 0) {
+          unsupportedFields.push(field);
+          updateFieldNormalizationStatus(
+            field,
+            fieldLabel(field) + " contains unsupported characters.",
+            "error",
+            true
+          );
+        } else if (result.removedUnsupportedCount > 0) {
+          updateFieldNormalizationStatus(
+            field,
+            "Removed "
+              + result.removedUnsupportedCount
+              + " unsupported character"
+              + (result.removedUnsupportedCount === 1 ? "" : "s")
+              + " from "
+              + fieldLabel(field)
+              + ".",
+            "ok",
+            false
+          );
+        }
+      });
+
+      if (unsupportedFields.length > 0) {
+        updateComposeNormalizationStatus("Remove unsupported characters before submitting.", "error");
+      } else {
+        updateComposeNormalizationStatus("", "");
+      }
+
+      saveComposeDraft(form);
+
+      return {
+        hasUnsupported: unsupportedFields.length > 0,
+      };
+    }
+
+    function removeUnsupportedFromField(field) {
+      if (!field) {
+        return;
+      }
+
+      const result = normalizeComposeField(field, { removeUnsupported: true });
+      if (result.removedUnsupportedCount > 0) {
+        updateFieldNormalizationStatus(
+          field,
+          "Removed "
+            + result.removedUnsupportedCount
+            + " unsupported character"
+            + (result.removedUnsupportedCount === 1 ? "" : "s")
+            + " from "
+            + fieldLabel(field)
+            + ".",
+          "ok",
+          false
+        );
+      }
+
+      const summary = normalizeComposeFields({ removeUnsupported: false });
+      if (!summary.hasUnsupported && result.removedUnsupportedCount > 0) {
+        updateFieldNormalizationStatus(
+          field,
+          "Removed "
+            + result.removedUnsupportedCount
+            + " unsupported character"
+            + (result.removedUnsupportedCount === 1 ? "" : "s")
+            + " from "
+            + fieldLabel(field)
+            + ".",
+          "ok",
+          false
+        );
+      }
+    }
+
+    function restoreComposeUiState() {
+      submitInFlight = false;
+      setSubmitButtonsDisabled(false);
+      normalizeComposeFields({ removeUnsupported: false });
     }
 
     if (hasBrowserKeypair()) {
       void syncIdentityHint(preferredIdentityHint());
     }
 
-    if (bodyField) {
-      normalizeBodyInput();
-      bodyField.addEventListener("input", function () {
-        normalizeBodyInput();
-      });
+    if (root.dataset.composeSubmitted === "1") {
+      clearComposeDraft(form);
+    } else {
+      restoreComposeDraft(form);
     }
+    normalizeComposeFields({ removeUnsupported: false });
 
-    if (removeUnsupportedButton) {
-      removeUnsupportedButton.addEventListener("click", function () {
-        normalizeBodyInput({ removeUnsupported: true });
+    textFields.forEach(function (field) {
+      field.addEventListener("input", function () {
+        normalizeComposeFields({ removeUnsupported: false });
       });
-    }
+      field.addEventListener("change", function () {
+        saveComposeDraft(form);
+      });
+    });
+
+    removeUnsupportedButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        removeUnsupportedFromField(fieldByName(button.dataset.composeFieldRemoveFor || ""));
+      });
+    });
 
     let submitInFlight = false;
     form.addEventListener("submit", async function (event) {
@@ -642,16 +907,11 @@
       const submitter = event.submitter;
       event.preventDefault();
       submitInFlight = true;
-      if (submitter && typeof submitter.disabled === "boolean") {
-        submitter.disabled = true;
-      }
-
-      const normalizationResult = normalizeBodyInput();
-      if (normalizationResult.unsupportedCount > 0) {
+      setSubmitButtonsDisabled(true);
+      const normalizationResult = normalizeComposeFields({ removeUnsupported: false });
+      if (normalizationResult.hasUnsupported) {
         submitInFlight = false;
-        if (submitter && typeof submitter.disabled === "boolean") {
-          submitter.disabled = false;
-        }
+        setSubmitButtonsDisabled(false);
         return;
       }
 
@@ -666,11 +926,12 @@
           error instanceof Error ? error.message : "Unable to prepare your browser identity. Use /account/key/ manually.",
           "error"
         );
-        submitInFlight = false;
-        if (submitter && typeof submitter.disabled === "boolean") {
-          submitter.disabled = false;
-        }
+        restoreComposeUiState();
       }
+    });
+
+    window.addEventListener("pageshow", function () {
+      restoreComposeUiState();
     });
   }
 

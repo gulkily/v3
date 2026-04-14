@@ -264,15 +264,68 @@ final class LocalAppSmokeTest
         assertStringContains('compose-normalization-inline', $thread);
         assertStringContains('data-role="compose-normalization-status"', $thread);
         assertStringContains('data-role="compose-normalization-message"', $thread);
+        assertStringContains('data-role="compose-field-normalization-status"', $thread);
+        assertStringContains('data-compose-field-status-for="board_tags"', $thread);
+        assertStringContains('data-compose-field-status-for="subject"', $thread);
+        assertStringContains('data-compose-field-status-for="body"', $thread);
+        assertStringContains('data-compose-field-label="Subject"', $thread);
+        assertStringContains('data-compose-field-label="Body"', $thread);
         assertStringContains('data-action="remove-unsupported-compose-characters"', $thread);
-        assertStringNotContains('data-role="compose-normalization-actions"', $thread);
+        assertStringContains('data-compose-field-remove-for="board_tags"', $thread);
+        assertStringContains('data-compose-field-remove-for="subject"', $thread);
+        assertStringContains('data-compose-field-remove-for="body"', $thread);
         assertStringContains('hidden', $thread);
         assertStringContains('compose-normalization-inline', $reply);
         assertStringContains('data-role="compose-normalization-status"', $reply);
         assertStringContains('data-role="compose-normalization-message"', $reply);
+        assertStringContains('data-compose-field-status-for="board_tags"', $reply);
+        assertStringContains('data-compose-field-status-for="body"', $reply);
+        assertStringContains('data-compose-field-label="Body"', $reply);
         assertStringContains('data-action="remove-unsupported-compose-characters"', $reply);
-        assertStringNotContains('data-role="compose-normalization-actions"', $reply);
+        assertStringContains('data-compose-field-remove-for="board_tags"', $reply);
+        assertStringContains('data-compose-field-remove-for="body"', $reply);
         assertStringContains('hidden', $reply);
+    }
+
+    public function testComposeThreadSubmitErrorPreservesEnteredValues(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/compose/thread?board_tags=ios&subject=Bad%E2%80%99Title&body=Saved%20Body'
+        );
+        $decoded = html_entity_decode($response, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        assertStringContains('value="ios"', $response);
+        assertStringContains('value="Bad’Title"', $decoded);
+        assertStringContains('>Saved Body</textarea>', $decoded);
+    }
+
+    public function testComposeReplySubmitErrorPreservesEnteredValues(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/compose/reply?thread_id=root-001&parent_id=root-001&board_tags=custom&body=Emoji%20%F0%9F%99%82'
+        );
+        $decoded = html_entity_decode($response, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        assertStringContains('value="custom"', $response);
+        assertStringContains('>Emoji 🙂</textarea>', $decoded);
     }
 
     public function testInstanceDownloadRoutesReturnRepositoryArchivesAndSqliteDatabase(): void
