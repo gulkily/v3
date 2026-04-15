@@ -54,6 +54,36 @@ NODE;
         assertSame(0, $result['removedUnsupportedCount']);
     }
 
+    public function testNormalizeComposeAsciiTransliteratesApprovedLatinDiacritics(): void
+    {
+        $result = $this->runHelper('Café déjà vu. François ate smörgåsbord.');
+
+        assertSame('Cafe deja vu. Francois ate smorgasbord.', $result['text']);
+        assertSame(true, $result['hadCorrections']);
+        assertSame(0, $result['unsupportedCount']);
+        assertSame(0, $result['removedUnsupportedCount']);
+    }
+
+    public function testNormalizeComposeAsciiTransliteratesUppercaseAndLigatures(): void
+    {
+        $result = $this->runHelper('Æsir and Œuvre in STRAẞE ŁÓDŹ');
+
+        assertSame('AEsir and OEuvre in STRASSE LODZ', $result['text']);
+        assertSame(true, $result['hadCorrections']);
+        assertSame(0, $result['unsupportedCount']);
+        assertSame(0, $result['removedUnsupportedCount']);
+    }
+
+    public function testNormalizeComposeAsciiKeepsUnsupportedNonLatinCharactersVisible(): void
+    {
+        $result = $this->runHelper('Café Привет');
+
+        assertSame('Cafe Привет', $result['text']);
+        assertSame(true, $result['hadCorrections']);
+        assertSame(6, $result['unsupportedCount']);
+        assertSame(0, $result['removedUnsupportedCount']);
+    }
+
     public function testNormalizeComposeAsciiReportsUnsupportedCharacters(): void
     {
         $result = $this->runHelper('emoji 🙂 test');
@@ -72,6 +102,16 @@ NODE;
         assertSame(false, $result['hadCorrections']);
         assertSame(0, $result['unsupportedCount']);
         assertSame(1, $result['removedUnsupportedCount']);
+    }
+
+    public function testNormalizeComposeAsciiCanCombinePunctuationTransliterationAndRemoval(): void
+    {
+        $result = $this->runHelper('“Café”… Привет', true);
+
+        assertSame('"Cafe"... ', $result['text']);
+        assertSame(true, $result['hadCorrections']);
+        assertSame(0, $result['unsupportedCount']);
+        assertSame(6, $result['removedUnsupportedCount']);
     }
 }
 
