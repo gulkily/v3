@@ -101,7 +101,7 @@ final class FrontController
             ]);
         }
 
-        if ($path === '/instance/' || $path === '/instance') {
+        if ($path === '/instance/' || $path === '/instance' || $path === '/backup/' || $path === '/backup') {
             return $this->firstExistingPath([
                 $this->publicRoot . '/instance.html',
                 $this->staticHtmlRoot . '/instance/index.html',

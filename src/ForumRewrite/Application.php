@@ -114,7 +114,7 @@ final class Application
             return;
         }
 
-        if ($path === '/instance/' || $path === '/instance') {
+        if ($path === '/instance/' || $path === '/instance' || $path === '/backup/' || $path === '/backup') {
             $this->sendHtml($this->renderInstance(), 200);
             return;
         }
@@ -879,7 +879,7 @@ final class Application
 
     private function renderLlmsTxt(): string
     {
-        return "Local test slice\nGET /api/\nGET /api/list_index\nGET /api/get_thread\nGET /compose/thread\nGET /compose/reply\nGET /account/key/\nGET /instance/\n";
+        return "Local test slice\nGET /api/\nGET /api/list_index\nGET /api/get_thread\nGET /compose/thread\nGET /compose/reply\nGET /account/key/\nGET /instance/\nGET /backup/\n";
     }
 
     private function renderPage(string $title, string $content, string $activeSection, array $scriptPaths = []): string

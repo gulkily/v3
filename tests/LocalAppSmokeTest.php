@@ -120,6 +120,7 @@ final class LocalAppSmokeTest
         $thread = $this->render($application, '/threads/root-001');
         $post = $this->render($application, '/posts/root-001');
         $instance = $this->render($application, '/instance/');
+        $backup = $this->render($application, '/backup/');
         $profile = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         $username = $this->render($application, '/user/guest');
         $_COOKIE = ['identity_hint' => 'guest'];
@@ -144,6 +145,8 @@ final class LocalAppSmokeTest
         assertStringContains('by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $post);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $post);
         assertStringContains('zenmemes', $instance);
+        assertStringContains('Backup', $backup);
+        assertStringContains('/backup/', $backup);
         assertStringContains('/user/guest', $instance);
         assertStringContains('/downloads/repository.tar.gz', $instance);
         assertStringContains('/downloads/repository.zip', $instance);
@@ -407,6 +410,27 @@ final class LocalAppSmokeTest
         $response = $this->renderFrontController($controller, 'GET', '/', []);
 
         assertStringContains('Static Board', $response);
+        assertStringContains('route-source: static-html', $response);
+    }
+
+    public function testFrontControllerServesStaticArtifactForBackupAlias(): void
+    {
+        @unlink($this->databasePath);
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        mkdir($staticHtmlRoot, 0777, true);
+        mkdir($staticHtmlRoot . '/instance', 0777, true);
+        file_put_contents($staticHtmlRoot . '/instance/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Backup</h1></body></html>');
+
+        $controller = new FrontController(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $staticHtmlRoot,
+        );
+
+        $response = $this->renderFrontController($controller, 'GET', '/backup/', []);
+
+        assertStringContains('Static Backup', $response);
         assertStringContains('route-source: static-html', $response);
     }
 

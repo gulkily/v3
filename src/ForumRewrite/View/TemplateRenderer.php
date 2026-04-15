@@ -65,7 +65,7 @@ final class TemplateRenderer
                 ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],
                 ['href' => '/compose/thread', 'label' => 'Compose', 'section' => 'compose'],
                 ['href' => '/account/key/', 'label' => 'Account', 'section' => 'account'],
-                ['href' => '/instance/', 'label' => 'Backup', 'section' => 'instance'],
+                ['href' => '/backup/', 'label' => 'Backup', 'section' => 'instance'],
             ],
         ]);
     }
