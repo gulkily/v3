@@ -573,7 +573,7 @@ final class Application
                     ],
                 ],
             ],
-            'Instance',
+            'Backup',
             'instance',
         );
     }

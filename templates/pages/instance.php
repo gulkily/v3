@@ -1,6 +1,6 @@
 <section class="stack">
   <article class="card">
-    <h1>Instance</h1>
+    <h1>Backup</h1>
     <p><strong>Name:</strong> <?= $e($siteName) ?></p>
     <p><strong>Admin:</strong>
 <?php if ($admins === []): ?>
