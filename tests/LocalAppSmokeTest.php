@@ -170,6 +170,11 @@ final class LocalAppSmokeTest
         assertStringNotContains('/users/pending/', $users);
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertStringContains('/assets/pending_approvals.js', $pendingUsers);
+        assertStringContains('meta name="app-version" content="no-git"', $board);
+        assertStringContains('/assets/site.css?v=no-git', $board);
+        assertStringContains('/assets/theme_toggle.js?v=no-git', $board);
+        assertStringContains('/assets/version_check.js?v=no-git', $board);
+        assertStringContains('data-role="app-version-banner"', $board);
         assertStringContains('Compose Thread', $composeThread);
         assertStringContains('browser_signing.js', $composeThread);
         assertStringContains('Ready.', $composeThread);
@@ -202,11 +207,13 @@ final class LocalAppSmokeTest
         $thread = $this->render($application, '/api/get_thread?thread_id=root-001');
         $post = $this->render($application, '/api/get_post?post_id=root-001');
         $profile = $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+        $version = $this->render($application, '/api/version');
         $readModelStatus = $this->render($application, '/api/read_model_status');
         $boardRss = $this->render($application, '/?format=rss');
         $threadRss = $this->render($application, '/threads/root-001?format=rss');
         $activityRss = $this->render($application, '/activity/?view=all&format=rss');
 
+        assertStringContains('GET /api/version', $apiIndex);
         assertStringContains('GET /api/get_thread?thread_id=<id>', $apiIndex);
         assertStringContains("root-001\tHello world\t1", $listIndex);
         assertStringContains('Created-At: 2026-04-10T12:00:00Z', $thread);
@@ -216,6 +223,7 @@ final class LocalAppSmokeTest
         assertStringContains('Created-At: 2026-04-10T12:00:00Z', $post);
         assertStringContains('Profile-Slug: openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $profile);
         assertStringContains('Approved: yes', $profile);
+        assertSame("no-git\n", $version);
         assertStringContains('status=ready', $readModelStatus);
         assertStringContains('lock_status=unlocked', $readModelStatus);
         assertStringContains('stale_marker=absent', $readModelStatus);

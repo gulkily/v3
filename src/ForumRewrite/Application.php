@@ -19,6 +19,7 @@ use PDOStatement;
 final class Application
 {
     private const HIDDEN_BOOTSTRAP_TAG = 'identity';
+    private ?string $appVersion = null;
 
     public function __construct(
         private readonly string $projectRoot,
@@ -30,11 +31,20 @@ final class Application
 
     public function handle(string $method, string $requestUri): void
     {
-        $this->ensureReadModel();
-
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
+
+        if ($path === '/api/version') {
+            $this->sendText($this->appVersion() . "\n", 200, [
+                'Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma: no-cache',
+                'Expires: 0',
+            ]);
+            return;
+        }
+
+        $this->ensureReadModel();
 
         if ($path === '/api/set_identity_hint') {
             $this->handleSetIdentityHint($method, $query);
@@ -764,7 +774,7 @@ final class Application
 
     private function renderApiIndex(): string
     {
-        return "GET /api/\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nPOST /api/set_identity_hint\n";
+        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nPOST /api/set_identity_hint\n";
     }
 
     private function renderApiListIndex(): string
@@ -879,7 +889,18 @@ final class Application
 
     private function renderer(): TemplateRenderer
     {
-        return new TemplateRenderer($this->projectRoot . '/templates');
+        return new TemplateRenderer($this->projectRoot . '/templates', $this->appVersion());
+    }
+
+    private function appVersion(): string
+    {
+        if ($this->appVersion !== null) {
+            return $this->appVersion;
+        }
+
+        $this->appVersion = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+
+        return $this->appVersion;
     }
 
     /**
@@ -1760,10 +1781,13 @@ final class Application
         echo $html;
     }
 
-    private function sendText(string $text, int $statusCode): void
+    private function sendText(string $text, int $statusCode, array $headers = []): void
     {
         http_response_code($statusCode);
         header('Content-Type: text/plain; charset=utf-8');
+        foreach ($headers as $headerValue) {
+            header($headerValue);
+        }
         echo $text;
     }
 

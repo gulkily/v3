@@ -11,6 +11,7 @@ final class TemplateRenderer
 {
     public function __construct(
         private readonly string $templateRoot,
+        private readonly string $appVersion = 'unknown',
     ) {
     }
 
@@ -41,13 +42,22 @@ final class TemplateRenderer
         array $scriptPaths = [],
         string $routeSource = 'php-fallback',
     ): string {
+        $versionedScriptPaths = [];
+        foreach ($scriptPaths as $scriptPath) {
+            $versionedScriptPaths[] = $this->appendVersionQuery($scriptPath);
+        }
+
         return $this->renderFile('layout.php', [
             'title' => $title,
             'content' => $content,
             'activeSection' => $activeSection,
-            'scriptPaths' => $scriptPaths,
+            'scriptPaths' => $versionedScriptPaths,
             'routeSource' => $routeSource,
             'siteName' => SiteConfig::SITE_NAME,
+            'appVersion' => $this->appVersion,
+            'siteCssPath' => $this->appendVersionQuery('/assets/site.css'),
+            'themeToggleScriptPath' => $this->appendVersionQuery('/assets/theme_toggle.js'),
+            'versionCheckScriptPath' => $this->appendVersionQuery('/assets/version_check.js'),
             'navItems' => [
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],
                 ['href' => '/activity/', 'label' => 'Activity', 'section' => 'activity'],
@@ -208,5 +218,12 @@ final class TemplateRenderer
         }
 
         return '<time datetime="' . $escape($value) . '">' . $escape($this->formatFriendlyTimestamp($value)) . '</time>';
+    }
+
+    private function appendVersionQuery(string $path): string
+    {
+        $separator = str_contains($path, '?') ? '&' : '?';
+
+        return $path . $separator . 'v=' . rawurlencode($this->appVersion);
     }
 }

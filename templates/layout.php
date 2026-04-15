@@ -22,13 +22,22 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="/assets/site.css">
+  <meta name="app-version" content="<?= $e($appVersion) ?>">
+  <meta name="app-version-endpoint" content="/api/version">
+  <link rel="stylesheet" href="<?= $e($siteCssPath) ?>">
 <?php foreach ($scriptPaths as $scriptPath): ?>
   <script src="<?= $e($scriptPath) ?>" defer></script>
 <?php endforeach; ?>
-  <script src="/assets/theme_toggle.js" defer></script>
+  <script src="<?= $e($themeToggleScriptPath) ?>" defer></script>
+  <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>
 </head>
 <body>
+  <div class="app-version-banner" data-role="app-version-banner" hidden>
+    <div class="app-version-banner__inner">
+      <span class="app-version-banner__text">A new version is available.</span>
+      <button type="button" class="app-version-banner__reload" data-action="reload-for-new-version">Reload</button>
+    </div>
+  </div>
   <!-- route-source: <?= $e($routeSource) ?> -->
   <div class="shell">
     <header class="site-header">
