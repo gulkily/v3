@@ -26,6 +26,7 @@ final class Application
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
         private readonly ?string $artifactRoot = null,
+        private readonly string $routeSource = 'php-fallback',
     ) {
     }
 
@@ -392,7 +393,7 @@ final class Application
 
     private function renderBoard(): string
     {
-        return $this->renderer()->renderPageTemplate(
+        return $this->renderPageTemplate(
             'board.php',
             [
                 'threads' => $this->fetchThreads(),
@@ -411,7 +412,7 @@ final class Application
 
         $title = $threadRow['subject'] ?: $threadRow['root_post_id'];
 
-        return $this->renderer()->renderPageTemplate(
+        return $this->renderPageTemplate(
             'thread.php',
             [
                 'thread' => $threadRow,
@@ -430,7 +431,7 @@ final class Application
             return null;
         }
 
-        return $this->renderer()->renderPageTemplate(
+        return $this->renderPageTemplate(
             'post.php',
             [
                 'post' => $post,
@@ -473,7 +474,7 @@ final class Application
             $pageTitleLabel = (string) $profile['profile_slug'];
         }
 
-        return $this->renderer()->renderPageTemplate(
+        return $this->renderPageTemplate(
             'profile.php',
             [
                 'profile' => $profile,
@@ -532,7 +533,7 @@ final class Application
             $approvedProfiles
         ));
 
-        return $this->renderer()->renderPageTemplate(
+        return $this->renderPageTemplate(
             'username.php',
             [
                 'usernameToken' => $usernameToken,
@@ -550,7 +551,7 @@ final class Application
 
     private function renderInstance(): string
     {
-        return $this->renderer()->renderPageTemplate(
+        return $this->renderPageTemplate(
             'instance.php',
             [
                 'siteName' => SiteConfig::SITE_NAME,
@@ -582,7 +583,7 @@ final class Application
     {
         $view = $this->normalizeActivityView($view);
 
-        return $this->renderer()->renderPageTemplate(
+        return $this->renderPageTemplate(
             'activity.php',
             [
                 'view' => $view,
@@ -638,7 +639,7 @@ final class Application
     {
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
 
-        return $this->renderer()->renderPageTemplate(
+        return $this->renderPageTemplate(
             'users.php',
             [
                 'users' => $this->fetchApprovedUserDirectoryUsers(),
@@ -653,7 +654,7 @@ final class Application
 
     private function renderPendingUserDirectory(): string
     {
-        return $this->renderer()->renderPageTemplate(
+        return $this->renderPageTemplate(
             'users_pending.php',
             [
                 'profiles' => $this->fetchPendingUserDirectoryProfiles(),
@@ -666,7 +667,7 @@ final class Application
 
     private function renderTools(): string
     {
-        return $this->renderer()->renderPageTemplate(
+        return $this->renderPageTemplate(
             'tools.php',
             [
                 'bookmarklets' => [
@@ -716,7 +717,7 @@ final class Application
         ?string $error = null
     ): string
     {
-        return $this->renderer()->renderPageTemplate('compose_thread.php', [
+        return $this->renderPageTemplate('compose_thread.php', [
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
             'subject' => $subject,
             'body' => $body,
@@ -742,7 +743,7 @@ final class Application
         string $body = ''
     ): string
     {
-        return $this->renderer()->renderPageTemplate('compose_reply.php', [
+        return $this->renderPageTemplate('compose_reply.php', [
             'threadId' => $threadId,
             'parentId' => $parentId,
             'notice' => $notice,
@@ -762,7 +763,7 @@ final class Application
 
     private function renderAccountKeyPage(?string $notice = null, ?string $error = null): string
     {
-        return $this->renderer()->renderPageTemplate('account_key.php', [
+        return $this->renderPageTemplate('account_key.php', [
             'identityHint' => $_COOKIE['identity_hint'] ?? '',
             'notice' => $notice,
             'error' => $error,
@@ -884,7 +885,28 @@ final class Application
 
     private function renderPage(string $title, string $content, string $activeSection, array $scriptPaths = []): string
     {
-        return $this->renderer()->renderLayout($title, $content, $activeSection, $scriptPaths);
+        return $this->renderer()->renderLayout($title, $content, $activeSection, $scriptPaths, $this->routeSource);
+    }
+
+    /**
+     * @param array<string, mixed> $pageData
+     * @param string[] $scriptPaths
+     */
+    private function renderPageTemplate(
+        string $pageTemplate,
+        array $pageData,
+        string $title,
+        string $activeSection,
+        array $scriptPaths = [],
+    ): string {
+        return $this->renderer()->renderPageTemplate(
+            $pageTemplate,
+            $pageData,
+            $title,
+            $activeSection,
+            $scriptPaths,
+            $this->routeSource,
+        );
     }
 
     private function renderer(): TemplateRenderer
@@ -1804,7 +1826,7 @@ final class Application
         header('Location: ' . $location);
         header('Content-Type: text/html; charset=utf-8');
 
-        echo $this->renderer()->renderPageTemplate(
+        echo $this->renderPageTemplate(
             'redirect.php',
             [
                 'location' => $location,
@@ -1827,7 +1849,7 @@ final class Application
 
     private function renderMessagePage(string $title, string $heading, string $message, string $activeSection): string
     {
-        return $this->renderer()->renderPageTemplate(
+        return $this->renderPageTemplate(
             'message.php',
             [
                 'heading' => $heading,

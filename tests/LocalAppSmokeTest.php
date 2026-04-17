@@ -397,7 +397,9 @@ final class LocalAppSmokeTest
     {
         @unlink($this->databasePath);
         $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
         mkdir($staticHtmlRoot, 0777, true);
+        mkdir($publicRoot, 0777, true);
         file_put_contents($staticHtmlRoot . '/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Board</h1></body></html>');
 
         $controller = new FrontController(
@@ -405,6 +407,7 @@ final class LocalAppSmokeTest
             $this->repositoryRoot,
             $this->databasePath,
             $staticHtmlRoot,
+            $publicRoot,
         );
 
         $response = $this->renderFrontController($controller, 'GET', '/', []);
@@ -417,7 +420,9 @@ final class LocalAppSmokeTest
     {
         @unlink($this->databasePath);
         $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
         mkdir($staticHtmlRoot, 0777, true);
+        mkdir($publicRoot, 0777, true);
         mkdir($staticHtmlRoot . '/instance', 0777, true);
         file_put_contents($staticHtmlRoot . '/instance/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Backup</h1></body></html>');
 
@@ -426,6 +431,7 @@ final class LocalAppSmokeTest
             $this->repositoryRoot,
             $this->databasePath,
             $staticHtmlRoot,
+            $publicRoot,
         );
 
         $response = $this->renderFrontController($controller, 'GET', '/backup/', []);
@@ -491,6 +497,8 @@ final class LocalAppSmokeTest
         assertTrue(is_file($artifactRoot . '/threads/root-001.html'));
         assertTrue(is_file($artifactRoot . '/posts/root-001.html'));
         assertTrue(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
+        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/index.html'));
+        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/root-001.html'));
 
         $controller = new FrontController(
             dirname(__DIR__),
@@ -502,9 +510,82 @@ final class LocalAppSmokeTest
 
         $response = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
         assertStringContains('Hello world', $response);
+        assertStringContains('route-source: static-html', $response);
 
         $usersResponse = $this->renderFrontController($controller, 'GET', '/users/', []);
         assertStringContains('Users', $usersResponse);
+        assertStringContains('route-source: static-html', $usersResponse);
+    }
+
+    public function testFrontControllerBuildsMissingArtifactAfterEligibleAnonymousFallback(): void
+    {
+        @unlink($this->databasePath);
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        mkdir($staticHtmlRoot, 0777, true);
+        mkdir($publicRoot, 0777, true);
+
+        $controller = new FrontController(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $staticHtmlRoot,
+            $publicRoot,
+        );
+
+        $firstResponse = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
+        assertStringContains('Hello world', $firstResponse);
+        assertStringContains('route-source: php-fallback', $firstResponse);
+        assertTrue(is_file($publicRoot . '/threads/root-001.html'));
+        assertStringContains('route-source: static-html', (string) file_get_contents($publicRoot . '/threads/root-001.html'));
+
+        $secondResponse = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
+        assertStringContains('Hello world', $secondResponse);
+        assertStringContains('route-source: static-html', $secondResponse);
+    }
+
+    public function testFrontControllerDoesNotBuildArtifactForCookieBearingFallback(): void
+    {
+        @unlink($this->databasePath);
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        mkdir($staticHtmlRoot, 0777, true);
+        mkdir($publicRoot, 0777, true);
+
+        $controller = new FrontController(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $staticHtmlRoot,
+            $publicRoot,
+        );
+
+        $response = $this->renderFrontController($controller, 'GET', '/threads/root-001', ['identity_hint' => 'guest']);
+        assertStringContains('Hello world', $response);
+        assertStringContains('route-source: php-fallback', $response);
+        assertFalse(is_file($publicRoot . '/threads/root-001.html'));
+    }
+
+    public function testFrontControllerDoesNotBuildArtifactForQueryFallback(): void
+    {
+        @unlink($this->databasePath);
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        mkdir($staticHtmlRoot, 0777, true);
+        mkdir($publicRoot, 0777, true);
+
+        $controller = new FrontController(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $staticHtmlRoot,
+            $publicRoot,
+        );
+
+        $response = $this->renderFrontController($controller, 'GET', '/activity/?view=all', []);
+        assertStringContains('Activity', $response);
+        assertStringContains('route-source: php-fallback', $response);
+        assertFalse(is_file($publicRoot . '/activity.html'));
     }
 
     public function testDefaultRepositoryBootstrapCreatesWritableLocalRepository(): void

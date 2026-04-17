@@ -9,6 +9,7 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use PDO;
+use RuntimeException;
 
 final class StaticArtifactBuilder
 {
@@ -33,11 +34,7 @@ final class StaticArtifactBuilder
             mkdir($this->artifactRoot, 0777, true);
         }
 
-        $application = new Application(
-            $this->projectRoot,
-            $this->repositoryRoot,
-            $this->databasePath,
-        );
+        $application = $this->application();
 
         $this->writeRouteArtifact($application, '/', $this->artifactRoot . '/index.html');
         $this->writeRouteArtifact($application, '/instance/', $this->artifactRoot . '/instance.html');
@@ -55,6 +52,21 @@ final class StaticArtifactBuilder
         foreach ($this->fetchIds('SELECT profile_slug FROM profiles ORDER BY profile_slug') as $profileSlug) {
             $this->writeRouteArtifact($application, '/profiles/' . $profileSlug, $this->artifactRoot . '/profiles/' . $profileSlug . '.html');
         }
+    }
+
+    public function buildSingleRoute(string $route): bool
+    {
+        $normalizedRoute = $this->normalizeRoute($route);
+        if ($normalizedRoute === null) {
+            return false;
+        }
+
+        $artifactPath = $this->artifactPathForRoute($normalizedRoute);
+        if ($artifactPath === null) {
+            return false;
+        }
+
+        return $this->writeRouteArtifactWithLock($this->application(), $normalizedRoute, $artifactPath);
     }
 
     /**
@@ -107,7 +119,175 @@ final class StaticArtifactBuilder
         ob_start();
         $application->handle('GET', $route);
         $contents = (string) ob_get_clean();
-        file_put_contents($path, $contents);
+        $temporaryPath = tempnam($directory, 'artifact-');
+        if ($temporaryPath === false) {
+            throw new RuntimeException('Unable to create temporary artifact path in ' . $directory);
+        }
+
+        if (file_put_contents($temporaryPath, $contents) === false) {
+            @unlink($temporaryPath);
+            throw new RuntimeException('Unable to write temporary artifact: ' . $temporaryPath);
+        }
+
+        if (!rename($temporaryPath, $path)) {
+            @unlink($temporaryPath);
+            throw new RuntimeException('Unable to move artifact into place: ' . $path);
+        }
+    }
+
+    private function writeRouteArtifactWithLock(Application $application, string $route, string $path): bool
+    {
+        $lockPath = $this->lockPathForArtifact($path);
+        $lockDirectory = dirname($lockPath);
+        if (!is_dir($lockDirectory) && !mkdir($lockDirectory, 0777, true) && !is_dir($lockDirectory)) {
+            throw new RuntimeException('Unable to create artifact lock directory: ' . $lockDirectory);
+        }
+
+        $lockHandle = fopen($lockPath, 'c+');
+        if ($lockHandle === false) {
+            throw new RuntimeException('Unable to open artifact lock file: ' . $lockPath);
+        }
+
+        try {
+            if (!flock($lockHandle, LOCK_EX | LOCK_NB)) {
+                return false;
+            }
+
+            try {
+                if (is_file($path)) {
+                    return true;
+                }
+
+                $this->writeRouteArtifact($application, $route, $path);
+                return true;
+            } finally {
+                flock($lockHandle, LOCK_UN);
+            }
+        } finally {
+            fclose($lockHandle);
+        }
+    }
+
+    private function application(): Application
+    {
+        return new Application(
+            $this->projectRoot,
+            $this->repositoryRoot,
+            $this->databasePath,
+            null,
+            'static-html',
+        );
+    }
+
+    private function lockPathForArtifact(string $path): string
+    {
+        return $this->artifactRoot . '/.locks/' . sha1($path) . '.lock';
+    }
+
+    private function normalizeRoute(string $route): ?string
+    {
+        $path = parse_url($route, PHP_URL_PATH) ?: '/';
+        $query = (string) (parse_url($route, PHP_URL_QUERY) ?? '');
+        if ($query !== '') {
+            return null;
+        }
+
+        if ($path === '' || $path === '/') {
+            return '/';
+        }
+
+        if ($path === '/instance' || $path === '/instance/' || $path === '/backup' || $path === '/backup/') {
+            return '/instance/';
+        }
+
+        if ($path === '/activity' || $path === '/activity/') {
+            return '/activity/';
+        }
+
+        if ($path === '/users' || $path === '/users/') {
+            return '/users/';
+        }
+
+        if ($path === '/users/pending' || $path === '/users/pending/') {
+            return null;
+        }
+
+        if (preg_match('#^/(threads|posts|profiles)/([^/]+)/?$#', $path, $matches) !== 1) {
+            return null;
+        }
+
+        $identifier = (string) $matches[2];
+        if ($identifier === '' || !preg_match('/^[A-Za-z0-9._:-]+$/', $identifier)) {
+            return null;
+        }
+
+        $kind = (string) $matches[1];
+        if ($kind === 'threads' && !$this->threadExists($identifier)) {
+            return null;
+        }
+
+        if ($kind === 'posts' && !$this->postExists($identifier)) {
+            return null;
+        }
+
+        if ($kind === 'profiles' && !$this->profileExists($identifier)) {
+            return null;
+        }
+
+        return '/' . $kind . '/' . $identifier;
+    }
+
+    private function artifactPathForRoute(string $route): ?string
+    {
+        if ($route === '/') {
+            return $this->artifactRoot . '/index.html';
+        }
+
+        if ($route === '/instance/') {
+            return $this->artifactRoot . '/instance.html';
+        }
+
+        if ($route === '/activity/') {
+            return $this->artifactRoot . '/activity.html';
+        }
+
+        if ($route === '/users/') {
+            return $this->artifactRoot . '/users.html';
+        }
+
+        if (preg_match('#^/(threads|posts|profiles)/([^/]+)$#', $route, $matches) === 1) {
+            return $this->artifactRoot . '/' . $matches[1] . '/' . $matches[2] . '.html';
+        }
+
+        return null;
+    }
+
+    private function threadExists(string $threadId): bool
+    {
+        return $this->rowExists('SELECT 1 FROM threads WHERE root_post_id = :value LIMIT 1', $threadId);
+    }
+
+    private function postExists(string $postId): bool
+    {
+        return $this->rowExists('SELECT 1 FROM posts WHERE post_id = :value LIMIT 1', $postId);
+    }
+
+    private function profileExists(string $profileSlug): bool
+    {
+        return $this->rowExists('SELECT 1 FROM profiles WHERE profile_slug = :value LIMIT 1', $profileSlug);
+    }
+
+    private function rowExists(string $sql, string $value): bool
+    {
+        $pdo = (new ReadModelConnection($this->databasePath))->open();
+        $statement = $pdo->prepare($sql);
+        if ($statement === false) {
+            throw new RuntimeException('Unable to prepare existence query.');
+        }
+
+        $statement->execute(['value' => $value]);
+
+        return $statement->fetchColumn() !== false;
     }
 
     private function isHiddenBootstrapBoardTagsJson(string $boardTagsJson): bool

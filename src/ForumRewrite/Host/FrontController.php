@@ -52,6 +52,7 @@ final class FrontController
                 $this->databasePath,
             );
             $application->handle($method, $requestUri);
+            $this->buildStaticArtifactOnEligibleMiss($method, $requestUri, $cookies, $staticArtifact);
         } catch (Throwable $throwable) {
             $this->sendHtml($this->renderConfigurationError($throwable->getMessage()), 503);
         }
@@ -148,6 +149,42 @@ final class FrontController
         }
 
         return null;
+    }
+
+    /**
+     * @param array<string, string> $cookies
+     */
+    private function buildStaticArtifactOnEligibleMiss(
+        string $method,
+        string $requestUri,
+        array $cookies,
+        ?string $staticArtifact,
+    ): void {
+        if ($staticArtifact !== null) {
+            return;
+        }
+
+        if ($method !== 'GET' || $cookies !== []) {
+            return;
+        }
+
+        $query = (string) (parse_url($requestUri, PHP_URL_QUERY) ?? '');
+        if ($query !== '') {
+            return;
+        }
+
+        $builder = new StaticArtifactBuilder(
+            $this->projectRoot,
+            $this->repositoryRoot,
+            $this->databasePath,
+            $this->publicRoot,
+        );
+
+        try {
+            $builder->buildSingleRoute($requestUri);
+        } catch (Throwable) {
+            // Best-effort generation should not affect the current response.
+        }
     }
 
     private function renderConfigurationError(string $details): string
