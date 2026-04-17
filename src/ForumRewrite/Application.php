@@ -1507,7 +1507,11 @@ final class Application
         $input = $this->requestData($query);
         try {
             $result = $this->writer()->createThread($input);
-            $this->sendText("status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\ncommit_sha={$result['commit_sha']}\n", 200);
+            $this->sendText(
+                "status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\ncommit_sha={$result['commit_sha']}\n",
+                200,
+                $this->serverTimingHeaders($result)
+            );
         } catch (RuntimeException $exception) {
             $this->sendText("error=" . $exception->getMessage() . "\n", 400);
         }
@@ -1526,7 +1530,11 @@ final class Application
         $input = $this->requestData($query);
         try {
             $result = $this->writer()->createReply($input);
-            $this->sendText("status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\ncommit_sha={$result['commit_sha']}\n", 200);
+            $this->sendText(
+                "status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\ncommit_sha={$result['commit_sha']}\n",
+                200,
+                $this->serverTimingHeaders($result)
+            );
         } catch (RuntimeException $exception) {
             $this->sendText("error=" . $exception->getMessage() . "\n", 400);
         }
@@ -1630,7 +1638,9 @@ final class Application
             $location = '/threads/' . $result['thread_id'];
             $this->sendRedirect(
                 $location,
-                'Created thread ' . $result['thread_id'] . '. Commit ' . $result['commit_sha'] . '.'
+                'Created thread ' . $result['thread_id'] . '. Commit ' . $result['commit_sha'] . '.',
+                303,
+                $this->serverTimingHeaders($result)
             );
         } catch (RuntimeException $exception) {
             $this->sendHtml(
@@ -1661,7 +1671,11 @@ final class Application
             $notice = 'Created reply ' . $result['post_id'] . '. '
                 . '<a href="/posts/' . $this->escape($result['post_id']) . '">Open post</a>. '
                 . 'Commit ' . $this->escape($result['commit_sha']);
-            $this->sendHtml($this->renderComposeReplyPage($threadId, $parentId, $notice, null), 200);
+            $this->sendHtml(
+                $this->renderComposeReplyPage($threadId, $parentId, $notice, null),
+                200,
+                $this->serverTimingHeaders($result)
+            );
         } catch (RuntimeException $exception) {
             $this->sendHtml(
                 $this->renderComposeReplyPage(
@@ -1798,10 +1812,13 @@ final class Application
         );
     }
 
-    private function sendHtml(string $html, int $statusCode): void
+    private function sendHtml(string $html, int $statusCode, array $headers = []): void
     {
         http_response_code($statusCode);
         header('Content-Type: text/html; charset=utf-8');
+        foreach ($headers as $headerValue) {
+            header($headerValue);
+        }
         echo $html;
     }
 
@@ -1822,11 +1839,14 @@ final class Application
         echo $xml;
     }
 
-    private function sendRedirect(string $location, string $message, int $statusCode = 303): void
+    private function sendRedirect(string $location, string $message, int $statusCode = 303, array $headers = []): void
     {
         http_response_code($statusCode);
         header('Location: ' . $location);
         header('Content-Type: text/html; charset=utf-8');
+        foreach ($headers as $headerValue) {
+            header($headerValue);
+        }
 
         echo $this->renderPageTemplate(
             'redirect.php',
@@ -1846,6 +1866,36 @@ final class Application
         }
 
         return 'forum_compose_draft:' . $kind;
+    }
+
+    /**
+     * @param array<string, mixed> $result
+     * @return list<string>
+     */
+    private function serverTimingHeaders(array $result): array
+    {
+        if (!isset($result['timings']) || !is_array($result['timings'])) {
+            return [];
+        }
+
+        $metrics = [];
+        foreach ($result['timings'] as $name => $duration) {
+            if (!is_string($name) || !preg_match('/^[a-z_][a-z0-9_]*$/', $name)) {
+                continue;
+            }
+
+            if (!is_int($duration) && !is_float($duration)) {
+                continue;
+            }
+
+            $metrics[] = sprintf('%s;dur=%.1f', $name, (float) $duration);
+        }
+
+        if ($metrics === []) {
+            return [];
+        }
+
+        return ['Server-Timing: ' . implode(', ', $metrics)];
     }
 
     private function queueComposeDraftClear(string $storageKey): void

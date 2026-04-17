@@ -35,6 +35,8 @@ class LocalWriteService
     {
         return $this->executionLock()->withExclusiveLock(function () use ($input): array {
             $this->assertWritableRepository();
+            $timings = [];
+            $totalStartedAt = hrtime(true);
             $postId = $this->generateRecordId('thread');
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $subject = $this->normalizeAsciiLine((string) ($input['subject'] ?? ''), 'subject');
@@ -51,16 +53,27 @@ class LocalWriteService
 
             (new PostRecordParser())->parse($contents);
             $recordPath = 'records/posts/' . $postId . '.txt';
+            $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $contents);
-            $commitSha = $this->commitCanonicalWrite([$recordPath], 'Create thread ' . $postId);
+            $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $phaseStartedAt = hrtime(true);
+            $commitResult = $this->commitCanonicalWrite([$recordPath], 'Create thread ' . $postId);
+            $timings = array_merge($timings, $commitResult['timings']);
+            $commitSha = $commitResult['commit_sha'];
+            $phaseStartedAt = hrtime(true);
             $this->refreshDerivedStateAfterCommit($commitSha);
+            $timings['read_model_rebuild'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateBoardThread($postId);
+            $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
 
             return [
                 'status' => 'ok',
                 'post_id' => $postId,
                 'thread_id' => $postId,
                 'commit_sha' => $commitSha,
+                'timings' => $timings,
             ];
         });
     }
@@ -73,6 +86,8 @@ class LocalWriteService
     {
         return $this->executionLock()->withExclusiveLock(function () use ($input): array {
             $this->assertWritableRepository();
+            $timings = [];
+            $totalStartedAt = hrtime(true);
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
             $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
             $body = $this->normalizeAsciiBody((string) ($input['body'] ?? ''), 'body');
@@ -98,16 +113,27 @@ class LocalWriteService
 
             (new PostRecordParser())->parse($contents);
             $recordPath = 'records/posts/' . $postId . '.txt';
+            $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $contents);
-            $commitSha = $this->commitCanonicalWrite([$recordPath], 'Create reply ' . $postId);
+            $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $phaseStartedAt = hrtime(true);
+            $commitResult = $this->commitCanonicalWrite([$recordPath], 'Create reply ' . $postId);
+            $timings = array_merge($timings, $commitResult['timings']);
+            $commitSha = $commitResult['commit_sha'];
+            $phaseStartedAt = hrtime(true);
             $this->refreshDerivedStateAfterCommit($commitSha);
+            $timings['read_model_rebuild'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateReply($threadId, $postId);
+            $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
 
             return [
                 'status' => 'ok',
                 'post_id' => $postId,
                 'thread_id' => $threadId,
                 'commit_sha' => $commitSha,
+                'timings' => $timings,
             ];
         });
     }
@@ -159,7 +185,8 @@ class LocalWriteService
             (new IdentityBootstrapRecordParser())->parse($contents);
             $this->writeFile($identityPath, $contents);
             $writtenPaths[] = $identityPath;
-            $commitSha = $this->commitCanonicalWrite($writtenPaths, 'Link identity ' . $postId);
+            $commitResult = $this->commitCanonicalWrite($writtenPaths, 'Link identity ' . $postId);
+            $commitSha = $commitResult['commit_sha'];
             $this->refreshDerivedStateAfterCommit($commitSha);
             $this->invalidator()->invalidateProfile('openpgp-' . $fingerprintLower);
 
@@ -214,10 +241,11 @@ class LocalWriteService
             (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::post($postId);
             $this->writeFile($recordPath, $contents);
-            $commitSha = $this->commitCanonicalWrite(
+            $commitResult = $this->commitCanonicalWrite(
                 [$recordPath],
                 'Approve user ' . $targetIdentityId . ' by ' . $approverIdentityId
             );
+            $commitSha = $commitResult['commit_sha'];
             $this->refreshDerivedStateAfterCommit($commitSha);
             $this->invalidator()->invalidateApproval($targetProfileSlug, $threadId, $parentId, $postId);
 
@@ -264,20 +292,36 @@ class LocalWriteService
     /**
      * @param list<string> $relativePaths
      */
-    private function commitCanonicalWrite(array $relativePaths, string $message): string
+    private function commitCanonicalWrite(array $relativePaths, string $message): array
     {
         if (!is_dir($this->repositoryRoot . '/.git')) {
             throw new RuntimeException('Writable repository must be a git checkout before writes are allowed.');
         }
 
+        $timings = [];
+        $phaseStartedAt = hrtime(true);
         $this->runGitCommand(array_merge(['add', '--'], $relativePaths), 'Unable to stage canonical write');
+        $timings['git_add'] = $this->elapsedMilliseconds($phaseStartedAt);
+        $phaseStartedAt = hrtime(true);
         $this->runGitCommand([
             '-c', 'user.name=Forum Rewrite',
             '-c', 'user.email=forum-rewrite@example.invalid',
             'commit', '-m', $message,
         ], 'Unable to commit canonical write');
+        $timings['git_commit'] = $this->elapsedMilliseconds($phaseStartedAt);
+        $phaseStartedAt = hrtime(true);
+        $commitSha = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read commit SHA'));
+        $timings['git_rev_parse'] = $this->elapsedMilliseconds($phaseStartedAt);
 
-        return trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read commit SHA'));
+        return [
+            'commit_sha' => $commitSha,
+            'timings' => $timings,
+        ];
+    }
+
+    private function elapsedMilliseconds(int $startedAt): float
+    {
+        return round((hrtime(true) - $startedAt) / 1000000, 1);
     }
 
     private function writeFile(string $relativePath, string $contents): void
