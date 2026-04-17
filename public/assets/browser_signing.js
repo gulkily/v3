@@ -7,6 +7,7 @@
     publishedFingerprint: "forum_pki_published_fingerprint",
     composePromptCancelled: "forum_pki_compose_prompt_cancelled",
     composeDraftPrefix: "forum_compose_draft",
+    recentlyClearedComposeDraft: "forum_recently_cleared_compose_draft",
   };
   let clearedKeypairBackup = null;
   const ASCII_COMPOSE_REPLACEMENTS = new Map([
@@ -188,6 +189,21 @@
   function clearComposeDraft(form) {
     try {
       localStorage.removeItem(composeDraftKey(form));
+    } catch (error) {
+    }
+  }
+
+  function recentlyClearedComposeDraftKey() {
+    try {
+      return sessionStorage.getItem(storageKeys.recentlyClearedComposeDraft) || "";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function clearRecentlyClearedComposeDraftKey() {
+    try {
+      sessionStorage.removeItem(storageKeys.recentlyClearedComposeDraft);
     } catch (error) {
     }
   }
@@ -712,6 +728,7 @@
     if (!form) {
       return;
     }
+    const draftKey = composeDraftKey(form);
 
     function updateComposeNormalizationStatus(message, kind) {
       if (!normalizationStatusNode) {
@@ -833,6 +850,7 @@
     function normalizeComposeFields(options) {
       const config = options || {};
       const removeUnsupported = config.removeUnsupported !== false;
+      const persistDraft = config.persistDraft !== false;
       const unsupportedFields = [];
 
       clearFieldNormalizationStatuses();
@@ -869,7 +887,9 @@
         updateComposeNormalizationStatus("", "");
       }
 
-      saveComposeDraft(form);
+      if (persistDraft) {
+        saveComposeDraft(form);
+      }
 
       return {
         hasUnsupported: unsupportedFields.length > 0,
@@ -920,16 +940,30 @@
       normalizeComposeFields({ removeUnsupported: false });
     }
 
+    function resetComposeFormToServerState() {
+      form.reset();
+      clearComposeDraft(form);
+    }
+
+    function shouldHonorRecentlyClearedDraft() {
+      return recentlyClearedComposeDraftKey() === draftKey;
+    }
+
     if (hasBrowserKeypair()) {
       void syncIdentityHint(preferredIdentityHint());
     }
 
     if (root.dataset.composeSubmitted === "1") {
-      clearComposeDraft(form);
+      resetComposeFormToServerState();
+      normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
+    } else if (shouldHonorRecentlyClearedDraft()) {
+      resetComposeFormToServerState();
+      clearRecentlyClearedComposeDraftKey();
+      normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
     } else {
       restoreComposeDraft(form);
+      normalizeComposeFields({ removeUnsupported: false });
     }
-    normalizeComposeFields({ removeUnsupported: false });
 
     textFields.forEach(function (field) {
       field.addEventListener("input", function () {
@@ -979,6 +1013,13 @@
     });
 
     window.addEventListener("pageshow", function () {
+      if (shouldHonorRecentlyClearedDraft()) {
+        resetComposeFormToServerState();
+        clearRecentlyClearedComposeDraftKey();
+        normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
+        return;
+      }
+
       restoreComposeUiState();
     });
   }

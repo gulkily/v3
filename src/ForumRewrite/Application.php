@@ -1626,6 +1626,7 @@ final class Application
         $input = $this->requestData($query);
         try {
             $result = $this->writer()->createThread($input);
+            $this->queueComposeDraftClear($this->composeDraftStorageKey('thread'));
             $location = '/threads/' . $result['thread_id'];
             $this->sendRedirect(
                 $location,
@@ -1656,6 +1657,7 @@ final class Application
 
         try {
             $result = $this->writer()->createReply($input);
+            $this->queueComposeDraftClear($this->composeDraftStorageKey('reply', $threadId, $parentId));
             $notice = 'Created reply ' . $result['post_id'] . '. '
                 . '<a href="/posts/' . $this->escape($result['post_id']) . '">Open post</a>. '
                 . 'Commit ' . $this->escape($result['commit_sha']);
@@ -1835,6 +1837,26 @@ final class Application
             'Redirecting',
             'compose'
         );
+    }
+
+    private function composeDraftStorageKey(string $kind, string $threadId = '', string $parentId = ''): string
+    {
+        if ($kind === 'reply') {
+            return 'forum_compose_draft:reply:' . $threadId . ':' . $parentId;
+        }
+
+        return 'forum_compose_draft:' . $kind;
+    }
+
+    private function queueComposeDraftClear(string $storageKey): void
+    {
+        setcookie('forum_clear_compose_draft', $storageKey, [
+            'expires' => time() + 300,
+            'path' => '/',
+            'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== '' && $_SERVER['HTTPS'] !== 'off',
+            'httponly' => false,
+            'samesite' => 'Lax',
+        ]);
     }
 
     private function escape(string $value): string

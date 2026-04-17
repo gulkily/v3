@@ -244,4 +244,79 @@ NODE;
         assertSame('', $result['pendingVersion']);
         assertSame(true, count($result['fetchCalls']) >= 1);
     }
+
+    public function testPendingComposeDraftClearCookieRemovesLocalDraftAndStoresSessionMarker(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: { 'forum_compose_draft:thread': '{"fields":{"body":"Saved"}}' },
+  sessionStore: {},
+  cookie: 'forum_clear_compose_draft=forum_compose_draft%3Athread',
+  fetchCalls: []
+};
+
+global.window = {
+  location: {
+    href: 'https://example.test/threads/root-001',
+    origin: 'https://example.test',
+    assign() {},
+    replace() {}
+  },
+  localStorage: {
+    getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+    setItem(key, value) { state.localStore[key] = String(value); },
+    removeItem(key) { delete state.localStore[key]; }
+  },
+  sessionStorage: {
+    getItem(key) { return Object.prototype.hasOwnProperty.call(state.sessionStore, key) ? state.sessionStore[key] : null; },
+    setItem(key, value) { state.sessionStore[key] = String(value); },
+    removeItem(key) { delete state.sessionStore[key]; }
+  },
+  fetch(url) {
+    state.fetchCalls.push(String(url));
+    return Promise.resolve({ ok: true, text() { return Promise.resolve('current-version'); } });
+  },
+  setTimeout() { return 1; },
+  setInterval() { return 1; },
+  addEventListener() {}
+};
+
+global.document = {
+  visibilityState: 'visible',
+  get cookie() {
+    return state.cookie;
+  },
+  set cookie(value) {
+    state.cookie = String(value);
+  },
+  querySelector(selector) {
+    if (selector === 'meta[name="app-version"]') {
+      return { getAttribute(name) { return name === 'content' ? 'current-version' : ''; } };
+    }
+    if (selector === 'meta[name="app-version-endpoint"]') {
+      return { getAttribute(name) { return name === 'content' ? '/api/version' : ''; } };
+    }
+    return null;
+  },
+  addEventListener() {}
+};
+
+vm.runInThisContext(source);
+
+process.stdout.write(JSON.stringify({
+  remainingLocalDraft: state.localStore['forum_compose_draft:thread'] || '',
+  recentlyClearedDraft: state.sessionStore.forum_recently_cleared_compose_draft || '',
+  cookie: state.cookie
+}));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('', $result['remainingLocalDraft']);
+        assertSame('forum_compose_draft:thread', $result['recentlyClearedDraft']);
+        assertStringContains('expires=Thu, 01 Jan 1970 00:00:00 GMT', $result['cookie']);
+    }
 }
