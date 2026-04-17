@@ -1,4 +1,12 @@
 (function () {
+  var storage = null;
+  try {
+    storage = window.sessionStorage;
+  } catch (error) {
+    storage = null;
+  }
+
+  var pendingVersionStorageKey = 'forum_pending_app_version';
   var versionMeta = document.querySelector('meta[name="app-version"]');
   if (!versionMeta) {
     return;
@@ -20,6 +28,33 @@
   var nextVersion = null;
   var requestInFlight = false;
 
+  function storedPendingVersion() {
+    if (!storage) {
+      return '';
+    }
+
+    try {
+      return String(storage.getItem(pendingVersionStorageKey) || '').trim();
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function persistPendingVersion(version) {
+    if (!storage) {
+      return;
+    }
+
+    try {
+      if (version === '') {
+        storage.removeItem(pendingVersionStorageKey);
+      } else {
+        storage.setItem(pendingVersionStorageKey, version);
+      }
+    } catch (error) {
+    }
+  }
+
   function withVersionBypass(url, version) {
     var target = new URL(url, window.location.origin);
     target.searchParams.set('__v', version);
@@ -28,6 +63,7 @@
 
   function showBanner(version) {
     nextVersion = version;
+    persistPendingVersion(version);
     if (!banner) {
       return;
     }
@@ -37,7 +73,33 @@
 
   function reloadForNewVersion() {
     var version = nextVersion || currentVersion;
+    persistPendingVersion(version);
     window.location.assign(withVersionBypass(window.location.href, version));
+  }
+
+  function ensurePendingVersionSatisfied() {
+    var pendingVersion = storedPendingVersion();
+    if (pendingVersion === '') {
+      return false;
+    }
+
+    if (pendingVersion === currentVersion) {
+      persistPendingVersion('');
+      return false;
+    }
+
+    var currentUrl = new URL(window.location.href, window.location.origin);
+    if (currentUrl.searchParams.get('__v') === pendingVersion) {
+      showBanner(pendingVersion);
+      return false;
+    }
+
+    window.location.replace(withVersionBypass(currentUrl.toString(), pendingVersion));
+    return true;
+  }
+
+  if (ensurePendingVersionSatisfied()) {
+    return;
   }
 
   function checkForNewVersion() {
@@ -77,6 +139,10 @@
     if (document.visibilityState === 'visible') {
       checkForNewVersion();
     }
+  });
+
+  window.addEventListener('pageshow', function () {
+    ensurePendingVersionSatisfied();
   });
 
   window.setTimeout(checkForNewVersion, 15000);

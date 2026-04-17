@@ -1,0 +1,247 @@
+<?php
+
+declare(strict_types=1);
+
+final class VersionCheckBehaviorTest
+{
+    /**
+     * @return array<string, mixed>
+     */
+    private function runScript(string $script): array
+    {
+        $command = sprintf(
+            'node -e %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/assets/version_check.js'),
+        );
+
+        $output = [];
+        $exitCode = 0;
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Node helper execution failed: ' . implode("\n", $output));
+        }
+
+        return json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    public function testShowBannerPersistsPendingVersionForLaterNavigation(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = { store: {}, bannerHidden: true, visibilityHandlers: [], pageshowHandlers: [], timeoutCalls: [], intervalCalls: [], fetchCalls: [] };
+
+const banner = {
+  hidden: true,
+  querySelector(selector) {
+    if (selector === '[data-action="reload-for-new-version"]') {
+      return { addEventListener() {} };
+    }
+    return null;
+  }
+};
+
+global.window = {
+  location: {
+    href: 'https://example.test/compose/thread',
+    origin: 'https://example.test',
+    assign() {},
+    replace() {}
+  },
+  sessionStorage: {
+    getItem(key) { return Object.prototype.hasOwnProperty.call(state.store, key) ? state.store[key] : null; },
+    setItem(key, value) { state.store[key] = String(value); },
+    removeItem(key) { delete state.store[key]; }
+  },
+  fetch(url) {
+    state.fetchCalls.push(String(url));
+    return Promise.resolve({ ok: true, text() { return Promise.resolve('next-version'); } });
+  },
+  setTimeout(fn, delay) {
+    state.timeoutCalls.push(delay);
+    fn();
+    return 1;
+  },
+  setInterval(fn, delay) {
+    state.intervalCalls.push(delay);
+    return 1;
+  },
+  addEventListener(type, handler) {
+    if (type === 'pageshow') {
+      state.pageshowHandlers.push(handler);
+    }
+  }
+};
+
+global.document = {
+  visibilityState: 'visible',
+  querySelector(selector) {
+    if (selector === 'meta[name="app-version"]') {
+      return { getAttribute(name) { return name === 'content' ? 'current-version' : ''; } };
+    }
+    if (selector === 'meta[name="app-version-endpoint"]') {
+      return { getAttribute(name) { return name === 'content' ? '/api/version' : ''; } };
+    }
+    if (selector === '[data-role="app-version-banner"]') {
+      return banner;
+    }
+    return null;
+  },
+  addEventListener(type, handler) {
+    if (type === 'visibilitychange') {
+      state.visibilityHandlers.push(handler);
+    }
+  }
+};
+
+vm.runInThisContext(source);
+
+(async () => {
+  await new Promise((resolve) => setImmediate(resolve));
+  state.bannerHidden = banner.hidden;
+  process.stdout.write(JSON.stringify({
+    bannerHidden: state.bannerHidden,
+    pendingVersion: state.store.forum_pending_app_version || '',
+    fetchCalls: state.fetchCalls
+  }));
+})().catch((error) => {
+  process.stderr.write(String(error && error.stack ? error.stack : error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('next-version', $result['pendingVersion']);
+        assertSame(true, count($result['fetchCalls']) >= 1);
+    }
+
+    public function testPendingVersionForcesVersionBypassOnLaterStaleLoad(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = { store: { forum_pending_app_version: 'next-version' }, replaceCalls: [], fetchCalls: [] };
+
+global.window = {
+  location: {
+    href: 'https://example.test/compose/thread',
+    origin: 'https://example.test',
+    assign() {},
+    replace(url) { state.replaceCalls.push(String(url)); }
+  },
+  sessionStorage: {
+    getItem(key) { return Object.prototype.hasOwnProperty.call(state.store, key) ? state.store[key] : null; },
+    setItem(key, value) { state.store[key] = String(value); },
+    removeItem(key) { delete state.store[key]; }
+  },
+  fetch(url) {
+    state.fetchCalls.push(String(url));
+    return Promise.resolve({ ok: true, text() { return Promise.resolve('next-version'); } });
+  },
+  setTimeout() { return 1; },
+  setInterval() { return 1; },
+  addEventListener() {}
+};
+
+global.document = {
+  visibilityState: 'visible',
+  querySelector(selector) {
+    if (selector === 'meta[name="app-version"]') {
+      return { getAttribute(name) { return name === 'content' ? 'current-version' : ''; } };
+    }
+    if (selector === 'meta[name="app-version-endpoint"]') {
+      return { getAttribute(name) { return name === 'content' ? '/api/version' : ''; } };
+    }
+    return null;
+  },
+  addEventListener() {}
+};
+
+vm.runInThisContext(source);
+
+process.stdout.write(JSON.stringify({
+  replaceCalls: state.replaceCalls,
+  fetchCalls: state.fetchCalls,
+  pendingVersion: state.store.forum_pending_app_version || ''
+}));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(['https://example.test/compose/thread?__v=next-version'], $result['replaceCalls']);
+        assertSame([], $result['fetchCalls']);
+        assertSame('next-version', $result['pendingVersion']);
+    }
+
+    public function testSatisfiedPendingVersionClearsStorageWithoutReloadLoop(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = { store: { forum_pending_app_version: 'next-version' }, replaceCalls: [], fetchCalls: [], timeoutCalls: [], intervalCalls: [] };
+
+global.window = {
+  location: {
+    href: 'https://example.test/compose/thread?__v=next-version',
+    origin: 'https://example.test',
+    assign() {},
+    replace(url) { state.replaceCalls.push(String(url)); }
+  },
+  sessionStorage: {
+    getItem(key) { return Object.prototype.hasOwnProperty.call(state.store, key) ? state.store[key] : null; },
+    setItem(key, value) { state.store[key] = String(value); },
+    removeItem(key) { delete state.store[key]; }
+  },
+  fetch(url) {
+    state.fetchCalls.push(String(url));
+    return Promise.resolve({ ok: true, text() { return Promise.resolve('next-version'); } });
+  },
+  setTimeout(fn, delay) {
+    state.timeoutCalls.push(delay);
+    fn();
+    return 1;
+  },
+  setInterval(fn, delay) {
+    state.intervalCalls.push(delay);
+    return 1;
+  },
+  addEventListener() {}
+};
+
+global.document = {
+  visibilityState: 'visible',
+  querySelector(selector) {
+    if (selector === 'meta[name="app-version"]') {
+      return { getAttribute(name) { return name === 'content' ? 'next-version' : ''; } };
+    }
+    if (selector === 'meta[name="app-version-endpoint"]') {
+      return { getAttribute(name) { return name === 'content' ? '/api/version' : ''; } };
+    }
+    return null;
+  },
+  addEventListener() {}
+};
+
+vm.runInThisContext(source);
+
+Promise.resolve().then(() => {
+  process.stdout.write(JSON.stringify({
+    replaceCalls: state.replaceCalls,
+    fetchCalls: state.fetchCalls,
+    pendingVersion: state.store.forum_pending_app_version || ''
+  }));
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame([], $result['replaceCalls']);
+        assertSame('', $result['pendingVersion']);
+        assertSame(true, count($result['fetchCalls']) >= 1);
+    }
+}
