@@ -802,6 +802,7 @@ final class Application
             'Last-Activity-At: ' . $thread['last_activity_at'],
             'Subject: ' . ($thread['subject'] ?: ''),
             'Reply-Count: ' . $thread['reply_count'],
+            'Labels: ' . implode(' ', $thread['thread_labels']),
             '',
         ];
 
@@ -932,7 +933,7 @@ final class Application
     {
         $rows = $this->pdo()->query(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
-                    threads.reply_count, threads.board_tags_json, posts.author_label, posts.author_profile_slug,
+                    threads.reply_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
                     profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
@@ -940,10 +941,12 @@ final class Application
              ORDER BY last_activity_at DESC, root_post_id DESC'
         )->fetchAll();
 
-        return array_values(array_filter(
+        $rows = array_values(array_filter(
             $rows,
             fn (array $thread): bool => !$this->isHiddenBootstrapBoardTagsJson((string) $thread['board_tags_json'])
         ));
+
+        return $this->hydrateThreadRows($rows);
     }
 
     /**
@@ -953,7 +956,7 @@ final class Application
     {
         $stmt = $this->pdo()->prepare(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
-                    threads.reply_count, threads.last_post_id, threads.board_tags_json, posts.author_label, posts.author_profile_slug,
+                    threads.reply_count, threads.last_post_id, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
                     profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
@@ -963,7 +966,11 @@ final class Application
         $stmt->execute(['thread_id' => $threadId]);
         $thread = $stmt->fetch();
 
-        return $thread === false ? null : $thread;
+        if ($thread === false) {
+            return null;
+        }
+
+        return $this->hydrateThreadRow($thread);
     }
 
     /**
@@ -1085,7 +1092,7 @@ final class Application
 
         $stmt = $this->prepareIdentityListQuery(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
-                    threads.reply_count, threads.last_post_id, threads.board_tags_json, posts.author_label, posts.author_profile_slug,
+                    threads.reply_count, threads.last_post_id, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
                     profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
@@ -1100,10 +1107,12 @@ final class Application
         $stmt->execute($identityIds);
         $rows = $stmt->fetchAll();
 
-        return array_values(array_filter(
+        $rows = array_values(array_filter(
             $rows,
             fn (array $thread): bool => !$this->isHiddenBootstrapBoardTagsJson((string) $thread['board_tags_json'])
         ));
+
+        return $this->hydrateThreadRows($rows);
     }
 
     /**
@@ -1141,6 +1150,46 @@ final class Application
     private function countVisibleAuthoredRows(array $identityIds, bool $threadsOnly): int
     {
         return count($threadsOnly ? $this->fetchVisibleAuthoredThreads($identityIds) : $this->fetchVisibleAuthoredPosts($identityIds));
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function hydrateThreadRows(array $rows): array
+    {
+        return array_map(fn (array $thread): array => $this->hydrateThreadRow($thread), $rows);
+    }
+
+    /**
+     * @param array<string, mixed> $thread
+     * @return array<string, mixed>
+     */
+    private function hydrateThreadRow(array $thread): array
+    {
+        $thread['thread_labels'] = $this->decodeStringList((string) ($thread['thread_labels_json'] ?? '[]'));
+
+        return $thread;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function decodeStringList(string $json): array
+    {
+        $decoded = json_decode($json, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        $values = [];
+        foreach ($decoded as $value) {
+            if (is_string($value)) {
+                $values[] = $value;
+            }
+        }
+
+        return $values;
     }
 
     /**

@@ -134,7 +134,9 @@ final class LocalAppSmokeTest
         $llms = $this->render($application, '/llms.txt');
 
         assertStringContains('Board', $board);
+        assertStringContains('Labels: bug, needs-review', $board);
         assertStringContains('Hello world', $thread);
+        assertStringContains('Labels: bug, needs-review', $thread);
         assertStringContains('/user/guest', $thread);
         assertStringContains('by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $thread);
         assertStringNotContains('Last activity <time datetime=', $thread);
@@ -221,6 +223,7 @@ final class LocalAppSmokeTest
         assertStringContains("root-001\tHello world\t1", $listIndex);
         assertStringContains('Created-At: 2026-04-10T12:00:00Z', $thread);
         assertStringContains('Last-Activity-At: 2026-04-10T12:05:00Z', $thread);
+        assertStringContains('Labels: bug needs-review', $thread);
         assertStringContains('Thread-ID: root-001', $thread);
         assertStringContains('Post-ID: root-001', $post);
         assertStringContains('Created-At: 2026-04-10T12:00:00Z', $post);
