@@ -320,16 +320,30 @@ class LocalWriteService
             $incrementalTimings = $this->incrementalReadModelUpdater()->applyPostWrite($record, $commitSha);
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
-            $this->staleMarker()->mark([
-                'reason' => 'write_refresh_failed',
-                'commit_sha' => $commitSha,
-                'failed_at' => gmdate('c'),
-                'message' => $throwable->getMessage(),
-            ]);
+            $fallbackStartedAt = hrtime(true);
+            try {
+                $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
+                $timings = [
+                    'read_model_incremental_fallback' => $this->elapsedMilliseconds($phaseStartedAt),
+                    'read_model_rebuild_fallback' => $this->elapsedMilliseconds($fallbackStartedAt),
+                ];
+                foreach ($rebuildTimings as $name => $duration) {
+                    $timings['read_model_' . $name] = $duration;
+                }
 
-            throw new RuntimeException(
-                'Canonical write committed at ' . $commitSha . ' but incremental read-model update failed. Derived state marked stale.'
-            );
+                return $timings;
+            } catch (\Throwable $fallbackThrowable) {
+                $this->staleMarker()->mark([
+                    'reason' => 'write_refresh_failed',
+                    'commit_sha' => $commitSha,
+                    'failed_at' => gmdate('c'),
+                    'message' => 'incremental=' . $throwable->getMessage() . '; fallback=' . $fallbackThrowable->getMessage(),
+                ]);
+
+                throw new RuntimeException(
+                    'Canonical write committed at ' . $commitSha . ' but incremental read-model update and rebuild fallback both failed. Derived state marked stale.'
+                );
+            }
         }
 
         $timings = [
@@ -342,7 +356,7 @@ class LocalWriteService
         return $timings;
     }
 
-    private function canIncrementallyUpdateReadModel(): bool
+    protected function canIncrementallyUpdateReadModel(): bool
     {
         if (!is_file($this->databasePath) || $this->staleMarker()->exists()) {
             return false;
@@ -366,9 +380,19 @@ class LocalWriteService
         }
     }
 
-    private function incrementalReadModelUpdater(): IncrementalReadModelUpdater
+    protected function incrementalReadModelUpdater(): IncrementalReadModelUpdater
     {
-        return new IncrementalReadModelUpdater($this->databasePath, $this->repositoryRoot);
+        return new IncrementalReadModelUpdater($this->databasePath(), $this->repositoryRoot());
+    }
+
+    protected function repositoryRoot(): string
+    {
+        return $this->repositoryRoot;
+    }
+
+    protected function databasePath(): string
+    {
+        return $this->databasePath;
     }
 
     /**

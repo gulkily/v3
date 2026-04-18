@@ -8,7 +8,7 @@ use ForumRewrite\Canonical\PostRecord;
 use PDO;
 use RuntimeException;
 
-final class IncrementalReadModelUpdater
+class IncrementalReadModelUpdater
 {
     private const HIDDEN_BOOTSTRAP_TAG = 'identity';
 

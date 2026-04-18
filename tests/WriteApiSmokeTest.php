@@ -6,6 +6,7 @@ require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
 use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
@@ -239,6 +240,79 @@ final class WriteApiSmokeTest
         assertStringContains('Incremental Thread', $threadPage);
         assertStringContains('Incremental reply', $replyPage);
         assertStringContains('Incremental reply', $threadPage);
+    }
+
+    public function testIncrementalFailureFallsBackToFullRebuildAndKeepsReadModelHealthy(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $service = new class($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot)) extends LocalWriteService {
+            protected function incrementalReadModelUpdater(): IncrementalReadModelUpdater
+            {
+                return new class($this->databasePath(), $this->repositoryRoot()) extends IncrementalReadModelUpdater {
+                    public function applyPostWrite(\ForumRewrite\Canonical\PostRecord $record, string $commitSha): array
+                    {
+                        throw new RuntimeException('simulated incremental failure');
+                    }
+                };
+            }
+        };
+
+        $result = $service->createThread([
+            'board_tags' => 'general',
+            'subject' => 'Fallback Thread',
+            'body' => 'Fallback body',
+        ]);
+
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/' . $result['thread_id']);
+        $staleMarkerPath = dirname($databasePath) . '/read_model_stale.json';
+
+        assertSame(true, isset($result['timings']['read_model_incremental_fallback']));
+        assertSame(true, isset($result['timings']['read_model_rebuild_fallback']));
+        assertStringContains('Fallback Thread', $threadPage);
+        assertFalse(is_file($staleMarkerPath));
+    }
+
+    public function testIncrementalThreadAndReplyMatchFreshRebuildView(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $identity = $this->linkGeneratedIdentity($application, 'compare-user');
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $threadResult = $service->createThread([
+            'board_tags' => 'general',
+            'subject' => 'Parity Thread',
+            'body' => 'Parity body',
+            'author_identity_id' => $identity['identity_id'],
+        ]);
+        $replyResult = $service->createReply([
+            'thread_id' => $threadResult['thread_id'],
+            'parent_id' => $threadResult['thread_id'],
+            'board_tags' => 'general',
+            'body' => 'Parity reply',
+            'author_identity_id' => $identity['identity_id'],
+        ]);
+
+        $freshDatabasePath = sys_get_temp_dir() . '/forum-rewrite-write-db-parity-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $freshApplication = new Application(dirname(__DIR__), $repositoryRoot, $freshDatabasePath, $artifactRoot);
+
+        $incrementalBoard = $this->renderMethod($application, 'GET', '/');
+        $freshBoard = $this->renderMethod($freshApplication, 'GET', '/');
+        $incrementalThread = $this->renderMethod($application, 'GET', '/threads/' . $threadResult['thread_id']);
+        $freshThread = $this->renderMethod($freshApplication, 'GET', '/threads/' . $threadResult['thread_id']);
+        $incrementalReply = $this->renderMethod($application, 'GET', '/posts/' . $replyResult['post_id']);
+        $freshReply = $this->renderMethod($freshApplication, 'GET', '/posts/' . $replyResult['post_id']);
+        $incrementalUser = $this->renderMethod($application, 'GET', '/user/compare-user');
+        $freshUser = $this->renderMethod($freshApplication, 'GET', '/user/compare-user');
+
+        assertSame($this->normalizeRenderedPage($freshBoard), $this->normalizeRenderedPage($incrementalBoard));
+        assertSame($this->normalizeRenderedPage($freshThread), $this->normalizeRenderedPage($incrementalThread));
+        assertSame($this->normalizeRenderedPage($freshReply), $this->normalizeRenderedPage($incrementalReply));
+        assertSame($this->normalizeRenderedPage($freshUser), $this->normalizeRenderedPage($incrementalUser));
     }
 
     public function testWriteApiReportsGitFailureWithoutInvalidatingArtifacts(): void
@@ -625,6 +699,11 @@ final class WriteApiSmokeTest
         assertSame(0, $exitCode, implode("\n", $output));
 
         return trim(implode("\n", $output));
+    }
+
+    private function normalizeRenderedPage(string $html): string
+    {
+        return preg_replace('/[a-f0-9]{40}/', 'COMMIT_SHA', $html) ?? $html;
     }
 
     private function copyDirectory(string $source, string $destination): void

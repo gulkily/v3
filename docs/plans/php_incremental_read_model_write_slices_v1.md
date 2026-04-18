@@ -169,6 +169,13 @@ Components touched:
 
 ## Slice 4: Fallback, Repair, and Parity Verification
 
+Status:
+
+- implemented
+- incremental write failure now falls back to a same-request full rebuild when possible
+- fallback failure still marks derived state stale
+- parity coverage compares incremental thread/reply results to a fresh rebuild of the same repository state
+
 Goal:
 
 - preserve recoverability and prove that incremental updates remain equivalent to a fresh rebuild
