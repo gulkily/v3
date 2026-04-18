@@ -1668,12 +1668,10 @@ final class Application
         try {
             $result = $this->writer()->createReply($input);
             $this->queueComposeDraftClear($this->composeDraftStorageKey('reply', $threadId, $parentId));
-            $notice = 'Created reply ' . $result['post_id'] . '. '
-                . '<a href="/posts/' . $this->escape($result['post_id']) . '">Open post</a>. '
-                . 'Commit ' . $this->escape($result['commit_sha']);
-            $this->sendHtml(
-                $this->renderComposeReplyPage($threadId, $parentId, $notice, null),
-                200,
+            $this->sendRedirect(
+                '/threads/' . $result['thread_id'],
+                'Created reply ' . $result['post_id'] . '. Commit ' . $result['commit_sha'] . '.',
+                303,
                 $this->serverTimingHeaders($result)
             );
         } catch (RuntimeException $exception) {

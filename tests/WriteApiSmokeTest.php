@@ -173,7 +173,9 @@ final class WriteApiSmokeTest
         assertStringContains('Redirecting', $threadResponse);
         assertStringContains('Created thread', $threadResponse);
         assertStringContains('Commit ', $threadResponse);
+        assertStringContains('Redirecting', $replyResponse);
         assertStringContains('Created reply', $replyResponse);
+        assertStringContains('/threads/' . $threadId, $replyResponse);
         assertStringContains('Commit ', $replyResponse);
         assertStringContains('Redirecting', $accountResponse);
         assertStringContains('Linked identity', $accountResponse);
