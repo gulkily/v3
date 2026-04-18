@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace ForumRewrite\ReadModel;
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\CanonicalRecordParseException;
+use ForumRewrite\Canonical\ThreadLabelRecord;
 use PDO;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -15,6 +17,7 @@ final class ReadModelBuilder
     private const HIDDEN_BOOTSTRAP_TAG = 'identity';
     /** @var array<string, float> */
     private array $timings = [];
+    private int $invalidThreadLabelRecordCount = 0;
 
     public function __construct(
         private readonly string $repositoryRoot,
@@ -35,12 +38,14 @@ final class ReadModelBuilder
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $this->timings = [];
+        $this->invalidThreadLabelRecordCount = 0;
         $pdo->beginTransaction();
         try {
             $this->measure('drop_schema', fn (): mixed => $this->dropSchema($pdo));
             $this->measure('create_schema', fn (): mixed => $this->createSchema($pdo));
 
             $posts = $this->measure('index_posts', fn (): array => $this->indexPosts($pdo));
+            $this->measure('index_thread_labels', fn (): mixed => $this->indexThreadLabels($pdo));
             $profiles = $this->measure('index_profiles', fn (): array => $this->indexProfiles($pdo));
             $approvalState = $this->measure('derive_approval_state', fn (): array => $this->deriveApprovalState($profiles, $posts));
             $profileCounts = $this->measure('derive_profile_counts', fn (): array => $this->deriveProfileCounts($profiles, $posts));
@@ -112,7 +117,8 @@ final class ReadModelBuilder
                 body_preview TEXT NOT NULL,
                 reply_count INTEGER NOT NULL,
                 last_post_id TEXT NOT NULL,
-                board_tags_json TEXT NOT NULL
+                board_tags_json TEXT NOT NULL,
+                thread_labels_json TEXT NOT NULL
             )'
         );
 
@@ -178,8 +184,8 @@ final class ReadModelBuilder
              VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :author_identity_id, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
-            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json)
-             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json)'
+            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json)
+             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json)'
         );
 
         $paths = $this->findRelativePaths('records/posts');
@@ -234,6 +240,7 @@ final class ReadModelBuilder
                     'reply_count' => 0,
                     'last_post_id' => $post['post_id'],
                     'board_tags_json' => $post['board_tags_json'],
+                    'thread_labels_json' => '[]',
                 ];
             }
 
@@ -253,6 +260,55 @@ final class ReadModelBuilder
         }
 
         return $posts;
+    }
+
+    private function indexThreadLabels(PDO $pdo): void
+    {
+        $rootThreadIds = $pdo->query('SELECT root_post_id FROM threads')->fetchAll(PDO::FETCH_COLUMN);
+        $knownRootThreads = array_fill_keys(array_map(static fn (mixed $value): string => (string) $value, $rootThreadIds), true);
+        $records = [];
+
+        foreach ($this->findRelativePaths('records/thread-labels') as $relativePath) {
+            try {
+                $records[] = $this->canonicalRepository->loadThreadLabel($relativePath);
+            } catch (CanonicalRecordParseException) {
+                $this->invalidThreadLabelRecordCount++;
+            }
+        }
+
+        usort($records, static function (ThreadLabelRecord $left, ThreadLabelRecord $right): int {
+            if ($left->createdAt !== $right->createdAt) {
+                return $left->createdAt <=> $right->createdAt;
+            }
+
+            return $left->recordId <=> $right->recordId;
+        });
+
+        $labelsByThread = [];
+        foreach ($records as $record) {
+            if (!isset($knownRootThreads[$record->threadId])) {
+                $this->invalidThreadLabelRecordCount++;
+                continue;
+            }
+
+            $labelsByThread[$record->threadId] ??= [];
+            foreach ($record->labels as $label) {
+                $labelsByThread[$record->threadId][$label] = true;
+            }
+        }
+
+        $updateThread = $pdo->prepare(
+            'UPDATE threads SET thread_labels_json = :thread_labels_json WHERE root_post_id = :root_post_id'
+        );
+
+        foreach ($knownRootThreads as $threadId => $_present) {
+            $labels = array_keys($labelsByThread[$threadId] ?? []);
+            sort($labels);
+            $updateThread->execute([
+                'thread_labels_json' => json_encode($labels, JSON_THROW_ON_ERROR),
+                'root_post_id' => $threadId,
+            ]);
+        }
     }
 
     /**
@@ -425,6 +481,7 @@ final class ReadModelBuilder
             'repository_head' => ReadModelMetadata::repositoryHead($this->repositoryRoot),
             'rebuilt_at' => gmdate('c'),
             'rebuild_reason' => $this->rebuildReason,
+            'thread_label_invalid_count' => (string) $this->invalidThreadLabelRecordCount,
         ];
 
         foreach ($metadata as $key => $value) {
