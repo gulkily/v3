@@ -87,18 +87,23 @@ class IncrementalReadModelUpdater
     }
 
     /**
-     * @return array{profile_slug:?string,label:string}
+     * @return array{profile_slug:?string,username_token:?string,label:string,is_approved:int}
      */
     private function loadAuthorProfile(PDO $pdo, ?string $identityId): array
     {
         if ($identityId === null) {
             return [
                 'profile_slug' => null,
+                'username_token' => null,
                 'label' => 'guest',
+                'is_approved' => 0,
             ];
         }
 
-        $stmt = $pdo->prepare('SELECT profile_slug, username FROM profiles WHERE identity_id = :identity_id');
+        $stmt = $pdo->prepare(
+            'SELECT profile_slug, username, username_token, COALESCE(is_approved, 0) AS is_approved
+             FROM profiles WHERE identity_id = :identity_id'
+        );
         $stmt->execute(['identity_id' => $identityId]);
         $row = $stmt->fetch();
         if (!is_array($row)) {
@@ -107,7 +112,9 @@ class IncrementalReadModelUpdater
 
         return [
             'profile_slug' => (string) $row['profile_slug'],
+            'username_token' => (string) $row['username_token'],
             'label' => (string) $row['username'],
+            'is_approved' => (int) $row['is_approved'],
         ];
     }
 
@@ -121,9 +128,9 @@ class IncrementalReadModelUpdater
     {
         $stmt = $pdo->prepare(
             'INSERT INTO threads (
-                root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json
+                root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json
              ) VALUES (
-                :root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json
+                :root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json
              )'
         );
         $stmt->execute([
@@ -135,6 +142,7 @@ class IncrementalReadModelUpdater
             'reply_count' => 0,
             'last_post_id' => $record->postId,
             'board_tags_json' => $boardTagsJson,
+            'thread_labels_json' => '[]',
         ]);
     }
 
@@ -168,9 +176,15 @@ class IncrementalReadModelUpdater
 
     private function insertActivity(PDO $pdo, PostRecord $record, string $boardTagsJson): void
     {
+        $author = $this->loadAuthorProfile($pdo, $record->authorIdentityId);
         $stmt = $pdo->prepare(
-            'INSERT INTO activity (created_at, kind, post_id, thread_id, label, board_tags_json)
-             VALUES (:created_at, :kind, :post_id, :thread_id, :label, :board_tags_json)'
+            'INSERT INTO activity (
+                created_at, kind, post_id, thread_id, label, board_tags_json,
+                author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved
+             ) VALUES (
+                :created_at, :kind, :post_id, :thread_id, :label, :board_tags_json,
+                :author_identity_id, :author_profile_slug, :author_username_token, :author_label, :author_is_approved
+             )'
         );
         $stmt->execute([
             'created_at' => $record->createdAt,
@@ -179,6 +193,11 @@ class IncrementalReadModelUpdater
             'thread_id' => $record->threadId ?? $record->postId,
             'label' => $record->subject ?? $this->preview($record->body),
             'board_tags_json' => $boardTagsJson,
+            'author_identity_id' => $record->authorIdentityId,
+            'author_profile_slug' => $author['profile_slug'],
+            'author_username_token' => $author['username_token'],
+            'author_label' => $author['label'],
+            'author_is_approved' => $author['is_approved'],
         ]);
     }
 

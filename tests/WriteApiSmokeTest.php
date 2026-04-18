@@ -293,6 +293,29 @@ final class WriteApiSmokeTest
         assertSame(1, count($matchingRecords));
     }
 
+    public function testLabeledWritesRebuildReadModelAndPublishLabelActivityImmediately(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $result = $service->createReply([
+            'thread_id' => 'root-001',
+            'parent_id' => 'root-001',
+            'board_tags' => 'general',
+            'body' => "Reply body\n#answered\n",
+        ]);
+
+        $activity = $this->renderMethod($application, 'GET', '/activity/?view=content');
+
+        assertSame(true, isset($result['timings']['read_model_rebuild']));
+        assertSame(false, isset($result['timings']['read_model_incremental_update']));
+        assertStringContains('thread_label_add', $activity);
+        assertStringContains('Labels added: answered', $activity);
+        assertStringContains('/threads/root-001', $activity);
+    }
+
     public function testIncrementalFailureFallsBackToFullRebuildAndKeepsReadModelHealthy(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

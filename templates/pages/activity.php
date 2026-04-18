@@ -10,9 +10,11 @@
     </div>
   </article>
 <?php foreach ($items as $item): ?>
+<?php $href = $item['kind'] === 'thread_label_add' ? '/threads/' . $item['thread_id'] : '/posts/' . $item['post_id']; ?>
+<?php $linkLabel = $item['kind'] === 'thread_label_add' ? $item['thread_id'] : $item['post_id']; ?>
   <article class="card">
     <p class="meta"><?= $e($item['kind']) ?></p>
-    <p><a href="/posts/<?= $e($item['post_id']) ?>"><?= $e($item['post_id']) ?></a></p>
+    <p><a href="<?= $e($href) ?>"><?= $e($linkLabel) ?></a></p>
     <p><?= $e($item['label']) ?></p>
     <p class="meta"><?= $contentMeta($item, 'created_at', '') ?></p>
   </article>

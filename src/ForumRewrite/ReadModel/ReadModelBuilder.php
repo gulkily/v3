@@ -18,6 +18,8 @@ final class ReadModelBuilder
     /** @var array<string, float> */
     private array $timings = [];
     private int $invalidThreadLabelRecordCount = 0;
+    /** @var array<int, array{created_at:string,thread_id:string,author_identity_id:?string,labels_added:list<string>}> */
+    private array $threadLabelActivityEvents = [];
 
     public function __construct(
         private readonly string $repositoryRoot,
@@ -39,6 +41,7 @@ final class ReadModelBuilder
 
         $this->timings = [];
         $this->invalidThreadLabelRecordCount = 0;
+        $this->threadLabelActivityEvents = [];
         $pdo->beginTransaction();
         try {
             $this->measure('drop_schema', fn (): mixed => $this->dropSchema($pdo));
@@ -169,7 +172,12 @@ final class ReadModelBuilder
                 post_id TEXT NOT NULL,
                 thread_id TEXT NOT NULL,
                 label TEXT NOT NULL,
-                board_tags_json TEXT NOT NULL
+                board_tags_json TEXT NOT NULL,
+                author_identity_id TEXT NULL,
+                author_profile_slug TEXT NULL,
+                author_username_token TEXT NULL,
+                author_label TEXT NOT NULL,
+                author_is_approved INTEGER NOT NULL DEFAULT 0
             )'
         );
     }
@@ -292,8 +300,22 @@ final class ReadModelBuilder
             }
 
             $labelsByThread[$record->threadId] ??= [];
+            $labelsAdded = [];
             foreach ($record->labels as $label) {
-                $labelsByThread[$record->threadId][$label] = true;
+                if (!isset($labelsByThread[$record->threadId][$label])) {
+                    $labelsByThread[$record->threadId][$label] = true;
+                    $labelsAdded[] = $label;
+                }
+            }
+
+            if ($labelsAdded !== []) {
+                sort($labelsAdded);
+                $this->threadLabelActivityEvents[] = [
+                    'created_at' => $record->createdAt,
+                    'thread_id' => $record->threadId,
+                    'author_identity_id' => $record->authorIdentityId,
+                    'labels_added' => $labelsAdded,
+                ];
             }
         }
 
@@ -451,14 +473,23 @@ final class ReadModelBuilder
     private function indexActivity(PDO $pdo, array $posts): void
     {
         $stmt = $pdo->prepare(
-            'INSERT INTO activity (created_at, kind, post_id, thread_id, label, board_tags_json) VALUES (:created_at, :kind, :post_id, :thread_id, :label, :board_tags_json)'
+            'INSERT INTO activity (
+                created_at, kind, post_id, thread_id, label, board_tags_json,
+                author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved
+             ) VALUES (
+                :created_at, :kind, :post_id, :thread_id, :label, :board_tags_json,
+                :author_identity_id, :author_profile_slug, :author_username_token, :author_label, :author_is_approved
+             )'
         );
+        $postsById = [];
 
         foreach ($posts as $post) {
+            $postsById[$post['post_id']] = $post;
             if ($this->isHiddenBootstrapBoardTagsJson($post['board_tags_json'])) {
                 continue;
             }
 
+            $author = $this->resolveActivityAuthor($pdo, $post['author_identity_id']);
             $kind = $post['post_id'] === $post['thread_id'] ? 'thread' : 'reply';
             $label = $post['subject'] ?? $this->preview($post['body']);
             $stmt->execute([
@@ -468,8 +499,72 @@ final class ReadModelBuilder
                 'thread_id' => $post['thread_id'],
                 'label' => $label,
                 'board_tags_json' => $post['board_tags_json'],
+                'author_identity_id' => $post['author_identity_id'],
+                'author_profile_slug' => $author['author_profile_slug'],
+                'author_username_token' => $author['author_username_token'],
+                'author_label' => $author['author_label'],
+                'author_is_approved' => $author['author_is_approved'],
             ]);
         }
+
+        foreach ($this->threadLabelActivityEvents as $event) {
+            $thread = $postsById[$event['thread_id']] ?? null;
+            if ($thread === null || $this->isHiddenBootstrapBoardTagsJson($thread['board_tags_json'])) {
+                continue;
+            }
+
+            $author = $this->resolveActivityAuthor($pdo, $event['author_identity_id']);
+            $stmt->execute([
+                'created_at' => $event['created_at'],
+                'kind' => 'thread_label_add',
+                'post_id' => $event['thread_id'],
+                'thread_id' => $event['thread_id'],
+                'label' => 'Labels added: ' . implode(', ', $event['labels_added']),
+                'board_tags_json' => $thread['board_tags_json'],
+                'author_identity_id' => $event['author_identity_id'],
+                'author_profile_slug' => $author['author_profile_slug'],
+                'author_username_token' => $author['author_username_token'],
+                'author_label' => $author['author_label'],
+                'author_is_approved' => $author['author_is_approved'],
+            ]);
+        }
+    }
+
+    /**
+     * @return array{author_profile_slug:?string,author_username_token:?string,author_label:string,author_is_approved:int}
+     */
+    private function resolveActivityAuthor(PDO $pdo, ?string $identityId): array
+    {
+        if ($identityId === null) {
+            return [
+                'author_profile_slug' => null,
+                'author_username_token' => null,
+                'author_label' => 'guest',
+                'author_is_approved' => 0,
+            ];
+        }
+
+        $stmt = $pdo->prepare(
+            'SELECT profile_slug, username, username_token, COALESCE(is_approved, 0) AS is_approved
+             FROM profiles WHERE identity_id = :identity_id'
+        );
+        $stmt->execute(['identity_id' => $identityId]);
+        $row = $stmt->fetch();
+        if (!is_array($row)) {
+            return [
+                'author_profile_slug' => null,
+                'author_username_token' => null,
+                'author_label' => $identityId,
+                'author_is_approved' => 0,
+            ];
+        }
+
+        return [
+            'author_profile_slug' => $row['profile_slug'] !== null ? (string) $row['profile_slug'] : null,
+            'author_username_token' => $row['username_token'] !== null ? (string) $row['username_token'] : null,
+            'author_label' => (string) $row['username'],
+            'author_is_approved' => (int) $row['is_approved'],
+        ];
     }
 
     private function writeMetadata(PDO $pdo): void

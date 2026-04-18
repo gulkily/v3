@@ -195,6 +195,9 @@ final class LocalAppSmokeTest
         assertStringNotContains('Bootstrap post ID', $account);
         assertStringContains('View: content', $activity);
         assertStringContains('by guest on <time datetime="2026-04-10T12:05:00Z">Apr 10, 2026 at 12:05 UTC</time>', $activity);
+        assertStringContains('thread_label_add', $activity);
+        assertStringContains('Labels added: bug, needs-review', $activity);
+        assertStringContains('/threads/root-001', $activity);
         assertStringContains('GET /api/list_index', $llms);
     }
 
@@ -233,7 +236,7 @@ final class LocalAppSmokeTest
         assertStringContains('status=ready', $readModelStatus);
         assertStringContains('lock_status=unlocked', $readModelStatus);
         assertStringContains('stale_marker=absent', $readModelStatus);
-        assertStringContains('schema_version=6', $readModelStatus);
+        assertStringContains('schema_version=7', $readModelStatus);
         assertStringContains('<rss version="2.0">', $boardRss);
         assertStringContains('<title>Hello world</title>', $threadRss);
         assertStringContains('<pubDate>Fri, 10 Apr 2026 12:05:00 +0000</pubDate>', $threadRss);

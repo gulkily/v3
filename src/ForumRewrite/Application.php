@@ -873,7 +873,10 @@ final class Application
         $view = $this->normalizeActivityView($view);
         $items = [];
         foreach ($this->fetchActivity($view) as $item) {
-            $items[] = $this->renderRssItem($item['label'], '/posts/' . $item['post_id'], $item['kind'], (string) $item['created_at']);
+            $link = $item['kind'] === 'thread_label_add'
+                ? '/threads/' . $item['thread_id']
+                : '/posts/' . $item['post_id'];
+            $items[] = $this->renderRssItem($item['label'], $link, $item['kind'], (string) $item['created_at']);
         }
 
         return $this->renderRssFeed('Activity ' . $view, '/activity/?view=' . rawurlencode($view) . '&format=rss', $items);
@@ -1422,11 +1425,9 @@ final class Application
         $view = $this->normalizeActivityView($view);
         $rows = $this->pdo()->query(
             'SELECT activity.created_at, activity.kind, activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
-                    activity.id, posts.author_label, posts.author_profile_slug,
-                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
+                    activity.id, activity.author_label, activity.author_profile_slug,
+                    activity.author_username_token, activity.author_is_approved
              FROM activity
-             JOIN posts ON posts.post_id = activity.post_id
-             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
              ORDER BY activity.created_at DESC, activity.id DESC'
         )->fetchAll();
 
