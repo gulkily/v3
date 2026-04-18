@@ -84,6 +84,13 @@ Components touched:
 
 ## Slice 2: Full-Rebuild Hot-Loop Optimization
 
+Status:
+
+- implemented
+- thread aggregates now build in one pass during `indexPosts()`
+- profile counts now derive from the already-loaded post list instead of per-profile SQL rescans
+- rebuild writes now run inside one SQLite transaction
+
 Goal:
 
 - materially reduce rebuild cost without changing the overall rebuild contract

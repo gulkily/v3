@@ -28,6 +28,7 @@ final class ReadModelBuilderTimingTest
         assertSame(true, isset($timings['index_posts']));
         assertSame(true, isset($timings['index_profiles']));
         assertSame(true, isset($timings['derive_approval_state']));
+        assertSame(true, isset($timings['derive_profile_counts']));
         assertSame(true, isset($timings['link_post_authors']));
         assertSame(true, isset($timings['index_instance']));
         assertSame(true, isset($timings['index_activity']));

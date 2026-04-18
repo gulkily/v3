@@ -35,16 +35,27 @@ final class ReadModelBuilder
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $this->timings = [];
-        $this->measure('drop_schema', fn (): mixed => $this->dropSchema($pdo));
-        $this->measure('create_schema', fn (): mixed => $this->createSchema($pdo));
+        $pdo->beginTransaction();
+        try {
+            $this->measure('drop_schema', fn (): mixed => $this->dropSchema($pdo));
+            $this->measure('create_schema', fn (): mixed => $this->createSchema($pdo));
 
-        $posts = $this->measure('index_posts', fn (): array => $this->indexPosts($pdo));
-        $profiles = $this->measure('index_profiles', fn (): array => $this->indexProfiles($pdo));
-        $approvalState = $this->measure('derive_approval_state', fn (): array => $this->deriveApprovalState($profiles, $posts));
-        $this->measure('link_post_authors', fn (): mixed => $this->linkPostAuthors($pdo, $profiles, $approvalState));
-        $this->measure('index_instance', fn (): mixed => $this->indexInstance($pdo));
-        $this->measure('index_activity', fn (): mixed => $this->indexActivity($pdo, $posts));
-        $this->measure('write_metadata', fn (): mixed => $this->writeMetadata($pdo));
+            $posts = $this->measure('index_posts', fn (): array => $this->indexPosts($pdo));
+            $profiles = $this->measure('index_profiles', fn (): array => $this->indexProfiles($pdo));
+            $approvalState = $this->measure('derive_approval_state', fn (): array => $this->deriveApprovalState($profiles, $posts));
+            $profileCounts = $this->measure('derive_profile_counts', fn (): array => $this->deriveProfileCounts($profiles, $posts));
+            $this->measure('link_post_authors', fn (): mixed => $this->linkPostAuthors($pdo, $profiles, $approvalState, $profileCounts));
+            $this->measure('index_instance', fn (): mixed => $this->indexInstance($pdo));
+            $this->measure('index_activity', fn (): mixed => $this->indexActivity($pdo, $posts));
+            $this->measure('write_metadata', fn (): mixed => $this->writeMetadata($pdo));
+            $pdo->commit();
+        } catch (\Throwable $throwable) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $throwable;
+        }
     }
 
     /**
@@ -206,42 +217,39 @@ final class ReadModelBuilder
         });
 
         $posts = [];
-        $threadChildren = [];
+        $threadSummaries = [];
         foreach ($parsedPosts as $index => $post) {
             $post['sequence_number'] = $index + 1;
             unset($post['source_order']);
             $posts[] = $post;
             $insertPost->execute($post);
-            $threadChildren[$post['thread_id']][] = $post['post_id'];
+
+            if (!isset($threadSummaries[$post['thread_id']])) {
+                $threadSummaries[$post['thread_id']] = [
+                    'root_post_id' => $post['thread_id'],
+                    'root_post_created_at' => $post['created_at'],
+                    'last_activity_at' => $post['created_at'],
+                    'subject' => $post['subject'],
+                    'body_preview' => $this->preview($post['body']),
+                    'reply_count' => 0,
+                    'last_post_id' => $post['post_id'],
+                    'board_tags_json' => $post['board_tags_json'],
+                ];
+            }
+
+            $summary = &$threadSummaries[$post['thread_id']];
+            if ($post['post_id'] !== $post['thread_id']) {
+                $summary['reply_count']++;
+            }
+            if ($post['created_at'] > $summary['last_activity_at']) {
+                $summary['last_activity_at'] = $post['created_at'];
+            }
+            $summary['last_post_id'] = $post['post_id'];
+            unset($summary);
         }
 
-        foreach ($posts as $post) {
-            if ($post['thread_id'] !== $post['post_id']) {
-                continue;
-            }
-
-            $children = $threadChildren[$post['post_id']] ?? [$post['post_id']];
-            $replyCount = count($children) - 1;
-            $lastActivityAt = $post['created_at'];
-            foreach ($posts as $candidate) {
-                if ($candidate['thread_id'] !== $post['post_id']) {
-                    continue;
-                }
-
-                if ($candidate['created_at'] > $lastActivityAt) {
-                    $lastActivityAt = $candidate['created_at'];
-                }
-            }
-            $insertThread->execute([
-                'root_post_id' => $post['post_id'],
-                'root_post_created_at' => $post['created_at'],
-                'last_activity_at' => $lastActivityAt,
-                'subject' => $post['subject'],
-                'body_preview' => $this->preview($post['body']),
-                'reply_count' => $replyCount,
-                'last_post_id' => $children[array_key_last($children)],
-                'board_tags_json' => $post['board_tags_json'],
-            ]);
+        foreach ($threadSummaries as $summary) {
+            $insertThread->execute($summary);
         }
 
         return $posts;
@@ -315,8 +323,9 @@ final class ReadModelBuilder
     /**
      * @param array<string, array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string}> $profiles
      * @param array<string, array{approved_by_identity_id:?string,approved_by_profile_slug:?string,approved_by_label:?string}> $approvalState
+     * @param array<string, array{post_count:int,thread_count:int}> $profileCounts
      */
-    private function linkPostAuthors(PDO $pdo, array $profiles, array $approvalState): void
+    private function linkPostAuthors(PDO $pdo, array $profiles, array $approvalState, array $profileCounts): void
     {
         $updatePost = $pdo->prepare(
             'UPDATE posts
@@ -342,8 +351,7 @@ final class ReadModelBuilder
                 'bootstrap_post_id' => $profile['bootstrap_post_id'],
             ]);
 
-            $visiblePostCount = $this->countVisibleRows($pdo, $profile['identity_id'], false);
-            $visibleThreadCount = $this->countVisibleRows($pdo, $profile['identity_id'], true);
+            $counts = $profileCounts[$profile['identity_id']] ?? ['post_count' => 0, 'thread_count' => 0];
             $approval = $approvalState[$profile['identity_id']] ?? [
                 'approved_by_identity_id' => null,
                 'approved_by_profile_slug' => null,
@@ -354,8 +362,8 @@ final class ReadModelBuilder
                 'approved_by_identity_id' => $approval['approved_by_identity_id'],
                 'approved_by_profile_slug' => $approval['approved_by_profile_slug'],
                 'approved_by_label' => $approval['approved_by_label'],
-                'post_count' => $visiblePostCount,
-                'thread_count' => $visibleThreadCount,
+                'post_count' => $counts['post_count'],
+                'thread_count' => $counts['thread_count'],
                 'identity_id' => $profile['identity_id'],
             ]);
         }
@@ -543,28 +551,42 @@ final class ReadModelBuilder
         return $matches[1];
     }
 
-    private function countVisibleRows(PDO $pdo, string $identityId, bool $threadsOnly): int
+    /**
+     * @param array<string, array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string}> $profiles
+     * @param array<int, array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int}> $posts
+     * @return array<string, array{post_count:int,thread_count:int}>
+     */
+    private function deriveProfileCounts(array $profiles, array $posts): array
     {
-        $sql = 'SELECT board_tags_json FROM posts WHERE author_identity_id = :author_identity_id';
-        if ($threadsOnly) {
-            $sql .= ' AND post_id = thread_id';
+        $counts = [];
+        $bootstrapPostOwners = [];
+        foreach ($profiles as $identityId => $profile) {
+            $counts[$identityId] = ['post_count' => 0, 'thread_count' => 0];
+            $bootstrapPostOwners[$profile['bootstrap_post_id']] = $identityId;
         }
 
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            'author_identity_id' => $identityId,
-        ]);
-
-        $visibleCount = 0;
-        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $boardTagsJson) {
-            if ($this->isHiddenBootstrapBoardTagsJson((string) $boardTagsJson)) {
+        foreach ($posts as $post) {
+            if ($this->isHiddenBootstrapBoardTagsJson($post['board_tags_json'])) {
                 continue;
             }
 
-            $visibleCount++;
+            $owners = [];
+            if ($post['author_identity_id'] !== null && isset($counts[$post['author_identity_id']])) {
+                $owners[$post['author_identity_id']] = true;
+            }
+            if (isset($bootstrapPostOwners[$post['post_id']])) {
+                $owners[$bootstrapPostOwners[$post['post_id']]] = true;
+            }
+
+            foreach (array_keys($owners) as $identityId) {
+                $counts[$identityId]['post_count']++;
+                if ($post['post_id'] === $post['thread_id']) {
+                    $counts[$identityId]['thread_count']++;
+                }
+            }
         }
 
-        return $visibleCount;
+        return $counts;
     }
 
     private function isHiddenBootstrapBoardTagsJson(string $boardTagsJson): bool
