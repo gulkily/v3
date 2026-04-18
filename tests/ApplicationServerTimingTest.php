@@ -21,13 +21,14 @@ final class ApplicationServerTimingTest
             'timings' => [
                 'write_file' => 1.2,
                 'git_commit' => 34.56,
+                'read_model_index_posts' => 128.4,
                 'ignored-bad-name' => 99,
                 'ignored_value' => 'oops',
             ],
         ]);
 
         assertSame(
-            ['Server-Timing: write_file;dur=1.2, git_commit;dur=34.6'],
+            ['Server-Timing: write_file;dur=1.2, git_commit;dur=34.6, read_model_index_posts;dur=128.4'],
             $headers
         );
     }

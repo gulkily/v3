@@ -238,7 +238,7 @@ final class WriteApiSmokeTest
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $this->seedArtifacts($artifactRoot, ['/index.html']);
         $service = new class($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot)) extends LocalWriteService {
-            protected function rebuildReadModel(): void
+            protected function rebuildReadModel(): array
             {
                 throw new RuntimeException('simulated refresh failure');
             }

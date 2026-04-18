@@ -61,8 +61,11 @@ class LocalWriteService
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
             $phaseStartedAt = hrtime(true);
-            $this->refreshDerivedStateAfterCommit($commitSha);
+            $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
             $timings['read_model_rebuild'] = $this->elapsedMilliseconds($phaseStartedAt);
+            foreach ($rebuildTimings as $name => $duration) {
+                $timings['read_model_' . $name] = $duration;
+            }
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateBoardThread($postId);
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -121,8 +124,11 @@ class LocalWriteService
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
             $phaseStartedAt = hrtime(true);
-            $this->refreshDerivedStateAfterCommit($commitSha);
+            $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
             $timings['read_model_rebuild'] = $this->elapsedMilliseconds($phaseStartedAt);
+            foreach ($rebuildTimings as $name => $duration) {
+                $timings['read_model_' . $name] = $duration;
+            }
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateReply($threadId, $postId);
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -259,7 +265,10 @@ class LocalWriteService
         });
     }
 
-    protected function rebuildReadModel(): void
+    /**
+     * @return array<string, float>
+     */
+    protected function rebuildReadModel(): array
     {
         $builder = new ReadModelBuilder(
             $this->repositoryRoot,
@@ -268,13 +277,19 @@ class LocalWriteService
             'write_refresh',
         );
         $builder->rebuild();
+
+        return $builder->timings();
     }
 
-    private function refreshDerivedStateAfterCommit(string $commitSha): void
+    /**
+     * @return array<string, float>
+     */
+    private function refreshDerivedStateAfterCommit(string $commitSha): array
     {
         try {
-            $this->rebuildReadModel();
+            $timings = $this->rebuildReadModel();
             $this->staleMarker()->clear();
+            return $timings;
         } catch (\Throwable $throwable) {
             $this->staleMarker()->mark([
                 'reason' => 'write_refresh_failed',

@@ -13,6 +13,8 @@ use FilesystemIterator;
 final class ReadModelBuilder
 {
     private const HIDDEN_BOOTSTRAP_TAG = 'identity';
+    /** @var array<string, float> */
+    private array $timings = [];
 
     public function __construct(
         private readonly string $repositoryRoot,
@@ -32,16 +34,25 @@ final class ReadModelBuilder
         $pdo = new PDO('sqlite:' . $this->databasePath);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        $this->dropSchema($pdo);
-        $this->createSchema($pdo);
+        $this->timings = [];
+        $this->measure('drop_schema', fn (): mixed => $this->dropSchema($pdo));
+        $this->measure('create_schema', fn (): mixed => $this->createSchema($pdo));
 
-        $posts = $this->indexPosts($pdo);
-        $profiles = $this->indexProfiles($pdo);
-        $approvalState = $this->deriveApprovalState($profiles, $posts);
-        $this->linkPostAuthors($pdo, $profiles, $approvalState);
-        $this->indexInstance($pdo);
-        $this->indexActivity($pdo, $posts);
-        $this->writeMetadata($pdo);
+        $posts = $this->measure('index_posts', fn (): array => $this->indexPosts($pdo));
+        $profiles = $this->measure('index_profiles', fn (): array => $this->indexProfiles($pdo));
+        $approvalState = $this->measure('derive_approval_state', fn (): array => $this->deriveApprovalState($profiles, $posts));
+        $this->measure('link_post_authors', fn (): mixed => $this->linkPostAuthors($pdo, $profiles, $approvalState));
+        $this->measure('index_instance', fn (): mixed => $this->indexInstance($pdo));
+        $this->measure('index_activity', fn (): mixed => $this->indexActivity($pdo, $posts));
+        $this->measure('write_metadata', fn (): mixed => $this->writeMetadata($pdo));
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    public function timings(): array
+    {
+        return $this->timings;
     }
 
     private function dropSchema(PDO $pdo): void
@@ -564,5 +575,15 @@ final class ReadModelBuilder
         }
 
         return in_array(self::HIDDEN_BOOTSTRAP_TAG, $boardTags, true);
+    }
+
+    private function measure(string $name, callable $callback): mixed
+    {
+        $startedAt = hrtime(true);
+        try {
+            return $callback();
+        } finally {
+            $this->timings[$name] = round((hrtime(true) - $startedAt) / 1000000, 1);
+        }
     }
 }
