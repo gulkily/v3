@@ -244,6 +244,55 @@ final class WriteApiSmokeTest
         assertStringContains('Incremental reply', $threadPage);
     }
 
+    public function testCreateThreadWithHashtagsWritesThreadLabelRecordAndRendersLabels(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_thread?board_tags=general&subject=Tagged%20Thread&body='
+            . rawurlencode("Thread body\n#bug #needs-review\n> #ignored\n#bug\n")
+        );
+        $threadId = $this->extractValue($response, 'thread_id');
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/' . $threadId);
+        $records = glob($repositoryRoot . '/records/thread-labels/*.txt');
+
+        assertStringContains('status=ok', $response);
+        assertStringContains('Labels: bug, needs-review', $threadPage);
+        assertSame(2, count($records));
+        assertSame(1, count(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), 'Thread-ID: ' . $threadId))));
+
+        $recordPath = array_values(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), 'Thread-ID: ' . $threadId)))[0];
+        $recordContents = (string) file_get_contents($recordPath);
+        assertStringContains('Labels: bug needs-review', $recordContents);
+        assertStringNotContains('ignored', $recordContents);
+    }
+
+    public function testCreateReplyWithHashtagsWritesThreadLabelRecordForTargetThread(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_reply?thread_id=root-001&parent_id=root-001&body=' . rawurlencode("Reply body\n#answered\n> #ignored\n")
+        );
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
+        $records = glob($repositoryRoot . '/records/thread-labels/*.txt');
+        $matchingRecords = array_values(array_filter(
+            $records,
+            static fn (string $path): bool => str_contains((string) file_get_contents($path), "Thread-ID: root-001\n")
+                && str_contains((string) file_get_contents($path), 'Labels: answered')
+        ));
+
+        assertStringContains('status=ok', $response);
+        assertStringContains('Labels: answered, bug, needs-review', $threadPage);
+        assertSame(1, count($matchingRecords));
+    }
+
     public function testIncrementalFailureFallsBackToFullRebuildAndKeepsReadModelHealthy(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

@@ -9,6 +9,7 @@ use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\PostRecordParser;
+use ForumRewrite\Canonical\ThreadLabelRecordParser;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
@@ -57,14 +58,24 @@ class LocalWriteService
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = 'records/posts/' . $postId . '.txt';
+            $threadLabels = $this->extractThreadLabelsFromBody($body);
+            $labelRecordPath = null;
             $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $contents);
+            if ($threadLabels !== []) {
+                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($postId, $threadLabels, $authorIdentityId, $createdAt);
+                $this->writeFile($labelRecordPath, $labelContents);
+            }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
             $phaseStartedAt = hrtime(true);
-            $commitResult = $this->commitCanonicalWrite([$recordPath], 'Create thread ' . $postId);
+            $writtenPaths = [$recordPath];
+            if ($labelRecordPath !== null) {
+                $writtenPaths[] = $labelRecordPath;
+            }
+            $commitResult = $this->commitCanonicalWrite($writtenPaths, 'Create thread ' . $postId);
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
-            $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha));
+            $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha, $labelRecordPath !== null));
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateBoardThread($postId);
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -115,14 +126,24 @@ class LocalWriteService
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = 'records/posts/' . $postId . '.txt';
+            $threadLabels = $this->extractThreadLabelsFromBody($body);
+            $labelRecordPath = null;
             $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $contents);
+            if ($threadLabels !== []) {
+                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($threadId, $threadLabels, $authorIdentityId, $createdAt);
+                $this->writeFile($labelRecordPath, $labelContents);
+            }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
             $phaseStartedAt = hrtime(true);
-            $commitResult = $this->commitCanonicalWrite([$recordPath], 'Create reply ' . $postId);
+            $writtenPaths = [$recordPath];
+            if ($labelRecordPath !== null) {
+                $writtenPaths[] = $labelRecordPath;
+            }
+            $commitResult = $this->commitCanonicalWrite($writtenPaths, 'Create reply ' . $postId);
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
-            $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha));
+            $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha, $labelRecordPath !== null));
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateReply($threadId, $postId);
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -301,10 +322,10 @@ class LocalWriteService
     /**
      * @return array<string, float>
      */
-    private function synchronizePostDerivedState(PostRecord $record, string $commitSha): array
+    private function synchronizePostDerivedState(PostRecord $record, string $commitSha, bool $hasThreadLabelWrite = false): array
     {
         $phaseStartedAt = hrtime(true);
-        if (!$this->canIncrementallyUpdateReadModel()) {
+        if ($hasThreadLabelWrite || !$this->canIncrementallyUpdateReadModel()) {
             $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
             $timings = [
                 'read_model_rebuild' => $this->elapsedMilliseconds($phaseStartedAt),
@@ -494,6 +515,58 @@ class LocalWriteService
     private function canonicalTimestampNow(): string
     {
         return gmdate('Y-m-d\TH:i:s\Z');
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function extractThreadLabelsFromBody(string $body): array
+    {
+        $labels = [];
+        foreach (explode("\n", $body) as $line) {
+            if (preg_match('/^\s*>/', $line) === 1) {
+                continue;
+            }
+
+            if (preg_match_all('/(^|[^A-Za-z0-9-])#([A-Za-z0-9-]+)/', $line, $matches) !== 1) {
+                continue;
+            }
+
+            foreach ($matches[2] as $label) {
+                if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $label)) {
+                    continue;
+                }
+
+                if (!in_array($label, $labels, true)) {
+                    $labels[] = $label;
+                }
+            }
+        }
+
+        return $labels;
+    }
+
+    /**
+     * @param list<string> $labels
+     * @return array{string,string}
+     */
+    private function buildThreadLabelRecord(string $threadId, array $labels, ?string $authorIdentityId, string $createdAt): array
+    {
+        $recordId = $this->generateRecordId('thread-label');
+        $contents = "Record-ID: {$recordId}\n"
+            . "Created-At: {$createdAt}\n"
+            . "Thread-ID: {$threadId}\n"
+            . "Operation: add\n"
+            . 'Labels: ' . implode(' ', $labels) . "\n"
+            . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
+            . "\n";
+
+        (new ThreadLabelRecordParser())->parse($contents);
+
+        return [
+            CanonicalPathResolver::threadLabel($recordId),
+            $contents,
+        ];
     }
 
     /**
