@@ -12,6 +12,7 @@ final class CanonicalRecordRepository
         private readonly IdentityBootstrapRecordParser $identityParser = new IdentityBootstrapRecordParser(),
         private readonly PublicKeyRecordParser $publicKeyParser = new PublicKeyRecordParser(),
         private readonly ApprovalSeedRecordParser $approvalSeedParser = new ApprovalSeedRecordParser(),
+        private readonly ThreadLabelRecordParser $threadLabelParser = new ThreadLabelRecordParser(),
         private readonly InstancePublicRecordParser $instanceParser = new InstancePublicRecordParser(),
     ) {
     }
@@ -86,6 +87,19 @@ final class CanonicalRecordRepository
         $expectedPath = CanonicalPathResolver::approvalSeed(substr($record->approvedIdentityId, strlen('openpgp:')));
         if ($relativePath !== $expectedPath) {
             throw new CanonicalRecordParseException('Approval seed record path must match Approved-Identity-ID.');
+        }
+
+        return $record;
+    }
+
+    public function loadThreadLabel(string $relativePath): ThreadLabelRecord
+    {
+        $this->assertPathIsWithinFamily($relativePath, 'records/thread-labels/');
+        $record = $this->threadLabelParser->parse($this->read($relativePath));
+
+        $expectedPath = CanonicalPathResolver::threadLabel($record->recordId);
+        if ($relativePath !== $expectedPath) {
+            throw new CanonicalRecordParseException('Thread-label record path must match Record-ID.');
         }
 
         return $record;

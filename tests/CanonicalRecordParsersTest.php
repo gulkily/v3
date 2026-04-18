@@ -10,6 +10,7 @@ use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\InstancePublicRecordParser;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PublicKeyRecordParser;
+use ForumRewrite\Canonical\ThreadLabelRecordParser;
 
 require __DIR__ . '/../autoload.php';
 
@@ -136,6 +137,42 @@ final class CanonicalRecordParsersTest
         assertSame('initial approved fixture user', $record->seedReason);
     }
 
+    public function testParsesThreadLabelFixture(): void
+    {
+        $record = (new ThreadLabelRecordParser())->parse(
+            $this->readFixture('thread-labels/thread-label-20260415153000-ab12cd34.txt')
+        );
+
+        assertSame('thread-label-20260415153000-ab12cd34', $record->recordId);
+        assertSame('2026-04-15T15:30:00Z', $record->createdAt);
+        assertSame('root-001', $record->threadId);
+        assertSame('add', $record->operation);
+        assertSame(['bug', 'needs-review'], $record->labels);
+        assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $record->authorIdentityId);
+        assertSame('Triage labels applied', $record->reason);
+        assertSame('', $record->body);
+    }
+
+    public function testRejectsThreadLabelWithUnsupportedOperation(): void
+    {
+        $contents = "Record-ID: thread-label-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nThread-ID: root-001\nOperation: remove\nLabels: bug\n\n";
+
+        assertThrows(
+            static fn () => (new ThreadLabelRecordParser())->parse($contents),
+            'Thread-label Operation must be add in V1.'
+        );
+    }
+
+    public function testRejectsThreadLabelWithInvalidLabelToken(): void
+    {
+        $contents = "Record-ID: thread-label-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nThread-ID: root-001\nOperation: add\nLabels: Needs-Review\n\n";
+
+        assertThrows(
+            static fn () => (new ThreadLabelRecordParser())->parse($contents),
+            'Invalid label token: Needs-Review'
+        );
+    }
+
     public function testParsesInstanceFixture(): void
     {
         $record = (new InstancePublicRecordParser())->parse($this->readFixture('instance/public.txt'));
@@ -152,12 +189,14 @@ final class CanonicalRecordParsersTest
         $identity = $repository->loadIdentity('records/identity/identity-openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt');
         $publicKey = $repository->loadPublicKey('records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc');
         $approvalSeed = $repository->loadApprovalSeed('records/approval-seeds/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt');
+        $threadLabel = $repository->loadThreadLabel('records/thread-labels/thread-label-20260415153000-ab12cd34.txt');
         $instance = $repository->loadInstancePublic('records/instance/public.txt');
 
         assertSame('root-001', $post->postId);
         assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $identity->identityId);
         assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $publicKey->fingerprint);
         assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $approvalSeed->approvedIdentityId);
+        assertSame(['bug', 'needs-review'], $threadLabel->labels);
         assertSame('zenmemes', $instance->headers['Instance-Name']);
     }
 
@@ -212,6 +251,21 @@ final class CanonicalRecordParsersTest
         assertSame('2026-04-10T12:00:00Z', $record->createdAt);
     }
 
+    public function testRepositoryRejectsThreadLabelPathMismatch(): void
+    {
+        $tempRoot = $this->createTempFixtureRoot();
+        rename(
+            $tempRoot . '/records/thread-labels/thread-label-20260415153000-ab12cd34.txt',
+            $tempRoot . '/records/thread-labels/not-the-record-id.txt'
+        );
+        $repository = new CanonicalRecordRepository($tempRoot);
+
+        assertThrows(
+            static fn () => $repository->loadThreadLabel('records/thread-labels/not-the-record-id.txt'),
+            'Thread-label record path must match Record-ID.'
+        );
+    }
+
     public function testCanonicalPathResolverMatchesSpecs(): void
     {
         assertSame('records/posts/root-001.txt', CanonicalPathResolver::post('root-001'));
@@ -226,6 +280,10 @@ final class CanonicalRecordParsersTest
         assertSame(
             'records/approval-seeds/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt',
             CanonicalPathResolver::approvalSeed('0168ff20eb09c3ea6193bd3c92a73aa7d20a0954')
+        );
+        assertSame(
+            'records/thread-labels/thread-label-20260415153000-ab12cd34.txt',
+            CanonicalPathResolver::threadLabel('thread-label-20260415153000-ab12cd34')
         );
         assertSame('records/instance/public.txt', CanonicalPathResolver::instancePublic());
     }

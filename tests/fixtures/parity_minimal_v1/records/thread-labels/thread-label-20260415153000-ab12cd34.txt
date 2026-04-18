@@ -1,0 +1,8 @@
+Record-ID: thread-label-20260415153000-ab12cd34
+Created-At: 2026-04-15T15:30:00Z
+Thread-ID: root-001
+Operation: add
+Labels: bug needs-review bug
+Author-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954
+Reason: Triage labels applied
+

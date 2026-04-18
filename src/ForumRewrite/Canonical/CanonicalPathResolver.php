@@ -26,6 +26,11 @@ final class CanonicalPathResolver
         return 'records/approval-seeds/openpgp-' . $lowercaseFingerprint . '.txt';
     }
 
+    public static function threadLabel(string $recordId): string
+    {
+        return 'records/thread-labels/' . $recordId . '.txt';
+    }
+
     public static function instancePublic(): string
     {
         return 'records/instance/public.txt';
