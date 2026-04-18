@@ -120,6 +120,13 @@ Components touched:
 
 ## Slice 3: Incremental Thread/Reply Read-Model Updates
 
+Status:
+
+- implemented
+- warm thread/reply writes now use an incremental SQLite updater instead of a full rebuild
+- cold or stale read-model states still fall back to full rebuild
+- timing output now distinguishes `read_model_incremental_*` from rebuild timings
+
 Goal:
 
 - stop performing full rebuilds on the hot path for the most common writes: thread creation and reply creation

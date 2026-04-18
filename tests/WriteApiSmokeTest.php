@@ -210,6 +210,37 @@ final class WriteApiSmokeTest
         assertFalse(str_contains($threadPage, 'by guest'));
     }
 
+    public function testThreadAndReplyWritesUseIncrementalReadModelUpdateWhenDatabaseIsWarm(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $threadResult = $service->createThread([
+            'board_tags' => 'general',
+            'subject' => 'Incremental Thread',
+            'body' => 'Incremental body',
+        ]);
+        $replyResult = $service->createReply([
+            'thread_id' => $threadResult['thread_id'],
+            'parent_id' => $threadResult['thread_id'],
+            'board_tags' => 'general',
+            'body' => 'Incremental reply',
+        ]);
+
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/' . $threadResult['thread_id']);
+        $replyPage = $this->renderMethod($application, 'GET', '/posts/' . $replyResult['post_id']);
+
+        assertSame(true, isset($threadResult['timings']['read_model_incremental_update']));
+        assertSame(false, isset($threadResult['timings']['read_model_rebuild']));
+        assertSame(true, isset($replyResult['timings']['read_model_incremental_update']));
+        assertSame(false, isset($replyResult['timings']['read_model_rebuild']));
+        assertStringContains('Incremental Thread', $threadPage);
+        assertStringContains('Incremental reply', $replyPage);
+        assertStringContains('Incremental reply', $threadPage);
+    }
+
     public function testWriteApiReportsGitFailureWithoutInvalidatingArtifacts(): void
     {
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-write-repo-' . bin2hex(random_bytes(6));

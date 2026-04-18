@@ -7,8 +7,12 @@ namespace ForumRewrite\Write;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
+use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\PostRecordParser;
+use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\ReadModel\ReadModelConnection;
+use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Security\OpenPgpKeyInspector;
@@ -51,7 +55,7 @@ class LocalWriteService
                 . ($subject !== '' ? "Subject: {$subject}\n" : '')
                 . "\n{$body}";
 
-            (new PostRecordParser())->parse($contents);
+            $record = (new PostRecordParser())->parse($contents);
             $recordPath = 'records/posts/' . $postId . '.txt';
             $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $contents);
@@ -60,12 +64,7 @@ class LocalWriteService
             $commitResult = $this->commitCanonicalWrite([$recordPath], 'Create thread ' . $postId);
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
-            $phaseStartedAt = hrtime(true);
-            $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
-            $timings['read_model_rebuild'] = $this->elapsedMilliseconds($phaseStartedAt);
-            foreach ($rebuildTimings as $name => $duration) {
-                $timings['read_model_' . $name] = $duration;
-            }
+            $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha));
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateBoardThread($postId);
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -114,7 +113,7 @@ class LocalWriteService
                 . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
                 . "\n{$body}";
 
-            (new PostRecordParser())->parse($contents);
+            $record = (new PostRecordParser())->parse($contents);
             $recordPath = 'records/posts/' . $postId . '.txt';
             $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $contents);
@@ -123,12 +122,7 @@ class LocalWriteService
             $commitResult = $this->commitCanonicalWrite([$recordPath], 'Create reply ' . $postId);
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
-            $phaseStartedAt = hrtime(true);
-            $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
-            $timings['read_model_rebuild'] = $this->elapsedMilliseconds($phaseStartedAt);
-            foreach ($rebuildTimings as $name => $duration) {
-                $timings['read_model_' . $name] = $duration;
-            }
+            $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha));
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateReply($threadId, $postId);
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -302,6 +296,79 @@ class LocalWriteService
                 'Canonical write committed at ' . $commitSha . ' but read-model refresh failed. Derived state marked stale.'
             );
         }
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function synchronizePostDerivedState(PostRecord $record, string $commitSha): array
+    {
+        $phaseStartedAt = hrtime(true);
+        if (!$this->canIncrementallyUpdateReadModel()) {
+            $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
+            $timings = [
+                'read_model_rebuild' => $this->elapsedMilliseconds($phaseStartedAt),
+            ];
+            foreach ($rebuildTimings as $name => $duration) {
+                $timings['read_model_' . $name] = $duration;
+            }
+
+            return $timings;
+        }
+
+        try {
+            $incrementalTimings = $this->incrementalReadModelUpdater()->applyPostWrite($record, $commitSha);
+            $this->staleMarker()->clear();
+        } catch (\Throwable $throwable) {
+            $this->staleMarker()->mark([
+                'reason' => 'write_refresh_failed',
+                'commit_sha' => $commitSha,
+                'failed_at' => gmdate('c'),
+                'message' => $throwable->getMessage(),
+            ]);
+
+            throw new RuntimeException(
+                'Canonical write committed at ' . $commitSha . ' but incremental read-model update failed. Derived state marked stale.'
+            );
+        }
+
+        $timings = [
+            'read_model_incremental_update' => $this->elapsedMilliseconds($phaseStartedAt),
+        ];
+        foreach ($incrementalTimings as $name => $duration) {
+            $timings['read_model_incremental_' . $name] = $duration;
+        }
+
+        return $timings;
+    }
+
+    private function canIncrementallyUpdateReadModel(): bool
+    {
+        if (!is_file($this->databasePath) || $this->staleMarker()->exists()) {
+            return false;
+        }
+
+        try {
+            $pdo = (new ReadModelConnection($this->databasePath))->open();
+            $metadata = [];
+            foreach ($pdo->query('SELECT key, value FROM metadata')->fetchAll() as $row) {
+                if (!is_array($row) || !isset($row['key'], $row['value'])) {
+                    continue;
+                }
+
+                $metadata[(string) $row['key']] = (string) $row['value'];
+            }
+
+            return ($metadata['schema_version'] ?? null) === ReadModelMetadata::SCHEMA_VERSION
+                && ($metadata['repository_root'] ?? null) === $this->repositoryRoot;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    private function incrementalReadModelUpdater(): IncrementalReadModelUpdater
+    {
+        return new IncrementalReadModelUpdater($this->databasePath, $this->repositoryRoot);
     }
 
     /**
