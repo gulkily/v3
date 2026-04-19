@@ -375,6 +375,78 @@ pre {
   overflow-wrap: anywhere;
 }
 
+.tags-section-card {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 92%, transparent 8%) 0%, var(--panel) 100%);
+}
+
+.board-subsection {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent 28%);
+}
+
+.board-subsection-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0;
+}
+
+.tags-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.tags-section-heading > div > .eyebrow {
+  margin-bottom: 0.3rem;
+}
+
+.tags-section-heading h2,
+.tag-group h3 {
+  margin: 0;
+}
+
+.tag-groups {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.tag-group {
+  padding: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent 18%);
+  background: color-mix(in srgb, var(--input-bg) 55%, var(--panel) 45%);
+}
+
+.tag-group-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.65rem;
+}
+
+.tag-thread-list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.tag-thread-list li + li {
+  margin-top: 0.45rem;
+}
+
+.tag-thread-list .meta {
+  display: inline-block;
+  margin-left: 0.35rem;
+}
+
+.tag-group-footer {
+  margin: 0.75rem 0 0;
+}
+
 :root[data-theme="chicago"] .shell {
   width: min(100%, 860px);
 }
@@ -747,5 +819,9 @@ pre {
 
   .card {
     padding: 1rem 1.1rem;
+  }
+
+  .tag-groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

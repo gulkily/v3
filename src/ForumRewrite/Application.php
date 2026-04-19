@@ -155,6 +155,11 @@ final class Application
             return;
         }
 
+        if ($path === '/tags/' || $path === '/tags') {
+            $this->sendHtml($this->renderTagsIndex(), 200);
+            return;
+        }
+
         if ($path === '/tools/' || $path === '/tools') {
             $this->sendHtml($this->renderTools(), 200);
             return;
@@ -251,6 +256,17 @@ final class Application
             }
 
             $html = $this->renderThread($matches[1]);
+            if ($html === null) {
+                $this->notFound();
+                return;
+            }
+
+            $this->sendHtml($html, 200);
+            return;
+        }
+
+        if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)/?$#', $path, $matches) === 1) {
+            $html = $this->renderTagPage($matches[1]);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -399,6 +415,39 @@ final class Application
                 'threads' => $this->fetchThreads(),
             ],
             'Board',
+            'board',
+        );
+    }
+
+    private function renderTagsIndex(): string
+    {
+        $threads = $this->fetchThreads();
+
+        return $this->renderPageTemplate(
+            'tags.php',
+            [
+                'tagGroups' => $this->limitTagGroupThreads($this->groupThreadsByTag($threads), 5),
+            ],
+            'Tags',
+            'board',
+        );
+    }
+
+    private function renderTagPage(string $tag): ?string
+    {
+        $threads = $this->fetchThreads();
+        $group = $this->findTagGroup($this->groupThreadsByTag($threads), $tag);
+        if ($group === null) {
+            return null;
+        }
+        $title = '#' . $tag . ' - Tag';
+
+        return $this->renderPageTemplate(
+            'tag.php',
+            [
+                'group' => $group,
+            ],
+            $title,
             'board',
         );
     }
@@ -1170,9 +1219,95 @@ final class Application
      */
     private function hydrateThreadRow(array $thread): array
     {
+        $thread['board_tags'] = $this->decodeStringList((string) ($thread['board_tags_json'] ?? '[]'));
         $thread['thread_labels'] = $this->decodeStringList((string) ($thread['thread_labels_json'] ?? '[]'));
 
         return $thread;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $threads
+     * @return array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>}>
+     */
+    private function groupThreadsByTag(array $threads): array
+    {
+        $groups = [];
+
+        foreach ($threads as $thread) {
+            $tags = [];
+            foreach (['board_tags', 'thread_labels'] as $field) {
+                $values = $thread[$field] ?? [];
+                if (!is_array($values)) {
+                    continue;
+                }
+
+                foreach ($values as $value) {
+                    if (is_string($value) && $value !== '' && !in_array($value, $tags, true)) {
+                        $tags[] = $value;
+                    }
+                }
+            }
+
+            foreach ($tags as $tag) {
+                if (!is_string($tag) || $tag === '') {
+                    continue;
+                }
+
+                $groups[$tag] ??= [
+                    'tag' => $tag,
+                    'count' => 0,
+                    'threads' => [],
+                ];
+                if (!in_array($thread['root_post_id'], array_column($groups[$tag]['threads'], 'root_post_id'), true)) {
+                    $groups[$tag]['count']++;
+                    $groups[$tag]['threads'][] = $thread;
+                }
+            }
+        }
+
+        uasort($groups, static function (array $left, array $right): int {
+            if ($left['count'] !== $right['count']) {
+                return $right['count'] <=> $left['count'];
+            }
+
+            return $left['tag'] <=> $right['tag'];
+        });
+
+        return array_values($groups);
+    }
+
+    /**
+     * @param array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>}> $groups
+     * @return array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>,preview_threads:array<int, array<string, mixed>>,href:string,has_more:bool}>
+     */
+    private function limitTagGroupThreads(array $groups, int $limit): array
+    {
+        $limited = [];
+
+        foreach ($groups as $group) {
+            $threads = $group['threads'];
+            $group['preview_threads'] = array_slice($threads, 0, $limit);
+            $group['has_more'] = count($threads) > $limit;
+            $group['href'] = '/tags/' . $group['tag'];
+            $limited[] = $group;
+        }
+
+        return $limited;
+    }
+
+    /**
+     * @param array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>}> $groups
+     * @return array{tag:string,count:int,threads:array<int, array<string, mixed>>}|null
+     */
+    private function findTagGroup(array $groups, string $tag): ?array
+    {
+        foreach ($groups as $group) {
+            if ($group['tag'] === $tag) {
+                return $group;
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -40,6 +40,10 @@ final class StaticArtifactBuilder
         $this->writeRouteArtifact($application, '/instance/', $this->artifactRoot . '/instance.html');
         $this->writeRouteArtifact($application, '/activity/', $this->artifactRoot . '/activity.html');
         $this->writeRouteArtifact($application, '/users/', $this->artifactRoot . '/users.html');
+        $this->writeRouteArtifact($application, '/tags/', $this->artifactRoot . '/tags.html');
+        foreach ($this->fetchVisibleTagRoutes() as $route) {
+            $this->writeRouteArtifact($application, $route, $this->artifactPathForRoute($route) ?? throw new RuntimeException('Unable to resolve artifact path for route: ' . $route));
+        }
 
         foreach ($this->fetchVisibleThreadIds() as $threadId) {
             $this->writeRouteArtifact($application, '/threads/' . $threadId, $this->artifactRoot . '/threads/' . $threadId . '.html');
@@ -208,8 +212,16 @@ final class StaticArtifactBuilder
             return '/users/';
         }
 
+        if ($path === '/tags' || $path === '/tags/') {
+            return '/tags/';
+        }
+
         if ($path === '/users/pending' || $path === '/users/pending/') {
             return null;
+        }
+
+        if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)/?$#', $path, $matches) === 1) {
+            return '/tags/' . $matches[1];
         }
 
         if (preg_match('#^/(threads|posts|profiles)/([^/]+)/?$#', $path, $matches) !== 1) {
@@ -255,11 +267,49 @@ final class StaticArtifactBuilder
             return $this->artifactRoot . '/users.html';
         }
 
+        if ($route === '/tags/') {
+            return $this->artifactRoot . '/tags.html';
+        }
+
         if (preg_match('#^/(threads|posts|profiles)/([^/]+)$#', $route, $matches) === 1) {
             return $this->artifactRoot . '/' . $matches[1] . '/' . $matches[2] . '.html';
         }
 
+        if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)$#', $route, $matches) === 1) {
+            return $this->artifactRoot . '/tags/' . $matches[1] . '.html';
+        }
+
         return null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function fetchVisibleTagRoutes(): array
+    {
+        $pdo = (new ReadModelConnection($this->databasePath))->open();
+        $rows = $pdo->query('SELECT board_tags_json, thread_labels_json FROM threads ORDER BY root_post_id')->fetchAll();
+        $routes = [];
+
+        foreach ($rows as $row) {
+            if ($this->isHiddenBootstrapBoardTagsJson((string) $row['board_tags_json'])) {
+                continue;
+            }
+
+            $tags = array_values(array_unique(array_merge(
+                $this->decodeStringList((string) $row['board_tags_json']),
+                $this->decodeStringList((string) $row['thread_labels_json']),
+            )));
+
+            foreach ($tags as $tag) {
+                $routes['/tags/' . $tag] = true;
+            }
+        }
+
+        $paths = array_keys($routes);
+        sort($paths);
+
+        return $paths;
     }
 
     private function threadExists(string $threadId): bool
@@ -298,5 +348,25 @@ final class StaticArtifactBuilder
         }
 
         return in_array('identity', $boardTags, true);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function decodeStringList(string $json): array
+    {
+        $decoded = json_decode($json, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        $values = [];
+        foreach ($decoded as $value) {
+            if (is_string($value) && $value !== '') {
+                $values[] = $value;
+            }
+        }
+
+        return $values;
     }
 }

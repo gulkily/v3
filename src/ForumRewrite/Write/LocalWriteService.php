@@ -528,7 +528,7 @@ class LocalWriteService
                 continue;
             }
 
-            if (preg_match_all('/(^|[^A-Za-z0-9-])#([A-Za-z0-9-]+)/', $line, $matches) !== 1) {
+            if (preg_match_all('/(^|[^A-Za-z0-9-])#([A-Za-z0-9-]+)/', $line, $matches) < 1) {
                 continue;
             }
 

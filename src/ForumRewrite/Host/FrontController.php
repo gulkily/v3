@@ -127,10 +127,24 @@ final class FrontController
             ]);
         }
 
+        if ($path === '/tags/' || $path === '/tags') {
+            return $this->firstExistingPath([
+                $this->publicRoot . '/tags.html',
+                $this->staticHtmlRoot . '/tags/index.html',
+            ]);
+        }
+
         if (preg_match('#^/(threads|posts|profiles)/([^/]+)/?$#', $path, $matches) === 1) {
             return $this->firstExistingPath([
                 $this->publicRoot . '/' . $matches[1] . '/' . $matches[2] . '.html',
                 $this->staticHtmlRoot . '/' . $matches[1] . '/' . $matches[2] . '/index.html',
+            ]);
+        }
+
+        if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)/?$#', $path, $matches) === 1) {
+            return $this->firstExistingPath([
+                $this->publicRoot . '/tags/' . $matches[1] . '.html',
+                $this->staticHtmlRoot . '/tags/' . $matches[1] . '/index.html',
             ]);
         }
 

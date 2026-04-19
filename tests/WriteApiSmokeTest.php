@@ -681,6 +681,39 @@ final class WriteApiSmokeTest
         assertStringContains('Approve-Identity-ID: ' . $target['identity_id'], $bootstrapThread);
     }
 
+    public function testTagsIndexShowsFiveNewestThreadsAndTagPageShowsAllThreads(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $subjects = [];
+        for ($index = 1; $index <= 6; $index++) {
+            $subject = 'Bug thread ' . $index;
+            $subjects[] = $subject;
+            $response = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=' . rawurlencode($subject) . '&body=' . rawurlencode("Thread body\n#bug\n")
+            );
+            assertStringContains('status=ok', $response);
+        }
+
+        $tags = $this->renderMethod($application, 'GET', '/tags/');
+        $tagPage = $this->renderMethod($application, 'GET', '/tags/bug');
+
+        assertStringContains('showing 5 newest', $tags);
+        assertStringContains('View all bug', $tags);
+        assertSame(5, substr_count($tags, 'data-tag-preview-item="bug"'));
+        assertSame(1, preg_match('#<ul class="tag-thread-list" data-tag-preview-for="bug">(.*?)</ul>#s', $tags, $matches));
+        $preview = $matches[1];
+        assertSame(5, substr_count($preview, 'Bug thread '));
+
+        foreach ($subjects as $subject) {
+            assertStringContains($subject, $tagPage);
+        }
+        assertSame(6, substr_count($tagPage, 'Bug thread '));
+    }
+
     /**
      * @return array{string,string,string}
      */

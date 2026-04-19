@@ -1,12 +1,12 @@
 <section class="stack">
   <article class="card">
-    <h1>Board</h1>
-    <div class="button-row">
-      <a class="nav-link" href="/tags/">Tags</a>
-      <a class="nav-link" href="/compose/thread">New Post</a>
-    </div>
+    <p class="eyebrow">Tag</p>
+    <h1>#<?= $e($group['tag']) ?></h1>
+    <p class="meta"><?= (int) $group['count'] ?> <?= (int) $group['count'] === 1 ? 'thread' : 'threads' ?></p>
+    <p class="meta"><a href="/tags/">Back to Tags</a> <span>|</span> <a href="/">Back to Board</a></p>
   </article>
-<?php foreach ($threads as $thread): ?>
+
+<?php foreach ($group['threads'] as $thread): ?>
 <?php $subject = $thread['subject'] ?: $thread['root_post_id']; ?>
   <article class="card">
     <h2><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($subject) ?></a></h2>
