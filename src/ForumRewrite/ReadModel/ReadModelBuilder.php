@@ -7,6 +7,7 @@ namespace ForumRewrite\ReadModel;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\CanonicalRecordParseException;
 use ForumRewrite\Canonical\ThreadLabelRecord;
+use ForumRewrite\TagScore;
 use PDO;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -48,9 +49,9 @@ final class ReadModelBuilder
             $this->measure('create_schema', fn (): mixed => $this->createSchema($pdo));
 
             $posts = $this->measure('index_posts', fn (): array => $this->indexPosts($pdo));
-            $this->measure('index_thread_labels', fn (): mixed => $this->indexThreadLabels($pdo));
             $profiles = $this->measure('index_profiles', fn (): array => $this->indexProfiles($pdo));
             $approvalState = $this->measure('derive_approval_state', fn (): array => $this->deriveApprovalState($profiles, $posts));
+            $this->measure('index_thread_labels', fn (): mixed => $this->indexThreadLabels($pdo, $approvalState));
             $profileCounts = $this->measure('derive_profile_counts', fn (): array => $this->deriveProfileCounts($profiles, $posts));
             $this->measure('link_post_authors', fn (): mixed => $this->linkPostAuthors($pdo, $profiles, $approvalState, $profileCounts));
             $this->measure('index_instance', fn (): mixed => $this->indexInstance($pdo));
@@ -121,7 +122,8 @@ final class ReadModelBuilder
                 reply_count INTEGER NOT NULL,
                 last_post_id TEXT NOT NULL,
                 board_tags_json TEXT NOT NULL,
-                thread_labels_json TEXT NOT NULL
+                thread_labels_json TEXT NOT NULL,
+                score_total INTEGER NOT NULL DEFAULT 0
             )'
         );
 
@@ -192,8 +194,8 @@ final class ReadModelBuilder
              VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :author_identity_id, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
-            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json)
-             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json)'
+            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total)
+             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total)'
         );
 
         $paths = $this->findRelativePaths('records/posts');
@@ -249,6 +251,7 @@ final class ReadModelBuilder
                     'last_post_id' => $post['post_id'],
                     'board_tags_json' => $post['board_tags_json'],
                     'thread_labels_json' => '[]',
+                    'score_total' => 0,
                 ];
             }
 
@@ -270,7 +273,10 @@ final class ReadModelBuilder
         return $posts;
     }
 
-    private function indexThreadLabels(PDO $pdo): void
+    /**
+     * @param array<string, array{approved_by_identity_id:?string,approved_by_profile_slug:?string,approved_by_label:?string}> $approvalState
+     */
+    private function indexThreadLabels(PDO $pdo, array $approvalState): void
     {
         $rootThreadIds = $pdo->query('SELECT root_post_id FROM threads')->fetchAll(PDO::FETCH_COLUMN);
         $knownRootThreads = array_fill_keys(array_map(static fn (mixed $value): string => (string) $value, $rootThreadIds), true);
@@ -293,6 +299,8 @@ final class ReadModelBuilder
         });
 
         $labelsByThread = [];
+        $scoreByThread = [];
+        $countedApprovedScoredTagsByThread = [];
         foreach ($records as $record) {
             if (!isset($knownRootThreads[$record->threadId])) {
                 $this->invalidThreadLabelRecordCount++;
@@ -300,12 +308,26 @@ final class ReadModelBuilder
             }
 
             $labelsByThread[$record->threadId] ??= [];
+            $scoreByThread[$record->threadId] ??= 0;
+            $countedApprovedScoredTagsByThread[$record->threadId] ??= [];
             $labelsAdded = [];
             foreach ($record->labels as $label) {
                 if (!isset($labelsByThread[$record->threadId][$label])) {
                     $labelsByThread[$record->threadId][$label] = true;
                     $labelsAdded[] = $label;
                 }
+
+                if ($record->authorIdentityId === null || !isset($approvalState[$record->authorIdentityId]) || !TagScore::isScoredTag($label)) {
+                    continue;
+                }
+
+                $dedupeKey = $record->authorIdentityId . ':' . $label;
+                if (isset($countedApprovedScoredTagsByThread[$record->threadId][$dedupeKey])) {
+                    continue;
+                }
+
+                $countedApprovedScoredTagsByThread[$record->threadId][$dedupeKey] = true;
+                $scoreByThread[$record->threadId] += TagScore::scoreValueForTag($label);
             }
 
             if ($labelsAdded !== []) {
@@ -320,7 +342,10 @@ final class ReadModelBuilder
         }
 
         $updateThread = $pdo->prepare(
-            'UPDATE threads SET thread_labels_json = :thread_labels_json WHERE root_post_id = :root_post_id'
+            'UPDATE threads
+             SET thread_labels_json = :thread_labels_json,
+                 score_total = :score_total
+             WHERE root_post_id = :root_post_id'
         );
 
         foreach ($knownRootThreads as $threadId => $_present) {
@@ -328,6 +353,7 @@ final class ReadModelBuilder
             sort($labels);
             $updateThread->execute([
                 'thread_labels_json' => json_encode($labels, JSON_THROW_ON_ERROR),
+                'score_total' => $scoreByThread[$threadId] ?? 0,
                 'root_post_id' => $threadId,
             ]);
         }

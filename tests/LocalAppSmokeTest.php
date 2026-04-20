@@ -145,8 +145,10 @@ final class LocalAppSmokeTest
         assertStringContains('href="/tags/"', $board);
         assertStringNotContains('href="/tags/board/', $board);
         assertStringNotContains('href="/tags/label/', $board);
+        assertStringContains('Score: 0', $board);
         assertStringContains('Labels: bug, needs-review', $board);
         assertStringContains('Hello world', $thread);
+        assertStringContains('Score: 0', $thread);
         assertStringContains('Labels: bug, needs-review', $thread);
         assertStringContains('/user/guest', $thread);
         assertStringContains('by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $thread);
@@ -192,6 +194,7 @@ final class LocalAppSmokeTest
         assertStringContains('/tags/bug', $tags);
         assertStringContains('Tag', $tagPage);
         assertStringContains('#bug', $tagPage);
+        assertStringContains('Score: 0', $tagPage);
         assertStringContains('/threads/root-001', $tagPage);
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertStringContains('/assets/pending_approvals.js', $pendingUsers);
@@ -249,6 +252,7 @@ final class LocalAppSmokeTest
         assertStringContains("root-001\tHello world\t1", $listIndex);
         assertStringContains('Created-At: 2026-04-10T12:00:00Z', $thread);
         assertStringContains('Last-Activity-At: 2026-04-10T12:05:00Z', $thread);
+        assertStringContains('Score-Total: 0', $thread);
         assertStringContains('Labels: bug needs-review', $thread);
         assertStringContains('Thread-ID: root-001', $thread);
         assertStringContains('Post-ID: root-001', $post);
@@ -259,7 +263,7 @@ final class LocalAppSmokeTest
         assertStringContains('status=ready', $readModelStatus);
         assertStringContains('lock_status=unlocked', $readModelStatus);
         assertStringContains('stale_marker=absent', $readModelStatus);
-        assertStringContains('schema_version=7', $readModelStatus);
+        assertStringContains('schema_version=8', $readModelStatus);
         assertStringContains('<rss version="2.0">', $boardRss);
         assertStringContains('<title>Hello world</title>', $threadRss);
         assertStringContains('<pubDate>Fri, 10 Apr 2026 12:05:00 +0000</pubDate>', $threadRss);

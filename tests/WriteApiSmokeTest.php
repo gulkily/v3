@@ -316,6 +316,80 @@ final class WriteApiSmokeTest
         assertStringContains('/threads/root-001', $activity);
     }
 
+    public function testApprovedLikeTagAddsScoreAndDoesNotDoubleCountForSameIdentity(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $first = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_reply?thread_id=root-001&parent_id=root-001&author_identity_id='
+            . rawurlencode('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954')
+            . '&body=' . rawurlencode("Reply body\n#like\n")
+        );
+        $second = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_reply?thread_id=root-001&parent_id=root-001&author_identity_id='
+            . rawurlencode('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954')
+            . '&body=' . rawurlencode("Another reply\n#like\n")
+        );
+
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
+        $threadApi = $this->renderMethod($application, 'GET', '/api/get_thread?thread_id=root-001');
+        $board = $this->renderMethod($application, 'GET', '/');
+
+        assertStringContains('status=ok', $first);
+        assertStringContains('status=ok', $second);
+        assertStringContains('Score: 1', $threadPage);
+        assertStringContains('Score-Total: 1', $threadApi);
+        assertStringContains('Score: 1', $board);
+    }
+
+    public function testUnapprovedLikeTagDoesNotAffectScore(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $identity = $this->linkGeneratedIdentity($application, 'alice');
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_reply?thread_id=root-001&parent_id=root-001&author_identity_id='
+            . rawurlencode($identity['identity_id'])
+            . '&body=' . rawurlencode("Reply body\n#like\n")
+        );
+
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
+        $threadApi = $this->renderMethod($application, 'GET', '/api/get_thread?thread_id=root-001');
+
+        assertStringContains('status=ok', $response);
+        assertStringContains('Score: 0', $threadPage);
+        assertStringContains('Score-Total: 0', $threadApi);
+    }
+
+    public function testApprovedFlagTagSubtractsFromScore(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_reply?thread_id=root-001&parent_id=root-001&author_identity_id='
+            . rawurlencode('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954')
+            . '&body=' . rawurlencode("Reply body\n#flag\n")
+        );
+
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
+        $threadApi = $this->renderMethod($application, 'GET', '/api/get_thread?thread_id=root-001');
+
+        assertStringContains('status=ok', $response);
+        assertStringContains('Score: -100', $threadPage);
+        assertStringContains('Score-Total: -100', $threadApi);
+    }
+
     public function testIncrementalFailureFallsBackToFullRebuildAndKeepsReadModelHealthy(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

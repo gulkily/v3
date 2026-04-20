@@ -884,6 +884,7 @@ final class Application
             'Last-Activity-At: ' . $thread['last_activity_at'],
             'Subject: ' . ($thread['subject'] ?: ''),
             'Reply-Count: ' . $thread['reply_count'],
+            'Score-Total: ' . $thread['score_total'],
             'Labels: ' . implode(' ', $thread['thread_labels']),
             '',
         ];
@@ -1018,7 +1019,7 @@ final class Application
     {
         $rows = $this->pdo()->query(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
-                    threads.reply_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
+                    threads.reply_count, threads.score_total, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
                     profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
@@ -1041,7 +1042,7 @@ final class Application
     {
         $stmt = $this->pdo()->prepare(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
-                    threads.reply_count, threads.last_post_id, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
+                    threads.reply_count, threads.last_post_id, threads.score_total, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
                     profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
@@ -1177,7 +1178,7 @@ final class Application
 
         $stmt = $this->prepareIdentityListQuery(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
-                    threads.reply_count, threads.last_post_id, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
+                    threads.reply_count, threads.last_post_id, threads.score_total, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
                     profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
@@ -1252,6 +1253,7 @@ final class Application
      */
     private function hydrateThreadRow(array $thread): array
     {
+        $thread['score_total'] = (int) ($thread['score_total'] ?? 0);
         $thread['board_tags'] = $this->decodeStringList((string) ($thread['board_tags_json'] ?? '[]'));
         $thread['thread_labels'] = $this->decodeStringList((string) ($thread['thread_labels_json'] ?? '[]'));
 

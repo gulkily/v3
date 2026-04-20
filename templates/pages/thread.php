@@ -2,6 +2,7 @@
   <article class="card">
     <h1><?= $e($title) ?></h1>
     <p class="meta"><?= $contentMeta($thread, 'root_post_created_at', '') ?></p>
+    <p class="meta">Score: <?= (int) $thread['score_total'] ?></p>
 <?php if ($thread['thread_labels'] !== []): ?>
     <p class="meta">Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?></p>
 <?php endif; ?>
