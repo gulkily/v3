@@ -62,6 +62,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/apply_thread_tag') {
+            $this->handleApplyThreadTag($method, $query);
+            return;
+        }
+
         if ($path === '/api/link_identity') {
             $this->handleLinkIdentity($method, $query);
             return;
@@ -857,7 +862,7 @@ final class Application
 
     private function renderApiIndex(): string
     {
-        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nPOST /api/set_identity_hint\n";
+        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nPOST /api/set_identity_hint\nPOST /api/apply_thread_tag\n";
     }
 
     private function renderApiListIndex(): string
@@ -1755,6 +1760,44 @@ final class Application
                 200,
                 $this->serverTimingHeaders($result)
             );
+        } catch (RuntimeException $exception) {
+            $this->sendText("error=" . $exception->getMessage() . "\n", 400);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleApplyThreadTag(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->sendText("method not allowed\n", 405);
+            return;
+        }
+
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        if ($viewerProfile === null) {
+            $this->sendText("error=You must set an identity hint before applying a tag.\n", 400);
+            return;
+        }
+
+        $input = $this->requestData($query);
+        $input['author_identity_id'] = (string) $viewerProfile['identity_id'];
+
+        try {
+            $result = $this->writer()->applyThreadTag($input);
+            $response = "status=ok\n"
+                . "thread_id={$result['thread_id']}\n"
+                . "tag={$result['tag']}\n"
+                . "score_total={$result['score_total']}\n"
+                . "viewer_identity_id={$result['author_identity_id']}\n"
+                . "viewer_is_approved={$result['viewer_is_approved']}\n"
+                . "wrote_record={$result['wrote_record']}\n";
+            if (isset($result['commit_sha'])) {
+                $response .= "commit_sha={$result['commit_sha']}\n";
+            }
+
+            $this->sendText($response, 200, $this->serverTimingHeaders($result));
         } catch (RuntimeException $exception) {
             $this->sendText("error=" . $exception->getMessage() . "\n", 400);
         }

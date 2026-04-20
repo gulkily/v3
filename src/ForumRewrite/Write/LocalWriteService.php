@@ -10,6 +10,7 @@ use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
+use ForumRewrite\TagScore;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
@@ -153,6 +154,70 @@ class LocalWriteService
                 'status' => 'ok',
                 'post_id' => $postId,
                 'thread_id' => $threadId,
+                'commit_sha' => $commitSha,
+                'timings' => $timings,
+            ];
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, string>
+     */
+    public function applyThreadTag(array $input): array
+    {
+        return $this->executionLock()->withExclusiveLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $timings = [];
+            $totalStartedAt = hrtime(true);
+            $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
+            $tag = $this->normalizeThreadTag((string) ($input['tag'] ?? ''));
+            $authorIdentityId = $this->requireOpenPgpIdentityId((string) ($input['author_identity_id'] ?? ''), 'author_identity_id');
+            $createdAt = $this->canonicalTimestampNow();
+
+            $thread = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($threadId));
+            if ($thread->threadId !== null) {
+                throw new RuntimeException('thread_id must refer to a root thread.');
+            }
+
+            $viewerIsApproved = $this->isApprovedIdentity($authorIdentityId) ? 'yes' : 'no';
+            if ($this->hasThreadTagFromIdentity($threadId, $tag, $authorIdentityId)) {
+                return [
+                    'status' => 'ok',
+                    'thread_id' => $threadId,
+                    'tag' => $tag,
+                    'score_total' => (string) $this->currentThreadScoreTotal($threadId),
+                    'author_identity_id' => $authorIdentityId,
+                    'viewer_is_approved' => $viewerIsApproved,
+                    'wrote_record' => 'no',
+                    'timings' => ['total' => $this->elapsedMilliseconds($totalStartedAt)],
+                ];
+            }
+
+            $phaseStartedAt = hrtime(true);
+            [$recordPath, $contents] = $this->buildThreadLabelRecord($threadId, [$tag], $authorIdentityId, $createdAt);
+            $this->writeFile($recordPath, $contents);
+            $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+            $commitResult = $this->commitCanonicalWrite([$recordPath], 'Apply thread tag ' . $tag . ' to ' . $threadId);
+            $timings = array_merge($timings, $commitResult['timings']);
+            $commitSha = $commitResult['commit_sha'];
+
+            $timings = array_merge($timings, $this->synchronizePostDerivedState($thread, $commitSha, true));
+
+            $phaseStartedAt = hrtime(true);
+            $this->invalidator()->invalidateBoardThread($threadId);
+            $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+            return [
+                'status' => 'ok',
+                'thread_id' => $threadId,
+                'tag' => $tag,
+                'score_total' => (string) $this->currentThreadScoreTotal($threadId),
+                'author_identity_id' => $authorIdentityId,
+                'viewer_is_approved' => $viewerIsApproved,
+                'wrote_record' => 'yes',
                 'commit_sha' => $commitSha,
                 'timings' => $timings,
             ];
@@ -416,6 +481,11 @@ class LocalWriteService
         return $this->databasePath;
     }
 
+    private function readModelPdo(): \PDO
+    {
+        return (new ReadModelConnection($this->databasePath))->open();
+    }
+
     /**
      * @param list<string> $relativePaths
      */
@@ -567,6 +637,54 @@ class LocalWriteService
             CanonicalPathResolver::threadLabel($recordId),
             $contents,
         ];
+    }
+
+    private function normalizeThreadTag(string $value): string
+    {
+        $tag = strtolower(trim($value));
+        if (!TagScore::isScoredTag($tag)) {
+            throw new RuntimeException('tag must be one of: ' . implode(', ', array_keys(TagScore::scoredTags())));
+        }
+
+        return $tag;
+    }
+
+    private function isApprovedIdentity(string $identityId): bool
+    {
+        $stmt = $this->readModelPdo()->prepare('SELECT is_approved FROM profiles WHERE identity_id = :identity_id');
+        $stmt->execute(['identity_id' => $identityId]);
+        $value = $stmt->fetchColumn();
+
+        return ((int) $value) === 1;
+    }
+
+    private function hasThreadTagFromIdentity(string $threadId, string $tag, string $identityId): bool
+    {
+        foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
+            $relativePath = 'records/thread-labels/' . basename($path);
+            $record = $this->canonicalRepository->loadThreadLabel($relativePath);
+            if ($record->threadId !== $threadId || $record->authorIdentityId !== $identityId) {
+                continue;
+            }
+
+            if (in_array($tag, $record->labels, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function currentThreadScoreTotal(string $threadId): int
+    {
+        $stmt = $this->readModelPdo()->prepare('SELECT score_total FROM threads WHERE root_post_id = :thread_id');
+        $stmt->execute(['thread_id' => $threadId]);
+        $value = $stmt->fetchColumn();
+        if ($value === false) {
+            throw new RuntimeException('thread_id does not resolve to a known thread.');
+        }
+
+        return (int) $value;
     }
 
     /**

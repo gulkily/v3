@@ -390,6 +390,92 @@ final class WriteApiSmokeTest
         assertStringContains('Score-Total: -100', $threadApi);
     }
 
+    public function testApplyThreadTagApiWritesApprovedLikeAndReportsUpdatedScore(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $recordsBefore = count(glob($repositoryRoot . '/records/thread-labels/*.txt') ?: []);
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $response = $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=root-001&tag=like');
+        $_COOKIE = [];
+
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
+        $recordsAfter = count(glob($repositoryRoot . '/records/thread-labels/*.txt') ?: []);
+
+        assertStringContains('status=ok', $response);
+        assertStringContains('thread_id=root-001', $response);
+        assertStringContains('tag=like', $response);
+        assertStringContains('score_total=1', $response);
+        assertStringContains('viewer_is_approved=yes', $response);
+        assertStringContains('wrote_record=yes', $response);
+        assertTrue(strlen($this->extractValue($response, 'commit_sha')) === 40);
+        assertSame($recordsBefore + 1, $recordsAfter);
+        assertStringContains('Score: 1', $threadPage);
+    }
+
+    public function testApplyThreadTagApiDuplicateShortCircuitsWithoutNewRecord(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $first = $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=root-001&tag=like');
+        $recordsAfterFirst = count(glob($repositoryRoot . '/records/thread-labels/*.txt') ?: []);
+        $second = $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=root-001&tag=like');
+        $_COOKIE = [];
+
+        $recordsAfterSecond = count(glob($repositoryRoot . '/records/thread-labels/*.txt') ?: []);
+        $threadApi = $this->renderMethod($application, 'GET', '/api/get_thread?thread_id=root-001');
+
+        assertStringContains('wrote_record=yes', $first);
+        assertStringContains('score_total=1', $first);
+        assertStringContains('wrote_record=no', $second);
+        assertStringContains('score_total=1', $second);
+        assertStringNotContains('commit_sha=', $second);
+        assertSame($recordsAfterFirst, $recordsAfterSecond);
+        assertStringContains('Score-Total: 1', $threadApi);
+    }
+
+    public function testApplyThreadTagApiAllowsUnapprovedUserButDoesNotChangeScore(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $identity = $this->linkGeneratedIdentity($application, 'alice');
+        $recordsBefore = count(glob($repositoryRoot . '/records/thread-labels/*.txt') ?: []);
+
+        $_COOKIE = ['identity_hint' => 'alice'];
+        $response = $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=root-001&tag=like');
+        $_COOKIE = [];
+
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
+        $recordsAfter = count(glob($repositoryRoot . '/records/thread-labels/*.txt') ?: []);
+
+        assertStringContains('status=ok', $response);
+        assertStringContains('viewer_identity_id=' . $identity['identity_id'], $response);
+        assertStringContains('viewer_is_approved=no', $response);
+        assertStringContains('score_total=0', $response);
+        assertStringContains('wrote_record=yes', $response);
+        assertSame($recordsBefore + 1, $recordsAfter);
+        assertStringContains('Score: 0', $threadPage);
+    }
+
+    public function testApplyThreadTagApiRejectsAnonymousViewerAndUnknownTag(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $_COOKIE = [];
+        $anonymous = $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=root-001&tag=like');
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $unknownTag = $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=root-001&tag=bug');
+        $_COOKIE = [];
+
+        assertStringContains('error=You must set an identity hint before applying a tag.', $anonymous);
+        assertStringContains('error=tag must be one of: like, flag', $unknownTag);
+    }
+
     public function testIncrementalFailureFallsBackToFullRebuildAndKeepsReadModelHealthy(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
