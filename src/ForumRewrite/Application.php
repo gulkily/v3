@@ -470,6 +470,9 @@ final class Application
         }
 
         $title = $threadRow['subject'] ?: $threadRow['root_post_id'];
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $viewerHasLiked = $viewerProfile !== null
+            && $this->viewerHasThreadTag($threadId, 'like', (string) $viewerProfile['identity_id']);
 
         return $this->renderPageTemplate(
             'thread.php',
@@ -477,9 +480,12 @@ final class Application
                 'thread' => $threadRow,
                 'posts' => $this->fetchThreadPosts($threadId),
                 'title' => $title,
+                'viewerProfile' => $viewerProfile,
+                'viewerHasLiked' => $viewerHasLiked,
             ],
             $title,
             'board',
+            ['/assets/thread_reactions.js'],
         );
     }
 
@@ -1551,6 +1557,23 @@ final class Application
         );
 
         return $stmt->fetchAll();
+    }
+
+    private function viewerHasThreadTag(string $threadId, string $tag, string $identityId): bool
+    {
+        $repository = new CanonicalRecordRepository($this->repositoryRoot);
+        foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
+            $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path));
+            if ($record->threadId !== $threadId || $record->authorIdentityId !== $identityId) {
+                continue;
+            }
+
+            if (in_array($tag, $record->labels, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function hasPendingUserDirectoryProfiles(): bool

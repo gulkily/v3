@@ -398,9 +398,9 @@ final class WriteApiSmokeTest
 
         $_COOKIE = ['identity_hint' => 'guest'];
         $response = $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=root-001&tag=like');
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
         $_COOKIE = [];
 
-        $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
         $recordsAfter = count(glob($repositoryRoot . '/records/thread-labels/*.txt') ?: []);
 
         assertStringContains('status=ok', $response);
@@ -412,6 +412,9 @@ final class WriteApiSmokeTest
         assertTrue(strlen($this->extractValue($response, 'commit_sha')) === 40);
         assertSame($recordsBefore + 1, $recordsAfter);
         assertStringContains('Score: 1', $threadPage);
+        assertStringContains('>Liked</button>', $threadPage);
+        assertStringContains('aria-pressed="true"', $threadPage);
+        assertStringNotContains('Set up or choose an identity', $threadPage);
     }
 
     public function testApplyThreadTagApiDuplicateShortCircuitsWithoutNewRecord(): void
@@ -446,9 +449,9 @@ final class WriteApiSmokeTest
 
         $_COOKIE = ['identity_hint' => 'alice'];
         $response = $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=root-001&tag=like');
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
         $_COOKIE = [];
 
-        $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
         $recordsAfter = count(glob($repositoryRoot . '/records/thread-labels/*.txt') ?: []);
 
         assertStringContains('status=ok', $response);
@@ -458,6 +461,8 @@ final class WriteApiSmokeTest
         assertStringContains('wrote_record=yes', $response);
         assertSame($recordsBefore + 1, $recordsAfter);
         assertStringContains('Score: 0', $threadPage);
+        assertStringContains('>Liked</button>', $threadPage);
+        assertStringContains('start affecting score once you are approved.', $threadPage);
     }
 
     public function testApplyThreadTagApiRejectsAnonymousViewerAndUnknownTag(): void
