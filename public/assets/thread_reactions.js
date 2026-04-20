@@ -78,13 +78,7 @@
           return;
         }
 
-        setFeedback(
-          feedbackNode,
-          wroteRecord
-            ? "Like saved. It will affect score once you are approved."
-            : "Like already saved. It will affect score once you are approved.",
-          "ok"
-        );
+        setFeedback(feedbackNode, wroteRecord ? "Liked." : "Already liked.", "ok");
       } catch (error) {
         button.disabled = false;
         setFeedback(

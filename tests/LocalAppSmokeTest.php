@@ -148,13 +148,13 @@ final class LocalAppSmokeTest
         assertStringContains('Score: 0', $board);
         assertStringContains('Labels: bug, needs-review', $board);
         assertStringContains('Hello world', $thread);
-        assertStringContains('Score: 0', $thread);
         assertStringContains('Labels: bug, needs-review', $thread);
         assertStringContains('/assets/thread_reactions.js', $thread);
         assertStringContains('data-thread-reactions-root', $thread);
         assertStringContains('data-action="apply-thread-tag"', $thread);
-        assertStringContains('Set up or choose an identity in <a href="/account/key/">Account</a> to use Like.', $thread);
-        assertStringContains('disabled="disabled"', $thread);
+        assertStringNotContains('Score: 0', $thread);
+        assertStringNotContains('Set up or choose an identity in <a href="/account/key/">Account</a> to use Like.', $thread);
+        assertStringNotContains('disabled="disabled"', $thread);
         assertStringContains('/user/guest', $thread);
         assertStringContains('by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $thread);
         assertStringNotContains('Last activity <time datetime=', $thread);

@@ -342,7 +342,7 @@ final class WriteApiSmokeTest
 
         assertStringContains('status=ok', $first);
         assertStringContains('status=ok', $second);
-        assertStringContains('Score: 1', $threadPage);
+        assertStringNotContains('Score: 1', $threadPage);
         assertStringContains('Score-Total: 1', $threadApi);
         assertStringContains('Score: 1', $board);
     }
@@ -365,7 +365,7 @@ final class WriteApiSmokeTest
         $threadApi = $this->renderMethod($application, 'GET', '/api/get_thread?thread_id=root-001');
 
         assertStringContains('status=ok', $response);
-        assertStringContains('Score: 0', $threadPage);
+        assertStringNotContains('Score: 0', $threadPage);
         assertStringContains('Score-Total: 0', $threadApi);
     }
 
@@ -386,7 +386,7 @@ final class WriteApiSmokeTest
         $threadApi = $this->renderMethod($application, 'GET', '/api/get_thread?thread_id=root-001');
 
         assertStringContains('status=ok', $response);
-        assertStringContains('Score: -100', $threadPage);
+        assertStringNotContains('Score: -100', $threadPage);
         assertStringContains('Score-Total: -100', $threadApi);
     }
 
@@ -411,7 +411,7 @@ final class WriteApiSmokeTest
         assertStringContains('wrote_record=yes', $response);
         assertTrue(strlen($this->extractValue($response, 'commit_sha')) === 40);
         assertSame($recordsBefore + 1, $recordsAfter);
-        assertStringContains('Score: 1', $threadPage);
+        assertStringNotContains('Score: 1', $threadPage);
         assertStringContains('>Liked</button>', $threadPage);
         assertStringContains('aria-pressed="true"', $threadPage);
         assertStringNotContains('Set up or choose an identity', $threadPage);
@@ -460,9 +460,8 @@ final class WriteApiSmokeTest
         assertStringContains('score_total=0', $response);
         assertStringContains('wrote_record=yes', $response);
         assertSame($recordsBefore + 1, $recordsAfter);
-        assertStringContains('Score: 0', $threadPage);
         assertStringContains('>Liked</button>', $threadPage);
-        assertStringContains('start affecting score once you are approved.', $threadPage);
+        assertStringNotContains('start affecting score once you are approved.', $threadPage);
     }
 
     public function testApplyThreadTagApiRejectsAnonymousViewerAndUnknownTag(): void

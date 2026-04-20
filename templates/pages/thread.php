@@ -2,7 +2,6 @@
   <article class="card" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>">
     <h1><?= $e($title) ?></h1>
     <p class="meta"><?= $contentMeta($thread, 'root_post_created_at', '') ?></p>
-    <p class="meta" data-role="thread-score">Score: <?= (int) $thread['score_total'] ?></p>
 <?php if ($thread['thread_labels'] !== []): ?>
     <p class="meta">Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?></p>
 <?php endif; ?>
@@ -17,14 +16,9 @@
         data-tag="like"
         data-applied-label="Liked"
         aria-pressed="<?= $viewerHasLiked ? 'true' : 'false' ?>"
-<?= ($viewerProfile === null || $viewerHasLiked) ? ' disabled="disabled"' : '' ?>
+<?= $viewerHasLiked ? ' disabled="disabled"' : '' ?>
       ><?= $viewerHasLiked ? 'Liked' : 'Like' ?></button>
     </div>
-<?php if ($viewerProfile === null): ?>
-    <p class="meta">Set up or choose an identity in <a href="/account/key/">Account</a> to use Like.</p>
-<?php elseif ((int) $viewerProfile['is_approved'] !== 1): ?>
-    <p class="meta">Your Like tag will be saved now and start affecting score once you are approved.</p>
-<?php endif; ?>
     <p class="meta thread-reaction-feedback" data-role="thread-reaction-feedback" hidden></p>
   </article>
 <?php foreach ($posts as $post): ?>
