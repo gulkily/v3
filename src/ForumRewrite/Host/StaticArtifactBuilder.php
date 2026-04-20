@@ -40,6 +40,8 @@ final class StaticArtifactBuilder
         $this->writeRouteArtifact($application, '/instance/', $this->artifactRoot . '/instance.html');
         $this->writeRouteArtifact($application, '/activity/', $this->artifactRoot . '/activity.html');
         $this->writeRouteArtifact($application, '/users/', $this->artifactRoot . '/users.html');
+        $this->writeRouteArtifact($application, '/tools/', $this->artifactRoot . '/tools.html');
+        $this->writeRouteArtifact($application, '/tools/bookmarklets/', $this->artifactRoot . '/tools/bookmarklets.html');
         $this->writeRouteArtifact($application, '/tags/', $this->artifactRoot . '/tags.html');
         foreach ($this->fetchVisibleTagRoutes() as $route) {
             $this->writeRouteArtifact($application, $route, $this->artifactPathForRoute($route) ?? throw new RuntimeException('Unable to resolve artifact path for route: ' . $route));
@@ -200,7 +202,7 @@ final class StaticArtifactBuilder
             return '/';
         }
 
-        if ($path === '/instance' || $path === '/instance/' || $path === '/backup' || $path === '/backup/') {
+        if ($path === '/instance' || $path === '/instance/' || $path === '/backup' || $path === '/backup/' || $path === '/tools/backup' || $path === '/tools/backup/') {
             return '/instance/';
         }
 
@@ -210,6 +212,14 @@ final class StaticArtifactBuilder
 
         if ($path === '/users' || $path === '/users/') {
             return '/users/';
+        }
+
+        if ($path === '/tools' || $path === '/tools/') {
+            return '/tools/';
+        }
+
+        if ($path === '/tools/bookmarklets' || $path === '/tools/bookmarklets/') {
+            return '/tools/bookmarklets/';
         }
 
         if ($path === '/tags' || $path === '/tags/') {
@@ -265,6 +275,14 @@ final class StaticArtifactBuilder
 
         if ($route === '/users/') {
             return $this->artifactRoot . '/users.html';
+        }
+
+        if ($route === '/tools/') {
+            return $this->artifactRoot . '/tools.html';
+        }
+
+        if ($route === '/tools/bookmarklets/') {
+            return $this->artifactRoot . '/tools/bookmarklets.html';
         }
 
         if ($route === '/tags/') {

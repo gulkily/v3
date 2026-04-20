@@ -115,8 +115,8 @@ final class Application
             return;
         }
 
-        if ($path === '/instance/' || $path === '/instance' || $path === '/backup/' || $path === '/backup') {
-            $this->sendHtml($this->renderInstance(), 200);
+        if ($path === '/instance/' || $path === '/instance' || $path === '/backup/' || $path === '/backup' || $path === '/tools/backup/' || $path === '/tools/backup') {
+            $this->sendHtml($this->renderBackup(), 200);
             return;
         }
 
@@ -162,6 +162,11 @@ final class Application
 
         if ($path === '/tools/' || $path === '/tools') {
             $this->sendHtml($this->renderTools(), 200);
+            return;
+        }
+
+        if ($path === '/tools/bookmarklets/' || $path === '/tools/bookmarklets') {
+            $this->sendHtml($this->renderBookmarklets(), 200);
             return;
         }
 
@@ -598,7 +603,7 @@ final class Application
         );
     }
 
-    private function renderInstance(): string
+    private function renderBackup(): string
     {
         return $this->renderPageTemplate(
             'instance.php',
@@ -624,7 +629,7 @@ final class Application
                 ],
             ],
             'Backup',
-            'instance',
+            'tools',
         );
     }
 
@@ -719,6 +724,34 @@ final class Application
         return $this->renderPageTemplate(
             'tools.php',
             [
+                'toolPages' => [
+                    [
+                        'label' => 'Bookmarklets',
+                        'href' => '/tools/bookmarklets/',
+                        'description' => 'Bookmarklet links for clipping URLs and selections straight into Compose Thread.',
+                    ],
+                    [
+                        'label' => 'Backup',
+                        'href' => '/tools/backup/',
+                        'description' => 'Portable downloads of the repository and current read-model database.',
+                    ],
+                    [
+                        'label' => 'Account',
+                        'href' => '/account/key/',
+                        'description' => 'Browser key setup, identity linking, and technical account details.',
+                    ],
+                ],
+            ],
+            'Tools',
+            'tools',
+        );
+    }
+
+    private function renderBookmarklets(): string
+    {
+        return $this->renderPageTemplate(
+            'bookmarklets.php',
+            [
                 'bookmarklets' => [
                     [
                         'label' => '+URL',
@@ -752,7 +785,7 @@ final class Application
                     ],
                 ],
             ],
-            'Tools',
+            'Bookmarklets',
             'tools',
             ['/assets/tools_bookmarklets.js'],
         );

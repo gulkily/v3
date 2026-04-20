@@ -102,10 +102,24 @@ final class FrontController
             ]);
         }
 
-        if ($path === '/instance/' || $path === '/instance' || $path === '/backup/' || $path === '/backup') {
+        if ($path === '/instance/' || $path === '/instance' || $path === '/backup/' || $path === '/backup' || $path === '/tools/backup/' || $path === '/tools/backup') {
             return $this->firstExistingPath([
                 $this->publicRoot . '/instance.html',
                 $this->staticHtmlRoot . '/instance/index.html',
+            ]);
+        }
+
+        if ($path === '/tools/' || $path === '/tools') {
+            return $this->firstExistingPath([
+                $this->publicRoot . '/tools.html',
+                $this->staticHtmlRoot . '/tools/index.html',
+            ]);
+        }
+
+        if ($path === '/tools/bookmarklets/' || $path === '/tools/bookmarklets') {
+            return $this->firstExistingPath([
+                $this->publicRoot . '/tools/bookmarklets.html',
+                $this->staticHtmlRoot . '/tools/bookmarklets/index.html',
             ]);
         }
 

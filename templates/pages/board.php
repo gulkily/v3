@@ -1,7 +1,7 @@
 <section class="stack">
   <article class="card">
     <h1>Board</h1>
-    <div class="button-row">
+    <div class="button-row button-row-natural button-row-split">
       <a class="nav-link" href="/tags/">Tags</a>
       <a class="nav-link" href="/compose/thread">New Post</a>
     </div>

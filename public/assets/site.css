@@ -628,6 +628,19 @@ pre {
   flex: 1 1 12rem;
 }
 
+.button-row.button-row-natural > * {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.button-row.button-row-split {
+  justify-content: space-between;
+}
+
+.button-row.button-row-split > *:last-child {
+  margin-left: auto;
+}
+
 .account-key-simple-surface {
   gap: 0.85rem;
 }

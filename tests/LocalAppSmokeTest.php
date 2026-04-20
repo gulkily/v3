@@ -121,6 +121,8 @@ final class LocalAppSmokeTest
         $post = $this->render($application, '/posts/root-001');
         $instance = $this->render($application, '/instance/');
         $backup = $this->render($application, '/backup/');
+        $toolsBackup = $this->render($application, '/tools/backup/');
+        $tools = $this->render($application, '/tools/');
         $profile = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         $username = $this->render($application, '/user/guest');
         $_COOKIE = ['identity_hint' => 'guest'];
@@ -130,6 +132,7 @@ final class LocalAppSmokeTest
         $pendingUsers = $this->render($application, '/users/pending/');
         $_COOKIE = [];
         $composeThread = $this->render($application, '/compose/thread');
+        $bookmarklets = $this->render($application, '/tools/bookmarklets/');
         $composeReply = $this->render($application, '/compose/reply?thread_id=root-001&parent_id=root-001');
         $account = $this->render($application, '/account/key/');
         $activity = $this->render($application, '/activity/?view=content');
@@ -156,7 +159,7 @@ final class LocalAppSmokeTest
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $post);
         assertStringContains('zenmemes', $instance);
         assertStringContains('Backup', $backup);
-        assertStringContains('/backup/', $backup);
+        assertStringContains('Backup', $toolsBackup);
         assertStringContains('/user/guest', $instance);
         assertStringContains('/downloads/repository.tar.gz', $instance);
         assertStringContains('/downloads/repository.zip', $instance);
@@ -169,6 +172,9 @@ final class LocalAppSmokeTest
         assertStringNotContains('Contact:', $instance);
         assertStringNotContains('Retention:', $instance);
         assertStringNotContains('Installed:', $instance);
+        assertStringContains('/tools/bookmarklets/', $tools);
+        assertStringContains('/tools/backup/', $tools);
+        assertStringContains('/account/key/', $tools);
         assertStringContains('Identity ID', $profile);
         assertStringContains('Approved by:</strong>', $profile);
         assertStringContains('root', $profile);
@@ -197,6 +203,9 @@ final class LocalAppSmokeTest
         assertStringContains('Compose Thread', $composeThread);
         assertStringContains('browser_signing.js', $composeThread);
         assertStringContains('Ready.', $composeThread);
+        assertStringContains('Bookmarklets', $bookmarklets);
+        assertStringContains('/assets/tools_bookmarklets.js', $bookmarklets);
+        assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
         assertStringContains('Thread ID:', $composeReply);
         assertStringContains('browser_signing.js', $composeReply);
         assertStringContains('Ready.', $composeReply);
@@ -272,10 +281,15 @@ final class LocalAppSmokeTest
             '/compose/thread?board_tags=general&subject=Saved%20Title&body=Saved%20Body'
         );
 
+        $bookmarklets = $this->render($application, '/tools/bookmarklets/');
+
         assertStringContains('Tools', $tools);
-        assertStringContains('Clip', $tools);
-        assertStringContains('/assets/tools_bookmarklets.js', $tools);
-        assertStringContains('data-bookmarklet-kind="clip"', $tools);
+        assertStringContains('Bookmarklets', $tools);
+        assertStringContains('Backup', $tools);
+        assertStringContains('/tools/bookmarklets/', $tools);
+        assertStringContains('/tools/backup/', $tools);
+        assertStringContains('/assets/tools_bookmarklets.js', $bookmarklets);
+        assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
         assertStringContains('value="Saved Title"', $prefilledCompose);
         assertStringContains('>Saved Body</textarea>', $prefilledCompose);
     }
@@ -514,6 +528,8 @@ final class LocalAppSmokeTest
         assertTrue(is_file($artifactRoot . '/instance.html'));
         assertTrue(is_file($artifactRoot . '/activity.html'));
         assertTrue(is_file($artifactRoot . '/users.html'));
+        assertTrue(is_file($artifactRoot . '/tools.html'));
+        assertTrue(is_file($artifactRoot . '/tools/bookmarklets.html'));
         assertTrue(is_file($artifactRoot . '/tags.html'));
         assertTrue(is_file($artifactRoot . '/tags/general.html'));
         assertTrue(is_file($artifactRoot . '/tags/bug.html'));
@@ -521,6 +537,8 @@ final class LocalAppSmokeTest
         assertTrue(is_file($artifactRoot . '/posts/root-001.html'));
         assertTrue(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/index.html'));
+        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tools.html'));
+        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tools/bookmarklets.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/general.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/bug.html'));
