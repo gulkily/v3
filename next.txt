@@ -1,3 +1,9 @@
 user directory --> approve user button in profile
 
 threads/replies
+
+bootstraps and approvals pages are empty fsr?
+move activity under tools?
+remove compose button
+
+board page should have sections/sorts like the activity page
