@@ -199,7 +199,7 @@ final class LocalAppSmokeTest
         assertStringContains('/tags/bug', $tags);
         assertStringContains('Tag', $tagPage);
         assertStringContains('#bug', $tagPage);
-        assertStringContains('Score: 0', $tagPage);
+        assertStringNotContains('Score: 0', $tagPage);
         assertStringContains('/threads/root-001', $tagPage);
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertStringContains('/assets/pending_approvals.js', $pendingUsers);

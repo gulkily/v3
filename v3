@@ -8,7 +8,8 @@ if [[ -z "${COMMAND}" ]]; then
   cat <<'EOF'
 Usage:
   ./v3 start [host:port]
-  ./v3 rebuild
+  ./v3 rebuild [repository_root] [database_path]
+  ./v3 build-static [repository_root] [database_path] [artifact_root]
   ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
 EOF
@@ -24,6 +25,10 @@ case "${COMMAND}" in
   rebuild)
     shift
     php "${ROOT}/scripts/rebuild_read_model.php" "$@"
+    ;;
+  build-static)
+    shift
+    php "${ROOT}/scripts/build_static_artifacts.php" "$@"
     ;;
   approval)
     shift
