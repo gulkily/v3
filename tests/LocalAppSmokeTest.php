@@ -538,8 +538,10 @@ final class LocalAppSmokeTest
         assertTrue(is_file($artifactRoot . '/activity.html'));
         assertTrue(is_file($artifactRoot . '/users.html'));
         assertTrue(is_file($artifactRoot . '/tools.html'));
+        assertTrue(is_file($artifactRoot . '/tools/index.html'));
         assertTrue(is_file($artifactRoot . '/tools/bookmarklets.html'));
         assertTrue(is_file($artifactRoot . '/tags.html'));
+        assertTrue(is_file($artifactRoot . '/tags/index.html'));
         assertTrue(is_file($artifactRoot . '/tags/general.html'));
         assertTrue(is_file($artifactRoot . '/tags/bug.html'));
         assertTrue(is_file($artifactRoot . '/threads/root-001.html'));
@@ -547,8 +549,10 @@ final class LocalAppSmokeTest
         assertTrue(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/index.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tools.html'));
+        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tools/index.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tools/bookmarklets.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags.html'));
+        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/index.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/general.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/bug.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/root-001.html'));
@@ -568,6 +572,10 @@ final class LocalAppSmokeTest
         $usersResponse = $this->renderFrontController($controller, 'GET', '/users/', []);
         assertStringContains('Users', $usersResponse);
         assertStringContains('route-source: static-html', $usersResponse);
+
+        $tagsResponse = $this->renderFrontController($controller, 'GET', '/tags/', []);
+        assertStringContains('All Tags', $tagsResponse);
+        assertStringContains('route-source: static-html', $tagsResponse);
     }
 
     public function testFrontControllerBuildsMissingArtifactAfterEligibleAnonymousFallback(): void

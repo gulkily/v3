@@ -112,6 +112,7 @@ final class FrontController
         if ($path === '/tools/' || $path === '/tools') {
             return $this->firstExistingPath([
                 $this->publicRoot . '/tools.html',
+                $this->publicRoot . '/tools/index.html',
                 $this->staticHtmlRoot . '/tools/index.html',
             ]);
         }
@@ -144,6 +145,7 @@ final class FrontController
         if ($path === '/tags/' || $path === '/tags') {
             return $this->firstExistingPath([
                 $this->publicRoot . '/tags.html',
+                $this->publicRoot . '/tags/index.html',
                 $this->staticHtmlRoot . '/tags/index.html',
             ]);
         }

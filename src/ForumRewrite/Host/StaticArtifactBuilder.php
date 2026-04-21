@@ -40,11 +40,23 @@ final class StaticArtifactBuilder
         $this->writeRouteArtifact($application, '/instance/', $this->artifactRoot . '/instance.html');
         $this->writeRouteArtifact($application, '/activity/', $this->artifactRoot . '/activity.html');
         $this->writeRouteArtifact($application, '/users/', $this->artifactRoot . '/users.html');
-        $this->writeRouteArtifact($application, '/tools/', $this->artifactRoot . '/tools.html');
+        $this->writeRouteArtifacts($application, '/tools/', [
+            $this->artifactRoot . '/tools.html',
+            $this->artifactRoot . '/tools/index.html',
+        ]);
         $this->writeRouteArtifact($application, '/tools/bookmarklets/', $this->artifactRoot . '/tools/bookmarklets.html');
-        $this->writeRouteArtifact($application, '/tags/', $this->artifactRoot . '/tags.html');
+        $this->writeRouteArtifacts($application, '/tags/', [
+            $this->artifactRoot . '/tags.html',
+            $this->artifactRoot . '/tags/index.html',
+        ]);
         foreach ($this->fetchVisibleTagRoutes() as $route) {
-            $this->writeRouteArtifact($application, $route, $this->artifactPathForRoute($route) ?? throw new RuntimeException('Unable to resolve artifact path for route: ' . $route));
+            $artifactPaths = $this->artifactPathsForRoute($route);
+            $artifactPath = $artifactPaths[0] ?? null;
+            if ($artifactPath === null) {
+                throw new RuntimeException('Unable to resolve artifact path for route: ' . $route);
+            }
+
+            $this->writeRouteArtifact($application, $route, $artifactPath);
         }
 
         foreach ($this->fetchVisibleThreadIds() as $threadId) {
@@ -67,12 +79,12 @@ final class StaticArtifactBuilder
             return false;
         }
 
-        $artifactPath = $this->artifactPathForRoute($normalizedRoute);
-        if ($artifactPath === null) {
+        $artifactPaths = $this->artifactPathsForRoute($normalizedRoute);
+        if ($artifactPaths === []) {
             return false;
         }
 
-        return $this->writeRouteArtifactWithLock($this->application(), $normalizedRoute, $artifactPath);
+        return $this->writeRouteArtifactsWithLock($this->application(), $normalizedRoute, $artifactPaths);
     }
 
     /**
@@ -141,9 +153,49 @@ final class StaticArtifactBuilder
         }
     }
 
-    private function writeRouteArtifactWithLock(Application $application, string $route, string $path): bool
+    /**
+     * @param list<string> $paths
+     */
+    private function writeRouteArtifacts(Application $application, string $route, array $paths): void
     {
-        $lockPath = $this->lockPathForArtifact($path);
+        ob_start();
+        $application->handle('GET', $route);
+        $contents = (string) ob_get_clean();
+
+        foreach ($paths as $path) {
+            $this->writeContentsArtifact($path, $contents);
+        }
+    }
+
+    private function writeContentsArtifact(string $path, string $contents): void
+    {
+        $directory = dirname($path);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        $temporaryPath = tempnam($directory, 'artifact-');
+        if ($temporaryPath === false) {
+            throw new RuntimeException('Unable to create temporary artifact path in ' . $directory);
+        }
+
+        if (file_put_contents($temporaryPath, $contents) === false) {
+            @unlink($temporaryPath);
+            throw new RuntimeException('Unable to write temporary artifact: ' . $temporaryPath);
+        }
+
+        if (!rename($temporaryPath, $path)) {
+            @unlink($temporaryPath);
+            throw new RuntimeException('Unable to move artifact into place: ' . $path);
+        }
+    }
+
+    /**
+     * @param list<string> $paths
+     */
+    private function writeRouteArtifactsWithLock(Application $application, string $route, array $paths): bool
+    {
+        $lockPath = $this->lockPathForArtifact($paths[0]);
         $lockDirectory = dirname($lockPath);
         if (!is_dir($lockDirectory) && !mkdir($lockDirectory, 0777, true) && !is_dir($lockDirectory)) {
             throw new RuntimeException('Unable to create artifact lock directory: ' . $lockDirectory);
@@ -160,11 +212,11 @@ final class StaticArtifactBuilder
             }
 
             try {
-                if (is_file($path)) {
+                if ($this->allArtifactPathsExist($paths)) {
                     return true;
                 }
 
-                $this->writeRouteArtifact($application, $route, $path);
+                $this->writeRouteArtifacts($application, $route, $paths);
                 return true;
             } finally {
                 flock($lockHandle, LOCK_UN);
@@ -259,45 +311,68 @@ final class StaticArtifactBuilder
         return '/' . $kind . '/' . $identifier;
     }
 
-    private function artifactPathForRoute(string $route): ?string
+    /**
+     * @return list<string>
+     */
+    private function artifactPathsForRoute(string $route): array
     {
         if ($route === '/') {
-            return $this->artifactRoot . '/index.html';
+            return [$this->artifactRoot . '/index.html'];
         }
 
         if ($route === '/instance/') {
-            return $this->artifactRoot . '/instance.html';
+            return [$this->artifactRoot . '/instance.html'];
         }
 
         if ($route === '/activity/') {
-            return $this->artifactRoot . '/activity.html';
+            return [$this->artifactRoot . '/activity.html'];
         }
 
         if ($route === '/users/') {
-            return $this->artifactRoot . '/users.html';
+            return [$this->artifactRoot . '/users.html'];
         }
 
         if ($route === '/tools/') {
-            return $this->artifactRoot . '/tools.html';
+            return [
+                $this->artifactRoot . '/tools.html',
+                $this->artifactRoot . '/tools/index.html',
+            ];
         }
 
         if ($route === '/tools/bookmarklets/') {
-            return $this->artifactRoot . '/tools/bookmarklets.html';
+            return [$this->artifactRoot . '/tools/bookmarklets.html'];
         }
 
         if ($route === '/tags/') {
-            return $this->artifactRoot . '/tags.html';
+            return [
+                $this->artifactRoot . '/tags.html',
+                $this->artifactRoot . '/tags/index.html',
+            ];
         }
 
         if (preg_match('#^/(threads|posts|profiles)/([^/]+)$#', $route, $matches) === 1) {
-            return $this->artifactRoot . '/' . $matches[1] . '/' . $matches[2] . '.html';
+            return [$this->artifactRoot . '/' . $matches[1] . '/' . $matches[2] . '.html'];
         }
 
         if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)$#', $route, $matches) === 1) {
-            return $this->artifactRoot . '/tags/' . $matches[1] . '.html';
+            return [$this->artifactRoot . '/tags/' . $matches[1] . '.html'];
         }
 
-        return null;
+        return [];
+    }
+
+    /**
+     * @param list<string> $paths
+     */
+    private function allArtifactPathsExist(array $paths): bool
+    {
+        foreach ($paths as $path) {
+            if (!is_file($path)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
