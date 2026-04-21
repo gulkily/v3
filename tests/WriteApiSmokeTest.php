@@ -344,7 +344,7 @@ final class WriteApiSmokeTest
         assertStringContains('status=ok', $second);
         assertStringNotContains('Score: 1', $threadPage);
         assertStringContains('Score-Total: 1', $threadApi);
-        assertStringContains('Score: 1', $board);
+        assertStringNotContains('Score: 1', $board);
     }
 
     public function testUnapprovedLikeTagDoesNotAffectScore(): void
