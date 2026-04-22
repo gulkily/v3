@@ -432,6 +432,26 @@ final class WriteApiSmokeTest
         assertStringNotContains('Unliked Thread', $boardLikedNewest);
     }
 
+    public function testApplyThreadTagUsesIncrementalReadModelUpdateWhenDatabaseIsWarm(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $result = $service->applyThreadTag([
+            'thread_id' => 'root-001',
+            'tag' => 'like',
+            'author_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+        ]);
+
+        $threadApi = $this->renderMethod($application, 'GET', '/api/get_thread?thread_id=root-001');
+
+        assertSame(true, isset($result['timings']['read_model_incremental_update']));
+        assertSame(false, isset($result['timings']['read_model_rebuild']));
+        assertStringContains('Score-Total: 1', $threadApi);
+    }
+
     public function testApplyThreadTagApiWritesApprovedLikeAndReportsUpdatedScore(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

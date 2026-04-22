@@ -203,7 +203,7 @@ class LocalWriteService
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
 
-            $timings = array_merge($timings, $this->synchronizePostDerivedState($thread, $commitSha, true));
+            $timings = array_merge($timings, $this->synchronizeThreadLabelDerivedState($threadId, $commitSha));
 
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateBoardThread($threadId);
@@ -428,6 +428,64 @@ class LocalWriteService
 
                 throw new RuntimeException(
                     'Canonical write committed at ' . $commitSha . ' but incremental read-model update and rebuild fallback both failed. Derived state marked stale.'
+                );
+            }
+        }
+
+        $timings = [
+            'read_model_incremental_update' => $this->elapsedMilliseconds($phaseStartedAt),
+        ];
+        foreach ($incrementalTimings as $name => $duration) {
+            $timings['read_model_incremental_' . $name] = $duration;
+        }
+
+        return $timings;
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function synchronizeThreadLabelDerivedState(string $threadId, string $commitSha): array
+    {
+        $phaseStartedAt = hrtime(true);
+        if (!$this->canIncrementallyUpdateReadModel()) {
+            $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
+            $timings = [
+                'read_model_rebuild' => $this->elapsedMilliseconds($phaseStartedAt),
+            ];
+            foreach ($rebuildTimings as $name => $duration) {
+                $timings['read_model_' . $name] = $duration;
+            }
+
+            return $timings;
+        }
+
+        try {
+            $incrementalTimings = $this->incrementalReadModelUpdater()->applyThreadLabelWrite($threadId, $commitSha);
+            $this->staleMarker()->clear();
+        } catch (\Throwable $throwable) {
+            $fallbackStartedAt = hrtime(true);
+            try {
+                $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
+                $timings = [
+                    'read_model_incremental_fallback' => $this->elapsedMilliseconds($phaseStartedAt),
+                    'read_model_rebuild_fallback' => $this->elapsedMilliseconds($fallbackStartedAt),
+                ];
+                foreach ($rebuildTimings as $name => $duration) {
+                    $timings['read_model_' . $name] = $duration;
+                }
+
+                return $timings;
+            } catch (\Throwable $fallbackThrowable) {
+                $this->staleMarker()->mark([
+                    'reason' => 'write_refresh_failed',
+                    'commit_sha' => $commitSha,
+                    'failed_at' => gmdate('c'),
+                    'message' => 'incremental=' . $throwable->getMessage() . '; fallback=' . $fallbackThrowable->getMessage(),
+                ]);
+
+                throw new RuntimeException(
+                    'Canonical write committed at ' . $commitSha . ' but incremental thread-label update and rebuild fallback both failed. Derived state marked stale.'
                 );
             }
         }
