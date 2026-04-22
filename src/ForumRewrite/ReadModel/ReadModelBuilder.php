@@ -511,10 +511,6 @@ final class ReadModelBuilder
 
         foreach ($posts as $post) {
             $postsById[$post['post_id']] = $post;
-            if ($this->isHiddenBootstrapBoardTagsJson($post['board_tags_json'])) {
-                continue;
-            }
-
             $author = $this->resolveActivityAuthor($pdo, $post['author_identity_id']);
             $kind = $post['post_id'] === $post['thread_id'] ? 'thread' : 'reply';
             $label = $post['subject'] ?? $this->preview($post['body']);

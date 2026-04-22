@@ -69,9 +69,7 @@ class IncrementalReadModelUpdater
                 $this->measure($timings, 'insert_thread', fn (): mixed => $this->insertThread($pdo, $record, $boardTagsJson));
             }
 
-            if (!$hidden) {
-                $this->measure($timings, 'upsert_activity', fn (): mixed => $this->insertActivity($pdo, $record, $boardTagsJson));
-            }
+            $this->measure($timings, 'upsert_activity', fn (): mixed => $this->insertActivity($pdo, $record, $boardTagsJson));
 
             if ($record->authorIdentityId !== null && !$hidden) {
                 $this->measure($timings, 'update_profile_counts', fn (): mixed => $this->updateProfileCounts($pdo, $record));

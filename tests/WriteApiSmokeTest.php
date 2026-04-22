@@ -119,6 +119,8 @@ final class WriteApiSmokeTest
         $bootstrapRecord = (string) file_get_contents($repositoryRoot . '/records/posts/' . $bootstrapPostId . '.txt');
         $board = $this->renderMethod($application, 'GET', '/');
         $activity = $this->renderMethod($application, 'GET', '/activity/?view=all');
+        $identityActivity = $this->renderMethod($application, 'GET', '/activity/?view=identity');
+        $bootstrapActivity = $this->renderMethod($application, 'GET', '/activity/?view=bootstrap');
         $bootstrapPostPage = $this->renderMethod($application, 'GET', '/posts/' . $bootstrapPostId);
         $profile = $this->renderMethod(
             $application,
@@ -132,6 +134,8 @@ final class WriteApiSmokeTest
         assertStringContains('Subject: account bootstrap', $bootstrapRecord);
         assertStringNotContains($bootstrapPostId, $board);
         assertStringNotContains($bootstrapPostId, $activity);
+        assertStringContains($bootstrapPostId, $identityActivity);
+        assertStringContains($bootstrapPostId, $bootstrapActivity);
         assertStringContains('Automatic account bootstrap anchor.', $bootstrapPostPage);
         assertStringContains('Threads:</strong> 0', $profile);
         assertStringContains('Posts:</strong> 0', $profile);
@@ -750,6 +754,8 @@ final class WriteApiSmokeTest
         $targetProfileApi = $this->renderMethod($application, 'GET', '/api/get_profile?profile_slug=' . rawurlencode($targetProfileSlug));
         $board = $this->renderMethod($application, 'GET', '/');
         $activity = $this->renderMethod($application, 'GET', '/activity/?view=all');
+        $identityActivity = $this->renderMethod($application, 'GET', '/activity/?view=identity');
+        $approvalActivity = $this->renderMethod($application, 'GET', '/activity/?view=approval');
         $bootstrapThread = $this->renderMethod($application, 'GET', '/threads/' . $targetBootstrapThreadId);
         $_COOKIE = [];
 
@@ -773,6 +779,8 @@ final class WriteApiSmokeTest
         assertFalse(is_file($artifactRoot . '/profiles/' . $targetProfileSlug . '.html'));
         assertStringNotContains($approvalPostId, $board);
         assertStringNotContains($approvalPostId, $activity);
+        assertStringContains($approvalPostId, $identityActivity);
+        assertStringContains($approvalPostId, $approvalActivity);
         assertStringContains($approvalPostId, $bootstrapThread);
         assertStringContains('Approve-Identity-ID: ' . $target['identity_id'], $bootstrapThread);
     }

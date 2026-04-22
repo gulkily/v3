@@ -1821,10 +1821,11 @@ final class Application
 
         return array_values(array_filter($items, function (array $item) use ($view): bool {
             $boardTagsJson = (string) $item['board_tags_json'];
+            $hidden = $this->isHiddenBootstrapBoardTagsJson($boardTagsJson);
 
             return match ($view) {
-                'all' => true,
-                'content' => !$this->isHiddenBootstrapBoardTagsJson($boardTagsJson),
+                'all' => !$hidden,
+                'content' => !$hidden,
                 'identity' => $this->hasBoardTag($boardTagsJson, 'identity'),
                 'bootstrap' => $this->hasBoardTag($boardTagsJson, 'identity') && $this->hasBoardTag($boardTagsJson, 'internal'),
                 'approval' => $this->hasBoardTag($boardTagsJson, 'identity') && $this->hasBoardTag($boardTagsJson, 'approval'),
