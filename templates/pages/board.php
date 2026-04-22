@@ -1,8 +1,16 @@
 <section class="stack">
   <article class="card">
     <h1>Board</h1>
-    <div class="button-row button-row-natural button-row-split">
+    <div class="nav board-controls-nav">
       <a class="nav-link" href="/tags/">Tags</a>
+<?php foreach ($viewOptions as $option): ?>
+<?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
+      <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
+<?php endforeach; ?>
+<?php foreach ($sortOptions as $option): ?>
+<?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
+      <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
+<?php endforeach; ?>
       <a class="nav-link" href="/compose/thread">New Post</a>
     </div>
   </article>

@@ -390,6 +390,48 @@ final class WriteApiSmokeTest
         assertStringContains('Score-Total: -100', $threadApi);
     }
 
+    public function testBoardSupportsLikedViewAndNewestOldestTopSorts(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $newThreadResponse = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_thread?board_tags=general&subject=Brand%20New%20Thread&body=Thread%20body'
+        );
+        $newThreadId = $this->extractValue($newThreadResponse, 'thread_id');
+        $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_thread?board_tags=general&subject=Unliked%20Thread&body=Thread%20body'
+        );
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=root-001&tag=like');
+        $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=' . rawurlencode($newThreadId) . '&tag=like');
+
+        $alice = $this->linkGeneratedIdentity($application, 'alice');
+        $this->renderMethod($application, 'POST', '/profiles/' . $alice['profile_slug'] . '/approve');
+        $_COOKIE = ['identity_hint' => 'alice'];
+        $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=root-001&tag=like');
+        $_COOKIE = [];
+
+        $boardDefault = $this->renderMethod($application, 'GET', '/');
+        $boardLikedNewest = $this->renderMethod($application, 'GET', '/?view=liked&sort=newest');
+        $boardLikedOldest = $this->renderMethod($application, 'GET', '/?view=liked&sort=oldest');
+        $boardLikedTop = $this->renderMethod($application, 'GET', '/?view=liked&sort=top');
+
+        assertStringNotContains('View: All', $boardDefault);
+        assertStringNotContains('Sort: Newest', $boardDefault);
+        assertStringNotContains('View: Liked', $boardLikedNewest);
+        assertStringNotContains('Sort: Newest', $boardLikedNewest);
+        assertOrdered($boardLikedNewest, 'Brand New Thread', 'Hello world');
+        assertOrdered($boardLikedOldest, 'Hello world', 'Brand New Thread');
+        assertOrdered($boardLikedTop, 'Hello world', 'Brand New Thread');
+        assertStringNotContains('Unliked Thread', $boardLikedNewest);
+    }
+
     public function testApplyThreadTagApiWritesApprovedLikeAndReportsUpdatedScore(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

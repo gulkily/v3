@@ -116,7 +116,13 @@ final class Application
                 return;
             }
 
-            $this->sendHtml($this->renderBoard(), 200);
+            $this->sendHtml(
+                $this->renderBoard(
+                    (string) ($query['view'] ?? 'all'),
+                    (string) ($query['sort'] ?? 'newest'),
+                ),
+                200
+            );
             return;
         }
 
@@ -417,12 +423,23 @@ final class Application
             . 'rebuild_reason=' . ($metadata['rebuild_reason'] ?? 'missing') . "\n";
     }
 
-    private function renderBoard(): string
+    private function renderBoard(string $view, string $sort): string
     {
+        $view = $this->normalizeBoardView($view);
+        $sort = $this->normalizeBoardSort($sort);
+        $viewOptions = $this->boardViewOptions($view, $sort);
+        $sortOptions = $this->boardSortOptions($view, $sort);
+
         return $this->renderPageTemplate(
             'board.php',
             [
-                'threads' => $this->fetchThreads(),
+                'threads' => $this->fetchBoardThreads($view, $sort),
+                'view' => $view,
+                'sort' => $sort,
+                'viewOptions' => $viewOptions,
+                'sortOptions' => $sortOptions,
+                'viewLabel' => $this->activeBoardOptionLabel($viewOptions, $view),
+                'sortLabel' => $this->activeBoardOptionLabel($sortOptions, $sort),
             ],
             'Board',
             'board',
@@ -1047,6 +1064,23 @@ final class Application
     }
 
     /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchBoardThreads(string $view, string $sort): array
+    {
+        $view = $this->normalizeBoardView($view);
+        $sort = $this->normalizeBoardSort($sort);
+        $threads = array_values(array_filter(
+            $this->fetchThreads(),
+            fn (array $thread): bool => $this->matchesBoardView($thread, $view)
+        ));
+
+        usort($threads, fn (array $left, array $right): int => $this->compareBoardThreads($left, $right, $sort));
+
+        return $threads;
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     private function fetchThread(string $threadId): ?array
@@ -1269,6 +1303,146 @@ final class Application
         $thread['thread_labels'] = $this->decodeStringList((string) ($thread['thread_labels_json'] ?? '[]'));
 
         return $thread;
+    }
+
+    private function normalizeBoardView(string $view): string
+    {
+        return in_array($view, ['all', 'liked'], true) ? $view : 'all';
+    }
+
+    private function normalizeBoardSort(string $sort): string
+    {
+        return in_array($sort, ['newest', 'oldest', 'top'], true) ? $sort : 'newest';
+    }
+
+    /**
+     * @return array<int, array{label:string,href:string,is_active:bool,key:string}>
+     */
+    private function boardViewOptions(string $activeView, string $activeSort): array
+    {
+        return [
+            [
+                'key' => 'all',
+                'label' => 'All',
+                'href' => '/?view=all&sort=' . rawurlencode($activeSort),
+                'is_active' => $activeView === 'all',
+            ],
+            [
+                'key' => 'liked',
+                'label' => 'Liked',
+                'href' => '/?view=liked&sort=' . rawurlencode($activeSort),
+                'is_active' => $activeView === 'liked',
+            ],
+        ];
+    }
+
+    /**
+     * @return array<int, array{label:string,href:string,is_active:bool,key:string}>
+     */
+    private function boardSortOptions(string $activeView, string $activeSort): array
+    {
+        return [
+            [
+                'key' => 'newest',
+                'label' => 'Newest',
+                'href' => '/?view=' . rawurlencode($activeView) . '&sort=newest',
+                'is_active' => $activeSort === 'newest',
+            ],
+            [
+                'key' => 'oldest',
+                'label' => 'Oldest',
+                'href' => '/?view=' . rawurlencode($activeView) . '&sort=oldest',
+                'is_active' => $activeSort === 'oldest',
+            ],
+            [
+                'key' => 'top',
+                'label' => 'Top',
+                'href' => '/?view=' . rawurlencode($activeView) . '&sort=top',
+                'is_active' => $activeSort === 'top',
+            ],
+        ];
+    }
+
+    /**
+     * @param array<int, array{label:string,href:string,is_active:bool,key:string}> $options
+     */
+    private function activeBoardOptionLabel(array $options, string $activeKey): string
+    {
+        foreach ($options as $option) {
+            if ($option['key'] === $activeKey) {
+                return $option['label'];
+            }
+        }
+
+        return $activeKey;
+    }
+
+    /**
+     * @param array<string, mixed> $thread
+     */
+    private function matchesBoardView(array $thread, string $view): bool
+    {
+        return match ($view) {
+            'all' => true,
+            'liked' => in_array('like', $thread['thread_labels'] ?? [], true)
+                && ((int) ($thread['score_total'] ?? 0)) > 0,
+            default => true,
+        };
+    }
+
+    /**
+     * @param array<string, mixed> $left
+     * @param array<string, mixed> $right
+     */
+    private function compareBoardThreads(array $left, array $right, string $sort): int
+    {
+        return match ($sort) {
+            'oldest' => $this->compareBoardThreadOldest($left, $right),
+            'top' => $this->compareBoardThreadTop($left, $right),
+            default => $this->compareBoardThreadNewest($left, $right),
+        };
+    }
+
+    /**
+     * @param array<string, mixed> $left
+     * @param array<string, mixed> $right
+     */
+    private function compareBoardThreadNewest(array $left, array $right): int
+    {
+        $createdCompare = strcmp((string) $right['root_post_created_at'], (string) $left['root_post_created_at']);
+        if ($createdCompare !== 0) {
+            return $createdCompare;
+        }
+
+        return strcmp((string) $right['root_post_id'], (string) $left['root_post_id']);
+    }
+
+    /**
+     * @param array<string, mixed> $left
+     * @param array<string, mixed> $right
+     */
+    private function compareBoardThreadOldest(array $left, array $right): int
+    {
+        $createdCompare = strcmp((string) $left['root_post_created_at'], (string) $right['root_post_created_at']);
+        if ($createdCompare !== 0) {
+            return $createdCompare;
+        }
+
+        return strcmp((string) $left['root_post_id'], (string) $right['root_post_id']);
+    }
+
+    /**
+     * @param array<string, mixed> $left
+     * @param array<string, mixed> $right
+     */
+    private function compareBoardThreadTop(array $left, array $right): int
+    {
+        $scoreCompare = ((int) $right['score_total']) <=> ((int) $left['score_total']);
+        if ($scoreCompare !== 0) {
+            return $scoreCompare;
+        }
+
+        return $this->compareBoardThreadNewest($left, $right);
     }
 
     /**

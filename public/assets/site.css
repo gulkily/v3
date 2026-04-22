@@ -302,6 +302,10 @@ pre {
   background: var(--panel);
 }
 
+.board-controls-nav > *:last-child {
+  margin-left: auto;
+}
+
 .theme-toggle {
   width: 1.8rem;
   min-width: 1.8rem;
