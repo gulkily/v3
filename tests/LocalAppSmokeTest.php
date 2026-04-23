@@ -297,6 +297,7 @@ final class LocalAppSmokeTest
         );
 
         $bookmarklets = $this->render($application, '/tools/bookmarklets/');
+        $bookmarkletAsset = (string) file_get_contents(__DIR__ . '/../public/assets/tools_bookmarklets.js');
 
         assertStringContains('Tools', $tools);
         assertStringContains('Bookmarklets', $tools);
@@ -305,6 +306,7 @@ final class LocalAppSmokeTest
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/assets/tools_bookmarklets.js', $bookmarklets);
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
+        assertStringContains('window.getSelection().toString().trim()', $bookmarkletAsset);
         assertStringContains('value="Saved Title"', $prefilledCompose);
         assertStringContains('>Saved Body</textarea>', $prefilledCompose);
     }

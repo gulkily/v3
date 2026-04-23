@@ -1,6 +1,9 @@
 (function () {
   function composeUrl(baseOrigin, kind) {
-    var selection = String(window.getSelection ? window.getSelection() : "").trim();
+    var selection = "";
+    if (window.getSelection) {
+      selection = window.getSelection().toString().trim();
+    }
     var title = document.title || "";
     var currentUrl = window.location.href || "";
     var subject = title;
