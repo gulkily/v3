@@ -314,18 +314,13 @@ class IncrementalReadModelUpdater
         $approved = $this->loadProfileApprovalFields($pdo, $profile['identity_id']);
         $stmt = $pdo->prepare(
             'UPDATE activity
-             SET author_identity_id = CASE
-                    WHEN post_id = :bootstrap_post_id THEN :author_identity_id
-                    ELSE author_identity_id
-                 END,
-                 author_profile_slug = :author_profile_slug,
+             SET author_profile_slug = :author_profile_slug,
                  author_username_token = :author_username_token,
                  author_label = :author_label,
                  author_is_approved = :author_is_approved
-             WHERE post_id = :bootstrap_post_id OR author_identity_id = :author_identity_id'
+             WHERE author_identity_id = :author_identity_id'
         );
         $stmt->execute([
-            'bootstrap_post_id' => $profile['bootstrap_post_id'],
             'author_identity_id' => $profile['identity_id'],
             'author_profile_slug' => $profile['profile_slug'],
             'author_username_token' => $profile['username_token'],

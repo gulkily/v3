@@ -162,6 +162,14 @@ Expected outcome:
 
 - the identity-link optimization is production-safe rather than just faster
 
+Implementation status:
+
+- implemented
+- identity-link parity coverage now compares incremental results to a fresh rebuild
+- identity-link failure coverage now exercises both:
+  - incremental failure with rebuild fallback recovery
+  - incremental failure plus rebuild failure leading to a stale marker
+
 ## Slice 5: In-Place Browser Bootstrap For `Like`
 
 Focus:

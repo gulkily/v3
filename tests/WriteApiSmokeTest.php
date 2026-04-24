@@ -606,6 +606,40 @@ final class WriteApiSmokeTest
         assertFalse(is_file($staleMarkerPath));
     }
 
+    public function testIdentityIncrementalFailureFallsBackToFullRebuildAndKeepsReadModelHealthy(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->deleteDirectoryContents($repositoryRoot . '/records/identity');
+        $this->deleteDirectoryContents($repositoryRoot . '/records/public-keys');
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $service = new class($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot)) extends LocalWriteService {
+            protected function incrementalReadModelUpdater(): IncrementalReadModelUpdater
+            {
+                return new class($this->databasePath(), $this->repositoryRoot()) extends IncrementalReadModelUpdater {
+                    public function applyIdentityLink(\ForumRewrite\Canonical\IdentityBootstrapRecord $record, string $commitSha): array
+                    {
+                        throw new RuntimeException('simulated identity incremental failure');
+                    }
+                };
+            }
+        };
+
+        $result = $service->linkIdentity([
+            'public_key' => $this->readFixturePublicKey(),
+            'bootstrap_post_id' => 'root-001',
+        ]);
+
+        $profilePage = $this->renderMethod($application, 'GET', '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+        $staleMarkerPath = dirname($databasePath) . '/read_model_stale.json';
+
+        assertSame(true, isset($result['timings']['read_model_incremental_fallback']));
+        assertSame(true, isset($result['timings']['read_model_rebuild_fallback']));
+        assertStringContains('Visible username:</strong> forum-user', $profilePage);
+        assertFalse(is_file($staleMarkerPath));
+    }
+
     public function testIncrementalThreadAndReplyMatchFreshRebuildView(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -644,6 +678,33 @@ final class WriteApiSmokeTest
         assertSame($this->normalizeRenderedPage($freshThread), $this->normalizeRenderedPage($incrementalThread));
         assertSame($this->normalizeRenderedPage($freshReply), $this->normalizeRenderedPage($incrementalReply));
         assertSame($this->normalizeRenderedPage($freshUser), $this->normalizeRenderedPage($incrementalUser));
+    }
+
+    public function testIncrementalIdentityLinkMatchesFreshRebuildView(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->deleteDirectoryContents($repositoryRoot . '/records/identity');
+        $this->deleteDirectoryContents($repositoryRoot . '/records/public-keys');
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $identity = $this->linkGeneratedIdentity($application, 'compare-user');
+        $freshDatabasePath = sys_get_temp_dir() . '/forum-rewrite-write-db-identity-parity-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $freshApplication = new Application(dirname(__DIR__), $repositoryRoot, $freshDatabasePath, $artifactRoot);
+
+        $incrementalProfile = $this->renderMethod($application, 'GET', '/profiles/' . $identity['profile_slug']);
+        $freshProfile = $this->renderMethod($freshApplication, 'GET', '/profiles/' . $identity['profile_slug']);
+        $incrementalUser = $this->renderMethod($application, 'GET', '/user/compare-user');
+        $freshUser = $this->renderMethod($freshApplication, 'GET', '/user/compare-user');
+        $incrementalPost = $this->renderMethod($application, 'GET', '/posts/' . $identity['bootstrap_post_id']);
+        $freshPost = $this->renderMethod($freshApplication, 'GET', '/posts/' . $identity['bootstrap_post_id']);
+        $incrementalActivity = $this->renderMethod($application, 'GET', '/activity/?view=bootstrap');
+        $freshActivity = $this->renderMethod($freshApplication, 'GET', '/activity/?view=bootstrap');
+
+        assertSame($this->normalizeRenderedPage($freshProfile), $this->normalizeRenderedPage($incrementalProfile));
+        assertSame($this->normalizeRenderedPage($freshUser), $this->normalizeRenderedPage($incrementalUser));
+        assertSame($this->normalizeRenderedPage($freshPost), $this->normalizeRenderedPage($incrementalPost));
+        assertSame($this->normalizeRenderedPage($freshActivity), $this->normalizeRenderedPage($incrementalActivity));
     }
 
     public function testWriteApiReportsGitFailureWithoutInvalidatingArtifacts(): void
@@ -697,6 +758,48 @@ final class WriteApiSmokeTest
         assertSame('write_refresh_failed', $staleMarker['reason'] ?? null);
         assertTrue(strlen((string) ($staleMarker['commit_sha'] ?? '')) === 40);
         assertTrue(is_file($artifactRoot . '/index.html'));
+    }
+
+    public function testIdentityWriteMarksDerivedStateStaleWhenIncrementalAndFallbackRefreshFail(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->deleteDirectoryContents($repositoryRoot . '/records/identity');
+        $this->deleteDirectoryContents($repositoryRoot . '/records/public-keys');
+        $service = new class($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot)) extends LocalWriteService {
+            protected function incrementalReadModelUpdater(): IncrementalReadModelUpdater
+            {
+                return new class($this->databasePath(), $this->repositoryRoot()) extends IncrementalReadModelUpdater {
+                    public function applyIdentityLink(\ForumRewrite\Canonical\IdentityBootstrapRecord $record, string $commitSha): array
+                    {
+                        throw new RuntimeException('simulated identity incremental failure');
+                    }
+                };
+            }
+
+            protected function rebuildReadModel(): array
+            {
+                throw new RuntimeException('simulated identity rebuild failure');
+            }
+        };
+
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        try {
+            $service->linkIdentity([
+                'public_key' => $this->readFixturePublicKey(),
+                'bootstrap_post_id' => 'root-001',
+            ]);
+            throw new RuntimeException('Expected identity refresh failure.');
+        } catch (RuntimeException $exception) {
+            assertStringContains('Derived state marked stale', $exception->getMessage());
+        }
+
+        $staleMarkerPath = dirname($databasePath) . '/read_model_stale.json';
+        assertTrue(is_file($staleMarkerPath));
+        $staleMarker = json_decode((string) file_get_contents($staleMarkerPath), true, 512, JSON_THROW_ON_ERROR);
+        assertSame('write_refresh_failed', $staleMarker['reason'] ?? null);
+        assertTrue(strlen((string) ($staleMarker['commit_sha'] ?? '')) === 40);
     }
 
     public function testLinkIdentityAllowsDuplicateUsernameTokensWithoutBreakingRebuild(): void
