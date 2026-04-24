@@ -195,6 +195,13 @@ Expected outcome:
 
 - brand-new users can click `Like` and complete the whole bootstrap-plus-like flow without leaving the page
 
+Implementation status:
+
+- implemented
+- thread pages now load the browser identity/bootstrap assets needed for in-place setup
+- the `Like` flow now reuses the browser bootstrap helper before calling `/api/apply_thread_tag`
+- bootstrap happens in place on the thread page with inline status/error feedback
+
 ## Slice 6: Like-Flow UX And Regression Coverage
 
 Focus:

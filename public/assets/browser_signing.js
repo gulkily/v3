@@ -430,10 +430,10 @@
     renderUndoState(root);
   }
 
-  async function promptForComposeUsername() {
+  async function promptForUsername(promptMessage, cancellationMessage) {
     const prompted = typeof window.prompt === "function"
       ? window.prompt(
-          "Choose a username for your first post:",
+          promptMessage,
           localStorage.getItem(storageKeys.username) || "guest"
         )
       : "guest";
@@ -443,38 +443,34 @@
         ? window.confirm("Continue with the default username 'guest'?")
         : true;
       if (!continueAsGuest) {
-        localStorage.setItem(storageKeys.composePromptCancelled, "1");
-        throw new Error("Posting paused until you choose a username.");
+        throw new Error(cancellationMessage);
       }
 
-      localStorage.removeItem(storageKeys.composePromptCancelled);
       return "guest";
     }
 
-    localStorage.removeItem(storageKeys.composePromptCancelled);
     return normalizeUsername(prompted);
   }
 
-  async function promptForAccountUsername() {
-    const prompted = typeof window.prompt === "function"
-      ? window.prompt(
-          "Choose a username for this browser keypair:",
-          localStorage.getItem(storageKeys.username) || "guest"
-        )
-      : "guest";
-
-    if (prompted === null || String(prompted).trim() === "") {
-      const continueAsGuest = typeof window.confirm === "function"
-        ? window.confirm("Continue with the default username 'guest'?")
-        : true;
-      if (!continueAsGuest) {
-        throw new Error("Key generation paused until you choose a username.");
-      }
-
-      return "guest";
+  async function promptForComposeUsername() {
+    try {
+      const username = await promptForUsername(
+        "Choose a username for your first post:",
+        "Posting paused until you choose a username."
+      );
+      localStorage.removeItem(storageKeys.composePromptCancelled);
+      return username;
+    } catch (error) {
+      localStorage.setItem(storageKeys.composePromptCancelled, "1");
+      throw error;
     }
+  }
 
-    return normalizeUsername(prompted);
+  async function promptForAccountUsername() {
+    return promptForUsername(
+      "Choose a username for this browser keypair:",
+      "Key generation paused until you choose a username."
+    );
   }
 
   async function generateBrowserKey(root, preferredUsername) {
@@ -551,12 +547,16 @@
     return fingerprint;
   }
 
-  async function ensureComposeIdentity(root, statusNode) {
+  async function ensureReadyIdentity(root, statusNode, options) {
+    const config = options || {};
+    const promptForUsername = typeof config.promptForUsername === "function"
+      ? config.promptForUsername
+      : promptForComposeUsername;
     const publishedFingerprint = localStorage.getItem(storageKeys.publishedFingerprint) || "";
 
     if (!hasBrowserKeypair()) {
       setStatus(statusNode, "Choose a username to prepare your browser keypair...", "info");
-      const username = await promptForComposeUsername();
+      const username = await promptForUsername();
       setStatus(statusNode, "Generating browser keypair...", "info");
       await generateBrowserKey(root, username);
     }
@@ -568,6 +568,20 @@
     } else {
       await syncIdentityHint(preferredIdentityHint());
     }
+  }
+
+  async function ensureComposeIdentity(root, statusNode) {
+    await ensureReadyIdentity(root, statusNode, {
+      promptForUsername: promptForComposeUsername,
+    });
+  }
+
+  if (typeof window !== "undefined") {
+    window.__forumBrowserIdentity = {
+      currentAuthorIdentityId: currentAuthorIdentityId,
+      ensureReadyIdentity: ensureReadyIdentity,
+      hasBrowserKeypair: hasBrowserKeypair,
+    };
   }
 
   function ensureComposeAuthorIdentity(form) {

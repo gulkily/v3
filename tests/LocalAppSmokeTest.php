@@ -155,6 +155,8 @@ final class LocalAppSmokeTest
         assertStringNotContains('Labels: bug, needs-review', $board);
         assertStringContains('Hello world', $thread);
         assertStringContains('Labels: bug, needs-review', $thread);
+        assertStringContains('/assets/openpgp.min.js', $thread);
+        assertStringContains('/assets/browser_signing.js', $thread);
         assertStringContains('/assets/thread_reactions.js', $thread);
         assertStringContains('data-thread-reactions-root', $thread);
         assertStringContains('data-action="apply-thread-tag"', $thread);

@@ -31,6 +31,16 @@
     return response.text();
   }
 
+  async function ensureReactionIdentity(root, feedbackNode) {
+    const helper = window.__forumBrowserIdentity;
+    if (!helper || typeof helper.ensureReadyIdentity !== "function") {
+      throw new Error("Identity setup is unavailable. Reload the page and try again.");
+    }
+
+    setFeedback(feedbackNode, "Preparing identity...", "ok");
+    await helper.ensureReadyIdentity(root, feedbackNode);
+  }
+
   function bindThreadReactions(root) {
     const threadId = root.getAttribute("data-thread-id") || "";
     const scoreNode = root.querySelector('[data-role="thread-score"]');
@@ -53,9 +63,10 @@
       const appliedLabel = button.getAttribute("data-applied-label") || "Applied";
 
       button.disabled = true;
-      setFeedback(feedbackNode, "Saving tag...", "ok");
 
       try {
+        await ensureReactionIdentity(root, feedbackNode);
+        setFeedback(feedbackNode, "Saving tag...", "ok");
         const text = await applyThreadTag(threadId, tag);
         if (!text.includes("status=ok")) {
           const errorMessage = parseResponseValue(text, "error") || "Unable to apply tag.";

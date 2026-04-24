@@ -502,7 +502,11 @@ final class Application
             ],
             $title,
             'board',
-            ['/assets/thread_reactions.js'],
+            [
+                '/assets/openpgp.min.js',
+                '/assets/browser_signing.js',
+                '/assets/thread_reactions.js',
+            ],
         );
     }
 
