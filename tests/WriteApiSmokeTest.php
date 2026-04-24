@@ -67,6 +67,8 @@ final class WriteApiSmokeTest
         $this->deleteDirectoryContents($repositoryRoot . '/records/public-keys');
         $this->seedArtifacts($artifactRoot, [
             '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html',
+            '/threads/root-001.html',
+            '/posts/root-001.html',
         ]);
 
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -98,6 +100,8 @@ final class WriteApiSmokeTest
         assertStringContains('Approved Profiles', $usernameRoute);
         assertStringContains('/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $usernameRoute);
         assertFalse(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
+        assertFalse(is_file($artifactRoot . '/threads/root-001.html'));
+        assertFalse(is_file($artifactRoot . '/posts/root-001.html'));
         assertSame($commitSha, $this->gitOutput($repositoryRoot, 'rev-parse HEAD'));
     }
 
@@ -246,6 +250,29 @@ final class WriteApiSmokeTest
         assertStringContains('Incremental Thread', $threadPage);
         assertStringContains('Incremental reply', $replyPage);
         assertStringContains('Incremental reply', $threadPage);
+    }
+
+    public function testLinkIdentityUsesIncrementalReadModelUpdateWhenDatabaseIsWarm(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->deleteDirectoryContents($repositoryRoot . '/records/identity');
+        $this->deleteDirectoryContents($repositoryRoot . '/records/public-keys');
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $result = $service->linkIdentity([
+            'public_key' => $this->readFixturePublicKey(),
+            'bootstrap_post_id' => 'root-001',
+        ]);
+
+        $profilePage = $this->renderMethod($application, 'GET', '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
+
+        assertSame(true, isset($result['timings']['read_model_incremental_update']));
+        assertSame(false, isset($result['timings']['read_model_rebuild']));
+        assertStringContains('Visible username:</strong> forum-user', $profilePage);
+        assertStringContains('forum-user', $threadPage);
     }
 
     public function testCreateThreadWithHashtagsWritesThreadLabelRecordAndRendersLabels(): void

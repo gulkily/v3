@@ -2016,7 +2016,8 @@ final class Application
             $result = $this->writer()->linkIdentity($input);
             $this->sendText(
                 "status=ok\nidentity_id={$result['identity_id']}\nprofile_slug={$result['profile_slug']}\nusername={$result['username']}\nbootstrap_post_id={$result['bootstrap_post_id']}\nbootstrap_thread_id={$result['bootstrap_thread_id']}\ncommit_sha={$result['commit_sha']}\n",
-                200
+                200,
+                $this->serverTimingHeaders($result)
             );
         } catch (RuntimeException $exception) {
             $this->sendText("error=" . $exception->getMessage() . "\n", 400);

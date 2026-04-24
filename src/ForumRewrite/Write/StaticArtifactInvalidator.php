@@ -36,6 +36,15 @@ final class StaticArtifactInvalidator
         ]);
     }
 
+    public function invalidateIdentityLink(string $profileSlug, string $threadId, string $postId): void
+    {
+        $this->deletePaths([
+            $this->artifactRoot . '/profiles/' . $profileSlug . '.html',
+            $this->artifactRoot . '/threads/' . $threadId . '.html',
+            $this->artifactRoot . '/posts/' . $postId . '.html',
+        ]);
+    }
+
     public function invalidateApproval(string $profileSlug, string $threadId, string $parentPostId, string $approvalPostId): void
     {
         $this->deletePaths([

@@ -134,6 +134,13 @@ Expected outcome:
 - the public-key submission path behaves like the already-optimized write flows
 - normal identity publication no longer blocks on a full rebuild in the warm case
 
+Implementation status:
+
+- implemented
+- `LocalWriteService::linkIdentity()` now uses incremental refresh when the DB is warm
+- `/api/link_identity` now exposes timing headers for the optimized path
+- identity linking now invalidates the affected profile, bootstrap thread, and bootstrap post artifacts
+
 ## Slice 4: Parity And Failure Coverage For Identity Linking
 
 Focus:
