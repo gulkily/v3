@@ -101,6 +101,14 @@ Expected outcome:
 - identity linking can refresh derived state without a full rebuild on the hot path
 - rebuild remains the correctness backstop
 
+Implementation status:
+
+- implemented
+- `IncrementalReadModelUpdater` now has a dedicated identity-link path
+- the updater handles both:
+  - linking against an already-indexed bootstrap post
+  - the auto-created hidden bootstrap post written in the same commit
+
 ## Slice 3: Route `linkIdentity()` Through The Incremental Path
 
 Focus:

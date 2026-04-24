@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace ForumRewrite\ReadModel;
 
+use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\CanonicalRecordParseException;
+use ForumRewrite\Canonical\IdentityBootstrapRecord;
 use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\ThreadLabelRecord;
 use ForumRewrite\TagScore;
@@ -20,6 +22,35 @@ class IncrementalReadModelUpdater
         private readonly string $databasePath,
         private readonly string $repositoryRoot,
     ) {
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    public function applyIdentityLink(IdentityBootstrapRecord $record, string $commitSha): array
+    {
+        $timings = [];
+        $pdo = (new ReadModelConnection($this->databasePath))->open();
+        $pdo->beginTransaction();
+
+        try {
+            $this->measure($timings, 'ensure_bootstrap_post', fn (): mixed => $this->ensureBootstrapPost($pdo, $record));
+            $profile = $this->measure($timings, 'insert_profile', fn (): array => $this->insertProfile($pdo, $record));
+            $this->measure($timings, 'ensure_username_route', fn (): mixed => $this->ensureUsernameRoute($pdo, $profile));
+            $this->measure($timings, 'link_posts', fn (): mixed => $this->linkIdentityPosts($pdo, $profile));
+            $this->measure($timings, 'link_activity', fn (): mixed => $this->linkIdentityActivity($pdo, $profile));
+            $this->measure($timings, 'refresh_profile_state', fn (): mixed => $this->refreshProfileState($pdo));
+            $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
+            $pdo->commit();
+
+            return $timings;
+        } catch (\Throwable $throwable) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $throwable;
+        }
     }
 
     /**
@@ -166,6 +197,401 @@ class IncrementalReadModelUpdater
     {
         $value = $pdo->query('SELECT COALESCE(MAX(sequence_number), 0) + 1 FROM posts')->fetchColumn();
         return max(1, (int) $value);
+    }
+
+    private function ensureBootstrapPost(PDO $pdo, IdentityBootstrapRecord $identity): void
+    {
+        $stmt = $pdo->prepare('SELECT 1 FROM posts WHERE post_id = :post_id');
+        $stmt->execute(['post_id' => $identity->bootstrapByPost]);
+        if ($stmt->fetchColumn() !== false) {
+            return;
+        }
+
+        $repository = new CanonicalRecordRepository($this->repositoryRoot);
+        $bootstrapPost = $repository->loadPost(CanonicalPathResolver::post($identity->bootstrapByPost));
+        $author = $this->loadAuthorProfile($pdo, $bootstrapPost->authorIdentityId);
+        $sequenceNumber = $this->nextSequenceNumber($pdo);
+        $boardTagsJson = json_encode($bootstrapPost->boardTags, JSON_THROW_ON_ERROR);
+
+        $this->insertPostRow($pdo, $bootstrapPost, $author, $sequenceNumber, $boardTagsJson);
+        if ($bootstrapPost->isReply()) {
+            $this->updateThreadForReply($pdo, $bootstrapPost);
+        } else {
+            $this->insertThread($pdo, $bootstrapPost, $boardTagsJson);
+        }
+
+        $this->insertActivity($pdo, $bootstrapPost, $boardTagsJson);
+        if ($bootstrapPost->authorIdentityId !== null && !$this->isHiddenBootstrapBoardTags($bootstrapPost->boardTags)) {
+            $this->updateProfileCounts($pdo, $bootstrapPost);
+        }
+    }
+
+    /**
+     * @return array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string}
+     */
+    private function insertProfile(PDO $pdo, IdentityBootstrapRecord $identity): array
+    {
+        $username = $identity->username !== '' ? $identity->username : 'guest';
+        $usernameToken = strtolower($username);
+        $profile = [
+            'identity_id' => $identity->identityId,
+            'profile_slug' => $identity->identitySlug(),
+            'username' => $username,
+            'username_token' => $usernameToken,
+            'fallback_label' => $username . '-' . substr(strtolower($identity->signerFingerprint), 0, 8),
+            'signer_fingerprint' => $identity->signerFingerprint,
+            'bootstrap_post_id' => $identity->bootstrapByPost,
+            'bootstrap_thread_id' => $identity->bootstrapByThread,
+            'public_key' => $identity->armoredPublicKey,
+        ];
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO profiles (
+                identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint,
+                bootstrap_post_id, bootstrap_thread_id, public_key
+             ) VALUES (
+                :identity_id, :profile_slug, :username, :username_token, :fallback_label, :signer_fingerprint,
+                :bootstrap_post_id, :bootstrap_thread_id, :public_key
+             )'
+        );
+        $stmt->execute($profile);
+
+        return [
+            'identity_id' => $profile['identity_id'],
+            'profile_slug' => $profile['profile_slug'],
+            'username' => $profile['username'],
+            'username_token' => $profile['username_token'],
+            'bootstrap_post_id' => $profile['bootstrap_post_id'],
+            'bootstrap_thread_id' => $profile['bootstrap_thread_id'],
+        ];
+    }
+
+    /**
+     * @param array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string} $profile
+     */
+    private function ensureUsernameRoute(PDO $pdo, array $profile): void
+    {
+        $existing = $pdo->prepare('SELECT identity_id FROM username_routes WHERE username_token = :username_token');
+        $existing->execute(['username_token' => $profile['username_token']]);
+        if ($existing->fetchColumn() !== false) {
+            return;
+        }
+
+        $insert = $pdo->prepare(
+            'INSERT INTO username_routes (username_token, identity_id) VALUES (:username_token, :identity_id)'
+        );
+        $insert->execute([
+            'username_token' => $profile['username_token'],
+            'identity_id' => $profile['identity_id'],
+        ]);
+    }
+
+    /**
+     * @param array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string} $profile
+     */
+    private function linkIdentityPosts(PDO $pdo, array $profile): void
+    {
+        $stmt = $pdo->prepare(
+            'UPDATE posts
+             SET author_identity_id = :author_identity_id,
+                 author_profile_slug = :author_profile_slug,
+                 author_label = :author_label
+             WHERE post_id = :bootstrap_post_id OR author_identity_id = :author_identity_id'
+        );
+        $stmt->execute([
+            'author_identity_id' => $profile['identity_id'],
+            'author_profile_slug' => $profile['profile_slug'],
+            'author_label' => $profile['username'],
+            'bootstrap_post_id' => $profile['bootstrap_post_id'],
+        ]);
+    }
+
+    /**
+     * @param array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string} $profile
+     */
+    private function linkIdentityActivity(PDO $pdo, array $profile): void
+    {
+        $approved = $this->loadProfileApprovalFields($pdo, $profile['identity_id']);
+        $stmt = $pdo->prepare(
+            'UPDATE activity
+             SET author_identity_id = CASE
+                    WHEN post_id = :bootstrap_post_id THEN :author_identity_id
+                    ELSE author_identity_id
+                 END,
+                 author_profile_slug = :author_profile_slug,
+                 author_username_token = :author_username_token,
+                 author_label = :author_label,
+                 author_is_approved = :author_is_approved
+             WHERE post_id = :bootstrap_post_id OR author_identity_id = :author_identity_id'
+        );
+        $stmt->execute([
+            'bootstrap_post_id' => $profile['bootstrap_post_id'],
+            'author_identity_id' => $profile['identity_id'],
+            'author_profile_slug' => $profile['profile_slug'],
+            'author_username_token' => $profile['username_token'],
+            'author_label' => $profile['username'],
+            'author_is_approved' => $approved['is_approved'],
+        ]);
+    }
+
+    private function refreshProfileState(PDO $pdo): void
+    {
+        $profiles = $this->loadProfiles($pdo);
+        if ($profiles === []) {
+            return;
+        }
+
+        $posts = $this->loadPostsForProfileDerivation($pdo);
+        $approvalState = $this->deriveApprovalState($posts, $profiles);
+        $profileCounts = $this->deriveProfileCounts($posts, $profiles);
+
+        $update = $pdo->prepare(
+            'UPDATE profiles
+             SET is_approved = :is_approved,
+                 approved_by_identity_id = :approved_by_identity_id,
+                 approved_by_profile_slug = :approved_by_profile_slug,
+                 approved_by_label = :approved_by_label,
+                 post_count = :post_count,
+                 thread_count = :thread_count
+             WHERE identity_id = :identity_id'
+        );
+
+        foreach ($profiles as $identityId => $profile) {
+            $approval = $approvalState[$identityId] ?? [
+                'approved_by_identity_id' => null,
+                'approved_by_profile_slug' => null,
+                'approved_by_label' => null,
+            ];
+            $counts = $profileCounts[$identityId] ?? ['post_count' => 0, 'thread_count' => 0];
+            $update->execute([
+                'is_approved' => isset($approvalState[$identityId]) ? 1 : 0,
+                'approved_by_identity_id' => $approval['approved_by_identity_id'],
+                'approved_by_profile_slug' => $approval['approved_by_profile_slug'],
+                'approved_by_label' => $approval['approved_by_label'],
+                'post_count' => $counts['post_count'],
+                'thread_count' => $counts['thread_count'],
+                'identity_id' => $identityId,
+            ]);
+        }
+
+        foreach ($profiles as $identityId => $profile) {
+            $this->linkIdentityActivity($pdo, $profile);
+        }
+    }
+
+    /**
+     * @return array<string, array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string}>
+     */
+    private function loadProfiles(PDO $pdo): array
+    {
+        $profiles = [];
+        $rows = $pdo->query(
+            'SELECT identity_id, profile_slug, username, username_token, bootstrap_post_id, bootstrap_thread_id
+             FROM profiles ORDER BY profile_slug ASC'
+        )->fetchAll();
+
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $profiles[(string) $row['identity_id']] = [
+                'identity_id' => (string) $row['identity_id'],
+                'profile_slug' => (string) $row['profile_slug'],
+                'username' => (string) $row['username'],
+                'username_token' => (string) $row['username_token'],
+                'bootstrap_post_id' => (string) $row['bootstrap_post_id'],
+                'bootstrap_thread_id' => (string) $row['bootstrap_thread_id'],
+            ];
+        }
+
+        return $profiles;
+    }
+
+    /**
+     * @return list<array{post_id:string,thread_id:string,parent_id:?string,body:string,board_tags_json:string,author_identity_id:?string,sequence_number:int}>
+     */
+    private function loadPostsForProfileDerivation(PDO $pdo): array
+    {
+        $rows = $pdo->query(
+            'SELECT post_id, thread_id, parent_id, body, board_tags_json, author_identity_id, sequence_number
+             FROM posts ORDER BY sequence_number ASC'
+        )->fetchAll();
+        $posts = [];
+
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $posts[] = [
+                'post_id' => (string) $row['post_id'],
+                'thread_id' => (string) $row['thread_id'],
+                'parent_id' => $row['parent_id'] !== null ? (string) $row['parent_id'] : null,
+                'body' => (string) $row['body'],
+                'board_tags_json' => (string) $row['board_tags_json'],
+                'author_identity_id' => $row['author_identity_id'] !== null ? (string) $row['author_identity_id'] : null,
+                'sequence_number' => (int) $row['sequence_number'],
+            ];
+        }
+
+        return $posts;
+    }
+
+    /**
+     * @param list<array{post_id:string,thread_id:string,parent_id:?string,body:string,board_tags_json:string,author_identity_id:?string,sequence_number:int}> $posts
+     * @param array<string, array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string}> $profiles
+     * @return array<string, array{approved_by_identity_id:?string,approved_by_profile_slug:?string,approved_by_label:?string}>
+     */
+    private function deriveApprovalState(array $posts, array $profiles): array
+    {
+        $approved = [];
+        foreach ($this->loadApprovalSeedIdentityIds() as $identityId) {
+            $approved[$identityId] = [
+                'approved_by_identity_id' => null,
+                'approved_by_profile_slug' => null,
+                'approved_by_label' => 'root',
+            ];
+        }
+
+        foreach ($posts as $post) {
+            $targetIdentityId = $this->extractApprovalTargetIdentityId($post['board_tags_json'], $post['body']);
+            if ($targetIdentityId === null || !isset($profiles[$targetIdentityId])) {
+                continue;
+            }
+
+            $approverIdentityId = $post['author_identity_id'];
+            if ($approverIdentityId === null || !isset($approved[$approverIdentityId]) || $approverIdentityId === $targetIdentityId) {
+                continue;
+            }
+
+            $targetProfile = $profiles[$targetIdentityId];
+            if ($post['thread_id'] !== $targetProfile['bootstrap_thread_id'] || $post['parent_id'] !== $targetProfile['bootstrap_post_id']) {
+                continue;
+            }
+
+            $approverProfile = $profiles[$approverIdentityId] ?? null;
+            $approved[$targetIdentityId] = [
+                'approved_by_identity_id' => $approverIdentityId,
+                'approved_by_profile_slug' => $approverProfile['profile_slug'] ?? null,
+                'approved_by_label' => $approverProfile['username'] ?? $approverIdentityId,
+            ];
+        }
+
+        return $approved;
+    }
+
+    /**
+     * @param list<array{post_id:string,thread_id:string,parent_id:?string,body:string,board_tags_json:string,author_identity_id:?string,sequence_number:int}> $posts
+     * @param array<string, array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string}> $profiles
+     * @return array<string, array{post_count:int,thread_count:int}>
+     */
+    private function deriveProfileCounts(array $posts, array $profiles): array
+    {
+        $counts = [];
+        $bootstrapPostOwners = [];
+        foreach ($profiles as $identityId => $profile) {
+            $counts[$identityId] = ['post_count' => 0, 'thread_count' => 0];
+            $bootstrapPostOwners[$profile['bootstrap_post_id']] = $identityId;
+        }
+
+        foreach ($posts as $post) {
+            if ($this->isHiddenBootstrapBoardTagsJson($post['board_tags_json'])) {
+                continue;
+            }
+
+            $owners = [];
+            if ($post['author_identity_id'] !== null && isset($counts[$post['author_identity_id']])) {
+                $owners[$post['author_identity_id']] = true;
+            }
+            if (isset($bootstrapPostOwners[$post['post_id']])) {
+                $owners[$bootstrapPostOwners[$post['post_id']]] = true;
+            }
+
+            foreach (array_keys($owners) as $identityId) {
+                $counts[$identityId]['post_count']++;
+                if ($post['post_id'] === $post['thread_id']) {
+                    $counts[$identityId]['thread_count']++;
+                }
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function loadApprovalSeedIdentityIds(): array
+    {
+        $repository = new CanonicalRecordRepository($this->repositoryRoot);
+        $identityIds = [];
+        foreach (glob($this->repositoryRoot . '/records/approval-seeds/*.txt') ?: [] as $path) {
+            $identityIds[] = $repository->loadApprovalSeed('records/approval-seeds/' . basename($path))->approvedIdentityId;
+        }
+
+        sort($identityIds);
+
+        return $identityIds;
+    }
+
+    private function extractApprovalTargetIdentityId(string $boardTagsJson, string $body): ?string
+    {
+        $boardTags = json_decode($boardTagsJson, true);
+        if (!is_array($boardTags) || !in_array('identity', $boardTags, true) || !in_array('approval', $boardTags, true)) {
+            return null;
+        }
+
+        if (preg_match('/^Approve-Identity-ID: (openpgp:[a-f0-9]{40})$/m', $body, $matches) !== 1) {
+            return null;
+        }
+
+        return $matches[1];
+    }
+
+    /**
+     * @return array{is_approved:int}
+     */
+    private function loadProfileApprovalFields(PDO $pdo, string $identityId): array
+    {
+        $stmt = $pdo->prepare('SELECT COALESCE(is_approved, 0) AS is_approved FROM profiles WHERE identity_id = :identity_id');
+        $stmt->execute(['identity_id' => $identityId]);
+        $row = $stmt->fetch();
+        if (!is_array($row)) {
+            return ['is_approved' => 0];
+        }
+
+        return ['is_approved' => (int) $row['is_approved']];
+    }
+
+    /**
+     * @param array{profile_slug:?string,username_token:?string,label:string,is_approved:int} $author
+     */
+    private function insertPostRow(PDO $pdo, PostRecord $record, array $author, int $sequenceNumber, string $boardTagsJson): void
+    {
+        $stmt = $pdo->prepare(
+            'INSERT INTO posts (
+                post_id, created_at, thread_id, parent_id, subject, body, board_tags_json,
+                thread_type, author_identity_id, author_profile_slug, author_label, sequence_number
+             ) VALUES (
+                :post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json,
+                :thread_type, :author_identity_id, :author_profile_slug, :author_label, :sequence_number
+             )'
+        );
+        $stmt->execute([
+            'post_id' => $record->postId,
+            'created_at' => $record->createdAt,
+            'thread_id' => $record->threadId ?? $record->postId,
+            'parent_id' => $record->parentId,
+            'subject' => $record->subject,
+            'body' => $record->body,
+            'board_tags_json' => $boardTagsJson,
+            'thread_type' => $record->threadType,
+            'author_identity_id' => $record->authorIdentityId,
+            'author_profile_slug' => $author['profile_slug'],
+            'author_label' => $author['label'],
+            'sequence_number' => $sequenceNumber,
+        ]);
     }
 
     private function insertThread(PDO $pdo, PostRecord $record, string $boardTagsJson): void
