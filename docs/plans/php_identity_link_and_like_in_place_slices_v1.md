@@ -222,6 +222,14 @@ Expected outcome:
 
 - the in-place `Like` flow matches the compose bootstrap quality bar
 
+Implementation status:
+
+- implemented
+- browser-side regression coverage now exercises:
+  - bootstrap-before-like sequencing
+  - inline bootstrap failure handling without issuing the like write
+- thread-route smoke coverage now verifies the required bootstrap assets are present
+
 ## Recommended Order
 
 1. define the exact incremental identity-link contract
