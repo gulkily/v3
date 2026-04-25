@@ -8,8 +8,7 @@ Optimize the `Approve user` write path so it does not require a full read-model 
 
 ## Implementation Status
 
-- slices 1-5 are implemented on this branch
-- slice 6 is pending
+- slices 1-6 are implemented on this branch
 
 ## Current Context
 
@@ -244,6 +243,16 @@ Checklist:
 Expected outcome:
 
 - the approval optimization has measured impact and a clear next step if further narrowing is worthwhile
+
+Implementation status:
+
+- implemented
+- local fixture-sized timing measurement on this branch showed:
+  - median approval read-model phase dropped from `8.7 ms` on forced rebuild to `5.7 ms` on the incremental path
+  - median end-to-end approval write time dropped from `19.1 ms` to `16.1 ms`
+- the warm path no longer spends its approval read-model time inside `read_model_rebuild`; it now reports `read_model_approval_incremental_*` timings instead
+- on the measured fixture, the dominant remaining cost is git add/commit/rev-parse time rather than approval-state or score recomputation
+- no narrower affected-thread optimization is needed for this slice because the new path is already parity-tested and measurably cheaper; any later narrowing work should be driven by larger-repo timing, not by this fixture result
 
 ## Recommended Order
 
