@@ -147,8 +147,8 @@ final class LocalAppSmokeTest
         assertStringNotContains('Sort: Newest', $board);
         assertStringContains('/?view=all&amp;sort=newest', $board);
         assertStringContains('/?view=liked&amp;sort=newest', $board);
-        assertStringContains('/?view=all&amp;sort=oldest', $board);
-        assertStringContains('/?view=all&amp;sort=top', $board);
+        assertStringContains('/?view=liked&amp;sort=oldest', $board);
+        assertStringContains('/?view=liked&amp;sort=top', $board);
         assertStringNotContains('href="/tags/board/', $board);
         assertStringNotContains('href="/tags/label/', $board);
         assertStringNotContains('Score: 0', $board);

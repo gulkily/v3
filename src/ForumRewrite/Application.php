@@ -118,7 +118,7 @@ final class Application
 
             $this->sendHtml(
                 $this->renderBoard(
-                    (string) ($query['view'] ?? 'all'),
+                    (string) ($query['view'] ?? 'liked'),
                     (string) ($query['sort'] ?? 'newest'),
                 ),
                 200
