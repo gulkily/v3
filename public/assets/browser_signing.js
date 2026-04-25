@@ -362,17 +362,170 @@
   }
 
   function setStatus(node, message, kind) {
+    const technicalDetails = arguments.length > 3 && arguments[3] && typeof arguments[3].technicalDetails === "string"
+      ? arguments[3].technicalDetails.trim()
+      : "";
     if (!node) {
       return;
     }
 
-    const messageNode = node.querySelector('[data-role="browser-key-status-message"]');
+    const messageNode = typeof node.querySelector === "function"
+      ? node.querySelector('[data-role="browser-key-status-message"]')
+      : null;
     if (messageNode) {
       messageNode.textContent = message;
     } else {
       node.textContent = message;
     }
     node.dataset.kind = kind || "info";
+    renderTechnicalStatus(node, technicalDetails);
+  }
+
+  function createTechnicalStatusToggle(node) {
+    if (!node || typeof node.appendChild !== "function" || typeof document === "undefined" || typeof document.createElement !== "function") {
+      return null;
+    }
+
+    const spacer = document.createTextNode(" ");
+    const toggle = document.createElement("a");
+    toggle.href = "#";
+    toggle.textContent = "details";
+    toggle.setAttribute("data-role", "browser-key-status-technical-toggle");
+    toggle.hidden = true;
+
+    const details = document.createElement("code");
+    details.setAttribute("data-role", "browser-key-status-technical-details");
+    details.hidden = true;
+    details.style.whiteSpace = "pre-wrap";
+
+    toggle.addEventListener("click", function (event) {
+      event.preventDefault();
+      const expanded = !details.hidden;
+      details.hidden = expanded;
+      toggle.textContent = expanded ? "details" : "hide";
+    });
+
+    node.appendChild(spacer);
+    node.appendChild(toggle);
+    node.appendChild(document.createTextNode(" "));
+    node.appendChild(details);
+
+    return {
+      toggle: toggle,
+      details: details,
+    };
+  }
+
+  function renderTechnicalStatus(node, technicalDetails) {
+    if (!node || typeof node.querySelector !== "function") {
+      return;
+    }
+
+    let toggle = node.querySelector('[data-role="browser-key-status-technical-toggle"]');
+    let details = node.querySelector('[data-role="browser-key-status-technical-details"]');
+    if ((!toggle || !details) && technicalDetails !== "") {
+      const created = createTechnicalStatusToggle(node);
+      if (created) {
+        toggle = created.toggle;
+        details = created.details;
+      }
+    }
+
+    if (!toggle || !details) {
+      return;
+    }
+
+    if (technicalDetails === "") {
+      toggle.hidden = true;
+      toggle.textContent = "details";
+      details.hidden = true;
+      details.textContent = "";
+      return;
+    }
+
+    toggle.hidden = false;
+    toggle.textContent = "details";
+    details.hidden = true;
+    details.textContent = technicalDetails;
+  }
+
+  function parseApiErrorResponse(text) {
+    const lines = String(text || "").trim().split("\n");
+    const errorLine = lines.find(function (line) {
+      return line.indexOf("error=") === 0;
+    });
+
+    if (errorLine) {
+      return errorLine.slice("error=".length).trim();
+    }
+
+    return String(text || "").trim();
+  }
+
+  function classifyIdentityBootstrapFailure(rawMessage) {
+    const technicalDetails = String(rawMessage || "").trim();
+    const fallback = "Could not prepare your browser identity automatically. Open /account/key/ to finish manually.";
+
+    if (technicalDetails === "") {
+      return {
+        friendlyMessage: fallback,
+        technicalDetails: "",
+      };
+    }
+
+    if (technicalDetails === "Unable to inspect OpenPGP public key."
+      || technicalDetails === "OpenPGP public key is missing a fingerprint or user ID."
+      || technicalDetails === "public_key is required."
+      || technicalDetails === "public_key must be ASCII only.") {
+      return {
+        friendlyMessage: "Could not verify the new browser key automatically. Open /account/key/ to finish manually.",
+        technicalDetails: technicalDetails,
+      };
+    }
+
+    if (technicalDetails.indexOf("Canonical write committed at ") === 0) {
+      return {
+        friendlyMessage: "Your browser identity may have been saved, but the forum could not finish refreshing it automatically. Open /account/key/ to finish manually.",
+        technicalDetails: technicalDetails,
+      };
+    }
+
+    if (technicalDetails === "Write APIs are disabled against the committed fixture repository. Initialize a local writable copy and set FORUM_REPOSITORY_ROOT."
+      || technicalDetails === "Writable repository must be a git checkout before writes are allowed."
+      || technicalDetails.indexOf("Unable to write canonical file: ") === 0
+      || technicalDetails.indexOf("Unable to stage canonical write: ") === 0
+      || technicalDetails.indexOf("Unable to commit canonical write: ") === 0
+      || technicalDetails.indexOf("Unable to read commit SHA: ") === 0) {
+      return {
+        friendlyMessage: "This forum could not save your browser identity automatically. Open /account/key/ to finish manually.",
+        technicalDetails: technicalDetails,
+      };
+    }
+
+    return {
+      friendlyMessage: fallback,
+      technicalDetails: technicalDetails,
+    };
+  }
+
+  function buildFriendlyError(message, technicalDetails) {
+    const error = new Error(message);
+    error.technicalDetails = technicalDetails;
+    return error;
+  }
+
+  function statusFromError(error, fallbackMessage) {
+    if (error instanceof Error) {
+      return {
+        message: error.message,
+        technicalDetails: typeof error.technicalDetails === "string" ? error.technicalDetails.trim() : "",
+      };
+    }
+
+    return {
+      message: fallbackMessage,
+      technicalDetails: "",
+    };
   }
 
   function hasBrowserKeypair() {
@@ -526,7 +679,8 @@
       return;
     }
 
-    throw new Error("Automatic identity bootstrap failed. Open /account/key/ to finish manually.");
+    const failure = classifyIdentityBootstrapFailure(parseApiErrorResponse(text));
+    throw buildFriendlyError(failure.friendlyMessage, failure.technicalDetails);
   }
 
   async function ensureStoredFingerprint() {
@@ -581,6 +735,8 @@
       currentAuthorIdentityId: currentAuthorIdentityId,
       ensureReadyIdentity: ensureReadyIdentity,
       hasBrowserKeypair: hasBrowserKeypair,
+      classifyIdentityBootstrapFailure: classifyIdentityBootstrapFailure,
+      statusFromError: statusFromError,
     };
   }
 
@@ -1017,10 +1173,12 @@
         setStatus(statusNode, "Identity ready. Sending post...", "ok");
         form.submit();
       } catch (error) {
+        const status = statusFromError(error, "Unable to prepare your browser identity. Use /account/key/ manually.");
         setStatus(
           statusNode,
-          error instanceof Error ? error.message : "Unable to prepare your browser identity. Use /account/key/ manually.",
-          "error"
+          status.message,
+          "error",
+          { technicalDetails: status.technicalDetails }
         );
         restoreComposeUiState();
       }

@@ -1,5 +1,75 @@
 (function () {
+  function createTechnicalFeedbackToggle(node) {
+    if (!node || typeof node.appendChild !== "function" || typeof document === "undefined" || typeof document.createElement !== "function") {
+      return null;
+    }
+
+    const toggle = document.createElement("a");
+    toggle.href = "#";
+    toggle.textContent = "details";
+    toggle.setAttribute("data-role", "thread-reaction-technical-toggle");
+    toggle.hidden = true;
+
+    const details = document.createElement("code");
+    details.setAttribute("data-role", "thread-reaction-technical-details");
+    details.hidden = true;
+    details.style.whiteSpace = "pre-wrap";
+
+    toggle.addEventListener("click", function (event) {
+      event.preventDefault();
+      const expanded = !details.hidden;
+      details.hidden = expanded;
+      toggle.textContent = expanded ? "details" : "hide";
+    });
+
+    node.appendChild(document.createTextNode(" "));
+    node.appendChild(toggle);
+    node.appendChild(document.createTextNode(" "));
+    node.appendChild(details);
+
+    return {
+      toggle: toggle,
+      details: details,
+    };
+  }
+
+  function renderTechnicalFeedback(node, technicalDetails) {
+    if (!node || typeof node.querySelector !== "function") {
+      return;
+    }
+
+    let toggle = node.querySelector('[data-role="thread-reaction-technical-toggle"]');
+    let details = node.querySelector('[data-role="thread-reaction-technical-details"]');
+    if ((!toggle || !details) && technicalDetails !== "") {
+      const created = createTechnicalFeedbackToggle(node);
+      if (created) {
+        toggle = created.toggle;
+        details = created.details;
+      }
+    }
+
+    if (!toggle || !details) {
+      return;
+    }
+
+    if (technicalDetails === "") {
+      toggle.hidden = true;
+      toggle.textContent = "details";
+      details.hidden = true;
+      details.textContent = "";
+      return;
+    }
+
+    toggle.hidden = false;
+    toggle.textContent = "details";
+    details.hidden = true;
+    details.textContent = technicalDetails;
+  }
+
   function setFeedback(node, message, kind) {
+    const technicalDetails = arguments.length > 3 && arguments[3] && typeof arguments[3].technicalDetails === "string"
+      ? arguments[3].technicalDetails.trim()
+      : "";
     if (!node) {
       return;
     }
@@ -7,6 +77,7 @@
     node.textContent = message;
     node.setAttribute("data-kind", kind);
     node.hidden = false;
+    renderTechnicalFeedback(node, technicalDetails);
   }
 
   function parseResponseValue(text, key) {
@@ -39,6 +110,20 @@
 
     setFeedback(feedbackNode, "Preparing identity...", "ok");
     await helper.ensureReadyIdentity(root, feedbackNode);
+  }
+
+  function feedbackFromError(error, fallbackMessage) {
+    if (error instanceof Error) {
+      return {
+        message: error.message,
+        technicalDetails: typeof error.technicalDetails === "string" ? error.technicalDetails.trim() : "",
+      };
+    }
+
+    return {
+      message: fallbackMessage,
+      technicalDetails: "",
+    };
   }
 
   function bindThreadReactions(root) {
@@ -92,10 +177,12 @@
         setFeedback(feedbackNode, wroteRecord ? "Liked." : "Already liked.", "ok");
       } catch (error) {
         button.disabled = false;
+        const feedback = feedbackFromError(error, "Unable to apply tag.");
         setFeedback(
           feedbackNode,
-          error instanceof Error ? error.message : "Unable to apply tag.",
-          "error"
+          feedback.message,
+          "error",
+          { technicalDetails: feedback.technicalDetails }
         );
       }
     });

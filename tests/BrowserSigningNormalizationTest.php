@@ -156,6 +156,38 @@ NODE;
         assertSame(6, $result['removedUnsupportedCount']);
     }
 
+    public function testIdentityBootstrapFailureClassificationPreservesTechnicalDetailsBehindFriendlyMessage(): void
+    {
+        $script = <<<'NODE'
+global.window = {};
+global.localStorage = { getItem(){ return ''; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener(){},
+  querySelector(){ return null; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'', addEventListener(){}, appendChild(){} }; },
+  createTextNode(text){ return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} },
+};
+global.navigator = {};
+const fs = require('fs');
+const vm = require('vm');
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+const helper = window.__forumBrowserIdentity.classifyIdentityBootstrapFailure;
+process.stdout.write(JSON.stringify(helper('Unable to commit canonical write: fatal: not a git repository')));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(
+            'This forum could not save your browser identity automatically. Open /account/key/ to finish manually.',
+            $result['friendlyMessage']
+        );
+        assertSame(
+            'Unable to commit canonical write: fatal: not a git repository',
+            $result['technicalDetails']
+        );
+    }
+
     public function testSubmittedComposePageClearsDraftWithoutImmediatelySavingBlankReplacement(): void
     {
         $script = <<<'NODE'
