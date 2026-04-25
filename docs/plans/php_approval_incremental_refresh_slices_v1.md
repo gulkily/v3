@@ -8,8 +8,8 @@ Optimize the `Approve user` write path so it does not require a full read-model 
 
 ## Implementation Status
 
-- slices 1-3 are implemented on this branch
-- slices 4-6 are pending
+- slices 1-4 are implemented on this branch
+- slices 5-6 are pending
 
 ## Current Context
 
@@ -178,6 +178,22 @@ Checklist:
 Expected outcome:
 
 - the `Approve user` flow stops blocking on a full rebuild in the warm case
+
+Implementation status:
+
+- implemented
+- `LocalWriteService::approveUser()` now uses the new approval incremental updater when the read-model DB is warm, compatible, and not stale
+- canonical behavior is unchanged around the write itself:
+  - the approval reply file is still written first
+  - the git add/commit boundary is unchanged
+  - artifact invalidation still targets the profile, bootstrap thread, bootstrap post, and approval post surfaces
+- approval writes now expose dedicated timing keys in the service result for:
+  - approval incremental refresh success
+  - approval incremental failure with rebuild fallback recovery
+  - approval cold-path rebuild
+- the retained failure behavior also now mirrors the other optimized write paths:
+  - incremental approval failure falls back to rebuild
+  - incremental plus rebuild failure marks the read model stale
 
 ## Slice 5: Parity And Failure Coverage
 

@@ -301,6 +301,8 @@ class LocalWriteService
     {
         return $this->executionLock()->withExclusiveLock(function () use ($input): array {
             $this->assertWritableRepository();
+            $timings = [];
+            $totalStartedAt = hrtime(true);
 
             $approverIdentityId = $this->requireOpenPgpIdentityId((string) ($input['approver_identity_id'] ?? ''), 'approver_identity_id');
             $targetIdentityId = $this->requireOpenPgpIdentityId((string) ($input['target_identity_id'] ?? ''), 'target_identity_id');
@@ -329,16 +331,22 @@ class LocalWriteService
                 . "Author-Identity-ID: {$approverIdentityId}\n"
                 . "\nApprove-Identity-ID: {$targetIdentityId}\n";
 
-            (new PostRecordParser())->parse($contents);
+            $record = (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::post($postId);
+            $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $contents);
+            $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
             $commitResult = $this->commitCanonicalWrite(
                 [$recordPath],
                 'Approve user ' . $targetIdentityId . ' by ' . $approverIdentityId
             );
+            $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
-            $this->refreshDerivedStateAfterCommit($commitSha);
+            $timings = array_merge($timings, $this->synchronizeApprovalDerivedState($record, $commitSha));
+            $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateApproval($targetProfileSlug, $threadId, $parentId, $postId);
+            $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
 
             return [
                 'status' => 'ok',
@@ -346,6 +354,7 @@ class LocalWriteService
                 'thread_id' => $threadId,
                 'target_identity_id' => $targetIdentityId,
                 'commit_sha' => $commitSha,
+                'timings' => $timings,
             ];
         });
     }
@@ -560,6 +569,64 @@ class LocalWriteService
         ];
         foreach ($incrementalTimings as $name => $duration) {
             $timings['read_model_incremental_' . $name] = $duration;
+        }
+
+        return $timings;
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function synchronizeApprovalDerivedState(PostRecord $record, string $commitSha): array
+    {
+        $phaseStartedAt = hrtime(true);
+        if (!$this->canIncrementallyUpdateReadModel()) {
+            $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
+            $timings = [
+                'read_model_approval_rebuild' => $this->elapsedMilliseconds($phaseStartedAt),
+            ];
+            foreach ($rebuildTimings as $name => $duration) {
+                $timings['read_model_' . $name] = $duration;
+            }
+
+            return $timings;
+        }
+
+        try {
+            $incrementalTimings = $this->incrementalReadModelUpdater()->applyApprovalWrite($record, $commitSha);
+            $this->staleMarker()->clear();
+        } catch (\Throwable $throwable) {
+            $fallbackStartedAt = hrtime(true);
+            try {
+                $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
+                $timings = [
+                    'read_model_approval_incremental_fallback' => $this->elapsedMilliseconds($phaseStartedAt),
+                    'read_model_approval_rebuild_fallback' => $this->elapsedMilliseconds($fallbackStartedAt),
+                ];
+                foreach ($rebuildTimings as $name => $duration) {
+                    $timings['read_model_' . $name] = $duration;
+                }
+
+                return $timings;
+            } catch (\Throwable $fallbackThrowable) {
+                $this->staleMarker()->mark([
+                    'reason' => 'write_refresh_failed',
+                    'commit_sha' => $commitSha,
+                    'failed_at' => gmdate('c'),
+                    'message' => 'incremental=' . $throwable->getMessage() . '; fallback=' . $fallbackThrowable->getMessage(),
+                ]);
+
+                throw new RuntimeException(
+                    'Canonical write committed at ' . $commitSha . ' but incremental approval update and rebuild fallback both failed. Derived state marked stale.'
+                );
+            }
+        }
+
+        $timings = [
+            'read_model_approval_incremental_update' => $this->elapsedMilliseconds($phaseStartedAt),
+        ];
+        foreach ($incrementalTimings as $name => $duration) {
+            $timings['read_model_approval_incremental_' . $name] = $duration;
         }
 
         return $timings;
