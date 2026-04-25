@@ -758,6 +758,11 @@ final class Application
             [
                 'toolPages' => [
                     [
+                        'label' => 'Activity',
+                        'href' => '/activity/',
+                        'description' => 'Recent forum activity across content, approvals, and identity events.',
+                    ],
+                    [
                         'label' => 'Bookmarklets',
                         'href' => '/tools/bookmarklets/',
                         'description' => 'Bookmarklet links for clipping URLs and selections straight into Compose Thread.',

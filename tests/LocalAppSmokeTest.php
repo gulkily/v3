@@ -187,6 +187,8 @@ final class LocalAppSmokeTest
         assertStringNotContains('Contact:', $instance);
         assertStringNotContains('Retention:', $instance);
         assertStringNotContains('Installed:', $instance);
+        assertStringContains('/activity/', $tools);
+        assertStringContains('Recent forum activity across content, approvals, and identity events.', $tools);
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/account/key/', $tools);
@@ -302,8 +304,10 @@ final class LocalAppSmokeTest
         $bookmarkletAsset = (string) file_get_contents(__DIR__ . '/../public/assets/tools_bookmarklets.js');
 
         assertStringContains('Tools', $tools);
+        assertStringContains('Activity', $tools);
         assertStringContains('Bookmarklets', $tools);
         assertStringContains('Backup', $tools);
+        assertStringContains('/activity/', $tools);
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/assets/tools_bookmarklets.js', $bookmarklets);
