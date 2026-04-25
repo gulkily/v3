@@ -141,6 +141,7 @@ final class LocalAppSmokeTest
         assertStringContains('Board', $board);
         assertStringContains('New Post', $board);
         assertStringContains('href="/compose/thread"', $board);
+        assertStringNotContains('href="/compose/thread">Compose</a>', $board);
         assertStringContains('>Tags</a>', $board);
         assertStringContains('href="/tags/"', $board);
         assertStringNotContains('View: All', $board);

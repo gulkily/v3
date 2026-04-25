@@ -62,7 +62,6 @@ final class TemplateRenderer
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],
                 ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
                 ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],
-                ['href' => '/compose/thread', 'label' => 'Compose', 'section' => 'compose'],
                 ['href' => '/account/key/', 'label' => 'Account', 'section' => 'account'],
             ],
         ]);
