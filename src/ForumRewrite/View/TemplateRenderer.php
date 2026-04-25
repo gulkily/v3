@@ -60,6 +60,7 @@ final class TemplateRenderer
             'versionCheckScriptPath' => $this->appendVersionQuery('/assets/version_check.js'),
             'navItems' => [
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],
+                ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
                 ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
                 ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],
                 ['href' => '/account/key/', 'label' => 'Account', 'section' => 'account'],

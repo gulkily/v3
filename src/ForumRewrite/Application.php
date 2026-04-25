@@ -126,6 +126,11 @@ final class Application
             return;
         }
 
+        if ($path === '/about/' || $path === '/about') {
+            $this->sendHtml($this->renderAbout(), 200);
+            return;
+        }
+
         if ($path === '/instance/' || $path === '/instance' || $path === '/backup/' || $path === '/backup' || $path === '/tools/backup/' || $path === '/tools/backup') {
             $this->sendHtml($this->renderBackup(), 200);
             return;
@@ -665,6 +670,18 @@ final class Application
         );
     }
 
+    private function renderAbout(): string
+    {
+        return $this->renderPageTemplate(
+            'about.php',
+            [
+                'siteName' => SiteConfig::SITE_NAME,
+            ],
+            'About',
+            'about',
+        );
+    }
+
     private function renderActivity(string $view): string
     {
         $view = $this->normalizeActivityView($view);
@@ -1004,7 +1021,7 @@ final class Application
 
     private function renderLlmsTxt(): string
     {
-        return "Local test slice\nGET /api/\nGET /api/list_index\nGET /api/get_thread\nGET /compose/thread\nGET /compose/reply\nGET /account/key/\nGET /instance/\nGET /backup/\n";
+        return "Local test slice\nGET /api/\nGET /api/list_index\nGET /api/get_thread\nGET /about/\nGET /compose/thread\nGET /compose/reply\nGET /account/key/\nGET /instance/\nGET /backup/\n";
     }
 
     private function renderPage(string $title, string $content, string $activeSection, array $scriptPaths = []): string

@@ -47,6 +47,7 @@ The repo-owned deployment contract is now documented in the production runbook. 
 Open these routes:
 
 - `http://127.0.0.1:8000/`
+- `http://127.0.0.1:8000/about/`
 - `http://127.0.0.1:8000/threads/root-001`
 - `http://127.0.0.1:8000/posts/root-001`
 - `http://127.0.0.1:8000/activity/`

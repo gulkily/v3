@@ -37,6 +37,10 @@ final class StaticArtifactBuilder
         $application = $this->application();
 
         $this->writeRouteArtifact($application, '/', $this->artifactRoot . '/index.html');
+        $this->writeRouteArtifacts($application, '/about/', [
+            $this->artifactRoot . '/about.html',
+            $this->artifactRoot . '/about/index.html',
+        ]);
         $this->writeRouteArtifact($application, '/instance/', $this->artifactRoot . '/instance.html');
         $this->writeRouteArtifact($application, '/activity/', $this->artifactRoot . '/activity.html');
         $this->writeRouteArtifact($application, '/users/', $this->artifactRoot . '/users.html');
@@ -254,6 +258,10 @@ final class StaticArtifactBuilder
             return '/';
         }
 
+        if ($path === '/about' || $path === '/about/') {
+            return '/about/';
+        }
+
         if ($path === '/instance' || $path === '/instance/' || $path === '/backup' || $path === '/backup/' || $path === '/tools/backup' || $path === '/tools/backup/') {
             return '/instance/';
         }
@@ -318,6 +326,13 @@ final class StaticArtifactBuilder
     {
         if ($route === '/') {
             return [$this->artifactRoot . '/index.html'];
+        }
+
+        if ($route === '/about/') {
+            return [
+                $this->artifactRoot . '/about.html',
+                $this->artifactRoot . '/about/index.html',
+            ];
         }
 
         if ($route === '/instance/') {

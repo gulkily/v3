@@ -102,6 +102,14 @@ final class FrontController
             ]);
         }
 
+        if ($path === '/about/' || $path === '/about') {
+            return $this->firstExistingPath([
+                $this->publicRoot . '/about.html',
+                $this->publicRoot . '/about/index.html',
+                $this->staticHtmlRoot . '/about/index.html',
+            ]);
+        }
+
         if ($path === '/instance/' || $path === '/instance' || $path === '/backup/' || $path === '/backup' || $path === '/tools/backup/' || $path === '/tools/backup') {
             return $this->firstExistingPath([
                 $this->publicRoot . '/instance.html',

@@ -117,6 +117,7 @@ final class LocalAppSmokeTest
         );
 
         $board = $this->render($application, '/');
+        $about = $this->render($application, '/about/');
         $thread = $this->render($application, '/threads/root-001');
         $post = $this->render($application, '/posts/root-001');
         $instance = $this->render($application, '/instance/');
@@ -139,6 +140,7 @@ final class LocalAppSmokeTest
         $llms = $this->render($application, '/llms.txt');
 
         assertStringContains('Board', $board);
+        assertStringContains('href="/about/">About</a>', $board);
         assertStringContains('New Post', $board);
         assertStringContains('href="/compose/thread"', $board);
         assertStringNotContains('href="/compose/thread">Compose</a>', $board);
@@ -193,6 +195,11 @@ final class LocalAppSmokeTest
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/account/key/', $tools);
+        assertStringContains('About zenmemes', $about);
+        assertStringContains('extraordinary people', $about);
+        assertStringContains('Harvard St Commons', $about);
+        assertStringContains('continuous social graph', $about);
+        assertStringContains('/tools/backup/', $about);
         assertStringContains('Identity ID', $profile);
         assertStringContains('Approved by:</strong>', $profile);
         assertStringContains('root', $profile);
@@ -240,6 +247,7 @@ final class LocalAppSmokeTest
         assertStringContains('thread_label_add', $activity);
         assertStringContains('Labels added: bug, needs-review', $activity);
         assertStringContains('/threads/root-001', $activity);
+        assertStringContains('GET /about/', $llms);
         assertStringContains('GET /api/list_index', $llms);
     }
 
@@ -549,6 +557,8 @@ final class LocalAppSmokeTest
         $builder->build();
 
         assertTrue(is_file($artifactRoot . '/index.html'));
+        assertTrue(is_file($artifactRoot . '/about.html'));
+        assertTrue(is_file($artifactRoot . '/about/index.html'));
         assertTrue(is_file($artifactRoot . '/instance.html'));
         assertTrue(is_file($artifactRoot . '/activity.html'));
         assertTrue(is_file($artifactRoot . '/users.html'));
@@ -563,6 +573,8 @@ final class LocalAppSmokeTest
         assertTrue(is_file($artifactRoot . '/posts/root-001.html'));
         assertTrue(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/index.html'));
+        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/about.html'));
+        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/about/index.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tools.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tools/index.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tools/bookmarklets.html'));
