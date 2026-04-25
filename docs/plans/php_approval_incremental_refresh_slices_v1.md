@@ -8,8 +8,8 @@ Optimize the `Approve user` write path so it does not require a full read-model 
 
 ## Implementation Status
 
-- slices 1-4 are implemented on this branch
-- slices 5-6 are pending
+- slices 1-5 are implemented on this branch
+- slice 6 is pending
 
 ## Current Context
 
@@ -214,6 +214,18 @@ Checklist:
 Expected outcome:
 
 - approval optimization is production-safe instead of just faster in simple cases
+
+Implementation status:
+
+- implemented
+- approval coverage now includes:
+  - warm-path approval writes using incremental refresh instead of rebuild
+  - direct approval parity against a fresh rebuild for profile, bootstrap-thread, and approval-activity rendering
+  - transitive approval parity where one approval unlocks another
+  - approval-sensitive score activation where an earlier `like` starts counting once its author becomes approved
+  - incremental approval failure with rebuild fallback recovery
+  - incremental approval failure plus rebuild failure producing a stale marker
+- the branch merge bar for approval refresh is now enforced by tests instead of only by plan text
 
 ## Slice 6: Follow-On Cleanup And Measurement
 

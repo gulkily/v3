@@ -1045,6 +1045,155 @@ final class WriteApiSmokeTest
         assertStringContains('Approve-Identity-ID: ' . $target['identity_id'], $bootstrapThread);
     }
 
+    public function testApproveUserUsesIncrementalReadModelUpdateWhenDatabaseIsWarm(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $target = $this->linkGeneratedIdentity($application, 'alice');
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $result = $this->approveIdentity($service, $target);
+        $profilePage = $this->renderMethod($application, 'GET', '/profiles/' . $target['profile_slug']);
+
+        assertSame(true, isset($result['timings']['read_model_approval_incremental_update']));
+        assertSame(false, isset($result['timings']['read_model_approval_rebuild']));
+        assertStringContains('Approved:</strong> yes', $profilePage);
+        assertStringContains('>guest</a>', $profilePage);
+    }
+
+    public function testIncrementalApprovalMatchesFreshRebuildForProfileThreadAndActivity(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $target = $this->linkGeneratedIdentity($application, 'alice');
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $this->approveIdentity($service, $target);
+
+        $freshDatabasePath = sys_get_temp_dir() . '/forum-rewrite-write-db-approval-parity-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $freshApplication = new Application(dirname(__DIR__), $repositoryRoot, $freshDatabasePath, $artifactRoot);
+
+        $incrementalProfile = $this->renderMethod($application, 'GET', '/profiles/' . $target['profile_slug']);
+        $freshProfile = $this->renderMethod($freshApplication, 'GET', '/profiles/' . $target['profile_slug']);
+        $incrementalBootstrapThread = $this->renderMethod($application, 'GET', '/threads/' . $target['bootstrap_thread_id']);
+        $freshBootstrapThread = $this->renderMethod($freshApplication, 'GET', '/threads/' . $target['bootstrap_thread_id']);
+        $incrementalApprovalActivity = $this->renderMethod($application, 'GET', '/activity/?view=approval');
+        $freshApprovalActivity = $this->renderMethod($freshApplication, 'GET', '/activity/?view=approval');
+
+        assertSame($this->normalizeRenderedPage($freshProfile), $this->normalizeRenderedPage($incrementalProfile));
+        assertSame($this->normalizeRenderedPage($freshBootstrapThread), $this->normalizeRenderedPage($incrementalBootstrapThread));
+        assertSame($this->normalizeRenderedPage($freshApprovalActivity), $this->normalizeRenderedPage($incrementalApprovalActivity));
+    }
+
+    public function testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $alice = $this->linkGeneratedIdentity($application, 'alice');
+        $bob = $this->linkGeneratedIdentity($application, 'bob');
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+
+        $likeResult = $service->applyThreadTag([
+            'thread_id' => 'root-001',
+            'tag' => 'like',
+            'author_identity_id' => $alice['identity_id'],
+        ]);
+        $approveAlice = $this->approveIdentity($service, $alice);
+        $approveBob = $this->approveIdentity($service, $bob, $alice['identity_id']);
+
+        $freshDatabasePath = sys_get_temp_dir() . '/forum-rewrite-write-db-approval-transitive-parity-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $freshApplication = new Application(dirname(__DIR__), $repositoryRoot, $freshDatabasePath, $artifactRoot);
+
+        $incrementalRootThread = $this->renderMethod($application, 'GET', '/threads/root-001');
+        $freshRootThread = $this->renderMethod($freshApplication, 'GET', '/threads/root-001');
+        $incrementalBobProfile = $this->renderMethod($application, 'GET', '/profiles/' . $bob['profile_slug']);
+        $freshBobProfile = $this->renderMethod($freshApplication, 'GET', '/profiles/' . $bob['profile_slug']);
+        $incrementalApprovalActivity = $this->renderMethod($application, 'GET', '/activity/?view=approval');
+        $freshApprovalActivity = $this->renderMethod($freshApplication, 'GET', '/activity/?view=approval');
+        $incrementalThreadApi = $this->renderMethod($application, 'GET', '/api/get_thread?thread_id=root-001');
+        $freshThreadApi = $this->renderMethod($freshApplication, 'GET', '/api/get_thread?thread_id=root-001');
+
+        assertSame('no', $likeResult['viewer_is_approved']);
+        assertSame(true, isset($approveAlice['timings']['read_model_approval_incremental_update']));
+        assertSame(true, isset($approveBob['timings']['read_model_approval_incremental_update']));
+        assertStringContains('Score-Total: 1', $incrementalThreadApi);
+        assertSame($this->normalizeRenderedPage($freshRootThread), $this->normalizeRenderedPage($incrementalRootThread));
+        assertSame($this->normalizeRenderedPage($freshBobProfile), $this->normalizeRenderedPage($incrementalBobProfile));
+        assertSame($this->normalizeRenderedPage($freshApprovalActivity), $this->normalizeRenderedPage($incrementalApprovalActivity));
+        assertSame($freshThreadApi, $incrementalThreadApi);
+    }
+
+    public function testApprovalIncrementalFailureFallsBackToFullRebuildAndKeepsReadModelHealthy(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $target = $this->linkGeneratedIdentity($application, 'alice');
+        $service = new class($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot)) extends LocalWriteService {
+            protected function incrementalReadModelUpdater(): IncrementalReadModelUpdater
+            {
+                return new class($this->databasePath(), $this->repositoryRoot()) extends IncrementalReadModelUpdater {
+                    public function applyApprovalWrite(\ForumRewrite\Canonical\PostRecord $record, string $commitSha): array
+                    {
+                        throw new RuntimeException('simulated approval incremental failure');
+                    }
+                };
+            }
+        };
+
+        $result = $this->approveIdentity($service, $target);
+        $profilePage = $this->renderMethod($application, 'GET', '/profiles/' . $target['profile_slug']);
+        $staleMarkerPath = dirname($databasePath) . '/read_model_stale.json';
+
+        assertSame(true, isset($result['timings']['read_model_approval_incremental_fallback']));
+        assertSame(true, isset($result['timings']['read_model_approval_rebuild_fallback']));
+        assertStringContains('Approved:</strong> yes', $profilePage);
+        assertFalse(is_file($staleMarkerPath));
+    }
+
+    public function testApprovalWriteMarksDerivedStateStaleWhenIncrementalAndFallbackRefreshFail(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $target = $this->linkGeneratedIdentity($application, 'alice');
+        $service = new class($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot)) extends LocalWriteService {
+            protected function incrementalReadModelUpdater(): IncrementalReadModelUpdater
+            {
+                return new class($this->databasePath(), $this->repositoryRoot()) extends IncrementalReadModelUpdater {
+                    public function applyApprovalWrite(\ForumRewrite\Canonical\PostRecord $record, string $commitSha): array
+                    {
+                        throw new RuntimeException('simulated approval incremental failure');
+                    }
+                };
+            }
+
+            protected function rebuildReadModel(): array
+            {
+                throw new RuntimeException('simulated approval rebuild failure');
+            }
+        };
+
+        try {
+            $this->approveIdentity($service, $target);
+            throw new RuntimeException('Expected approval refresh failure.');
+        } catch (RuntimeException $exception) {
+            assertStringContains('Derived state marked stale', $exception->getMessage());
+        }
+
+        $staleMarkerPath = dirname($databasePath) . '/read_model_stale.json';
+        assertTrue(is_file($staleMarkerPath));
+        $staleMarker = json_decode((string) file_get_contents($staleMarkerPath), true, 512, JSON_THROW_ON_ERROR);
+        assertSame('write_refresh_failed', $staleMarker['reason'] ?? null);
+        assertTrue(strlen((string) ($staleMarker['commit_sha'] ?? '')) === 40);
+    }
+
     public function testTagsIndexShowsFiveNewestThreadsAndTagPageShowsAllThreads(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -1170,6 +1319,21 @@ final class WriteApiSmokeTest
         assertSame(0, $exitCode, implode("\n", $output));
 
         return trim(implode("\n", $output));
+    }
+
+    /**
+     * @param array{identity_id:string,profile_slug:string,bootstrap_post_id:string,bootstrap_thread_id:string} $target
+     * @return array<string, mixed>
+     */
+    private function approveIdentity(LocalWriteService $service, array $target, string $approverIdentityId = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'): array
+    {
+        return $service->approveUser([
+            'approver_identity_id' => $approverIdentityId,
+            'target_identity_id' => $target['identity_id'],
+            'target_profile_slug' => $target['profile_slug'],
+            'thread_id' => $target['bootstrap_thread_id'],
+            'parent_id' => $target['bootstrap_post_id'],
+        ]);
     }
 
     private function normalizeRenderedPage(string $html): string
