@@ -191,6 +191,11 @@ class IncrementalReadModelUpdater
             if ($changedIdentityIds !== []) {
                 $this->measure(
                     $timings,
+                    'refresh_approval_sensitive_thread_scores',
+                    fn (): mixed => $this->refreshApprovalSensitiveThreadScores($pdo, $changedIdentityIds)
+                );
+                $this->measure(
+                    $timings,
                     'refresh_changed_activity_authors',
                     fn (): mixed => $this->refreshActivityAuthors($pdo, $changedIdentityIds)
                 );
@@ -870,6 +875,83 @@ class IncrementalReadModelUpdater
                 'author_is_approved' => $author['author_is_approved'],
             ]);
         }
+    }
+
+    /**
+     * @param list<string> $changedIdentityIds
+     */
+    private function refreshApprovalSensitiveThreadScores(PDO $pdo, array $changedIdentityIds): void
+    {
+        $affectedThreadIds = $this->loadThreadIdsForLabelAuthors($changedIdentityIds);
+        if ($affectedThreadIds === []) {
+            return;
+        }
+
+        $approvedIdentityIds = $this->loadApprovedIdentityIds($pdo);
+        foreach ($affectedThreadIds as $threadId) {
+            if (!$this->threadExists($pdo, $threadId)) {
+                continue;
+            }
+
+            $records = $this->loadThreadLabelRecords($threadId);
+            $labelState = $this->deriveThreadLabelState($threadId, $records, $approvedIdentityIds);
+            $this->updateThreadScoreTotal($pdo, $threadId, $labelState['score_total']);
+        }
+    }
+
+    /**
+     * @param list<string> $identityIds
+     * @return list<string>
+     */
+    private function loadThreadIdsForLabelAuthors(array $identityIds): array
+    {
+        if ($identityIds === []) {
+            return [];
+        }
+
+        $identityLookup = array_fill_keys($identityIds, true);
+        $repository = new CanonicalRecordRepository($this->repositoryRoot);
+        $threadIds = [];
+
+        foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
+            try {
+                $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path));
+            } catch (CanonicalRecordParseException) {
+                continue;
+            }
+
+            if ($record->authorIdentityId === null || !isset($identityLookup[$record->authorIdentityId])) {
+                continue;
+            }
+
+            $threadIds[$record->threadId] = true;
+        }
+
+        $result = array_keys($threadIds);
+        sort($result);
+
+        return $result;
+    }
+
+    private function threadExists(PDO $pdo, string $threadId): bool
+    {
+        $stmt = $pdo->prepare('SELECT 1 FROM threads WHERE root_post_id = :thread_id');
+        $stmt->execute(['thread_id' => $threadId]);
+
+        return $stmt->fetchColumn() !== false;
+    }
+
+    private function updateThreadScoreTotal(PDO $pdo, string $threadId, int $scoreTotal): void
+    {
+        $stmt = $pdo->prepare(
+            'UPDATE threads
+             SET score_total = :score_total
+             WHERE root_post_id = :thread_id'
+        );
+        $stmt->execute([
+            'score_total' => $scoreTotal,
+            'thread_id' => $threadId,
+        ]);
     }
 
     /**

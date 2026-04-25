@@ -8,8 +8,8 @@ Optimize the `Approve user` write path so it does not require a full read-model 
 
 ## Implementation Status
 
-- slices 1-2 are implemented on this branch
-- slices 3-6 are pending
+- slices 1-3 are implemented on this branch
+- slices 4-6 are pending
 
 ## Current Context
 
@@ -146,6 +146,17 @@ Checklist:
 Expected outcome:
 
 - previously written likes/flags from newly approved identities start counting immediately without a full rebuild
+
+Implementation status:
+
+- implemented
+- `applyApprovalWrite()` now uses the approval-state change set to find affected threads with existing canonical thread-label records from those identities
+- for each affected indexed thread, the updater reruns the existing rebuild-equivalent thread-label score derivation against the current approved-identity set and updates only `threads.score_total`
+- additive label state is intentionally left alone on this slice:
+  - `threads.thread_labels_json` is not rewritten here
+  - thread-label activity rows are not regenerated here
+  - only approval-sensitive score totals are recomputed
+- invalid or non-indexed thread-label targets are skipped, matching the rebuild rule that only root-thread labels contribute to thread scores
 
 ## Slice 4: Route Approval Writes Through The Incremental Path
 
