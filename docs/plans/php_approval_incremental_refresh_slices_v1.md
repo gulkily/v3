@@ -8,8 +8,8 @@ Optimize the `Approve user` write path so it does not require a full read-model 
 
 ## Implementation Status
 
-- slice 1 is implemented on this branch
-- slices 2-6 are pending
+- slices 1-2 are implemented on this branch
+- slices 3-6 are pending
 
 ## Current Context
 
@@ -112,6 +112,20 @@ Checklist:
 Expected outcome:
 
 - approval writes can refresh profile approval state without a full rebuild on the warm path
+
+Implementation status:
+
+- implemented
+- `IncrementalReadModelUpdater` now has `applyApprovalWrite()` with the same transactional shape as the other incremental write paths
+- the updater now:
+  - inserts the canonical approval reply post row into `posts`
+  - updates the target bootstrap thread summary for the new reply
+  - inserts the approval activity row with current reply semantics
+  - reloads indexed `profiles` and `posts`, reruns rebuild-equivalent approval derivation, and updates `profiles.is_approved` plus all `approved_by_*` fields
+  - tracks which identities changed approval state during that recompute
+  - refreshes `activity.author_*` fields for those changed identities so approval-sensitive activity rendering stays aligned with the new profile state
+  - writes metadata with the committed repository head and `write_incremental`
+- thread-score recomputation is intentionally still pending for slice 3, so the new updater is ready but not yet routed into production approval writes
 
 ## Slice 3: Recompute Approval-Sensitive Thread Scores
 

@@ -162,6 +162,54 @@ class IncrementalReadModelUpdater
     }
 
     /**
+     * @return array<string, float>
+     */
+    public function applyApprovalWrite(PostRecord $record, string $commitSha): array
+    {
+        $timings = [];
+        $pdo = (new ReadModelConnection($this->databasePath))->open();
+        $pdo->beginTransaction();
+
+        try {
+            $author = $this->measure($timings, 'load_author_profile', fn (): array => $this->loadAuthorProfile($pdo, $record->authorIdentityId));
+            $sequenceNumber = $this->measure($timings, 'next_sequence_number', fn (): int => $this->nextSequenceNumber($pdo));
+            $boardTagsJson = json_encode($record->boardTags, JSON_THROW_ON_ERROR);
+
+            $this->measure(
+                $timings,
+                'insert_post',
+                fn (): mixed => $this->insertPostRow($pdo, $record, $author, $sequenceNumber, $boardTagsJson)
+            );
+            $this->measure($timings, 'update_thread', fn (): mixed => $this->updateThreadForReply($pdo, $record));
+            $this->measure($timings, 'upsert_activity', fn (): mixed => $this->insertActivity($pdo, $record, $boardTagsJson));
+            $changedIdentityIds = $this->measure(
+                $timings,
+                'refresh_approval_state',
+                fn (): array => $this->refreshApprovalState($pdo)
+            );
+
+            if ($changedIdentityIds !== []) {
+                $this->measure(
+                    $timings,
+                    'refresh_changed_activity_authors',
+                    fn (): mixed => $this->refreshActivityAuthors($pdo, $changedIdentityIds)
+                );
+            }
+
+            $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
+            $pdo->commit();
+
+            return $timings;
+        } catch (\Throwable $throwable) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $throwable;
+        }
+    }
+
+    /**
      * @return array{profile_slug:?string,username_token:?string,label:string,is_approved:int}
      */
     private function loadAuthorProfile(PDO $pdo, ?string $identityId): array
@@ -375,6 +423,67 @@ class IncrementalReadModelUpdater
     }
 
     /**
+     * @return list<string>
+     */
+    private function refreshApprovalState(PDO $pdo): array
+    {
+        $profiles = $this->loadProfiles($pdo);
+        if ($profiles === []) {
+            return [];
+        }
+
+        $posts = $this->loadPostsForProfileDerivation($pdo);
+        $approvalState = $this->deriveApprovalState($posts, $profiles);
+        $currentApprovalState = $this->loadCurrentApprovalState($pdo);
+        $changedIdentityIds = [];
+
+        $update = $pdo->prepare(
+            'UPDATE profiles
+             SET is_approved = :is_approved,
+                 approved_by_identity_id = :approved_by_identity_id,
+                 approved_by_profile_slug = :approved_by_profile_slug,
+                 approved_by_label = :approved_by_label
+             WHERE identity_id = :identity_id'
+        );
+
+        foreach ($profiles as $identityId => $profile) {
+            $approval = $approvalState[$identityId] ?? [
+                'approved_by_identity_id' => null,
+                'approved_by_profile_slug' => null,
+                'approved_by_label' => null,
+            ];
+            $nextState = [
+                'is_approved' => isset($approvalState[$identityId]) ? 1 : 0,
+                'approved_by_identity_id' => $approval['approved_by_identity_id'],
+                'approved_by_profile_slug' => $approval['approved_by_profile_slug'],
+                'approved_by_label' => $approval['approved_by_label'],
+            ];
+            $currentState = $currentApprovalState[$identityId] ?? [
+                'is_approved' => 0,
+                'approved_by_identity_id' => null,
+                'approved_by_profile_slug' => null,
+                'approved_by_label' => null,
+            ];
+
+            if ($currentState !== $nextState) {
+                $changedIdentityIds[] = $identityId;
+            }
+
+            $update->execute([
+                'is_approved' => $nextState['is_approved'],
+                'approved_by_identity_id' => $nextState['approved_by_identity_id'],
+                'approved_by_profile_slug' => $nextState['approved_by_profile_slug'],
+                'approved_by_label' => $nextState['approved_by_label'],
+                'identity_id' => $identityId,
+            ]);
+        }
+
+        sort($changedIdentityIds);
+
+        return $changedIdentityIds;
+    }
+
+    /**
      * @return array<string, array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string}>
      */
     private function loadProfiles(PDO $pdo): array
@@ -401,6 +510,34 @@ class IncrementalReadModelUpdater
         }
 
         return $profiles;
+    }
+
+    /**
+     * @return array<string, array{is_approved:int,approved_by_identity_id:?string,approved_by_profile_slug:?string,approved_by_label:?string}>
+     */
+    private function loadCurrentApprovalState(PDO $pdo): array
+    {
+        $rows = $pdo->query(
+            'SELECT identity_id, COALESCE(is_approved, 0) AS is_approved,
+                    approved_by_identity_id, approved_by_profile_slug, approved_by_label
+             FROM profiles'
+        )->fetchAll();
+        $approvalState = [];
+
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $approvalState[(string) $row['identity_id']] = [
+                'is_approved' => (int) $row['is_approved'],
+                'approved_by_identity_id' => $row['approved_by_identity_id'] !== null ? (string) $row['approved_by_identity_id'] : null,
+                'approved_by_profile_slug' => $row['approved_by_profile_slug'] !== null ? (string) $row['approved_by_profile_slug'] : null,
+                'approved_by_label' => $row['approved_by_label'] !== null ? (string) $row['approved_by_label'] : null,
+            ];
+        }
+
+        return $approvalState;
     }
 
     /**
@@ -705,6 +842,32 @@ class IncrementalReadModelUpdater
             $stmt->execute([
                 'key' => $key,
                 'value' => $value,
+            ]);
+        }
+    }
+
+    /**
+     * @param list<string> $identityIds
+     */
+    private function refreshActivityAuthors(PDO $pdo, array $identityIds): void
+    {
+        $update = $pdo->prepare(
+            'UPDATE activity
+             SET author_profile_slug = :author_profile_slug,
+                 author_username_token = :author_username_token,
+                 author_label = :author_label,
+                 author_is_approved = :author_is_approved
+             WHERE author_identity_id = :author_identity_id'
+        );
+
+        foreach ($identityIds as $identityId) {
+            $author = $this->resolveActivityAuthor($pdo, $identityId);
+            $update->execute([
+                'author_identity_id' => $identityId,
+                'author_profile_slug' => $author['author_profile_slug'],
+                'author_username_token' => $author['author_username_token'],
+                'author_label' => $author['author_label'],
+                'author_is_approved' => $author['author_is_approved'],
             ]);
         }
     }
