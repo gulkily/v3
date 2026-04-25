@@ -14,6 +14,10 @@
   --status-error: #8f1f1f;
   --status-ok: #1f5e2e;
   --status-warning: #9a6400;
+  --active-bg: #dce8ff;
+  --active-ink: #082f7f;
+  --active-line: #4d79d8;
+  --active-ring: rgba(11, 62, 168, 0.14);
   --body-font: Georgia, "Times New Roman", serif;
   --ui-font: "Trebuchet MS", "Segoe UI", sans-serif;
   --code-font: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
@@ -39,6 +43,10 @@
   --status-error: #ffb7c3;
   --status-ok: #a7efb8;
   --status-warning: #f2c66d;
+  --active-bg: #263858;
+  --active-ink: #f3f8ff;
+  --active-line: #86a9e8;
+  --active-ring: rgba(134, 169, 232, 0.18);
 }
 
 :root[data-theme="console"] {
@@ -59,6 +67,10 @@
   --status-error: #ff9fa6;
   --status-ok: #b8ff9b;
   --status-warning: #ffd76a;
+  --active-bg: #17341b;
+  --active-ink: #c5ffba;
+  --active-line: #6fdc6b;
+  --active-ring: rgba(155, 255, 138, 0.2);
   --body-font: "Lucida Console", "Courier New", monospace;
   --ui-font: "Lucida Console", "Courier New", monospace;
   --code-font: "Lucida Console", "Courier New", monospace;
@@ -82,6 +94,10 @@
   --status-error: #5f3d1c;
   --status-ok: #284d28;
   --status-warning: #745110;
+  --active-bg: #b6c38f;
+  --active-ink: #1f2919;
+  --active-line: #4f6040;
+  --active-ring: rgba(39, 50, 32, 0.16);
   --body-font: "Verdana", "Geneva", sans-serif;
   --ui-font: "Verdana", "Geneva", sans-serif;
   --code-font: "Lucida Console", "Courier New", monospace;
@@ -126,6 +142,10 @@
   --status-error: #ffb3de;
   --status-ok: #9bffeb;
   --status-warning: #ffd67a;
+  --active-bg: rgba(122, 252, 255, 0.22);
+  --active-ink: #d8ffff;
+  --active-line: #7afcff;
+  --active-ring: rgba(122, 252, 255, 0.18);
   --body-font: "Trebuchet MS", "Century Gothic", "Segoe UI", sans-serif;
   --ui-font: "Trebuchet MS", "Century Gothic", "Segoe UI", sans-serif;
   --code-font: "Courier New", monospace;
@@ -600,6 +620,16 @@ pre {
   text-shadow: 0 0 10px rgba(122, 252, 255, 0.24);
 }
 
+:root:not([data-theme="chicago"]) .nav-link.is-active {
+  color: var(--active-ink);
+  background: var(--active-bg);
+  border-color: var(--active-line);
+  box-shadow:
+    0 0 0 1px var(--active-ring),
+    inset 0 -2px 0 color-mix(in srgb, var(--active-line) 68%, transparent 32%);
+  font-weight: 600;
+}
+
 .feedback {
   padding: 0.75rem;
   border: 1px solid var(--line);
@@ -861,6 +891,10 @@ pre {
     --status-error: #ffb7c3;
     --status-ok: #a7efb8;
     --status-warning: #f2c66d;
+    --active-bg: #263858;
+    --active-ink: #f3f8ff;
+    --active-line: #86a9e8;
+    --active-ring: rgba(134, 169, 232, 0.18);
   }
 }
 
