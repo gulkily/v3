@@ -841,13 +841,158 @@ pre {
 
 .pending-approvals-action-cell {
   white-space: nowrap;
-  width: 1%;
+  width: 6.75rem;
+}
+
+.pending-approvals-user-cell {
+  white-space: nowrap;
+  width: 30%;
+}
+
+.pending-approvals-user-cell a {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+
+.pending-approvals-profile-cell {
+  min-width: 0;
+}
+
+.pending-approvals-profile-link {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+  font-family: var(--code-font);
+  font-size: 0.9em;
 }
 
 .pending-approvals-action-button {
   width: auto;
   min-width: 0;
   margin-top: 0;
+}
+
+[data-role="pending-approvals-table"] {
+  overflow-x: visible;
+}
+
+[data-role="pending-approvals-table-element"] {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+[data-role="pending-approvals-table-element"] th,
+[data-role="pending-approvals-table-element"] td {
+  padding: 0.45rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+[data-role="pending-approvals-table-element"] th {
+  font-family: var(--ui-font);
+}
+
+[data-role="pending-approvals-table-element"] tbody tr + tr td {
+  border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent 30%);
+}
+
+[data-role="pending-approvals-table-element"] th:first-child,
+[data-role="pending-approvals-table-element"] td:first-child {
+  padding-left: 0;
+}
+
+[data-role="pending-approvals-table-element"] th:last-child,
+[data-role="pending-approvals-table-element"] td:last-child {
+  padding-right: 0;
+}
+
+@media (max-width: 520px) {
+  [data-role="pending-approvals-table"] {
+    overflow-x: visible;
+  }
+
+  [data-role="pending-approvals-table-element"],
+  [data-role="pending-approvals-table-element"] tbody,
+  [data-role="pending-approvals-table-element"] tr,
+  [data-role="pending-approvals-table-element"] td {
+    display: block;
+    width: 100%;
+  }
+
+  [data-role="pending-approvals-table-element"] thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  [data-role="pending-approvals-table-element"] tbody {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  [data-role="pending-approvals-table-element"] tbody tr {
+    padding-top: 0.7rem;
+    border-top: 1px solid color-mix(in srgb, var(--line) 76%, transparent 24%);
+  }
+
+  [data-role="pending-approvals-table-element"] tbody tr:first-child {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  [data-role="pending-approvals-table-element"] td,
+  [data-role="pending-approvals-table-element"] th:first-child,
+  [data-role="pending-approvals-table-element"] td:first-child,
+  [data-role="pending-approvals-table-element"] th:last-child,
+  [data-role="pending-approvals-table-element"] td:last-child {
+    padding: 0.2rem 0;
+  }
+
+  [data-role="pending-approvals-table-element"] tbody tr + tr td {
+    border-top: 0;
+  }
+
+  [data-role="pending-approvals-table-element"] td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.08rem;
+    color: var(--ink-soft);
+    font-family: var(--ui-font);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .pending-approvals-user-cell {
+    white-space: normal;
+  }
+
+  .pending-approvals-user-cell a {
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  .pending-approvals-profile-link {
+    max-width: 100%;
+  }
+
+  .pending-approvals-action-cell {
+    padding-top: 0.45rem;
+    white-space: normal;
+  }
+
+  .pending-approvals-action-button {
+    width: 100%;
+  }
 }
 
 .key-material-gap {

@@ -984,6 +984,13 @@ final class WriteApiSmokeTest
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertStringContains('bob', $pendingUsers);
         assertStringNotContains('alice', $pendingUsers);
+        assertStringContains('title="' . $pendingTarget['profile_slug'] . '"', $pendingUsers);
+        assertStringContains('aria-label="' . $pendingTarget['profile_slug'] . '"', $pendingUsers);
+        assertStringContains(
+            substr($pendingTarget['profile_slug'], 0, 18) . '...' . substr($pendingTarget['profile_slug'], -10),
+            $pendingUsers
+        );
+        assertStringNotContains('>' . $pendingTarget['profile_slug'] . '</a>', $pendingUsers);
         assertStringContains('<table ', $pendingUsers);
         assertStringContains('Approve', $pendingUsers);
         assertStringNotContains('Username route', $pendingUsers);
