@@ -120,5 +120,5 @@ Approval helper examples:
 Run the current parser, rebuild, and app smoke tests:
 
 ```bash
-php tests/run.php
+./v3 test
 ```
