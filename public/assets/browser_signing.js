@@ -232,6 +232,21 @@
     return restoredAny;
   }
 
+  function hasExplicitComposePrefill(fields) {
+    if (typeof window === "undefined" || !window.location || !window.location.search) {
+      return false;
+    }
+
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return fields.some(function (field) {
+        return Boolean(field.name) && params.has(field.name);
+      });
+    } catch (error) {
+      return false;
+    }
+  }
+
   if (typeof window !== "undefined") {
     window.__forumComposeNormalization = {
       normalizeComposeAscii: normalizeComposeAscii,
@@ -1130,6 +1145,8 @@
       resetComposeFormToServerState();
       clearRecentlyClearedComposeDraftKey();
       normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
+    } else if (hasExplicitComposePrefill(textFields)) {
+      normalizeComposeFields({ removeUnsupported: false });
     } else {
       restoreComposeDraft(form);
       normalizeComposeFields({ removeUnsupported: false });

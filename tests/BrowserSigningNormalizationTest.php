@@ -340,6 +340,138 @@ NODE;
         assertSame('', $result['body']);
     }
 
+    public function testComposeQueryPrefillOverridesSavedDraft(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: {
+    'forum_compose_draft:thread': '{"fields":{"board_tags":"general","subject":"","body":""}}'
+  },
+  domContentLoaded: null
+};
+
+function makeField(tagName, name, value, type) {
+  return {
+    tagName,
+    name,
+    value,
+    defaultValue: value,
+    dataset: {},
+    hidden: false,
+    disabled: false,
+    getAttribute(attribute) {
+      if (attribute === 'type') {
+        return type || null;
+      }
+      return null;
+    },
+    addEventListener() {}
+  };
+}
+
+const fields = [
+  makeField('INPUT', 'author_identity_id', '', 'hidden'),
+  makeField('INPUT', 'board_tags', 'general', 'text'),
+  Object.assign(makeField('INPUT', 'subject', 'Luke 19 NIV - Zacchaeus the Tax Collector - Jesus - Bible Gateway', 'text'), { dataset: { composeFieldLabel: 'Subject' } }),
+  Object.assign(makeField('TEXTAREA', 'body', '19 Jesus entered Jericho and was passing through.\n\nhttps://www.biblegateway.com/passage/?search=Luke%2019&version=NIV', null), { dataset: { composeFieldLabel: 'Body' } })
+];
+
+const form = {
+  dataset: { composeKind: 'thread' },
+  querySelector() {
+    return null;
+  },
+  querySelectorAll(selector) {
+    if (selector === 'input[name], textarea[name]') {
+      return fields;
+    }
+    return [];
+  },
+  addEventListener() {},
+  submit() {},
+  reset() {
+    fields.forEach((field) => {
+      field.value = field.defaultValue;
+    });
+  }
+};
+
+const statusNode = { dataset: {}, textContent: 'Ready.', hidden: false };
+const root = {
+  dataset: {},
+  querySelector(selector) {
+    if (selector === '[data-compose-form]') {
+      return form;
+    }
+    if (selector === '[data-role="compose-identity-status"]') {
+      return statusNode;
+    }
+    return null;
+  },
+  querySelectorAll() {
+    return [];
+  }
+};
+
+global.window = {
+  location: {
+    search: '?board_tags=general&subject=Luke%2019%20NIV%20-%20Zacchaeus%20the%20Tax%20Collector%20-%20Jesus%20-%20Bible%20Gateway&body=19%20Jesus%20entered%20Jericho%20and%20was%20passing%20through.%0A%0Ahttps%3A%2F%2Fwww.biblegateway.com%2Fpassage%2F%3Fsearch%3DLuke%252019%26version%3DNIV'
+  },
+  addEventListener() {},
+  localStorage: {
+    getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+    setItem(key, value) { state.localStore[key] = String(value); },
+    removeItem(key) { delete state.localStore[key]; }
+  },
+  sessionStorage: {
+    getItem() { return null; },
+    removeItem() {}
+  }
+};
+
+global.localStorage = global.window.localStorage;
+global.sessionStorage = global.window.sessionStorage;
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      state.domContentLoaded = handler;
+    }
+  },
+  querySelector(selector) {
+    if (selector === '[data-account-key-root]') {
+      return null;
+    }
+    if (selector === '[data-compose-root]') {
+      return root;
+    }
+    return null;
+  },
+  createElement() { return { setAttribute() {}, style: {}, select() {}, value: '' }; },
+  body: { appendChild() {}, removeChild() {} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+state.domContentLoaded();
+
+process.stdout.write(JSON.stringify({
+  subject: fields[2].value,
+  body: fields[3].value,
+  savedDraft: JSON.parse(state.localStore['forum_compose_draft:thread'])
+}));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('Luke 19 NIV - Zacchaeus the Tax Collector - Jesus - Bible Gateway', $result['subject']);
+        assertStringContains('19 Jesus entered Jericho and was passing through.', $result['body']);
+        assertSame($result['subject'], $result['savedDraft']['fields']['subject']);
+        assertSame($result['body'], $result['savedDraft']['fields']['body']);
+    }
+
     public function testThreadReactionBootstrapsIdentityBeforeApplyingLike(): void
     {
         $script = <<<'NODE'
