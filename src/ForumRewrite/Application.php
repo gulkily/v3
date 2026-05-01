@@ -1887,7 +1887,7 @@ final class Application
                     activity.id, activity.author_label, activity.author_profile_slug,
                     activity.author_username_token, activity.author_is_approved
              FROM activity
-             ORDER BY activity.created_at DESC, activity.id DESC'
+             ORDER BY activity.created_at DESC, activity.post_id DESC, activity.id DESC'
         )->fetchAll();
 
         $items = array_map(function (array $post): array {

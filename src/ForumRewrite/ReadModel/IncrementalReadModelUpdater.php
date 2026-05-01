@@ -591,28 +591,33 @@ class IncrementalReadModelUpdater
             ];
         }
 
-        foreach ($posts as $post) {
-            $targetIdentityId = $this->extractApprovalTargetIdentityId($post['board_tags_json'], $post['body']);
-            if ($targetIdentityId === null || !isset($profiles[$targetIdentityId])) {
-                continue;
-            }
+        $changed = true;
+        while ($changed) {
+            $changed = false;
+            foreach ($posts as $post) {
+                $targetIdentityId = $this->extractApprovalTargetIdentityId($post['board_tags_json'], $post['body']);
+                if ($targetIdentityId === null || !isset($profiles[$targetIdentityId]) || isset($approved[$targetIdentityId])) {
+                    continue;
+                }
 
-            $approverIdentityId = $post['author_identity_id'];
-            if ($approverIdentityId === null || !isset($approved[$approverIdentityId]) || $approverIdentityId === $targetIdentityId) {
-                continue;
-            }
+                $approverIdentityId = $post['author_identity_id'];
+                if ($approverIdentityId === null || !isset($approved[$approverIdentityId]) || $approverIdentityId === $targetIdentityId) {
+                    continue;
+                }
 
-            $targetProfile = $profiles[$targetIdentityId];
-            if ($post['thread_id'] !== $targetProfile['bootstrap_thread_id'] || $post['parent_id'] !== $targetProfile['bootstrap_post_id']) {
-                continue;
-            }
+                $targetProfile = $profiles[$targetIdentityId];
+                if ($post['thread_id'] !== $targetProfile['bootstrap_thread_id'] || $post['parent_id'] !== $targetProfile['bootstrap_post_id']) {
+                    continue;
+                }
 
-            $approverProfile = $profiles[$approverIdentityId] ?? null;
-            $approved[$targetIdentityId] = [
-                'approved_by_identity_id' => $approverIdentityId,
-                'approved_by_profile_slug' => $approverProfile['profile_slug'] ?? null,
-                'approved_by_label' => $approverProfile['username'] ?? $approverIdentityId,
-            ];
+                $approverProfile = $profiles[$approverIdentityId] ?? null;
+                $approved[$targetIdentityId] = [
+                    'approved_by_identity_id' => $approverIdentityId,
+                    'approved_by_profile_slug' => $approverProfile['profile_slug'] ?? null,
+                    'approved_by_label' => $approverProfile['username'] ?? $approverIdentityId,
+                ];
+                $changed = true;
+            }
         }
 
         return $approved;
