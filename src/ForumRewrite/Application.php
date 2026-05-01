@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace ForumRewrite;
 
+use ForumRewrite\Analysis\DedalusPostAnalyzer;
+use ForumRewrite\Analysis\PostAnalysisService;
+use ForumRewrite\Analysis\SqlitePostAnalysisStore;
+use ForumRewrite\Analysis\StubPostAnalyzer;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\Support\ExecutionLock;
+use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
 use PDO;
@@ -59,6 +64,11 @@ final class Application
 
         if ($path === '/api/create_reply') {
             $this->handleCreateReply($method, $query);
+            return;
+        }
+
+        if ($path === '/api/analyze_post') {
+            $this->handleAnalyzePost($method, $query);
             return;
         }
 
@@ -276,7 +286,7 @@ final class Application
                 return;
             }
 
-            $html = $this->renderThread($matches[1]);
+            $html = $this->renderThread($matches[1], (string) ($query['created_post_id'] ?? ''));
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -484,7 +494,7 @@ final class Application
         );
     }
 
-    private function renderThread(string $threadId): ?string
+    private function renderThread(string $threadId, string $createdPostId = ''): ?string
     {
         $threadRow = $this->fetchThread($threadId);
         if ($threadRow === null) {
@@ -495,15 +505,20 @@ final class Application
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
         $viewerHasLiked = $viewerProfile !== null
             && $this->viewerHasThreadTag($threadId, 'like', (string) $viewerProfile['identity_id']);
+        $posts = $this->fetchThreadPosts($threadId);
+        $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
 
         return $this->renderPageTemplate(
             'thread.php',
             [
                 'thread' => $threadRow,
-                'posts' => $this->fetchThreadPosts($threadId),
+                'posts' => $posts,
                 'title' => $title,
                 'viewerProfile' => $viewerProfile,
                 'viewerHasLiked' => $viewerHasLiked,
+                'createdPostId' => $this->createdPostIdForThread($threadId, $createdPostId),
+                'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
+                'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $this->fetchPostAnalysesForPosts($posts) : [],
             ],
             $title,
             'board',
@@ -511,6 +526,7 @@ final class Application
                 '/assets/openpgp.min.js',
                 '/assets/browser_signing.js',
                 '/assets/thread_reactions.js',
+                '/assets/post_analysis.js',
             ],
         );
     }
@@ -911,7 +927,7 @@ final class Application
 
     private function renderApiIndex(): string
     {
-        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nPOST /api/set_identity_hint\nPOST /api/apply_thread_tag\n";
+        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nPOST /api/set_identity_hint\nPOST /api/analyze_post\nPOST /api/apply_thread_tag\n";
     }
 
     private function renderApiListIndex(): string
@@ -1021,7 +1037,7 @@ final class Application
 
     private function renderLlmsTxt(): string
     {
-        return "Local test slice\nGET /api/\nGET /api/list_index\nGET /api/get_thread\nGET /about/\nGET /compose/thread\nGET /compose/reply\nGET /account/key/\nGET /instance/\nGET /backup/\n";
+        return "Local test slice\nGET /api/\nGET /api/list_index\nGET /api/get_thread\nPOST /api/analyze_post\nGET /about/\nGET /compose/thread\nGET /compose/reply\nGET /account/key/\nGET /instance/\nGET /backup/\n";
     }
 
     private function renderPage(string $title, string $content, string $activeSection, array $scriptPaths = []): string
@@ -1137,7 +1153,7 @@ final class Application
     {
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_label,
-                    posts.created_at,
+                    posts.created_at, posts.board_tags_json,
                     posts.author_profile_slug, profiles.username_token AS author_username_token,
                     COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM posts
@@ -1157,7 +1173,7 @@ final class Application
     {
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_label,
-                    posts.created_at,
+                    posts.created_at, posts.board_tags_json,
                     posts.author_profile_slug, profiles.username_token AS author_username_token,
                     COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM posts
@@ -1168,6 +1184,21 @@ final class Application
         $post = $stmt->fetch();
 
         return $post === false ? null : $post;
+    }
+
+    private function createdPostIdForThread(string $threadId, string $createdPostId): string
+    {
+        $createdPostId = trim($createdPostId);
+        if ($createdPostId === '') {
+            return '';
+        }
+
+        $post = $this->fetchPost($createdPostId);
+        if ($post === null || (string) $post['thread_id'] !== $threadId) {
+            return '';
+        }
+
+        return $createdPostId;
     }
 
     /**
@@ -1219,6 +1250,36 @@ final class Application
         $stmt->execute(['username_token' => $usernameToken]);
 
         return $stmt->fetchAll();
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $posts
+     * @return array<string, array<string, mixed>>
+     */
+    private function fetchPostAnalysesForPosts(array $posts): array
+    {
+        if ($posts === []) {
+            return [];
+        }
+
+        try {
+            $store = new SqlitePostAnalysisStore($this->pdo());
+        } catch (\Throwable) {
+            return [];
+        }
+
+        $analyses = [];
+        foreach ($posts as $post) {
+            $context = $this->postAnalysisContext($post);
+            $analysis = $store->find((string) $context['post_id'], (string) $context['content_hash']);
+            if ($analysis === null) {
+                continue;
+            }
+
+            $analyses[(string) $context['post_id']] = $analysis;
+        }
+
+        return $analyses;
     }
 
     /**
@@ -1992,6 +2053,40 @@ final class Application
     /**
      * @param array<string, mixed> $query
      */
+    private function handleAnalyzePost(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+
+        $input = $this->requestData($query);
+        $postId = trim((string) ($input['post_id'] ?? ''));
+        if ($postId === '') {
+            $this->sendJson(['status' => 'error', 'error' => 'Missing post_id.'], 400);
+            return;
+        }
+
+        $post = $this->fetchPost($postId);
+        if ($post === null) {
+            $this->sendJson(['status' => 'error', 'error' => 'post not found'], 404);
+            return;
+        }
+
+        $context = $this->postAnalysisContext($post);
+        $result = $this->postAnalysisService()->analyze($context);
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $this->sendJson($this->postAnalysisResponse($result, $viewerCanSeePostAnalysis), 200, [
+            'Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma: no-cache',
+            'Expires: 0',
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
     private function handleApplyThreadTag(string $method, array $query): void
     {
         if ($method !== 'POST') {
@@ -2114,6 +2209,119 @@ final class Application
         );
     }
 
+    private function postAnalysisService(): PostAnalysisService
+    {
+        $config = PrivateConfig::load($this->projectRoot);
+        $mode = strtolower(trim((string) ($config['DEDALUS_ANALYSIS_MODE'] ?? '')));
+        $analyzer = null;
+
+        if ($mode === 'stub') {
+            $analyzer = new StubPostAnalyzer();
+        } else {
+            $apiKey = trim((string) ($config['DEDALUS_API_KEY'] ?? ''));
+            if ($apiKey !== '') {
+                $analyzer = new DedalusPostAnalyzer(
+                    $apiKey,
+                    trim((string) ($config['DEDALUS_API_BASE_URL'] ?? 'https://api.dedaluslabs.ai')) ?: 'https://api.dedaluslabs.ai',
+                    trim((string) ($config['DEDALUS_MODEL'] ?? 'openai/gpt-5-nano')) ?: 'openai/gpt-5-nano',
+                    max(60, (int) ($config['DEDALUS_TIMEOUT_SECONDS'] ?? 60)),
+                    $this->dedalusPromptTemplatePath($config)
+                );
+            }
+        }
+
+        return new PostAnalysisService(
+            new SqlitePostAnalysisStore($this->pdo()),
+            $analyzer
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function dedalusPromptTemplatePath(array $config): ?string
+    {
+        $path = trim((string) ($config['DEDALUS_POST_ANALYSIS_PROMPT_PATH'] ?? ''));
+        if ($path === '') {
+            return null;
+        }
+
+        if (str_starts_with($path, '/')) {
+            return $path;
+        }
+
+        return $this->projectRoot . '/' . $path;
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     * @return array<string, mixed>
+     */
+    private function postAnalysisContext(array $post): array
+    {
+        $thread = $this->fetchPost((string) $post['thread_id']);
+        $parent = trim((string) ($post['parent_id'] ?? '')) !== '' ? $this->fetchPost((string) $post['parent_id']) : null;
+        $body = (string) $post['body'];
+
+        return [
+            'post_id' => (string) $post['post_id'],
+            'content_hash' => hash('sha256', json_encode([
+                'post_id' => (string) $post['post_id'],
+                'subject' => (string) ($post['subject'] ?? ''),
+                'body' => $body,
+            ], JSON_THROW_ON_ERROR)),
+            'post_kind' => (string) $post['post_id'] === (string) $post['thread_id'] ? 'thread' : 'reply',
+            'thread_id' => (string) $post['thread_id'],
+            'parent_id' => isset($post['parent_id']) ? (string) $post['parent_id'] : null,
+            'subject' => isset($post['subject']) ? (string) $post['subject'] : '',
+            'body' => $this->limitAnalysisText($body, 6000),
+            'board_tags' => $this->decodeStringList((string) ($post['board_tags_json'] ?? '[]')),
+            'author_label' => (string) ($post['author_label'] ?? 'guest'),
+            'thread_subject' => $thread !== null ? (string) ($thread['subject'] ?? '') : '',
+            'thread_body_preview' => $thread !== null ? $this->limitAnalysisText((string) ($thread['body'] ?? ''), 1200) : '',
+            'parent_body_preview' => $parent !== null ? $this->limitAnalysisText((string) ($parent['body'] ?? ''), 1200) : '',
+        ];
+    }
+
+    private function limitAnalysisText(string $value, int $maxLength): string
+    {
+        if (strlen($value) <= $maxLength) {
+            return $value;
+        }
+
+        return substr($value, 0, $maxLength) . "\n[truncated]";
+    }
+
+    /**
+     * @param array<string, mixed> $analysis
+     * @return array<string, mixed>
+     */
+    private function postAnalysisResponse(array $analysis, bool $includeDetails): array
+    {
+        $response = [
+            'status' => 'ok',
+            'post_id' => (string) ($analysis['post_id'] ?? ''),
+            'analysis_status' => (string) ($analysis['status'] ?? 'unknown'),
+            'cached' => (bool) ($analysis['cached'] ?? false),
+            'failure_code' => $analysis['failure_code'] ?? null,
+            'failure_message' => $analysis['failure_message'] ?? ($analysis['message'] ?? null),
+            'retry_after' => $analysis['retry_after'] ?? null,
+            'viewer_can_see_analysis' => $includeDetails,
+        ];
+
+        if (!$includeDetails) {
+            return $response;
+        }
+
+        $response['provider'] = $analysis['provider'] ?? null;
+        $response['provider_model'] = $analysis['provider_model'] ?? null;
+        $response['moderation'] = $analysis['moderation'] ?? null;
+        $response['engagement'] = $analysis['engagement'] ?? null;
+        $response['quality'] = $analysis['quality'] ?? null;
+
+        return $response;
+    }
+
     /**
      * @param array<string, mixed> $query
      */
@@ -2123,7 +2331,9 @@ final class Application
         try {
             $result = $this->writer()->createThread($input);
             $this->queueComposeDraftClear($this->composeDraftStorageKey('thread'));
-            $location = '/threads/' . $result['thread_id'];
+            $location = '/threads/' . $result['thread_id']
+                . '?created_post_id=' . rawurlencode($result['post_id'])
+                . '&__v=' . rawurlencode($result['commit_sha']);
             $this->sendRedirect(
                 $location,
                 'Created thread ' . $result['thread_id'] . '. Commit ' . $result['commit_sha'] . '.',
@@ -2157,7 +2367,9 @@ final class Application
             $result = $this->writer()->createReply($input);
             $this->queueComposeDraftClear($this->composeDraftStorageKey('reply', $threadId, $parentId));
             $this->sendRedirect(
-                '/threads/' . $result['thread_id'],
+                '/threads/' . $result['thread_id']
+                    . '?created_post_id=' . rawurlencode($result['post_id'])
+                    . '&__v=' . rawurlencode($result['commit_sha']),
                 'Created reply ' . $result['post_id'] . '. Commit ' . $result['commit_sha'] . '.',
                 303,
                 $this->serverTimingHeaders($result)
@@ -2316,6 +2528,19 @@ final class Application
             header($headerValue);
         }
         echo $text;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function sendJson(array $payload, int $statusCode, array $headers = []): void
+    {
+        http_response_code($statusCode);
+        header('Content-Type: application/json; charset=utf-8');
+        foreach ($headers as $headerValue) {
+            header($headerValue);
+        }
+        echo json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) . "\n";
     }
 
     private function sendXml(string $xml, int $statusCode): void

@@ -1,4 +1,4 @@
-<section class="stack">
+<section class="stack"<?= $createdPostId !== '' ? ' data-created-post-id="' . $e($createdPostId) . '"' : '' ?>>
   <article class="card" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>">
     <h1><?= $e($title) ?></h1>
     <p class="meta"><?= $contentMeta($thread, 'root_post_created_at', '') ?></p>

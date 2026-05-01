@@ -34,6 +34,20 @@ Start the local PHP server:
 ./v3 start
 ```
 
+Create or update the local private config for Dedalus post analysis:
+
+```bash
+./v3 private-config
+```
+
+For this checkout, the default local file is `/home/wsl/forum-private/secrets.php`. To update only the Dedalus API key without putting it in shell history:
+
+```bash
+printf '%s\n' "$DEDALUS_API_KEY" | ./v3 private-config --api-key-stdin
+```
+
+The default Dedalus post-analysis prompt is stored in `prompts/dedalus_post_analysis_system.txt`. Set `DEDALUS_POST_ANALYSIS_PROMPT_PATH` in the private config to use a different text file; relative paths are resolved from the project root.
+
 For Apache/shared-host deployment, `public/.htaccess` is now part of the intended runtime model:
 
 - serve existing files and directories directly

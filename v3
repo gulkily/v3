@@ -11,6 +11,7 @@ Usage:
   ./v3 test
   ./v3 rebuild [repository_root] [database_path]
   ./v3 build-static [repository_root] [database_path] [artifact_root]
+  ./v3 private-config [--force] [--api-key-stdin] [--path=/private/path/secrets.php]
   ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
 EOF
@@ -34,6 +35,10 @@ case "${COMMAND}" in
   build-static)
     shift
     php "${ROOT}/scripts/build_static_artifacts.php" "$@"
+    ;;
+  private-config)
+    shift
+    php "${ROOT}/scripts/write_private_config.php" "$@"
     ;;
   approval)
     shift

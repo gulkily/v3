@@ -6,6 +6,7 @@ $testFiles = [
     __DIR__ . '/ApplicationServerTimingTest.php',
     __DIR__ . '/BrowserSigningNormalizationTest.php',
     __DIR__ . '/CanonicalRecordParsersTest.php',
+    __DIR__ . '/DedalusPostAnalyzerTest.php',
     __DIR__ . '/LocalAppSmokeTest.php',
     __DIR__ . '/ReadModelBuilderTimingTest.php',
     __DIR__ . '/ReadModelThreadLabelsTest.php',

@@ -161,6 +161,7 @@ final class LocalAppSmokeTest
         assertStringContains('/assets/openpgp.min.js', $thread);
         assertStringContains('/assets/browser_signing.js', $thread);
         assertStringContains('/assets/thread_reactions.js', $thread);
+        assertStringContains('/assets/post_analysis.js', $thread);
         assertStringContains('data-thread-reactions-root', $thread);
         assertStringContains('data-action="apply-thread-tag"', $thread);
         assertStringNotContains('Score: 0', $thread);
@@ -248,6 +249,7 @@ final class LocalAppSmokeTest
         assertStringContains('Labels added: bug, needs-review', $activity);
         assertStringContains('/threads/root-001', $activity);
         assertStringContains('GET /about/', $llms);
+        assertStringContains('POST /api/analyze_post', $llms);
         assertStringContains('GET /api/list_index', $llms);
     }
 
@@ -273,6 +275,7 @@ final class LocalAppSmokeTest
 
         assertStringContains('GET /api/version', $apiIndex);
         assertStringContains('GET /api/get_thread?thread_id=<id>', $apiIndex);
+        assertStringContains('POST /api/analyze_post', $apiIndex);
         assertStringContains("root-001\tHello world\t1", $listIndex);
         assertStringContains('Created-At: 2026-04-10T12:00:00Z', $thread);
         assertStringContains('Last-Activity-At: 2026-04-10T12:05:00Z', $thread);

@@ -60,6 +60,77 @@ final class WriteApiSmokeTest
         assertSame($replyCommitSha, $this->gitOutput($repositoryRoot, 'rev-parse HEAD'));
     }
 
+    public function testPostAnalysisEndpointStoresStubResultIdempotently(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Analyzed&body=Thoughtful%20body'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = [];
+            $first = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $second = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = [];
+            $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId) . '?created_post_id=' . rawurlencode($postId));
+            $_COOKIE = [];
+            $anonymousThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $approvedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $_COOKIE = [];
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $count = (int) $pdo->query('SELECT COUNT(*) FROM post_analyses')->fetchColumn();
+
+            assertSame('ok', $first['status']);
+            assertSame('complete', $first['analysis_status']);
+            assertSame(false, $first['cached']);
+            assertSame(false, $first['viewer_can_see_analysis']);
+            assertSame(false, isset($first['moderation']));
+            assertSame('ok', $second['status']);
+            assertSame('complete', $second['analysis_status']);
+            assertSame(true, $second['cached']);
+            assertSame(true, $second['viewer_can_see_analysis']);
+            assertSame('stub', $second['provider']);
+            assertSame('none', $second['moderation']['severity']);
+            assertSame(1, $count);
+            assertStringContains('data-created-post-id="' . $postId . '"', $threadPage);
+            assertStringNotContains('Post analysis', $anonymousThreadPage);
+            assertStringContains('Post analysis', $approvedThreadPage);
+            assertStringContains('Provider: stub / stub/post-analysis', $approvedThreadPage);
+            assertStringContains('Suggested response:', $approvedThreadPage);
+            assertFalse(is_dir($repositoryRoot . '/records/post-analyses'));
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            $_COOKIE = [];
+        }
+    }
+
+    public function testPostAnalysisEndpointReportsMissingConfigWithoutStoringAnalysis(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE');
+        putenv('DEDALUS_API_KEY');
+        putenv('FORUM_SECRETS_PATH=' . sys_get_temp_dir() . '/forum-rewrite-missing-secrets-' . bin2hex(random_bytes(6)) . '.php');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $response = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=root-001'), true);
+
+            assertSame('ok', $response['status']);
+            assertSame('config_missing', $response['analysis_status']);
+            assertSame('Dedalus API key is not configured.', $response['failure_message']);
+        } finally {
+            putenv('FORUM_SECRETS_PATH');
+        }
+    }
+
     public function testLinkIdentityUsesPublicKeyUserIdForUsernameAndInvalidatesProfileArtifact(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -180,10 +251,14 @@ final class WriteApiSmokeTest
 
         assertStringContains('Redirecting', $threadResponse);
         assertStringContains('Created thread', $threadResponse);
+        assertStringContains('created_post_id=', $threadResponse);
+        assertStringContains('__v=', $threadResponse);
         assertStringContains('Commit ', $threadResponse);
         assertStringContains('Redirecting', $replyResponse);
         assertStringContains('Created reply', $replyResponse);
         assertStringContains('/threads/' . $threadId, $replyResponse);
+        assertStringContains('created_post_id=', $replyResponse);
+        assertStringContains('__v=', $replyResponse);
         assertStringContains('Commit ', $replyResponse);
         assertStringContains('Redirecting', $accountResponse);
         assertStringContains('Linked identity', $accountResponse);
@@ -1279,7 +1354,7 @@ final class WriteApiSmokeTest
             throw new RuntimeException('Missing href prefix: ' . $prefix);
         }
 
-        return $matches[1];
+        return strtok($matches[1], '?') ?: $matches[1];
     }
 
     /**
