@@ -9,6 +9,7 @@ $postAnalysis = ((bool) ($viewerCanSeePostAnalysis ?? false))
 $postAnalysisModeration = is_array($postAnalysis) && is_array($postAnalysis['moderation'] ?? null) ? $postAnalysis['moderation'] : [];
 $postAnalysisEngagement = is_array($postAnalysis) && is_array($postAnalysis['engagement'] ?? null) ? $postAnalysis['engagement'] : [];
 $postAnalysisQuality = is_array($postAnalysis) && is_array($postAnalysis['quality'] ?? null) ? $postAnalysis['quality'] : [];
+$postAnalysisRespondability = is_array($postAnalysis) && is_array($postAnalysis['respondability'] ?? null) ? $postAnalysis['respondability'] : [];
 $postAnalysisLabels = $postAnalysisModeration['labels'] ?? [];
 if (!is_array($postAnalysisLabels)) {
     $postAnalysisLabels = [];
@@ -28,6 +29,18 @@ if (!is_array($postAnalysisLabels)) {
 <?php endif; ?>
 <?php if (isset($postAnalysisQuality['discussion_value']) || isset($postAnalysisQuality['good_faith_likelihood'])): ?>
       <p><strong>Quality:</strong> <?= $e($postAnalysisQuality['discussion_value'] ?? 'unknown') ?><?php if (isset($postAnalysisQuality['good_faith_likelihood'])): ?>, good faith <?= $e($postAnalysisQuality['good_faith_likelihood']) ?><?php endif; ?></p>
+<?php endif; ?>
+<?php if ($postAnalysisRespondability !== []): ?>
+      <p><strong>Respondability:</strong> <?= $e($postAnalysisRespondability['overall_score'] ?? 'unknown') ?><?php if (isset($postAnalysisRespondability['best_response_mode'])): ?>, <?= $e($postAnalysisRespondability['best_response_mode']) ?><?php endif; ?><?php if (array_key_exists('should_generate_response', $postAnalysisRespondability)): ?>, generate <?= ((bool) $postAnalysisRespondability['should_generate_response']) ? 'yes' : 'no' ?><?php endif; ?></p>
+<?php if (isset($postAnalysisRespondability['asks_question']) || isset($postAnalysisRespondability['question_type'])): ?>
+      <p><strong>Question:</strong> <?= ((bool) ($postAnalysisRespondability['asks_question'] ?? false)) ? 'yes' : 'no' ?><?php if (isset($postAnalysisRespondability['question_type'])): ?>, <?= $e($postAnalysisRespondability['question_type']) ?><?php endif; ?></p>
+<?php endif; ?>
+<?php if (isset($postAnalysisRespondability['audience_benefit']) || isset($postAnalysisRespondability['response_risk'])): ?>
+      <p><strong>Response value:</strong> audience <?= $e($postAnalysisRespondability['audience_benefit'] ?? 'unknown') ?><?php if (isset($postAnalysisRespondability['author_benefit'])): ?>, author <?= $e($postAnalysisRespondability['author_benefit']) ?><?php endif; ?><?php if (isset($postAnalysisRespondability['response_risk'])): ?>, risk <?= $e($postAnalysisRespondability['response_risk']) ?><?php endif; ?></p>
+<?php endif; ?>
+<?php if (isset($postAnalysisRespondability['reason']) && trim((string) $postAnalysisRespondability['reason']) !== ''): ?>
+      <p><strong>Response reason:</strong> <?= $e($postAnalysisRespondability['reason']) ?></p>
+<?php endif; ?>
 <?php endif; ?>
 <?php if (isset($postAnalysisEngagement['suggested_response']) && trim((string) $postAnalysisEngagement['suggested_response']) !== ''): ?>
       <p><strong>Suggested response:</strong> <?= $e($postAnalysisEngagement['suggested_response']) ?></p>

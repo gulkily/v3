@@ -22,6 +22,7 @@ final class DedalusPostAnalyzerTest
 
         assertSame('none', $decoded['moderation']['severity']);
         assertSame('curious', $decoded['engagement']['response_style']);
+        assertSame(true, $decoded['respondability']['should_generate_response']);
     }
 
     public function testDecodeCompletionPayloadAcceptsStructuredMessageContent(): void
@@ -83,7 +84,7 @@ final class DedalusPostAnalyzerTest
         $path = tempnam(sys_get_temp_dir(), 'dedalus-prompt-');
         assertSame(true, is_string($path));
 
-        file_put_contents($path, "Styles: {{response_styles}}\nLabels: {{moderation_labels}}\n");
+        file_put_contents($path, "Styles: {{response_styles}}\nLabels: {{moderation_labels}}\nQuestion types: {{question_types}}\nModes: {{response_modes}}\n");
 
         try {
             $analyzer = new DedalusPostAnalyzer('test-key', 'https://example.invalid', 'test-model', 60, $path);
@@ -92,7 +93,9 @@ final class DedalusPostAnalyzerTest
 
             assertSame(
                 'Styles: curious, clarifying, supportive, challenging, deescalating' . "\n"
-                    . 'Labels: trolling, bad_faith, aggression, harassment, threat, spam, low_effort, off_topic, escalation_risk',
+                    . 'Labels: trolling, bad_faith, aggression, harassment, threat, spam, low_effort, off_topic, escalation_risk' . "\n"
+                    . 'Question types: none, factual, opinion, advice, clarification, challenge, rhetorical' . "\n"
+                    . 'Modes: none, answer, clarify, ask_followup, share_context, challenge_gently, deescalate',
                 $method->invoke($analyzer)
             );
         } finally {
@@ -122,6 +125,19 @@ final class DedalusPostAnalyzerTest
                 'discussion_value' => 'medium',
                 'good_faith_likelihood' => 0.78,
                 'needs_human_review' => false,
+            ],
+            'respondability' => [
+                'overall_score' => 0.72,
+                'asks_question' => true,
+                'question_type' => 'advice',
+                'invites_response' => true,
+                'author_benefit' => 'high',
+                'audience_benefit' => 'medium',
+                'response_effort_required' => 'medium',
+                'response_risk' => 'low',
+                'best_response_mode' => 'answer',
+                'should_generate_response' => true,
+                'reason' => 'The post asks a clear question.',
             ],
         ];
     }

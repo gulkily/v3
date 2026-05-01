@@ -70,7 +70,7 @@ final class WriteApiSmokeTest
             $threadResponse = $this->renderMethod(
                 $application,
                 'POST',
-                '/api/create_thread?board_tags=general&subject=Analyzed&body=Thoughtful%20body'
+                '/api/create_thread?board_tags=general&subject=Analyzed&body=Thoughtful%20body%3F'
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
 
@@ -99,11 +99,17 @@ final class WriteApiSmokeTest
             assertSame(true, $second['viewer_can_see_analysis']);
             assertSame('stub', $second['provider']);
             assertSame('none', $second['moderation']['severity']);
+            assertSame(true, $second['respondability']['asks_question']);
+            assertSame('opinion', $second['respondability']['question_type']);
+            assertSame(true, $second['respondability']['should_generate_response']);
             assertSame(1, $count);
             assertStringContains('data-created-post-id="' . $postId . '"', $threadPage);
             assertStringNotContains('Post analysis', $anonymousThreadPage);
             assertStringContains('Post analysis', $approvedThreadPage);
             assertStringContains('Provider: stub / stub/post-analysis', $approvedThreadPage);
+            assertStringContains('Respondability:', $approvedThreadPage);
+            assertStringContains('Question:', $approvedThreadPage);
+            assertStringContains('Response value:', $approvedThreadPage);
             assertStringContains('Suggested response:', $approvedThreadPage);
             assertFalse(is_dir($repositoryRoot . '/records/post-analyses'));
         } finally {

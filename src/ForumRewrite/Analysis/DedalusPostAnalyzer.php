@@ -13,6 +13,11 @@ final class DedalusPostAnalyzer implements PostAnalyzer
     private const MODERATION_SEVERITIES = ['none', 'low', 'medium', 'high', 'critical'];
     private const RECOMMENDED_ACTIONS = ['none', 'watch', 'review', 'hide_pending_review', 'escalate'];
     private const DISCUSSION_VALUES = ['low', 'medium', 'high'];
+    private const QUESTION_TYPES = ['none', 'factual', 'opinion', 'advice', 'clarification', 'challenge', 'rhetorical'];
+    private const BENEFIT_LEVELS = ['low', 'medium', 'high'];
+    private const EFFORT_LEVELS = ['low', 'medium', 'high'];
+    private const RESPONSE_RISK_LEVELS = ['low', 'medium', 'high'];
+    private const RESPONSE_MODES = ['none', 'answer', 'clarify', 'ask_followup', 'share_context', 'challenge_gently', 'deescalate'];
 
     private string $apiKey;
     private string $baseUrl;
@@ -69,6 +74,7 @@ final class DedalusPostAnalyzer implements PostAnalyzer
             'moderation' => $this->objectOrEmpty($decoded['moderation'] ?? null),
             'engagement' => $this->objectOrEmpty($decoded['engagement'] ?? null),
             'quality' => $this->objectOrEmpty($decoded['quality'] ?? null),
+            'respondability' => $this->objectOrEmpty($decoded['respondability'] ?? null),
             'raw_response' => $response,
         ];
     }
@@ -183,6 +189,11 @@ final class DedalusPostAnalyzer implements PostAnalyzer
             '{{moderation_severities}}' => implode(', ', self::MODERATION_SEVERITIES),
             '{{recommended_actions}}' => implode(', ', self::RECOMMENDED_ACTIONS),
             '{{discussion_values}}' => implode(', ', self::DISCUSSION_VALUES),
+            '{{question_types}}' => implode(', ', self::QUESTION_TYPES),
+            '{{benefit_levels}}' => implode(', ', self::BENEFIT_LEVELS),
+            '{{effort_levels}}' => implode(', ', self::EFFORT_LEVELS),
+            '{{response_risk_levels}}' => implode(', ', self::RESPONSE_RISK_LEVELS),
+            '{{response_modes}}' => implode(', ', self::RESPONSE_MODES),
         ]);
     }
 
@@ -245,8 +256,56 @@ final class DedalusPostAnalyzer implements PostAnalyzer
                     ],
                     'required' => ['discussion_value', 'good_faith_likelihood', 'needs_human_review'],
                 ],
+                'respondability' => [
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'properties' => [
+                        'overall_score' => ['type' => 'number', 'minimum' => 0, 'maximum' => 1],
+                        'asks_question' => ['type' => 'boolean'],
+                        'question_type' => [
+                            'type' => 'string',
+                            'enum' => self::QUESTION_TYPES,
+                        ],
+                        'invites_response' => ['type' => 'boolean'],
+                        'author_benefit' => [
+                            'type' => 'string',
+                            'enum' => self::BENEFIT_LEVELS,
+                        ],
+                        'audience_benefit' => [
+                            'type' => 'string',
+                            'enum' => self::BENEFIT_LEVELS,
+                        ],
+                        'response_effort_required' => [
+                            'type' => 'string',
+                            'enum' => self::EFFORT_LEVELS,
+                        ],
+                        'response_risk' => [
+                            'type' => 'string',
+                            'enum' => self::RESPONSE_RISK_LEVELS,
+                        ],
+                        'best_response_mode' => [
+                            'type' => 'string',
+                            'enum' => self::RESPONSE_MODES,
+                        ],
+                        'should_generate_response' => ['type' => 'boolean'],
+                        'reason' => ['type' => 'string'],
+                    ],
+                    'required' => [
+                        'overall_score',
+                        'asks_question',
+                        'question_type',
+                        'invites_response',
+                        'author_benefit',
+                        'audience_benefit',
+                        'response_effort_required',
+                        'response_risk',
+                        'best_response_mode',
+                        'should_generate_response',
+                        'reason',
+                    ],
+                ],
             ],
-            'required' => ['engagement', 'moderation', 'quality'],
+            'required' => ['engagement', 'moderation', 'quality', 'respondability'],
         ];
     }
 

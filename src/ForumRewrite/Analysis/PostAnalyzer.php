@@ -15,6 +15,7 @@ interface PostAnalyzer
      *   moderation:array<string, mixed>,
      *   engagement:array<string, mixed>,
      *   quality:array<string, mixed>,
+     *   respondability:array<string, mixed>,
      *   raw_response:array<string, mixed>
      * }
      */
