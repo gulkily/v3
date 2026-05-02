@@ -8,6 +8,20 @@
     window.setTimeout(callback, 0);
   }
 
+  const generationStartedPostIds = window.__forumAgentReplyGenerationStartedPostIds instanceof Set
+    ? window.__forumAgentReplyGenerationStartedPostIds
+    : new Set();
+  window.__forumAgentReplyGenerationStartedPostIds = generationStartedPostIds;
+
+  function markGenerationStarted(postId) {
+    if (generationStartedPostIds.has(postId)) {
+      return false;
+    }
+
+    generationStartedPostIds.add(postId);
+    return true;
+  }
+
   async function analyzePost(postId) {
     const response = await fetch("/api/analyze_post", {
       method: "POST",
@@ -120,6 +134,10 @@
       return;
     }
 
+    if (result.generation_status === "in_progress") {
+      return;
+    }
+
     if (result.generation_status === "failed") {
       setFeedback(node, "Agent reply failed" + skippedReason(result, analysis) + ".", "");
       return;
@@ -146,6 +164,10 @@
       return;
     }
 
+    if (!markGenerationStarted(postId)) {
+      return;
+    }
+
     requestIdle(async function () {
       try {
         const analysis = await analyzePost(postId);
@@ -160,7 +182,6 @@
           return;
         }
 
-        setFeedback(feedback, "Generating agent reply...", "");
         const result = await generateAgentReply(postId);
         applyGenerationResult(feedback, result, analysis);
       } catch (error) {

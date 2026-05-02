@@ -6,6 +6,7 @@ require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\Agent\AgentIdentityService;
+use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
@@ -315,6 +316,48 @@ final class WriteApiSmokeTest
             putenv('DEDALUS_ANALYSIS_MODE');
             putenv('DEDALUS_AGENT_REPLY_MODE');
         }
+    }
+
+    public function testGenerateAgentReplyDoesNotStartWhenGenerationIsAlreadyPending(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $postId = $this->createAnalyzedThread($application, $databasePath);
+            $contentHash = $this->contentHashForAnalysis($databasePath, $postId);
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $store->reserveGeneration([
+                'post_id' => $postId,
+                'content_hash' => $contentHash,
+                'analysis_hash' => 'already-running',
+            ]);
+            $postCountBefore = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+
+            $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $postCountAfter = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+            $row = $store->findByTarget($postId, $contentHash);
+
+            assertSame('ok', $response['status']);
+            assertSame('in_progress', $response['generation_status']);
+            assertSame($postCountBefore, $postCountAfter);
+            assertSame('pending', $row['status']);
+            assertSame(null, $row['agent_post_id']);
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            putenv('DEDALUS_AGENT_REPLY_MODE');
+        }
+    }
+
+    public function testPostAnalysisScriptDoesNotExposeInProgressReplyGeneration(): void
+    {
+        $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/post_analysis.js');
+
+        assertStringContains('__forumAgentReplyGenerationStartedPostIds', $script);
+        assertStringContains('generation_status === "in_progress"', $script);
+        assertStringNotContains('Generating agent reply...', $script);
     }
 
     public function testGenerateAgentReplyRespectsDisabledConfig(): void

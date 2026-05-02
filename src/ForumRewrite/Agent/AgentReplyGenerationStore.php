@@ -19,6 +19,17 @@ interface AgentReplyGenerationStore
     public function saveComplete(array $context, array $generation): array;
 
     /**
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    public function reserveGeneration(array $context): array;
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function reservePosting(string $postId, string $contentHash): ?array;
+
+    /**
      * @return array<string, mixed>
      */
     public function saveFailed(string $postId, string $contentHash, string $analysisHash, string $failureCode, string $failureMessage): array;

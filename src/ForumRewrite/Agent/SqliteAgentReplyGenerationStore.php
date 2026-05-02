@@ -70,6 +70,83 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
         return $this->findByTarget($postId, $contentHash) ?? $this->hydrate($row);
     }
 
+    public function reserveGeneration(array $context): array
+    {
+        $postId = (string) ($context['post_id'] ?? '');
+        $contentHash = (string) ($context['content_hash'] ?? '');
+        $now = gmdate('c');
+        $row = [
+            'target_post_id' => $postId,
+            'target_content_hash' => $contentHash,
+            'analysis_hash' => (string) ($context['analysis_hash'] ?? ''),
+            'status' => 'pending',
+            'requested_at' => $now,
+            'completed_at' => null,
+            'provider' => null,
+            'provider_model' => null,
+            'provider_request_id' => null,
+            'response_text' => null,
+            'response_style' => null,
+            'response_intent' => null,
+            'agent_identity_id' => null,
+            'agent_profile_slug' => null,
+            'agent_post_id' => null,
+            'posted_at' => null,
+            'failure_code' => null,
+            'failure_message' => null,
+            'retry_after' => null,
+            'raw_response_json' => $this->encode([]),
+        ];
+
+        $stmt = $this->pdo->prepare(
+            'INSERT OR IGNORE INTO post_generated_responses (
+                target_post_id, target_content_hash, analysis_hash, status, requested_at, completed_at,
+                provider, provider_model, provider_request_id, response_text, response_style, response_intent,
+                agent_identity_id, agent_profile_slug, agent_post_id, posted_at,
+                failure_code, failure_message, retry_after, raw_response_json
+             ) VALUES (
+                :target_post_id, :target_content_hash, :analysis_hash, :status, :requested_at, :completed_at,
+                :provider, :provider_model, :provider_request_id, :response_text, :response_style, :response_intent,
+                :agent_identity_id, :agent_profile_slug, :agent_post_id, :posted_at,
+                :failure_code, :failure_message, :retry_after, :raw_response_json
+             )'
+        );
+        $stmt->execute($row);
+
+        $reserved = $stmt->rowCount() > 0;
+        $found = $this->findByTarget($postId, $contentHash) ?? $this->hydrate($row);
+        $found['reserved'] = $reserved;
+
+        return $found;
+    }
+
+    public function reservePosting(string $postId, string $contentHash): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE post_generated_responses
+             SET status = :posting
+             WHERE target_post_id = :target_post_id
+               AND target_content_hash = :target_content_hash
+               AND status = :complete
+               AND agent_post_id IS NULL'
+        );
+        $stmt->execute([
+            'posting' => 'posting',
+            'target_post_id' => $postId,
+            'target_content_hash' => $contentHash,
+            'complete' => 'complete',
+        ]);
+
+        $row = $this->findByTarget($postId, $contentHash);
+        if ($row === null) {
+            return null;
+        }
+
+        $row['reserved'] = $stmt->rowCount() > 0;
+
+        return $row;
+    }
+
     public function saveFailed(string $postId, string $contentHash, string $analysisHash, string $failureCode, string $failureMessage): array
     {
         $now = gmdate('c');
@@ -110,7 +187,10 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
                  agent_identity_id = :agent_identity_id,
                  agent_profile_slug = :agent_profile_slug,
                  posted_at = :posted_at
-             WHERE target_post_id = :target_post_id AND target_content_hash = :target_content_hash'
+             WHERE target_post_id = :target_post_id
+               AND target_content_hash = :target_content_hash
+               AND status = :posting
+               AND agent_post_id IS NULL'
         );
         $stmt->execute([
             'status' => 'posted',
@@ -120,6 +200,7 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
             'posted_at' => $now,
             'target_post_id' => $postId,
             'target_content_hash' => $contentHash,
+            'posting' => 'posting',
         ]);
 
         return $this->findByTarget($postId, $contentHash) ?? [];

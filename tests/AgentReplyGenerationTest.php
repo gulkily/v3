@@ -73,6 +73,41 @@ final class AgentReplyGenerationTest
         assertSame(1, (int) $pdo->query('SELECT COUNT(*) FROM post_generated_responses')->fetchColumn());
     }
 
+    public function testStoreReservesGenerationOncePerTarget(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $store = new SqliteAgentReplyGenerationStore($pdo);
+
+        $first = $store->reserveGeneration($this->context());
+        $second = $store->reserveGeneration($this->context());
+
+        assertSame('pending', $first['status']);
+        assertSame(true, $first['reserved']);
+        assertSame('pending', $second['status']);
+        assertSame(false, $second['reserved']);
+        assertSame(1, (int) $pdo->query('SELECT COUNT(*) FROM post_generated_responses')->fetchColumn());
+    }
+
+    public function testStoreReservesPostingOncePerTarget(): void
+    {
+        $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));
+        $store->saveComplete($this->context(), [
+            'provider' => 'stub',
+            'provider_model' => 'stub/agent-reply',
+            'response_text' => 'First reply.',
+            'response_style' => 'curious',
+            'response_intent' => 'answer',
+        ]);
+
+        $first = $store->reservePosting('root-001', 'hash-001');
+        $second = $store->reservePosting('root-001', 'hash-001');
+
+        assertSame('posting', $first['status']);
+        assertSame(true, $first['reserved']);
+        assertSame('posting', $second['status']);
+        assertSame(false, $second['reserved']);
+    }
+
     public function testStubGeneratorReturnsDeterministicStructuredOutput(): void
     {
         $generator = new StubAgentReplyGenerator();
