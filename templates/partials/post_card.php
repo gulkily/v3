@@ -15,6 +15,8 @@ if (!is_array($postAnalysisLabels)) {
     $postAnalysisLabels = [];
 }
 ?>
+  <div class="button-row button-row-natural post-card-actions">
+    <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
 <?php if (is_array($postAnalysis) && ($postAnalysis['status'] ?? '') === 'complete'): ?>
   <details class="post-analysis">
     <summary>Post analysis</summary>
@@ -48,5 +50,5 @@ if (!is_array($postAnalysisLabels)) {
     </div>
   </details>
 <?php endif; ?>
-  <p><a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a></p>
+  </div>
 </article>

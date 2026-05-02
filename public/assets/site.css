@@ -710,6 +710,23 @@ pre {
   color: var(--status-error);
 }
 
+.post-card-actions {
+  align-items: baseline;
+  margin-top: 1rem;
+}
+
+.post-card-actions .post-analysis {
+  min-width: 0;
+}
+
+.post-card-actions .post-analysis[open] {
+  flex-basis: 100%;
+}
+
+.post-card-actions .post-analysis > summary {
+  cursor: pointer;
+}
+
 .account-key-simple-surface {
   gap: 0.85rem;
 }
