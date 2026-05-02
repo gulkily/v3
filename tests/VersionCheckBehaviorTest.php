@@ -31,7 +31,7 @@ final class VersionCheckBehaviorTest
 const fs = require('fs');
 const vm = require('vm');
 const source = fs.readFileSync(process.argv[1], 'utf8');
-const state = { store: {}, bannerHidden: true, visibilityHandlers: [], pageshowHandlers: [], timeoutCalls: [], intervalCalls: [], fetchCalls: [] };
+const state = { store: {}, bannerHidden: true, visibilityHandlers: [], pageshowHandlers: [], timeoutCalls: [], timeoutHandlers: [], intervalCalls: [], fetchCalls: [] };
 
 const banner = {
   hidden: true,
@@ -61,7 +61,7 @@ global.window = {
   },
   setTimeout(fn, delay) {
     state.timeoutCalls.push(delay);
-    fn();
+    state.timeoutHandlers.push(fn);
     return 1;
   },
   setInterval(fn, delay) {
@@ -99,6 +99,7 @@ global.document = {
 vm.runInThisContext(source);
 
 (async () => {
+  state.timeoutHandlers.shift()();
   await new Promise((resolve) => setImmediate(resolve));
   state.bannerHidden = banner.hidden;
   process.stdout.write(JSON.stringify({
@@ -183,7 +184,7 @@ NODE;
 const fs = require('fs');
 const vm = require('vm');
 const source = fs.readFileSync(process.argv[1], 'utf8');
-const state = { store: { forum_pending_app_version: 'next-version' }, replaceCalls: [], fetchCalls: [], timeoutCalls: [], intervalCalls: [] };
+const state = { store: { forum_pending_app_version: 'next-version' }, replaceCalls: [], fetchCalls: [], timeoutCalls: [], timeoutHandlers: [], intervalCalls: [] };
 
 global.window = {
   location: {
@@ -203,7 +204,7 @@ global.window = {
   },
   setTimeout(fn, delay) {
     state.timeoutCalls.push(delay);
-    fn();
+    state.timeoutHandlers.push(fn);
     return 1;
   },
   setInterval(fn, delay) {
@@ -229,7 +230,9 @@ global.document = {
 
 vm.runInThisContext(source);
 
-Promise.resolve().then(() => {
+state.timeoutHandlers.shift()();
+
+new Promise((resolve) => setImmediate(resolve)).then(() => {
   process.stdout.write(JSON.stringify({
     replaceCalls: state.replaceCalls,
     fetchCalls: state.fetchCalls,
@@ -243,6 +246,78 @@ NODE;
         assertSame([], $result['replaceCalls']);
         assertSame('', $result['pendingVersion']);
         assertSame(true, count($result['fetchCalls']) >= 1);
+    }
+
+    public function testVersionChecksBackOffUntilSteadyDelay(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = { store: {}, timeoutCalls: [], timeoutHandlers: [], fetchCalls: [] };
+
+global.window = {
+  location: {
+    href: 'https://example.test/compose/thread',
+    origin: 'https://example.test',
+    assign() {},
+    replace() {}
+  },
+  sessionStorage: {
+    getItem(key) { return Object.prototype.hasOwnProperty.call(state.store, key) ? state.store[key] : null; },
+    setItem(key, value) { state.store[key] = String(value); },
+    removeItem(key) { delete state.store[key]; }
+  },
+  fetch(url) {
+    state.fetchCalls.push(String(url));
+    return Promise.resolve({ ok: true, text() { return Promise.resolve('current-version'); } });
+  },
+  setTimeout(fn, delay) {
+    state.timeoutCalls.push(delay);
+    state.timeoutHandlers.push(fn);
+    return state.timeoutCalls.length;
+  },
+  setInterval() { return 1; },
+  addEventListener() {}
+};
+
+global.document = {
+  visibilityState: 'visible',
+  querySelector(selector) {
+    if (selector === 'meta[name="app-version"]') {
+      return { getAttribute(name) { return name === 'content' ? 'current-version' : ''; } };
+    }
+    if (selector === 'meta[name="app-version-endpoint"]') {
+      return { getAttribute(name) { return name === 'content' ? '/api/version' : ''; } };
+    }
+    return null;
+  },
+  addEventListener() {}
+};
+
+vm.runInThisContext(source);
+
+(async () => {
+  for (let i = 0; i < 5; i += 1) {
+    const handler = state.timeoutHandlers.shift();
+    handler();
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+
+  process.stdout.write(JSON.stringify({
+    timeoutCalls: state.timeoutCalls,
+    fetchCallCount: state.fetchCalls.length
+  }));
+})().catch((error) => {
+  process.stderr.write(String(error && error.stack ? error.stack : error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame([15000, 30000, 60000, 120000, 120000, 120000], $result['timeoutCalls']);
+        assertSame(5, $result['fetchCallCount']);
     }
 
     public function testPendingComposeDraftClearCookieRemovesLocalDraftAndStoresSessionMarker(): void

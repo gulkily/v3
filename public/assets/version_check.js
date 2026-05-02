@@ -87,6 +87,9 @@
   var reloadButton = banner ? banner.querySelector('[data-action="reload-for-new-version"]') : null;
   var nextVersion = null;
   var requestInFlight = false;
+  var versionCheckDelay = 15000;
+  var maximumVersionCheckDelay = 120000;
+  var versionCheckTimer = null;
 
   function storedPendingVersion() {
     if (!storage) {
@@ -162,8 +165,24 @@
     return;
   }
 
-  function checkForNewVersion() {
+  function scheduleNextVersionCheck() {
+    if (versionCheckTimer !== null) {
+      return;
+    }
+
+    var delay = versionCheckDelay;
+    versionCheckDelay = Math.min(versionCheckDelay * 2, maximumVersionCheckDelay);
+    versionCheckTimer = window.setTimeout(function () {
+      versionCheckTimer = null;
+      checkForNewVersion(true);
+    }, delay);
+  }
+
+  function checkForNewVersion(scheduleAfterCheck) {
     if (requestInFlight) {
+      if (scheduleAfterCheck) {
+        scheduleNextVersionCheck();
+      }
       return;
     }
 
@@ -188,6 +207,9 @@
     }).catch(function () {
     }).finally(function () {
       requestInFlight = false;
+      if (scheduleAfterCheck) {
+        scheduleNextVersionCheck();
+      }
     });
   }
 
@@ -197,7 +219,7 @@
 
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') {
-      checkForNewVersion();
+      checkForNewVersion(false);
     }
   });
 
@@ -205,6 +227,5 @@
     ensurePendingVersionSatisfied();
   });
 
-  window.setTimeout(checkForNewVersion, 15000);
-  window.setInterval(checkForNewVersion, 120000);
+  scheduleNextVersionCheck();
 })();
