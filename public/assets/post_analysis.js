@@ -67,6 +67,10 @@
     return card.querySelector('[data-role="agent-reply-feedback"]');
   }
 
+  function cardForPost(postId) {
+    return document.querySelector('[data-post-id="' + selectorEscape(postId) + '"]');
+  }
+
   function setFeedback(node, text) {
     if (!node) {
       return;
@@ -134,6 +138,16 @@
       return;
     }
 
+    const card = cardForPost(postId);
+    if (!card) {
+      return;
+    }
+
+    const work = card.getAttribute("data-agent-reply-work") || "none";
+    if (work !== "analyze" && work !== "publish") {
+      return;
+    }
+
     const feedback = feedbackForPost(postId);
     if (!markGenerationStarted(postId)) {
       return;
@@ -141,16 +155,19 @@
 
     requestIdle(async function () {
       try {
-        const analysis = await analyzePost(postId);
-        if (!analysis || analysis.status !== "ok") {
-          return;
-        }
-
-        if (analysis.agent_reply_generation_allowed !== true) {
-          if (analysis.viewer_can_see_analysis && analysis.analysis_status !== "complete") {
-            setFeedback(feedback, "Agent reply skipped: analysis required.", "");
+        let analysis = null;
+        if (work === "analyze") {
+          analysis = await analyzePost(postId);
+          if (!analysis || analysis.status !== "ok") {
+            return;
           }
-          return;
+
+          if (analysis.agent_reply_generation_allowed !== true) {
+            if (analysis.viewer_can_see_analysis && analysis.analysis_status !== "complete") {
+              setFeedback(feedback, "Agent reply skipped: analysis required.", "");
+            }
+            return;
+          }
         }
 
         const result = await generateAgentReply(postId);

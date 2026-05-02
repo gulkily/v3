@@ -107,6 +107,7 @@ final class WriteApiSmokeTest
             assertSame(true, $second['respondability']['should_generate_response']);
             assertSame(1, $count);
             assertStringContains('data-created-post-id="' . $postId . '"', $threadPage);
+            assertStringContains('data-agent-reply-work="publish"', $threadPage);
             assertStringNotContains('Post analysis', $anonymousThreadPage);
             assertStringContains('Post analysis', $approvedThreadPage);
             assertStringContains('Provider: stub / stub/post-analysis', $approvedThreadPage);
@@ -151,8 +152,10 @@ final class WriteApiSmokeTest
             '/api/create_thread?board_tags=general&subject=Needs%20Analysis&body=Should%20this%20be%20answered%3F'
         );
         $postId = $this->extractValue($threadResponse, 'post_id');
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId) . '?created_post_id=' . rawurlencode($postId));
         $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
 
+        assertStringContains('data-agent-reply-work="analyze"', $threadPage);
         assertSame('ok', $response['status']);
         assertSame('analysis_required', $response['generation_status']);
         assertSame('missing_analysis', $response['reason']);
@@ -300,6 +303,7 @@ final class WriteApiSmokeTest
             assertStringContains('data-created-post-id="' . $postId . '"', $createdThreadPage);
             assertStringContains('data-post-id="' . $postId . '"', $createdThreadPage);
             assertStringContains('data-agent-reply-posted-id="' . $agentPostId . '"', $createdThreadPage);
+            assertStringNotContains('data-agent-reply-work=', $createdThreadPage);
             assertStringContains('data-role="agent-reply-feedback"', $createdThreadPage);
             assertStringContains('Automated reply agent', $agentProfile);
             assertStringContains('Account type:</strong> automated reply agent', $agentProfile);
@@ -348,6 +352,9 @@ final class WriteApiSmokeTest
         $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/post_analysis.js');
 
         assertStringContains('__forumAgentReplyGenerationStartedPostIds', $script);
+        assertStringContains('data-agent-reply-work', $script);
+        assertStringContains('work === "analyze"', $script);
+        assertStringContains('work !== "analyze" && work !== "publish"', $script);
         assertStringContains('generation_status === "in_progress"', $script);
         assertStringNotContains('Generating agent reply...', $script);
         assertStringNotContains('Agent reply failed', $script);

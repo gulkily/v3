@@ -1,9 +1,10 @@
 <?php
 $agentReply = $agentRepliesByPostId[$post['post_id']] ?? null;
 $agentReplyPostedId = is_array($agentReply) && isset($agentReply['agent_post_id']) ? (string) $agentReply['agent_post_id'] : '';
+$agentReplyWork = (string) ($agentReplyWorkByPostId[$post['post_id']] ?? '');
 $isAgentPost = (string) ($post['author_label'] ?? '') === 'reply-agent';
 ?>
-<article class="card<?= $isAgentPost ? ' agent-authored-post' : '' ?>" data-post-id="<?= $e($post['post_id']) ?>"<?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?>>
+<article class="card<?= $isAgentPost ? ' agent-authored-post' : '' ?>" data-post-id="<?= $e($post['post_id']) ?>"<?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?>>
   <p class="meta">Post <a href="/posts/<?= $e($post['post_id']) ?>"><?= $e($post['post_id']) ?></a></p>
   <p class="meta"><?= $contentMeta($post, 'created_at', '') ?></p>
 <?php if ($isAgentPost): ?>

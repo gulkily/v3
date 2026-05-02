@@ -515,6 +515,9 @@ final class Application
             && $this->viewerHasThreadTag($threadId, 'like', (string) $viewerProfile['identity_id']);
         $posts = $this->fetchThreadPosts($threadId);
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $createdPostId = $this->createdPostIdForThread($threadId, $createdPostId);
+        $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
+        $agentRepliesByPostId = $this->fetchAgentReplyGenerationsForPosts($posts);
 
         return $this->renderPageTemplate(
             'thread.php',
@@ -524,10 +527,16 @@ final class Application
                 'title' => $title,
                 'viewerProfile' => $viewerProfile,
                 'viewerHasLiked' => $viewerHasLiked,
-                'createdPostId' => $this->createdPostIdForThread($threadId, $createdPostId),
+                'createdPostId' => $createdPostId,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
-                'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $this->fetchPostAnalysesForPosts($posts) : [],
-                'agentRepliesByPostId' => $this->fetchAgentReplyGenerationsForPosts($posts),
+                'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
+                'agentRepliesByPostId' => $agentRepliesByPostId,
+                'agentReplyWorkByPostId' => $this->agentReplyWorkByPostId(
+                    $posts,
+                    $createdPostId,
+                    $postAnalysesForWork,
+                    $agentRepliesByPostId
+                ),
             ],
             $title,
             'board',
@@ -1319,6 +1328,71 @@ final class Application
         }
 
         return $generations;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $posts
+     * @param array<string, array<string, mixed>> $analysesByPostId
+     * @param array<string, array<string, mixed>> $agentRepliesByPostId
+     * @return array<string, string>
+     */
+    private function agentReplyWorkByPostId(
+        array $posts,
+        string $createdPostId,
+        array $analysesByPostId,
+        array $agentRepliesByPostId
+    ): array {
+        if ($createdPostId === '' || !$this->agentRepliesEnabled()) {
+            return [];
+        }
+
+        foreach ($posts as $post) {
+            if ((string) ($post['post_id'] ?? '') !== $createdPostId) {
+                continue;
+            }
+
+            $work = $this->agentReplyWorkForPost(
+                $post,
+                $analysesByPostId[$createdPostId] ?? null,
+                $agentRepliesByPostId[$createdPostId] ?? null
+            );
+
+            return $work === 'none' ? [] : [$createdPostId => $work];
+        }
+
+        return [];
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     * @param array<string, mixed>|null $analysis
+     * @param array<string, mixed>|null $agentReply
+     */
+    private function agentReplyWorkForPost(array $post, ?array $analysis, ?array $agentReply): string
+    {
+        if ((string) ($post['author_label'] ?? '') === AgentIdentityService::USERNAME) {
+            return 'none';
+        }
+
+        if ($agentReply !== null) {
+            if ($agentReply['agent_post_id'] !== null) {
+                return 'none';
+            }
+
+            if (in_array((string) ($agentReply['status'] ?? ''), ['pending', 'posting', 'failed'], true)) {
+                return 'none';
+            }
+        }
+
+        if ($analysis === null) {
+            return 'analyze';
+        }
+
+        if (($analysis['status'] ?? null) !== 'complete') {
+            return 'none';
+        }
+
+        return $this->agentReplyGateFailure($post, $analysis) === null ? 'publish' : 'none';
     }
 
     /**
