@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 $testFiles = [
     __DIR__ . '/AgentIdentityServiceTest.php',
+    __DIR__ . '/AgentReplyGenerationTest.php',
     __DIR__ . '/ApplicationServerTimingTest.php',
     __DIR__ . '/BrowserSigningNormalizationTest.php',
     __DIR__ . '/CanonicalRecordParsersTest.php',

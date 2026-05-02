@@ -46,6 +46,8 @@ Commit after identity bootstrap is deterministic and covered by tests.
 
 ## Slice 2: Generation Storage And Prompt Template
 
+Status: implemented in branch `dedalus-agent-reply-slices`; committed after tests passed.
+
 ### Objective
 
 Add response-generation infrastructure without posting replies yet.
