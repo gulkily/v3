@@ -110,7 +110,6 @@
 
   function applyGenerationResult(node, result, analysis) {
     if (!result || result.status !== "ok") {
-      setFeedback(node, "Agent reply failed.", "");
       return;
     }
 
@@ -139,7 +138,6 @@
     }
 
     if (result.generation_status === "failed") {
-      setFeedback(node, "Agent reply failed" + skippedReason(result, analysis) + ".", "");
       return;
     }
 
@@ -185,7 +183,6 @@
         const result = await generateAgentReply(postId);
         applyGenerationResult(feedback, result, analysis);
       } catch (error) {
-        setFeedback(feedback, "Agent reply failed.", "");
       }
     });
   }

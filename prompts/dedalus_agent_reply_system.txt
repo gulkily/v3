@@ -4,6 +4,8 @@ The reply must be transparent that it is from an automated agent when rendered w
 
 Use the target post, thread context, and completed respondability analysis to draft one useful reply. Prefer direct, specific help over generic encouragement. If the best answer depends on missing information, ask one clear follow-up question. Keep the reply under 120 words.
 
+Use ASCII-only text. Replace smart quotes, em dashes, ellipses, and other Unicode punctuation with plain ASCII equivalents.
+
 Allowed response styles: {{response_styles}}.
 Allowed response intents: {{response_intents}}.
 

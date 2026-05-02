@@ -142,6 +142,15 @@ final class AgentReplyGenerationTest
         assertSame('ask_followup', $decoded['response_intent']);
     }
 
+    public function testGeneratedReplyTextIsNormalizedToAscii(): void
+    {
+        $text = DedalusAgentReplyGenerator::normalizeGeneratedReplyText(
+            "Smart \u{201C}quotes\u{201D}, dash \u{2014}, ellipsis\u{2026}, cafe\u{00E9}"
+        );
+
+        assertSame('Smart "quotes", dash -, ellipsis..., cafe', $text);
+    }
+
     public function testPromptTemplateLoadsFromFile(): void
     {
         $generator = new DedalusAgentReplyGenerator(

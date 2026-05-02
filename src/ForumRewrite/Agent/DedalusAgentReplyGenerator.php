@@ -49,7 +49,7 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
         ]);
 
         $decoded = self::decodeCompletionPayload($response);
-        $text = trim((string) ($decoded['response_text'] ?? ''));
+        $text = self::normalizeGeneratedReplyText((string) ($decoded['response_text'] ?? ''));
         if ($text === '') {
             throw new RuntimeException('Dedalus reply response did not include response_text.');
         }
@@ -72,6 +72,24 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
     public static function decodeCompletionPayload(array $response): array
     {
         return DedalusPostAnalyzer::decodeCompletionPayload($response);
+    }
+
+    public static function normalizeGeneratedReplyText(string $text): string
+    {
+        $normalized = str_replace(["\r\n", "\r"], "\n", trim($text));
+        $normalized = strtr($normalized, [
+            "\u{2018}" => "'",
+            "\u{2019}" => "'",
+            "\u{201C}" => '"',
+            "\u{201D}" => '"',
+            "\u{2013}" => '-',
+            "\u{2014}" => '-',
+            "\u{2026}" => '...',
+            "\u{00A0}" => ' ',
+        ]);
+        $normalized = preg_replace('/[^\x0A\x20-\x7E]/u', '', $normalized);
+
+        return trim($normalized ?? '');
     }
 
     public function systemPrompt(): string
