@@ -67,33 +67,14 @@
     return card.querySelector('[data-role="agent-reply-feedback"]');
   }
 
-  function setFeedback(node, text, href) {
+  function setFeedback(node, text) {
     if (!node) {
       return;
     }
 
     node.hidden = false;
     node.textContent = "";
-    if (!href) {
-      node.textContent = text;
-      return;
-    }
-
-    node.append(document.createTextNode(text + " "));
-    const link = document.createElement("a");
-    link.href = href;
-    link.textContent = "View reply";
-    node.append(link);
-  }
-
-  function existingAgentReplyUrl(postId) {
-    const card = document.querySelector('[data-post-id="' + selectorEscape(postId) + '"]');
-    if (!card) {
-      return "";
-    }
-
-    const postedId = card.getAttribute("data-agent-reply-posted-id") || "";
-    return postedId ? "/posts/" + encodeURIComponent(postedId) : "";
+    node.textContent = text;
   }
 
   function skippedReason(result, analysis) {
@@ -114,12 +95,10 @@
     }
 
     if (result.generation_status === "generated" && result.agent_post_url) {
-      setFeedback(node, "Agent reply posted", result.agent_post_url);
       return;
     }
 
     if (result.generation_status === "already_posted" && result.agent_post_url) {
-      setFeedback(node, "Agent reply posted", result.agent_post_url);
       return;
     }
 
@@ -156,12 +135,6 @@
     }
 
     const feedback = feedbackForPost(postId);
-    const existingUrl = existingAgentReplyUrl(postId);
-    if (existingUrl) {
-      setFeedback(feedback, "Agent reply posted", existingUrl);
-      return;
-    }
-
     if (!markGenerationStarted(postId)) {
       return;
     }

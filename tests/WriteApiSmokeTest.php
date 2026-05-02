@@ -351,6 +351,8 @@ final class WriteApiSmokeTest
         assertStringContains('generation_status === "in_progress"', $script);
         assertStringNotContains('Generating agent reply...', $script);
         assertStringNotContains('Agent reply failed', $script);
+        assertStringNotContains('Agent reply posted', $script);
+        assertStringNotContains('View reply', $script);
     }
 
     public function testGenerateAgentReplyRespectsDisabledConfig(): void
