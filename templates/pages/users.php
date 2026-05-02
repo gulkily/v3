@@ -16,6 +16,9 @@
 <?php foreach ($users as $user): ?>
   <article class="card">
     <h2><a href="/user/<?= $e($user['username_token']) ?>"><?= $e($user['username']) ?></a></h2>
+<?php if ((string) ($user['username'] ?? '') === 'reply-agent'): ?>
+    <p class="meta"><span class="agent-label">Automated reply agent</span></p>
+<?php endif; ?>
     <p class="meta"><?= (int) $user['thread_count'] ?> threads, <?= (int) $user['post_count'] ?> posts</p>
   </article>
 <?php endforeach; ?>

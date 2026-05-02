@@ -274,6 +274,9 @@ final class WriteApiSmokeTest
             $replyRecord = (string) file_get_contents($repositoryRoot . '/records/posts/' . $agentPostId . '.txt');
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
             $createdThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId) . '?created_post_id=' . rawurlencode($postId));
+            $agentProfile = $this->renderMethod($application, 'GET', '/profiles/' . rawurlencode((string) $row['agent_profile_slug']));
+            $users = $this->renderMethod($application, 'GET', '/users/');
+            $activity = $this->renderMethod($application, 'GET', '/activity/?view=content');
 
             assertSame('generated', $first['generation_status']);
             assertSame(false, $first['cached']);
@@ -295,14 +298,49 @@ final class WriteApiSmokeTest
             assertStringContains('openpgp-', $row['agent_profile_slug']);
             assertSame(true, is_string($row['posted_at']));
             assertStringContains('reply-agent', $threadPage);
+            assertStringContains('Agent-authored reply', $threadPage);
+            assertStringContains('data-agent-authored="reply-agent"', $threadPage);
             assertStringContains('tradeoffs', $threadPage);
             assertStringContains('data-created-post-id="' . $postId . '"', $createdThreadPage);
             assertStringContains('data-post-id="' . $postId . '"', $createdThreadPage);
             assertStringContains('data-agent-reply-posted-id="' . $agentPostId . '"', $createdThreadPage);
             assertStringContains('data-role="agent-reply-feedback"', $createdThreadPage);
+            assertStringContains('Automated reply agent', $agentProfile);
+            assertStringContains('Account type:</strong> automated reply agent', $agentProfile);
+            assertStringContains('reply-agent', $users);
+            assertStringContains('Automated reply agent', $users);
+            assertStringContains('Author: reply-agent', $activity);
+            assertStringContains('automated reply agent', $activity);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
             putenv('DEDALUS_AGENT_REPLY_MODE');
+        }
+    }
+
+    public function testGenerateAgentReplyRespectsDisabledConfig(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
+        putenv('DEDALUS_AGENT_REPLIES_ENABLED=false');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $postId = $this->createAnalyzedThread($application, $databasePath);
+            $postCountBefore = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+
+            $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $postCountAfter = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+            $pdo = new PDO('sqlite:' . $databasePath);
+
+            assertSame('not_recommended', $response['generation_status']);
+            assertSame('config_disabled', $response['reason']);
+            assertSame($postCountBefore, $postCountAfter);
+            assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM sqlite_master WHERE type = "table" AND name = "post_generated_responses"')->fetchColumn());
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            putenv('DEDALUS_AGENT_REPLY_MODE');
+            putenv('DEDALUS_AGENT_REPLIES_ENABLED');
         }
     }
 

@@ -36,6 +36,7 @@ One workable layout:
     .git/
   state/
     cache/
+    private/
     forum-rewrite.lock
     read_model_stale.json
 ```
@@ -54,6 +55,7 @@ The web user must be able to write:
 - the canonical repository checkout at `FORUM_REPOSITORY_ROOT`
 - the parent directory of `FORUM_DATABASE_PATH`
 - the lock file directory next to `FORUM_DATABASE_PATH`
+- `state/private/agent-reply/` under the application root if automatic agent replies are enabled
 - sibling static artifacts in `public/` if production uses `public/*.html`
 
 If sibling `public/*.html` artifacts are used and writes are enabled, the application must be able to invalidate affected artifacts after successful writes.
@@ -75,6 +77,24 @@ FORUM_PUBLIC_ARTIFACT_ROOT=/srv/forum-rewrite/app/public
 ```
 
 `FORUM_STATIC_HTML_ROOT` remains available for separate static roots, but the primary production model for this repo is sibling artifacts in `public/`.
+
+## Automatic Agent Replies
+
+Automatic replies can be disabled with:
+
+```text
+DEDALUS_AGENT_REPLIES_ENABLED=false
+```
+
+Use `DEDALUS_AGENT_REPLY_MODE=stub` only for deterministic local tests. Production uses `DEDALUS_API_KEY` and can override the response model with `DEDALUS_AGENT_REPLY_MODEL`.
+
+On first successful agent reply, the app bootstraps a canonical `reply-agent` OpenPGP identity and stores the private key under:
+
+```text
+<application-root>/state/private/agent-reply/
+```
+
+This directory must not be under `public/` and should be readable only by the deployment user and web user. To rotate the key, disable automatic replies, archive the old private key, remove or supersede the canonical `reply-agent` identity through an operator-reviewed migration, rebuild the read model, then re-enable replies so a new key can be bootstrapped.
 
 ## First-Time Setup
 

@@ -7,11 +7,15 @@ if ($headingLabel === '') {
 if ($headingLabel === '') {
     $headingLabel = $profileSlug;
 }
+$isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
 ?>
 <section class="stack">
   <article class="card">
     <h1><?= $e($headingLabel) ?></h1>
     <p class="meta">Profile <?= $e($profileSlug) ?></p>
+<?php if ($isReplyAgentProfile): ?>
+    <p class="meta"><span class="agent-label">Automated reply agent</span></p>
+<?php endif; ?>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
   </article>
 <?php if ($isOwnProfile): ?>
@@ -28,6 +32,9 @@ if ($headingLabel === '') {
 <?php endif; ?>
   <article class="card">
     <p><strong>Visible username:</strong> <?= $e($profile['username']) ?></p>
+<?php if ($isReplyAgentProfile): ?>
+    <p><strong>Account type:</strong> automated reply agent</p>
+<?php endif; ?>
     <p><strong>Approved:</strong> <?= ((int) $profile['is_approved']) === 1 ? 'yes' : 'no' ?></p>
 <?php if (((int) $profile['is_approved']) === 1 && ((string) ($profile['approved_by_label'] ?? '')) !== ''): ?>
     <p><strong>Approved by:</strong>

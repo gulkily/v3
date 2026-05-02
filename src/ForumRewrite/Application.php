@@ -2151,6 +2151,13 @@ final class Application
             return;
         }
 
+        if (!$this->agentRepliesEnabled()) {
+            $this->sendJson($this->agentReplyStatusResponse('not_recommended', $postId, [
+                'reason' => 'config_disabled',
+            ]), 200, $this->noStoreHeaders());
+            return;
+        }
+
         $context = $this->postAnalysisContext($post);
         $store = new SqliteAgentReplyGenerationStore($this->pdo());
         $existing = $store->findByTarget((string) $context['post_id'], (string) $context['content_hash']);
@@ -2443,6 +2450,14 @@ final class Application
             max(60, (int) ($config['DEDALUS_TIMEOUT_SECONDS'] ?? 60)),
             $this->dedalusAgentReplyPromptTemplatePath($config)
         );
+    }
+
+    private function agentRepliesEnabled(): bool
+    {
+        $config = PrivateConfig::load($this->projectRoot);
+        $value = strtolower(trim((string) ($config['DEDALUS_AGENT_REPLIES_ENABLED'] ?? 'true')));
+
+        return !in_array($value, ['0', 'false', 'no', 'off'], true);
     }
 
     /**

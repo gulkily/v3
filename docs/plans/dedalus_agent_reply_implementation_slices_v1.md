@@ -206,6 +206,8 @@ Commit after the user-visible flow works from page load to posted reply notifica
 
 ## Slice 6: Agent Labeling And Safety Polish
 
+Status: implemented in branch `dedalus-agent-reply-slices`; committed after tests and JS syntax check passed.
+
 ### Objective
 
 Make agent authorship unmistakable and harden edge cases before considering the feature complete.

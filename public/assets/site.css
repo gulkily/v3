@@ -1036,6 +1036,19 @@ pre {
   color: var(--status-ok);
 }
 
+.agent-authored-post {
+  border-color: color-mix(in srgb, var(--status-ok) 45%, var(--line) 55%);
+}
+
+.agent-label {
+  display: inline;
+  color: var(--ink);
+  font-family: var(--ui-font);
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     color-scheme: dark;

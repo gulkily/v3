@@ -36,6 +36,7 @@ final class PrivateConfig
             'DEDALUS_AGENT_REPLY_MODE',
             'DEDALUS_AGENT_REPLY_MODEL',
             'DEDALUS_AGENT_REPLY_PROMPT_PATH',
+            'DEDALUS_AGENT_REPLIES_ENABLED',
         ] as $key) {
             $value = getenv($key);
             if ($value !== false) {
