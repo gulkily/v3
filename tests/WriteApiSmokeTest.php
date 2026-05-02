@@ -143,31 +143,25 @@ final class WriteApiSmokeTest
     public function testGenerateAgentReplyRequiresCompletedCurrentAnalysis(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
 
-        try {
-            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
-            $threadResponse = $this->renderMethod(
-                $application,
-                'POST',
-                '/api/create_thread?board_tags=general&subject=Needs%20Analysis&body=Should%20this%20be%20answered%3F'
-            );
-            $postId = $this->extractValue($threadResponse, 'post_id');
-            $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $threadResponse = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_thread?board_tags=general&subject=Needs%20Analysis&body=Should%20this%20be%20answered%3F'
+        );
+        $postId = $this->extractValue($threadResponse, 'post_id');
+        $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
 
-            assertSame('ok', $response['status']);
-            assertSame('analysis_required', $response['generation_status']);
-            assertSame('missing_analysis', $response['reason']);
-        } finally {
-            putenv('DEDALUS_AGENT_REPLY_MODE');
-        }
+        assertSame('ok', $response['status']);
+        assertSame('analysis_required', $response['generation_status']);
+        assertSame('missing_analysis', $response['reason']);
     }
 
     public function testGenerateAgentReplyReportsFailedAnalysisAsRequired(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         putenv('DEDALUS_ANALYSIS_MODE=stub');
-        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -183,15 +177,13 @@ final class WriteApiSmokeTest
             assertSame('failed', $response['analysis_status']);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
-            putenv('DEDALUS_AGENT_REPLY_MODE');
         }
     }
 
-    public function testGenerateAgentReplyRejectsLowRespondabilityHighRiskAndHighModeration(): void
+    public function testGenerateAgentReplyRejectsLowRespondabilityHighRiskHighModerationAndPrivateResponse(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         putenv('DEDALUS_ANALYSIS_MODE=stub');
-        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -205,10 +197,14 @@ final class WriteApiSmokeTest
             $moderationPostId = $this->createAnalyzedThread($application, $databasePath, [
                 'moderation' => ['severity' => 'critical'],
             ]);
+            $privatePostId = $this->createAnalyzedThread($application, $databasePath, [
+                'engagement' => ['response_should_be_public' => false],
+            ]);
 
             $low = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($lowPostId)), true);
             $risk = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($riskPostId)), true);
             $moderation = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($moderationPostId)), true);
+            $private = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($privatePostId)), true);
 
             assertSame('not_recommended', $low['generation_status']);
             assertSame('respondability_score_low', $low['reason']);
@@ -216,9 +212,10 @@ final class WriteApiSmokeTest
             assertSame('response_risk_high', $risk['reason']);
             assertSame('not_recommended', $moderation['generation_status']);
             assertSame('moderation_severity_high', $moderation['reason']);
+            assertSame('not_recommended', $private['generation_status']);
+            assertSame('response_not_public', $private['reason']);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
-            putenv('DEDALUS_AGENT_REPLY_MODE');
         }
     }
 
@@ -226,7 +223,6 @@ final class WriteApiSmokeTest
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         putenv('DEDALUS_ANALYSIS_MODE=stub');
-        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
 
         try {
             $identity = (new AgentIdentityService(
@@ -251,7 +247,6 @@ final class WriteApiSmokeTest
             assertSame('agent_loop_prevention', $response['reason']);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
-            putenv('DEDALUS_AGENT_REPLY_MODE');
         }
     }
 
@@ -259,7 +254,6 @@ final class WriteApiSmokeTest
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         putenv('DEDALUS_ANALYSIS_MODE=stub');
-        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -282,18 +276,19 @@ final class WriteApiSmokeTest
             assertSame('generated', $first['generation_status']);
             assertSame(false, $first['cached']);
             assertSame('stub', $first['provider']);
-            assertStringContains('tradeoffs', $first['response_text']);
+            assertSame('stub/post-analysis', $first['provider_model']);
+            assertStringContains('strongest reason', $first['response_text']);
             assertSame(true, $first['posted']);
             assertSame('/posts/' . $agentPostId, $first['agent_post_url']);
             assertStringContains('Parent-ID: ' . $postId, $replyRecord);
             assertStringContains('Author-Identity-ID: openpgp:', $replyRecord);
-            assertStringContains('tradeoffs', $replyRecord);
+            assertStringContains('strongest reason', $replyRecord);
             assertSame('already_posted', $second['generation_status']);
             assertSame($agentPostId, $second['agent_post_id']);
             assertSame($postCountAfterFirst, $postCountAfter);
             assertSame('posted', $row['status']);
             assertSame('stub', $row['provider']);
-            assertStringContains('tradeoffs', $row['response_text']);
+            assertStringContains('strongest reason', $row['response_text']);
             assertSame($agentPostId, $row['agent_post_id']);
             assertStringContains('openpgp:', $row['agent_identity_id']);
             assertStringContains('openpgp-', $row['agent_profile_slug']);
@@ -301,7 +296,7 @@ final class WriteApiSmokeTest
             assertStringContains('reply-agent', $threadPage);
             assertStringContains('Agent-authored reply', $threadPage);
             assertStringContains('data-agent-authored="reply-agent"', $threadPage);
-            assertStringContains('tradeoffs', $threadPage);
+            assertStringContains('strongest reason', $threadPage);
             assertStringContains('data-created-post-id="' . $postId . '"', $createdThreadPage);
             assertStringContains('data-post-id="' . $postId . '"', $createdThreadPage);
             assertStringContains('data-agent-reply-posted-id="' . $agentPostId . '"', $createdThreadPage);
@@ -314,7 +309,6 @@ final class WriteApiSmokeTest
             assertStringContains('automated reply agent', $activity);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
-            putenv('DEDALUS_AGENT_REPLY_MODE');
         }
     }
 
@@ -322,7 +316,6 @@ final class WriteApiSmokeTest
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         putenv('DEDALUS_ANALYSIS_MODE=stub');
-        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -347,7 +340,6 @@ final class WriteApiSmokeTest
             assertSame(null, $row['agent_post_id']);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
-            putenv('DEDALUS_AGENT_REPLY_MODE');
         }
     }
 
@@ -365,7 +357,6 @@ final class WriteApiSmokeTest
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         putenv('DEDALUS_ANALYSIS_MODE=stub');
-        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
         putenv('DEDALUS_AGENT_REPLIES_ENABLED=false');
 
         try {
@@ -383,7 +374,6 @@ final class WriteApiSmokeTest
             assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM sqlite_master WHERE type = "table" AND name = "post_generated_responses"')->fetchColumn());
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
-            putenv('DEDALUS_AGENT_REPLY_MODE');
             putenv('DEDALUS_AGENT_REPLIES_ENABLED');
         }
     }
@@ -392,7 +382,6 @@ final class WriteApiSmokeTest
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         putenv('DEDALUS_ANALYSIS_MODE=stub');
-        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -411,7 +400,6 @@ final class WriteApiSmokeTest
             assertSame(null, $row['agent_post_id']);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
-            putenv('DEDALUS_AGENT_REPLY_MODE');
         }
     }
 

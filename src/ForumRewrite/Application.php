@@ -8,10 +8,8 @@ use ForumRewrite\Analysis\DedalusPostAnalyzer;
 use ForumRewrite\Analysis\PostAnalysisService;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Analysis\StubPostAnalyzer;
-use ForumRewrite\Agent\AgentReplyGenerator;
 use ForumRewrite\Agent\DedalusAgentReplyGenerator;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
-use ForumRewrite\Agent\StubAgentReplyGenerator;
 use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
@@ -2229,28 +2227,15 @@ final class Application
         }
 
         if ($stored === null) {
-            $generator = $this->agentReplyGenerator();
-            if ($generator === null) {
-                $failed = $store->saveFailed(
-                    (string) $context['post_id'],
-                    (string) $context['content_hash'],
-                    (string) $generationContext['analysis_hash'],
-                    'config_missing',
-                    'Dedalus API key is not configured.'
-                );
-                $this->sendJson($this->failedAgentReplyResponse($failed), 200, $this->noStoreHeaders());
-                return;
-            }
-
             try {
-                $generation = $generator->generate($generationContext);
+                $generation = $this->agentReplyGenerationFromAnalysis($analysis);
                 $stored = $store->saveComplete($generationContext, $generation);
             } catch (\Throwable $throwable) {
                 $failed = $store->saveFailed(
                     (string) $context['post_id'],
                     (string) $context['content_hash'],
                     (string) $generationContext['analysis_hash'],
-                    'provider_error',
+                    'analysis_suggestion_error',
                     $throwable->getMessage()
                 );
                 $this->sendJson($this->failedAgentReplyResponse($failed), 200, $this->noStoreHeaders());
@@ -2318,6 +2303,32 @@ final class Application
             );
             $this->sendJson($this->failedAgentReplyResponse($failed), 200, $this->noStoreHeaders());
         }
+    }
+
+    /**
+     * @param array<string, mixed> $analysis
+     * @return array<string, mixed>
+     */
+    private function agentReplyGenerationFromAnalysis(array $analysis): array
+    {
+        $engagement = is_array($analysis['engagement'] ?? null) ? $analysis['engagement'] : [];
+        $respondability = is_array($analysis['respondability'] ?? null) ? $analysis['respondability'] : [];
+        $text = DedalusAgentReplyGenerator::normalizeGeneratedReplyText((string) ($engagement['suggested_response'] ?? ''));
+        if ($text === '') {
+            throw new RuntimeException('Completed analysis did not include a suggested_response.');
+        }
+
+        return [
+            'provider' => (string) ($analysis['provider'] ?? 'analysis'),
+            'provider_model' => (string) ($analysis['provider_model'] ?? 'analysis'),
+            'provider_request_id' => isset($analysis['provider_request_id']) ? (string) $analysis['provider_request_id'] : null,
+            'response_text' => $text,
+            'response_style' => (string) ($engagement['response_style'] ?? 'curious'),
+            'response_intent' => (string) ($respondability['best_response_mode'] ?? 'answer'),
+            'raw_response' => [
+                'source' => 'analysis_suggested_response',
+            ],
+        ];
     }
 
     /**
@@ -2483,29 +2494,6 @@ final class Application
         );
     }
 
-    private function agentReplyGenerator(): ?AgentReplyGenerator
-    {
-        $config = PrivateConfig::load($this->projectRoot);
-        $mode = strtolower(trim((string) ($config['DEDALUS_AGENT_REPLY_MODE'] ?? '')));
-        if ($mode === 'stub') {
-            return new StubAgentReplyGenerator();
-        }
-
-        $apiKey = trim((string) ($config['DEDALUS_API_KEY'] ?? ''));
-        if ($apiKey === '') {
-            return null;
-        }
-
-        return new DedalusAgentReplyGenerator(
-            $apiKey,
-            trim((string) ($config['DEDALUS_API_BASE_URL'] ?? 'https://api.dedaluslabs.ai')) ?: 'https://api.dedaluslabs.ai',
-            trim((string) ($config['DEDALUS_AGENT_REPLY_MODEL'] ?? ($config['DEDALUS_MODEL'] ?? 'openai/gpt-5-nano'))) ?: 'openai/gpt-5-nano',
-            max(60, (int) ($config['DEDALUS_TIMEOUT_SECONDS'] ?? 60)),
-            $this->dedalusAgentReplyPromptTemplatePath($config),
-            max(1200, (int) ($config['DEDALUS_AGENT_REPLY_MAX_COMPLETION_TOKENS'] ?? 6000))
-        );
-    }
-
     private function agentRepliesEnabled(): bool
     {
         $config = PrivateConfig::load($this->projectRoot);
@@ -2532,23 +2520,6 @@ final class Application
     }
 
     /**
-     * @param array<string, mixed> $config
-     */
-    private function dedalusAgentReplyPromptTemplatePath(array $config): ?string
-    {
-        $path = trim((string) ($config['DEDALUS_AGENT_REPLY_PROMPT_PATH'] ?? ''));
-        if ($path === '') {
-            return null;
-        }
-
-        if (str_starts_with($path, '/')) {
-            return $path;
-        }
-
-        return $this->projectRoot . '/' . $path;
-    }
-
-    /**
      * @param array<string, mixed> $post
      * @param array<string, mixed> $analysis
      * @return array<string, mixed>|null
@@ -2561,9 +2532,14 @@ final class Application
 
         $respondability = is_array($analysis['respondability'] ?? null) ? $analysis['respondability'] : [];
         $moderation = is_array($analysis['moderation'] ?? null) ? $analysis['moderation'] : [];
+        $engagement = is_array($analysis['engagement'] ?? null) ? $analysis['engagement'] : [];
 
         if (($respondability['should_generate_response'] ?? false) !== true) {
             return ['reason' => 'respondability_not_recommended'];
+        }
+
+        if (($engagement['response_should_be_public'] ?? false) !== true) {
+            return ['reason' => 'response_not_public'];
         }
 
         if ((float) ($respondability['overall_score'] ?? 0) < 0.65) {
