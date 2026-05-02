@@ -2501,7 +2501,8 @@ final class Application
             trim((string) ($config['DEDALUS_API_BASE_URL'] ?? 'https://api.dedaluslabs.ai')) ?: 'https://api.dedaluslabs.ai',
             trim((string) ($config['DEDALUS_AGENT_REPLY_MODEL'] ?? ($config['DEDALUS_MODEL'] ?? 'openai/gpt-5-nano'))) ?: 'openai/gpt-5-nano',
             max(60, (int) ($config['DEDALUS_TIMEOUT_SECONDS'] ?? 60)),
-            $this->dedalusAgentReplyPromptTemplatePath($config)
+            $this->dedalusAgentReplyPromptTemplatePath($config),
+            max(1200, (int) ($config['DEDALUS_AGENT_REPLY_MAX_COMPLETION_TOKENS'] ?? 6000))
         );
     }
 

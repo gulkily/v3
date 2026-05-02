@@ -159,6 +159,15 @@ final class AgentReplyGenerationTest
         assertStringNotContains('{{response_styles}}', $prompt);
     }
 
+    public function testAgentReplyGeneratorDefaultsToLargerCompletionBudget(): void
+    {
+        $generator = new DedalusAgentReplyGenerator('test-key');
+        $property = new ReflectionProperty(DedalusAgentReplyGenerator::class, 'maxCompletionTokens');
+        $property->setAccessible(true);
+
+        assertSame(6000, $property->getValue($generator));
+    }
+
     /**
      * @return array<string, mixed>
      */

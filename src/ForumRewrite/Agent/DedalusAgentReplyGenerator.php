@@ -20,6 +20,7 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
         private readonly string $model = 'openai/gpt-5-nano',
         private readonly int $timeoutSeconds = 60,
         private readonly ?string $systemPromptTemplatePath = null,
+        private readonly int $maxCompletionTokens = 6000,
     ) {
     }
 
@@ -44,7 +45,7 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
                     'schema' => $this->responseSchema(),
                 ],
             ],
-            'max_completion_tokens' => 1200,
+            'max_completion_tokens' => max(1200, $this->maxCompletionTokens),
         ]);
 
         $decoded = self::decodeCompletionPayload($response);

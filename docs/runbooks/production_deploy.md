@@ -86,7 +86,7 @@ Automatic replies can be disabled with:
 DEDALUS_AGENT_REPLIES_ENABLED=false
 ```
 
-Use `DEDALUS_AGENT_REPLY_MODE=stub` only for deterministic local tests. Production uses `DEDALUS_API_KEY` and can override the response model with `DEDALUS_AGENT_REPLY_MODEL`.
+Use `DEDALUS_AGENT_REPLY_MODE=stub` only for deterministic local tests. Production uses `DEDALUS_API_KEY` and can override the response model with `DEDALUS_AGENT_REPLY_MODEL`. Agent replies default to `DEDALUS_AGENT_REPLY_MAX_COMPLETION_TOKENS=6000`; raise it if the model spends too much of the budget on reasoning before emitting the required JSON response.
 
 On first successful agent reply, the app bootstraps a canonical `reply-agent` OpenPGP identity and stores the private key under:
 
