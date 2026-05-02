@@ -342,6 +342,11 @@
     return `openpgp:${fingerprint}`;
   }
 
+  function profileSlugForFingerprint(fingerprint) {
+    const normalized = String(fingerprint || "").trim().toLowerCase();
+    return normalized ? `openpgp-${normalized}` : "";
+  }
+
   function preferredIdentityHint() {
     const identityId = currentAuthorIdentityId();
     if (identityId) {
@@ -698,6 +703,23 @@
     throw buildFriendlyError(failure.friendlyMessage, failure.technicalDetails);
   }
 
+  async function serverKnowsCurrentIdentity(fingerprint) {
+    const profileSlug = profileSlugForFingerprint(fingerprint);
+    if (!profileSlug) {
+      return false;
+    }
+
+    const response = await fetch(
+      `/api/get_profile?profile_slug=${encodeURIComponent(profileSlug)}`,
+      {
+        method: "GET",
+        credentials: "same-origin",
+      }
+    );
+
+    return response.ok;
+  }
+
   async function ensureStoredFingerprint() {
     const existing = localStorage.getItem(storageKeys.fingerprint) || "";
     if (existing) {
@@ -721,7 +743,9 @@
     const promptForUsername = typeof config.promptForUsername === "function"
       ? config.promptForUsername
       : promptForComposeUsername;
-    const publishedFingerprint = localStorage.getItem(storageKeys.publishedFingerprint) || "";
+    const publishedFingerprint = (localStorage.getItem(storageKeys.publishedFingerprint) || "")
+      .trim()
+      .toUpperCase();
 
     if (!hasBrowserKeypair()) {
       setStatus(statusNode, "Choose a username to prepare your browser keypair...", "info");
@@ -730,9 +754,12 @@
       await generateBrowserKey(root, username);
     }
 
-    const fingerprint = await ensureStoredFingerprint();
+    const fingerprint = String(await ensureStoredFingerprint()).trim().toUpperCase();
     if (fingerprint === "" || publishedFingerprint !== fingerprint) {
       setStatus(statusNode, "Publishing your public key in the background...", "info");
+      await publishPublicKey(root);
+    } else if (!(await serverKnowsCurrentIdentity(fingerprint))) {
+      setStatus(statusNode, "Finishing browser identity setup...", "info");
       await publishPublicKey(root);
     } else {
       await syncIdentityHint(preferredIdentityHint());

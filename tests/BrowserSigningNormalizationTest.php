@@ -188,6 +188,81 @@ NODE;
         );
     }
 
+    public function testReadyIdentityRepublishesWhenStoredPublishedFingerprintIsUnknownToServer(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: {
+    forum_pki_username: 'forum-user',
+    forum_pki_public_key: '-----BEGIN PGP PUBLIC KEY BLOCK-----\nfixture\n-----END PGP PUBLIC KEY BLOCK-----',
+    forum_pki_private_key: '-----BEGIN PGP PRIVATE KEY BLOCK-----\nfixture\n-----END PGP PRIVATE KEY BLOCK-----',
+    forum_pki_fingerprint: '0168FF20EB09C3EA6193BD3C92A73AA7D20A0954',
+    forum_pki_published_fingerprint: '0168FF20EB09C3EA6193BD3C92A73AA7D20A0954'
+  },
+  fetches: [],
+  localSetCalls: []
+};
+
+global.window = {};
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+  setItem(key, value) {
+    state.localSetCalls.push([key, String(value)]);
+    state.localStore[key] = String(value);
+  },
+  removeItem(key) { delete state.localStore[key]; }
+};
+global.document = {
+  addEventListener(){},
+  querySelector(){ return null; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'', addEventListener(){}, appendChild(){} }; },
+  createTextNode(text){ return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} },
+};
+global.navigator = {};
+global.fetch = async function (url, options) {
+  state.fetches.push({ url: String(url), method: options && options.method ? options.method : 'GET' });
+  if (String(url).indexOf('/api/get_profile?') === 0) {
+    return { ok: false, status: 404, text: async () => 'profile not found\n' };
+  }
+  if (String(url) === '/api/link_identity') {
+    return { ok: true, status: 200, text: async () => 'status=ok\nidentity_id=openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n' };
+  }
+  if (String(url).indexOf('/api/set_identity_hint?') === 0) {
+    return { ok: true, status: 200, text: async () => 'identity_hint=openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n' };
+  }
+
+  throw new Error('Unexpected fetch: ' + url);
+};
+
+vm.runInThisContext(source);
+const root = { querySelector(){ return null; } };
+const statusNode = { dataset: {}, textContent: '', querySelector(){ return null; } };
+
+window.__forumBrowserIdentity.ensureReadyIdentity(root, statusNode).then(() => {
+  process.stdout.write(JSON.stringify({
+    fetches: state.fetches,
+    localSetCalls: state.localSetCalls,
+    status: statusNode.textContent
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][0]['url']);
+        assertSame('/api/link_identity', $result['fetches'][1]['url']);
+        assertStringContains('/api/set_identity_hint?identity_hint=openpgp%3A0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][2]['url']);
+        assertSame(['forum_pki_published_fingerprint', '0168FF20EB09C3EA6193BD3C92A73AA7D20A0954'], $result['localSetCalls'][0]);
+        assertSame('Finishing browser identity setup...', $result['status']);
+    }
+
     public function testSubmittedComposePageClearsDraftWithoutImmediatelySavingBlankReplacement(): void
     {
         $script = <<<'NODE'
