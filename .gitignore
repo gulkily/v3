@@ -1,6 +1,7 @@
 .idea/
 state/cache/
 state/local_repository/
+state/
 public/*.html
 public/threads/
 public/posts/
