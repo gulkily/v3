@@ -8,6 +8,11 @@ use ForumRewrite\Analysis\DedalusPostAnalyzer;
 use ForumRewrite\Analysis\PostAnalysisService;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Analysis\StubPostAnalyzer;
+use ForumRewrite\Agent\AgentReplyGenerator;
+use ForumRewrite\Agent\DedalusAgentReplyGenerator;
+use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
+use ForumRewrite\Agent\StubAgentReplyGenerator;
+use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
@@ -69,6 +74,11 @@ final class Application
 
         if ($path === '/api/analyze_post') {
             $this->handleAnalyzePost($method, $query);
+            return;
+        }
+
+        if ($path === '/api/generate_agent_reply') {
+            $this->handleGenerateAgentReply($method, $query);
             return;
         }
 
@@ -927,7 +937,7 @@ final class Application
 
     private function renderApiIndex(): string
     {
-        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nPOST /api/set_identity_hint\nPOST /api/analyze_post\nPOST /api/apply_thread_tag\n";
+        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nPOST /api/set_identity_hint\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/apply_thread_tag\n";
     }
 
     private function renderApiListIndex(): string
@@ -1152,7 +1162,7 @@ final class Application
     private function fetchThreadPosts(string $threadId): array
     {
         $stmt = $this->pdo()->prepare(
-            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_label,
+            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_identity_id, posts.author_label,
                     posts.created_at, posts.board_tags_json,
                     posts.author_profile_slug, profiles.username_token AS author_username_token,
                     COALESCE(profiles.is_approved, 0) AS author_is_approved
@@ -2087,6 +2097,102 @@ final class Application
     /**
      * @param array<string, mixed> $query
      */
+    private function handleGenerateAgentReply(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+
+        $input = $this->requestData($query);
+        $postId = trim((string) ($input['post_id'] ?? ''));
+        if ($postId === '') {
+            $this->sendJson(['status' => 'error', 'error' => 'Missing post_id.'], 400);
+            return;
+        }
+
+        $post = $this->fetchPost($postId);
+        if ($post === null) {
+            $this->sendJson(['status' => 'error', 'error' => 'post not found'], 404);
+            return;
+        }
+
+        $context = $this->postAnalysisContext($post);
+        $store = new SqliteAgentReplyGenerationStore($this->pdo());
+        $existing = $store->findByTarget((string) $context['post_id'], (string) $context['content_hash']);
+        if ($existing !== null && $existing['agent_post_id'] !== null) {
+            $this->sendJson($this->agentReplyStatusResponse('already_posted', $postId, [
+                'agent_post_id' => $existing['agent_post_id'],
+                'agent_post_url' => '/posts/' . $existing['agent_post_id'],
+            ]), 200, $this->noStoreHeaders());
+            return;
+        }
+
+        if ($existing !== null && $existing['status'] === 'complete') {
+            $this->sendJson($this->generatedAgentReplyResponse($existing, true), 200, $this->noStoreHeaders());
+            return;
+        }
+
+        $analysis = (new SqlitePostAnalysisStore($this->pdo()))->find(
+            (string) $context['post_id'],
+            (string) $context['content_hash']
+        );
+        if ($analysis === null || ($analysis['status'] ?? null) !== 'complete') {
+            $this->sendJson($this->agentReplyStatusResponse('analysis_required', $postId, [
+                'reason' => $analysis === null ? 'missing_analysis' : 'analysis_not_complete',
+                'analysis_status' => $analysis['status'] ?? null,
+                'failure_code' => $analysis['failure_code'] ?? null,
+            ]), 200, $this->noStoreHeaders());
+            return;
+        }
+
+        $gateFailure = $this->agentReplyGateFailure($post, $analysis);
+        if ($gateFailure !== null) {
+            $this->sendJson($this->agentReplyStatusResponse('not_recommended', $postId, $gateFailure), 200, $this->noStoreHeaders());
+            return;
+        }
+
+        $generator = $this->agentReplyGenerator();
+        if ($generator === null) {
+            $failed = $store->saveFailed(
+                (string) $context['post_id'],
+                (string) $context['content_hash'],
+                $this->analysisHash($analysis),
+                'config_missing',
+                'Dedalus API key is not configured.'
+            );
+            $this->sendJson($this->failedAgentReplyResponse($failed), 200, $this->noStoreHeaders());
+            return;
+        }
+
+        $generationContext = $context;
+        $generationContext['analysis'] = [
+            'moderation' => $analysis['moderation'] ?? [],
+            'engagement' => $analysis['engagement'] ?? [],
+            'quality' => $analysis['quality'] ?? [],
+            'respondability' => $analysis['respondability'] ?? [],
+        ];
+        $generationContext['analysis_hash'] = $this->analysisHash($analysis);
+
+        try {
+            $generation = $generator->generate($generationContext);
+            $stored = $store->saveComplete($generationContext, $generation);
+            $this->sendJson($this->generatedAgentReplyResponse($stored, false), 200, $this->noStoreHeaders());
+        } catch (\Throwable $throwable) {
+            $failed = $store->saveFailed(
+                (string) $context['post_id'],
+                (string) $context['content_hash'],
+                (string) $generationContext['analysis_hash'],
+                'provider_error',
+                $throwable->getMessage()
+            );
+            $this->sendJson($this->failedAgentReplyResponse($failed), 200, $this->noStoreHeaders());
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
     private function handleApplyThreadTag(string $method, array $query): void
     {
         if ($method !== 'POST') {
@@ -2236,6 +2342,28 @@ final class Application
         );
     }
 
+    private function agentReplyGenerator(): ?AgentReplyGenerator
+    {
+        $config = PrivateConfig::load($this->projectRoot);
+        $mode = strtolower(trim((string) ($config['DEDALUS_AGENT_REPLY_MODE'] ?? '')));
+        if ($mode === 'stub') {
+            return new StubAgentReplyGenerator();
+        }
+
+        $apiKey = trim((string) ($config['DEDALUS_API_KEY'] ?? ''));
+        if ($apiKey === '') {
+            return null;
+        }
+
+        return new DedalusAgentReplyGenerator(
+            $apiKey,
+            trim((string) ($config['DEDALUS_API_BASE_URL'] ?? 'https://api.dedaluslabs.ai')) ?: 'https://api.dedaluslabs.ai',
+            trim((string) ($config['DEDALUS_AGENT_REPLY_MODEL'] ?? ($config['DEDALUS_MODEL'] ?? 'openai/gpt-5-nano'))) ?: 'openai/gpt-5-nano',
+            max(60, (int) ($config['DEDALUS_TIMEOUT_SECONDS'] ?? 60)),
+            $this->dedalusAgentReplyPromptTemplatePath($config)
+        );
+    }
+
     /**
      * @param array<string, mixed> $config
      */
@@ -2251,6 +2379,131 @@ final class Application
         }
 
         return $this->projectRoot . '/' . $path;
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function dedalusAgentReplyPromptTemplatePath(array $config): ?string
+    {
+        $path = trim((string) ($config['DEDALUS_AGENT_REPLY_PROMPT_PATH'] ?? ''));
+        if ($path === '') {
+            return null;
+        }
+
+        if (str_starts_with($path, '/')) {
+            return $path;
+        }
+
+        return $this->projectRoot . '/' . $path;
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     * @param array<string, mixed> $analysis
+     * @return array<string, mixed>|null
+     */
+    private function agentReplyGateFailure(array $post, array $analysis): ?array
+    {
+        if ((string) ($post['author_label'] ?? '') === AgentIdentityService::USERNAME) {
+            return ['reason' => 'agent_loop_prevention'];
+        }
+
+        $respondability = is_array($analysis['respondability'] ?? null) ? $analysis['respondability'] : [];
+        $moderation = is_array($analysis['moderation'] ?? null) ? $analysis['moderation'] : [];
+
+        if (($respondability['should_generate_response'] ?? false) !== true) {
+            return ['reason' => 'respondability_not_recommended'];
+        }
+
+        if ((float) ($respondability['overall_score'] ?? 0) < 0.65) {
+            return ['reason' => 'respondability_score_low'];
+        }
+
+        if ((string) ($respondability['response_risk'] ?? '') === 'high') {
+            return ['reason' => 'response_risk_high'];
+        }
+
+        if (in_array((string) ($moderation['severity'] ?? ''), ['high', 'critical'], true)) {
+            return ['reason' => 'moderation_severity_high'];
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<string, mixed> $analysis
+     */
+    private function analysisHash(array $analysis): string
+    {
+        return hash('sha256', json_encode([
+            'status' => $analysis['status'] ?? null,
+            'moderation' => $analysis['moderation'] ?? [],
+            'engagement' => $analysis['engagement'] ?? [],
+            'quality' => $analysis['quality'] ?? [],
+            'respondability' => $analysis['respondability'] ?? [],
+        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
+    }
+
+    /**
+     * @param array<string, mixed> $extra
+     * @return array<string, mixed>
+     */
+    private function agentReplyStatusResponse(string $generationStatus, string $postId, array $extra = []): array
+    {
+        return array_merge([
+            'status' => 'ok',
+            'post_id' => $postId,
+            'generation_status' => $generationStatus,
+        ], $extra);
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    private function generatedAgentReplyResponse(array $row, bool $cached): array
+    {
+        return [
+            'status' => 'ok',
+            'post_id' => (string) ($row['target_post_id'] ?? ''),
+            'generation_status' => 'generated',
+            'cached' => $cached,
+            'provider' => $row['provider'] ?? null,
+            'provider_model' => $row['provider_model'] ?? null,
+            'response_text' => $row['response_text'] ?? null,
+            'response_style' => $row['response_style'] ?? null,
+            'response_intent' => $row['response_intent'] ?? null,
+            'agent_post_id' => $row['agent_post_id'] ?? null,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    private function failedAgentReplyResponse(array $row): array
+    {
+        return [
+            'status' => 'ok',
+            'post_id' => (string) ($row['target_post_id'] ?? ''),
+            'generation_status' => 'failed',
+            'failure_code' => $row['failure_code'] ?? null,
+            'failure_message' => $row['failure_message'] ?? null,
+            'retry_after' => $row['retry_after'] ?? null,
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function noStoreHeaders(): array
+    {
+        return [
+            'Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma: no-cache',
+            'Expires: 0',
+        ];
     }
 
     /**

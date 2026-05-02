@@ -5,7 +5,9 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
+use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
 use ForumRewrite\Write\LocalWriteService;
 
@@ -134,6 +136,155 @@ final class WriteApiSmokeTest
             assertSame('Dedalus API key is not configured.', $response['failure_message']);
         } finally {
             putenv('FORUM_SECRETS_PATH');
+        }
+    }
+
+    public function testGenerateAgentReplyRequiresCompletedCurrentAnalysis(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Needs%20Analysis&body=Should%20this%20be%20answered%3F'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+            $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+
+            assertSame('ok', $response['status']);
+            assertSame('analysis_required', $response['generation_status']);
+            assertSame('missing_analysis', $response['reason']);
+        } finally {
+            putenv('DEDALUS_AGENT_REPLY_MODE');
+        }
+    }
+
+    public function testGenerateAgentReplyReportsFailedAnalysisAsRequired(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $postId = $this->createAnalyzedThread($application, $databasePath);
+            $contentHash = $this->contentHashForAnalysis($databasePath, $postId);
+            (new SqlitePostAnalysisStore(new PDO('sqlite:' . $databasePath)))->saveFailed($postId, $contentHash, 'provider_error', 'analysis failed');
+
+            $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+
+            assertSame('ok', $response['status']);
+            assertSame('analysis_required', $response['generation_status']);
+            assertSame('analysis_not_complete', $response['reason']);
+            assertSame('failed', $response['analysis_status']);
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            putenv('DEDALUS_AGENT_REPLY_MODE');
+        }
+    }
+
+    public function testGenerateAgentReplyRejectsLowRespondabilityHighRiskAndHighModeration(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+            $lowPostId = $this->createAnalyzedThread($application, $databasePath, [
+                'respondability' => ['overall_score' => 0.4],
+            ]);
+            $riskPostId = $this->createAnalyzedThread($application, $databasePath, [
+                'respondability' => ['response_risk' => 'high'],
+            ]);
+            $moderationPostId = $this->createAnalyzedThread($application, $databasePath, [
+                'moderation' => ['severity' => 'critical'],
+            ]);
+
+            $low = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($lowPostId)), true);
+            $risk = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($riskPostId)), true);
+            $moderation = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($moderationPostId)), true);
+
+            assertSame('not_recommended', $low['generation_status']);
+            assertSame('respondability_score_low', $low['reason']);
+            assertSame('not_recommended', $risk['generation_status']);
+            assertSame('response_risk_high', $risk['reason']);
+            assertSame('not_recommended', $moderation['generation_status']);
+            assertSame('moderation_severity_high', $moderation['reason']);
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            putenv('DEDALUS_AGENT_REPLY_MODE');
+        }
+    }
+
+    public function testGenerateAgentReplyRejectsAgentAuthoredTarget(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
+
+        try {
+            $identity = (new AgentIdentityService(
+                $repositoryRoot,
+                $databasePath,
+                $artifactRoot,
+                sys_get_temp_dir() . '/forum-rewrite-agent-private-' . bin2hex(random_bytes(6)),
+                new CanonicalRecordRepository($repositoryRoot),
+            ))->ensureReplyAgentIdentity();
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Agent%20Thread&body=Agent%20body%3F&author_identity_id=' . rawurlencode((string) $identity['identity_id'])
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+            $this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId));
+
+            $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+
+            assertSame('not_recommended', $response['generation_status']);
+            assertSame('agent_loop_prevention', $response['reason']);
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            putenv('DEDALUS_AGENT_REPLY_MODE');
+        }
+    }
+
+    public function testGenerateAgentReplyStoresMetadataWithoutCreatingCanonicalPost(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $postId = $this->createAnalyzedThread($application, $databasePath);
+            $postCountBefore = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+
+            $first = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $second = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $postCountAfter = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $row = $pdo->query('SELECT status, provider, response_text, agent_post_id FROM post_generated_responses')->fetch();
+
+            assertSame('generated', $first['generation_status']);
+            assertSame(false, $first['cached']);
+            assertSame('stub', $first['provider']);
+            assertStringContains('tradeoffs', $first['response_text']);
+            assertSame('generated', $second['generation_status']);
+            assertSame(true, $second['cached']);
+            assertSame($postCountBefore, $postCountAfter);
+            assertSame('complete', $row['status']);
+            assertSame('stub', $row['provider']);
+            assertStringContains('tradeoffs', $row['response_text']);
+            assertSame(null, $row['agent_post_id']);
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            putenv('DEDALUS_AGENT_REPLY_MODE');
         }
     }
 
@@ -1361,6 +1512,87 @@ final class WriteApiSmokeTest
         }
 
         return strtok($matches[1], '?') ?: $matches[1];
+    }
+
+    /**
+     * @param array<string, mixed> $analysisOverrides
+     */
+    private function createAnalyzedThread(Application $application, string $databasePath, array $analysisOverrides = []): string
+    {
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_thread?board_tags=general&subject=Respondable%20Question&body=' . rawurlencode('What should we consider next?')
+        );
+        $postId = $this->extractValue($response, 'post_id');
+        $this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId));
+
+        if ($analysisOverrides !== []) {
+            $contentHash = $this->contentHashForAnalysis($databasePath, $postId);
+            (new SqlitePostAnalysisStore(new PDO('sqlite:' . $databasePath)))->saveComplete(
+                $postId,
+                $contentHash,
+                array_replace_recursive($this->baseCompletedAnalysis(), $analysisOverrides)
+            );
+        }
+
+        return $postId;
+    }
+
+    private function contentHashForAnalysis(string $databasePath, string $postId): string
+    {
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $stmt = $pdo->prepare('SELECT content_hash FROM post_analyses WHERE post_id = :post_id');
+        $stmt->execute(['post_id' => $postId]);
+        $value = $stmt->fetchColumn();
+        if ($value === false) {
+            throw new RuntimeException('Missing analysis content hash for ' . $postId);
+        }
+
+        return (string) $value;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function baseCompletedAnalysis(): array
+    {
+        return [
+            'provider' => 'stub',
+            'provider_model' => 'stub/post-analysis',
+            'provider_request_id' => 'stub-analysis',
+            'moderation' => [
+                'severity' => 'none',
+                'labels' => [],
+                'confidence' => 0.9,
+                'summary' => 'No moderation concern.',
+                'recommended_action' => 'none',
+            ],
+            'engagement' => [
+                'suggested_response' => 'Consider naming the main tradeoff.',
+                'response_style' => 'curious',
+                'response_should_be_public' => true,
+            ],
+            'quality' => [
+                'discussion_value' => 'medium',
+                'good_faith_likelihood' => 0.9,
+                'needs_human_review' => false,
+            ],
+            'respondability' => [
+                'overall_score' => 0.9,
+                'asks_question' => true,
+                'question_type' => 'opinion',
+                'invites_response' => true,
+                'author_benefit' => 'medium',
+                'audience_benefit' => 'medium',
+                'response_effort_required' => 'low',
+                'response_risk' => 'low',
+                'best_response_mode' => 'answer',
+                'should_generate_response' => true,
+                'reason' => 'Respondable test post.',
+            ],
+            'raw_response' => ['stub' => true],
+        ];
     }
 
     /**

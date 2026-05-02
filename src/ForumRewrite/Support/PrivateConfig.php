@@ -27,7 +27,16 @@ final class PrivateConfig
             }
         }
 
-        foreach (['DEDALUS_API_KEY', 'DEDALUS_API_BASE_URL', 'DEDALUS_MODEL', 'DEDALUS_TIMEOUT_SECONDS', 'DEDALUS_ANALYSIS_MODE'] as $key) {
+        foreach ([
+            'DEDALUS_API_KEY',
+            'DEDALUS_API_BASE_URL',
+            'DEDALUS_MODEL',
+            'DEDALUS_TIMEOUT_SECONDS',
+            'DEDALUS_ANALYSIS_MODE',
+            'DEDALUS_AGENT_REPLY_MODE',
+            'DEDALUS_AGENT_REPLY_MODEL',
+            'DEDALUS_AGENT_REPLY_PROMPT_PATH',
+        ] as $key) {
             $value = getenv($key);
             if ($value !== false) {
                 $config[$key] = $value;

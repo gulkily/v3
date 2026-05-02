@@ -92,6 +92,8 @@ Commit after storage, prompt, and generator interfaces work independently of can
 
 ## Slice 3: Agent Reply Gating API
 
+Status: implemented in branch `dedalus-agent-reply-slices`; committed after tests passed.
+
 ### Objective
 
 Add an API endpoint that decides whether an agent reply should be generated, but initially does not write the canonical reply.
