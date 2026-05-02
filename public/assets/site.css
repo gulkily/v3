@@ -399,6 +399,20 @@ pre {
   overflow-wrap: anywhere;
 }
 
+.post-card {
+  position: relative;
+  padding-bottom: 2.25rem;
+}
+
+.post-card-permalink {
+  position: absolute;
+  right: 0.9rem;
+  bottom: 0.65rem;
+  font-family: var(--ui-font);
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
 .tags-section-card {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--panel) 92%, transparent 8%) 0%, var(--panel) 100%);

@@ -170,7 +170,8 @@ final class LocalAppSmokeTest
         assertStringContains('/user/guest', $thread);
         assertStringContains('by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $thread);
         assertStringNotContains('Last activity <time datetime=', $thread);
-        assertOrdered($thread, 'Post <a href="/posts/root-001">root-001</a>', 'Post <a href="/posts/reply-001">reply-001</a>');
+        assertOrdered($thread, 'href="/posts/root-001" title="Post root-001" aria-label="Post root-001">#</a>', 'href="/posts/reply-001" title="Post reply-001" aria-label="Post reply-001">#</a>');
+        assertStringNotContains('Post <a href="/posts/root-001">root-001</a>', $thread);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $thread);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=reply-001', $thread);
         assertStringContains('First line preview.', $post);
