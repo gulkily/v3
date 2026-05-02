@@ -59,7 +59,7 @@ final class TemplateRenderer
             'themeToggleScriptPath' => $this->appendVersionQuery('/assets/theme_toggle.js'),
             'versionCheckScriptPath' => $this->appendVersionQuery('/assets/version_check.js'),
             'navItems' => [
-                ['href' => '/', 'label' => 'Board', 'section' => 'board'],
+                ['href' => '/threads/', 'label' => 'Board', 'section' => 'board'],
                 ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
                 ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
                 ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],

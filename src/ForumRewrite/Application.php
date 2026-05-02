@@ -128,15 +128,16 @@ final class Application
             return;
         }
 
-        if ($path === '/' || $path === '') {
+        if ($path === '/' || $path === '' || $path === '/threads/' || $path === '/threads') {
             if (($query['format'] ?? null) === 'rss') {
                 $this->sendXml($this->renderBoardRss(), 200);
                 return;
             }
 
+            $defaultView = ($path === '/threads/' || $path === '/threads') ? 'all' : 'liked';
             $this->sendHtml(
                 $this->renderBoard(
-                    (string) ($query['view'] ?? 'liked'),
+                    (string) ($query['view'] ?? $defaultView),
                     (string) ($query['sort'] ?? 'newest'),
                 ),
                 200
@@ -1524,13 +1525,13 @@ final class Application
             [
                 'key' => 'all',
                 'label' => 'All',
-                'href' => '/?view=all&sort=' . rawurlencode($activeSort),
+                'href' => '/threads/?view=all&sort=' . rawurlencode($activeSort),
                 'is_active' => $activeView === 'all',
             ],
             [
                 'key' => 'liked',
                 'label' => 'Liked',
-                'href' => '/?view=liked&sort=' . rawurlencode($activeSort),
+                'href' => '/threads/?view=liked&sort=' . rawurlencode($activeSort),
                 'is_active' => $activeView === 'liked',
             ],
         ];
@@ -1545,19 +1546,19 @@ final class Application
             [
                 'key' => 'newest',
                 'label' => 'Newest',
-                'href' => '/?view=' . rawurlencode($activeView) . '&sort=newest',
+                'href' => '/threads/?view=' . rawurlencode($activeView) . '&sort=newest',
                 'is_active' => $activeSort === 'newest',
             ],
             [
                 'key' => 'oldest',
                 'label' => 'Oldest',
-                'href' => '/?view=' . rawurlencode($activeView) . '&sort=oldest',
+                'href' => '/threads/?view=' . rawurlencode($activeView) . '&sort=oldest',
                 'is_active' => $activeSort === 'oldest',
             ],
             [
                 'key' => 'top',
                 'label' => 'Top',
-                'href' => '/?view=' . rawurlencode($activeView) . '&sort=top',
+                'href' => '/threads/?view=' . rawurlencode($activeView) . '&sort=top',
                 'is_active' => $activeSort === 'top',
             ],
         ];

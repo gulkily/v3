@@ -102,6 +102,14 @@ final class FrontController
             ]);
         }
 
+        if ($path === '/threads/' || $path === '/threads') {
+            return $this->firstExistingPath([
+                $this->publicRoot . '/threads.html',
+                $this->publicRoot . '/threads/index.html',
+                $this->staticHtmlRoot . '/threads/index.html',
+            ]);
+        }
+
         if ($path === '/about/' || $path === '/about') {
             return $this->firstExistingPath([
                 $this->publicRoot . '/about.html',

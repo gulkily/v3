@@ -117,6 +117,8 @@ final class LocalAppSmokeTest
         );
 
         $board = $this->render($application, '/');
+        $threadsIndex = $this->render($application, '/threads/');
+        $threadsIndexNoSlash = $this->render($application, '/threads');
         $about = $this->render($application, '/about/');
         $thread = $this->render($application, '/threads/root-001');
         $post = $this->render($application, '/posts/root-001');
@@ -140,6 +142,11 @@ final class LocalAppSmokeTest
         $llms = $this->render($application, '/llms.txt');
 
         assertStringContains('Board', $board);
+        assertStringContains('Board', $threadsIndex);
+        assertStringContains('Board', $threadsIndexNoSlash);
+        assertStringContains('href="/threads/root-001"', $threadsIndex);
+        assertStringContains('href="/threads/root-001"', $threadsIndexNoSlash);
+        assertStringContains('href="/threads/">Board</a>', $board);
         assertStringContains('href="/about/">About</a>', $board);
         assertStringContains('New Post', $board);
         assertStringContains('href="/compose/thread"', $board);
@@ -148,10 +155,10 @@ final class LocalAppSmokeTest
         assertStringContains('href="/tags/"', $board);
         assertStringNotContains('View: All', $board);
         assertStringNotContains('Sort: Newest', $board);
-        assertStringContains('/?view=all&amp;sort=newest', $board);
-        assertStringContains('/?view=liked&amp;sort=newest', $board);
-        assertStringContains('/?view=liked&amp;sort=oldest', $board);
-        assertStringContains('/?view=liked&amp;sort=top', $board);
+        assertStringContains('/threads/?view=all&amp;sort=newest', $board);
+        assertStringContains('/threads/?view=liked&amp;sort=newest', $board);
+        assertStringContains('/threads/?view=liked&amp;sort=oldest', $board);
+        assertStringContains('/threads/?view=liked&amp;sort=top', $board);
         assertStringNotContains('href="/tags/board/', $board);
         assertStringNotContains('href="/tags/label/', $board);
         assertStringNotContains('Score: 0', $board);
@@ -561,6 +568,8 @@ final class LocalAppSmokeTest
         $builder->build();
 
         assertTrue(is_file($artifactRoot . '/index.html'));
+        assertTrue(is_file($artifactRoot . '/threads.html'));
+        assertTrue(is_file($artifactRoot . '/threads/index.html'));
         assertTrue(is_file($artifactRoot . '/about.html'));
         assertTrue(is_file($artifactRoot . '/about/index.html'));
         assertTrue(is_file($artifactRoot . '/instance.html'));
@@ -577,6 +586,8 @@ final class LocalAppSmokeTest
         assertTrue(is_file($artifactRoot . '/posts/root-001.html'));
         assertTrue(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/index.html'));
+        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads.html'));
+        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/index.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/about.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/about/index.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tools.html'));
@@ -599,6 +610,16 @@ final class LocalAppSmokeTest
         $response = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
         assertStringContains('Hello world', $response);
         assertStringContains('route-source: static-html', $response);
+
+        $threadsResponse = $this->renderFrontController($controller, 'GET', '/threads/', []);
+        assertStringContains('Board', $threadsResponse);
+        assertStringContains('/threads/root-001', $threadsResponse);
+        assertStringContains('route-source: static-html', $threadsResponse);
+
+        $threadsNoSlashResponse = $this->renderFrontController($controller, 'GET', '/threads', []);
+        assertStringContains('Board', $threadsNoSlashResponse);
+        assertStringContains('/threads/root-001', $threadsNoSlashResponse);
+        assertStringContains('route-source: static-html', $threadsNoSlashResponse);
 
         $usersResponse = $this->renderFrontController($controller, 'GET', '/users/', []);
         assertStringContains('Users', $usersResponse);
