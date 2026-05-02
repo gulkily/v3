@@ -2128,11 +2128,6 @@ final class Application
             return;
         }
 
-        if ($existing !== null && $existing['status'] === 'complete') {
-            $this->sendJson($this->generatedAgentReplyResponse($existing, true), 200, $this->noStoreHeaders());
-            return;
-        }
-
         $analysis = (new SqlitePostAnalysisStore($this->pdo()))->find(
             (string) $context['post_id'],
             (string) $context['content_hash']
@@ -2152,19 +2147,6 @@ final class Application
             return;
         }
 
-        $generator = $this->agentReplyGenerator();
-        if ($generator === null) {
-            $failed = $store->saveFailed(
-                (string) $context['post_id'],
-                (string) $context['content_hash'],
-                $this->analysisHash($analysis),
-                'config_missing',
-                'Dedalus API key is not configured.'
-            );
-            $this->sendJson($this->failedAgentReplyResponse($failed), 200, $this->noStoreHeaders());
-            return;
-        }
-
         $generationContext = $context;
         $generationContext['analysis'] = [
             'moderation' => $analysis['moderation'] ?? [],
@@ -2174,16 +2156,70 @@ final class Application
         ];
         $generationContext['analysis_hash'] = $this->analysisHash($analysis);
 
+        $stored = $existing !== null && $existing['status'] === 'complete' ? $existing : null;
+        if ($stored === null) {
+            $generator = $this->agentReplyGenerator();
+            if ($generator === null) {
+                $failed = $store->saveFailed(
+                    (string) $context['post_id'],
+                    (string) $context['content_hash'],
+                    (string) $generationContext['analysis_hash'],
+                    'config_missing',
+                    'Dedalus API key is not configured.'
+                );
+                $this->sendJson($this->failedAgentReplyResponse($failed), 200, $this->noStoreHeaders());
+                return;
+            }
+
+            try {
+                $generation = $generator->generate($generationContext);
+                $stored = $store->saveComplete($generationContext, $generation);
+            } catch (\Throwable $throwable) {
+                $failed = $store->saveFailed(
+                    (string) $context['post_id'],
+                    (string) $context['content_hash'],
+                    (string) $generationContext['analysis_hash'],
+                    'provider_error',
+                    $throwable->getMessage()
+                );
+                $this->sendJson($this->failedAgentReplyResponse($failed), 200, $this->noStoreHeaders());
+                return;
+            }
+        }
+
+        $latest = $store->findByTarget((string) $context['post_id'], (string) $context['content_hash']);
+        if ($latest !== null && $latest['agent_post_id'] !== null) {
+            $this->sendJson($this->agentReplyStatusResponse('already_posted', $postId, [
+                'agent_post_id' => $latest['agent_post_id'],
+                'agent_post_url' => '/posts/' . $latest['agent_post_id'],
+            ]), 200, $this->noStoreHeaders());
+            return;
+        }
+
         try {
-            $generation = $generator->generate($generationContext);
-            $stored = $store->saveComplete($generationContext, $generation);
-            $this->sendJson($this->generatedAgentReplyResponse($stored, false), 200, $this->noStoreHeaders());
+            $identity = $this->agentIdentityService()->ensureReplyAgentIdentity();
+            $writeResult = $this->writer()->createReply([
+                'thread_id' => (string) $post['thread_id'],
+                'parent_id' => (string) $post['post_id'],
+                'board_tags' => 'general',
+                'body' => (string) ($stored['response_text'] ?? ''),
+                'author_identity_id' => (string) $identity['identity_id'],
+            ]);
+            $posted = $store->markPosted(
+                (string) $context['post_id'],
+                (string) $context['content_hash'],
+                (string) $writeResult['post_id'],
+                (string) $identity['identity_id'],
+                (string) $identity['profile_slug']
+            );
+
+            $this->sendJson($this->generatedAgentReplyResponse($posted, $existing !== null), 200, $this->noStoreHeaders());
         } catch (\Throwable $throwable) {
             $failed = $store->saveFailed(
                 (string) $context['post_id'],
                 (string) $context['content_hash'],
                 (string) $generationContext['analysis_hash'],
-                'provider_error',
+                'posting_error',
                 $throwable->getMessage()
             );
             $this->sendJson($this->failedAgentReplyResponse($failed), 200, $this->noStoreHeaders());
@@ -2311,6 +2347,17 @@ final class Application
             $this->repositoryRoot,
             $this->databasePath,
             $this->artifactRoot ?? ($this->projectRoot . '/public'),
+            new CanonicalRecordRepository($this->repositoryRoot),
+        );
+    }
+
+    private function agentIdentityService(): AgentIdentityService
+    {
+        return new AgentIdentityService(
+            $this->repositoryRoot,
+            $this->databasePath,
+            $this->artifactRoot ?? ($this->projectRoot . '/public'),
+            $this->projectRoot . '/state/private/agent-reply',
             new CanonicalRecordRepository($this->repositoryRoot),
         );
     }
@@ -2475,6 +2522,8 @@ final class Application
             'response_style' => $row['response_style'] ?? null,
             'response_intent' => $row['response_intent'] ?? null,
             'agent_post_id' => $row['agent_post_id'] ?? null,
+            'agent_post_url' => isset($row['agent_post_id']) ? '/posts/' . $row['agent_post_id'] : null,
+            'posted' => isset($row['agent_post_id']),
         ];
     }
 

@@ -254,7 +254,7 @@ final class WriteApiSmokeTest
         }
     }
 
-    public function testGenerateAgentReplyStoresMetadataWithoutCreatingCanonicalPost(): void
+    public function testGenerateAgentReplyCreatesCanonicalReplyAndIsIdempotent(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         putenv('DEDALUS_ANALYSIS_MODE=stub');
@@ -263,24 +263,64 @@ final class WriteApiSmokeTest
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
             $postId = $this->createAnalyzedThread($application, $databasePath);
-            $postCountBefore = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
 
             $first = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $agentPostId = (string) $first['agent_post_id'];
+            $postCountAfterFirst = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
             $second = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $postCountAfter = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
             $pdo = new PDO('sqlite:' . $databasePath);
-            $row = $pdo->query('SELECT status, provider, response_text, agent_post_id FROM post_generated_responses')->fetch();
+            $row = $pdo->query('SELECT status, provider, response_text, agent_post_id, agent_identity_id, agent_profile_slug, posted_at FROM post_generated_responses')->fetch();
+            $replyRecord = (string) file_get_contents($repositoryRoot . '/records/posts/' . $agentPostId . '.txt');
+            $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
 
             assertSame('generated', $first['generation_status']);
             assertSame(false, $first['cached']);
             assertSame('stub', $first['provider']);
             assertStringContains('tradeoffs', $first['response_text']);
-            assertSame('generated', $second['generation_status']);
-            assertSame(true, $second['cached']);
-            assertSame($postCountBefore, $postCountAfter);
-            assertSame('complete', $row['status']);
+            assertSame(true, $first['posted']);
+            assertSame('/posts/' . $agentPostId, $first['agent_post_url']);
+            assertStringContains('Parent-ID: ' . $postId, $replyRecord);
+            assertStringContains('Author-Identity-ID: openpgp:', $replyRecord);
+            assertStringContains('tradeoffs', $replyRecord);
+            assertSame('already_posted', $second['generation_status']);
+            assertSame($agentPostId, $second['agent_post_id']);
+            assertSame($postCountAfterFirst, $postCountAfter);
+            assertSame('posted', $row['status']);
             assertSame('stub', $row['provider']);
             assertStringContains('tradeoffs', $row['response_text']);
+            assertSame($agentPostId, $row['agent_post_id']);
+            assertStringContains('openpgp:', $row['agent_identity_id']);
+            assertStringContains('openpgp-', $row['agent_profile_slug']);
+            assertSame(true, is_string($row['posted_at']));
+            assertStringContains('reply-agent', $threadPage);
+            assertStringContains('tradeoffs', $threadPage);
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            putenv('DEDALUS_AGENT_REPLY_MODE');
+        }
+    }
+
+    public function testGenerateAgentReplyRecordsPostingFailureAfterGeneration(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        putenv('DEDALUS_AGENT_REPLY_MODE=stub');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $postId = $this->createAnalyzedThread($application, $databasePath);
+            $this->deleteTree($repositoryRoot . '/.git');
+
+            $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $row = $pdo->query('SELECT status, failure_code, failure_message, agent_post_id FROM post_generated_responses')->fetch();
+
+            assertSame('failed', $response['generation_status']);
+            assertSame('posting_error', $response['failure_code']);
+            assertSame('failed', $row['status']);
+            assertSame('posting_error', $row['failure_code']);
+            assertStringContains('Writable repository must be a git checkout', $row['failure_message']);
             assertSame(null, $row['agent_post_id']);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');

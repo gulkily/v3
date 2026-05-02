@@ -139,6 +139,8 @@ Commit after the endpoint can safely generate and store metadata without posting
 
 ## Slice 4: Canonical Agent Reply Posting
 
+Status: implemented in branch `dedalus-agent-reply-slices`; committed after tests passed.
+
 ### Objective
 
 Turn a successful generated response into a canonical reply authored by `reply-agent`.
