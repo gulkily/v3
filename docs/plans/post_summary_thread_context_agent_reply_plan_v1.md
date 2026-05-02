@@ -66,9 +66,13 @@ Add a neutral one-sentence `post_summary` to stored post analysis, then use each
    - Add an application-level test that reply/analysis context for a thread includes multiple comments with summaries and body text.
    - Run `php tests/run.php`.
 
+## Implementation Progress
+
+- Baseline committed in `fa4e313` with the reviewed plan.
+- Slice 1: complete - added `post_summary` to the Dedalus post-analysis prompt/schema and direct analyzer tests. Verification: `php tests/run.php`.
+
 ## Open Decisions
 
 - Exact truncation limits for thread comments. Proposed starting point: 3000 chars per comment and 18000 chars total.
 - Whether the UI label should be `Post summary` and `Moderation summary`, or leave the moderation field as `Summary`.
 - Whether missing per-comment summaries should remain empty, or whether reply generation should opportunistically analyze missing comments first. The safer first implementation is empty summaries to avoid cascading provider calls.
-

@@ -71,6 +71,7 @@ final class DedalusPostAnalyzer implements PostAnalyzer
             'provider' => 'dedalus',
             'provider_model' => (string) ($response['model'] ?? $this->model),
             'provider_request_id' => isset($response['id']) ? (string) $response['id'] : null,
+            'post_summary' => (string) ($decoded['post_summary'] ?? ''),
             'moderation' => $this->objectOrEmpty($decoded['moderation'] ?? null),
             'engagement' => $this->objectOrEmpty($decoded['engagement'] ?? null),
             'quality' => $this->objectOrEmpty($decoded['quality'] ?? null),
@@ -206,6 +207,11 @@ final class DedalusPostAnalyzer implements PostAnalyzer
             'type' => 'object',
             'additionalProperties' => false,
             'properties' => [
+                'post_summary' => [
+                    'type' => 'string',
+                    'minLength' => 1,
+                    'maxLength' => 500,
+                ],
                 'engagement' => [
                     'type' => 'object',
                     'additionalProperties' => false,
@@ -305,7 +311,7 @@ final class DedalusPostAnalyzer implements PostAnalyzer
                     ],
                 ],
             ],
-            'required' => ['engagement', 'moderation', 'quality', 'respondability'],
+            'required' => ['post_summary', 'engagement', 'moderation', 'quality', 'respondability'],
         ];
     }
 

@@ -21,6 +21,7 @@ final class DedalusPostAnalyzerTest
         ]);
 
         assertSame('none', $decoded['moderation']['severity']);
+        assertSame('The post asks how to make replies more useful.', $decoded['post_summary']);
         assertSame('curious', $decoded['engagement']['response_style']);
         assertSame(true, $decoded['respondability']['should_generate_response']);
     }
@@ -109,6 +110,7 @@ final class DedalusPostAnalyzerTest
     private function analysisPayload(): array
     {
         return [
+            'post_summary' => 'The post asks how to make replies more useful.',
             'engagement' => [
                 'suggested_response' => 'What would change your mind?',
                 'response_style' => 'curious',
