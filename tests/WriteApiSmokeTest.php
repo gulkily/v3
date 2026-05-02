@@ -273,6 +273,7 @@ final class WriteApiSmokeTest
             $row = $pdo->query('SELECT status, provider, response_text, agent_post_id, agent_identity_id, agent_profile_slug, posted_at FROM post_generated_responses')->fetch();
             $replyRecord = (string) file_get_contents($repositoryRoot . '/records/posts/' . $agentPostId . '.txt');
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $createdThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId) . '?created_post_id=' . rawurlencode($postId));
 
             assertSame('generated', $first['generation_status']);
             assertSame(false, $first['cached']);
@@ -295,6 +296,10 @@ final class WriteApiSmokeTest
             assertSame(true, is_string($row['posted_at']));
             assertStringContains('reply-agent', $threadPage);
             assertStringContains('tradeoffs', $threadPage);
+            assertStringContains('data-created-post-id="' . $postId . '"', $createdThreadPage);
+            assertStringContains('data-post-id="' . $postId . '"', $createdThreadPage);
+            assertStringContains('data-agent-reply-posted-id="' . $agentPostId . '"', $createdThreadPage);
+            assertStringContains('data-role="agent-reply-feedback"', $createdThreadPage);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
             putenv('DEDALUS_AGENT_REPLY_MODE');

@@ -171,6 +171,8 @@ Commit after canonical posting is fully wired and idempotent.
 
 ## Slice 5: Agent Reply UI Notification
 
+Status: implemented in branch `dedalus-agent-reply-slices`; committed after tests and JS syntax check passed.
+
 ### Objective
 
 Notify the user on the thread page when agent generation is running, skipped, failed, or posted.

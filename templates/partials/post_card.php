@@ -1,4 +1,8 @@
-<article class="card">
+<?php
+$agentReply = $agentRepliesByPostId[$post['post_id']] ?? null;
+$agentReplyPostedId = is_array($agentReply) && isset($agentReply['agent_post_id']) ? (string) $agentReply['agent_post_id'] : '';
+?>
+<article class="card" data-post-id="<?= $e($post['post_id']) ?>"<?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?>>
   <p class="meta">Post <a href="/posts/<?= $e($post['post_id']) ?>"><?= $e($post['post_id']) ?></a></p>
   <p class="meta"><?= $contentMeta($post, 'created_at', '') ?></p>
   <div class="body"><?= $br($post['body']) ?></div>
@@ -17,6 +21,7 @@ if (!is_array($postAnalysisLabels)) {
 ?>
   <div class="button-row button-row-natural post-card-actions">
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
+    <p class="meta agent-reply-feedback" data-role="agent-reply-feedback" hidden></p>
 <?php if (is_array($postAnalysis) && ($postAnalysis['status'] ?? '') === 'complete'): ?>
   <details class="post-analysis">
     <summary>Post analysis</summary>

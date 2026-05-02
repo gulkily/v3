@@ -529,6 +529,7 @@ final class Application
                 'createdPostId' => $this->createdPostIdForThread($threadId, $createdPostId),
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $this->fetchPostAnalysesForPosts($posts) : [],
+                'agentRepliesByPostId' => $this->fetchAgentReplyGenerationsForPosts($posts),
             ],
             $title,
             'board',
@@ -1290,6 +1291,36 @@ final class Application
         }
 
         return $analyses;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $posts
+     * @return array<string, array<string, mixed>>
+     */
+    private function fetchAgentReplyGenerationsForPosts(array $posts): array
+    {
+        if ($posts === []) {
+            return [];
+        }
+
+        try {
+            $store = new SqliteAgentReplyGenerationStore($this->pdo());
+        } catch (\Throwable) {
+            return [];
+        }
+
+        $generations = [];
+        foreach ($posts as $post) {
+            $context = $this->postAnalysisContext($post);
+            $generation = $store->findByTarget((string) $context['post_id'], (string) $context['content_hash']);
+            if ($generation === null) {
+                continue;
+            }
+
+            $generations[(string) $context['post_id']] = $generation;
+        }
+
+        return $generations;
     }
 
     /**
@@ -2087,7 +2118,10 @@ final class Application
         $result = $this->postAnalysisService()->analyze($context);
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
-        $this->sendJson($this->postAnalysisResponse($result, $viewerCanSeePostAnalysis), 200, [
+        $response = $this->postAnalysisResponse($result, $viewerCanSeePostAnalysis);
+        $response['agent_reply_generation_allowed'] = ($result['status'] ?? null) === 'complete'
+            && $this->agentReplyGateFailure($post, $result) === null;
+        $this->sendJson($response, 200, [
             'Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
             'Pragma: no-cache',
             'Expires: 0',
