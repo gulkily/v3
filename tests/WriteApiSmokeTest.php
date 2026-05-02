@@ -812,6 +812,28 @@ final class WriteApiSmokeTest
         assertStringNotContains('Unliked Thread', $boardLikedNewest);
     }
 
+    public function testLikedViewIncludesUnapprovedLikesBecauseItFiltersLabelsNotScore(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $identity = $this->linkGeneratedIdentity($application, 'pending-user');
+        $threadResponse = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_thread?board_tags=general&subject=Pending%20Liked%20Thread&body=Thread%20body'
+        );
+        $threadId = $this->extractValue($threadResponse, 'thread_id');
+
+        $_COOKIE = ['identity_hint' => $identity['identity_id']];
+        $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=' . rawurlencode($threadId) . '&tag=like');
+        $_COOKIE = [];
+
+        $boardLiked = $this->renderMethod($application, 'GET', '/?view=liked&sort=newest');
+
+        assertStringContains('Pending Liked Thread', $boardLiked);
+    }
+
     public function testApplyThreadTagUsesIncrementalReadModelUpdateWhenDatabaseIsWarm(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

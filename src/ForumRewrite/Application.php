@@ -1510,8 +1510,7 @@ final class Application
     {
         return match ($view) {
             'all' => true,
-            'liked' => in_array('like', $thread['thread_labels'] ?? [], true)
-                && ((int) ($thread['score_total'] ?? 0)) > 0,
+            'liked' => in_array('like', $thread['thread_labels'] ?? [], true),
             default => true,
         };
     }
