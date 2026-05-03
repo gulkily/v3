@@ -19,6 +19,7 @@ $postAnalysisModeration = is_array($postAnalysis) && is_array($postAnalysis['mod
 $postAnalysisEngagement = is_array($postAnalysis) && is_array($postAnalysis['engagement'] ?? null) ? $postAnalysis['engagement'] : [];
 $postAnalysisQuality = is_array($postAnalysis) && is_array($postAnalysis['quality'] ?? null) ? $postAnalysis['quality'] : [];
 $postAnalysisRespondability = is_array($postAnalysis) && is_array($postAnalysis['respondability'] ?? null) ? $postAnalysis['respondability'] : [];
+$postAnalysisSummary = is_array($postAnalysis) ? trim((string) ($postAnalysis['post_summary'] ?? '')) : '';
 $postAnalysisLabels = $postAnalysisModeration['labels'] ?? [];
 if (!is_array($postAnalysisLabels)) {
     $postAnalysisLabels = [];
@@ -32,12 +33,15 @@ if (!is_array($postAnalysisLabels)) {
     <summary>Post analysis</summary>
     <div class="stack">
       <p class="meta">Provider: <?= $e(($postAnalysis['provider'] ?? 'unknown') . ' / ' . ($postAnalysis['provider_model'] ?? 'unknown')) ?></p>
+<?php if ($postAnalysisSummary !== ''): ?>
+      <p><strong>Post summary:</strong> <?= $e($postAnalysisSummary) ?></p>
+<?php endif; ?>
       <p><strong>Moderation:</strong> <?= $e($postAnalysisModeration['severity'] ?? 'unknown') ?><?= $postAnalysisLabels !== [] ? ' (' . $e(implode(', ', array_map('strval', $postAnalysisLabels))) . ')' : '' ?></p>
 <?php if (isset($postAnalysisModeration['recommended_action'])): ?>
       <p><strong>Recommended action:</strong> <?= $e($postAnalysisModeration['recommended_action']) ?></p>
 <?php endif; ?>
 <?php if (isset($postAnalysisModeration['summary']) && trim((string) $postAnalysisModeration['summary']) !== ''): ?>
-      <p><strong>Summary:</strong> <?= $e($postAnalysisModeration['summary']) ?></p>
+      <p><strong>Moderation summary:</strong> <?= $e($postAnalysisModeration['summary']) ?></p>
 <?php endif; ?>
 <?php if (isset($postAnalysisQuality['discussion_value']) || isset($postAnalysisQuality['good_faith_likelihood'])): ?>
       <p><strong>Quality:</strong> <?= $e($postAnalysisQuality['discussion_value'] ?? 'unknown') ?><?php if (isset($postAnalysisQuality['good_faith_likelihood'])): ?>, good faith <?= $e($postAnalysisQuality['good_faith_likelihood']) ?><?php endif; ?></p>

@@ -2721,12 +2721,12 @@ final class Application
         return [
             'post_id' => (string) $post['post_id'],
             'content_hash' => hash('sha256', json_encode([
-                'analysis_schema_version' => 2,
+                'analysis_schema_version' => 3,
                 'post_id' => (string) $post['post_id'],
                 'subject' => (string) ($post['subject'] ?? ''),
                 'body' => $body,
             ], JSON_THROW_ON_ERROR)),
-            'analysis_schema_version' => 2,
+            'analysis_schema_version' => 3,
             'post_kind' => (string) $post['post_id'] === (string) $post['thread_id'] ? 'thread' : 'reply',
             'thread_id' => (string) $post['thread_id'],
             'parent_id' => isset($post['parent_id']) ? (string) $post['parent_id'] : null,
@@ -2772,6 +2772,7 @@ final class Application
 
         $response['provider'] = $analysis['provider'] ?? null;
         $response['provider_model'] = $analysis['provider_model'] ?? null;
+        $response['post_summary'] = $analysis['post_summary'] ?? '';
         $response['moderation'] = $analysis['moderation'] ?? null;
         $response['engagement'] = $analysis['engagement'] ?? null;
         $response['quality'] = $analysis['quality'] ?? null;

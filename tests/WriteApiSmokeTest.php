@@ -101,6 +101,7 @@ final class WriteApiSmokeTest
             assertSame(true, $second['cached']);
             assertSame(true, $second['viewer_can_see_analysis']);
             assertSame('stub', $second['provider']);
+            assertSame('The post says: Thoughtful body?', $second['post_summary']);
             assertSame('none', $second['moderation']['severity']);
             assertSame(true, $second['respondability']['asks_question']);
             assertSame('opinion', $second['respondability']['question_type']);
@@ -111,6 +112,8 @@ final class WriteApiSmokeTest
             assertStringNotContains('Post analysis', $anonymousThreadPage);
             assertStringContains('Post analysis', $approvedThreadPage);
             assertStringContains('Provider: stub / stub/post-analysis', $approvedThreadPage);
+            assertStringContains('Post summary:', $approvedThreadPage);
+            assertStringContains('Moderation summary:', $approvedThreadPage);
             assertStringContains('Respondability:', $approvedThreadPage);
             assertStringContains('Question:', $approvedThreadPage);
             assertStringContains('Response value:', $approvedThreadPage);
@@ -1707,6 +1710,7 @@ final class WriteApiSmokeTest
             'provider' => 'stub',
             'provider_model' => 'stub/post-analysis',
             'provider_request_id' => 'stub-analysis',
+            'post_summary' => 'The post asks what should be considered next.',
             'moderation' => [
                 'severity' => 'none',
                 'labels' => [],
