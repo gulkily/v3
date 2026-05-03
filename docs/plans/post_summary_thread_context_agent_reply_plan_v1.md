@@ -70,6 +70,7 @@ Add a neutral one-sentence `post_summary` to stored post analysis, then use each
 
 - Baseline committed in `fa4e313` with the reviewed plan.
 - Slice 1: complete - added `post_summary` to the Dedalus post-analysis prompt/schema and direct analyzer tests. Verification: `php tests/run.php`.
+- Slice 2: complete - persisted and hydrated `post_summary` in SQLite analysis storage, including migration coverage and stub analyzer output. Verification: `php tests/run.php`.
 
 ## Open Decisions
 

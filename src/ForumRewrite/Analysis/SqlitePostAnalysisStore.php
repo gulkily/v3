@@ -17,7 +17,7 @@ final class SqlitePostAnalysisStore implements PostAnalysisStore
     public function find(string $postId, string $contentHash): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT post_id, content_hash, status, requested_at, completed_at, provider, provider_model,
+            'SELECT post_id, content_hash, status, requested_at, completed_at, provider, provider_model, post_summary,
                     provider_request_id, moderation_json, engagement_json, quality_json, respondability_json, raw_response_json,
                     failure_code, failure_message, retry_after
              FROM post_analyses
@@ -44,6 +44,7 @@ final class SqlitePostAnalysisStore implements PostAnalysisStore
             'provider' => (string) ($analysis['provider'] ?? ''),
             'provider_model' => (string) ($analysis['provider_model'] ?? ''),
             'provider_request_id' => isset($analysis['provider_request_id']) ? (string) $analysis['provider_request_id'] : null,
+            'post_summary' => (string) ($analysis['post_summary'] ?? ''),
             'moderation_json' => $this->encode($analysis['moderation'] ?? []),
             'engagement_json' => $this->encode($analysis['engagement'] ?? []),
             'quality_json' => $this->encode($analysis['quality'] ?? []),
@@ -71,6 +72,7 @@ final class SqlitePostAnalysisStore implements PostAnalysisStore
             'provider' => null,
             'provider_model' => null,
             'provider_request_id' => null,
+            'post_summary' => null,
             'moderation_json' => $this->encode([]),
             'engagement_json' => $this->encode([]),
             'quality_json' => $this->encode([]),
@@ -98,6 +100,7 @@ final class SqlitePostAnalysisStore implements PostAnalysisStore
                 provider TEXT NULL,
                 provider_model TEXT NULL,
                 provider_request_id TEXT NULL,
+                post_summary TEXT NULL,
                 moderation_json TEXT NOT NULL,
                 engagement_json TEXT NOT NULL,
                 quality_json TEXT NOT NULL,
@@ -112,6 +115,9 @@ final class SqlitePostAnalysisStore implements PostAnalysisStore
         if (!$this->columnExists('post_analyses', 'respondability_json')) {
             $this->pdo->exec('ALTER TABLE post_analyses ADD COLUMN respondability_json TEXT NOT NULL DEFAULT \'{}\'');
         }
+        if (!$this->columnExists('post_analyses', 'post_summary')) {
+            $this->pdo->exec('ALTER TABLE post_analyses ADD COLUMN post_summary TEXT NULL');
+        }
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_post_analyses_status ON post_analyses (status, completed_at)');
     }
 
@@ -123,11 +129,11 @@ final class SqlitePostAnalysisStore implements PostAnalysisStore
         $stmt = $this->pdo->prepare(
             'INSERT INTO post_analyses (
                 post_id, content_hash, status, requested_at, completed_at, provider, provider_model,
-                provider_request_id, moderation_json, engagement_json, quality_json, respondability_json, raw_response_json,
+                provider_request_id, post_summary, moderation_json, engagement_json, quality_json, respondability_json, raw_response_json,
                 failure_code, failure_message, retry_after
              ) VALUES (
                 :post_id, :content_hash, :status, :requested_at, :completed_at, :provider, :provider_model,
-                :provider_request_id, :moderation_json, :engagement_json, :quality_json, :respondability_json, :raw_response_json,
+                :provider_request_id, :post_summary, :moderation_json, :engagement_json, :quality_json, :respondability_json, :raw_response_json,
                 :failure_code, :failure_message, :retry_after
              )
              ON CONFLICT(post_id, content_hash) DO UPDATE SET
@@ -137,6 +143,7 @@ final class SqlitePostAnalysisStore implements PostAnalysisStore
                 provider = excluded.provider,
                 provider_model = excluded.provider_model,
                 provider_request_id = excluded.provider_request_id,
+                post_summary = excluded.post_summary,
                 moderation_json = excluded.moderation_json,
                 engagement_json = excluded.engagement_json,
                 quality_json = excluded.quality_json,
@@ -164,6 +171,7 @@ final class SqlitePostAnalysisStore implements PostAnalysisStore
             'provider' => isset($row['provider']) ? (string) $row['provider'] : null,
             'provider_model' => isset($row['provider_model']) ? (string) $row['provider_model'] : null,
             'provider_request_id' => isset($row['provider_request_id']) ? (string) $row['provider_request_id'] : null,
+            'post_summary' => isset($row['post_summary']) ? (string) $row['post_summary'] : '',
             'moderation' => $this->decode((string) $row['moderation_json']),
             'engagement' => $this->decode((string) $row['engagement_json']),
             'quality' => $this->decode((string) $row['quality_json']),

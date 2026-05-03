@@ -30,6 +30,7 @@ final class StubPostAnalyzer implements PostAnalyzer
             'provider' => 'stub',
             'provider_model' => $this->model,
             'provider_request_id' => null,
+            'post_summary' => $this->summary((string) ($context['body'] ?? '')),
             'moderation' => [
                 'severity' => $severity,
                 'labels' => $labels,
@@ -66,5 +67,19 @@ final class StubPostAnalyzer implements PostAnalyzer
                 'stub' => true,
             ],
         ];
+    }
+
+    private function summary(string $body): string
+    {
+        $normalized = trim((string) preg_replace('/\s+/', ' ', $body));
+        if ($normalized === '') {
+            return 'The post has no body text.';
+        }
+
+        if (strlen($normalized) > 120) {
+            $normalized = rtrim(substr($normalized, 0, 117)) . '...';
+        }
+
+        return 'The post says: ' . $normalized;
     }
 }

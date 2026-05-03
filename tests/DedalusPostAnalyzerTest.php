@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Analysis\DedalusPostAnalyzer;
+use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 
 final class DedalusPostAnalyzerTest
 {
@@ -102,6 +103,29 @@ final class DedalusPostAnalyzerTest
         } finally {
             @unlink($path);
         }
+    }
+
+    public function testSqliteStorePersistsAndHydratesPostSummary(): void
+    {
+        $store = new SqlitePostAnalysisStore(new PDO('sqlite::memory:'));
+        $stored = $store->saveComplete('root-001', 'hash-001', [
+            'provider' => 'stub',
+            'provider_model' => 'stub/post-analysis',
+            'provider_request_id' => 'req-1',
+            'post_summary' => 'The post asks how reply context should work.',
+            'moderation' => [
+                'severity' => 'none',
+            ],
+            'engagement' => [],
+            'quality' => [],
+            'respondability' => [],
+            'raw_response' => [],
+        ]);
+        $hydrated = $store->find('root-001', 'hash-001');
+
+        assertSame('The post asks how reply context should work.', $stored['post_summary']);
+        assertSame('The post asks how reply context should work.', $hydrated['post_summary']);
+        assertSame('none', $hydrated['moderation']['severity']);
     }
 
     /**
