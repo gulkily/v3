@@ -114,3 +114,13 @@ Add a compact reply composer directly on thread pages so a reader can start repl
   - Added `public/assets/inline_reply_form.js` and loaded it on thread pages after `browser_signing.js`; it opens the composer when restored draft body text is present.
 - Verification:
   - `php tests/run.php` passed.
+
+## Stage 4 - Tests And Static Artifacts
+
+- Status: complete.
+- Changes:
+  - Extended `LocalAppSmokeTest::testApplicationRendersCoreRoutes` to assert the inline composer markup, signed reply form fields, submit label, and thread-only inline reply asset.
+  - Confirmed `/compose/reply` does not load the inline reply asset.
+  - Extended static artifact coverage to assert generated thread HTML includes the inline reply asset and composer markup.
+- Verification:
+  - `php tests/run.php` passed.

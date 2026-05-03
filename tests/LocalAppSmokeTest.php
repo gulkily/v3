@@ -167,10 +167,17 @@ final class LocalAppSmokeTest
         assertStringContains('Labels: bug, needs-review', $thread);
         assertStringContains('/assets/openpgp.min.js', $thread);
         assertStringContains('/assets/browser_signing.js', $thread);
+        assertStringContains('/assets/inline_reply_form.js', $thread);
         assertStringContains('/assets/thread_reactions.js', $thread);
         assertStringContains('/assets/post_analysis.js', $thread);
         assertStringContains('data-thread-reactions-root', $thread);
         assertStringContains('data-action="apply-thread-tag"', $thread);
+        assertStringContains('inline-reply-composer', $thread);
+        assertStringContains('data-inline-reply-details', $thread);
+        assertStringContains('data-compose-form data-compose-kind="reply"', $thread);
+        assertStringContains('name="thread_id" value="root-001"', $thread);
+        assertStringContains('name="parent_id" value="root-001"', $thread);
+        assertStringContains('Post reply', $thread);
         assertStringNotContains('Score: 0', $thread);
         assertStringNotContains('Set up or choose an identity in <a href="/account/key/">Account</a> to use Like.', $thread);
         assertStringNotContains('disabled="disabled"', $thread);
@@ -253,6 +260,7 @@ final class LocalAppSmokeTest
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
         assertStringContains('Thread ID:', $composeReply);
         assertStringContains('browser_signing.js', $composeReply);
+        assertStringNotContains('/assets/inline_reply_form.js', $composeReply);
         assertStringContains('Ready.', $composeReply);
         assertStringContains('Advanced / technical details', $account);
         assertStringContains('Set up this browser', $account);
@@ -608,6 +616,8 @@ final class LocalAppSmokeTest
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/general.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/bug.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/root-001.html'));
+        assertStringContains('/assets/inline_reply_form.js', (string) file_get_contents($artifactRoot . '/threads/root-001.html'));
+        assertStringContains('inline-reply-composer', (string) file_get_contents($artifactRoot . '/threads/root-001.html'));
 
         $controller = new FrontController(
             dirname(__DIR__),
