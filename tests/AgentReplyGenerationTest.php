@@ -35,6 +35,8 @@ final class AgentReplyGenerationTest
         assertSame('A concise generated reply.', $hydrated['response_text']);
         assertSame('curious', $hydrated['response_style']);
         assertSame('answer', $hydrated['response_intent']);
+        assertSame('root-001', $hydrated['request_context']['post_id']);
+        assertSame('Root summary.', $hydrated['request_context']['thread_comments'][0]['post_summary']);
         assertSame(true, $hydrated['raw_response']['ok']);
     }
 
@@ -189,6 +191,13 @@ final class AgentReplyGenerationTest
             'analysis' => [
                 'respondability' => [
                     'best_response_mode' => 'answer',
+                ],
+            ],
+            'thread_comments' => [
+                [
+                    'post_id' => 'root-001',
+                    'post_summary' => 'Root summary.',
+                    'body' => 'Root body.',
                 ],
             ],
         ];

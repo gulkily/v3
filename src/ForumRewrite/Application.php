@@ -27,6 +27,9 @@ use PDOStatement;
 final class Application
 {
     private const HIDDEN_BOOTSTRAP_TAG = 'identity';
+    private const ANALYSIS_SCHEMA_VERSION = 3;
+    private const THREAD_CONTEXT_COMMENT_BODY_LIMIT = 3000;
+    private const THREAD_CONTEXT_TOTAL_BODY_LIMIT = 18000;
     private ?string $appVersion = null;
 
     public function __construct(
@@ -1289,7 +1292,7 @@ final class Application
 
         $analyses = [];
         foreach ($posts as $post) {
-            $context = $this->postAnalysisContext($post);
+            $context = $this->postAnalysisContext($post, false);
             $analysis = $store->find((string) $context['post_id'], (string) $context['content_hash']);
             if ($analysis === null) {
                 continue;
@@ -1319,7 +1322,7 @@ final class Application
 
         $generations = [];
         foreach ($posts as $post) {
-            $context = $this->postAnalysisContext($post);
+            $context = $this->postAnalysisContext($post, false);
             $generation = $store->findByTarget((string) $context['post_id'], (string) $context['content_hash']);
             if ($generation === null) {
                 continue;
@@ -2712,21 +2715,16 @@ final class Application
      * @param array<string, mixed> $post
      * @return array<string, mixed>
      */
-    private function postAnalysisContext(array $post): array
+    private function postAnalysisContext(array $post, bool $includeThreadComments = true): array
     {
         $thread = $this->fetchPost((string) $post['thread_id']);
         $parent = trim((string) ($post['parent_id'] ?? '')) !== '' ? $this->fetchPost((string) $post['parent_id']) : null;
         $body = (string) $post['body'];
 
-        return [
+        $context = [
             'post_id' => (string) $post['post_id'],
-            'content_hash' => hash('sha256', json_encode([
-                'analysis_schema_version' => 3,
-                'post_id' => (string) $post['post_id'],
-                'subject' => (string) ($post['subject'] ?? ''),
-                'body' => $body,
-            ], JSON_THROW_ON_ERROR)),
-            'analysis_schema_version' => 3,
+            'content_hash' => $this->postAnalysisContentHash($post),
+            'analysis_schema_version' => self::ANALYSIS_SCHEMA_VERSION,
             'post_kind' => (string) $post['post_id'] === (string) $post['thread_id'] ? 'thread' : 'reply',
             'thread_id' => (string) $post['thread_id'],
             'parent_id' => isset($post['parent_id']) ? (string) $post['parent_id'] : null,
@@ -2738,6 +2736,91 @@ final class Application
             'thread_body_preview' => $thread !== null ? $this->limitAnalysisText((string) ($thread['body'] ?? ''), 1200) : '',
             'parent_body_preview' => $parent !== null ? $this->limitAnalysisText((string) ($parent['body'] ?? ''), 1200) : '',
         ];
+
+        if ($includeThreadComments) {
+            $context['thread_comments'] = $this->threadCommentsContext($post);
+        }
+
+        return $context;
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     */
+    private function postAnalysisContentHash(array $post): string
+    {
+        return hash('sha256', json_encode([
+            'analysis_schema_version' => self::ANALYSIS_SCHEMA_VERSION,
+            'post_id' => (string) $post['post_id'],
+            'subject' => (string) ($post['subject'] ?? ''),
+            'body' => (string) $post['body'],
+        ], JSON_THROW_ON_ERROR));
+    }
+
+    /**
+     * @param array<string, mixed> $targetPost
+     * @return array<int, array<string, mixed>>
+     */
+    private function threadCommentsContext(array $targetPost): array
+    {
+        $posts = $this->fetchThreadPosts((string) $targetPost['thread_id']);
+        if ($posts === []) {
+            return [];
+        }
+
+        $store = new SqlitePostAnalysisStore($this->pdo());
+        $targetPostId = (string) $targetPost['post_id'];
+        $parentPostId = isset($targetPost['parent_id']) ? (string) $targetPost['parent_id'] : '';
+        $threadPostId = (string) $targetPost['thread_id'];
+        $remainingBodyBudget = self::THREAD_CONTEXT_TOTAL_BODY_LIMIT;
+        $comments = [];
+
+        foreach ($posts as $post) {
+            $postId = (string) $post['post_id'];
+            $isRequired = $postId === $targetPostId || $postId === $parentPostId || $postId === $threadPostId;
+            if ($remainingBodyBudget <= 0 && !$isRequired) {
+                continue;
+            }
+
+            $bodyLimit = $isRequired
+                ? self::THREAD_CONTEXT_COMMENT_BODY_LIMIT
+                : min(self::THREAD_CONTEXT_COMMENT_BODY_LIMIT, $remainingBodyBudget);
+            $body = $this->limitThreadCommentBody((string) $post['body'], max(0, $bodyLimit));
+            $remainingBodyBudget -= strlen($body);
+            $analysis = $store->find($postId, $this->postAnalysisContentHash($post));
+
+            $comments[] = [
+                'post_id' => $postId,
+                'parent_id' => isset($post['parent_id']) ? (string) $post['parent_id'] : null,
+                'author_label' => (string) ($post['author_label'] ?? 'guest'),
+                'created_at' => (string) ($post['created_at'] ?? ''),
+                'post_kind' => $postId === $threadPostId ? 'thread' : 'reply',
+                'is_thread_root' => $postId === $threadPostId,
+                'is_parent' => $postId === $parentPostId,
+                'is_target' => $postId === $targetPostId,
+                'is_agent_authored' => (string) ($post['author_label'] ?? '') === 'reply-agent',
+                'post_summary' => is_array($analysis) && ($analysis['status'] ?? null) === 'complete'
+                    ? (string) ($analysis['post_summary'] ?? '')
+                    : '',
+                'body' => $body,
+                'body_truncated' => strlen((string) $post['body']) > strlen($body),
+            ];
+        }
+
+        return $comments;
+    }
+
+    private function limitThreadCommentBody(string $value, int $maxLength): string
+    {
+        if ($maxLength <= 0) {
+            return '';
+        }
+
+        if (strlen($value) <= $maxLength) {
+            return $value;
+        }
+
+        return substr($value, 0, max(0, $maxLength - 12)) . "\n[truncated]";
     }
 
     private function limitAnalysisText(string $value, int $maxLength): string

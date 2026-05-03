@@ -20,7 +20,7 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
             'SELECT id, target_post_id, target_content_hash, analysis_hash, status, requested_at, completed_at,
                     provider, provider_model, provider_request_id, response_text, response_style, response_intent,
                     agent_identity_id, agent_profile_slug, agent_post_id, posted_at,
-                    failure_code, failure_message, retry_after, raw_response_json
+                    failure_code, failure_message, retry_after, request_context_json, raw_response_json
              FROM post_generated_responses
              WHERE target_post_id = :target_post_id AND target_content_hash = :target_content_hash'
         );
@@ -63,6 +63,7 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
             'failure_code' => null,
             'failure_message' => null,
             'retry_after' => null,
+            'request_context_json' => $this->encode($context),
             'raw_response_json' => $this->encode($generation['raw_response'] ?? []),
         ];
         $this->upsert($row);
@@ -95,6 +96,7 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
             'failure_code' => null,
             'failure_message' => null,
             'retry_after' => null,
+            'request_context_json' => $this->encode($context),
             'raw_response_json' => $this->encode([]),
         ];
 
@@ -103,12 +105,12 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
                 target_post_id, target_content_hash, analysis_hash, status, requested_at, completed_at,
                 provider, provider_model, provider_request_id, response_text, response_style, response_intent,
                 agent_identity_id, agent_profile_slug, agent_post_id, posted_at,
-                failure_code, failure_message, retry_after, raw_response_json
+                failure_code, failure_message, retry_after, request_context_json, raw_response_json
              ) VALUES (
                 :target_post_id, :target_content_hash, :analysis_hash, :status, :requested_at, :completed_at,
                 :provider, :provider_model, :provider_request_id, :response_text, :response_style, :response_intent,
                 :agent_identity_id, :agent_profile_slug, :agent_post_id, :posted_at,
-                :failure_code, :failure_message, :retry_after, :raw_response_json
+                :failure_code, :failure_message, :retry_after, :request_context_json, :raw_response_json
              )'
         );
         $stmt->execute($row);
@@ -170,6 +172,7 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
             'failure_code' => $failureCode,
             'failure_message' => substr($failureMessage, 0, 500),
             'retry_after' => gmdate('c', time() + 300),
+            'request_context_json' => $this->encode([]),
             'raw_response_json' => $this->encode([]),
         ];
         $this->upsert($row);
@@ -230,10 +233,14 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
                 failure_code TEXT NULL,
                 failure_message TEXT NULL,
                 retry_after TEXT NULL,
+                request_context_json TEXT NOT NULL DEFAULT \'{}\',
                 raw_response_json TEXT NOT NULL,
                 UNIQUE(target_post_id, target_content_hash)
             )'
         );
+        if (!$this->columnExists('post_generated_responses', 'request_context_json')) {
+            $this->pdo->exec('ALTER TABLE post_generated_responses ADD COLUMN request_context_json TEXT NOT NULL DEFAULT \'{}\'');
+        }
         $this->pdo->exec(
             'CREATE INDEX IF NOT EXISTS idx_post_generated_responses_status
              ON post_generated_responses (status, completed_at)'
@@ -254,12 +261,12 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
                 target_post_id, target_content_hash, analysis_hash, status, requested_at, completed_at,
                 provider, provider_model, provider_request_id, response_text, response_style, response_intent,
                 agent_identity_id, agent_profile_slug, agent_post_id, posted_at,
-                failure_code, failure_message, retry_after, raw_response_json
+                failure_code, failure_message, retry_after, request_context_json, raw_response_json
              ) VALUES (
                 :target_post_id, :target_content_hash, :analysis_hash, :status, :requested_at, :completed_at,
                 :provider, :provider_model, :provider_request_id, :response_text, :response_style, :response_intent,
                 :agent_identity_id, :agent_profile_slug, :agent_post_id, :posted_at,
-                :failure_code, :failure_message, :retry_after, :raw_response_json
+                :failure_code, :failure_message, :retry_after, :request_context_json, :raw_response_json
              )
              ON CONFLICT(target_post_id, target_content_hash) DO UPDATE SET
                 analysis_hash = excluded.analysis_hash,
@@ -279,6 +286,7 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
                 failure_code = excluded.failure_code,
                 failure_message = excluded.failure_message,
                 retry_after = excluded.retry_after,
+                request_context_json = excluded.request_context_json,
                 raw_response_json = excluded.raw_response_json'
         );
         $stmt->execute($row);
@@ -311,6 +319,7 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
             'failure_code' => isset($row['failure_code']) ? (string) $row['failure_code'] : null,
             'failure_message' => isset($row['failure_message']) ? (string) $row['failure_message'] : null,
             'retry_after' => isset($row['retry_after']) ? (string) $row['retry_after'] : null,
+            'request_context' => $this->decode((string) ($row['request_context_json'] ?? '{}')),
             'raw_response' => $this->decode((string) ($row['raw_response_json'] ?? '{}')),
         ];
     }
@@ -318,6 +327,22 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
     private function encode(mixed $value): string
     {
         return json_encode(is_array($value) ? $value : [], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+    }
+
+    private function columnExists(string $table, string $column): bool
+    {
+        $stmt = $this->pdo->query('PRAGMA table_info(' . $table . ')');
+        if ($stmt === false) {
+            return false;
+        }
+
+        foreach ($stmt->fetchAll() as $row) {
+            if ((string) ($row['name'] ?? '') === $column) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

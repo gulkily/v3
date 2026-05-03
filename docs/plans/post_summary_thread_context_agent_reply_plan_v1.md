@@ -72,9 +72,10 @@ Add a neutral one-sentence `post_summary` to stored post analysis, then use each
 - Slice 1: complete - added `post_summary` to the Dedalus post-analysis prompt/schema and direct analyzer tests. Verification: `php tests/run.php`.
 - Slice 2: complete - persisted and hydrated `post_summary` in SQLite analysis storage, including migration coverage and stub analyzer output. Verification: `php tests/run.php`.
 - Slice 3: complete - bumped analysis schema version to 3 and displayed `post_summary` in approved API/page analysis output with separate moderation summary labeling. Verification: `php tests/run.php`.
+- Slice 4: complete - added bounded full-thread `thread_comments` context to post analysis/generation inputs and persisted generated-response request context for auditing. Verification: `php tests/run.php`.
 
 ## Open Decisions
 
-- Exact truncation limits for thread comments. Proposed starting point: 3000 chars per comment and 18000 chars total.
-- Whether the UI label should be `Post summary` and `Moderation summary`, or leave the moderation field as `Summary`.
-- Whether missing per-comment summaries should remain empty, or whether reply generation should opportunistically analyze missing comments first. The safer first implementation is empty summaries to avoid cascading provider calls.
+- Resolved: thread comment context uses 3000 chars per comment and 18000 chars total.
+- Resolved: the UI uses `Post summary` for the neutral content summary and `Moderation summary` for moderation-specific text.
+- Resolved: missing per-comment summaries remain empty; reply generation does not cascade provider calls to analyze missing comments.

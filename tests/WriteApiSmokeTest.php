@@ -319,6 +319,51 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testGenerateAgentReplyPersistsThreadCommentContext(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Context&body=' . rawurlencode('Root body?')
+            );
+            $threadId = $this->extractValue($threadResponse, 'post_id');
+            $this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($threadId));
+            $replyResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_reply?thread_id=' . rawurlencode($threadId)
+                    . '&parent_id=' . rawurlencode($threadId)
+                    . '&board_tags=general&body=' . rawurlencode('Reply body?')
+            );
+            $replyId = $this->extractValue($replyResponse, 'post_id');
+            $this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($replyId));
+
+            $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($replyId)), true);
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $contextJson = (string) $pdo->query('SELECT request_context_json FROM post_generated_responses')->fetchColumn();
+            $context = json_decode($contextJson, true);
+
+            assertSame('generated', $response['generation_status']);
+            assertSame($replyId, $context['post_id']);
+            assertSame($threadId, $context['thread_comments'][0]['post_id']);
+            assertSame("Root body?\n", $context['thread_comments'][0]['body']);
+            assertSame('The post says: Root body?', $context['thread_comments'][0]['post_summary']);
+            assertSame(false, $context['thread_comments'][0]['is_target']);
+            assertSame($replyId, $context['thread_comments'][1]['post_id']);
+            assertSame("Reply body?\n", $context['thread_comments'][1]['body']);
+            assertSame('The post says: Reply body?', $context['thread_comments'][1]['post_summary']);
+            assertSame(true, $context['thread_comments'][1]['is_target']);
+            assertSame(false, $context['thread_comments'][1]['is_parent']);
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+        }
+    }
+
     public function testGenerateAgentReplyDoesNotStartWhenGenerationIsAlreadyPending(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

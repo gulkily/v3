@@ -20,6 +20,7 @@ response_risk must be one of: {{response_risk_levels}}.
 best_response_mode must be one of: {{response_modes}}.
 
 For respondability, judge whether the post is worth a thoughtful reply, not merely whether a reply is possible.
+When thread_comments is present, use the full comment bodies and post_summary values to understand the surrounding thread before writing suggested_response.
 Set asks_question to true for explicit questions, including rhetorical or hostile questions.
 Use question_type=rhetorical or question_type=challenge when a question is not a sincere information request.
 Set audience_benefit high when a good response would likely enrich other readers, clarify the thread, or add reusable context.
