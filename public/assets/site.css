@@ -485,6 +485,50 @@ pre {
   margin: 0.75rem 0 0;
 }
 
+.inline-reply-composer {
+  padding: 0;
+}
+
+.inline-reply-details {
+  display: block;
+}
+
+.inline-reply-summary {
+  min-height: 2.65rem;
+  padding: 0.8rem 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  font-family: var(--ui-font);
+}
+
+.inline-reply-summary::marker {
+  content: "";
+}
+
+.inline-reply-summary::-webkit-details-marker {
+  display: none;
+}
+
+.inline-reply-summary .meta {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.inline-reply-details[open] .inline-reply-summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.inline-reply-expanded {
+  padding: 0.9rem;
+}
+
+.inline-reply-expanded h2 {
+  margin-top: 0;
+}
+
 :root[data-theme="chicago"] .shell {
   width: min(100%, 860px);
 }

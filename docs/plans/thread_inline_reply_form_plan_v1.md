@@ -104,3 +104,13 @@ Add a compact reply composer directly on thread pages so a reader can start repl
 - Verification:
   - `php tests/run.php` passed.
   - Stage 4 will add explicit smoke coverage for the inline composer.
+
+## Stage 3 - Add Expansion Behavior And Styling
+
+- Status: complete.
+- Changes:
+  - Converted the inline composer to a native expandable `details` block so the thread page starts with a compact reply prompt.
+  - Added compact and expanded composer styles in `public/assets/site.css`.
+  - Added `public/assets/inline_reply_form.js` and loaded it on thread pages after `browser_signing.js`; it opens the composer when restored draft body text is present.
+- Verification:
+  - `php tests/run.php` passed.

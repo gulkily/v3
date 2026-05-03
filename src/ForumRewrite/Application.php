@@ -553,6 +553,7 @@ final class Application
             [
                 '/assets/openpgp.min.js',
                 '/assets/browser_signing.js',
+                '/assets/inline_reply_form.js',
                 '/assets/thread_reactions.js',
                 '/assets/post_analysis.js',
             ],
