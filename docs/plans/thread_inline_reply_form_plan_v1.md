@@ -92,4 +92,15 @@ Add a compact reply composer directly on thread pages so a reader can start repl
   - Added `templates/partials/reply_form.php` for the shared signed reply form fields.
   - Updated `templates/pages/compose_reply.php` to render the shared partial while preserving the existing page wrapper and identity status placement.
 - Verification:
-  - Pending full suite after later stages; this stage is covered by existing compose reply smoke and browser signing tests.
+  - `php tests/run.php LocalAppSmokeTest BrowserSigningNormalizationTest` passed.
+
+## Stage 2 - Render Compact Inline Composer On Thread Pages
+
+- Status: complete.
+- Changes:
+  - Added a single inline reply composer at the bottom of `templates/pages/thread.php`.
+  - The inline composer uses the shared reply form partial and defaults to replying to the thread root post.
+  - Existing per-post reply links remain unchanged, and the inline composer includes a direct full-page compose fallback link.
+- Verification:
+  - `php tests/run.php` passed.
+  - Stage 4 will add explicit smoke coverage for the inline composer.

@@ -24,4 +24,16 @@
 <?php foreach ($posts as $post): ?>
 <?= $indent($partial('partials/post_card.php', ['post' => $post]), 1) ?>
 <?php endforeach; ?>
+  <article class="card inline-reply-composer" data-compose-root>
+    <h2>Reply to thread</h2>
+    <p class="meta" data-role="compose-identity-status">Ready.</p>
+<?= $indent($partial('partials/reply_form.php', [
+    'threadId' => $thread['root_post_id'],
+    'parentId' => $thread['root_post_id'],
+    'boardTags' => 'general',
+    'body' => '',
+    'submitLabel' => 'Post reply',
+]), 2) ?>
+    <p class="meta"><a href="/compose/reply?thread_id=<?= $e($thread['root_post_id']) ?>&amp;parent_id=<?= $e($thread['root_post_id']) ?>">Open full reply page</a></p>
+  </article>
 </section>
