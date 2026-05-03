@@ -1,9 +1,16 @@
 <section class="stack">
   <article class="card">
-    <p class="eyebrow">Tags</p>
     <h1>All Tags</h1>
-    <p class="meta">Browse visible threads by tag. A tag can come from board tags or thread labels.</p>
-    <p class="meta"><a href="/">Back to Board</a></p>
+    <div class="nav board-controls-nav">
+      <a class="nav-link is-active" href="/tags/">Tags</a>
+<?php foreach ($viewOptions as $option): ?>
+      <a class="nav-link" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
+<?php endforeach; ?>
+<?php foreach ($sortOptions as $option): ?>
+      <a class="nav-link" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
+<?php endforeach; ?>
+      <a class="nav-link" href="/compose/thread">New Post</a>
+    </div>
   </article>
 
   <article class="card tags-section-card">

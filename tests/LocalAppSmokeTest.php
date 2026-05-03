@@ -222,6 +222,16 @@ final class LocalAppSmokeTest
         assertStringNotContains('Profile:', $users);
         assertStringNotContains('/users/pending/', $users);
         assertStringContains('All Tags', $tags);
+        assertStringContains('href="/tags/"', $tags);
+        assertStringContains('class="nav-link is-active" href="/tags/"', $tags);
+        assertStringNotContains('class="nav-link is-active" href="/threads/?view=all&amp;sort=newest"', $tags);
+        assertStringNotContains('class="nav-link is-active" href="/threads/?view=all&amp;sort=oldest"', $tags);
+        assertStringContains('/threads/?view=all&amp;sort=newest', $tags);
+        assertStringContains('/threads/?view=liked&amp;sort=newest', $tags);
+        assertStringContains('/threads/?view=all&amp;sort=oldest', $tags);
+        assertStringContains('/threads/?view=all&amp;sort=top', $tags);
+        assertStringContains('href="/compose/thread"', $tags);
+        assertStringContains('New Post', $tags);
         assertStringContains('/tags/general', $tags);
         assertStringContains('/tags/bug', $tags);
         assertStringContains('Tag', $tagPage);

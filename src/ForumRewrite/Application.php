@@ -475,12 +475,18 @@ final class Application
 
     private function renderTagsIndex(): string
     {
+        $view = $this->normalizeBoardView('all');
+        $sort = $this->normalizeBoardSort('newest');
+        $viewOptions = $this->boardViewOptions($view, $sort);
+        $sortOptions = $this->boardSortOptions($view, $sort);
         $threads = $this->fetchThreads();
 
         return $this->renderPageTemplate(
             'tags.php',
             [
                 'tagGroups' => $this->limitTagGroupThreads($this->groupThreadsByTag($threads), 5),
+                'viewOptions' => $viewOptions,
+                'sortOptions' => $sortOptions,
             ],
             'Tags',
             'board',
