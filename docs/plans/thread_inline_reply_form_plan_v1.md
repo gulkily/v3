@@ -145,3 +145,13 @@ Add a compact reply composer directly on thread pages so a reader can start repl
   - Reduced the visual weight of the full-page reply fallback link.
 - Verification:
   - `php tests/run.php` passed.
+
+## Follow-Up - Minimal Expanded Inline Form
+
+- Status: complete.
+- Changes:
+  - Removed the visible `Reply to thread` heading from the expanded inline composer.
+  - Removed the visible `Body` label from the expanded inline composer while keeping the textarea accessible with `aria-label`.
+  - Removed the `Open full reply page` fallback link from the expanded inline composer.
+- Verification:
+  - `php tests/run.php` passed.

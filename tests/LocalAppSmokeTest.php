@@ -177,12 +177,15 @@ final class LocalAppSmokeTest
         assertStringContains('class="inline-reply-prompt"', $thread);
         assertStringContains('placeholder="Write a reply..."', $thread);
         assertStringContains('inline-reply-identity-status', $thread);
-        assertStringContains('inline-reply-fallback', $thread);
         assertStringContains('data-compose-form data-compose-kind="reply"', $thread);
         assertStringContains('name="thread_id" value="root-001"', $thread);
         assertStringContains('name="parent_id" value="root-001"', $thread);
         assertStringContains('type="hidden" name="board_tags" value="general"', $thread);
+        assertStringContains('aria-label="Body"', $thread);
         assertStringContains('Post reply', $thread);
+        assertStringNotContains('<h2>Reply to thread</h2>', $thread);
+        assertStringNotContains('Open full reply page', $thread);
+        assertStringNotContains('<label>Body<textarea name="body"', $thread);
         assertStringNotContains('Score: 0', $thread);
         assertStringNotContains('Set up or choose an identity in <a href="/account/key/">Account</a> to use Like.', $thread);
         assertStringNotContains('disabled="disabled"', $thread);

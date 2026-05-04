@@ -534,11 +534,6 @@ pre {
   display: block;
 }
 
-.inline-reply-fallback {
-  margin-top: 0.4rem;
-  font-size: 0.9rem;
-}
-
 :root[data-theme="chicago"] .shell {
   width: min(100%, 860px);
 }
