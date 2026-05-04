@@ -135,3 +135,13 @@ Add a compact reply composer directly on thread pages so a reader can start repl
   - Updated smoke and browser-signing tests for hidden reply tags and the new textarea prompt.
 - Verification:
   - `php tests/run.php` passed.
+
+## Follow-Up - Expanded Form Visual Cleanup
+
+- Status: complete.
+- Changes:
+  - Explicitly hide the collapsed textarea prompt after the inline reply composer opens.
+  - Hide the inline reply identity status while it is only the default `Ready.` message; it remains available for active status updates.
+  - Reduced the visual weight of the full-page reply fallback link.
+- Verification:
+  - `php tests/run.php` passed.

@@ -38,7 +38,7 @@
       </summary>
       <div class="inline-reply-expanded stack">
         <h2>Reply to thread</h2>
-        <p class="meta" data-role="compose-identity-status">Ready.</p>
+        <p class="meta inline-reply-identity-status" data-role="compose-identity-status">Ready.</p>
 <?= $indent($partial('partials/reply_form.php', [
     'threadId' => $thread['root_post_id'],
     'parentId' => $thread['root_post_id'],
@@ -46,7 +46,7 @@
     'body' => '',
     'submitLabel' => 'Post reply',
 ]), 2) ?>
-        <p class="meta"><a href="/compose/reply?thread_id=<?= $e($thread['root_post_id']) ?>&amp;parent_id=<?= $e($thread['root_post_id']) ?>">Open full reply page</a></p>
+        <p class="meta inline-reply-fallback"><a href="/compose/reply?thread_id=<?= $e($thread['root_post_id']) ?>&amp;parent_id=<?= $e($thread['root_post_id']) ?>">Open full reply page</a></p>
       </div>
     </details>
   </article>

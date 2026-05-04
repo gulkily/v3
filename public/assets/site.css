@@ -513,6 +513,7 @@ pre {
   cursor: text;
 }
 
+.inline-reply-summary[hidden],
 .inline-reply-details[open] .inline-reply-summary {
   display: none;
 }
@@ -523,6 +524,19 @@ pre {
 
 .inline-reply-expanded h2 {
   margin-top: 0;
+}
+
+.inline-reply-identity-status {
+  display: none;
+}
+
+.inline-reply-identity-status[data-kind] {
+  display: block;
+}
+
+.inline-reply-fallback {
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
 }
 
 :root[data-theme="chicago"] .shell {

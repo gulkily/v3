@@ -6,10 +6,20 @@
 
   function bindInlineReply(details) {
     const trigger = details.querySelector("[data-inline-reply-trigger]");
+    const summary = details.querySelector(".inline-reply-summary");
     const body = details.querySelector('textarea[name="body"]');
+
+    function syncOpenState() {
+      const expanded = details.open;
+      details.dataset.inlineReplyExpanded = expanded ? "1" : "";
+      if (summary) {
+        summary.hidden = expanded;
+      }
+    }
 
     function openComposer(focusBody) {
       details.open = true;
+      syncOpenState();
       if (focusBody && body) {
         window.setTimeout(function () {
           body.focus();
@@ -22,7 +32,8 @@
     }
 
     if (trigger) {
-      trigger.addEventListener("click", function () {
+      trigger.addEventListener("click", function (event) {
+        event.preventDefault();
         openComposer(true);
       });
 
@@ -38,6 +49,9 @@
 
       openComposer(false);
     });
+
+    details.addEventListener("toggle", syncOpenState);
+    syncOpenState();
   }
 
   document.addEventListener("DOMContentLoaded", function () {
