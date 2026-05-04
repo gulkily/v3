@@ -174,9 +174,12 @@ final class LocalAppSmokeTest
         assertStringContains('data-action="apply-thread-tag"', $thread);
         assertStringContains('inline-reply-composer', $thread);
         assertStringContains('data-inline-reply-details', $thread);
+        assertStringContains('class="inline-reply-prompt"', $thread);
+        assertStringContains('placeholder="Write a reply..."', $thread);
         assertStringContains('data-compose-form data-compose-kind="reply"', $thread);
         assertStringContains('name="thread_id" value="root-001"', $thread);
         assertStringContains('name="parent_id" value="root-001"', $thread);
+        assertStringContains('type="hidden" name="board_tags" value="general"', $thread);
         assertStringContains('Post reply', $thread);
         assertStringNotContains('Score: 0', $thread);
         assertStringNotContains('Set up or choose an identity in <a href="/account/key/">Account</a> to use Like.', $thread);
@@ -384,12 +387,14 @@ final class LocalAppSmokeTest
         assertStringContains('compose-normalization-inline', $reply);
         assertStringContains('data-role="compose-normalization-status"', $reply);
         assertStringContains('data-role="compose-normalization-message"', $reply);
-        assertStringContains('data-compose-field-status-for="board_tags"', $reply);
         assertStringContains('data-compose-field-status-for="body"', $reply);
         assertStringContains('data-compose-field-label="Body"', $reply);
         assertStringContains('data-action="remove-unsupported-compose-characters"', $reply);
-        assertStringContains('data-compose-field-remove-for="board_tags"', $reply);
         assertStringContains('data-compose-field-remove-for="body"', $reply);
+        assertStringContains('type="hidden" name="board_tags" value="general"', $reply);
+        assertStringNotContains('<label>Board tags', $reply);
+        assertStringNotContains('data-compose-field-status-for="board_tags"', $reply);
+        assertStringNotContains('data-compose-field-remove-for="board_tags"', $reply);
         assertStringContains('hidden', $reply);
     }
 

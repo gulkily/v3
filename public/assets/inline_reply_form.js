@@ -5,8 +5,30 @@
   }
 
   function bindInlineReply(details) {
-    if (hasReplyBody(details)) {
+    const trigger = details.querySelector("[data-inline-reply-trigger]");
+    const body = details.querySelector('textarea[name="body"]');
+
+    function openComposer(focusBody) {
       details.open = true;
+      if (focusBody && body) {
+        window.setTimeout(function () {
+          body.focus();
+        }, 0);
+      }
+    }
+
+    if (hasReplyBody(details)) {
+      openComposer(false);
+    }
+
+    if (trigger) {
+      trigger.addEventListener("click", function () {
+        openComposer(true);
+      });
+
+      trigger.addEventListener("focus", function () {
+        openComposer(true);
+      });
     }
 
     details.addEventListener("focusin", function (event) {
@@ -14,7 +36,7 @@
         return;
       }
 
-      details.open = true;
+      openComposer(false);
     });
   }
 

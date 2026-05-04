@@ -494,14 +494,8 @@ pre {
 }
 
 .inline-reply-summary {
-  min-height: 2.65rem;
   padding: 0.8rem 0.9rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
   cursor: pointer;
-  font-family: var(--ui-font);
 }
 
 .inline-reply-summary::marker {
@@ -512,13 +506,15 @@ pre {
   display: none;
 }
 
-.inline-reply-summary .meta {
+.inline-reply-prompt {
+  min-height: 4.75rem;
   margin: 0;
-  white-space: nowrap;
+  resize: none;
+  cursor: text;
 }
 
 .inline-reply-details[open] .inline-reply-summary {
-  border-bottom: 1px solid var(--line);
+  display: none;
 }
 
 .inline-reply-expanded {

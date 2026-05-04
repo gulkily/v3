@@ -124,3 +124,14 @@ Add a compact reply composer directly on thread pages so a reader can start repl
   - Extended static artifact coverage to assert generated thread HTML includes the inline reply asset and composer markup.
 - Verification:
   - `php tests/run.php` passed.
+
+## Follow-Up - Textarea Prompt And Hidden Reply Tags
+
+- Status: complete.
+- Changes:
+  - Replaced the collapsed inline reply summary with an unnamed readonly textarea prompt that invites composing and opens the full inline form.
+  - Removed the visible board tags field from shared reply forms while keeping a hidden `board_tags` value for the existing write contract.
+  - Updated inline reply JS to focus the real body textarea after opening from the collapsed prompt.
+  - Updated smoke and browser-signing tests for hidden reply tags and the new textarea prompt.
+- Verification:
+  - `php tests/run.php` passed.

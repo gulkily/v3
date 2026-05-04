@@ -302,7 +302,7 @@ const fields = [
   makeField('INPUT', 'thread_id', 'root-001', 'root-001', 'hidden'),
   makeField('INPUT', 'parent_id', 'root-001', 'root-001', 'hidden'),
   makeField('INPUT', 'author_identity_id', '', '', 'hidden'),
-  makeField('INPUT', 'board_tags', '', 'general', 'text'),
+  makeField('INPUT', 'board_tags', '', 'general', 'hidden'),
   Object.assign(makeField('TEXTAREA', 'body', '', '', null), { dataset: { composeFieldLabel: 'Body' } })
 ];
 

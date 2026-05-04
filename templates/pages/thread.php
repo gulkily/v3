@@ -27,8 +27,14 @@
   <article class="card inline-reply-composer" data-compose-root>
     <details class="inline-reply-details" data-inline-reply-details>
       <summary class="inline-reply-summary">
-        <span>Reply to thread</span>
-        <span class="meta">Open composer</span>
+        <textarea
+          class="inline-reply-prompt"
+          rows="2"
+          placeholder="Write a reply..."
+          aria-label="Write a reply"
+          data-inline-reply-trigger
+          readonly
+        ></textarea>
       </summary>
       <div class="inline-reply-expanded stack">
         <h2>Reply to thread</h2>
