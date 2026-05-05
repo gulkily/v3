@@ -177,7 +177,8 @@ final class LocalAppSmokeTest
         assertStringContains('class="inline-reply-prompt"', $thread);
         assertStringContains('placeholder="Write a reply..."', $thread);
         assertStringContains('inline-reply-identity-status', $thread);
-        assertStringContains('data-compose-form data-compose-kind="reply"', $thread);
+        assertStringContains('method="post" action="/compose/reply" class="stack" data-compose-form data-compose-kind="reply"', $thread);
+        assertStringContains('method="post" action="/compose/reply" class="stack" data-compose-form data-compose-kind="reply"', $composeReply);
         assertStringContains('name="thread_id" value="root-001"', $thread);
         assertStringContains('name="parent_id" value="root-001"', $thread);
         assertStringContains('type="hidden" name="board_tags" value="general"', $thread);

@@ -7,7 +7,7 @@ if ($bodyRows < 1) {
 }
 $showBodyLabel = (bool) ($showBodyLabel ?? true);
 ?>
-<form method="post" class="<?= $e($formClass) ?>" data-compose-form data-compose-kind="reply">
+<form method="post" action="/compose/reply" class="<?= $e($formClass) ?>" data-compose-form data-compose-kind="reply">
   <input type="hidden" name="thread_id" value="<?= $e($threadId) ?>">
   <input type="hidden" name="parent_id" value="<?= $e($parentId) ?>">
   <input type="hidden" name="author_identity_id" value="">
