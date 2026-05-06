@@ -54,6 +54,11 @@ final class FrontController
             $application->handle($method, $requestUri);
             $this->buildStaticArtifactOnEligibleMiss($method, $requestUri, $cookies, $staticArtifact);
         } catch (Throwable $throwable) {
+            if (str_starts_with($throwable->getMessage(), 'Timed out waiting for execution lock: ')) {
+                $this->sendHtml($this->renderBusyError($throwable->getMessage()), 503);
+                return;
+            }
+
             $this->sendHtml($this->renderConfigurationError($throwable->getMessage()), 503);
         }
     }
@@ -242,6 +247,19 @@ final class FrontController
             . '</p></header>'
             . '<main class="main"><section class="stack"><h1>Configuration Error</h1>'
             . '<article class="card"><p>The PHP host configuration is incomplete or invalid.</p><p>'
+            . htmlspecialchars($details, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+            . '</p></article></section></main></div></body></html>';
+    }
+
+    private function renderBusyError(string $details): string
+    {
+        return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+            . '<title>Service Busy</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
+            . '<div class="shell"><header class="site-header"><p class="eyebrow">'
+            . htmlspecialchars(SiteConfig::SITE_NAME, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+            . '</p></header>'
+            . '<main class="main"><section class="stack"><h1>Service Busy</h1>'
+            . '<article class="card"><p>The site is finishing another write or read-model rebuild.</p><p>'
             . htmlspecialchars($details, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
             . '</p></article></section></main></div></body></html>';
     }

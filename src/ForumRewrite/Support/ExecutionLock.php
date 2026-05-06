@@ -8,10 +8,13 @@ use RuntimeException;
 
 final class ExecutionLock
 {
+    private readonly int $timeoutSeconds;
+
     public function __construct(
         private readonly string $lockPath,
-        private readonly int $timeoutSeconds = 5,
+        ?int $timeoutSeconds = null,
     ) {
+        $this->timeoutSeconds = $timeoutSeconds ?? self::defaultTimeoutSeconds();
     }
 
     /**
@@ -49,6 +52,20 @@ final class ExecutionLock
         }
 
         throw new RuntimeException('Timed out waiting for execution lock: ' . $this->lockPath);
+    }
+
+    private static function defaultTimeoutSeconds(): int
+    {
+        $raw = getenv('FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS');
+        if ($raw === false || trim($raw) === '') {
+            return 5;
+        }
+
+        if (!ctype_digit(trim($raw))) {
+            return 5;
+        }
+
+        return max(0, (int) trim($raw));
     }
 
     public function isLocked(): bool

@@ -582,6 +582,32 @@ final class LocalAppSmokeTest
         assertStringContains('Repository root does not exist', $response);
     }
 
+    public function testFrontControllerShowsBusyErrorForExecutionLockContention(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
+        @unlink($databasePath);
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        mkdir($staticHtmlRoot, 0777, true);
+        $controller = new FrontController(
+            dirname(__DIR__),
+            $repositoryRoot,
+            $databasePath,
+            $staticHtmlRoot,
+        );
+
+        putenv('FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS=0');
+        try {
+            $lock = new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock', 0);
+            $response = $lock->withExclusiveLock(fn () => $this->renderFrontController($controller, 'GET', '/', []));
+        } finally {
+            putenv('FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS');
+        }
+
+        assertStringContains('Service Busy', $response);
+        assertStringContains('Timed out waiting for execution lock', $response);
+        assertStringNotContains('Configuration Error', $response);
+    }
+
     public function testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout(): void
     {
         @unlink($this->databasePath);

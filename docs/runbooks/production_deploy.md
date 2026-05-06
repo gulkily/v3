@@ -48,6 +48,10 @@ Recommended mapping:
 - writable repository root: `/srv/forum-rewrite/repository`
 - read-model database: `/srv/forum-rewrite/state/cache/post_index.sqlite3`
 
+Optional runtime setting:
+
+- `FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS`: seconds a request waits for the shared write/read-model lock before returning a busy error. The default is `5`.
+
 ## Writable Paths
 
 The web user must be able to write:
