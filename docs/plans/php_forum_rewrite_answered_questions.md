@@ -10,7 +10,7 @@ Answer: The current user-visible route set in `v2` is:
 The plain-text API surface is:
 `/api/`, `/api/list_index`, `/api/get_thread`, `/api/get_post`, `/api/get_profile`, `/api/get_username_claim_cta`, `/api/create_thread`, `/api/create_reply`, `/api/pow_requirement`, `/api/link_identity`, `/api/set_identity_hint`, `/api/call_llm`.
 - Is there a canonical inventory of existing public routes, write routes, redirects, and RSS outputs?
-Answer: Yes. For `v3`, the canonical route inventory is the local authority set described in this document plus `docs/specs/php_forum_rewrite_spec_v1.md` and `docs/plans/not_completed/php_forum_rewrite_trimmed_parity_suite_v1.md`. RSS outputs currently exist for `/` with `?format=rss`, `/threads/<thread-id>?format=rss`, and `/activity/?view=<mode>&format=rss`.
+Answer: Yes. For `v3`, the canonical route inventory is the local authority set described in this document plus `docs/specs/php_forum_rewrite_spec_v1.md` and `docs/plans/php_forum_rewrite_trimmed_parity_suite_v1.md`. RSS outputs currently exist for `/` with `?format=rss`, `/threads/<thread-id>?format=rss`, and `/activity/?view=<mode>&format=rss`.
 - Which current behaviors are considered compatibility-critical versus acceptable to simplify in V1?
 Answer: Compatibility-critical user-facing behaviors appear to be:
 indexed public reads for board/thread/post/profile surfaces; activity filters and RSS; browser-signing-based compose flows; username capture during key generation; account key page; and plain-text API availability. What looks more simplifiable is copy/layout phrasing, some feature-flagged affordances, and whether self-profile/account pages remain partly dynamic initially.
@@ -21,7 +21,7 @@ Answer: `v3` should not depend on `~/v2` as the authority. The authority set is 
 `docs/specs/identity_bootstrap_record_v1.md`,
 `docs/specs/profile_read_contract_v1.md`,
 `docs/specs/public_key_storage_v1.md`,
-`docs/plans/not_completed/php_forum_rewrite_trimmed_parity_suite_v1.md`,
+`docs/plans/php_forum_rewrite_trimmed_parity_suite_v1.md`,
 and `tests/fixtures/parity_minimal_v1/`.
 If those documents are still silent on a behavior, that behavior needs an explicit product decision before implementation.
 - What exact current-product behavior is in scope for parity where `v2` behavior and the rewrite spec are still ambiguous?
@@ -155,7 +155,7 @@ Answer: Treat this as a greenfield project rather than a production cutover. Lea
 ## Testing and Acceptance
 
 - What existing automated tests or fixtures can be reused as a regression oracle?
-Answer: Inside `v3`, the reduced parity oracle is defined by `docs/plans/not_completed/php_forum_rewrite_trimmed_parity_suite_v1.md` plus `tests/fixtures/parity_minimal_v1/`. Historical `v2` tests may inspire design ideas, but they are not required for implementation and are not part of the authority set.
+Answer: Inside `v3`, the reduced parity oracle is defined by `docs/plans/php_forum_rewrite_trimmed_parity_suite_v1.md` plus `tests/fixtures/parity_minimal_v1/`. Historical `v2` tests may inspire design ideas, but they are not required for implementation and are not part of the authority set.
 - Is there an accepted fixture repository or golden-output set for route parity testing?
 Answer: Yes for the reduced retained scope: `tests/fixtures/parity_minimal_v1/` is the seed fixture tree in `v3`. It is intentionally small and should be expanded only for in-scope route parity needs.
 - Which browser-level behaviors must be manually verified in addition to request tests?

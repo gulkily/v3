@@ -58,8 +58,8 @@ Today:
 
 Relevant current-state references:
 
-- [docs/plans/completed/php_ascii_restrictions_current_state_v1.md](/home/wsl/v3/docs/plans/completed/php_ascii_restrictions_current_state_v1.md:1)
-- [docs/plans/not_completed/php_non_ascii_compose_autocorrection_slices_v1.md](/home/wsl/v3/docs/plans/not_completed/php_non_ascii_compose_autocorrection_slices_v1.md:1)
+- [docs/plans/php_ascii_restrictions_current_state_v1.md](/home/wsl/v3/docs/plans/php_ascii_restrictions_current_state_v1.md:1)
+- [docs/plans/php_non_ascii_compose_autocorrection_slices_v1.md](/home/wsl/v3/docs/plans/php_non_ascii_compose_autocorrection_slices_v1.md:1)
 
 ## Slice 1: Define The Transliteration Policy
 

@@ -4,7 +4,7 @@ This document defines the implementation contract for moving automatic
 `reply-agent` publishing into `POST /api/analyze_post`.
 
 Source plan:
-`docs/plans/not_completed/agent_reply_one_step_analyze_publish_plan_v1.md`
+`docs/plans/agent_reply_one_step_analyze_publish_plan_v1.md`
 
 ## Scope
 
@@ -315,3 +315,4 @@ Tests should be added or updated in `tests/WriteApiSmokeTest.php` to cover:
   duplicate reply
 - `POST /api/generate_agent_reply` keeps its full compatibility response shape
   and idempotency behavior
+

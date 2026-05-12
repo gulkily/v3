@@ -10,7 +10,7 @@ Production-facing deployment and operations docs now live here:
 - [Operator Recovery Runbook](/home/wsl/v3/docs/runbooks/operator_recovery.md)
 - [Apache Vhost Example](/home/wsl/v3/docs/examples/apache_vhost.conf)
 - [Production Env Example](/home/wsl/v3/docs/examples/env.production.example)
-- [Production Deployment Checklist](/home/wsl/v3/docs/plans/not_completed/php_production_deployment_checklist_v1.md)
+- [Production Deployment Checklist](/home/wsl/v3/docs/plans/php_production_deployment_checklist_v1.md)
 
 ## Local Run
 
