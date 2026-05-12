@@ -2233,30 +2233,37 @@ final class Application
             return;
         }
 
+        $this->sendJson($this->agentReplyResultForPost($post), 200, $this->noStoreHeaders());
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     * @return array<string, mixed>
+     */
+    private function agentReplyResultForPost(array $post): array
+    {
+        $postId = (string) ($post['post_id'] ?? '');
+
         if (!$this->agentRepliesEnabled()) {
-            $this->sendJson($this->agentReplyStatusResponse('not_recommended', $postId, [
+            return $this->agentReplyStatusResponse('not_recommended', $postId, [
                 'reason' => 'config_disabled',
-            ]), 200, $this->noStoreHeaders());
-            return;
+            ]);
         }
 
         $context = $this->postAnalysisContext($post);
         $store = new SqliteAgentReplyGenerationStore($this->pdo());
         $existing = $store->findByTarget((string) $context['post_id'], (string) $context['content_hash']);
         if ($existing !== null && $existing['agent_post_id'] !== null) {
-            $this->sendJson($this->agentReplyStatusResponse('already_posted', $postId, [
+            return $this->agentReplyStatusResponse('already_posted', $postId, [
                 'agent_post_id' => $existing['agent_post_id'],
                 'agent_post_url' => '/posts/' . $existing['agent_post_id'],
-            ]), 200, $this->noStoreHeaders());
-            return;
+            ]);
         }
         if ($existing !== null && $existing['status'] === 'failed') {
-            $this->sendJson($this->failedAgentReplyResponse($existing), 200, $this->noStoreHeaders());
-            return;
+            return $this->failedAgentReplyResponse($existing);
         }
         if ($existing !== null && in_array($existing['status'], ['pending', 'posting'], true)) {
-            $this->sendJson($this->agentReplyStatusResponse('in_progress', $postId), 200, $this->noStoreHeaders());
-            return;
+            return $this->agentReplyStatusResponse('in_progress', $postId);
         }
 
         $analysis = (new SqlitePostAnalysisStore($this->pdo()))->find(
@@ -2264,18 +2271,16 @@ final class Application
             (string) $context['content_hash']
         );
         if ($analysis === null || ($analysis['status'] ?? null) !== 'complete') {
-            $this->sendJson($this->agentReplyStatusResponse('analysis_required', $postId, [
+            return $this->agentReplyStatusResponse('analysis_required', $postId, [
                 'reason' => $analysis === null ? 'missing_analysis' : 'analysis_not_complete',
                 'analysis_status' => $analysis['status'] ?? null,
                 'failure_code' => $analysis['failure_code'] ?? null,
-            ]), 200, $this->noStoreHeaders());
-            return;
+            ]);
         }
 
         $gateFailure = $this->agentReplyGateFailure($post, $analysis);
         if ($gateFailure !== null) {
-            $this->sendJson($this->agentReplyStatusResponse('not_recommended', $postId, $gateFailure), 200, $this->noStoreHeaders());
-            return;
+            return $this->agentReplyStatusResponse('not_recommended', $postId, $gateFailure);
         }
 
         $generationContext = $context;
@@ -2292,20 +2297,17 @@ final class Application
             $reservation = $store->reserveGeneration($generationContext);
             if (($reservation['reserved'] ?? false) !== true) {
                 if ($reservation['agent_post_id'] !== null) {
-                    $this->sendJson($this->agentReplyStatusResponse('already_posted', $postId, [
+                    return $this->agentReplyStatusResponse('already_posted', $postId, [
                         'agent_post_id' => $reservation['agent_post_id'],
                         'agent_post_url' => '/posts/' . $reservation['agent_post_id'],
-                    ]), 200, $this->noStoreHeaders());
-                    return;
+                    ]);
                 }
                 if ($reservation['status'] === 'complete') {
                     $stored = $reservation;
                 } elseif ($reservation['status'] === 'failed') {
-                    $this->sendJson($this->failedAgentReplyResponse($reservation), 200, $this->noStoreHeaders());
-                    return;
+                    return $this->failedAgentReplyResponse($reservation);
                 } else {
-                    $this->sendJson($this->agentReplyStatusResponse('in_progress', $postId), 200, $this->noStoreHeaders());
-                    return;
+                    return $this->agentReplyStatusResponse('in_progress', $postId);
                 }
             }
         }
@@ -2322,40 +2324,34 @@ final class Application
                     'analysis_suggestion_error',
                     $throwable->getMessage()
                 );
-                $this->sendJson($this->failedAgentReplyResponse($failed), 200, $this->noStoreHeaders());
-                return;
+                return $this->failedAgentReplyResponse($failed);
             }
         }
 
         $latest = $store->findByTarget((string) $context['post_id'], (string) $context['content_hash']);
         if ($latest !== null && $latest['agent_post_id'] !== null) {
-            $this->sendJson($this->agentReplyStatusResponse('already_posted', $postId, [
+            return $this->agentReplyStatusResponse('already_posted', $postId, [
                 'agent_post_id' => $latest['agent_post_id'],
                 'agent_post_url' => '/posts/' . $latest['agent_post_id'],
-            ]), 200, $this->noStoreHeaders());
-            return;
+            ]);
         }
         if ($latest !== null && $latest['status'] === 'failed') {
-            $this->sendJson($this->failedAgentReplyResponse($latest), 200, $this->noStoreHeaders());
-            return;
+            return $this->failedAgentReplyResponse($latest);
         }
 
         $posting = $store->reservePosting((string) $context['post_id'], (string) $context['content_hash']);
         if ($posting === null || ($posting['reserved'] ?? false) !== true) {
             if ($posting !== null && $posting['agent_post_id'] !== null) {
-                $this->sendJson($this->agentReplyStatusResponse('already_posted', $postId, [
+                return $this->agentReplyStatusResponse('already_posted', $postId, [
                     'agent_post_id' => $posting['agent_post_id'],
                     'agent_post_url' => '/posts/' . $posting['agent_post_id'],
-                ]), 200, $this->noStoreHeaders());
-                return;
+                ]);
             }
             if ($posting !== null && $posting['status'] === 'failed') {
-                $this->sendJson($this->failedAgentReplyResponse($posting), 200, $this->noStoreHeaders());
-                return;
+                return $this->failedAgentReplyResponse($posting);
             }
 
-            $this->sendJson($this->agentReplyStatusResponse('in_progress', $postId), 200, $this->noStoreHeaders());
-            return;
+            return $this->agentReplyStatusResponse('in_progress', $postId);
         }
         $stored = $posting;
 
@@ -2376,7 +2372,7 @@ final class Application
                 (string) $identity['profile_slug']
             );
 
-            $this->sendJson($this->generatedAgentReplyResponse($posted, $existing !== null), 200, $this->noStoreHeaders());
+            return $this->generatedAgentReplyResponse($posted, $existing !== null);
         } catch (\Throwable $throwable) {
             $failed = $store->saveFailed(
                 (string) $context['post_id'],
@@ -2385,7 +2381,7 @@ final class Application
                 'posting_error',
                 $throwable->getMessage()
             );
-            $this->sendJson($this->failedAgentReplyResponse($failed), 200, $this->noStoreHeaders());
+            return $this->failedAgentReplyResponse($failed);
         }
     }
 

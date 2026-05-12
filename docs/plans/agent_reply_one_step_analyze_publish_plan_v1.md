@@ -274,3 +274,4 @@ The automatic path becomes one backend step from the browser's perspective. Ther
 ## Implementation Status
 
 - 2026-05-12: Step 0 complete on branch `agent-reply-one-step-analyze-publish` - added the implementation contract document and this status log. No runtime behavior changed.
+- 2026-05-12: Step 1 complete - extracted `Application::agentReplyResultForPost()` as the shared array-returning reply posting helper and changed `POST /api/generate_agent_reply` to delegate after request validation. Verified with `php -l src/ForumRewrite/Application.php`.
