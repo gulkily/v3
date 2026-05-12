@@ -2201,8 +2201,29 @@ final class Application
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
         $response = $this->postAnalysisResponse($result, $viewerCanSeePostAnalysis);
-        $response['agent_reply_generation_allowed'] = ($result['status'] ?? null) === 'complete'
-            && $this->agentReplyGateFailure($post, $result) === null;
+        $agentReplyEnabled = $this->agentRepliesEnabled();
+        $analysisComplete = ($result['status'] ?? null) === 'complete';
+        $gateFailure = $analysisComplete ? $this->agentReplyGateFailure($post, $result) : null;
+        $agentReplyAllowed = $agentReplyEnabled && $analysisComplete && $gateFailure === null;
+
+        if (!$agentReplyEnabled) {
+            $agentReplyResult = $this->agentReplyStatusResponse('not_recommended', $postId, [
+                'reason' => 'config_disabled',
+            ]);
+        } elseif (!$analysisComplete) {
+            $agentReplyResult = $this->agentReplyStatusResponse('analysis_required', $postId, [
+                'reason' => array_key_exists('status', $result) ? 'analysis_not_complete' : 'missing_analysis',
+            ]);
+        } elseif ($gateFailure !== null) {
+            $agentReplyResult = $this->agentReplyStatusResponse('not_recommended', $postId, [
+                'reason' => $viewerCanSeePostAnalysis ? ($gateFailure['reason'] ?? 'not_recommended') : 'not_recommended',
+            ]);
+        } else {
+            $agentReplyResult = $this->agentReplyResultForPost($post);
+        }
+
+        $response['agent_reply_generation_allowed'] = $agentReplyAllowed;
+        $response = array_merge($response, $this->agentReplySummaryForAnalysisResponse($agentReplyResult));
         $this->sendJson($response, 200, [
             'Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
             'Pragma: no-cache',
@@ -2700,6 +2721,76 @@ final class Application
             'failure_message' => $row['failure_message'] ?? null,
             'retry_after' => $row['retry_after'] ?? null,
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $replyResult
+     * @return array<string, mixed>
+     */
+    private function agentReplySummaryForAnalysisResponse(array $replyResult): array
+    {
+        $generationStatus = (string) ($replyResult['generation_status'] ?? 'failed');
+        $agentPostId = isset($replyResult['agent_post_id']) ? (string) $replyResult['agent_post_id'] : null;
+        $agentPostUrl = isset($replyResult['agent_post_url']) ? (string) $replyResult['agent_post_url'] : null;
+        $reason = isset($replyResult['reason']) ? (string) $replyResult['reason'] : null;
+        $failureCode = isset($replyResult['failure_code']) ? (string) $replyResult['failure_code'] : null;
+
+        $summary = [
+            'agent_reply_generation_status' => $generationStatus,
+            'agent_reply_posted' => false,
+            'agent_reply_post_id' => null,
+            'agent_reply_post_url' => null,
+            'agent_reply_reason' => null,
+            'agent_reply_failure_code' => null,
+        ];
+
+        if ($generationStatus === 'generated') {
+            $posted = ($replyResult['posted'] ?? false) === true;
+            $summary['agent_reply_posted'] = $posted;
+            $summary['agent_reply_post_id'] = $posted ? $agentPostId : null;
+            $summary['agent_reply_post_url'] = $posted ? $agentPostUrl : null;
+            $summary['agent_reply_reason'] = $reason;
+            $summary['agent_reply_failure_code'] = $failureCode;
+
+            return $summary;
+        }
+
+        if ($generationStatus === 'already_posted') {
+            $summary['agent_reply_posted'] = true;
+            $summary['agent_reply_post_id'] = $agentPostId;
+            $summary['agent_reply_post_url'] = $agentPostUrl;
+
+            return $summary;
+        }
+
+        if ($generationStatus === 'not_recommended') {
+            $summary['agent_reply_reason'] = $reason;
+
+            return $summary;
+        }
+
+        if ($generationStatus === 'analysis_required') {
+            $summary['agent_reply_reason'] = $reason;
+
+            return $summary;
+        }
+
+        if ($generationStatus === 'failed') {
+            $summary['agent_reply_post_id'] = $agentPostId;
+            $summary['agent_reply_post_url'] = $agentPostUrl;
+            $summary['agent_reply_failure_code'] = $failureCode;
+
+            return $summary;
+        }
+
+        if ($generationStatus === 'in_progress') {
+            return $summary;
+        }
+
+        $summary['agent_reply_generation_status'] = 'failed';
+        $summary['agent_reply_failure_code'] = 'unexpected_agent_reply_status';
+
+        return $summary;
     }
 
     /**
