@@ -65,6 +65,7 @@ final class StubPostAnalyzer implements PostAnalyzer
             ],
             'raw_response' => [
                 'stub' => true,
+                'related_content' => is_array($context['related_content'] ?? null) ? $context['related_content'] : [],
             ],
         ];
     }

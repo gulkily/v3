@@ -6,6 +6,7 @@ namespace ForumRewrite;
 
 use ForumRewrite\Analysis\DedalusPostAnalyzer;
 use ForumRewrite\Analysis\PostAnalysisService;
+use ForumRewrite\Analysis\RelatedContentSearchService;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Analysis\StubPostAnalyzer;
 use ForumRewrite\Agent\DedalusAgentReplyGenerator;
@@ -27,7 +28,7 @@ use PDOStatement;
 final class Application
 {
     private const HIDDEN_BOOTSTRAP_TAG = 'identity';
-    private const ANALYSIS_SCHEMA_VERSION = 3;
+    private const ANALYSIS_SCHEMA_VERSION = 4;
     private const THREAD_CONTEXT_COMMENT_BODY_LIMIT = 3000;
     private const THREAD_CONTEXT_TOTAL_BODY_LIMIT = 18000;
     private ?string $appVersion = null;
@@ -2870,6 +2871,10 @@ final class Application
 
         if ($includeThreadComments) {
             $context['thread_comments'] = $this->threadCommentsContext($post);
+            $relatedContent = $this->relatedContentContext($post);
+            if ($relatedContent !== []) {
+                $context['related_content'] = $relatedContent;
+            }
         }
 
         return $context;
@@ -2939,6 +2944,15 @@ final class Application
         }
 
         return $comments;
+    }
+
+    /**
+     * @param array<string, mixed> $targetPost
+     * @return list<array<string, mixed>>
+     */
+    private function relatedContentContext(array $targetPost): array
+    {
+        return (new RelatedContentSearchService($this->pdo()))->findRelatedContent($targetPost, 5);
     }
 
     private function limitThreadCommentBody(string $value, int $maxLength): string

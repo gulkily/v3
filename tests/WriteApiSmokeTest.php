@@ -169,6 +169,46 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testPostAnalysisContextIncludesRelatedCrossThreadContent(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        putenv('DEDALUS_AGENT_REPLIES_ENABLED=false');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $relatedResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=' . rawurlencode('Reply agent context')
+                    . '&body=' . rawurlencode('The reply agent should use prior context before answering repeated questions.')
+            );
+            $relatedPostId = $this->extractValue($relatedResponse, 'post_id');
+            $targetResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=' . rawurlencode('Repeated reply agent question')
+                    . '&body=' . rawurlencode('Could the reply agent use prior context when a repeated question appears?')
+            );
+            $targetPostId = $this->extractValue($targetResponse, 'post_id');
+
+            $response = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($targetPostId)), true);
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $rawResponseJson = (string) $pdo->query('SELECT raw_response_json FROM post_analyses WHERE post_id = ' . $pdo->quote($targetPostId))->fetchColumn();
+            $rawResponse = json_decode($rawResponseJson, true);
+            $relatedContent = $rawResponse['related_content'] ?? [];
+
+            assertSame('ok', $response['status']);
+            assertSame('complete', $response['analysis_status']);
+            assertSame($relatedPostId, $relatedContent[0]['post_id'] ?? null);
+            assertSame('/posts/' . $relatedPostId, $relatedContent[0]['post_url'] ?? null);
+            assertSame(false, in_array($targetPostId, array_column($relatedContent, 'post_id'), true));
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            putenv('DEDALUS_AGENT_REPLIES_ENABLED');
+        }
+    }
+
     public function testGenerateAgentReplyRequiresCompletedCurrentAnalysis(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

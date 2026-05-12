@@ -12,3 +12,16 @@
 - Notes:
   - Ranking is intentionally simple keyword scoring with no read-model schema migration.
   - Same-thread posts are excluded because existing `thread_comments` already carries same-thread context.
+
+## Stage 2 - Analyzer Context Integration
+- Changes:
+  - Extended post-analysis context construction to include a bounded `related_content` list when cross-thread matches exist.
+  - Bumped the analysis schema version so existing cached analysis rows do not mask the new context shape.
+  - Updated the stub analyzer to record received related content in its raw response for regression testing.
+  - Added write API smoke coverage proving analysis receives a related cross-thread post and excludes the target post.
+- Verification:
+  - `php -d zend.assertions=1 -d assert.exception=1 -r 'require "tests/ApplicationServerTimingTest.php"; require "tests/LocalAppSmokeTest.php"; require "tests/WriteApiSmokeTest.php"; $test = new WriteApiSmokeTest(); $test->testPostAnalysisContextIncludesRelatedCrossThreadContent(); echo "PASS WriteApiSmokeTest::testPostAnalysisContextIncludesRelatedCrossThreadContent\n";'`
+  - Result: `PASS WriteApiSmokeTest::testPostAnalysisContextIncludesRelatedCrossThreadContent`.
+- Notes:
+  - No post creation path changes were made; related-content lookup runs inside the existing analysis path.
+  - Empty match sets omit `related_content`, preserving existing analyzer behavior.
