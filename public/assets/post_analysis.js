@@ -93,6 +93,22 @@
     return "";
   }
 
+  function agentReplyResultFromAnalysis(analysis) {
+    if (!analysis || analysis.status !== "ok" || !Object.prototype.hasOwnProperty.call(analysis, "agent_reply_generation_status")) {
+      return null;
+    }
+
+    return {
+      status: "ok",
+      generation_status: analysis.agent_reply_generation_status,
+      posted: analysis.agent_reply_posted,
+      agent_post_id: analysis.agent_reply_post_id,
+      agent_post_url: analysis.agent_reply_post_url,
+      reason: analysis.agent_reply_reason,
+      failure_code: analysis.agent_reply_failure_code,
+    };
+  }
+
   function applyGenerationResult(node, result, analysis) {
     if (!result || result.status !== "ok") {
       return;
@@ -162,12 +178,9 @@
             return;
           }
 
-          if (analysis.agent_reply_generation_allowed !== true) {
-            if (analysis.viewer_can_see_analysis && analysis.analysis_status !== "complete") {
-              setFeedback(feedback, "Agent reply skipped: analysis required.", "");
-            }
-            return;
-          }
+          const result = agentReplyResultFromAnalysis(analysis);
+          applyGenerationResult(feedback, result, analysis);
+          return;
         }
 
         const result = await generateAgentReply(postId);
