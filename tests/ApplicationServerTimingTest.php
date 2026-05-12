@@ -32,6 +32,35 @@ final class ApplicationServerTimingTest
             $headers
         );
     }
+
+    public function testNoStoreTimingHeadersCombinesCacheAndTimingHeaders(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            __DIR__ . '/fixtures/parity_minimal_v1',
+            sys_get_temp_dir() . '/forum-rewrite-server-timing-' . bin2hex(random_bytes(6)) . '.sqlite3',
+        );
+
+        $method = new ReflectionMethod($application, 'noStoreTimingHeaders');
+        $method->setAccessible(true);
+
+        $headers = $method->invoke($application, [
+            'request_data' => 0.2,
+            'post_analysis' => 42.25,
+            'agent_reply' => 8.0,
+            'total' => 55.6,
+        ]);
+
+        assertSame(
+            [
+                'Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma: no-cache',
+                'Expires: 0',
+                'Server-Timing: request_data;dur=0.2, post_analysis;dur=42.2, agent_reply;dur=8.0, total;dur=55.6',
+            ],
+            $headers
+        );
+    }
 }
 
 if (!function_exists('assertSame')) {

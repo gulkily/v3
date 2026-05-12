@@ -2178,34 +2178,57 @@ final class Application
      */
     private function handleAnalyzePost(string $method, array $query): void
     {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        $headersWithTimings = function () use (&$timings, $totalStartedAt): array {
+            $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
+            return $this->noStoreTimingHeaders($timings);
+        };
+
         if ($method !== 'POST') {
-            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $headersWithTimings());
             return;
         }
 
+        $phaseStartedAt = hrtime(true);
         $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
         $postId = trim((string) ($input['post_id'] ?? ''));
         if ($postId === '') {
-            $this->sendJson(['status' => 'error', 'error' => 'Missing post_id.'], 400);
+            $this->sendJson(['status' => 'error', 'error' => 'Missing post_id.'], 400, $headersWithTimings());
             return;
         }
 
+        $phaseStartedAt = hrtime(true);
         $post = $this->fetchPost($postId);
+        $timings['fetch_post'] = $this->elapsedMilliseconds($phaseStartedAt);
         if ($post === null) {
-            $this->sendJson(['status' => 'error', 'error' => 'post not found'], 404);
+            $this->sendJson(['status' => 'error', 'error' => 'post not found'], 404, $headersWithTimings());
             return;
         }
 
+        $phaseStartedAt = hrtime(true);
         $context = $this->postAnalysisContext($post);
+        $timings['analysis_context'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+        $phaseStartedAt = hrtime(true);
         $result = $this->postAnalysisService()->analyze($context);
+        $timings['post_analysis'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+        $phaseStartedAt = hrtime(true);
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+        $phaseStartedAt = hrtime(true);
         $response = $this->postAnalysisResponse($result, $viewerCanSeePostAnalysis);
         $agentReplyEnabled = $this->agentRepliesEnabled();
         $analysisComplete = ($result['status'] ?? null) === 'complete';
         $gateFailure = $analysisComplete ? $this->agentReplyGateFailure($post, $result) : null;
         $agentReplyAllowed = $agentReplyEnabled && $analysisComplete && $gateFailure === null;
+        $timings['analysis_response'] = $this->elapsedMilliseconds($phaseStartedAt);
 
+        $phaseStartedAt = hrtime(true);
         if (!$agentReplyEnabled) {
             $agentReplyResult = $this->agentReplyStatusResponse('not_recommended', $postId, [
                 'reason' => 'config_disabled',
@@ -2221,14 +2244,14 @@ final class Application
         } else {
             $agentReplyResult = $this->agentReplyResultForPost($post);
         }
+        $timings['agent_reply'] = $this->elapsedMilliseconds($phaseStartedAt);
 
+        $phaseStartedAt = hrtime(true);
         $response['agent_reply_generation_allowed'] = $agentReplyAllowed;
         $response = array_merge($response, $this->agentReplySummaryForAnalysisResponse($agentReplyResult));
-        $this->sendJson($response, 200, [
-            'Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
-            'Pragma: no-cache',
-            'Expires: 0',
-        ]);
+        $timings['response_summary'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+        $this->sendJson($response, 200, $headersWithTimings());
     }
 
     /**
@@ -2803,6 +2826,20 @@ final class Application
             'Pragma: no-cache',
             'Expires: 0',
         ];
+    }
+
+    /**
+     * @param array<string, float|int> $timings
+     * @return list<string>
+     */
+    private function noStoreTimingHeaders(array $timings): array
+    {
+        return array_merge($this->noStoreHeaders(), $this->serverTimingHeaders(['timings' => $timings]));
+    }
+
+    private function elapsedMilliseconds(int $startedAt): float
+    {
+        return round((hrtime(true) - $startedAt) / 1000000, 1);
     }
 
     /**
