@@ -468,9 +468,15 @@ final class WriteApiSmokeTest
         assertStringContains('__forumAgentReplyGenerationStartedPostIds', $script);
         assertStringContains('data-agent-reply-work', $script);
         assertStringContains('function agentReplyResultFromAnalysis(analysis)', $script);
+        assertStringContains('function setFeedbackLink(node, text, href, label)', $script);
+        assertStringContains('function agentReplyAnchorUrl(agentPostId)', $script);
         assertStringContains('work === "analyze"', $script);
         assertStringContains('work !== "analyze" && work !== "publish"', $script);
         assertStringContains('const result = agentReplyResultFromAnalysis(analysis);', $script);
+        assertStringContains('Agent analysis and reply added below this post.', $script);
+        assertStringContains('View agent reply.', $script);
+        assertStringContains('url.searchParams.set("created_post_id", agentPostId);', $script);
+        assertStringContains('url.hash = "post-" + agentPostId;', $script);
         assertStringContains('generation_status === "in_progress"', $script);
         $analyzeBranchStart = strpos($script, 'if (work === "analyze")');
         $publishBranchStart = strpos($script, 'const result = await generateAgentReply(postId);');
@@ -481,7 +487,6 @@ final class WriteApiSmokeTest
         assertStringNotContains('Generating agent reply...', $script);
         assertStringNotContains('Agent reply failed', $script);
         assertStringNotContains('Agent reply posted', $script);
-        assertStringNotContains('View reply', $script);
     }
 
     public function testGenerateAgentReplyRespectsDisabledConfig(): void
@@ -670,6 +675,7 @@ final class WriteApiSmokeTest
         assertStringContains('/threads/' . $threadId, $replyResponse);
         assertStringContains('created_post_id=', $replyResponse);
         assertStringContains('__v=', $replyResponse);
+        assertStringContains('#post-', $replyResponse);
         assertStringContains('Commit ', $replyResponse);
         assertStringContains('Redirecting', $accountResponse);
         assertStringContains('Linked identity', $accountResponse);

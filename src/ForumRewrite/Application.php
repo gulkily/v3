@@ -3002,10 +3002,12 @@ final class Application
         try {
             $result = $this->writer()->createReply($input);
             $this->queueComposeDraftClear($this->composeDraftStorageKey('reply', $threadId, $parentId));
+            $location = '/threads/' . $result['thread_id']
+                . '?created_post_id=' . rawurlencode($result['post_id'])
+                . '&__v=' . rawurlencode($result['commit_sha'])
+                . '#post-' . rawurlencode($result['post_id']);
             $this->sendRedirect(
-                '/threads/' . $result['thread_id']
-                    . '?created_post_id=' . rawurlencode($result['post_id'])
-                    . '&__v=' . rawurlencode($result['commit_sha']),
+                $location,
                 'Created reply ' . $result['post_id'] . '. Commit ' . $result['commit_sha'] . '.',
                 303,
                 $this->serverTimingHeaders($result)

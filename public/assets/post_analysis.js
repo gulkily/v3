@@ -81,6 +81,29 @@
     node.textContent = text;
   }
 
+  function setFeedbackLink(node, text, href, label) {
+    if (!node) {
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = href;
+    link.textContent = label;
+
+    node.hidden = false;
+    node.textContent = "";
+    node.appendChild(document.createTextNode(text + " "));
+    node.appendChild(link);
+  }
+
+  function agentReplyAnchorUrl(agentPostId) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("created_post_id", agentPostId);
+    url.searchParams.delete("__v");
+    url.hash = "post-" + agentPostId;
+    return url.pathname + url.search + url.hash;
+  }
+
   function skippedReason(result, analysis) {
     if (result.reason && analysis && analysis.viewer_can_see_analysis) {
       return ": " + result.reason.replace(/_/g, " ");
@@ -114,11 +137,23 @@
       return;
     }
 
-    if (result.generation_status === "generated" && result.agent_post_url) {
+    if (result.generation_status === "generated" && result.agent_post_id) {
+      setFeedbackLink(
+        node,
+        "Agent analysis and reply added below this post.",
+        agentReplyAnchorUrl(result.agent_post_id),
+        "View agent reply."
+      );
       return;
     }
 
-    if (result.generation_status === "already_posted" && result.agent_post_url) {
+    if (result.generation_status === "already_posted" && result.agent_post_id) {
+      setFeedbackLink(
+        node,
+        "Agent analysis and reply already exists below this post.",
+        agentReplyAnchorUrl(result.agent_post_id),
+        "View agent reply."
+      );
       return;
     }
 

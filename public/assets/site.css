@@ -402,6 +402,11 @@ pre {
 .post-card {
   position: relative;
   padding-bottom: 2.25rem;
+  scroll-margin-top: 1rem;
+}
+
+.post-card:target {
+  border-color: var(--active-line);
 }
 
 .post-card-permalink {
