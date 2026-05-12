@@ -52,6 +52,9 @@ final class PostAnalysisService
 
         try {
             $analysis = $this->analyzer->analyze($context);
+            if (is_array($context['related_content'] ?? null)) {
+                $analysis['related_content'] = $context['related_content'];
+            }
             $stored = $this->store->saveComplete($postId, $contentHash, $analysis);
             $stored['cached'] = false;
             return $stored;

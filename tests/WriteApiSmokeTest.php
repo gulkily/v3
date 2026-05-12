@@ -196,19 +196,32 @@ final class WriteApiSmokeTest
             $pdo = new PDO('sqlite:' . $databasePath);
             $rawResponseJson = (string) $pdo->query('SELECT raw_response_json FROM post_analyses WHERE post_id = ' . $pdo->quote($targetPostId))->fetchColumn();
             $engagementJson = (string) $pdo->query('SELECT engagement_json FROM post_analyses WHERE post_id = ' . $pdo->quote($targetPostId))->fetchColumn();
+            $relatedContentJson = (string) $pdo->query('SELECT related_content_json FROM post_analyses WHERE post_id = ' . $pdo->quote($targetPostId))->fetchColumn();
             $rawResponse = json_decode($rawResponseJson, true);
             $engagement = json_decode($engagementJson, true);
+            $storedRelatedContent = json_decode($relatedContentJson, true);
             $relatedContent = $rawResponse['related_content'] ?? [];
+            $_COOKIE = [];
+            $anonymousThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($targetPostId));
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $approvedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($targetPostId));
+            $approvedResponse = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($targetPostId)), true);
 
             assertSame('ok', $response['status']);
             assertSame('complete', $response['analysis_status']);
             assertSame($relatedPostId, $relatedContent[0]['post_id'] ?? null);
+            assertSame($relatedPostId, $storedRelatedContent[0]['post_id'] ?? null);
             assertSame('/posts/' . $relatedPostId, $relatedContent[0]['post_url'] ?? null);
             assertStringContains('/posts/' . $relatedPostId, (string) ($engagement['suggested_response'] ?? ''));
+            assertStringContains('/posts/' . $relatedPostId, $approvedResponse['related_content'][0]['post_url'] ?? '');
+            assertStringNotContains('Related content:', $anonymousThreadPage);
+            assertStringContains('Related content:', $approvedThreadPage);
+            assertStringContains('/posts/' . $relatedPostId, $approvedThreadPage);
             assertSame(false, in_array($targetPostId, array_column($relatedContent, 'post_id'), true));
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
             putenv('DEDALUS_AGENT_REPLIES_ENABLED');
+            $_COOKIE = [];
         }
     }
 

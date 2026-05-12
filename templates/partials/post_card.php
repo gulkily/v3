@@ -20,6 +20,7 @@ $postAnalysisModeration = is_array($postAnalysis) && is_array($postAnalysis['mod
 $postAnalysisEngagement = is_array($postAnalysis) && is_array($postAnalysis['engagement'] ?? null) ? $postAnalysis['engagement'] : [];
 $postAnalysisQuality = is_array($postAnalysis) && is_array($postAnalysis['quality'] ?? null) ? $postAnalysis['quality'] : [];
 $postAnalysisRespondability = is_array($postAnalysis) && is_array($postAnalysis['respondability'] ?? null) ? $postAnalysis['respondability'] : [];
+$postAnalysisRelatedContent = is_array($postAnalysis) && is_array($postAnalysis['related_content'] ?? null) ? $postAnalysis['related_content'] : [];
 $postAnalysisSummary = is_array($postAnalysis) ? trim((string) ($postAnalysis['post_summary'] ?? '')) : '';
 $postAnalysisLabels = $postAnalysisModeration['labels'] ?? [];
 if (!is_array($postAnalysisLabels)) {
@@ -61,6 +62,23 @@ if (!is_array($postAnalysisLabels)) {
 <?php endif; ?>
 <?php if (isset($postAnalysisEngagement['suggested_response']) && trim((string) $postAnalysisEngagement['suggested_response']) !== ''): ?>
       <p><strong>Suggested response:</strong> <?= $e($postAnalysisEngagement['suggested_response']) ?></p>
+<?php endif; ?>
+<?php if ($postAnalysisRelatedContent !== []): ?>
+      <div>
+        <p><strong>Related content:</strong></p>
+        <ul>
+<?php foreach (array_slice($postAnalysisRelatedContent, 0, 5) as $related): ?>
+<?php
+    $relatedPostUrl = (string) ($related['post_url'] ?? '');
+    $relatedLabel = trim((string) ($related['subject'] ?? '')) ?: (string) ($related['post_id'] ?? 'Related post');
+    $relatedExcerpt = trim((string) ($related['excerpt'] ?? ''));
+?>
+<?php if ($relatedPostUrl !== ''): ?>
+          <li><a href="<?= $e($relatedPostUrl) ?>"><?= $e($relatedLabel) ?></a><?php if ($relatedExcerpt !== ''): ?>: <?= $e($relatedExcerpt) ?><?php endif; ?></li>
+<?php endif; ?>
+<?php endforeach; ?>
+        </ul>
+      </div>
 <?php endif; ?>
     </div>
   </details>

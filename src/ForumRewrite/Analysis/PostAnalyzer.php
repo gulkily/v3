@@ -14,10 +14,11 @@ interface PostAnalyzer
      *   provider_request_id:?string,
      *   moderation:array<string, mixed>,
      *   engagement:array<string, mixed>,
-     *   quality:array<string, mixed>,
-     *   respondability:array<string, mixed>,
-     *   raw_response:array<string, mixed>
-     * }
+ *   quality:array<string, mixed>,
+ *   respondability:array<string, mixed>,
+ *   related_content?:array<int, array<string, mixed>>,
+ *   raw_response:array<string, mixed>
+ * }
      */
     public function analyze(array $context): array;
 }

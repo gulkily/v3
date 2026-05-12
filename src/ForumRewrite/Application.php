@@ -3005,6 +3005,7 @@ final class Application
         $response['engagement'] = $analysis['engagement'] ?? null;
         $response['quality'] = $analysis['quality'] ?? null;
         $response['respondability'] = $analysis['respondability'] ?? null;
+        $response['related_content'] = $analysis['related_content'] ?? [];
 
         return $response;
     }

@@ -39,3 +39,22 @@
 - Notes:
   - The prompt explicitly warns against citing weak matches.
   - Agent reply publication already uses `engagement.suggested_response`, so no separate reply path was added.
+
+## Stage 4 - Inspectability And Regression Coverage
+- Changes:
+  - Persisted `related_content` with completed post analyses in the operational SQLite analysis store.
+  - Included related content in approved-viewer analysis API details.
+  - Rendered related-content links and excerpts inside the existing post-card `Post analysis` details panel.
+  - Extended the cross-thread write API smoke test to verify persistence, approved-only display, and API detail exposure.
+- Verification:
+  - `php -d zend.assertions=1 -d assert.exception=1 -r 'require "tests/ApplicationServerTimingTest.php"; require "tests/DedalusPostAnalyzerTest.php"; $test = new DedalusPostAnalyzerTest(); $test->testSqliteStorePersistsAndHydratesPostSummary(); echo "PASS DedalusPostAnalyzerTest::testSqliteStorePersistsAndHydratesPostSummary\n";'`
+  - Result: `PASS DedalusPostAnalyzerTest::testSqliteStorePersistsAndHydratesPostSummary`.
+  - `php -d zend.assertions=1 -d assert.exception=1 -r 'require "tests/ApplicationServerTimingTest.php"; require "tests/LocalAppSmokeTest.php"; require "tests/WriteApiSmokeTest.php"; $test = new WriteApiSmokeTest(); $test->testPostAnalysisContextIncludesRelatedCrossThreadContent(); echo "PASS WriteApiSmokeTest::testPostAnalysisContextIncludesRelatedCrossThreadContent\n";'`
+  - Result: `PASS WriteApiSmokeTest::testPostAnalysisContextIncludesRelatedCrossThreadContent`.
+  - `php -l src/ForumRewrite/Analysis/SqlitePostAnalysisStore.php && php -l templates/partials/post_card.php`
+  - Result: no syntax errors.
+  - `php -d zend.assertions=1 -d assert.exception=1 tests/run.php`
+  - Result: all new related-content tests passed; full run failed on existing `LocalAppSmokeTest::testFrontControllerShowsBusyErrorForExecutionLockContention`.
+- Notes:
+  - Related-content display is limited to the existing approved-viewer analysis details surface.
+  - The analysis store migration is additive and operational-only; no canonical records are written.
