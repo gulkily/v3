@@ -214,8 +214,8 @@ final class WriteApiSmokeTest
             assertSame('/posts/' . $relatedPostId, $relatedContent[0]['post_url'] ?? null);
             assertStringContains('/posts/' . $relatedPostId, (string) ($engagement['suggested_response'] ?? ''));
             assertStringContains('/posts/' . $relatedPostId, $approvedResponse['related_content'][0]['post_url'] ?? '');
-            assertStringNotContains('Related content:', $anonymousThreadPage);
-            assertStringContains('Related content:', $approvedThreadPage);
+            assertStringNotContains('Possibly related', $anonymousThreadPage);
+            assertStringContains('Possibly related', $approvedThreadPage);
             assertStringContains('/posts/' . $relatedPostId, $approvedThreadPage);
             assertSame(false, in_array($targetPostId, array_column($relatedContent, 'post_id'), true));
         } finally {

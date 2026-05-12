@@ -30,6 +30,25 @@ if (!is_array($postAnalysisLabels)) {
   <div class="button-row button-row-natural post-card-actions">
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
     <p class="meta agent-reply-feedback" data-role="agent-reply-feedback" hidden></p>
+<?php if ($postAnalysisRelatedContent !== []): ?>
+  </div>
+  <section class="possibly-related" aria-label="Possibly related">
+    <p class="possibly-related-title">Possibly related</p>
+    <ul>
+<?php foreach (array_slice($postAnalysisRelatedContent, 0, 5) as $related): ?>
+<?php
+    $relatedPostUrl = (string) ($related['post_url'] ?? '');
+    $relatedLabel = trim((string) ($related['subject'] ?? '')) ?: (string) ($related['post_id'] ?? 'Related post');
+    $relatedExcerpt = trim((string) ($related['excerpt'] ?? ''));
+?>
+<?php if ($relatedPostUrl !== ''): ?>
+      <li><a href="<?= $e($relatedPostUrl) ?>"><?= $e($relatedLabel) ?></a><?php if ($relatedExcerpt !== ''): ?>: <?= $e($relatedExcerpt) ?><?php endif; ?></li>
+<?php endif; ?>
+<?php endforeach; ?>
+    </ul>
+  </section>
+  <div class="button-row button-row-natural post-card-actions">
+<?php endif; ?>
 <?php if (is_array($postAnalysis) && ($postAnalysis['status'] ?? '') === 'complete'): ?>
   <details class="post-analysis">
     <summary>Post analysis</summary>
@@ -62,23 +81,6 @@ if (!is_array($postAnalysisLabels)) {
 <?php endif; ?>
 <?php if (isset($postAnalysisEngagement['suggested_response']) && trim((string) $postAnalysisEngagement['suggested_response']) !== ''): ?>
       <p><strong>Suggested response:</strong> <?= $e($postAnalysisEngagement['suggested_response']) ?></p>
-<?php endif; ?>
-<?php if ($postAnalysisRelatedContent !== []): ?>
-      <div>
-        <p><strong>Related content:</strong></p>
-        <ul>
-<?php foreach (array_slice($postAnalysisRelatedContent, 0, 5) as $related): ?>
-<?php
-    $relatedPostUrl = (string) ($related['post_url'] ?? '');
-    $relatedLabel = trim((string) ($related['subject'] ?? '')) ?: (string) ($related['post_id'] ?? 'Related post');
-    $relatedExcerpt = trim((string) ($related['excerpt'] ?? ''));
-?>
-<?php if ($relatedPostUrl !== ''): ?>
-          <li><a href="<?= $e($relatedPostUrl) ?>"><?= $e($relatedLabel) ?></a><?php if ($relatedExcerpt !== ''): ?>: <?= $e($relatedExcerpt) ?><?php endif; ?></li>
-<?php endif; ?>
-<?php endforeach; ?>
-        </ul>
-      </div>
 <?php endif; ?>
     </div>
   </details>
