@@ -79,8 +79,10 @@ final class WriteApiSmokeTest
 
             $_COOKIE = [];
             $first = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
+            $postCountAfterFirstAnalyze = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
             $_COOKIE = ['identity_hint' => 'guest'];
             $second = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
+            $postCountAfterSecondAnalyze = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
             $_COOKIE = [];
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId) . '?created_post_id=' . rawurlencode($postId));
             $_COOKIE = [];
@@ -90,16 +92,34 @@ final class WriteApiSmokeTest
             $_COOKIE = [];
             $pdo = new PDO('sqlite:' . $databasePath);
             $count = (int) $pdo->query('SELECT COUNT(*) FROM post_analyses')->fetchColumn();
+            $generatedCount = (int) $pdo->query('SELECT COUNT(*) FROM post_generated_responses')->fetchColumn();
+            $generatedRow = $pdo->query('SELECT provider, provider_model, raw_response_json FROM post_generated_responses')->fetch();
+            $rawResponse = json_decode((string) $generatedRow['raw_response_json'], true);
+            $agentPostId = (string) $first['agent_reply_post_id'];
+            $replyRecord = (string) file_get_contents($repositoryRoot . '/records/posts/' . $agentPostId . '.txt');
 
             assertSame('ok', $first['status']);
             assertSame('complete', $first['analysis_status']);
             assertSame(false, $first['cached']);
             assertSame(false, $first['viewer_can_see_analysis']);
             assertSame(false, isset($first['moderation']));
+            assertSame(true, $first['agent_reply_generation_allowed']);
+            assertSame('generated', $first['agent_reply_generation_status']);
+            assertSame(true, $first['agent_reply_posted']);
+            assertSame('/posts/' . $agentPostId, $first['agent_reply_post_url']);
+            assertSame(null, $first['agent_reply_reason']);
+            assertSame(null, $first['agent_reply_failure_code']);
+            assertStringContains('Parent-ID: ' . $postId, $replyRecord);
+            assertStringContains('Author-Identity-ID: openpgp:', $replyRecord);
             assertSame('ok', $second['status']);
             assertSame('complete', $second['analysis_status']);
             assertSame(true, $second['cached']);
             assertSame(true, $second['viewer_can_see_analysis']);
+            assertSame(true, $second['agent_reply_generation_allowed']);
+            assertSame('already_posted', $second['agent_reply_generation_status']);
+            assertSame(true, $second['agent_reply_posted']);
+            assertSame($agentPostId, $second['agent_reply_post_id']);
+            assertSame($postCountAfterFirstAnalyze, $postCountAfterSecondAnalyze);
             assertSame('stub', $second['provider']);
             assertSame('The post says: Thoughtful body?', $second['post_summary']);
             assertSame('none', $second['moderation']['severity']);
@@ -107,8 +127,13 @@ final class WriteApiSmokeTest
             assertSame('opinion', $second['respondability']['question_type']);
             assertSame(true, $second['respondability']['should_generate_response']);
             assertSame(1, $count);
+            assertSame(1, $generatedCount);
+            assertSame('stub', $generatedRow['provider']);
+            assertSame('stub/post-analysis', $generatedRow['provider_model']);
+            assertSame('analysis_suggested_response', $rawResponse['source']);
             assertStringContains('data-created-post-id="' . $postId . '"', $threadPage);
-            assertStringContains('data-agent-reply-work="publish"', $threadPage);
+            assertStringContains('data-agent-reply-posted-id="' . $agentPostId . '"', $threadPage);
+            assertStringNotContains('data-agent-reply-work=', $threadPage);
             assertStringNotContains('Post analysis', $anonymousThreadPage);
             assertStringContains('Post analysis', $approvedThreadPage);
             assertStringContains('Provider: stub / stub/post-analysis', $approvedThreadPage);
@@ -225,6 +250,47 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testAnalyzePostGateFailureUsesCompactVisibilityRules(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $postId = $this->createAnalyzedThread($application, $databasePath, [
+                'respondability' => ['overall_score' => 0.4],
+            ]);
+            $postCountBefore = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+
+            $_COOKIE = [];
+            $anonymous = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $approved = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = [];
+            $postCountAfter = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+            $pdo = new PDO('sqlite:' . $databasePath);
+
+            assertSame(false, $anonymous['agent_reply_generation_allowed']);
+            assertSame('not_recommended', $anonymous['agent_reply_generation_status']);
+            assertSame(false, $anonymous['agent_reply_posted']);
+            assertSame(null, $anonymous['agent_reply_post_id']);
+            assertSame(null, $anonymous['agent_reply_post_url']);
+            assertSame('not_recommended', $anonymous['agent_reply_reason']);
+            assertSame(null, $anonymous['agent_reply_failure_code']);
+            assertSame(false, isset($anonymous['response_text']));
+            assertSame(false, isset($anonymous['provider_model']));
+            assertSame(false, isset($anonymous['raw_response']));
+            assertSame(false, $approved['agent_reply_generation_allowed']);
+            assertSame('not_recommended', $approved['agent_reply_generation_status']);
+            assertSame('respondability_score_low', $approved['agent_reply_reason']);
+            assertSame($postCountBefore, $postCountAfter);
+            assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM sqlite_master WHERE type = "table" AND name = "post_generated_responses"')->fetchColumn());
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            $_COOKIE = [];
+        }
+    }
+
     public function testGenerateAgentReplyRejectsAgentAuthoredTarget(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -332,7 +398,7 @@ final class WriteApiSmokeTest
                 '/api/create_thread?board_tags=general&subject=Context&body=' . rawurlencode('Root body?')
             );
             $threadId = $this->extractValue($threadResponse, 'post_id');
-            $this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($threadId));
+            $this->analyzePostWithoutAgentReply($application, $threadId);
             $replyResponse = $this->renderMethod(
                 $application,
                 'POST',
@@ -341,7 +407,7 @@ final class WriteApiSmokeTest
                     . '&board_tags=general&body=' . rawurlencode('Reply body?')
             );
             $replyId = $this->extractValue($replyResponse, 'post_id');
-            $this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($replyId));
+            $this->analyzePostWithoutAgentReply($application, $replyId);
 
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($replyId)), true);
             $pdo = new PDO('sqlite:' . $databasePath);
@@ -401,9 +467,17 @@ final class WriteApiSmokeTest
 
         assertStringContains('__forumAgentReplyGenerationStartedPostIds', $script);
         assertStringContains('data-agent-reply-work', $script);
+        assertStringContains('function agentReplyResultFromAnalysis(analysis)', $script);
         assertStringContains('work === "analyze"', $script);
         assertStringContains('work !== "analyze" && work !== "publish"', $script);
+        assertStringContains('const result = agentReplyResultFromAnalysis(analysis);', $script);
         assertStringContains('generation_status === "in_progress"', $script);
+        $analyzeBranchStart = strpos($script, 'if (work === "analyze")');
+        $publishBranchStart = strpos($script, 'const result = await generateAgentReply(postId);');
+        assertFalse($analyzeBranchStart === false);
+        assertFalse($publishBranchStart === false);
+        $analyzeBranch = substr($script, (int) $analyzeBranchStart, (int) $publishBranchStart - (int) $analyzeBranchStart);
+        assertStringNotContains('generateAgentReply(postId)', $analyzeBranch);
         assertStringNotContains('Generating agent reply...', $script);
         assertStringNotContains('Agent reply failed', $script);
         assertStringNotContains('Agent reply posted', $script);
@@ -421,10 +495,18 @@ final class WriteApiSmokeTest
             $postId = $this->createAnalyzedThread($application, $databasePath);
             $postCountBefore = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
 
+            $analysis = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $postCountAfter = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
             $pdo = new PDO('sqlite:' . $databasePath);
 
+            assertSame(false, $analysis['agent_reply_generation_allowed']);
+            assertSame('not_recommended', $analysis['agent_reply_generation_status']);
+            assertSame(false, $analysis['agent_reply_posted']);
+            assertSame(null, $analysis['agent_reply_post_id']);
+            assertSame(null, $analysis['agent_reply_post_url']);
+            assertSame('config_disabled', $analysis['agent_reply_reason']);
+            assertSame(null, $analysis['agent_reply_failure_code']);
             assertSame('not_recommended', $response['generation_status']);
             assertSame('config_disabled', $response['reason']);
             assertSame($postCountBefore, $postCountAfter);
@@ -1719,7 +1801,7 @@ final class WriteApiSmokeTest
             '/api/create_thread?board_tags=general&subject=Respondable%20Question&body=' . rawurlencode('What should we consider next?')
         );
         $postId = $this->extractValue($response, 'post_id');
-        $this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId));
+        $this->analyzePostWithoutAgentReply($application, $postId);
 
         if ($analysisOverrides !== []) {
             $contentHash = $this->contentHashForAnalysis($databasePath, $postId);
@@ -1731,6 +1813,28 @@ final class WriteApiSmokeTest
         }
 
         return $postId;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function analyzePostWithoutAgentReply(Application $application, string $postId): array
+    {
+        $previous = getenv('DEDALUS_AGENT_REPLIES_ENABLED');
+        putenv('DEDALUS_AGENT_REPLIES_ENABLED=false');
+
+        try {
+            return json_decode(
+                $this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)),
+                true
+            );
+        } finally {
+            if ($previous === false) {
+                putenv('DEDALUS_AGENT_REPLIES_ENABLED');
+            } else {
+                putenv('DEDALUS_AGENT_REPLIES_ENABLED=' . $previous);
+            }
+        }
     }
 
     private function contentHashForAnalysis(string $databasePath, string $postId): string
