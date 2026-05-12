@@ -2,7 +2,7 @@
 
 This document defines the approved Latin-diacritic transliteration table for `v3` compose normalization.
 
-It is the policy source of truth for the transliteration change described in [docs/plans/php_latin_diacritic_transliteration_slices_v1.md](/home/wsl/v3/docs/plans/php_latin_diacritic_transliteration_slices_v1.md:1).
+It is the policy source of truth for the transliteration change described in [docs/plans/not_completed/php_latin_diacritic_transliteration_slices_v1.md](/home/wsl/v3/docs/plans/not_completed/php_latin_diacritic_transliteration_slices_v1.md:1).
 
 ## Goal
 

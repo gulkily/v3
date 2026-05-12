@@ -9,9 +9,9 @@ Status update on 2026-04-08:
 - `docs/specs/canonical_post_record_v1.md` now exists in `v3`.
 - `docs/specs/identity_bootstrap_record_v1.md` now defines the retained canonical bootstrap format in `v3`.
 - `docs/specs/public_key_storage_v1.md` now defines canonical public-key storage in `v3`.
-- `docs/plans/php_forum_rewrite_trimmed_parity_suite_v1.md` now records the reduced parity scope in `v3`.
+- `docs/plans/not_completed/php_forum_rewrite_trimmed_parity_suite_v1.md` now records the reduced parity scope in `v3`.
 - `tests/fixtures/parity_minimal_v1/` now provides a local seed fixture tree for the retained record families.
-- `docs/plans/php_forum_rewrite_answered_questions.md` has been updated so the migrated `v3` docs, not `~/v2`, are the authority set.
+- `docs/plans/completed/php_forum_rewrite_answered_questions.md` has been updated so the migrated `v3` docs, not `~/v2`, are the authority set.
 
 - `v3` now contains planning/spec docs plus a local seed parity fixture tree.
 - `v3` still does not contain an executable parity test runner, but the retained contracts and fixture inventory now live locally.
@@ -76,15 +76,15 @@ Implementation should treat these local documents as the authority set:
 3. [identity_bootstrap_record_v1.md](/home/wsl/v3/docs/specs/identity_bootstrap_record_v1.md)
 4. [profile_read_contract_v1.md](/home/wsl/v3/docs/specs/profile_read_contract_v1.md)
 5. [public_key_storage_v1.md](/home/wsl/v3/docs/specs/public_key_storage_v1.md)
-6. [php_forum_rewrite_trimmed_parity_suite_v1.md](/home/wsl/v3/docs/plans/php_forum_rewrite_trimmed_parity_suite_v1.md)
+6. [php_forum_rewrite_trimmed_parity_suite_v1.md](/home/wsl/v3/docs/plans/not_completed/php_forum_rewrite_trimmed_parity_suite_v1.md)
 7. `tests/fixtures/parity_minimal_v1/`
 
 ## Relevant `v3` Docs
 
 - [php_forum_rewrite_spec_v1.md](/home/wsl/v3/docs/specs/php_forum_rewrite_spec_v1.md)
 - [profile_read_contract_v1.md](/home/wsl/v3/docs/specs/profile_read_contract_v1.md)
-- [php_forum_rewrite_answered_questions.md](/home/wsl/v3/docs/plans/php_forum_rewrite_answered_questions.md)
-- [php_forum_rewrite_fdp_loop_recommendation.md](/home/wsl/v3/docs/plans/php_forum_rewrite_fdp_loop_recommendation.md)
+- [php_forum_rewrite_answered_questions.md](/home/wsl/v3/docs/plans/completed/php_forum_rewrite_answered_questions.md)
+- [php_forum_rewrite_fdp_loop_recommendation.md](/home/wsl/v3/docs/plans/completed/php_forum_rewrite_fdp_loop_recommendation.md)
 
 ## Follow-Up: Licensing For Downloaded Archives
 

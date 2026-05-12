@@ -1,6 +1,6 @@
 # PHP Thread Labels After Creation Implementation Checklist V1
 
-This document turns the retained proposal in `docs/plans/php_thread_labels_after_creation_proposal_v1.md` into a concrete implementation checklist for the current PHP codebase.
+This document turns the retained proposal in `docs/plans/not_completed/php_thread_labels_after_creation_proposal_v1.md` into a concrete implementation checklist for the current PHP codebase.
 
 ## Goal
 
