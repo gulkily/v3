@@ -105,6 +105,17 @@ final class DedalusPostAnalyzerTest
         }
     }
 
+    public function testSystemPromptGuidesUseOfRelatedContent(): void
+    {
+        $analyzer = new DedalusPostAnalyzer('test-key');
+        $method = new \ReflectionMethod(DedalusPostAnalyzer::class, 'systemPrompt');
+        $method->setAccessible(true);
+        $prompt = (string) $method->invoke($analyzer);
+
+        assertSame(true, str_contains($prompt, 'When related_content is present'));
+        assertSame(true, str_contains($prompt, 'Do not cite weak related_content matches.'));
+    }
+
     public function testSqliteStorePersistsAndHydratesPostSummary(): void
     {
         $store = new SqlitePostAnalysisStore(new PDO('sqlite::memory:'));

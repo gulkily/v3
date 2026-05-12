@@ -25,6 +25,7 @@ final class StubPostAnalyzer implements PostAnalyzer
         $responseRisk = $labels === [] ? 'low' : 'medium';
         $overallScore = $asksQuestion ? 0.78 : 0.58;
         $shouldGenerateResponse = $overallScore >= 0.65 && $responseRisk !== 'high';
+        $relatedContent = is_array($context['related_content'] ?? null) ? $context['related_content'] : [];
 
         return [
             'provider' => 'stub',
@@ -39,7 +40,7 @@ final class StubPostAnalyzer implements PostAnalyzer
                 'recommended_action' => $labels === [] ? 'none' : 'review',
             ],
             'engagement' => [
-                'suggested_response' => $shouldGenerateResponse ? 'Thanks for starting this. What is the strongest reason someone might disagree?' : '',
+                'suggested_response' => $this->suggestedResponse($shouldGenerateResponse, $relatedContent),
                 'response_style' => 'curious',
                 'response_should_be_public' => $shouldGenerateResponse,
             ],
@@ -65,9 +66,29 @@ final class StubPostAnalyzer implements PostAnalyzer
             ],
             'raw_response' => [
                 'stub' => true,
-                'related_content' => is_array($context['related_content'] ?? null) ? $context['related_content'] : [],
+                'related_content' => $relatedContent,
             ],
         ];
+    }
+
+    /**
+     * @param list<array<string, mixed>> $relatedContent
+     */
+    private function suggestedResponse(bool $shouldGenerateResponse, array $relatedContent): string
+    {
+        if (!$shouldGenerateResponse) {
+            return '';
+        }
+
+        $firstMatch = $relatedContent[0] ?? null;
+        if (is_array($firstMatch) && trim((string) ($firstMatch['post_url'] ?? '')) !== '') {
+            $subject = trim((string) ($firstMatch['subject'] ?? ''));
+            $label = $subject !== '' ? $subject : (string) ($firstMatch['post_id'] ?? 'a related post');
+
+            return 'This looks connected to ' . (string) $firstMatch['post_url'] . ' (' . $label . '). A useful next step is to compare what changed since that earlier answer.';
+        }
+
+        return 'Thanks for starting this. What is the strongest reason someone might disagree?';
     }
 
     private function summary(string $body): string

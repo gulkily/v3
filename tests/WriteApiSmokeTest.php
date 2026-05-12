@@ -195,13 +195,16 @@ final class WriteApiSmokeTest
             $response = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($targetPostId)), true);
             $pdo = new PDO('sqlite:' . $databasePath);
             $rawResponseJson = (string) $pdo->query('SELECT raw_response_json FROM post_analyses WHERE post_id = ' . $pdo->quote($targetPostId))->fetchColumn();
+            $engagementJson = (string) $pdo->query('SELECT engagement_json FROM post_analyses WHERE post_id = ' . $pdo->quote($targetPostId))->fetchColumn();
             $rawResponse = json_decode($rawResponseJson, true);
+            $engagement = json_decode($engagementJson, true);
             $relatedContent = $rawResponse['related_content'] ?? [];
 
             assertSame('ok', $response['status']);
             assertSame('complete', $response['analysis_status']);
             assertSame($relatedPostId, $relatedContent[0]['post_id'] ?? null);
             assertSame('/posts/' . $relatedPostId, $relatedContent[0]['post_url'] ?? null);
+            assertStringContains('/posts/' . $relatedPostId, (string) ($engagement['suggested_response'] ?? ''));
             assertSame(false, in_array($targetPostId, array_column($relatedContent, 'post_id'), true));
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');

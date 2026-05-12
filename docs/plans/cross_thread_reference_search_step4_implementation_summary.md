@@ -25,3 +25,17 @@
 - Notes:
   - No post creation path changes were made; related-content lookup runs inside the existing analysis path.
   - Empty match sets omit `related_content`, preserving existing analyzer behavior.
+
+## Stage 3 - Related-Content-Aware Analysis Replies
+- Changes:
+  - Updated the Dedalus post-analysis prompt to tell the analyzer how to use or ignore `related_content` safely.
+  - Updated stub analysis behavior so strong related matches can shape `engagement.suggested_response` with a stable post URL.
+  - Extended tests to verify prompt guidance and that related-content suggestions can flow into stored engagement output.
+- Verification:
+  - `php -d zend.assertions=1 -d assert.exception=1 -r 'require "tests/ApplicationServerTimingTest.php"; require "tests/DedalusPostAnalyzerTest.php"; $test = new DedalusPostAnalyzerTest(); $test->testSystemPromptGuidesUseOfRelatedContent(); echo "PASS DedalusPostAnalyzerTest::testSystemPromptGuidesUseOfRelatedContent\n";'`
+  - Result: `PASS DedalusPostAnalyzerTest::testSystemPromptGuidesUseOfRelatedContent`.
+  - `php -d zend.assertions=1 -d assert.exception=1 -r 'require "tests/ApplicationServerTimingTest.php"; require "tests/LocalAppSmokeTest.php"; require "tests/WriteApiSmokeTest.php"; $test = new WriteApiSmokeTest(); $test->testPostAnalysisContextIncludesRelatedCrossThreadContent(); echo "PASS WriteApiSmokeTest::testPostAnalysisContextIncludesRelatedCrossThreadContent\n";'`
+  - Result: `PASS WriteApiSmokeTest::testPostAnalysisContextIncludesRelatedCrossThreadContent`.
+- Notes:
+  - The prompt explicitly warns against citing weak matches.
+  - Agent reply publication already uses `engagement.suggested_response`, so no separate reply path was added.
