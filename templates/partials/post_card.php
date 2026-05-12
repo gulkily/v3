@@ -32,7 +32,7 @@ if (!is_array($postAnalysisLabels)) {
     <p class="meta agent-reply-feedback" data-role="agent-reply-feedback" hidden></p>
 <?php if ($postAnalysisRelatedContent !== []): ?>
   </div>
-  <section class="possibly-related" aria-label="Possibly related">
+  <section class="card possibly-related" aria-label="Possibly related">
     <p class="possibly-related-title">Possibly related</p>
     <ul>
 <?php foreach (array_slice($postAnalysisRelatedContent, 0, 5) as $related): ?>
