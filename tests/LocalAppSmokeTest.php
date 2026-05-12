@@ -176,6 +176,9 @@ final class LocalAppSmokeTest
         assertStringContains('data-inline-reply-details', $thread);
         assertStringContains('class="inline-reply-prompt"', $thread);
         assertStringContains('placeholder="Write a reply..."', $thread);
+        $inlineReplyScript = (string) file_get_contents(__DIR__ . '/../public/assets/inline_reply_form.js');
+        assertStringContains('function scrollFullyIntoView(node)', $inlineReplyScript);
+        assertStringContains('node.scrollIntoView({', $inlineReplyScript);
         assertStringContains('inline-reply-identity-status', $thread);
         assertStringContains('method="post" action="/compose/reply" class="stack" data-compose-form data-compose-kind="reply"', $thread);
         assertStringContains('method="post" action="/compose/reply" class="stack" data-compose-form data-compose-kind="reply"', $composeReply);
