@@ -1390,7 +1390,7 @@ final class Application
                 return 'none';
             }
 
-            if (in_array((string) ($agentReply['status'] ?? ''), ['pending', 'posting', 'failed'], true)) {
+            if ((string) ($agentReply['status'] ?? '') !== 'complete') {
                 return 'none';
             }
         }
