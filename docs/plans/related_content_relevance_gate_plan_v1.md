@@ -117,6 +117,7 @@ Recommended enums:
   - Completed focused write API verification for persisted and API-exposed assessment metadata.
 
 ## Stage 5 - Regression Fixtures
+- Status: Implemented in commit 5 on branch `related-content-relevance-gate`.
 - Goal: Lock in precision-first behavior.
 - Test cases:
   - One shared generic domain token returns no displayed related content.
@@ -124,6 +125,7 @@ Recommended enums:
   - A target post that explicitly asks "has this been discussed before?" can display same-topic background.
   - A target post that does not ask for prior context suppresses merely adjacent same-topic results.
   - A candidate with high lexical overlap but different intent is rejected by model assessment.
+  - Completed focused verification with `RelatedContentSearchServiceTest` and `DedalusPostAnalyzerTest`.
 
 ## Migration Notes
 - This changes analysis output shape and should bump the analysis schema version so stale cached rows do not mask the new gate.

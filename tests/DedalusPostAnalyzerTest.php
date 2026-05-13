@@ -300,6 +300,66 @@ final class DedalusPostAnalyzerTest
         assertSame([], $analysis['related_content']);
     }
 
+    public function testPostAnalysisServiceAllowsDirectAnswersEvenWhenPriorContextWasNotSolicited(): void
+    {
+        $analysis = $this->analyzeWithRelatedAssessment([
+            'related_results_appropriate' => true,
+            'solicitation_score' => 0.2,
+            'solicitation_reason' => 'Prior discussion is not explicitly requested.',
+            'candidate_reviews' => [
+                [
+                    'post_id' => 'direct-answer',
+                    'relationship' => 'direct_answer',
+                    'relevance_score' => 0.9,
+                    'appropriate_to_show' => true,
+                    'reason' => 'This directly answers the same concrete question.',
+                ],
+            ],
+        ]);
+
+        assertSame(['direct-answer'], array_column($analysis['related_content'], 'post_id'));
+    }
+
+    public function testPostAnalysisServiceAllowsSolicitedBackgroundContext(): void
+    {
+        $analysis = $this->analyzeWithRelatedAssessment([
+            'related_results_appropriate' => true,
+            'solicitation_score' => 0.85,
+            'solicitation_reason' => 'The target asks whether this has been discussed before.',
+            'candidate_reviews' => [
+                [
+                    'post_id' => 'background',
+                    'relationship' => 'background_context',
+                    'relevance_score' => 0.82,
+                    'appropriate_to_show' => true,
+                    'reason' => 'The prior discussion provides requested context.',
+                ],
+            ],
+        ], 'background');
+
+        assertSame(['background'], array_column($analysis['related_content'], 'post_id'));
+    }
+
+    public function testPostAnalysisServiceRejectsHighOverlapDifferentIntentCandidates(): void
+    {
+        $analysis = $this->analyzeWithRelatedAssessment([
+            'related_results_appropriate' => false,
+            'solicitation_score' => 0.8,
+            'solicitation_reason' => 'The target asks for prior discussion, but the candidate does not match the intent.',
+            'candidate_reviews' => [
+                [
+                    'post_id' => 'different-intent',
+                    'relationship' => 'none',
+                    'relevance_score' => 0.88,
+                    'appropriate_to_show' => false,
+                    'reason' => 'High lexical overlap but a different request.',
+                ],
+            ],
+        ], 'different-intent');
+
+        assertSame([], $analysis['related_content']);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -344,5 +404,50 @@ final class DedalusPostAnalyzerTest
                 'candidate_reviews' => [],
             ],
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $assessment
+     * @return array<string, mixed>
+     */
+    private function analyzeWithRelatedAssessment(array $assessment, string $candidatePostId = 'direct-answer'): array
+    {
+        $store = new SqlitePostAnalysisStore(new PDO('sqlite::memory:'));
+        $service = new PostAnalysisService($store, new class($assessment) implements PostAnalyzer {
+            /**
+             * @param array<string, mixed> $assessment
+             */
+            public function __construct(private readonly array $assessment)
+            {
+            }
+
+            public function analyze(array $context): array
+            {
+                return [
+                    'provider' => 'test',
+                    'provider_model' => 'test-model',
+                    'post_summary' => 'Summary.',
+                    'moderation' => [],
+                    'engagement' => [],
+                    'quality' => [],
+                    'respondability' => [],
+                    'related_content_assessment' => $this->assessment,
+                    'raw_response' => [],
+                ];
+            }
+        });
+
+        return $service->analyze([
+            'post_id' => 'target',
+            'thread_id' => 'target-thread',
+            'content_hash' => 'hash-' . $candidatePostId,
+            'related_content' => [
+                [
+                    'post_id' => $candidatePostId,
+                    'thread_id' => $candidatePostId . '-thread',
+                    'post_url' => '/posts/' . $candidatePostId,
+                ],
+            ],
+        ]);
     }
 }
