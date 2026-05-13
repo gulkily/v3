@@ -91,6 +91,7 @@ Recommended enums:
   - Completed focused verification with `DedalusPostAnalyzerTest`.
 
 ## Stage 3 - Persist Only Approved Related Content
+- Status: Implemented in commit 3 on branch `related-content-relevance-gate`.
 - Goal: Stop storing raw lexical candidates as displayable related content.
 - Expected changes:
   - Change `PostAnalysisService::analyze()` so it filters `context['related_content']` through the analyzer's `related_content_assessment`.
@@ -100,6 +101,7 @@ Recommended enums:
 - Verification:
   - Store tests prove approved candidates persist and rejected candidates do not.
   - Write API smoke tests prove unrelated lexical candidates do not appear in approved thread/post pages.
+  - Completed focused store/service verification with `DedalusPostAnalyzerTest`.
 
 ## Stage 4 - UI And API Inspectability
 - Goal: Make the decision understandable without overstating uncertainty.

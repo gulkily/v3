@@ -5,6 +5,8 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Analysis\DedalusPostAnalyzer;
+use ForumRewrite\Analysis\PostAnalyzer;
+use ForumRewrite\Analysis\PostAnalysisService;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 
 final class DedalusPostAnalyzerTest
@@ -159,6 +161,143 @@ final class DedalusPostAnalyzerTest
         assertSame('The post asks how reply context should work.', $stored['post_summary']);
         assertSame('The post asks how reply context should work.', $hydrated['post_summary']);
         assertSame('none', $hydrated['moderation']['severity']);
+    }
+
+    public function testSqliteStorePersistsAndHydratesRelatedContentAssessment(): void
+    {
+        $store = new SqlitePostAnalysisStore(new PDO('sqlite::memory:'));
+        $store->saveComplete('root-001', 'hash-001', [
+            'provider' => 'stub',
+            'provider_model' => 'stub/post-analysis',
+            'post_summary' => 'Summary.',
+            'moderation' => [],
+            'engagement' => [],
+            'quality' => [],
+            'respondability' => [],
+            'related_content_assessment' => [
+                'related_results_appropriate' => false,
+                'solicitation_score' => 0.2,
+                'solicitation_reason' => 'Not requested.',
+                'candidate_reviews' => [],
+            ],
+            'raw_response' => [],
+        ]);
+
+        $hydrated = $store->find('root-001', 'hash-001');
+
+        assertSame(false, $hydrated['related_content_assessment']['related_results_appropriate']);
+        assertSame(0.2, $hydrated['related_content_assessment']['solicitation_score']);
+    }
+
+    public function testPostAnalysisServicePersistsOnlyApprovedRelatedContent(): void
+    {
+        $store = new SqlitePostAnalysisStore(new PDO('sqlite::memory:'));
+        $service = new PostAnalysisService($store, new class implements PostAnalyzer {
+            public function analyze(array $context): array
+            {
+                return [
+                    'provider' => 'test',
+                    'provider_model' => 'test-model',
+                    'post_summary' => 'Summary.',
+                    'moderation' => [],
+                    'engagement' => [],
+                    'quality' => [],
+                    'respondability' => [],
+                    'related_content_assessment' => [
+                        'related_results_appropriate' => true,
+                        'solicitation_score' => 0.8,
+                        'solicitation_reason' => 'The target asks for prior discussion.',
+                        'candidate_reviews' => [
+                            [
+                                'post_id' => 'approved',
+                                'relationship' => 'direct_answer',
+                                'relevance_score' => 0.91,
+                                'appropriate_to_show' => true,
+                                'reason' => 'Direct prior answer.',
+                            ],
+                            [
+                                'post_id' => 'rejected',
+                                'relationship' => 'none',
+                                'relevance_score' => 0.2,
+                                'appropriate_to_show' => false,
+                                'reason' => 'Only lexical overlap.',
+                            ],
+                        ],
+                    ],
+                    'raw_response' => [],
+                ];
+            }
+        });
+
+        $analysis = $service->analyze([
+            'post_id' => 'target',
+            'thread_id' => 'target-thread',
+            'content_hash' => 'hash-001',
+            'related_content' => [
+                [
+                    'post_id' => 'approved',
+                    'thread_id' => 'approved-thread',
+                    'post_url' => '/posts/approved',
+                ],
+                [
+                    'post_id' => 'rejected',
+                    'thread_id' => 'rejected-thread',
+                    'post_url' => '/posts/rejected',
+                ],
+            ],
+        ]);
+
+        assertSame(['approved'], array_column($analysis['related_content'], 'post_id'));
+        assertSame(true, $analysis['related_content_assessment']['related_results_appropriate']);
+    }
+
+    public function testPostAnalysisServiceSuppressesUnsolicitedSameTopicRelatedContent(): void
+    {
+        $store = new SqlitePostAnalysisStore(new PDO('sqlite::memory:'));
+        $service = new PostAnalysisService($store, new class implements PostAnalyzer {
+            public function analyze(array $context): array
+            {
+                return [
+                    'provider' => 'test',
+                    'provider_model' => 'test-model',
+                    'post_summary' => 'Summary.',
+                    'moderation' => [],
+                    'engagement' => [],
+                    'quality' => [],
+                    'respondability' => [],
+                    'related_content_assessment' => [
+                        'related_results_appropriate' => true,
+                        'solicitation_score' => 0.2,
+                        'solicitation_reason' => 'Prior discussion is not solicited.',
+                        'candidate_reviews' => [
+                            [
+                                'post_id' => 'same-topic',
+                                'relationship' => 'same_topic',
+                                'relevance_score' => 0.9,
+                                'appropriate_to_show' => true,
+                                'reason' => 'Same broad topic.',
+                            ],
+                        ],
+                    ],
+                    'raw_response' => [],
+                ];
+            }
+        });
+
+        $analysis = $service->analyze([
+            'post_id' => 'target',
+            'thread_id' => 'target-thread',
+            'content_hash' => 'hash-001',
+            'related_content' => [
+                [
+                    'post_id' => 'same-topic',
+                    'thread_id' => 'same-topic-thread',
+                    'post_url' => '/posts/same-topic',
+                ],
+            ],
+        ]);
+
+        assertSame([], $analysis['related_content']);
     }
 
     /**

@@ -28,7 +28,7 @@ use PDOStatement;
 final class Application
 {
     private const HIDDEN_BOOTSTRAP_TAG = 'identity';
-    private const ANALYSIS_SCHEMA_VERSION = 4;
+    private const ANALYSIS_SCHEMA_VERSION = 5;
     private const THREAD_CONTEXT_COMMENT_BODY_LIMIT = 3000;
     private const THREAD_CONTEXT_TOTAL_BODY_LIMIT = 18000;
     private ?string $appVersion = null;
