@@ -104,6 +104,7 @@ Recommended enums:
   - Completed focused store/service verification with `DedalusPostAnalyzerTest`.
 
 ## Stage 4 - UI And API Inspectability
+- Status: Implemented in commit 4 on branch `related-content-relevance-gate`.
 - Goal: Make the decision understandable without overstating uncertainty.
 - Expected changes:
   - Continue hiding related content from anonymous viewers.
@@ -113,6 +114,7 @@ Recommended enums:
 - Verification:
   - UI smoke test confirms rejected candidates are absent.
   - API detail test confirms assessment metadata is available to approved viewers only.
+  - Completed focused write API verification for persisted and API-exposed assessment metadata.
 
 ## Stage 5 - Regression Fixtures
 - Goal: Lock in precision-first behavior.

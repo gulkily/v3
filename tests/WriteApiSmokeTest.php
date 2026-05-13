@@ -197,9 +197,11 @@ final class WriteApiSmokeTest
             $rawResponseJson = (string) $pdo->query('SELECT raw_response_json FROM post_analyses WHERE post_id = ' . $pdo->quote($targetPostId))->fetchColumn();
             $engagementJson = (string) $pdo->query('SELECT engagement_json FROM post_analyses WHERE post_id = ' . $pdo->quote($targetPostId))->fetchColumn();
             $relatedContentJson = (string) $pdo->query('SELECT related_content_json FROM post_analyses WHERE post_id = ' . $pdo->quote($targetPostId))->fetchColumn();
+            $relatedContentAssessmentJson = (string) $pdo->query('SELECT related_content_assessment_json FROM post_analyses WHERE post_id = ' . $pdo->quote($targetPostId))->fetchColumn();
             $rawResponse = json_decode($rawResponseJson, true);
             $engagement = json_decode($engagementJson, true);
             $storedRelatedContent = json_decode($relatedContentJson, true);
+            $storedRelatedContentAssessment = json_decode($relatedContentAssessmentJson, true);
             $relatedContent = $rawResponse['related_content'] ?? [];
             $_COOKIE = [];
             $anonymousThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($targetPostId));
@@ -211,6 +213,8 @@ final class WriteApiSmokeTest
             assertSame('complete', $response['analysis_status']);
             assertSame($relatedPostId, $relatedContent[0]['post_id'] ?? null);
             assertSame($relatedPostId, $storedRelatedContent[0]['post_id'] ?? null);
+            assertSame(true, $storedRelatedContentAssessment['related_results_appropriate'] ?? null);
+            assertSame(true, $approvedResponse['related_content_assessment']['related_results_appropriate'] ?? null);
             assertSame('/posts/' . $relatedPostId, $relatedContent[0]['post_url'] ?? null);
             assertStringContains('/posts/' . $relatedPostId, (string) ($engagement['suggested_response'] ?? ''));
             assertStringContains('/posts/' . $relatedPostId, $approvedResponse['related_content'][0]['post_url'] ?? '');
