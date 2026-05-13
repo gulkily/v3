@@ -10,6 +10,8 @@ final class RelatedContentSearchService
 {
     private const MIN_TOKEN_LENGTH = 4;
     private const MAX_QUERY_TOKENS = 12;
+    private const MIN_LEXICAL_SCORE = 4;
+    private const MIN_MATCHED_TOKENS = 2;
     private const EXCERPT_LENGTH = 280;
 
     public function __construct(
@@ -46,7 +48,7 @@ final class RelatedContentSearchService
 
         $targetPostId = (string) ($targetPost['post_id'] ?? '');
         $targetThreadId = (string) ($targetPost['thread_id'] ?? '');
-        $matches = [];
+        $candidates = [];
 
         foreach ($stmt->fetchAll() as $row) {
             $postId = (string) ($row['post_id'] ?? '');
@@ -55,15 +57,16 @@ final class RelatedContentSearchService
                 continue;
             }
 
-            $score = $this->scoreRow($row, $tokens);
-            if ($score <= 0) {
+            $lexicalMatch = $this->scoreRow($row, $tokens);
+            if (!$this->isCandidateMatch($lexicalMatch)) {
                 continue;
             }
 
             $subject = (string) ($row['subject'] ?? '');
             $threadSubject = (string) ($row['thread_subject'] ?? '');
-            $matches[] = [
-                'score' => $score,
+            $candidates[] = [
+                'score' => $lexicalMatch['score'],
+                'matched_tokens' => $lexicalMatch['matched_tokens'],
                 'post_id' => $postId,
                 'thread_id' => $threadId,
                 'parent_id' => isset($row['parent_id']) ? (string) $row['parent_id'] : null,
@@ -76,15 +79,21 @@ final class RelatedContentSearchService
             ];
         }
 
-        usort($matches, static function (array $left, array $right): int {
+        usort($candidates, static function (array $left, array $right): int {
             if ($left['score'] !== $right['score']) {
                 return $right['score'] <=> $left['score'];
+            }
+
+            $leftIsRoot = (string) ($left['post_id'] ?? '') === (string) ($left['thread_id'] ?? '');
+            $rightIsRoot = (string) ($right['post_id'] ?? '') === (string) ($right['thread_id'] ?? '');
+            if ($leftIsRoot !== $rightIsRoot) {
+                return $rightIsRoot <=> $leftIsRoot;
             }
 
             return strcmp((string) $left['post_id'], (string) $right['post_id']);
         });
 
-        return array_slice($matches, 0, $limit);
+        return array_slice($candidates, 0, $limit);
     }
 
     /**
@@ -114,22 +123,46 @@ final class RelatedContentSearchService
      * @param array<string, mixed> $row
      * @param list<string> $tokens
      */
-    private function scoreRow(array $row, array $tokens): int
+    private function scoreRow(array $row, array $tokens): array
     {
         $subject = strtolower((string) ($row['subject'] ?? '') . ' ' . (string) ($row['thread_subject'] ?? ''));
         $body = strtolower((string) ($row['body'] ?? ''));
         $score = 0;
+        $matchedTokens = [];
+        $subjectMatched = false;
 
         foreach ($tokens as $token) {
             if ($subject !== '' && str_contains($subject, $token)) {
                 $score += 4;
+                $matchedTokens[$token] = true;
+                $subjectMatched = true;
             }
             if ($body !== '' && str_contains($body, $token)) {
                 $score += 1;
+                $matchedTokens[$token] = true;
             }
         }
 
-        return $score;
+        return [
+            'score' => $score,
+            'matched_tokens' => array_keys($matchedTokens),
+            'subject_matched' => $subjectMatched,
+        ];
+    }
+
+    /**
+     * @param array{score:int, matched_tokens:list<string>, subject_matched:bool} $lexicalMatch
+     */
+    private function isCandidateMatch(array $lexicalMatch): bool
+    {
+        $score = $lexicalMatch['score'];
+        $matchedTokenCount = count($lexicalMatch['matched_tokens']);
+
+        if ($score < self::MIN_LEXICAL_SCORE) {
+            return false;
+        }
+
+        return $matchedTokenCount >= self::MIN_MATCHED_TOKENS || $lexicalMatch['subject_matched'];
     }
 
     private function excerpt(string $body): string

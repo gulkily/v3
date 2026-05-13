@@ -67,6 +67,21 @@ final class RelatedContentSearchServiceTest
         ]));
     }
 
+    public function testFindRelatedContentRejectsSingleBodyTokenOverlap(): void
+    {
+        $pdo = $this->pdoWithContent();
+        $service = new RelatedContentSearchService($pdo);
+
+        $matches = $service->findRelatedContent([
+            'post_id' => 'new-post',
+            'thread_id' => 'new-post',
+            'subject' => '',
+            'body' => 'Tomatoes',
+        ]);
+
+        assertSame([], $matches);
+    }
+
     private function pdoWithContent(): PDO
     {
         $pdo = new PDO('sqlite::memory:');
