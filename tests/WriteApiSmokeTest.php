@@ -205,8 +205,10 @@ final class WriteApiSmokeTest
             $relatedContent = $rawResponse['related_content'] ?? [];
             $_COOKIE = [];
             $anonymousThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($targetPostId));
+            $anonymousPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($targetPostId));
             $_COOKIE = ['identity_hint' => 'guest'];
             $approvedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($targetPostId));
+            $approvedPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($targetPostId));
             $approvedResponse = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($targetPostId)), true);
 
             assertSame('ok', $response['status']);
@@ -219,8 +221,11 @@ final class WriteApiSmokeTest
             assertStringContains('/posts/' . $relatedPostId, (string) ($engagement['suggested_response'] ?? ''));
             assertStringContains('/posts/' . $relatedPostId, $approvedResponse['related_content'][0]['post_url'] ?? '');
             assertStringNotContains('Possibly related', $anonymousThreadPage);
+            assertStringNotContains('Post analysis', $anonymousPostPage);
             assertStringContains('Possibly related', $approvedThreadPage);
             assertStringContains('/posts/' . $relatedPostId, $approvedThreadPage);
+            assertStringContains('Post analysis', $approvedPostPage);
+            assertStringContains('/posts/' . $relatedPostId, $approvedPostPage);
             assertSame(false, in_array($targetPostId, array_column($relatedContent, 'post_id'), true));
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');

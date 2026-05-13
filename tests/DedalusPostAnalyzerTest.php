@@ -140,6 +140,13 @@ final class DedalusPostAnalyzerTest
         );
     }
 
+    public function testAnalyzerUsesLargerCompletionBudgetForReasoningModels(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__) . '/src/ForumRewrite/Analysis/DedalusPostAnalyzer.php');
+
+        assertSame(true, str_contains($source, "'max_completion_tokens' => 8000"));
+    }
+
     public function testSqliteStorePersistsAndHydratesPostSummary(): void
     {
         $store = new SqlitePostAnalysisStore(new PDO('sqlite::memory:'));

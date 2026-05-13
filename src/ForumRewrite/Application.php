@@ -568,13 +568,31 @@ final class Application
             return null;
         }
 
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $posts = [$post];
+        $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
+        $agentRepliesByPostId = $this->fetchAgentReplyGenerationsForPosts($posts);
+
         return $this->renderPageTemplate(
             'post.php',
             [
                 'post' => $post,
+                'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
+                'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
+                'agentRepliesByPostId' => $agentRepliesByPostId,
+                'agentReplyWorkByPostId' => $this->agentReplyWorkByPostId(
+                    $posts,
+                    '',
+                    $postAnalysesForWork,
+                    $agentRepliesByPostId
+                ),
             ],
             'Post ' . $post['post_id'],
             'board',
+            [
+                '/assets/post_analysis.js',
+            ],
         );
     }
 
