@@ -18,6 +18,7 @@ final class DedalusPostAnalyzer implements PostAnalyzer
     private const EFFORT_LEVELS = ['low', 'medium', 'high'];
     private const RESPONSE_RISK_LEVELS = ['low', 'medium', 'high'];
     private const RESPONSE_MODES = ['none', 'answer', 'clarify', 'ask_followup', 'share_context', 'challenge_gently', 'deescalate'];
+    private const RELATED_CONTENT_RELATIONSHIPS = ['none', 'same_topic', 'same_question', 'direct_answer', 'duplicate_request', 'background_context', 'counterexample'];
 
     private string $apiKey;
     private string $baseUrl;
@@ -76,6 +77,7 @@ final class DedalusPostAnalyzer implements PostAnalyzer
             'engagement' => $this->objectOrEmpty($decoded['engagement'] ?? null),
             'quality' => $this->objectOrEmpty($decoded['quality'] ?? null),
             'respondability' => $this->objectOrEmpty($decoded['respondability'] ?? null),
+            'related_content_assessment' => $this->objectOrEmpty($decoded['related_content_assessment'] ?? null),
             'raw_response' => $response,
         ];
     }
@@ -310,8 +312,36 @@ final class DedalusPostAnalyzer implements PostAnalyzer
                         'reason',
                     ],
                 ],
+                'related_content_assessment' => [
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'properties' => [
+                        'related_results_appropriate' => ['type' => 'boolean'],
+                        'solicitation_score' => ['type' => 'number', 'minimum' => 0, 'maximum' => 1],
+                        'solicitation_reason' => ['type' => 'string'],
+                        'candidate_reviews' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'additionalProperties' => false,
+                                'properties' => [
+                                    'post_id' => ['type' => 'string'],
+                                    'relationship' => [
+                                        'type' => 'string',
+                                        'enum' => self::RELATED_CONTENT_RELATIONSHIPS,
+                                    ],
+                                    'relevance_score' => ['type' => 'number', 'minimum' => 0, 'maximum' => 1],
+                                    'appropriate_to_show' => ['type' => 'boolean'],
+                                    'reason' => ['type' => 'string'],
+                                ],
+                                'required' => ['post_id', 'relationship', 'relevance_score', 'appropriate_to_show', 'reason'],
+                            ],
+                        ],
+                    ],
+                    'required' => ['related_results_appropriate', 'solicitation_score', 'solicitation_reason', 'candidate_reviews'],
+                ],
             ],
-            'required' => ['post_summary', 'engagement', 'moderation', 'quality', 'respondability'],
+            'required' => ['post_summary', 'engagement', 'moderation', 'quality', 'respondability', 'related_content_assessment'],
         ];
     }
 

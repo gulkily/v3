@@ -64,10 +64,42 @@ final class StubPostAnalyzer implements PostAnalyzer
                     ? 'Stub analysis treats explicit questions as respondable.'
                     : 'Stub analysis sees a possible follow-up but no explicit question.',
             ],
+            'related_content_assessment' => $this->relatedContentAssessment($relatedContent),
             'raw_response' => [
                 'stub' => true,
                 'related_content' => $relatedContent,
             ],
+        ];
+    }
+
+    /**
+     * @param list<array<string, mixed>> $relatedContent
+     */
+    private function relatedContentAssessment(array $relatedContent): array
+    {
+        $candidateReviews = [];
+        foreach ($relatedContent as $candidate) {
+            $postId = (string) ($candidate['post_id'] ?? '');
+            if ($postId === '') {
+                continue;
+            }
+
+            $candidateReviews[] = [
+                'post_id' => $postId,
+                'relationship' => 'same_topic',
+                'relevance_score' => 0.8,
+                'appropriate_to_show' => true,
+                'reason' => 'Stub analysis treats supplied related content as displayable.',
+            ];
+        }
+
+        return [
+            'related_results_appropriate' => $candidateReviews !== [],
+            'solicitation_score' => $candidateReviews !== [] ? 0.8 : 0.0,
+            'solicitation_reason' => $candidateReviews !== []
+                ? 'Stub analysis received related content candidates.'
+                : 'Stub analysis received no related content candidates.',
+            'candidate_reviews' => $candidateReviews,
         ];
     }
 

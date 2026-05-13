@@ -114,6 +114,28 @@ final class DedalusPostAnalyzerTest
 
         assertSame(true, str_contains($prompt, 'When related_content is present'));
         assertSame(true, str_contains($prompt, 'Do not cite weak related_content matches.'));
+        assertSame(true, str_contains($prompt, 'solicitation_score'));
+        assertSame(true, str_contains($prompt, 'asked for, solicited, or appropriate'));
+        assertSame(true, str_contains($prompt, 'appropriate_to_show=false'));
+    }
+
+    public function testResponseSchemaRequiresRelatedContentAssessment(): void
+    {
+        $analyzer = new DedalusPostAnalyzer('test-key');
+        $method = new \ReflectionMethod(DedalusPostAnalyzer::class, 'responseSchema');
+        $method->setAccessible(true);
+
+        $schema = $method->invoke($analyzer);
+
+        assertSame(true, in_array('related_content_assessment', $schema['required'], true));
+        assertSame(
+            ['related_results_appropriate', 'solicitation_score', 'solicitation_reason', 'candidate_reviews'],
+            $schema['properties']['related_content_assessment']['required']
+        );
+        assertSame(
+            ['none', 'same_topic', 'same_question', 'direct_answer', 'duplicate_request', 'background_context', 'counterexample'],
+            $schema['properties']['related_content_assessment']['properties']['candidate_reviews']['items']['properties']['relationship']['enum']
+        );
     }
 
     public function testSqliteStorePersistsAndHydratesPostSummary(): void
@@ -175,6 +197,12 @@ final class DedalusPostAnalyzerTest
                 'best_response_mode' => 'answer',
                 'should_generate_response' => true,
                 'reason' => 'The post asks a clear question.',
+            ],
+            'related_content_assessment' => [
+                'related_results_appropriate' => false,
+                'solicitation_score' => 0.1,
+                'solicitation_reason' => 'The post does not ask for prior related discussion.',
+                'candidate_reviews' => [],
             ],
         ];
     }

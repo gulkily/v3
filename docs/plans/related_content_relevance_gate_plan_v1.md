@@ -78,6 +78,7 @@ Recommended enums:
   - Completed focused verification with `RelatedContentSearchServiceTest`.
 
 ## Stage 2 - Add Model Relevance Assessment
+- Status: Implemented in commit 2 on branch `related-content-relevance-gate`.
 - Goal: Let the analyzer decide whether related results are genuinely related and appropriate.
 - Expected changes:
   - Extend the Dedalus response schema with `related_content_assessment`.
@@ -87,6 +88,7 @@ Recommended enums:
 - Verification:
   - Analyzer schema tests cover the new field.
   - Prompt tests assert guidance for solicitation score, candidate review, and suppressing weak matches.
+  - Completed focused verification with `DedalusPostAnalyzerTest`.
 
 ## Stage 3 - Persist Only Approved Related Content
 - Goal: Stop storing raw lexical candidates as displayable related content.
