@@ -572,12 +572,19 @@ final class Application
 
     private function renderPost(string $postId): ?string
     {
-        $post = $this->fetchPost($postId);
+        $post = $this->fetchPost($postId, true);
         if ($post === null) {
             return null;
         }
 
+        if (((int) ($post['is_hidden'] ?? 0)) === 1) {
+            return $this->renderMessagePage('Post Hidden', 'Post Hidden', 'This post has been hidden.', 'board');
+        }
+
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $viewerPostFlags = $viewerProfile !== null
+            ? $this->viewerPostTagsForPosts([$post['post_id']], 'flag', (string) $viewerProfile['identity_id'])
+            : [];
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
         $posts = [$post];
         $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
@@ -587,6 +594,7 @@ final class Application
             'post.php',
             [
                 'post' => $post,
+                'viewerPostFlags' => $viewerPostFlags,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
@@ -600,6 +608,9 @@ final class Application
             'Post ' . $post['post_id'],
             'board',
             [
+                '/assets/openpgp.min.js',
+                '/assets/browser_signing.js',
+                '/assets/thread_reactions.js',
                 '/assets/post_analysis.js',
             ],
         );
@@ -1216,6 +1227,7 @@ final class Application
              FROM posts
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
              WHERE posts.thread_id = :thread_id
+               AND posts.is_hidden = 0
              ORDER BY posts.sequence_number ASC'
         );
         $stmt->execute(['thread_id' => $threadId]);
@@ -1226,16 +1238,18 @@ final class Application
     /**
      * @return array<string, mixed>|null
      */
-    private function fetchPost(string $postId): ?array
+    private function fetchPost(string $postId, bool $includeHidden = false): ?array
     {
+        $hiddenWhere = $includeHidden ? '' : ' AND posts.is_hidden = 0';
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_label,
-                    posts.created_at, posts.board_tags_json,
+                    posts.created_at, posts.board_tags_json, posts.is_hidden, posts.hidden_reason,
                     posts.author_profile_slug, profiles.username_token AS author_username_token,
                     COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM posts
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
              WHERE posts.post_id = :post_id'
+             . $hiddenWhere
         );
         $stmt->execute(['post_id' => $postId]);
         $post = $stmt->fetch();
@@ -1502,6 +1516,7 @@ final class Application
              FROM posts
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
              WHERE author_identity_id IN (%s)
+               AND posts.is_hidden = 0
              ORDER BY created_at DESC, sequence_number DESC, post_id DESC',
             $identityIds
         );
@@ -2065,6 +2080,8 @@ final class Application
                     activity.id, activity.author_label, activity.author_profile_slug,
                     activity.author_username_token, activity.author_is_approved
              FROM activity
+             LEFT JOIN posts ON posts.post_id = activity.post_id
+             WHERE COALESCE(posts.is_hidden, 0) = 0
              ORDER BY activity.created_at DESC, activity.post_id DESC, activity.id DESC'
         )->fetchAll();
 

@@ -209,7 +209,7 @@ Status: implemented.
 
 ### Slice 5: Hidden Content Filtering
 
-Status: pending.
+Status: implemented.
 
 - Filter hidden posts from thread rendering and public APIs.
 - Handle direct hidden-post URLs with an explicit hidden message.

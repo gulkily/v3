@@ -1179,6 +1179,39 @@ final class WriteApiSmokeTest
         assertStringContains('error=tag must be one of: like, flag', $unknownTag);
     }
 
+    public function testApprovedFlagOnReplyAgentPostHidesPublicSurfaces(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $postId = $this->createAnalyzedThread($application, $databasePath);
+            $reply = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $agentPostId = (string) $reply['agent_post_id'];
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $flagResponse = $this->renderMethod($application, 'POST', '/api/apply_post_tag?post_id=' . rawurlencode($agentPostId) . '&tag=flag');
+            $_COOKIE = [];
+
+            $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($agentPostId));
+            $threadApi = $this->renderMethod($application, 'GET', '/api/get_thread?thread_id=' . rawurlencode($postId));
+            $postApi = $this->renderMethod($application, 'GET', '/api/get_post?post_id=' . rawurlencode($agentPostId));
+            $activity = $this->renderMethod($application, 'GET', '/activity/?view=content');
+
+            assertStringContains('is_hidden=yes', $flagResponse);
+            assertStringNotContains('strongest reason', $threadPage);
+            assertStringContains('This post has been hidden.', $postPage);
+            assertStringNotContains($agentPostId, $threadApi);
+            assertStringContains('post not found', $postApi);
+            assertStringNotContains($agentPostId, $activity);
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            $_COOKIE = [];
+        }
+    }
+
     public function testApplyThreadTagApiDuplicateShortCircuitsWithoutNewRecord(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
