@@ -6,6 +6,7 @@ namespace ForumRewrite\ReadModel;
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\CanonicalRecordParseException;
+use ForumRewrite\Canonical\PostReactionRecord;
 use ForumRewrite\Canonical\ThreadLabelRecord;
 use ForumRewrite\TagScore;
 use PDO;
@@ -54,6 +55,7 @@ final class ReadModelBuilder
             $this->measure('index_thread_labels', fn (): mixed => $this->indexThreadLabels($pdo, $approvalState));
             $profileCounts = $this->measure('derive_profile_counts', fn (): array => $this->deriveProfileCounts($profiles, $posts));
             $this->measure('link_post_authors', fn (): mixed => $this->linkPostAuthors($pdo, $profiles, $approvalState, $profileCounts));
+            $this->measure('index_post_reactions', fn (): mixed => $this->indexPostReactions($pdo, $approvalState));
             $this->measure('index_instance', fn (): mixed => $this->indexInstance($pdo));
             $this->measure('index_activity', fn (): mixed => $this->indexActivity($pdo, $posts));
             $this->measure('write_metadata', fn (): mixed => $this->writeMetadata($pdo));
@@ -108,6 +110,11 @@ final class ReadModelBuilder
                 author_identity_id TEXT NULL,
                 author_profile_slug TEXT NULL,
                 author_label TEXT NOT NULL DEFAULT \'guest\',
+                post_tags_json TEXT NOT NULL DEFAULT \'[]\',
+                post_score_total INTEGER NOT NULL DEFAULT 0,
+                approved_flag_count INTEGER NOT NULL DEFAULT 0,
+                is_hidden INTEGER NOT NULL DEFAULT 0,
+                hidden_reason TEXT NULL,
                 sequence_number INTEGER NOT NULL
             )'
         );
@@ -355,6 +362,100 @@ final class ReadModelBuilder
                 'thread_labels_json' => json_encode($labels, JSON_THROW_ON_ERROR),
                 'score_total' => $scoreByThread[$threadId] ?? 0,
                 'root_post_id' => $threadId,
+            ]);
+        }
+    }
+
+    /**
+     * @param array<string, array{approved_by_identity_id:?string,approved_by_profile_slug:?string,approved_by_label:?string}> $approvalState
+     */
+    private function indexPostReactions(PDO $pdo, array $approvalState): void
+    {
+        $postRows = $pdo->query('SELECT post_id, author_label FROM posts')->fetchAll();
+        $knownPosts = [];
+        foreach ($postRows as $row) {
+            $knownPosts[(string) $row['post_id']] = [
+                'author_label' => (string) $row['author_label'],
+            ];
+        }
+
+        $records = [];
+        foreach ($this->findRelativePaths('records/post-reactions') as $relativePath) {
+            try {
+                $records[] = $this->canonicalRepository->loadPostReaction($relativePath);
+            } catch (CanonicalRecordParseException) {
+                continue;
+            }
+        }
+
+        usort($records, static function (PostReactionRecord $left, PostReactionRecord $right): int {
+            if ($left->createdAt !== $right->createdAt) {
+                return $left->createdAt <=> $right->createdAt;
+            }
+
+            return $left->recordId <=> $right->recordId;
+        });
+
+        $tagsByPost = [];
+        $scoreByPost = [];
+        $flaggersByPost = [];
+        $countedApprovedScoredTagsByPost = [];
+        foreach ($records as $record) {
+            if (!isset($knownPosts[$record->postId])) {
+                continue;
+            }
+
+            $tagsByPost[$record->postId] ??= [];
+            $scoreByPost[$record->postId] ??= 0;
+            $flaggersByPost[$record->postId] ??= [];
+            $countedApprovedScoredTagsByPost[$record->postId] ??= [];
+            foreach ($record->tags as $tag) {
+                $tagsByPost[$record->postId][$tag] = true;
+
+                if ($record->authorIdentityId === null || !isset($approvalState[$record->authorIdentityId])) {
+                    continue;
+                }
+
+                if ($tag === 'flag') {
+                    $flaggersByPost[$record->postId][$record->authorIdentityId] = true;
+                }
+
+                if (!TagScore::isScoredTag($tag)) {
+                    continue;
+                }
+
+                $dedupeKey = $record->authorIdentityId . ':' . $tag;
+                if (isset($countedApprovedScoredTagsByPost[$record->postId][$dedupeKey])) {
+                    continue;
+                }
+
+                $countedApprovedScoredTagsByPost[$record->postId][$dedupeKey] = true;
+                $scoreByPost[$record->postId] += TagScore::scoreValueForTag($tag);
+            }
+        }
+
+        $updatePost = $pdo->prepare(
+            'UPDATE posts
+             SET post_tags_json = :post_tags_json,
+                 post_score_total = :post_score_total,
+                 approved_flag_count = :approved_flag_count,
+                 is_hidden = :is_hidden,
+                 hidden_reason = :hidden_reason
+             WHERE post_id = :post_id'
+        );
+
+        foreach ($knownPosts as $postId => $post) {
+            $tags = array_keys($tagsByPost[$postId] ?? []);
+            sort($tags);
+            $approvedFlagCount = count($flaggersByPost[$postId] ?? []);
+            $isHidden = $approvedFlagCount > 0 && $post['author_label'] === 'reply-agent';
+            $updatePost->execute([
+                'post_tags_json' => json_encode($tags, JSON_THROW_ON_ERROR),
+                'post_score_total' => $scoreByPost[$postId] ?? 0,
+                'approved_flag_count' => $approvedFlagCount,
+                'is_hidden' => $isHidden ? 1 : 0,
+                'hidden_reason' => $isHidden ? 'approved_flagged_reply_agent' : null,
+                'post_id' => $postId,
             ]);
         }
     }

@@ -175,7 +175,7 @@ Status: implemented.
 
 ### Slice 2: Full Rebuild Reducer
 
-Status: pending.
+Status: implemented.
 
 - Extend the read-model schema with post reaction/hide columns.
 - Index post-reaction records during rebuild.
