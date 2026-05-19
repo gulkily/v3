@@ -3,6 +3,7 @@ $agentReply = $agentRepliesByPostId[$post['post_id']] ?? null;
 $agentReplyPostedId = is_array($agentReply) && isset($agentReply['agent_post_id']) ? (string) $agentReply['agent_post_id'] : '';
 $agentReplyWork = (string) ($agentReplyWorkByPostId[$post['post_id']] ?? '');
 $isAgentPost = (string) ($post['author_label'] ?? '') === 'reply-agent';
+$viewerHasFlaggedPost = isset($viewerPostFlags[(string) $post['post_id']]);
 $postPermalinkLabel = 'Post ' . (string) $post['post_id'];
 $postAnchorId = 'post-' . (string) $post['post_id'];
 ?>
@@ -29,6 +30,17 @@ if (!is_array($postAnalysisLabels)) {
 ?>
   <div class="button-row button-row-natural post-card-actions">
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
+    <button
+      type="button"
+      class="thread-reaction-button"
+      data-action="apply-post-tag"
+      data-post-id="<?= $e($post['post_id']) ?>"
+      data-tag="flag"
+      data-applied-label="Flagged"
+      aria-pressed="<?= $viewerHasFlaggedPost ? 'true' : 'false' ?>"
+<?= $viewerHasFlaggedPost ? ' disabled="disabled"' : '' ?>
+    ><?= $viewerHasFlaggedPost ? 'Flagged' : 'Flag' ?></button>
+    <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
     <p class="meta agent-reply-feedback" data-role="agent-reply-feedback" hidden></p>
 <?php if (is_array($postAnalysis) && ($postAnalysis['status'] ?? '') === 'complete'): ?>
   <details class="post-analysis">

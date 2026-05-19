@@ -102,6 +102,19 @@
     return response.text();
   }
 
+  async function applyPostTag(postId, tag) {
+    const response = await fetch("/api/apply_post_tag", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
+      body: new URLSearchParams({ post_id: postId, tag }).toString(),
+    });
+
+    return response.text();
+  }
+
   async function ensureReactionIdentity(root, feedbackNode) {
     const helper = window.__forumBrowserIdentity;
     if (!helper || typeof helper.ensureReadyIdentity !== "function") {
@@ -188,10 +201,72 @@
     });
   }
 
+  function bindPostReactions(root) {
+    const postId = root.getAttribute("data-post-id") || "";
+    const feedbackNode = root.querySelector('[data-role="post-reaction-feedback"]');
+
+    root.addEventListener("click", async (event) => {
+      const button = event.target instanceof Element
+        ? event.target.closest('[data-action="apply-post-tag"]')
+        : null;
+      if (!button || !(button instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      event.preventDefault();
+      if (button.disabled || postId === "") {
+        return;
+      }
+
+      const tag = button.getAttribute("data-tag") || "";
+      const appliedLabel = button.getAttribute("data-applied-label") || "Applied";
+
+      button.disabled = true;
+
+      try {
+        await ensureReactionIdentity(root, feedbackNode);
+        setFeedback(feedbackNode, "Saving tag...", "ok");
+        const text = await applyPostTag(postId, tag);
+        if (!text.includes("status=ok")) {
+          const errorMessage = parseResponseValue(text, "error") || "Unable to apply tag.";
+          throw new Error(errorMessage);
+        }
+
+        const wroteRecord = parseResponseValue(text, "wrote_record") === "yes";
+        const isHidden = parseResponseValue(text, "is_hidden") === "yes";
+
+        button.textContent = appliedLabel;
+        button.setAttribute("aria-pressed", "true");
+
+        if (isHidden) {
+          root.hidden = true;
+          return;
+        }
+
+        setFeedback(feedbackNode, wroteRecord ? "Flagged." : "Already flagged.", "ok");
+      } catch (error) {
+        button.disabled = false;
+        const feedback = feedbackFromError(error, "Unable to apply tag.");
+        setFeedback(
+          feedbackNode,
+          feedback.message,
+          "error",
+          { technicalDetails: feedback.technicalDetails }
+        );
+      }
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     const root = document.querySelector("[data-thread-reactions-root]");
     if (root) {
       bindThreadReactions(root);
+    }
+
+    if (typeof document.querySelectorAll === "function") {
+      document.querySelectorAll(".post-card[data-post-id]").forEach((postRoot) => {
+        bindPostReactions(postRoot);
+      });
     }
   });
 })();

@@ -1118,6 +1118,67 @@ final class WriteApiSmokeTest
         assertStringNotContains('Set up or choose an identity', $threadPage);
     }
 
+    public function testApplyPostTagApiWritesApprovedFlagAndReportsPostState(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $recordsBefore = count(glob($repositoryRoot . '/records/post-reactions/*.txt') ?: []);
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $response = $this->renderMethod($application, 'POST', '/api/apply_post_tag?post_id=reply-001&tag=flag');
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
+        $_COOKIE = [];
+
+        $recordsAfter = count(glob($repositoryRoot . '/records/post-reactions/*.txt') ?: []);
+
+        assertStringContains('status=ok', $response);
+        assertStringContains('post_id=reply-001', $response);
+        assertStringContains('thread_id=root-001', $response);
+        assertStringContains('tag=flag', $response);
+        assertStringContains('post_score_total=-100', $response);
+        assertStringContains('approved_flag_count=1', $response);
+        assertStringContains('is_hidden=no', $response);
+        assertStringContains('viewer_is_approved=yes', $response);
+        assertStringContains('wrote_record=yes', $response);
+        assertTrue(strlen($this->extractValue($response, 'commit_sha')) === 40);
+        assertSame($recordsBefore + 1, $recordsAfter);
+        assertStringContains('>Flagged</button>', $threadPage);
+        assertStringContains('data-action="apply-post-tag"', $threadPage);
+    }
+
+    public function testApplyPostTagApiDuplicateShortCircuitsWithoutNewRecord(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $first = $this->renderMethod($application, 'POST', '/api/apply_post_tag?post_id=reply-001&tag=flag');
+        $recordsAfterFirst = count(glob($repositoryRoot . '/records/post-reactions/*.txt') ?: []);
+        $second = $this->renderMethod($application, 'POST', '/api/apply_post_tag?post_id=reply-001&tag=flag');
+        $_COOKIE = [];
+
+        $recordsAfterSecond = count(glob($repositoryRoot . '/records/post-reactions/*.txt') ?: []);
+
+        assertStringContains('wrote_record=yes', $first);
+        assertStringContains('wrote_record=no', $second);
+        assertStringNotContains('commit_sha=', $second);
+        assertSame($recordsAfterFirst, $recordsAfterSecond);
+    }
+
+    public function testApplyPostTagApiRejectsAnonymousViewerAndUnknownTag(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $anonymous = $this->renderMethod($application, 'POST', '/api/apply_post_tag?post_id=reply-001&tag=flag');
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $unknownTag = $this->renderMethod($application, 'POST', '/api/apply_post_tag?post_id=reply-001&tag=bug');
+        $_COOKIE = [];
+
+        assertStringContains('error=You must set an identity hint before applying a tag.', $anonymous);
+        assertStringContains('error=tag must be one of: like, flag', $unknownTag);
+    }
+
     public function testApplyThreadTagApiDuplicateShortCircuitsWithoutNewRecord(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

@@ -199,7 +199,7 @@ Status: implemented.
 
 ### Slice 4: API And Browser Flow
 
-Status: pending.
+Status: implemented.
 
 - Add `/api/apply_post_tag`.
 - Reuse browser identity setup from the like flow.

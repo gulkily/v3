@@ -89,6 +89,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/apply_post_tag') {
+            $this->handleApplyPostTag($method, $query);
+            return;
+        }
+
         if ($path === '/api/link_identity') {
             $this->handleLinkIdentity($method, $query);
             return;
@@ -525,6 +530,9 @@ final class Application
         $viewerHasLiked = $viewerProfile !== null
             && $this->viewerHasThreadTag($threadId, 'like', (string) $viewerProfile['identity_id']);
         $posts = $this->fetchThreadPosts($threadId);
+        $viewerPostFlags = $viewerProfile !== null
+            ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'flag', (string) $viewerProfile['identity_id'])
+            : [];
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
         $createdPostId = $this->createdPostIdForThread($threadId, $createdPostId);
         $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
@@ -538,6 +546,7 @@ final class Application
                 'title' => $title,
                 'viewerProfile' => $viewerProfile,
                 'viewerHasLiked' => $viewerHasLiked,
+                'viewerPostFlags' => $viewerPostFlags,
                 'createdPostId' => $createdPostId,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
@@ -975,7 +984,7 @@ final class Application
 
     private function renderApiIndex(): string
     {
-        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nPOST /api/set_identity_hint\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/apply_thread_tag\n";
+        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nPOST /api/set_identity_hint\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
     }
 
     private function renderApiListIndex(): string
@@ -1979,6 +1988,33 @@ final class Application
         return false;
     }
 
+    /**
+     * @param array<int, mixed> $postIds
+     * @return array<string, true>
+     */
+    private function viewerPostTagsForPosts(array $postIds, string $tag, string $identityId): array
+    {
+        $postLookup = array_fill_keys(array_map(static fn (mixed $value): string => (string) $value, $postIds), true);
+        if ($postLookup === []) {
+            return [];
+        }
+
+        $repository = new CanonicalRecordRepository($this->repositoryRoot);
+        $taggedPostIds = [];
+        foreach (glob($this->repositoryRoot . '/records/post-reactions/*.txt') ?: [] as $path) {
+            $record = $repository->loadPostReaction('records/post-reactions/' . basename($path));
+            if (!isset($postLookup[$record->postId]) || $record->authorIdentityId !== $identityId) {
+                continue;
+            }
+
+            if (in_array($tag, $record->tags, true)) {
+                $taggedPostIds[$record->postId] = true;
+            }
+        }
+
+        return $taggedPostIds;
+    }
+
     private function hasPendingUserDirectoryProfiles(): bool
     {
         $stmt = $this->pdo()->query('SELECT 1 FROM profiles WHERE is_approved = 0 LIMIT 1');
@@ -2499,6 +2535,47 @@ final class Application
                 . "thread_id={$result['thread_id']}\n"
                 . "tag={$result['tag']}\n"
                 . "score_total={$result['score_total']}\n"
+                . "viewer_identity_id={$result['author_identity_id']}\n"
+                . "viewer_is_approved={$result['viewer_is_approved']}\n"
+                . "wrote_record={$result['wrote_record']}\n";
+            if (isset($result['commit_sha'])) {
+                $response .= "commit_sha={$result['commit_sha']}\n";
+            }
+
+            $this->sendText($response, 200, $this->serverTimingHeaders($result));
+        } catch (RuntimeException $exception) {
+            $this->sendText("error=" . $exception->getMessage() . "\n", 400);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleApplyPostTag(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->sendText("method not allowed\n", 405);
+            return;
+        }
+
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        if ($viewerProfile === null) {
+            $this->sendText("error=You must set an identity hint before applying a tag.\n", 400);
+            return;
+        }
+
+        $input = $this->requestData($query);
+        $input['author_identity_id'] = (string) $viewerProfile['identity_id'];
+
+        try {
+            $result = $this->writer()->applyPostTag($input);
+            $response = "status=ok\n"
+                . "post_id={$result['post_id']}\n"
+                . "thread_id={$result['thread_id']}\n"
+                . "tag={$result['tag']}\n"
+                . "post_score_total={$result['post_score_total']}\n"
+                . "approved_flag_count={$result['approved_flag_count']}\n"
+                . "is_hidden={$result['is_hidden']}\n"
                 . "viewer_identity_id={$result['author_identity_id']}\n"
                 . "viewer_is_approved={$result['viewer_is_approved']}\n"
                 . "wrote_record={$result['wrote_record']}\n";
