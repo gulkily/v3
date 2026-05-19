@@ -8,6 +8,7 @@ use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\CanonicalRecordParseException;
 use ForumRewrite\Canonical\IdentityBootstrapRecord;
+use ForumRewrite\Canonical\PostReactionRecord;
 use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\ThreadLabelRecord;
 use ForumRewrite\TagScore;
@@ -147,6 +148,43 @@ class IncrementalReadModelUpdater
                 $timings,
                 'refresh_thread_label_activity',
                 fn (): mixed => $this->refreshThreadLabelActivity($pdo, $thread, $labelState['activity_events'])
+            );
+            $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
+            $pdo->commit();
+
+            return $timings;
+        } catch (\Throwable $throwable) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $throwable;
+        }
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    public function applyPostReactionWrite(string $postId, string $commitSha): array
+    {
+        $timings = [];
+        $pdo = (new ReadModelConnection($this->databasePath))->open();
+        $pdo->beginTransaction();
+
+        try {
+            $post = $this->measure($timings, 'load_post', fn (): array => $this->loadPostReactionTarget($pdo, $postId));
+            $records = $this->measure($timings, 'load_post_reaction_records', fn (): array => $this->loadPostReactionRecords($postId));
+            $approvedIdentityIds = $this->measure($timings, 'load_approved_identity_ids', fn (): array => $this->loadApprovedIdentityIds($pdo));
+            $state = $this->measure(
+                $timings,
+                'derive_post_reaction_state',
+                fn (): array => $this->derivePostReactionState($postId, $post['author_label'], $records, $approvedIdentityIds)
+            );
+
+            $this->measure(
+                $timings,
+                'update_post_reactions',
+                fn (): mixed => $this->updatePostReactions($pdo, $postId, $state)
             );
             $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
             $pdo->commit();
@@ -1021,6 +1059,141 @@ class IncrementalReadModelUpdater
         });
 
         return $records;
+    }
+
+    /**
+     * @return array{post_id:string,thread_id:string,author_label:string}
+     */
+    private function loadPostReactionTarget(PDO $pdo, string $postId): array
+    {
+        $stmt = $pdo->prepare('SELECT post_id, thread_id, author_label FROM posts WHERE post_id = :post_id');
+        $stmt->execute(['post_id' => $postId]);
+        $row = $stmt->fetch();
+        if (!is_array($row)) {
+            throw new RuntimeException('Incremental post-reaction update could not resolve target post.');
+        }
+
+        return [
+            'post_id' => (string) $row['post_id'],
+            'thread_id' => (string) $row['thread_id'],
+            'author_label' => (string) $row['author_label'],
+        ];
+    }
+
+    /**
+     * @return list<PostReactionRecord>
+     */
+    private function loadPostReactionRecords(string $postId): array
+    {
+        $repository = new CanonicalRecordRepository($this->repositoryRoot);
+        $records = [];
+        foreach (glob($this->repositoryRoot . '/records/post-reactions/*.txt') ?: [] as $path) {
+            try {
+                $record = $repository->loadPostReaction('records/post-reactions/' . basename($path));
+            } catch (CanonicalRecordParseException) {
+                continue;
+            }
+
+            if ($record->postId !== $postId) {
+                continue;
+            }
+
+            $records[] = $record;
+        }
+
+        usort($records, static function (PostReactionRecord $left, PostReactionRecord $right): int {
+            if ($left->createdAt !== $right->createdAt) {
+                return $left->createdAt <=> $right->createdAt;
+            }
+
+            return $left->recordId <=> $right->recordId;
+        });
+
+        return $records;
+    }
+
+    /**
+     * @param list<PostReactionRecord> $records
+     * @param array<string, true> $approvedIdentityIds
+     * @return array{tags:list<string>,post_score_total:int,approved_flag_count:int,is_hidden:int,hidden_reason:?string}
+     */
+    private function derivePostReactionState(string $postId, string $authorLabel, array $records, array $approvedIdentityIds): array
+    {
+        $tags = [];
+        $scoreTotal = 0;
+        $approvedFlaggers = [];
+        $countedApprovedScoredTags = [];
+
+        foreach ($records as $record) {
+            if ($record->postId !== $postId) {
+                continue;
+            }
+
+            foreach ($record->tags as $tag) {
+                $tags[$tag] = true;
+
+                if ($record->authorIdentityId === null || !isset($approvedIdentityIds[$record->authorIdentityId])) {
+                    continue;
+                }
+
+                if ($tag === 'flag') {
+                    $approvedFlaggers[$record->authorIdentityId] = true;
+                }
+
+                if (!TagScore::isScoredTag($tag)) {
+                    continue;
+                }
+
+                $dedupeKey = $record->authorIdentityId . ':' . $tag;
+                if (isset($countedApprovedScoredTags[$dedupeKey])) {
+                    continue;
+                }
+
+                $countedApprovedScoredTags[$dedupeKey] = true;
+                $scoreTotal += TagScore::scoreValueForTag($tag);
+            }
+        }
+
+        $tagList = array_keys($tags);
+        sort($tagList);
+        $approvedFlagCount = count($approvedFlaggers);
+        $isHidden = $approvedFlagCount > 0 && $authorLabel === 'reply-agent';
+
+        return [
+            'tags' => $tagList,
+            'post_score_total' => $scoreTotal,
+            'approved_flag_count' => $approvedFlagCount,
+            'is_hidden' => $isHidden ? 1 : 0,
+            'hidden_reason' => $isHidden ? 'approved_flagged_reply_agent' : null,
+        ];
+    }
+
+    /**
+     * @param array{tags:list<string>,post_score_total:int,approved_flag_count:int,is_hidden:int,hidden_reason:?string} $state
+     */
+    private function updatePostReactions(PDO $pdo, string $postId, array $state): void
+    {
+        $stmt = $pdo->prepare(
+            'UPDATE posts
+             SET post_tags_json = :post_tags_json,
+                 post_score_total = :post_score_total,
+                 approved_flag_count = :approved_flag_count,
+                 is_hidden = :is_hidden,
+                 hidden_reason = :hidden_reason
+             WHERE post_id = :post_id'
+        );
+        $stmt->execute([
+            'post_tags_json' => json_encode($state['tags'], JSON_THROW_ON_ERROR),
+            'post_score_total' => $state['post_score_total'],
+            'approved_flag_count' => $state['approved_flag_count'],
+            'is_hidden' => $state['is_hidden'],
+            'hidden_reason' => $state['hidden_reason'],
+            'post_id' => $postId,
+        ]);
+
+        if ($stmt->rowCount() !== 1) {
+            throw new RuntimeException('Incremental post-reaction update could not update target post.');
+        }
     }
 
     /**

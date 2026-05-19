@@ -189,7 +189,7 @@ Status: implemented.
 
 ### Slice 3: Incremental Write Path
 
-Status: pending.
+Status: implemented.
 
 - Add `IncrementalReadModelUpdater::applyPostReactionWrite()`.
 - Add `LocalWriteService::applyPostTag()`.

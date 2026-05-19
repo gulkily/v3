@@ -9,6 +9,7 @@ use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\PostRecordParser;
+use ForumRewrite\Canonical\PostReactionRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
 use ForumRewrite\TagScore;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
@@ -215,6 +216,81 @@ class LocalWriteService
                 'thread_id' => $threadId,
                 'tag' => $tag,
                 'score_total' => (string) $this->currentThreadScoreTotal($threadId),
+                'author_identity_id' => $authorIdentityId,
+                'viewer_is_approved' => $viewerIsApproved,
+                'wrote_record' => 'yes',
+                'commit_sha' => $commitSha,
+                'timings' => $timings,
+            ];
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, string>
+     */
+    public function applyPostTag(array $input): array
+    {
+        return $this->executionLock()->withExclusiveLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $timings = [];
+            $totalStartedAt = hrtime(true);
+            $postId = $this->requireAsciiToken((string) ($input['post_id'] ?? ''), 'post_id');
+            $tag = $this->normalizeThreadTag((string) ($input['tag'] ?? ''));
+            $authorIdentityId = $this->requireOpenPgpIdentityId((string) ($input['author_identity_id'] ?? ''), 'author_identity_id');
+            $createdAt = $this->canonicalTimestampNow();
+
+            $post = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($postId));
+            $threadId = $post->threadId ?? $post->postId;
+            $viewerIsApproved = $this->isApprovedIdentity($authorIdentityId) ? 'yes' : 'no';
+            if ($this->hasPostTagFromIdentity($postId, $tag, $authorIdentityId)) {
+                $state = $this->currentPostReactionState($postId);
+
+                return [
+                    'status' => 'ok',
+                    'post_id' => $postId,
+                    'thread_id' => $threadId,
+                    'tag' => $tag,
+                    'post_score_total' => (string) $state['post_score_total'],
+                    'approved_flag_count' => (string) $state['approved_flag_count'],
+                    'is_hidden' => $state['is_hidden'] ? 'yes' : 'no',
+                    'author_identity_id' => $authorIdentityId,
+                    'viewer_is_approved' => $viewerIsApproved,
+                    'wrote_record' => 'no',
+                    'timings' => ['total' => $this->elapsedMilliseconds($totalStartedAt)],
+                ];
+            }
+
+            $phaseStartedAt = hrtime(true);
+            [$recordPath, $contents] = $this->buildPostReactionRecord($postId, [$tag], $authorIdentityId, $createdAt);
+            $this->writeFile($recordPath, $contents);
+            $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+            $commitResult = $this->commitCanonicalWrite([$recordPath], 'Apply post tag ' . $tag . ' to ' . $postId);
+            $timings = array_merge($timings, $commitResult['timings']);
+            $commitSha = $commitResult['commit_sha'];
+
+            $timings = array_merge($timings, $this->synchronizePostReactionDerivedState($postId, $commitSha));
+
+            $phaseStartedAt = hrtime(true);
+            if ($post->isReply()) {
+                $this->invalidator()->invalidateReply($threadId, $postId);
+            } else {
+                $this->invalidator()->invalidateBoardThread($postId);
+            }
+            $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+            $state = $this->currentPostReactionState($postId);
+
+            return [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'tag' => $tag,
+                'post_score_total' => (string) $state['post_score_total'],
+                'approved_flag_count' => (string) $state['approved_flag_count'],
+                'is_hidden' => $state['is_hidden'] ? 'yes' : 'no',
                 'author_identity_id' => $authorIdentityId,
                 'viewer_is_approved' => $viewerIsApproved,
                 'wrote_record' => 'yes',
@@ -500,6 +576,64 @@ class LocalWriteService
 
                 throw new RuntimeException(
                     'Canonical write committed at ' . $commitSha . ' but incremental thread-label update and rebuild fallback both failed. Derived state marked stale.'
+                );
+            }
+        }
+
+        $timings = [
+            'read_model_incremental_update' => $this->elapsedMilliseconds($phaseStartedAt),
+        ];
+        foreach ($incrementalTimings as $name => $duration) {
+            $timings['read_model_incremental_' . $name] = $duration;
+        }
+
+        return $timings;
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function synchronizePostReactionDerivedState(string $postId, string $commitSha): array
+    {
+        $phaseStartedAt = hrtime(true);
+        if (!$this->canIncrementallyUpdateReadModel()) {
+            $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
+            $timings = [
+                'read_model_rebuild' => $this->elapsedMilliseconds($phaseStartedAt),
+            ];
+            foreach ($rebuildTimings as $name => $duration) {
+                $timings['read_model_' . $name] = $duration;
+            }
+
+            return $timings;
+        }
+
+        try {
+            $incrementalTimings = $this->incrementalReadModelUpdater()->applyPostReactionWrite($postId, $commitSha);
+            $this->staleMarker()->clear();
+        } catch (\Throwable $throwable) {
+            $fallbackStartedAt = hrtime(true);
+            try {
+                $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
+                $timings = [
+                    'read_model_incremental_fallback' => $this->elapsedMilliseconds($phaseStartedAt),
+                    'read_model_rebuild_fallback' => $this->elapsedMilliseconds($fallbackStartedAt),
+                ];
+                foreach ($rebuildTimings as $name => $duration) {
+                    $timings['read_model_' . $name] = $duration;
+                }
+
+                return $timings;
+            } catch (\Throwable $fallbackThrowable) {
+                $this->staleMarker()->mark([
+                    'reason' => 'write_refresh_failed',
+                    'commit_sha' => $commitSha,
+                    'failed_at' => gmdate('c'),
+                    'message' => 'incremental=' . $throwable->getMessage() . '; fallback=' . $fallbackThrowable->getMessage(),
+                ]);
+
+                throw new RuntimeException(
+                    'Canonical write committed at ' . $commitSha . ' but incremental post-reaction update and rebuild fallback both failed. Derived state marked stale.'
                 );
             }
         }
@@ -829,6 +963,25 @@ class LocalWriteService
         ];
     }
 
+    private function buildPostReactionRecord(string $postId, array $tags, ?string $authorIdentityId, string $createdAt): array
+    {
+        $recordId = $this->generateRecordId('post-reaction');
+        $contents = "Record-ID: {$recordId}\n"
+            . "Created-At: {$createdAt}\n"
+            . "Post-ID: {$postId}\n"
+            . "Operation: add\n"
+            . 'Tags: ' . implode(' ', $tags) . "\n"
+            . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
+            . "\n";
+
+        (new PostReactionRecordParser())->parse($contents);
+
+        return [
+            CanonicalPathResolver::postReaction($recordId),
+            $contents,
+        ];
+    }
+
     private function normalizeThreadTag(string $value): string
     {
         $tag = strtolower(trim($value));
@@ -865,6 +1018,23 @@ class LocalWriteService
         return false;
     }
 
+    private function hasPostTagFromIdentity(string $postId, string $tag, string $identityId): bool
+    {
+        foreach (glob($this->repositoryRoot . '/records/post-reactions/*.txt') ?: [] as $path) {
+            $relativePath = 'records/post-reactions/' . basename($path);
+            $record = $this->canonicalRepository->loadPostReaction($relativePath);
+            if ($record->postId !== $postId || $record->authorIdentityId !== $identityId) {
+                continue;
+            }
+
+            if (in_array($tag, $record->tags, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function currentThreadScoreTotal(string $threadId): int
     {
         $stmt = $this->readModelPdo()->prepare('SELECT score_total FROM threads WHERE root_post_id = :thread_id');
@@ -875,6 +1045,29 @@ class LocalWriteService
         }
 
         return (int) $value;
+    }
+
+    /**
+     * @return array{post_score_total:int,approved_flag_count:int,is_hidden:bool}
+     */
+    private function currentPostReactionState(string $postId): array
+    {
+        $stmt = $this->readModelPdo()->prepare(
+            'SELECT post_score_total, approved_flag_count, is_hidden
+             FROM posts
+             WHERE post_id = :post_id'
+        );
+        $stmt->execute(['post_id' => $postId]);
+        $row = $stmt->fetch();
+        if (!is_array($row)) {
+            throw new RuntimeException('post_id does not resolve to a known post.');
+        }
+
+        return [
+            'post_score_total' => (int) $row['post_score_total'],
+            'approved_flag_count' => (int) $row['approved_flag_count'],
+            'is_hidden' => ((int) $row['is_hidden']) === 1,
+        ];
     }
 
     /**

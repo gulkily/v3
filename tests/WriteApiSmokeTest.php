@@ -1062,6 +1062,35 @@ final class WriteApiSmokeTest
         assertStringContains('Score-Total: 1', $threadApi);
     }
 
+    public function testApplyPostTagUsesIncrementalReadModelUpdateWhenDatabaseIsWarm(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $result = $service->applyPostTag([
+            'post_id' => 'reply-001',
+            'tag' => 'flag',
+            'author_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+        ]);
+
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $row = $pdo->query("SELECT post_tags_json, post_score_total, approved_flag_count, is_hidden FROM posts WHERE post_id = 'reply-001'")->fetch();
+
+        assertSame(true, isset($result['timings']['read_model_incremental_update']));
+        assertSame(false, isset($result['timings']['read_model_rebuild']));
+        assertSame('reply-001', $result['post_id']);
+        assertSame('root-001', $result['thread_id']);
+        assertSame('-100', $result['post_score_total']);
+        assertSame('1', $result['approved_flag_count']);
+        assertSame('no', $result['is_hidden']);
+        assertSame('["flag"]', $row['post_tags_json']);
+        assertSame('-100', (string) $row['post_score_total']);
+        assertSame('1', (string) $row['approved_flag_count']);
+        assertSame('0', (string) $row['is_hidden']);
+    }
+
     public function testApplyThreadTagApiWritesApprovedLikeAndReportsUpdatedScore(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
