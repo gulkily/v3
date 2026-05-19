@@ -13,6 +13,7 @@ final class CanonicalRecordRepository
         private readonly PublicKeyRecordParser $publicKeyParser = new PublicKeyRecordParser(),
         private readonly ApprovalSeedRecordParser $approvalSeedParser = new ApprovalSeedRecordParser(),
         private readonly ThreadLabelRecordParser $threadLabelParser = new ThreadLabelRecordParser(),
+        private readonly PostReactionRecordParser $postReactionParser = new PostReactionRecordParser(),
         private readonly InstancePublicRecordParser $instanceParser = new InstancePublicRecordParser(),
     ) {
     }
@@ -100,6 +101,19 @@ final class CanonicalRecordRepository
         $expectedPath = CanonicalPathResolver::threadLabel($record->recordId);
         if ($relativePath !== $expectedPath) {
             throw new CanonicalRecordParseException('Thread-label record path must match Record-ID.');
+        }
+
+        return $record;
+    }
+
+    public function loadPostReaction(string $relativePath): PostReactionRecord
+    {
+        $this->assertPathIsWithinFamily($relativePath, 'records/post-reactions/');
+        $record = $this->postReactionParser->parse($this->read($relativePath));
+
+        $expectedPath = CanonicalPathResolver::postReaction($record->recordId);
+        if ($relativePath !== $expectedPath) {
+            throw new CanonicalRecordParseException('Post-reaction record path must match Record-ID.');
         }
 
         return $record;

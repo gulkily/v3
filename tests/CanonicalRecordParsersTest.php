@@ -8,6 +8,7 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\ApprovalSeedRecordParser;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\InstancePublicRecordParser;
+use ForumRewrite\Canonical\PostReactionRecordParser;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PublicKeyRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
@@ -173,6 +174,42 @@ final class CanonicalRecordParsersTest
         );
     }
 
+    public function testParsesPostReactionRecord(): void
+    {
+        $contents = "Record-ID: post-reaction-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nPost-ID: reply-001\nOperation: add\nTags: flag flag\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\nReason: Flagged reply-agent content\n\n";
+
+        $record = (new PostReactionRecordParser())->parse($contents);
+
+        assertSame('post-reaction-20260415153000-ab12cd34', $record->recordId);
+        assertSame('2026-04-15T15:30:00Z', $record->createdAt);
+        assertSame('reply-001', $record->postId);
+        assertSame('add', $record->operation);
+        assertSame(['flag'], $record->tags);
+        assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $record->authorIdentityId);
+        assertSame('Flagged reply-agent content', $record->reason);
+        assertSame('', $record->body);
+    }
+
+    public function testRejectsPostReactionWithUnsupportedOperation(): void
+    {
+        $contents = "Record-ID: post-reaction-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nPost-ID: reply-001\nOperation: remove\nTags: flag\n\n";
+
+        assertThrows(
+            static fn () => (new PostReactionRecordParser())->parse($contents),
+            'Post-reaction Operation must be add in V1.'
+        );
+    }
+
+    public function testRejectsPostReactionWithInvalidTagToken(): void
+    {
+        $contents = "Record-ID: post-reaction-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nPost-ID: reply-001\nOperation: add\nTags: Needs-Review\n\n";
+
+        assertThrows(
+            static fn () => (new PostReactionRecordParser())->parse($contents),
+            'Invalid tag token: Needs-Review'
+        );
+    }
+
     public function testParsesInstanceFixture(): void
     {
         $record = (new InstancePublicRecordParser())->parse($this->readFixture('instance/public.txt'));
@@ -183,7 +220,13 @@ final class CanonicalRecordParsersTest
 
     public function testRepositoryLoadsFixtureRecordsByFamily(): void
     {
-        $repository = new CanonicalRecordRepository(__DIR__ . '/fixtures/parity_minimal_v1');
+        $tempRoot = $this->createTempFixtureRoot();
+        mkdir($tempRoot . '/records/post-reactions');
+        file_put_contents(
+            $tempRoot . '/records/post-reactions/post-reaction-20260415153000-ab12cd34.txt',
+            "Record-ID: post-reaction-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nPost-ID: reply-001\nOperation: add\nTags: flag\n\n"
+        );
+        $repository = new CanonicalRecordRepository($tempRoot);
 
         $post = $repository->loadPost('records/posts/root-001.txt');
         $identity = $repository->loadIdentity('records/identity/identity-openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt');
@@ -191,12 +234,14 @@ final class CanonicalRecordParsersTest
         $approvalSeed = $repository->loadApprovalSeed('records/approval-seeds/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt');
         $threadLabel = $repository->loadThreadLabel('records/thread-labels/thread-label-20260415153000-ab12cd34.txt');
         $instance = $repository->loadInstancePublic('records/instance/public.txt');
+        $postReaction = $repository->loadPostReaction('records/post-reactions/post-reaction-20260415153000-ab12cd34.txt');
 
         assertSame('root-001', $post->postId);
         assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $identity->identityId);
         assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $publicKey->fingerprint);
         assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $approvalSeed->approvedIdentityId);
         assertSame(['bug', 'needs-review'], $threadLabel->labels);
+        assertSame(['flag'], $postReaction->tags);
         assertSame('zenmemes', $instance->headers['Instance-Name']);
     }
 
@@ -266,6 +311,22 @@ final class CanonicalRecordParsersTest
         );
     }
 
+    public function testRepositoryRejectsPostReactionPathMismatch(): void
+    {
+        $tempRoot = $this->createTempFixtureRoot();
+        mkdir($tempRoot . '/records/post-reactions');
+        file_put_contents(
+            $tempRoot . '/records/post-reactions/not-the-record-id.txt',
+            "Record-ID: post-reaction-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nPost-ID: reply-001\nOperation: add\nTags: flag\n\n"
+        );
+        $repository = new CanonicalRecordRepository($tempRoot);
+
+        assertThrows(
+            static fn () => $repository->loadPostReaction('records/post-reactions/not-the-record-id.txt'),
+            'Post-reaction record path must match Record-ID.'
+        );
+    }
+
     public function testCanonicalPathResolverMatchesSpecs(): void
     {
         assertSame('records/posts/root-001.txt', CanonicalPathResolver::post('root-001'));
@@ -284,6 +345,10 @@ final class CanonicalRecordParsersTest
         assertSame(
             'records/thread-labels/thread-label-20260415153000-ab12cd34.txt',
             CanonicalPathResolver::threadLabel('thread-label-20260415153000-ab12cd34')
+        );
+        assertSame(
+            'records/post-reactions/post-reaction-20260415153000-ab12cd34.txt',
+            CanonicalPathResolver::postReaction('post-reaction-20260415153000-ab12cd34')
         );
         assertSame('records/instance/public.txt', CanonicalPathResolver::instancePublic());
     }
