@@ -24,6 +24,7 @@
   </script>
   <meta name="app-version" content="<?= $e($appVersion) ?>">
   <meta name="app-version-endpoint" content="/api/version">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
   <link rel="stylesheet" href="<?= $e($siteCssPath) ?>">
 <?php foreach ($scriptPaths as $scriptPath): ?>
   <script src="<?= $e($scriptPath) ?>" defer></script>
