@@ -748,6 +748,34 @@ final class WriteApiSmokeTest
         assertStringContains('Commit ', $accountResponse);
     }
 
+    public function testAccountPageLinksLoggedInApprovedUserToUsernameRoute(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $account = $this->renderMethod($application, 'GET', '/account/key/');
+        $_COOKIE = [];
+
+        assertStringContains('View user page', $account);
+        assertStringContains('href="/user/guest"', $account);
+    }
+
+    public function testAccountPageLinksLoggedInUnapprovedUserToProfileRoute(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $identity = $this->linkGeneratedIdentity($application, 'pending-user');
+
+        $_COOKIE = ['identity_hint' => $identity['identity_id']];
+        $account = $this->renderMethod($application, 'GET', '/account/key/');
+        $_COOKIE = [];
+
+        assertStringContains('View profile', $account);
+        assertStringContains('href="/profiles/' . $identity['profile_slug'] . '"', $account);
+        assertStringNotContains('href="/user/pending-user"', $account);
+    }
+
     public function testCreateThreadUsesAuthorIdentityForRenderedAuthorLabel(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

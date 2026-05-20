@@ -278,6 +278,7 @@ final class LocalAppSmokeTest
         assertStringContains('Ready.', $composeReply);
         assertStringContains('Advanced / technical details', $account);
         assertStringContains('Set up this browser', $account);
+        assertStringNotContains('View user page', $account);
         assertStringContains('Link identity', $account);
         assertStringContains('Saved browser identity:', $account);
         assertStringContains('/assets/openpgp.min.js', $account);

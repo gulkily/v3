@@ -983,8 +983,11 @@ final class Application
 
     private function renderAccountKeyPage(?string $notice = null, ?string $error = null): string
     {
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+
         return $this->renderPageTemplate('account_key.php', [
             'identityHint' => $_COOKIE['identity_hint'] ?? '',
+            'viewerProfile' => $viewerProfile,
             'notice' => $notice,
             'error' => $error,
         ], 'Account Key', 'account', [

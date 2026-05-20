@@ -1,3 +1,17 @@
+<?php
+$viewerProfile = $viewerProfile ?? null;
+$viewerProfileHref = '';
+$viewerProfileLabel = '';
+if (is_array($viewerProfile)) {
+    if (((int) ($viewerProfile['is_approved'] ?? 0)) === 1) {
+        $viewerProfileHref = '/user/' . rawurlencode((string) ($viewerProfile['username_token'] ?? ''));
+        $viewerProfileLabel = 'View user page';
+    } else {
+        $viewerProfileHref = '/profiles/' . rawurlencode((string) ($viewerProfile['profile_slug'] ?? ''));
+        $viewerProfileLabel = 'View profile';
+    }
+}
+?>
 <section class="stack" data-account-key-root>
   <article class="card">
     <h1>Account Key</h1>
@@ -11,6 +25,9 @@
         <div>
           <p class="account-key-label">Signed in as</p>
           <p class="account-key-username" data-role="username-field">guest</p>
+<?php if ($viewerProfileHref !== ''): ?>
+          <p class="meta account-key-profile-link"><a href="<?= $e($viewerProfileHref) ?>"><?= $e($viewerProfileLabel) ?></a></p>
+<?php endif; ?>
         </div>
         <button type="button" class="account-key-primary-button" data-action="generate-browser-key">Set up this browser</button>
         <p class="meta account-key-simple-status" id="simple-status">Choose a name to set up this browser.</p>
