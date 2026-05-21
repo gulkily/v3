@@ -42,7 +42,10 @@
       <p class="meta compose-normalization-inline" data-role="compose-normalization-status" hidden>
         <span data-role="compose-normalization-message"></span>
       </p>
-      <button type="submit">Create thread</button>
+      <div class="compose-form-actions">
+        <button type="submit">Create thread</button>
+        <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
+      </div>
     </form>
   </article>
 </section>

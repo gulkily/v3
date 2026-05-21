@@ -935,6 +935,7 @@
     }) : [];
     const fieldNormalizationStatusNodes = form ? Array.from(root.querySelectorAll('[data-role="compose-field-normalization-status"]')) : [];
     const removeUnsupportedButtons = form ? Array.from(root.querySelectorAll('[data-action="remove-unsupported-compose-characters"]')) : [];
+    const clearFieldsButtons = form ? Array.from(root.querySelectorAll('[data-action="clear-compose-fields"]')) : [];
     const normalizationStatusNode = root.querySelector('[data-role="compose-normalization-status"]');
     const normalizationMessageNode = root.querySelector('[data-role="compose-normalization-message"]');
     if (!form) {
@@ -1157,6 +1158,14 @@
       clearComposeDraft(form);
     }
 
+    function clearComposeFields() {
+      textFields.forEach(function (field) {
+        field.value = "";
+      });
+      clearComposeDraft(form);
+      normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
+    }
+
     function shouldHonorRecentlyClearedDraft() {
       return recentlyClearedComposeDraftKey() === draftKey;
     }
@@ -1192,6 +1201,10 @@
       button.addEventListener("click", function () {
         removeUnsupportedFromField(fieldByName(button.dataset.composeFieldRemoveFor || ""));
       });
+    });
+
+    clearFieldsButtons.forEach(function (button) {
+      button.addEventListener("click", clearComposeFields);
     });
 
     let submitInFlight = false;

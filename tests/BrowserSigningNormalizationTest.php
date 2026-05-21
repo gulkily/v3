@@ -547,6 +547,151 @@ NODE;
         assertSame($result['body'], $result['savedDraft']['fields']['body']);
     }
 
+    public function testClearComposeFieldsButtonClearsEditableFieldsAndSavedDraft(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: {
+    'forum_compose_draft:thread': '{"fields":{"board_tags":"general","subject":"Saved subject","body":"Saved body"}}'
+  },
+  localRemoveCalls: [],
+  domContentLoaded: null,
+  clearClickHandler: null
+};
+
+function makeField(tagName, name, value, type) {
+  return {
+    tagName,
+    name,
+    value,
+    defaultValue: value,
+    dataset: {},
+    hidden: false,
+    disabled: false,
+    getAttribute(attribute) {
+      if (attribute === 'type') {
+        return type || null;
+      }
+      return null;
+    },
+    addEventListener() {}
+  };
+}
+
+const fields = [
+  makeField('INPUT', 'author_identity_id', '', 'hidden'),
+  makeField('INPUT', 'board_tags', 'general', 'text'),
+  Object.assign(makeField('INPUT', 'subject', 'Saved subject', 'text'), { dataset: { composeFieldLabel: 'Subject' } }),
+  Object.assign(makeField('TEXTAREA', 'body', 'Saved body', null), { dataset: { composeFieldLabel: 'Body' } })
+];
+
+const clearButton = {
+  addEventListener(type, handler) {
+    if (type === 'click') {
+      state.clearClickHandler = handler;
+    }
+  }
+};
+
+const form = {
+  dataset: { composeKind: 'thread' },
+  querySelector() {
+    return null;
+  },
+  querySelectorAll(selector) {
+    if (selector === 'input[name], textarea[name]') {
+      return fields;
+    }
+    return [];
+  },
+  addEventListener() {},
+  submit() {},
+  reset() {}
+};
+
+const statusNode = { dataset: {}, textContent: 'Ready.', hidden: false };
+const root = {
+  dataset: {},
+  querySelector(selector) {
+    if (selector === '[data-compose-form]') {
+      return form;
+    }
+    if (selector === '[data-role="compose-identity-status"]') {
+      return statusNode;
+    }
+    return null;
+  },
+  querySelectorAll(selector) {
+    if (selector === '[data-action="clear-compose-fields"]') {
+      return [clearButton];
+    }
+    return [];
+  }
+};
+
+global.window = {
+  addEventListener() {},
+  localStorage: {
+    getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+    setItem(key, value) { state.localStore[key] = String(value); },
+    removeItem(key) {
+      state.localRemoveCalls.push(key);
+      delete state.localStore[key];
+    }
+  },
+  sessionStorage: {
+    getItem() { return null; },
+    removeItem() {}
+  }
+};
+
+global.localStorage = global.window.localStorage;
+global.sessionStorage = global.window.sessionStorage;
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      state.domContentLoaded = handler;
+    }
+  },
+  querySelector(selector) {
+    if (selector === '[data-account-key-root]') {
+      return null;
+    }
+    if (selector === '[data-compose-root]') {
+      return root;
+    }
+    return null;
+  },
+  createElement() { return { setAttribute() {}, style: {}, select() {}, value: '' }; },
+  body: { appendChild() {}, removeChild() {} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+state.domContentLoaded();
+state.clearClickHandler();
+
+process.stdout.write(JSON.stringify({
+  boardTags: fields[1].value,
+  subject: fields[2].value,
+  body: fields[3].value,
+  removeCalls: state.localRemoveCalls,
+  savedDraftExists: Object.prototype.hasOwnProperty.call(state.localStore, 'forum_compose_draft:thread')
+}));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('', $result['boardTags']);
+        assertSame('', $result['subject']);
+        assertSame('', $result['body']);
+        assertSame(['forum_compose_draft:thread'], $result['removeCalls']);
+        assertSame(false, $result['savedDraftExists']);
+    }
+
     public function testThreadReactionBootstrapsIdentityBeforeApplyingLike(): void
     {
         $script = <<<'NODE'
