@@ -1,20 +1,10 @@
-user directory --> approve user button in profile
-
-threads/replies
-
 bootstraps and approvals pages are empty fsr?
 move activity under tools?
 remove compose button
 
-board page should have sections/sorts like the activity page
-
 pwa for offline access
 
 nested threads
-
-add a reply textarea to the bottom of a thread page to skip a step clicking through
-
-favicon
 
 remove extra text fields like subject and board tags
 (hide them behind expando)
