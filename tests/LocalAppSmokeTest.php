@@ -172,6 +172,11 @@ final class LocalAppSmokeTest
         assertStringContains('/assets/post_analysis.js', $thread);
         assertStringContains('data-thread-reactions-root', $thread);
         assertStringContains('data-action="apply-thread-tag"', $thread);
+        assertStringContains('class="card post-card thread-root-card"', $thread);
+        assertStringContains('data-thread-id="root-001" data-post-id="root-001"', $thread);
+        assertSame(1, substr_count($thread, 'by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>'));
+        assertOrdered($thread, '<h1>Hello world</h1>', 'First line preview.');
+        assertOrdered($thread, 'First line preview.', 'id="post-reply-001"');
         assertStringContains('inline-reply-composer', $thread);
         assertStringContains('data-inline-reply-details', $thread);
         assertStringContains('class="inline-reply-prompt"', $thread);
