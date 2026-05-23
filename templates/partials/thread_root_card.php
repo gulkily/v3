@@ -40,6 +40,15 @@ if (!is_array($postAnalysisLabels)) {
     <button
       type="button"
       class="thread-reaction-button"
+      data-action="apply-thread-tag"
+      data-tag="like"
+      data-applied-label="Liked"
+      aria-pressed="<?= $viewerHasLiked ? 'true' : 'false' ?>"
+<?= $viewerHasLiked ? ' disabled="disabled"' : '' ?>
+    ><?= $viewerHasLiked ? 'Liked' : 'Like' ?></button>
+    <button
+      type="button"
+      class="thread-reaction-button"
       data-action="apply-post-tag"
       data-post-id="<?= $e($post['post_id']) ?>"
       data-tag="flag"
@@ -47,15 +56,6 @@ if (!is_array($postAnalysisLabels)) {
       aria-pressed="<?= $viewerHasFlaggedPost ? 'true' : 'false' ?>"
 <?= $viewerHasFlaggedPost ? ' disabled="disabled"' : '' ?>
     ><?= $viewerHasFlaggedPost ? 'Flagged' : 'Flag' ?></button>
-    <button
-      type="button"
-      class="thread-reaction-button"
-      data-action="apply-thread-tag"
-      data-tag="like"
-      data-applied-label="Liked"
-      aria-pressed="<?= $viewerHasLiked ? 'true' : 'false' ?>"
-<?= $viewerHasLiked ? ' disabled="disabled"' : '' ?>
-    ><?= $viewerHasLiked ? 'Liked' : 'Like' ?></button>
     <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
     <p class="meta thread-reaction-feedback" data-role="thread-reaction-feedback" hidden></p>
     <p class="meta agent-reply-feedback" data-role="agent-reply-feedback" hidden></p>
