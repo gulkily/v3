@@ -115,3 +115,4 @@ The root card should keep:
 - Step 0: Created this plan on branch `thread-root-card-consolidation`.
 - Step 1: Split the root post from replies in `templates/pages/thread.php` and added `templates/partials/thread_root_card.php` for the combined root-thread card.
 - Step 2: Added smoke assertions covering the combined root card, root metadata de-duplication, and root-before-reply ordering.
+- Step 3: Verified the implementation with `php tests/run.php`; all tests passed.
