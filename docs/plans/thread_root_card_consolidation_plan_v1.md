@@ -113,3 +113,4 @@ The root card should keep:
 ## Execution Log
 
 - Step 0: Created this plan on branch `thread-root-card-consolidation`.
+- Step 1: Split the root post from replies in `templates/pages/thread.php` and added `templates/partials/thread_root_card.php` for the combined root-thread card.
