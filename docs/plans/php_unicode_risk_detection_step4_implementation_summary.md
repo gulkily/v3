@@ -53,3 +53,15 @@
   - `php tests/run.php` passed.
 - Notes:
   - Suspicious characters are displayed by escaped code point notation such as `U+200B`, not raw glyph output.
+
+## Stage 6 - Backfill And Recheck Tooling
+- Changes:
+  - Added `scripts/backfill_unicode_risk.php`.
+  - Added `./v3 unicode-risk-backfill` wrapper command.
+  - Scans existing read-model posts and writes deterministic Unicode risk rows by default.
+  - Supports explicit `--with-llm` mode that reuses the existing post-analysis service for provider-enabled review.
+  - Prints scanned, changed, priority bucket, and provider failure counts.
+- Verification:
+  - `php tests/run.php` passed.
+- Notes:
+  - The default mode is deterministic-only and does not modify canonical records.

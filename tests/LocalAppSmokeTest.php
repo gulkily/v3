@@ -36,6 +36,37 @@ final class LocalAppSmokeTest
         assertTrue(is_file($this->databasePath));
     }
 
+    public function testUnicodeRiskBackfillScansExistingPostsDeterministically(): void
+    {
+        @unlink($this->databasePath);
+        $rebuildCommand = sprintf(
+            'php %s %s %s',
+            escapeshellarg(__DIR__ . '/../scripts/rebuild_read_model.php'),
+            escapeshellarg($this->repositoryRoot),
+            escapeshellarg($this->databasePath),
+        );
+        exec($rebuildCommand, $rebuildOutput, $rebuildExitCode);
+
+        $command = sprintf(
+            'php %s %s %s',
+            escapeshellarg(__DIR__ . '/../scripts/backfill_unicode_risk.php'),
+            escapeshellarg($this->repositoryRoot),
+            escapeshellarg($this->databasePath),
+        );
+        exec($command, $output, $exitCode);
+
+        $pdo = new PDO('sqlite:' . $this->databasePath);
+        $postCount = (int) $pdo->query('SELECT COUNT(*) FROM posts')->fetchColumn();
+        $riskCount = (int) $pdo->query('SELECT COUNT(*) FROM post_unicode_risks')->fetchColumn();
+        $combinedOutput = implode("\n", $output);
+
+        assertSame(0, $rebuildExitCode);
+        assertSame(0, $exitCode);
+        assertSame($postCount, $riskCount);
+        assertStringContains('Mode: deterministic-only', $combinedOutput);
+        assertStringContains('Scanned: ' . $postCount, $combinedOutput);
+    }
+
     public function testInjectApprovalScriptSeedsIdentity(): void
     {
         [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();

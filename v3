@@ -10,6 +10,7 @@ Usage:
   ./v3 start [host:port]
   ./v3 test
   ./v3 rebuild [repository_root] [database_path]
+  ./v3 unicode-risk-backfill [repository_root] [database_path] [--with-llm]
   ./v3 build-static [repository_root] [database_path] [artifact_root]
   ./v3 private-config [--force] [--api-key-stdin] [--path=/private/path/secrets.php]
   ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
@@ -31,6 +32,10 @@ case "${COMMAND}" in
   rebuild)
     shift
     php "${ROOT}/scripts/rebuild_read_model.php" "$@"
+    ;;
+  unicode-risk-backfill)
+    shift
+    php "${ROOT}/scripts/backfill_unicode_risk.php" "$@"
     ;;
   build-static)
     shift
