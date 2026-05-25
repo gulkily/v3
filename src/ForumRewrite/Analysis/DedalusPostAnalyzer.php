@@ -19,6 +19,8 @@ final class DedalusPostAnalyzer implements PostAnalyzer
     private const RESPONSE_RISK_LEVELS = ['low', 'medium', 'high'];
     private const RESPONSE_MODES = ['none', 'answer', 'clarify', 'ask_followup', 'share_context', 'challenge_gently', 'deescalate'];
     private const RELATED_CONTENT_RELATIONSHIPS = ['none', 'same_topic', 'same_question', 'direct_answer', 'duplicate_request', 'background_context', 'counterexample'];
+    private const UNICODE_REVIEW_PRIORITIES = ['none', 'low', 'medium', 'high'];
+    private const UNICODE_RECOMMENDED_ACTIONS = ['none', 'watch', 'human_review'];
 
     private string $apiKey;
     private string $baseUrl;
@@ -78,6 +80,7 @@ final class DedalusPostAnalyzer implements PostAnalyzer
             'quality' => $this->objectOrEmpty($decoded['quality'] ?? null),
             'respondability' => $this->objectOrEmpty($decoded['respondability'] ?? null),
             'related_content_assessment' => $this->objectOrEmpty($decoded['related_content_assessment'] ?? null),
+            'unicode_risk_review' => $this->unicodeRiskReview($decoded['unicode_risk_review'] ?? null),
             'raw_response' => $response,
         ];
     }
@@ -198,6 +201,61 @@ final class DedalusPostAnalyzer implements PostAnalyzer
             '{{response_risk_levels}}' => implode(', ', self::RESPONSE_RISK_LEVELS),
             '{{response_modes}}' => implode(', ', self::RESPONSE_MODES),
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function unicodeRiskReview(mixed $review): array
+    {
+        if (!is_array($review)) {
+            return $this->emptyUnicodeRiskReview();
+        }
+
+        $priority = (string) ($review['review_priority'] ?? 'none');
+        if (!in_array($priority, self::UNICODE_REVIEW_PRIORITIES, true)) {
+            $priority = 'none';
+        }
+
+        $action = (string) ($review['recommended_action'] ?? 'none');
+        if (!in_array($action, self::UNICODE_RECOMMENDED_ACTIONS, true)) {
+            $action = 'none';
+        }
+
+        $concerns = $review['concerns'] ?? [];
+        if (!is_array($concerns) || !array_is_list($concerns)) {
+            $concerns = [];
+        }
+
+        return [
+            'review_priority' => $priority,
+            'summary' => substr((string) ($review['summary'] ?? ''), 0, 500),
+            'concerns' => array_values(array_filter(array_map(
+                static fn (mixed $concern): string => substr((string) $concern, 0, 80),
+                $concerns
+            ), static fn (string $concern): bool => $concern !== '')),
+            'recommended_action' => $action,
+            'confidence' => $this->boundedScore($review['confidence'] ?? 0.0),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function emptyUnicodeRiskReview(): array
+    {
+        return [
+            'review_priority' => 'none',
+            'summary' => '',
+            'concerns' => [],
+            'recommended_action' => 'none',
+            'confidence' => 0.0,
+        ];
+    }
+
+    private function boundedScore(mixed $value): float
+    {
+        return max(0.0, min(1.0, (float) $value));
     }
 
     /**
@@ -340,8 +398,33 @@ final class DedalusPostAnalyzer implements PostAnalyzer
                     ],
                     'required' => ['related_results_appropriate', 'solicitation_score', 'solicitation_reason', 'candidate_reviews'],
                 ],
+                'unicode_risk_review' => [
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'properties' => [
+                        'review_priority' => [
+                            'type' => 'string',
+                            'enum' => self::UNICODE_REVIEW_PRIORITIES,
+                        ],
+                        'summary' => [
+                            'type' => 'string',
+                            'maxLength' => 500,
+                        ],
+                        'concerns' => [
+                            'type' => 'array',
+                            'items' => ['type' => 'string'],
+                            'maxItems' => 10,
+                        ],
+                        'recommended_action' => [
+                            'type' => 'string',
+                            'enum' => self::UNICODE_RECOMMENDED_ACTIONS,
+                        ],
+                        'confidence' => ['type' => 'number', 'minimum' => 0, 'maximum' => 1],
+                    ],
+                    'required' => ['review_priority', 'summary', 'concerns', 'recommended_action', 'confidence'],
+                ],
             ],
-            'required' => ['post_summary', 'engagement', 'moderation', 'quality', 'respondability', 'related_content_assessment'],
+            'required' => ['post_summary', 'engagement', 'moderation', 'quality', 'respondability', 'related_content_assessment', 'unicode_risk_review'],
         ];
     }
 

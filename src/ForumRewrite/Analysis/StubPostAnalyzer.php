@@ -65,10 +65,47 @@ final class StubPostAnalyzer implements PostAnalyzer
                     : 'Stub analysis sees a possible follow-up but no explicit question.',
             ],
             'related_content_assessment' => $this->relatedContentAssessment($relatedContent),
+            'unicode_risk_review' => $this->unicodeRiskReview($context),
             'raw_response' => [
                 'stub' => true,
                 'related_content' => $relatedContent,
             ],
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    private function unicodeRiskReview(array $context): array
+    {
+        $facts = $context['unicode_risk_deterministic_facts'] ?? null;
+        if (!is_array($facts)) {
+            return [
+                'review_priority' => 'none',
+                'summary' => '',
+                'concerns' => [],
+                'recommended_action' => 'none',
+                'confidence' => 1.0,
+            ];
+        }
+
+        $labels = [];
+        foreach (($facts['fields'] ?? []) as $fieldFacts) {
+            if (!is_array($fieldFacts)) {
+                continue;
+            }
+            foreach (($fieldFacts['risk_labels'] ?? []) as $label) {
+                $labels[(string) $label] = true;
+            }
+        }
+
+        return [
+            'review_priority' => $labels === [] ? 'none' : 'low',
+            'summary' => $labels === [] ? '' : 'Stub review saw deterministic Unicode risk labels.',
+            'concerns' => array_keys($labels),
+            'recommended_action' => $labels === [] ? 'none' : 'watch',
+            'confidence' => 0.8,
         ];
     }
 

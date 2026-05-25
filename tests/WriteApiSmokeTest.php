@@ -127,6 +127,7 @@ final class WriteApiSmokeTest
             assertSame('The post says: Thoughtful body?', $second['post_summary']);
             assertSame('none', $second['moderation']['severity']);
             assertSame([], $second['unicode_risk']['deterministic_facts']['fields']['subject']['risk_labels']);
+            assertSame([], $second['unicode_risk']['llm_review']);
             assertSame(true, $second['respondability']['asks_question']);
             assertSame('opinion', $second['respondability']['question_type']);
             assertSame(true, $second['respondability']['should_generate_response']);

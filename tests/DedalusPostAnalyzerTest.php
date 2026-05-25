@@ -29,6 +29,7 @@ final class DedalusPostAnalyzerTest
         assertSame('The post asks how to make replies more useful.', $decoded['post_summary']);
         assertSame('curious', $decoded['engagement']['response_style']);
         assertSame(true, $decoded['respondability']['should_generate_response']);
+        assertSame('none', $decoded['unicode_risk_review']['review_priority']);
     }
 
     public function testDecodeCompletionPayloadAcceptsStructuredMessageContent(): void
@@ -123,7 +124,7 @@ final class DedalusPostAnalyzerTest
         assertSame(true, str_contains($prompt, 'appropriate_to_show=false'));
     }
 
-    public function testResponseSchemaRequiresRelatedContentAssessment(): void
+    public function testResponseSchemaRequiresRelatedContentAndUnicodeReview(): void
     {
         $analyzer = new DedalusPostAnalyzer('test-key');
         $method = new \ReflectionMethod(DedalusPostAnalyzer::class, 'responseSchema');
@@ -132,6 +133,7 @@ final class DedalusPostAnalyzerTest
         $schema = $method->invoke($analyzer);
 
         assertSame(true, in_array('related_content_assessment', $schema['required'], true));
+        assertSame(true, in_array('unicode_risk_review', $schema['required'], true));
         assertSame(
             ['related_results_appropriate', 'solicitation_score', 'solicitation_reason', 'candidate_reviews'],
             $schema['properties']['related_content_assessment']['required']
@@ -139,6 +141,10 @@ final class DedalusPostAnalyzerTest
         assertSame(
             ['none', 'same_topic', 'same_question', 'direct_answer', 'duplicate_request', 'background_context', 'counterexample'],
             $schema['properties']['related_content_assessment']['properties']['candidate_reviews']['items']['properties']['relationship']['enum']
+        );
+        assertSame(
+            ['review_priority', 'summary', 'concerns', 'recommended_action', 'confidence'],
+            $schema['properties']['unicode_risk_review']['required']
         );
     }
 
@@ -279,6 +285,13 @@ final class DedalusPostAnalyzerTest
                         'quality' => [],
                         'respondability' => [],
                         'related_content_assessment' => [],
+                        'unicode_risk_review' => [
+                            'review_priority' => 'low',
+                            'summary' => 'Mixed script identifier-like text deserves a look.',
+                            'concerns' => ['mixed_script'],
+                            'recommended_action' => 'watch',
+                            'confidence' => 0.8,
+                        ],
                         'raw_response' => [],
                     ];
                 }
@@ -298,6 +311,7 @@ final class DedalusPostAnalyzerTest
         assertSame('complete', $analysis['status']);
         assertSame(true, in_array('mixed_script', $analysis['unicode_risk']['deterministic_facts']['fields']['subject']['risk_labels'], true));
         assertSame(true, in_array('confusable_identifier_like_text', $storedRisk['deterministic_facts']['fields']['subject']['risk_labels'], true));
+        assertSame('low', $storedRisk['llm_review']['review_priority']);
     }
 
     public function testPostAnalysisServiceSuppressesUnsolicitedSameTopicRelatedContent(): void
@@ -451,6 +465,13 @@ final class DedalusPostAnalyzerTest
                 'solicitation_score' => 0.1,
                 'solicitation_reason' => 'The post does not ask for prior related discussion.',
                 'candidate_reviews' => [],
+            ],
+            'unicode_risk_review' => [
+                'review_priority' => 'none',
+                'summary' => '',
+                'concerns' => [],
+                'recommended_action' => 'none',
+                'confidence' => 1.0,
             ],
         ];
     }

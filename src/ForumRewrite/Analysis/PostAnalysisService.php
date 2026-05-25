@@ -65,10 +65,13 @@ final class PostAnalysisService
         }
 
         try {
-            $analysis = $this->analyzer->analyze($context);
+            $analysisContext = $this->contextWithUnicodeRisk($context, $unicodeRisk);
+            $analysis = $this->analyzer->analyze($analysisContext);
             $analysis['related_content_assessment'] = $this->relatedContentAssessment($analysis);
             $analysis['related_content'] = $this->approvedRelatedContent($context, $analysis['related_content_assessment']);
+            $analysis['unicode_risk_review'] = $this->unicodeRiskReview($analysis);
             if ($unicodeRisk !== null) {
+                $unicodeRisk = $this->storeUnicodeRiskReview($postId, $contentHash, $unicodeRisk, $analysis['unicode_risk_review']);
                 $analysis['unicode_risk'] = $unicodeRisk;
             }
             $stored = $this->store->saveComplete($postId, $contentHash, $analysis);
@@ -80,11 +83,112 @@ final class PostAnalysisService
         } catch (\Throwable $throwable) {
             $stored = $this->store->saveFailed($postId, $contentHash, 'provider_error', $throwable->getMessage());
             if ($unicodeRisk !== null) {
+                $unicodeRisk = $this->storeUnicodeRiskFailure($postId, $contentHash, $unicodeRisk, $throwable->getMessage());
                 $stored['unicode_risk'] = $unicodeRisk;
             }
             $stored['cached'] = false;
             return $stored;
         }
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     * @param array<string, mixed>|null $unicodeRisk
+     * @return array<string, mixed>
+     */
+    private function contextWithUnicodeRisk(array $context, ?array $unicodeRisk): array
+    {
+        if ($unicodeRisk === null || !$this->unicodeRiskHasSignals($unicodeRisk)) {
+            return $context;
+        }
+
+        $context['unicode_risk_deterministic_facts'] = $unicodeRisk['deterministic_facts'] ?? [];
+        return $context;
+    }
+
+    /**
+     * @param array<string, mixed> $unicodeRisk
+     */
+    private function unicodeRiskHasSignals(array $unicodeRisk): bool
+    {
+        $facts = $unicodeRisk['deterministic_facts'] ?? [];
+        if (!is_array($facts)) {
+            return false;
+        }
+
+        foreach (($facts['fields'] ?? []) as $fieldFacts) {
+            if (!is_array($fieldFacts)) {
+                continue;
+            }
+            $labels = $fieldFacts['risk_labels'] ?? [];
+            if (is_array($labels) && $labels !== []) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string, mixed> $analysis
+     * @return array<string, mixed>
+     */
+    private function unicodeRiskReview(array $analysis): array
+    {
+        $review = $analysis['unicode_risk_review'] ?? null;
+        if (!is_array($review)) {
+            return [
+                'review_priority' => 'none',
+                'summary' => '',
+                'concerns' => [],
+                'recommended_action' => 'none',
+                'confidence' => 0.0,
+            ];
+        }
+
+        $concerns = $review['concerns'] ?? [];
+        if (!is_array($concerns) || !array_is_list($concerns)) {
+            $concerns = [];
+        }
+
+        return [
+            'review_priority' => in_array((string) ($review['review_priority'] ?? ''), ['none', 'low', 'medium', 'high'], true)
+                ? (string) $review['review_priority']
+                : 'none',
+            'summary' => substr((string) ($review['summary'] ?? ''), 0, 500),
+            'concerns' => array_values(array_filter(array_map(static fn (mixed $concern): string => substr((string) $concern, 0, 80), $concerns))),
+            'recommended_action' => in_array((string) ($review['recommended_action'] ?? ''), ['none', 'watch', 'human_review'], true)
+                ? (string) $review['recommended_action']
+                : 'none',
+            'confidence' => max(0.0, min(1.0, (float) ($review['confidence'] ?? 0.0))),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $unicodeRisk
+     * @param array<string, mixed> $review
+     * @return array<string, mixed>
+     */
+    private function storeUnicodeRiskReview(string $postId, string $contentHash, array $unicodeRisk, array $review): array
+    {
+        if ($this->unicodeRiskStore === null || !$this->unicodeRiskHasSignals($unicodeRisk)) {
+            return $unicodeRisk;
+        }
+
+        return $this->unicodeRiskStore->saveLlmReview($postId, $contentHash, $review);
+    }
+
+    /**
+     * @param array<string, mixed> $unicodeRisk
+     * @return array<string, mixed>
+     */
+    private function storeUnicodeRiskFailure(string $postId, string $contentHash, array $unicodeRisk, string $failureMessage): array
+    {
+        if ($this->unicodeRiskStore === null || !$this->unicodeRiskHasSignals($unicodeRisk)) {
+            return $unicodeRisk;
+        }
+
+        return $this->unicodeRiskStore->saveLlmFailure($postId, $contentHash, $failureMessage);
     }
 
     /**

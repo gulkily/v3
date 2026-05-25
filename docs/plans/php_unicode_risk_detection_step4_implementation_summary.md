@@ -31,3 +31,15 @@
   - `php tests/run.php` passed.
 - Notes:
   - Unicode risk findings do not affect agent reply generation gates.
+
+## Stage 4 - LLM-Assisted Unicode Risk Review
+- Changes:
+  - Extended the existing post-analysis prompt and JSON schema with `unicode_risk_review`.
+  - Passed deterministic Unicode facts into the existing analyzer context only when deterministic risk labels are present.
+  - Stored model review output separately in `post_unicode_risks.llm_review_json`.
+  - Recorded LLM failures without erasing deterministic facts.
+  - Updated stub analysis mode to return deterministic Unicode review output.
+- Verification:
+  - `php tests/run.php` passed.
+- Notes:
+  - This uses the existing post-analysis model call; no extra provider request path was added.

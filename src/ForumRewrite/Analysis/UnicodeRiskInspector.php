@@ -199,6 +199,10 @@ final class UnicodeRiskInspector
     /** @return list<string> */
     private function codePointLabels(string $character): array
     {
+        if ($character === "\n") {
+            return [];
+        }
+
         $labels = [];
 
         if ($this->isNoncharacter($character)) {
