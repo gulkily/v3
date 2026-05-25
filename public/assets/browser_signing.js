@@ -76,13 +76,42 @@
     return characters;
   }
 
-  function normalizeComposeAscii(text, options) {
+  function isAllowedVisibleUnicodeCharacter(character) {
+    if (character === "\n" || /^[\x20-\x7E]$/.test(character)) {
+      return true;
+    }
+
+    if (/[\p{C}\p{Z}\p{S}]/u.test(character)) {
+      return false;
+    }
+
+    return /^[\p{L}\p{M}\p{N}\p{P}]$/u.test(character);
+  }
+
+  function unsafeUnicodeComposeCharacters(text) {
+    const characters = [];
+    for (const character of text) {
+      if (!isAllowedVisibleUnicodeCharacter(character)) {
+        characters.push(character);
+      }
+    }
+    return characters;
+  }
+
+  function normalizeComposeText(text, options) {
     const config = options || {};
     const removeUnsupported = config.removeUnsupported === true;
+    const allowUnicodeAuthoredText = config.allowUnicodeAuthoredText === true;
     let normalized = "";
     let hadCorrections = false;
+    const newlineNormalized = normalizeNewlines(text);
+    const source = allowUnicodeAuthoredText && typeof newlineNormalized.normalize === "function"
+      ? newlineNormalized.normalize("NFC")
+      : newlineNormalized;
 
-    for (const character of normalizeNewlines(text)) {
+    hadCorrections = source !== newlineNormalized;
+
+    for (const character of source) {
       const punctuationReplacement = ASCII_COMPOSE_REPLACEMENTS.get(character);
       if (punctuationReplacement !== undefined) {
         normalized += punctuationReplacement;
@@ -90,21 +119,27 @@
         continue;
       }
 
-      const transliterationReplacement = LATIN_DIACRITIC_REPLACEMENTS.get(character);
-      if (transliterationReplacement !== undefined) {
-        normalized += transliterationReplacement;
-        hadCorrections = true;
-        continue;
+      if (!allowUnicodeAuthoredText) {
+        const transliterationReplacement = LATIN_DIACRITIC_REPLACEMENTS.get(character);
+        if (transliterationReplacement !== undefined) {
+          normalized += transliterationReplacement;
+          hadCorrections = true;
+          continue;
+        }
       }
 
       normalized += character;
     }
 
-    const unsupportedBeforeRemoval = unsupportedComposeCharacters(normalized);
+    const unsupportedBeforeRemoval = allowUnicodeAuthoredText
+      ? unsafeUnicodeComposeCharacters(normalized)
+      : unsupportedComposeCharacters(normalized);
     if (removeUnsupported && unsupportedBeforeRemoval.length > 0) {
       normalized = Array.from(normalized)
         .filter(function (character) {
-          return /^[\x00-\x7F]$/.test(character);
+          return allowUnicodeAuthoredText
+            ? isAllowedVisibleUnicodeCharacter(character)
+            : /^[\x00-\x7F]$/.test(character);
         })
         .join("");
     }
@@ -115,6 +150,11 @@
       unsupportedCount: removeUnsupported ? 0 : unsupportedBeforeRemoval.length,
       removedUnsupportedCount: removeUnsupported ? unsupportedBeforeRemoval.length : 0,
     };
+  }
+
+  function normalizeComposeAscii(text, options) {
+    const config = Object.assign({}, options || {}, { allowUnicodeAuthoredText: false });
+    return normalizeComposeText(text, config);
   }
 
   function composeDraftKey(form) {
@@ -250,6 +290,7 @@
   if (typeof window !== "undefined") {
     window.__forumComposeNormalization = {
       normalizeComposeAscii: normalizeComposeAscii,
+      normalizeComposeText: normalizeComposeText,
     };
   }
 
@@ -942,6 +983,7 @@
       return;
     }
     const draftKey = composeDraftKey(form);
+    const unicodeAuthoredTextEnabled = root.dataset.unicodeAuthoredText === "1";
 
     function updateComposeNormalizationStatus(message, kind) {
       if (!normalizationStatusNode) {
@@ -1042,7 +1084,9 @@
     }
 
     function normalizeComposeField(field, options) {
-      const result = normalizeComposeAscii(field.value, options);
+      const result = normalizeComposeText(field.value, Object.assign({}, options || {}, {
+        allowUnicodeAuthoredText: unicodeAuthoredTextEnabled && (field.name === "subject" || field.name === "body"),
+      }));
       if (field.value !== result.text) {
         field.value = result.text;
       }

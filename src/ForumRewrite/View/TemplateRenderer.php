@@ -77,6 +77,9 @@ final class TemplateRenderer
         if (!is_file($path)) {
             throw new RuntimeException('Missing template: ' . $relativePath);
         }
+        $data = array_merge([
+            'unicodeAuthoredTextEnabled' => SiteConfig::unicodeAuthoredTextEnabled(),
+        ], $data);
 
         $e = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $br = static fn (mixed $value): string => nl2br(htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));

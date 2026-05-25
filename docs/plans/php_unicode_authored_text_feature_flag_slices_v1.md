@@ -186,6 +186,14 @@ Components touched:
 
 ## Slice 4: Update Browser Compose Normalization For Policy Awareness
 
+Status:
+
+- implemented
+- compose roots now expose the active Unicode-authored-text policy to browser code
+- browser normalization preserves readable Unicode in `subject` and `body` when the flag is enabled
+- `board_tags` and other machine fields keep the ASCII normalization path
+- unsafe Unicode characters remain blocking and explicitly removable
+
 Focus:
 
 - align browser feedback with the server policy while keeping the server authoritative

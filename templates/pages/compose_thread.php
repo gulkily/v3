@@ -1,8 +1,8 @@
-<section class="stack" data-compose-root<?= $notice !== null ? ' data-compose-submitted="1"' : '' ?>>
+<section class="stack" data-compose-root data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>"<?= $notice !== null ? ' data-compose-submitted="1"' : '' ?>>
   <article class="card">
     <h1>Compose Thread</h1>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
-    <p>Posts are stored as canonical ASCII files and the SQLite read model rebuilds immediately.</p>
+    <p>Posts are stored as canonical text files and the SQLite read model rebuilds immediately.</p>
     <p class="meta" data-role="compose-identity-status">Ready.</p>
     <form method="post" class="stack" data-compose-form data-compose-kind="thread">
       <input type="hidden" name="author_identity_id" value="">
@@ -28,7 +28,7 @@
           hidden
         >Remove unsupported characters</button>
       </p>
-      <label>Body<textarea name="body" data-compose-field-label="Body" rows="7" placeholder="ASCII body"><?= $e($body) ?></textarea></label>
+      <label>Body<textarea name="body" data-compose-field-label="Body" rows="7" placeholder="Body"><?= $e($body) ?></textarea></label>
       <p class="meta compose-normalization-inline" data-role="compose-field-normalization-status" data-compose-field-status-for="body" hidden>
         <span data-role="compose-field-normalization-message"></span>
         <button

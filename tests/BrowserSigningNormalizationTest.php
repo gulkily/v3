@@ -68,6 +68,50 @@ NODE;
     /**
      * @return array<string, mixed>
      */
+    private function runTextHelper(string $text, bool $allowUnicodeAuthoredText, bool $removeUnsupported = false): array
+    {
+        $script = <<<'NODE'
+global.window = {};
+global.localStorage = { getItem(){ return ''; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener(){},
+  querySelector(){ return null; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} },
+};
+global.navigator = {};
+const fs = require('fs');
+const vm = require('vm');
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+const helper = window.__forumComposeNormalization.normalizeComposeText;
+process.stdout.write(JSON.stringify(helper(process.argv[2], {
+  allowUnicodeAuthoredText: process.argv[3] === '1',
+  removeUnsupported: process.argv[4] === '1'
+})));
+NODE;
+
+        $command = sprintf(
+            'node -e %s %s %s %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/assets/browser_signing.js'),
+            escapeshellarg($text),
+            escapeshellarg($allowUnicodeAuthoredText ? '1' : '0'),
+            escapeshellarg($removeUnsupported ? '1' : '0'),
+        );
+
+        $output = [];
+        $exitCode = 0;
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Node helper execution failed: ' . implode("\n", $output));
+        }
+
+        return json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     private function runThreadReactionScript(string $script): array
     {
         $command = sprintf(
@@ -124,6 +168,25 @@ NODE;
         assertSame(true, $result['hadCorrections']);
         assertSame(6, $result['unsupportedCount']);
         assertSame(0, $result['removedUnsupportedCount']);
+    }
+
+    public function testNormalizeComposeTextPreservesReadableUnicodeWhenEnabled(): void
+    {
+        $result = $this->runTextHelper('Café Привет', true);
+
+        assertSame('Café Привет', $result['text']);
+        assertSame(false, $result['hadCorrections']);
+        assertSame(0, $result['unsupportedCount']);
+        assertSame(0, $result['removedUnsupportedCount']);
+    }
+
+    public function testNormalizeComposeTextStillRejectsUnsafeUnicodeWhenEnabled(): void
+    {
+        $result = $this->runTextHelper('Привет 🙂​', true, true);
+
+        assertSame('Привет ', $result['text']);
+        assertSame(0, $result['unsupportedCount']);
+        assertSame(2, $result['removedUnsupportedCount']);
     }
 
     public function testNormalizeComposeAsciiReportsUnsupportedCharacters(): void
