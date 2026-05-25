@@ -226,6 +226,13 @@ Components touched:
 
 ## Slice 5: Extend Canonical Parser And Read-Model Coverage
 
+Status:
+
+- implemented
+- added parser coverage for canonical post records containing Unicode subject and body prose
+- added flag-enabled write smoke coverage for Cyrillic subject/body through canonical record creation, read-model refresh, thread/post rendering, activity/RSS rendering, and static artifact generation
+- verified generated artifact paths remain ASCII record-id paths while artifact contents preserve Unicode prose
+
 Focus:
 
 - verify stored Unicode prose remains parseable and renderable through the existing derived-state pipeline

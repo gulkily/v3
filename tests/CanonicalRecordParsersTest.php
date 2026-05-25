@@ -60,6 +60,16 @@ final class CanonicalRecordParsersTest
         assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $record->authorIdentityId);
     }
 
+    public function testParsesUnicodeAuthoredPostProse(): void
+    {
+        $contents = "Post-ID: root-unicode\nCreated-At: 2026-04-10T12:06:00Z\nBoard-Tags: general\nSubject: Привет\n\nПривет мир.\n";
+
+        $record = (new PostRecordParser())->parse($contents);
+
+        assertSame('Привет', $record->subject);
+        assertSame("Привет мир.\n", $record->body);
+    }
+
     public function testRejectsReplyWithTypedRootHeader(): void
     {
         $contents = "Post-ID: reply-002\nCreated-At: 2026-04-10T12:06:00Z\nBoard-Tags: general\nThread-ID: root-001\nParent-ID: root-001\nThread-Type: task\n\nBody.\n";
