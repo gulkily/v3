@@ -1340,6 +1340,7 @@ final class Application
 
         try {
             $store = new SqlitePostAnalysisStore($this->pdo());
+            $unicodeRiskStore = new SqliteUnicodeRiskStore($this->pdo());
         } catch (\Throwable) {
             return [];
         }
@@ -1350,6 +1351,10 @@ final class Application
             $analysis = $store->find((string) $context['post_id'], (string) $context['content_hash']);
             if ($analysis === null) {
                 continue;
+            }
+            $unicodeRisk = $unicodeRiskStore->find((string) $context['post_id'], (string) $context['content_hash']);
+            if ($unicodeRisk !== null) {
+                $analysis['unicode_risk'] = $unicodeRisk;
             }
 
             $analyses[(string) $context['post_id']] = $analysis;

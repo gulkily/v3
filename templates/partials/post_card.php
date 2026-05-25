@@ -22,6 +22,33 @@ $postAnalysisEngagement = is_array($postAnalysis) && is_array($postAnalysis['eng
 $postAnalysisQuality = is_array($postAnalysis) && is_array($postAnalysis['quality'] ?? null) ? $postAnalysis['quality'] : [];
 $postAnalysisRespondability = is_array($postAnalysis) && is_array($postAnalysis['respondability'] ?? null) ? $postAnalysis['respondability'] : [];
 $postAnalysisRelatedContent = is_array($postAnalysis) && is_array($postAnalysis['related_content'] ?? null) ? $postAnalysis['related_content'] : [];
+$postAnalysisUnicodeRisk = is_array($postAnalysis) && is_array($postAnalysis['unicode_risk'] ?? null) ? $postAnalysis['unicode_risk'] : [];
+$postAnalysisUnicodeFacts = is_array($postAnalysisUnicodeRisk['deterministic_facts'] ?? null) ? $postAnalysisUnicodeRisk['deterministic_facts'] : [];
+$postAnalysisUnicodeReview = is_array($postAnalysisUnicodeRisk['llm_review'] ?? null) ? $postAnalysisUnicodeRisk['llm_review'] : [];
+$postAnalysisUnicodeFields = is_array($postAnalysisUnicodeFacts['fields'] ?? null) ? $postAnalysisUnicodeFacts['fields'] : [];
+$postAnalysisUnicodeLabels = [];
+$postAnalysisUnicodeScripts = [];
+$postAnalysisUnicodeCodePoints = [];
+foreach ($postAnalysisUnicodeFields as $unicodeFieldName => $unicodeFieldFacts) {
+    if (!is_array($unicodeFieldFacts)) {
+        continue;
+    }
+    foreach (($unicodeFieldFacts['risk_labels'] ?? []) as $riskLabel) {
+        $postAnalysisUnicodeLabels[(string) $riskLabel] = true;
+    }
+    $scripts = $unicodeFieldFacts['scripts_present'] ?? [];
+    if (is_array($scripts) && $scripts !== []) {
+        $postAnalysisUnicodeScripts[] = (string) $unicodeFieldName . ': ' . implode(', ', array_map('strval', $scripts));
+    }
+    foreach (($unicodeFieldFacts['suspicious_code_points'] ?? []) as $codePointFinding) {
+        if (!is_array($codePointFinding)) {
+            continue;
+        }
+        $findingLabels = is_array($codePointFinding['labels'] ?? null) ? implode(', ', array_map('strval', $codePointFinding['labels'])) : '';
+        $postAnalysisUnicodeCodePoints[] = (string) $unicodeFieldName . ' ' . (string) ($codePointFinding['code_point'] ?? '') . ($findingLabels !== '' ? ' (' . $findingLabels . ')' : '');
+    }
+}
+$postAnalysisUnicodeLabels = array_keys($postAnalysisUnicodeLabels);
 $postAnalysisSummary = is_array($postAnalysis) ? trim((string) ($postAnalysis['post_summary'] ?? '')) : '';
 $postAnalysisLabels = $postAnalysisModeration['labels'] ?? [];
 if (!is_array($postAnalysisLabels)) {
@@ -74,6 +101,18 @@ if (!is_array($postAnalysisLabels)) {
 <?php endif; ?>
 <?php if (isset($postAnalysisEngagement['suggested_response']) && trim((string) $postAnalysisEngagement['suggested_response']) !== ''): ?>
       <p><strong>Suggested response:</strong> <?= $e($postAnalysisEngagement['suggested_response']) ?></p>
+<?php endif; ?>
+<?php if ($postAnalysisUnicodeRisk !== []): ?>
+      <p><strong>Unicode risk:</strong> <?= $e($postAnalysisUnicodeReview['review_priority'] ?? 'none') ?><?= $postAnalysisUnicodeLabels !== [] ? ' (' . $e(implode(', ', $postAnalysisUnicodeLabels)) . ')' : '' ?></p>
+<?php if ($postAnalysisUnicodeScripts !== []): ?>
+      <p><strong>Unicode scripts:</strong> <?= $e(implode('; ', $postAnalysisUnicodeScripts)) ?></p>
+<?php endif; ?>
+<?php if (isset($postAnalysisUnicodeReview['summary']) && trim((string) $postAnalysisUnicodeReview['summary']) !== ''): ?>
+      <p><strong>Unicode review:</strong> <?= $e($postAnalysisUnicodeReview['summary']) ?></p>
+<?php endif; ?>
+<?php if ($postAnalysisUnicodeCodePoints !== []): ?>
+      <p><strong>Unicode code points:</strong> <?= $e(implode('; ', array_slice($postAnalysisUnicodeCodePoints, 0, 8))) ?></p>
+<?php endif; ?>
 <?php endif; ?>
     </div>
   </details>

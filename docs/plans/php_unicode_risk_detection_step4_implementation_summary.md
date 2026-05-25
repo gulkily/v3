@@ -43,3 +43,13 @@
   - `php tests/run.php` passed.
 - Notes:
   - This uses the existing post-analysis model call; no extra provider request path was added.
+
+## Stage 5 - Approved Analysis UI
+- Changes:
+  - Attached sibling Unicode risk rows when loading post analyses for rendered pages.
+  - Added compact Unicode risk, scripts, review summary, and escaped code point output to approved analysis panels.
+  - Kept anonymous pages from rendering post-analysis or Unicode-risk details.
+- Verification:
+  - `php tests/run.php` passed.
+- Notes:
+  - Suspicious characters are displayed by escaped code point notation such as `U+200B`, not raw glyph output.

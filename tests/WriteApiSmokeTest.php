@@ -148,6 +148,8 @@ final class WriteApiSmokeTest
             assertStringContains('Respondability:', $approvedThreadPage);
             assertStringContains('Question:', $approvedThreadPage);
             assertStringContains('Response value:', $approvedThreadPage);
+            assertStringContains('Unicode risk:', $approvedThreadPage);
+            assertStringContains('Unicode scripts:', $approvedThreadPage);
             assertStringContains('Suggested response:', $approvedThreadPage);
             assertFalse(is_dir($repositoryRoot . '/records/post-analyses'));
         } finally {
