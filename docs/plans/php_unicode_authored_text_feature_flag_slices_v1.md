@@ -262,6 +262,12 @@ Components touched:
 
 ## Slice 6: Add Unsafe Unicode Regression Tests
 
+Status:
+
+- implemented
+- added server policy tests for zero-width characters, bidirectional controls, private-use characters, noncharacters, invalid UTF-8, subject line breaks, body controls, and emoji symbols
+- added browser-helper coverage proving explicit removal drops unsafe Unicode while preserving readable Cyrillic text
+
 Focus:
 
 - lock down the anti-deception guarantees

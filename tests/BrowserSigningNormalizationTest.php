@@ -182,11 +182,11 @@ NODE;
 
     public function testNormalizeComposeTextStillRejectsUnsafeUnicodeWhenEnabled(): void
     {
-        $result = $this->runTextHelper('Привет 🙂​', true, true);
+        $result = $this->runTextHelper("Привет 🙂\u{200B}\u{202E}\u{E000}", true, true);
 
         assertSame('Привет ', $result['text']);
         assertSame(0, $result['unsupportedCount']);
-        assertSame(2, $result['removedUnsupportedCount']);
+        assertSame(4, $result['removedUnsupportedCount']);
     }
 
     public function testNormalizeComposeAsciiReportsUnsupportedCharacters(): void
