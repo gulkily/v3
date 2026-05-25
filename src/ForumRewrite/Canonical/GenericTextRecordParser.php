@@ -8,7 +8,7 @@ final class GenericTextRecordParser
 {
     public function parse(string $contents): GenericTextRecord
     {
-        $this->assertAscii($contents);
+        $this->assertValidCanonicalText($contents);
         $this->assertLfLineEndings($contents);
         $this->assertTrailingLf($contents);
 
@@ -42,10 +42,20 @@ final class GenericTextRecordParser
         return new GenericTextRecord($headers, $body);
     }
 
-    private function assertAscii(string $contents): void
+    private function assertValidCanonicalText(string $contents): void
     {
-        if (!preg_match('//u', $contents) || preg_match('/[^\x09\x0A\x0D\x20-\x7E]/', $contents)) {
-            throw new CanonicalRecordParseException('Canonical text record must be ASCII only.');
+        if (!mb_check_encoding($contents, 'UTF-8')) {
+            throw new CanonicalRecordParseException('Canonical text record must be valid UTF-8.');
+        }
+
+        foreach (preg_split('//u', $contents, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $character) {
+            if ($character === "\n" || $character === "\t" || preg_match('/^[\x20-\x7E]$/', $character) === 1) {
+                continue;
+            }
+
+            if (preg_match('/[\p{C}]/u', $character) === 1) {
+                throw new CanonicalRecordParseException('Canonical text record must not contain Unicode control or format characters.');
+            }
         }
     }
 

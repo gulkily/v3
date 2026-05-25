@@ -1139,6 +1139,7 @@ class LocalWriteService
         $normalized = strtolower(trim($value));
         $normalized = preg_replace('/[^a-z0-9 -]+/', '', $normalized) ?? '';
         $normalized = preg_replace('/\s+/', ' ', $normalized) ?? '';
+        $normalized = trim($normalized);
 
         return $normalized !== '' ? $normalized : 'general';
     }

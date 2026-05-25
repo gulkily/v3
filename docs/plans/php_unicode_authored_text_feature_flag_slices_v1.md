@@ -148,6 +148,14 @@ Components touched:
 
 ## Slice 3: Preserve ASCII-Only Machine Fields
 
+Status:
+
+- implemented
+- added flag-enabled smoke coverage proving `board_tags` continue to canonicalize to ASCII
+- added flag-enabled write-service coverage proving Unicode does not widen `thread_id`, reaction tags, or OpenPGP identity IDs
+- relaxed the generic text parser from ASCII-only to valid UTF-8 text so flag-enabled prose can parse while family-specific parsers still enforce machine-field constraints
+- trimmed board-tag canonicalization after non-ASCII stripping so removed characters cannot leave leading/trailing tag whitespace
+
 Focus:
 
 - make sure the Unicode flag cannot accidentally widen identifiers, tags, paths, or routes

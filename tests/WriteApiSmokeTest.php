@@ -806,6 +806,72 @@ final class WriteApiSmokeTest
         assertFalse(str_contains($threadPage, 'by guest'));
     }
 
+    public function testUnicodeAuthoredTextFlagDoesNotWidenMachineFields(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('FORUM_UNICODE_AUTHORED_TEXT=true');
+
+        try {
+            $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+            $threadResult = $service->createThread([
+                'board_tags' => 'тест bug',
+                'subject' => 'Привет',
+                'body' => 'Привет мир',
+            ]);
+            $record = (string) file_get_contents($repositoryRoot . '/records/posts/' . $threadResult['thread_id'] . '.txt');
+
+            assertStringContains('Board-Tags: bug', $record);
+            assertStringNotContains('тест', $record);
+
+            $rejected = false;
+            try {
+                $service->createReply([
+                    'thread_id' => 'ветка',
+                    'parent_id' => $threadResult['thread_id'],
+                    'body' => 'Привет',
+                ]);
+            } catch (RuntimeException $exception) {
+                assertStringContains('thread_id is required and must be an ASCII token.', $exception->getMessage());
+                $rejected = true;
+            }
+            if (!$rejected) {
+                throw new RuntimeException('Expected Unicode thread_id rejection.');
+            }
+
+            $rejected = false;
+            try {
+                $service->applyThreadTag([
+                    'thread_id' => $threadResult['thread_id'],
+                    'tag' => 'лайк',
+                    'author_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+                ]);
+            } catch (RuntimeException $exception) {
+                assertStringContains('tag must be one of:', $exception->getMessage());
+                $rejected = true;
+            }
+            if (!$rejected) {
+                throw new RuntimeException('Expected Unicode reaction tag rejection.');
+            }
+
+            $rejected = false;
+            try {
+                $service->applyThreadTag([
+                    'thread_id' => $threadResult['thread_id'],
+                    'tag' => 'like',
+                    'author_identity_id' => 'openpgp:кириллица',
+                ]);
+            } catch (RuntimeException $exception) {
+                assertStringContains('ASCII token', $exception->getMessage());
+                $rejected = true;
+            }
+            if (!$rejected) {
+                throw new RuntimeException('Expected Unicode identity ID rejection.');
+            }
+        } finally {
+            putenv('FORUM_UNICODE_AUTHORED_TEXT');
+        }
+    }
+
     public function testThreadAndReplyWritesUseIncrementalReadModelUpdateWhenDatabaseIsWarm(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
