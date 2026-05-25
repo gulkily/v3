@@ -19,6 +19,7 @@ use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\Support\ExecutionLock;
+use ForumRewrite\Support\UnicodeTextPolicy;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use RuntimeException;
 
@@ -1159,7 +1160,7 @@ class LocalWriteService
     private function normalizeAuthoredLine(string $value, string $field): string
     {
         if (SiteConfig::unicodeAuthoredTextEnabled()) {
-            return $this->normalizeAsciiLine($value, $field);
+            return (new UnicodeTextPolicy())->normalizeLine($value, $field);
         }
 
         return $this->normalizeAsciiLine($value, $field);
@@ -1192,7 +1193,7 @@ class LocalWriteService
     private function normalizeAuthoredBody(string $value, string $field): string
     {
         if (SiteConfig::unicodeAuthoredTextEnabled()) {
-            return $this->normalizeAsciiBody($value, $field);
+            return (new UnicodeTextPolicy())->normalizeBody($value, $field);
         }
 
         return $this->normalizeAsciiBody($value, $field);

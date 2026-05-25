@@ -110,6 +110,14 @@ Components touched:
 
 ## Slice 2: Add Server-Side Visible Unicode Normalization
 
+Status:
+
+- implemented
+- added `UnicodeTextPolicy` for flag-enabled subject/body normalization
+- accepts visible UTF-8 letters such as Cyrillic while rejecting controls, format characters, noncharacters, unsupported spacing, and symbols such as emoji
+- preserves the existing ASCII validators when `FORUM_UNICODE_AUTHORED_TEXT` is disabled
+- added focused policy tests for Cyrillic acceptance and unsafe-character rejection
+
 Focus:
 
 - create the authoritative validation and normalization functions for authored prose
