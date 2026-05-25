@@ -17,6 +17,7 @@ use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
+use ForumRewrite\SiteConfig;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use RuntimeException;
@@ -46,8 +47,8 @@ class LocalWriteService
             $totalStartedAt = hrtime(true);
             $postId = $this->generateRecordId('thread');
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
-            $subject = $this->normalizeAsciiLine((string) ($input['subject'] ?? ''), 'subject');
-            $body = $this->normalizeAsciiBody((string) ($input['body'] ?? ''), 'body');
+            $subject = $this->normalizeAuthoredLine((string) ($input['subject'] ?? ''), 'subject');
+            $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
             $authorIdentityId = $this->resolveAuthorIdentityId($input);
             $createdAt = $this->canonicalTimestampNow();
 
@@ -105,7 +106,7 @@ class LocalWriteService
             $totalStartedAt = hrtime(true);
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
             $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
-            $body = $this->normalizeAsciiBody((string) ($input['body'] ?? ''), 'body');
+            $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $authorIdentityId = $this->resolveAuthorIdentityId($input);
             $createdAt = $this->canonicalTimestampNow();
@@ -1155,6 +1156,15 @@ class LocalWriteService
         return $value;
     }
 
+    private function normalizeAuthoredLine(string $value, string $field): string
+    {
+        if (SiteConfig::unicodeAuthoredTextEnabled()) {
+            return $this->normalizeAsciiLine($value, $field);
+        }
+
+        return $this->normalizeAsciiLine($value, $field);
+    }
+
     private function requireAsciiToken(string $value, string $field): string
     {
         $value = trim($value);
@@ -1177,5 +1187,14 @@ class LocalWriteService
         }
 
         return $value . "\n";
+    }
+
+    private function normalizeAuthoredBody(string $value, string $field): string
+    {
+        if (SiteConfig::unicodeAuthoredTextEnabled()) {
+            return $this->normalizeAsciiBody($value, $field);
+        }
+
+        return $this->normalizeAsciiBody($value, $field);
     }
 }
