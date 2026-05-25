@@ -177,6 +177,47 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testUnicodeRiskAnalysisFlagsMixedScriptIdentifierForApprovedViewersOnly(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        putenv('FORUM_UNICODE_AUTHORED_TEXT=true');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=' . rawurlencode('Look at раypal.com') . '&body=' . rawurlencode('Plain body')
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = [];
+            $anonymous = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $approved = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
+            $approvedPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+            $_COOKIE = [];
+            $anonymousPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $riskRow = $pdo->query('SELECT status, llm_review_json FROM post_unicode_risks WHERE post_id = ' . $pdo->quote($postId))->fetch();
+            $llmReview = json_decode((string) $riskRow['llm_review_json'], true);
+
+            assertSame(false, isset($anonymous['unicode_risk']));
+            assertSame(true, in_array('mixed_script', $approved['unicode_risk']['deterministic_facts']['fields']['subject']['risk_labels'], true));
+            assertSame(true, in_array('confusable_identifier_like_text', $approved['unicode_risk']['deterministic_facts']['fields']['subject']['risk_labels'], true));
+            assertSame('complete', $riskRow['status']);
+            assertSame('low', $llmReview['review_priority']);
+            assertStringContains('Unicode risk:', $approvedPostPage);
+            assertStringContains('confusable_identifier_like_text', $approvedPostPage);
+            assertStringNotContains('Unicode risk:', $anonymousPostPage);
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            putenv('FORUM_UNICODE_AUTHORED_TEXT');
+            $_COOKIE = [];
+        }
+    }
+
     public function testPostAnalysisContextIncludesRelatedCrossThreadContent(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

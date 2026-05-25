@@ -65,3 +65,12 @@
   - `php tests/run.php` passed.
 - Notes:
   - The default mode is deterministic-only and does not modify canonical records.
+
+## Stage 7 - Regression And Abuse-Case Coverage
+- Changes:
+  - Added an end-to-end mixed-script identifier-like Unicode risk test.
+  - Covered anonymous API/detail suppression, approved API visibility, stored LLM review, and approved-only page rendering.
+- Verification:
+  - `php tests/run.php` passed.
+- Notes:
+  - Existing scanner, store, decoder/schema, API, UI, and backfill tests now cover the V1 acceptance cases from the plan.
