@@ -51,6 +51,7 @@ Recommended mapping:
 Optional runtime setting:
 
 - `FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS`: seconds a request waits for the shared write/read-model lock before returning a busy error. The default is `5`.
+- `FORUM_UNICODE_AUTHORED_TEXT`: when set to `true`, subject/body prose may contain visible UTF-8 text such as Cyrillic. The default is disabled.
 
 ## Writable Paths
 
@@ -81,6 +82,32 @@ FORUM_PUBLIC_ARTIFACT_ROOT=/srv/forum-rewrite/app/public
 ```
 
 `FORUM_STATIC_HTML_ROOT` remains available for separate static roots, but the primary production model for this repo is sibling artifacts in `public/`.
+
+## Unicode Authored Text Rollout
+
+`FORUM_UNICODE_AUTHORED_TEXT=true` enables visible UTF-8 prose in post subjects and bodies.
+
+Scope:
+
+- affected: human-authored post `subject` and `body`
+- unchanged: post IDs, thread IDs, parent IDs, board tags, reaction tags, profile slugs, identity IDs, routes, and artifact paths
+
+The server still rejects invalid UTF-8, control characters, format characters, bidirectional controls, private-use characters, noncharacters, unsupported spacing characters, and symbols such as emoji.
+
+Operational notes:
+
+- keep the flag disabled for first deploys unless Unicode prose has been explicitly tested on the target host
+- verify `git diff`, rebuild scripts, static artifact generation, RSS, and terminal inspection all run under a UTF-8-capable locale
+- PHP `intl` is optional in this implementation; when it is unavailable, combining-mark input is rejected instead of normalized, while precomposed readable Unicode such as normal Cyrillic remains supported
+- rollback is `FORUM_UNICODE_AUTHORED_TEXT=false`; existing Unicode records remain valid UTF-8 canonical text and should continue to parse and render
+
+Rollout smoke test:
+
+1. enable `FORUM_UNICODE_AUTHORED_TEXT=true`
+2. create a test thread with subject `Привет` and body `Привет мир`
+3. verify the thread page, post page, activity page, RSS feed, read-model rebuild, and static artifact build
+4. verify a post with a zero-width or bidirectional control character is rejected
+5. disable the flag if submit-time Unicode acceptance must be rolled back
 
 ## Automatic Agent Replies
 

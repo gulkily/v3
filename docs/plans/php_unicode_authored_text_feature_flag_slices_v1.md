@@ -300,6 +300,13 @@ Components touched:
 
 ## Slice 7: Rollout Documentation And Operational Checks
 
+Status:
+
+- implemented
+- documented local opt-in in `README.md`
+- documented production rollout scope, rollback, UTF-8 tooling checks, and the PHP `intl` normalization caveat in the production deploy runbook
+- kept the production env example default commented out and disabled
+
 Focus:
 
 - make the feature safe to enable, monitor, and roll back

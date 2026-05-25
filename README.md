@@ -34,6 +34,14 @@ Start the local PHP server:
 ./v3 start
 ```
 
+Authored post subject/body text remains ASCII-only by default. To test visible UTF-8 prose, such as Cyrillic, enable the rollout flag before starting the app:
+
+```bash
+FORUM_UNICODE_AUTHORED_TEXT=true ./v3 start
+```
+
+The flag affects only human-authored post prose. Machine fields such as post IDs, thread IDs, board tags, profile slugs, routes, and identity IDs remain ASCII-oriented.
+
 Create or update the local private config for Dedalus post analysis:
 
 ```bash
