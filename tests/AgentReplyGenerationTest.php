@@ -153,6 +153,16 @@ final class AgentReplyGenerationTest
         assertSame('Smart "quotes", dash -, ellipsis..., cafe', $text);
     }
 
+    public function testGeneratedReplyTextCanPreserveVisibleUnicode(): void
+    {
+        $text = DedalusAgentReplyGenerator::normalizeGeneratedReplyText(
+            "Smart \u{201C}quotes\u{201D}: Хорошо",
+            true,
+        );
+
+        assertSame('Smart "quotes": Хорошо', $text);
+    }
+
     public function testPromptTemplateLoadsFromFile(): void
     {
         $generator = new DedalusAgentReplyGenerator(

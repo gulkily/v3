@@ -451,6 +451,38 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testGenerateAgentReplyPreservesVisibleUnicodeWhenAuthoredTextFlagIsEnabled(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        putenv('FORUM_UNICODE_AUTHORED_TEXT=true');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $postId = $this->createAnalyzedThread($application, $databasePath, [
+                'engagement' => [
+                    'suggested_response' => "Unicode is supported here; the Cyrillic 'Хорошо' renders cleanly.",
+                ],
+            ]);
+
+            $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $statement = $pdo->prepare('SELECT response_text, agent_post_id FROM post_generated_responses WHERE target_post_id = :post_id');
+            $statement->execute(['post_id' => $postId]);
+            $row = $statement->fetch();
+            $replyRecord = (string) file_get_contents($repositoryRoot . '/records/posts/' . $row['agent_post_id'] . '.txt');
+            $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode((string) $row['agent_post_id']));
+
+            assertSame('generated', $response['generation_status']);
+            assertStringContains("'Хорошо'", (string) $row['response_text']);
+            assertStringContains("'Хорошо'", $replyRecord);
+            assertStringContains('Хорошо', $postPage);
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            putenv('FORUM_UNICODE_AUTHORED_TEXT');
+        }
+    }
+
     public function testGenerateAgentReplyPersistsThreadCommentContext(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

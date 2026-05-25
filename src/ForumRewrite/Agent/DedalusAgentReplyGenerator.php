@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Agent;
 
 use ForumRewrite\Analysis\DedalusPostAnalyzer;
+use ForumRewrite\Support\UnicodeTextPolicy;
 use RuntimeException;
 
 final class DedalusAgentReplyGenerator implements AgentReplyGenerator
@@ -74,7 +75,7 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
         return DedalusPostAnalyzer::decodeCompletionPayload($response);
     }
 
-    public static function normalizeGeneratedReplyText(string $text): string
+    public static function normalizeGeneratedReplyText(string $text, bool $allowUnicodeAuthoredText = false): string
     {
         $normalized = str_replace(["\r\n", "\r"], "\n", trim($text));
         $normalized = strtr($normalized, [
@@ -87,6 +88,11 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
             "\u{2026}" => '...',
             "\u{00A0}" => ' ',
         ]);
+
+        if ($allowUnicodeAuthoredText) {
+            return trim((new UnicodeTextPolicy())->normalizeBody($normalized, 'response_text'));
+        }
+
         $normalized = preg_replace('/[^\x0A\x20-\x7E]/u', '', $normalized);
 
         return trim($normalized ?? '');

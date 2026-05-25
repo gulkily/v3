@@ -2512,7 +2512,10 @@ final class Application
     {
         $engagement = is_array($analysis['engagement'] ?? null) ? $analysis['engagement'] : [];
         $respondability = is_array($analysis['respondability'] ?? null) ? $analysis['respondability'] : [];
-        $text = DedalusAgentReplyGenerator::normalizeGeneratedReplyText((string) ($engagement['suggested_response'] ?? ''));
+        $text = DedalusAgentReplyGenerator::normalizeGeneratedReplyText(
+            (string) ($engagement['suggested_response'] ?? ''),
+            SiteConfig::unicodeAuthoredTextEnabled(),
+        );
         if ($text === '') {
             throw new RuntimeException('Completed analysis did not include a suggested_response.');
         }
