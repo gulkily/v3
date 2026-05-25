@@ -8,6 +8,8 @@ use ForumRewrite\Analysis\DedalusPostAnalyzer;
 use ForumRewrite\Analysis\PostAnalyzer;
 use ForumRewrite\Analysis\PostAnalysisService;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
+use ForumRewrite\Analysis\SqliteUnicodeRiskStore;
+use ForumRewrite\Analysis\UnicodeRiskInspector;
 
 final class DedalusPostAnalyzerTest
 {
@@ -256,6 +258,46 @@ final class DedalusPostAnalyzerTest
 
         assertSame(['approved'], array_column($analysis['related_content'], 'post_id'));
         assertSame(true, $analysis['related_content_assessment']['related_results_appropriate']);
+    }
+
+    public function testPostAnalysisServicePersistsUnicodeRiskBeforeProviderAnalysis(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $store = new SqlitePostAnalysisStore($pdo);
+        $unicodeStore = new SqliteUnicodeRiskStore($pdo);
+        $service = new PostAnalysisService(
+            $store,
+            new class implements PostAnalyzer {
+                public function analyze(array $context): array
+                {
+                    return [
+                        'provider' => 'test',
+                        'provider_model' => 'test-model',
+                        'post_summary' => 'Summary.',
+                        'moderation' => [],
+                        'engagement' => [],
+                        'quality' => [],
+                        'respondability' => [],
+                        'related_content_assessment' => [],
+                        'raw_response' => [],
+                    ];
+                }
+            },
+            new UnicodeRiskInspector(),
+            $unicodeStore,
+        );
+
+        $analysis = $service->analyze([
+            'post_id' => 'post-1',
+            'content_hash' => 'hash-1',
+            'subject' => 'Look at раypal.com',
+            'body' => 'Body',
+        ]);
+        $storedRisk = $unicodeStore->find('post-1', 'hash-1');
+
+        assertSame('complete', $analysis['status']);
+        assertSame(true, in_array('mixed_script', $analysis['unicode_risk']['deterministic_facts']['fields']['subject']['risk_labels'], true));
+        assertSame(true, in_array('confusable_identifier_like_text', $storedRisk['deterministic_facts']['fields']['subject']['risk_labels'], true));
     }
 
     public function testPostAnalysisServiceSuppressesUnsolicitedSameTopicRelatedContent(): void

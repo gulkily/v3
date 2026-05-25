@@ -14,6 +14,8 @@ final class PostAnalysisService
     public function __construct(
         private readonly PostAnalysisStore $store,
         private readonly ?PostAnalyzer $analyzer,
+        private readonly ?UnicodeRiskInspector $unicodeRiskInspector = null,
+        private readonly ?UnicodeRiskStore $unicodeRiskStore = null,
     ) {
     }
 
@@ -29,9 +31,14 @@ final class PostAnalysisService
             throw new RuntimeException('Post analysis requires post_id and content_hash.');
         }
 
+        $unicodeRisk = $this->unicodeRisk($context, $postId, $contentHash);
+
         $existing = $this->store->find($postId, $contentHash);
         if ($existing !== null && $existing['status'] === 'complete') {
             $existing['cached'] = true;
+            if ($unicodeRisk !== null) {
+                $existing['unicode_risk'] = $unicodeRisk;
+            }
             return $existing;
         }
 
@@ -39,6 +46,9 @@ final class PostAnalysisService
             $retryAfter = strtotime((string) ($existing['retry_after'] ?? ''));
             if ($retryAfter !== false && $retryAfter > time()) {
                 $existing['cached'] = true;
+                if ($unicodeRisk !== null) {
+                    $existing['unicode_risk'] = $unicodeRisk;
+                }
                 return $existing;
             }
         }
@@ -50,6 +60,7 @@ final class PostAnalysisService
                 'status' => 'config_missing',
                 'cached' => false,
                 'message' => 'Dedalus API key is not configured.',
+                'unicode_risk' => $unicodeRisk,
             ];
         }
 
@@ -57,14 +68,46 @@ final class PostAnalysisService
             $analysis = $this->analyzer->analyze($context);
             $analysis['related_content_assessment'] = $this->relatedContentAssessment($analysis);
             $analysis['related_content'] = $this->approvedRelatedContent($context, $analysis['related_content_assessment']);
+            if ($unicodeRisk !== null) {
+                $analysis['unicode_risk'] = $unicodeRisk;
+            }
             $stored = $this->store->saveComplete($postId, $contentHash, $analysis);
+            if ($unicodeRisk !== null) {
+                $stored['unicode_risk'] = $unicodeRisk;
+            }
             $stored['cached'] = false;
             return $stored;
         } catch (\Throwable $throwable) {
             $stored = $this->store->saveFailed($postId, $contentHash, 'provider_error', $throwable->getMessage());
+            if ($unicodeRisk !== null) {
+                $stored['unicode_risk'] = $unicodeRisk;
+            }
             $stored['cached'] = false;
             return $stored;
         }
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>|null
+     */
+    private function unicodeRisk(array $context, string $postId, string $contentHash): ?array
+    {
+        if ($this->unicodeRiskInspector === null || $this->unicodeRiskStore === null) {
+            return null;
+        }
+
+        $existing = $this->unicodeRiskStore->find($postId, $contentHash);
+        if ($existing !== null && (int) ($existing['schema_version'] ?? 0) === 1) {
+            return $existing;
+        }
+
+        $facts = $this->unicodeRiskInspector->inspectPost(
+            (string) ($context['subject'] ?? ''),
+            (string) ($context['body'] ?? '')
+        );
+
+        return $this->unicodeRiskStore->saveDeterministic($postId, $contentHash, 1, $facts);
     }
 
     /**

@@ -8,7 +8,9 @@ use ForumRewrite\Analysis\DedalusPostAnalyzer;
 use ForumRewrite\Analysis\PostAnalysisService;
 use ForumRewrite\Analysis\RelatedContentSearchService;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
+use ForumRewrite\Analysis\SqliteUnicodeRiskStore;
 use ForumRewrite\Analysis\StubPostAnalyzer;
+use ForumRewrite\Analysis\UnicodeRiskInspector;
 use ForumRewrite\Agent\DedalusAgentReplyGenerator;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Agent\AgentIdentityService;
@@ -2733,7 +2735,9 @@ final class Application
 
         return new PostAnalysisService(
             new SqlitePostAnalysisStore($this->pdo()),
-            $analyzer
+            $analyzer,
+            new UnicodeRiskInspector(),
+            new SqliteUnicodeRiskStore($this->pdo())
         );
     }
 
@@ -3125,6 +3129,7 @@ final class Application
         $response['respondability'] = $analysis['respondability'] ?? null;
         $response['related_content'] = $analysis['related_content'] ?? [];
         $response['related_content_assessment'] = $analysis['related_content_assessment'] ?? [];
+        $response['unicode_risk'] = $analysis['unicode_risk'] ?? null;
 
         return $response;
     }

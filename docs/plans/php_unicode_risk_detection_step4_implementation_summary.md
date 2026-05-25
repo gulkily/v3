@@ -20,3 +20,14 @@
   - `php tests/run.php` passed.
 - Notes:
   - The store is intentionally separate from canonical records and from the existing `post_analyses` row shape.
+
+## Stage 3 - Deterministic Detection In Post Analysis
+- Changes:
+  - Wired `UnicodeRiskInspector` and `SqliteUnicodeRiskStore` into `PostAnalysisService`.
+  - Ensured deterministic Unicode facts are computed and stored before provider analysis or config-missing return.
+  - Returned `unicode_risk` only inside approved-viewer analysis details.
+  - Kept anonymous `/api/analyze_post` responses compact and unchanged except existing public status fields.
+- Verification:
+  - `php tests/run.php` passed.
+- Notes:
+  - Unicode risk findings do not affect agent reply generation gates.

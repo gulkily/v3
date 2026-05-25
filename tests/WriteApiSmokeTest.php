@@ -93,6 +93,7 @@ final class WriteApiSmokeTest
             $_COOKIE = [];
             $pdo = new PDO('sqlite:' . $databasePath);
             $count = (int) $pdo->query('SELECT COUNT(*) FROM post_analyses')->fetchColumn();
+            $unicodeRiskCount = (int) $pdo->query('SELECT COUNT(*) FROM post_unicode_risks')->fetchColumn();
             $generatedCount = (int) $pdo->query('SELECT COUNT(*) FROM post_generated_responses')->fetchColumn();
             $generatedRow = $pdo->query('SELECT provider, provider_model, raw_response_json FROM post_generated_responses')->fetch();
             $rawResponse = json_decode((string) $generatedRow['raw_response_json'], true);
@@ -104,6 +105,7 @@ final class WriteApiSmokeTest
             assertSame(false, $first['cached']);
             assertSame(false, $first['viewer_can_see_analysis']);
             assertSame(false, isset($first['moderation']));
+            assertSame(false, isset($first['unicode_risk']));
             assertSame(true, $first['agent_reply_generation_allowed']);
             assertSame('generated', $first['agent_reply_generation_status']);
             assertSame(true, $first['agent_reply_posted']);
@@ -124,10 +126,12 @@ final class WriteApiSmokeTest
             assertSame('stub', $second['provider']);
             assertSame('The post says: Thoughtful body?', $second['post_summary']);
             assertSame('none', $second['moderation']['severity']);
+            assertSame([], $second['unicode_risk']['deterministic_facts']['fields']['subject']['risk_labels']);
             assertSame(true, $second['respondability']['asks_question']);
             assertSame('opinion', $second['respondability']['question_type']);
             assertSame(true, $second['respondability']['should_generate_response']);
             assertSame(1, $count);
+            assertSame(1, $unicodeRiskCount);
             assertSame(1, $generatedCount);
             assertSame('stub', $generatedRow['provider']);
             assertSame('stub/post-analysis', $generatedRow['provider_model']);
