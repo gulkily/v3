@@ -1248,7 +1248,7 @@ final class Application
         $hiddenWhere = $includeHidden ? '' : ' AND posts.is_hidden = 0';
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_label,
-                    posts.created_at, posts.board_tags_json, posts.is_hidden, posts.hidden_reason,
+                    posts.created_at, posts.board_tags_json, posts.post_score_total, posts.is_hidden, posts.hidden_reason,
                     posts.author_profile_slug, profiles.username_token AS author_username_token,
                     COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM posts

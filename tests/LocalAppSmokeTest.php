@@ -193,6 +193,7 @@ final class LocalAppSmokeTest
         assertStringNotContains('href="/tags/board/', $board);
         assertStringNotContains('href="/tags/label/', $board);
         assertStringNotContains('Score: 0', $board);
+        assertStringContains('Score: 0', $post);
         assertStringNotContains('Labels: bug, needs-review', $board);
         assertStringContains('Hello world', $thread);
         assertStringContains('Labels: bug, needs-review', $thread);
