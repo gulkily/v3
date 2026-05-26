@@ -645,8 +645,8 @@ final class LocalAppSmokeTest
             putenv('FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS');
         }
 
-        assertStringContains('Meme Oven Warming Up', $response);
-        assertStringContains('A fresh batch of zenmemes is still cooling. Try again in a moment.', $response);
+        assertStringContains('Meme Oven Is Busy', $response);
+        assertStringContains('The next batch of zenmemes is still baking. Try again in a moment.', $response);
         assertStringNotContains('Service Busy', $response);
         assertStringNotContains('Timed out waiting for execution lock', $response);
         assertStringNotContains('forum-rewrite.lock', $response);

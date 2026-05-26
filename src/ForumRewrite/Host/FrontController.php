@@ -254,12 +254,12 @@ final class FrontController
     private function renderBusyError(): string
     {
         return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
-            . '<title>Meme Oven Warming Up</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
+            . '<title>Meme Oven Is Busy</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
             . '<div class="shell"><header class="site-header"><p class="eyebrow">'
             . htmlspecialchars(SiteConfig::SITE_NAME, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
             . '</p></header>'
-            . '<main class="main"><section class="stack"><h1>Meme Oven Warming Up</h1>'
-            . '<article class="card"><p>A fresh batch of zenmemes is still cooling. Try again in a moment.</p>'
+            . '<main class="main"><section class="stack"><h1>Meme Oven Is Busy</h1>'
+            . '<article class="card"><p>The next batch of zenmemes is still baking. Try again in a moment.</p>'
             . '</article></section></main></div></body></html>';
     }
 
