@@ -645,8 +645,14 @@ final class LocalAppSmokeTest
             putenv('FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS');
         }
 
-        assertStringContains('Service Busy', $response);
-        assertStringContains('Timed out waiting for execution lock', $response);
+        assertStringContains('Meme Oven Warming Up', $response);
+        assertStringContains('A fresh batch of zenmemes is still cooling. Try again in a moment.', $response);
+        assertStringNotContains('Service Busy', $response);
+        assertStringNotContains('Timed out waiting for execution lock', $response);
+        assertStringNotContains('forum-rewrite.lock', $response);
+        assertStringNotContains('/home/', $response);
+        assertStringNotContains('read-model', $response);
+        assertStringNotContains('rebuild', $response);
         assertStringNotContains('Configuration Error', $response);
     }
 
