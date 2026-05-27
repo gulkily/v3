@@ -2,7 +2,14 @@
 
 ## Status
 
-Implementation in progress on `feature/codebase-state`. This captures the lightweight feature sketch from the chat discussion and is not yet an approved FDP Step 2 or Step 3 artifact.
+Implementation completed on `feature/codebase-state`. This captures the lightweight feature sketch from the chat discussion and is not yet an approved FDP Step 2 or Step 3 artifact.
+
+Slice commits:
+
+- Slice 1: `5afc319` Add codebase state collector.
+- Slice 2: `21f2b8e` Wire codebase state page.
+- Slice 3: `e137f1f` Polish codebase state presentation.
+- Slice 4: `381b1ff` Cover codebase state page.
 
 ## Goal
 
