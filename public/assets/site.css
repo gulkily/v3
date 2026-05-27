@@ -716,6 +716,67 @@ pre {
   font-size: 0.95rem;
 }
 
+.codebase-status-card h1 {
+  margin-bottom: 0.45rem;
+}
+
+.codebase-status {
+  display: inline-block;
+  margin: 0 0 0.6rem;
+  padding: 0.22rem 0.5rem;
+  border: 1px solid var(--line);
+  background: var(--input-bg);
+  color: var(--status-ok);
+  font-family: var(--ui-font);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.codebase-status[data-status="stale"],
+.codebase-status[data-status="locked"] {
+  color: var(--status-warning);
+}
+
+.codebase-status[data-status="configuration issue"] {
+  color: var(--status-error);
+}
+
+.codebase-facts {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.codebase-facts th,
+.codebase-facts td {
+  padding: 0.38rem 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.codebase-facts th {
+  width: 38%;
+  padding-right: 0.8rem;
+  color: var(--ink-soft);
+  font-family: var(--ui-font);
+  font-weight: 700;
+}
+
+.codebase-facts tr + tr th,
+.codebase-facts tr + tr td {
+  border-top: 1px solid color-mix(in srgb, var(--line) 68%, transparent 32%);
+}
+
+.codebase-facts code {
+  font-family: var(--code-font);
+  overflow-wrap: anywhere;
+}
+
+.codebase-downloads {
+  margin-bottom: 0;
+}
+
 .body {
   white-space: normal;
 }

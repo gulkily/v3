@@ -59,7 +59,7 @@ Add a user/operator-facing surface that shows the current codebase and derived-s
 
 ### Slice 3 - Presentation
 
-- Status: Pending.
+- Status: Completed.
 - Use existing `stack` and `card` conventions.
 - Put a terse status summary first.
 - Use compact fact rows or tables for operator details.

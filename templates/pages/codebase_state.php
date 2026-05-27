@@ -1,38 +1,81 @@
+<?php
+$repositoryRows = [
+    ['label' => 'Repository', 'value' => $state['repository']['root_label']],
+    ['label' => 'Repository head', 'value' => $state['repository']['head']],
+    ['label' => 'Short head', 'value' => $state['repository']['short_head']],
+    ['label' => 'Git checkout', 'value' => $state['repository']['git_exists']],
+    ['label' => 'Records directory', 'value' => $state['repository']['records_exists']],
+];
+if ($state['repository']['latest_commit'] !== null) {
+    $repositoryRows[] = [
+        'label' => 'Latest commit',
+        'value' => $state['repository']['latest_commit']['short'] . ' ' . $state['repository']['latest_commit']['date'] . ' ' . $state['repository']['latest_commit']['subject'],
+    ];
+}
+
+$readModelRows = [
+    ['label' => 'Database', 'value' => $state['read_model']['database_label']],
+    ['label' => 'Database exists', 'value' => $state['read_model']['database_exists']],
+    ['label' => 'Metadata', 'value' => $state['read_model']['metadata_status']],
+    ['label' => 'Schema version', 'value' => $state['read_model']['schema_version'] . ' / expected ' . $state['read_model']['expected_schema_version']],
+    ['label' => 'Repository head', 'value' => $state['read_model']['repository_head']],
+    ['label' => 'Current repository head', 'value' => $state['read_model']['current_repository_head']],
+    ['label' => 'Rebuilt at', 'value' => $state['read_model']['rebuilt_at']],
+    ['label' => 'Rebuild reason', 'value' => $state['read_model']['rebuild_reason']],
+    ['label' => 'Lock status', 'value' => $state['read_model']['lock_status']],
+    ['label' => 'Stale marker', 'value' => $state['read_model']['stale_marker']],
+    ['label' => 'Stale reason', 'value' => $state['read_model']['stale_reason']],
+    ['label' => 'Stale commit', 'value' => $state['read_model']['stale_commit_sha']],
+];
+?>
 <section class="stack">
-  <article class="card">
+  <article class="card codebase-status-card" data-role="codebase-state">
     <h1>Codebase</h1>
-    <p class="meta">Status: <?= $e($state['overall_status']) ?></p>
-    <p class="meta">App version: <?= $e($state['app_version']) ?></p>
+    <p class="codebase-status" data-status="<?= $e($state['overall_status']) ?>"><?= $e($state['overall_status']) ?></p>
+    <p class="meta">App version <code><?= $e($state['app_version']) ?></code></p>
   </article>
-  <article class="card">
+  <article class="card" data-role="codebase-state">
     <h2>Repository</h2>
-    <p><strong>Repository:</strong> <?= $e($state['repository']['root_label']) ?></p>
-    <p><strong>Repository head:</strong> <?= $e($state['repository']['head']) ?></p>
-    <p><strong>Short head:</strong> <?= $e($state['repository']['short_head']) ?></p>
-    <p><strong>Git checkout:</strong> <?= $e($state['repository']['git_exists']) ?></p>
-    <p><strong>Records directory:</strong> <?= $e($state['repository']['records_exists']) ?></p>
-<?php if ($state['repository']['latest_commit'] !== null): ?>
-    <p><strong>Latest commit:</strong> <?= $e($state['repository']['latest_commit']['short']) ?> <?= $e($state['repository']['latest_commit']['date']) ?> <?= $e($state['repository']['latest_commit']['subject']) ?></p>
-<?php endif; ?>
+    <table class="codebase-facts">
+      <tbody>
+<?php foreach ($repositoryRows as $row): ?>
+        <tr>
+          <th scope="row"><?= $e($row['label']) ?></th>
+          <td><code><?= $e($row['value']) ?></code></td>
+        </tr>
+<?php endforeach; ?>
+      </tbody>
+    </table>
   </article>
-  <article class="card">
+  <article class="card" data-role="codebase-state">
     <h2>Read model</h2>
-    <p><strong>Database:</strong> <?= $e($state['read_model']['database_label']) ?></p>
-    <p><strong>Database exists:</strong> <?= $e($state['read_model']['database_exists']) ?></p>
-    <p><strong>Metadata:</strong> <?= $e($state['read_model']['metadata_status']) ?></p>
-    <p><strong>Schema version:</strong> <?= $e($state['read_model']['schema_version']) ?> / expected <?= $e($state['read_model']['expected_schema_version']) ?></p>
-    <p><strong>Repository head:</strong> <?= $e($state['read_model']['repository_head']) ?></p>
-    <p><strong>Current repository head:</strong> <?= $e($state['read_model']['current_repository_head']) ?></p>
-    <p><strong>Rebuilt at:</strong> <?= $e($state['read_model']['rebuilt_at']) ?></p>
-    <p><strong>Rebuild reason:</strong> <?= $e($state['read_model']['rebuild_reason']) ?></p>
-    <p><strong>Lock status:</strong> <?= $e($state['read_model']['lock_status']) ?></p>
-    <p><strong>Stale marker:</strong> <?= $e($state['read_model']['stale_marker']) ?></p>
-    <p><strong>Stale reason:</strong> <?= $e($state['read_model']['stale_reason']) ?></p>
-    <p><strong>Stale commit:</strong> <?= $e($state['read_model']['stale_commit_sha']) ?></p>
+    <table class="codebase-facts">
+      <tbody>
+<?php foreach ($readModelRows as $row): ?>
+        <tr>
+          <th scope="row"><?= $e($row['label']) ?></th>
+          <td><code><?= $e($row['value']) ?></code></td>
+        </tr>
+<?php endforeach; ?>
+      </tbody>
+    </table>
   </article>
-  <article class="card">
+  <article class="card" data-role="codebase-state">
+    <h2>Read-model rows</h2>
+    <table class="codebase-facts">
+      <tbody>
+<?php foreach ($state['read_model']['row_counts'] as $label => $value): ?>
+        <tr>
+          <th scope="row"><?= $e($label) ?></th>
+          <td><code><?= $e($value) ?></code></td>
+        </tr>
+<?php endforeach; ?>
+      </tbody>
+    </table>
+  </article>
+  <article class="card" data-role="codebase-state">
     <h2>Downloads</h2>
-    <ul>
+    <ul class="codebase-downloads">
 <?php foreach ($state['downloads'] as $download): ?>
       <li><a href="<?= $e($download['href']) ?>"><?= $e($download['label']) ?></a></li>
 <?php endforeach; ?>
