@@ -51,7 +51,7 @@ Add a user/operator-facing surface that shows the current codebase and derived-s
 
 ### Slice 2 - Route And Template
 
-- Status: Pending.
+- Status: Completed.
 - Add `/tools/codebase/` handling in `Application::handle()`.
 - Add `renderCodebaseState()`.
 - Create `templates/pages/codebase_state.php`.

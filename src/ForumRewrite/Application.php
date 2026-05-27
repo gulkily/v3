@@ -216,6 +216,11 @@ final class Application
             return;
         }
 
+        if ($path === '/tools/codebase/' || $path === '/tools/codebase') {
+            $this->sendHtml($this->renderCodebaseState(), 200);
+            return;
+        }
+
         if ($path === '/compose/thread') {
             $this->sendHtml(
                 $this->renderComposeThread(
@@ -1018,6 +1023,11 @@ final class Application
                         'description' => 'Portable downloads of the repository and current read-model database.',
                     ],
                     [
+                        'label' => 'Codebase',
+                        'href' => '/tools/codebase/',
+                        'description' => 'Current application version, repository head, and read-model health.',
+                    ],
+                    [
                         'label' => 'Account',
                         'href' => '/account/key/',
                         'description' => 'Browser key setup, identity linking, and technical account details.',
@@ -1025,6 +1035,18 @@ final class Application
                 ],
             ],
             'Tools',
+            'tools',
+        );
+    }
+
+    private function renderCodebaseState(): string
+    {
+        return $this->renderPageTemplate(
+            'codebase_state.php',
+            [
+                'state' => $this->collectCodebaseState(),
+            ],
+            'Codebase',
             'tools',
         );
     }
