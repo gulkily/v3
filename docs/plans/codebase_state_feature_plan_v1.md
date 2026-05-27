@@ -67,7 +67,7 @@ Add a user/operator-facing surface that shows the current codebase and derived-s
 
 ### Slice 4 - Verification
 
-- Status: Pending.
+- Status: Completed.
 - Extend `LocalAppSmokeTest::testApplicationRendersCoreRoutes()` to render `/tools/codebase/`.
 - Assert stable page strings such as:
   - `Codebase`
@@ -76,6 +76,13 @@ Add a user/operator-facing surface that shows the current codebase and derived-s
   - `Schema version`
   - `Lock status`
 - Add focused stale/lock assertions by adapting the existing read-model status tests.
+
+## Implementation Verification
+
+- `php -l src/ForumRewrite/Application.php` passed.
+- `php -l templates/pages/codebase_state.php` passed.
+- Targeted `LocalAppSmokeTest` route/lock/stale checks passed.
+- `php tests/run.php` was run; the codebase-state coverage passed, but the suite still failed at the pre-existing `WriteApiSmokeTest::testApprovedFlagTagSubtractsFromScore` assertion expecting `Score: -100` on `/posts/reply-001`.
 
 ## Open Question
 

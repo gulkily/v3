@@ -157,6 +157,7 @@ final class LocalAppSmokeTest
         $backup = $this->render($application, '/backup/');
         $toolsBackup = $this->render($application, '/tools/backup/');
         $tools = $this->render($application, '/tools/');
+        $codebase = $this->render($application, '/tools/codebase/');
         $profile = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         $username = $this->render($application, '/user/guest');
         $_COOKIE = ['identity_hint' => 'guest'];
@@ -261,7 +262,16 @@ final class LocalAppSmokeTest
         assertStringContains('Recent forum activity across content, approvals, and identity events.', $tools);
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
+        assertStringContains('/tools/codebase/', $tools);
+        assertStringContains('Current application version, repository head, and read-model health.', $tools);
         assertStringContains('/account/key/', $tools);
+        assertStringContains('Codebase', $codebase);
+        assertStringContains('Repository head', $codebase);
+        assertStringContains('Read model', $codebase);
+        assertStringContains('Schema version', $codebase);
+        assertStringContains('Lock status', $codebase);
+        assertStringContains('Read-model rows', $codebase);
+        assertStringContains('/downloads/repository.tar.gz', $codebase);
         assertStringContains('About zenmemes', $about);
         assertStringContains('extraordinary people', $about);
         assertStringContains('Harvard St Commons', $about);
@@ -875,9 +885,13 @@ final class LocalAppSmokeTest
         $this->render($application, '/');
         $lock = new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock', 0);
         $status = $lock->withExclusiveLock(fn () => $this->render($application, '/api/read_model_status'));
+        $codebase = $lock->withExclusiveLock(fn () => $this->render($application, '/tools/codebase/'));
 
         assertStringContains('status=ready', $status);
         assertStringContains('lock_status=locked', $status);
+        assertStringContains('Codebase', $codebase);
+        assertStringContains('locked', $codebase);
+        assertStringContains('Lock status', $codebase);
     }
 
     public function testApplicationClearsStaleMarkerOnNextSuccessfulRead(): void
@@ -896,10 +910,14 @@ final class LocalAppSmokeTest
         );
 
         $status = $this->render($application, '/api/read_model_status');
+        $codebase = $this->render($application, '/tools/codebase/');
 
         assertStringContains('status=ready', $status);
         assertStringContains('stale_marker=absent', $status);
         assertStringContains('rebuild_reason=stale_marker', $status);
+        assertStringContains('Codebase', $codebase);
+        assertStringContains('Stale marker', $codebase);
+        assertStringContains('absent', $codebase);
     }
 
     public function testExecutionLockTimesOutWhenAlreadyHeld(): void
