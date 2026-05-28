@@ -341,6 +341,46 @@ final class LocalAppSmokeTest
         assertStringContains('GET /api/list_index', $llms);
     }
 
+    public function testNegativeRootScoreIsFilteredOnlyFromLikedBoardListings(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-negative-liked-fixture-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        mkdir($repositoryRoot . '/records/post-reactions');
+        file_put_contents(
+            $repositoryRoot . '/records/post-reactions/post-reaction-20260415153100-ab12cd35.txt',
+            "Record-ID: post-reaction-20260415153100-ab12cd35\nCreated-At: 2026-04-15T15:31:00Z\nPost-ID: root-001\nOperation: add\nTags: flag\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n"
+        );
+        file_put_contents(
+            $repositoryRoot . '/records/thread-labels/thread-label-20260415153200-ab12cd36.txt',
+            "Record-ID: thread-label-20260415153200-ab12cd36\nCreated-At: 2026-04-15T15:32:00Z\nThread-ID: root-001\nOperation: add\nLabels: like\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n"
+        );
+
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-negative-liked-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        @unlink($databasePath);
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+        $rootDefault = $this->render($application, '/');
+        $likedNewest = $this->render($application, '/threads/?view=liked&sort=newest');
+        $likedOldest = $this->render($application, '/threads/?view=liked&sort=oldest');
+        $likedTop = $this->render($application, '/threads/?view=liked&sort=top');
+        $allThreads = $this->render($application, '/threads/?view=all');
+        $thread = $this->render($application, '/threads/root-001');
+        $post = $this->render($application, '/posts/root-001');
+
+        assertStringNotContains('href="/threads/root-001"', $rootDefault);
+        assertStringNotContains('href="/threads/root-001"', $likedNewest);
+        assertStringNotContains('href="/threads/root-001"', $likedOldest);
+        assertStringNotContains('href="/threads/root-001"', $likedTop);
+        assertStringContains('href="/threads/root-001"', $allThreads);
+        assertStringContains('id="post-root-001"', $thread);
+        assertStringContains('id="post-reply-001"', $thread);
+        assertStringContains('Score: -100', $post);
+
+        $this->deleteTree($repositoryRoot);
+        @unlink($databasePath);
+    }
+
     public function testApplicationRendersTextApisAndRss(): void
     {
         @unlink($this->databasePath);

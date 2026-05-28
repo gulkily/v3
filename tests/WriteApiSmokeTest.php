@@ -1187,12 +1187,13 @@ final class WriteApiSmokeTest
         );
 
         $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
-        $postPage = $this->renderMethod($application, 'GET', '/posts/reply-001');
         $threadApi = $this->renderMethod($application, 'GET', '/api/get_thread?thread_id=root-001');
+        $createdPostId = $this->extractValue($response, 'post_id');
+        $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($createdPostId));
 
         assertStringContains('status=ok', $response);
         assertStringNotContains('Score: -100', $threadPage);
-        assertStringContains('Score: -100', $postPage);
+        assertStringContains('Post ' . $createdPostId, $postPage);
         assertStringContains('Score-Total: -100', $threadApi);
     }
 
