@@ -1,7 +1,11 @@
 <section class="stack">
   <article class="card">
-    <h1>Tools</h1>
-    <p>Utility pages for capture, backup, and local account setup.</p>
+    <div class="nav board-controls-nav">
+<?php foreach ($toolNavOptions as $option): ?>
+<?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
+      <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
+<?php endforeach; ?>
+    </div>
   </article>
 <?php foreach ($toolPages as $toolPage): ?>
   <article class="card">

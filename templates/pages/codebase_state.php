@@ -29,6 +29,14 @@ $readModelRows = [
 ];
 ?>
 <section class="stack">
+  <article class="card">
+    <div class="nav board-controls-nav">
+<?php foreach ($toolNavOptions as $option): ?>
+<?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
+      <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
+<?php endforeach; ?>
+    </div>
+  </article>
   <article class="card codebase-status-card" data-role="codebase-state">
     <h1>Codebase</h1>
     <p class="codebase-status" data-status="<?= $e($state['overall_status']) ?>"><?= $e($state['overall_status']) ?></p>

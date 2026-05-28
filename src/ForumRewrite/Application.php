@@ -880,6 +880,7 @@ final class Application
             [
                 'siteName' => SiteConfig::SITE_NAME,
                 'admins' => $this->fetchSeedApprovedUsers(),
+                'toolNavOptions' => $this->toolNavOptions('backup'),
                 'downloads' => [
                     [
                         'href' => '/downloads/repository.tar.gz',
@@ -1033,6 +1034,7 @@ final class Application
                         'description' => 'Browser key setup, identity linking, and technical account details.',
                     ],
                 ],
+                'toolNavOptions' => $this->toolNavOptions('overview'),
             ],
             'Tools',
             'tools',
@@ -1045,6 +1047,7 @@ final class Application
             'codebase_state.php',
             [
                 'state' => $this->collectCodebaseState(),
+                'toolNavOptions' => $this->toolNavOptions('codebase'),
             ],
             'Codebase',
             'tools',
@@ -1088,11 +1091,42 @@ final class Application
                         'bookmarklet_kind' => 'selection',
                     ],
                 ],
+                'toolNavOptions' => $this->toolNavOptions('bookmarklets'),
             ],
             'Bookmarklets',
             'tools',
             ['/assets/tools_bookmarklets.js'],
         );
+    }
+
+    private function toolNavOptions(string $activeKey): array
+    {
+        return [
+            [
+                'key' => 'overview',
+                'label' => 'Tools',
+                'href' => '/tools/',
+                'is_active' => $activeKey === 'overview',
+            ],
+            [
+                'key' => 'bookmarklets',
+                'label' => 'Bookmarklets',
+                'href' => '/tools/bookmarklets/',
+                'is_active' => $activeKey === 'bookmarklets',
+            ],
+            [
+                'key' => 'backup',
+                'label' => 'Backup',
+                'href' => '/tools/backup/',
+                'is_active' => $activeKey === 'backup',
+            ],
+            [
+                'key' => 'codebase',
+                'label' => 'Codebase',
+                'href' => '/tools/codebase/',
+                'is_active' => $activeKey === 'codebase',
+            ],
+        ];
     }
 
     private function renderComposeThreadPage(

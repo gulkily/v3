@@ -1,8 +1,15 @@
 <section class="stack">
   <article class="card">
+    <div class="nav board-controls-nav">
+<?php foreach ($toolNavOptions as $option): ?>
+<?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
+      <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
+<?php endforeach; ?>
+    </div>
+  </article>
+  <article class="card">
     <h1>Bookmarklets</h1>
     <p>Bookmarklets let you jump into Compose Thread from another page with the current page URL or selected text already filled in.</p>
-    <p class="meta"><a href="/tools/">Back to Tools</a></p>
   </article>
   <article class="card">
     <h2>How to use these</h2>

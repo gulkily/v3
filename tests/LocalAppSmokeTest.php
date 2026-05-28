@@ -246,6 +246,7 @@ final class LocalAppSmokeTest
         assertStringContains('zenmemes', $instance);
         assertStringContains('Backup', $backup);
         assertStringContains('Backup', $toolsBackup);
+        assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
         assertStringContains('/user/guest', $instance);
         assertStringContains('/downloads/repository.tar.gz', $instance);
         assertStringContains('/downloads/repository.zip', $instance);
@@ -260,12 +261,14 @@ final class LocalAppSmokeTest
         assertStringNotContains('Installed:', $instance);
         assertStringContains('/activity/', $tools);
         assertStringContains('Recent forum activity across content, approvals, and identity events.', $tools);
+        assertStringContains('class="nav-link is-active" href="/tools/"', $tools);
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/tools/codebase/', $tools);
         assertStringContains('Current application version, repository head, and read-model health.', $tools);
         assertStringContains('/account/key/', $tools);
         assertStringContains('Codebase', $codebase);
+        assertStringContains('class="nav-link is-active" href="/tools/codebase/"', $codebase);
         assertStringContains('Repository head', $codebase);
         assertStringContains('Read model', $codebase);
         assertStringContains('Schema version', $codebase);
@@ -289,7 +292,6 @@ final class LocalAppSmokeTest
         assertStringNotContains('Username route:', $users);
         assertStringNotContains('Profile:', $users);
         assertStringNotContains('/users/pending/', $users);
-        assertStringContains('All Tags', $tags);
         assertStringContains('href="/tags/"', $tags);
         assertStringContains('class="nav-link is-active" href="/tags/"', $tags);
         assertStringNotContains('class="nav-link is-active" href="/threads/?view=all&amp;sort=newest"', $tags);
@@ -317,6 +319,7 @@ final class LocalAppSmokeTest
         assertStringContains('browser_signing.js', $composeThread);
         assertStringContains('Ready.', $composeThread);
         assertStringContains('Bookmarklets', $bookmarklets);
+        assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
         assertStringContains('/assets/tools_bookmarklets.js', $bookmarklets);
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
         assertStringContains('Thread ID:', $composeReply);
@@ -444,6 +447,7 @@ final class LocalAppSmokeTest
         $bookmarkletAsset = (string) file_get_contents(__DIR__ . '/../public/assets/tools_bookmarklets.js');
 
         assertStringContains('Tools', $tools);
+        assertStringContains('class="nav-link is-active" href="/tools/"', $tools);
         assertStringContains('Activity', $tools);
         assertStringContains('Bookmarklets', $tools);
         assertStringContains('Backup', $tools);
@@ -451,6 +455,7 @@ final class LocalAppSmokeTest
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/assets/tools_bookmarklets.js', $bookmarklets);
+        assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
         assertStringContains('window.getSelection().toString().trim()', $bookmarkletAsset);
         assertStringContains('value="Saved Title"', $prefilledCompose);
@@ -782,7 +787,7 @@ final class LocalAppSmokeTest
         assertStringContains('route-source: static-html', $usersResponse);
 
         $tagsResponse = $this->renderFrontController($controller, 'GET', '/tags/', []);
-        assertStringContains('All Tags', $tagsResponse);
+        assertStringContains('class="nav-link is-active" href="/tags/"', $tagsResponse);
         assertStringContains('route-source: static-html', $tagsResponse);
     }
 

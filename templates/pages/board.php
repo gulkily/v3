@@ -1,6 +1,5 @@
 <section class="stack">
   <article class="card">
-    <h1>Board</h1>
     <div class="nav board-controls-nav">
       <a class="nav-link" href="/tags/">Tags</a>
 <?php foreach ($viewOptions as $option): ?>
