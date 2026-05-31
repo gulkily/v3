@@ -4,7 +4,7 @@ This fixture tree seeds the smallest self-contained canonical repository slice n
 
 ## Included Families
 
-- `records/posts/`: one thread root and one reply
+- `records/posts/`: one thread root, one reply, and the pinned ZenMemes rules thread
 - `records/identity/`: one identity bootstrap record
 - `records/public-keys/`: the reusable signer key for that identity
 - `records/instance/`: one published instance facts file

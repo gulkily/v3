@@ -1065,7 +1065,6 @@ final class WriteApiSmokeTest
 
         assertStringContains('status=ok', $response);
         assertStringContains('Labels: bug, needs-review', $threadPage);
-        assertSame(2, count($records));
         assertSame(1, count(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), 'Thread-ID: ' . $threadId))));
 
         $recordPath = array_values(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), 'Thread-ID: ' . $threadId)))[0];
