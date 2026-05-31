@@ -745,7 +745,9 @@ final class LocalAppSmokeTest
         assertTrue(is_file($artifactRoot . '/tags/general.html'));
         assertTrue(is_file($artifactRoot . '/tags/bug.html'));
         assertTrue(is_file($artifactRoot . '/threads/root-001.html'));
+        assertTrue(is_file($artifactRoot . '/threads/thread-zenmemes-rules.html'));
         assertTrue(is_file($artifactRoot . '/posts/root-001.html'));
+        assertTrue(is_file($artifactRoot . '/posts/thread-zenmemes-rules.html'));
         assertTrue(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/index.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads.html'));
@@ -762,6 +764,17 @@ final class LocalAppSmokeTest
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/root-001.html'));
         assertStringContains('/assets/inline_reply_form.js', (string) file_get_contents($artifactRoot . '/threads/root-001.html'));
         assertStringContains('inline-reply-composer', (string) file_get_contents($artifactRoot . '/threads/root-001.html'));
+        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/thread-zenmemes-rules.html'));
+
+        $threadsArtifact = (string) file_get_contents($artifactRoot . '/threads.html');
+        assertStringContains('class="pinned-thread-marker">Pinned</span>', $threadsArtifact);
+        assertOrdered($threadsArtifact, 'The Rules of ZenMemes.com', 'Hello world');
+
+        $pdo = new PDO('sqlite:' . $this->databasePath);
+        assertSame(
+            '["pinned"]',
+            $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id = 'thread-zenmemes-rules'")->fetchColumn()
+        );
 
         $controller = new FrontController(
             dirname(__DIR__),

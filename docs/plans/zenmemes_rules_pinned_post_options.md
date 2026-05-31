@@ -159,6 +159,8 @@ Slice 3 verification: `./v3 test` passed. `LocalAppSmokeTest::testApplicationRen
 
 ### Slice 4: Static Artifacts And Rebuild Verification
 
+Status: completed in branch slice 4.
+
 Files likely involved:
 
 - `src/ForumRewrite/Host/StaticArtifactBuilder.php`
@@ -166,10 +168,12 @@ Files likely involved:
 
 Checklist:
 
-- confirm static board artifacts include the pinned ordering and marker
-- confirm the pinned rules thread artifact is generated
-- confirm full read-model rebuild derives `thread_labels_json` with `pinned`
-- confirm incremental refresh still works for ordinary thread-label writes
+- [x] confirm static board artifacts include the pinned ordering and marker
+- [x] confirm the pinned rules thread artifact is generated
+- [x] confirm full read-model rebuild derives `thread_labels_json` with `pinned`
+- [x] confirm incremental refresh still works for ordinary thread-label writes
+
+Slice 4 verification: `./v3 test` passed. `LocalAppSmokeTest::testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout` verifies the generated rules thread artifacts, static board marker/order, and rebuilt `thread_labels_json`; existing incremental label-write smoke tests continue passing.
 
 ## Verification
 
