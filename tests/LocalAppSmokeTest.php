@@ -178,6 +178,9 @@ final class LocalAppSmokeTest
         assertStringContains('Board', $threadsIndexNoSlash);
         assertStringContains('href="/threads/root-001"', $threadsIndex);
         assertStringContains('href="/threads/root-001"', $threadsIndexNoSlash);
+        assertStringContains('href="/threads/thread-zenmemes-rules"', $threadsIndex);
+        assertStringContains('class="pinned-thread-marker">Pinned</span>', $threadsIndex);
+        assertSame(1, substr_count($threadsIndex, 'class="pinned-thread-marker"'));
         assertStringContains('href="/threads/">Board</a>', $board);
         assertStringContains('href="/about/">About</a>', $board);
         assertStringContains('New Post', $board);

@@ -139,6 +139,8 @@ Slice 2 verification: `./v3 test` passed. `WriteApiSmokeTest::testPinnedThreadsS
 
 ### Slice 3: Render Board Marker
 
+Status: completed in branch slice 3.
+
 Files likely involved:
 
 - `templates/pages/board.php`
@@ -147,11 +149,13 @@ Files likely involved:
 
 Checklist:
 
-- detect `pinned` from the hydrated `thread_labels` array
-- render a compact `Pinned` marker on pinned board cards
-- avoid rendering an empty marker for normal threads
-- add smoke coverage for the marker on `/threads/` or `/`
-- add smoke coverage proving the marker does not appear on an unpinned thread card
+- [x] detect `pinned` from the hydrated `thread_labels` array
+- [x] render a compact `Pinned` marker on pinned board cards
+- [x] avoid rendering an empty marker for normal threads
+- [x] add smoke coverage for the marker on `/threads/` or `/`
+- [x] add smoke coverage proving the marker does not appear on an unpinned thread card
+
+Slice 3 verification: `./v3 test` passed. `LocalAppSmokeTest::testApplicationRendersCoreRoutes` verifies the seeded rules thread link and exactly one board marker on `/threads/`.
 
 ### Slice 4: Static Artifacts And Rebuild Verification
 

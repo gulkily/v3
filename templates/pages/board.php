@@ -15,8 +15,9 @@
   </article>
 <?php foreach ($threads as $thread): ?>
 <?php $subject = $thread['subject'] ?: $thread['root_post_id']; ?>
+<?php $isPinned = in_array('pinned', $thread['thread_labels'] ?? [], true); ?>
   <article class="card">
-    <h2><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($subject) ?></a></h2>
+    <h2><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($subject) ?></a><?php if ($isPinned): ?> <span class="pinned-thread-marker">Pinned</span><?php endif; ?></h2>
     <p class="meta"><?= $contentMeta($thread, 'root_post_created_at', '') ?></p>
     <p><?= $br($thread['body_preview']) ?></p>
 <?php if ((int) $thread['reply_count'] > 0): ?>

@@ -716,6 +716,20 @@ pre {
   font-size: 0.95rem;
 }
 
+.pinned-thread-marker {
+  display: inline-block;
+  margin-left: 0.4rem;
+  border: 1px solid var(--line);
+  padding: 0.12rem 0.35rem;
+  vertical-align: middle;
+  color: var(--ink-soft);
+  background: var(--input-bg);
+  font-family: var(--ui-font);
+  font-size: 0.68rem;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
 .codebase-status-card h1 {
   margin-bottom: 0.45rem;
 }
