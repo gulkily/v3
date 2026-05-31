@@ -1860,11 +1860,33 @@ final class Application
      */
     private function compareBoardThreads(array $left, array $right, string $sort): int
     {
+        $pinnedCompare = $this->compareBoardThreadPinnedStatus($left, $right);
+        if ($pinnedCompare !== 0) {
+            return $pinnedCompare;
+        }
+
         return match ($sort) {
             'oldest' => $this->compareBoardThreadOldest($left, $right),
             'top' => $this->compareBoardThreadTop($left, $right),
             default => $this->compareBoardThreadNewest($left, $right),
         };
+    }
+
+    /**
+     * @param array<string, mixed> $left
+     * @param array<string, mixed> $right
+     */
+    private function compareBoardThreadPinnedStatus(array $left, array $right): int
+    {
+        return ((int) $this->isPinnedThread($right)) <=> ((int) $this->isPinnedThread($left));
+    }
+
+    /**
+     * @param array<string, mixed> $thread
+     */
+    private function isPinnedThread(array $thread): bool
+    {
+        return in_array('pinned', $thread['thread_labels'] ?? [], true);
     }
 
     /**

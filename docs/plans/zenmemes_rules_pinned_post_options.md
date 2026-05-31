@@ -119,6 +119,8 @@ Slice 1 verification: `./v3 test` passed after making the hashtag-write smoke te
 
 ### Slice 2: Add Pin-Aware Board Sorting
 
+Status: completed in branch slice 2.
+
 Files likely involved:
 
 - `src/ForumRewrite/Application.php`
@@ -126,12 +128,14 @@ Files likely involved:
 
 Checklist:
 
-- add a helper such as `isPinnedThread(array $thread): bool`
-- update board comparison so pinned status is compared before the active sort
-- preserve existing `newest`, `oldest`, and `top` tie-break behavior within each pinned group
-- keep filtering behavior in `matchesBoardView()` unchanged
-- add tests proving pinned threads sort above normal threads for `newest`, `oldest`, and `top`
-- add a test proving non-pinned ordering remains unchanged relative to the active sort
+- [x] add a helper such as `isPinnedThread(array $thread): bool`
+- [x] update board comparison so pinned status is compared before the active sort
+- [x] preserve existing `newest`, `oldest`, and `top` tie-break behavior within each pinned group
+- [x] keep filtering behavior in `matchesBoardView()` unchanged
+- [x] add tests proving pinned threads sort above normal threads for `newest`, `oldest`, and `top`
+- [x] add a test proving non-pinned ordering remains unchanged relative to the active sort
+
+Slice 2 verification: `./v3 test` passed. `WriteApiSmokeTest::testPinnedThreadsSortBeforeNormalThreadsForBoardSorts` covers pinned priority for `newest`, `oldest`, and `top`; existing board sort tests continue covering normal relative ordering.
 
 ### Slice 3: Render Board Marker
 

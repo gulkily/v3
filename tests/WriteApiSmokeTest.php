@@ -1238,6 +1238,32 @@ final class WriteApiSmokeTest
         assertStringNotContains('Unliked Thread', $boardLikedNewest);
     }
 
+    public function testPinnedThreadsSortBeforeNormalThreadsForBoardSorts(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_thread?board_tags=general&subject=Newer%20Normal%20Thread&body=Thread%20body'
+        );
+
+        $alice = $this->linkGeneratedIdentity($application, 'alice');
+        $this->renderMethod($application, 'POST', '/profiles/' . $alice['profile_slug'] . '/approve');
+        $_COOKIE = ['identity_hint' => 'alice'];
+        $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=root-001&tag=like');
+        $_COOKIE = [];
+
+        $boardNewest = $this->renderMethod($application, 'GET', '/threads/?view=all&sort=newest');
+        $boardOldest = $this->renderMethod($application, 'GET', '/threads/?view=all&sort=oldest');
+        $boardTop = $this->renderMethod($application, 'GET', '/threads/?view=all&sort=top');
+
+        assertOrdered($boardNewest, 'The Rules of ZenMemes.com', 'Newer Normal Thread');
+        assertOrdered($boardOldest, 'The Rules of ZenMemes.com', 'Hello world');
+        assertOrdered($boardTop, 'The Rules of ZenMemes.com', 'Hello world');
+    }
+
     public function testLikedViewIncludesUnapprovedLikesBecauseItFiltersLabelsNotScore(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
