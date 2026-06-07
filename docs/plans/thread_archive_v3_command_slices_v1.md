@@ -32,7 +32,7 @@ Status: completed
 
 ### Slice 2: Component Discovery And Zip Manifest
 
-Status: pending
+Status: completed
 
 - Resolve the thread root post and reject missing threads or reply ids.
 - Discover replies, thread-label records, and post-reaction records tied to the thread.
