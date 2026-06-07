@@ -164,3 +164,4 @@ No read-model rebuild, canonical data migration, or static asset rebuild is requ
 ## Implementation Log
 
 - Slice 1: Added the `FORUM_APP_VERSION_NOTIFICATION` config helper, passed it into the layout, and gated the version metadata, script tag, and banner markup.
+- Slice 2: Added smoke coverage proving the notification remains enabled by default and can be disabled with `FORUM_APP_VERSION_NOTIFICATION=false`.

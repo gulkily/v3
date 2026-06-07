@@ -351,6 +351,37 @@ final class LocalAppSmokeTest
         assertStringContains('GET /api/list_index', $llms);
     }
 
+    public function testAppVersionNotificationCanBeDisabled(): void
+    {
+        $previousFlag = getenv('FORUM_APP_VERSION_NOTIFICATION');
+        putenv('FORUM_APP_VERSION_NOTIFICATION=false');
+
+        try {
+            @unlink($this->databasePath);
+            $application = new Application(
+                dirname(__DIR__),
+                $this->repositoryRoot,
+                $this->databasePath,
+            );
+
+            $board = $this->render($application, '/');
+
+            assertStringNotContains('meta name="app-version"', $board);
+            assertStringNotContains('meta name="app-version-endpoint"', $board);
+            assertStringNotContains('/assets/version_check.js', $board);
+            assertStringNotContains('data-role="app-version-banner"', $board);
+            assertStringNotContains('A new version is available.', $board);
+            assertStringContains('/assets/site.css?v=no-git', $board);
+            assertStringContains('/assets/theme_toggle.js?v=no-git', $board);
+        } finally {
+            if ($previousFlag === false) {
+                putenv('FORUM_APP_VERSION_NOTIFICATION');
+            } else {
+                putenv('FORUM_APP_VERSION_NOTIFICATION=' . $previousFlag);
+            }
+        }
+    }
+
     public function testNegativeRootScoreIsFilteredOnlyFromLikedBoardListings(): void
     {
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-negative-liked-fixture-' . bin2hex(random_bytes(6));
