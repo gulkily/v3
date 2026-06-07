@@ -6,6 +6,7 @@ require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 $projectRoot = dirname(__DIR__);
@@ -27,19 +28,34 @@ $artifactRoot = normalizePath($argv[4] ?? (getenv('FORUM_PUBLIC_ARTIFACT_ROOT') 
 $archivePath = normalizePath($argv[5] ?? defaultArchivePath($projectRoot, $threadId));
 
 try {
-    $repository = new CanonicalRecordRepository($repositoryRoot);
-    $componentPaths = discoverThreadComponentPaths($repositoryRoot, $repository, $threadId);
-    $manifest = buildManifest($repositoryRoot, $threadId, $componentPaths);
-    writeArchive($repositoryRoot, $archivePath, $componentPaths, $manifest);
+    $result = (new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(
+        static function () use ($repositoryRoot, $threadId, $archivePath): array {
+            $repository = new CanonicalRecordRepository($repositoryRoot);
+            $componentPaths = discoverThreadComponentPaths($repositoryRoot, $repository, $threadId);
+            $manifest = buildManifest($repositoryRoot, $threadId, $componentPaths);
+            writeArchive($repositoryRoot, $archivePath, $componentPaths, $manifest);
+            removeArchivedComponents($repositoryRoot, $componentPaths);
+            $archiveCommit = commitArchiveRemoval($repositoryRoot, $threadId, $componentPaths);
 
-    fwrite(STDOUT, "Archived thread components.\n");
+            return [
+                'component_paths' => $componentPaths,
+                'archive_commit' => $archiveCommit,
+            ];
+        }
+    );
+
+    fwrite(STDOUT, "Archived thread and removed live canonical records.\n");
     fwrite(STDOUT, "Thread: {$threadId}\n");
     fwrite(STDOUT, "Repository: {$repositoryRoot}\n");
     fwrite(STDOUT, "Database: {$databasePath}\n");
     fwrite(STDOUT, "Artifacts: {$artifactRoot}\n");
     fwrite(STDOUT, "Archive: {$archivePath}\n");
-    fwrite(STDOUT, sprintf("Files archived: %d\n", count($componentPaths)));
-    fwrite(STDOUT, "Live repository removal is not complete yet.\n");
+    fwrite(STDOUT, sprintf("Files archived: %d\n", count($result['component_paths'])));
+    fwrite(STDOUT, sprintf("Files removed: %d\n", count($result['component_paths'])));
+    if ($result['archive_commit'] !== null) {
+        fwrite(STDOUT, "Removal commit: {$result['archive_commit']}\n");
+    }
+    fwrite(STDOUT, "Derived public refresh is not complete yet.\n");
 } catch (Throwable $throwable) {
     fwrite(STDERR, $throwable->getMessage() . "\n");
     exit(1);
@@ -208,6 +224,51 @@ function verifyArchive(string $archivePath, array $componentPaths): void
     } finally {
         $zip->close();
     }
+}
+
+/**
+ * @param list<string> $componentPaths
+ */
+function removeArchivedComponents(string $repositoryRoot, array $componentPaths): void
+{
+    foreach ($componentPaths as $relativePath) {
+        $absolutePath = $repositoryRoot . '/' . $relativePath;
+        if (!is_file($absolutePath)) {
+            throw new RuntimeException('Archive component disappeared before removal: ' . $relativePath);
+        }
+
+        if (!unlink($absolutePath)) {
+            throw new RuntimeException('Unable to remove archived component from live repository: ' . $relativePath);
+        }
+    }
+}
+
+/**
+ * @param list<string> $componentPaths
+ */
+function commitArchiveRemoval(string $repositoryRoot, string $threadId, array $componentPaths): ?string
+{
+    if (!is_dir($repositoryRoot . '/.git')) {
+        return null;
+    }
+
+    $pathspec = implode(' ', array_map('escapeshellarg', $componentPaths));
+    runGit($repositoryRoot, 'add -u -- ' . $pathspec);
+    runGit($repositoryRoot, 'commit --only -m ' . escapeshellarg('Archive thread ' . $threadId) . ' -- ' . $pathspec);
+
+    return sourceCommit($repositoryRoot);
+}
+
+function runGit(string $repositoryRoot, string $arguments): string
+{
+    $output = [];
+    $exitCode = 0;
+    exec('git -C ' . escapeshellarg($repositoryRoot) . ' ' . $arguments . ' 2>&1', $output, $exitCode);
+    if ($exitCode !== 0) {
+        throw new RuntimeException('Git command failed: git ' . $arguments . "\n" . implode("\n", $output));
+    }
+
+    return implode("\n", $output);
 }
 
 function repositoryRelativePath(string $repositoryRoot, string $path): string

@@ -41,7 +41,7 @@ Status: completed
 
 ### Slice 3: Remove From Live Repository And Commit
 
-Status: pending
+Status: completed
 
 - After successful zip creation and verification, delete archived canonical files from the live repository.
 - If the repository is a git worktree, commit the deletions with `Archive thread <thread_id>`.
