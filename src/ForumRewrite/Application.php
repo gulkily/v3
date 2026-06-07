@@ -145,10 +145,9 @@ final class Application
                 return;
             }
 
-            $defaultView = ($path === '/threads/' || $path === '/threads') ? 'all' : 'liked';
             $this->sendHtml(
                 $this->renderBoard(
-                    (string) ($query['view'] ?? $defaultView),
+                    (string) ($query['view'] ?? 'liked'),
                     (string) ($query['sort'] ?? 'newest'),
                 ),
                 200

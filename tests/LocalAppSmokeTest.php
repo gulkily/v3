@@ -176,12 +176,9 @@ final class LocalAppSmokeTest
         assertStringContains('Board', $board);
         assertStringContains('Board', $threadsIndex);
         assertStringContains('Board', $threadsIndexNoSlash);
-        assertStringContains('href="/threads/root-001"', $threadsIndex);
-        assertStringContains('href="/threads/root-001"', $threadsIndexNoSlash);
-        assertStringContains('href="/threads/thread-zenmemes-rules"', $threadsIndex);
-        assertStringContains('class="pinned-thread-marker">Pinned</span>', $threadsIndex);
-        assertSame(1, substr_count($threadsIndex, 'class="pinned-thread-marker"'));
-        assertStringContains('href="/threads/">Board</a>', $board);
+        assertSame($board, $threadsIndex);
+        assertSame($board, $threadsIndexNoSlash);
+        assertStringContains('href="/">Board</a>', $board);
         assertStringContains('href="/about/">About</a>', $board);
         assertStringContains('New Post', $board);
         assertStringContains('href="/compose/thread"', $board);
@@ -802,8 +799,7 @@ final class LocalAppSmokeTest
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/thread-zenmemes-rules.html'));
 
         $threadsArtifact = (string) file_get_contents($artifactRoot . '/threads.html');
-        assertStringContains('class="pinned-thread-marker">Pinned</span>', $threadsArtifact);
-        assertOrdered($threadsArtifact, 'The Rules of ZenMemes.com', 'Hello world');
+        assertSame((string) file_get_contents($artifactRoot . '/index.html'), $threadsArtifact);
 
         $pdo = new PDO('sqlite:' . $this->databasePath);
         assertSame(
@@ -824,13 +820,11 @@ final class LocalAppSmokeTest
         assertStringContains('route-source: static-html', $response);
 
         $threadsResponse = $this->renderFrontController($controller, 'GET', '/threads/', []);
-        assertStringContains('Board', $threadsResponse);
-        assertStringContains('/threads/root-001', $threadsResponse);
+        assertSame((string) file_get_contents($artifactRoot . '/index.html'), $threadsResponse);
         assertStringContains('route-source: static-html', $threadsResponse);
 
         $threadsNoSlashResponse = $this->renderFrontController($controller, 'GET', '/threads', []);
-        assertStringContains('Board', $threadsNoSlashResponse);
-        assertStringContains('/threads/root-001', $threadsNoSlashResponse);
+        assertSame((string) file_get_contents($artifactRoot . '/index.html'), $threadsNoSlashResponse);
         assertStringContains('route-source: static-html', $threadsNoSlashResponse);
 
         $usersResponse = $this->renderFrontController($controller, 'GET', '/users/', []);
