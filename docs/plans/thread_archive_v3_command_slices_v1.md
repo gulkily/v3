@@ -23,7 +23,7 @@ Status: completed
 
 ### Slice 1: CLI Contract And Archive Skeleton
 
-Status: pending
+Status: completed
 
 - Add `./v3 archive-thread <thread_id> [repository_root] [database_path] [artifact_root] [archive_path]`.
 - Create `scripts/archive_thread.php`.
@@ -66,4 +66,3 @@ Status: pending
 - Cover read-model/static artifact refresh enough to prove the thread is no longer public.
 - Cover failure cases for missing thread ids and reply ids.
 - Update command usage text.
-

@@ -12,6 +12,7 @@ Usage:
   ./v3 rebuild [repository_root] [database_path]
   ./v3 unicode-risk-backfill [repository_root] [database_path] [--with-llm]
   ./v3 build-static [repository_root] [database_path] [artifact_root]
+  ./v3 archive-thread <thread_id> [repository_root] [database_path] [artifact_root] [archive_path]
   ./v3 private-config [--force] [--api-key-stdin] [--path=/private/path/secrets.php]
   ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
@@ -40,6 +41,10 @@ case "${COMMAND}" in
   build-static)
     shift
     php "${ROOT}/scripts/build_static_artifacts.php" "$@"
+    ;;
+  archive-thread)
+    shift
+    php "${ROOT}/scripts/archive_thread.php" "$@"
     ;;
   private-config)
     shift
