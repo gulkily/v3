@@ -21,6 +21,7 @@
 - Verification approach: Assert representative source strings render for repository head, latest commit, schema metadata, lock status, and row counts; run PHP syntax checks and focused smoke tests.
 - Risks or open questions: Avoid showing absolute private filesystem paths or implementation-only PHP method names as sources unless they help an operator reproduce the value; prefer commands like `git -C <repository> rev-parse HEAD` and SQL like `SELECT COUNT(*) FROM posts`.
 - Canonical components/API contracts touched: `src/ForumRewrite/Application.php`, `templates/pages/codebase_state.php`, `public/assets/site.css`, `tests/LocalAppSmokeTest.php`; no canonical record changes.
+- Status: Implemented source details using generic `REPOSITORY`, `DATABASE`, and `DATABASE_DIR` placeholders for git commands, filesystem checks, lock/stale-marker checks, metadata reads, and row-count SQL.
 
 ## Stage 3
 - Goal: Complete verification and commit the per-stage plan update.

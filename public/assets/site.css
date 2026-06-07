@@ -787,6 +787,13 @@ pre {
   overflow-wrap: anywhere;
 }
 
+.codebase-source {
+  margin-top: 0.18rem;
+  color: var(--ink-soft);
+  font-family: var(--ui-font);
+  font-size: 0.78rem;
+}
+
 .codebase-downloads {
   margin-bottom: 0;
 }

@@ -277,6 +277,10 @@ final class LocalAppSmokeTest
         assertStringContains('Schema version', $codebase);
         assertStringContains('Lock status', $codebase);
         assertStringContains('Read-model rows', $codebase);
+        assertStringContains('git -C REPOSITORY rev-parse HEAD', $codebase);
+        assertStringContains("SELECT value FROM metadata WHERE key = &#039;schema_version&#039;", $codebase);
+        assertStringContains('flock DATABASE_DIR/forum-rewrite.lock', $codebase);
+        assertStringContains('SELECT COUNT(*) FROM posts', $codebase);
         assertStringContains('/downloads/repository.tar.gz', $codebase);
         assertStringContains('About zenmemes', $about);
         assertStringContains('extraordinary people', $about);
