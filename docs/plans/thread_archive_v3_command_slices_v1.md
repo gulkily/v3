@@ -50,7 +50,7 @@ Status: completed
 
 ### Slice 4: Refresh Derived Public State
 
-Status: pending
+Status: completed
 
 - Rebuild the read model from remaining canonical records.
 - Build static artifacts from the rebuilt read model.

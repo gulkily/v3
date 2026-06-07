@@ -6,6 +6,7 @@ require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 
@@ -29,17 +30,20 @@ $archivePath = normalizePath($argv[5] ?? defaultArchivePath($projectRoot, $threa
 
 try {
     $result = (new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(
-        static function () use ($repositoryRoot, $threadId, $archivePath): array {
+        static function () use ($projectRoot, $repositoryRoot, $databasePath, $artifactRoot, $threadId, $archivePath): array {
             $repository = new CanonicalRecordRepository($repositoryRoot);
             $componentPaths = discoverThreadComponentPaths($repositoryRoot, $repository, $threadId);
             $manifest = buildManifest($repositoryRoot, $threadId, $componentPaths);
             writeArchive($repositoryRoot, $archivePath, $componentPaths, $manifest);
             removeArchivedComponents($repositoryRoot, $componentPaths);
             $archiveCommit = commitArchiveRemoval($repositoryRoot, $threadId, $componentPaths);
+            $removedArtifactPaths = removeStaleStaticArtifacts($artifactRoot, $threadId, $componentPaths);
+            (new StaticArtifactBuilder($projectRoot, $repositoryRoot, $databasePath, $artifactRoot))->build();
 
             return [
                 'component_paths' => $componentPaths,
                 'archive_commit' => $archiveCommit,
+                'removed_artifact_paths' => $removedArtifactPaths,
             ];
         }
     );
@@ -52,10 +56,11 @@ try {
     fwrite(STDOUT, "Archive: {$archivePath}\n");
     fwrite(STDOUT, sprintf("Files archived: %d\n", count($result['component_paths'])));
     fwrite(STDOUT, sprintf("Files removed: %d\n", count($result['component_paths'])));
+    fwrite(STDOUT, sprintf("Stale artifacts removed: %d\n", count($result['removed_artifact_paths'])));
     if ($result['archive_commit'] !== null) {
         fwrite(STDOUT, "Removal commit: {$result['archive_commit']}\n");
     }
-    fwrite(STDOUT, "Derived public refresh is not complete yet.\n");
+    fwrite(STDOUT, "Read model and static artifacts refreshed.\n");
 } catch (Throwable $throwable) {
     fwrite(STDERR, $throwable->getMessage() . "\n");
     exit(1);
@@ -269,6 +274,55 @@ function runGit(string $repositoryRoot, string $arguments): string
     }
 
     return implode("\n", $output);
+}
+
+/**
+ * @param list<string> $componentPaths
+ * @return list<string>
+ */
+function removeStaleStaticArtifacts(string $artifactRoot, string $threadId, array $componentPaths): array
+{
+    $postIds = [$threadId => true];
+    foreach ($componentPaths as $relativePath) {
+        if (preg_match('#^records/posts/([^/]+)\.txt$#', $relativePath, $matches) === 1) {
+            $postIds[(string) $matches[1]] = true;
+        }
+    }
+
+    $candidatePaths = [
+        $artifactRoot . '/index.html',
+        $artifactRoot . '/threads.html',
+        $artifactRoot . '/threads/index.html',
+        $artifactRoot . '/activity.html',
+        $artifactRoot . '/tags.html',
+        $artifactRoot . '/tags/index.html',
+    ];
+
+    $candidatePaths[] = $artifactRoot . '/threads/' . $threadId . '.html';
+    foreach (array_keys($postIds) as $postId) {
+        $candidatePaths[] = $artifactRoot . '/posts/' . $postId . '.html';
+    }
+
+    foreach (glob($artifactRoot . '/tags/*.html') ?: [] as $tagPath) {
+        $candidatePaths[] = $tagPath;
+    }
+
+    $removed = [];
+    foreach (array_values(array_unique($candidatePaths)) as $path) {
+        if (!is_file($path)) {
+            continue;
+        }
+
+        if (!unlink($path)) {
+            throw new RuntimeException('Unable to remove stale artifact: ' . $path);
+        }
+
+        $removed[] = $path;
+    }
+
+    sort($removed);
+
+    return $removed;
 }
 
 function repositoryRelativePath(string $repositoryRoot, string $path): string
