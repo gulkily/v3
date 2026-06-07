@@ -54,7 +54,7 @@ $rowCountSources = [
     <h1>System State</h1>
     <p class="codebase-status" data-status="<?= $e($state['overall_status']) ?>"><?= $e($state['overall_status']) ?></p>
     <p class="meta">App version <code><?= $e($state['app_version']) ?></code></p>
-    <p class="meta codebase-source">Source: <code>git -C REPOSITORY rev-parse HEAD</code></p>
+    <p class="meta codebase-source"><code>git -C REPOSITORY rev-parse HEAD</code></p>
   </article>
   <article class="card" data-role="codebase-state">
     <h2>Repository</h2>
@@ -66,7 +66,7 @@ $rowCountSources = [
           <td>
             <code><?= $e($row['value']) ?></code>
 <?php if (isset($row['source'])): ?>
-            <div class="codebase-source">Source: <code><?= $e($row['source']) ?></code></div>
+            <div class="codebase-source"><code><?= $e($row['source']) ?></code></div>
 <?php endif; ?>
           </td>
         </tr>
@@ -84,7 +84,7 @@ $rowCountSources = [
           <td>
             <code><?= $e($row['value']) ?></code>
 <?php if (isset($row['source'])): ?>
-            <div class="codebase-source">Source: <code><?= $e($row['source']) ?></code></div>
+            <div class="codebase-source"><code><?= $e($row['source']) ?></code></div>
 <?php endif; ?>
           </td>
         </tr>
@@ -102,7 +102,7 @@ $rowCountSources = [
           <td>
             <code><?= $e($value) ?></code>
 <?php if (isset($rowCountSources[$label])): ?>
-            <div class="codebase-source">Source: <code><?= $e($rowCountSources[$label]) ?></code></div>
+            <div class="codebase-source"><code><?= $e($rowCountSources[$label]) ?></code></div>
 <?php endif; ?>
           </td>
         </tr>
