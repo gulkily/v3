@@ -332,6 +332,8 @@ final class LocalAppSmokeTest
         assertStringContains('Ready.', $composeReply);
         assertStringContains('Advanced / technical details', $account);
         assertStringContains('Set up this browser', $account);
+        assertStringContains('data-action="clear-browser-identity"', $account);
+        assertStringContains('Clear identity', $account);
         assertStringNotContains('View user page', $account);
         assertStringContains('Link identity', $account);
         assertStringContains('Saved browser identity:', $account);

@@ -940,6 +940,22 @@ pre {
   line-height: 1.2;
 }
 
+.account-key-simple-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.account-key-simple-actions > button {
+  width: auto;
+}
+
+.account-key-secondary-button {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
 .account-key-simple-status {
   margin: 0;
 }

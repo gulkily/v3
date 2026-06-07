@@ -251,6 +251,165 @@ NODE;
         );
     }
 
+    public function testAccountClearIdentityButtonClearsSavedBrowserIdentity(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: {
+    forum_pki_username: 'forum-user',
+    forum_pki_public_key: '-----BEGIN PGP PUBLIC KEY BLOCK-----\nfixture\n-----END PGP PUBLIC KEY BLOCK-----',
+    forum_pki_private_key: '-----BEGIN PGP PRIVATE KEY BLOCK-----\nfixture\n-----END PGP PRIVATE KEY BLOCK-----',
+    forum_pki_fingerprint: '0168FF20EB09C3EA6193BD3C92A73AA7D20A0954',
+    forum_pki_published_fingerprint: '0168FF20EB09C3EA6193BD3C92A73AA7D20A0954',
+    forum_pki_compose_prompt_cancelled: '1'
+  },
+  removeCalls: [],
+  fetches: [],
+  domContentLoaded: null,
+  clearIdentityClickHandler: null
+};
+
+function makeElement(text) {
+  return {
+    textContent: text || '',
+    value: '',
+    href: '',
+    hidden: false,
+    dataset: {},
+    style: {},
+    setAttribute() {},
+    addEventListener() {},
+    appendChild() {},
+    remove() {},
+    querySelector() { return null; }
+  };
+}
+
+const statusMessage = makeElement('Ready.');
+const statusNode = Object.assign(makeElement('Ready.'), {
+  querySelector(selector) {
+    if (selector === '[data-role="browser-key-status-message"]') {
+      return statusMessage;
+    }
+    return null;
+  }
+});
+const usernameField = makeElement('');
+const publicKeyField = makeElement('');
+const publicKeyViewer = makeElement('');
+const privateKeyViewer = makeElement('');
+const identityIdField = makeElement('');
+const profileLink = makeElement('');
+const profileLinkWrap = makeElement('');
+const undoLink = makeElement('');
+const clearIdentityButton = {
+  addEventListener(type, handler) {
+    if (type === 'click') {
+      state.clearIdentityClickHandler = handler;
+    }
+  }
+};
+
+const root = {
+  querySelector(selector) {
+    if (selector === '[data-role="browser-key-status"]') return statusNode;
+    if (selector === '[data-role="public-key-field"]') return publicKeyField;
+    if (selector === '[data-action="generate-browser-key"]') return null;
+    if (selector === '[data-action="load-browser-key"]') return null;
+    if (selector === '[data-action="clear-browser-key"]') return null;
+    if (selector === '[data-action="clear-browser-identity"]') return clearIdentityButton;
+    if (selector === '[data-action="undo-clear-browser-key"]') return undoLink;
+    if (selector === '[data-action="copy-public-key"]') return null;
+    if (selector === '[data-action="copy-private-key"]') return null;
+    if (selector === '[data-role="username-field"]') return usernameField;
+    if (selector === '[data-role="private-key-viewer"]') return privateKeyViewer;
+    if (selector === '[data-role="public-key-viewer"]') return publicKeyViewer;
+    if (selector === '[data-role="identity-id-field"]') return identityIdField;
+    if (selector === '[data-role="profile-link"]') return profileLink;
+    if (selector === '[data-role="profile-link-wrap"]') return profileLinkWrap;
+    return null;
+  }
+};
+
+global.window = {
+  addEventListener() {},
+  localStorage: {
+    getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+    setItem(key, value) { state.localStore[key] = String(value); },
+    removeItem(key) {
+      state.removeCalls.push(key);
+      delete state.localStore[key];
+    }
+  }
+};
+global.localStorage = global.window.localStorage;
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      state.domContentLoaded = handler;
+    }
+  },
+  querySelector(selector) {
+    if (selector === '[data-account-key-root]') {
+      return root;
+    }
+    return null;
+  },
+  createElement() { return makeElement(''); },
+  createTextNode(text) { return makeElement(text); },
+  body: { appendChild() {}, removeChild() {} }
+};
+global.navigator = {};
+global.fetch = async function (url, options) {
+  state.fetches.push({ url: String(url), method: options && options.method ? options.method : 'GET' });
+  return { ok: true, status: 200, text: async () => 'identity_hint=guest\n' };
+};
+
+vm.runInThisContext(source);
+state.domContentLoaded();
+
+Promise.resolve(state.clearIdentityClickHandler()).then(() => {
+  process.stdout.write(JSON.stringify({
+    removeCalls: state.removeCalls,
+    remainingKeys: Object.keys(state.localStore).sort(),
+    fetches: state.fetches,
+    username: usernameField.textContent,
+    identityId: identityIdField.textContent,
+    publicKeyViewer: publicKeyViewer.textContent,
+    privateKeyViewer: privateKeyViewer.textContent,
+    publicKeyField: publicKeyField.value,
+    status: statusMessage.textContent
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame([
+            'forum_pki_username',
+            'forum_pki_public_key',
+            'forum_pki_private_key',
+            'forum_pki_fingerprint',
+            'forum_pki_published_fingerprint',
+            'forum_pki_compose_prompt_cancelled',
+        ], $result['removeCalls']);
+        assertSame([], $result['remainingKeys']);
+        assertStringContains('/api/set_identity_hint?identity_hint=guest', $result['fetches'][1]['url']);
+        assertSame('POST', $result['fetches'][1]['method']);
+        assertSame('guest', $result['username']);
+        assertSame('none', $result['identityId']);
+        assertSame('No browser public key saved yet.', $result['publicKeyViewer']);
+        assertSame('No browser private key saved yet.', $result['privateKeyViewer']);
+        assertSame('', $result['publicKeyField']);
+        assertSame('Cleared the saved browser keypair from local storage.', $result['status']);
+    }
+
     public function testReadyIdentityRepublishesWhenStoredPublishedFingerprintIsUnknownToServer(): void
     {
         $script = <<<'NODE'

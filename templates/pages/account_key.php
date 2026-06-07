@@ -29,7 +29,10 @@ if (is_array($viewerProfile)) {
           <p class="meta account-key-profile-link"><a href="<?= $e($viewerProfileHref) ?>"><?= $e($viewerProfileLabel) ?></a></p>
 <?php endif; ?>
         </div>
-        <button type="button" class="account-key-primary-button" data-action="generate-browser-key">Set up this browser</button>
+        <div class="account-key-simple-actions">
+          <button type="button" class="account-key-primary-button" data-action="generate-browser-key">Set up this browser</button>
+          <button type="button" class="account-key-secondary-button" data-action="clear-browser-identity" hidden>Clear identity</button>
+        </div>
         <p class="meta account-key-simple-status" id="simple-status">Choose a name to set up this browser.</p>
       </div>
       <details class="account-key-advanced">
@@ -148,6 +151,7 @@ No browser private key saved yet.
       var statusDot = root.querySelector('[data-role="simple-status-dot"]');
       var statusBadge = root.querySelector('[data-role="simple-status-badge"]');
       var generateButton = root.querySelector('[data-action="generate-browser-key"]');
+      var clearIdentityButton = root.querySelector('[data-action="clear-browser-identity"]');
       var simpleStatus = root.querySelector('#simple-status');
 
       if (usernameField) {
@@ -164,6 +168,10 @@ No browser private key saved yet.
 
       if (generateButton) {
         generateButton.textContent = ready ? 'Re-setup / change name' : 'Set up this browser';
+      }
+
+      if (clearIdentityButton) {
+        clearIdentityButton.hidden = !ready;
       }
 
       if (simpleStatus && !simpleStatus.dataset.kind) {

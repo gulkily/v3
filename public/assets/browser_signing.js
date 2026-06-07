@@ -841,6 +841,7 @@
     const generateButton = root.querySelector('[data-action="generate-browser-key"]');
     const loadButton = root.querySelector('[data-action="load-browser-key"]');
     const clearButton = root.querySelector('[data-action="clear-browser-key"]');
+    const clearIdentityButton = root.querySelector('[data-action="clear-browser-identity"]');
     const undoClearLink = root.querySelector('[data-action="undo-clear-browser-key"]');
     const copyPublicButton = root.querySelector('[data-action="copy-public-key"]');
     const copyPrivateButton = root.querySelector('[data-action="copy-private-key"]');
@@ -880,31 +881,33 @@
       });
     }
 
-    if (clearButton) {
-      clearButton.addEventListener("click", async function () {
-        try {
-          const savedBackup = saveClearedKeypairBackup();
-          localStorage.removeItem(storageKeys.username);
-          localStorage.removeItem(storageKeys.publicKey);
-          localStorage.removeItem(storageKeys.privateKey);
-          localStorage.removeItem(storageKeys.fingerprint);
-          localStorage.removeItem(storageKeys.publishedFingerprint);
-          localStorage.removeItem(storageKeys.composePromptCancelled);
-          await syncIdentityHint(preferredIdentityHint());
-          renderSavedState(root);
-          if (publicKeyField) {
-            publicKeyField.value = "";
-          }
-
-          if (savedBackup) {
-            setStatus(statusNode, "Cleared the saved browser keypair from local storage.", "ok");
-          } else {
-            setStatus(statusNode, "Cleared the saved browser keypair from local storage.", "ok");
-          }
-        } catch (error) {
-          setStatus(statusNode, error instanceof Error ? error.message : "Unable to clear the saved browser keypair.", "error");
+    async function clearBrowserIdentity() {
+      try {
+        saveClearedKeypairBackup();
+        localStorage.removeItem(storageKeys.username);
+        localStorage.removeItem(storageKeys.publicKey);
+        localStorage.removeItem(storageKeys.privateKey);
+        localStorage.removeItem(storageKeys.fingerprint);
+        localStorage.removeItem(storageKeys.publishedFingerprint);
+        localStorage.removeItem(storageKeys.composePromptCancelled);
+        await syncIdentityHint(preferredIdentityHint());
+        renderSavedState(root);
+        if (publicKeyField) {
+          publicKeyField.value = "";
         }
-      });
+
+        setStatus(statusNode, "Cleared the saved browser keypair from local storage.", "ok");
+      } catch (error) {
+        setStatus(statusNode, error instanceof Error ? error.message : "Unable to clear the saved browser keypair.", "error");
+      }
+    }
+
+    if (clearButton) {
+      clearButton.addEventListener("click", clearBrowserIdentity);
+    }
+
+    if (clearIdentityButton) {
+      clearIdentityButton.addEventListener("click", clearBrowserIdentity);
     }
 
     if (undoClearLink) {
