@@ -30,13 +30,21 @@
 - Verification approach: Run `php -l` on changed PHP files and `php tests/run.php`, then document pass/fail status and any pre-existing failures.
 - Risks or open questions: If the full suite exposes an unrelated pre-existing failure, capture it in the plan and final response rather than broadening this feature.
 - Canonical components/API contracts touched: `docs/plans/codebase_page_source_details_step3_development_plan.md`; no runtime contract changes.
+- Status: Final verification completed; `php -l` checks and `php tests/run.php` passed.
 
 ## Planned Commit Cadence
-- Commit 1: Approved plan document on the feature branch.
-- Commit 2: Rename the Codebase page title and update tests.
-- Commit 3: Add source commands/database queries and update tests.
+- Commit 1: `6cfb03e` Add codebase page source details plan.
+- Commit 2: `8df9f5a` Rename codebase page to system state.
+- Commit 3: `75e9973` Show codebase page source details.
 - Commit 4: Record final verification and implementation notes in this plan.
 
 ## Approval Gate
 - Pause here until the user explicitly approves this plan.
 - After approval, create the feature branch, commit the approved plan first, then execute the stages above.
+
+## Implementation Summary
+- Branch: `codebase-page-source-details`.
+- Selected title: `System State`.
+- Route retained: `/tools/codebase/`.
+- Source categories rendered: app/repository git commands, repository filesystem checks, read-model database checks, metadata SQL, lock/stale-marker checks, and read-model row-count SQL.
+- Verification: `php -l src/ForumRewrite/Application.php`, `php -l templates/pages/codebase_state.php`, `php -l tests/LocalAppSmokeTest.php`, and `php tests/run.php` passed.
