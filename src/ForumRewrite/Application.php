@@ -1024,7 +1024,7 @@ final class Application
                         'description' => 'Portable downloads of the repository and current read-model database.',
                     ],
                     [
-                        'label' => 'Codebase',
+                        'label' => 'System State',
                         'href' => '/tools/codebase/',
                         'description' => 'Current application version, repository head, and read-model health.',
                     ],
@@ -1049,7 +1049,7 @@ final class Application
                 'state' => $this->collectCodebaseState(),
                 'toolNavOptions' => $this->toolNavOptions('codebase'),
             ],
-            'Codebase',
+            'System State',
             'tools',
         );
     }
@@ -1122,7 +1122,7 @@ final class Application
             ],
             [
                 'key' => 'codebase',
-                'label' => 'Codebase',
+                'label' => 'System State',
                 'href' => '/tools/codebase/',
                 'is_active' => $activeKey === 'codebase',
             ],

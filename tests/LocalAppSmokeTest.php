@@ -270,7 +270,7 @@ final class LocalAppSmokeTest
         assertStringContains('/tools/codebase/', $tools);
         assertStringContains('Current application version, repository head, and read-model health.', $tools);
         assertStringContains('/account/key/', $tools);
-        assertStringContains('Codebase', $codebase);
+        assertStringContains('System State', $codebase);
         assertStringContains('class="nav-link is-active" href="/tools/codebase/"', $codebase);
         assertStringContains('Repository head', $codebase);
         assertStringContains('Read model', $codebase);
@@ -950,7 +950,7 @@ final class LocalAppSmokeTest
 
         assertStringContains('status=ready', $status);
         assertStringContains('lock_status=locked', $status);
-        assertStringContains('Codebase', $codebase);
+        assertStringContains('System State', $codebase);
         assertStringContains('locked', $codebase);
         assertStringContains('Lock status', $codebase);
     }
@@ -976,7 +976,7 @@ final class LocalAppSmokeTest
         assertStringContains('status=ready', $status);
         assertStringContains('stale_marker=absent', $status);
         assertStringContains('rebuild_reason=stale_marker', $status);
-        assertStringContains('Codebase', $codebase);
+        assertStringContains('System State', $codebase);
         assertStringContains('Stale marker', $codebase);
         assertStringContains('absent', $codebase);
     }

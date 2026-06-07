@@ -12,6 +12,7 @@
 - Verification approach: Run focused PHP syntax checks for changed files and the local smoke suite assertion path for `/tools/codebase/`.
 - Risks or open questions: Final title choice can be adjusted during review; route remains `/tools/codebase/` for compatibility.
 - Canonical components/API contracts touched: `src/ForumRewrite/Application.php`, `templates/pages/codebase_state.php`, `tests/LocalAppSmokeTest.php`; no canonical record or database contract changes.
+- Status: Implemented title, page heading, and tool navigation rename to `System State`; route remains `/tools/codebase/`.
 
 ## Stage 2
 - Goal: Show source commands or database queries for appropriate facts on the page.

@@ -38,7 +38,7 @@ $readModelRows = [
     </div>
   </article>
   <article class="card codebase-status-card" data-role="codebase-state">
-    <h1>Codebase</h1>
+    <h1>System State</h1>
     <p class="codebase-status" data-status="<?= $e($state['overall_status']) ?>"><?= $e($state['overall_status']) ?></p>
     <p class="meta">App version <code><?= $e($state['app_version']) ?></code></p>
   </article>
