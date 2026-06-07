@@ -55,6 +55,7 @@ final class TemplateRenderer
             'routeSource' => $routeSource,
             'siteName' => SiteConfig::SITE_NAME,
             'appVersion' => $this->appVersion,
+            'appVersionNotificationEnabled' => SiteConfig::appVersionNotificationEnabled(),
             'siteCssPath' => $this->appendVersionQuery('/assets/site.css'),
             'themeToggleScriptPath' => $this->appendVersionQuery('/assets/theme_toggle.js'),
             'versionCheckScriptPath' => $this->appendVersionQuery('/assets/version_check.js'),

@@ -13,6 +13,11 @@ final class SiteConfig
         return self::envFlagEnabled('FORUM_UNICODE_AUTHORED_TEXT', false);
     }
 
+    public static function appVersionNotificationEnabled(): bool
+    {
+        return self::envFlagEnabled('FORUM_APP_VERSION_NOTIFICATION', true);
+    }
+
     private static function envFlagEnabled(string $name, bool $default): bool
     {
         $value = getenv($name);

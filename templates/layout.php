@@ -22,23 +22,29 @@
       }
     })();
   </script>
+<?php if ($appVersionNotificationEnabled): ?>
   <meta name="app-version" content="<?= $e($appVersion) ?>">
   <meta name="app-version-endpoint" content="/api/version">
+<?php endif; ?>
   <link rel="icon" href="/favicon.ico" sizes="32x32">
   <link rel="stylesheet" href="<?= $e($siteCssPath) ?>">
 <?php foreach ($scriptPaths as $scriptPath): ?>
   <script src="<?= $e($scriptPath) ?>" defer></script>
 <?php endforeach; ?>
   <script src="<?= $e($themeToggleScriptPath) ?>" defer></script>
+<?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>
+<?php endif; ?>
 </head>
 <body>
+<?php if ($appVersionNotificationEnabled): ?>
   <div class="app-version-banner" data-role="app-version-banner" hidden>
     <div class="app-version-banner__inner">
       <span class="app-version-banner__text">A new version is available.</span>
       <button type="button" class="app-version-banner__reload" data-action="reload-for-new-version">Reload</button>
     </div>
   </div>
+<?php endif; ?>
   <!-- route-source: <?= $e($routeSource) ?> -->
   <div class="shell">
     <header class="site-header">
