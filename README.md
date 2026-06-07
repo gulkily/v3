@@ -42,6 +42,12 @@ FORUM_UNICODE_AUTHORED_TEXT=true ./v3 start
 
 The flag affects only human-authored post prose. Machine fields such as post IDs, thread IDs, board tags, profile slugs, routes, and identity IDs remain ASCII-oriented.
 
+The browser-side app version polling and reload banner are enabled by default. To disable the "A new version is available." notification before starting the app:
+
+```bash
+FORUM_APP_VERSION_NOTIFICATION=false ./v3 start
+```
+
 Create or update the local private config for Dedalus post analysis:
 
 ```bash

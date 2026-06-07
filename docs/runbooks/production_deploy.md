@@ -52,6 +52,7 @@ Optional runtime setting:
 
 - `FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS`: seconds a request waits for the shared write/read-model lock before returning a busy error. The default is `5`.
 - `FORUM_UNICODE_AUTHORED_TEXT`: when set to `true`, subject/body prose may contain visible UTF-8 text such as Cyrillic. The default is disabled.
+- `FORUM_APP_VERSION_NOTIFICATION`: when set to `false`, disables browser-side app version polling and the reload banner. The default is enabled.
 
 ## Writable Paths
 
@@ -82,6 +83,14 @@ FORUM_PUBLIC_ARTIFACT_ROOT=/srv/forum-rewrite/app/public
 ```
 
 `FORUM_STATIC_HTML_ROOT` remains available for separate static roots, but the primary production model for this repo is sibling artifacts in `public/`.
+
+## App Version Notification
+
+`FORUM_APP_VERSION_NOTIFICATION=false` disables the browser-side `/api/version` polling and the "A new version is available." reload banner.
+
+The default is enabled. `/api/version` remains available when the notification is disabled.
+
+If production serves prebuilt static HTML artifacts, rebuild those artifacts after changing this flag so rendered pages include or omit the notification markup consistently.
 
 ## Unicode Authored Text Rollout
 
