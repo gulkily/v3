@@ -59,7 +59,7 @@ Status: completed
 
 ### Slice 5: Tests And Documentation Polish
 
-Status: pending
+Status: completed
 
 - Add smoke coverage for zip contents and manifest.
 - Cover removal from live canonical records.

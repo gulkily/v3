@@ -257,11 +257,32 @@ function commitArchiveRemoval(string $repositoryRoot, string $threadId, array $c
         return null;
     }
 
-    $pathspec = implode(' ', array_map('escapeshellarg', $componentPaths));
+    $trackedPaths = array_values(array_filter(
+        $componentPaths,
+        static fn (string $relativePath): bool => isGitTracked($repositoryRoot, $relativePath)
+    ));
+    if ($trackedPaths === []) {
+        return null;
+    }
+
+    $pathspec = implode(' ', array_map('escapeshellarg', $trackedPaths));
     runGit($repositoryRoot, 'add -u -- ' . $pathspec);
     runGit($repositoryRoot, 'commit --only -m ' . escapeshellarg('Archive thread ' . $threadId) . ' -- ' . $pathspec);
 
     return sourceCommit($repositoryRoot);
+}
+
+function isGitTracked(string $repositoryRoot, string $relativePath): bool
+{
+    $output = [];
+    $exitCode = 0;
+    exec(
+        'git -C ' . escapeshellarg($repositoryRoot) . ' ls-files --error-unmatch -- ' . escapeshellarg($relativePath) . ' 2>/dev/null',
+        $output,
+        $exitCode
+    );
+
+    return $exitCode === 0;
 }
 
 function runGit(string $repositoryRoot, string $arguments): string
