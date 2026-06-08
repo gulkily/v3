@@ -66,3 +66,12 @@ Status: completed
 - Cover read-model/static artifact refresh enough to prove the thread is no longer public.
 - Cover failure cases for missing thread ids and reply ids.
 - Update command usage text.
+
+### Slice 6: Supporting Public Keys
+
+Status: completed
+
+- Include public key records referenced by archived posts, thread labels, and post reactions.
+- Preserve those public key records in the live repository.
+- Record supporting public key paths separately in the archive manifest.
+- Extend archive command coverage for zip contents and live repository preservation.

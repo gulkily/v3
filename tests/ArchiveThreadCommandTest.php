@@ -35,7 +35,9 @@ final class ArchiveThreadCommandTest
 
         assertSame(0, $exitCode);
         assertStringContains('Archived thread and removed live canonical records.', $output);
-        assertStringContains('Files archived: 4', $output);
+        assertStringContains('Files archived: 5', $output);
+        assertStringContains('Supporting public keys archived: 1', $output);
+        assertStringContains('Files removed: 4', $output);
         assertStringContains('Read model and static artifacts refreshed.', $output);
         assertTrue(is_file($archivePath));
 
@@ -50,11 +52,17 @@ final class ArchiveThreadCommandTest
         assertTrue(in_array('records/posts/reply-001.txt', $archivePaths, true));
         assertTrue(in_array('records/thread-labels/thread-label-20260415153000-ab12cd34.txt', $archivePaths, true));
         assertTrue(in_array('records/post-reactions/post-reaction-archive-test.txt', $archivePaths, true));
+        assertTrue(in_array('records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc', $archivePaths, true));
+        assertSame(
+            ['records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc'],
+            $manifest['supporting_public_key_paths'] ?? null
+        );
 
         assertFalse(is_file($repositoryRoot . '/records/posts/root-001.txt'));
         assertFalse(is_file($repositoryRoot . '/records/posts/reply-001.txt'));
         assertFalse(is_file($repositoryRoot . '/records/thread-labels/thread-label-20260415153000-ab12cd34.txt'));
         assertFalse(is_file($repositoryRoot . '/records/post-reactions/post-reaction-archive-test.txt'));
+        assertTrue(is_file($repositoryRoot . '/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc'));
 
         assertFalse(is_file($artifactRoot . '/threads/root-001.html'));
         assertFalse(is_file($artifactRoot . '/posts/root-001.html'));

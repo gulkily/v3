@@ -33,8 +33,10 @@ try {
         static function () use ($projectRoot, $repositoryRoot, $databasePath, $artifactRoot, $threadId, $archivePath): array {
             $repository = new CanonicalRecordRepository($repositoryRoot);
             $componentPaths = discoverThreadComponentPaths($repositoryRoot, $repository, $threadId);
-            $manifest = buildManifest($repositoryRoot, $threadId, $componentPaths);
-            writeArchive($repositoryRoot, $archivePath, $componentPaths, $manifest);
+            $supportingPublicKeyPaths = discoverSupportingPublicKeyPaths($repositoryRoot, $repository, $componentPaths);
+            $archivePaths = archivePaths($componentPaths, $supportingPublicKeyPaths);
+            $manifest = buildManifest($repositoryRoot, $threadId, $archivePaths, $componentPaths, $supportingPublicKeyPaths);
+            writeArchive($repositoryRoot, $archivePath, $archivePaths, $manifest);
             removeArchivedComponents($repositoryRoot, $componentPaths);
             $archiveCommit = commitArchiveRemoval($repositoryRoot, $threadId, $componentPaths);
             $removedArtifactPaths = removeStaleStaticArtifacts($artifactRoot, $threadId, $componentPaths);
@@ -42,6 +44,8 @@ try {
 
             return [
                 'component_paths' => $componentPaths,
+                'archive_paths' => $archivePaths,
+                'supporting_public_key_paths' => $supportingPublicKeyPaths,
                 'archive_commit' => $archiveCommit,
                 'removed_artifact_paths' => $removedArtifactPaths,
             ];
@@ -54,7 +58,8 @@ try {
     fwrite(STDOUT, "Database: {$databasePath}\n");
     fwrite(STDOUT, "Artifacts: {$artifactRoot}\n");
     fwrite(STDOUT, "Archive: {$archivePath}\n");
-    fwrite(STDOUT, sprintf("Files archived: %d\n", count($result['component_paths'])));
+    fwrite(STDOUT, sprintf("Files archived: %d\n", count($result['archive_paths'])));
+    fwrite(STDOUT, sprintf("Supporting public keys archived: %d\n", count($result['supporting_public_key_paths'])));
     fwrite(STDOUT, sprintf("Files removed: %d\n", count($result['component_paths'])));
     fwrite(STDOUT, sprintf("Stale artifacts removed: %d\n", count($result['removed_artifact_paths'])));
     if ($result['archive_commit'] !== null) {
@@ -123,12 +128,72 @@ function discoverThreadComponentPaths(string $repositoryRoot, CanonicalRecordRep
 
 /**
  * @param list<string> $componentPaths
+ * @return list<string>
+ */
+function discoverSupportingPublicKeyPaths(string $repositoryRoot, CanonicalRecordRepository $repository, array $componentPaths): array
+{
+    $identityIds = [];
+
+    foreach ($componentPaths as $relativePath) {
+        if (str_starts_with($relativePath, 'records/posts/')) {
+            $identityId = $repository->loadPost($relativePath)->authorIdentityId;
+        } elseif (str_starts_with($relativePath, 'records/thread-labels/')) {
+            $identityId = $repository->loadThreadLabel($relativePath)->authorIdentityId;
+        } elseif (str_starts_with($relativePath, 'records/post-reactions/')) {
+            $identityId = $repository->loadPostReaction($relativePath)->authorIdentityId;
+        } else {
+            $identityId = null;
+        }
+
+        if ($identityId !== null) {
+            $identityIds[$identityId] = true;
+        }
+    }
+
+    $paths = [];
+    foreach (array_keys($identityIds) as $identityId) {
+        if (preg_match('/^openpgp:([a-fA-F0-9]+)$/', $identityId, $matches) !== 1) {
+            continue;
+        }
+
+        $publicKeyPath = CanonicalPathResolver::publicKey(strtoupper((string) $matches[1]));
+        if (!is_file($repositoryRoot . '/' . $publicKeyPath)) {
+            throw new RuntimeException('Referenced public key record does not exist for identity: ' . $identityId);
+        }
+
+        $repository->loadPublicKey($publicKeyPath);
+        $paths[] = $publicKeyPath;
+    }
+
+    $paths = array_values(array_unique($paths));
+    sort($paths);
+
+    return $paths;
+}
+
+/**
+ * @param list<string> $componentPaths
+ * @param list<string> $supportingPublicKeyPaths
+ * @return list<string>
+ */
+function archivePaths(array $componentPaths, array $supportingPublicKeyPaths): array
+{
+    $paths = array_values(array_unique(array_merge($componentPaths, $supportingPublicKeyPaths)));
+    sort($paths);
+
+    return $paths;
+}
+
+/**
+ * @param list<string> $archivePaths
+ * @param list<string> $componentPaths
+ * @param list<string> $supportingPublicKeyPaths
  * @return array<string, mixed>
  */
-function buildManifest(string $repositoryRoot, string $threadId, array $componentPaths): array
+function buildManifest(string $repositoryRoot, string $threadId, array $archivePaths, array $componentPaths, array $supportingPublicKeyPaths): array
 {
     $files = [];
-    foreach ($componentPaths as $relativePath) {
+    foreach ($archivePaths as $relativePath) {
         $absolutePath = $repositoryRoot . '/' . $relativePath;
         $hash = hash_file('sha256', $absolutePath);
         if ($hash === false) {
@@ -148,6 +213,8 @@ function buildManifest(string $repositoryRoot, string $threadId, array $componen
         'thread_id' => $threadId,
         'archived_at' => gmdate('Y-m-d\TH:i:s\Z'),
         'source_commit' => sourceCommit($repositoryRoot),
+        'component_paths' => $componentPaths,
+        'supporting_public_key_paths' => $supportingPublicKeyPaths,
         'files' => $files,
     ];
 }
