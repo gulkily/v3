@@ -251,6 +251,59 @@ NODE;
         );
     }
 
+    public function testInsecureOpenPgpLoaderFailureReportsAnonymousAndHttpsOptions(): void
+    {
+        $script = <<<'NODE'
+global.window = {
+  isSecureContext: false,
+  prompt() { return 'guest'; },
+  confirm() { return true; }
+};
+const rejectedLoader = Promise.reject(new Error('legacy bundle unavailable'));
+rejectedLoader.catch(() => {});
+global.window.__forumOpenPgpLoader = {
+  selectedVersion: 'v5',
+  selectedPath: '/assets/openpgp.v5.11.3.min.js',
+  ready: rejectedLoader
+};
+global.localStorage = {
+  getItem(){ return ''; },
+  setItem(){},
+  removeItem(){}
+};
+global.document = {
+  addEventListener(){},
+  querySelector(){ return null; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'', addEventListener(){}, appendChild(){} }; },
+  createTextNode(text){ return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} },
+};
+global.navigator = {};
+const fs = require('fs');
+const vm = require('vm');
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+const root = { querySelector(){ return null; } };
+const statusNode = { dataset: {}, textContent: '', querySelector(){ return null; } };
+
+window.__forumBrowserIdentity.ensureReadyIdentity(root, statusNode).then(() => {
+  process.stderr.write('expected failure');
+  process.exit(1);
+}).catch((error) => {
+  const status = window.__forumBrowserIdentity.statusFromError(error, 'fallback');
+  process.stdout.write(JSON.stringify(status));
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(
+            'Browser OpenPGP is unavailable on this HTTP page. You can post anonymously or switch to HTTPS for browser identity.',
+            $result['message']
+        );
+        assertStringContains('/assets/openpgp.v5.11.3.min.js', $result['technicalDetails']);
+        assertStringContains('legacy bundle unavailable', $result['technicalDetails']);
+    }
+
     public function testAccountClearIdentityButtonClearsSavedBrowserIdentity(): void
     {
         $script = <<<'NODE'
@@ -1131,6 +1184,15 @@ if (!function_exists('assertSame')) {
                 . var_export($actual, true)
                 . '.'
             );
+        }
+    }
+}
+
+if (!function_exists('assertStringContains')) {
+    function assertStringContains(string $needle, string $haystack): void
+    {
+        if (!str_contains($haystack, $needle)) {
+            throw new RuntimeException('Failed asserting that output contains: ' . $needle);
         }
     }
 }

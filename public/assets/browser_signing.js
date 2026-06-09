@@ -575,6 +575,41 @@
     return error;
   }
 
+  function openPgpUnavailableError(technicalDetails) {
+    const details = String(technicalDetails || "").trim() || "OpenPGP.js failed to load.";
+    if (window.isSecureContext === false) {
+      return buildFriendlyError(
+        "Browser OpenPGP is unavailable on this HTTP page. You can post anonymously or switch to HTTPS for browser identity.",
+        details
+      );
+    }
+
+    return buildFriendlyError("OpenPGP.js failed to load.", details);
+  }
+
+  async function ensureOpenPgpApi(requiredMethods) {
+    const loader = window.__forumOpenPgpLoader || null;
+    if (loader && loader.ready && typeof loader.ready.then === "function") {
+      try {
+        await loader.ready;
+      } catch (error) {
+        const loaderPath = loader.selectedPath ? ` (${loader.selectedPath})` : "";
+        const message = error instanceof Error ? error.message : String(error || "unknown error");
+        throw openPgpUnavailableError(`OpenPGP loader failed${loaderPath}: ${message}`);
+      }
+    }
+
+    const api = window.openpgp;
+    const missingMethods = requiredMethods.filter(function (method) {
+      return !api || typeof api[method] !== "function";
+    });
+    if (missingMethods.length > 0) {
+      throw openPgpUnavailableError("OpenPGP API missing method(s): " + missingMethods.join(", "));
+    }
+
+    return api;
+  }
+
   function statusFromError(error, fallbackMessage) {
     if (error instanceof Error) {
       return {
@@ -688,18 +723,16 @@
   }
 
   async function generateBrowserKey(root, preferredUsername) {
-    if (!window.openpgp || !window.openpgp.generateKey) {
-      throw new Error("OpenPGP.js failed to load.");
-    }
+    const openpgp = await ensureOpenPgpApi(["generateKey", "readKey"]);
 
     const username = normalizeUsername(preferredUsername || localStorage.getItem(storageKeys.username) || "guest");
-    const result = await window.openpgp.generateKey({
+    const result = await openpgp.generateKey({
       type: "ecc",
       curve: "ed25519",
       userIDs: [{ name: username }],
       format: "armored",
     });
-    const key = await window.openpgp.readKey({ armoredKey: result.publicKey });
+    const key = await openpgp.readKey({ armoredKey: result.publicKey });
     const fingerprint = String(key.getFingerprint()).toUpperCase();
 
     localStorage.setItem(storageKeys.username, username);
@@ -768,11 +801,12 @@
     }
 
     const publicKey = localStorage.getItem(storageKeys.publicKey) || "";
-    if (!publicKey || !window.openpgp || !window.openpgp.readKey) {
+    if (!publicKey) {
       return "";
     }
 
-    const key = await window.openpgp.readKey({ armoredKey: publicKey });
+    const openpgp = await ensureOpenPgpApi(["readKey"]);
+    const key = await openpgp.readKey({ armoredKey: publicKey });
     const fingerprint = String(key.getFingerprint()).toUpperCase();
     localStorage.setItem(storageKeys.fingerprint, fingerprint);
 
@@ -820,6 +854,7 @@
       hasBrowserKeypair: hasBrowserKeypair,
       classifyIdentityBootstrapFailure: classifyIdentityBootstrapFailure,
       statusFromError: statusFromError,
+      ensureOpenPgpApi: ensureOpenPgpApi,
     };
   }
 

@@ -75,3 +75,18 @@ NODE;
         assertSame([['src' => '/assets/openpgp.v5.11.3.min.js', 'async' => false]], $result['appendedScripts']);
     }
 }
+
+if (!function_exists('assertSame')) {
+    function assertSame(mixed $expected, mixed $actual): void
+    {
+        if ($expected !== $actual) {
+            throw new RuntimeException(
+                'Failed asserting that values are identical. Expected '
+                . var_export($expected, true)
+                . ' but got '
+                . var_export($actual, true)
+                . '.'
+            );
+        }
+    }
+}
