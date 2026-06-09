@@ -3,6 +3,7 @@ state/cache/
 state/local_repository/
 state/
 public/*.html
+public/**/*.html
 public/threads/
 public/posts/
 public/profiles/
