@@ -322,6 +322,7 @@ final class LocalAppSmokeTest
         assertStringContains('Compose Thread', $composeThread);
         assertStringContains('browser_signing.js', $composeThread);
         assertStringContains('Ready.', $composeThread);
+        assertStringContains('data-action="submit-anonymous-compose"', $composeThread);
         assertStringContains('Bookmarklets', $bookmarklets);
         assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
         assertStringContains('/assets/tools_bookmarklets.js', $bookmarklets);
@@ -330,6 +331,7 @@ final class LocalAppSmokeTest
         assertStringContains('browser_signing.js', $composeReply);
         assertStringNotContains('/assets/inline_reply_form.js', $composeReply);
         assertStringContains('Ready.', $composeReply);
+        assertStringContains('data-action="submit-anonymous-compose"', $composeReply);
         assertStringContains('Advanced / technical details', $account);
         assertStringContains('Set up this browser', $account);
         assertStringContains('data-action="clear-browser-identity"', $account);

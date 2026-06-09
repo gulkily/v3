@@ -967,6 +967,159 @@ NODE;
         assertSame(false, $result['savedDraftExists']);
     }
 
+    public function testAnonymousComposeSubmitSkipsBrowserIdentity(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: {},
+  submitHandler: null,
+  submitted: 0,
+  promptCalls: 0,
+  fetchCalls: 0
+};
+
+function makeField(tagName, name, value, defaultValue, type) {
+  return {
+    tagName,
+    name,
+    value,
+    defaultValue,
+    dataset: {},
+    hidden: false,
+    disabled: false,
+    getAttribute(attribute) {
+      if (attribute === 'type') {
+        return type || null;
+      }
+      return null;
+    },
+    addEventListener() {}
+  };
+}
+
+const authorField = makeField('INPUT', 'author_identity_id', 'openpgp:aaaaaaaa', '', 'hidden');
+const fields = [
+  authorField,
+  Object.assign(makeField('INPUT', 'subject', 'Anonymous subject', '', 'text'), { dataset: { composeFieldLabel: 'Subject' } }),
+  Object.assign(makeField('TEXTAREA', 'body', 'Anonymous body', '', null), { dataset: { composeFieldLabel: 'Body' } })
+];
+const normalButton = { dataset: {}, disabled: false };
+const anonymousButton = { dataset: { action: 'submit-anonymous-compose' }, disabled: false };
+const statusNode = { dataset: {}, textContent: '', querySelector(){ return null; } };
+const form = {
+  dataset: { composeKind: 'thread' },
+  querySelector(selector) {
+    if (selector === 'input[name="author_identity_id"]') {
+      return authorField;
+    }
+    return null;
+  },
+  querySelectorAll(selector) {
+    if (selector === 'input[name], textarea[name]') {
+      return fields;
+    }
+    if (selector === 'button[type="submit"], input[type="submit"]') {
+      return [normalButton, anonymousButton];
+    }
+    return [];
+  },
+  addEventListener(type, handler) {
+    if (type === 'submit') {
+      state.submitHandler = handler;
+    }
+  },
+  appendChild() {},
+  submit() {
+    state.submitted += 1;
+  },
+  reset() {}
+};
+const root = {
+  dataset: { composeKind: 'thread' },
+  querySelector(selector) {
+    if (selector === '[data-compose-form]') {
+      return form;
+    }
+    if (selector === '[data-role="compose-identity-status"]') {
+      return statusNode;
+    }
+    return null;
+  },
+  querySelectorAll() {
+    return [];
+  }
+};
+
+global.window = {
+  prompt() {
+    state.promptCalls += 1;
+    return 'guest';
+  },
+  confirm() { return true; },
+  addEventListener() {}
+};
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+  setItem(key, value) { state.localStore[key] = String(value); },
+  removeItem(key) { delete state.localStore[key]; }
+};
+global.sessionStorage = {
+  getItem(){ return ''; },
+  setItem(){},
+  removeItem(){}
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      handler();
+    }
+  },
+  querySelector(selector) {
+    if (selector === '[data-compose-root]') {
+      return root;
+    }
+    return null;
+  },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'', addEventListener(){}, appendChild(){} }; },
+  createTextNode(text){ return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} },
+};
+global.navigator = {};
+global.fetch = async function() {
+  state.fetchCalls += 1;
+  throw new Error('fetch should not run');
+};
+
+vm.runInThisContext(source);
+state.submitHandler({
+  submitter: anonymousButton,
+  preventDefault() {}
+}).then(() => {
+  process.stdout.write(JSON.stringify({
+    submitted: state.submitted,
+    authorIdentityId: authorField.value,
+    promptCalls: state.promptCalls,
+    fetchCalls: state.fetchCalls,
+    status: statusNode.textContent
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(1, $result['submitted']);
+        assertSame('', $result['authorIdentityId']);
+        assertSame(0, $result['promptCalls']);
+        assertSame(0, $result['fetchCalls']);
+        assertSame('Sending anonymous post...', $result['status']);
+    }
+
     public function testThreadReactionBootstrapsIdentityBeforeApplyingLike(): void
     {
         $script = <<<'NODE'

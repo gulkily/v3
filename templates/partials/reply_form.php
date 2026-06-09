@@ -32,6 +32,7 @@ $showBodyLabel = (bool) ($showBodyLabel ?? true);
   </p>
   <div class="compose-form-actions">
     <button type="submit"><?= $e($submitLabel) ?></button>
+    <button type="submit" data-action="submit-anonymous-compose">Post anonymous reply</button>
     <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
   </div>
 </form>

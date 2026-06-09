@@ -1248,6 +1248,22 @@
       normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
     }
 
+    function isAnonymousComposeSubmitter(submitter) {
+      return Boolean(submitter && submitter.dataset && submitter.dataset.action === "submit-anonymous-compose");
+    }
+
+    function clearComposeAuthorIdentity(form) {
+      let field = form.querySelector('input[name="author_identity_id"]');
+      if (!field) {
+        field = document.createElement("input");
+        field.type = "hidden";
+        field.name = "author_identity_id";
+        form.appendChild(field);
+      }
+
+      field.value = "";
+    }
+
     function shouldHonorRecentlyClearedDraft() {
       return recentlyClearedComposeDraftKey() === draftKey;
     }
@@ -1307,6 +1323,13 @@
       }
 
       try {
+        if (isAnonymousComposeSubmitter(submitter)) {
+          clearComposeAuthorIdentity(form);
+          setStatus(statusNode, "Sending anonymous post...", "ok");
+          form.submit();
+          return;
+        }
+
         await ensureComposeIdentity(root, statusNode);
         ensureComposeAuthorIdentity(form);
         setStatus(statusNode, "Identity ready. Sending post...", "ok");

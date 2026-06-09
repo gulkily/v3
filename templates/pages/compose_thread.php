@@ -44,6 +44,7 @@
       </p>
       <div class="compose-form-actions">
         <button type="submit">Create thread</button>
+        <button type="submit" data-action="submit-anonymous-compose">Create thread anonymously</button>
         <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
       </div>
     </form>
