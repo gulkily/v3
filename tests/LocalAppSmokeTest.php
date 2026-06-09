@@ -198,7 +198,7 @@ final class LocalAppSmokeTest
         assertStringNotContains('Labels: bug, needs-review', $board);
         assertStringContains('Hello world', $thread);
         assertStringContains('Labels: bug, needs-review', $thread);
-        assertStringContains('/assets/openpgp.min.js', $thread);
+        assertStringContains('/assets/openpgp_loader.js', $thread);
         assertStringContains('/assets/browser_signing.js', $thread);
         assertStringContains('/assets/inline_reply_form.js', $thread);
         assertStringContains('/assets/thread_reactions.js', $thread);
@@ -337,7 +337,7 @@ final class LocalAppSmokeTest
         assertStringNotContains('View user page', $account);
         assertStringContains('Link identity', $account);
         assertStringContains('Saved browser identity:', $account);
-        assertStringContains('/assets/openpgp.min.js', $account);
+        assertStringContains('/assets/openpgp_loader.js', $account);
         assertStringContains('/assets/browser_signing.js', $account);
         assertStringNotContains('Bootstrap post ID', $account);
         assertStringContains('View: content', $activity);

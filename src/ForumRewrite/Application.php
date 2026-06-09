@@ -709,7 +709,7 @@ final class Application
             $title,
             'board',
             [
-                '/assets/openpgp.min.js',
+                '/assets/openpgp_loader.js',
                 '/assets/browser_signing.js',
                 '/assets/inline_reply_form.js',
                 '/assets/thread_reactions.js',
@@ -756,7 +756,7 @@ final class Application
             'Post ' . $post['post_id'],
             'board',
             [
-                '/assets/openpgp.min.js',
+                '/assets/openpgp_loader.js',
                 '/assets/browser_signing.js',
                 '/assets/thread_reactions.js',
                 '/assets/post_analysis.js',
@@ -1143,7 +1143,7 @@ final class Application
             'notice' => $notice,
             'error' => $error,
         ], 'Compose Thread', 'compose', [
-            '/assets/openpgp.min.js',
+            '/assets/openpgp_loader.js',
             '/assets/browser_signing.js',
         ]);
     }
@@ -1170,7 +1170,7 @@ final class Application
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
             'body' => $body,
         ], 'Compose Reply', 'compose', [
-            '/assets/openpgp.min.js',
+            '/assets/openpgp_loader.js',
             '/assets/browser_signing.js',
         ]);
     }
@@ -1190,7 +1190,7 @@ final class Application
             'notice' => $notice,
             'error' => $error,
         ], 'Account Key', 'account', [
-            '/assets/openpgp.min.js',
+            '/assets/openpgp_loader.js',
             '/assets/browser_signing.js',
         ]);
     }
