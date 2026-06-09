@@ -25,6 +25,27 @@ final class VersionCheckBehaviorTest
         return json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function runComposeDraftClearScript(string $script): array
+    {
+        $command = sprintf(
+            'node -e %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/assets/compose_draft_clear.js'),
+        );
+
+        $output = [];
+        $exitCode = 0;
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Node helper execution failed: ' . implode("\n", $output));
+        }
+
+        return json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+    }
+
     public function testShowBannerPersistsPendingVersionForLaterNavigation(): void
     {
         $script = <<<'NODE'
@@ -388,7 +409,7 @@ process.stdout.write(JSON.stringify({
 }));
 NODE;
 
-        $result = $this->runScript($script);
+        $result = $this->runComposeDraftClearScript($script);
 
         assertSame('', $result['remainingLocalDraft']);
         assertSame('forum_compose_draft:thread', $result['recentlyClearedDraft']);

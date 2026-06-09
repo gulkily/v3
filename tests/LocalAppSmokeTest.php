@@ -317,6 +317,7 @@ final class LocalAppSmokeTest
         assertStringContains('meta name="app-version" content="no-git"', $board);
         assertStringContains('/assets/site.css?v=no-git', $board);
         assertStringContains('/assets/theme_toggle.js?v=no-git', $board);
+        assertStringContains('/assets/compose_draft_clear.js?v=no-git', $board);
         assertStringContains('/assets/version_check.js?v=no-git', $board);
         assertStringContains('data-role="app-version-banner"', $board);
         assertStringContains('Compose Thread', $composeThread);
@@ -373,6 +374,7 @@ final class LocalAppSmokeTest
             assertStringNotContains('data-role="app-version-banner"', $board);
             assertStringNotContains('A new version is available.', $board);
             assertStringContains('/assets/site.css?v=no-git', $board);
+            assertStringContains('/assets/compose_draft_clear.js?v=no-git', $board);
             assertStringContains('/assets/theme_toggle.js?v=no-git', $board);
         } finally {
             if ($previousFlag === false) {

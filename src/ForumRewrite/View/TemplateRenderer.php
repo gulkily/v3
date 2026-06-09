@@ -58,6 +58,7 @@ final class TemplateRenderer
             'appVersionNotificationEnabled' => SiteConfig::appVersionNotificationEnabled(),
             'siteCssPath' => $this->appendVersionQuery('/assets/site.css'),
             'themeToggleScriptPath' => $this->appendVersionQuery('/assets/theme_toggle.js'),
+            'composeDraftClearScriptPath' => $this->appendVersionQuery('/assets/compose_draft_clear.js'),
             'versionCheckScriptPath' => $this->appendVersionQuery('/assets/version_check.js'),
             'navItems' => [
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],

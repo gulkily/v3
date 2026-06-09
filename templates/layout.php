@@ -31,6 +31,7 @@
 <?php foreach ($scriptPaths as $scriptPath): ?>
   <script src="<?= $e($scriptPath) ?>" defer></script>
 <?php endforeach; ?>
+  <script src="<?= $e($composeDraftClearScriptPath) ?>" defer></script>
   <script src="<?= $e($themeToggleScriptPath) ?>" defer></script>
 <?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>
