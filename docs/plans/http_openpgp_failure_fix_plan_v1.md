@@ -143,3 +143,4 @@ The fix is a dual-path browser strategy plus an explicit anonymous fallback: kee
 ## Implementation Log
 
 - Slice 1: complete. Added `public/assets/openpgp_loader.js`, kept the current v6 bundle as the only selected bundle for now, and updated rendered pages/tests to load the loader before `browser_signing.js`. Verification: `php tests/run.php` passed all loader-related assertions but failed the existing `LocalAppSmokeTest::testFrontControllerShowsBusyErrorForExecutionLockContention` busy-page assertion.
+- Slice 2: complete. Vendored patched `OpenPGP.js v5.11.3`, made `openpgp_loader.js` select v5 only on insecure public contexts, and added loader selection tests for secure v6 and insecure v5 paths. Verification: `php tests/run.php` passed `OpenPgpLoaderTest` and all new loader behavior, with the same unrelated `LocalAppSmokeTest::testFrontControllerShowsBusyErrorForExecutionLockContention` busy-page assertion still failing.

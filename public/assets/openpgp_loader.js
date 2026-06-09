@@ -1,7 +1,7 @@
 (function () {
   const config = {
     v6Path: "/assets/openpgp.min.js",
-    v5Path: "",
+    v5Path: "/assets/openpgp.v5.11.3.min.js",
   };
 
   function selectedBundle() {
