@@ -92,6 +92,24 @@ The default is enabled. `/api/version` remains available when the notification i
 
 If production serves prebuilt static HTML artifacts, rebuild those artifacts after changing this flag so rendered pages include or omit the notification markup consistently.
 
+## HTTP, HTTPS, and Browser OpenPGP
+
+Plain HTTP remains a supported production access path. The default Apache example serves the app on port 80 and must not be replaced with a forced HTTP-to-HTTPS redirect unless the local operator intentionally accepts the extra TLS failure modes.
+
+Do not enable HSTS by default. `Strict-Transport-Security` can prevent users from reaching the site after certificate expiry, hostname changes, proxy mistakes, subdomain gaps, captive-portal interference, or other TLS failures.
+
+Browser-held OpenPGP identity uses:
+
+- `public/assets/openpgp_loader.js`
+- `public/assets/openpgp.min.js` for OpenPGP.js v6 on HTTPS and secure loopback origins
+- `public/assets/openpgp.v5.11.3.min.js` as the patched v5 fallback on public HTTP
+
+OpenPGP.js v6 is preferred, but browsers do not expose `crypto.subtle` on public HTTP origins. The loader therefore uses the v5 fallback on public HTTP so authored browser-identity posting can still work where the legacy bundle works.
+
+If browser OpenPGP is unavailable, compose forms expose an explicit anonymous submit button. That path submits with an empty `author_identity_id`; the server writes a normal canonical post without `Author-Identity-ID`. This is intentional and is separate from authored OpenPGP posting.
+
+Server-side user identity generation is intentionally out of scope. Do not generate, store, or manage user private keys on the server for this fallback.
+
 ## Unicode Authored Text Rollout
 
 `FORUM_UNICODE_AUTHORED_TEXT=true` enables visible UTF-8 prose in post subjects and bodies.
@@ -165,6 +183,8 @@ php scripts/build_static_artifacts.php /srv/forum-rewrite/repository /srv/forum-
 - the web user can write the read-model database and lock files
 - the web user can invalidate `public/*.html` artifacts if sibling artifacts are enabled
 - `/api/read_model_status` returns `status=ready`
+- HTTP requests to `/account/key/`, `/compose/thread`, and `/assets/openpgp_loader.js` return app/asset responses, not forced HTTPS redirects
+- default responses do not emit `Strict-Transport-Security`
 
 ## Manual Verification
 
@@ -179,7 +199,9 @@ Before launch, verify:
 - cookie-bearing requests bypass static artifacts and fall back to PHP
 - thread creation works
 - reply creation works
-- identity bootstrap works
+- authored browser identity bootstrap works on HTTPS or secure loopback with the v6 OpenPGP path
+- authored browser identity bootstrap works on public HTTP with the v5 OpenPGP fallback where supported by the browser
+- explicit anonymous compose works when browser OpenPGP is unavailable
 
 ## Recommended Launch Sequence
 

@@ -100,6 +100,8 @@ Compose routes now use submit-time browser identity bootstrap for brand-new user
 
 - no keypair is generated on page load
 - on the first real submit, the browser prompts for username, generates an OpenPGP keypair, publishes the public key in the background, sets the identity-hint cookie, and then continues the original post submit
+- browser OpenPGP is loaded through `/assets/openpgp_loader.js`; it prefers OpenPGP.js v6 on secure origins and uses a pinned OpenPGP.js v5 fallback on public HTTP
+- compose forms include an explicit anonymous submit button that posts without `Author-Identity-ID` when the user chooses not to use browser identity or browser OpenPGP is unavailable
 - existing browser-local keypairs skip regeneration
 - if browser generation/bootstrap fails, the draft stays intact and `/account/key/` remains the manual fallback
 

@@ -8,7 +8,7 @@ When the live site is opened over plain `http://`, browser-side identity setup c
 OpenPGP.js failed to load.
 ```
 
-The app loads OpenPGP.js from the local vendored browser bundle:
+The original failure happened when the app loaded OpenPGP.js directly from the local vendored browser bundle:
 
 ```html
 <script src="/assets/openpgp.min.js?..."></script>
@@ -146,3 +146,4 @@ The fix is a dual-path browser strategy plus an explicit anonymous fallback: kee
 - Slice 2: complete. Vendored patched `OpenPGP.js v5.11.3`, made `openpgp_loader.js` select v5 only on insecure public contexts, and added loader selection tests for secure v6 and insecure v5 paths. Verification: `php tests/run.php` passed `OpenPgpLoaderTest` and all new loader behavior, with the same unrelated `LocalAppSmokeTest::testFrontControllerShowsBusyErrorForExecutionLockContention` busy-page assertion still failing.
 - Slice 3: complete. Updated `browser_signing.js` to await `window.__forumOpenPgpLoader.ready`, normalize the required `generateKey`/`readKey` API checks, and report insecure HTTP OpenPGP loader failures with anonymous-posting and optional-HTTPS next steps. Verification: focused `OpenPgpLoaderTest` and `BrowserSigningNormalizationTest::testInsecureOpenPgpLoaderFailureReportsAnonymousAndHttpsOptions` pass; `php tests/run.php` still has only the unrelated busy-page assertion failure.
 - Slice 4: complete. Added explicit anonymous submit buttons to thread/reply compose forms and updated `browser_signing.js` so only that submitter skips browser identity, clears `author_identity_id`, and submits anonymously. Verification: `BrowserSigningNormalizationTest::testAnonymousComposeSubmitSkipsBrowserIdentity` passes, render smoke assertions cover the new buttons, and `php tests/run.php` still has only the unrelated busy-page assertion failure.
+- Slice 5: complete. Updated production docs and examples to document supported HTTP access, no default HTTPS redirect, no default HSTS, the v6/v5 OpenPGP loader split, explicit anonymous compose fallback, and no server-side user identity custody. Verification: documentation grep checks passed; `php tests/run.php` still has only the unrelated busy-page assertion failure.
