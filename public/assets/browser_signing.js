@@ -534,7 +534,7 @@
       };
     }
 
-    if (technicalDetails === "Unable to inspect OpenPGP public key."
+    if (technicalDetails.indexOf("Unable to inspect OpenPGP public key.") === 0
       || technicalDetails === "OpenPGP public key is missing a fingerprint or user ID."
       || technicalDetails === "public_key is required."
       || technicalDetails === "public_key must be ASCII only.") {
@@ -573,6 +573,12 @@
     const error = new Error(message);
     error.technicalDetails = technicalDetails;
     return error;
+  }
+
+  function isRetryableIdentityBootstrapFailure(technicalDetails) {
+    const message = String(technicalDetails || "").trim();
+    return message.indexOf("Unable to inspect OpenPGP public key.") === 0
+      || message === "OpenPGP public key is missing a fingerprint or user ID.";
   }
 
   function openPgpUnavailableError(technicalDetails) {
@@ -777,6 +783,23 @@
     throw buildFriendlyError(failure.friendlyMessage, failure.technicalDetails);
   }
 
+  async function publishPublicKeyWithRetry(root) {
+    try {
+      await publishPublicKey(root);
+      return;
+    } catch (error) {
+      const technicalDetails = error instanceof Error && typeof error.technicalDetails === "string"
+        ? error.technicalDetails
+        : "";
+      if (!isRetryableIdentityBootstrapFailure(technicalDetails)) {
+        throw error;
+      }
+    }
+
+    await ensureStoredFingerprint();
+    await publishPublicKey(root);
+  }
+
   async function serverKnowsCurrentIdentity(fingerprint) {
     const profileSlug = profileSlugForFingerprint(fingerprint);
     if (!profileSlug) {
@@ -832,10 +855,10 @@
     const fingerprint = String(await ensureStoredFingerprint()).trim().toUpperCase();
     if (fingerprint === "" || publishedFingerprint !== fingerprint) {
       setStatus(statusNode, "Publishing your public key in the background...", "info");
-      await publishPublicKey(root);
+      await publishPublicKeyWithRetry(root);
     } else if (!(await serverKnowsCurrentIdentity(fingerprint))) {
       setStatus(statusNode, "Finishing browser identity setup...", "info");
-      await publishPublicKey(root);
+      await publishPublicKeyWithRetry(root);
     } else {
       await syncIdentityHint(preferredIdentityHint());
     }

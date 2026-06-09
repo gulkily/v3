@@ -227,6 +227,25 @@ final class TemplateRenderer
     {
         $separator = str_contains($path, '?') ? '&' : '?';
 
-        return $path . $separator . 'v=' . rawurlencode($this->appVersion);
+        return $path . $separator . 'v=' . rawurlencode($this->assetVersion($path));
+    }
+
+    private function assetVersion(string $path): string
+    {
+        if (!str_starts_with($path, '/assets/')) {
+            return $this->appVersion;
+        }
+
+        $assetPath = dirname($this->templateRoot) . '/public' . $path;
+        if (!is_file($assetPath)) {
+            return $this->appVersion;
+        }
+
+        $hash = hash_file('sha256', $assetPath);
+        if ($hash === false) {
+            return $this->appVersion;
+        }
+
+        return $this->appVersion . '-' . substr($hash, 0, 12);
     }
 }

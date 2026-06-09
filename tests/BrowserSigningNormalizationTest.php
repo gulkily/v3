@@ -538,6 +538,99 @@ NODE;
         assertSame('Finishing browser identity setup...', $result['status']);
     }
 
+    public function testReadyIdentityRetriesTransientPublicKeyInspectionFailure(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: {},
+  fetches: [],
+  localSetCalls: [],
+  linkIdentityCalls: 0
+};
+
+const generatedPublicKey = '-----BEGIN PGP PUBLIC KEY BLOCK-----\nfixture-key\n-----END PGP PUBLIC KEY BLOCK-----';
+const generatedPrivateKey = '-----BEGIN PGP PRIVATE KEY BLOCK-----\nfixture-key\n-----END PGP PRIVATE KEY BLOCK-----';
+const fingerprint = '0168FF20EB09C3EA6193BD3C92A73AA7D20A0954';
+
+global.window = {
+  prompt() { return 'forum-user'; },
+  confirm() { return true; },
+  openpgp: {
+    async generateKey(options) {
+      state.generatedUsername = options.userIDs[0].name;
+      return { publicKey: generatedPublicKey, privateKey: generatedPrivateKey };
+    },
+    async readKey() {
+      return { getFingerprint() { return fingerprint; } };
+    }
+  }
+};
+global.openpgp = global.window.openpgp;
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+  setItem(key, value) {
+    state.localSetCalls.push([key, String(value)]);
+    state.localStore[key] = String(value);
+  },
+  removeItem(key) { delete state.localStore[key]; }
+};
+global.document = {
+  addEventListener(){},
+  querySelector(){ return null; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'', addEventListener(){}, appendChild(){} }; },
+  createTextNode(text){ return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} },
+};
+global.navigator = {};
+global.fetch = async function (url, options) {
+  const body = options && options.body ? String(options.body) : '';
+  state.fetches.push({ url: String(url), method: options && options.method ? options.method : 'GET', body });
+  if (String(url).indexOf('/api/set_identity_hint?') === 0) {
+    return { ok: true, status: 200, text: async () => 'identity_hint=openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n' };
+  }
+  if (String(url) === '/api/link_identity') {
+    state.linkIdentityCalls += 1;
+    if (state.linkIdentityCalls === 1) {
+      return { ok: false, status: 400, text: async () => 'error=Unable to inspect OpenPGP public key.\n' };
+    }
+    return { ok: true, status: 200, text: async () => 'status=ok\nidentity_id=openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n' };
+  }
+
+  throw new Error('Unexpected fetch: ' + url);
+};
+
+vm.runInThisContext(source);
+const root = { querySelector(){ return null; } };
+const statusNode = { dataset: {}, textContent: '', querySelector(){ return null; } };
+
+window.__forumBrowserIdentity.ensureReadyIdentity(root, statusNode).then(() => {
+  process.stdout.write(JSON.stringify({
+    generatedUsername: state.generatedUsername,
+    fetches: state.fetches,
+    linkIdentityCalls: state.linkIdentityCalls,
+    publishedFingerprint: state.localStore.forum_pki_published_fingerprint || '',
+    status: statusNode.textContent
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('forum-user', $result['generatedUsername']);
+        assertSame(2, $result['linkIdentityCalls']);
+        assertSame('/api/link_identity', $result['fetches'][1]['url']);
+        assertSame('/api/link_identity', $result['fetches'][2]['url']);
+        assertStringContains('public_key=', $result['fetches'][2]['body']);
+        assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $result['publishedFingerprint']);
+        assertSame('Publishing your public key in the background...', $result['status']);
+    }
+
     public function testSubmittedComposePageClearsDraftWithoutImmediatelySavingBlankReplacement(): void
     {
         $script = <<<'NODE'

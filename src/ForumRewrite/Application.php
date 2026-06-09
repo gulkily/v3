@@ -2904,13 +2904,41 @@ final class Application
         }
 
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-        if (str_starts_with($contentType, 'application/json')) {
-            $decoded = json_decode((string) file_get_contents('php://input'), true);
+        $rawBody = (string) file_get_contents('php://input');
+
+        return $this->mergeRequestBodyData($data, $contentType, $rawBody);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function mergeRequestBodyData(array $data, string $contentType, string $rawBody): array
+    {
+        $normalizedContentType = strtolower(trim(explode(';', $contentType, 2)[0]));
+        if ($rawBody === '') {
+            return $data;
+        }
+
+        if ($normalizedContentType === 'application/json') {
+            $decoded = json_decode($rawBody, true);
             if (is_array($decoded)) {
                 foreach ($decoded as $key => $value) {
                     if (is_string($key)) {
                         $data[$key] = $value;
                     }
+                }
+            }
+
+            return $data;
+        }
+
+        if ($normalizedContentType === 'application/x-www-form-urlencoded') {
+            $decoded = [];
+            parse_str($rawBody, $decoded);
+            foreach ($decoded as $key => $value) {
+                if (is_string($key)) {
+                    $data[$key] = $value;
                 }
             }
         }

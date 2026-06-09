@@ -315,13 +315,13 @@ final class LocalAppSmokeTest
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertStringContains('/assets/pending_approvals.js', $pendingUsers);
         assertStringContains('meta name="app-version" content="no-git"', $board);
-        assertStringContains('/assets/site.css?v=no-git', $board);
-        assertStringContains('/assets/theme_toggle.js?v=no-git', $board);
-        assertStringContains('/assets/compose_draft_clear.js?v=no-git', $board);
-        assertStringContains('/assets/version_check.js?v=no-git', $board);
+        assertStringContains('/assets/site.css?v=no-git-', $board);
+        assertStringContains('/assets/theme_toggle.js?v=no-git-', $board);
+        assertStringContains('/assets/compose_draft_clear.js?v=no-git-', $board);
+        assertStringContains('/assets/version_check.js?v=no-git-', $board);
         assertStringContains('data-role="app-version-banner"', $board);
         assertStringContains('Compose Thread', $composeThread);
-        assertStringContains('browser_signing.js', $composeThread);
+        assertStringContains('/assets/browser_signing.js?v=no-git-', $composeThread);
         assertStringContains('Ready.', $composeThread);
         assertStringContains('data-action="submit-anonymous-compose"', $composeThread);
         assertStringContains('Bookmarklets', $bookmarklets);
@@ -373,9 +373,9 @@ final class LocalAppSmokeTest
             assertStringNotContains('/assets/version_check.js', $board);
             assertStringNotContains('data-role="app-version-banner"', $board);
             assertStringNotContains('A new version is available.', $board);
-            assertStringContains('/assets/site.css?v=no-git', $board);
-            assertStringContains('/assets/compose_draft_clear.js?v=no-git', $board);
-            assertStringContains('/assets/theme_toggle.js?v=no-git', $board);
+            assertStringContains('/assets/site.css?v=no-git-', $board);
+            assertStringContains('/assets/compose_draft_clear.js?v=no-git-', $board);
+            assertStringContains('/assets/theme_toggle.js?v=no-git-', $board);
         } finally {
             if ($previousFlag === false) {
                 putenv('FORUM_APP_VERSION_NOTIFICATION');
@@ -618,6 +618,26 @@ final class LocalAppSmokeTest
         assertStringContains('identity_hint=openpgp-example', $response);
         assertSame('openpgp-example', $_COOKIE['identity_hint'] ?? null);
         assertStringContains('openpgp-example', $account);
+    }
+
+    public function testRequestDataParsesRawFormEncodedBodyWhenPostIsEmpty(): void
+    {
+        $application = new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath);
+        $method = new ReflectionMethod(Application::class, 'mergeRequestBodyData');
+        $method->setAccessible(true);
+
+        $result = $method->invoke(
+            $application,
+            ['thread_id' => 'query-thread'],
+            'application/x-www-form-urlencoded; charset=UTF-8',
+            'thread_id=body-thread&public_key=' . rawurlencode("-----BEGIN PGP PUBLIC KEY BLOCK-----\nfixture\n-----END PGP PUBLIC KEY BLOCK-----")
+        );
+
+        assertSame('body-thread', $result['thread_id']);
+        assertSame(
+            "-----BEGIN PGP PUBLIC KEY BLOCK-----\nfixture\n-----END PGP PUBLIC KEY BLOCK-----",
+            $result['public_key']
+        );
     }
 
     public function testWriteApisAreDisabledAgainstCommittedFixtures(): void
