@@ -2198,8 +2198,8 @@ final class WriteApiSmokeTest
         $tags = $this->renderMethod($application, 'GET', '/tags/');
         $tagPage = $this->renderMethod($application, 'GET', '/tags/bug');
 
-        assertStringContains('showing 5 newest', $tags);
-        assertStringContains('View all bug', $tags);
+        assertStringContains('showing 5 newest of 7', $tags);
+        assertStringNotContains('View all bug', $tags);
         assertSame(5, substr_count($tags, 'data-tag-preview-item="bug"'));
         assertSame(1, preg_match('#<ul class="tag-thread-list" data-tag-preview-for="bug">(.*?)</ul>#s', $tags, $matches));
         $preview = $matches[1];

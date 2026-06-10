@@ -32,7 +32,9 @@
           </li>
 <?php endforeach; ?>
         </ul>
-        <p class="meta tag-group-footer"><a href="<?= $e($group['href']) ?>">View all <?= $e($group['tag']) ?></a><?php if ($group['has_more']): ?> <span>showing 5 newest</span><?php endif; ?></p>
+<?php if ($group['has_more']): ?>
+        <p class="meta tag-group-footer">showing 5 newest of <?= (int) $group['count'] ?></p>
+<?php endif; ?>
       </section>
 <?php endforeach; ?>
     </div>
