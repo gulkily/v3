@@ -158,6 +158,10 @@
     }
 
     if (result.generation_status === "not_recommended") {
+      if (result.reason === "config_disabled") {
+        return;
+      }
+
       setFeedback(node, "Agent reply skipped" + skippedReason(result, analysis) + ".", "");
       return;
     }

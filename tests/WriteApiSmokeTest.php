@@ -621,6 +621,7 @@ final class WriteApiSmokeTest
         assertStringContains('const result = agentReplyResultFromAnalysis(analysis);', $script);
         assertStringContains('Agent analysis and reply added below this post.', $script);
         assertStringContains('View agent reply.', $script);
+        assertStringContains('result.reason === "config_disabled"', $script);
         assertStringContains('url.searchParams.set("created_post_id", agentPostId);', $script);
         assertStringContains('url.hash = "post-" + agentPostId;', $script);
         assertStringContains('generation_status === "in_progress"', $script);
