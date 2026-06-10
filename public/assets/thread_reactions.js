@@ -139,6 +139,12 @@
     };
   }
 
+  function postReactionMessage(appliedLabel, wroteRecord) {
+    const label = String(appliedLabel || "Applied").trim() || "Applied";
+    const lowerLabel = label.toLowerCase();
+    return wroteRecord ? `${label}.` : `Already ${lowerLabel}.`;
+  }
+
   function bindThreadReactions(root) {
     const threadId = root.getAttribute("data-thread-id") || "";
     const scoreNode = root.querySelector('[data-role="thread-score"]');
@@ -243,7 +249,7 @@
           return;
         }
 
-        setFeedback(feedbackNode, wroteRecord ? "Flagged." : "Already flagged.", "ok");
+        setFeedback(feedbackNode, postReactionMessage(appliedLabel, wroteRecord), "ok");
       } catch (error) {
         button.disabled = false;
         const feedback = feedbackFromError(error, "Unable to apply tag.");

@@ -1417,6 +1417,112 @@ NODE;
         assertSame(false, $result['buttonDisabled']);
         assertSame('Like', $result['buttonText']);
     }
+
+    public function testPostReactionLikeUsesLikeFeedbackCopy(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const events = [];
+let clickHandler = null;
+
+class HTMLButtonElement {
+  constructor() {
+    this.disabled = false;
+    this.textContent = 'Like';
+    this.attributes = {};
+  }
+  getAttribute(name) {
+    if (name === 'data-tag') return 'like';
+    if (name === 'data-applied-label') return 'Liked';
+    return this.attributes[name] || null;
+  }
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+  }
+  closest(selector) {
+    return selector === '[data-action="apply-post-tag"]' ? this : null;
+  }
+}
+
+const button = new HTMLButtonElement();
+const feedbackNode = { textContent: '', hidden: true, setAttribute(name, value) { this[name] = value; } };
+const root = {
+  hidden: false,
+  getAttribute(name) {
+    return name === 'data-post-id' ? 'reply-001' : '';
+  },
+  querySelector(selector) {
+    if (selector === '[data-role="post-reaction-feedback"]') return feedbackNode;
+    return null;
+  },
+  addEventListener(type, handler) {
+    if (type === 'click') {
+      clickHandler = handler;
+    }
+  }
+};
+
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = {
+  __forumBrowserIdentity: {
+    async ensureReadyIdentity(receivedRoot, receivedFeedback) {
+      events.push(receivedRoot === root ? 'ensure-root' : 'ensure-wrong-root');
+      events.push(receivedFeedback === feedbackNode ? 'ensure-feedback' : 'ensure-wrong-feedback');
+    }
+  }
+};
+global.fetch = async function(url) {
+  events.push(url);
+  return {
+    async text() {
+      return 'status=ok\nwrote_record=no\nis_hidden=no\n';
+    }
+  };
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      handler();
+    }
+  },
+  querySelector() {
+    return null;
+  },
+  querySelectorAll(selector) {
+    return selector === '.post-card[data-post-id]' ? [root] : [];
+  }
+};
+
+vm.runInThisContext(source);
+clickHandler({
+  target: button,
+  preventDefault() {}
+}).then(() => {
+  process.stdout.write(JSON.stringify({
+    events,
+    feedback: feedbackNode.textContent,
+    feedbackHidden: feedbackNode.hidden,
+    buttonDisabled: button.disabled,
+    buttonText: button.textContent,
+    ariaPressed: button.attributes['aria-pressed'] || '',
+    rootHidden: root.hidden
+  }));
+});
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame(['ensure-root', 'ensure-feedback', '/api/apply_post_tag'], array_slice($result['events'], 0, 3));
+        assertSame('Already liked.', $result['feedback']);
+        assertSame(false, $result['feedbackHidden']);
+        assertSame(true, $result['buttonDisabled']);
+        assertSame('Liked', $result['buttonText']);
+        assertSame('true', $result['ariaPressed']);
+        assertSame(false, $result['rootHidden']);
+    }
 }
 
 if (!function_exists('assertSame')) {

@@ -1390,6 +1390,36 @@ final class WriteApiSmokeTest
         assertStringContains('data-action="apply-post-tag"', $threadPage);
     }
 
+    public function testApplyPostTagApiWritesApprovedCommentLikeAndRendersLikedButton(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $recordsBefore = count(glob($repositoryRoot . '/records/post-reactions/*.txt') ?: []);
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $response = $this->renderMethod($application, 'POST', '/api/apply_post_tag?post_id=reply-001&tag=like');
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
+        $_COOKIE = [];
+
+        $recordsAfter = count(glob($repositoryRoot . '/records/post-reactions/*.txt') ?: []);
+
+        assertStringContains('status=ok', $response);
+        assertStringContains('post_id=reply-001', $response);
+        assertStringContains('thread_id=root-001', $response);
+        assertStringContains('tag=like', $response);
+        assertStringContains('post_score_total=1', $response);
+        assertStringContains('approved_flag_count=0', $response);
+        assertStringContains('is_hidden=no', $response);
+        assertStringContains('viewer_is_approved=yes', $response);
+        assertStringContains('wrote_record=yes', $response);
+        assertTrue(strlen($this->extractValue($response, 'commit_sha')) === 40);
+        assertSame($recordsBefore + 1, $recordsAfter);
+        assertStringContains('data-post-id="reply-001"', $threadPage);
+        assertStringContains('data-tag="like"', $threadPage);
+        assertStringContains('>Liked</button>', $threadPage);
+        assertStringContains('aria-pressed="true"', $threadPage);
+    }
+
     public function testApplyPostTagApiDuplicateShortCircuitsWithoutNewRecord(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

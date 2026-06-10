@@ -681,6 +681,9 @@ final class Application
         $viewerPostFlags = $viewerProfile !== null
             ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'flag', (string) $viewerProfile['identity_id'])
             : [];
+        $viewerPostLikes = $viewerProfile !== null
+            ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'like', (string) $viewerProfile['identity_id'])
+            : [];
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
         $createdPostId = $this->createdPostIdForThread($threadId, $createdPostId);
         $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
@@ -695,6 +698,7 @@ final class Application
                 'viewerProfile' => $viewerProfile,
                 'viewerHasLiked' => $viewerHasLiked,
                 'viewerPostFlags' => $viewerPostFlags,
+                'viewerPostLikes' => $viewerPostLikes,
                 'createdPostId' => $createdPostId,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
@@ -733,6 +737,9 @@ final class Application
         $viewerPostFlags = $viewerProfile !== null
             ? $this->viewerPostTagsForPosts([$post['post_id']], 'flag', (string) $viewerProfile['identity_id'])
             : [];
+        $viewerPostLikes = $viewerProfile !== null
+            ? $this->viewerPostTagsForPosts([$post['post_id']], 'like', (string) $viewerProfile['identity_id'])
+            : [];
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
         $posts = [$post];
         $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
@@ -743,6 +750,7 @@ final class Application
             [
                 'post' => $post,
                 'viewerPostFlags' => $viewerPostFlags,
+                'viewerPostLikes' => $viewerPostLikes,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
