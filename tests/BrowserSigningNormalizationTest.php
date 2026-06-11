@@ -1348,8 +1348,8 @@ NODE;
             [
                 'forum_action_start',
                 'forum_identity_start',
-                'forum_first_feedback',
                 'forum_identity_ready',
+                'forum_first_feedback',
                 'forum_fetch_start',
                 'forum_response_received',
                 'forum_reconcile_complete',
@@ -1706,6 +1706,7 @@ const source = fs.readFileSync(process.argv[1], 'utf8');
 let clickHandler = null;
 let fetchCount = 0;
 let resolveFirstFetch = null;
+const debugEvents = [];
 
 class HTMLButtonElement {
   constructor() {
@@ -1752,8 +1753,14 @@ const root = {
 global.Element = HTMLButtonElement;
 global.HTMLButtonElement = HTMLButtonElement;
 global.window = {
+  location: { search: '?debug_timing=1' },
   __forumBrowserIdentity: {
     async ensureReadyIdentity() {}
+  }
+};
+global.console = {
+  info(label, payload) {
+    debugEvents.push({ label, payload });
   }
 };
 global.fetch = async function() {
@@ -1815,7 +1822,8 @@ vm.runInThisContext(source);
     fetchesWhilePending,
     finalFetchCount: fetchCount,
     score: scoreNode.textContent,
-    secondButtonText: secondButton.textContent
+    secondButtonText: secondButton.textContent,
+    debugStatuses: debugEvents.map((event) => event.payload.status)
   }));
 })().catch((error) => {
   process.stderr.write(error.stack || String(error));
@@ -1829,6 +1837,7 @@ NODE;
         assertSame(2, $result['finalFetchCount']);
         assertSame('Score: 2', $result['score']);
         assertSame('Liked', $result['secondButtonText']);
+        assertSame(['ignored_pending', 'ok', 'ok'], $result['debugStatuses']);
     }
 
     public function testPostReactionLikeUsesLikeFeedbackCopy(): void

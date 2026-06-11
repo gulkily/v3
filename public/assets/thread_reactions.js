@@ -373,7 +373,6 @@
 
     markActionTiming(timing, "forum_identity_start");
     setFeedback(feedbackNode, "Preparing identity...", "ok");
-    markFirstFeedback(timing);
     await helper.ensureReadyIdentity(root, feedbackNode);
     markActionTiming(timing, "forum_identity_ready");
   }
@@ -419,11 +418,12 @@
       const tag = button.getAttribute("data-tag") || "";
       const appliedLabel = button.getAttribute("data-applied-label") || "Applied";
       const operationKey = reactionOperationKey("thread", threadId, tag);
+      const timing = startActionTiming("apply_thread_tag");
       if (!beginPendingReaction(operationKey)) {
+        completeActionTiming(timing, "ignored_pending");
         return;
       }
 
-      const timing = startActionTiming("apply_thread_tag");
       const previousState = captureThreadReactionState(button, scoreNode);
 
       button.disabled = true;
@@ -496,11 +496,12 @@
       const tag = button.getAttribute("data-tag") || "";
       const appliedLabel = button.getAttribute("data-applied-label") || "Applied";
       const operationKey = reactionOperationKey("post", postId, tag);
+      const timing = startActionTiming("apply_post_tag");
       if (!beginPendingReaction(operationKey)) {
+        completeActionTiming(timing, "ignored_pending");
         return;
       }
 
-      const timing = startActionTiming("apply_post_tag");
       const previousState = capturePostReactionState(root, button);
 
       button.disabled = true;

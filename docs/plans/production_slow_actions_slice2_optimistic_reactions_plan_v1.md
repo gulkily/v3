@@ -213,6 +213,14 @@ Acceptance:
 
 ### Slice 2E: Timing and Debug Compatibility
 
+Status:
+
+- implemented
+- `forum_first_feedback` now marks the optimistic pending UI update after identity readiness, instead of the earlier identity-preparation message
+- duplicate pending clicks emit opt-in debug summaries with status `ignored_pending`
+- existing success and error summaries continue to use `ok` and `error`
+- reaction responses continue to parse `Server-Timing` into the opt-in debug payload
+
 Goal:
 
 - keep Slice 1 timing useful after optimistic behavior lands
