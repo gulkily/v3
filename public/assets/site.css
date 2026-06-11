@@ -852,6 +852,12 @@ pre {
   margin-top: 0.75rem;
 }
 
+.post-card-actions .thread-reaction-feedback,
+.post-card-actions .agent-reply-feedback {
+  margin: 0;
+  line-height: inherit;
+}
+
 .thread-reaction-feedback[data-kind="ok"] {
   color: var(--status-ok);
 }
