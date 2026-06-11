@@ -1501,7 +1501,10 @@ const state = {
   fetchCalls: [],
   assignedUrl: '',
   resolveCreateReply: null,
-  formSubmitted: 0
+  formSubmitted: 0,
+  marks: [],
+  debugEvents: [],
+  now: 0
 };
 
 function makeNode(tagName) {
@@ -1629,9 +1632,28 @@ parent.children.push({ id: 'existing-reply' }, root);
 global.window = {
   addEventListener() {},
   location: {
+    search: '?debug_timing=1',
     assign(url) {
       state.assignedUrl = url;
     }
+  },
+  performance: {
+    now() {
+      state.now += 10;
+      return state.now;
+    },
+    mark(name, options) {
+      state.marks.push({
+        name,
+        action: options && options.detail ? options.detail.action : '',
+        status: options && options.detail ? options.detail.status || '' : ''
+      });
+    }
+  }
+};
+global.console = {
+  info(label, payload) {
+    state.debugEvents.push({ label, payload });
   }
 };
 global.localStorage = {
@@ -1668,7 +1690,7 @@ global.fetch = async function(url, options) {
     return new Promise((resolve) => {
       state.resolveCreateReply = function () {
         resolve({
-          headers: { get() { return ''; } },
+          headers: { get(name) { return name === 'Server-Timing' ? 'lock_wait;dur=1.5, total;dur=7.5' : ''; } },
           async text() {
             return 'status=ok\npost_id=reply-002\nthread_id=root-001\ncommit_sha=abc999\n';
           }
@@ -1707,7 +1729,9 @@ vm.runInThisContext(source);
     optimistic,
     assignedUrl: state.assignedUrl,
     removeCalls: state.localRemoveCalls,
-    finalFormSubmitted: state.formSubmitted
+    finalFormSubmitted: state.formSubmitted,
+    marks: state.marks,
+    debugEvents: state.debugEvents
   }));
 })().catch((error) => {
   process.stderr.write(error.stack || String(error));
@@ -1735,6 +1759,27 @@ NODE;
         assertSame('/threads/root-001?created_post_id=reply-002&__v=abc999#post-reply-002', $result['assignedUrl']);
         assertSame(['forum_compose_draft:reply:root-001:root-001'], $result['removeCalls']);
         assertSame(0, $result['finalFormSubmitted']);
+        assertSame(
+            [
+                'forum_action_start',
+                'forum_identity_start',
+                'forum_identity_ready',
+                'forum_first_feedback',
+                'forum_fetch_start',
+                'forum_response_received',
+                'forum_reconcile_complete',
+                'forum_action_complete',
+            ],
+            array_column($result['marks'], 'name')
+        );
+        assertSame('compose_reply', $result['marks'][0]['action']);
+        assertSame('ok', $result['marks'][7]['status']);
+        assertSame('[forum timing]', $result['debugEvents'][0]['label']);
+        assertSame('compose_reply', $result['debugEvents'][0]['payload']['action']);
+        assertSame('ok', $result['debugEvents'][0]['payload']['status']);
+        assertSame(1.5, $result['debugEvents'][0]['payload']['server_timing']['lock_wait']);
+        assertSame(7.5, $result['debugEvents'][0]['payload']['server_timing']['total']);
+        assertSame(false, array_key_exists('body', $result['debugEvents'][0]['payload']));
     }
 
     public function testInlineReplySubmitFailureRemovesPendingCardAndPreservesDraft(): void

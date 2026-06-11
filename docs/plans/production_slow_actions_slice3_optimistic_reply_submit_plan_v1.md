@@ -213,6 +213,14 @@ Acceptance:
 
 ### Slice 3E: Timing and Compatibility
 
+Status:
+
+- implemented
+- optimistic inline replies mark identity start/ready, first optimistic feedback, fetch start, response received, reconcile complete, and action complete
+- compose timing debug summaries now include network duration and parsed `Server-Timing` when present
+- debug payloads remain metadata-only and do not include reply body, request body, public/private key material, or authored content
+- anonymous reply submits and standalone compose reply pages keep their existing form-submit behavior
+
 Goal:
 
 - keep Slice 1 timing useful for reply submits after optimistic rendering lands

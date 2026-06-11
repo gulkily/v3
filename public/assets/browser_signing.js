@@ -25,6 +25,8 @@
       id: `${action}:${Date.now()}:${++actionTimingSequence}`,
       firstFeedbackMarked: false,
       points: {},
+      serverTiming: {},
+      errorKind: "",
     };
     markActionTiming(timing, "forum_action_start");
     return timing;
@@ -107,9 +109,9 @@
       status: status,
       duration_ms: timingDelta(timing, "forum_action_start", "forum_action_complete"),
       identity_ms: timingDelta(timing, "forum_identity_start", "forum_identity_ready"),
-      network_ms: null,
-      server_timing: {},
-      error_kind: status === "error" || status === "validation_error" ? status : "",
+      network_ms: timingDelta(timing, "forum_fetch_start", "forum_response_received"),
+      server_timing: timing.serverTiming || {},
+      error_kind: timing.errorKind || (status === "error" || status === "validation_error" ? status : ""),
     });
   }
 
@@ -1598,6 +1600,7 @@
         markActionTiming(timing, "forum_fetch_start");
         const result = await submitReplyFormToApi(form);
         markActionTiming(timing, "forum_response_received");
+        timing.serverTiming = result.serverTiming || {};
         if (!result.ok) {
           removeNode(pendingCard);
           throw new Error(result.error);
@@ -1708,6 +1711,7 @@
         completeActionTiming(timing, "submit");
         form.submit();
       } catch (error) {
+        timing.errorKind = error instanceof Error && error.name ? error.name : "error";
         const status = statusFromError(error, "Unable to prepare your browser identity. Use /account/key/ manually.");
         setStatus(
           statusNode,
