@@ -389,10 +389,109 @@
     }
   }
 
+  function parseServerTimingHeader(value) {
+    const metrics = {};
+    String(value || "").split(",").forEach(function (entry) {
+      const parts = entry.trim().split(";");
+      const name = (parts.shift() || "").trim();
+      if (!/^[a-z_][a-z0-9_]*$/.test(name)) {
+        return;
+      }
+
+      const durationPart = parts.find(function (part) {
+        return part.trim().startsWith("dur=");
+      });
+      if (!durationPart) {
+        return;
+      }
+
+      const duration = Number(durationPart.trim().slice(4));
+      if (!Number.isFinite(duration)) {
+        return;
+      }
+
+      metrics[name] = duration;
+    });
+
+    return metrics;
+  }
+
+  function parseComposeApiValue(text, key) {
+    const prefix = `${key}=`;
+    const line = String(text)
+      .split("\n")
+      .find(function (item) {
+        return item.startsWith(prefix);
+      });
+
+    return line ? line.slice(prefix.length) : "";
+  }
+
+  function parseCreateReplyResponse(text, serverTiming) {
+    if (!String(text || "").includes("status=ok")) {
+      return {
+        ok: false,
+        error: parseComposeApiValue(text, "error") || "Unable to create reply.",
+        serverTiming: serverTiming || {},
+      };
+    }
+
+    return {
+      ok: true,
+      postId: parseComposeApiValue(text, "post_id"),
+      threadId: parseComposeApiValue(text, "thread_id"),
+      commitSha: parseComposeApiValue(text, "commit_sha"),
+      serverTiming: serverTiming || {},
+    };
+  }
+
+  function isReplyComposeForm(form) {
+    return Boolean(form && form.dataset && form.dataset.composeKind === "reply");
+  }
+
+  function composeFormFieldValue(form, name) {
+    const field = form.querySelector(`[name="${name}"]`);
+    return field ? field.value : "";
+  }
+
+  function collectReplySubmitFields(form) {
+    return {
+      thread_id: composeFormFieldValue(form, "thread_id"),
+      parent_id: composeFormFieldValue(form, "parent_id"),
+      author_identity_id: composeFormFieldValue(form, "author_identity_id"),
+      board_tags: composeFormFieldValue(form, "board_tags"),
+      body: composeFormFieldValue(form, "body"),
+    };
+  }
+
+  async function submitReplyFormToApi(form) {
+    const response = await fetch("/api/create_reply", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
+      body: new URLSearchParams(collectReplySubmitFields(form)).toString(),
+    });
+
+    const text = await response.text();
+    return parseCreateReplyResponse(
+      text,
+      parseServerTimingHeader(response.headers && typeof response.headers.get === "function"
+        ? response.headers.get("Server-Timing")
+        : "")
+    );
+  }
+
   if (typeof window !== "undefined") {
     window.__forumComposeNormalization = {
+      collectReplySubmitFields: collectReplySubmitFields,
+      isReplyComposeForm: isReplyComposeForm,
       normalizeComposeAscii: normalizeComposeAscii,
       normalizeComposeText: normalizeComposeText,
+      parseCreateReplyResponse: parseCreateReplyResponse,
+      parseServerTimingHeader: parseServerTimingHeader,
+      submitReplyFormToApi: submitReplyFormToApi,
     };
   }
 

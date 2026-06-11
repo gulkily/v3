@@ -1213,6 +1213,173 @@ NODE;
         assertSame('Sending anonymous post...', $result['status']);
     }
 
+    public function testReplySubmitTransportHelpersCollectFieldsAndParseResponses(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+
+function field(name, value) {
+  return { name, value };
+}
+
+const fields = [
+  field('thread_id', 'root-001'),
+  field('parent_id', 'reply-001'),
+  field('author_identity_id', 'openpgp:abc123'),
+  field('board_tags', 'general'),
+  field('body', 'Reply body')
+];
+const form = {
+  dataset: { composeKind: 'reply' },
+  querySelector(selector) {
+    const match = selector.match(/^\[name="([^"]+)"\]$/);
+    if (!match) {
+      return null;
+    }
+
+    return fields.find((item) => item.name === match[1]) || null;
+  }
+};
+
+global.window = {};
+global.localStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.sessionStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener() {},
+  querySelector() { return null; },
+  createElement() { return { setAttribute(){}, style:{}, addEventListener(){}, appendChild(){}, select(){} }; },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+const helper = window.__forumComposeNormalization;
+process.stdout.write(JSON.stringify({
+  isReply: helper.isReplyComposeForm(form),
+  fields: helper.collectReplySubmitFields(form),
+  success: helper.parseCreateReplyResponse('status=ok\npost_id=reply-002\nthread_id=root-001\ncommit_sha=abc999\n', { total: 12.3 }),
+  failure: helper.parseCreateReplyResponse('error=Body is required.\n', {}),
+  timing: helper.parseServerTimingHeader('lock_wait;dur=1.2, total;dur=4.5, invalid-name;dur=9, git_commit;dur=nope')
+}));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(true, $result['isReply']);
+        assertSame(
+            [
+                'thread_id' => 'root-001',
+                'parent_id' => 'reply-001',
+                'author_identity_id' => 'openpgp:abc123',
+                'board_tags' => 'general',
+                'body' => 'Reply body',
+            ],
+            $result['fields']
+        );
+        assertSame(true, $result['success']['ok']);
+        assertSame('reply-002', $result['success']['postId']);
+        assertSame('root-001', $result['success']['threadId']);
+        assertSame('abc999', $result['success']['commitSha']);
+        assertSame(12.3, $result['success']['serverTiming']['total']);
+        assertSame(false, $result['failure']['ok']);
+        assertSame('Body is required.', $result['failure']['error']);
+        assertSame(1.2, $result['timing']['lock_wait']);
+        assertSame(4.5, $result['timing']['total']);
+        assertSame(false, array_key_exists('invalid-name', $result['timing']));
+        assertSame(false, array_key_exists('git_commit', $result['timing']));
+    }
+
+    public function testReplySubmitTransportPostsUrlEncodedPayload(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+let fetchCall = null;
+
+function field(name, value) {
+  return { name, value };
+}
+
+const fields = [
+  field('thread_id', 'root-001'),
+  field('parent_id', 'root-001'),
+  field('author_identity_id', 'openpgp:abc123'),
+  field('board_tags', 'general'),
+  field('body', 'Reply body with spaces')
+];
+const form = {
+  dataset: { composeKind: 'reply' },
+  querySelector(selector) {
+    const match = selector.match(/^\[name="([^"]+)"\]$/);
+    if (!match) {
+      return null;
+    }
+
+    return fields.find((item) => item.name === match[1]) || null;
+  }
+};
+
+global.window = {};
+global.localStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.sessionStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener() {},
+  querySelector() { return null; },
+  createElement() { return { setAttribute(){}, style:{}, addEventListener(){}, appendChild(){}, select(){} }; },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url, options) {
+  fetchCall = { url, options };
+  return {
+    headers: {
+      get(name) {
+        return name === 'Server-Timing' ? 'total;dur=9.5' : '';
+      }
+    },
+    async text() {
+      return 'status=ok\npost_id=reply-002\nthread_id=root-001\ncommit_sha=abc999\n';
+    }
+  };
+};
+
+vm.runInThisContext(source);
+window.__forumComposeNormalization.submitReplyFormToApi(form).then((result) => {
+  process.stdout.write(JSON.stringify({
+    result,
+    url: fetchCall.url,
+    method: fetchCall.options.method,
+    credentials: fetchCall.options.credentials,
+    contentType: fetchCall.options.headers['Content-Type'],
+    body: fetchCall.options.body
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('/api/create_reply', $result['url']);
+        assertSame('POST', $result['method']);
+        assertSame('same-origin', $result['credentials']);
+        assertSame('application/x-www-form-urlencoded; charset=UTF-8', $result['contentType']);
+        assertStringContains('thread_id=root-001', $result['body']);
+        assertStringContains('parent_id=root-001', $result['body']);
+        assertStringContains('author_identity_id=openpgp%3Aabc123', $result['body']);
+        assertStringContains('board_tags=general', $result['body']);
+        assertStringContains('body=Reply+body+with+spaces', $result['body']);
+        assertSame(true, $result['result']['ok']);
+        assertSame('reply-002', $result['result']['postId']);
+        assertSame(9.5, $result['result']['serverTiming']['total']);
+    }
+
     public function testThreadReactionBootstrapsIdentityBeforeApplyingLike(): void
     {
         $script = <<<'NODE'
