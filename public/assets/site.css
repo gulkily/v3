@@ -409,6 +409,18 @@ pre {
   border-color: var(--active-line);
 }
 
+.pending-reply-card {
+  border-style: dashed;
+}
+
+.pending-reply-card .body {
+  white-space: pre-wrap;
+}
+
+.pending-reply-status {
+  color: var(--ink-soft);
+}
+
 .post-card-permalink {
   position: absolute;
   right: 0.9rem;

@@ -1380,6 +1380,108 @@ NODE;
         assertSame(9.5, $result['result']['serverTiming']['total']);
     }
 
+    public function testPendingReplyCardRendererEscapesBodyAndInsertsBeforeComposer(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+
+function makeNode(tagName) {
+  return {
+    tagName,
+    id: '',
+    className: '',
+    textContent: '',
+    attributes: {},
+    children: [],
+    parentNode: null,
+    setAttribute(name, value) {
+      this.attributes[name] = String(value);
+    },
+    appendChild(child) {
+      child.parentNode = this;
+      this.children.push(child);
+      return child;
+    },
+    querySelector(selector) {
+      if (selector === '.body') {
+        return this.children.find((child) => child.className === 'body') || null;
+      }
+      if (selector === '[data-role="pending-reply-status"]') {
+        return this.children.find((child) => child.attributes['data-role'] === 'pending-reply-status') || null;
+      }
+      return null;
+    }
+  };
+}
+
+const parent = {
+  children: [],
+  insertBefore(child, before) {
+    child.parentNode = this;
+    const index = this.children.indexOf(before);
+    if (index === -1) {
+      this.children.push(child);
+      return child;
+    }
+    this.children.splice(index, 0, child);
+    return child;
+  }
+};
+const composer = { parentNode: parent, id: 'composer' };
+parent.children.push({ id: 'existing-reply' }, composer);
+
+global.window = {};
+global.localStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.sessionStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener() {},
+  querySelector() { return null; },
+  createElement(tagName) { return makeNode(tagName); },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+const helper = window.__forumComposeNormalization;
+const card = helper.createPendingReplyCard({
+  pendingId: 'pending-reply:test',
+  parentId: 'root-001',
+  body: '<script>alert(1)</script>\nsecond line',
+  authorLabel: 'Posting as Alice',
+  status: 'Posting...'
+});
+const inserted = helper.insertPendingReplyCard(composer, card);
+process.stdout.write(JSON.stringify({
+  inserted,
+  cardId: card.id,
+  className: card.className,
+  pendingId: card.attributes['data-pending-reply-id'],
+  parentId: card.attributes['data-parent-id'],
+  author: card.children[0].textContent,
+  bodyText: card.querySelector('.body').textContent,
+  bodyChildCount: card.querySelector('.body').children.length,
+  status: card.querySelector('[data-role="pending-reply-status"]').textContent,
+  order: parent.children.map((child) => child.id)
+}));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(true, $result['inserted']);
+        assertSame('pending-reply:test', $result['cardId']);
+        assertSame('card post-card pending-reply-card', $result['className']);
+        assertSame('pending-reply:test', $result['pendingId']);
+        assertSame('root-001', $result['parentId']);
+        assertSame('Posting as Alice', $result['author']);
+        assertSame("<script>alert(1)</script>\nsecond line", $result['bodyText']);
+        assertSame(0, $result['bodyChildCount']);
+        assertSame('Posting...', $result['status']);
+        assertSame(['existing-reply', 'pending-reply:test', 'composer'], $result['order']);
+    }
+
     public function testThreadReactionBootstrapsIdentityBeforeApplyingLike(): void
     {
         $script = <<<'NODE'

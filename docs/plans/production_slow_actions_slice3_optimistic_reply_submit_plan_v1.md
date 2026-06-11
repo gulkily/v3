@@ -106,6 +106,14 @@ Acceptance:
 
 ### Slice 3B: Pending Reply Card Renderer
 
+Status:
+
+- implemented
+- added a pending reply card renderer that creates `card post-card pending-reply-card` markup with `data-pending-reply-id` and `data-parent-id`
+- pending reply bodies are assigned with `textContent`, so authored text is not interpreted as HTML
+- pending reply body line breaks are preserved with CSS on `.pending-reply-card .body`
+- pending cards insert immediately before the inline composer when a composer parent is available
+
 Goal:
 
 - render a local pending reply card that matches existing post-card structure closely enough to avoid layout churn

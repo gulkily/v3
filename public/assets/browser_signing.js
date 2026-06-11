@@ -464,6 +464,45 @@
     };
   }
 
+  let pendingReplySequence = 0;
+
+  function createPendingReplyCard(reply) {
+    const data = reply || {};
+    const pendingId = data.pendingId || `pending-reply:${++pendingReplySequence}`;
+    const article = document.createElement("article");
+    article.id = pendingId;
+    article.className = "card post-card pending-reply-card";
+    article.setAttribute("data-pending-reply-id", pendingId);
+    article.setAttribute("data-parent-id", data.parentId || "");
+
+    const meta = document.createElement("p");
+    meta.className = "meta";
+    meta.textContent = data.authorLabel || "Posting as your browser identity";
+    article.appendChild(meta);
+
+    const body = document.createElement("div");
+    body.className = "body";
+    body.textContent = data.body || "";
+    article.appendChild(body);
+
+    const status = document.createElement("p");
+    status.className = "meta pending-reply-status";
+    status.setAttribute("data-role", "pending-reply-status");
+    status.textContent = data.status || "Posting...";
+    article.appendChild(status);
+
+    return article;
+  }
+
+  function insertPendingReplyCard(composerRoot, card) {
+    if (!composerRoot || !card || !composerRoot.parentNode || typeof composerRoot.parentNode.insertBefore !== "function") {
+      return false;
+    }
+
+    composerRoot.parentNode.insertBefore(card, composerRoot);
+    return true;
+  }
+
   async function submitReplyFormToApi(form) {
     const response = await fetch("/api/create_reply", {
       method: "POST",
@@ -486,6 +525,8 @@
   if (typeof window !== "undefined") {
     window.__forumComposeNormalization = {
       collectReplySubmitFields: collectReplySubmitFields,
+      createPendingReplyCard: createPendingReplyCard,
+      insertPendingReplyCard: insertPendingReplyCard,
       isReplyComposeForm: isReplyComposeForm,
       normalizeComposeAscii: normalizeComposeAscii,
       normalizeComposeText: normalizeComposeText,
