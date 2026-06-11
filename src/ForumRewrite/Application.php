@@ -2544,6 +2544,9 @@ final class Application
         $phaseStartedAt = hrtime(true);
         $result = $this->postAnalysisService()->analyze($context);
         $timings['post_analysis'] = $this->elapsedMilliseconds($phaseStartedAt);
+        foreach ($this->timingMetricsFrom($result['timings'] ?? null) as $name => $duration) {
+            $timings[$name] = $duration;
+        }
 
         $phaseStartedAt = hrtime(true);
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
@@ -2620,6 +2623,9 @@ final class Application
         $phaseStartedAt = hrtime(true);
         $response = $this->agentReplyResultForPost($post);
         $timings['agent_reply'] = $this->elapsedMilliseconds($phaseStartedAt);
+        foreach ($this->timingMetricsFrom($response['timings'] ?? null) as $name => $duration) {
+            $timings[$name] = $duration;
+        }
 
         $this->sendJson($response, 200, $headersWithTimings());
     }
@@ -3337,6 +3343,31 @@ final class Application
     private function timingsWithTotal(array $timings, int $totalStartedAt): array
     {
         $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+        return $timings;
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function timingMetricsFrom(mixed $value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $timings = [];
+        foreach ($value as $name => $duration) {
+            if (!is_string($name) || !preg_match('/^[a-z_][a-z0-9_]*$/', $name)) {
+                continue;
+            }
+
+            if (!is_int($duration) && !is_float($duration)) {
+                continue;
+            }
+
+            $timings[$name] = (float) $duration;
+        }
 
         return $timings;
     }

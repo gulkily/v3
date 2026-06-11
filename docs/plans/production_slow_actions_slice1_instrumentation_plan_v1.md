@@ -27,8 +27,8 @@ This slice should not introduce optimistic UI behavior yet. It should only add o
 - `Application::handleAnalyzePost()` already records a more detailed non-write timing chain.
 - `ExecutionLock::withExclusiveLockTimed()` exposes `lock_wait`, and `LocalWriteService` merges it into successful canonical write timings.
 - Write endpoints now merge application-level pre-writer timings with write-service timings. Handler-level `total` covers the full request handler, while writer-internal `total` is preserved as `write_total`.
-- Some timing gaps remain for provider-specific internals and broader browser-side action duration.
-- Browser-side action duration is mostly invisible. Reaction code shows progress messages, but it does not mark identity preparation, fetch timing, or first visible feedback.
+- Provider-backed post analysis now returns an `external_provider` timing bucket, and the Dedalus agent reply generator attaches the same bucket when used directly.
+- Browser-side action duration remains mostly invisible. Reaction code shows progress messages, but it does not mark identity preparation, fetch timing, or first visible feedback.
 
 ## Timing Names
 
@@ -157,6 +157,13 @@ Verification:
 - validation errors that occur after timing starts include `Server-Timing`
 
 ### Slice 1C: External Provider Timing
+
+Status:
+
+- implemented
+- `PostAnalysisService` measures analyzer execution and returns `external_provider` on success and provider failure
+- `DedalusPostAnalyzer` measures the actual provider HTTP call and returns that value as `external_provider`
+- `DedalusAgentReplyGenerator` also returns `external_provider`; the current `/api/generate_agent_reply` path still primarily reports the whole `agent_reply` flow because it usually reuses analysis-derived response text
 
 Goal:
 

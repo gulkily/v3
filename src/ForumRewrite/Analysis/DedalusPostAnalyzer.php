@@ -46,6 +46,7 @@ final class DedalusPostAnalyzer implements PostAnalyzer
 
     public function analyze(array $context): array
     {
+        $providerStartedAt = hrtime(true);
         $response = $this->postJson('/v1/chat/completions', [
             'model' => $this->model,
             'messages' => [
@@ -67,6 +68,7 @@ final class DedalusPostAnalyzer implements PostAnalyzer
             ],
             'max_completion_tokens' => 8000,
         ]);
+        $externalProviderTiming = $this->elapsedMilliseconds($providerStartedAt);
 
         $decoded = self::decodeCompletionPayload($response);
 
@@ -82,6 +84,9 @@ final class DedalusPostAnalyzer implements PostAnalyzer
             'related_content_assessment' => $this->objectOrEmpty($decoded['related_content_assessment'] ?? null),
             'unicode_risk_review' => $this->unicodeRiskReview($decoded['unicode_risk_review'] ?? null),
             'raw_response' => $response,
+            'timings' => [
+                'external_provider' => $externalProviderTiming,
+            ],
         ];
     }
 
@@ -256,6 +261,11 @@ final class DedalusPostAnalyzer implements PostAnalyzer
     private function boundedScore(mixed $value): float
     {
         return max(0.0, min(1.0, (float) $value));
+    }
+
+    private function elapsedMilliseconds(int $startedAt): float
+    {
+        return round((hrtime(true) - $startedAt) / 1000000, 1);
     }
 
     /**

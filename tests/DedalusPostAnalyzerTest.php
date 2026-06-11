@@ -266,6 +266,44 @@ final class DedalusPostAnalyzerTest
         assertSame(true, $analysis['related_content_assessment']['related_results_appropriate']);
     }
 
+    public function testPostAnalysisServiceReturnsExternalProviderTiming(): void
+    {
+        $store = new SqlitePostAnalysisStore(new PDO('sqlite::memory:'));
+        $service = new PostAnalysisService($store, new class implements PostAnalyzer {
+            public function analyze(array $context): array
+            {
+                usleep(1000);
+
+                return [
+                    'provider' => 'test',
+                    'provider_model' => 'test-model',
+                    'post_summary' => 'Summary.',
+                    'moderation' => [],
+                    'engagement' => [],
+                    'quality' => [],
+                    'respondability' => [],
+                    'related_content_assessment' => [
+                        'related_results_appropriate' => false,
+                        'solicitation_score' => 0.0,
+                        'solicitation_reason' => '',
+                        'candidate_reviews' => [],
+                    ],
+                    'raw_response' => [],
+                ];
+            }
+        });
+
+        $analysis = $service->analyze([
+            'post_id' => 'target',
+            'thread_id' => 'target-thread',
+            'content_hash' => 'hash-timing',
+        ]);
+
+        if (!isset($analysis['timings']['external_provider']) || !is_float($analysis['timings']['external_provider'])) {
+            throw new RuntimeException('Expected external provider timing.');
+        }
+    }
+
     public function testPostAnalysisServicePersistsUnicodeRiskBeforeProviderAnalysis(): void
     {
         $pdo = new PDO('sqlite::memory:');

@@ -27,6 +27,7 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
 
     public function generate(array $context): array
     {
+        $providerStartedAt = hrtime(true);
         $response = $this->postJson('/v1/chat/completions', [
             'model' => $this->model,
             'messages' => [
@@ -48,6 +49,7 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
             ],
             'max_completion_tokens' => max(1200, $this->maxCompletionTokens),
         ]);
+        $externalProviderTiming = $this->elapsedMilliseconds($providerStartedAt);
 
         $decoded = self::decodeCompletionPayload($response);
         $text = self::normalizeGeneratedReplyText((string) ($decoded['response_text'] ?? ''));
@@ -63,6 +65,9 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
             'response_style' => (string) ($decoded['response_style'] ?? 'curious'),
             'response_intent' => (string) ($decoded['response_intent'] ?? 'answer'),
             'raw_response' => $response,
+            'timings' => [
+                'external_provider' => $externalProviderTiming,
+            ],
         ];
     }
 
@@ -122,6 +127,11 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
         ]);
 
         return $this->loadedSystemPrompt;
+    }
+
+    private function elapsedMilliseconds(int $startedAt): float
+    {
+        return round((hrtime(true) - $startedAt) / 1000000, 1);
     }
 
     /**

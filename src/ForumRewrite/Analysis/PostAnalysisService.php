@@ -66,7 +66,9 @@ final class PostAnalysisService
 
         try {
             $analysisContext = $this->contextWithUnicodeRisk($context, $unicodeRisk);
+            $providerStartedAt = hrtime(true);
             $analysis = $this->analyzer->analyze($analysisContext);
+            $providerTiming = $this->elapsedMilliseconds($providerStartedAt);
             $analysis['related_content_assessment'] = $this->relatedContentAssessment($analysis);
             $analysis['related_content'] = $this->approvedRelatedContent($context, $analysis['related_content_assessment']);
             $analysis['unicode_risk_review'] = $this->unicodeRiskReview($analysis);
@@ -79,16 +81,45 @@ final class PostAnalysisService
                 $stored['unicode_risk'] = $unicodeRisk;
             }
             $stored['cached'] = false;
+            $stored['timings'] = $this->analysisTimings($analysis, $providerTiming);
             return $stored;
         } catch (\Throwable $throwable) {
+            $providerTiming = isset($providerStartedAt) ? $this->elapsedMilliseconds($providerStartedAt) : 0.0;
             $stored = $this->store->saveFailed($postId, $contentHash, 'provider_error', $throwable->getMessage());
             if ($unicodeRisk !== null) {
                 $unicodeRisk = $this->storeUnicodeRiskFailure($postId, $contentHash, $unicodeRisk, $throwable->getMessage());
                 $stored['unicode_risk'] = $unicodeRisk;
             }
             $stored['cached'] = false;
+            $stored['timings'] = [
+                'external_provider' => $providerTiming,
+            ];
             return $stored;
         }
+    }
+
+    /**
+     * @param array<string, mixed> $analysis
+     * @return array<string, float>
+     */
+    private function analysisTimings(array $analysis, float $providerTiming): array
+    {
+        $timings = [];
+        if (isset($analysis['timings']) && is_array($analysis['timings'])) {
+            foreach ($analysis['timings'] as $name => $duration) {
+                if (!is_string($name) || (!is_int($duration) && !is_float($duration))) {
+                    continue;
+                }
+
+                $timings[$name] = (float) $duration;
+            }
+        }
+
+        if (!isset($timings['external_provider'])) {
+            $timings['external_provider'] = $providerTiming;
+        }
+
+        return $timings;
     }
 
     /**
@@ -212,6 +243,11 @@ final class PostAnalysisService
         );
 
         return $this->unicodeRiskStore->saveDeterministic($postId, $contentHash, 1, $facts);
+    }
+
+    private function elapsedMilliseconds(int $startedAt): float
+    {
+        return round((hrtime(true) - $startedAt) / 1000000, 1);
     }
 
     /**
