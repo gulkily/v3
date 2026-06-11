@@ -12,6 +12,9 @@
       action: action,
       id: `${action}:${Date.now()}:${++actionTimingSequence}`,
       firstFeedbackMarked: false,
+      points: {},
+      serverTiming: {},
+      errorKind: "",
     };
     markActionTiming(timing, "forum_action_start");
     return timing;
@@ -21,6 +24,10 @@
     const perf = browserPerformance();
     if (!perf || !timing) {
       return;
+    }
+
+    if (typeof perf.now === "function") {
+      timing.points[name] = perf.now();
     }
 
     const detail = Object.assign({
@@ -49,6 +56,78 @@
 
   function completeActionTiming(timing, status) {
     markActionTiming(timing, "forum_action_complete", { status: status });
+    emitActionTimingDebug(timing, status);
+  }
+
+  function timingDelta(timing, startName, endName) {
+    if (!timing || !timing.points || typeof timing.points[startName] !== "number" || typeof timing.points[endName] !== "number") {
+      return null;
+    }
+
+    return Math.max(0, Math.round((timing.points[endName] - timing.points[startName]) * 10) / 10);
+  }
+
+  function debugTimingEnabled() {
+    try {
+      if (typeof window !== "undefined" && window.location && window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("debug_timing") === "1") {
+          return true;
+        }
+      }
+    } catch (error) {
+    }
+
+    try {
+      return typeof window !== "undefined"
+        && window.localStorage
+        && window.localStorage.getItem("forum_debug_timing") === "1";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function emitActionTimingDebug(timing, status) {
+    if (!debugTimingEnabled() || typeof console === "undefined" || typeof console.info !== "function") {
+      return;
+    }
+
+    console.info("[forum timing]", {
+      action: timing.action,
+      status: status,
+      duration_ms: timingDelta(timing, "forum_action_start", "forum_action_complete"),
+      identity_ms: timingDelta(timing, "forum_identity_start", "forum_identity_ready"),
+      network_ms: timingDelta(timing, "forum_fetch_start", "forum_response_received"),
+      server_timing: timing.serverTiming || {},
+      error_kind: timing.errorKind || "",
+    });
+  }
+
+  function parseServerTimingHeader(value) {
+    const metrics = {};
+    String(value || "").split(",").forEach(function (entry) {
+      const parts = entry.trim().split(";");
+      const name = (parts.shift() || "").trim();
+      if (!/^[a-z_][a-z0-9_]*$/.test(name)) {
+        return;
+      }
+
+      const durationPart = parts.find(function (part) {
+        return part.trim().startsWith("dur=");
+      });
+      if (!durationPart) {
+        return;
+      }
+
+      const duration = Number(durationPart.trim().slice(4));
+      if (!Number.isFinite(duration)) {
+        return;
+      }
+
+      metrics[name] = duration;
+    });
+
+    return metrics;
   }
 
   function createTechnicalFeedbackToggle(node) {
@@ -151,7 +230,13 @@
       body: new URLSearchParams({ thread_id: threadId, tag }).toString(),
     });
 
-    return response.text();
+    const text = await response.text();
+    return {
+      text: text,
+      serverTiming: parseServerTimingHeader(response.headers && typeof response.headers.get === "function"
+        ? response.headers.get("Server-Timing")
+        : ""),
+    };
   }
 
   async function applyPostTag(postId, tag) {
@@ -164,7 +249,13 @@
       body: new URLSearchParams({ post_id: postId, tag }).toString(),
     });
 
-    return response.text();
+    const text = await response.text();
+    return {
+      text: text,
+      serverTiming: parseServerTimingHeader(response.headers && typeof response.headers.get === "function"
+        ? response.headers.get("Server-Timing")
+        : ""),
+    };
   }
 
   async function ensureReactionIdentity(root, feedbackNode, timing) {
@@ -229,8 +320,10 @@
         setFeedback(feedbackNode, "Saving tag...", "ok");
         markFirstFeedback(timing);
         markActionTiming(timing, "forum_fetch_start");
-        const text = await applyThreadTag(threadId, tag);
+        const result = await applyThreadTag(threadId, tag);
         markActionTiming(timing, "forum_response_received");
+        const text = result.text;
+        timing.serverTiming = result.serverTiming;
         if (!text.includes("status=ok")) {
           const errorMessage = parseResponseValue(text, "error") || "Unable to apply tag.";
           throw new Error(errorMessage);
@@ -257,6 +350,7 @@
         setFeedback(feedbackNode, wroteRecord ? "Liked." : "Already liked.", "ok");
       } catch (error) {
         button.disabled = false;
+        timing.errorKind = error instanceof Error && error.name ? error.name : "error";
         const feedback = feedbackFromError(error, "Unable to apply tag.");
         setFeedback(
           feedbackNode,
@@ -297,8 +391,10 @@
         setFeedback(feedbackNode, "Saving tag...", "ok");
         markFirstFeedback(timing);
         markActionTiming(timing, "forum_fetch_start");
-        const text = await applyPostTag(postId, tag);
+        const result = await applyPostTag(postId, tag);
         markActionTiming(timing, "forum_response_received");
+        const text = result.text;
+        timing.serverTiming = result.serverTiming;
         if (!text.includes("status=ok")) {
           const errorMessage = parseResponseValue(text, "error") || "Unable to apply tag.";
           throw new Error(errorMessage);
@@ -322,6 +418,7 @@
         completeActionTiming(timing, "ok");
       } catch (error) {
         button.disabled = false;
+        timing.errorKind = error instanceof Error && error.name ? error.name : "error";
         const feedback = feedbackFromError(error, "Unable to apply tag.");
         setFeedback(
           feedbackNode,

@@ -23,6 +23,7 @@
       action: action,
       id: `${action}:${Date.now()}:${++actionTimingSequence}`,
       firstFeedbackMarked: false,
+      points: {},
     };
     markActionTiming(timing, "forum_action_start");
     return timing;
@@ -32,6 +33,10 @@
     const perf = browserPerformance();
     if (!perf || !timing) {
       return;
+    }
+
+    if (typeof perf.now === "function") {
+      timing.points[name] = perf.now();
     }
 
     const detail = Object.assign({
@@ -60,6 +65,51 @@
 
   function completeActionTiming(timing, status) {
     markActionTiming(timing, "forum_action_complete", { status: status });
+    emitActionTimingDebug(timing, status);
+  }
+
+  function timingDelta(timing, startName, endName) {
+    if (!timing || !timing.points || typeof timing.points[startName] !== "number" || typeof timing.points[endName] !== "number") {
+      return null;
+    }
+
+    return Math.max(0, Math.round((timing.points[endName] - timing.points[startName]) * 10) / 10);
+  }
+
+  function debugTimingEnabled() {
+    try {
+      if (typeof window !== "undefined" && window.location && window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("debug_timing") === "1") {
+          return true;
+        }
+      }
+    } catch (error) {
+    }
+
+    try {
+      return typeof window !== "undefined"
+        && window.localStorage
+        && window.localStorage.getItem("forum_debug_timing") === "1";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function emitActionTimingDebug(timing, status) {
+    if (!debugTimingEnabled() || typeof console === "undefined" || typeof console.info !== "function") {
+      return;
+    }
+
+    console.info("[forum timing]", {
+      action: timing.action,
+      status: status,
+      duration_ms: timingDelta(timing, "forum_action_start", "forum_action_complete"),
+      identity_ms: timingDelta(timing, "forum_identity_start", "forum_identity_ready"),
+      network_ms: null,
+      server_timing: {},
+      error_kind: status === "error" || status === "validation_error" ? status : "",
+    });
   }
 
   const ASCII_COMPOSE_REPLACEMENTS = new Map([

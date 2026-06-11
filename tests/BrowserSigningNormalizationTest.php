@@ -1221,6 +1221,8 @@ const vm = require('vm');
 const source = fs.readFileSync(process.argv[1], 'utf8');
 const events = [];
 const marks = [];
+const debugEvents = [];
+let now = 0;
 let clickHandler = null;
 
 class HTMLButtonElement {
@@ -1264,7 +1266,12 @@ const root = {
 global.Element = HTMLButtonElement;
 global.HTMLButtonElement = HTMLButtonElement;
 global.window = {
+  location: { search: '?debug_timing=1' },
   performance: {
+    now() {
+      now += 10;
+      return now;
+    },
     mark(name, options) {
       marks.push({ name, action: options && options.detail ? options.detail.action : '' });
     }
@@ -1277,9 +1284,19 @@ global.window = {
     }
   }
 };
+global.console = {
+  info(label, payload) {
+    debugEvents.push({ label, payload });
+  }
+};
 global.fetch = async function(url) {
   events.push(url);
   return {
+    headers: {
+      get(name) {
+        return name === 'Server-Timing' ? 'lock_wait;dur=1.2, total;dur=3.4' : '';
+      }
+    },
     async text() {
       return 'status=ok\nscore_total=1\nwrote_record=yes\nviewer_is_approved=yes\n';
     }
@@ -1312,7 +1329,8 @@ clickHandler({
     buttonDisabled: button.disabled,
     buttonText: button.textContent,
     ariaPressed: button.attributes['aria-pressed'] || '',
-    marks
+    marks,
+    debugEvents
   }));
 });
 NODE;
@@ -1340,6 +1358,11 @@ NODE;
             array_column($result['marks'], 'name')
         );
         assertSame('apply_thread_tag', $result['marks'][0]['action']);
+        assertSame('[forum timing]', $result['debugEvents'][0]['label']);
+        assertSame('apply_thread_tag', $result['debugEvents'][0]['payload']['action']);
+        assertSame('ok', $result['debugEvents'][0]['payload']['status']);
+        assertSame(1.2, $result['debugEvents'][0]['payload']['server_timing']['lock_wait']);
+        assertSame(3.4, $result['debugEvents'][0]['payload']['server_timing']['total']);
     }
 
     public function testThreadReactionShowsBootstrapFailureInlineAndSkipsLikeWrite(): void
