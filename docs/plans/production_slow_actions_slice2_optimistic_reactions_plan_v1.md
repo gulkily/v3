@@ -147,6 +147,14 @@ Acceptance:
 
 ### Slice 2C: Optimistic Post Tag UI
 
+Status:
+
+- implemented
+- post tag buttons switch to the applied label and `aria-pressed="true"` immediately after identity readiness
+- visible feedback changes to `Saving tag...` while the request is in flight
+- posts are not hidden optimistically; `root.hidden` changes only after the server returns `is_hidden=yes`
+- server failures restore the captured button and post visibility state
+
 Goal:
 
 - make post reactions visibly apply immediately after identity readiness without prematurely hiding content

@@ -1802,6 +1802,239 @@ NODE;
         assertSame('true', $result['ariaPressed']);
         assertSame(false, $result['rootHidden']);
     }
+
+    public function testPostReactionAppliesOptimisticStateBeforeFetchResolvesAndHidesAfterResponse(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+let clickHandler = null;
+let fetchCount = 0;
+let resolveFetch = null;
+
+class HTMLButtonElement {
+  constructor() {
+    this.disabled = false;
+    this.textContent = 'Flag';
+    this.attributes = {};
+  }
+  getAttribute(name) {
+    if (name === 'data-tag') return 'flag';
+    if (name === 'data-applied-label') return 'Flagged';
+    return Object.prototype.hasOwnProperty.call(this.attributes, name) ? this.attributes[name] : null;
+  }
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+  }
+  removeAttribute(name) {
+    delete this.attributes[name];
+  }
+  closest(selector) {
+    return selector === '[data-action="apply-post-tag"]' ? this : null;
+  }
+}
+
+const button = new HTMLButtonElement();
+const feedbackNode = { textContent: '', hidden: true, setAttribute(name, value) { this[name] = value; } };
+const root = {
+  hidden: false,
+  getAttribute(name) {
+    return name === 'data-post-id' ? 'reply-001' : '';
+  },
+  querySelector(selector) {
+    if (selector === '[data-role="post-reaction-feedback"]') return feedbackNode;
+    return null;
+  },
+  addEventListener(type, handler) {
+    if (type === 'click') {
+      clickHandler = handler;
+    }
+  }
+};
+
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = {
+  __forumBrowserIdentity: {
+    async ensureReadyIdentity() {}
+  }
+};
+global.fetch = async function() {
+  fetchCount += 1;
+  return new Promise((resolve) => {
+    resolveFetch = function () {
+      resolve({
+        headers: { get() { return ''; } },
+        async text() {
+          return 'status=ok\nwrote_record=yes\nis_hidden=yes\n';
+        }
+      });
+    };
+  });
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      handler();
+    }
+  },
+  querySelector() {
+    return null;
+  },
+  querySelectorAll(selector) {
+    return selector === '.post-card[data-post-id]' ? [root] : [];
+  }
+};
+
+vm.runInThisContext(source);
+(async function () {
+  const clickPromise = clickHandler({
+    target: button,
+    preventDefault() {}
+  });
+  await Promise.resolve();
+  await Promise.resolve();
+  const optimistic = {
+    fetchCount,
+    feedback: feedbackNode.textContent,
+    buttonDisabled: button.disabled,
+    buttonText: button.textContent,
+    ariaPressed: button.attributes['aria-pressed'] || '',
+    rootHidden: root.hidden
+  };
+  resolveFetch();
+  await clickPromise;
+  process.stdout.write(JSON.stringify({
+    optimistic,
+    finalButtonText: button.textContent,
+    finalAriaPressed: button.attributes['aria-pressed'] || '',
+    finalRootHidden: root.hidden
+  }));
+})().catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame(1, $result['optimistic']['fetchCount']);
+        assertSame('Saving tag...', $result['optimistic']['feedback']);
+        assertSame(true, $result['optimistic']['buttonDisabled']);
+        assertSame('Flagged', $result['optimistic']['buttonText']);
+        assertSame('true', $result['optimistic']['ariaPressed']);
+        assertSame(false, $result['optimistic']['rootHidden']);
+        assertSame('Flagged', $result['finalButtonText']);
+        assertSame('true', $result['finalAriaPressed']);
+        assertSame(true, $result['finalRootHidden']);
+    }
+
+    public function testPostReactionServerFailureRollsBackOptimisticState(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+let clickHandler = null;
+
+class HTMLButtonElement {
+  constructor() {
+    this.disabled = false;
+    this.textContent = 'Flag';
+    this.attributes = {};
+  }
+  getAttribute(name) {
+    if (name === 'data-tag') return 'flag';
+    if (name === 'data-applied-label') return 'Flagged';
+    return Object.prototype.hasOwnProperty.call(this.attributes, name) ? this.attributes[name] : null;
+  }
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+  }
+  removeAttribute(name) {
+    delete this.attributes[name];
+  }
+  closest(selector) {
+    return selector === '[data-action="apply-post-tag"]' ? this : null;
+  }
+}
+
+const button = new HTMLButtonElement();
+const feedbackNode = { textContent: '', hidden: true, setAttribute(name, value) { this[name] = value; } };
+const root = {
+  hidden: false,
+  getAttribute(name) {
+    return name === 'data-post-id' ? 'reply-001' : '';
+  },
+  querySelector(selector) {
+    if (selector === '[data-role="post-reaction-feedback"]') return feedbackNode;
+    return null;
+  },
+  addEventListener(type, handler) {
+    if (type === 'click') {
+      clickHandler = handler;
+    }
+  }
+};
+
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = {
+  __forumBrowserIdentity: {
+    async ensureReadyIdentity() {}
+  }
+};
+global.fetch = async function() {
+  return {
+    headers: { get() { return ''; } },
+    async text() {
+      return 'error=Unable to save tag.\n';
+    }
+  };
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      handler();
+    }
+  },
+  querySelector() {
+    return null;
+  },
+  querySelectorAll(selector) {
+    return selector === '.post-card[data-post-id]' ? [root] : [];
+  }
+};
+
+vm.runInThisContext(source);
+clickHandler({
+  target: button,
+  preventDefault() {}
+}).then(() => {
+  process.stdout.write(JSON.stringify({
+    feedback: feedbackNode.textContent,
+    feedbackKind: feedbackNode['data-kind'] || '',
+    buttonDisabled: button.disabled,
+    buttonText: button.textContent,
+    ariaPressed: button.attributes['aria-pressed'] || '',
+    rootHidden: root.hidden
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame('Unable to save tag.', $result['feedback']);
+        assertSame('error', $result['feedbackKind']);
+        assertSame(false, $result['buttonDisabled']);
+        assertSame('Flag', $result['buttonText']);
+        assertSame('', $result['ariaPressed']);
+        assertSame(false, $result['rootHidden']);
+    }
 }
 
 if (!function_exists('assertSame')) {

@@ -300,6 +300,10 @@
     };
   }
 
+  function setOptimisticPostReactionState(button, appliedLabel) {
+    setPendingReactionButton(button, appliedLabel);
+  }
+
   function restorePostReactionState(root, button, state) {
     restoreButtonState(button, state.button);
     root.hidden = state.hidden;
@@ -473,6 +477,7 @@
 
       try {
         await ensureReactionIdentity(root, feedbackNode, timing);
+        setOptimisticPostReactionState(button, appliedLabel);
         setFeedback(feedbackNode, "Saving tag...", "ok");
         markFirstFeedback(timing);
         markActionTiming(timing, "forum_fetch_start");
