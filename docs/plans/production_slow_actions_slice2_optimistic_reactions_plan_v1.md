@@ -106,6 +106,14 @@ Acceptance:
 
 ### Slice 2B: Optimistic Thread Tag UI
 
+Status:
+
+- implemented
+- thread tag buttons switch to the applied label and `aria-pressed="true"` immediately after identity readiness
+- `tag=like` increments a parseable visible thread score optimistically when the button was not already pressed
+- server responses still reconcile the authoritative `score_total`, `wrote_record`, and final feedback
+- server failures restore the captured button and score state
+
 Goal:
 
 - make thread tag clicks visibly apply immediately after identity readiness

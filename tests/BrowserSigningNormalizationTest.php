@@ -1365,6 +1365,134 @@ NODE;
         assertSame(3.4, $result['debugEvents'][0]['payload']['server_timing']['total']);
     }
 
+    public function testThreadReactionAppliesOptimisticStateBeforeFetchResolves(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+let clickHandler = null;
+let fetchCount = 0;
+let resolveFetch = null;
+
+class HTMLButtonElement {
+  constructor() {
+    this.disabled = false;
+    this.textContent = 'Like';
+    this.attributes = {};
+  }
+  getAttribute(name) {
+    if (name === 'data-tag') return 'like';
+    if (name === 'data-applied-label') return 'Liked';
+    return Object.prototype.hasOwnProperty.call(this.attributes, name) ? this.attributes[name] : null;
+  }
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+  }
+  removeAttribute(name) {
+    delete this.attributes[name];
+  }
+  closest(selector) {
+    return selector === '[data-action="apply-thread-tag"]' ? this : null;
+  }
+}
+
+const button = new HTMLButtonElement();
+const scoreNode = { textContent: 'Score: 0' };
+const feedbackNode = { textContent: '', hidden: true, setAttribute(name, value) { this[name] = value; } };
+const root = {
+  getAttribute(name) {
+    return name === 'data-thread-id' ? 'root-001' : '';
+  },
+  querySelector(selector) {
+    if (selector === '[data-role="thread-score"]') return scoreNode;
+    if (selector === '[data-role="thread-reaction-feedback"]') return feedbackNode;
+    return null;
+  },
+  addEventListener(type, handler) {
+    if (type === 'click') {
+      clickHandler = handler;
+    }
+  }
+};
+
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = {
+  __forumBrowserIdentity: {
+    async ensureReadyIdentity() {}
+  }
+};
+global.fetch = async function() {
+  fetchCount += 1;
+  return new Promise((resolve) => {
+    resolveFetch = function () {
+      resolve({
+        headers: { get() { return ''; } },
+        async text() {
+          return 'status=ok\nscore_total=5\nwrote_record=yes\nviewer_is_approved=yes\n';
+        }
+      });
+    };
+  });
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      handler();
+    }
+  },
+  querySelector(selector) {
+    if (selector === '[data-thread-reactions-root]') {
+      return root;
+    }
+    return null;
+  }
+};
+
+vm.runInThisContext(source);
+(async function () {
+  const clickPromise = clickHandler({
+    target: button,
+    preventDefault() {}
+  });
+  await Promise.resolve();
+  await Promise.resolve();
+  const optimistic = {
+    fetchCount,
+    score: scoreNode.textContent,
+    feedback: feedbackNode.textContent,
+    buttonDisabled: button.disabled,
+    buttonText: button.textContent,
+    ariaPressed: button.attributes['aria-pressed'] || ''
+  };
+  resolveFetch();
+  await clickPromise;
+  process.stdout.write(JSON.stringify({
+    optimistic,
+    finalScore: scoreNode.textContent,
+    finalFeedback: feedbackNode.textContent,
+    finalButtonText: button.textContent
+  }));
+})().catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame(1, $result['optimistic']['fetchCount']);
+        assertSame('Score: 1', $result['optimistic']['score']);
+        assertSame('Saving tag...', $result['optimistic']['feedback']);
+        assertSame(true, $result['optimistic']['buttonDisabled']);
+        assertSame('Liked', $result['optimistic']['buttonText']);
+        assertSame('true', $result['optimistic']['ariaPressed']);
+        assertSame('Score: 5', $result['finalScore']);
+        assertSame('Liked.', $result['finalFeedback']);
+        assertSame('Liked', $result['finalButtonText']);
+    }
+
     public function testThreadReactionShowsBootstrapFailureInlineAndSkipsLikeWrite(): void
     {
         $script = <<<'NODE'
@@ -1460,6 +1588,113 @@ NODE;
         assertSame(false, $result['feedbackHidden']);
         assertSame(false, $result['buttonDisabled']);
         assertSame('Like', $result['buttonText']);
+    }
+
+    public function testThreadReactionServerFailureRollsBackOptimisticState(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+let clickHandler = null;
+
+class HTMLButtonElement {
+  constructor() {
+    this.disabled = false;
+    this.textContent = 'Like';
+    this.attributes = {};
+  }
+  getAttribute(name) {
+    if (name === 'data-tag') return 'like';
+    if (name === 'data-applied-label') return 'Liked';
+    return Object.prototype.hasOwnProperty.call(this.attributes, name) ? this.attributes[name] : null;
+  }
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+  }
+  removeAttribute(name) {
+    delete this.attributes[name];
+  }
+  closest(selector) {
+    return selector === '[data-action="apply-thread-tag"]' ? this : null;
+  }
+}
+
+const button = new HTMLButtonElement();
+const scoreNode = { textContent: 'Score: 0' };
+const feedbackNode = { textContent: '', hidden: true, setAttribute(name, value) { this[name] = value; } };
+const root = {
+  getAttribute(name) {
+    return name === 'data-thread-id' ? 'root-001' : '';
+  },
+  querySelector(selector) {
+    if (selector === '[data-role="thread-score"]') return scoreNode;
+    if (selector === '[data-role="thread-reaction-feedback"]') return feedbackNode;
+    return null;
+  },
+  addEventListener(type, handler) {
+    if (type === 'click') {
+      clickHandler = handler;
+    }
+  }
+};
+
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = {
+  __forumBrowserIdentity: {
+    async ensureReadyIdentity() {}
+  }
+};
+global.fetch = async function() {
+  return {
+    headers: { get() { return ''; } },
+    async text() {
+      return 'error=Unable to save tag.\n';
+    }
+  };
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      handler();
+    }
+  },
+  querySelector(selector) {
+    if (selector === '[data-thread-reactions-root]') {
+      return root;
+    }
+    return null;
+  }
+};
+
+vm.runInThisContext(source);
+clickHandler({
+  target: button,
+  preventDefault() {}
+}).then(() => {
+  process.stdout.write(JSON.stringify({
+    score: scoreNode.textContent,
+    feedback: feedbackNode.textContent,
+    feedbackKind: feedbackNode['data-kind'] || '',
+    buttonDisabled: button.disabled,
+    buttonText: button.textContent,
+    ariaPressed: button.attributes['aria-pressed'] || ''
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame('Score: 0', $result['score']);
+        assertSame('Unable to save tag.', $result['feedback']);
+        assertSame('error', $result['feedbackKind']);
+        assertSame(false, $result['buttonDisabled']);
+        assertSame('Like', $result['buttonText']);
+        assertSame('', $result['ariaPressed']);
     }
 
     public function testPostReactionLikeUsesLikeFeedbackCopy(): void

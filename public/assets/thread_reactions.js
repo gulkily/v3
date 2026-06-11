@@ -251,6 +251,34 @@
     button.setAttribute("aria-pressed", "true");
   }
 
+  function parsedThreadScore(scoreNode) {
+    if (!scoreNode) {
+      return null;
+    }
+
+    const match = String(scoreNode.textContent || "").match(/^Score:\s*(-?\d+)$/);
+    return match ? Number(match[1]) : null;
+  }
+
+  function setThreadScore(scoreNode, scoreTotal) {
+    if (scoreNode && scoreTotal !== "") {
+      scoreNode.textContent = `Score: ${scoreTotal}`;
+    }
+  }
+
+  function setOptimisticThreadReactionState(button, scoreNode, tag, appliedLabel, previousState) {
+    setPendingReactionButton(button, appliedLabel);
+
+    if (tag !== "like" || previousState.button.ariaPressed === "true") {
+      return;
+    }
+
+    const score = parsedThreadScore(scoreNode);
+    if (score !== null && scoreNode) {
+      scoreNode.textContent = `Score: ${score + 1}`;
+    }
+  }
+
   function captureThreadReactionState(button, scoreNode) {
     return {
       button: captureButtonState(button),
@@ -375,6 +403,7 @@
 
       try {
         await ensureReactionIdentity(root, feedbackNode, timing);
+        setOptimisticThreadReactionState(button, scoreNode, tag, appliedLabel, previousState);
         setFeedback(feedbackNode, "Saving tag...", "ok");
         markFirstFeedback(timing);
         markActionTiming(timing, "forum_fetch_start");
@@ -391,9 +420,7 @@
         const wroteRecord = parseResponseValue(text, "wrote_record") === "yes";
         const viewerIsApproved = parseResponseValue(text, "viewer_is_approved") === "yes";
 
-        if (scoreNode && scoreTotal !== "") {
-          scoreNode.textContent = `Score: ${scoreTotal}`;
-        }
+        setThreadScore(scoreNode, scoreTotal);
 
         setConfirmedReactionButton(button, appliedLabel);
 
