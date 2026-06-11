@@ -1052,6 +1052,19 @@ final class LocalAppSmokeTest
         });
     }
 
+    public function testExecutionLockTimedResultIncludesLockWait(): void
+    {
+        $lockPath = sys_get_temp_dir() . '/forum-rewrite-lock-' . bin2hex(random_bytes(6)) . '.lock';
+        $lock = new ExecutionLock($lockPath, 0);
+
+        $result = $lock->withExclusiveLockTimed(static fn (): string => 'locked');
+
+        assertSame('locked', $result['result']);
+        assertTrue(isset($result['timings']['lock_wait']));
+        assertTrue(is_float($result['timings']['lock_wait']));
+        assertTrue($result['timings']['lock_wait'] >= 0.0);
+    }
+
     private function render(Application $application, string $path): string
     {
         return $this->renderMethod($application, 'GET', $path);

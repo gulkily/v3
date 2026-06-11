@@ -24,6 +24,18 @@ final class ExecutionLock
      */
     public function withExclusiveLock(callable $callback): mixed
     {
+        $locked = $this->withExclusiveLockTimed($callback);
+
+        return $locked['result'];
+    }
+
+    /**
+     * @template T
+     * @param callable(): T $callback
+     * @return array{result:T,timings:array{lock_wait:float}}
+     */
+    public function withExclusiveLockTimed(callable $callback): array
+    {
         $directory = dirname($this->lockPath);
         if (!is_dir($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
             throw new RuntimeException('Unable to create lock directory: ' . $directory);
@@ -34,19 +46,25 @@ final class ExecutionLock
             throw new RuntimeException('Unable to open lock file: ' . $this->lockPath);
         }
 
-        $start = microtime(true);
+        $start = hrtime(true);
         try {
             do {
                 if (flock($handle, LOCK_EX | LOCK_NB)) {
+                    $lockWait = $this->elapsedMilliseconds($start);
                     try {
-                        return $callback();
+                        return [
+                            'result' => $callback(),
+                            'timings' => [
+                                'lock_wait' => $lockWait,
+                            ],
+                        ];
                     } finally {
                         flock($handle, LOCK_UN);
                     }
                 }
 
                 usleep(100000);
-            } while ((microtime(true) - $start) < $this->timeoutSeconds);
+            } while (((hrtime(true) - $start) / 1000000000) < $this->timeoutSeconds);
         } finally {
             fclose($handle);
         }
@@ -66,6 +84,11 @@ final class ExecutionLock
         }
 
         return max(0, (int) trim($raw));
+    }
+
+    private function elapsedMilliseconds(int $startedAt): float
+    {
+        return round((hrtime(true) - $startedAt) / 1000000, 1);
     }
 
     public function isLocked(): bool

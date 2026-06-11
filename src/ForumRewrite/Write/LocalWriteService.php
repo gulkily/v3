@@ -42,7 +42,7 @@ class LocalWriteService
      */
     public function createThread(array $input): array
     {
-        return $this->executionLock()->withExclusiveLock(function () use ($input): array {
+        return $this->withTimedWriteLock(function () use ($input): array {
             $this->assertWritableRepository();
             $timings = [];
             $totalStartedAt = hrtime(true);
@@ -101,7 +101,7 @@ class LocalWriteService
      */
     public function createReply(array $input): array
     {
-        return $this->executionLock()->withExclusiveLock(function () use ($input): array {
+        return $this->withTimedWriteLock(function () use ($input): array {
             $this->assertWritableRepository();
             $timings = [];
             $totalStartedAt = hrtime(true);
@@ -169,7 +169,7 @@ class LocalWriteService
      */
     public function applyThreadTag(array $input): array
     {
-        return $this->executionLock()->withExclusiveLock(function () use ($input): array {
+        return $this->withTimedWriteLock(function () use ($input): array {
             $this->assertWritableRepository();
             $timings = [];
             $totalStartedAt = hrtime(true);
@@ -233,7 +233,7 @@ class LocalWriteService
      */
     public function applyPostTag(array $input): array
     {
-        return $this->executionLock()->withExclusiveLock(function () use ($input): array {
+        return $this->withTimedWriteLock(function () use ($input): array {
             $this->assertWritableRepository();
             $timings = [];
             $totalStartedAt = hrtime(true);
@@ -308,7 +308,7 @@ class LocalWriteService
      */
     public function linkIdentity(array $input): array
     {
-        return $this->executionLock()->withExclusiveLock(function () use ($input): array {
+        return $this->withTimedWriteLock(function () use ($input): array {
             $this->assertWritableRepository();
             $publicKey = $this->normalizeAsciiBody((string) ($input['public_key'] ?? ''), 'public_key');
 
@@ -377,7 +377,7 @@ class LocalWriteService
      */
     public function approveUser(array $input): array
     {
-        return $this->executionLock()->withExclusiveLock(function () use ($input): array {
+        return $this->withTimedWriteLock(function () use ($input): array {
             $this->assertWritableRepository();
             $timings = [];
             $totalStartedAt = hrtime(true);
@@ -881,6 +881,22 @@ class LocalWriteService
     private function executionLock(): ExecutionLock
     {
         return new ExecutionLock(dirname($this->databasePath) . '/forum-rewrite.lock');
+    }
+
+    /**
+     * @param callable(): array<string, mixed> $callback
+     * @return array<string, mixed>
+     */
+    private function withTimedWriteLock(callable $callback): array
+    {
+        $locked = $this->executionLock()->withExclusiveLockTimed($callback);
+        $result = $locked['result'];
+        $timings = isset($result['timings']) && is_array($result['timings'])
+            ? $result['timings']
+            : [];
+        $result['timings'] = array_merge($locked['timings'], $timings);
+
+        return $result;
     }
 
     /**
