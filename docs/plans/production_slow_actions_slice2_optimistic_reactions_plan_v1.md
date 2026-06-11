@@ -185,6 +185,13 @@ Acceptance:
 
 ### Slice 2D: Pending Operation Memory
 
+Status:
+
+- implemented
+- added page-local pending operation memory keyed as `thread:${threadId}:${tag}` and `post:${postId}:${tag}`
+- identical operations are ignored while the first request is in flight, even if triggered through a separate matching button
+- pending keys are cleared in `finally` after both success and failure so retries can proceed
+
 Goal:
 
 - prevent repeated clicks or page-local double application while a request is in flight

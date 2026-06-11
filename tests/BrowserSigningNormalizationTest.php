@@ -1697,6 +1697,140 @@ NODE;
         assertSame('', $result['ariaPressed']);
     }
 
+    public function testThreadReactionDuplicatePendingClickIssuesOneFetchAndClearsAfterSuccess(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+let clickHandler = null;
+let fetchCount = 0;
+let resolveFirstFetch = null;
+
+class HTMLButtonElement {
+  constructor() {
+    this.disabled = false;
+    this.textContent = 'Like';
+    this.attributes = {};
+  }
+  getAttribute(name) {
+    if (name === 'data-tag') return 'like';
+    if (name === 'data-applied-label') return 'Liked';
+    return Object.prototype.hasOwnProperty.call(this.attributes, name) ? this.attributes[name] : null;
+  }
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+  }
+  removeAttribute(name) {
+    delete this.attributes[name];
+  }
+  closest(selector) {
+    return selector === '[data-action="apply-thread-tag"]' ? this : null;
+  }
+}
+
+const firstButton = new HTMLButtonElement();
+const secondButton = new HTMLButtonElement();
+const scoreNode = { textContent: 'Score: 0' };
+const feedbackNode = { textContent: '', hidden: true, setAttribute(name, value) { this[name] = value; } };
+const root = {
+  getAttribute(name) {
+    return name === 'data-thread-id' ? 'root-001' : '';
+  },
+  querySelector(selector) {
+    if (selector === '[data-role="thread-score"]') return scoreNode;
+    if (selector === '[data-role="thread-reaction-feedback"]') return feedbackNode;
+    return null;
+  },
+  addEventListener(type, handler) {
+    if (type === 'click') {
+      clickHandler = handler;
+    }
+  }
+};
+
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = {
+  __forumBrowserIdentity: {
+    async ensureReadyIdentity() {}
+  }
+};
+global.fetch = async function() {
+  fetchCount += 1;
+  if (fetchCount === 1) {
+    return new Promise((resolve) => {
+      resolveFirstFetch = function () {
+        resolve({
+          headers: { get() { return ''; } },
+          async text() {
+            return 'status=ok\nscore_total=1\nwrote_record=yes\nviewer_is_approved=yes\n';
+          }
+        });
+      };
+    });
+  }
+
+  return {
+    headers: { get() { return ''; } },
+    async text() {
+      return 'status=ok\nscore_total=2\nwrote_record=no\nviewer_is_approved=yes\n';
+    }
+  };
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      handler();
+    }
+  },
+  querySelector(selector) {
+    if (selector === '[data-thread-reactions-root]') {
+      return root;
+    }
+    return null;
+  }
+};
+
+vm.runInThisContext(source);
+(async function () {
+  const firstClick = clickHandler({
+    target: firstButton,
+    preventDefault() {}
+  });
+  await Promise.resolve();
+  await Promise.resolve();
+  await clickHandler({
+    target: secondButton,
+    preventDefault() {}
+  });
+  const fetchesWhilePending = fetchCount;
+  resolveFirstFetch();
+  await firstClick;
+  await clickHandler({
+    target: secondButton,
+    preventDefault() {}
+  });
+  process.stdout.write(JSON.stringify({
+    fetchesWhilePending,
+    finalFetchCount: fetchCount,
+    score: scoreNode.textContent,
+    secondButtonText: secondButton.textContent
+  }));
+})().catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame(1, $result['fetchesWhilePending']);
+        assertSame(2, $result['finalFetchCount']);
+        assertSame('Score: 2', $result['score']);
+        assertSame('Liked', $result['secondButtonText']);
+    }
+
     public function testPostReactionLikeUsesLikeFeedbackCopy(): void
     {
         $script = <<<'NODE'
@@ -2034,6 +2168,134 @@ NODE;
         assertSame('Flag', $result['buttonText']);
         assertSame('', $result['ariaPressed']);
         assertSame(false, $result['rootHidden']);
+    }
+
+    public function testPostReactionPendingKeyClearsAfterFailureAndRetryWorks(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+let clickHandler = null;
+let fetchCount = 0;
+
+class HTMLButtonElement {
+  constructor() {
+    this.disabled = false;
+    this.textContent = 'Flag';
+    this.attributes = {};
+  }
+  getAttribute(name) {
+    if (name === 'data-tag') return 'flag';
+    if (name === 'data-applied-label') return 'Flagged';
+    return Object.prototype.hasOwnProperty.call(this.attributes, name) ? this.attributes[name] : null;
+  }
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+  }
+  removeAttribute(name) {
+    delete this.attributes[name];
+  }
+  closest(selector) {
+    return selector === '[data-action="apply-post-tag"]' ? this : null;
+  }
+}
+
+const button = new HTMLButtonElement();
+const feedbackNode = { textContent: '', hidden: true, setAttribute(name, value) { this[name] = value; } };
+const root = {
+  hidden: false,
+  getAttribute(name) {
+    return name === 'data-post-id' ? 'reply-001' : '';
+  },
+  querySelector(selector) {
+    if (selector === '[data-role="post-reaction-feedback"]') return feedbackNode;
+    return null;
+  },
+  addEventListener(type, handler) {
+    if (type === 'click') {
+      clickHandler = handler;
+    }
+  }
+};
+
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = {
+  __forumBrowserIdentity: {
+    async ensureReadyIdentity() {}
+  }
+};
+global.fetch = async function() {
+  fetchCount += 1;
+  return {
+    headers: { get() { return ''; } },
+    async text() {
+      if (fetchCount === 1) {
+        return 'error=Unable to save tag.\n';
+      }
+
+      return 'status=ok\nwrote_record=yes\nis_hidden=no\n';
+    }
+  };
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      handler();
+    }
+  },
+  querySelector() {
+    return null;
+  },
+  querySelectorAll(selector) {
+    return selector === '.post-card[data-post-id]' ? [root] : [];
+  }
+};
+
+vm.runInThisContext(source);
+(async function () {
+  await clickHandler({
+    target: button,
+    preventDefault() {}
+  });
+  const afterFailure = {
+    fetchCount,
+    feedback: feedbackNode.textContent,
+    buttonDisabled: button.disabled,
+    buttonText: button.textContent,
+    ariaPressed: button.attributes['aria-pressed'] || ''
+  };
+  await clickHandler({
+    target: button,
+    preventDefault() {}
+  });
+  process.stdout.write(JSON.stringify({
+    afterFailure,
+    finalFetchCount: fetchCount,
+    finalFeedback: feedbackNode.textContent,
+    finalButtonDisabled: button.disabled,
+    finalButtonText: button.textContent,
+    finalAriaPressed: button.attributes['aria-pressed'] || ''
+  }));
+})().catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame(1, $result['afterFailure']['fetchCount']);
+        assertSame('Unable to save tag.', $result['afterFailure']['feedback']);
+        assertSame(false, $result['afterFailure']['buttonDisabled']);
+        assertSame('Flag', $result['afterFailure']['buttonText']);
+        assertSame('', $result['afterFailure']['ariaPressed']);
+        assertSame(2, $result['finalFetchCount']);
+        assertSame('Flagged.', $result['finalFeedback']);
+        assertSame(true, $result['finalButtonDisabled']);
+        assertSame('Flagged', $result['finalButtonText']);
+        assertSame('true', $result['finalAriaPressed']);
     }
 }
 

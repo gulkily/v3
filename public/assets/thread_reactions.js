@@ -1,5 +1,6 @@
 (function () {
   let actionTimingSequence = 0;
+  const pendingReactionOperations = new Set();
 
   function browserPerformance() {
     return typeof window !== "undefined" && window.performance && typeof window.performance.mark === "function"
@@ -220,6 +221,23 @@
     return line ? line.slice(prefix.length) : "";
   }
 
+  function reactionOperationKey(kind, id, tag) {
+    return `${kind}:${id}:${tag}`;
+  }
+
+  function beginPendingReaction(key) {
+    if (pendingReactionOperations.has(key)) {
+      return false;
+    }
+
+    pendingReactionOperations.add(key);
+    return true;
+  }
+
+  function clearPendingReaction(key) {
+    pendingReactionOperations.delete(key);
+  }
+
   function captureButtonState(button) {
     return {
       disabled: button.disabled,
@@ -400,6 +418,11 @@
 
       const tag = button.getAttribute("data-tag") || "";
       const appliedLabel = button.getAttribute("data-applied-label") || "Applied";
+      const operationKey = reactionOperationKey("thread", threadId, tag);
+      if (!beginPendingReaction(operationKey)) {
+        return;
+      }
+
       const timing = startActionTiming("apply_thread_tag");
       const previousState = captureThreadReactionState(button, scoreNode);
 
@@ -447,6 +470,8 @@
           { technicalDetails: feedback.technicalDetails }
         );
         completeActionTiming(timing, "error");
+      } finally {
+        clearPendingReaction(operationKey);
       }
     });
   }
@@ -470,6 +495,11 @@
 
       const tag = button.getAttribute("data-tag") || "";
       const appliedLabel = button.getAttribute("data-applied-label") || "Applied";
+      const operationKey = reactionOperationKey("post", postId, tag);
+      if (!beginPendingReaction(operationKey)) {
+        return;
+      }
+
       const timing = startActionTiming("apply_post_tag");
       const previousState = capturePostReactionState(root, button);
 
@@ -516,6 +546,8 @@
           { technicalDetails: feedback.technicalDetails }
         );
         completeActionTiming(timing, "error");
+      } finally {
+        clearPendingReaction(operationKey);
       }
     });
   }
