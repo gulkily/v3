@@ -1482,6 +1482,457 @@ NODE;
         assertSame(['existing-reply', 'pending-reply:test', 'composer'], $result['order']);
     }
 
+    public function testInlineReplySubmitRendersPendingCardBeforeApiResponseAndNavigatesOnSuccess(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: {
+    forum_pki_username: 'alice',
+    forum_pki_public_key: 'public',
+    forum_pki_private_key: 'private',
+    forum_pki_fingerprint: 'ABC123',
+    forum_pki_published_fingerprint: 'ABC123'
+  },
+  localRemoveCalls: [],
+  submitHandler: null,
+  fetchCalls: [],
+  assignedUrl: '',
+  resolveCreateReply: null,
+  formSubmitted: 0
+};
+
+function makeNode(tagName) {
+  return {
+    tagName,
+    id: '',
+    className: '',
+    textContent: '',
+    attributes: {},
+    dataset: {},
+    children: [],
+    parentNode: null,
+    hidden: false,
+    disabled: false,
+    setAttribute(name, value) {
+      this.attributes[name] = String(value);
+    },
+    appendChild(child) {
+      child.parentNode = this;
+      this.children.push(child);
+      return child;
+    },
+    querySelector(selector) {
+      if (selector === '.body') {
+        return this.children.find((child) => child.className === 'body') || null;
+      }
+      if (selector === '[data-role="pending-reply-status"]') {
+        return this.children.find((child) => child.attributes['data-role'] === 'pending-reply-status') || null;
+      }
+      return null;
+    }
+  };
+}
+
+function makeField(tagName, name, value, type) {
+  return {
+    tagName,
+    name,
+    value,
+    defaultValue: '',
+    dataset: { composeFieldLabel: name === 'body' ? 'Body' : name },
+    disabled: false,
+    hidden: false,
+    getAttribute(attribute) {
+      if (attribute === 'type') return type || null;
+      return null;
+    },
+    addEventListener() {}
+  };
+}
+
+const fields = [
+  makeField('INPUT', 'thread_id', 'root-001', 'hidden'),
+  makeField('INPUT', 'parent_id', 'root-001', 'hidden'),
+  makeField('INPUT', 'author_identity_id', '', 'hidden'),
+  makeField('INPUT', 'board_tags', 'general', 'hidden'),
+  makeField('TEXTAREA', 'body', 'Hello <b>world</b>\nsecond line', null)
+];
+const submitButton = { disabled: false, dataset: {} };
+const form = {
+  dataset: { composeKind: 'reply' },
+  querySelector(selector) {
+    const exact = {
+      'input[name="thread_id"]': fields[0],
+      'input[name="parent_id"]': fields[1],
+      'input[name="author_identity_id"]': fields[2],
+      '[name="thread_id"]': fields[0],
+      '[name="parent_id"]': fields[1],
+      '[name="author_identity_id"]': fields[2],
+      '[name="board_tags"]': fields[3],
+      '[name="body"]': fields[4]
+    };
+    return exact[selector] || null;
+  },
+  querySelectorAll(selector) {
+    if (selector === 'input[name], textarea[name]') return fields;
+    if (selector === 'button[type="submit"], input[type="submit"]') return [submitButton];
+    return [];
+  },
+  addEventListener(type, handler) {
+    if (type === 'submit') {
+      state.submitHandler = handler;
+    }
+  },
+  appendChild(field) {
+    fields.push(field);
+  },
+  submit() {
+    state.formSubmitted += 1;
+  },
+  reset() {}
+};
+
+const statusNode = { dataset: {}, textContent: 'Ready.', hidden: false, querySelector() { return null; } };
+const parent = {
+  children: [],
+  insertBefore(child, before) {
+    child.parentNode = this;
+    const index = this.children.indexOf(before);
+    this.children.splice(index < 0 ? this.children.length : index, 0, child);
+    return child;
+  },
+  removeChild(child) {
+    const index = this.children.indexOf(child);
+    if (index >= 0) this.children.splice(index, 1);
+  }
+};
+const inlineDetails = {};
+const root = {
+  id: 'composer',
+  parentNode: parent,
+  dataset: {},
+  querySelector(selector) {
+    if (selector === '[data-compose-form]') return form;
+    if (selector === '[data-role="compose-identity-status"]') return statusNode;
+    if (selector === '[data-inline-reply-details]') return inlineDetails;
+    return null;
+  },
+  querySelectorAll() {
+    return [];
+  }
+};
+parent.children.push({ id: 'existing-reply' }, root);
+
+global.window = {
+  addEventListener() {},
+  location: {
+    assign(url) {
+      state.assignedUrl = url;
+    }
+  }
+};
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+  setItem(key, value) { state.localStore[key] = String(value); },
+  removeItem(key) {
+    state.localRemoveCalls.push(key);
+    delete state.localStore[key];
+  }
+};
+global.sessionStorage = { getItem(){ return ''; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') handler();
+  },
+  querySelector(selector) {
+    if (selector === '[data-compose-root]') return root;
+    return null;
+  },
+  createElement(tagName) { return makeNode(tagName); },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url, options) {
+  state.fetchCalls.push({ url, options });
+  if (String(url).indexOf('/api/get_profile') === 0) {
+    return { ok: true };
+  }
+  if (String(url).indexOf('/api/set_identity_hint') === 0) {
+    return { async text() { return 'status=ok\n'; } };
+  }
+  if (url === '/api/create_reply') {
+    return new Promise((resolve) => {
+      state.resolveCreateReply = function () {
+        resolve({
+          headers: { get() { return ''; } },
+          async text() {
+            return 'status=ok\npost_id=reply-002\nthread_id=root-001\ncommit_sha=abc999\n';
+          }
+        });
+      };
+    });
+  }
+  throw new Error('Unexpected fetch ' + url);
+};
+
+vm.runInThisContext(source);
+(async function () {
+  const submitPromise = state.submitHandler({
+    submitter: submitButton,
+    preventDefault() {}
+  });
+  for (let index = 0; index < 20 && state.resolveCreateReply === null; index += 1) {
+    await Promise.resolve();
+  }
+  const pendingCard = parent.children.find((child) => child.attributes && child.attributes['data-pending-reply-id']);
+  const optimistic = {
+    fetchUrls: state.fetchCalls.map((call) => call.url),
+    pendingExists: Boolean(pendingCard),
+    order: parent.children.map((child) => child.id),
+    pendingBody: pendingCard ? pendingCard.querySelector('.body').textContent : '',
+    pendingBodyChildren: pendingCard ? pendingCard.querySelector('.body').children.length : -1,
+    status: statusNode.textContent,
+    bodyValue: fields[4].value,
+    submitDisabled: submitButton.disabled,
+    authorIdentityId: fields[2].value,
+    formSubmitted: state.formSubmitted
+  };
+  state.resolveCreateReply();
+  await submitPromise;
+  process.stdout.write(JSON.stringify({
+    optimistic,
+    assignedUrl: state.assignedUrl,
+    removeCalls: state.localRemoveCalls,
+    finalFormSubmitted: state.formSubmitted
+  }));
+})().catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame([
+            '/api/set_identity_hint?identity_hint=openpgp%3Aabc123',
+            '/api/get_profile?profile_slug=openpgp-abc123',
+            '/api/set_identity_hint?identity_hint=openpgp%3Aabc123',
+            '/api/create_reply',
+        ], $result['optimistic']['fetchUrls']);
+        assertSame(true, $result['optimistic']['pendingExists']);
+        assertSame(['existing-reply', 'pending-reply:1', 'composer'], $result['optimistic']['order']);
+        assertSame("Hello <b>world</b>\nsecond line", $result['optimistic']['pendingBody']);
+        assertSame(0, $result['optimistic']['pendingBodyChildren']);
+        assertSame('Posting reply...', $result['optimistic']['status']);
+        assertSame("Hello <b>world</b>\nsecond line", $result['optimistic']['bodyValue']);
+        assertSame(true, $result['optimistic']['submitDisabled']);
+        assertSame('openpgp:abc123', $result['optimistic']['authorIdentityId']);
+        assertSame(0, $result['optimistic']['formSubmitted']);
+        assertSame('/threads/root-001?created_post_id=reply-002&__v=abc999#post-reply-002', $result['assignedUrl']);
+        assertSame(['forum_compose_draft:reply:root-001:root-001'], $result['removeCalls']);
+        assertSame(0, $result['finalFormSubmitted']);
+    }
+
+    public function testInlineReplySubmitFailureRemovesPendingCardAndPreservesDraft(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: {
+    forum_pki_username: 'alice',
+    forum_pki_public_key: 'public',
+    forum_pki_private_key: 'private',
+    forum_pki_fingerprint: 'ABC123',
+    forum_pki_published_fingerprint: 'ABC123'
+  },
+  submitHandler: null,
+  fetchCalls: []
+};
+
+function makeNode(tagName) {
+  return {
+    tagName,
+    id: '',
+    className: '',
+    textContent: '',
+    attributes: {},
+    dataset: {},
+    children: [],
+    parentNode: null,
+    hidden: false,
+    disabled: false,
+    setAttribute(name, value) {
+      this.attributes[name] = String(value);
+    },
+    appendChild(child) {
+      child.parentNode = this;
+      this.children.push(child);
+      return child;
+    },
+    querySelector() {
+      return null;
+    }
+  };
+}
+
+function makeField(tagName, name, value, type) {
+  return {
+    tagName,
+    name,
+    value,
+    defaultValue: '',
+    dataset: { composeFieldLabel: name === 'body' ? 'Body' : name },
+    disabled: false,
+    hidden: false,
+    getAttribute(attribute) {
+      if (attribute === 'type') return type || null;
+      return null;
+    },
+    addEventListener() {}
+  };
+}
+
+const fields = [
+  makeField('INPUT', 'thread_id', 'root-001', 'hidden'),
+  makeField('INPUT', 'parent_id', 'root-001', 'hidden'),
+  makeField('INPUT', 'author_identity_id', '', 'hidden'),
+  makeField('INPUT', 'board_tags', 'general', 'hidden'),
+  makeField('TEXTAREA', 'body', 'Draft body', null)
+];
+const submitButton = { disabled: false, dataset: {} };
+const form = {
+  dataset: { composeKind: 'reply' },
+  querySelector(selector) {
+    const exact = {
+      'input[name="thread_id"]': fields[0],
+      'input[name="parent_id"]': fields[1],
+      'input[name="author_identity_id"]': fields[2],
+      '[name="thread_id"]': fields[0],
+      '[name="parent_id"]': fields[1],
+      '[name="author_identity_id"]': fields[2],
+      '[name="board_tags"]': fields[3],
+      '[name="body"]': fields[4]
+    };
+    return exact[selector] || null;
+  },
+  querySelectorAll(selector) {
+    if (selector === 'input[name], textarea[name]') return fields;
+    if (selector === 'button[type="submit"], input[type="submit"]') return [submitButton];
+    return [];
+  },
+  addEventListener(type, handler) {
+    if (type === 'submit') state.submitHandler = handler;
+  },
+  appendChild(field) {
+    fields.push(field);
+  },
+  submit() {},
+  reset() {}
+};
+
+const statusNode = { dataset: {}, textContent: 'Ready.', hidden: false, querySelector() { return null; } };
+const parent = {
+  children: [],
+  insertBefore(child, before) {
+    child.parentNode = this;
+    const index = this.children.indexOf(before);
+    this.children.splice(index < 0 ? this.children.length : index, 0, child);
+    return child;
+  },
+  removeChild(child) {
+    const index = this.children.indexOf(child);
+    if (index >= 0) this.children.splice(index, 1);
+  }
+};
+const root = {
+  id: 'composer',
+  parentNode: parent,
+  dataset: {},
+  querySelector(selector) {
+    if (selector === '[data-compose-form]') return form;
+    if (selector === '[data-role="compose-identity-status"]') return statusNode;
+    if (selector === '[data-inline-reply-details]') return {};
+    return null;
+  },
+  querySelectorAll() { return []; }
+};
+parent.children.push({ id: 'existing-reply' }, root);
+
+global.window = { addEventListener() {}, location: { assign() {} } };
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+  setItem(key, value) { state.localStore[key] = String(value); },
+  removeItem(key) { delete state.localStore[key]; }
+};
+global.sessionStorage = { getItem(){ return ''; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') handler();
+  },
+  querySelector(selector) {
+    if (selector === '[data-compose-root]') return root;
+    return null;
+  },
+  createElement(tagName) { return makeNode(tagName); },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url) {
+  state.fetchCalls.push(url);
+  if (String(url).indexOf('/api/get_profile') === 0) return { ok: true };
+  if (String(url).indexOf('/api/set_identity_hint') === 0) return { async text() { return 'status=ok\n'; } };
+  if (url === '/api/create_reply') {
+    return {
+      headers: { get() { return ''; } },
+      async text() { return 'error=Body is required.\n'; }
+    };
+  }
+  throw new Error('Unexpected fetch ' + url);
+};
+
+vm.runInThisContext(source);
+state.submitHandler({
+  submitter: submitButton,
+  preventDefault() {}
+}).then(() => {
+  process.stdout.write(JSON.stringify({
+    bodyValue: fields[4].value,
+    submitDisabled: submitButton.disabled,
+    status: statusNode.textContent,
+    statusKind: statusNode.dataset.kind,
+    order: parent.children.map((child) => child.id),
+    pendingCount: parent.children.filter((child) => child.attributes && child.attributes['data-pending-reply-id']).length,
+    fetchCalls: state.fetchCalls
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('Draft body', $result['bodyValue']);
+        assertSame(false, $result['submitDisabled']);
+        assertSame('Body is required.', $result['status']);
+        assertSame('error', $result['statusKind']);
+        assertSame(['existing-reply', 'composer'], $result['order']);
+        assertSame(0, $result['pendingCount']);
+        assertSame([
+            '/api/set_identity_hint?identity_hint=openpgp%3Aabc123',
+            '/api/get_profile?profile_slug=openpgp-abc123',
+            '/api/set_identity_hint?identity_hint=openpgp%3Aabc123',
+            '/api/create_reply',
+        ], $result['fetchCalls']);
+    }
+
     public function testThreadReactionBootstrapsIdentityBeforeApplyingLike(): void
     {
         $script = <<<'NODE'

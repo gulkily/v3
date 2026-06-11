@@ -503,6 +503,41 @@
     return true;
   }
 
+  function removeNode(node) {
+    if (!node || !node.parentNode) {
+      return;
+    }
+
+    if (typeof node.remove === "function") {
+      node.remove();
+      return;
+    }
+
+    if (typeof node.parentNode.removeChild === "function") {
+      node.parentNode.removeChild(node);
+    }
+  }
+
+  function isInlineReplyComposer(root) {
+    return Boolean(root && typeof root.querySelector === "function" && root.querySelector("[data-inline-reply-details]"));
+  }
+
+  function canonicalReplyUrl(result) {
+    return `/threads/${encodeURIComponent(result.threadId)}?created_post_id=${encodeURIComponent(result.postId)}&__v=${encodeURIComponent(result.commitSha)}#post-${encodeURIComponent(result.postId)}`;
+  }
+
+  function navigateToCanonicalReply(result) {
+    const url = canonicalReplyUrl(result);
+    if (typeof window !== "undefined" && window.location) {
+      if (typeof window.location.assign === "function") {
+        window.location.assign(url);
+        return;
+      }
+
+      window.location.href = url;
+    }
+  }
+
   async function submitReplyFormToApi(form) {
     const response = await fetch("/api/create_reply", {
       method: "POST",
@@ -525,8 +560,10 @@
   if (typeof window !== "undefined") {
     window.__forumComposeNormalization = {
       collectReplySubmitFields: collectReplySubmitFields,
+      canonicalReplyUrl: canonicalReplyUrl,
       createPendingReplyCard: createPendingReplyCard,
       insertPendingReplyCard: insertPendingReplyCard,
+      isInlineReplyComposer: isInlineReplyComposer,
       isReplyComposeForm: isReplyComposeForm,
       normalizeComposeAscii: normalizeComposeAscii,
       normalizeComposeText: normalizeComposeText,
@@ -1517,6 +1554,33 @@
       return Boolean(submitter && submitter.dataset && submitter.dataset.action === "submit-anonymous-compose");
     }
 
+    async function submitOptimisticReply(timing) {
+      const fields = collectReplySubmitFields(form);
+      const pendingCard = createPendingReplyCard({
+        parentId: fields.parent_id,
+        body: fields.body,
+      });
+      if (!insertPendingReplyCard(root, pendingCard)) {
+        return false;
+      }
+
+      setStatus(statusNode, "Posting reply...", "ok");
+      markFirstFeedback(timing);
+      markActionTiming(timing, "forum_fetch_start");
+      const result = await submitReplyFormToApi(form);
+      markActionTiming(timing, "forum_response_received");
+      if (!result.ok) {
+        removeNode(pendingCard);
+        throw new Error(result.error);
+      }
+
+      clearComposeDraft(form);
+      markActionTiming(timing, "forum_reconcile_complete");
+      completeActionTiming(timing, "ok");
+      navigateToCanonicalReply(result);
+      return true;
+    }
+
     function clearComposeAuthorIdentity(form) {
       let field = form.querySelector('input[name="author_identity_id"]');
       if (!field) {
@@ -1603,6 +1667,10 @@
         await ensureComposeIdentity(root, statusNode);
         markActionTiming(timing, "forum_identity_ready");
         ensureComposeAuthorIdentity(form);
+        if (isReplyComposeForm(form) && isInlineReplyComposer(root) && await submitOptimisticReply(timing)) {
+          return;
+        }
+
         setStatus(statusNode, "Identity ready. Sending post...", "ok");
         markFirstFeedback(timing);
         completeActionTiming(timing, "submit");

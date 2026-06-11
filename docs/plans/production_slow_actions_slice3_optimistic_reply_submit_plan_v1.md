@@ -141,6 +141,15 @@ Acceptance:
 
 ### Slice 3C: Optimistic Inline Reply Flow
 
+Status:
+
+- implemented
+- inline reply composer submits through `/api/create_reply` after the existing browser identity readiness path succeeds
+- a pending reply card is inserted before the API response resolves
+- successful API responses clear the confirmed draft locally and navigate to the canonical thread URL with `created_post_id`, `__v`, and `#post-{post_id}`
+- failed API responses remove the pending card, restore submit controls, preserve the typed body, and show the server error
+- standalone compose reply pages and anonymous submits still use the existing form submit path
+
 Goal:
 
 - wire the inline thread composer to apply the pending reply before the network response resolves
