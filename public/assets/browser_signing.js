@@ -338,6 +338,40 @@
     }
   }
 
+  function rememberRecentlyClearedComposeDraftKey(key) {
+    try {
+      sessionStorage.setItem(storageKeys.recentlyClearedComposeDraft, key);
+    } catch (error) {
+    }
+  }
+
+  function clearComposeDraftForPendingSubmit(form) {
+    const key = composeDraftKey(form);
+    const draft = serializeComposeDraft(form);
+    clearComposeDraft(form);
+    rememberRecentlyClearedComposeDraftKey(key);
+
+    return {
+      key: key,
+      draft: draft,
+    };
+  }
+
+  function restoreComposeDraftAfterFailedSubmit(clearedDraft) {
+    if (!clearedDraft || !clearedDraft.key || !clearedDraft.draft) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(clearedDraft.key, JSON.stringify(clearedDraft.draft));
+    } catch (error) {
+    }
+
+    if (recentlyClearedComposeDraftKey() === clearedDraft.key) {
+      clearRecentlyClearedComposeDraftKey();
+    }
+  }
+
   function recentlyClearedComposeDraftKey() {
     try {
       return sessionStorage.getItem(storageKeys.recentlyClearedComposeDraft) || "";
@@ -1593,6 +1627,7 @@
         clearPendingReplyOperation(form, operationKey);
         return false;
       }
+      const clearedDraft = clearComposeDraftForPendingSubmit(form);
 
       try {
         setStatus(statusNode, "Posting reply...", "ok");
@@ -1603,10 +1638,10 @@
         timing.serverTiming = result.serverTiming || {};
         if (!result.ok) {
           removeNode(pendingCard);
+          restoreComposeDraftAfterFailedSubmit(clearedDraft);
           throw new Error(result.error);
         }
 
-        clearComposeDraft(form);
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
         navigateToCanonicalReply(result);

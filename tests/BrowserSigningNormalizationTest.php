@@ -1494,8 +1494,10 @@ const state = {
     forum_pki_public_key: 'public',
     forum_pki_private_key: 'private',
     forum_pki_fingerprint: 'ABC123',
-    forum_pki_published_fingerprint: 'ABC123'
+    forum_pki_published_fingerprint: 'ABC123',
+    'forum_compose_draft:reply:root-001:root-001': '{"fields":{"body":"Hello <b>world</b>\\nsecond line"}}'
   },
+  sessionStore: {},
   localRemoveCalls: [],
   submitHandler: null,
   fetchCalls: [],
@@ -1664,7 +1666,11 @@ global.localStorage = {
     delete state.localStore[key];
   }
 };
-global.sessionStorage = { getItem(){ return ''; }, setItem(){}, removeItem(){} };
+global.sessionStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.sessionStore, key) ? state.sessionStore[key] : ''; },
+  setItem(key, value) { state.sessionStore[key] = String(value); },
+  removeItem(key) { delete state.sessionStore[key]; }
+};
 global.document = {
   addEventListener(type, handler) {
     if (type === 'DOMContentLoaded') handler();
@@ -1721,7 +1727,9 @@ vm.runInThisContext(source);
     bodyValue: fields[4].value,
     submitDisabled: submitButton.disabled,
     authorIdentityId: fields[2].value,
-    formSubmitted: state.formSubmitted
+    formSubmitted: state.formSubmitted,
+    draftExists: Object.prototype.hasOwnProperty.call(state.localStore, 'forum_compose_draft:reply:root-001:root-001'),
+    recentlyClearedDraft: state.sessionStore.forum_recently_cleared_compose_draft || ''
   };
   state.resolveCreateReply();
   await submitPromise;
@@ -1756,6 +1764,8 @@ NODE;
         assertSame(true, $result['optimistic']['submitDisabled']);
         assertSame('openpgp:abc123', $result['optimistic']['authorIdentityId']);
         assertSame(0, $result['optimistic']['formSubmitted']);
+        assertSame(false, $result['optimistic']['draftExists']);
+        assertSame('forum_compose_draft:reply:root-001:root-001', $result['optimistic']['recentlyClearedDraft']);
         assertSame('/threads/root-001?created_post_id=reply-002&__v=abc999#post-reply-002', $result['assignedUrl']);
         assertSame(['forum_compose_draft:reply:root-001:root-001'], $result['removeCalls']);
         assertSame(0, $result['finalFormSubmitted']);
@@ -1796,6 +1806,7 @@ const state = {
     forum_pki_fingerprint: 'ABC123',
     forum_pki_published_fingerprint: 'ABC123'
   },
+  sessionStore: {},
   submitHandler: null,
   fetchCalls: []
 };
@@ -1915,7 +1926,11 @@ global.localStorage = {
   setItem(key, value) { state.localStore[key] = String(value); },
   removeItem(key) { delete state.localStore[key]; }
 };
-global.sessionStorage = { getItem(){ return ''; }, setItem(){}, removeItem(){} };
+global.sessionStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.sessionStore, key) ? state.sessionStore[key] : ''; },
+  setItem(key, value) { state.sessionStore[key] = String(value); },
+  removeItem(key) { delete state.sessionStore[key]; }
+};
 global.document = {
   addEventListener(type, handler) {
     if (type === 'DOMContentLoaded') handler();
@@ -1954,7 +1969,9 @@ state.submitHandler({
     statusKind: statusNode.dataset.kind,
     order: parent.children.map((child) => child.id),
     pendingCount: parent.children.filter((child) => child.attributes && child.attributes['data-pending-reply-id']).length,
-    fetchCalls: state.fetchCalls
+    fetchCalls: state.fetchCalls,
+    restoredDraft: JSON.parse(state.localStore['forum_compose_draft:reply:root-001:root-001'] || '{}'),
+    recentlyClearedDraft: state.sessionStore.forum_recently_cleared_compose_draft || ''
   }));
 }).catch((error) => {
   process.stderr.write(error.stack || String(error));
@@ -1970,6 +1987,8 @@ NODE;
         assertSame('error', $result['statusKind']);
         assertSame(['existing-reply', 'composer'], $result['order']);
         assertSame(0, $result['pendingCount']);
+        assertSame('Draft body', $result['restoredDraft']['fields']['body']);
+        assertSame('', $result['recentlyClearedDraft']);
         assertSame([
             '/api/set_identity_hint?identity_hint=openpgp%3Aabc123',
             '/api/get_profile?profile_slug=openpgp-abc123',
