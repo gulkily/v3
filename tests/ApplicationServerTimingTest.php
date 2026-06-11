@@ -61,6 +61,38 @@ final class ApplicationServerTimingTest
             $headers
         );
     }
+
+    public function testMergeResultTimingsPreservesWriterTotalAsWriteTotal(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            __DIR__ . '/fixtures/parity_minimal_v1',
+            sys_get_temp_dir() . '/forum-rewrite-server-timing-' . bin2hex(random_bytes(6)) . '.sqlite3',
+        );
+
+        $method = new ReflectionMethod($application, 'mergeResultTimings');
+        $method->setAccessible(true);
+
+        $startedAt = hrtime(true);
+        usleep(1000);
+        $result = $method->invoke($application, [
+            'status' => 'ok',
+            'timings' => [
+                'lock_wait' => 0.1,
+                'total' => 12.3,
+            ],
+        ], [
+            'request_data' => 0.2,
+        ], $startedAt);
+
+        assertSame('ok', $result['status']);
+        assertSame(0.2, $result['timings']['request_data']);
+        assertSame(0.1, $result['timings']['lock_wait']);
+        assertSame(12.3, $result['timings']['write_total']);
+        if (!isset($result['timings']['total']) || !is_float($result['timings']['total'])) {
+            throw new RuntimeException('Expected merged total timing.');
+        }
+    }
 }
 
 if (!function_exists('assertSame')) {

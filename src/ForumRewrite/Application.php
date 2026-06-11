@@ -2444,21 +2444,30 @@ final class Application
      */
     private function handleCreateThread(string $method, array $query): void
     {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
         if ($method !== 'POST') {
             $this->sendText("method not allowed\n", 405);
             return;
         }
 
+        $phaseStartedAt = hrtime(true);
         $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
         try {
             $result = $this->writer()->createThread($input);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
             $this->sendText(
                 "status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\ncommit_sha={$result['commit_sha']}\n",
                 200,
                 $this->serverTimingHeaders($result)
             );
         } catch (RuntimeException $exception) {
-            $this->sendText("error=" . $exception->getMessage() . "\n", 400);
+            $this->sendText(
+                "error=" . $exception->getMessage() . "\n",
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
         }
     }
 
@@ -2467,21 +2476,30 @@ final class Application
      */
     private function handleCreateReply(string $method, array $query): void
     {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
         if ($method !== 'POST') {
             $this->sendText("method not allowed\n", 405);
             return;
         }
 
+        $phaseStartedAt = hrtime(true);
         $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
         try {
             $result = $this->writer()->createReply($input);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
             $this->sendText(
                 "status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\ncommit_sha={$result['commit_sha']}\n",
                 200,
                 $this->serverTimingHeaders($result)
             );
         } catch (RuntimeException $exception) {
-            $this->sendText("error=" . $exception->getMessage() . "\n", 400);
+            $this->sendText(
+                "error=" . $exception->getMessage() . "\n",
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
         }
     }
 
@@ -2571,25 +2589,39 @@ final class Application
      */
     private function handleGenerateAgentReply(string $method, array $query): void
     {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        $headersWithTimings = function () use (&$timings, $totalStartedAt): array {
+            return $this->noStoreTimingHeaders($this->timingsWithTotal($timings, $totalStartedAt));
+        };
+
         if ($method !== 'POST') {
-            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $headersWithTimings());
             return;
         }
 
+        $phaseStartedAt = hrtime(true);
         $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
         $postId = trim((string) ($input['post_id'] ?? ''));
         if ($postId === '') {
-            $this->sendJson(['status' => 'error', 'error' => 'Missing post_id.'], 400);
+            $this->sendJson(['status' => 'error', 'error' => 'Missing post_id.'], 400, $headersWithTimings());
             return;
         }
 
+        $phaseStartedAt = hrtime(true);
         $post = $this->fetchPost($postId);
+        $timings['fetch_post'] = $this->elapsedMilliseconds($phaseStartedAt);
         if ($post === null) {
-            $this->sendJson(['status' => 'error', 'error' => 'post not found'], 404);
+            $this->sendJson(['status' => 'error', 'error' => 'post not found'], 404, $headersWithTimings());
             return;
         }
 
-        $this->sendJson($this->agentReplyResultForPost($post), 200, $this->noStoreHeaders());
+        $phaseStartedAt = hrtime(true);
+        $response = $this->agentReplyResultForPost($post);
+        $timings['agent_reply'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+        $this->sendJson($response, 200, $headersWithTimings());
     }
 
     /**
@@ -2775,22 +2807,33 @@ final class Application
      */
     private function handleApplyThreadTag(string $method, array $query): void
     {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
         if ($method !== 'POST') {
             $this->sendText("method not allowed\n", 405);
             return;
         }
 
+        $phaseStartedAt = hrtime(true);
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
         if ($viewerProfile === null) {
-            $this->sendText("error=You must set an identity hint before applying a tag.\n", 400);
+            $this->sendText(
+                "error=You must set an identity hint before applying a tag.\n",
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
             return;
         }
 
+        $phaseStartedAt = hrtime(true);
         $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
         $input['author_identity_id'] = (string) $viewerProfile['identity_id'];
 
         try {
             $result = $this->writer()->applyThreadTag($input);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
             $response = "status=ok\n"
                 . "thread_id={$result['thread_id']}\n"
                 . "tag={$result['tag']}\n"
@@ -2804,7 +2847,11 @@ final class Application
 
             $this->sendText($response, 200, $this->serverTimingHeaders($result));
         } catch (RuntimeException $exception) {
-            $this->sendText("error=" . $exception->getMessage() . "\n", 400);
+            $this->sendText(
+                "error=" . $exception->getMessage() . "\n",
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
         }
     }
 
@@ -2813,22 +2860,33 @@ final class Application
      */
     private function handleApplyPostTag(string $method, array $query): void
     {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
         if ($method !== 'POST') {
             $this->sendText("method not allowed\n", 405);
             return;
         }
 
+        $phaseStartedAt = hrtime(true);
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
         if ($viewerProfile === null) {
-            $this->sendText("error=You must set an identity hint before applying a tag.\n", 400);
+            $this->sendText(
+                "error=You must set an identity hint before applying a tag.\n",
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
             return;
         }
 
+        $phaseStartedAt = hrtime(true);
         $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
         $input['author_identity_id'] = (string) $viewerProfile['identity_id'];
 
         try {
             $result = $this->writer()->applyPostTag($input);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
             $response = "status=ok\n"
                 . "post_id={$result['post_id']}\n"
                 . "thread_id={$result['thread_id']}\n"
@@ -2845,7 +2903,11 @@ final class Application
 
             $this->sendText($response, 200, $this->serverTimingHeaders($result));
         } catch (RuntimeException $exception) {
-            $this->sendText("error=" . $exception->getMessage() . "\n", 400);
+            $this->sendText(
+                "error=" . $exception->getMessage() . "\n",
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
         }
     }
 
@@ -2854,21 +2916,30 @@ final class Application
      */
     private function handleLinkIdentity(string $method, array $query): void
     {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
         if ($method !== 'POST') {
             $this->sendText("method not allowed\n", 405);
             return;
         }
 
+        $phaseStartedAt = hrtime(true);
         $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
         try {
             $result = $this->writer()->linkIdentity($input);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
             $this->sendText(
                 "status=ok\nidentity_id={$result['identity_id']}\nprofile_slug={$result['profile_slug']}\nusername={$result['username']}\nbootstrap_post_id={$result['bootstrap_post_id']}\nbootstrap_thread_id={$result['bootstrap_thread_id']}\ncommit_sha={$result['commit_sha']}\n",
                 200,
                 $this->serverTimingHeaders($result)
             );
         } catch (RuntimeException $exception) {
-            $this->sendText("error=" . $exception->getMessage() . "\n", 400);
+            $this->sendText(
+                "error=" . $exception->getMessage() . "\n",
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
         }
     }
 
@@ -2877,25 +2948,39 @@ final class Application
      */
     private function handleApproveUserApi(string $method, array $query): void
     {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
         if ($method !== 'POST') {
             $this->sendText("method not allowed\n", 405);
             return;
         }
 
+        $phaseStartedAt = hrtime(true);
         $profileSlug = trim((string) ($this->requestData($query)['profile_slug'] ?? ''));
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
         if ($profileSlug === '') {
-            $this->sendText("error=Missing profile_slug.\n", 400);
+            $this->sendText(
+                "error=Missing profile_slug.\n",
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
             return;
         }
 
         try {
-            $result = $this->approveUserBySlug($profileSlug);
+            $result = $this->approveUserBySlug($profileSlug, $timings);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
             $this->sendText(
                 "status=ok\nprofile_slug={$result['profile_slug']}\nusername={$result['username']}\npost_id={$result['post_id']}\ncommit_sha={$result['commit_sha']}\n",
-                200
+                200,
+                $this->serverTimingHeaders($result)
             );
         } catch (RuntimeException $exception) {
-            $this->sendText("error=" . $exception->getMessage() . "\n", 400);
+            $this->sendText(
+                "error=" . $exception->getMessage() . "\n",
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
         }
     }
 
@@ -3223,6 +3308,39 @@ final class Application
         return array_merge($this->noStoreHeaders(), $this->serverTimingHeaders(['timings' => $timings]));
     }
 
+    /**
+     * @param array<string, mixed> $result
+     * @param array<string, float|int> $timings
+     * @return array<string, mixed>
+     */
+    private function mergeResultTimings(array $result, array $timings, int $totalStartedAt): array
+    {
+        $existing = isset($result['timings']) && is_array($result['timings'])
+            ? $result['timings']
+            : [];
+
+        if (isset($existing['total']) && (is_int($existing['total']) || is_float($existing['total']))) {
+            $existing['write_total'] = $existing['total'];
+            unset($existing['total']);
+        }
+
+        $result['timings'] = array_merge($timings, $existing);
+        $result['timings']['total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+        return $result;
+    }
+
+    /**
+     * @param array<string, float|int> $timings
+     * @return array<string, float|int>
+     */
+    private function timingsWithTotal(array $timings, int $totalStartedAt): array
+    {
+        $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+        return $timings;
+    }
+
     private function elapsedMilliseconds(int $startedAt): float
     {
         return round((hrtime(true) - $startedAt) / 1000000, 1);
@@ -3402,9 +3520,14 @@ final class Application
      */
     private function handleComposeThreadSubmit(array $query): void
     {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        $phaseStartedAt = hrtime(true);
         $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
         try {
             $result = $this->writer()->createThread($input);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
             $this->queueComposeDraftClear($this->composeDraftStorageKey('thread'));
             $location = '/threads/' . $result['thread_id']
                 . '?created_post_id=' . rawurlencode($result['post_id'])
@@ -3424,7 +3547,8 @@ final class Application
                     null,
                     $exception->getMessage()
                 ),
-                400
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
             );
         }
     }
@@ -3434,12 +3558,17 @@ final class Application
      */
     private function handleComposeReplySubmit(array $query): void
     {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        $phaseStartedAt = hrtime(true);
         $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
         $threadId = (string) ($input['thread_id'] ?? '');
         $parentId = (string) ($input['parent_id'] ?? '');
 
         try {
             $result = $this->writer()->createReply($input);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
             $this->queueComposeDraftClear($this->composeDraftStorageKey('reply', $threadId, $parentId));
             $location = '/threads/' . $result['thread_id']
                 . '?created_post_id=' . rawurlencode($result['post_id'])
@@ -3461,7 +3590,8 @@ final class Application
                     (string) ($input['board_tags'] ?? 'general'),
                     (string) ($input['body'] ?? '')
                 ),
-                400
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
             );
         }
     }
@@ -3471,16 +3601,27 @@ final class Application
      */
     private function handleAccountKeySubmit(array $query): void
     {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        $phaseStartedAt = hrtime(true);
         $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
         try {
             $result = $this->writer()->linkIdentity($input);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
             $location = '/profiles/' . $result['profile_slug'];
             $this->sendRedirect(
                 $location,
-                'Linked identity ' . $result['identity_id'] . ' as ' . $result['username'] . '. Commit ' . $result['commit_sha'] . '.'
+                'Linked identity ' . $result['identity_id'] . ' as ' . $result['username'] . '. Commit ' . $result['commit_sha'] . '.',
+                303,
+                $this->serverTimingHeaders($result)
             );
         } catch (RuntimeException $exception) {
-            $this->sendHtml($this->renderAccountKeyPage(null, $exception->getMessage()), 400);
+            $this->sendHtml(
+                $this->renderAccountKeyPage(null, $exception->getMessage()),
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
         }
     }
 
@@ -3489,34 +3630,53 @@ final class Application
      */
     private function handleApproveUserSubmit(string $slug, array $query): void
     {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        $phaseStartedAt = hrtime(true);
         $profile = $this->fetchProfileBySlug($slug);
+        $timings['target_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
         if ($profile === null) {
             $this->notFound();
             return;
         }
 
         try {
-            $result = $this->approveUserBySlug($slug);
+            $result = $this->approveUserBySlug($slug, $timings);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
             $location = '/profiles/' . rawurlencode((string) $profile['profile_slug'])
                 . '?approval=success&post_id=' . rawurlencode((string) $result['post_id'])
                 . '&commit=' . rawurlencode((string) $result['commit_sha']);
-            $this->sendRedirect($location, 'Approved user ' . (string) $profile['username'] . '.');
+            $this->sendRedirect(
+                $location,
+                'Approved user ' . (string) $profile['username'] . '.',
+                303,
+                $this->serverTimingHeaders($result)
+            );
         } catch (RuntimeException $exception) {
-            $this->sendHtml($this->renderProfilePage($profile, false, null, $exception->getMessage()), 400);
+            $this->sendHtml(
+                $this->renderProfilePage($profile, false, null, $exception->getMessage()),
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
         }
     }
 
     /**
-     * @return array{profile_slug:string,username:string,post_id:string,commit_sha:string}
+     * @param array<string, float> $timings
+     * @return array{profile_slug:string,username:string,post_id:string,commit_sha:string,timings:array<string,float>}
      */
-    private function approveUserBySlug(string $slug): array
+    private function approveUserBySlug(string $slug, array &$timings = []): array
     {
+        $phaseStartedAt = hrtime(true);
         $profile = $this->fetchProfileBySlug($slug);
+        $timings['target_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
         if ($profile === null) {
             throw new RuntimeException('Profile not found.');
         }
 
+        $phaseStartedAt = hrtime(true);
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
         if ($viewerProfile === null || ((int) $viewerProfile['is_approved']) !== 1) {
             throw new RuntimeException('Only approved users can approve other users.');
         }
@@ -3542,6 +3702,7 @@ final class Application
             'username' => (string) $profile['username'],
             'post_id' => (string) $result['post_id'],
             'commit_sha' => (string) $result['commit_sha'],
+            'timings' => is_array($result['timings'] ?? null) ? $result['timings'] : [],
         ];
     }
 

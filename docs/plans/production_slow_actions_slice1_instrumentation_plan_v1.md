@@ -26,11 +26,8 @@ This slice should not introduce optimistic UI behavior yet. It should only add o
 - `Application::serverTimingHeaders()` already emits valid timing names as a `Server-Timing` header.
 - `Application::handleAnalyzePost()` already records a more detailed non-write timing chain.
 - `ExecutionLock::withExclusiveLockTimed()` exposes `lock_wait`, and `LocalWriteService` merges it into successful canonical write timings.
-- Some write responses omit timing headers or omit useful pre-writer phases:
-  - approval API and approval form response
-  - account key form redirect
-  - error responses
-  - viewer profile/identity lookup before reaction writes
+- Write endpoints now merge application-level pre-writer timings with write-service timings. Handler-level `total` covers the full request handler, while writer-internal `total` is preserved as `write_total`.
+- Some timing gaps remain for provider-specific internals and broader browser-side action duration.
 - Browser-side action duration is mostly invisible. Reaction code shows progress messages, but it does not mark identity preparation, fetch timing, or first visible feedback.
 
 ## Timing Names
@@ -54,6 +51,7 @@ Server timing names:
 - `artifact_invalidate`
 - `external_provider`
 - `response_render`
+- `write_total`
 - `total`
 
 Browser mark/measure names:
@@ -110,6 +108,13 @@ Verification:
 - existing lock timeout tests continue passing
 
 ### Slice 1B: Normalize Write Endpoint Timing Coverage
+
+Status:
+
+- implemented
+- write-like API handlers now include `request_data`, `viewer_profile`, `target_profile`, writer timings, `write_total`, and full handler `total` where applicable
+- account key and approval redirects now include `Server-Timing`
+- expected pre-writer validation failures now return timing headers where practical
 
 Goal:
 
