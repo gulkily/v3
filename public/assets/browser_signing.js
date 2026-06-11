@@ -9,7 +9,59 @@
     composeDraftPrefix: "forum_compose_draft",
     recentlyClearedComposeDraft: "forum_recently_cleared_compose_draft",
   };
+  let actionTimingSequence = 0;
   let clearedKeypairBackup = null;
+
+  function browserPerformance() {
+    return typeof window !== "undefined" && window.performance && typeof window.performance.mark === "function"
+      ? window.performance
+      : null;
+  }
+
+  function startActionTiming(action) {
+    const timing = {
+      action: action,
+      id: `${action}:${Date.now()}:${++actionTimingSequence}`,
+      firstFeedbackMarked: false,
+    };
+    markActionTiming(timing, "forum_action_start");
+    return timing;
+  }
+
+  function markActionTiming(timing, name, extraDetail) {
+    const perf = browserPerformance();
+    if (!perf || !timing) {
+      return;
+    }
+
+    const detail = Object.assign({
+      action: timing.action,
+      id: timing.id,
+    }, extraDetail || {});
+
+    try {
+      perf.mark(name, { detail: detail });
+    } catch (error) {
+      try {
+        perf.mark(name);
+      } catch (ignored) {
+      }
+    }
+  }
+
+  function markFirstFeedback(timing) {
+    if (!timing || timing.firstFeedbackMarked) {
+      return;
+    }
+
+    timing.firstFeedbackMarked = true;
+    markActionTiming(timing, "forum_first_feedback");
+  }
+
+  function completeActionTiming(timing, status) {
+    markActionTiming(timing, "forum_action_complete", { status: status });
+  }
+
   const ASCII_COMPOSE_REPLACEMENTS = new Map([
     ["\u2018", "'"],
     ["\u2019", "'"],
@@ -1336,12 +1388,14 @@
 
       const submitter = event.submitter;
       event.preventDefault();
+      const timing = startActionTiming(`compose_${form.dataset.composeKind || "submit"}`);
       submitInFlight = true;
       setSubmitButtonsDisabled(true);
       const normalizationResult = normalizeComposeFields({ removeUnsupported: false });
       if (normalizationResult.hasUnsupported) {
         submitInFlight = false;
         setSubmitButtonsDisabled(false);
+        completeActionTiming(timing, "validation_error");
         return;
       }
 
@@ -1349,13 +1403,19 @@
         if (isAnonymousComposeSubmitter(submitter)) {
           clearComposeAuthorIdentity(form);
           setStatus(statusNode, "Sending anonymous post...", "ok");
+          markFirstFeedback(timing);
+          completeActionTiming(timing, "submit");
           form.submit();
           return;
         }
 
+        markActionTiming(timing, "forum_identity_start");
         await ensureComposeIdentity(root, statusNode);
+        markActionTiming(timing, "forum_identity_ready");
         ensureComposeAuthorIdentity(form);
         setStatus(statusNode, "Identity ready. Sending post...", "ok");
+        markFirstFeedback(timing);
+        completeActionTiming(timing, "submit");
         form.submit();
       } catch (error) {
         const status = statusFromError(error, "Unable to prepare your browser identity. Use /account/key/ manually.");
@@ -1365,6 +1425,8 @@
           "error",
           { technicalDetails: status.technicalDetails }
         );
+        markFirstFeedback(timing);
+        completeActionTiming(timing, "error");
         restoreComposeUiState();
       }
     });

@@ -1,4 +1,56 @@
 (function () {
+  let actionTimingSequence = 0;
+
+  function browserPerformance() {
+    return typeof window !== "undefined" && window.performance && typeof window.performance.mark === "function"
+      ? window.performance
+      : null;
+  }
+
+  function startActionTiming(action) {
+    const timing = {
+      action: action,
+      id: `${action}:${Date.now()}:${++actionTimingSequence}`,
+      firstFeedbackMarked: false,
+    };
+    markActionTiming(timing, "forum_action_start");
+    return timing;
+  }
+
+  function markActionTiming(timing, name, extraDetail) {
+    const perf = browserPerformance();
+    if (!perf || !timing) {
+      return;
+    }
+
+    const detail = Object.assign({
+      action: timing.action,
+      id: timing.id,
+    }, extraDetail || {});
+
+    try {
+      perf.mark(name, { detail: detail });
+    } catch (error) {
+      try {
+        perf.mark(name);
+      } catch (ignored) {
+      }
+    }
+  }
+
+  function markFirstFeedback(timing) {
+    if (!timing || timing.firstFeedbackMarked) {
+      return;
+    }
+
+    timing.firstFeedbackMarked = true;
+    markActionTiming(timing, "forum_first_feedback");
+  }
+
+  function completeActionTiming(timing, status) {
+    markActionTiming(timing, "forum_action_complete", { status: status });
+  }
+
   function createTechnicalFeedbackToggle(node) {
     if (!node || typeof node.appendChild !== "function" || typeof document === "undefined" || typeof document.createElement !== "function") {
       return null;
@@ -115,14 +167,17 @@
     return response.text();
   }
 
-  async function ensureReactionIdentity(root, feedbackNode) {
+  async function ensureReactionIdentity(root, feedbackNode, timing) {
     const helper = window.__forumBrowserIdentity;
     if (!helper || typeof helper.ensureReadyIdentity !== "function") {
       throw new Error("Identity setup is unavailable. Reload the page and try again.");
     }
 
+    markActionTiming(timing, "forum_identity_start");
     setFeedback(feedbackNode, "Preparing identity...", "ok");
+    markFirstFeedback(timing);
     await helper.ensureReadyIdentity(root, feedbackNode);
+    markActionTiming(timing, "forum_identity_ready");
   }
 
   function feedbackFromError(error, fallbackMessage) {
@@ -165,13 +220,17 @@
 
       const tag = button.getAttribute("data-tag") || "";
       const appliedLabel = button.getAttribute("data-applied-label") || "Applied";
+      const timing = startActionTiming("apply_thread_tag");
 
       button.disabled = true;
 
       try {
-        await ensureReactionIdentity(root, feedbackNode);
+        await ensureReactionIdentity(root, feedbackNode, timing);
         setFeedback(feedbackNode, "Saving tag...", "ok");
+        markFirstFeedback(timing);
+        markActionTiming(timing, "forum_fetch_start");
         const text = await applyThreadTag(threadId, tag);
+        markActionTiming(timing, "forum_response_received");
         if (!text.includes("status=ok")) {
           const errorMessage = parseResponseValue(text, "error") || "Unable to apply tag.";
           throw new Error(errorMessage);
@@ -188,6 +247,8 @@
         button.textContent = appliedLabel;
         button.setAttribute("aria-pressed", "true");
 
+        markActionTiming(timing, "forum_reconcile_complete");
+        completeActionTiming(timing, "ok");
         if (viewerIsApproved) {
           setFeedback(feedbackNode, wroteRecord ? "Liked." : "Already liked.", "ok");
           return;
@@ -203,6 +264,7 @@
           "error",
           { technicalDetails: feedback.technicalDetails }
         );
+        completeActionTiming(timing, "error");
       }
     });
   }
@@ -226,13 +288,17 @@
 
       const tag = button.getAttribute("data-tag") || "";
       const appliedLabel = button.getAttribute("data-applied-label") || "Applied";
+      const timing = startActionTiming("apply_post_tag");
 
       button.disabled = true;
 
       try {
-        await ensureReactionIdentity(root, feedbackNode);
+        await ensureReactionIdentity(root, feedbackNode, timing);
         setFeedback(feedbackNode, "Saving tag...", "ok");
+        markFirstFeedback(timing);
+        markActionTiming(timing, "forum_fetch_start");
         const text = await applyPostTag(postId, tag);
+        markActionTiming(timing, "forum_response_received");
         if (!text.includes("status=ok")) {
           const errorMessage = parseResponseValue(text, "error") || "Unable to apply tag.";
           throw new Error(errorMessage);
@@ -246,10 +312,14 @@
 
         if (isHidden) {
           root.hidden = true;
+          markActionTiming(timing, "forum_reconcile_complete");
+          completeActionTiming(timing, "ok");
           return;
         }
 
         setFeedback(feedbackNode, postReactionMessage(appliedLabel, wroteRecord), "ok");
+        markActionTiming(timing, "forum_reconcile_complete");
+        completeActionTiming(timing, "ok");
       } catch (error) {
         button.disabled = false;
         const feedback = feedbackFromError(error, "Unable to apply tag.");
@@ -259,6 +329,7 @@
           "error",
           { technicalDetails: feedback.technicalDetails }
         );
+        completeActionTiming(timing, "error");
       }
     });
   }

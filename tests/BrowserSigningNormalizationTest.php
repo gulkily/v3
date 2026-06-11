@@ -1220,6 +1220,7 @@ const fs = require('fs');
 const vm = require('vm');
 const source = fs.readFileSync(process.argv[1], 'utf8');
 const events = [];
+const marks = [];
 let clickHandler = null;
 
 class HTMLButtonElement {
@@ -1263,6 +1264,11 @@ const root = {
 global.Element = HTMLButtonElement;
 global.HTMLButtonElement = HTMLButtonElement;
 global.window = {
+  performance: {
+    mark(name, options) {
+      marks.push({ name, action: options && options.detail ? options.detail.action : '' });
+    }
+  },
   __forumBrowserIdentity: {
     async ensureReadyIdentity(receivedRoot, receivedFeedback) {
       events.push(receivedRoot === root ? 'ensure-root' : 'ensure-wrong-root');
@@ -1305,7 +1311,8 @@ clickHandler({
     feedbackHidden: feedbackNode.hidden,
     buttonDisabled: button.disabled,
     buttonText: button.textContent,
-    ariaPressed: button.attributes['aria-pressed'] || ''
+    ariaPressed: button.attributes['aria-pressed'] || '',
+    marks
   }));
 });
 NODE;
@@ -1319,6 +1326,20 @@ NODE;
         assertSame(true, $result['buttonDisabled']);
         assertSame('Liked', $result['buttonText']);
         assertSame('true', $result['ariaPressed']);
+        assertSame(
+            [
+                'forum_action_start',
+                'forum_identity_start',
+                'forum_first_feedback',
+                'forum_identity_ready',
+                'forum_fetch_start',
+                'forum_response_received',
+                'forum_reconcile_complete',
+                'forum_action_complete',
+            ],
+            array_column($result['marks'], 'name')
+        );
+        assertSame('apply_thread_tag', $result['marks'][0]['action']);
     }
 
     public function testThreadReactionShowsBootstrapFailureInlineAndSkipsLikeWrite(): void

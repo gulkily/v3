@@ -28,7 +28,7 @@ This slice should not introduce optimistic UI behavior yet. It should only add o
 - `ExecutionLock::withExclusiveLockTimed()` exposes `lock_wait`, and `LocalWriteService` merges it into successful canonical write timings.
 - Write endpoints now merge application-level pre-writer timings with write-service timings. Handler-level `total` covers the full request handler, while writer-internal `total` is preserved as `write_total`.
 - Provider-backed post analysis now returns an `external_provider` timing bucket, and the Dedalus agent reply generator attaches the same bucket when used directly.
-- Browser-side action duration remains mostly invisible. Reaction code shows progress messages, but it does not mark identity preparation, fetch timing, or first visible feedback.
+- Browser-side action duration now has passive `performance.mark()` coverage for reaction clicks and compose-submit preparation.
 
 ## Timing Names
 
@@ -190,6 +190,13 @@ Verification:
 - tests can use stub providers or reflection-level assertions without real network calls
 
 ### Slice 1D: Browser Action Performance Marks
+
+Status:
+
+- implemented
+- reaction clicks mark action start, identity preparation, first feedback, fetch start, response receipt, reconciliation, and completion
+- compose submits mark action start, identity preparation, first feedback, validation failures, and submit/error completion
+- the timing helpers no-op when browser performance APIs are unavailable
 
 Goal:
 
