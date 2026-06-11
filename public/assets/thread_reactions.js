@@ -220,6 +220,63 @@
     return line ? line.slice(prefix.length) : "";
   }
 
+  function captureButtonState(button) {
+    return {
+      disabled: button.disabled,
+      textContent: button.textContent,
+      ariaPressed: button.getAttribute("aria-pressed"),
+    };
+  }
+
+  function restoreButtonState(button, state) {
+    button.disabled = state.disabled;
+    button.textContent = state.textContent;
+    if (state.ariaPressed === null || state.ariaPressed === undefined) {
+      if (typeof button.removeAttribute === "function") {
+        button.removeAttribute("aria-pressed");
+      }
+    } else {
+      button.setAttribute("aria-pressed", state.ariaPressed);
+    }
+  }
+
+  function setPendingReactionButton(button, appliedLabel) {
+    button.disabled = true;
+    button.textContent = appliedLabel;
+    button.setAttribute("aria-pressed", "true");
+  }
+
+  function setConfirmedReactionButton(button, appliedLabel) {
+    button.textContent = appliedLabel;
+    button.setAttribute("aria-pressed", "true");
+  }
+
+  function captureThreadReactionState(button, scoreNode) {
+    return {
+      button: captureButtonState(button),
+      scoreText: scoreNode ? scoreNode.textContent : null,
+    };
+  }
+
+  function restoreThreadReactionState(button, scoreNode, state) {
+    restoreButtonState(button, state.button);
+    if (scoreNode && state.scoreText !== null) {
+      scoreNode.textContent = state.scoreText;
+    }
+  }
+
+  function capturePostReactionState(root, button) {
+    return {
+      button: captureButtonState(button),
+      hidden: root.hidden,
+    };
+  }
+
+  function restorePostReactionState(root, button, state) {
+    restoreButtonState(button, state.button);
+    root.hidden = state.hidden;
+  }
+
   async function applyThreadTag(threadId, tag) {
     const response = await fetch("/api/apply_thread_tag", {
       method: "POST",
@@ -312,6 +369,7 @@
       const tag = button.getAttribute("data-tag") || "";
       const appliedLabel = button.getAttribute("data-applied-label") || "Applied";
       const timing = startActionTiming("apply_thread_tag");
+      const previousState = captureThreadReactionState(button, scoreNode);
 
       button.disabled = true;
 
@@ -337,8 +395,7 @@
           scoreNode.textContent = `Score: ${scoreTotal}`;
         }
 
-        button.textContent = appliedLabel;
-        button.setAttribute("aria-pressed", "true");
+        setConfirmedReactionButton(button, appliedLabel);
 
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
@@ -349,7 +406,7 @@
 
         setFeedback(feedbackNode, wroteRecord ? "Liked." : "Already liked.", "ok");
       } catch (error) {
-        button.disabled = false;
+        restoreThreadReactionState(button, scoreNode, previousState);
         timing.errorKind = error instanceof Error && error.name ? error.name : "error";
         const feedback = feedbackFromError(error, "Unable to apply tag.");
         setFeedback(
@@ -383,6 +440,7 @@
       const tag = button.getAttribute("data-tag") || "";
       const appliedLabel = button.getAttribute("data-applied-label") || "Applied";
       const timing = startActionTiming("apply_post_tag");
+      const previousState = capturePostReactionState(root, button);
 
       button.disabled = true;
 
@@ -403,8 +461,7 @@
         const wroteRecord = parseResponseValue(text, "wrote_record") === "yes";
         const isHidden = parseResponseValue(text, "is_hidden") === "yes";
 
-        button.textContent = appliedLabel;
-        button.setAttribute("aria-pressed", "true");
+        setConfirmedReactionButton(button, appliedLabel);
 
         if (isHidden) {
           root.hidden = true;
@@ -417,7 +474,7 @@
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
       } catch (error) {
-        button.disabled = false;
+        restorePostReactionState(root, button, previousState);
         timing.errorKind = error instanceof Error && error.name ? error.name : "error";
         const feedback = feedbackFromError(error, "Unable to apply tag.");
         setFeedback(
