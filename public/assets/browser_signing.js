@@ -11,6 +11,7 @@
   };
   let actionTimingSequence = 0;
   let clearedKeypairBackup = null;
+  const pendingReplyOperations = new Set();
 
   function browserPerformance() {
     return typeof window !== "undefined" && window.performance && typeof window.performance.mark === "function"
@@ -535,6 +536,27 @@
       }
 
       window.location.href = url;
+    }
+  }
+
+  function beginPendingReplyOperation(form, fields) {
+    if (form.dataset.pendingReplyOperationKey) {
+      return "";
+    }
+
+    const key = `reply:${fields.thread_id}:${fields.parent_id}:${Date.now()}:${pendingReplyOperations.size + 1}`;
+    pendingReplyOperations.add(key);
+    form.dataset.pendingReplyOperationKey = key;
+    return key;
+  }
+
+  function clearPendingReplyOperation(form, key) {
+    if (key) {
+      pendingReplyOperations.delete(key);
+    }
+
+    if (form && form.dataset) {
+      delete form.dataset.pendingReplyOperationKey;
     }
   }
 
@@ -1556,29 +1578,39 @@
 
     async function submitOptimisticReply(timing) {
       const fields = collectReplySubmitFields(form);
+      const operationKey = beginPendingReplyOperation(form, fields);
+      if (operationKey === "") {
+        return true;
+      }
+
       const pendingCard = createPendingReplyCard({
         parentId: fields.parent_id,
         body: fields.body,
       });
       if (!insertPendingReplyCard(root, pendingCard)) {
+        clearPendingReplyOperation(form, operationKey);
         return false;
       }
 
-      setStatus(statusNode, "Posting reply...", "ok");
-      markFirstFeedback(timing);
-      markActionTiming(timing, "forum_fetch_start");
-      const result = await submitReplyFormToApi(form);
-      markActionTiming(timing, "forum_response_received");
-      if (!result.ok) {
-        removeNode(pendingCard);
-        throw new Error(result.error);
-      }
+      try {
+        setStatus(statusNode, "Posting reply...", "ok");
+        markFirstFeedback(timing);
+        markActionTiming(timing, "forum_fetch_start");
+        const result = await submitReplyFormToApi(form);
+        markActionTiming(timing, "forum_response_received");
+        if (!result.ok) {
+          removeNode(pendingCard);
+          throw new Error(result.error);
+        }
 
-      clearComposeDraft(form);
-      markActionTiming(timing, "forum_reconcile_complete");
-      completeActionTiming(timing, "ok");
-      navigateToCanonicalReply(result);
-      return true;
+        clearComposeDraft(form);
+        markActionTiming(timing, "forum_reconcile_complete");
+        completeActionTiming(timing, "ok");
+        navigateToCanonicalReply(result);
+        return true;
+      } finally {
+        clearPendingReplyOperation(form, operationKey);
+      }
     }
 
     function clearComposeAuthorIdentity(form) {
@@ -1636,12 +1668,12 @@
 
     let submitInFlight = false;
     form.addEventListener("submit", async function (event) {
+      event.preventDefault();
       if (submitInFlight) {
         return;
       }
 
       const submitter = event.submitter;
-      event.preventDefault();
       const timing = startActionTiming(`compose_${form.dataset.composeKind || "submit"}`);
       submitInFlight = true;
       setSubmitButtonsDisabled(true);

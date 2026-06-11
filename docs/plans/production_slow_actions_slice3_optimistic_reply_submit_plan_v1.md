@@ -184,6 +184,14 @@ Acceptance:
 
 ### Slice 3D: Duplicate Submit Guard and Retry
 
+Status:
+
+- implemented
+- repeated submit events now always call `preventDefault()` before checking in-flight state
+- optimistic reply submits store a page-local pending operation key on the form and in an in-memory set
+- duplicate submits while the request is pending do not issue additional `/api/create_reply` requests
+- pending operation state is cleared after success or failure so failed drafts can be retried
+
 Goal:
 
 - prevent accidental double-posts from repeated clicks while still allowing retry after failure
