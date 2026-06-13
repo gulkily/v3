@@ -1380,6 +1380,166 @@ NODE;
         assertSame(9.5, $result['result']['serverTiming']['total']);
     }
 
+    public function testThreadSubmitTransportHelpersCollectFieldsAndParseResponses(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+
+function field(name, value) {
+  return { name, value };
+}
+
+const fields = [
+  field('author_identity_id', 'openpgp:def456'),
+  field('board_tags', 'general updates'),
+  field('subject', 'Thread subject'),
+  field('body', 'Thread body')
+];
+const form = {
+  dataset: { composeKind: 'thread' },
+  querySelector(selector) {
+    const match = selector.match(/^\[name="([^"]+)"\]$/);
+    if (!match) {
+      return null;
+    }
+
+    return fields.find((item) => item.name === match[1]) || null;
+  }
+};
+
+global.window = {};
+global.localStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.sessionStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener() {},
+  querySelector() { return null; },
+  createElement() { return { setAttribute(){}, style:{}, addEventListener(){}, appendChild(){}, select(){} }; },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+const helper = window.__forumComposeNormalization;
+process.stdout.write(JSON.stringify({
+  isThread: helper.isThreadComposeForm(form),
+  fields: helper.collectThreadSubmitFields(form),
+  success: helper.parseCreateThreadResponse('status=ok\npost_id=thread-002\nthread_id=thread-001\ncommit_sha=def999\n', { total: 22.4 }),
+  failure: helper.parseCreateThreadResponse('error=Subject is required.\n', {})
+}));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(true, $result['isThread']);
+        assertSame(
+            [
+                'author_identity_id' => 'openpgp:def456',
+                'board_tags' => 'general updates',
+                'subject' => 'Thread subject',
+                'body' => 'Thread body',
+            ],
+            $result['fields']
+        );
+        assertSame(true, $result['success']['ok']);
+        assertSame('thread-002', $result['success']['postId']);
+        assertSame('thread-001', $result['success']['threadId']);
+        assertSame('def999', $result['success']['commitSha']);
+        assertSame(22.4, $result['success']['serverTiming']['total']);
+        assertSame(false, $result['failure']['ok']);
+        assertSame('Subject is required.', $result['failure']['error']);
+    }
+
+    public function testThreadSubmitTransportPostsUrlEncodedPayload(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+let fetchCall = null;
+
+function field(name, value) {
+  return { name, value };
+}
+
+const fields = [
+  field('author_identity_id', 'openpgp:def456'),
+  field('board_tags', 'general updates'),
+  field('subject', 'Thread subject with spaces'),
+  field('body', 'Thread body with spaces')
+];
+const form = {
+  dataset: { composeKind: 'thread' },
+  querySelector(selector) {
+    const match = selector.match(/^\[name="([^"]+)"\]$/);
+    if (!match) {
+      return null;
+    }
+
+    return fields.find((item) => item.name === match[1]) || null;
+  }
+};
+
+global.window = {};
+global.localStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.sessionStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener() {},
+  querySelector() { return null; },
+  createElement() { return { setAttribute(){}, style:{}, addEventListener(){}, appendChild(){}, select(){} }; },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url, options) {
+  fetchCall = { url, options };
+  return {
+    headers: {
+      get(name) {
+        return name === 'Server-Timing' ? 'total;dur=14.25' : '';
+      }
+    },
+    async text() {
+      return 'status=ok\npost_id=thread-002\nthread_id=thread-001\ncommit_sha=def999\n';
+    }
+  };
+};
+
+vm.runInThisContext(source);
+window.__forumComposeNormalization.submitThreadFormToApi(form).then((result) => {
+  process.stdout.write(JSON.stringify({
+    result,
+    url: fetchCall.url,
+    method: fetchCall.options.method,
+    credentials: fetchCall.options.credentials,
+    contentType: fetchCall.options.headers['Content-Type'],
+    body: fetchCall.options.body
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('/api/create_thread', $result['url']);
+        assertSame('POST', $result['method']);
+        assertSame('same-origin', $result['credentials']);
+        assertSame('application/x-www-form-urlencoded; charset=UTF-8', $result['contentType']);
+        assertStringContains('author_identity_id=openpgp%3Adef456', $result['body']);
+        assertStringContains('board_tags=general+updates', $result['body']);
+        assertStringContains('subject=Thread+subject+with+spaces', $result['body']);
+        assertStringContains('body=Thread+body+with+spaces', $result['body']);
+        assertSame(true, $result['result']['ok']);
+        assertSame('thread-002', $result['result']['postId']);
+        assertSame('thread-001', $result['result']['threadId']);
+        assertSame('def999', $result['result']['commitSha']);
+        assertSame(14.25, $result['result']['serverTiming']['total']);
+    }
+
     public function testPendingReplyCardRendererEscapesBodyAndInsertsBeforeComposer(): void
     {
         $script = <<<'NODE'

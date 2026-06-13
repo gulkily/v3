@@ -482,8 +482,30 @@
     };
   }
 
+  function parseCreateThreadResponse(text, serverTiming) {
+    if (!String(text || "").includes("status=ok")) {
+      return {
+        ok: false,
+        error: parseComposeApiValue(text, "error") || "Unable to create thread.",
+        serverTiming: serverTiming || {},
+      };
+    }
+
+    return {
+      ok: true,
+      postId: parseComposeApiValue(text, "post_id"),
+      threadId: parseComposeApiValue(text, "thread_id"),
+      commitSha: parseComposeApiValue(text, "commit_sha"),
+      serverTiming: serverTiming || {},
+    };
+  }
+
   function isReplyComposeForm(form) {
     return Boolean(form && form.dataset && form.dataset.composeKind === "reply");
+  }
+
+  function isThreadComposeForm(form) {
+    return Boolean(form && form.dataset && form.dataset.composeKind === "thread");
   }
 
   function composeFormFieldValue(form, name) {
@@ -497,6 +519,15 @@
       parent_id: composeFormFieldValue(form, "parent_id"),
       author_identity_id: composeFormFieldValue(form, "author_identity_id"),
       board_tags: composeFormFieldValue(form, "board_tags"),
+      body: composeFormFieldValue(form, "body"),
+    };
+  }
+
+  function collectThreadSubmitFields(form) {
+    return {
+      author_identity_id: composeFormFieldValue(form, "author_identity_id"),
+      board_tags: composeFormFieldValue(form, "board_tags"),
+      subject: composeFormFieldValue(form, "subject"),
       body: composeFormFieldValue(form, "body"),
     };
   }
@@ -615,19 +646,42 @@
     );
   }
 
+  async function submitThreadFormToApi(form) {
+    const response = await fetch("/api/create_thread", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
+      body: new URLSearchParams(collectThreadSubmitFields(form)).toString(),
+    });
+
+    const text = await response.text();
+    return parseCreateThreadResponse(
+      text,
+      parseServerTimingHeader(response.headers && typeof response.headers.get === "function"
+        ? response.headers.get("Server-Timing")
+        : "")
+    );
+  }
+
   if (typeof window !== "undefined") {
     window.__forumComposeNormalization = {
       collectReplySubmitFields: collectReplySubmitFields,
+      collectThreadSubmitFields: collectThreadSubmitFields,
       canonicalReplyUrl: canonicalReplyUrl,
       createPendingReplyCard: createPendingReplyCard,
       insertPendingReplyCard: insertPendingReplyCard,
       isInlineReplyComposer: isInlineReplyComposer,
       isReplyComposeForm: isReplyComposeForm,
+      isThreadComposeForm: isThreadComposeForm,
       normalizeComposeAscii: normalizeComposeAscii,
       normalizeComposeText: normalizeComposeText,
+      parseCreateThreadResponse: parseCreateThreadResponse,
       parseCreateReplyResponse: parseCreateReplyResponse,
       parseServerTimingHeader: parseServerTimingHeader,
       submitReplyFormToApi: submitReplyFormToApi,
+      submitThreadFormToApi: submitThreadFormToApi,
     };
   }
 
