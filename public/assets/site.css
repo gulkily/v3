@@ -413,11 +413,23 @@ pre {
   border-style: dashed;
 }
 
+.pending-thread-shell {
+  border-style: dashed;
+}
+
 .pending-reply-card .body {
   white-space: pre-wrap;
 }
 
+.pending-thread-shell .body {
+  white-space: pre-wrap;
+}
+
 .pending-reply-status {
+  color: var(--ink-soft);
+}
+
+.pending-thread-status {
   color: var(--ink-soft);
 }
 

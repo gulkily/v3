@@ -124,6 +124,12 @@ Acceptance:
 - test proves line breaks in body remain readable
 - test proves insertion does not remove the form
 
+Status:
+
+- Implemented in commit pending: added `createPendingThreadShell` and `insertPendingThreadShell`.
+- Added dashed pending-shell styling and preserved body line breaks with `white-space: pre-wrap`.
+- Added a Node-backed renderer test covering escaped subject/body/tag text, placement before the compose card, and form preservation.
+
 ### Slice 4C: Optimistic Thread Submit Flow
 
 Goal:

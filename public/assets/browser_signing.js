@@ -533,6 +533,7 @@
   }
 
   let pendingReplySequence = 0;
+  let pendingThreadSequence = 0;
 
   function createPendingReplyCard(reply) {
     const data = reply || {};
@@ -569,6 +570,59 @@
 
     composerRoot.parentNode.insertBefore(card, composerRoot);
     return true;
+  }
+
+  function createPendingThreadShell(thread) {
+    const data = thread || {};
+    const pendingId = data.pendingId || `pending-thread:${++pendingThreadSequence}`;
+    const article = document.createElement("article");
+    article.id = pendingId;
+    article.className = "card pending-thread-shell";
+    article.setAttribute("data-pending-thread-id", pendingId);
+
+    const subject = document.createElement("h2");
+    subject.textContent = data.subject || "Untitled thread";
+    article.appendChild(subject);
+
+    const tags = document.createElement("p");
+    tags.className = "meta pending-thread-tags";
+    tags.textContent = data.boardTags ? `Board tags: ${data.boardTags}` : "No board tags";
+    article.appendChild(tags);
+
+    const body = document.createElement("div");
+    body.className = "body";
+    body.textContent = data.body || "";
+    article.appendChild(body);
+
+    const status = document.createElement("p");
+    status.className = "meta pending-thread-status";
+    status.setAttribute("data-role", "pending-thread-status");
+    status.textContent = data.status || "Creating thread...";
+    article.appendChild(status);
+
+    return article;
+  }
+
+  function insertPendingThreadShell(composeRoot, shell) {
+    if (!composeRoot || !shell) {
+      return false;
+    }
+
+    const form = typeof composeRoot.querySelector === "function" ? composeRoot.querySelector("[data-compose-form]") : null;
+    const formCard = form && typeof form.closest === "function" ? form.closest(".card") : null;
+    const target = formCard || form || null;
+
+    if (target && target.parentNode && typeof target.parentNode.insertBefore === "function") {
+      target.parentNode.insertBefore(shell, target);
+      return true;
+    }
+
+    if (typeof composeRoot.insertBefore === "function") {
+      composeRoot.insertBefore(shell, composeRoot.firstChild || null);
+      return true;
+    }
+
+    return false;
   }
 
   function removeNode(node) {
@@ -671,7 +725,9 @@
       collectThreadSubmitFields: collectThreadSubmitFields,
       canonicalReplyUrl: canonicalReplyUrl,
       createPendingReplyCard: createPendingReplyCard,
+      createPendingThreadShell: createPendingThreadShell,
       insertPendingReplyCard: insertPendingReplyCard,
+      insertPendingThreadShell: insertPendingThreadShell,
       isInlineReplyComposer: isInlineReplyComposer,
       isReplyComposeForm: isReplyComposeForm,
       isThreadComposeForm: isThreadComposeForm,

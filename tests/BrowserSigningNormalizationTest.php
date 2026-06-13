@@ -1642,6 +1642,130 @@ NODE;
         assertSame(['existing-reply', 'pending-reply:test', 'composer'], $result['order']);
     }
 
+    public function testPendingThreadShellRendererEscapesContentAndInsertsBeforeComposeCard(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+
+function makeNode(tagName) {
+  return {
+    tagName,
+    id: '',
+    className: '',
+    textContent: '',
+    attributes: {},
+    children: [],
+    parentNode: null,
+    firstChild: null,
+    setAttribute(name, value) {
+      this.attributes[name] = String(value);
+    },
+    appendChild(child) {
+      child.parentNode = this;
+      this.children.push(child);
+      if (!this.firstChild) {
+        this.firstChild = child;
+      }
+      return child;
+    },
+    insertBefore(child, before) {
+      child.parentNode = this;
+      const index = this.children.indexOf(before);
+      if (index === -1) {
+        this.children.push(child);
+      } else {
+        this.children.splice(index, 0, child);
+      }
+      this.firstChild = this.children[0] || null;
+      return child;
+    },
+    querySelector(selector) {
+      if (selector === 'h2') {
+        return this.children.find((child) => child.tagName === 'h2') || null;
+      }
+      if (selector === '.body') {
+        return this.children.find((child) => child.className === 'body') || null;
+      }
+      if (selector === '.pending-thread-tags') {
+        return this.children.find((child) => child.className === 'meta pending-thread-tags') || null;
+      }
+      if (selector === '[data-role="pending-thread-status"]') {
+        return this.children.find((child) => child.attributes['data-role'] === 'pending-thread-status') || null;
+      }
+      return null;
+    }
+  };
+}
+
+const root = makeNode('section');
+const intro = makeNode('p');
+intro.id = 'intro';
+const formCard = makeNode('article');
+formCard.id = 'compose-card';
+const form = {
+  id: 'compose-form',
+  closest(selector) {
+    return selector === '.card' ? formCard : null;
+  }
+};
+root.appendChild(intro);
+root.appendChild(formCard);
+root.querySelector = function(selector) {
+  return selector === '[data-compose-form]' ? form : null;
+};
+
+global.window = {};
+global.localStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.sessionStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener() {},
+  querySelector() { return null; },
+  createElement(tagName) { return makeNode(tagName); },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+const helper = window.__forumComposeNormalization;
+const shell = helper.createPendingThreadShell({
+  pendingId: 'pending-thread:test',
+  subject: '<img src=x onerror=alert(1)>',
+  boardTags: 'general <script>',
+  body: '<script>alert(1)</script>\nsecond line',
+  status: 'Creating thread...'
+});
+const inserted = helper.insertPendingThreadShell(root, shell);
+process.stdout.write(JSON.stringify({
+  inserted,
+  shellId: shell.id,
+  className: shell.className,
+  pendingId: shell.attributes['data-pending-thread-id'],
+  subjectText: shell.querySelector('h2').textContent,
+  tagsText: shell.querySelector('.pending-thread-tags').textContent,
+  bodyText: shell.querySelector('.body').textContent,
+  bodyChildCount: shell.querySelector('.body').children.length,
+  status: shell.querySelector('[data-role="pending-thread-status"]').textContent,
+  order: root.children.map((child) => child.id)
+}));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(true, $result['inserted']);
+        assertSame('pending-thread:test', $result['shellId']);
+        assertSame('card pending-thread-shell', $result['className']);
+        assertSame('pending-thread:test', $result['pendingId']);
+        assertSame('<img src=x onerror=alert(1)>', $result['subjectText']);
+        assertSame('Board tags: general <script>', $result['tagsText']);
+        assertSame("<script>alert(1)</script>\nsecond line", $result['bodyText']);
+        assertSame(0, $result['bodyChildCount']);
+        assertSame('Creating thread...', $result['status']);
+        assertSame(['intro', 'pending-thread:test', 'compose-card'], $result['order']);
+    }
+
     public function testInlineReplySubmitRendersPendingCardBeforeApiResponseAndNavigatesOnSuccess(): void
     {
         $script = <<<'NODE'
