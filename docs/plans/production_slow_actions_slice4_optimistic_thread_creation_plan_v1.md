@@ -164,6 +164,13 @@ Acceptance:
 - test proves server success navigates using `post_id`, `thread_id`, and `commit_sha`
 - test proves server failure restores the draft and leaves fields recoverable
 
+Status:
+
+- Implemented in commit pending: thread compose submits now render a pending shell after browser identity is ready and post to `/api/create_thread`.
+- Draft clearing now happens before the thread create fetch resolves, with rollback on API failure or fetch failure.
+- Successful creates navigate to the canonical server thread URL returned by the API response.
+- Added success and failure tests covering pending paint, draft clearing, canonical navigation, shell removal, and draft restoration.
+
 ### Slice 4D: Duplicate Submit Guard and Retry
 
 Goal:

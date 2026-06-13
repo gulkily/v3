@@ -648,8 +648,24 @@
     return `/threads/${encodeURIComponent(result.threadId)}?created_post_id=${encodeURIComponent(result.postId)}&__v=${encodeURIComponent(result.commitSha)}#post-${encodeURIComponent(result.postId)}`;
   }
 
+  function canonicalThreadUrl(result) {
+    return `/threads/${encodeURIComponent(result.threadId)}?created_post_id=${encodeURIComponent(result.postId)}&__v=${encodeURIComponent(result.commitSha)}`;
+  }
+
   function navigateToCanonicalReply(result) {
     const url = canonicalReplyUrl(result);
+    if (typeof window !== "undefined" && window.location) {
+      if (typeof window.location.assign === "function") {
+        window.location.assign(url);
+        return;
+      }
+
+      window.location.href = url;
+    }
+  }
+
+  function navigateToCanonicalThread(result) {
+    const url = canonicalThreadUrl(result);
     if (typeof window !== "undefined" && window.location) {
       if (typeof window.location.assign === "function") {
         window.location.assign(url);
@@ -724,6 +740,7 @@
       collectReplySubmitFields: collectReplySubmitFields,
       collectThreadSubmitFields: collectThreadSubmitFields,
       canonicalReplyUrl: canonicalReplyUrl,
+      canonicalThreadUrl: canonicalThreadUrl,
       createPendingReplyCard: createPendingReplyCard,
       createPendingThreadShell: createPendingThreadShell,
       insertPendingReplyCard: insertPendingReplyCard,
@@ -1761,6 +1778,40 @@
       }
     }
 
+    async function submitOptimisticThread(timing) {
+      const fields = collectThreadSubmitFields(form);
+      const pendingShell = createPendingThreadShell({
+        subject: fields.subject,
+        boardTags: fields.board_tags,
+        body: fields.body,
+      });
+      if (!insertPendingThreadShell(root, pendingShell)) {
+        return false;
+      }
+      const clearedDraft = clearComposeDraftForPendingSubmit(form);
+
+      try {
+        setStatus(statusNode, "Creating thread...", "ok");
+        markFirstFeedback(timing);
+        markActionTiming(timing, "forum_fetch_start");
+        const result = await submitThreadFormToApi(form);
+        markActionTiming(timing, "forum_response_received");
+        timing.serverTiming = result.serverTiming || {};
+        if (!result.ok) {
+          throw new Error(result.error);
+        }
+
+        markActionTiming(timing, "forum_reconcile_complete");
+        completeActionTiming(timing, "ok");
+        navigateToCanonicalThread(result);
+        return true;
+      } catch (error) {
+        removeNode(pendingShell);
+        restoreComposeDraftAfterFailedSubmit(clearedDraft);
+        throw error;
+      }
+    }
+
     function clearComposeAuthorIdentity(form) {
       let field = form.querySelector('input[name="author_identity_id"]');
       if (!field) {
@@ -1847,6 +1898,10 @@
         await ensureComposeIdentity(root, statusNode);
         markActionTiming(timing, "forum_identity_ready");
         ensureComposeAuthorIdentity(form);
+        if (isThreadComposeForm(form) && await submitOptimisticThread(timing)) {
+          return;
+        }
+
         if (isReplyComposeForm(form) && isInlineReplyComposer(root) && await submitOptimisticReply(timing)) {
           return;
         }

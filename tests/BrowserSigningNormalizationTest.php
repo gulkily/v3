@@ -1766,6 +1766,492 @@ NODE;
         assertSame(['intro', 'pending-thread:test', 'compose-card'], $result['order']);
     }
 
+    public function testThreadSubmitRendersPendingShellBeforeApiResponseAndNavigatesOnSuccess(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: {
+    forum_pki_username: 'alice',
+    forum_pki_public_key: 'public',
+    forum_pki_private_key: 'private',
+    forum_pki_fingerprint: 'DEF456',
+    forum_pki_published_fingerprint: 'DEF456',
+    'forum_compose_draft:thread': '{"fields":{"board_tags":"general","subject":"Thread subject","body":"Thread body\\nsecond line"}}'
+  },
+  sessionStore: {},
+  localRemoveCalls: [],
+  submitHandler: null,
+  fetchCalls: [],
+  assignedUrl: '',
+  resolveCreateThread: null,
+  formSubmitted: 0
+};
+
+function makeNode(tagName) {
+  return {
+    tagName,
+    id: '',
+    className: '',
+    textContent: '',
+    attributes: {},
+    dataset: {},
+    children: [],
+    parentNode: null,
+    firstChild: null,
+    hidden: false,
+    disabled: false,
+    setAttribute(name, value) {
+      this.attributes[name] = String(value);
+    },
+    appendChild(child) {
+      child.parentNode = this;
+      this.children.push(child);
+      if (!this.firstChild) this.firstChild = child;
+      return child;
+    },
+    insertBefore(child, before) {
+      child.parentNode = this;
+      const index = this.children.indexOf(before);
+      this.children.splice(index < 0 ? this.children.length : index, 0, child);
+      this.firstChild = this.children[0] || null;
+      return child;
+    },
+    removeChild(child) {
+      const index = this.children.indexOf(child);
+      if (index >= 0) this.children.splice(index, 1);
+      this.firstChild = this.children[0] || null;
+    },
+    querySelector(selector) {
+      if (selector === 'h2') return this.children.find((child) => child.tagName === 'h2') || null;
+      if (selector === '.body') return this.children.find((child) => child.className === 'body') || null;
+      if (selector === '.pending-thread-tags') return this.children.find((child) => child.className === 'meta pending-thread-tags') || null;
+      if (selector === '[data-role="pending-thread-status"]') return this.children.find((child) => child.attributes['data-role'] === 'pending-thread-status') || null;
+      return null;
+    }
+  };
+}
+
+function makeField(tagName, name, value, type) {
+  return {
+    tagName,
+    name,
+    value,
+    defaultValue: '',
+    dataset: { composeFieldLabel: name },
+    disabled: false,
+    hidden: false,
+    getAttribute(attribute) {
+      if (attribute === 'type') return type || null;
+      return null;
+    },
+    addEventListener() {}
+  };
+}
+
+const fields = [
+  makeField('INPUT', 'author_identity_id', '', 'hidden'),
+  makeField('INPUT', 'board_tags', 'general', 'text'),
+  makeField('INPUT', 'subject', 'Thread subject', 'text'),
+  makeField('TEXTAREA', 'body', 'Thread body\nsecond line', null)
+];
+const submitButton = { disabled: false, dataset: {} };
+const formCard = makeNode('article');
+formCard.id = 'compose-card';
+const form = {
+  dataset: { composeKind: 'thread' },
+  querySelector(selector) {
+    const exact = {
+      'input[name="author_identity_id"]': fields[0],
+      '[name="author_identity_id"]': fields[0],
+      '[name="board_tags"]': fields[1],
+      '[name="subject"]': fields[2],
+      '[name="body"]': fields[3]
+    };
+    return exact[selector] || null;
+  },
+  querySelectorAll(selector) {
+    if (selector === 'input[name], textarea[name]') return fields;
+    if (selector === 'button[type="submit"], input[type="submit"]') return [submitButton];
+    return [];
+  },
+  addEventListener(type, handler) {
+    if (type === 'submit') state.submitHandler = handler;
+  },
+  appendChild(field) {
+    fields.push(field);
+  },
+  closest(selector) {
+    return selector === '.card' ? formCard : null;
+  },
+  submit() {
+    state.formSubmitted += 1;
+  },
+  reset() {}
+};
+
+const statusNode = { dataset: {}, textContent: 'Ready.', hidden: false, querySelector() { return null; } };
+const root = makeNode('section');
+root.dataset = {};
+const intro = makeNode('p');
+intro.id = 'intro';
+root.appendChild(intro);
+root.appendChild(formCard);
+root.querySelector = function(selector) {
+  if (selector === '[data-compose-form]') return form;
+  if (selector === '[data-role="compose-identity-status"]') return statusNode;
+  return null;
+};
+root.querySelectorAll = function() { return []; };
+
+global.window = {
+  addEventListener() {},
+  location: {
+    search: '',
+    assign(url) {
+      state.assignedUrl = url;
+    }
+  }
+};
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+  setItem(key, value) { state.localStore[key] = String(value); },
+  removeItem(key) {
+    state.localRemoveCalls.push(key);
+    delete state.localStore[key];
+  }
+};
+global.sessionStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.sessionStore, key) ? state.sessionStore[key] : ''; },
+  setItem(key, value) { state.sessionStore[key] = String(value); },
+  removeItem(key) { delete state.sessionStore[key]; }
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') handler();
+  },
+  querySelector(selector) {
+    if (selector === '[data-compose-root]') return root;
+    return null;
+  },
+  createElement(tagName) { return makeNode(tagName); },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url, options) {
+  state.fetchCalls.push({ url, options });
+  if (String(url).indexOf('/api/get_profile') === 0) {
+    return { ok: true };
+  }
+  if (String(url).indexOf('/api/set_identity_hint') === 0) {
+    return { async text() { return 'status=ok\n'; } };
+  }
+  if (url === '/api/create_thread') {
+    return new Promise((resolve) => {
+      state.resolveCreateThread = function () {
+        resolve({
+          headers: { get(name) { return name === 'Server-Timing' ? 'total;dur=11.5' : ''; } },
+          async text() {
+            return 'status=ok\npost_id=thread-post-002\nthread_id=thread-001\ncommit_sha=def999\n';
+          }
+        });
+      };
+    });
+  }
+  throw new Error('Unexpected fetch ' + url);
+};
+
+vm.runInThisContext(source);
+(async function () {
+  const submitPromise = state.submitHandler({
+    submitter: submitButton,
+    preventDefault() {}
+  });
+  for (let index = 0; index < 20 && state.resolveCreateThread === null; index += 1) {
+    await Promise.resolve();
+  }
+  const pendingShell = root.children.find((child) => child.attributes && child.attributes['data-pending-thread-id']);
+  const optimistic = {
+    fetchUrls: state.fetchCalls.map((call) => call.url),
+    pendingExists: Boolean(pendingShell),
+    order: root.children.map((child) => child.id),
+    pendingSubject: pendingShell ? pendingShell.querySelector('h2').textContent : '',
+    pendingTags: pendingShell ? pendingShell.querySelector('.pending-thread-tags').textContent : '',
+    pendingBody: pendingShell ? pendingShell.querySelector('.body').textContent : '',
+    pendingBodyChildren: pendingShell ? pendingShell.querySelector('.body').children.length : -1,
+    status: statusNode.textContent,
+    submitDisabled: submitButton.disabled,
+    authorIdentityId: fields[0].value,
+    formSubmitted: state.formSubmitted,
+    draftExists: Object.prototype.hasOwnProperty.call(state.localStore, 'forum_compose_draft:thread'),
+    recentlyClearedDraft: state.sessionStore.forum_recently_cleared_compose_draft || ''
+  };
+  state.resolveCreateThread();
+  await submitPromise;
+  process.stdout.write(JSON.stringify({
+    optimistic,
+    assignedUrl: state.assignedUrl,
+    removeCalls: state.localRemoveCalls,
+    finalFormSubmitted: state.formSubmitted
+  }));
+})().catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame([
+            '/api/set_identity_hint?identity_hint=openpgp%3Adef456',
+            '/api/get_profile?profile_slug=openpgp-def456',
+            '/api/set_identity_hint?identity_hint=openpgp%3Adef456',
+            '/api/create_thread',
+        ], $result['optimistic']['fetchUrls']);
+        assertSame(true, $result['optimistic']['pendingExists']);
+        assertSame(['intro', 'pending-thread:1', 'compose-card'], $result['optimistic']['order']);
+        assertSame('Thread subject', $result['optimistic']['pendingSubject']);
+        assertSame('Board tags: general', $result['optimistic']['pendingTags']);
+        assertSame("Thread body\nsecond line", $result['optimistic']['pendingBody']);
+        assertSame(0, $result['optimistic']['pendingBodyChildren']);
+        assertSame('Creating thread...', $result['optimistic']['status']);
+        assertSame(true, $result['optimistic']['submitDisabled']);
+        assertSame('openpgp:def456', $result['optimistic']['authorIdentityId']);
+        assertSame(0, $result['optimistic']['formSubmitted']);
+        assertSame(false, $result['optimistic']['draftExists']);
+        assertSame('forum_compose_draft:thread', $result['optimistic']['recentlyClearedDraft']);
+        assertSame('/threads/thread-001?created_post_id=thread-post-002&__v=def999', $result['assignedUrl']);
+        assertSame(['forum_compose_draft:thread'], $result['removeCalls']);
+        assertSame(0, $result['finalFormSubmitted']);
+    }
+
+    public function testThreadSubmitFailureRemovesPendingShellAndRestoresDraft(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: {
+    forum_pki_username: 'alice',
+    forum_pki_public_key: 'public',
+    forum_pki_private_key: 'private',
+    forum_pki_fingerprint: 'DEF456',
+    forum_pki_published_fingerprint: 'DEF456'
+  },
+  sessionStore: {},
+  submitHandler: null,
+  fetchCalls: [],
+  assignedUrl: '',
+  formSubmitted: 0
+};
+
+function makeNode(tagName) {
+  return {
+    tagName,
+    id: '',
+    className: '',
+    textContent: '',
+    attributes: {},
+    dataset: {},
+    children: [],
+    parentNode: null,
+    firstChild: null,
+    hidden: false,
+    disabled: false,
+    setAttribute(name, value) {
+      this.attributes[name] = String(value);
+    },
+    appendChild(child) {
+      child.parentNode = this;
+      this.children.push(child);
+      if (!this.firstChild) this.firstChild = child;
+      return child;
+    },
+    insertBefore(child, before) {
+      child.parentNode = this;
+      const index = this.children.indexOf(before);
+      this.children.splice(index < 0 ? this.children.length : index, 0, child);
+      this.firstChild = this.children[0] || null;
+      return child;
+    },
+    removeChild(child) {
+      const index = this.children.indexOf(child);
+      if (index >= 0) this.children.splice(index, 1);
+      this.firstChild = this.children[0] || null;
+    },
+    querySelector() {
+      return null;
+    }
+  };
+}
+
+function makeField(tagName, name, value, type) {
+  return {
+    tagName,
+    name,
+    value,
+    defaultValue: '',
+    dataset: { composeFieldLabel: name },
+    disabled: false,
+    hidden: false,
+    getAttribute(attribute) {
+      if (attribute === 'type') return type || null;
+      return null;
+    },
+    addEventListener() {}
+  };
+}
+
+const fields = [
+  makeField('INPUT', 'author_identity_id', '', 'hidden'),
+  makeField('INPUT', 'board_tags', 'general', 'text'),
+  makeField('INPUT', 'subject', 'Thread subject', 'text'),
+  makeField('TEXTAREA', 'body', 'Thread body', null)
+];
+const submitButton = { disabled: false, dataset: {} };
+const formCard = makeNode('article');
+formCard.id = 'compose-card';
+const form = {
+  dataset: { composeKind: 'thread' },
+  querySelector(selector) {
+    const exact = {
+      'input[name="author_identity_id"]': fields[0],
+      '[name="author_identity_id"]': fields[0],
+      '[name="board_tags"]': fields[1],
+      '[name="subject"]': fields[2],
+      '[name="body"]': fields[3]
+    };
+    return exact[selector] || null;
+  },
+  querySelectorAll(selector) {
+    if (selector === 'input[name], textarea[name]') return fields;
+    if (selector === 'button[type="submit"], input[type="submit"]') return [submitButton];
+    return [];
+  },
+  addEventListener(type, handler) {
+    if (type === 'submit') state.submitHandler = handler;
+  },
+  appendChild(field) {
+    fields.push(field);
+  },
+  closest(selector) {
+    return selector === '.card' ? formCard : null;
+  },
+  submit() {
+    state.formSubmitted += 1;
+  },
+  reset() {}
+};
+
+const statusNode = { dataset: {}, textContent: 'Ready.', hidden: false, querySelector() { return null; } };
+const root = makeNode('section');
+root.dataset = {};
+const intro = makeNode('p');
+intro.id = 'intro';
+root.appendChild(intro);
+root.appendChild(formCard);
+root.querySelector = function(selector) {
+  if (selector === '[data-compose-form]') return form;
+  if (selector === '[data-role="compose-identity-status"]') return statusNode;
+  return null;
+};
+root.querySelectorAll = function() { return []; };
+
+global.window = {
+  addEventListener() {},
+  location: {
+    search: '',
+    assign(url) {
+      state.assignedUrl = url;
+    }
+  }
+};
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+  setItem(key, value) { state.localStore[key] = String(value); },
+  removeItem(key) { delete state.localStore[key]; }
+};
+global.sessionStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.sessionStore, key) ? state.sessionStore[key] : ''; },
+  setItem(key, value) { state.sessionStore[key] = String(value); },
+  removeItem(key) { delete state.sessionStore[key]; }
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') handler();
+  },
+  querySelector(selector) {
+    if (selector === '[data-compose-root]') return root;
+    return null;
+  },
+  createElement(tagName) { return makeNode(tagName); },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url, options) {
+  state.fetchCalls.push({ url, options });
+  if (String(url).indexOf('/api/get_profile') === 0) {
+    return { ok: true };
+  }
+  if (String(url).indexOf('/api/set_identity_hint') === 0) {
+    return { async text() { return 'status=ok\n'; } };
+  }
+  if (url === '/api/create_thread') {
+    return {
+      headers: { get() { return ''; } },
+      async text() {
+        return 'error=Subject is required.\n';
+      }
+    };
+  }
+  throw new Error('Unexpected fetch ' + url);
+};
+
+vm.runInThisContext(source);
+(async function () {
+  await state.submitHandler({
+    submitter: submitButton,
+    preventDefault() {}
+  });
+  process.stdout.write(JSON.stringify({
+    fetchUrls: state.fetchCalls.map((call) => call.url),
+    pendingCount: root.children.filter((child) => child.attributes && child.attributes['data-pending-thread-id']).length,
+    order: root.children.map((child) => child.id),
+    status: statusNode.textContent,
+    statusKind: statusNode.dataset.kind || '',
+    submitDisabled: submitButton.disabled,
+    assignedUrl: state.assignedUrl,
+    formSubmitted: state.formSubmitted,
+    draft: JSON.parse(state.localStore['forum_compose_draft:thread'] || '{}'),
+    recentlyClearedDraft: state.sessionStore.forum_recently_cleared_compose_draft || ''
+  }));
+})().catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('/api/create_thread', $result['fetchUrls'][3]);
+        assertSame(0, $result['pendingCount']);
+        assertSame(['intro', 'compose-card'], $result['order']);
+        assertSame('Subject is required.', $result['status']);
+        assertSame('error', $result['statusKind']);
+        assertSame(false, $result['submitDisabled']);
+        assertSame('', $result['assignedUrl']);
+        assertSame(0, $result['formSubmitted']);
+        assertSame('general', $result['draft']['fields']['board_tags']);
+        assertSame('Thread subject', $result['draft']['fields']['subject']);
+        assertSame('Thread body', $result['draft']['fields']['body']);
+        assertSame('', $result['recentlyClearedDraft']);
+    }
+
     public function testInlineReplySubmitRendersPendingCardBeforeApiResponseAndNavigatesOnSuccess(): void
     {
         $script = <<<'NODE'
