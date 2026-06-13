@@ -1787,7 +1787,10 @@ const state = {
   fetchCalls: [],
   assignedUrl: '',
   resolveCreateThread: null,
-  formSubmitted: 0
+  formSubmitted: 0,
+  marks: [],
+  debugEvents: [],
+  now: 0
 };
 
 function makeNode(tagName) {
@@ -1909,10 +1912,28 @@ root.querySelectorAll = function() { return []; };
 global.window = {
   addEventListener() {},
   location: {
-    search: '',
+    search: '?debug_timing=1',
     assign(url) {
       state.assignedUrl = url;
     }
+  },
+  performance: {
+    now() {
+      state.now += 10;
+      return state.now;
+    },
+    mark(name, options) {
+      state.marks.push({
+        name,
+        action: options && options.detail ? options.detail.action : '',
+        status: options && options.detail ? options.detail.status || '' : ''
+      });
+    }
+  }
+};
+global.console = {
+  info(label, payload) {
+    state.debugEvents.push({ label, payload });
   }
 };
 global.localStorage = {
@@ -1995,7 +2016,9 @@ vm.runInThisContext(source);
     optimistic,
     assignedUrl: state.assignedUrl,
     removeCalls: state.localRemoveCalls,
-    finalFormSubmitted: state.formSubmitted
+    finalFormSubmitted: state.formSubmitted,
+    marks: state.marks,
+    debugEvents: state.debugEvents
   }));
 })().catch((error) => {
   process.stderr.write(error.stack || String(error));
@@ -2026,6 +2049,28 @@ NODE;
         assertSame('/threads/thread-001?created_post_id=thread-post-002&__v=def999', $result['assignedUrl']);
         assertSame(['forum_compose_draft:thread'], $result['removeCalls']);
         assertSame(0, $result['finalFormSubmitted']);
+        assertSame(
+            [
+                'forum_action_start',
+                'forum_identity_start',
+                'forum_identity_ready',
+                'forum_first_feedback',
+                'forum_fetch_start',
+                'forum_response_received',
+                'forum_reconcile_complete',
+                'forum_action_complete',
+            ],
+            array_column($result['marks'], 'name')
+        );
+        assertSame('compose_thread', $result['marks'][0]['action']);
+        assertSame('ok', $result['marks'][7]['status']);
+        assertSame('[forum timing]', $result['debugEvents'][0]['label']);
+        assertSame('compose_thread', $result['debugEvents'][0]['payload']['action']);
+        assertSame('ok', $result['debugEvents'][0]['payload']['status']);
+        assertSame(11.5, $result['debugEvents'][0]['payload']['server_timing']['total']);
+        assertSame(false, array_key_exists('subject', $result['debugEvents'][0]['payload']));
+        assertSame(false, array_key_exists('body', $result['debugEvents'][0]['payload']));
+        assertSame(false, array_key_exists('private_key', $result['debugEvents'][0]['payload']));
     }
 
     public function testThreadSubmitFailureRemovesPendingShellAndRestoresDraft(): void

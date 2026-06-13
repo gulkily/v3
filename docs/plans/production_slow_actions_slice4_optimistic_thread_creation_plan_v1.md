@@ -225,6 +225,12 @@ Acceptance:
 - debug payloads do not include subject/body text or key material
 - tests cover optimistic success, rollback/failure, duplicate submit guard, and fallback behavior
 
+Status:
+
+- Implemented in commit pending: optimistic thread creation uses the existing compose action timing marks for action start, identity, first feedback, fetch, response, reconciliation, and completion.
+- Parsed `Server-Timing` from `/api/create_thread` is included only in the opt-in debug timing payload.
+- Added assertions that debug timing omits subject, body, and private key material while preserving the existing anonymous fallback coverage.
+
 ## Reconciliation Strategy
 
 Initial recommendation:
