@@ -12,6 +12,7 @@
   let actionTimingSequence = 0;
   let clearedKeypairBackup = null;
   const pendingReplyOperations = new Set();
+  const pendingThreadOperations = new Set();
 
   function browserPerformance() {
     return typeof window !== "undefined" && window.performance && typeof window.performance.mark === "function"
@@ -694,6 +695,27 @@
 
     if (form && form.dataset) {
       delete form.dataset.pendingReplyOperationKey;
+    }
+  }
+
+  function beginPendingThreadOperation(form) {
+    if (form.dataset.pendingThreadOperationKey) {
+      return "";
+    }
+
+    const key = `thread:${Date.now()}:${pendingThreadOperations.size + 1}`;
+    pendingThreadOperations.add(key);
+    form.dataset.pendingThreadOperationKey = key;
+    return key;
+  }
+
+  function clearPendingThreadOperation(form, key) {
+    if (key) {
+      pendingThreadOperations.delete(key);
+    }
+
+    if (form && form.dataset) {
+      delete form.dataset.pendingThreadOperationKey;
     }
   }
 
@@ -1780,12 +1802,18 @@
 
     async function submitOptimisticThread(timing) {
       const fields = collectThreadSubmitFields(form);
+      const operationKey = beginPendingThreadOperation(form);
+      if (operationKey === "") {
+        return true;
+      }
+
       const pendingShell = createPendingThreadShell({
         subject: fields.subject,
         boardTags: fields.board_tags,
         body: fields.body,
       });
       if (!insertPendingThreadShell(root, pendingShell)) {
+        clearPendingThreadOperation(form, operationKey);
         return false;
       }
       const clearedDraft = clearComposeDraftForPendingSubmit(form);
@@ -1809,6 +1837,8 @@
         removeNode(pendingShell);
         restoreComposeDraftAfterFailedSubmit(clearedDraft);
         throw error;
+      } finally {
+        clearPendingThreadOperation(form, operationKey);
       }
     }
 

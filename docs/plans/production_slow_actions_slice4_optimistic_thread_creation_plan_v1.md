@@ -192,6 +192,12 @@ Acceptance:
 - retry after failure produces a second create-thread fetch
 - successful retry does not leave duplicate pending shells
 
+Status:
+
+- Implemented in commit pending: added page-local thread pending operation tracking with cleanup on success and failure.
+- The existing submit handler continues to call `preventDefault()` before in-flight checks, so duplicate submits do not fall through to native form submit.
+- Added a duplicate/retry test covering one pending create request, rollback after failure, and successful retry without duplicate pending shells.
+
 ### Slice 4E: Timing and Compatibility
 
 Goal:

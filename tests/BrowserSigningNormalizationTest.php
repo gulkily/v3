@@ -2252,6 +2252,247 @@ NODE;
         assertSame('', $result['recentlyClearedDraft']);
     }
 
+    public function testThreadSubmitIgnoresDuplicatePendingSubmitAndAllowsRetryAfterFailure(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: {
+    forum_pki_username: 'alice',
+    forum_pki_public_key: 'public',
+    forum_pki_private_key: 'private',
+    forum_pki_fingerprint: 'DEF456',
+    forum_pki_published_fingerprint: 'DEF456'
+  },
+  submitHandler: null,
+  createFetchCount: 0,
+  preventDefaultCount: 0,
+  resolveFirstCreateThread: null,
+  assignedUrl: ''
+};
+
+function makeNode(tagName) {
+  return {
+    tagName,
+    id: '',
+    className: '',
+    textContent: '',
+    attributes: {},
+    dataset: {},
+    children: [],
+    parentNode: null,
+    firstChild: null,
+    hidden: false,
+    disabled: false,
+    setAttribute(name, value) {
+      this.attributes[name] = String(value);
+    },
+    appendChild(child) {
+      child.parentNode = this;
+      this.children.push(child);
+      if (!this.firstChild) this.firstChild = child;
+      return child;
+    },
+    insertBefore(child, before) {
+      child.parentNode = this;
+      const index = this.children.indexOf(before);
+      this.children.splice(index < 0 ? this.children.length : index, 0, child);
+      this.firstChild = this.children[0] || null;
+      return child;
+    },
+    removeChild(child) {
+      const index = this.children.indexOf(child);
+      if (index >= 0) this.children.splice(index, 1);
+      this.firstChild = this.children[0] || null;
+    },
+    querySelector() {
+      return null;
+    }
+  };
+}
+
+function makeField(tagName, name, value, type) {
+  return {
+    tagName,
+    name,
+    value,
+    defaultValue: '',
+    dataset: { composeFieldLabel: name },
+    disabled: false,
+    hidden: false,
+    getAttribute(attribute) {
+      if (attribute === 'type') return type || null;
+      return null;
+    },
+    addEventListener() {}
+  };
+}
+
+const fields = [
+  makeField('INPUT', 'author_identity_id', '', 'hidden'),
+  makeField('INPUT', 'board_tags', 'general', 'text'),
+  makeField('INPUT', 'subject', 'Retry thread', 'text'),
+  makeField('TEXTAREA', 'body', 'Retry body', null)
+];
+const submitButton = { disabled: false, dataset: {} };
+const formCard = makeNode('article');
+formCard.id = 'compose-card';
+const form = {
+  dataset: { composeKind: 'thread' },
+  querySelector(selector) {
+    const exact = {
+      'input[name="author_identity_id"]': fields[0],
+      '[name="author_identity_id"]': fields[0],
+      '[name="board_tags"]': fields[1],
+      '[name="subject"]': fields[2],
+      '[name="body"]': fields[3]
+    };
+    return exact[selector] || null;
+  },
+  querySelectorAll(selector) {
+    if (selector === 'input[name], textarea[name]') return fields;
+    if (selector === 'button[type="submit"], input[type="submit"]') return [submitButton];
+    return [];
+  },
+  addEventListener(type, handler) {
+    if (type === 'submit') state.submitHandler = handler;
+  },
+  appendChild(field) {
+    fields.push(field);
+  },
+  closest(selector) {
+    return selector === '.card' ? formCard : null;
+  },
+  submit() {},
+  reset() {}
+};
+const statusNode = { dataset: {}, textContent: 'Ready.', hidden: false, querySelector() { return null; } };
+const root = makeNode('section');
+root.dataset = {};
+root.appendChild(formCard);
+root.querySelector = function(selector) {
+  if (selector === '[data-compose-form]') return form;
+  if (selector === '[data-role="compose-identity-status"]') return statusNode;
+  return null;
+};
+root.querySelectorAll = function() { return []; };
+
+function submitEvent() {
+  return {
+    submitter: submitButton,
+    preventDefault() {
+      state.preventDefaultCount += 1;
+    }
+  };
+}
+
+global.window = {
+  addEventListener() {},
+  location: {
+    search: '',
+    assign(url) {
+      state.assignedUrl = url;
+    }
+  }
+};
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+  setItem(key, value) { state.localStore[key] = String(value); },
+  removeItem(key) { delete state.localStore[key]; }
+};
+global.sessionStorage = { getItem(){ return ''; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') handler();
+  },
+  querySelector(selector) {
+    if (selector === '[data-compose-root]') return root;
+    return null;
+  },
+  createElement(tagName) { return makeNode(tagName); },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url) {
+  if (String(url).indexOf('/api/get_profile') === 0) return { ok: true };
+  if (String(url).indexOf('/api/set_identity_hint') === 0) return { async text() { return 'status=ok\n'; } };
+  if (url === '/api/create_thread') {
+    state.createFetchCount += 1;
+    if (state.createFetchCount === 1) {
+      return new Promise((resolve) => {
+        state.resolveFirstCreateThread = function () {
+          resolve({
+            headers: { get() { return ''; } },
+            async text() { return 'error=Temporary failure.\n'; }
+          });
+        };
+      });
+    }
+    return {
+      headers: { get() { return ''; } },
+      async text() {
+        return 'status=ok\npost_id=thread-post-002\nthread_id=thread-001\ncommit_sha=def999\n';
+      }
+    };
+  }
+  throw new Error('Unexpected fetch ' + url);
+};
+
+vm.runInThisContext(source);
+(async function () {
+  const firstSubmit = state.submitHandler(submitEvent());
+  for (let index = 0; index < 20 && state.resolveFirstCreateThread === null; index += 1) {
+    await Promise.resolve();
+  }
+  await state.submitHandler(submitEvent());
+  const duplicateSnapshot = {
+    createFetchCount: state.createFetchCount,
+    preventDefaultCount: state.preventDefaultCount,
+    submitDisabled: submitButton.disabled,
+    pendingCount: root.children.filter((child) => child.attributes && child.attributes['data-pending-thread-id']).length
+  };
+  state.resolveFirstCreateThread();
+  await firstSubmit;
+  const afterFailure = {
+    createFetchCount: state.createFetchCount,
+    submitDisabled: submitButton.disabled,
+    pendingCount: root.children.filter((child) => child.attributes && child.attributes['data-pending-thread-id']).length,
+    status: statusNode.textContent
+  };
+  await state.submitHandler(submitEvent());
+  process.stdout.write(JSON.stringify({
+    duplicateSnapshot,
+    afterFailure,
+    finalCreateFetchCount: state.createFetchCount,
+    finalPreventDefaultCount: state.preventDefaultCount,
+    finalPendingCount: root.children.filter((child) => child.attributes && child.attributes['data-pending-thread-id']).length,
+    assignedUrl: state.assignedUrl
+  }));
+})().catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(1, $result['duplicateSnapshot']['createFetchCount']);
+        assertSame(2, $result['duplicateSnapshot']['preventDefaultCount']);
+        assertSame(true, $result['duplicateSnapshot']['submitDisabled']);
+        assertSame(1, $result['duplicateSnapshot']['pendingCount']);
+        assertSame(1, $result['afterFailure']['createFetchCount']);
+        assertSame(false, $result['afterFailure']['submitDisabled']);
+        assertSame(0, $result['afterFailure']['pendingCount']);
+        assertSame('Temporary failure.', $result['afterFailure']['status']);
+        assertSame(2, $result['finalCreateFetchCount']);
+        assertSame(3, $result['finalPreventDefaultCount']);
+        assertSame(1, $result['finalPendingCount']);
+        assertSame('/threads/thread-001?created_post_id=thread-post-002&__v=def999', $result['assignedUrl']);
+    }
+
     public function testInlineReplySubmitRendersPendingCardBeforeApiResponseAndNavigatesOnSuccess(): void
     {
         $script = <<<'NODE'
