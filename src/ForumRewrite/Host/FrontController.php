@@ -34,6 +34,12 @@ final class FrontController
             return;
         }
 
+        $assetPath = $this->resolveFingerprintedAssetPath($method, $requestUri);
+        if ($assetPath !== null) {
+            $this->sendAsset($assetPath, $method);
+            return;
+        }
+
         $staticArtifact = $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
         if ($staticArtifact !== null && is_file($staticArtifact)) {
             $contents = file_get_contents($staticArtifact);
@@ -61,6 +67,17 @@ final class FrontController
 
             $this->sendHtml($this->renderConfigurationError($throwable->getMessage()), 503);
         }
+    }
+
+    private function resolveFingerprintedAssetPath(string $method, string $requestUri): ?string
+    {
+        if ($method !== 'GET' && $method !== 'HEAD') {
+            return null;
+        }
+
+        $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+
+        return AssetFingerprint::sourcePathForFingerprint($this->publicRoot, $path);
     }
 
     private function configurationError(): ?string
@@ -268,5 +285,38 @@ final class FrontController
         http_response_code($statusCode);
         header('Content-Type: text/html; charset=utf-8');
         echo $html;
+    }
+
+    private function sendAsset(string $path, string $method): void
+    {
+        $contents = file_get_contents($path);
+        if ($contents === false) {
+            http_response_code(404);
+            return;
+        }
+
+        http_response_code(200);
+        header('Content-Type: ' . $this->contentTypeForAsset($path));
+        header('Cache-Control: public, max-age=31536000, immutable');
+        header('Content-Length: ' . strlen($contents));
+
+        if ($method !== 'HEAD') {
+            echo $contents;
+        }
+    }
+
+    private function contentTypeForAsset(string $path): string
+    {
+        return match (strtolower((string) pathinfo($path, PATHINFO_EXTENSION))) {
+            'css' => 'text/css; charset=utf-8',
+            'js' => 'application/javascript; charset=utf-8',
+            'json', 'map' => 'application/json; charset=utf-8',
+            'ico' => 'image/x-icon',
+            'png' => 'image/png',
+            'jpg', 'jpeg' => 'image/jpeg',
+            'svg' => 'image/svg+xml',
+            'webp' => 'image/webp',
+            default => 'application/octet-stream',
+        };
     }
 }

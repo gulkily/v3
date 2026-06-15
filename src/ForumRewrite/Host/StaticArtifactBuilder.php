@@ -34,6 +34,8 @@ final class StaticArtifactBuilder
             mkdir($this->artifactRoot, 0777, true);
         }
 
+        AssetFingerprint::copyFingerprintedAssets($this->projectRoot . '/public', $this->artifactRoot);
+
         $application = $this->application();
 
         $this->writeRouteArtifact($application, '/', $this->artifactRoot . '/index.html');

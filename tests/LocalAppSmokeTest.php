@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
+use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\Host\FrontController;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\Support\ExecutionLock;
@@ -34,6 +35,16 @@ final class LocalAppSmokeTest
 
         assertSame(0, $exitCode);
         assertTrue(is_file($this->databasePath));
+    }
+
+    public function testAssetFingerprintPathsUseContentHashFilenames(): void
+    {
+        $publicRoot = dirname(__DIR__) . '/public';
+
+        $siteCssPath = AssetFingerprint::fingerprintedPath($publicRoot, '/assets/site.css');
+        assertStringMatches('#^/assets/site\.[a-f0-9]{12}\.css$#', $siteCssPath);
+        assertSame($publicRoot . '/assets/site.css', AssetFingerprint::sourcePathForFingerprint($publicRoot, $siteCssPath));
+        assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/site.000000000000.css'));
     }
 
     public function testUnicodeRiskBackfillScansExistingPostsDeterministically(): void
@@ -198,11 +209,11 @@ final class LocalAppSmokeTest
         assertStringNotContains('Labels: bug, needs-review', $board);
         assertStringContains('Hello world', $thread);
         assertStringContains('Labels: bug, needs-review', $thread);
-        assertStringContains('/assets/openpgp_loader.js', $thread);
-        assertStringContains('/assets/browser_signing.js', $thread);
-        assertStringContains('/assets/inline_reply_form.js', $thread);
-        assertStringContains('/assets/thread_reactions.js', $thread);
-        assertStringContains('/assets/post_analysis.js', $thread);
+        assertFingerprintedAsset($thread, 'openpgp_loader.js');
+        assertFingerprintedAsset($thread, 'browser_signing.js');
+        assertFingerprintedAsset($thread, 'inline_reply_form.js');
+        assertFingerprintedAsset($thread, 'thread_reactions.js');
+        assertFingerprintedAsset($thread, 'post_analysis.js');
         assertStringContains('data-thread-reactions-root', $thread);
         assertStringContains('data-action="apply-thread-tag"', $thread);
         assertStringContains('class="card post-card thread-root-card"', $thread);
@@ -313,23 +324,23 @@ final class LocalAppSmokeTest
         assertStringNotContains('Score: 0', $tagPage);
         assertStringContains('/threads/root-001', $tagPage);
         assertStringContains('Users Awaiting Approval', $pendingUsers);
-        assertStringContains('/assets/pending_approvals.js', $pendingUsers);
+        assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="no-git"', $board);
-        assertStringContains('/assets/site.css?v=no-git-', $board);
-        assertStringContains('/assets/theme_toggle.js?v=no-git-', $board);
-        assertStringContains('/assets/compose_draft_clear.js?v=no-git-', $board);
-        assertStringContains('/assets/version_check.js?v=no-git-', $board);
+        assertFingerprintedAsset($board, 'site.css');
+        assertFingerprintedAsset($board, 'theme_toggle.js');
+        assertFingerprintedAsset($board, 'compose_draft_clear.js');
+        assertFingerprintedAsset($board, 'version_check.js');
         assertStringContains('data-role="app-version-banner"', $board);
         assertStringContains('Compose Thread', $composeThread);
-        assertStringContains('/assets/browser_signing.js?v=no-git-', $composeThread);
+        assertFingerprintedAsset($composeThread, 'browser_signing.js');
         assertStringContains('Ready.', $composeThread);
         assertStringContains('data-action="submit-anonymous-compose"', $composeThread);
         assertStringContains('Bookmarklets', $bookmarklets);
         assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
-        assertStringContains('/assets/tools_bookmarklets.js', $bookmarklets);
+        assertFingerprintedAsset($bookmarklets, 'tools_bookmarklets.js');
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
         assertStringContains('Thread ID:', $composeReply);
-        assertStringContains('browser_signing.js', $composeReply);
+        assertFingerprintedAsset($composeReply, 'browser_signing.js');
         assertStringNotContains('/assets/inline_reply_form.js', $composeReply);
         assertStringContains('Ready.', $composeReply);
         assertStringContains('data-action="submit-anonymous-compose"', $composeReply);
@@ -340,8 +351,8 @@ final class LocalAppSmokeTest
         assertStringNotContains('View user page', $account);
         assertStringContains('Link identity', $account);
         assertStringContains('Saved browser identity:', $account);
-        assertStringContains('/assets/openpgp_loader.js', $account);
-        assertStringContains('/assets/browser_signing.js', $account);
+        assertFingerprintedAsset($account, 'openpgp_loader.js');
+        assertFingerprintedAsset($account, 'browser_signing.js');
         assertStringNotContains('Bootstrap post ID', $account);
         assertStringContains('View: content', $activity);
         assertStringContains('by guest on <time datetime="2026-04-10T12:05:00Z">Apr 10, 2026 at 12:05 UTC</time>', $activity);
@@ -370,12 +381,12 @@ final class LocalAppSmokeTest
 
             assertStringNotContains('meta name="app-version"', $board);
             assertStringNotContains('meta name="app-version-endpoint"', $board);
-            assertStringNotContains('/assets/version_check.js', $board);
+            assertStringNotContains('/assets/version_check.', $board);
             assertStringNotContains('data-role="app-version-banner"', $board);
             assertStringNotContains('A new version is available.', $board);
-            assertStringContains('/assets/site.css?v=no-git-', $board);
-            assertStringContains('/assets/compose_draft_clear.js?v=no-git-', $board);
-            assertStringContains('/assets/theme_toggle.js?v=no-git-', $board);
+            assertFingerprintedAsset($board, 'site.css');
+            assertFingerprintedAsset($board, 'compose_draft_clear.js');
+            assertFingerprintedAsset($board, 'theme_toggle.js');
         } finally {
             if ($previousFlag === false) {
                 putenv('FORUM_APP_VERSION_NOTIFICATION');
@@ -495,7 +506,7 @@ final class LocalAppSmokeTest
         assertStringContains('/activity/', $tools);
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
-        assertStringContains('/assets/tools_bookmarklets.js', $bookmarklets);
+        assertFingerprintedAsset($bookmarklets, 'tools_bookmarklets.js');
         assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
         assertStringContains('window.getSelection().toString().trim()', $bookmarkletAsset);
@@ -819,9 +830,11 @@ final class LocalAppSmokeTest
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/index.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/general.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/bug.html'));
-        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/root-001.html'));
-        assertStringContains('/assets/inline_reply_form.js', (string) file_get_contents($artifactRoot . '/threads/root-001.html'));
-        assertStringContains('inline-reply-composer', (string) file_get_contents($artifactRoot . '/threads/root-001.html'));
+        $rootThreadArtifact = (string) file_get_contents($artifactRoot . '/threads/root-001.html');
+        assertStringContains('route-source: static-html', $rootThreadArtifact);
+        $inlineReplyAssetPath = fingerprintedAssetPath($rootThreadArtifact, 'inline_reply_form.js');
+        assertTrue(is_file($artifactRoot . $inlineReplyAssetPath));
+        assertStringContains('inline-reply-composer', $rootThreadArtifact);
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/thread-zenmemes-rules.html'));
 
         $threadsArtifact = (string) file_get_contents($artifactRoot . '/threads.html');
@@ -1247,5 +1260,40 @@ if (!function_exists('assertStringNotContains')) {
         if (str_contains($haystack, $needle)) {
             throw new RuntimeException('Failed asserting that output does not contain: ' . $needle);
         }
+    }
+}
+
+if (!function_exists('assertStringMatches')) {
+    function assertStringMatches(string $pattern, string $value): void
+    {
+        if (preg_match($pattern, $value) !== 1) {
+            throw new RuntimeException('Failed asserting that output matches: ' . $pattern);
+        }
+    }
+}
+
+if (!function_exists('assertFingerprintedAsset')) {
+    function assertFingerprintedAsset(string $haystack, string $assetName): void
+    {
+        fingerprintedAssetPath($haystack, $assetName);
+    }
+}
+
+if (!function_exists('fingerprintedAssetPath')) {
+    function fingerprintedAssetPath(string $haystack, string $assetName): string
+    {
+        $extensionOffset = strrpos($assetName, '.');
+        if ($extensionOffset === false) {
+            throw new RuntimeException('Asset name must include an extension: ' . $assetName);
+        }
+
+        $base = preg_quote(substr($assetName, 0, $extensionOffset), '#');
+        $extension = preg_quote(substr($assetName, $extensionOffset), '#');
+        $pattern = '#/assets/' . $base . '\.[a-f0-9]{12}' . $extension . '#';
+        if (preg_match($pattern, $haystack, $matches) !== 1) {
+            throw new RuntimeException('Failed asserting that output contains fingerprinted asset: ' . $assetName);
+        }
+
+        return $matches[0];
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\View;
 
+use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\SiteConfig;
 use RuntimeException;
 
@@ -42,24 +43,24 @@ final class TemplateRenderer
         array $scriptPaths = [],
         string $routeSource = 'php-fallback',
     ): string {
-        $versionedScriptPaths = [];
+        $assetScriptPaths = [];
         foreach ($scriptPaths as $scriptPath) {
-            $versionedScriptPaths[] = $this->appendVersionQuery($scriptPath);
+            $assetScriptPaths[] = $this->assetPath($scriptPath);
         }
 
         return $this->renderFile('layout.php', [
             'title' => $title,
             'content' => $content,
             'activeSection' => $activeSection,
-            'scriptPaths' => $versionedScriptPaths,
+            'scriptPaths' => $assetScriptPaths,
             'routeSource' => $routeSource,
             'siteName' => SiteConfig::SITE_NAME,
             'appVersion' => $this->appVersion,
             'appVersionNotificationEnabled' => SiteConfig::appVersionNotificationEnabled(),
-            'siteCssPath' => $this->appendVersionQuery('/assets/site.css'),
-            'themeToggleScriptPath' => $this->appendVersionQuery('/assets/theme_toggle.js'),
-            'composeDraftClearScriptPath' => $this->appendVersionQuery('/assets/compose_draft_clear.js'),
-            'versionCheckScriptPath' => $this->appendVersionQuery('/assets/version_check.js'),
+            'siteCssPath' => $this->assetPath('/assets/site.css'),
+            'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
+            'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
+            'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
             'navItems' => [
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],
                 ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
@@ -223,29 +224,8 @@ final class TemplateRenderer
         return '<time datetime="' . $escape($value) . '">' . $escape($this->formatFriendlyTimestamp($value)) . '</time>';
     }
 
-    private function appendVersionQuery(string $path): string
+    private function assetPath(string $path): string
     {
-        $separator = str_contains($path, '?') ? '&' : '?';
-
-        return $path . $separator . 'v=' . rawurlencode($this->assetVersion($path));
-    }
-
-    private function assetVersion(string $path): string
-    {
-        if (!str_starts_with($path, '/assets/')) {
-            return $this->appVersion;
-        }
-
-        $assetPath = dirname($this->templateRoot) . '/public' . $path;
-        if (!is_file($assetPath)) {
-            return $this->appVersion;
-        }
-
-        $hash = hash_file('sha256', $assetPath);
-        if ($hash === false) {
-            return $this->appVersion;
-        }
-
-        return $this->appVersion . '-' . substr($hash, 0, 12);
+        return AssetFingerprint::fingerprintedPath(dirname($this->templateRoot) . '/public', $path);
     }
 }
