@@ -2030,7 +2030,6 @@ NODE;
 
         assertSame([
             '/api/set_identity_hint?identity_hint=openpgp%3Adef456',
-            '/api/get_profile?profile_slug=openpgp-def456',
             '/api/set_identity_hint?identity_hint=openpgp%3Adef456',
             '/api/create_thread',
         ], $result['optimistic']['fetchUrls']);
@@ -2283,7 +2282,7 @@ NODE;
 
         $result = $this->runScript($script);
 
-        assertSame('/api/create_thread', $result['fetchUrls'][3]);
+        assertSame('/api/create_thread', $result['fetchUrls'][2]);
         assertSame(0, $result['pendingCount']);
         assertSame(['intro', 'compose-card'], $result['order']);
         assertSame('Subject is required.', $result['status']);
@@ -2807,7 +2806,6 @@ NODE;
 
         assertSame([
             '/api/set_identity_hint?identity_hint=openpgp%3Aabc123',
-            '/api/get_profile?profile_slug=openpgp-abc123',
             '/api/set_identity_hint?identity_hint=openpgp%3Aabc123',
             '/api/create_reply',
         ], $result['optimistic']['fetchUrls']);
@@ -3047,7 +3045,6 @@ NODE;
         assertSame('', $result['recentlyClearedDraft']);
         assertSame([
             '/api/set_identity_hint?identity_hint=openpgp%3Aabc123',
-            '/api/get_profile?profile_slug=openpgp-abc123',
             '/api/set_identity_hint?identity_hint=openpgp%3Aabc123',
             '/api/create_reply',
         ], $result['fetchCalls']);

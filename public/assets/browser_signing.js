@@ -1327,6 +1327,7 @@
     const promptForUsername = typeof config.promptForUsername === "function"
       ? config.promptForUsername
       : promptForComposeUsername;
+    const verifyPublishedIdentity = config.verifyPublishedIdentity !== false;
     const publishedFingerprint = (localStorage.getItem(storageKeys.publishedFingerprint) || "")
       .trim()
       .toUpperCase();
@@ -1342,17 +1343,23 @@
     if (fingerprint === "" || publishedFingerprint !== fingerprint) {
       setStatus(statusNode, "Publishing your public key in the background...", "info");
       await publishPublicKeyWithRetry(root);
-    } else if (!(await serverKnowsCurrentIdentity(fingerprint))) {
+    } else if (verifyPublishedIdentity && !(await serverKnowsCurrentIdentity(fingerprint))) {
       setStatus(statusNode, "Finishing browser identity setup...", "info");
       await publishPublicKeyWithRetry(root);
     } else {
-      await syncIdentityHint(preferredIdentityHint());
+      const sync = syncIdentityHint(preferredIdentityHint());
+      if (verifyPublishedIdentity) {
+        await sync;
+      } else {
+        void sync.catch(function () {});
+      }
     }
   }
 
   async function ensureComposeIdentity(root, statusNode) {
     await ensureReadyIdentity(root, statusNode, {
       promptForUsername: promptForComposeUsername,
+      verifyPublishedIdentity: false,
     });
   }
 
