@@ -3360,6 +3360,7 @@ global.window = {
     async ensureReadyIdentity(receivedRoot, receivedFeedback) {
       events.push(receivedRoot === root ? 'ensure-root' : 'ensure-wrong-root');
       events.push(receivedFeedback === feedbackNode ? 'ensure-feedback' : 'ensure-wrong-feedback');
+      events.push(arguments[2] && arguments[2].verifyPublishedIdentity === false ? 'ensure-fast' : 'ensure-verified');
       events.push('ensure');
     }
   }
@@ -3417,7 +3418,7 @@ NODE;
 
         $result = $this->runThreadReactionScript($script);
 
-        assertSame(['ensure-root', 'ensure-feedback', 'ensure', '/api/apply_thread_tag'], array_slice($result['events'], 0, 4));
+        assertSame(['ensure-root', 'ensure-feedback', 'ensure-fast', 'ensure', '/api/apply_thread_tag'], array_slice($result['events'], 0, 5));
         assertSame('Score: 1', $result['score']);
         assertSame('Liked.', $result['feedback']);
         assertSame(false, $result['feedbackHidden']);
@@ -3973,6 +3974,7 @@ global.window = {
     async ensureReadyIdentity(receivedRoot, receivedFeedback) {
       events.push(receivedRoot === root ? 'ensure-root' : 'ensure-wrong-root');
       events.push(receivedFeedback === feedbackNode ? 'ensure-feedback' : 'ensure-wrong-feedback');
+      events.push(arguments[2] && arguments[2].verifyPublishedIdentity === false ? 'ensure-fast' : 'ensure-verified');
     }
   }
 };
@@ -4017,7 +4019,7 @@ NODE;
 
         $result = $this->runThreadReactionScript($script);
 
-        assertSame(['ensure-root', 'ensure-feedback', '/api/apply_post_tag'], array_slice($result['events'], 0, 3));
+        assertSame(['ensure-root', 'ensure-feedback', 'ensure-fast', '/api/apply_post_tag'], array_slice($result['events'], 0, 4));
         assertSame('Already liked.', $result['feedback']);
         assertSame(false, $result['feedbackHidden']);
         assertSame(true, $result['buttonDisabled']);

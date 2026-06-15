@@ -373,7 +373,7 @@
 
     markActionTiming(timing, "forum_identity_start");
     setFeedback(feedbackNode, "Preparing identity...", "ok");
-    await helper.ensureReadyIdentity(root, feedbackNode);
+    await helper.ensureReadyIdentity(root, feedbackNode, { verifyPublishedIdentity: false });
     markActionTiming(timing, "forum_identity_ready");
   }
 
