@@ -2052,6 +2052,8 @@ NODE;
             [
                 'forum_action_start',
                 'forum_identity_start',
+                'forum_identity_hint_fetch_start',
+                'forum_identity_hint_response',
                 'forum_identity_ready',
                 'forum_first_feedback',
                 'forum_fetch_start',
@@ -2062,7 +2064,7 @@ NODE;
             array_column($result['marks'], 'name')
         );
         assertSame('compose_thread', $result['marks'][0]['action']);
-        assertSame('ok', $result['marks'][7]['status']);
+        assertSame('ok', $result['marks'][9]['status']);
         assertSame('[forum timing]', $result['debugEvents'][0]['label']);
         assertSame('compose_thread', $result['debugEvents'][0]['payload']['action']);
         assertSame('ok', $result['debugEvents'][0]['payload']['status']);
@@ -2827,6 +2829,8 @@ NODE;
             [
                 'forum_action_start',
                 'forum_identity_start',
+                'forum_identity_hint_fetch_start',
+                'forum_identity_hint_response',
                 'forum_identity_ready',
                 'forum_first_feedback',
                 'forum_fetch_start',
@@ -2837,7 +2841,7 @@ NODE;
             array_column($result['marks'], 'name')
         );
         assertSame('compose_reply', $result['marks'][0]['action']);
-        assertSame('ok', $result['marks'][7]['status']);
+        assertSame('ok', $result['marks'][9]['status']);
         assertSame('[forum timing]', $result['debugEvents'][0]['label']);
         assertSame('compose_reply', $result['debugEvents'][0]['payload']['action']);
         assertSame('ok', $result['debugEvents'][0]['payload']['status']);
@@ -4387,6 +4391,199 @@ NODE;
         assertSame(true, $result['finalButtonDisabled']);
         assertSame('Flagged', $result['finalButtonText']);
         assertSame('true', $result['finalAriaPressed']);
+    }
+
+    public function testIdentityPrewarmDoesNotGenerateOrLinkIdentity(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const storage = {
+  forum_pki_public_key: 'public-key',
+  forum_pki_private_key: 'private-key',
+  forum_pki_username: 'guest'
+};
+let generateCalled = false;
+let fetchUrls = [];
+
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(storage, key) ? storage[key] : ''; },
+  setItem(key, value) { storage[key] = String(value); },
+  removeItem(key) { delete storage[key]; }
+};
+global.window = {
+  setTimeout(callback) { callback(); },
+  __forumOpenPgpLoader: { ready: Promise.resolve({}) },
+  openpgp: {
+    generateKey() {
+      generateCalled = true;
+      throw new Error('generateKey should not run during prewarm');
+    },
+    async readKey() {
+      return { getFingerprint() { return 'ABC123'; } };
+    }
+  }
+};
+global.openpgp = global.window.openpgp;
+global.fetch = async function(url) {
+  fetchUrls.push(String(url));
+  return { ok: true, async text() { return 'ok'; } };
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      handler();
+    }
+  },
+  querySelector(selector) {
+    return selector === '[data-compose-root], [data-thread-reactions-root], .post-card[data-post-id]' ? {} : null;
+  },
+  querySelectorAll() {
+    return [];
+  },
+  createElement() {
+    return { setAttribute(){}, style:{}, select(){}, value:'' };
+  },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+setTimeout(() => {
+  process.stdout.write(JSON.stringify({
+    generateCalled,
+    fingerprint: storage.forum_pki_fingerprint || '',
+    fetchUrls
+  }));
+}, 0);
+process.on('unhandledRejection', (error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(false, $result['generateCalled']);
+        assertSame('ABC123', $result['fingerprint']);
+        assertSame(['/api/set_identity_hint?identity_hint=openpgp%3Aabc123'], $result['fetchUrls']);
+    }
+
+    public function testReactionPrepareIdentityDoesNotApplyTag(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+let clickHandler = null;
+let ensureCount = 0;
+let fetchCount = 0;
+
+class Button {
+  constructor() {
+    this.disabled = false;
+    this.hidden = false;
+    this.attributes = {};
+  }
+  getAttribute(name) {
+    return Object.prototype.hasOwnProperty.call(this.attributes, name) ? this.attributes[name] : null;
+  }
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+  }
+  closest(selector) {
+    return selector === '[data-action="prepare-browser-identity"]' ? this : null;
+  }
+  addEventListener(type, handler) {
+    if (type === 'click') {
+      clickHandler = handler;
+    }
+  }
+}
+
+const prepareButton = new Button();
+const statusNode = {
+  hidden: true,
+  textContent: '',
+  setAttribute(name, value) { this[name] = value; },
+  querySelector() { return null; },
+  appendChild() {}
+};
+const root = {
+  dataset: {},
+  getAttribute(name) {
+    return name === 'data-post-id' ? 'reply-001' : '';
+  },
+  querySelector(selector) {
+    if (selector === '[data-action="prepare-browser-identity"]') return prepareButton;
+    if (selector === '[data-role="identity-prepare-status"]') return statusNode;
+    if (selector === '[data-role="post-reaction-feedback"]') return { textContent: '', hidden: true, setAttribute() {} };
+    return null;
+  },
+  addEventListener() {}
+};
+
+global.Element = Button;
+global.HTMLButtonElement = Button;
+global.window = {
+  __forumBrowserIdentity: {
+    identityPreparationState() { return 'needs_consent'; },
+    renderIdentityPreparationState(node, state, options) {
+      statusNode.hidden = false;
+      statusNode.textContent = options && options.message ? options.message : state;
+      prepareButton.hidden = state === 'ready';
+      prepareButton.disabled = Boolean(options && options.busy);
+    },
+    async ensureReadyIdentity() {
+      ensureCount += 1;
+    },
+    statusFromError(error, fallback) {
+      return { message: fallback, technicalDetails: '' };
+    }
+  }
+};
+global.fetch = async function() {
+  fetchCount += 1;
+  return { headers: { get() { return ''; } }, async text() { return 'status=ok\n'; } };
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      handler();
+    }
+  },
+  querySelector() {
+    return null;
+  },
+  querySelectorAll(selector) {
+    return selector === '.post-card[data-post-id]' ? [root] : [];
+  }
+};
+
+vm.runInThisContext(source);
+clickHandler({
+  target: prepareButton,
+  preventDefault() {}
+}).then(() => {
+  process.stdout.write(JSON.stringify({
+    ensureCount,
+    fetchCount,
+    status: statusNode.textContent,
+    prepareHidden: prepareButton.hidden
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame(1, $result['ensureCount']);
+        assertSame(0, $result['fetchCount']);
+        assertSame('Browser identity ready.', $result['status']);
+        assertSame(true, $result['prepareHidden']);
     }
 }
 

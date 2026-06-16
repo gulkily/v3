@@ -407,7 +407,15 @@
   }
 
   function bindReactionIdentityPrepareControls(root) {
-    if (!root || root.dataset.identityPrepareBound === "1") {
+    if (!root) {
+      return;
+    }
+
+    if (!root.dataset) {
+      root.dataset = {};
+    }
+
+    if (root.dataset.identityPrepareBound === "1") {
       return;
     }
 
