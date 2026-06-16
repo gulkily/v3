@@ -99,6 +99,11 @@
       status: status,
       duration_ms: timingDelta(timing, "forum_action_start", "forum_action_complete"),
       identity_ms: timingDelta(timing, "forum_identity_start", "forum_identity_ready"),
+      username_prompt_ms: timingDelta(timing, "forum_username_prompt_start", "forum_username_prompt_returned"),
+      key_generation_ms: timingDelta(timing, "forum_key_generation_start", "forum_key_generation_end"),
+      link_identity_ms: timingDelta(timing, "forum_link_identity_fetch_start", "forum_link_identity_response"),
+      identity_hint_ms: timingDelta(timing, "forum_identity_hint_fetch_start", "forum_identity_hint_response"),
+      prepare_ms: timingDelta(timing, "forum_action_start", "forum_prepare_complete"),
       network_ms: timingDelta(timing, "forum_fetch_start", "forum_response_received"),
       server_timing: timing.serverTiming || {},
       error_kind: timing.errorKind || "",
@@ -374,7 +379,10 @@
 
     markActionTiming(timing, "forum_identity_start");
     setFeedback(feedbackNode, "Preparing identity...", "ok");
-    await helper.ensureReadyIdentity(root, feedbackNode, { verifyPublishedIdentity: false });
+    await helper.ensureReadyIdentity(root, feedbackNode, {
+      verifyPublishedIdentity: false,
+      timing: timing,
+    });
     markActionTiming(timing, "forum_identity_ready");
   }
 
@@ -427,6 +435,7 @@
         return;
       }
 
+      const timing = startActionTiming("identity_prepare_reaction");
       reactionIdentityPrepareInFlight = true;
       prepareButton.disabled = true;
       try {
@@ -436,14 +445,20 @@
           setFeedback(statusNode, "Preparing identity...", "ok");
         }
 
-        await identityHelper.ensureReadyIdentity(root, statusNode, { verifyPublishedIdentity: false });
+        await identityHelper.ensureReadyIdentity(root, statusNode, {
+          verifyPublishedIdentity: false,
+          timing: timing,
+        });
 
         if (typeof identityHelper.renderIdentityPreparationState === "function") {
           identityHelper.renderIdentityPreparationState(root, "ready", { message: "Browser identity ready." });
         } else {
           setFeedback(statusNode, "Browser identity ready.", "ok");
         }
+        markActionTiming(timing, "forum_prepare_complete");
+        completeActionTiming(timing, "ok");
       } catch (error) {
+        timing.errorKind = error instanceof Error && error.name ? error.name : "error";
         const fallback = "Unable to prepare your browser identity. Open /account/key/ manually.";
         const status = typeof identityHelper.statusFromError === "function"
           ? identityHelper.statusFromError(error, fallback)
@@ -456,6 +471,7 @@
         } else {
           setFeedback(statusNode, status.message, "error", { technicalDetails: status.technicalDetails });
         }
+        completeActionTiming(timing, "error");
       } finally {
         reactionIdentityPrepareInFlight = false;
         if (prepareButton.hidden !== true) {

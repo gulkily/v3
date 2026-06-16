@@ -111,6 +111,12 @@
       status: status,
       duration_ms: timingDelta(timing, "forum_action_start", "forum_action_complete"),
       identity_ms: timingDelta(timing, "forum_identity_start", "forum_identity_ready"),
+      openpgp_ms: timingDelta(timing, "forum_identity_prewarm_start", "forum_openpgp_ready"),
+      username_prompt_ms: timingDelta(timing, "forum_username_prompt_start", "forum_username_prompt_returned"),
+      key_generation_ms: timingDelta(timing, "forum_key_generation_start", "forum_key_generation_end"),
+      link_identity_ms: timingDelta(timing, "forum_link_identity_fetch_start", "forum_link_identity_response"),
+      identity_hint_ms: timingDelta(timing, "forum_identity_hint_fetch_start", "forum_identity_hint_response"),
+      prepare_ms: timingDelta(timing, "forum_action_start", "forum_prepare_complete"),
       network_ms: timingDelta(timing, "forum_fetch_start", "forum_response_received"),
       server_timing: timing.serverTiming || {},
       error_kind: timing.errorKind || (status === "error" || status === "validation_error" ? status : ""),
@@ -893,12 +899,14 @@
     return normalizeUsername(localStorage.getItem(storageKeys.username) || "guest");
   }
 
-  async function syncIdentityHint(value) {
+  async function syncIdentityHint(value, timing) {
     const query = new URLSearchParams({ identity_hint: value }).toString();
+    markActionTiming(timing, "forum_identity_hint_fetch_start");
     await fetch(`/api/set_identity_hint?${query}`, {
       method: "POST",
       credentials: "same-origin",
     });
+    markActionTiming(timing, "forum_identity_hint_response");
   }
 
   async function copyText(text) {
@@ -1377,10 +1385,11 @@
     );
   }
 
-  async function generateBrowserKey(root, preferredUsername) {
+  async function generateBrowserKey(root, preferredUsername, timing) {
     const openpgp = await ensureOpenPgpApi(["generateKey", "readKey"]);
 
     const username = normalizeUsername(preferredUsername || localStorage.getItem(storageKeys.username) || "guest");
+    markActionTiming(timing, "forum_key_generation_start");
     const result = await openpgp.generateKey({
       type: "ecc",
       curve: "ed25519",
@@ -1389,19 +1398,20 @@
     });
     const key = await openpgp.readKey({ armoredKey: result.publicKey });
     const fingerprint = String(key.getFingerprint()).toUpperCase();
+    markActionTiming(timing, "forum_key_generation_end");
 
     localStorage.setItem(storageKeys.username, username);
     localStorage.setItem(storageKeys.publicKey, result.publicKey);
     localStorage.setItem(storageKeys.privateKey, result.privateKey);
     localStorage.setItem(storageKeys.fingerprint, fingerprint);
     clearClearedKeypairBackup();
-    await syncIdentityHint(preferredIdentityHint());
+    await syncIdentityHint(preferredIdentityHint(), timing);
     renderSavedState(root);
 
     return username;
   }
 
-  async function publishPublicKey(root) {
+  async function publishPublicKey(root, timing) {
     const publicKey = localStorage.getItem(storageKeys.publicKey) || "";
     const username = localStorage.getItem(storageKeys.username) || "guest";
     const fingerprint = await ensureStoredFingerprint();
@@ -1409,6 +1419,7 @@
       throw new Error("No browser public key is available to publish.");
     }
 
+    markActionTiming(timing, "forum_link_identity_fetch_start");
     const response = await fetch(`/api/link_identity`, {
       method: "POST",
       credentials: "same-origin",
@@ -1418,12 +1429,13 @@
       body: new URLSearchParams({ public_key: publicKey }).toString(),
     });
     const text = await response.text();
+    markActionTiming(timing, "forum_link_identity_response");
 
     if (text.includes("status=ok") || text.includes("Identity already exists for this fingerprint.")) {
       if (fingerprint) {
         localStorage.setItem(storageKeys.publishedFingerprint, fingerprint);
       }
-      await syncIdentityHint(preferredIdentityHint());
+      await syncIdentityHint(preferredIdentityHint(), timing);
       renderSavedState(root);
       return;
     }
@@ -1432,9 +1444,9 @@
     throw buildFriendlyError(failure.friendlyMessage, failure.technicalDetails);
   }
 
-  async function publishPublicKeyWithRetry(root) {
+  async function publishPublicKeyWithRetry(root, timing) {
     try {
-      await publishPublicKey(root);
+      await publishPublicKey(root, timing);
       return;
     } catch (error) {
       const technicalDetails = error instanceof Error && typeof error.technicalDetails === "string"
@@ -1446,7 +1458,7 @@
     }
 
     await ensureStoredFingerprint();
-    await publishPublicKey(root);
+    await publishPublicKey(root, timing);
   }
 
   async function serverKnowsCurrentIdentity(fingerprint) {
@@ -1487,6 +1499,7 @@
 
   async function ensureReadyIdentity(root, statusNode, options) {
     const config = options || {};
+    const timing = config.timing || null;
     const promptForUsername = typeof config.promptForUsername === "function"
       ? config.promptForUsername
       : promptForComposeUsername;
@@ -1497,20 +1510,22 @@
 
     if (!hasBrowserKeypair()) {
       setStatus(statusNode, "Choose a username to prepare your browser keypair...", "info");
+      markActionTiming(timing, "forum_username_prompt_start");
       const username = await promptForUsername();
+      markActionTiming(timing, "forum_username_prompt_returned");
       setStatus(statusNode, "Generating browser keypair...", "info");
-      await generateBrowserKey(root, username);
+      await generateBrowserKey(root, username, timing);
     }
 
     const fingerprint = String(await ensureStoredFingerprint()).trim().toUpperCase();
     if (fingerprint === "" || publishedFingerprint !== fingerprint) {
       setStatus(statusNode, "Publishing your public key in the background...", "info");
-      await publishPublicKeyWithRetry(root);
+      await publishPublicKeyWithRetry(root, timing);
     } else if (verifyPublishedIdentity && !(await serverKnowsCurrentIdentity(fingerprint))) {
       setStatus(statusNode, "Finishing browser identity setup...", "info");
-      await publishPublicKeyWithRetry(root);
+      await publishPublicKeyWithRetry(root, timing);
     } else {
-      const sync = syncIdentityHint(preferredIdentityHint());
+      const sync = syncIdentityHint(preferredIdentityHint(), timing);
       if (verifyPublishedIdentity) {
         await sync;
       } else {
@@ -1519,10 +1534,11 @@
     }
   }
 
-  async function ensureComposeIdentity(root, statusNode) {
+  async function ensureComposeIdentity(root, statusNode, timing) {
     await ensureReadyIdentity(root, statusNode, {
       promptForUsername: promptForComposeUsername,
       verifyPublishedIdentity: false,
+      timing: timing,
     });
   }
 
@@ -1943,19 +1959,24 @@
       }
 
       prepareIdentityInFlight = true;
+      const timing = startActionTiming("identity_prepare_compose");
       let succeeded = false;
       renderIdentityPreparationState(root, identityPreparationState(), { busy: true });
       try {
-        await ensureComposeIdentity(root, statusNode);
+        await ensureComposeIdentity(root, statusNode, timing);
         ensureComposeAuthorIdentity(form);
         succeeded = true;
+        markActionTiming(timing, "forum_prepare_complete");
+        completeActionTiming(timing, "ok");
         renderIdentityPreparationState(root, "ready", { message: "Browser identity ready." });
       } catch (error) {
+        timing.errorKind = error instanceof Error && error.name ? error.name : "error";
         const status = statusFromError(error, "Unable to prepare your browser identity. Use /account/key/ manually.");
         renderIdentityPreparationState(root, "failed", {
           message: status.message,
           technicalDetails: status.technicalDetails,
         });
+        completeActionTiming(timing, "error");
       } finally {
         prepareIdentityInFlight = false;
         if (succeeded && identityPreparationState() !== "ready") {
@@ -2137,7 +2158,7 @@
         }
 
         markActionTiming(timing, "forum_identity_start");
-        await ensureComposeIdentity(root, statusNode);
+        await ensureComposeIdentity(root, statusNode, timing);
         markActionTiming(timing, "forum_identity_ready");
         ensureComposeAuthorIdentity(form);
         if (isThreadComposeForm(form) && await submitOptimisticThread(timing)) {
