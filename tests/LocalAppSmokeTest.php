@@ -185,6 +185,40 @@ final class LocalAppSmokeTest
         assertStringContains('Rebuilt static artifacts:', $combinedOutput);
     }
 
+    public function testThreadAttributesCommandResolvesDeletedLabelRecordToThread(): void
+    {
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $recordId = 'thread-label-20260530000001-zenrules';
+
+        $deleteCommand = sprintf(
+            '%s delete-record %s %s %s %s',
+            escapeshellarg(__DIR__ . '/../v3'),
+            escapeshellarg($recordId),
+            escapeshellarg($repositoryRoot),
+            escapeshellarg($databasePath),
+            escapeshellarg($artifactRoot),
+        );
+        exec($deleteCommand, $deleteOutput, $deleteExitCode);
+
+        $attributesCommand = sprintf(
+            '%s thread-attributes %s %s %s',
+            escapeshellarg(__DIR__ . '/../v3'),
+            escapeshellarg($recordId),
+            escapeshellarg($repositoryRoot),
+            escapeshellarg($databasePath),
+        );
+        exec($attributesCommand, $attributesOutput, $attributesExitCode);
+        $combinedOutput = implode("\n", $attributesOutput);
+
+        assertSame(0, $deleteExitCode);
+        assertSame(0, $attributesExitCode);
+        assertStringContains('target_type: deleted-thread-label', $combinedOutput);
+        assertStringContains('record_id: ' . $recordId, $combinedOutput);
+        assertStringContains('thread_id: thread-zenmemes-rules', $combinedOutput);
+        assertStringContains('subject: The Rules of ZenMemes.com', $combinedOutput);
+        assertStringContains('labels: (none)', $combinedOutput);
+    }
+
     public function testApplicationRendersCoreRoutes(): void
     {
         @unlink($this->databasePath);

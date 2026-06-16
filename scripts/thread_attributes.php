@@ -6,26 +6,43 @@ require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
+use ForumRewrite\Canonical\PostReactionRecordParser;
+use ForumRewrite\Canonical\PostRecordParser;
+use ForumRewrite\Canonical\ThreadLabelRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecord;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 $projectRoot = dirname(__DIR__);
-$threadId = (string) ($argv[1] ?? '');
+$target = (string) ($argv[1] ?? '');
 
-if ($threadId === '' || in_array($threadId, ['-h', '--help'], true)) {
+if ($target === '' || in_array($target, ['-h', '--help'], true)) {
     fwrite(STDERR, usage());
-    exit($threadId === '' ? 1 : 0);
+    exit($target === '' ? 1 : 0);
 }
 
-if (preg_match('/^[A-Za-z0-9._:-]+$/', $threadId) !== 1) {
-    fwrite(STDERR, "thread_id must contain only ASCII letters, numbers, dot, underscore, colon, or hyphen.\n");
+if (preg_match('/^[A-Za-z0-9._:\/.-]+$/', $target) !== 1) {
+    fwrite(STDERR, "target must contain only ASCII letters, numbers, slash, dot, underscore, colon, or hyphen.\n");
     exit(1);
 }
 
 $repositoryRoot = normalizePath($argv[2] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
 $databasePath = normalizePath($argv[3] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
 $repository = new CanonicalRecordRepository($repositoryRoot);
+$targetInfo = resolveTargetInfo($repositoryRoot, $repository, $target);
+$threadId = $targetInfo['thread_id'];
+
+if ($threadId === null) {
+    printSection('Target Item');
+    foreach ($targetInfo['metadata'] as $key => $value) {
+        printField($key, $value);
+    }
+    printField('thread_id', '(none)');
+    fwrite(STDERR, "Target does not resolve to a thread: {$target}\n");
+    exit(1);
+}
+
 $rootPath = CanonicalPathResolver::post($threadId);
 
 if (!is_file($repositoryRoot . '/' . $rootPath)) {
@@ -68,6 +85,14 @@ sort($replyPaths);
 $labelRecords = loadThreadLabelRecords($repositoryRoot, $repository, $threadId);
 $effectiveLabels = effectiveLabels($labelRecords);
 $derivedThread = loadDerivedThread($databasePath, $threadId);
+
+printSection('Target Item');
+foreach ($targetInfo['metadata'] as $key => $value) {
+    printField($key, $value);
+}
+if ($targetInfo['path'] !== null) {
+    printField('target_record_path', $targetInfo['path']);
+}
 
 printSection('Thread');
 printField('thread_id', $threadId);
@@ -137,6 +162,317 @@ if ($replyPaths === []) {
     foreach ($replyPaths as $path) {
         printField('path', $path);
     }
+}
+
+/**
+ * @return array{path:?string,thread_id:?string,metadata:array<string,string>}
+ */
+function resolveTargetInfo(string $repositoryRoot, CanonicalRecordRepository $repository, string $target): array
+{
+    $target = trim($target);
+    $matches = [];
+
+    if (str_starts_with($target, rtrim($repositoryRoot, '/') . '/')) {
+        $target = substr($target, strlen(rtrim($repositoryRoot, '/') . '/'));
+    }
+
+    if (str_contains($target, '/')) {
+        $relativePath = ltrim($target, '/');
+        assertCanonicalRecordPath($relativePath);
+
+        return loadTargetInfo($repositoryRoot, $repository, $relativePath);
+    }
+
+    foreach (recordFiles($repositoryRoot) as $relativePath) {
+        $stem = preg_replace('/\.(txt|asc)$/', '', basename($relativePath));
+        if ($stem === $target) {
+            $matches[] = $relativePath;
+        }
+    }
+
+    foreach (candidateRecordPaths($target) as $relativePath) {
+        if (is_file($repositoryRoot . '/' . $relativePath) || readHistoricalRecord($repositoryRoot, $relativePath) !== null) {
+            $matches[] = $relativePath;
+        }
+    }
+
+    $matches = array_values(array_unique($matches));
+    sort($matches);
+
+    if ($matches === []) {
+        $postPath = CanonicalPathResolver::post($target);
+        return [
+            'path' => $postPath,
+            'thread_id' => $target,
+            'metadata' => [
+                'target' => $target,
+                'target_type' => 'thread-id',
+            ],
+        ];
+    }
+
+    if (count($matches) > 1) {
+        fwrite(STDERR, "Ambiguous target: {$target}\n");
+        foreach ($matches as $match) {
+            fwrite(STDERR, "  {$match}\n");
+        }
+        exit(1);
+    }
+
+    return loadTargetInfo($repositoryRoot, $repository, $matches[0]);
+}
+
+/**
+ * @return array{path:string,thread_id:?string,metadata:array<string,string>}
+ */
+function loadTargetInfo(string $repositoryRoot, CanonicalRecordRepository $repository, string $relativePath): array
+{
+    $historicalContents = null;
+    $isCurrent = is_file($repositoryRoot . '/' . $relativePath);
+
+    if (!$isCurrent) {
+        $historicalContents = readHistoricalRecord($repositoryRoot, $relativePath);
+        if ($historicalContents === null) {
+            fwrite(STDERR, "Canonical record does not exist in current files or git history: {$relativePath}\n");
+            exit(1);
+        }
+    }
+
+    try {
+        if (str_starts_with($relativePath, 'records/thread-labels/')) {
+            $record = $isCurrent
+                ? $repository->loadThreadLabel($relativePath)
+                : (new ThreadLabelRecordParser())->parse($historicalContents ?? '');
+
+            return [
+                'path' => $relativePath,
+                'thread_id' => $record->threadId,
+                'metadata' => [
+                    'target_type' => $isCurrent ? 'thread-label' : 'deleted-thread-label',
+                    'record_id' => $record->recordId,
+                    'created_at' => $record->createdAt,
+                    'thread_id' => $record->threadId,
+                    'labels' => implode(' ', $record->labels),
+                    'author_identity_id' => nullable($record->authorIdentityId),
+                ],
+            ];
+        }
+
+        if (str_starts_with($relativePath, 'records/posts/')) {
+            $record = $isCurrent
+                ? $repository->loadPost($relativePath)
+                : (new PostRecordParser())->parse($historicalContents ?? '');
+
+            return [
+                'path' => $relativePath,
+                'thread_id' => $record->threadId ?? $record->postId,
+                'metadata' => [
+                    'target_type' => $record->isRoot() ? ($isCurrent ? 'thread-root-post' : 'deleted-thread-root-post') : ($isCurrent ? 'reply-post' : 'deleted-reply-post'),
+                    'post_id' => $record->postId,
+                    'thread_id' => $record->threadId ?? $record->postId,
+                    'parent_id' => nullable($record->parentId),
+                    'subject' => nullable($record->subject),
+                ],
+            ];
+        }
+
+        if (str_starts_with($relativePath, 'records/post-reactions/')) {
+            $record = $isCurrent
+                ? $repository->loadPostReaction($relativePath)
+                : (new PostReactionRecordParser())->parse($historicalContents ?? '');
+            $threadId = resolvePostThreadId($repositoryRoot, $repository, $record->postId);
+
+            return [
+                'path' => $relativePath,
+                'thread_id' => $threadId,
+                'metadata' => [
+                    'target_type' => $isCurrent ? 'post-reaction' : 'deleted-post-reaction',
+                    'record_id' => $record->recordId,
+                    'created_at' => $record->createdAt,
+                    'post_id' => $record->postId,
+                    'thread_id' => nullable($threadId),
+                    'tags' => implode(' ', $record->tags),
+                    'author_identity_id' => nullable($record->authorIdentityId),
+                ],
+            ];
+        }
+
+        if (str_starts_with($relativePath, 'records/identity/')) {
+            $record = $isCurrent
+                ? $repository->loadIdentity($relativePath)
+                : (new IdentityBootstrapRecordParser())->parse($historicalContents ?? '');
+
+            return [
+                'path' => $relativePath,
+                'thread_id' => $record->bootstrapByThread,
+                'metadata' => [
+                    'target_type' => $isCurrent ? 'identity-bootstrap' : 'deleted-identity-bootstrap',
+                    'identity_id' => $record->identityId,
+                    'username' => $record->username,
+                    'bootstrap_by_post' => $record->bootstrapByPost,
+                    'bootstrap_by_thread' => $record->bootstrapByThread,
+                ],
+            ];
+        }
+    } catch (Throwable $throwable) {
+        fwrite(STDERR, "Unable to load target record {$relativePath}: {$throwable->getMessage()}\n");
+        exit(1);
+    }
+
+    return [
+        'path' => $relativePath,
+        'thread_id' => null,
+        'metadata' => [
+            'target_type' => $isCurrent ? 'canonical-record' : 'deleted-canonical-record',
+        ],
+    ];
+}
+
+function resolvePostThreadId(string $repositoryRoot, CanonicalRecordRepository $repository, string $postId): ?string
+{
+    $relativePath = CanonicalPathResolver::post($postId);
+    try {
+        if (is_file($repositoryRoot . '/' . $relativePath)) {
+            $record = $repository->loadPost($relativePath);
+        } else {
+            $contents = readHistoricalRecord($repositoryRoot, $relativePath);
+            if ($contents === null) {
+                return null;
+            }
+            $record = (new PostRecordParser())->parse($contents);
+        }
+    } catch (Throwable) {
+        return null;
+    }
+
+    return $record->threadId ?? $record->postId;
+}
+
+/**
+ * @return list<string>
+ */
+function candidateRecordPaths(string $target): array
+{
+    $paths = [
+        CanonicalPathResolver::post($target),
+        CanonicalPathResolver::threadLabel($target),
+        CanonicalPathResolver::postReaction($target),
+    ];
+
+    if (preg_match('/^identity-openpgp-([a-fA-F0-9]{40})$/', $target, $matches) === 1) {
+        $paths[] = CanonicalPathResolver::identity(strtolower($matches[1]));
+    }
+
+    if (preg_match('/^openpgp-([a-fA-F0-9]{40})$/', $target, $matches) === 1) {
+        $paths[] = CanonicalPathResolver::approvalSeed(strtolower($matches[1]));
+        $paths[] = CanonicalPathResolver::publicKey(strtoupper($matches[1]));
+    }
+
+    return array_values(array_unique($paths));
+}
+
+function assertCanonicalRecordPath(string $relativePath): void
+{
+    if (!str_starts_with($relativePath, 'records/')) {
+        fwrite(STDERR, "Record path must be under records/: {$relativePath}\n");
+        exit(1);
+    }
+
+    if (str_contains($relativePath, '..') || str_starts_with($relativePath, '/') || str_ends_with($relativePath, '/')) {
+        fwrite(STDERR, "Invalid record path: {$relativePath}\n");
+        exit(1);
+    }
+
+    if (!preg_match('/\.(txt|asc)$/', $relativePath)) {
+        fwrite(STDERR, "Record path must end in .txt or .asc: {$relativePath}\n");
+        exit(1);
+    }
+}
+
+/**
+ * @return list<string>
+ */
+function recordFiles(string $repositoryRoot): array
+{
+    $recordsRoot = $repositoryRoot . '/records';
+    if (!is_dir($recordsRoot)) {
+        return [];
+    }
+
+    $paths = [];
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($recordsRoot, FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($iterator as $item) {
+        if (!$item->isFile()) {
+            continue;
+        }
+
+        $path = $item->getPathname();
+        if (!preg_match('/\.(txt|asc)$/', $path)) {
+            continue;
+        }
+
+        $paths[] = repositoryRelativePath($repositoryRoot, $path);
+    }
+    sort($paths);
+
+    return $paths;
+}
+
+function readHistoricalRecord(string $repositoryRoot, string $relativePath): ?string
+{
+    if (!is_dir($repositoryRoot . '/.git')) {
+        return null;
+    }
+
+    $commits = runCommand(sprintf(
+        'git -C %s rev-list --all -- %s',
+        escapeshellarg($repositoryRoot),
+        escapeshellarg($relativePath)
+    ));
+    if ($commits['exit_code'] !== 0) {
+        return null;
+    }
+
+    foreach (array_filter(explode("\n", trim($commits['output']))) as $commit) {
+        $exists = runCommand(sprintf(
+            'git -C %s cat-file -e %s:%s',
+            escapeshellarg($repositoryRoot),
+            escapeshellarg($commit),
+            escapeshellarg($relativePath)
+        ));
+        if ($exists['exit_code'] !== 0) {
+            continue;
+        }
+
+        $contents = shell_exec(sprintf(
+            'git -C %s show %s:%s 2>/dev/null',
+            escapeshellarg($repositoryRoot),
+            escapeshellarg($commit),
+            escapeshellarg($relativePath)
+        ));
+        if (is_string($contents)) {
+            return $contents;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * @return array{exit_code:int,output:string}
+ */
+function runCommand(string $command): array
+{
+    $output = [];
+    $exitCode = 0;
+    exec($command . ' 2>&1', $output, $exitCode);
+
+    return [
+        'exit_code' => $exitCode,
+        'output' => implode("\n", $output),
+    ];
 }
 
 /**
@@ -270,10 +606,12 @@ function usage(): string
 {
     return <<<TEXT
 Usage:
-  ./v3 thread-attributes <thread_id> [repository_root] [database_path]
+  ./v3 thread-attributes <thread_id_or_record> [repository_root] [database_path]
 
-Prints canonical root post attributes, derived read-model thread attributes,
-effective labels, and each thread-label record that adds a label.
+Accepts a thread ID, post ID, canonical record path, or unambiguous canonical
+record filename stem. Prints the target item, canonical root post attributes,
+derived read-model thread attributes, effective labels, and each thread-label
+record that adds a label.
 
 TEXT;
 }

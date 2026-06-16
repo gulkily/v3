@@ -10,7 +10,7 @@ Usage:
   ./v3 start [host:port]
   ./v3 test
   ./v3 rebuild [repository_root] [database_path]
-  ./v3 thread-attributes <thread_id> [repository_root] [database_path]
+  ./v3 thread-attributes <thread_id_or_record> [repository_root] [database_path]
   ./v3 delete-record <record_path_or_id> [repository_root] [database_path] [artifact_root]
   ./v3 unicode-risk-backfill [repository_root] [database_path] [--with-llm]
   ./v3 build-static [repository_root] [database_path] [artifact_root]
