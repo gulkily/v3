@@ -5,6 +5,9 @@
     <p><strong>Thread ID:</strong> <?= $e($threadId !== '' ? $threadId : 'missing') ?></p>
     <p><strong>Parent ID:</strong> <?= $e($parentId !== '' ? $parentId : 'missing') ?></p>
     <p class="meta" data-role="compose-identity-status">Ready.</p>
+    <p class="meta">
+      <button type="button" data-action="prepare-browser-identity">Prepare browser identity</button>
+    </p>
 <?= $indent($partial('partials/reply_form.php'), 2) ?>
   </article>
 </section>

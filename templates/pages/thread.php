@@ -36,6 +36,9 @@ foreach ($posts as $post) {
       </summary>
       <div class="inline-reply-expanded stack">
         <p class="meta inline-reply-identity-status" data-role="compose-identity-status">Ready.</p>
+        <p class="meta">
+          <button type="button" data-action="prepare-browser-identity">Prepare browser identity</button>
+        </p>
 <?= $indent($partial('partials/reply_form.php', [
     'threadId' => $thread['root_post_id'],
     'parentId' => $thread['root_post_id'],

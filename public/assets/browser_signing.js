@@ -1697,6 +1697,7 @@
     const fieldNormalizationStatusNodes = form ? Array.from(root.querySelectorAll('[data-role="compose-field-normalization-status"]')) : [];
     const removeUnsupportedButtons = form ? Array.from(root.querySelectorAll('[data-action="remove-unsupported-compose-characters"]')) : [];
     const clearFieldsButtons = form ? Array.from(root.querySelectorAll('[data-action="clear-compose-fields"]')) : [];
+    const prepareIdentityButtons = Array.from(root.querySelectorAll('[data-action="prepare-browser-identity"]'));
     const normalizationStatusNode = root.querySelector('[data-role="compose-normalization-status"]');
     const normalizationMessageNode = root.querySelector('[data-role="compose-normalization-message"]');
     if (!form) {
@@ -1934,6 +1935,34 @@
       return Boolean(submitter && submitter.dataset && submitter.dataset.action === "submit-anonymous-compose");
     }
 
+    let prepareIdentityInFlight = false;
+    async function prepareComposeIdentity() {
+      if (prepareIdentityInFlight) {
+        return;
+      }
+
+      prepareIdentityInFlight = true;
+      let succeeded = false;
+      renderIdentityPreparationState(root, identityPreparationState(), { busy: true });
+      try {
+        await ensureComposeIdentity(root, statusNode);
+        ensureComposeAuthorIdentity(form);
+        succeeded = true;
+        renderIdentityPreparationState(root, "ready", { message: "Browser identity ready." });
+      } catch (error) {
+        const status = statusFromError(error, "Unable to prepare your browser identity. Use /account/key/ manually.");
+        renderIdentityPreparationState(root, "failed", {
+          message: status.message,
+          technicalDetails: status.technicalDetails,
+        });
+      } finally {
+        prepareIdentityInFlight = false;
+        if (succeeded && identityPreparationState() !== "ready") {
+          renderIdentityPreparationState(root, identityPreparationState(), { busy: false });
+        }
+      }
+    }
+
     async function submitOptimisticReply(timing) {
       const fields = collectReplySubmitFields(form);
       const operationKey = beginPendingReplyOperation(form, fields);
@@ -2067,6 +2096,15 @@
     clearFieldsButtons.forEach(function (button) {
       button.addEventListener("click", clearComposeFields);
     });
+
+    prepareIdentityButtons.forEach(function (button) {
+      button.addEventListener("click", function (event) {
+        event.preventDefault();
+        void prepareComposeIdentity();
+      });
+    });
+
+    renderIdentityPreparationState(root, identityPreparationState());
 
     let submitInFlight = false;
     form.addEventListener("submit", async function (event) {
