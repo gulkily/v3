@@ -4470,6 +4470,72 @@ NODE;
         assertSame(['/api/set_identity_hint?identity_hint=openpgp%3Aabc123'], $result['fetchUrls']);
     }
 
+    public function testClearPendingComposeArtifactsRemovesOptimisticNodesAndFormKeys(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+
+global.window = {};
+global.localStorage = { getItem(){ return ''; }, setItem(){}, removeItem(){} };
+global.sessionStorage = { getItem(){ return ''; }, setItem(){}, removeItem(){} };
+global.navigator = {};
+global.document = {
+  addEventListener(){},
+  querySelector(){ return null; },
+  createElement(){ return { setAttribute(){}, appendChild(){}, style:{}, select(){}, value:'' }; },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+
+const removed = [];
+function pendingNode(id) {
+  return {
+    id,
+    parentNode: {
+      removeChild(node) {
+        removed.push(node.id);
+      }
+    }
+  };
+}
+
+const pendingThread = pendingNode('pending-thread:1');
+const pendingReply = pendingNode('pending-reply:1');
+const parent = {
+  querySelectorAll(selector) {
+    return selector === '[data-pending-thread-id], [data-pending-reply-id]'
+      ? [pendingThread, pendingReply]
+      : [];
+  }
+};
+const root = { parentNode: parent };
+const form = {
+  dataset: {
+    pendingThreadOperationKey: 'thread:1',
+    pendingReplyOperationKey: 'reply:1'
+  }
+};
+
+vm.runInThisContext(source);
+const count = window.__forumComposeNormalization.clearPendingComposeArtifacts(root, form);
+process.stdout.write(JSON.stringify({
+  count,
+  removed,
+  hasThreadKey: Object.prototype.hasOwnProperty.call(form.dataset, 'pendingThreadOperationKey'),
+  hasReplyKey: Object.prototype.hasOwnProperty.call(form.dataset, 'pendingReplyOperationKey')
+}));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(2, $result['count']);
+        assertSame(['pending-thread:1', 'pending-reply:1'], $result['removed']);
+        assertSame(false, $result['hasThreadKey']);
+        assertSame(false, $result['hasReplyKey']);
+    }
+
 }
 
 if (!function_exists('assertSame')) {

@@ -657,6 +657,30 @@
     }
   }
 
+  function clearPendingComposeArtifacts(root, form) {
+    const scope = root && root.parentNode && typeof root.parentNode.querySelectorAll === "function"
+      ? root.parentNode
+      : root;
+    let removed = 0;
+
+    if (scope && typeof scope.querySelectorAll === "function") {
+      Array.from(scope.querySelectorAll("[data-pending-thread-id], [data-pending-reply-id]")).forEach(function (node) {
+        removeNode(node);
+        removed += 1;
+      });
+    }
+
+    pendingReplyOperations.clear();
+    pendingThreadOperations.clear();
+
+    if (form && form.dataset) {
+      delete form.dataset.pendingReplyOperationKey;
+      delete form.dataset.pendingThreadOperationKey;
+    }
+
+    return removed;
+  }
+
   function isInlineReplyComposer(root) {
     return Boolean(root && typeof root.querySelector === "function" && root.querySelector("[data-inline-reply-details]"));
   }
@@ -781,6 +805,7 @@
       canonicalThreadUrl: canonicalThreadUrl,
       createPendingReplyCard: createPendingReplyCard,
       createPendingThreadShell: createPendingThreadShell,
+      clearPendingComposeArtifacts: clearPendingComposeArtifacts,
       insertPendingReplyCard: insertPendingReplyCard,
       insertPendingThreadShell: insertPendingThreadShell,
       isInlineReplyComposer: isInlineReplyComposer,
@@ -1928,6 +1953,19 @@
       normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
     }
 
+    function clearTransientComposeStatus() {
+      if (!statusNode) {
+        return;
+      }
+
+      statusNode.textContent = "";
+      statusNode.hidden = true;
+      if (statusNode.dataset) {
+        statusNode.dataset.kind = "";
+      }
+      renderTechnicalStatus(statusNode, "");
+    }
+
     function isAnonymousComposeSubmitter(submitter) {
       return Boolean(submitter && submitter.dataset && submitter.dataset.action === "submit-anonymous-compose");
     }
@@ -2127,6 +2165,9 @@
     });
 
     window.addEventListener("pageshow", function () {
+      clearPendingComposeArtifacts(root, form);
+      clearTransientComposeStatus();
+
       if (shouldHonorRecentlyClearedDraft()) {
         resetComposeFormToServerState();
         clearRecentlyClearedComposeDraftKey();
