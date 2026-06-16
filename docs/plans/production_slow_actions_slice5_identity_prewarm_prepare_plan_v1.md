@@ -251,6 +251,7 @@ Manual checks:
 - 2026-06-16: Slice 5I-A complete - added browser identity preparation state classification, signed-surface discovery, shared status-node and prepare-button rendering helpers, and exported test hooks under `window.__forumBrowserIdentity`. Verification: `node --check public/assets/browser_signing.js`.
 - 2026-06-16: Slice 5I-B complete - added idle identity prewarm on signed-action pages, OpenPGP loader timing marks, saved-key fingerprint completion, and background identity-hint sync without key generation or `/api/link_identity`. Verification: `node --check public/assets/browser_signing.js`.
 - 2026-06-16: Slice 5I-C complete - added compose and inline-reply `Prepare browser identity` controls, bound them to the existing compose identity setup flow, kept form drafts untouched, populated hidden author identity fields on success, and preserved failure recovery. Verification: `node --check public/assets/browser_signing.js`; `php -l templates/pages/compose_thread.php`; `php -l templates/pages/compose_reply.php`; `php -l templates/pages/thread.php`.
+- 2026-06-16: Slice 5I-D complete - added reaction-area `Prepare browser identity` controls for thread roots and replies, bound them through `thread_reactions.js` to identity preparation without applying tags, and kept failure feedback reversible. Verification: `node --check public/assets/browser_signing.js`; `node --check public/assets/thread_reactions.js`; `php -l templates/partials/thread_root_card.php`; `php -l templates/partials/post_card.php`.
 
 ## Open Questions
 

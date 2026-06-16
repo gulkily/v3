@@ -926,6 +926,7 @@
       return;
     }
 
+    node.hidden = false;
     const messageNode = typeof node.querySelector === "function"
       ? node.querySelector('[data-role="browser-key-status-message"]')
       : null;

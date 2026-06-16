@@ -1,6 +1,7 @@
 (function () {
   let actionTimingSequence = 0;
   const pendingReactionOperations = new Set();
+  let reactionIdentityPrepareInFlight = false;
 
   function browserPerformance() {
     return typeof window !== "undefined" && window.performance && typeof window.performance.mark === "function"
@@ -397,6 +398,73 @@
     return wroteRecord ? `${label}.` : `Already ${lowerLabel}.`;
   }
 
+  function bindReactionIdentityPrepareControls(root) {
+    if (!root || root.dataset.identityPrepareBound === "1") {
+      return;
+    }
+
+    const prepareButton = root.querySelector('[data-action="prepare-browser-identity"]');
+    const statusNode = root.querySelector('[data-role="identity-prepare-status"]');
+    if (!prepareButton || !statusNode) {
+      return;
+    }
+
+    root.dataset.identityPrepareBound = "1";
+    const helper = window.__forumBrowserIdentity || null;
+    if (helper && typeof helper.renderIdentityPreparationState === "function" && typeof helper.identityPreparationState === "function") {
+      helper.renderIdentityPreparationState(root, helper.identityPreparationState());
+    }
+
+    prepareButton.addEventListener("click", async function (event) {
+      event.preventDefault();
+      if (reactionIdentityPrepareInFlight) {
+        return;
+      }
+
+      const identityHelper = window.__forumBrowserIdentity || null;
+      if (!identityHelper || typeof identityHelper.ensureReadyIdentity !== "function") {
+        setFeedback(statusNode, "Identity setup is unavailable. Reload the page and try again.", "error");
+        return;
+      }
+
+      reactionIdentityPrepareInFlight = true;
+      prepareButton.disabled = true;
+      try {
+        if (typeof identityHelper.renderIdentityPreparationState === "function" && typeof identityHelper.identityPreparationState === "function") {
+          identityHelper.renderIdentityPreparationState(root, identityHelper.identityPreparationState(), { busy: true });
+        } else {
+          setFeedback(statusNode, "Preparing identity...", "ok");
+        }
+
+        await identityHelper.ensureReadyIdentity(root, statusNode, { verifyPublishedIdentity: false });
+
+        if (typeof identityHelper.renderIdentityPreparationState === "function") {
+          identityHelper.renderIdentityPreparationState(root, "ready", { message: "Browser identity ready." });
+        } else {
+          setFeedback(statusNode, "Browser identity ready.", "ok");
+        }
+      } catch (error) {
+        const fallback = "Unable to prepare your browser identity. Open /account/key/ manually.";
+        const status = typeof identityHelper.statusFromError === "function"
+          ? identityHelper.statusFromError(error, fallback)
+          : feedbackFromError(error, fallback);
+        if (typeof identityHelper.renderIdentityPreparationState === "function") {
+          identityHelper.renderIdentityPreparationState(root, "failed", {
+            message: status.message,
+            technicalDetails: status.technicalDetails,
+          });
+        } else {
+          setFeedback(statusNode, status.message, "error", { technicalDetails: status.technicalDetails });
+        }
+      } finally {
+        reactionIdentityPrepareInFlight = false;
+        if (prepareButton.hidden !== true) {
+          prepareButton.disabled = false;
+        }
+      }
+    });
+  }
+
   function bindThreadReactions(root) {
     const threadId = root.getAttribute("data-thread-id") || "";
     const scoreNode = root.querySelector('[data-role="thread-score"]');
@@ -561,6 +629,7 @@
 
     if (typeof document.querySelectorAll === "function") {
       document.querySelectorAll(".post-card[data-post-id]").forEach((postRoot) => {
+        bindReactionIdentityPrepareControls(postRoot);
         bindPostReactions(postRoot);
       });
     }
