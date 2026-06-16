@@ -11,6 +11,7 @@ Usage:
   ./v3 test
   ./v3 rebuild [repository_root] [database_path]
   ./v3 thread-attributes <thread_id> [repository_root] [database_path]
+  ./v3 delete-thread-label <adding_record_id> [repository_root] [database_path] [artifact_root]
   ./v3 unicode-risk-backfill [repository_root] [database_path] [--with-llm]
   ./v3 build-static [repository_root] [database_path] [artifact_root]
   ./v3 archive-thread <thread_id> [repository_root] [database_path] [artifact_root] [archive_path]
@@ -38,6 +39,10 @@ case "${COMMAND}" in
   thread-attributes)
     shift
     php "${ROOT}/scripts/thread_attributes.php" "$@"
+    ;;
+  delete-thread-label)
+    shift
+    php "${ROOT}/scripts/delete_thread_label.php" "$@"
     ;;
   unicode-risk-backfill)
     shift

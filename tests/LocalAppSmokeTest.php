@@ -80,7 +80,7 @@ final class LocalAppSmokeTest
 
     public function testInjectApprovalScriptSeedsIdentity(): void
     {
-        [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
         $this->deleteDirectoryContents($repositoryRoot . '/records/approval-seeds');
 
         $command = sprintf(
@@ -147,6 +147,41 @@ final class LocalAppSmokeTest
         assertStringContains('Missing required argument: approver_identity_id.', $combinedOutput);
         assertStringContains('Usage:', $combinedOutput);
         assertStringNotContains('PHP Fatal error', $combinedOutput);
+    }
+
+    public function testDeleteThreadLabelCommandRemovesRecordCommitsAndRefreshesDerivedState(): void
+    {
+        [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $recordId = 'thread-label-20260530000001-zenrules';
+        $recordPath = $repositoryRoot . '/records/thread-labels/' . $recordId . '.txt';
+
+        $command = sprintf(
+            '%s delete-thread-label %s %s %s %s',
+            escapeshellarg(__DIR__ . '/../v3'),
+            escapeshellarg($recordId),
+            escapeshellarg($repositoryRoot),
+            escapeshellarg($databasePath),
+            escapeshellarg($artifactRoot),
+        );
+        exec($command, $output, $exitCode);
+
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $labels = $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id = 'thread-zenmemes-rules'")->fetchColumn();
+        exec(
+            sprintf('git -C %s log -1 --pretty=%%s', escapeshellarg($repositoryRoot)),
+            $gitLogOutput,
+            $gitLogExitCode,
+        );
+        $combinedOutput = implode("\n", $output);
+
+        assertSame(0, $exitCode);
+        assertFalse(is_file($recordPath));
+        assertSame('[]', $labels);
+        assertSame(0, $gitLogExitCode);
+        assertSame('Delete thread label ' . $recordId, $gitLogOutput[0] ?? '');
+        assertTrue(is_file($artifactRoot . '/threads/thread-zenmemes-rules.html'));
+        assertStringContains('Deleted thread-label record.', $combinedOutput);
+        assertStringContains('Rebuilt static artifacts:', $combinedOutput);
     }
 
     public function testApplicationRendersCoreRoutes(): void
