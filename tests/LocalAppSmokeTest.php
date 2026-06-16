@@ -403,7 +403,7 @@ final class LocalAppSmokeTest
         assertStringContains('data-role="app-version-banner"', $board);
         assertStringContains('Compose Thread', $composeThread);
         assertFingerprintedAsset($composeThread, 'browser_signing.js');
-        assertStringContains('Ready.', $composeThread);
+        assertStringContains('data-role="compose-identity-status" hidden', $composeThread);
         assertStringContains('data-action="submit-anonymous-compose"', $composeThread);
         assertStringContains('Bookmarklets', $bookmarklets);
         assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
@@ -412,7 +412,7 @@ final class LocalAppSmokeTest
         assertStringContains('Thread ID:', $composeReply);
         assertFingerprintedAsset($composeReply, 'browser_signing.js');
         assertStringNotContains('/assets/inline_reply_form.js', $composeReply);
-        assertStringContains('Ready.', $composeReply);
+        assertStringContains('data-role="compose-identity-status" hidden', $composeReply);
         assertStringContains('data-action="submit-anonymous-compose"', $composeReply);
         assertStringContains('Advanced / technical details', $account);
         assertStringContains('Set up this browser', $account);

@@ -1188,17 +1188,8 @@
     }
 
     return Array.from(scope.querySelectorAll(
-      '[data-role="compose-identity-status"], [data-role="browser-key-status"], [data-role="identity-prepare-status"]'
+      '[data-role="compose-identity-status"], [data-role="browser-key-status"]'
     ));
-  }
-
-  function identityPrepareButtons(root) {
-    const scope = root || document;
-    if (!scope || typeof scope.querySelectorAll !== "function") {
-      return [];
-    }
-
-    return Array.from(scope.querySelectorAll('[data-action="prepare-browser-identity"]'));
   }
 
   function identityStateMessage(state) {
@@ -1244,13 +1235,6 @@
     identityStatusNodes(root).forEach(function (node) {
       setStatus(node, message, config.kind || identityStateKind(state), { technicalDetails: technicalDetails });
     });
-
-    identityPrepareButtons(root).forEach(function (button) {
-      const isReady = state === "ready";
-      button.hidden = isReady;
-      button.disabled = Boolean(config.busy);
-      button.setAttribute("aria-busy", config.busy ? "true" : "false");
-    });
   }
 
   function scheduleIdentityPrewarm(root) {
@@ -1265,7 +1249,6 @@
       try {
         const loader = window.__forumOpenPgpLoader || null;
         if (loader && loader.ready && typeof loader.ready.then === "function") {
-          renderIdentityPreparationState(root, "loading_openpgp", { busy: false });
           await loader.ready;
         }
         markActionTiming(timing, "forum_openpgp_ready");
@@ -1279,8 +1262,6 @@
           if (identityId !== "") {
             void syncIdentityHint(identityId).catch(function () {});
           }
-
-          renderIdentityPreparationState(root, identityPreparationState());
         }
 
         completeActionTiming(timing, "ok");
@@ -1714,7 +1695,6 @@
     const fieldNormalizationStatusNodes = form ? Array.from(root.querySelectorAll('[data-role="compose-field-normalization-status"]')) : [];
     const removeUnsupportedButtons = form ? Array.from(root.querySelectorAll('[data-action="remove-unsupported-compose-characters"]')) : [];
     const clearFieldsButtons = form ? Array.from(root.querySelectorAll('[data-action="clear-compose-fields"]')) : [];
-    const prepareIdentityButtons = Array.from(root.querySelectorAll('[data-action="prepare-browser-identity"]'));
     const normalizationStatusNode = root.querySelector('[data-role="compose-normalization-status"]');
     const normalizationMessageNode = root.querySelector('[data-role="compose-normalization-message"]');
     if (!form) {
@@ -1952,39 +1932,6 @@
       return Boolean(submitter && submitter.dataset && submitter.dataset.action === "submit-anonymous-compose");
     }
 
-    let prepareIdentityInFlight = false;
-    async function prepareComposeIdentity() {
-      if (prepareIdentityInFlight) {
-        return;
-      }
-
-      prepareIdentityInFlight = true;
-      const timing = startActionTiming("identity_prepare_compose");
-      let succeeded = false;
-      renderIdentityPreparationState(root, identityPreparationState(), { busy: true });
-      try {
-        await ensureComposeIdentity(root, statusNode, timing);
-        ensureComposeAuthorIdentity(form);
-        succeeded = true;
-        markActionTiming(timing, "forum_prepare_complete");
-        completeActionTiming(timing, "ok");
-        renderIdentityPreparationState(root, "ready", { message: "Browser identity ready." });
-      } catch (error) {
-        timing.errorKind = error instanceof Error && error.name ? error.name : "error";
-        const status = statusFromError(error, "Unable to prepare your browser identity. Use /account/key/ manually.");
-        renderIdentityPreparationState(root, "failed", {
-          message: status.message,
-          technicalDetails: status.technicalDetails,
-        });
-        completeActionTiming(timing, "error");
-      } finally {
-        prepareIdentityInFlight = false;
-        if (succeeded && identityPreparationState() !== "ready") {
-          renderIdentityPreparationState(root, identityPreparationState(), { busy: false });
-        }
-      }
-    }
-
     async function submitOptimisticReply(timing) {
       const fields = collectReplySubmitFields(form);
       const operationKey = beginPendingReplyOperation(form, fields);
@@ -2118,15 +2065,6 @@
     clearFieldsButtons.forEach(function (button) {
       button.addEventListener("click", clearComposeFields);
     });
-
-    prepareIdentityButtons.forEach(function (button) {
-      button.addEventListener("click", function (event) {
-        event.preventDefault();
-        void prepareComposeIdentity();
-      });
-    });
-
-    renderIdentityPreparationState(root, identityPreparationState());
 
     let submitInFlight = false;
     form.addEventListener("submit", async function (event) {

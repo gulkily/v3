@@ -78,10 +78,6 @@ if (!is_array($postAnalysisLabels)) {
       aria-pressed="<?= $viewerHasFlaggedPost ? 'true' : 'false' ?>"
 <?= $viewerHasFlaggedPost ? ' disabled="disabled"' : '' ?>
     ><?= $viewerHasFlaggedPost ? 'Flagged' : 'Flag' ?></button>
-    <p class="meta thread-reaction-feedback" data-role="identity-prepare-status" hidden></p>
-    <p class="meta thread-reaction-feedback">
-      <button type="button" data-action="prepare-browser-identity">Prepare browser identity</button>
-    </p>
     <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
     <p class="meta agent-reply-feedback" data-role="agent-reply-feedback" hidden></p>
 <?php if (is_array($postAnalysis) && ($postAnalysis['status'] ?? '') === 'complete'): ?>

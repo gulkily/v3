@@ -203,6 +203,76 @@ Acceptance:
 - tests cover both explicit prepare and direct first-action identity setup
 - non-JavaScript compose and account-key flows remain available
 
+### Slice 5I-G: Quiet Prewarm and No Standalone Prepare UI
+
+Goal:
+
+- keep identity prewarm invisible during normal page load and remove the explicit `Prepare browser identity` controls
+
+Problem:
+
+- `/compose/thread` can show `Loading browser identity tools...` and leave the compose form looking like an identity workflow instead of a normal compose form
+- thread pages can show persistent `Browser identity ready.` text even when the user has not clicked a signed action
+- the explicit `Prepare browser identity` button adds UI weight without matching the desired product feel
+
+Work:
+
+- remove `Prepare browser identity` buttons from:
+  - `templates/pages/compose_thread.php`
+  - `templates/pages/compose_reply.php`
+  - inline reply composer in `templates/pages/thread.php`
+  - reaction areas in `templates/partials/thread_root_card.php`
+  - reaction areas in `templates/partials/post_card.php`
+- keep idle OpenPGP prewarm and saved-key fingerprint/hint sync, but make it silent:
+  - do not call `setStatus()` or `renderIdentityPreparationState()` from idle prewarm
+  - do not reveal `compose-identity-status`, `identity-prepare-status`, `thread-reaction-feedback`, or `post-reaction-feedback` for prewarm-only states
+  - keep timing marks and debug logs opt-in only
+- keep status messages only for user-initiated signed actions:
+  - signed compose submit
+  - signed reaction click
+  - account-key page actions
+- after successful inline identity setup for a signed action, clear or hide transient identity status once the action moves into its own visible pending state, such as `Creating thread...`, `Posting reply...`, or `Saving tag...`
+- remove now-unused explicit prepare click handlers and tests, while preserving direct first-action setup behavior
+
+Acceptance:
+
+- fresh `/compose/thread` renders with no identity-loading or identity-ready message at rest
+- fresh thread pages render with no persistent `Browser identity ready.` message at rest
+- no `Prepare browser identity` button appears on compose, inline reply, thread root, or reply cards
+- OpenPGP prewarm still runs silently on signed-action pages
+- first signed submit/click still shows immediate identity-preparation progress if identity setup is needed
+- anonymous compose submit paths remain visible and unchanged
+
+### Slice 5I-H: Back Button Optimistic Compose Cleanup
+
+Goal:
+
+- prevent stale optimistic compose artifacts from remaining visible when the user returns with the browser Back button
+
+Problem:
+
+- after an optimistic thread creation, returning to `/compose/thread` with Back can show the pre-rendered pending/new post shell that was inserted before navigation
+- stale pending compose UI makes the user think the old operation is still active or that the form contains server-confirmed content
+
+Work:
+
+- audit `pageshow` handling in `browser_signing.js` for bfcache restores after optimistic thread/reply navigation
+- on `pageshow`, remove any optimistic-only DOM nodes created by:
+  - `createPendingThreadShell()`
+  - `createPendingReplyCard()`
+- clear pending operation keys from form datasets and in-memory sets
+- restore submit buttons and compose normalization state
+- keep draft-clearing behavior from `forum_recently_cleared_compose_draft` intact for confirmed submissions
+- do not clear authored fields unless the existing successful-submit draft-clear marker applies
+
+Acceptance:
+
+- after successful optimistic thread creation and Back navigation, `/compose/thread` does not show the previously inserted pending thread shell
+- after successful optimistic inline reply and Back navigation, the thread page does not show the previously inserted pending reply card
+- failed submissions still restore recoverable draft text
+- successful submissions still clear drafts according to the existing recently-cleared draft marker
+- tests cover `pageshow` cleanup for pending thread shells and pending reply cards
+
 ## Reconciliation Strategy
 
 Initial recommendation:
@@ -254,6 +324,7 @@ Manual checks:
 - 2026-06-16: Slice 5I-D complete - added reaction-area `Prepare browser identity` controls for thread roots and replies, bound them through `thread_reactions.js` to identity preparation without applying tags, and kept failure feedback reversible. Verification: `node --check public/assets/browser_signing.js`; `node --check public/assets/thread_reactions.js`; `php -l templates/partials/thread_root_card.php`; `php -l templates/partials/post_card.php`.
 - 2026-06-16: Slice 5I-E complete - threaded browser-safe timing marks through username prompt, key generation, identity linking, identity-hint sync, explicit prepare, direct compose setup, and direct reaction setup; expanded opt-in debug payloads with identity subphase durations. Verification: `node --check public/assets/browser_signing.js`; `node --check public/assets/thread_reactions.js`.
 - 2026-06-16: Slice 5I-F complete - added browser-script coverage proving idle prewarm does not generate/link identities and reaction prepare does not apply tags, updated timing expectations for identity-hint marks, and kept legacy reaction fixtures compatible. Verification: `node --check public/assets/browser_signing.js`; `node --check public/assets/thread_reactions.js`; `php -l templates/pages/compose_thread.php`; `php -l templates/pages/compose_reply.php`; `php -l templates/pages/thread.php`; `php -l templates/partials/thread_root_card.php`; `php -l templates/partials/post_card.php`; `php tests/run.php`.
+- 2026-06-16: Slice 5I-G complete - removed standalone `Prepare browser identity` controls, made compose identity status nodes hidden at rest, removed reaction prepare handlers, and kept idle OpenPGP prewarm silent while preserving user-initiated signed-action progress. Verification: `node --check public/assets/browser_signing.js`; `node --check public/assets/thread_reactions.js`; PHP syntax checks for changed templates and partials; `php tests/run.php`.
 
 ## Open Questions
 

@@ -3,10 +3,7 @@
     <h1>Compose Thread</h1>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
     <p>Posts are stored as canonical text files and the SQLite read model rebuilds immediately.</p>
-    <p class="meta" data-role="compose-identity-status">Ready.</p>
-    <p class="meta">
-      <button type="button" data-action="prepare-browser-identity">Prepare browser identity</button>
-    </p>
+    <p class="meta" data-role="compose-identity-status" hidden></p>
     <form method="post" class="stack" data-compose-form data-compose-kind="thread">
       <input type="hidden" name="author_identity_id" value="">
       <label>Board tags<input type="text" name="board_tags" value="<?= $e($boardTags) ?>"></label>
