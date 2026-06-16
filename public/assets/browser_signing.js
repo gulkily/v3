@@ -1123,6 +1123,117 @@
     );
   }
 
+  function storedFingerprint() {
+    return (localStorage.getItem(storageKeys.fingerprint) || "")
+      .trim()
+      .toUpperCase();
+  }
+
+  function publishedFingerprint() {
+    return (localStorage.getItem(storageKeys.publishedFingerprint) || "")
+      .trim()
+      .toUpperCase();
+  }
+
+  function identityPreparationState() {
+    const hasKeypair = hasBrowserKeypair();
+    const fingerprint = storedFingerprint();
+    const published = publishedFingerprint();
+
+    if (!hasKeypair) {
+      return "needs_consent";
+    }
+
+    if (fingerprint === "") {
+      return "needs_fingerprint";
+    }
+
+    if (published !== fingerprint) {
+      return "needs_publish";
+    }
+
+    return "ready";
+  }
+
+  function pageHasSignedActionSurfaces(root) {
+    const scope = root || document;
+    return Boolean(scope && typeof scope.querySelector === "function" && scope.querySelector(
+      "[data-compose-root], [data-thread-reactions-root], .post-card[data-post-id]"
+    ));
+  }
+
+  function identityStatusNodes(root) {
+    const scope = root || document;
+    if (!scope || typeof scope.querySelectorAll !== "function") {
+      return [];
+    }
+
+    return Array.from(scope.querySelectorAll(
+      '[data-role="compose-identity-status"], [data-role="browser-key-status"], [data-role="identity-prepare-status"]'
+    ));
+  }
+
+  function identityPrepareButtons(root) {
+    const scope = root || document;
+    if (!scope || typeof scope.querySelectorAll !== "function") {
+      return [];
+    }
+
+    return Array.from(scope.querySelectorAll('[data-action="prepare-browser-identity"]'));
+  }
+
+  function identityStateMessage(state) {
+    switch (state) {
+      case "loading_openpgp":
+        return "Loading browser identity tools...";
+      case "needs_consent":
+        return "Prepare a browser identity before signed actions.";
+      case "needs_fingerprint":
+        return "Finishing saved browser identity...";
+      case "needs_publish":
+        return "Publish your browser identity before signed actions.";
+      case "generating":
+        return "Generating browser keypair...";
+      case "publishing":
+        return "Publishing your public key in the background...";
+      case "ready":
+        return "Browser identity ready.";
+      case "failed":
+        return "Unable to prepare your browser identity.";
+      case "idle":
+      default:
+        return "Ready.";
+    }
+  }
+
+  function identityStateKind(state) {
+    if (state === "ready") {
+      return "ok";
+    }
+
+    if (state === "failed") {
+      return "error";
+    }
+
+    return "info";
+  }
+
+  function renderIdentityPreparationState(root, state, options) {
+    const config = options || {};
+    const message = config.message || identityStateMessage(state);
+    const technicalDetails = typeof config.technicalDetails === "string" ? config.technicalDetails : "";
+    identityStatusNodes(root).forEach(function (node) {
+      setStatus(node, message, config.kind || identityStateKind(state), { technicalDetails: technicalDetails });
+    });
+
+    identityPrepareButtons(root).forEach(function (button) {
+      const isReady = state === "ready";
+      button.hidden = isReady;
+      button.disabled = Boolean(config.busy);
+      button.setAttribute("aria-busy", config.busy ? "true" : "false");
+    });
+  }
+
   function renderSavedState(root) {
     const publicKey = localStorage.getItem(storageKeys.publicKey) || "";
     const privateKey = localStorage.getItem(storageKeys.privateKey) || "";
@@ -1368,6 +1479,9 @@
       currentAuthorIdentityId: currentAuthorIdentityId,
       ensureReadyIdentity: ensureReadyIdentity,
       hasBrowserKeypair: hasBrowserKeypair,
+      identityPreparationState: identityPreparationState,
+      pageHasSignedActionSurfaces: pageHasSignedActionSurfaces,
+      renderIdentityPreparationState: renderIdentityPreparationState,
       classifyIdentityBootstrapFailure: classifyIdentityBootstrapFailure,
       statusFromError: statusFromError,
       ensureOpenPgpApi: ensureOpenPgpApi,
