@@ -249,6 +249,7 @@ Manual checks:
 ## Implementation Log
 
 - 2026-06-16: Slice 5I-A complete - added browser identity preparation state classification, signed-surface discovery, shared status-node and prepare-button rendering helpers, and exported test hooks under `window.__forumBrowserIdentity`. Verification: `node --check public/assets/browser_signing.js`.
+- 2026-06-16: Slice 5I-B complete - added idle identity prewarm on signed-action pages, OpenPGP loader timing marks, saved-key fingerprint completion, and background identity-hint sync without key generation or `/api/link_identity`. Verification: `node --check public/assets/browser_signing.js`.
 
 ## Open Questions
 

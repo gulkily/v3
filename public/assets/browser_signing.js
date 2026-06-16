@@ -13,6 +13,7 @@
   let clearedKeypairBackup = null;
   const pendingReplyOperations = new Set();
   const pendingThreadOperations = new Set();
+  let identityPrewarmStarted = false;
 
   function browserPerformance() {
     return typeof window !== "undefined" && window.performance && typeof window.performance.mark === "function"
@@ -114,6 +115,15 @@
       server_timing: timing.serverTiming || {},
       error_kind: timing.errorKind || (status === "error" || status === "validation_error" ? status : ""),
     });
+  }
+
+  function requestIdle(callback) {
+    if (typeof window !== "undefined" && typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(callback, { timeout: 2000 });
+      return;
+    }
+
+    window.setTimeout(callback, 0);
   }
 
   const ASCII_COMPOSE_REPLACEMENTS = new Map([
@@ -1234,6 +1244,47 @@
     });
   }
 
+  function scheduleIdentityPrewarm(root) {
+    if (identityPrewarmStarted || !pageHasSignedActionSurfaces(root)) {
+      return false;
+    }
+
+    identityPrewarmStarted = true;
+    requestIdle(async function () {
+      const timing = startActionTiming("identity_prewarm");
+      markActionTiming(timing, "forum_identity_prewarm_start");
+      try {
+        const loader = window.__forumOpenPgpLoader || null;
+        if (loader && loader.ready && typeof loader.ready.then === "function") {
+          renderIdentityPreparationState(root, "loading_openpgp", { busy: false });
+          await loader.ready;
+        }
+        markActionTiming(timing, "forum_openpgp_ready");
+
+        if (hasBrowserKeypair()) {
+          if (storedFingerprint() === "") {
+            await ensureStoredFingerprint();
+          }
+
+          const identityId = currentAuthorIdentityId();
+          if (identityId !== "") {
+            void syncIdentityHint(identityId).catch(function () {});
+          }
+
+          renderIdentityPreparationState(root, identityPreparationState());
+        }
+
+        completeActionTiming(timing, "ok");
+      } catch (error) {
+        markActionTiming(timing, "forum_openpgp_failed");
+        timing.errorKind = error instanceof Error && error.name ? error.name : "error";
+        completeActionTiming(timing, "error");
+      }
+    });
+
+    return true;
+  }
+
   function renderSavedState(root) {
     const publicKey = localStorage.getItem(storageKeys.publicKey) || "";
     const privateKey = localStorage.getItem(storageKeys.privateKey) || "";
@@ -1482,6 +1533,7 @@
       identityPreparationState: identityPreparationState,
       pageHasSignedActionSurfaces: pageHasSignedActionSurfaces,
       renderIdentityPreparationState: renderIdentityPreparationState,
+      scheduleIdentityPrewarm: scheduleIdentityPrewarm,
       classifyIdentityBootstrapFailure: classifyIdentityBootstrapFailure,
       statusFromError: statusFromError,
       ensureOpenPgpApi: ensureOpenPgpApi,
@@ -2089,6 +2141,8 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    scheduleIdentityPrewarm(document);
+
     const accountRoot = document.querySelector("[data-account-key-root]");
     if (accountRoot) {
       bindAccountKeyPage(accountRoot);
