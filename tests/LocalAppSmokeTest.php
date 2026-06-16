@@ -80,7 +80,7 @@ final class LocalAppSmokeTest
 
     public function testInjectApprovalScriptSeedsIdentity(): void
     {
-        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
         $this->deleteDirectoryContents($repositoryRoot . '/records/approval-seeds');
 
         $command = sprintf(
@@ -149,16 +149,17 @@ final class LocalAppSmokeTest
         assertStringNotContains('PHP Fatal error', $combinedOutput);
     }
 
-    public function testDeleteThreadLabelCommandRemovesRecordCommitsAndRefreshesDerivedState(): void
+    public function testDeleteRecordCommandRemovesRecordCommitsAndRefreshesDerivedState(): void
     {
-        [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
         $recordId = 'thread-label-20260530000001-zenrules';
-        $recordPath = $repositoryRoot . '/records/thread-labels/' . $recordId . '.txt';
+        $relativePath = 'records/thread-labels/' . $recordId . '.txt';
+        $recordPath = $repositoryRoot . '/' . $relativePath;
 
         $command = sprintf(
-            '%s delete-thread-label %s %s %s %s',
+            '%s delete-record %s %s %s %s',
             escapeshellarg(__DIR__ . '/../v3'),
-            escapeshellarg($recordId),
+            escapeshellarg($relativePath),
             escapeshellarg($repositoryRoot),
             escapeshellarg($databasePath),
             escapeshellarg($artifactRoot),
@@ -178,9 +179,9 @@ final class LocalAppSmokeTest
         assertFalse(is_file($recordPath));
         assertSame('[]', $labels);
         assertSame(0, $gitLogExitCode);
-        assertSame('Delete thread label ' . $recordId, $gitLogOutput[0] ?? '');
+        assertSame('Delete canonical record ' . $relativePath, $gitLogOutput[0] ?? '');
         assertTrue(is_file($artifactRoot . '/threads/thread-zenmemes-rules.html'));
-        assertStringContains('Deleted thread-label record.', $combinedOutput);
+        assertStringContains('Deleted canonical record.', $combinedOutput);
         assertStringContains('Rebuilt static artifacts:', $combinedOutput);
     }
 
