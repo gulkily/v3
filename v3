@@ -10,6 +10,7 @@ Usage:
   ./v3 start [host:port]
   ./v3 test
   ./v3 rebuild [repository_root] [database_path]
+  ./v3 thread-attributes <thread_id> [repository_root] [database_path]
   ./v3 unicode-risk-backfill [repository_root] [database_path] [--with-llm]
   ./v3 build-static [repository_root] [database_path] [artifact_root]
   ./v3 archive-thread <thread_id> [repository_root] [database_path] [artifact_root] [archive_path]
@@ -33,6 +34,10 @@ case "${COMMAND}" in
   rebuild)
     shift
     php "${ROOT}/scripts/rebuild_read_model.php" "$@"
+    ;;
+  thread-attributes)
+    shift
+    php "${ROOT}/scripts/thread_attributes.php" "$@"
     ;;
   unicode-risk-backfill)
     shift
