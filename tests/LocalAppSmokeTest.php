@@ -86,7 +86,7 @@ final class LocalAppSmokeTest
         $command = sprintf(
             '%s approval seed %s %s %s %s',
             escapeshellarg(__DIR__ . '/../v3'),
-            escapeshellarg('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'),
+            escapeshellarg('openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'),
             escapeshellarg('script seeded approval'),
             escapeshellarg($repositoryRoot),
             escapeshellarg($databasePath),
@@ -118,8 +118,8 @@ final class LocalAppSmokeTest
         $command = sprintf(
             '%s approval approve %s %s %s %s %s',
             escapeshellarg(__DIR__ . '/../v3'),
-            escapeshellarg('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'),
-            escapeshellarg($targetIdentityId),
+            escapeshellarg('openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'),
+            escapeshellarg(str_replace('openpgp:', 'openpgp-', $targetIdentityId)),
             escapeshellarg($repositoryRoot),
             escapeshellarg($databasePath),
             escapeshellarg($artifactRoot),

@@ -21,7 +21,7 @@ try {
     }
 
     if ($command === 'seed') {
-        $identityId = requireCliArgument($argv, 2, 'identity_id');
+        $identityId = normalizeCliIdentityId(requireCliArgument($argv, 2, 'identity_id'));
         $seedReason = trim((string) ($argv[3] ?? 'initial approved user'));
         $repositoryRoot = $argv[4] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $defaultRepositoryRoot);
         $databasePath = $argv[5] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3'));
@@ -31,8 +31,8 @@ try {
         exit(0);
     }
 
-    $approverIdentityId = requireCliArgument($argv, 2, 'approver_identity_id');
-    $targetIdentityId = requireCliArgument($argv, 3, 'target_identity_id');
+    $approverIdentityId = normalizeCliIdentityId(requireCliArgument($argv, 2, 'approver_identity_id'));
+    $targetIdentityId = normalizeCliIdentityId(requireCliArgument($argv, 3, 'target_identity_id'));
     $repositoryRoot = $argv[4] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $defaultRepositoryRoot);
     $databasePath = $argv[5] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3'));
     $artifactRoot = $argv[6] ?? (getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'));
@@ -179,9 +179,14 @@ function usageText(): string
 
 function normalizeIdentityId(string $identityId): string
 {
-    if (preg_match('/^openpgp:([a-f0-9]{40})$/', $identityId, $matches) !== 1) {
-        throw new RuntimeException('Identity ID must use the retained openpgp lowercase fingerprint form.');
+    if (preg_match('/^openpgp[:-]([a-f0-9]{40})$/', $identityId, $matches) !== 1) {
+        throw new RuntimeException('Identity ID must use the retained openpgp fingerprint form.');
     }
 
     return $matches[1];
+}
+
+function normalizeCliIdentityId(string $identityId): string
+{
+    return 'openpgp:' . normalizeIdentityId(strtolower($identityId));
 }

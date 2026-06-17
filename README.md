@@ -141,8 +141,8 @@ Approval helper examples:
 
 ```bash
 ./v3 start
-./v3 approval seed openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954
-./v3 approval approve openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954 openpgp:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+./v3 approval seed openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954
+./v3 approval approve openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954 openpgp-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ```
 
 ## Tests
