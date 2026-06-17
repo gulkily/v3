@@ -12,6 +12,7 @@ use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecord;
 use ForumRewrite\ReadModel\ReadModelConnection;
+use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 $projectRoot = dirname(__DIR__);
@@ -63,24 +64,7 @@ if (!$root->isRoot()) {
     exit(1);
 }
 
-$replyPaths = [];
-foreach (glob($repositoryRoot . '/records/posts/*.txt') ?: [] as $path) {
-    $relativePath = repositoryRelativePath($repositoryRoot, $path);
-    if ($relativePath === $rootPath) {
-        continue;
-    }
-
-    try {
-        $post = $repository->loadPost($relativePath);
-    } catch (Throwable) {
-        continue;
-    }
-
-    if ($post->threadId === $threadId) {
-        $replyPaths[] = $relativePath;
-    }
-}
-sort($replyPaths);
+$replyPaths = loadReplyPaths($repositoryRoot, $repository, $databasePath, $threadId, $rootPath);
 
 $labelRecords = loadThreadLabelRecords($repositoryRoot, $repository, $threadId);
 $effectiveLabels = effectiveLabels($labelRecords);
@@ -183,6 +167,27 @@ function resolveTargetInfo(string $repositoryRoot, CanonicalRecordRepository $re
         return loadTargetInfo($repositoryRoot, $repository, $relativePath);
     }
 
+    foreach (candidateRecordPaths($target) as $relativePath) {
+        if (is_file($repositoryRoot . '/' . $relativePath)) {
+            $matches[] = $relativePath;
+        }
+    }
+
+    $matches = array_values(array_unique($matches));
+    sort($matches);
+
+    if (count($matches) > 1) {
+        fwrite(STDERR, "Ambiguous target: {$target}\n");
+        foreach ($matches as $match) {
+            fwrite(STDERR, "  {$match}\n");
+        }
+        exit(1);
+    }
+
+    if ($matches !== []) {
+        return loadTargetInfo($repositoryRoot, $repository, $matches[0]);
+    }
+
     foreach (recordFiles($repositoryRoot) as $relativePath) {
         $stem = preg_replace('/\.(txt|asc)$/', '', basename($relativePath));
         if ($stem === $target) {
@@ -191,7 +196,7 @@ function resolveTargetInfo(string $repositoryRoot, CanonicalRecordRepository $re
     }
 
     foreach (candidateRecordPaths($target) as $relativePath) {
-        if (is_file($repositoryRoot . '/' . $relativePath) || readHistoricalRecord($repositoryRoot, $relativePath) !== null) {
+        if (readHistoricalRecord($repositoryRoot, $relativePath) !== null) {
             $matches[] = $relativePath;
         }
     }
@@ -476,12 +481,99 @@ function runCommand(string $command): array
 }
 
 /**
+ * @return list<string>
+ */
+function loadReplyPaths(
+    string $repositoryRoot,
+    CanonicalRecordRepository $repository,
+    string $databasePath,
+    string $threadId,
+    string $rootPath
+): array
+{
+    $readModelReplyPaths = loadReadModelReplyPaths($repositoryRoot, $databasePath, $threadId);
+    if ($readModelReplyPaths !== null) {
+        return $readModelReplyPaths;
+    }
+
+    $replyPaths = [];
+    foreach (glob($repositoryRoot . '/records/posts/*.txt') ?: [] as $path) {
+        $relativePath = repositoryRelativePath($repositoryRoot, $path);
+        if ($relativePath === $rootPath) {
+            continue;
+        }
+
+        if (postHeaderThreadId($path) !== $threadId) {
+            continue;
+        }
+
+        try {
+            $post = $repository->loadPost($relativePath);
+        } catch (Throwable) {
+            continue;
+        }
+
+        if ($post->threadId === $threadId) {
+            $replyPaths[] = $relativePath;
+        }
+    }
+    sort($replyPaths);
+
+    return $replyPaths;
+}
+
+/**
+ * @return list<string>|null
+ */
+function loadReadModelReplyPaths(string $repositoryRoot, string $databasePath, string $threadId): ?array
+{
+    if (!isReadModelUsableForThreadAttributes($repositoryRoot, $databasePath, $threadId)) {
+        return null;
+    }
+
+    try {
+        $pdo = (new ReadModelConnection($databasePath))->open();
+        $stmt = $pdo->prepare(
+            'SELECT post_id
+             FROM posts
+             WHERE thread_id = :thread_id AND post_id <> :thread_id
+             ORDER BY sequence_number ASC'
+        );
+        $stmt->execute(['thread_id' => $threadId]);
+        $rows = $stmt->fetchAll();
+    } catch (Throwable) {
+        return null;
+    }
+
+    $paths = [];
+    foreach ($rows as $row) {
+        $postId = (string) ($row['post_id'] ?? '');
+        if ($postId === '') {
+            return null;
+        }
+
+        $relativePath = CanonicalPathResolver::post($postId);
+        if (!is_file($repositoryRoot . '/' . $relativePath)) {
+            return null;
+        }
+
+        $paths[] = $relativePath;
+    }
+
+    return $paths;
+}
+
+/**
  * @return list<array{path:string,record:ThreadLabelRecord}>
  */
 function loadThreadLabelRecords(string $repositoryRoot, CanonicalRecordRepository $repository, string $threadId): array
 {
     $entries = [];
     foreach (glob($repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
+        if (threadLabelHeaderThreadId($path) !== $threadId) {
+            continue;
+        }
+
         $relativePath = repositoryRelativePath($repositoryRoot, $path);
 
         try {
@@ -508,6 +600,66 @@ function loadThreadLabelRecords(string $repositoryRoot, CanonicalRecordRepositor
     });
 
     return $entries;
+}
+
+function postHeaderThreadId(string $path): ?string
+{
+    return recordHeaderValue($path, 'Thread-ID');
+}
+
+function threadLabelHeaderThreadId(string $path): ?string
+{
+    return recordHeaderValue($path, 'Thread-ID');
+}
+
+function recordHeaderValue(string $path, string $headerName): ?string
+{
+    $handle = @fopen($path, 'rb');
+    if ($handle === false) {
+        return null;
+    }
+
+    try {
+        $prefix = $headerName . ':';
+        while (($line = fgets($handle)) !== false) {
+            $line = rtrim($line, "\r\n");
+            if ($line === '') {
+                return null;
+            }
+
+            if (str_starts_with($line, $prefix)) {
+                return trim(substr($line, strlen($prefix)));
+            }
+        }
+    } finally {
+        fclose($handle);
+    }
+
+    return null;
+}
+
+function isReadModelUsableForThreadAttributes(string $repositoryRoot, string $databasePath, string $threadId): bool
+{
+    if (!is_file($databasePath)) {
+        return false;
+    }
+
+    try {
+        $pdo = (new ReadModelConnection($databasePath))->open();
+        $thread = $pdo->prepare('SELECT 1 FROM threads WHERE root_post_id = :thread_id');
+        $thread->execute(['thread_id' => $threadId]);
+        if ($thread->fetchColumn() === false) {
+            return false;
+        }
+
+        $metadata = $pdo->prepare('SELECT value FROM metadata WHERE key = :key');
+        $metadata->execute(['key' => 'repository_head']);
+        $indexedHead = $metadata->fetchColumn();
+    } catch (Throwable) {
+        return false;
+    }
+
+    return is_string($indexedHead) && trim($indexedHead) === ReadModelMetadata::repositoryHead($repositoryRoot);
 }
 
 /**
