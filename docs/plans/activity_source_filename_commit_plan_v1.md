@@ -80,6 +80,7 @@ For first implementation:
 ## Risks And Decisions
 - Full rebuild git lookups may be slow on large repositories if done one path at a time. Cache results at minimum; batch lookup can be considered later if profiling shows a problem.
 - `source_commit_sha` needs a clear meaning. This plan uses the latest commit touching the source file for rebuilds, and the write commit SHA for incremental writes.
+- Production hotfix note: full rebuilds now use the repository head for rebuilt source rows instead of running one `git log` per source file. This keeps file-at-commit links valid for current canonical files and avoids holding the global execution lock across many per-file git scans during deploy-time schema rebuilds. Incremental writes still use the exact write commit SHA.
 - Thread-label activity needs extra source metadata before insertion. Without preserving `recordId`, label items can only point to the thread, not to the canonical label record.
 - In no-git fixture environments, the UI should avoid presenting `no-git` as a real commit hash. A label like `commit unavailable` is preferable if the value is `no-git`, `git-error`, or null.
 

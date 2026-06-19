@@ -2426,7 +2426,8 @@ final class WriteApiSmokeTest
 
     private function normalizeRenderedPage(string $html): string
     {
-        return preg_replace('/[a-f0-9]{40}/', 'COMMIT_SHA', $html) ?? $html;
+        $normalized = preg_replace('/[a-f0-9]{40}/', 'COMMIT_SHA', $html) ?? $html;
+        return preg_replace('#(href="/source/commits/COMMIT_SHA" title="COMMIT_SHA">)[a-f0-9]{12}(</a>)#', '$1SHORT_COMMIT_SHA$2', $normalized) ?? $normalized;
     }
 
     private function copyDirectory(string $source, string $destination): void

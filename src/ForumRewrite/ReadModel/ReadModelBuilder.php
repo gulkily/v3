@@ -23,8 +23,7 @@ final class ReadModelBuilder
     private int $invalidThreadLabelRecordCount = 0;
     /** @var array<int, array{created_at:string,thread_id:string,author_identity_id:?string,labels_added:list<string>,source_path:string,source_commit_sha:?string}> */
     private array $threadLabelActivityEvents = [];
-    /** @var array<string, ?string> */
-    private array $sourceCommitShaByPath = [];
+    private ?string $sourceCommitShaForRebuild = null;
 
     public function __construct(
         private readonly string $repositoryRoot,
@@ -47,7 +46,7 @@ final class ReadModelBuilder
         $this->timings = [];
         $this->invalidThreadLabelRecordCount = 0;
         $this->threadLabelActivityEvents = [];
-        $this->sourceCommitShaByPath = [];
+        $this->sourceCommitShaForRebuild = null;
         $pdo->beginTransaction();
         try {
             $this->measure('drop_schema', fn (): mixed => $this->dropSchema($pdo));
@@ -772,32 +771,11 @@ final class ReadModelBuilder
 
     private function sourceCommitShaForPath(string $relativePath): ?string
     {
-        if (array_key_exists($relativePath, $this->sourceCommitShaByPath)) {
-            return $this->sourceCommitShaByPath[$relativePath];
+        if ($this->sourceCommitShaForRebuild === null) {
+            $this->sourceCommitShaForRebuild = ReadModelMetadata::repositoryHead($this->repositoryRoot);
         }
 
-        if (!is_dir($this->repositoryRoot . '/.git')) {
-            $this->sourceCommitShaByPath[$relativePath] = 'no-git';
-            return $this->sourceCommitShaByPath[$relativePath];
-        }
-
-        $command = sprintf(
-            'git -C %s log -1 --format=%%H -- %s 2>&1',
-            escapeshellarg($this->repositoryRoot),
-            escapeshellarg($relativePath)
-        );
-        $output = [];
-        $exitCode = 0;
-        exec($command, $output, $exitCode);
-        if ($exitCode !== 0) {
-            $this->sourceCommitShaByPath[$relativePath] = 'git-error';
-            return $this->sourceCommitShaByPath[$relativePath];
-        }
-
-        $sha = trim(implode("\n", $output));
-        $this->sourceCommitShaByPath[$relativePath] = $sha !== '' ? $sha : null;
-
-        return $this->sourceCommitShaByPath[$relativePath];
+        return $this->sourceCommitShaForRebuild;
     }
 
     /**
