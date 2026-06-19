@@ -18,8 +18,6 @@
     <p><?= $e($item['label']) ?></p>
 <?php if ((string) ($item['author_label'] ?? '') === 'reply-agent'): ?>
     <p class="meta">Author: reply-agent <span class="agent-label">automated reply agent</span></p>
-<?php elseif ((string) ($item['author_label'] ?? '') !== ''): ?>
-    <p class="meta">Author: <?= $e($item['author_label']) ?></p>
 <?php endif; ?>
 <?php $sourcePath = (string) ($item['source_path'] ?? ''); ?>
 <?php $sourceCommit = (string) ($item['source_commit_sha'] ?? ''); ?>
