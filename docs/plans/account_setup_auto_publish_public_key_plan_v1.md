@@ -134,3 +134,4 @@ Acceptance:
 ## Implementation Log
 
 - 2026-06-19: Slice A implemented on branch `account-setup-auto-publish-public-key`. The Account page generate-button path now calls `publishPublicKeyWithRetry()` after key generation, keeps the advanced public-key field populated, and reports linked success only after publication completes.
+- 2026-06-19: Slice B implemented. Generating a new browser keypair now clears `forum_pki_published_fingerprint` before any publish attempt, so replacement setup cannot inherit stale publication state from the previous keypair.

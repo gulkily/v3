@@ -1410,6 +1410,7 @@
     localStorage.setItem(storageKeys.publicKey, result.publicKey);
     localStorage.setItem(storageKeys.privateKey, result.privateKey);
     localStorage.setItem(storageKeys.fingerprint, fingerprint);
+    localStorage.removeItem(storageKeys.publishedFingerprint);
     clearClearedKeypairBackup();
     await syncIdentityHint(preferredIdentityHint(), timing);
     renderSavedState(root);
