@@ -33,14 +33,16 @@
 <?php else: ?>
       <span><?= $e($sourcePath) ?></span>
 <?php endif; ?>
+    </p>
+    <p class="meta">Commit:
 <?php if (!$sourceCommitIsUnavailable): ?>
 <?php if ($sourceCommitHref !== ''): ?>
-      <a href="<?= $e($sourceCommitHref) ?>" title="<?= $e($sourceCommit) ?>">@ <?= $e(substr($sourceCommit, 0, 12)) ?></a>
+      <a href="<?= $e($sourceCommitHref) ?>" title="<?= $e($sourceCommit) ?>"><?= $e(substr($sourceCommit, 0, 12)) ?></a>
 <?php else: ?>
-      <span title="<?= $e($sourceCommit) ?>">@ <?= $e(substr($sourceCommit, 0, 12)) ?></span>
+      <span title="<?= $e($sourceCommit) ?>"><?= $e(substr($sourceCommit, 0, 12)) ?></span>
 <?php endif; ?>
 <?php else: ?>
-      <span>@ commit unavailable</span>
+      <span>commit unavailable</span>
 <?php endif; ?>
     </p>
 <?php endif; ?>

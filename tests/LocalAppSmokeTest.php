@@ -434,7 +434,9 @@ final class LocalAppSmokeTest
         assertStringContains('records/thread-labels/thread-label-20260415153000-ab12cd34.txt', $activity);
         assertStringContains('href="/source/current/records/posts/root-001.txt"', $activity);
         assertStringContains('href="/source/current/records/thread-labels/thread-label-20260415153000-ab12cd34.txt"', $activity);
-        assertStringContains('@ commit unavailable', $activity);
+        assertStringContains('Commit:', $activity);
+        assertStringContains('commit unavailable', $activity);
+        assertStringNotContains('@ commit unavailable', $activity);
         assertStringContains('GET /about/', $llms);
         assertStringContains('POST /api/analyze_post', $llms);
         assertStringContains('GET /api/list_index', $llms);
@@ -568,7 +570,9 @@ final class LocalAppSmokeTest
         assertStringContains('href="/source/blob/' . $postCommitSha . '/records/posts/root-001.txt"', $activity);
         assertStringContains('href="/source/commits/' . $postCommitSha . '"', $activity);
         assertStringContains('title="' . $postCommitSha . '"', $activity);
-        assertStringContains('@ ' . substr($postCommitSha, 0, 12), $activity);
+        assertStringContains('Commit:', $activity);
+        assertStringContains('>' . substr($postCommitSha, 0, 12) . '</a>', $activity);
+        assertStringNotContains('@ ' . substr($postCommitSha, 0, 12), $activity);
     }
 
     public function testCurrentSourceRouteServesOnlyCanonicalRecordFiles(): void
