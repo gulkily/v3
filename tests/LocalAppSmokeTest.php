@@ -429,6 +429,10 @@ final class LocalAppSmokeTest
         assertStringContains('thread_label_add', $activity);
         assertStringContains('Labels added: bug, needs-review', $activity);
         assertStringContains('/threads/root-001', $activity);
+        assertStringContains('Source:', $activity);
+        assertStringContains('records/posts/root-001.txt', $activity);
+        assertStringContains('records/thread-labels/thread-label-20260415153000-ab12cd34.txt', $activity);
+        assertStringContains('@ commit unavailable', $activity);
         assertStringContains('GET /about/', $llms);
         assertStringContains('POST /api/analyze_post', $llms);
         assertStringContains('GET /api/list_index', $llms);
@@ -543,11 +547,24 @@ final class LocalAppSmokeTest
         assertStringContains('status=ready', $readModelStatus);
         assertStringContains('lock_status=unlocked', $readModelStatus);
         assertStringContains('stale_marker=absent', $readModelStatus);
-        assertStringContains('schema_version=9', $readModelStatus);
+        assertStringContains('schema_version=10', $readModelStatus);
         assertStringContains('<rss version="2.0">', $boardRss);
         assertStringContains('<title>Hello world</title>', $threadRss);
         assertStringContains('<pubDate>Fri, 10 Apr 2026 12:05:00 +0000</pubDate>', $threadRss);
         assertStringContains('<title>Activity all</title>', $activityRss);
+    }
+
+    public function testActivityShowsGitSourceCommitForCanonicalRecords(): void
+    {
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $activity = $this->render($application, '/activity/?view=content');
+        $postCommitSha = trim($this->runCommand($repositoryRoot, 'git log -1 --format=%H -- records/posts/root-001.txt'));
+
+        assertStringContains('records/posts/root-001.txt', $activity);
+        assertStringContains('title="' . $postCommitSha . '"', $activity);
+        assertStringContains('@ ' . substr($postCommitSha, 0, 12), $activity);
     }
 
     public function testToolsPageRendersBookmarkletsAndComposeThreadAcceptsPrefills(): void

@@ -75,6 +75,7 @@ For first implementation:
   - `php -l src/ForumRewrite/Application.php`
   - `php -l templates/pages/activity.php`
   - `php tests/run.php`
+- Status: Implemented in the Stage 5 commit. Smoke coverage now checks post and thread-label filenames, no-git unavailable display, schema version 10, and a real git-backed source commit hash. Verification passed with the planned syntax checks and `php tests/run.php`.
 
 ## Risks And Decisions
 - Full rebuild git lookups may be slow on large repositories if done one path at a time. Cache results at minimum; batch lookup can be considered later if profiling shows a problem.
