@@ -1602,7 +1602,12 @@
           if (publicKeyField) {
             publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
           }
-          setStatus(statusNode, `Browser keypair ready for ${username}. Submit the form to link it.`, "ok");
+          setStatus(statusNode, "Publishing your public key in the background...", "info");
+          await publishPublicKeyWithRetry(root);
+          if (publicKeyField) {
+            publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
+          }
+          setStatus(statusNode, `Browser keypair ready for ${username}. Public key linked.`, "ok");
         } catch (error) {
           setStatus(statusNode, error instanceof Error ? error.message : "Unable to generate browser keypair.", "error");
         } finally {
