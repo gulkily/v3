@@ -2397,6 +2397,8 @@ final class Application
         )->fetchAll();
 
         $items = array_map(function (array $post): array {
+            $sourcePath = $post['source_path'] !== null ? (string) $post['source_path'] : '';
+            $sourceCommitSha = $post['source_commit_sha'] !== null ? (string) $post['source_commit_sha'] : '';
             return [
                 'created_at' => $post['created_at'],
                 'kind' => $post['kind'],
@@ -2404,8 +2406,10 @@ final class Application
                 'thread_id' => $post['thread_id'],
                 'label' => $post['label'],
                 'board_tags_json' => $post['board_tags_json'],
-                'source_path' => $post['source_path'],
-                'source_commit_sha' => $post['source_commit_sha'],
+                'source_path' => $sourcePath,
+                'source_commit_sha' => $sourceCommitSha,
+                'source_path_href' => $this->sourcePathHref($sourcePath, $sourceCommitSha),
+                'source_commit_href' => $this->sourceCommitHref($sourceCommitSha),
                 'id' => (int) $post['id'],
                 'author_label' => $post['author_label'],
                 'author_profile_slug' => $post['author_profile_slug'],
@@ -2427,6 +2431,34 @@ final class Application
                 default => true,
             };
         }));
+    }
+
+    private function sourcePathHref(string $sourcePath, string $sourceCommitSha): ?string
+    {
+        if ($sourcePath === '' || !$this->isValidCanonicalSourcePath($sourcePath)) {
+            return null;
+        }
+
+        $encodedPath = $this->encodeSourcePathForUrl($sourcePath);
+        if ($this->isValidSourceCommitSha($sourceCommitSha)) {
+            return '/source/blob/' . $sourceCommitSha . '/' . $encodedPath;
+        }
+
+        return '/source/current/' . $encodedPath;
+    }
+
+    private function sourceCommitHref(string $sourceCommitSha): ?string
+    {
+        if (!$this->isValidSourceCommitSha($sourceCommitSha)) {
+            return null;
+        }
+
+        return '/source/commits/' . $sourceCommitSha;
+    }
+
+    private function encodeSourcePathForUrl(string $sourcePath): string
+    {
+        return implode('/', array_map('rawurlencode', explode('/', $sourcePath)));
     }
 
     private function renderRssFeed(string $title, string $link, array $items): string

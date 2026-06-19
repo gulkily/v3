@@ -432,6 +432,8 @@ final class LocalAppSmokeTest
         assertStringContains('Source:', $activity);
         assertStringContains('records/posts/root-001.txt', $activity);
         assertStringContains('records/thread-labels/thread-label-20260415153000-ab12cd34.txt', $activity);
+        assertStringContains('href="/source/current/records/posts/root-001.txt"', $activity);
+        assertStringContains('href="/source/current/records/thread-labels/thread-label-20260415153000-ab12cd34.txt"', $activity);
         assertStringContains('@ commit unavailable', $activity);
         assertStringContains('GET /about/', $llms);
         assertStringContains('POST /api/analyze_post', $llms);
@@ -563,6 +565,8 @@ final class LocalAppSmokeTest
         $postCommitSha = trim($this->runCommand($repositoryRoot, 'git log -1 --format=%H -- records/posts/root-001.txt'));
 
         assertStringContains('records/posts/root-001.txt', $activity);
+        assertStringContains('href="/source/blob/' . $postCommitSha . '/records/posts/root-001.txt"', $activity);
+        assertStringContains('href="/source/commits/' . $postCommitSha . '"', $activity);
         assertStringContains('title="' . $postCommitSha . '"', $activity);
         assertStringContains('@ ' . substr($postCommitSha, 0, 12), $activity);
     }

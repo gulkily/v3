@@ -102,6 +102,7 @@ This builds on `activity_source_filename_commit_plan_v1.md`, which added `activi
   - git-backed activity links filename to `/source/blob/<sha>/...`;
   - git-backed activity links short hash to `/source/commits/<sha>`.
 - Update this plan in the same commit.
+- Status: Implemented in the Slice 4 commit. Activity source filenames now link to current or blob routes, and real commit hashes link to commit details; smoke assertions cover no-git and git-backed link targets.
 
 ## Slice 5: Final Verification
 - Run:

@@ -23,12 +23,22 @@
 <?php endif; ?>
 <?php $sourcePath = (string) ($item['source_path'] ?? ''); ?>
 <?php $sourceCommit = (string) ($item['source_commit_sha'] ?? ''); ?>
+<?php $sourcePathHref = (string) ($item['source_path_href'] ?? ''); ?>
+<?php $sourceCommitHref = (string) ($item['source_commit_href'] ?? ''); ?>
 <?php $sourceCommitIsUnavailable = $sourceCommit === '' || $sourceCommit === 'no-git' || $sourceCommit === 'git-error'; ?>
 <?php if ($sourcePath !== ''): ?>
     <p class="meta">Source:
+<?php if ($sourcePathHref !== ''): ?>
+      <a href="<?= $e($sourcePathHref) ?>"><?= $e($sourcePath) ?></a>
+<?php else: ?>
       <span><?= $e($sourcePath) ?></span>
+<?php endif; ?>
 <?php if (!$sourceCommitIsUnavailable): ?>
+<?php if ($sourceCommitHref !== ''): ?>
+      <a href="<?= $e($sourceCommitHref) ?>" title="<?= $e($sourceCommit) ?>">@ <?= $e(substr($sourceCommit, 0, 12)) ?></a>
+<?php else: ?>
       <span title="<?= $e($sourceCommit) ?>">@ <?= $e(substr($sourceCommit, 0, 12)) ?></span>
+<?php endif; ?>
 <?php else: ?>
       <span>@ commit unavailable</span>
 <?php endif; ?>
