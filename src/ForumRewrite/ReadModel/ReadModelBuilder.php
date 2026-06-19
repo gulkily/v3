@@ -23,6 +23,8 @@ final class ReadModelBuilder
     private int $invalidThreadLabelRecordCount = 0;
     /** @var array<int, array{created_at:string,thread_id:string,author_identity_id:?string,labels_added:list<string>,source_path:string,source_commit_sha:?string}> */
     private array $threadLabelActivityEvents = [];
+    /** @var array<string, ?string> */
+    private array $sourceCommitShaByPath = [];
 
     public function __construct(
         private readonly string $repositoryRoot,
@@ -45,6 +47,7 @@ final class ReadModelBuilder
         $this->timings = [];
         $this->invalidThreadLabelRecordCount = 0;
         $this->threadLabelActivityEvents = [];
+        $this->sourceCommitShaByPath = [];
         $pdo->beginTransaction();
         try {
             $this->measure('drop_schema', fn (): mixed => $this->dropSchema($pdo));
@@ -225,7 +228,7 @@ final class ReadModelBuilder
                 'thread_type' => $record->threadType,
                 'author_identity_id' => $record->authorIdentityId,
                 'source_path' => $relativePath,
-                'source_commit_sha' => null,
+                'source_commit_sha' => $this->sourceCommitShaForPath($relativePath),
                 'source_order' => $index + 1,
             ];
         }
@@ -361,7 +364,7 @@ final class ReadModelBuilder
                     'author_identity_id' => $record->authorIdentityId,
                     'labels_added' => $labelsAdded,
                     'source_path' => CanonicalPathResolver::threadLabel($record->recordId),
-                    'source_commit_sha' => null,
+                    'source_commit_sha' => $this->sourceCommitShaForPath(CanonicalPathResolver::threadLabel($record->recordId)),
                 ];
             }
         }
@@ -765,6 +768,36 @@ final class ReadModelBuilder
     {
         $line = strtok($body, "\n");
         return $line === false ? '' : $line;
+    }
+
+    private function sourceCommitShaForPath(string $relativePath): ?string
+    {
+        if (array_key_exists($relativePath, $this->sourceCommitShaByPath)) {
+            return $this->sourceCommitShaByPath[$relativePath];
+        }
+
+        if (!is_dir($this->repositoryRoot . '/.git')) {
+            $this->sourceCommitShaByPath[$relativePath] = 'no-git';
+            return $this->sourceCommitShaByPath[$relativePath];
+        }
+
+        $command = sprintf(
+            'git -C %s log -1 --format=%%H -- %s 2>&1',
+            escapeshellarg($this->repositoryRoot),
+            escapeshellarg($relativePath)
+        );
+        $output = [];
+        $exitCode = 0;
+        exec($command, $output, $exitCode);
+        if ($exitCode !== 0) {
+            $this->sourceCommitShaByPath[$relativePath] = 'git-error';
+            return $this->sourceCommitShaByPath[$relativePath];
+        }
+
+        $sha = trim(implode("\n", $output));
+        $this->sourceCommitShaByPath[$relativePath] = $sha !== '' ? $sha : null;
+
+        return $this->sourceCommitShaByPath[$relativePath];
     }
 
     /**

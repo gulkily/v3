@@ -43,6 +43,7 @@ For first implementation:
 - Use the helper while inserting full-rebuild activity rows.
 - Keep this out of `Application::fetchActivity()` and templates.
 - Consider caching path-to-SHA results during a rebuild so duplicate path lookups do not repeat git commands.
+- Status: Implemented in the Stage 2 commit. `ReadModelBuilder` now caches source-path git lookups and writes `source_commit_sha` during full rebuilds.
 
 ### Stage 3: Incremental update support
 - In `IncrementalReadModelUpdater::insertActivity()`, set:
