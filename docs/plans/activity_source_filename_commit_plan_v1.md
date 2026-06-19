@@ -52,6 +52,7 @@ For first implementation:
 - In `computeThreadLabelState()`, include the thread-label `record_id` or `source_path` in each activity event.
 - In `refreshThreadLabelActivity()`, set `source_path` to `CanonicalPathResolver::threadLabel($recordId)` and `source_commit_sha` to the `$commitSha` from `applyThreadLabelWrite()`.
 - Update the method signatures/PHPDocs as needed so the commit SHA can be passed into the refresh method.
+- Status: Implemented in the Stage 3 commit. Incremental post, approval, bootstrap, and thread-label activity inserts now populate source metadata.
 
 ### Stage 4: Activity rendering
 - Select `activity.source_path` and `activity.source_commit_sha` in `Application::fetchActivity()`.

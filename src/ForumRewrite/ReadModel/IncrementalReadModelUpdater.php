@@ -101,7 +101,7 @@ class IncrementalReadModelUpdater
                 $this->measure($timings, 'insert_thread', fn (): mixed => $this->insertThread($pdo, $record, $boardTagsJson));
             }
 
-            $this->measure($timings, 'upsert_activity', fn (): mixed => $this->insertActivity($pdo, $record, $boardTagsJson));
+            $this->measure($timings, 'upsert_activity', fn (): mixed => $this->insertActivity($pdo, $record, $boardTagsJson, $commitSha));
 
             if ($record->authorIdentityId !== null && !$hidden) {
                 $this->measure($timings, 'update_profile_counts', fn (): mixed => $this->updateProfileCounts($pdo, $record));
@@ -147,7 +147,7 @@ class IncrementalReadModelUpdater
             $this->measure(
                 $timings,
                 'refresh_thread_label_activity',
-                fn (): mixed => $this->refreshThreadLabelActivity($pdo, $thread, $labelState['activity_events'])
+                fn (): mixed => $this->refreshThreadLabelActivity($pdo, $thread, $labelState['activity_events'], $commitSha)
             );
             $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
             $pdo->commit();
@@ -219,7 +219,7 @@ class IncrementalReadModelUpdater
                 fn (): mixed => $this->insertPostRow($pdo, $record, $author, $sequenceNumber, $boardTagsJson)
             );
             $this->measure($timings, 'update_thread', fn (): mixed => $this->updateThreadForReply($pdo, $record));
-            $this->measure($timings, 'upsert_activity', fn (): mixed => $this->insertActivity($pdo, $record, $boardTagsJson));
+            $this->measure($timings, 'upsert_activity', fn (): mixed => $this->insertActivity($pdo, $record, $boardTagsJson, $commitSha));
             $changedIdentityIds = $this->measure(
                 $timings,
                 'refresh_approval_state',
@@ -311,7 +311,12 @@ class IncrementalReadModelUpdater
             $this->insertThread($pdo, $bootstrapPost, $boardTagsJson);
         }
 
-        $this->insertActivity($pdo, $bootstrapPost, $boardTagsJson);
+        $this->insertActivity(
+            $pdo,
+            $bootstrapPost,
+            $boardTagsJson,
+            $this->sourceCommitShaForPath(CanonicalPathResolver::post($bootstrapPost->postId)) ?? 'no-git'
+        );
         if ($bootstrapPost->authorIdentityId !== null && !$this->isHiddenBootstrapBoardTags($bootstrapPost->boardTags)) {
             $this->updateProfileCounts($pdo, $bootstrapPost);
         }
@@ -825,16 +830,18 @@ class IncrementalReadModelUpdater
         }
     }
 
-    private function insertActivity(PDO $pdo, PostRecord $record, string $boardTagsJson): void
+    private function insertActivity(PDO $pdo, PostRecord $record, string $boardTagsJson, string $commitSha): void
     {
         $author = $this->loadAuthorProfile($pdo, $record->authorIdentityId);
         $stmt = $pdo->prepare(
             'INSERT INTO activity (
                 created_at, kind, post_id, thread_id, label, board_tags_json,
-                author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved
+                author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved,
+                source_path, source_commit_sha
              ) VALUES (
                 :created_at, :kind, :post_id, :thread_id, :label, :board_tags_json,
-                :author_identity_id, :author_profile_slug, :author_username_token, :author_label, :author_is_approved
+                :author_identity_id, :author_profile_slug, :author_username_token, :author_label, :author_is_approved,
+                :source_path, :source_commit_sha
              )'
         );
         $stmt->execute([
@@ -849,6 +856,8 @@ class IncrementalReadModelUpdater
             'author_username_token' => $author['username_token'],
             'author_label' => $author['label'],
             'author_is_approved' => $author['is_approved'],
+            'source_path' => CanonicalPathResolver::post($record->postId),
+            'source_commit_sha' => $commitSha,
         ]);
     }
 
@@ -1009,6 +1018,28 @@ class IncrementalReadModelUpdater
     {
         $line = strtok($body, "\n");
         return $line === false ? '' : $line;
+    }
+
+    private function sourceCommitShaForPath(string $relativePath): ?string
+    {
+        if (!is_dir($this->repositoryRoot . '/.git')) {
+            return 'no-git';
+        }
+
+        $command = sprintf(
+            'git -C %s log -1 --format=%%H -- %s 2>&1',
+            escapeshellarg($this->repositoryRoot),
+            escapeshellarg($relativePath)
+        );
+        $output = [];
+        $exitCode = 0;
+        exec($command, $output, $exitCode);
+        if ($exitCode !== 0) {
+            return 'git-error';
+        }
+
+        $sha = trim(implode("\n", $output));
+        return $sha !== '' ? $sha : null;
     }
 
     /**
@@ -1209,7 +1240,7 @@ class IncrementalReadModelUpdater
     /**
      * @param list<ThreadLabelRecord> $records
      * @param array<string, true> $approvedIdentityIds
-     * @return array{labels:list<string>,score_total:int,activity_events:list<array{created_at:string,author_identity_id:?string,labels_added:list<string>}>}
+     * @return array{labels:list<string>,score_total:int,activity_events:list<array{created_at:string,author_identity_id:?string,labels_added:list<string>,source_path:string}>}
      */
     private function deriveThreadLabelState(string $threadId, array $records, array $approvedIdentityIds): array
     {
@@ -1251,6 +1282,7 @@ class IncrementalReadModelUpdater
                     'created_at' => $record->createdAt,
                     'author_identity_id' => $record->authorIdentityId,
                     'labels_added' => $labelsAdded,
+                    'source_path' => CanonicalPathResolver::threadLabel($record->recordId),
                 ];
             }
         }
@@ -1289,9 +1321,9 @@ class IncrementalReadModelUpdater
 
     /**
      * @param array{root_post_id:string,board_tags_json:string} $thread
-     * @param list<array{created_at:string,author_identity_id:?string,labels_added:list<string>}> $activityEvents
+     * @param list<array{created_at:string,author_identity_id:?string,labels_added:list<string>,source_path:string}> $activityEvents
      */
-    private function refreshThreadLabelActivity(PDO $pdo, array $thread, array $activityEvents): void
+    private function refreshThreadLabelActivity(PDO $pdo, array $thread, array $activityEvents, string $commitSha): void
     {
         $delete = $pdo->prepare('DELETE FROM activity WHERE kind = :kind AND thread_id = :thread_id');
         $delete->execute([
@@ -1306,10 +1338,12 @@ class IncrementalReadModelUpdater
         $insert = $pdo->prepare(
             'INSERT INTO activity (
                 created_at, kind, post_id, thread_id, label, board_tags_json,
-                author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved
+                author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved,
+                source_path, source_commit_sha
              ) VALUES (
                 :created_at, :kind, :post_id, :thread_id, :label, :board_tags_json,
-                :author_identity_id, :author_profile_slug, :author_username_token, :author_label, :author_is_approved
+                :author_identity_id, :author_profile_slug, :author_username_token, :author_label, :author_is_approved,
+                :source_path, :source_commit_sha
              )'
         );
 
@@ -1327,6 +1361,8 @@ class IncrementalReadModelUpdater
                 'author_username_token' => $author['author_username_token'],
                 'author_label' => $author['author_label'],
                 'author_is_approved' => $author['author_is_approved'],
+                'source_path' => $event['source_path'],
+                'source_commit_sha' => $commitSha,
             ]);
         }
     }
