@@ -190,6 +190,11 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/source/current/(.+)$#', $path, $matches) === 1) {
+            $this->handleCurrentSourceFile($matches[1]);
+            return;
+        }
+
         if ($path === '/users/pending/' || $path === '/users/pending') {
             $this->handlePendingUserDirectory($method);
             return;
@@ -968,6 +973,23 @@ final class Application
             'Activity',
             'activity',
         );
+    }
+
+    private function handleCurrentSourceFile(string $encodedRelativePath): void
+    {
+        $relativePath = $this->normalizeSourceRoutePath($encodedRelativePath);
+        if ($relativePath === null || !$this->isValidCanonicalSourcePath($relativePath)) {
+            $this->sendText("Invalid source path\n", 400);
+            return;
+        }
+
+        $contents = $this->readCurrentSourceFile($relativePath);
+        if ($contents === null) {
+            $this->sendText("Source not found\n", 404);
+            return;
+        }
+
+        $this->sendText($contents, 200);
     }
 
     private function renderComposeThread(
@@ -3800,6 +3822,60 @@ final class Application
             header($headerValue);
         }
         echo $text;
+    }
+
+    private function normalizeSourceRoutePath(string $encodedRelativePath): ?string
+    {
+        $relativePath = rawurldecode($encodedRelativePath);
+        $relativePath = str_replace('\\', '/', $relativePath);
+        if ($relativePath === '' || str_starts_with($relativePath, '/')) {
+            return null;
+        }
+
+        foreach (explode('/', $relativePath) as $segment) {
+            if ($segment === '' || $segment === '.' || $segment === '..') {
+                return null;
+            }
+        }
+
+        return $relativePath;
+    }
+
+    private function isValidCanonicalSourcePath(string $relativePath): bool
+    {
+        if (!str_starts_with($relativePath, 'records/')) {
+            return false;
+        }
+
+        return $relativePath === 'records/instance/public.txt'
+            || preg_match('#^records/posts/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
+            || preg_match('#^records/thread-labels/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
+            || preg_match('#^records/post-reactions/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
+            || preg_match('#^records/identity/identity-openpgp-[A-Fa-f0-9]{40}\.txt$#', $relativePath) === 1
+            || preg_match('#^records/approval-seeds/openpgp-[A-Fa-f0-9]{40}\.txt$#', $relativePath) === 1
+            || preg_match('#^records/public-keys/openpgp-[A-Fa-f0-9]{40}\.asc$#', $relativePath) === 1;
+    }
+
+    private function readCurrentSourceFile(string $relativePath): ?string
+    {
+        $repositoryRoot = realpath($this->repositoryRoot);
+        if ($repositoryRoot === false) {
+            return null;
+        }
+
+        $path = $this->repositoryRoot . '/' . $relativePath;
+        $realPath = realpath($path);
+        if ($realPath === false || !is_file($realPath)) {
+            return null;
+        }
+
+        $rootPrefix = rtrim($repositoryRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        if (!str_starts_with($realPath, $rootPrefix)) {
+            return null;
+        }
+
+        $contents = file_get_contents($realPath);
+        return $contents === false ? null : $contents;
     }
 
     /**

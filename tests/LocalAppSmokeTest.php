@@ -567,6 +567,29 @@ final class LocalAppSmokeTest
         assertStringContains('@ ' . substr($postCommitSha, 0, 12), $activity);
     }
 
+    public function testCurrentSourceRouteServesOnlyCanonicalRecordFiles(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $postSource = $this->render($application, '/source/current/records/posts/root-001.txt');
+        $labelSource = $this->render($application, '/source/current/records/thread-labels/thread-label-20260415153000-ab12cd34.txt');
+        $traversal = $this->render($application, '/source/current/records/posts/..%2F..%2FREADME.md');
+        $absolute = $this->render($application, '/source/current/%2Frecords%2Fposts%2Froot-001.txt');
+        $missing = $this->render($application, '/source/current/records/posts/missing.txt');
+
+        assertStringContains('Post-ID: root-001', $postSource);
+        assertStringContains('Subject: Hello world', $postSource);
+        assertStringContains('Record-ID: thread-label-20260415153000-ab12cd34', $labelSource);
+        assertSame("Invalid source path\n", $traversal);
+        assertSame("Invalid source path\n", $absolute);
+        assertSame("Source not found\n", $missing);
+    }
+
     public function testToolsPageRendersBookmarkletsAndComposeThreadAcceptsPrefills(): void
     {
         @unlink($this->databasePath);

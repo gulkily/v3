@@ -61,6 +61,7 @@ This builds on `activity_source_filename_commit_plan_v1.md`, which added `activi
   - traversal attempts are rejected;
   - unknown but well-shaped records return 404.
 - Update this plan in the same commit.
+- Status: Implemented in the Slice 1 commit. Current source files are served as text for validated canonical paths, with tests for post records, thread-label records, traversal rejection, absolute-path rejection, and missing records.
 
 ## Slice 2: Blob-at-Commit Source Route
 - Add route handling for `/source/blob/<sha>/<path>`.
