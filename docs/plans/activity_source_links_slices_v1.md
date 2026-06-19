@@ -112,6 +112,7 @@ This builds on `activity_source_filename_commit_plan_v1.md`, which added `activi
   - `php tests/run.php`
 - Document results here.
 - Commit only this plan update if verification notes are not already included in Slice 4.
+- Status: Completed in the Slice 5 commit. `php -l src/ForumRewrite/Application.php`, `php -l templates/pages/activity.php`, `php -l tests/LocalAppSmokeTest.php`, and `php tests/run.php` passed.
 
 ## Open Decisions
 - First version should use plain text for source and commit views. HTML can come later if navigation or styling becomes important.
