@@ -21,6 +21,19 @@
 <?php elseif ((string) ($item['author_label'] ?? '') !== ''): ?>
     <p class="meta">Author: <?= $e($item['author_label']) ?></p>
 <?php endif; ?>
+<?php $sourcePath = (string) ($item['source_path'] ?? ''); ?>
+<?php $sourceCommit = (string) ($item['source_commit_sha'] ?? ''); ?>
+<?php $sourceCommitIsUnavailable = $sourceCommit === '' || $sourceCommit === 'no-git' || $sourceCommit === 'git-error'; ?>
+<?php if ($sourcePath !== ''): ?>
+    <p class="meta">Source:
+      <span><?= $e($sourcePath) ?></span>
+<?php if (!$sourceCommitIsUnavailable): ?>
+      <span title="<?= $e($sourceCommit) ?>">@ <?= $e(substr($sourceCommit, 0, 12)) ?></span>
+<?php else: ?>
+      <span>@ commit unavailable</span>
+<?php endif; ?>
+    </p>
+<?php endif; ?>
     <p class="meta"><?= $contentMeta($item, 'created_at', '') ?></p>
   </article>
 <?php endforeach; ?>

@@ -62,6 +62,7 @@ For first implementation:
 - Display a shortened hash in the UI, but keep the full hash available in a `title` attribute or equivalent text if existing style allows.
 - Omit the line when both values are empty/null.
 - Decide whether RSS descriptions should include the source line. My recommendation is to include it only in HTML for the first slice, then add RSS if needed.
+- Status: Implemented in the Stage 4 commit. HTML activity cards now render `Source:` with a canonical filename, shortened commit hash, and full hash in `title` when available.
 
 ### Stage 5: Tests and verification
 - Update `LocalAppSmokeTest` activity assertions to expect source filename text for a post item and a thread-label item.

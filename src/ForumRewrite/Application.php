@@ -2317,6 +2317,7 @@ final class Application
         $view = $this->normalizeActivityView($view);
         $rows = $this->pdo()->query(
             'SELECT activity.created_at, activity.kind, activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
+                    activity.source_path, activity.source_commit_sha,
                     activity.id, activity.author_label, activity.author_profile_slug,
                     activity.author_username_token, activity.author_is_approved
              FROM activity
@@ -2333,6 +2334,8 @@ final class Application
                 'thread_id' => $post['thread_id'],
                 'label' => $post['label'],
                 'board_tags_json' => $post['board_tags_json'],
+                'source_path' => $post['source_path'],
+                'source_commit_sha' => $post['source_commit_sha'],
                 'id' => (int) $post['id'],
                 'author_label' => $post['author_label'],
                 'author_profile_slug' => $post['author_profile_slug'],
