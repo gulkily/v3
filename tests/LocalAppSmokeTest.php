@@ -608,6 +608,24 @@ final class LocalAppSmokeTest
         assertSame("Invalid source path\n", $traversal);
     }
 
+    public function testSourceCommitRouteShowsCommitDetails(): void
+    {
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $commitSha = trim($this->runCommand($repositoryRoot, 'git rev-parse HEAD'));
+
+        $commitDetails = $this->render($application, '/source/commits/' . $commitSha);
+        $invalidSha = $this->render($application, '/source/commits/not-a-sha');
+        $missingCommit = $this->render($application, '/source/commits/0000000000000000000000000000000000000000');
+
+        assertStringContains('Commit: ' . $commitSha, $commitDetails);
+        assertStringContains('Author-Date:', $commitDetails);
+        assertStringContains('Subject: Initialize local repository', $commitDetails);
+        assertStringContains('records/posts/root-001.txt', $commitDetails);
+        assertSame("Invalid source commit\n", $invalidSha);
+        assertSame("Commit not found\n", $missingCommit);
+    }
+
     public function testToolsPageRendersBookmarkletsAndComposeThreadAcceptsPrefills(): void
     {
         @unlink($this->databasePath);

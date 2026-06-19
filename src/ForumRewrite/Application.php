@@ -200,6 +200,11 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/source/commits/([^/]+)$#', $path, $matches) === 1) {
+            $this->handleSourceCommit($matches[1]);
+            return;
+        }
+
         if ($path === '/users/pending/' || $path === '/users/pending') {
             $this->handlePendingUserDirectory($method);
             return;
@@ -1017,6 +1022,22 @@ final class Application
         }
 
         $this->sendText($contents, 200);
+    }
+
+    private function handleSourceCommit(string $commitSha): void
+    {
+        if (!$this->isValidSourceCommitSha($commitSha)) {
+            $this->sendText("Invalid source commit\n", 400);
+            return;
+        }
+
+        $details = $this->sourceCommitDetails($commitSha);
+        if ($details === null) {
+            $this->sendText("Commit not found\n", 404);
+            return;
+        }
+
+        $this->sendText($details, 200);
     }
 
     private function renderComposeThread(
@@ -3930,6 +3951,53 @@ final class Application
         }
 
         return implode("\n", $output) . "\n";
+    }
+
+    private function sourceCommitDetails(string $commitSha): ?string
+    {
+        if (!is_dir($this->repositoryRoot . '/.git')) {
+            return null;
+        }
+
+        $metadataCommand = sprintf(
+            'git -C %s show -s --format=%%H%%n%%aI%%n%%s %s 2>/dev/null',
+            escapeshellarg($this->repositoryRoot),
+            escapeshellarg($commitSha)
+        );
+        $metadataOutput = [];
+        $metadataExitCode = 0;
+        exec($metadataCommand, $metadataOutput, $metadataExitCode);
+        if ($metadataExitCode !== 0 || count($metadataOutput) < 3) {
+            return null;
+        }
+
+        $filesCommand = sprintf(
+            'git -C %s diff-tree --root --no-commit-id --name-only -r %s 2>/dev/null',
+            escapeshellarg($this->repositoryRoot),
+            escapeshellarg($commitSha)
+        );
+        $filesOutput = [];
+        $filesExitCode = 0;
+        exec($filesCommand, $filesOutput, $filesExitCode);
+        if ($filesExitCode !== 0) {
+            return null;
+        }
+
+        $lines = [
+            'Commit: ' . trim($metadataOutput[0]),
+            'Author-Date: ' . trim($metadataOutput[1]),
+            'Subject: ' . trim($metadataOutput[2]),
+            'Files:',
+        ];
+
+        foreach ($filesOutput as $file) {
+            $file = trim($file);
+            if ($file !== '') {
+                $lines[] = $file;
+            }
+        }
+
+        return implode("\n", $lines) . "\n";
     }
 
     /**

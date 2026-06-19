@@ -88,6 +88,7 @@ This builds on `activity_source_filename_commit_plan_v1.md`, which added `activi
   - invalid SHA is rejected;
   - missing commit returns 404.
 - Update this plan in the same commit.
+- Status: Implemented in the Slice 3 commit. Commit details are served as plain text for validated SHAs with tests for valid commit metadata, invalid SHAs, and missing commits.
 
 ## Slice 4: Activity Page Links
 - Update `templates/pages/activity.php`:
