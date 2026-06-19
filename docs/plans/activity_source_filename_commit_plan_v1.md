@@ -33,6 +33,7 @@ For first implementation:
 - Extend `ReadModelBuilder::indexPosts()` to keep each post's `source_path` from the scanned relative path.
 - Extend thread-label activity event arrays in `ReadModelBuilder::indexThreadLabels()` to include `source_path` using `CanonicalPathResolver::threadLabel($record->recordId)`.
 - Extend matching PHPDoc array shapes so the source metadata is explicit.
+- Status: Implemented in the Stage 1 commit. Schema version bumped to 10; full rebuild activity rows now carry canonical source paths and nullable source commit fields.
 
 ### Stage 2: Commit SHA resolution
 - Add a small helper for read-model indexing, likely in `ReadModelBuilder` first:

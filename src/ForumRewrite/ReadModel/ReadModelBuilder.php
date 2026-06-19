@@ -6,6 +6,7 @@ namespace ForumRewrite\ReadModel;
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\CanonicalRecordParseException;
+use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\PostReactionRecord;
 use ForumRewrite\Canonical\ThreadLabelRecord;
 use ForumRewrite\TagScore;
@@ -20,7 +21,7 @@ final class ReadModelBuilder
     /** @var array<string, float> */
     private array $timings = [];
     private int $invalidThreadLabelRecordCount = 0;
-    /** @var array<int, array{created_at:string,thread_id:string,author_identity_id:?string,labels_added:list<string>}> */
+    /** @var array<int, array{created_at:string,thread_id:string,author_identity_id:?string,labels_added:list<string>,source_path:string,source_commit_sha:?string}> */
     private array $threadLabelActivityEvents = [];
 
     public function __construct(
@@ -186,13 +187,15 @@ final class ReadModelBuilder
                 author_profile_slug TEXT NULL,
                 author_username_token TEXT NULL,
                 author_label TEXT NOT NULL,
-                author_is_approved INTEGER NOT NULL DEFAULT 0
+                author_is_approved INTEGER NOT NULL DEFAULT 0,
+                source_path TEXT NULL,
+                source_commit_sha TEXT NULL
             )'
         );
     }
 
     /**
-     * @return array<int, array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int}>
+     * @return array<int, array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,source_path:string,source_commit_sha:?string,sequence_number:int}>
      */
     private function indexPosts(PDO $pdo): array
     {
@@ -221,6 +224,8 @@ final class ReadModelBuilder
                 'board_tags_json' => json_encode($record->boardTags, JSON_THROW_ON_ERROR),
                 'thread_type' => $record->threadType,
                 'author_identity_id' => $record->authorIdentityId,
+                'source_path' => $relativePath,
+                'source_commit_sha' => null,
                 'source_order' => $index + 1,
             ];
         }
@@ -245,7 +250,18 @@ final class ReadModelBuilder
             $post['sequence_number'] = $index + 1;
             unset($post['source_order']);
             $posts[] = $post;
-            $insertPost->execute($post);
+            $insertPost->execute([
+                'post_id' => $post['post_id'],
+                'created_at' => $post['created_at'],
+                'thread_id' => $post['thread_id'],
+                'parent_id' => $post['parent_id'],
+                'subject' => $post['subject'],
+                'body' => $post['body'],
+                'board_tags_json' => $post['board_tags_json'],
+                'thread_type' => $post['thread_type'],
+                'author_identity_id' => $post['author_identity_id'],
+                'sequence_number' => $post['sequence_number'],
+            ]);
 
             if (!isset($threadSummaries[$post['thread_id']])) {
                 $threadSummaries[$post['thread_id']] = [
@@ -344,6 +360,8 @@ final class ReadModelBuilder
                     'thread_id' => $record->threadId,
                     'author_identity_id' => $record->authorIdentityId,
                     'labels_added' => $labelsAdded,
+                    'source_path' => CanonicalPathResolver::threadLabel($record->recordId),
+                    'source_commit_sha' => null,
                 ];
             }
         }
@@ -595,17 +613,19 @@ final class ReadModelBuilder
     }
 
     /**
-     * @param array<int, array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int}> $posts
+     * @param array<int, array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,source_path:string,source_commit_sha:?string,sequence_number:int}> $posts
      */
     private function indexActivity(PDO $pdo, array $posts): void
     {
         $stmt = $pdo->prepare(
             'INSERT INTO activity (
                 created_at, kind, post_id, thread_id, label, board_tags_json,
-                author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved
+                author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved,
+                source_path, source_commit_sha
              ) VALUES (
                 :created_at, :kind, :post_id, :thread_id, :label, :board_tags_json,
-                :author_identity_id, :author_profile_slug, :author_username_token, :author_label, :author_is_approved
+                :author_identity_id, :author_profile_slug, :author_username_token, :author_label, :author_is_approved,
+                :source_path, :source_commit_sha
              )'
         );
         $postsById = [];
@@ -627,6 +647,8 @@ final class ReadModelBuilder
                 'author_username_token' => $author['author_username_token'],
                 'author_label' => $author['author_label'],
                 'author_is_approved' => $author['author_is_approved'],
+                'source_path' => $post['source_path'],
+                'source_commit_sha' => $post['source_commit_sha'],
             ]);
         }
 
@@ -649,6 +671,8 @@ final class ReadModelBuilder
                 'author_username_token' => $author['author_username_token'],
                 'author_label' => $author['author_label'],
                 'author_is_approved' => $author['author_is_approved'],
+                'source_path' => $event['source_path'],
+                'source_commit_sha' => $event['source_commit_sha'],
             ]);
         }
     }
@@ -745,7 +769,7 @@ final class ReadModelBuilder
 
     /**
      * @param array<string, array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string}> $profiles
-     * @param array<int, array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int}> $posts
+     * @param array<int, array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,source_path:string,source_commit_sha:?string,sequence_number:int}> $posts
      * @return array<string, array{approved_by_identity_id:?string,approved_by_profile_slug:?string,approved_by_label:?string}>
      */
     private function deriveApprovalState(array $profiles, array $posts): array
@@ -815,7 +839,7 @@ final class ReadModelBuilder
     }
 
     /**
-     * @param array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int} $post
+     * @param array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,source_path:string,source_commit_sha:?string,sequence_number:int} $post
      */
     private function extractApprovalTargetIdentityId(array $post): ?string
     {
@@ -833,7 +857,7 @@ final class ReadModelBuilder
 
     /**
      * @param array<string, array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string}> $profiles
-     * @param array<int, array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,sequence_number:int}> $posts
+     * @param array<int, array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,source_path:string,source_commit_sha:?string,sequence_number:int}> $posts
      * @return array<string, array{post_count:int,thread_count:int}>
      */
     private function deriveProfileCounts(array $profiles, array $posts): array
