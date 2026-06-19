@@ -538,6 +538,184 @@ NODE;
         assertSame('Finishing browser identity setup...', $result['status']);
     }
 
+    public function testAccountSetupPublishesGeneratedPublicKey(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const generatedPublicKey = '-----BEGIN PGP PUBLIC KEY BLOCK-----\nfixture-key\n-----END PGP PUBLIC KEY BLOCK-----';
+const generatedPrivateKey = '-----BEGIN PGP PRIVATE KEY BLOCK-----\nfixture-key\n-----END PGP PRIVATE KEY BLOCK-----';
+const fingerprint = '0168FF20EB09C3EA6193BD3C92A73AA7D20A0954';
+const state = {
+  localStore: {
+    forum_pki_published_fingerprint: 'OLDPUBLISHED'
+  },
+  localSetCalls: [],
+  localRemoveCalls: [],
+  fetches: [],
+  domContentLoaded: null,
+  generateClickHandler: null,
+  generatedUsername: ''
+};
+
+function makeElement(text) {
+  return {
+    textContent: text || '',
+    value: '',
+    dataset: {},
+    hidden: false,
+    disabled: false,
+    href: '',
+    addEventListener() {},
+    setAttribute() {},
+    removeAttribute() {},
+    querySelector() { return null; },
+    querySelectorAll() { return []; },
+    appendChild(child) { return child; },
+    select() {}
+  };
+}
+
+const statusMessage = makeElement('Ready.');
+const statusNode = {
+  textContent: '',
+  dataset: {},
+  querySelector(selector) {
+    if (selector === '[data-role="browser-key-status-message"]') {
+      return statusMessage;
+    }
+    return null;
+  }
+};
+const publicKeyField = makeElement('');
+const usernameField = makeElement('');
+const privateKeyViewer = makeElement('');
+const publicKeyViewer = makeElement('');
+const identityIdField = makeElement('');
+const profileLink = makeElement('');
+const profileLinkWrap = makeElement('');
+const generateButton = {
+  disabled: false,
+  addEventListener(type, handler) {
+    if (type === 'click') {
+      state.generateClickHandler = handler;
+    }
+  }
+};
+
+const root = {
+  querySelector(selector) {
+    if (selector === '[data-role="browser-key-status"]') return statusNode;
+    if (selector === '[data-role="public-key-field"]') return publicKeyField;
+    if (selector === '[data-action="generate-browser-key"]') return generateButton;
+    if (selector === '[data-action="load-browser-key"]') return null;
+    if (selector === '[data-action="clear-browser-key"]') return null;
+    if (selector === '[data-action="clear-browser-identity"]') return null;
+    if (selector === '[data-action="undo-clear-browser-key"]') return null;
+    if (selector === '[data-action="copy-public-key"]') return null;
+    if (selector === '[data-action="copy-private-key"]') return null;
+    if (selector === '[data-role="username-field"]') return usernameField;
+    if (selector === '[data-role="private-key-viewer"]') return privateKeyViewer;
+    if (selector === '[data-role="public-key-viewer"]') return publicKeyViewer;
+    if (selector === '[data-role="identity-id-field"]') return identityIdField;
+    if (selector === '[data-role="profile-link"]') return profileLink;
+    if (selector === '[data-role="profile-link-wrap"]') return profileLinkWrap;
+    return null;
+  }
+};
+
+global.window = {
+  prompt() { return 'forum-user'; },
+  confirm() { return true; },
+  addEventListener() {},
+  openpgp: {
+    async generateKey(options) {
+      state.generatedUsername = options.userIDs[0].name;
+      return { publicKey: generatedPublicKey, privateKey: generatedPrivateKey };
+    },
+    async readKey() {
+      return { getFingerprint() { return fingerprint; } };
+    }
+  },
+  localStorage: {
+    getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+    setItem(key, value) {
+      state.localSetCalls.push([key, String(value)]);
+      state.localStore[key] = String(value);
+    },
+    removeItem(key) {
+      state.localRemoveCalls.push(key);
+      delete state.localStore[key];
+    }
+  }
+};
+global.openpgp = global.window.openpgp;
+global.localStorage = global.window.localStorage;
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      state.domContentLoaded = handler;
+    }
+  },
+  querySelector(selector) {
+    if (selector === '[data-account-key-root]') {
+      return root;
+    }
+    return null;
+  },
+  createElement() { return makeElement(''); },
+  createTextNode(text) { return makeElement(text); },
+  body: { appendChild() {}, removeChild() {} }
+};
+global.navigator = {};
+global.fetch = async function (url, options) {
+  const body = options && options.body ? String(options.body) : '';
+  state.fetches.push({ url: String(url), method: options && options.method ? options.method : 'GET', body });
+  if (String(url).indexOf('/api/set_identity_hint?') === 0) {
+    return { ok: true, status: 200, text: async () => 'identity_hint=openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n' };
+  }
+  if (String(url) === '/api/link_identity') {
+    return { ok: true, status: 200, text: async () => 'status=ok\nidentity_id=openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n' };
+  }
+
+  throw new Error('Unexpected fetch: ' + url);
+};
+
+vm.runInThisContext(source);
+state.domContentLoaded();
+
+Promise.resolve(state.generateClickHandler()).then(() => {
+  process.stdout.write(JSON.stringify({
+    generatedUsername: state.generatedUsername,
+    fetches: state.fetches,
+    localSetCalls: state.localSetCalls,
+    localRemoveCalls: state.localRemoveCalls,
+    publishedFingerprint: state.localStore.forum_pki_published_fingerprint || '',
+    publicKeyField: publicKeyField.value,
+    status: statusMessage.textContent,
+    buttonDisabled: generateButton.disabled
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('forum-user', $result['generatedUsername']);
+        assertSame('/api/set_identity_hint?identity_hint=openpgp%3A0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][0]['url']);
+        assertSame('/api/link_identity', $result['fetches'][1]['url']);
+        assertStringContains('public_key=', $result['fetches'][1]['body']);
+        assertSame('/api/set_identity_hint?identity_hint=openpgp%3A0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][2]['url']);
+        assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $result['publishedFingerprint']);
+        assertSame(true, in_array('forum_pki_published_fingerprint', $result['localRemoveCalls'], true));
+        assertSame("-----BEGIN PGP PUBLIC KEY BLOCK-----\nfixture-key\n-----END PGP PUBLIC KEY BLOCK-----", $result['publicKeyField']);
+        assertSame('Browser keypair ready for forum-user. Public key linked.', $result['status']);
+        assertSame(false, $result['buttonDisabled']);
+    }
+
     public function testReadyIdentityRetriesTransientPublicKeyInspectionFailure(): void
     {
         $script = <<<'NODE'
