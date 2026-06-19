@@ -195,6 +195,11 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/source/blob/([^/]+)/(.+)$#', $path, $matches) === 1) {
+            $this->handleSourceBlob($matches[1], $matches[2]);
+            return;
+        }
+
         if ($path === '/users/pending/' || $path === '/users/pending') {
             $this->handlePendingUserDirectory($method);
             return;
@@ -984,6 +989,28 @@ final class Application
         }
 
         $contents = $this->readCurrentSourceFile($relativePath);
+        if ($contents === null) {
+            $this->sendText("Source not found\n", 404);
+            return;
+        }
+
+        $this->sendText($contents, 200);
+    }
+
+    private function handleSourceBlob(string $commitSha, string $encodedRelativePath): void
+    {
+        if (!$this->isValidSourceCommitSha($commitSha)) {
+            $this->sendText("Invalid source commit\n", 400);
+            return;
+        }
+
+        $relativePath = $this->normalizeSourceRoutePath($encodedRelativePath);
+        if ($relativePath === null || !$this->isValidCanonicalSourcePath($relativePath)) {
+            $this->sendText("Invalid source path\n", 400);
+            return;
+        }
+
+        $contents = $this->readSourceBlob($commitSha, $relativePath);
         if ($contents === null) {
             $this->sendText("Source not found\n", 404);
             return;
@@ -3856,6 +3883,11 @@ final class Application
             || preg_match('#^records/public-keys/openpgp-[A-Fa-f0-9]{40}\.asc$#', $relativePath) === 1;
     }
 
+    private function isValidSourceCommitSha(string $commitSha): bool
+    {
+        return preg_match('/^[A-Fa-f0-9]{40}$/', $commitSha) === 1;
+    }
+
     private function readCurrentSourceFile(string $relativePath): ?string
     {
         $repositoryRoot = realpath($this->repositoryRoot);
@@ -3876,6 +3908,28 @@ final class Application
 
         $contents = file_get_contents($realPath);
         return $contents === false ? null : $contents;
+    }
+
+    private function readSourceBlob(string $commitSha, string $relativePath): ?string
+    {
+        if (!is_dir($this->repositoryRoot . '/.git')) {
+            return null;
+        }
+
+        $object = $commitSha . ':' . $relativePath;
+        $command = sprintf(
+            'git -C %s show --no-ext-diff %s 2>/dev/null',
+            escapeshellarg($this->repositoryRoot),
+            escapeshellarg($object)
+        );
+        $output = [];
+        $exitCode = 0;
+        exec($command, $output, $exitCode);
+        if ($exitCode !== 0) {
+            return null;
+        }
+
+        return implode("\n", $output) . "\n";
     }
 
     /**

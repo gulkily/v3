@@ -73,6 +73,7 @@ This builds on `activity_source_filename_commit_plan_v1.md`, which added `activi
   - valid SHA with missing path returns 404;
   - traversal is rejected before git is invoked.
 - Update this plan in the same commit.
+- Status: Implemented in the Slice 2 commit. Blob source files are served from validated 40-character SHAs with tests for valid records, invalid SHAs, missing paths, and traversal rejection.
 
 ## Slice 3: Commit Detail Route
 - Add route handling for `/source/commits/<sha>`.

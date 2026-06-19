@@ -590,6 +590,24 @@ final class LocalAppSmokeTest
         assertSame("Source not found\n", $missing);
     }
 
+    public function testBlobSourceRouteServesCanonicalRecordAtCommit(): void
+    {
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $commitSha = trim($this->runCommand($repositoryRoot, 'git log -1 --format=%H -- records/posts/root-001.txt'));
+
+        $postSource = $this->render($application, '/source/blob/' . $commitSha . '/records/posts/root-001.txt');
+        $invalidSha = $this->render($application, '/source/blob/not-a-sha/records/posts/root-001.txt');
+        $missing = $this->render($application, '/source/blob/' . $commitSha . '/records/posts/missing.txt');
+        $traversal = $this->render($application, '/source/blob/' . $commitSha . '/records/posts/..%2F..%2FREADME.md');
+
+        assertStringContains('Post-ID: root-001', $postSource);
+        assertStringContains('Subject: Hello world', $postSource);
+        assertSame("Invalid source commit\n", $invalidSha);
+        assertSame("Source not found\n", $missing);
+        assertSame("Invalid source path\n", $traversal);
+    }
+
     public function testToolsPageRendersBookmarkletsAndComposeThreadAcceptsPrefills(): void
     {
         @unlink($this->databasePath);
