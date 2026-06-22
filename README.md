@@ -34,6 +34,14 @@ Start the local PHP server:
 ./v3 start
 ```
 
+By default this binds to `127.0.0.1:8000`. To make it reachable from other devices on allowed networks such as Tailscale, bind to all interfaces explicitly:
+
+```bash
+./v3 start --listen-all
+```
+
+You can also pass any explicit `host:port`, such as `./v3 start 0.0.0.0:8000`.
+
 Authored post subject/body text remains ASCII-only by default. To test visible UTF-8 prose, such as Cyrillic, enable the rollout flag before starting the app:
 
 ```bash

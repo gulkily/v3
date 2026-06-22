@@ -7,7 +7,7 @@ COMMAND="${1:-}"
 if [[ -z "${COMMAND}" ]]; then
   cat <<'EOF'
 Usage:
-  ./v3 start [host:port]
+  ./v3 start [--listen-all|host:port]
   ./v3 test
   ./v3 rebuild [repository_root] [database_path]
   ./v3 thread-attributes <thread_id_or_record> [repository_root] [database_path]
@@ -26,6 +26,9 @@ case "${COMMAND}" in
   start)
     shift
     ADDRESS="${1:-127.0.0.1:8000}"
+    if [[ "${ADDRESS}" == "--listen-all" ]]; then
+      ADDRESS="0.0.0.0:8000"
+    fi
     php -S "${ADDRESS}" -t "${ROOT}/public" "${ROOT}/public/router.php"
     ;;
   test)
