@@ -266,6 +266,13 @@ final class LocalAppSmokeTest
         assertStringNotContains('href="/compose/thread">Compose</a>', $board);
         assertStringContains('>Tags</a>', $board);
         assertStringContains('href="/tags/"', $board);
+        assertStringContains('data-compose-root', $board);
+        assertStringContains('data-compose-kind="thread"', $board);
+        assertStringContains('name="subject"', $board);
+        assertStringContains('name="body"', $board);
+        assertFingerprintedAsset($board, 'lazy_compose_signing.js');
+        assertStringNotContains('/assets/openpgp_loader.js', $board);
+        assertStringNotContains('/assets/browser_signing.js', $board);
         assertStringNotContains('View: All', $board);
         assertStringNotContains('Sort: Newest', $board);
         assertStringContains('/threads/?view=all&amp;sort=newest', $board);

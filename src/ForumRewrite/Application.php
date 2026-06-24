@@ -639,6 +639,9 @@ final class Application
             ],
             'Board',
             'board',
+            [
+                '/assets/lazy_compose_signing.js',
+            ],
         );
     }
 

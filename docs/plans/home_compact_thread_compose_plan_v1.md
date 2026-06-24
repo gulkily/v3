@@ -79,3 +79,4 @@ As a user, I want to be able to start a new thread from the home page, using a c
 - 2026-06-24: Extracted the full thread compose form into `templates/partials/thread_compose_form.php` so the board and full compose page can share one markup path.
 - 2026-06-24: Rendered the compact thread composer above the board feed and added responsive compact compose styles.
 - 2026-06-24: Made `browser_signing.js` expose an idempotent `window.ForumBrowserSigning.init()` initializer for lazy-loaded compose flows.
+- 2026-06-24: Added `lazy_compose_signing.js`, wired it to the board route, and asserted the board does not eagerly include OpenPGP or browser-signing assets.
