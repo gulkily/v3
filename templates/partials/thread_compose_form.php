@@ -9,6 +9,11 @@ $threadComposeAnonymousLabel = $isCompactThreadCompose ? 'Post anonymously' : 'C
 ?>
 <form method="post" class="<?= $e($threadComposeFormClass) ?>" data-compose-form data-compose-kind="thread">
   <input type="hidden" name="author_identity_id" value="">
+<?php if ($isCompactThreadCompose): ?>
+  <input type="hidden" name="board_tags" value="<?= $e($boardTags) ?>">
+  <input type="hidden" name="subject" data-compose-field-label="Subject" value="<?= $e($subject) ?>">
+  <textarea name="body" data-compose-field-label="Body" rows="<?= $e($threadComposeBodyRows) ?>" placeholder="<?= $e($threadComposeBodyPlaceholder) ?>" aria-label="Body"><?= $e($body) ?></textarea>
+<?php else: ?>
   <label>Board tags<input type="text" name="board_tags" value="<?= $e($boardTags) ?>"></label>
   <p class="meta compose-normalization-inline" data-role="compose-field-normalization-status" data-compose-field-status-for="board_tags" hidden>
     <span data-role="compose-field-normalization-message"></span>
@@ -32,6 +37,7 @@ $threadComposeAnonymousLabel = $isCompactThreadCompose ? 'Post anonymously' : 'C
     >Remove unsupported characters</button>
   </p>
   <label>Body<textarea name="body" data-compose-field-label="Body" rows="<?= $e($threadComposeBodyRows) ?>" placeholder="<?= $e($threadComposeBodyPlaceholder) ?>"><?= $e($body) ?></textarea></label>
+<?php endif; ?>
   <p class="meta compose-normalization-inline" data-role="compose-field-normalization-status" data-compose-field-status-for="body" hidden>
     <span data-role="compose-field-normalization-message"></span>
     <button

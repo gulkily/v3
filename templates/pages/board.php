@@ -13,8 +13,20 @@
       <a class="nav-link" href="/compose/thread">New Post</a>
     </div>
   </article>
-  <article class="card compact-thread-compose" data-compose-root data-pending-thread-position="after" data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>">
-    <p class="meta" data-role="compose-identity-status" hidden></p>
+  <article class="card inline-reply-composer compact-thread-compose" data-compose-root data-pending-thread-position="after" data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>">
+    <details class="inline-reply-details compact-thread-compose-details" data-inline-reply-details>
+      <summary class="inline-reply-summary">
+        <textarea
+          class="inline-reply-prompt compact-thread-compose-prompt"
+          rows="2"
+          placeholder="Start a thread..."
+          aria-label="Start a thread"
+          data-inline-reply-trigger
+          readonly
+        ></textarea>
+      </summary>
+      <div class="inline-reply-expanded stack">
+        <p class="meta inline-reply-identity-status" data-role="compose-identity-status" hidden></p>
 <?= $indent($partial('partials/thread_compose_form.php', [
     'boardTags' => 'general',
     'subject' => '',
@@ -22,7 +34,9 @@
     'notice' => null,
     'error' => null,
     'compact' => true,
-]), 2) ?>
+]), 4) ?>
+      </div>
+    </details>
   </article>
 <?php foreach ($threads as $thread): ?>
 <?php $subject = $thread['subject'] ?: $thread['root_post_id']; ?>

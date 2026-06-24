@@ -640,6 +640,7 @@ final class Application
             'Board',
             'board',
             [
+                '/assets/inline_reply_form.js',
                 '/assets/lazy_compose_signing.js',
             ],
         );

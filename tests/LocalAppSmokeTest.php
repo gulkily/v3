@@ -267,9 +267,13 @@ final class LocalAppSmokeTest
         assertStringContains('>Tags</a>', $board);
         assertStringContains('href="/tags/"', $board);
         assertStringContains('data-compose-root', $board);
+        assertStringContains('data-inline-reply-details', $board);
+        assertStringContains('class="inline-reply-prompt compact-thread-compose-prompt"', $board);
         assertStringContains('data-compose-kind="thread"', $board);
         assertStringContains('name="subject"', $board);
         assertStringContains('name="body"', $board);
+        assertStringContains('name="board_tags" value="general"', $board);
+        assertFingerprintedAsset($board, 'inline_reply_form.js');
         assertFingerprintedAsset($board, 'lazy_compose_signing.js');
         assertStringNotContains('/assets/openpgp_loader.js', $board);
         assertStringNotContains('/assets/browser_signing.js', $board);

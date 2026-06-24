@@ -1032,7 +1032,7 @@ pre {
 }
 
 .compact-thread-compose {
-  padding: 1rem;
+  padding: 0;
 }
 
 .compact-thread-compose label {
@@ -1047,6 +1047,10 @@ pre {
 .compact-thread-compose textarea {
   min-height: 5.5rem;
   resize: vertical;
+}
+
+.compact-thread-compose-prompt {
+  min-height: 4.75rem;
 }
 
 .compact-thread-compose-form {
