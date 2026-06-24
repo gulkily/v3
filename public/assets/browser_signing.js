@@ -2185,6 +2185,42 @@
       button.addEventListener("click", clearComposeFields);
     });
 
+    function primaryComposeSubmitter() {
+      return submitButtons.find(function (button) {
+        return !button.disabled && !isAnonymousComposeSubmitter(button);
+      }) || null;
+    }
+
+    function submitComposeFromKeyboard(event) {
+      if (!event || !(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey) {
+        return;
+      }
+
+      if (event.key !== "Enter") {
+        return;
+      }
+
+      const target = event.target || null;
+      if (!target || target.tagName !== "TEXTAREA") {
+        return;
+      }
+
+      const submitter = primaryComposeSubmitter();
+      if (!submitter) {
+        return;
+      }
+
+      event.preventDefault();
+      if (typeof form.requestSubmit === "function") {
+        form.requestSubmit(submitter);
+        return;
+      }
+
+      submitter.click();
+    }
+
+    form.addEventListener("keydown", submitComposeFromKeyboard);
+
     let submitInFlight = false;
     form.addEventListener("submit", async function (event) {
       event.preventDefault();
