@@ -1031,6 +1031,39 @@ pre {
   white-space: nowrap;
 }
 
+.compact-thread-compose {
+  padding: 1rem;
+}
+
+.compact-thread-compose label {
+  font-size: 0.92rem;
+}
+
+.compact-thread-compose input,
+.compact-thread-compose textarea {
+  margin-top: 0.25rem;
+}
+
+.compact-thread-compose textarea {
+  min-height: 5.5rem;
+  resize: vertical;
+}
+
+.compact-thread-compose-form {
+  gap: 0.65rem;
+}
+
+.compact-thread-compose-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.compact-thread-compose-actions > button {
+  margin-top: 0;
+}
+
 .account-key-advanced {
   padding-top: 0.1rem;
   border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent 30%);
@@ -1313,6 +1346,10 @@ pre {
 
   .card {
     padding: 1rem 1.1rem;
+  }
+
+  .compact-thread-compose-actions {
+    grid-template-columns: minmax(0, 1fr) auto auto;
   }
 
   .tag-groups {

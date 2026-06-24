@@ -13,6 +13,17 @@
       <a class="nav-link" href="/compose/thread">New Post</a>
     </div>
   </article>
+  <article class="card compact-thread-compose" data-compose-root data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>">
+    <p class="meta" data-role="compose-identity-status" hidden></p>
+<?= $indent($partial('partials/thread_compose_form.php', [
+    'boardTags' => 'general',
+    'subject' => '',
+    'body' => '',
+    'notice' => null,
+    'error' => null,
+    'compact' => true,
+]), 2) ?>
+  </article>
 <?php foreach ($threads as $thread): ?>
 <?php $subject = $thread['subject'] ?: $thread['root_post_id']; ?>
 <?php $isPinned = in_array('pinned', $thread['thread_labels'] ?? [], true); ?>
