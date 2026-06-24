@@ -84,3 +84,4 @@ As a user, I want to be able to start a new thread from the home page, using a c
 - 2026-06-24: Marked the board composer so optimistic pending thread shells insert after the composer and before the feed.
 - 2026-06-24: Completed the planned implementation slices and verified the full test suite.
 - 2026-06-24: Revised the board composer to use the inline reply expand pattern and reduced the compact thread form to a body-only visible surface with hidden defaults.
+- 2026-06-24: Added deterministic body-excerpt display titles for titleless threads and wrote the follow-up LLM-generated title plan.

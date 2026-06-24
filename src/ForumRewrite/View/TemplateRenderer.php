@@ -6,6 +6,7 @@ namespace ForumRewrite\View;
 
 use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\SiteConfig;
+use ForumRewrite\Support\ThreadTitle;
 use RuntimeException;
 
 final class TemplateRenderer
@@ -91,6 +92,11 @@ final class TemplateRenderer
         $author = fn (array $record): string => $this->renderAuthorHtml($record, $e);
         $contentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e);
         $timeMeta = fn (string $label, ?string $timestamp): string => $this->renderTimeMeta($label, $timestamp, $e);
+        $threadTitle = static fn (array $thread): string => ThreadTitle::displayTitle(
+            (string) ($thread['subject'] ?? ''),
+            (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
+            (string) ($thread['root_post_id'] ?? $thread['thread_id'] ?? $thread['post_id'] ?? '')
+        );
         $partial = fn (string $partialPath, array $partialData = []): string => $this->renderFile(
             $partialPath,
             array_merge($data, $partialData)

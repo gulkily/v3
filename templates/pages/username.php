@@ -20,7 +20,7 @@
     <p>No visible threads.</p>
 <?php else: ?>
 <?php foreach ($approvedThreads as $thread): ?>
-<?php $subject = $thread['subject'] ?: $thread['root_post_id']; ?>
+<?php $subject = $threadTitle($thread); ?>
     <article class="card">
       <h3><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($subject) ?></a></h3>
       <p class="meta"><?= $contentMeta($thread, 'root_post_created_at', '') ?></p>

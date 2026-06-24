@@ -39,7 +39,7 @@
     </details>
   </article>
 <?php foreach ($threads as $thread): ?>
-<?php $subject = $thread['subject'] ?: $thread['root_post_id']; ?>
+<?php $subject = $threadTitle($thread); ?>
 <?php $isPinned = in_array('pinned', $thread['thread_labels'] ?? [], true); ?>
   <article class="card">
     <h2><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($subject) ?></a><?php if ($isPinned): ?> <span class="pinned-thread-marker">Pinned</span><?php endif; ?></h2>

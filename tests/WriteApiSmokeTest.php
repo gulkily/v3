@@ -15,6 +15,30 @@ use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
 {
+    public function testTitlelessThreadDisplaysBodyExcerptTitle(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $body = 'This titleless thread should use its body as the display title.';
+
+        $threadResponse = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_thread?board_tags=general&subject=&body=' . rawurlencode($body)
+        );
+        $threadId = $this->extractValue($threadResponse, 'thread_id');
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($threadId));
+        $board = $this->renderMethod($application, 'GET', '/threads/?view=all');
+        $boardRss = $this->renderMethod($application, 'GET', '/?format=rss');
+        $apiIndex = $this->renderMethod($application, 'GET', '/api/list_index');
+
+        assertStringContains('<title>' . $body . '</title>', $threadPage);
+        assertStringContains('<h1>' . $body . '</h1>', $threadPage);
+        assertStringContains('>' . $body . '</a>', $board);
+        assertStringContains('<title>' . $body . '</title>', $boardRss);
+        assertStringContains($threadId . "\t" . $body, $apiIndex);
+    }
+
     public function testCreateThreadAndReplyApisWriteCanonicalFilesCommitAndInvalidateArtifacts(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

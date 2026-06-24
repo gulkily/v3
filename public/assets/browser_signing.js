@@ -552,6 +552,30 @@
   let pendingReplySequence = 0;
   let pendingThreadSequence = 0;
 
+  function displayThreadTitle(subject, body, fallback) {
+    const subjectText = String(subject || "").trim();
+    if (subjectText !== "") {
+      return subjectText;
+    }
+
+    const bodyText = String(body || "").replace(/\s+/g, " ").trim();
+    if (bodyText !== "") {
+      if (bodyText.length <= 80) {
+        return bodyText;
+      }
+
+      let excerpt = bodyText.slice(0, 80);
+      const lastSpace = excerpt.lastIndexOf(" ");
+      if (lastSpace >= 24) {
+        excerpt = excerpt.slice(0, lastSpace);
+      }
+
+      return excerpt.replace(/[ .,;:!?]+$/, "") + "...";
+    }
+
+    return String(fallback || "").trim() || "Untitled thread";
+  }
+
   function createPendingReplyCard(reply) {
     const data = reply || {};
     const pendingId = data.pendingId || `pending-reply:${++pendingReplySequence}`;
@@ -598,7 +622,7 @@
     article.setAttribute("data-pending-thread-id", pendingId);
 
     const subject = document.createElement("h2");
-    subject.textContent = data.subject || "Untitled thread";
+    subject.textContent = displayThreadTitle(data.subject, data.body, data.pendingId);
     article.appendChild(subject);
 
     const tags = document.createElement("p");

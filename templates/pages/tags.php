@@ -25,7 +25,7 @@
         </div>
         <ul class="tag-thread-list" data-tag-preview-for="<?= $e($group['tag']) ?>">
 <?php foreach ($group['preview_threads'] as $thread): ?>
-<?php $subject = $thread['subject'] ?: $thread['root_post_id']; ?>
+<?php $subject = $threadTitle($thread); ?>
           <li data-tag-preview-item="<?= $e($group['tag']) ?>">
             <a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($subject) ?></a>
             <span class="meta">by <?= $author($thread) ?></span>

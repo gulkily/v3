@@ -17,6 +17,7 @@ $testFiles = [
     __DIR__ . '/RelatedContentSearchServiceTest.php',
     __DIR__ . '/ReadModelBuilderTimingTest.php',
     __DIR__ . '/ReadModelThreadLabelsTest.php',
+    __DIR__ . '/ThreadTitleTest.php',
     __DIR__ . '/UnicodeRiskInspectorTest.php',
     __DIR__ . '/UnicodeRiskStoreTest.php',
     __DIR__ . '/UnicodeTextPolicyTest.php',

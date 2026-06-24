@@ -21,6 +21,7 @@ use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\PrivateConfig;
+use ForumRewrite\Support\ThreadTitle;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
 use PDO;
@@ -692,7 +693,7 @@ final class Application
             return null;
         }
 
-        $title = $threadRow['subject'] ?: $threadRow['root_post_id'];
+        $title = $this->displayThreadTitle($threadRow);
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
         $viewerHasLiked = $viewerProfile !== null
             && $this->viewerHasThreadTag($threadId, 'like', (string) $viewerProfile['identity_id']);
@@ -738,6 +739,18 @@ final class Application
                 '/assets/thread_reactions.js',
                 '/assets/post_analysis.js',
             ],
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $thread
+     */
+    private function displayThreadTitle(array $thread): string
+    {
+        return ThreadTitle::displayTitle(
+            (string) ($thread['subject'] ?? ''),
+            (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
+            (string) ($thread['root_post_id'] ?? $thread['thread_id'] ?? $thread['post_id'] ?? '')
         );
     }
 
@@ -1286,7 +1299,7 @@ final class Application
     {
         $lines = [];
         foreach ($this->fetchThreads() as $thread) {
-            $subject = $thread['subject'] ?: $thread['root_post_id'];
+            $subject = $this->displayThreadTitle($thread);
             $lines[] = $thread['root_post_id'] . "\t" . $subject . "\t" . $thread['reply_count'];
         }
 
@@ -1346,7 +1359,7 @@ final class Application
     {
         $items = [];
         foreach ($this->fetchThreads() as $thread) {
-            $title = $thread['subject'] ?: $thread['root_post_id'];
+            $title = $this->displayThreadTitle($thread);
             $items[] = $this->renderRssItem($title, '/threads/' . $thread['root_post_id'], $thread['body_preview'], (string) $thread['last_activity_at']);
         }
 
@@ -1370,7 +1383,7 @@ final class Application
             );
         }
 
-        return $this->renderRssFeed($thread['subject'] ?: $threadId, '/threads/' . $threadId . '?format=rss', $items);
+        return $this->renderRssFeed($this->displayThreadTitle($thread), '/threads/' . $threadId . '?format=rss', $items);
     }
 
     private function renderActivityRss(string $view): string
