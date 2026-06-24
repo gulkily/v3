@@ -1837,8 +1837,18 @@ function makeNode(tagName) {
     children: [],
     parentNode: null,
     firstChild: null,
+    get nextSibling() {
+      if (!this.parentNode) {
+        return null;
+      }
+      const index = this.parentNode.children.indexOf(this);
+      return index === -1 ? null : (this.parentNode.children[index + 1] || null);
+    },
     setAttribute(name, value) {
       this.attributes[name] = String(value);
+    },
+    getAttribute(name) {
+      return this.attributes[name] || null;
     },
     appendChild(child) {
       child.parentNode = this;
@@ -1916,8 +1926,30 @@ const shell = helper.createPendingThreadShell({
   status: 'Creating thread...'
 });
 const inserted = helper.insertPendingThreadShell(root, shell);
+
+const boardRoot = makeNode('section');
+boardRoot.setAttribute('data-pending-thread-position', 'after');
+const boardComposeCard = makeNode('article');
+boardComposeCard.id = 'board-compose-card';
+const firstThread = makeNode('article');
+firstThread.id = 'first-thread';
+const boardForm = {
+  id: 'board-compose-form',
+  closest(selector) {
+    return selector === '.card' ? boardComposeCard : null;
+  }
+};
+boardRoot.appendChild(boardComposeCard);
+boardRoot.appendChild(firstThread);
+boardRoot.querySelector = function(selector) {
+  return selector === '[data-compose-form]' ? boardForm : null;
+};
+const boardShell = helper.createPendingThreadShell({ pendingId: 'pending-thread:board' });
+const boardInserted = helper.insertPendingThreadShell(boardRoot, boardShell);
+
 process.stdout.write(JSON.stringify({
   inserted,
+  boardInserted,
   shellId: shell.id,
   className: shell.className,
   pendingId: shell.attributes['data-pending-thread-id'],
@@ -1926,7 +1958,8 @@ process.stdout.write(JSON.stringify({
   bodyText: shell.querySelector('.body').textContent,
   bodyChildCount: shell.querySelector('.body').children.length,
   status: shell.querySelector('[data-role="pending-thread-status"]').textContent,
-  order: root.children.map((child) => child.id)
+  order: root.children.map((child) => child.id),
+  boardOrder: boardRoot.children.map((child) => child.id)
 }));
 NODE;
 
@@ -1942,6 +1975,8 @@ NODE;
         assertSame(0, $result['bodyChildCount']);
         assertSame('Creating thread...', $result['status']);
         assertSame(['intro', 'pending-thread:test', 'compose-card'], $result['order']);
+        assertSame(true, $result['boardInserted']);
+        assertSame(['board-compose-card', 'pending-thread:board', 'first-thread'], $result['boardOrder']);
     }
 
     public function testThreadSubmitRendersPendingShellBeforeApiResponseAndNavigatesOnSuccess(): void

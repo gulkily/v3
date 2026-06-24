@@ -630,6 +630,14 @@
     const target = formCard || form || null;
 
     if (target && target.parentNode && typeof target.parentNode.insertBefore === "function") {
+      if (
+        typeof composeRoot.getAttribute === "function" &&
+        composeRoot.getAttribute("data-pending-thread-position") === "after"
+      ) {
+        target.parentNode.insertBefore(shell, target.nextSibling || null);
+        return true;
+      }
+
       target.parentNode.insertBefore(shell, target);
       return true;
     }

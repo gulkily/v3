@@ -81,3 +81,4 @@ As a user, I want to be able to start a new thread from the home page, using a c
 - 2026-06-24: Made `browser_signing.js` expose an idempotent `window.ForumBrowserSigning.init()` initializer for lazy-loaded compose flows.
 - 2026-06-24: Added `lazy_compose_signing.js`, wired it to the board route, and asserted the board does not eagerly include OpenPGP or browser-signing assets.
 - 2026-06-24: Added a Node-backed asset test for lazy compose signing load order, duplicate intent dedupe, and initializer invocation.
+- 2026-06-24: Marked the board composer so optimistic pending thread shells insert after the composer and before the feed.
