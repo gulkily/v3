@@ -1576,7 +1576,43 @@
     field.value = currentAuthorIdentityId();
   }
 
+  function rootIsBrowserSigningBound(root) {
+    if (!root) {
+      return true;
+    }
+
+    if (root.dataset) {
+      return root.dataset.browserSigningBound === "1";
+    }
+
+    if (typeof root.getAttribute === "function") {
+      return root.getAttribute("data-browser-signing-bound") === "1";
+    }
+
+    return false;
+  }
+
+  function markRootBrowserSigningBound(root) {
+    if (!root) {
+      return;
+    }
+
+    if (root.dataset) {
+      root.dataset.browserSigningBound = "1";
+      return;
+    }
+
+    if (typeof root.setAttribute === "function") {
+      root.setAttribute("data-browser-signing-bound", "1");
+    }
+  }
+
   function bindAccountKeyPage(root) {
+    if (rootIsBrowserSigningBound(root)) {
+      return false;
+    }
+    markRootBrowserSigningBound(root);
+
     const statusNode = root.querySelector('[data-role="browser-key-status"]');
     const publicKeyField = root.querySelector('[data-role="public-key-field"]');
     const generateButton = root.querySelector('[data-action="generate-browser-key"]');
@@ -1705,9 +1741,16 @@
         setStatus(statusNode, "Copied the saved private key.", "ok");
       });
     }
+
+    return true;
   }
 
   function bindComposePage(root) {
+    if (rootIsBrowserSigningBound(root)) {
+      return false;
+    }
+    markRootBrowserSigningBound(root);
+
     const form = root.querySelector("[data-compose-form]");
     const statusNode = root.querySelector('[data-role="compose-identity-status"]');
     const submitButtons = form ? Array.from(form.querySelectorAll('button[type="submit"], input[type="submit"]')) : [];
@@ -2183,19 +2226,33 @@
 
       restoreComposeUiState();
     });
+
+    return true;
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
-    scheduleIdentityPrewarm(document);
+  function initBrowserSigning(root) {
+    const scope = root && typeof root.querySelector === "function" ? root : document;
+    scheduleIdentityPrewarm(scope);
 
-    const accountRoot = document.querySelector("[data-account-key-root]");
+    const accountRoot = scope.matches && scope.matches("[data-account-key-root]")
+      ? scope
+      : scope.querySelector("[data-account-key-root]");
     if (accountRoot) {
       bindAccountKeyPage(accountRoot);
     }
 
-    const composeRoot = document.querySelector("[data-compose-root]");
+    const composeRoot = scope.matches && scope.matches("[data-compose-root]")
+      ? scope
+      : scope.querySelector("[data-compose-root]");
     if (composeRoot) {
       bindComposePage(composeRoot);
     }
+  }
+
+  window.ForumBrowserSigning = window.ForumBrowserSigning || {};
+  window.ForumBrowserSigning.init = initBrowserSigning;
+
+  document.addEventListener("DOMContentLoaded", function () {
+    initBrowserSigning(document);
   });
 })();
