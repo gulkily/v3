@@ -1121,7 +1121,7 @@ final class WriteApiSmokeTest
         assertSame(1, count($matchingRecords));
     }
 
-    public function testLabeledWritesRebuildReadModelAndPublishLabelActivityImmediately(): void
+    public function testLabeledWritesUseIncrementalReadModelAndPublishLabelActivityImmediately(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -1137,8 +1137,11 @@ final class WriteApiSmokeTest
 
         $activity = $this->renderMethod($application, 'GET', '/activity/?view=content');
 
-        assertSame(true, isset($result['timings']['read_model_rebuild']));
-        assertSame(false, isset($result['timings']['read_model_incremental_update']));
+        assertSame(true, isset($result['timings']['read_model_incremental_update']));
+        assertSame(true, isset($result['timings']['read_model_incremental_post_insert_post']));
+        assertSame(true, isset($result['timings']['read_model_incremental_thread_label_update_thread_labels']));
+        assertSame(true, isset($result['timings']['read_model_incremental_thread_label_refresh_thread_label_activity']));
+        assertSame(false, isset($result['timings']['read_model_rebuild']));
         assertStringContains('thread_label_add', $activity);
         assertStringContains('Labels added: answered', $activity);
         assertStringContains('/threads/root-001', $activity);
@@ -1607,6 +1610,44 @@ final class WriteApiSmokeTest
         assertFalse(is_file($staleMarkerPath));
     }
 
+    public function testLabeledWriteIncrementalLabelFailureFallsBackToFullRebuildAndKeepsReadModelHealthy(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $service = new class($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot)) extends LocalWriteService {
+            protected function incrementalReadModelUpdater(): IncrementalReadModelUpdater
+            {
+                return new class($this->databasePath(), $this->repositoryRoot()) extends IncrementalReadModelUpdater {
+                    public function applyThreadLabelWrite(string $threadId, string $commitSha): array
+                    {
+                        throw new RuntimeException('simulated thread-label incremental failure');
+                    }
+                };
+            }
+        };
+
+        $result = $service->createReply([
+            'thread_id' => 'root-001',
+            'parent_id' => 'root-001',
+            'board_tags' => 'general',
+            'body' => "Fallback labeled reply\n#answered\n",
+        ]);
+
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
+        $activity = $this->renderMethod($application, 'GET', '/activity/?view=content');
+        $staleMarkerPath = dirname($databasePath) . '/read_model_stale.json';
+
+        assertSame(true, isset($result['timings']['read_model_incremental_fallback']));
+        assertSame(true, isset($result['timings']['read_model_rebuild_fallback']));
+        assertStringContains('Fallback labeled reply', $threadPage);
+        assertStringContains('Labels: answered, bug, needs-review', $threadPage);
+        assertStringContains('thread_label_add', $activity);
+        assertStringContains('Labels added: answered', $activity);
+        assertFalse(is_file($staleMarkerPath));
+    }
+
     public function testIdentityIncrementalFailureFallsBackToFullRebuildAndKeepsReadModelHealthy(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -1659,7 +1700,7 @@ final class WriteApiSmokeTest
             'thread_id' => $threadResult['thread_id'],
             'parent_id' => $threadResult['thread_id'],
             'board_tags' => 'general',
-            'body' => 'Parity reply',
+            'body' => "Parity reply\n#parity\n",
             'author_identity_id' => $identity['identity_id'],
         ]);
 
@@ -1674,11 +1715,14 @@ final class WriteApiSmokeTest
         $freshReply = $this->renderMethod($freshApplication, 'GET', '/posts/' . $replyResult['post_id']);
         $incrementalUser = $this->renderMethod($application, 'GET', '/user/compare-user');
         $freshUser = $this->renderMethod($freshApplication, 'GET', '/user/compare-user');
+        $incrementalActivity = $this->renderMethod($application, 'GET', '/activity/?view=content');
+        $freshActivity = $this->renderMethod($freshApplication, 'GET', '/activity/?view=content');
 
         assertSame($this->normalizeRenderedPage($freshBoard), $this->normalizeRenderedPage($incrementalBoard));
         assertSame($this->normalizeRenderedPage($freshThread), $this->normalizeRenderedPage($incrementalThread));
         assertSame($this->normalizeRenderedPage($freshReply), $this->normalizeRenderedPage($incrementalReply));
         assertSame($this->normalizeRenderedPage($freshUser), $this->normalizeRenderedPage($incrementalUser));
+        assertSame($this->normalizeRenderedPage($freshActivity), $this->normalizeRenderedPage($incrementalActivity));
     }
 
     public function testIncrementalIdentityLinkMatchesFreshRebuildView(): void

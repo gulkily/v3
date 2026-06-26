@@ -482,7 +482,7 @@ class LocalWriteService
     private function synchronizePostDerivedState(PostRecord $record, string $commitSha, bool $hasThreadLabelWrite = false): array
     {
         $phaseStartedAt = hrtime(true);
-        if ($hasThreadLabelWrite || !$this->canIncrementallyUpdateReadModel()) {
+        if (!$this->canIncrementallyUpdateReadModel()) {
             $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
             $timings = [
                 'read_model_rebuild' => $this->elapsedMilliseconds($phaseStartedAt),
@@ -495,7 +495,21 @@ class LocalWriteService
         }
 
         try {
-            $incrementalTimings = $this->incrementalReadModelUpdater()->applyPostWrite($record, $commitSha);
+            $updater = $this->incrementalReadModelUpdater();
+            $postTimings = $updater->applyPostWrite($record, $commitSha);
+            if ($hasThreadLabelWrite) {
+                $threadLabelTimings = $updater->applyThreadLabelWrite($record->threadId ?? $record->postId, $commitSha);
+                $incrementalTimings = [];
+                foreach ($postTimings as $name => $duration) {
+                    $incrementalTimings['post_' . $name] = $duration;
+                }
+                foreach ($threadLabelTimings as $name => $duration) {
+                    $incrementalTimings['thread_label_' . $name] = $duration;
+                }
+            } else {
+                $incrementalTimings = $postTimings;
+            }
+
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
             $fallbackStartedAt = hrtime(true);
