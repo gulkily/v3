@@ -310,21 +310,62 @@ final class WriteApiSmokeTest
     public function testGenerateAgentReplyRequiresCompletedCurrentAnalysis(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED=true');
 
-        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
-        $threadResponse = $this->renderMethod(
-            $application,
-            'POST',
-            '/api/create_thread?board_tags=general&subject=Needs%20Analysis&body=Should%20this%20be%20answered%3F'
-        );
-        $postId = $this->extractValue($threadResponse, 'post_id');
-        $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId) . '?created_post_id=' . rawurlencode($postId));
-        $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Needs%20Analysis&body=Should%20this%20be%20answered%3F'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+            $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId) . '?created_post_id=' . rawurlencode($postId));
+            $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
 
-        assertStringContains('data-agent-reply-work="analyze"', $threadPage);
-        assertSame('ok', $response['status']);
-        assertSame('analysis_required', $response['generation_status']);
-        assertSame('missing_analysis', $response['reason']);
+            assertStringContains('data-agent-reply-work="analyze"', $threadPage);
+            assertSame('ok', $response['status']);
+            assertSame('analysis_required', $response['generation_status']);
+            assertSame('missing_analysis', $response['reason']);
+        } finally {
+            putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED');
+        }
+    }
+
+    public function testAutomaticAgentReplyWorkCanBeDisabledWithoutDisablingApi(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $secretsPath = tempnam(sys_get_temp_dir(), 'forum-rewrite-secrets-');
+        if ($secretsPath === false) {
+            throw new RuntimeException('Unable to create temporary secrets file.');
+        }
+        file_put_contents($secretsPath, <<<'PHP'
+<?php
+return [
+    'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED' => false,
+];
+PHP);
+        putenv('FORUM_SECRETS_PATH=' . $secretsPath);
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Manual%20Analysis&body=Should%20manual%20analysis%20still%20work%3F'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+            $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId) . '?created_post_id=' . rawurlencode($postId));
+            $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+
+            assertStringNotContains('data-agent-reply-work=', $threadPage);
+            assertSame('ok', $response['status']);
+            assertSame('analysis_required', $response['generation_status']);
+            assertSame('missing_analysis', $response['reason']);
+        } finally {
+            putenv('FORUM_SECRETS_PATH');
+            @unlink($secretsPath);
+        }
     }
 
     public function testGenerateAgentReplyReportsFailedAnalysisAsRequired(): void

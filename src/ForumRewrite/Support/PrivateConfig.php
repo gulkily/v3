@@ -34,6 +34,7 @@ final class PrivateConfig
             'DEDALUS_TIMEOUT_SECONDS',
             'DEDALUS_ANALYSIS_MODE',
             'DEDALUS_AGENT_REPLIES_ENABLED',
+            'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED',
         ] as $key) {
             $value = getenv($key);
             if ($value !== false) {

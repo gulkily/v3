@@ -1391,6 +1391,137 @@ NODE;
         assertSame('Sending anonymous post...', $result['status']);
     }
 
+    public function testComposeTextareaCtrlEnterRequestsPrimarySubmit(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  keydownHandler: null,
+  requestSubmitCalls: [],
+  primaryClicks: 0,
+  anonymousClicks: 0,
+  prevented: []
+};
+
+function makeField(tagName, name, value, type) {
+  return {
+    tagName,
+    name,
+    value,
+    defaultValue: value,
+    dataset: {},
+    disabled: false,
+    hidden: false,
+    getAttribute(attribute) {
+      if (attribute === 'type') return type || null;
+      return null;
+    },
+    addEventListener() {}
+  };
+}
+
+const body = Object.assign(makeField('TEXTAREA', 'body', 'Draft body', null), { dataset: { composeFieldLabel: 'Body' } });
+const subject = Object.assign(makeField('INPUT', 'subject', 'Draft subject', 'text'), { dataset: { composeFieldLabel: 'Subject' } });
+const author = makeField('INPUT', 'author_identity_id', '', 'hidden');
+const primaryButton = {
+  dataset: {},
+  disabled: false,
+  click() { state.primaryClicks += 1; }
+};
+const anonymousButton = {
+  dataset: { action: 'submit-anonymous-compose' },
+  disabled: false,
+  click() { state.anonymousClicks += 1; }
+};
+const form = {
+  dataset: { composeKind: 'thread' },
+  querySelector(selector) {
+    if (selector === 'input[name="author_identity_id"]') return author;
+    return null;
+  },
+  querySelectorAll(selector) {
+    if (selector === 'input[name], textarea[name]') return [author, subject, body];
+    if (selector === 'button[type="submit"], input[type="submit"]') return [primaryButton, anonymousButton];
+    return [];
+  },
+  addEventListener(type, handler) {
+    if (type === 'keydown') state.keydownHandler = handler;
+  },
+  requestSubmit(submitter) {
+    state.requestSubmitCalls.push(submitter === primaryButton ? 'primary' : 'anonymous');
+  },
+  reset() {},
+  submit() {}
+};
+const statusNode = { dataset: {}, textContent: '', hidden: true, querySelector(){ return null; } };
+const root = {
+  dataset: {},
+  querySelector(selector) {
+    if (selector === '[data-compose-form]') return form;
+    if (selector === '[data-role="compose-identity-status"]') return statusNode;
+    return null;
+  },
+  querySelectorAll() {
+    return [];
+  }
+};
+
+function keyEvent(label, overrides) {
+  return Object.assign({
+    key: 'Enter',
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    altKey: false,
+    target: body,
+    preventDefault() { state.prevented.push(label); }
+  }, overrides || {});
+}
+
+global.window = { addEventListener() {}, setTimeout(callback) { callback(); } };
+global.localStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.sessionStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') handler();
+  },
+  querySelector(selector) {
+    if (selector === '[data-compose-root]' || selector.indexOf('[data-compose-root]') !== -1) return root;
+    return null;
+  },
+  createElement(){ return { setAttribute(){}, style:{}, addEventListener(){}, appendChild(){}, querySelector(){ return null; } }; },
+  createTextNode(text){ return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+state.keydownHandler(keyEvent('plain'));
+state.keydownHandler(keyEvent('shift', { ctrlKey: true, shiftKey: true }));
+state.keydownHandler(keyEvent('input', { ctrlKey: true, target: subject }));
+state.keydownHandler(keyEvent('ctrl', { ctrlKey: true }));
+state.keydownHandler(keyEvent('meta', { metaKey: true }));
+primaryButton.disabled = true;
+state.keydownHandler(keyEvent('disabled', { ctrlKey: true }));
+
+process.stdout.write(JSON.stringify({
+  requestSubmitCalls: state.requestSubmitCalls,
+  prevented: state.prevented,
+  primaryClicks: state.primaryClicks,
+  anonymousClicks: state.anonymousClicks
+}));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(['primary', 'primary'], $result['requestSubmitCalls']);
+        assertSame(['ctrl', 'meta'], $result['prevented']);
+        assertSame(0, $result['primaryClicks']);
+        assertSame(0, $result['anonymousClicks']);
+    }
+
     public function testReplySubmitTransportHelpersCollectFieldsAndParseResponses(): void
     {
         $script = <<<'NODE'
