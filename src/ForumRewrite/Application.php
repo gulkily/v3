@@ -1698,7 +1698,7 @@ final class Application
         array $analysesByPostId,
         array $agentRepliesByPostId
     ): array {
-        if ($createdPostId === '' || !$this->agentRepliesEnabled()) {
+        if ($createdPostId === '' || !$this->agentRepliesAutomaticEnabled()) {
             return [];
         }
 
@@ -3220,9 +3220,53 @@ final class Application
     private function agentRepliesEnabled(): bool
     {
         $config = PrivateConfig::load($this->projectRoot);
-        $value = strtolower(trim((string) ($config['DEDALUS_AGENT_REPLIES_ENABLED'] ?? 'true')));
 
-        return !in_array($value, ['0', 'false', 'no', 'off'], true);
+        return $this->configFlagEnabled($config, 'DEDALUS_AGENT_REPLIES_ENABLED', true);
+    }
+
+    private function agentRepliesAutomaticEnabled(): bool
+    {
+        if (!$this->agentRepliesEnabled()) {
+            return false;
+        }
+
+        $config = PrivateConfig::load($this->projectRoot);
+
+        return $this->configFlagEnabled($config, 'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', true);
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function configFlagEnabled(array $config, string $key, bool $default): bool
+    {
+        if (!array_key_exists($key, $config)) {
+            return $default;
+        }
+
+        $value = $config[$key];
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (float) $value !== 0.0;
+        }
+
+        $normalized = strtolower(trim((string) $value));
+        if ($normalized === '') {
+            return $default;
+        }
+
+        if (in_array($normalized, ['0', 'false', 'no', 'off'], true)) {
+            return false;
+        }
+
+        if (in_array($normalized, ['1', 'true', 'yes', 'on'], true)) {
+            return true;
+        }
+
+        return $default;
     }
 
     /**
