@@ -477,3 +477,4 @@ Stop there if the immediate need is visibility and auditability. Then implement 
 - Slice 8: Documented site feature flag precedence, git-backed audit history, production env override semantics, rollback options, and static artifact implications.
 - Follow-up: Accepted the feature flags UI's displayed `enabled`/`disabled` values as write inputs while continuing to store canonical `true`/`false` values.
 - Follow-up: Added private read-only feature flag visibility for `DEDALUS_AGENT_REPLIES_ENABLED` and `DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED`, including private-config source reporting.
+- Follow-up: Fixed enhanced feature flag form submissions so the selected canonical value is captured before controls are disabled, preventing missing `value` payloads.

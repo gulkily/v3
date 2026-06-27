@@ -47,13 +47,14 @@
         if (status) {
           status.textContent = "Saving...";
         }
+        var body = new URLSearchParams(new FormData(form)).toString();
         setPending(form, true);
 
         window.fetch("/api/set_feature_flag", {
           method: "POST",
           credentials: "same-origin",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams(new FormData(form)).toString()
+          body: body
         }).then(function (response) {
           return response.text().then(function (text) {
             var result = parseTextResponse(text);
