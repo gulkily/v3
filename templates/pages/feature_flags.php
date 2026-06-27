@@ -21,13 +21,13 @@
       </thead>
       <tbody>
 <?php foreach ($flags as $flag): ?>
-        <tr>
+        <tr data-feature-flag-row data-flag-key="<?= $e($flag->definition->key) ?>">
           <th scope="row">
             <?= $e($flag->definition->label) ?>
             <div class="codebase-source"><code><?= $e($flag->definition->key) ?></code></div>
             <div class="meta"><?= $e($flag->definition->description) ?></div>
           </th>
-          <td><code><?= $flag->effectiveValue ? 'enabled' : 'disabled' ?></code></td>
+          <td><code data-role="feature-flag-effective"><?= $flag->effectiveValue ? 'enabled' : 'disabled' ?></code></td>
           <td>
             <code><?= $flag->definition->defaultValue ? 'enabled' : 'disabled' ?></code>
 <?php if ($flag->isDefault()): ?>
@@ -37,7 +37,7 @@
 <?php endif; ?>
           </td>
           <td>
-            <code><?= $e($flag->source) ?></code>
+            <code data-role="feature-flag-source"><?= $e($flag->source) ?></code>
 <?php if ($flag->environmentValue !== null): ?>
             <div class="codebase-source"><code><?= $e($flag->definition->environmentVariable) ?></code></div>
 <?php endif; ?>
@@ -48,13 +48,14 @@
           <td>
             <code><?= $flag->canChangeFromSite() ? 'yes' : 'no' ?></code>
 <?php if ($flag->canChangeFromSite()): ?>
-            <form method="post" action="/tools/feature-flags/" class="inline-form">
+            <form method="post" action="/tools/feature-flags/" class="inline-form" data-feature-flag-form>
               <input type="hidden" name="key" value="<?= $e($flag->definition->key) ?>">
               <select name="value">
                 <option value="true"<?= $flag->effectiveValue ? ' selected' : '' ?>>enabled</option>
                 <option value="false"<?= !$flag->effectiveValue ? ' selected' : '' ?>>disabled</option>
               </select>
               <button type="submit">Save</button>
+              <div class="meta" data-role="feature-flag-status"></div>
             </form>
 <?php endif; ?>
           </td>

@@ -1181,6 +1181,7 @@ final class Application
             ],
             'Feature Flags',
             'tools',
+            ['/assets/feature_flags.js'],
         );
     }
 

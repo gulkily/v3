@@ -376,9 +376,10 @@ final class LocalAppSmokeTest
         assertStringContains('/downloads/repository.tar.gz', $codebase);
         assertStringContains('Feature Flags', $featureFlags);
         assertStringContains('class="nav-link is-active" href="/tools/feature-flags/"', $featureFlags);
+        assertFingerprintedAsset($featureFlags, 'feature_flags.js');
         assertStringContains('FORUM_UNICODE_AUTHORED_TEXT', $featureFlags);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $featureFlags);
-        assertStringContains('<code>default</code>', $featureFlags);
+        assertStringContains('data-role="feature-flag-source">default</code>', $featureFlags);
         assertStringContains('current value is default', $featureFlags);
         assertStringContains('<code>yes</code>', $featureFlags);
         assertStringContains('About zenmemes', $about);
@@ -514,7 +515,7 @@ final class LocalAppSmokeTest
         assertStringNotContains('meta name="app-version"', $board);
         assertStringNotContains('/assets/version_check.', $board);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $featureFlags);
-        assertStringContains('<code>site</code>', $featureFlags);
+        assertStringContains('data-role="feature-flag-source">site</code>', $featureFlags);
         assertStringContains('current value differs from default', $featureFlags);
     }
 
@@ -535,7 +536,7 @@ final class LocalAppSmokeTest
 
         assertStringContains('meta name="app-version"', $board);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $featureFlags);
-        assertStringContains('<code>invalid-site-value</code>', $featureFlags);
+        assertStringContains('data-role="feature-flag-source">invalid-site-value</code>', $featureFlags);
     }
 
     public function testNegativeRootScoreIsFilteredOnlyFromLikedBoardListings(): void

@@ -11,6 +11,7 @@ $testFiles = [
     __DIR__ . '/ArchiveThreadCommandTest.php',
     __DIR__ . '/DedalusPostAnalyzerTest.php',
     __DIR__ . '/FeatureFlagEvaluatorTest.php',
+    __DIR__ . '/FeatureFlagsBehaviorTest.php',
     __DIR__ . '/LocalAppSmokeTest.php',
     __DIR__ . '/LazyComposeSigningTest.php',
     __DIR__ . '/OpenPgpLoaderTest.php',

@@ -1186,10 +1186,11 @@ PHP);
         $_COOKIE = [];
 
         assertStringContains('method="post" action="/tools/feature-flags/"', $form);
+        assertStringContains('data-feature-flag-form', $form);
         assertStringContains('Feature flag changes require a root-approved identity.', $unauthorized);
         assertStringContains('Feature flag updated. Commit:', $redirect);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $updated);
-        assertStringContains('<code>site</code>', $updated);
+        assertStringContains('data-role="feature-flag-source">site</code>', $updated);
     }
 
     public function testThreadAndReplyWritesUseIncrementalReadModelUpdateWhenDatabaseIsWarm(): void
