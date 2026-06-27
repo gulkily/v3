@@ -40,4 +40,9 @@ final class CanonicalPathResolver
     {
         return 'records/instance/public.txt';
     }
+
+    public static function featureFlags(): string
+    {
+        return 'records/instance/feature-flags.txt';
+    }
 }

@@ -11,6 +11,7 @@ use ForumRewrite\Canonical\InstancePublicRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PublicKeyRecordParser;
+use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
 
 require __DIR__ . '/../autoload.php';
@@ -228,6 +229,44 @@ final class CanonicalRecordParsersTest
         assertSame("zenmemes summary.\n", $record->body);
     }
 
+    public function testParsesSiteFeatureFlagsRecord(): void
+    {
+        $contents = "Schema: site-feature-flags-v1\nUpdated-At: 2026-06-27T00:00:00Z\n\nFORUM_APP_VERSION_NOTIFICATION: true\nFORUM_UNKNOWN_FUTURE_FLAG: false\nFORUM_UNICODE_AUTHORED_TEXT: false\n";
+
+        $record = (new SiteFeatureFlagsRecordParser())->parse($contents);
+
+        assertSame('2026-06-27T00:00:00Z', $record->updatedAt);
+        assertSame([
+            'FORUM_APP_VERSION_NOTIFICATION' => true,
+            'FORUM_UNICODE_AUTHORED_TEXT' => false,
+            'FORUM_UNKNOWN_FUTURE_FLAG' => false,
+        ], $record->values);
+    }
+
+    public function testRejectsMalformedSiteFeatureFlagsRecord(): void
+    {
+        assertThrows(
+            static fn () => (new SiteFeatureFlagsRecordParser())->parse("Schema: wrong\n\nFORUM_APP_VERSION_NOTIFICATION: true\n"),
+            'Site feature flags Schema must be site-feature-flags-v1.'
+        );
+        assertThrows(
+            static fn () => (new SiteFeatureFlagsRecordParser())->parse("Schema: site-feature-flags-v1\nUpdated-At: 2026-06-27 00:00:00\n\nFORUM_APP_VERSION_NOTIFICATION: true\n"),
+            'Updated-At must use RFC 3339 UTC format like 2026-04-13T12:34:56Z.'
+        );
+        assertThrows(
+            static fn () => (new SiteFeatureFlagsRecordParser())->parse("Schema: site-feature-flags-v1\n\nFORUM_APP_VERSION_NOTIFICATION: yes\n"),
+            'Invalid site feature flag line: FORUM_APP_VERSION_NOTIFICATION: yes'
+        );
+        assertThrows(
+            static fn () => (new SiteFeatureFlagsRecordParser())->parse("Schema: site-feature-flags-v1\n\nforum_lower: true\n"),
+            'Invalid site feature flag line: forum_lower: true'
+        );
+        assertThrows(
+            static fn () => (new SiteFeatureFlagsRecordParser())->parse("Schema: site-feature-flags-v1\n\nFORUM_APP_VERSION_NOTIFICATION: true\nFORUM_APP_VERSION_NOTIFICATION: false\n"),
+            'Duplicate site feature flag key: FORUM_APP_VERSION_NOTIFICATION'
+        );
+    }
+
     public function testRepositoryLoadsFixtureRecordsByFamily(): void
     {
         $tempRoot = $this->createTempFixtureRoot();
@@ -235,6 +274,10 @@ final class CanonicalRecordParsersTest
         file_put_contents(
             $tempRoot . '/records/post-reactions/post-reaction-20260415153000-ab12cd34.txt',
             "Record-ID: post-reaction-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nPost-ID: reply-001\nOperation: add\nTags: flag\n\n"
+        );
+        file_put_contents(
+            $tempRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_APP_VERSION_NOTIFICATION: false\n"
         );
         $repository = new CanonicalRecordRepository($tempRoot);
 
@@ -244,6 +287,7 @@ final class CanonicalRecordParsersTest
         $approvalSeed = $repository->loadApprovalSeed('records/approval-seeds/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt');
         $threadLabel = $repository->loadThreadLabel('records/thread-labels/thread-label-20260415153000-ab12cd34.txt');
         $instance = $repository->loadInstancePublic('records/instance/public.txt');
+        $featureFlags = $repository->loadFeatureFlags('records/instance/feature-flags.txt');
         $postReaction = $repository->loadPostReaction('records/post-reactions/post-reaction-20260415153000-ab12cd34.txt');
 
         assertSame('root-001', $post->postId);
@@ -253,6 +297,17 @@ final class CanonicalRecordParsersTest
         assertSame(['bug', 'needs-review'], $threadLabel->labels);
         assertSame(['flag'], $postReaction->tags);
         assertSame('zenmemes', $instance->headers['Instance-Name']);
+        assertSame(['FORUM_APP_VERSION_NOTIFICATION' => false], $featureFlags->values);
+    }
+
+    public function testRepositoryReturnsEmptyFeatureFlagsWhenRecordIsAbsent(): void
+    {
+        $repository = new CanonicalRecordRepository($this->createTempFixtureRoot());
+
+        $featureFlags = $repository->loadFeatureFlags('records/instance/feature-flags.txt');
+
+        assertSame([], $featureFlags->values);
+        assertNullValue($featureFlags->updatedAt);
     }
 
     public function testRepositoryAcceptsLegacyLowercasePublicKeyPath(): void
@@ -361,6 +416,7 @@ final class CanonicalRecordParsersTest
             CanonicalPathResolver::postReaction('post-reaction-20260415153000-ab12cd34')
         );
         assertSame('records/instance/public.txt', CanonicalPathResolver::instancePublic());
+        assertSame('records/instance/feature-flags.txt', CanonicalPathResolver::featureFlags());
     }
 
     private function readFixture(string $relativePath): string

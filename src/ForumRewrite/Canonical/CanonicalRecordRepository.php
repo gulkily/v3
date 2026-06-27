@@ -15,6 +15,7 @@ final class CanonicalRecordRepository
         private readonly ThreadLabelRecordParser $threadLabelParser = new ThreadLabelRecordParser(),
         private readonly PostReactionRecordParser $postReactionParser = new PostReactionRecordParser(),
         private readonly InstancePublicRecordParser $instanceParser = new InstancePublicRecordParser(),
+        private readonly SiteFeatureFlagsRecordParser $featureFlagsParser = new SiteFeatureFlagsRecordParser(),
     ) {
     }
 
@@ -78,6 +79,19 @@ final class CanonicalRecordRepository
         }
 
         return $this->instanceParser->parse($this->read($relativePath));
+    }
+
+    public function loadFeatureFlags(string $relativePath): SiteFeatureFlagsRecord
+    {
+        if ($relativePath !== CanonicalPathResolver::featureFlags()) {
+            throw new CanonicalRecordParseException('Site feature flags record path must be records/instance/feature-flags.txt.');
+        }
+
+        if (!is_file($this->repositoryRoot . '/' . $relativePath)) {
+            return SiteFeatureFlagsRecord::empty();
+        }
+
+        return $this->featureFlagsParser->parse($this->read($relativePath));
     }
 
     public function loadApprovalSeed(string $relativePath): ApprovalSeedRecord
