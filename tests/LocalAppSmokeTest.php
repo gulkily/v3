@@ -379,6 +379,8 @@ final class LocalAppSmokeTest
         assertFingerprintedAsset($featureFlags, 'feature_flags.js');
         assertStringContains('FORUM_UNICODE_AUTHORED_TEXT', $featureFlags);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $featureFlags);
+        assertStringContains('DEDALUS_AGENT_REPLIES_ENABLED', $featureFlags);
+        assertStringContains('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $featureFlags);
         assertStringContains('data-role="feature-flag-source">default</code>', $featureFlags);
         assertStringContains('current value is default', $featureFlags);
         assertStringContains('<code>yes</code>', $featureFlags);

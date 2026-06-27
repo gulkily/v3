@@ -16,6 +16,8 @@ final class FeatureFlagEvaluatorTest
 
             $unicode = $evaluator->evaluate(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
             $notification = $evaluator->evaluate(FeatureFlagRegistry::APP_VERSION_NOTIFICATION);
+            $agentReplies = $evaluator->evaluate(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED);
+            $automaticAgentReplies = $evaluator->evaluate(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED);
 
             assertSame(false, $unicode->effectiveValue);
             assertSame('default', $unicode->source);
@@ -23,6 +25,10 @@ final class FeatureFlagEvaluatorTest
             assertSame(true, $notification->effectiveValue);
             assertSame('default', $notification->source);
             assertSame(true, $notification->isDefault());
+            assertSame(true, $agentReplies->effectiveValue);
+            assertSame('default', $agentReplies->source);
+            assertSame(true, $automaticAgentReplies->effectiveValue);
+            assertSame('default', $automaticAgentReplies->source);
         });
     }
 
@@ -57,7 +63,30 @@ final class FeatureFlagEvaluatorTest
         assertSame([
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
+            FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
+            FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
         ], $keys);
+    }
+
+    public function testPrivateConfigFlagsAreReadOnlyAndUsePrivateConfigSource(): void
+    {
+        $this->withEnvironment([], function (): void {
+            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\nDEDALUS_AGENT_REPLIES_ENABLED: true\n");
+            $projectRoot = $this->projectRootWithPrivateConfig(<<<'PHP'
+<?php
+
+return [
+    'DEDALUS_AGENT_REPLIES_ENABLED' => false,
+];
+PHP);
+            $agentReplies = FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)
+                ->evaluate(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED);
+
+            assertSame(false, $agentReplies->effectiveValue);
+            assertSame('private-config', $agentReplies->source);
+            assertSame(false, $agentReplies->canChangeFromSite());
+            assertNullValue($agentReplies->siteValue);
+        });
     }
 
     public function testRepositoryValuesOverrideDefaultsButNotEnvironment(): void
@@ -110,6 +139,8 @@ final class FeatureFlagEvaluatorTest
         $keys = [
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
+            FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
+            FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
         ];
         $previous = [];
         foreach ($keys as $key) {
@@ -141,5 +172,15 @@ final class FeatureFlagEvaluatorTest
         file_put_contents($repositoryRoot . '/records/instance/feature-flags.txt', $contents);
 
         return $repositoryRoot;
+    }
+
+    private function projectRootWithPrivateConfig(string $contents): string
+    {
+        $root = sys_get_temp_dir() . '/forum-rewrite-private-flags-' . bin2hex(random_bytes(6));
+        mkdir($root . '/app', 0777, true);
+        mkdir($root . '/forum-private', 0777, true);
+        file_put_contents($root . '/forum-private/secrets.php', $contents);
+
+        return $root . '/app';
     }
 }

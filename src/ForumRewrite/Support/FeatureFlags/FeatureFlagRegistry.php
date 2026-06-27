@@ -8,6 +8,8 @@ final class FeatureFlagRegistry
 {
     public const UNICODE_AUTHORED_TEXT = 'FORUM_UNICODE_AUTHORED_TEXT';
     public const APP_VERSION_NOTIFICATION = 'FORUM_APP_VERSION_NOTIFICATION';
+    public const DEDALUS_AGENT_REPLIES_ENABLED = 'DEDALUS_AGENT_REPLIES_ENABLED';
+    public const DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED = 'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED';
 
     /**
      * @return list<FeatureFlagDefinition>
@@ -30,6 +32,22 @@ final class FeatureFlagRegistry
                 true,
                 self::APP_VERSION_NOTIFICATION,
                 siteMutable: true,
+            ),
+            new FeatureFlagDefinition(
+                self::DEDALUS_AGENT_REPLIES_ENABLED,
+                'Agent replies',
+                'Allow post analysis to generate and publish suggested agent replies when reply gates pass.',
+                true,
+                self::DEDALUS_AGENT_REPLIES_ENABLED,
+                'private',
+            ),
+            new FeatureFlagDefinition(
+                self::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
+                'Automatic agent replies',
+                'Allow eligible post pages to trigger agent reply work automatically.',
+                true,
+                self::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
+                'private',
             ),
         ];
     }

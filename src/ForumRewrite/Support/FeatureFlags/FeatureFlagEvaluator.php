@@ -7,6 +7,7 @@ namespace ForumRewrite\Support\FeatureFlags;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordParseException;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Support\PrivateConfig;
 
 final class FeatureFlagEvaluator
 {
@@ -17,6 +18,7 @@ final class FeatureFlagEvaluator
         private readonly FeatureFlagRegistry $registry = new FeatureFlagRegistry(),
         private readonly array $siteValues = [],
         private readonly ?string $siteError = null,
+        private readonly array $privateConfigValues = [],
     ) {
     }
 
@@ -29,6 +31,18 @@ final class FeatureFlagEvaluator
             return new self($registry, $record->values);
         } catch (CanonicalRecordParseException $exception) {
             return new self($registry, [], $exception->getMessage());
+        }
+    }
+
+    public static function forApplication(string $repositoryRoot, string $projectRoot): self
+    {
+        $registry = new FeatureFlagRegistry();
+        try {
+            $record = (new CanonicalRecordRepository($repositoryRoot))->loadFeatureFlags(CanonicalPathResolver::featureFlags());
+
+            return new self($registry, $record->values, privateConfigValues: PrivateConfig::load($projectRoot));
+        } catch (CanonicalRecordParseException $exception) {
+            return new self($registry, [], $exception->getMessage(), PrivateConfig::load($projectRoot));
         }
     }
 
@@ -67,6 +81,22 @@ final class FeatureFlagEvaluator
             );
         }
 
+        if ($definition->category === 'private' && array_key_exists($definition->environmentVariable, $this->privateConfigValues)) {
+            $privateValue = $this->configFlagValue(
+                $this->privateConfigValues[$definition->environmentVariable],
+                $definition->defaultValue
+            );
+
+            return new FeatureFlagState(
+                $definition,
+                $privateValue,
+                'private-config',
+                null,
+                null,
+                $this->siteError,
+            );
+        }
+
         if ($this->siteError !== null) {
             return new FeatureFlagState(
                 $definition,
@@ -78,7 +108,7 @@ final class FeatureFlagEvaluator
             );
         }
 
-        if (array_key_exists($definition->key, $this->siteValues)) {
+        if ($definition->siteMutable && array_key_exists($definition->key, $this->siteValues)) {
             return new FeatureFlagState(
                 $definition,
                 $this->siteValues[$definition->key],
@@ -111,5 +141,31 @@ final class FeatureFlagEvaluator
         }
 
         return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
+    }
+
+    private function configFlagValue(mixed $value, bool $default): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (float) $value !== 0.0;
+        }
+
+        $normalized = strtolower(trim((string) $value));
+        if ($normalized === '') {
+            return $default;
+        }
+
+        if (in_array($normalized, ['0', 'false', 'no', 'off'], true)) {
+            return false;
+        }
+
+        if (in_array($normalized, ['1', 'true', 'yes', 'on'], true)) {
+            return true;
+        }
+
+        return $default;
     }
 }

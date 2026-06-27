@@ -1482,7 +1482,7 @@ final class Application
     private function featureFlags(): FeatureFlagEvaluator
     {
         if ($this->featureFlags === null) {
-            $this->featureFlags = FeatureFlagEvaluator::forRepository($this->repositoryRoot);
+            $this->featureFlags = FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot);
         }
 
         return $this->featureFlags;
