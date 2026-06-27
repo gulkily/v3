@@ -239,6 +239,7 @@ final class LocalAppSmokeTest
         $toolsBackup = $this->render($application, '/tools/backup/');
         $tools = $this->render($application, '/tools/');
         $codebase = $this->render($application, '/tools/codebase/');
+        $featureFlags = $this->render($application, '/tools/feature-flags/');
         $profile = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         $username = $this->render($application, '/user/guest');
         $_COOKIE = ['identity_hint' => 'guest'];
@@ -358,6 +359,8 @@ final class LocalAppSmokeTest
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/tools/codebase/', $tools);
         assertStringContains('Current application version, repository head, and read-model health.', $tools);
+        assertStringContains('/tools/feature-flags/', $tools);
+        assertStringContains('Registered site feature flags, defaults, effective values, and override sources.', $tools);
         assertStringContains('/account/key/', $tools);
         assertStringContains('System State', $codebase);
         assertStringContains('class="nav-link is-active" href="/tools/codebase/"', $codebase);
@@ -371,6 +374,13 @@ final class LocalAppSmokeTest
         assertStringContains('flock DATABASE_DIR/forum-rewrite.lock', $codebase);
         assertStringContains('SELECT COUNT(*) FROM posts', $codebase);
         assertStringContains('/downloads/repository.tar.gz', $codebase);
+        assertStringContains('Feature Flags', $featureFlags);
+        assertStringContains('class="nav-link is-active" href="/tools/feature-flags/"', $featureFlags);
+        assertStringContains('FORUM_UNICODE_AUTHORED_TEXT', $featureFlags);
+        assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $featureFlags);
+        assertStringContains('<code>default</code>', $featureFlags);
+        assertStringContains('current value is default', $featureFlags);
+        assertStringContains('<code>no</code>', $featureFlags);
         assertStringContains('About zenmemes', $about);
         assertStringContains('extraordinary people', $about);
         assertStringContains('Harvard St Commons', $about);
@@ -672,6 +682,7 @@ final class LocalAppSmokeTest
         assertStringContains('/activity/', $tools);
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
+        assertStringContains('/tools/feature-flags/', $tools);
         assertFingerprintedAsset($bookmarklets, 'tools_bookmarklets.js');
         assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
@@ -975,6 +986,7 @@ final class LocalAppSmokeTest
         assertTrue(is_file($artifactRoot . '/tools.html'));
         assertTrue(is_file($artifactRoot . '/tools/index.html'));
         assertTrue(is_file($artifactRoot . '/tools/bookmarklets.html'));
+        assertTrue(is_file($artifactRoot . '/tools/feature-flags.html'));
         assertTrue(is_file($artifactRoot . '/tags.html'));
         assertTrue(is_file($artifactRoot . '/tags/index.html'));
         assertTrue(is_file($artifactRoot . '/tags/general.html'));

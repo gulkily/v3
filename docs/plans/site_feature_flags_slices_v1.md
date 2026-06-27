@@ -468,3 +468,4 @@ Stop there if the immediate need is visibility and auditability. Then implement 
 ## Implementation Log
 
 - Slice 1: Added a central public feature flag registry/evaluator for the two existing `FORUM_*` flags, kept `SiteConfig` compatibility helpers, and covered default plus environment override behavior.
+- Slice 2: Added a read-only `/tools/feature-flags/` page, linked it from Tools navigation, rendered registered flag state with source/default/mutability details, and included it in static artifact generation.

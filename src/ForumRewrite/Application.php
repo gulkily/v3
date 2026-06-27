@@ -236,6 +236,11 @@ final class Application
             return;
         }
 
+        if ($path === '/tools/feature-flags/' || $path === '/tools/feature-flags') {
+            $this->sendHtml($this->renderFeatureFlags(), 200);
+            return;
+        }
+
         if ($path === '/compose/thread') {
             $this->sendHtml(
                 $this->renderComposeThread(
@@ -1123,6 +1128,11 @@ final class Application
                         'description' => 'Current application version, repository head, and read-model health.',
                     ],
                     [
+                        'label' => 'Feature Flags',
+                        'href' => '/tools/feature-flags/',
+                        'description' => 'Registered site feature flags, defaults, effective values, and override sources.',
+                    ],
+                    [
                         'label' => 'Account',
                         'href' => '/account/key/',
                         'description' => 'Browser key setup, identity linking, and technical account details.',
@@ -1144,6 +1154,19 @@ final class Application
                 'toolNavOptions' => $this->toolNavOptions('codebase'),
             ],
             'System State',
+            'tools',
+        );
+    }
+
+    private function renderFeatureFlags(): string
+    {
+        return $this->renderPageTemplate(
+            'feature_flags.php',
+            [
+                'flags' => SiteConfig::featureFlags()->all(),
+                'toolNavOptions' => $this->toolNavOptions('feature-flags'),
+            ],
+            'Feature Flags',
             'tools',
         );
     }
@@ -1219,6 +1242,12 @@ final class Application
                 'label' => 'System State',
                 'href' => '/tools/codebase/',
                 'is_active' => $activeKey === 'codebase',
+            ],
+            [
+                'key' => 'feature-flags',
+                'label' => 'Feature Flags',
+                'href' => '/tools/feature-flags/',
+                'is_active' => $activeKey === 'feature-flags',
             ],
         ];
     }

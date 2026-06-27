@@ -55,6 +55,7 @@ final class StaticArtifactBuilder
             $this->artifactRoot . '/tools/index.html',
         ]);
         $this->writeRouteArtifact($application, '/tools/bookmarklets/', $this->artifactRoot . '/tools/bookmarklets.html');
+        $this->writeRouteArtifact($application, '/tools/feature-flags/', $this->artifactRoot . '/tools/feature-flags.html');
         $this->writeRouteArtifacts($application, '/tags/', [
             $this->artifactRoot . '/tags.html',
             $this->artifactRoot . '/tags/index.html',
@@ -373,6 +374,10 @@ final class StaticArtifactBuilder
 
         if ($route === '/tools/bookmarklets/') {
             return [$this->artifactRoot . '/tools/bookmarklets.html'];
+        }
+
+        if ($route === '/tools/feature-flags/') {
+            return [$this->artifactRoot . '/tools/feature-flags.html'];
         }
 
         if ($route === '/tags/') {
