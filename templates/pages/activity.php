@@ -10,8 +10,16 @@
     </div>
   </article>
 <?php foreach ($items as $item): ?>
-<?php $href = $item['kind'] === 'thread_label_add' ? '/threads/' . $item['thread_id'] : '/posts/' . $item['post_id']; ?>
-<?php $linkLabel = $item['kind'] === 'thread_label_add' ? $item['thread_id'] : $item['post_id']; ?>
+<?php if ($item['kind'] === 'site_feature_flag'): ?>
+<?php $href = '/tools/feature-flags/'; ?>
+<?php $linkLabel = 'site feature flags'; ?>
+<?php elseif ($item['kind'] === 'thread_label_add'): ?>
+<?php $href = '/threads/' . $item['thread_id']; ?>
+<?php $linkLabel = $item['thread_id']; ?>
+<?php else: ?>
+<?php $href = '/posts/' . $item['post_id']; ?>
+<?php $linkLabel = $item['post_id']; ?>
+<?php endif; ?>
   <article class="card">
     <p class="meta"><?= $e($item['kind']) ?></p>
     <p><a href="<?= $e($href) ?>"><?= $e($linkLabel) ?></a></p>

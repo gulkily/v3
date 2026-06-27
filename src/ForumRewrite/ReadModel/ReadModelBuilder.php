@@ -181,8 +181,8 @@ final class ReadModelBuilder
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 created_at TEXT NOT NULL,
                 kind TEXT NOT NULL,
-                post_id TEXT NOT NULL,
-                thread_id TEXT NOT NULL,
+                post_id TEXT NULL,
+                thread_id TEXT NULL,
                 label TEXT NOT NULL,
                 board_tags_json TEXT NOT NULL,
                 author_identity_id TEXT NULL,
@@ -677,6 +677,24 @@ final class ReadModelBuilder
                 'source_commit_sha' => $event['source_commit_sha'],
             ]);
         }
+
+        foreach ($this->featureFlagActivityEvents() as $event) {
+            $stmt->execute([
+                'created_at' => $event['created_at'],
+                'kind' => 'site_feature_flag',
+                'post_id' => null,
+                'thread_id' => null,
+                'label' => $event['label'],
+                'board_tags_json' => '["site"]',
+                'author_identity_id' => null,
+                'author_profile_slug' => null,
+                'author_username_token' => null,
+                'author_label' => 'site configuration',
+                'author_is_approved' => 1,
+                'source_path' => CanonicalPathResolver::featureFlags(),
+                'source_commit_sha' => $event['source_commit_sha'],
+            ]);
+        }
     }
 
     /**
@@ -776,6 +794,50 @@ final class ReadModelBuilder
         }
 
         return $this->sourceCommitShaForRebuild;
+    }
+
+    /**
+     * @return list<array{created_at:string,label:string,source_commit_sha:string}>
+     */
+    private function featureFlagActivityEvents(): array
+    {
+        $path = CanonicalPathResolver::featureFlags();
+        if (!is_file($this->repositoryRoot . '/' . $path) || !is_dir($this->repositoryRoot . '/.git')) {
+            return [];
+        }
+
+        $command = [
+            'git',
+            '-C',
+            $this->repositoryRoot,
+            'log',
+            '--format=%cI%x00%H%x00%s',
+            '--',
+            $path,
+        ];
+        $output = [];
+        $exitCode = 0;
+        exec(implode(' ', array_map('escapeshellarg', $command)) . ' 2>/dev/null', $output, $exitCode);
+        if ($exitCode !== 0) {
+            return [];
+        }
+
+        $events = [];
+        foreach ($output as $line) {
+            $parts = explode("\0", $line, 3);
+            if (count($parts) !== 3 || $parts[0] === '' || $parts[1] === '') {
+                continue;
+            }
+
+            $subject = trim($parts[2]);
+            $events[] = [
+                'created_at' => $parts[0],
+                'label' => $subject !== '' ? $subject : 'Updated site feature flags',
+                'source_commit_sha' => $parts[1],
+            ];
+        }
+
+        return $events;
     }
 
     /**

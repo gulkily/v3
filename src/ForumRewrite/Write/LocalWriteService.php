@@ -489,6 +489,10 @@ class LocalWriteService
             $commitSha = $commitResult['commit_sha'];
 
             $phaseStartedAt = hrtime(true);
+            $this->insertFeatureFlagActivity($key, $requestedValue, $recordPath, $commitSha);
+            $timings['activity_update'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+            $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateFeatureFlags();
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
             $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
@@ -895,6 +899,36 @@ class LocalWriteService
     private function readModelPdo(): \PDO
     {
         return (new ReadModelConnection($this->databasePath))->open();
+    }
+
+    private function insertFeatureFlagActivity(string $key, bool $value, string $recordPath, string $commitSha): void
+    {
+        if (!$this->canIncrementallyUpdateReadModel()) {
+            return;
+        }
+
+        $pdo = $this->readModelPdo();
+        $stmt = $pdo->prepare(
+            'INSERT INTO activity (
+                created_at, kind, post_id, thread_id, label, board_tags_json,
+                author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved,
+                source_path, source_commit_sha
+             ) VALUES (
+                :created_at, :kind, NULL, NULL, :label, :board_tags_json,
+                NULL, NULL, NULL, :author_label, :author_is_approved,
+                :source_path, :source_commit_sha
+             )'
+        );
+        $stmt->execute([
+            'created_at' => $this->canonicalTimestampNow(),
+            'kind' => 'site_feature_flag',
+            'label' => 'Set feature flag ' . $key . '=' . ($value ? 'true' : 'false'),
+            'board_tags_json' => '["site"]',
+            'author_label' => 'site configuration',
+            'author_is_approved' => 1,
+            'source_path' => $recordPath,
+            'source_commit_sha' => $commitSha,
+        ]);
     }
 
     /**

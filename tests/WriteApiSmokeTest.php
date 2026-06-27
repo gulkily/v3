@@ -1185,6 +1185,50 @@ PHP);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION: false', (string) file_get_contents($repositoryRoot . '/records/instance/feature-flags.txt'));
     }
 
+    public function testSetFeatureFlagAddsActivityForWarmReadModel(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        try {
+            $response = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
+            );
+            $activity = $this->renderMethod($application, 'GET', '/activity/');
+        } finally {
+            $_COOKIE = [];
+        }
+
+        $commitSha = $this->extractValue($response, 'commit_sha');
+        assertStringContains('site_feature_flag', $activity);
+        assertStringContains('Set feature flag FORUM_APP_VERSION_NOTIFICATION=false', $activity);
+        assertStringContains('records/instance/feature-flags.txt', $activity);
+        assertStringContains(substr($commitSha, 0, 12), $activity);
+    }
+
+    public function testFeatureFlagActivityIsRecoveredByFullRebuildFromGitHistory(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $result = $service->setFeatureFlag([
+            'key' => 'FORUM_APP_VERSION_NOTIFICATION',
+            'value' => 'false',
+        ]);
+        $rebuiltDatabasePath = dirname($databasePath) . '/rebuilt-' . basename($databasePath);
+        $rebuiltApplication = new Application(dirname(__DIR__), $repositoryRoot, $rebuiltDatabasePath, $artifactRoot);
+
+        $activity = $this->renderMethod($rebuiltApplication, 'GET', '/activity/');
+
+        assertStringContains('site_feature_flag', $activity);
+        assertStringContains('Set feature flag FORUM_APP_VERSION_NOTIFICATION=false', $activity);
+        assertStringContains('records/instance/feature-flags.txt', $activity);
+        assertStringContains(substr((string) $result['commit_sha'], 0, 12), $activity);
+    }
+
     public function testFeatureFlagFormSubmitRequiresRootApprovedIdentityAndRedirectsAfterCommit(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

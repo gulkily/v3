@@ -1434,9 +1434,11 @@ final class Application
         $view = $this->normalizeActivityView($view);
         $items = [];
         foreach ($this->fetchActivity($view) as $item) {
-            $link = $item['kind'] === 'thread_label_add'
-                ? '/threads/' . $item['thread_id']
-                : '/posts/' . $item['post_id'];
+            $link = match ($item['kind']) {
+                'thread_label_add' => '/threads/' . $item['thread_id'],
+                'site_feature_flag' => '/tools/feature-flags/',
+                default => '/posts/' . $item['post_id'],
+            };
             $items[] = $this->renderRssItem($item['label'], $link, $item['kind'], (string) $item['created_at']);
         }
 
@@ -2471,7 +2473,7 @@ final class Application
                     activity.author_username_token, activity.author_is_approved
              FROM activity
              LEFT JOIN posts ON posts.post_id = activity.post_id
-             WHERE COALESCE(posts.is_hidden, 0) = 0
+             WHERE activity.post_id IS NULL OR COALESCE(posts.is_hidden, 0) = 0
              ORDER BY activity.created_at DESC, activity.post_id DESC, activity.id DESC'
         )->fetchAll();
 
@@ -4128,6 +4130,7 @@ final class Application
         }
 
         return $relativePath === 'records/instance/public.txt'
+            || $relativePath === 'records/instance/feature-flags.txt'
             || preg_match('#^records/posts/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/thread-labels/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/post-reactions/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1

@@ -618,7 +618,7 @@ final class LocalAppSmokeTest
         assertStringContains('status=ready', $readModelStatus);
         assertStringContains('lock_status=unlocked', $readModelStatus);
         assertStringContains('stale_marker=absent', $readModelStatus);
-        assertStringContains('schema_version=10', $readModelStatus);
+        assertStringContains('schema_version=11', $readModelStatus);
         assertStringContains('<rss version="2.0">', $boardRss);
         assertStringContains('<title>Hello world</title>', $threadRss);
         assertStringContains('<pubDate>Fri, 10 Apr 2026 12:05:00 +0000</pubDate>', $threadRss);

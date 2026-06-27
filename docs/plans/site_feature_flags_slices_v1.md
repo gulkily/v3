@@ -446,8 +446,6 @@ Verification:
 
 Not required for V1:
 
-- read-model indexing of feature flag changes
-- activity-feed entries for flag changes
 - per-flag role-based permissions
 - private config mutation through the public site
 - secret-bearing config display or mutation
@@ -478,3 +476,4 @@ Stop there if the immediate need is visibility and auditability. Then implement 
 - Follow-up: Accepted the feature flags UI's displayed `enabled`/`disabled` values as write inputs while continuing to store canonical `true`/`false` values.
 - Follow-up: Added private read-only feature flag visibility for `DEDALUS_AGENT_REPLIES_ENABLED` and `DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED`, including private-config source reporting.
 - Follow-up: Fixed enhanced feature flag form submissions so the selected canonical value is captured before controls are disabled, preventing missing `value` payloads.
+- Follow-up: Added `site_feature_flag` Activity rows for feature flag commits, including live write insertion, rebuild recovery from git history, and source/commit links to `records/instance/feature-flags.txt`.
