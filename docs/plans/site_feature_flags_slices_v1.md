@@ -474,3 +474,4 @@ Stop there if the immediate need is visibility and auditability. Then implement 
 - Slice 5: Added git-backed `LocalWriteService::setFeatureFlag()` plumbing, made current public site flags site-mutable, preserved unknown canonical keys, rejected env-overridden writes, and invalidated common static artifacts after successful commits.
 - Slice 6: Exposed feature flag mutation through `/api/set_feature_flag` and the `/tools/feature-flags/` form, requiring a root-approved identity hint, returning commit metadata, and keeping unauthorized or invalid changes server-rejected.
 - Slice 7: Added progressive browser enhancement for feature flag forms with per-row pending/error/commit feedback while preserving the non-JavaScript form submit path.
+- Slice 8: Documented site feature flag precedence, git-backed audit history, production env override semantics, rollback options, and static artifact implications.

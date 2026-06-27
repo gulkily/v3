@@ -84,6 +84,40 @@ FORUM_PUBLIC_ARTIFACT_ROOT=/srv/forum-rewrite/app/public
 
 `FORUM_STATIC_HTML_ROOT` remains available for separate static roots, but the primary production model for this repo is sibling artifacts in `public/`.
 
+## Site Feature Flags
+
+The site exposes registered public flags at `/tools/feature-flags/`.
+
+Root-approved users can change mutable site flags from that page. Successful changes update:
+
+```text
+records/instance/feature-flags.txt
+```
+
+and commit the change to the content repository git log.
+
+Runtime precedence is:
+
+1. environment/private override
+2. git-backed site value
+3. code default
+
+Use `FORUM_*` environment variables for emergency or deployment-level overrides. While an environment variable is present, the corresponding flag is effectively pinned by the process and the site UI reports the environment source.
+
+Audit site-level changes with:
+
+```bash
+git -C /srv/forum-rewrite/repository log -- records/instance/feature-flags.txt
+git -C /srv/forum-rewrite/repository show <commit>:records/instance/feature-flags.txt
+```
+
+Rollback options:
+
+- set the previous value through `/tools/feature-flags/`
+- or revert the relevant content-repository commit
+
+If production serves prebuilt static HTML artifacts, rebuild artifacts after changing flags outside the web write path. Changes made through the web path invalidate common shell/tool artifacts automatically.
+
 ## App Version Notification
 
 `FORUM_APP_VERSION_NOTIFICATION=false` disables the browser-side `/api/version` polling and the "A new version is available." reload banner.

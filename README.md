@@ -56,6 +56,21 @@ The browser-side app version polling and reload banner are enabled by default. T
 FORUM_APP_VERSION_NOTIFICATION=false ./v3 start
 ```
 
+Registered site feature flags are visible at `/tools/feature-flags/`. Root-approved users can change mutable site flags there; those changes are written to `records/instance/feature-flags.txt` in the content repository and committed to git.
+
+Runtime precedence is:
+
+1. `FORUM_*` environment override
+2. `records/instance/feature-flags.txt`
+3. code default
+
+Use environment variables as operator overrides when a flag must be pinned outside site content. Use the Tools page for normal auditable site-level changes. Inspect history with:
+
+```bash
+git log -- records/instance/feature-flags.txt
+git show <commit>:records/instance/feature-flags.txt
+```
+
 Create or update the local private config for Dedalus post analysis:
 
 ```bash
