@@ -1169,6 +1169,44 @@ final class LocalAppSmokeTest
         assertFalse(is_file($publicRoot . '/activity.html'));
     }
 
+    public function testFeatureFlagWriteInvalidatesAlternateStaticActivityArtifact(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
+        $projectRoot = dirname(__DIR__);
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        mkdir($staticHtmlRoot . '/activity', 0777, true);
+        mkdir($publicRoot, 0777, true);
+        file_put_contents($staticHtmlRoot . '/activity/index.html', '<!doctype html><title>stale activity</title><p>stale activity</p>');
+
+        $controller = new FrontController(
+            $projectRoot,
+            $repositoryRoot,
+            $databasePath,
+            $staticHtmlRoot,
+            $publicRoot,
+        );
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        try {
+            $writeResponse = $this->renderFrontController(
+                $controller,
+                'POST',
+                '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false',
+                ['identity_hint' => 'guest']
+            );
+        } finally {
+            $_COOKIE = [];
+        }
+        $activityResponse = $this->renderFrontController($controller, 'GET', '/activity/', []);
+
+        assertStringContains('status=ok', $writeResponse);
+        assertFalse(is_file($staticHtmlRoot . '/activity/index.html'));
+        assertStringContains('site_feature_flag', $activityResponse);
+        assertStringContains('Set feature flag FORUM_APP_VERSION_NOTIFICATION=false', $activityResponse);
+        assertStringNotContains('stale activity', $activityResponse);
+    }
+
     public function testDefaultRepositoryBootstrapCreatesWritableLocalRepository(): void
     {
         $projectRoot = sys_get_temp_dir() . '/forum-rewrite-project-' . bin2hex(random_bytes(6));

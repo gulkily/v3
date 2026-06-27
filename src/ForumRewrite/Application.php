@@ -44,6 +44,7 @@ final class Application
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
         private readonly ?string $artifactRoot = null,
+        private readonly ?string $staticHtmlRoot = null,
         private readonly string $routeSource = 'php-fallback',
     ) {
     }
@@ -3315,7 +3316,21 @@ final class Application
             $this->artifactRoot ?? ($this->projectRoot . '/public'),
             new CanonicalRecordRepository($this->repositoryRoot),
             featureFlags: $this->featureFlags(),
+            additionalArtifactRoots: $this->additionalArtifactRoots(),
         );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function additionalArtifactRoots(): array
+    {
+        $roots = [];
+        if ($this->staticHtmlRoot !== null && $this->staticHtmlRoot !== ($this->artifactRoot ?? ($this->projectRoot . '/public'))) {
+            $roots[] = $this->staticHtmlRoot;
+        }
+
+        return $roots;
     }
 
     private function agentIdentityService(): AgentIdentityService

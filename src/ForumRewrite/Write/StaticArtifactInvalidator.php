@@ -6,72 +6,101 @@ namespace ForumRewrite\Write;
 
 final class StaticArtifactInvalidator
 {
+    /** @var list<string> */
+    private readonly array $artifactRoots;
+
     public function __construct(
-        private readonly string $artifactRoot,
+        string $artifactRoot,
+        string ...$additionalArtifactRoots,
     ) {
+        $roots = [];
+        foreach (array_merge([$artifactRoot], $additionalArtifactRoots) as $root) {
+            if ($root !== '' && !in_array($root, $roots, true)) {
+                $roots[] = $root;
+            }
+        }
+
+        $this->artifactRoots = $roots;
     }
 
     public function invalidateBoardThread(string $threadId): void
     {
         $this->deletePaths([
-            $this->artifactRoot . '/index.html',
-            $this->artifactRoot . '/threads/' . $threadId . '.html',
-            $this->artifactRoot . '/posts/' . $threadId . '.html',
+            '/index.html',
+            '/threads/' . $threadId . '.html',
+            '/threads/' . $threadId . '/index.html',
+            '/posts/' . $threadId . '.html',
+            '/posts/' . $threadId . '/index.html',
         ]);
     }
 
     public function invalidateReply(string $threadId, string $postId): void
     {
         $this->deletePaths([
-            $this->artifactRoot . '/index.html',
-            $this->artifactRoot . '/threads/' . $threadId . '.html',
-            $this->artifactRoot . '/posts/' . $postId . '.html',
+            '/index.html',
+            '/threads/' . $threadId . '.html',
+            '/threads/' . $threadId . '/index.html',
+            '/posts/' . $postId . '.html',
+            '/posts/' . $postId . '/index.html',
         ]);
     }
 
     public function invalidateProfile(string $profileSlug): void
     {
         $this->deletePaths([
-            $this->artifactRoot . '/profiles/' . $profileSlug . '.html',
+            '/profiles/' . $profileSlug . '.html',
+            '/profiles/' . $profileSlug . '/index.html',
         ]);
     }
 
     public function invalidateIdentityLink(string $profileSlug, string $threadId, string $postId): void
     {
         $this->deletePaths([
-            $this->artifactRoot . '/profiles/' . $profileSlug . '.html',
-            $this->artifactRoot . '/threads/' . $threadId . '.html',
-            $this->artifactRoot . '/posts/' . $postId . '.html',
+            '/profiles/' . $profileSlug . '.html',
+            '/profiles/' . $profileSlug . '/index.html',
+            '/threads/' . $threadId . '.html',
+            '/threads/' . $threadId . '/index.html',
+            '/posts/' . $postId . '.html',
+            '/posts/' . $postId . '/index.html',
         ]);
     }
 
     public function invalidateApproval(string $profileSlug, string $threadId, string $parentPostId, string $approvalPostId): void
     {
         $this->deletePaths([
-            $this->artifactRoot . '/profiles/' . $profileSlug . '.html',
-            $this->artifactRoot . '/threads/' . $threadId . '.html',
-            $this->artifactRoot . '/posts/' . $parentPostId . '.html',
-            $this->artifactRoot . '/posts/' . $approvalPostId . '.html',
+            '/profiles/' . $profileSlug . '.html',
+            '/profiles/' . $profileSlug . '/index.html',
+            '/threads/' . $threadId . '.html',
+            '/threads/' . $threadId . '/index.html',
+            '/posts/' . $parentPostId . '.html',
+            '/posts/' . $parentPostId . '/index.html',
+            '/posts/' . $approvalPostId . '.html',
+            '/posts/' . $approvalPostId . '/index.html',
         ]);
     }
 
     public function invalidateFeatureFlags(): void
     {
         $this->deletePaths([
-            $this->artifactRoot . '/index.html',
-            $this->artifactRoot . '/threads.html',
-            $this->artifactRoot . '/threads/index.html',
-            $this->artifactRoot . '/about.html',
-            $this->artifactRoot . '/about/index.html',
-            $this->artifactRoot . '/instance.html',
-            $this->artifactRoot . '/activity.html',
-            $this->artifactRoot . '/users.html',
-            $this->artifactRoot . '/tools.html',
-            $this->artifactRoot . '/tools/index.html',
-            $this->artifactRoot . '/tools/bookmarklets.html',
-            $this->artifactRoot . '/tools/feature-flags.html',
-            $this->artifactRoot . '/tags.html',
-            $this->artifactRoot . '/tags/index.html',
+            '/index.html',
+            '/threads.html',
+            '/threads/index.html',
+            '/about.html',
+            '/about/index.html',
+            '/instance.html',
+            '/instance/index.html',
+            '/activity.html',
+            '/activity/index.html',
+            '/users.html',
+            '/users/index.html',
+            '/tools.html',
+            '/tools/index.html',
+            '/tools/bookmarklets.html',
+            '/tools/bookmarklets/index.html',
+            '/tools/feature-flags.html',
+            '/tools/feature-flags/index.html',
+            '/tags.html',
+            '/tags/index.html',
         ]);
     }
 
@@ -80,9 +109,12 @@ final class StaticArtifactInvalidator
      */
     private function deletePaths(array $paths): void
     {
-        foreach ($paths as $path) {
-            if (is_file($path)) {
-                @unlink($path);
+        foreach ($this->artifactRoots as $root) {
+            foreach ($paths as $path) {
+                $absolutePath = $root . $path;
+                if (is_file($absolutePath)) {
+                    @unlink($absolutePath);
+                }
             }
         }
     }

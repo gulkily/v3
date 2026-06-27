@@ -56,6 +56,8 @@ final class FrontController
                 $this->projectRoot,
                 $this->repositoryRoot,
                 $this->databasePath,
+                $this->publicRoot,
+                $this->staticHtmlRoot,
             );
             $application->handle($method, $requestUri);
             $this->buildStaticArtifactOnEligibleMiss($method, $requestUri, $cookies, $staticArtifact);

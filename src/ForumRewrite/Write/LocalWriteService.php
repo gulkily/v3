@@ -36,6 +36,7 @@ class LocalWriteService
         private readonly CanonicalRecordRepository $canonicalRepository,
         private readonly OpenPgpKeyInspector $keyInspector = new OpenPgpKeyInspector(),
         private readonly FeatureFlagEvaluator $featureFlags = new FeatureFlagEvaluator(),
+        private readonly array $additionalArtifactRoots = [],
     ) {
     }
 
@@ -989,7 +990,7 @@ class LocalWriteService
 
     private function invalidator(): StaticArtifactInvalidator
     {
-        return new StaticArtifactInvalidator($this->artifactRoot);
+        return new StaticArtifactInvalidator($this->artifactRoot, ...$this->additionalArtifactRoots);
     }
 
     private function staleMarker(): ReadModelStaleMarker

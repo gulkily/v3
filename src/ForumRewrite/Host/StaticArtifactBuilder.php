@@ -244,7 +244,7 @@ final class StaticArtifactBuilder
             $this->repositoryRoot,
             $this->databasePath,
             null,
-            'static-html',
+            routeSource: 'static-html',
         );
     }
 

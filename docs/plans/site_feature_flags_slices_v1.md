@@ -477,3 +477,4 @@ Stop there if the immediate need is visibility and auditability. Then implement 
 - Follow-up: Added private read-only feature flag visibility for `DEDALUS_AGENT_REPLIES_ENABLED` and `DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED`, including private-config source reporting.
 - Follow-up: Fixed enhanced feature flag form submissions so the selected canonical value is captured before controls are disabled, preventing missing `value` payloads.
 - Follow-up: Added `site_feature_flag` Activity rows for feature flag commits, including live write insertion, rebuild recovery from git history, and source/commit links to `records/instance/feature-flags.txt`.
+- Follow-up: Fixed feature flag writes to invalidate alternate static HTML artifacts such as `FORUM_STATIC_HTML_ROOT/activity/index.html`, so Activity does not keep serving stale pages after config changes.
