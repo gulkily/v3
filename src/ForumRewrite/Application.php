@@ -20,6 +20,8 @@ use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\Support\ExecutionLock;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\Support\ThreadTitle;
 use ForumRewrite\View\TemplateRenderer;
@@ -35,6 +37,7 @@ final class Application
     private const THREAD_CONTEXT_COMMENT_BODY_LIMIT = 3000;
     private const THREAD_CONTEXT_TOTAL_BODY_LIMIT = 18000;
     private ?string $appVersion = null;
+    private ?FeatureFlagEvaluator $featureFlags = null;
 
     public function __construct(
         private readonly string $projectRoot,
@@ -1163,7 +1166,7 @@ final class Application
         return $this->renderPageTemplate(
             'feature_flags.php',
             [
-                'flags' => SiteConfig::featureFlags()->all(),
+                'flags' => $this->featureFlags()->all(),
                 'toolNavOptions' => $this->toolNavOptions('feature-flags'),
             ],
             'Feature Flags',
@@ -1462,7 +1465,16 @@ final class Application
 
     private function renderer(): TemplateRenderer
     {
-        return new TemplateRenderer($this->projectRoot . '/templates', $this->appVersion());
+        return new TemplateRenderer($this->projectRoot . '/templates', $this->appVersion(), $this->featureFlags());
+    }
+
+    private function featureFlags(): FeatureFlagEvaluator
+    {
+        if ($this->featureFlags === null) {
+            $this->featureFlags = FeatureFlagEvaluator::forRepository($this->repositoryRoot);
+        }
+
+        return $this->featureFlags;
     }
 
     private function appVersion(): string
@@ -2940,7 +2952,7 @@ final class Application
         $respondability = is_array($analysis['respondability'] ?? null) ? $analysis['respondability'] : [];
         $text = DedalusAgentReplyGenerator::normalizeGeneratedReplyText(
             (string) ($engagement['suggested_response'] ?? ''),
-            SiteConfig::unicodeAuthoredTextEnabled(),
+            $this->featureFlags()->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
         );
         if ($text === '') {
             throw new RuntimeException('Completed analysis did not include a suggested_response.');
@@ -3203,6 +3215,7 @@ final class Application
             $this->databasePath,
             $this->artifactRoot ?? ($this->projectRoot . '/public'),
             new CanonicalRecordRepository($this->repositoryRoot),
+            featureFlags: $this->featureFlags(),
         );
     }
 

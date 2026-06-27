@@ -4,11 +4,32 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Support\FeatureFlags;
 
+use ForumRewrite\Canonical\CanonicalPathResolver;
+use ForumRewrite\Canonical\CanonicalRecordParseException;
+use ForumRewrite\Canonical\CanonicalRecordRepository;
+
 final class FeatureFlagEvaluator
 {
+    /**
+     * @param array<string, bool> $siteValues
+     */
     public function __construct(
         private readonly FeatureFlagRegistry $registry = new FeatureFlagRegistry(),
+        private readonly array $siteValues = [],
+        private readonly ?string $siteError = null,
     ) {
+    }
+
+    public static function forRepository(string $repositoryRoot): self
+    {
+        $registry = new FeatureFlagRegistry();
+        try {
+            $record = (new CanonicalRecordRepository($repositoryRoot))->loadFeatureFlags(CanonicalPathResolver::featureFlags());
+
+            return new self($registry, $record->values);
+        } catch (CanonicalRecordParseException $exception) {
+            return new self($registry, [], $exception->getMessage());
+        }
     }
 
     /**
@@ -41,6 +62,29 @@ final class FeatureFlagEvaluator
                 $environmentValue,
                 'environment',
                 $environmentValue,
+                $this->siteValues[$definition->key] ?? null,
+                $this->siteError,
+            );
+        }
+
+        if ($this->siteError !== null) {
+            return new FeatureFlagState(
+                $definition,
+                $definition->defaultValue,
+                'invalid-site-value',
+                null,
+                null,
+                $this->siteError,
+            );
+        }
+
+        if (array_key_exists($definition->key, $this->siteValues)) {
+            return new FeatureFlagState(
+                $definition,
+                $this->siteValues[$definition->key],
+                'site',
+                null,
+                $this->siteValues[$definition->key],
             );
         }
 
@@ -48,6 +92,9 @@ final class FeatureFlagEvaluator
             $definition,
             $definition->defaultValue,
             'default',
+            null,
+            null,
+            $this->siteError,
         );
     }
 

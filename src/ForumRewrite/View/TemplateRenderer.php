@@ -6,6 +6,8 @@ namespace ForumRewrite\View;
 
 use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\SiteConfig;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\ThreadTitle;
 use RuntimeException;
 
@@ -14,6 +16,7 @@ final class TemplateRenderer
     public function __construct(
         private readonly string $templateRoot,
         private readonly string $appVersion = 'unknown',
+        private readonly FeatureFlagEvaluator $featureFlags = new FeatureFlagEvaluator(),
     ) {
     }
 
@@ -57,7 +60,7 @@ final class TemplateRenderer
             'routeSource' => $routeSource,
             'siteName' => SiteConfig::SITE_NAME,
             'appVersion' => $this->appVersion,
-            'appVersionNotificationEnabled' => SiteConfig::appVersionNotificationEnabled(),
+            'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
             'siteCssPath' => $this->assetPath('/assets/site.css'),
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
@@ -82,7 +85,7 @@ final class TemplateRenderer
             throw new RuntimeException('Missing template: ' . $relativePath);
         }
         $data = array_merge([
-            'unicodeAuthoredTextEnabled' => SiteConfig::unicodeAuthoredTextEnabled(),
+            'unicodeAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
         ], $data);
 
         $e = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');

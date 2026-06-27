@@ -1060,6 +1060,28 @@ PHP);
         }
     }
 
+    public function testUnicodeAuthoredTextCanBeEnabledFromSiteFeatureFlagsRecord(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_UNICODE_AUTHORED_TEXT: true\n"
+        );
+
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_thread?board_tags=general&subject=' . rawurlencode('Привет') . '&body=' . rawurlencode('Привет мир')
+        );
+        $postId = $this->extractValue($response, 'post_id');
+        $record = (string) file_get_contents($repositoryRoot . '/records/posts/' . $postId . '.txt');
+
+        assertStringContains('status=ok', $response);
+        assertStringContains('Subject: Привет', $record);
+        assertStringContains('Привет мир', $record);
+    }
+
     public function testThreadAndReplyWritesUseIncrementalReadModelUpdateWhenDatabaseIsWarm(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

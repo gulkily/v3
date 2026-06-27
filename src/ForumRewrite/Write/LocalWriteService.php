@@ -17,8 +17,9 @@ use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
-use ForumRewrite\SiteConfig;
 use ForumRewrite\Support\ExecutionLock;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\UnicodeTextPolicy;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use RuntimeException;
@@ -33,6 +34,7 @@ class LocalWriteService
         private readonly string $artifactRoot,
         private readonly CanonicalRecordRepository $canonicalRepository,
         private readonly OpenPgpKeyInspector $keyInspector = new OpenPgpKeyInspector(),
+        private readonly FeatureFlagEvaluator $featureFlags = new FeatureFlagEvaluator(),
     ) {
     }
 
@@ -1190,7 +1192,7 @@ class LocalWriteService
 
     private function normalizeAuthoredLine(string $value, string $field): string
     {
-        if (SiteConfig::unicodeAuthoredTextEnabled()) {
+        if ($this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT)) {
             return (new UnicodeTextPolicy())->normalizeLine($value, $field);
         }
 
@@ -1223,7 +1225,7 @@ class LocalWriteService
 
     private function normalizeAuthoredBody(string $value, string $field): string
     {
-        if (SiteConfig::unicodeAuthoredTextEnabled()) {
+        if ($this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT)) {
             return (new UnicodeTextPolicy())->normalizeBody($value, $field);
         }
 

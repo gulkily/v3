@@ -41,6 +41,9 @@
 <?php if ($flag->environmentValue !== null): ?>
             <div class="codebase-source"><code><?= $e($flag->definition->environmentVariable) ?></code></div>
 <?php endif; ?>
+<?php if ($flag->siteError !== null): ?>
+            <div class="meta"><?= $e($flag->siteError) ?></div>
+<?php endif; ?>
           </td>
           <td><code><?= $flag->canChangeFromSite() ? 'yes' : 'no' ?></code></td>
         </tr>
