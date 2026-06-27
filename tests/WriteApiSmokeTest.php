@@ -1112,6 +1112,26 @@ PHP);
         assertFalse(is_file($artifactRoot . '/tools/feature-flags.html'));
     }
 
+    public function testSetFeatureFlagAcceptsDisplayedEnabledDisabledValues(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+
+        $disabled = $service->setFeatureFlag([
+            'key' => 'FORUM_APP_VERSION_NOTIFICATION',
+            'value' => 'disabled',
+        ]);
+        $enabled = $service->setFeatureFlag([
+            'key' => 'FORUM_APP_VERSION_NOTIFICATION',
+            'value' => 'enabled',
+        ]);
+        $record = (string) file_get_contents($repositoryRoot . '/records/instance/feature-flags.txt');
+
+        assertSame('false', $disabled['site_value']);
+        assertSame('true', $enabled['site_value']);
+        assertStringContains('FORUM_APP_VERSION_NOTIFICATION: true', $record);
+    }
+
     public function testSetFeatureFlagRejectsEnvironmentOverrideAndInvalidValues(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -1191,6 +1211,27 @@ PHP);
         assertStringContains('Feature flag updated. Commit:', $redirect);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $updated);
         assertStringContains('data-role="feature-flag-source">site</code>', $updated);
+    }
+
+    public function testFeatureFlagFormSubmitAcceptsDisplayedEnabledDisabledValues(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $_POST = [
+            'key' => 'FORUM_APP_VERSION_NOTIFICATION',
+            'value' => 'disabled',
+        ];
+        try {
+            $redirect = $this->renderMethod($application, 'POST', '/tools/feature-flags/');
+        } finally {
+            $_COOKIE = [];
+            $_POST = [];
+        }
+
+        assertStringContains('Feature flag updated. Commit:', $redirect);
+        assertStringContains('FORUM_APP_VERSION_NOTIFICATION: false', (string) file_get_contents($repositoryRoot . '/records/instance/feature-flags.txt'));
     }
 
     public function testThreadAndReplyWritesUseIncrementalReadModelUpdateWhenDatabaseIsWarm(): void

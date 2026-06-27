@@ -1122,6 +1122,12 @@ class LocalWriteService
             if ($normalized === 'false') {
                 return false;
             }
+            if ($normalized === 'enabled') {
+                return true;
+            }
+            if ($normalized === 'disabled') {
+                return false;
+            }
         }
 
         throw new RuntimeException($field . ' must be true or false.');
