@@ -55,6 +55,26 @@ final class StaticArtifactInvalidator
         ]);
     }
 
+    public function invalidateFeatureFlags(): void
+    {
+        $this->deletePaths([
+            $this->artifactRoot . '/index.html',
+            $this->artifactRoot . '/threads.html',
+            $this->artifactRoot . '/threads/index.html',
+            $this->artifactRoot . '/about.html',
+            $this->artifactRoot . '/about/index.html',
+            $this->artifactRoot . '/instance.html',
+            $this->artifactRoot . '/activity.html',
+            $this->artifactRoot . '/users.html',
+            $this->artifactRoot . '/tools.html',
+            $this->artifactRoot . '/tools/index.html',
+            $this->artifactRoot . '/tools/bookmarklets.html',
+            $this->artifactRoot . '/tools/feature-flags.html',
+            $this->artifactRoot . '/tags.html',
+            $this->artifactRoot . '/tags/index.html',
+        ]);
+    }
+
     /**
      * @param list<string> $paths
      */

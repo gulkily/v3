@@ -21,6 +21,7 @@ final class FeatureFlagRegistry
                 'Allow visible UTF-8 prose in human-authored post subject and body fields.',
                 false,
                 self::UNICODE_AUTHORED_TEXT,
+                siteMutable: true,
             ),
             new FeatureFlagDefinition(
                 self::APP_VERSION_NOTIFICATION,
@@ -28,6 +29,7 @@ final class FeatureFlagRegistry
                 'Show browser-side app version polling and the reload notification banner.',
                 true,
                 self::APP_VERSION_NOTIFICATION,
+                siteMutable: true,
             ),
         ];
     }

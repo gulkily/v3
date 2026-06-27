@@ -10,6 +10,7 @@ use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
+use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
 use ForumRewrite\TagScore;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
@@ -433,6 +434,74 @@ class LocalWriteService
                 'post_id' => $postId,
                 'thread_id' => $threadId,
                 'target_identity_id' => $targetIdentityId,
+                'commit_sha' => $commitSha,
+                'timings' => $timings,
+            ];
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function setFeatureFlag(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $timings = [];
+            $totalStartedAt = hrtime(true);
+            $key = $this->requireFeatureFlagKey((string) ($input['key'] ?? ''));
+            $requestedValue = $this->requireBooleanValue($input['value'] ?? null, 'value');
+            $currentState = $this->featureFlags->evaluate($key);
+            if ($currentState->source === 'environment') {
+                throw new RuntimeException('feature flag is currently overridden by environment: ' . $key);
+            }
+            if ($currentState->siteError !== null) {
+                throw new RuntimeException('feature flags record is invalid: ' . $currentState->siteError);
+            }
+
+            $recordPath = CanonicalPathResolver::featureFlags();
+            $record = $this->canonicalRepository->loadFeatureFlags($recordPath);
+            if (array_key_exists($key, $record->values) && $record->values[$key] === $requestedValue) {
+                $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+                return [
+                    'status' => 'ok',
+                    'key' => $key,
+                    'site_value' => $requestedValue ? 'true' : 'false',
+                    'effective_value' => $currentState->effectiveValue ? 'true' : 'false',
+                    'source' => $currentState->source,
+                    'wrote_record' => 'no',
+                    'timings' => $timings,
+                ];
+            }
+
+            $values = $record->values;
+            $values[$key] = $requestedValue;
+
+            $phaseStartedAt = hrtime(true);
+            $contents = $this->buildFeatureFlagsRecord($values);
+            $this->writeFile($recordPath, $contents);
+            $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+            $commitResult = $this->commitCanonicalWrite([$recordPath], 'Set feature flag ' . $key . '=' . ($requestedValue ? 'true' : 'false'));
+            $timings = array_merge($timings, $commitResult['timings']);
+            $commitSha = $commitResult['commit_sha'];
+
+            $phaseStartedAt = hrtime(true);
+            $this->invalidator()->invalidateFeatureFlags();
+            $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+            $updatedState = FeatureFlagEvaluator::forRepository($this->repositoryRoot)->evaluate($key);
+
+            return [
+                'status' => 'ok',
+                'key' => $key,
+                'site_value' => $requestedValue ? 'true' : 'false',
+                'effective_value' => $updatedState->effectiveValue ? 'true' : 'false',
+                'source' => $updatedState->source,
+                'wrote_record' => 'yes',
                 'commit_sha' => $commitSha,
                 'timings' => $timings,
             ];
@@ -1024,6 +1093,55 @@ class LocalWriteService
         }
 
         return $tag;
+    }
+
+    private function requireFeatureFlagKey(string $key): string
+    {
+        $key = trim($key);
+        $definition = (new FeatureFlagRegistry())->get($key);
+        if ($definition === null) {
+            throw new RuntimeException('unknown feature flag: ' . $key);
+        }
+        if (!$definition->siteMutable) {
+            throw new RuntimeException('feature flag is not mutable from site content: ' . $key);
+        }
+
+        return $key;
+    }
+
+    private function requireBooleanValue(mixed $value, string $field): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+        if (is_string($value)) {
+            $normalized = strtolower(trim($value));
+            if ($normalized === 'true') {
+                return true;
+            }
+            if ($normalized === 'false') {
+                return false;
+            }
+        }
+
+        throw new RuntimeException($field . ' must be true or false.');
+    }
+
+    /**
+     * @param array<string, bool> $values
+     */
+    private function buildFeatureFlagsRecord(array $values): string
+    {
+        ksort($values);
+        $contents = "Schema: " . SiteFeatureFlagsRecordParser::SCHEMA . "\n"
+            . 'Updated-At: ' . $this->canonicalTimestampNow() . "\n\n";
+        foreach ($values as $key => $value) {
+            $contents .= $key . ': ' . ($value ? 'true' : 'false') . "\n";
+        }
+
+        (new SiteFeatureFlagsRecordParser())->parse($contents);
+
+        return $contents;
     }
 
     private function isApprovedIdentity(string $identityId): bool

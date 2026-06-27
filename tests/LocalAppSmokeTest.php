@@ -380,7 +380,7 @@ final class LocalAppSmokeTest
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $featureFlags);
         assertStringContains('<code>default</code>', $featureFlags);
         assertStringContains('current value is default', $featureFlags);
-        assertStringContains('<code>no</code>', $featureFlags);
+        assertStringContains('<code>yes</code>', $featureFlags);
         assertStringContains('About zenmemes', $about);
         assertStringContains('extraordinary people', $about);
         assertStringContains('Harvard St Commons', $about);

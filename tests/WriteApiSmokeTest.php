@@ -1082,6 +1082,62 @@ PHP);
         assertStringContains('Привет мир', $record);
     }
 
+    public function testSetFeatureFlagWritesCanonicalRecordCommitsAndInvalidatesArtifacts(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->seedArtifacts($artifactRoot, [
+            '/index.html',
+            '/tools.html',
+            '/tools/feature-flags.html',
+        ]);
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+
+        $result = $service->setFeatureFlag([
+            'key' => 'FORUM_APP_VERSION_NOTIFICATION',
+            'value' => 'false',
+        ]);
+        $record = (string) file_get_contents($repositoryRoot . '/records/instance/feature-flags.txt');
+
+        assertSame('ok', $result['status']);
+        assertSame('yes', $result['wrote_record']);
+        assertSame('site', $result['source']);
+        assertSame('false', $result['site_value']);
+        assertSame('false', $result['effective_value']);
+        assertTrue(strlen((string) $result['commit_sha']) === 40);
+        assertSame($result['commit_sha'], $this->gitOutput($repositoryRoot, 'rev-parse HEAD'));
+        assertStringContains('Schema: site-feature-flags-v1', $record);
+        assertStringContains('FORUM_APP_VERSION_NOTIFICATION: false', $record);
+        assertFalse(is_file($artifactRoot . '/index.html'));
+        assertFalse(is_file($artifactRoot . '/tools.html'));
+        assertFalse(is_file($artifactRoot . '/tools/feature-flags.html'));
+    }
+
+    public function testSetFeatureFlagRejectsEnvironmentOverrideAndInvalidValues(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+
+        assertThrowsRuntime(
+            static fn () => $service->setFeatureFlag(['key' => 'FORUM_APP_VERSION_NOTIFICATION', 'value' => 'maybe']),
+            'value must be true or false.'
+        );
+        assertThrowsRuntime(
+            static fn () => $service->setFeatureFlag(['key' => 'FORUM_NOT_REAL', 'value' => 'true']),
+            'unknown feature flag: FORUM_NOT_REAL'
+        );
+
+        putenv('FORUM_APP_VERSION_NOTIFICATION=false');
+        try {
+            $overriddenService = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+            assertThrowsRuntime(
+                static fn () => $overriddenService->setFeatureFlag(['key' => 'FORUM_APP_VERSION_NOTIFICATION', 'value' => 'true']),
+                'feature flag is currently overridden by environment: FORUM_APP_VERSION_NOTIFICATION'
+            );
+        } finally {
+            putenv('FORUM_APP_VERSION_NOTIFICATION');
+        }
+    }
+
     public function testThreadAndReplyWritesUseIncrementalReadModelUpdateWhenDatabaseIsWarm(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -2683,5 +2739,22 @@ if (!function_exists('assertFalse')) {
         if ($condition) {
             throw new RuntimeException('Failed asserting that condition is false.');
         }
+    }
+}
+
+if (!function_exists('assertThrowsRuntime')) {
+    function assertThrowsRuntime(callable $callback, string $expectedMessage): void
+    {
+        try {
+            $callback();
+        } catch (RuntimeException $exception) {
+            if ($exception->getMessage() !== $expectedMessage) {
+                throw new RuntimeException('Unexpected exception message: ' . $exception->getMessage());
+            }
+
+            return;
+        }
+
+        throw new RuntimeException('Expected RuntimeException was not thrown.');
     }
 }
