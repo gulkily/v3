@@ -100,6 +100,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/set_feature_flag') {
+            $this->handleSetFeatureFlagApi($method, $query);
+            return;
+        }
+
         if ($path === '/api/link_identity') {
             $this->handleLinkIdentity($method, $query);
             return;
@@ -127,6 +132,11 @@ final class Application
 
         if ($method === 'POST' && preg_match('#^/profiles/([^/]+)/approve/?$#', $path, $matches) === 1) {
             $this->handleApproveUserSubmit($matches[1], $query);
+            return;
+        }
+
+        if (($path === '/tools/feature-flags/' || $path === '/tools/feature-flags') && $method === 'POST') {
+            $this->handleSetFeatureFlagSubmit($query);
             return;
         }
 
@@ -2321,6 +2331,16 @@ final class Application
     }
 
     /**
+     * @param array<string, mixed>|null $viewerProfile
+     */
+    private function viewerCanManageFeatureFlags(?array $viewerProfile): bool
+    {
+        return $viewerProfile !== null
+            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
+            && (string) ($viewerProfile['approved_by_label'] ?? '') === 'root';
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     private function fetchApprovedUserDirectoryUsers(): array
@@ -3076,6 +3096,82 @@ final class Application
                 "error=" . $exception->getMessage() . "\n",
                 400,
                 $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleSetFeatureFlagApi(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->sendText("method not allowed\n", 405);
+            return;
+        }
+
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        if (!$this->viewerCanManageFeatureFlags($viewerProfile)) {
+            $this->sendText("error=Feature flag changes require a root-approved identity.\n", 403);
+            return;
+        }
+
+        try {
+            $result = $this->writer()->setFeatureFlag($this->requestData($query));
+            $this->featureFlags = null;
+            $response = "status=ok\n"
+                . "key={$result['key']}\n"
+                . "site_value={$result['site_value']}\n"
+                . "effective_value={$result['effective_value']}\n"
+                . "source={$result['source']}\n"
+                . "wrote_record={$result['wrote_record']}\n";
+            if (isset($result['commit_sha'])) {
+                $response .= "commit_sha={$result['commit_sha']}\n";
+            }
+
+            $this->sendText($response, 200, $this->serverTimingHeaders($result));
+        } catch (RuntimeException $exception) {
+            $this->sendText("error=" . $exception->getMessage() . "\n", 400);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleSetFeatureFlagSubmit(array $query): void
+    {
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        if (!$this->viewerCanManageFeatureFlags($viewerProfile)) {
+            $this->sendHtml(
+                $this->renderMessagePage(
+                    'Forbidden',
+                    'Forbidden',
+                    'Feature flag changes require a root-approved identity.',
+                    'tools'
+                ),
+                403
+            );
+            return;
+        }
+
+        try {
+            $result = $this->writer()->setFeatureFlag($this->requestData($query));
+            $this->featureFlags = null;
+            $message = 'Feature flag updated.';
+            if (isset($result['commit_sha'])) {
+                $message .= ' Commit: ' . $result['commit_sha'];
+            }
+
+            $this->sendRedirect('/tools/feature-flags/', $message, activeSection: 'tools');
+        } catch (RuntimeException $exception) {
+            $this->sendHtml(
+                $this->renderMessagePage(
+                    'Feature Flag Error',
+                    'Feature Flag Error',
+                    $exception->getMessage(),
+                    'tools'
+                ),
+                400
             );
         }
     }
@@ -4155,7 +4251,7 @@ final class Application
         echo $xml;
     }
 
-    private function sendRedirect(string $location, string $message, int $statusCode = 303, array $headers = []): void
+    private function sendRedirect(string $location, string $message, int $statusCode = 303, array $headers = [], string $activeSection = 'compose'): void
     {
         http_response_code($statusCode);
         header('Location: ' . $location);
@@ -4171,7 +4267,7 @@ final class Application
                 'message' => $message,
             ],
             'Redirecting',
-            'compose'
+            $activeSection
         );
     }
 

@@ -45,7 +45,19 @@
             <div class="meta"><?= $e($flag->siteError) ?></div>
 <?php endif; ?>
           </td>
-          <td><code><?= $flag->canChangeFromSite() ? 'yes' : 'no' ?></code></td>
+          <td>
+            <code><?= $flag->canChangeFromSite() ? 'yes' : 'no' ?></code>
+<?php if ($flag->canChangeFromSite()): ?>
+            <form method="post" action="/tools/feature-flags/" class="inline-form">
+              <input type="hidden" name="key" value="<?= $e($flag->definition->key) ?>">
+              <select name="value">
+                <option value="true"<?= $flag->effectiveValue ? ' selected' : '' ?>>enabled</option>
+                <option value="false"<?= !$flag->effectiveValue ? ' selected' : '' ?>>disabled</option>
+              </select>
+              <button type="submit">Save</button>
+            </form>
+<?php endif; ?>
+          </td>
         </tr>
 <?php endforeach; ?>
       </tbody>

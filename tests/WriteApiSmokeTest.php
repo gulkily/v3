@@ -1138,6 +1138,60 @@ PHP);
         }
     }
 
+    public function testSetFeatureFlagApiRequiresRootApprovedIdentityAndCommits(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $unauthorized = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
+        );
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $authorized = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
+        );
+        $_COOKIE = [];
+
+        assertStringContains('error=Feature flag changes require a root-approved identity.', $unauthorized);
+        assertStringContains('status=ok', $authorized);
+        assertStringContains('key=FORUM_APP_VERSION_NOTIFICATION', $authorized);
+        assertStringContains('site_value=false', $authorized);
+        assertStringContains('source=site', $authorized);
+        assertStringContains('commit_sha=', $authorized);
+        assertStringContains('FORUM_APP_VERSION_NOTIFICATION: false', (string) file_get_contents($repositoryRoot . '/records/instance/feature-flags.txt'));
+    }
+
+    public function testFeatureFlagFormSubmitRequiresRootApprovedIdentityAndRedirectsAfterCommit(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $form = $this->renderMethod($application, 'GET', '/tools/feature-flags/');
+        $unauthorized = $this->renderMethod(
+            $application,
+            'POST',
+            '/tools/feature-flags/?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
+        );
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $redirect = $this->renderMethod(
+            $application,
+            'POST',
+            '/tools/feature-flags/?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
+        );
+        $updated = $this->renderMethod($application, 'GET', '/tools/feature-flags/');
+        $_COOKIE = [];
+
+        assertStringContains('method="post" action="/tools/feature-flags/"', $form);
+        assertStringContains('Feature flag changes require a root-approved identity.', $unauthorized);
+        assertStringContains('Feature flag updated. Commit:', $redirect);
+        assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $updated);
+        assertStringContains('<code>site</code>', $updated);
+    }
+
     public function testThreadAndReplyWritesUseIncrementalReadModelUpdateWhenDatabaseIsWarm(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
