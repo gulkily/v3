@@ -2,13 +2,20 @@
   <button
     type="button"
     class="theme-toggle theme-swatch"
+    data-action="theme-cycle"
+    aria-label="Cycle theme"
+    title="Cycle theme"
+  ></button>
+  <button
+    type="button"
+    class="theme-menu__trigger"
     data-action="theme-toggle"
     aria-label="Choose theme"
     title="Choose theme"
     aria-haspopup="menu"
     aria-expanded="false"
     aria-controls="theme-menu-popover"
-  ></button>
+  >&#9662;</button>
   <div class="theme-menu__popover" id="theme-menu-popover" role="menu" aria-label="Theme" hidden>
 <?php foreach ($themes as $theme): ?>
     <button

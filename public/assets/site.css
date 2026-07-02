@@ -475,6 +475,21 @@ pre {
 
 .theme-menu {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+}
+
+.theme-menu__trigger {
+  width: auto;
+  min-width: 0;
+  height: 1.8rem;
+  margin-top: 0;
+  padding: 0 0.3rem;
+  font-family: var(--ui-font);
+  font-size: 0.75rem;
+  line-height: 1;
   flex: 0 0 auto;
 }
 

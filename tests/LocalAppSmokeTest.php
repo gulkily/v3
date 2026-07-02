@@ -425,7 +425,7 @@ final class LocalAppSmokeTest
         assertStringContains('aria-haspopup="menu"', $board);
         assertStringContains('data-theme-option="auto"', $board);
         assertStringContains('data-theme-option="sticker"', $board);
-        assertStringNotContains('Cycle theme', $board);
+        assertStringContains('data-action="theme-cycle"', $board);
         assertFingerprintedAsset($board, 'site.css');
         assertFingerprintedAsset($board, 'theme_toggle.js');
         assertFingerprintedAsset($board, 'compose_draft_clear.js');

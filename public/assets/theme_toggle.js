@@ -9,6 +9,7 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     var menu = document.querySelector("[data-role='theme-menu']");
+    var cycleButton = menu ? menu.querySelector("[data-action='theme-cycle']") : null;
     var button = menu ? menu.querySelector("[data-action='theme-toggle']") : null;
     var popover = menu ? menu.querySelector(".theme-menu__popover") : null;
     var options = popover
@@ -54,16 +55,27 @@
       return isExplicitTheme(theme) ? theme : systemTheme();
     }
 
+    function nextTheme(currentTheme) {
+      var currentIndex = themes.indexOf(currentTheme);
+      if (currentIndex === -1) {
+        return themes[0];
+      }
+
+      return themes[(currentIndex + 1) % themes.length];
+    }
+
     function syncButton(theme) {
-      button.setAttribute("data-theme", resolvedTheme(theme));
-      button.setAttribute("data-theme-mode", theme);
-      button.setAttribute(
+      var next = nextTheme(theme);
+
+      cycleButton.setAttribute("data-theme", resolvedTheme(theme));
+      cycleButton.setAttribute("data-theme-mode", theme);
+      cycleButton.setAttribute(
         "aria-label",
-        "Theme: " + labels[theme] + ". Activate to choose a theme."
+        "Theme: " + labels[theme] + ". Activate to switch to " + labels[next] + "."
       );
-      button.setAttribute(
+      cycleButton.setAttribute(
         "title",
-        "Theme: " + labels[theme] + ". Click to choose a theme."
+        "Theme: " + labels[theme] + ". Click to switch to " + labels[next] + "."
       );
     }
 
@@ -91,7 +103,7 @@
       }
     }
 
-    if (!menu || !button || !popover || options.length === 0) {
+    if (!menu || !cycleButton || !button || !popover || options.length === 0) {
       return;
     }
 
@@ -101,7 +113,7 @@
     syncButton(currentTheme);
     syncOptions(currentTheme);
 
-    function selectTheme(theme) {
+    function applySelection(theme) {
       currentTheme = theme;
       applyTheme(currentTheme);
       syncButton(currentTheme);
@@ -111,9 +123,16 @@
         localStorage.setItem(storageKey, currentTheme);
       } catch (error) {
       }
+    }
 
+    function selectTheme(theme) {
+      applySelection(theme);
       closeMenu(true);
     }
+
+    cycleButton.addEventListener("click", function () {
+      applySelection(nextTheme(currentTheme));
+    });
 
     button.addEventListener("click", function () {
       if (popover.hidden) {
