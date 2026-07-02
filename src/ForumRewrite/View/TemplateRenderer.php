@@ -65,6 +65,8 @@ final class TemplateRenderer
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
+            'themes' => ThemeRegistry::all(),
+            'explicitThemeNames' => ThemeRegistry::explicitNames(),
             'navItems' => [
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],
                 ['href' => '/about/', 'label' => 'About', 'section' => 'about'],

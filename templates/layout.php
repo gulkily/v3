@@ -8,16 +8,8 @@
     (function () {
       try {
         var theme = localStorage.getItem('zenmemes-theme');
-        if (
-          theme === 'light' ||
-          theme === 'dark' ||
-          theme === 'console' ||
-          theme === 'lcd' ||
-          theme === 'chicago' ||
-          theme === 'vapor' ||
-          theme === 'forge' ||
-          theme === 'sticker'
-        ) {
+        var allowed = <?= json_encode($explicitThemeNames, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+        if (allowed.indexOf(theme) !== -1) {
           document.documentElement.setAttribute('data-theme', theme);
         }
       } catch (error) {

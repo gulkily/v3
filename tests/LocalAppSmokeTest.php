@@ -420,6 +420,7 @@ final class LocalAppSmokeTest
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="no-git"', $board);
+        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker"];', $board);
         assertFingerprintedAsset($board, 'site.css');
         assertFingerprintedAsset($board, 'theme_toggle.js');
         assertFingerprintedAsset($board, 'compose_draft_clear.js');
