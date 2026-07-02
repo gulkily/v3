@@ -46,13 +46,7 @@
       <p class="eyebrow"><?= $e($siteName) ?></p>
       <div class="site-header-actions">
 <?= $indent($partial('partials/nav.php'), 4) ?>
-        <button
-          type="button"
-          class="theme-toggle theme-swatch"
-          data-action="theme-toggle"
-          aria-label="Cycle theme"
-          title="Cycle theme"
-        ></button>
+<?= $indent($partial('partials/theme_menu.php'), 4) ?>
       </div>
     </header>
     <main class="main">

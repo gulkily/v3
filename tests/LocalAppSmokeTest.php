@@ -421,6 +421,11 @@ final class LocalAppSmokeTest
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="no-git"', $board);
         assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker"];', $board);
+        assertStringContains('data-role="theme-menu"', $board);
+        assertStringContains('aria-haspopup="menu"', $board);
+        assertStringContains('data-theme-option="auto"', $board);
+        assertStringContains('data-theme-option="sticker"', $board);
+        assertStringNotContains('Cycle theme', $board);
         assertFingerprintedAsset($board, 'site.css');
         assertFingerprintedAsset($board, 'theme_toggle.js');
         assertFingerprintedAsset($board, 'compose_draft_clear.js');
