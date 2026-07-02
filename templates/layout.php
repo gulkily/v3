@@ -48,7 +48,7 @@
 <?= $indent($partial('partials/nav.php'), 4) ?>
         <button
           type="button"
-          class="theme-toggle"
+          class="theme-toggle theme-swatch"
           data-action="theme-toggle"
           aria-label="Cycle theme"
           title="Cycle theme"
