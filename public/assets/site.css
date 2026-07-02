@@ -410,9 +410,16 @@ pre {
     linear-gradient(135deg, #fff59a 0 50%, #17233f 50% 100%);
 }
 
+.theme-swatch[data-theme="light"] {
+  background: #ffffff;
+  border-color: #b7c9ef;
+  box-shadow: inset 0 0 0 0.22rem #eef5ff;
+}
+
 .theme-swatch[data-theme="dark"] {
-  background: var(--ink);
-  box-shadow: inset 0 0 0 0.22rem var(--page-bg);
+  background: #d9e7ff;
+  border-color: #344a73;
+  box-shadow: inset 0 0 0 0.22rem #0b1220;
 }
 
 .theme-swatch[data-theme="console"] {
@@ -478,7 +485,8 @@ pre {
   z-index: 30;
   min-width: 11rem;
   border: 1px solid var(--line);
-  background: var(--panel);
+  background-color: var(--page-bg);
+  background-image: linear-gradient(var(--panel), var(--panel));
   padding: 0.3rem;
   display: grid;
   gap: 2px;
@@ -764,7 +772,7 @@ pre {
 :root[data-theme="console"] [data-role="private-key-viewer"],
 :root[data-theme="console"] input,
 :root[data-theme="console"] textarea,
-:root[data-theme="console"] button {
+:root[data-theme="console"] button:not(.theme-swatch) {
   border-style: solid;
   box-shadow: inset 0 0 0 1px rgba(155, 255, 138, 0.08);
 }
@@ -774,7 +782,7 @@ pre {
 }
 
 :root[data-theme="console"] .nav-link.is-active,
-:root[data-theme="console"] button:hover {
+:root[data-theme="console"] button:not(.theme-swatch):hover {
   background: #132917;
 }
 
@@ -794,7 +802,7 @@ pre {
 :root[data-theme="lcd"] [data-role="private-key-viewer"],
 :root[data-theme="lcd"] input,
 :root[data-theme="lcd"] textarea,
-:root[data-theme="lcd"] button {
+:root[data-theme="lcd"] button:not(.theme-swatch) {
   border-radius: 2px;
   box-shadow: inset 0 0 0 1px rgba(39, 50, 32, 0.08);
 }
@@ -833,7 +841,7 @@ pre {
 :root[data-theme="vapor"] [data-role="private-key-viewer"],
 :root[data-theme="vapor"] input,
 :root[data-theme="vapor"] textarea,
-:root[data-theme="vapor"] button {
+:root[data-theme="vapor"] button:not(.theme-swatch) {
   border-color: color-mix(in srgb, var(--line) 78%, #7afcff 22%);
   box-shadow:
     0 0 0 1px rgba(122, 252, 255, 0.08),
@@ -884,7 +892,7 @@ pre {
 :root[data-theme="forge"] [data-role="private-key-viewer"],
 :root[data-theme="forge"] input,
 :root[data-theme="forge"] textarea,
-:root[data-theme="forge"] button {
+:root[data-theme="forge"] button:not(.theme-swatch) {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
@@ -950,7 +958,7 @@ pre {
   background: #ffffff;
 }
 
-:root[data-theme="sticker"] button {
+:root[data-theme="sticker"] button:not(.theme-swatch) {
   border: none;
   outline: 2px solid #0a0a0a;
   box-shadow: 3px 3px 0 #0a0a0a;
@@ -958,7 +966,7 @@ pre {
   font-weight: 700;
 }
 
-:root[data-theme="sticker"] button:active {
+:root[data-theme="sticker"] button:not(.theme-swatch):active {
   box-shadow: 1px 1px 0 #0a0a0a;
   transform: translate(2px, 2px);
 }
