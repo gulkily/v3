@@ -15,7 +15,8 @@
           theme === 'lcd' ||
           theme === 'chicago' ||
           theme === 'vapor' ||
-          theme === 'forge'
+          theme === 'forge' ||
+          theme === 'sticker'
         ) {
           document.documentElement.setAttribute('data-theme', theme);
         }

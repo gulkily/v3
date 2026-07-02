@@ -188,6 +188,32 @@
   }
 }
 
+:root[data-theme="sticker"] {
+  color-scheme: light;
+  --page-bg: #e0493a;
+  --body-background: #e0493a;
+  --ink: #0a0a0a;
+  --ink-soft: #333333;
+  --line: #0a0a0a;
+  --panel: #ffffff;
+  --input-bg: #ffffff;
+  --button-bg: #ffffff;
+  --button-alt-bg: #f0f0f0;
+  --feedback-ok-bg: #e8ffe8;
+  --feedback-error-bg: #fff0f0;
+  --status-error: #cc0000;
+  --status-ok: #006600;
+  --status-warning: #885500;
+  --active-bg: #0a0a0a;
+  --active-ink: #ffffff;
+  --active-line: #0a0a0a;
+  --active-ring: rgba(10, 10, 10, 0.3);
+  --body-font: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ui-font: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --code-font: ui-monospace, "Cascadia Code", "SF Mono", "Consolas",
+               "Liberation Mono", monospace;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -429,6 +455,12 @@ pre {
   );
   border-color: #e06820;
   box-shadow: inset 0 0 0 0.22rem #0f0e0d;
+}
+
+.theme-toggle[data-theme="sticker"] {
+  background: #e0493a;
+  border: 2.5px solid #0a0a0a;
+  box-shadow: 2px 2px 0 #0a0a0a;
 }
 
 .main {
@@ -811,6 +843,132 @@ pre {
     0 0 0 1px var(--active-ring),
     inset 0 -2px 0 var(--active-line);
   font-weight: 600;
+}
+
+:root[data-theme="sticker"] .shell {
+  width: min(100%, 680px);
+}
+
+:root[data-theme="sticker"] .card {
+  border: none;
+  outline: 2.5px solid #0a0a0a;
+  box-shadow: 5px 5px 0 #0a0a0a;
+  position: relative;
+}
+
+:root[data-theme="sticker"] .stack > * + * {
+  margin-top: 1.5rem;
+}
+
+:root[data-theme="sticker"] .pending-reply-card,
+:root[data-theme="sticker"] .pending-thread-shell {
+  outline-style: dashed;
+}
+
+:root[data-theme="sticker"] .post-card:target {
+  outline-color: #ffe800;
+}
+
+:root[data-theme="sticker"] .nav-link {
+  border: none;
+  outline: 2px solid #0a0a0a;
+  box-shadow: 3px 3px 0 #0a0a0a;
+  background: #ffffff;
+}
+
+:root[data-theme="sticker"] .nav-link.is-active {
+  background: #0a0a0a;
+  color: #ffffff;
+  outline: 2px solid #0a0a0a;
+  box-shadow: none;
+  font-weight: 700;
+}
+
+:root[data-theme="sticker"] input,
+:root[data-theme="sticker"] textarea {
+  border: none;
+  outline: 2px solid #0a0a0a;
+  box-shadow: 3px 3px 0 #0a0a0a;
+  background: #ffffff;
+}
+
+:root[data-theme="sticker"] button {
+  border: none;
+  outline: 2px solid #0a0a0a;
+  box-shadow: 3px 3px 0 #0a0a0a;
+  background: #ffffff;
+  font-weight: 700;
+}
+
+:root[data-theme="sticker"] button:active {
+  box-shadow: 1px 1px 0 #0a0a0a;
+  transform: translate(2px, 2px);
+}
+
+:root[data-theme="sticker"] .thread-reaction-button {
+  padding: 0.3rem 0.55rem;
+}
+
+:root[data-theme="sticker"] .thread-reaction-button[disabled] {
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  font-weight: 400;
+}
+
+:root[data-theme="sticker"] button:focus-visible,
+:root[data-theme="sticker"] input:focus-visible,
+:root[data-theme="sticker"] textarea:focus-visible,
+:root[data-theme="sticker"] .nav-link:focus-visible {
+  outline-offset: 2px;
+}
+
+:root[data-theme="sticker"] .eyebrow {
+  display: inline-block;
+  background: #ffe800;
+  padding: 0.1rem 0.35rem;
+  margin-bottom: 0.6rem;
+  color: #0a0a0a;
+  letter-spacing: 0.1em;
+  outline: 1.5px solid #0a0a0a;
+}
+
+:root[data-theme="sticker"] .pinned-thread-marker {
+  background: #ffe800;
+  border: 1.5px solid #0a0a0a;
+  color: #0a0a0a;
+  font-weight: 700;
+}
+
+:root[data-theme="sticker"] .site-header {
+  padding-bottom: 1.25rem;
+}
+
+:root[data-theme="sticker"] .site-header::after {
+  content: "";
+  display: block;
+  margin-top: 0.9rem;
+  height: 3px;
+  background: #0a0a0a;
+}
+
+:root[data-theme="sticker"] .feedback {
+  border: none;
+  outline: 2px solid #0a0a0a;
+  box-shadow: 3px 3px 0 #0a0a0a;
+}
+
+:root[data-theme="sticker"] [data-role="public-key-viewer"],
+:root[data-theme="sticker"] [data-role="private-key-viewer"] {
+  border: none;
+  outline: 2px solid #0a0a0a;
+  box-shadow: 3px 3px 0 #0a0a0a;
+}
+
+@media (max-width: 480px) {
+  :root[data-theme="sticker"] .card {
+    box-shadow: 3px 3px 0 #0a0a0a;
+  }
 }
 
 .feedback {

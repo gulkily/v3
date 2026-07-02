@@ -1,6 +1,6 @@
 (function () {
   var storageKey = "zenmemes-theme";
-  var themes = ["auto", "light", "dark", "console", "lcd", "chicago", "vapor", "forge"];
+  var themes = ["auto", "light", "dark", "console", "lcd", "chicago", "vapor", "forge", "sticker"];
 
   function isExplicitTheme(theme) {
     return (
@@ -10,7 +10,8 @@
       theme === "lcd" ||
       theme === "chicago" ||
       theme === "vapor" ||
-      theme === "forge"
+      theme === "forge" ||
+      theme === "sticker"
     );
   }
 
@@ -67,7 +68,11 @@
       return "Vapor";
     }
 
-    return "Forge";
+    if (theme === "forge") {
+      return "Forge";
+    }
+
+    return "Sticker";
   }
 
   function applyTheme(theme) {
