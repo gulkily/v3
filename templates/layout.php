@@ -14,7 +14,8 @@
           theme === 'console' ||
           theme === 'lcd' ||
           theme === 'chicago' ||
-          theme === 'vapor'
+          theme === 'vapor' ||
+          theme === 'forge'
         ) {
           document.documentElement.setAttribute('data-theme', theme);
         }
