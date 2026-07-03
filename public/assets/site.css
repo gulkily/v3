@@ -222,6 +222,33 @@
                "Liberation Mono", monospace;
 }
 
+:root[data-theme="arena"],
+.theme-menu__option[data-theme-option="arena"] {
+  color-scheme: dark;
+  --page-bg: #000000;
+  --body-background: #000000;
+  --ink: #ffffff;
+  --ink-soft: #666666;
+  --line: rgba(255, 255, 255, 0.18);
+  --panel: transparent;
+  --input-bg: rgba(255, 255, 255, 0.04);
+  --button-bg: rgba(255, 255, 255, 0.04);
+  --button-alt-bg: rgba(255, 255, 255, 0.07);
+  --feedback-ok-bg: rgba(255, 255, 255, 0.04);
+  --feedback-error-bg: rgba(255, 255, 255, 0.04);
+  --status-error: #ff6b6b;
+  --status-ok: #aaaaaa;
+  --status-warning: #aaaaaa;
+  --active-bg: #ffffff;
+  --active-ink: #000000;
+  --active-line: #ffffff;
+  --active-ring: rgba(255, 255, 255, 0.2);
+  --body-font: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ui-font: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --code-font: ui-monospace, "Cascadia Code", "SF Mono", "Consolas",
+               "Liberation Mono", monospace;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -479,6 +506,12 @@ pre {
   background: #e0493a;
   border: 2.5px solid #0a0a0a;
   box-shadow: 2px 2px 0 #0a0a0a;
+}
+
+.theme-swatch[data-theme="arena"] {
+  background: #000000;
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 0 0 0.22rem #000000;
 }
 
 .theme-menu {
@@ -1105,6 +1138,71 @@ pre {
   :root[data-theme="sticker"] .card {
     box-shadow: 3px 3px 0 #0a0a0a;
   }
+}
+
+:root[data-theme="arena"] body {
+  line-height: 1.65;
+  letter-spacing: 0.01em;
+}
+
+:root[data-theme="arena"] .card {
+  padding: 1.2rem;
+}
+
+:root[data-theme="arena"] .stack > * + * {
+  margin-top: 1.25rem;
+}
+
+:root[data-theme="arena"] .site-header::after {
+  content: "";
+  display: block;
+  margin-top: 0.9rem;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme="arena"] .nav-link {
+  background: transparent;
+}
+
+:root[data-theme="arena"] .nav-link.is-active {
+  box-shadow: none;
+}
+
+:root[data-theme="arena"] input::placeholder,
+:root[data-theme="arena"] textarea::placeholder {
+  color: #777777;
+}
+
+:root[data-theme="arena"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+:root[data-theme="arena"] .eyebrow {
+  color: var(--ink-soft);
+  letter-spacing: 0.16em;
+  font-size: 0.72rem;
+}
+
+:root[data-theme="arena"] .pinned-thread-marker {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+:root[data-theme="arena"] a {
+  text-decoration: none;
+}
+
+:root[data-theme="arena"] a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* The sticky version banner floats over scrolled content, so it cannot
+   inherit the theme's transparent panel. */
+:root[data-theme="arena"] .app-version-banner__text,
+:root[data-theme="arena"] .app-version-banner__reload {
+  background: #000000;
 }
 
 .feedback {

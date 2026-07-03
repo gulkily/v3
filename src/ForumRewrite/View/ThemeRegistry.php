@@ -21,6 +21,7 @@ final class ThemeRegistry
             ['name' => 'vapor', 'label' => 'Vapor', 'mode' => 'dark'],
             ['name' => 'forge', 'label' => 'Forge', 'mode' => 'dark'],
             ['name' => 'sticker', 'label' => 'Sticker', 'mode' => 'light'],
+            ['name' => 'arena', 'label' => 'Arena', 'mode' => 'dark'],
         ];
     }
 
