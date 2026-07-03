@@ -72,6 +72,20 @@
       });
     }
 
+    function maybeCollapseComposer() {
+      if (!details.open || hasReplyBody(details)) {
+        return;
+      }
+
+      const active = document.activeElement;
+      if (active && details.contains(active)) {
+        return;
+      }
+
+      details.open = false;
+      syncOpenState();
+    }
+
     if (hasReplyBody(details)) {
       openComposer(false);
     }
@@ -93,6 +107,10 @@
       }
 
       openComposer(false);
+    });
+
+    details.addEventListener("focusout", function () {
+      window.setTimeout(maybeCollapseComposer, 0);
     });
 
     details.addEventListener("toggle", syncOpenState);
