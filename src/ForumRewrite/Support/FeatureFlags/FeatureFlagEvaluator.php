@@ -64,6 +64,24 @@ final class FeatureFlagEvaluator
 
     public function evaluate(string $key): FeatureFlagState
     {
+        $state = $this->evaluateWithoutDependencies($key);
+        $requiresEnabledFlag = $state->definition->requiresEnabledFlag;
+        if ($requiresEnabledFlag !== null && $state->effectiveValue && !$this->isEnabled($requiresEnabledFlag)) {
+            return new FeatureFlagState(
+                $state->definition,
+                false,
+                'dependency',
+                $state->environmentValue,
+                $state->siteValue,
+                $state->siteError,
+            );
+        }
+
+        return $state;
+    }
+
+    private function evaluateWithoutDependencies(string $key): FeatureFlagState
+    {
         $definition = $this->registry->get($key);
         if ($definition === null) {
             throw new \InvalidArgumentException('Unknown feature flag: ' . $key);

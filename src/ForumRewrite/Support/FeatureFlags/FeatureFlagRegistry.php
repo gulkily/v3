@@ -7,6 +7,7 @@ namespace ForumRewrite\Support\FeatureFlags;
 final class FeatureFlagRegistry
 {
     public const UNICODE_AUTHORED_TEXT = 'FORUM_UNICODE_AUTHORED_TEXT';
+    public const EMOJI_AUTHORED_TEXT = 'FORUM_EMOJI_AUTHORED_TEXT';
     public const APP_VERSION_NOTIFICATION = 'FORUM_APP_VERSION_NOTIFICATION';
     public const DEDALUS_AGENT_REPLIES_ENABLED = 'DEDALUS_AGENT_REPLIES_ENABLED';
     public const DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED = 'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED';
@@ -24,6 +25,15 @@ final class FeatureFlagRegistry
                 false,
                 self::UNICODE_AUTHORED_TEXT,
                 siteMutable: true,
+            ),
+            new FeatureFlagDefinition(
+                self::EMOJI_AUTHORED_TEXT,
+                'Emoji authored text',
+                'Allow emoji in human-authored post subject and body fields when Unicode authored text is also enabled.',
+                false,
+                self::EMOJI_AUTHORED_TEXT,
+                siteMutable: true,
+                requiresEnabledFlag: self::UNICODE_AUTHORED_TEXT,
             ),
             new FeatureFlagDefinition(
                 self::APP_VERSION_NOTIFICATION,

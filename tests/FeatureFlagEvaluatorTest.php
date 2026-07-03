@@ -15,6 +15,7 @@ final class FeatureFlagEvaluatorTest
             $evaluator = new FeatureFlagEvaluator();
 
             $unicode = $evaluator->evaluate(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
+            $emoji = $evaluator->evaluate(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT);
             $notification = $evaluator->evaluate(FeatureFlagRegistry::APP_VERSION_NOTIFICATION);
             $agentReplies = $evaluator->evaluate(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED);
             $automaticAgentReplies = $evaluator->evaluate(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED);
@@ -22,6 +23,9 @@ final class FeatureFlagEvaluatorTest
             assertSame(false, $unicode->effectiveValue);
             assertSame('default', $unicode->source);
             assertSame(true, $unicode->isDefault());
+            assertSame(false, $emoji->effectiveValue);
+            assertSame('default', $emoji->source);
+            assertSame(true, $emoji->isDefault());
             assertSame(true, $notification->effectiveValue);
             assertSame('default', $notification->source);
             assertSame(true, $notification->isDefault());
@@ -36,16 +40,21 @@ final class FeatureFlagEvaluatorTest
     {
         $this->withEnvironment([
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT => 'true',
+            FeatureFlagRegistry::EMOJI_AUTHORED_TEXT => 'true',
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION => 'false',
         ], function (): void {
             $evaluator = new FeatureFlagEvaluator();
 
             $unicode = $evaluator->evaluate(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
+            $emoji = $evaluator->evaluate(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT);
             $notification = $evaluator->evaluate(FeatureFlagRegistry::APP_VERSION_NOTIFICATION);
 
             assertSame(true, $unicode->effectiveValue);
             assertSame('environment', $unicode->source);
             assertSame(true, $unicode->environmentValue);
+            assertSame(true, $emoji->effectiveValue);
+            assertSame('environment', $emoji->source);
+            assertSame(true, $emoji->environmentValue);
             assertSame(false, $notification->effectiveValue);
             assertSame('environment', $notification->source);
             assertSame(false, $notification->environmentValue);
@@ -62,6 +71,7 @@ final class FeatureFlagEvaluatorTest
 
         assertSame([
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,
+            FeatureFlagRegistry::EMOJI_AUTHORED_TEXT,
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
@@ -92,15 +102,19 @@ PHP);
     public function testRepositoryValuesOverrideDefaultsButNotEnvironment(): void
     {
         $this->withEnvironment([], function (): void {
-            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\nFORUM_APP_VERSION_NOTIFICATION: false\nFORUM_UNICODE_AUTHORED_TEXT: true\n");
+            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\nFORUM_APP_VERSION_NOTIFICATION: false\nFORUM_EMOJI_AUTHORED_TEXT: true\nFORUM_UNICODE_AUTHORED_TEXT: true\n");
             $evaluator = FeatureFlagEvaluator::forRepository($repositoryRoot);
 
             $unicode = $evaluator->evaluate(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
+            $emoji = $evaluator->evaluate(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT);
             $notification = $evaluator->evaluate(FeatureFlagRegistry::APP_VERSION_NOTIFICATION);
 
             assertSame(true, $unicode->effectiveValue);
             assertSame('site', $unicode->source);
             assertSame(true, $unicode->siteValue);
+            assertSame(true, $emoji->effectiveValue);
+            assertSame('site', $emoji->source);
+            assertSame(true, $emoji->siteValue);
             assertSame(false, $notification->effectiveValue);
             assertSame('site', $notification->source);
             assertSame(false, $notification->siteValue);
@@ -115,6 +129,18 @@ PHP);
             assertSame(false, $unicode->effectiveValue);
             assertSame('environment', $unicode->source);
             assertSame(true, $unicode->siteValue);
+        });
+    }
+
+    public function testEmojiAuthoredTextDependsOnUnicodeAuthoredText(): void
+    {
+        $this->withEnvironment([], function (): void {
+            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\nFORUM_EMOJI_AUTHORED_TEXT: true\nFORUM_UNICODE_AUTHORED_TEXT: false\n");
+            $emoji = FeatureFlagEvaluator::forRepository($repositoryRoot)->evaluate(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT);
+
+            assertSame(false, $emoji->effectiveValue);
+            assertSame('dependency', $emoji->source);
+            assertSame(true, $emoji->siteValue);
         });
     }
 
@@ -138,6 +164,7 @@ PHP);
     {
         $keys = [
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,
+            FeatureFlagRegistry::EMOJI_AUTHORED_TEXT,
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,

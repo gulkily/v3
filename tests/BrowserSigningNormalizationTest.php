@@ -68,7 +68,12 @@ NODE;
     /**
      * @return array<string, mixed>
      */
-    private function runTextHelper(string $text, bool $allowUnicodeAuthoredText, bool $removeUnsupported = false): array
+    private function runTextHelper(
+        string $text,
+        bool $allowUnicodeAuthoredText,
+        bool $removeUnsupported = false,
+        bool $allowEmojiAuthoredText = false,
+    ): array
     {
         $script = <<<'NODE'
 global.window = {};
@@ -86,17 +91,19 @@ vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
 const helper = window.__forumComposeNormalization.normalizeComposeText;
 process.stdout.write(JSON.stringify(helper(process.argv[2], {
   allowUnicodeAuthoredText: process.argv[3] === '1',
-  removeUnsupported: process.argv[4] === '1'
+  removeUnsupported: process.argv[4] === '1',
+  allowEmojiAuthoredText: process.argv[5] === '1'
 })));
 NODE;
 
         $command = sprintf(
-            'node -e %s %s %s %s %s',
+            'node -e %s %s %s %s %s %s',
             escapeshellarg($script),
             escapeshellarg(__DIR__ . '/../public/assets/browser_signing.js'),
             escapeshellarg($text),
             escapeshellarg($allowUnicodeAuthoredText ? '1' : '0'),
             escapeshellarg($removeUnsupported ? '1' : '0'),
+            escapeshellarg($allowEmojiAuthoredText ? '1' : '0'),
         );
 
         $output = [];
@@ -187,6 +194,33 @@ NODE;
         assertSame('Привет ', $result['text']);
         assertSame(0, $result['unsupportedCount']);
         assertSame(4, $result['removedUnsupportedCount']);
+    }
+
+    public function testNormalizeComposeTextPreservesEmojiWhenEnabled(): void
+    {
+        $result = $this->runTextHelper('Привет 🙂', true, false, true);
+
+        assertSame('Привет 🙂', $result['text']);
+        assertSame(0, $result['unsupportedCount']);
+        assertSame(0, $result['removedUnsupportedCount']);
+    }
+
+    public function testNormalizeComposeTextStillRejectsStandaloneEmojiJoinersWhenEmojiIsEnabled(): void
+    {
+        $result = $this->runTextHelper("hello\u{200D}world 🙂", true, true, true);
+
+        assertSame('helloworld 🙂', $result['text']);
+        assertSame(0, $result['unsupportedCount']);
+        assertSame(1, $result['removedUnsupportedCount']);
+    }
+
+    public function testNormalizeComposeTextRequiresUnicodeForEmoji(): void
+    {
+        $result = $this->runTextHelper('Привет 🙂', false, true, true);
+
+        assertSame(' ', $result['text']);
+        assertSame(0, $result['unsupportedCount']);
+        assertSame(7, $result['removedUnsupportedCount']);
     }
 
     public function testNormalizeComposeAsciiReportsUnsupportedCharacters(): void

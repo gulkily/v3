@@ -117,4 +117,25 @@ final class UnicodeTextPolicyTest
 
         throw new RuntimeException('Expected emoji rejection.');
     }
+
+    public function testAllowsEmojiSymbolsWhenEnabled(): void
+    {
+        $policy = new UnicodeTextPolicy(allowEmoji: true);
+
+        assertSame("hello 🙂\n", $policy->normalizeBody('hello 🙂', 'body'));
+    }
+
+    public function testRejectsStandaloneEmojiJoinersWhenEmojiIsEnabled(): void
+    {
+        $policy = new UnicodeTextPolicy(allowEmoji: true);
+
+        try {
+            $policy->normalizeBody("hello\u{200D}world", 'body');
+        } catch (RuntimeException $exception) {
+            assertStringContains('control or format', $exception->getMessage());
+            return;
+        }
+
+        throw new RuntimeException('Expected standalone emoji joiner rejection.');
+    }
 }

@@ -13,7 +13,7 @@
       <a class="nav-link" href="/compose/thread">New Post</a>
     </div>
   </article>
-  <article class="card inline-reply-composer compact-thread-compose" data-compose-root data-pending-thread-position="after" data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>">
+  <article class="card inline-reply-composer compact-thread-compose" data-compose-root data-pending-thread-position="after" data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>">
     <details class="inline-reply-details compact-thread-compose-details" data-inline-reply-details>
       <summary class="inline-reply-summary">
         <textarea

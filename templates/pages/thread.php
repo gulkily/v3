@@ -22,7 +22,7 @@ foreach ($posts as $post) {
 <?php foreach ($replyPosts as $post): ?>
 <?= $indent($partial('partials/post_card.php', ['post' => $post]), 1) ?>
 <?php endforeach; ?>
-  <article class="card inline-reply-composer" data-compose-root>
+  <article class="card inline-reply-composer" data-compose-root data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>">
     <details class="inline-reply-details" data-inline-reply-details>
       <summary class="inline-reply-summary">
         <textarea

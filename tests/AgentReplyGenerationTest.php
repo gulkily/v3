@@ -163,6 +163,17 @@ final class AgentReplyGenerationTest
         assertSame('Smart "quotes": Хорошо', $text);
     }
 
+    public function testGeneratedReplyTextCanPreserveEmojiWhenEnabled(): void
+    {
+        $text = DedalusAgentReplyGenerator::normalizeGeneratedReplyText(
+            "Looks good 🙂",
+            true,
+            true,
+        );
+
+        assertSame('Looks good 🙂', $text);
+    }
+
     public function testPromptTemplateLoadsFromFile(): void
     {
         $generator = new DedalusAgentReplyGenerator(

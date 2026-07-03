@@ -14,6 +14,7 @@ final class FeatureFlagDefinition
         public readonly string $environmentVariable,
         public readonly string $category = 'site',
         public readonly bool $siteMutable = false,
+        public readonly ?string $requiresEnabledFlag = null,
     ) {
     }
 }

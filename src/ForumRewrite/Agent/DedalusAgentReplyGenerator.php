@@ -80,7 +80,11 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
         return DedalusPostAnalyzer::decodeCompletionPayload($response);
     }
 
-    public static function normalizeGeneratedReplyText(string $text, bool $allowUnicodeAuthoredText = false): string
+    public static function normalizeGeneratedReplyText(
+        string $text,
+        bool $allowUnicodeAuthoredText = false,
+        bool $allowEmojiAuthoredText = false,
+    ): string
     {
         $normalized = str_replace(["\r\n", "\r"], "\n", trim($text));
         $normalized = strtr($normalized, [
@@ -95,7 +99,7 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
         ]);
 
         if ($allowUnicodeAuthoredText) {
-            return trim((new UnicodeTextPolicy())->normalizeBody($normalized, 'response_text'));
+            return trim((new UnicodeTextPolicy($allowEmojiAuthoredText))->normalizeBody($normalized, 'response_text'));
         }
 
         $normalized = preg_replace('/[^\x0A\x20-\x7E]/u', '', $normalized);

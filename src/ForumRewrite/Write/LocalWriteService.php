@@ -454,7 +454,7 @@ class LocalWriteService
             $key = $this->requireFeatureFlagKey((string) ($input['key'] ?? ''));
             $requestedValue = $this->requireBooleanValue($input['value'] ?? null, 'value');
             $currentState = $this->featureFlags->evaluate($key);
-            if ($currentState->source === 'environment') {
+            if ($currentState->environmentValue !== null) {
                 throw new RuntimeException('feature flag is currently overridden by environment: ' . $key);
             }
             if ($currentState->siteError !== null) {
@@ -1352,7 +1352,7 @@ class LocalWriteService
     private function normalizeAuthoredLine(string $value, string $field): string
     {
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT)) {
-            return (new UnicodeTextPolicy())->normalizeLine($value, $field);
+            return (new UnicodeTextPolicy($this->emojiAuthoredTextEnabled()))->normalizeLine($value, $field);
         }
 
         return $this->normalizeAsciiLine($value, $field);
@@ -1385,9 +1385,14 @@ class LocalWriteService
     private function normalizeAuthoredBody(string $value, string $field): string
     {
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT)) {
-            return (new UnicodeTextPolicy())->normalizeBody($value, $field);
+            return (new UnicodeTextPolicy($this->emojiAuthoredTextEnabled()))->normalizeBody($value, $field);
         }
 
         return $this->normalizeAsciiBody($value, $field);
+    }
+
+    private function emojiAuthoredTextEnabled(): bool
+    {
+        return $this->featureFlags->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT);
     }
 }

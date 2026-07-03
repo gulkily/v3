@@ -2977,6 +2977,7 @@ final class Application
         $text = DedalusAgentReplyGenerator::normalizeGeneratedReplyText(
             (string) ($engagement['suggested_response'] ?? ''),
             $this->featureFlags()->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
+            $this->featureFlags()->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT),
         );
         if ($text === '') {
             throw new RuntimeException('Completed analysis did not include a suggested_response.');

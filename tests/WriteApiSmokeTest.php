@@ -1082,6 +1082,28 @@ PHP);
         assertStringContains('Привет мир', $record);
     }
 
+    public function testEmojiAuthoredTextRequiresUnicodeAndEmojiFeatureFlags(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_EMOJI_AUTHORED_TEXT: true\nFORUM_UNICODE_AUTHORED_TEXT: true\n"
+        );
+
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_thread?board_tags=general&subject=' . rawurlencode('Hello 🙂') . '&body=' . rawurlencode('Looks good 🙂')
+        );
+        $postId = $this->extractValue($response, 'post_id');
+        $record = (string) file_get_contents($repositoryRoot . '/records/posts/' . $postId . '.txt');
+
+        assertStringContains('status=ok', $response);
+        assertStringContains('Subject: Hello 🙂', $record);
+        assertStringContains('Looks good 🙂', $record);
+    }
+
     public function testSetFeatureFlagWritesCanonicalRecordCommitsAndInvalidatesArtifacts(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

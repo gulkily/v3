@@ -198,25 +198,92 @@
     return characters;
   }
 
-  function isAllowedVisibleUnicodeCharacter(character) {
+  function isEmojiBaseCharacter(character) {
+    const codePoint = character.codePointAt(0);
+    if (codePoint === undefined) {
+      return false;
+    }
+
+    return codePoint === 0x00A9
+      || codePoint === 0x00AE
+      || codePoint === 0x203C
+      || codePoint === 0x2049
+      || codePoint === 0x2122
+      || codePoint === 0x2139
+      || (codePoint >= 0x2194 && codePoint <= 0x21AA)
+      || codePoint === 0x231A
+      || codePoint === 0x231B
+      || codePoint === 0x2328
+      || codePoint === 0x23CF
+      || (codePoint >= 0x23E9 && codePoint <= 0x23F3)
+      || (codePoint >= 0x23F8 && codePoint <= 0x23FA)
+      || codePoint === 0x24C2
+      || codePoint === 0x25AA
+      || codePoint === 0x25AB
+      || codePoint === 0x25B6
+      || codePoint === 0x25C0
+      || (codePoint >= 0x25FB && codePoint <= 0x25FE)
+      || (codePoint >= 0x2600 && codePoint <= 0x27BF)
+      || codePoint === 0x2934
+      || codePoint === 0x2935
+      || (codePoint >= 0x2B05 && codePoint <= 0x2B55)
+      || codePoint === 0x3030
+      || codePoint === 0x303D
+      || codePoint === 0x3297
+      || codePoint === 0x3299
+      || (codePoint >= 0x1F000 && codePoint <= 0x1FAFF);
+  }
+
+  function isEmojiSequenceCharacter(character) {
+    const codePoint = character.codePointAt(0);
+    return codePoint === 0x200D || codePoint === 0x20E3 || codePoint === 0xFE0F;
+  }
+
+  function isAllowedEmojiSequenceCharacter(character, previousCharacter, nextCharacter) {
+    const codePoint = character.codePointAt(0);
+    if (codePoint === 0x200D) {
+      return isEmojiBaseCharacter(previousCharacter || "") && isEmojiBaseCharacter(nextCharacter || "");
+    }
+
+    if (codePoint === 0x20E3) {
+      return /^[0-9#*]$/.test(previousCharacter || "");
+    }
+
+    return isEmojiBaseCharacter(previousCharacter || "") || isEmojiBaseCharacter(nextCharacter || "");
+  }
+
+  function isAllowedVisibleUnicodeCharacter(character, allowEmojiAuthoredText, previousCharacter, nextCharacter) {
     if (character === "\n" || /^[\x20-\x7E]$/.test(character)) {
       return true;
     }
 
+    if (isEmojiSequenceCharacter(character)) {
+      return allowEmojiAuthoredText === true
+        && isAllowedEmojiSequenceCharacter(character, previousCharacter, nextCharacter);
+    }
+
     if (/[\p{C}\p{Z}\p{S}]/u.test(character)) {
-      return false;
+      return allowEmojiAuthoredText === true && isEmojiBaseCharacter(character);
     }
 
     return /^[\p{L}\p{M}\p{N}\p{P}]$/u.test(character);
   }
 
-  function unsafeUnicodeComposeCharacters(text) {
+  function unsafeUnicodeComposeCharacters(text, options) {
+    const config = options || {};
+    const allowEmojiAuthoredText = config.allowEmojiAuthoredText === true;
     const characters = [];
-    for (const character of text) {
-      if (!isAllowedVisibleUnicodeCharacter(character)) {
+    const source = Array.from(text);
+    source.forEach(function (character, index) {
+      if (!isAllowedVisibleUnicodeCharacter(
+        character,
+        allowEmojiAuthoredText,
+        source[index - 1] || "",
+        source[index + 1] || ""
+      )) {
         characters.push(character);
       }
-    }
+    });
     return characters;
   }
 
@@ -224,6 +291,7 @@
     const config = options || {};
     const removeUnsupported = config.removeUnsupported === true;
     const allowUnicodeAuthoredText = config.allowUnicodeAuthoredText === true;
+    const allowEmojiAuthoredText = allowUnicodeAuthoredText && config.allowEmojiAuthoredText === true;
     let normalized = "";
     let hadCorrections = false;
     const newlineNormalized = normalizeNewlines(text);
@@ -254,13 +322,19 @@
     }
 
     const unsupportedBeforeRemoval = allowUnicodeAuthoredText
-      ? unsafeUnicodeComposeCharacters(normalized)
+      ? unsafeUnicodeComposeCharacters(normalized, { allowEmojiAuthoredText: allowEmojiAuthoredText })
       : unsupportedComposeCharacters(normalized);
     if (removeUnsupported && unsupportedBeforeRemoval.length > 0) {
-      normalized = Array.from(normalized)
-        .filter(function (character) {
+      const normalizedCharacters = Array.from(normalized);
+      normalized = normalizedCharacters
+        .filter(function (character, index) {
           return allowUnicodeAuthoredText
-            ? isAllowedVisibleUnicodeCharacter(character)
+            ? isAllowedVisibleUnicodeCharacter(
+              character,
+              allowEmojiAuthoredText,
+              normalizedCharacters[index - 1] || "",
+              normalizedCharacters[index + 1] || ""
+            )
             : /^[\x00-\x7F]$/.test(character);
         })
         .join("");
@@ -1808,6 +1882,7 @@
     }
     const draftKey = composeDraftKey(form);
     const unicodeAuthoredTextEnabled = root.dataset.unicodeAuthoredText === "1";
+    const emojiAuthoredTextEnabled = unicodeAuthoredTextEnabled && root.dataset.emojiAuthoredText === "1";
 
     function updateComposeNormalizationStatus(message, kind) {
       if (!normalizationStatusNode) {
@@ -1910,6 +1985,7 @@
     function normalizeComposeField(field, options) {
       const result = normalizeComposeText(field.value, Object.assign({}, options || {}, {
         allowUnicodeAuthoredText: unicodeAuthoredTextEnabled && (field.name === "subject" || field.name === "body"),
+        allowEmojiAuthoredText: emojiAuthoredTextEnabled && (field.name === "subject" || field.name === "body"),
       }));
       if (field.value !== result.text) {
         field.value = result.text;

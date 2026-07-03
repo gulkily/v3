@@ -16,6 +16,11 @@ final class SiteConfig
         return self::featureFlags()->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
     }
 
+    public static function emojiAuthoredTextEnabled(): bool
+    {
+        return self::featureFlags()->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT);
+    }
+
     public static function appVersionNotificationEnabled(): bool
     {
         return self::featureFlags()->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION);

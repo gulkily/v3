@@ -271,6 +271,8 @@ final class LocalAppSmokeTest
         assertStringContains('data-inline-reply-details', $board);
         assertStringContains('class="inline-reply-prompt compact-thread-compose-prompt"', $board);
         assertStringContains('data-compose-kind="thread"', $board);
+        assertStringContains('data-unicode-authored-text="0"', $board);
+        assertStringContains('data-emoji-authored-text="0"', $board);
         assertStringContains('name="subject"', $board);
         assertStringContains('name="body"', $board);
         assertStringContains('name="board_tags" value="general"', $board);
@@ -304,6 +306,8 @@ final class LocalAppSmokeTest
         assertOrdered($thread, '<h1>Hello world</h1>', 'First line preview.');
         assertOrdered($thread, 'First line preview.', 'id="post-reply-001"');
         assertStringContains('inline-reply-composer', $thread);
+        assertStringContains('data-unicode-authored-text="0"', $thread);
+        assertStringContains('data-emoji-authored-text="0"', $thread);
         assertStringContains('data-inline-reply-details', $thread);
         assertStringContains('class="inline-reply-prompt"', $thread);
         assertStringContains('placeholder="Write a reply..."', $thread);
@@ -378,6 +382,7 @@ final class LocalAppSmokeTest
         assertStringContains('class="nav-link is-active" href="/tools/feature-flags/"', $featureFlags);
         assertFingerprintedAsset($featureFlags, 'feature_flags.js');
         assertStringContains('FORUM_UNICODE_AUTHORED_TEXT', $featureFlags);
+        assertStringContains('FORUM_EMOJI_AUTHORED_TEXT', $featureFlags);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $featureFlags);
         assertStringContains('DEDALUS_AGENT_REPLIES_ENABLED', $featureFlags);
         assertStringContains('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $featureFlags);
@@ -757,6 +762,8 @@ final class LocalAppSmokeTest
         $reply = $this->render($application, '/compose/reply?thread_id=root-001&parent_id=root-001');
 
         assertStringContains('compose-normalization-inline', $thread);
+        assertStringContains('data-unicode-authored-text="0"', $thread);
+        assertStringContains('data-emoji-authored-text="0"', $thread);
         assertStringContains('data-role="compose-normalization-status"', $thread);
         assertStringContains('data-role="compose-normalization-message"', $thread);
         assertStringContains('data-role="compose-field-normalization-status"', $thread);
@@ -770,6 +777,8 @@ final class LocalAppSmokeTest
         assertStringContains('data-compose-field-remove-for="subject"', $thread);
         assertStringContains('data-compose-field-remove-for="body"', $thread);
         assertStringContains('hidden', $thread);
+        assertStringContains('data-unicode-authored-text="0"', $reply);
+        assertStringContains('data-emoji-authored-text="0"', $reply);
         assertStringContains('compose-normalization-inline', $reply);
         assertStringContains('data-role="compose-normalization-status"', $reply);
         assertStringContains('data-role="compose-normalization-message"', $reply);
