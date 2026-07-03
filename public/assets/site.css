@@ -555,6 +555,24 @@ pre {
   border: 1px solid var(--line);
 }
 
+.theme-menu__option[data-theme-option="console"] {
+  text-shadow: 0 0 6px rgba(155, 255, 138, 0.55);
+}
+
+.theme-menu__option[data-theme-option="vapor"] {
+  text-shadow: 0 0 8px rgba(122, 252, 255, 0.6);
+}
+
+.theme-menu__option[data-theme-option="chicago"] {
+  background: #c0c0c0;
+  box-shadow: inset -1px -1px 0 #7b7b7b, inset 1px 1px 0 #ffffff;
+}
+
+.theme-menu__option[data-theme-option="sticker"] {
+  border: 2px solid #0a0a0a;
+  box-shadow: 2px 2px 0 #0a0a0a;
+}
+
 .theme-menu__option:hover {
   border-color: var(--ink-soft);
 }

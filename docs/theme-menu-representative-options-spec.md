@@ -9,8 +9,10 @@ Status: in progress on branch `theme-menu-representative-options`.
   (row = its theme's background/ink/font; hover/focus/checked use the row's
   own tokens), bump popover row gap to 4px. Auto row stays ambient via
   `:not([data-theme-option="auto"])`. `php tests/run.php` green.
-- [ ] Slice 2: garnish rules (console/vapor text glow, chicago silver chrome,
-  sticker offset shadow).
+- [x] Slice 2: garnish rules (console/vapor text glow, chicago silver chrome,
+  sticker offset shadow). Placed *before* the hover/focus/checked rules so the
+  sticker `border` shorthand cannot mask the equal-specificity state
+  indicators — state visibility wins per spec. `php tests/run.php` green.
 - [ ] Playwright sweep per Verification section.
 
 ## Context
