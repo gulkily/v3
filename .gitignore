@@ -8,3 +8,7 @@ public/threads/
 public/posts/
 public/profiles/
 public/.locks/
+public/assets/*.[0-9a-f]*.js
+public/assets/*.[0-9a-f]*.css
+public/assets/*.[0-9a-f]*.map
+repository.tar.gz
