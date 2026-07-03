@@ -97,7 +97,7 @@ final class TemplateRenderer
         $author = fn (array $record): string => $this->renderAuthorHtml($record, $e);
         $contentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e);
         $timeMeta = fn (string $label, ?string $timestamp): string => $this->renderTimeMeta($label, $timestamp, $e);
-        $heat = fn (?string $timestamp): int => $this->heatLevel($timestamp);
+        $heat = fn (?string $timestamp, int $replyCount = 0): int => $this->heatLevel($timestamp, $replyCount);
         $threadTitle = static fn (array $thread): string => ThreadTitle::displayTitle(
             (string) ($thread['subject'] ?? ''),
             (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
@@ -205,10 +205,11 @@ final class TemplateRenderer
     }
 
     /**
-     * Buckets a timestamp's age into a 1 (coldest) to 8 (hottest) heat level.
-     * Rendered as data-heat on content cards so themes can color by recency.
+     * Buckets a timestamp's age into a 1 (coldest) to 8 (hottest) heat level,
+     * then lets reply volume push the level up to two bands hotter (capped).
+     * Rendered as data-heat on content cards so themes can color by activity.
      */
-    private function heatLevel(?string $timestamp): int
+    private function heatLevel(?string $timestamp, int $replyCount = 0): int
     {
         $value = trim((string) $timestamp);
         if ($value === '') {
@@ -231,13 +232,21 @@ final class TemplateRenderer
             [3, 30 * 86400],     // within a month
             [2, 90 * 86400],     // within a quarter
         ];
-        foreach ($buckets as [$level, $maxAgeSeconds]) {
+        $level = 1;
+        foreach ($buckets as [$bucketLevel, $maxAgeSeconds]) {
             if ($ageSeconds <= $maxAgeSeconds) {
-                return $level;
+                $level = $bucketLevel;
+                break;
             }
         }
 
-        return 1;
+        if ($replyCount >= 10) {
+            $level += 2;
+        } elseif ($replyCount >= 3) {
+            $level += 1;
+        }
+
+        return min(8, $level);
     }
 
     private function formatFriendlyTimestamp(?string $timestamp): string
