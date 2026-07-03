@@ -13,7 +13,23 @@ Status: in progress on branch `theme-menu-representative-options`.
   sticker offset shadow). Placed *before* the hover/focus/checked rules so the
   sticker `border` shorthand cannot mask the equal-specificity state
   indicators — state visibility wins per spec. `php tests/run.php` green.
-- [ ] Playwright sweep per Verification section.
+- [x] Slice 3 (found by the Playwright sweep): the "cannot leak" safety note
+  below was wrong — ambient scoped rules like
+  `:root[data-theme=vapor] button:...` are descendant selectors and *do* match
+  the option rows, overriding their backgrounds/borders/shadows. Fixed by
+  adding `:not(.theme-menu__option)` to the ambient button rules, matching the
+  existing `.theme-swatch`/`.theme-menu__trigger` exclusions. Also gave rows
+  `background-color: var(--page-bg)` under the `--body-background` gradient:
+  Forge's gradient starts near-transparent with no solid layer, so the ambient
+  popover bled through it.
+- [x] Playwright sweep per Verification section: all 35 checks pass — per-row
+  computed styles under contrasting ambients, garnish, checked/hover/focus
+  indicators (including sticker hover vs. its border garnish), selection +
+  persistence + focus return, Escape, no ambient bleed. Screenshots of the
+  popover under all 9 ambient themes reviewed by eye; 11rem min-width reads
+  fine (open question 4: keep). `php tests/run.php` fully green (note: a
+  stale generated `public/index.html` artifact makes the busy-page smoke test
+  fail spuriously — delete it before running).
 
 ## Context
 
