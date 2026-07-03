@@ -20,7 +20,7 @@
 <?php $href = '/posts/' . $item['post_id']; ?>
 <?php $linkLabel = $item['post_id']; ?>
 <?php endif; ?>
-  <article class="card">
+  <article class="card" data-heat="<?= $heat($item['created_at'] ?? null) ?>">
     <p class="meta"><?= $e($item['kind']) ?></p>
     <p><a href="<?= $e($href) ?>"><?= $e($linkLabel) ?></a></p>
     <p><?= $e($item['label']) ?></p>

@@ -97,6 +97,7 @@ final class TemplateRenderer
         $author = fn (array $record): string => $this->renderAuthorHtml($record, $e);
         $contentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e);
         $timeMeta = fn (string $label, ?string $timestamp): string => $this->renderTimeMeta($label, $timestamp, $e);
+        $heat = fn (?string $timestamp): int => $this->heatLevel($timestamp);
         $threadTitle = static fn (array $thread): string => ThreadTitle::displayTitle(
             (string) ($thread['subject'] ?? ''),
             (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
@@ -201,6 +202,42 @@ final class TemplateRenderer
         $timestampHtml = $this->renderTimestampHtml($timestamp, $escape);
 
         return $timestampHtml !== '' ? $label . ' ' . $timestampHtml : $label;
+    }
+
+    /**
+     * Buckets a timestamp's age into a 1 (coldest) to 8 (hottest) heat level.
+     * Rendered as data-heat on content cards so themes can color by recency.
+     */
+    private function heatLevel(?string $timestamp): int
+    {
+        $value = trim((string) $timestamp);
+        if ($value === '') {
+            return 1;
+        }
+
+        try {
+            $date = new \DateTimeImmutable($value);
+        } catch (\Exception) {
+            return 1;
+        }
+
+        $ageSeconds = max(0, time() - $date->getTimestamp());
+        $buckets = [
+            [8, 3600],           // within the hour
+            [7, 6 * 3600],       // within 6 hours
+            [6, 24 * 3600],      // within a day
+            [5, 3 * 86400],      // within 3 days
+            [4, 7 * 86400],      // within a week
+            [3, 30 * 86400],     // within a month
+            [2, 90 * 86400],     // within a quarter
+        ];
+        foreach ($buckets as [$level, $maxAgeSeconds]) {
+            if ($ageSeconds <= $maxAgeSeconds) {
+                return $level;
+            }
+        }
+
+        return 1;
     }
 
     private function formatFriendlyTimestamp(?string $timestamp): string

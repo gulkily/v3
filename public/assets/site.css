@@ -249,6 +249,41 @@
                "Liberation Mono", monospace;
 }
 
+:root[data-theme="thermal"],
+.theme-menu__option[data-theme-option="thermal"] {
+  color-scheme: dark;
+  --page-bg: #090909;
+  --body-background:
+    repeating-linear-gradient(
+      180deg,
+      rgba(232, 228, 240, 0.02) 0 1px,
+      transparent 1px 4px
+    ),
+    #090909;
+  --ink: #e8e4f0;
+  --ink-soft: #9d93b0;
+  --line: #2a2438;
+  --panel: #131020;
+  --input-bg: #0d0a16;
+  --button-bg: #1b1528;
+  --button-alt-bg: #241c34;
+  --feedback-ok-bg: #04312a;
+  --feedback-error-bg: #2d0a04;
+  --status-error: #ff9e8a;
+  --status-ok: #7de8b0;
+  --status-warning: #e8d06a;
+  --active-bg: #2d1a04;
+  --active-ink: #ffd9a8;
+  --active-line: #a86a2a;
+  --active-ring: rgba(240, 200, 158, 0.18);
+  --body-font: ui-monospace, "Cascadia Code", "SF Mono", "Consolas",
+               "Liberation Mono", monospace;
+  --ui-font: ui-monospace, "Cascadia Code", "SF Mono", "Consolas",
+             "Liberation Mono", monospace;
+  --code-font: ui-monospace, "Cascadia Code", "SF Mono", "Consolas",
+               "Liberation Mono", monospace;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -514,6 +549,20 @@ pre {
   box-shadow: inset 0 0 0 0.22rem #000000;
 }
 
+.theme-swatch[data-theme="thermal"] {
+  background:
+    linear-gradient(
+      90deg,
+      #2a0a4d 0%,
+      #0a2d8a 25%,
+      #0a6e5c 50%,
+      #8a4d0a 75%,
+      #8a1c0a 100%
+    );
+  border-color: #4a3a66;
+  box-shadow: inset 0 0 0 0.14rem #090909;
+}
+
 .theme-menu {
   position: relative;
   display: flex;
@@ -605,6 +654,21 @@ pre {
 .theme-menu__option[data-theme-option="sticker"] {
   border: 2px solid #0a0a0a;
   box-shadow: 2px 2px 0 #0a0a0a;
+}
+
+.theme-menu__option[data-theme-option="thermal"] {
+  background-image:
+    linear-gradient(
+      90deg,
+      #160428 0%,
+      #090e3d 18%,
+      #061c3d 34%,
+      #042d3d 48%,
+      #04312a 60%,
+      #1a2504 72%,
+      #2d1a04 86%,
+      #2d0a04 100%
+    );
 }
 
 .theme-menu__option:hover {
@@ -1203,6 +1267,167 @@ pre {
 :root[data-theme="arena"] .app-version-banner__text,
 :root[data-theme="arena"] .app-version-banner__reload {
   background: #000000;
+}
+
+:root[data-theme="thermal"] .eyebrow {
+  color: var(--ink-soft);
+  letter-spacing: 0.2em;
+}
+
+:root[data-theme="thermal"] .site-header > .eyebrow {
+  background:
+    linear-gradient(
+      90deg,
+      #8a5cf0 0%,
+      #388ae8 30%,
+      #1cc98f 55%,
+      #e89b2e 80%,
+      #e85038 100%
+    );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+:root[data-theme="thermal"] .site-header::after {
+  content: "";
+  display: block;
+  margin-top: 0.7rem;
+  height: 2px;
+  background:
+    linear-gradient(
+      90deg,
+      #160428 0%,
+      #090e3d 14%,
+      #061c3d 28%,
+      #042d3d 42%,
+      #04312a 56%,
+      #1a2504 70%,
+      #2d1a04 84%,
+      #2d0a04 100%
+    );
+}
+
+:root[data-theme="thermal"] .meta {
+  font-size: 0.82rem;
+}
+
+/* Cards carry data-heat (1 coldest .. 8 hottest) derived from how recently
+   their content saw activity; the thermal spectrum makes recency visible.
+   Cards without data-heat stay on the neutral --panel. */
+:root[data-theme="thermal"] .card[data-heat="1"] {
+  background: #160428;
+  border-color: #33125c;
+}
+
+:root[data-theme="thermal"] .card[data-heat="2"] {
+  background: #090e3d;
+  border-color: #182173;
+}
+
+:root[data-theme="thermal"] .card[data-heat="3"] {
+  background: #061c3d;
+  border-color: #123c73;
+}
+
+:root[data-theme="thermal"] .card[data-heat="4"] {
+  background: #042d3d;
+  border-color: #0d5873;
+}
+
+:root[data-theme="thermal"] .card[data-heat="5"] {
+  background: #04312a;
+  border-color: #0d6154;
+}
+
+:root[data-theme="thermal"] .card[data-heat="6"] {
+  background: #1a2504;
+  border-color: #3d520e;
+}
+
+:root[data-theme="thermal"] .card[data-heat="7"] {
+  background: #2d1a04;
+  border-color: #66390e;
+}
+
+:root[data-theme="thermal"] .card[data-heat="8"] {
+  background: #2d0a04;
+  border-color: #661a0e;
+}
+
+/* Ambient spectrum: cards without heat data cycle spectrum hues by position
+   as an edge stripe. Backgrounds stay reserved for the heat readout, so
+   edge color never reads as a temperature. */
+:root[data-theme="thermal"] .card:not([data-heat]):nth-child(8n+1),
+:root[data-theme="thermal"] .tag-group:nth-child(8n+1) {
+  box-shadow: inset 3px 0 0 #8a5cf0;
+}
+
+:root[data-theme="thermal"] .card:not([data-heat]):nth-child(8n+2),
+:root[data-theme="thermal"] .tag-group:nth-child(8n+2) {
+  box-shadow: inset 3px 0 0 #5c6ef0;
+}
+
+:root[data-theme="thermal"] .card:not([data-heat]):nth-child(8n+3),
+:root[data-theme="thermal"] .tag-group:nth-child(8n+3) {
+  box-shadow: inset 3px 0 0 #388ae8;
+}
+
+:root[data-theme="thermal"] .card:not([data-heat]):nth-child(8n+4),
+:root[data-theme="thermal"] .tag-group:nth-child(8n+4) {
+  box-shadow: inset 3px 0 0 #1cb4d4;
+}
+
+:root[data-theme="thermal"] .card:not([data-heat]):nth-child(8n+5),
+:root[data-theme="thermal"] .tag-group:nth-child(8n+5) {
+  box-shadow: inset 3px 0 0 #1cc98f;
+}
+
+:root[data-theme="thermal"] .card:not([data-heat]):nth-child(8n+6),
+:root[data-theme="thermal"] .tag-group:nth-child(8n+6) {
+  box-shadow: inset 3px 0 0 #a3c422;
+}
+
+:root[data-theme="thermal"] .card:not([data-heat]):nth-child(8n+7),
+:root[data-theme="thermal"] .tag-group:nth-child(8n+7) {
+  box-shadow: inset 3px 0 0 #e89b2e;
+}
+
+:root[data-theme="thermal"] .card:not([data-heat]):nth-child(8n+8),
+:root[data-theme="thermal"] .tag-group:nth-child(8n+8) {
+  box-shadow: inset 3px 0 0 #e85038;
+}
+
+:root[data-theme="thermal"] .nav-link:not(.is-active):nth-child(8n+1) {
+  box-shadow: inset 0 -2px 0 #8a5cf0;
+}
+
+:root[data-theme="thermal"] .nav-link:not(.is-active):nth-child(8n+2) {
+  box-shadow: inset 0 -2px 0 #5c6ef0;
+}
+
+:root[data-theme="thermal"] .nav-link:not(.is-active):nth-child(8n+3) {
+  box-shadow: inset 0 -2px 0 #388ae8;
+}
+
+:root[data-theme="thermal"] .nav-link:not(.is-active):nth-child(8n+4) {
+  box-shadow: inset 0 -2px 0 #1cb4d4;
+}
+
+:root[data-theme="thermal"] .nav-link:not(.is-active):nth-child(8n+5) {
+  box-shadow: inset 0 -2px 0 #1cc98f;
+}
+
+:root[data-theme="thermal"] .nav-link:not(.is-active):nth-child(8n+6) {
+  box-shadow: inset 0 -2px 0 #a3c422;
+}
+
+:root[data-theme="thermal"] .nav-link:not(.is-active):nth-child(8n+7) {
+  box-shadow: inset 0 -2px 0 #e89b2e;
+}
+
+:root[data-theme="thermal"] .nav-link:not(.is-active):nth-child(8n+8) {
+  box-shadow: inset 0 -2px 0 #e85038;
 }
 
 .feedback {
