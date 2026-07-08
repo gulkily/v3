@@ -1649,6 +1649,51 @@ pre {
     inset -1px -1px 0 0 #dfdfdf;
 }
 
+:root[data-theme="word97"] .theme-menu {
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid #808080;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow:
+    inset 1px 1px 0 0 #404040,
+    inset -1px -1px 0 0 #dfdfdf;
+}
+
+:root[data-theme="word97"] .theme-menu > .theme-toggle {
+  border-radius: 0;
+}
+
+:root[data-theme="word97"] .theme-menu__trigger {
+  width: 17px;
+  min-width: 17px;
+  padding: 0;
+  border: 1px solid #404040;
+  border-radius: 0;
+  color: transparent;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='4' y='6' width='7' height='1' fill='%23000000'/><rect x='5' y='7' width='5' height='1' fill='%23000000'/><rect x='6' y='8' width='3' height='1' fill='%23000000'/><rect x='7' y='9' width='1' height='1' fill='%23000000'/></svg>")
+    center no-repeat #c0c0c0;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #808080;
+}
+
+:root[data-theme="word97"] .theme-menu__trigger:hover {
+  color: transparent;
+}
+
+:root[data-theme="word97"] .theme-menu__trigger:active,
+:root[data-theme="word97"] .theme-menu__trigger[aria-expanded="true"] {
+  color: transparent;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='4' y='6' width='7' height='1' fill='%23000000'/><rect x='5' y='7' width='5' height='1' fill='%23000000'/><rect x='6' y='8' width='3' height='1' fill='%23000000'/><rect x='7' y='9' width='1' height='1' fill='%23000000'/></svg>")
+    center no-repeat #c0c0c0;
+  box-shadow:
+    inset -1px -1px 0 0 #ffffff,
+    inset 1px 1px 0 0 #808080;
+}
+
 :root[data-theme="word97"] .post-card:target {
   border-color: #000080;
 }
