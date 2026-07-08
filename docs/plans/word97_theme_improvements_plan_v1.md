@@ -6,9 +6,11 @@
 - [x] Slice 2 — `ad4f3a1` Cards as MDI windows (silver ring frames + navy title bars from h1/h2/byline; highlighter pinned badge pulled forward; :target navy ring; verified on board/thread/tools/tags/users, :target jump, 380px viewport, after an artifact rebuild per constraint 5) + follow-up commit unifying the site header onto the same ring frame / full-bleed title bar per user feedback
 - [x] Slice 3 — Title-bar app icon (16px page-with-navy-Z pixel SVG as .eyebrow::before; eyebrow switched from space-between to margin-left:auto on the window buttons so the icon hugs the wordmark; verified at 1000px and 380px)
 - [x] Slice 4 — System-feel pass (navy/white ::selection, Win95 dotted focus rects on links/buttons — skipped edit fields as Win95 doesn't draw them there, engraved disabled/dim text, silver popover menu chrome; rows verified untouched; all four verified visually)
-- [ ] Slice 5 — Word detail pass (end-of-document marker, squiggles, highlighter)
-- [ ] Slice 6 — Clippy easter egg (blocked on user confirmation + asset clip)
-- [ ] Slice 7 — Office-suite stretch ideas (deferred; pick up only if wanted)
+- [x] Slice 5 — Gray inactive surfaces (user request 2026-07-08: card/panel interiors go Win95 dialog silver; white reserved for text inputs and key viewers; --panel/--feedback vars, card frame fill, tags-section-card, and the word97 menu-row garnish all moved to #c0c0c0; verified on board + thread after artifact rebuild)
+- [ ] Slice 6 — Word detail pass (end-of-document marker, squiggles, highlighter)
+- [ ] Slice 7 — IE3 embossed swoosh watermark on the toolbar chrome
+- [ ] Slice 8 — Clippy easter egg (blocked on user confirmation + asset clip)
+- [ ] Slice 9 — Office-suite stretch ideas (deferred; pick up only if wanted)
 
 ## Context
 
@@ -190,7 +192,7 @@ All CSS in the word97 scoped section; no template changes expected:
   ambient and compare rows against the pre-slice screenshot
   (`scratchpad/current-menu.png` equivalent) to prove no leakage.
 
-### Slice 5 — Word detail pass (one commit)
+### Slice 6 — Word detail pass (one commit)
 
 - End-of-document marker: `:root[data-theme="word97"] .main >
   .stack::after { content: ""; display: block; width: 26px; height: 3px;
@@ -214,7 +216,29 @@ All CSS in the word97 scoped section; no template changes expected:
 - Verify: board + thread page screenshots; eyeball the pinned badge and
   the marker under the last card.
 
-### Slice 6 — Clippy easter egg (ask first)
+### Slice 7 — IE3 embossed swoosh watermark
+
+Reference: `internet-explorer-3-0-02.png` (repo root) — IE3's silver
+toolbar carries a faint embossed pattern of looping ribbon curves
+(and the blue IE logo tile at the right edge). The user likes the
+background effect; recreate the emboss:
+
+- Draw a tileable SVG (~220×90) of 2–3 looping bezier curves. Emboss =
+  each curve stroked twice: a `#ffffff` stroke offset 1px down-right
+  (highlight) under a `#a8a8a8` stroke (shadow), both ~1px wide, no
+  fill. Opacity ~0.5 so chrome text/icons stay readable.
+- Apply as a repeating `background-image` over the `#c0c0c0` base on
+  `.site-header` (and optionally `.site-status-bar` and card
+  interiors — decide by eye; IE3 only textures the toolbar band).
+  Data URI per branch conventions (`%23` for `#`); curves don't need
+  crispEdges — smooth anti-aliased strokes are correct here, unlike
+  the pixel icons.
+- Keep the ruler and title bar clean (pattern behind toolbar rows
+  only).
+- Verify: header screenshot at 1× and 2×; contrast check that nav
+  labels stay readable; confirm no pattern bleed into the popover.
+
+### Slice 8 — Clippy easter egg (ask first)
 
 Blocked on user confirmation (clipping a Microsoft character from their
 screenshot into the repo is their call).
@@ -238,7 +262,7 @@ screenshot into the repo is their call).
 - Verify: board screenshot at desktop and ~500px widths; confirm no
   overlap with the New Post control or the status bar.
 
-### Slice 7 — Office-suite stretch (deferred)
+### Slice 9 — Office-suite stretch (deferred)
 
 Only if the user wants to lean from "Word 97" into "Office 97 suite":
 

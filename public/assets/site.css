@@ -292,12 +292,12 @@
   --ink: #000000;
   --ink-soft: #404040;
   --line: #808080;
-  --panel: #ffffff;
+  --panel: #c0c0c0;
   --input-bg: #ffffff;
   --button-bg: #c0c0c0;
   --button-alt-bg: #c0c0c0;
-  --feedback-ok-bg: #ffffff;
-  --feedback-error-bg: #ffffff;
+  --feedback-ok-bg: #c0c0c0;
+  --feedback-error-bg: #c0c0c0;
   --status-error: #800000;
   --status-ok: #005f00;
   --status-warning: #806000;
@@ -711,7 +711,7 @@ pre {
 }
 
 .theme-menu__option[data-theme-option="word97"] {
-  background: #ffffff;
+  background: #c0c0c0;
   box-shadow: inset -1px -1px 0 #808080, inset 1px 1px 0 #ffffff;
 }
 
@@ -1561,7 +1561,7 @@ pre {
 :root[data-theme="word97"] .card,
 :root[data-theme="word97"] .feedback {
   border: 1px solid #808080;
-  background: #ffffff;
+  background: #c0c0c0;
   box-shadow:
     0 0 0 3px #c0c0c0,
     0 0 0 4px #404040,
@@ -1606,7 +1606,7 @@ pre {
 }
 
 :root[data-theme="word97"] .tags-section-card {
-  background: #ffffff;
+  background: #c0c0c0;
 }
 
 :root[data-theme="word97"] a {
