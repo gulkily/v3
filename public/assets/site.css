@@ -1691,6 +1691,80 @@ pre {
   color: #808080;
 }
 
+html[data-theme="word97"]::-webkit-scrollbar,
+html[data-theme="word97"] ::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+  background:
+    conic-gradient(#ffffff 25%, #c0c0c0 0 50%, #ffffff 0 75%, #c0c0c0 0)
+    0 0 / 2px 2px;
+}
+
+html[data-theme="word97"]::-webkit-scrollbar-thumb,
+html[data-theme="word97"] ::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border: 1px solid #404040;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #808080;
+}
+
+html[data-theme="word97"]::-webkit-scrollbar-button,
+html[data-theme="word97"] ::-webkit-scrollbar-button {
+  display: block;
+  width: 16px;
+  height: 16px;
+  background-color: #c0c0c0;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: 1px solid #404040;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #808080;
+}
+
+html[data-theme="word97"]::-webkit-scrollbar-button:vertical:start:increment,
+html[data-theme="word97"] ::-webkit-scrollbar-button:vertical:start:increment,
+html[data-theme="word97"]::-webkit-scrollbar-button:vertical:end:decrement,
+html[data-theme="word97"] ::-webkit-scrollbar-button:vertical:end:decrement,
+html[data-theme="word97"]::-webkit-scrollbar-button:horizontal:start:increment,
+html[data-theme="word97"] ::-webkit-scrollbar-button:horizontal:start:increment,
+html[data-theme="word97"]::-webkit-scrollbar-button:horizontal:end:decrement,
+html[data-theme="word97"] ::-webkit-scrollbar-button:horizontal:end:decrement {
+  display: none;
+}
+
+html[data-theme="word97"]::-webkit-scrollbar-button:vertical:decrement,
+html[data-theme="word97"] ::-webkit-scrollbar-button:vertical:decrement {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='7' y='6' width='1' height='1' fill='%23000000'/><rect x='6' y='7' width='3' height='1' fill='%23000000'/><rect x='5' y='8' width='5' height='1' fill='%23000000'/><rect x='4' y='9' width='7' height='1' fill='%23000000'/></svg>");
+}
+
+html[data-theme="word97"]::-webkit-scrollbar-button:vertical:increment,
+html[data-theme="word97"] ::-webkit-scrollbar-button:vertical:increment {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='4' y='6' width='7' height='1' fill='%23000000'/><rect x='5' y='7' width='5' height='1' fill='%23000000'/><rect x='6' y='8' width='3' height='1' fill='%23000000'/><rect x='7' y='9' width='1' height='1' fill='%23000000'/></svg>");
+}
+
+html[data-theme="word97"]::-webkit-scrollbar-button:horizontal:decrement,
+html[data-theme="word97"] ::-webkit-scrollbar-button:horizontal:decrement {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='6' y='7' width='1' height='1' fill='%23000000'/><rect x='7' y='6' width='1' height='3' fill='%23000000'/><rect x='8' y='5' width='1' height='5' fill='%23000000'/><rect x='9' y='4' width='1' height='7' fill='%23000000'/></svg>");
+}
+
+html[data-theme="word97"]::-webkit-scrollbar-button:horizontal:increment,
+html[data-theme="word97"] ::-webkit-scrollbar-button:horizontal:increment {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='6' y='4' width='1' height='7' fill='%23000000'/><rect x='7' y='5' width='1' height='5' fill='%23000000'/><rect x='8' y='6' width='1' height='3' fill='%23000000'/><rect x='9' y='7' width='1' height='1' fill='%23000000'/></svg>");
+}
+
+html[data-theme="word97"]::-webkit-scrollbar-corner,
+html[data-theme="word97"] ::-webkit-scrollbar-corner {
+  background: #c0c0c0;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  :root[data-theme="word97"] {
+    scrollbar-color: #c0c0c0 #dfdfdf;
+  }
+}
+
 :root[data-theme="word97"] .pinned-thread-marker {
   color: #ffffff;
   background: #000080;
