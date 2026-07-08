@@ -5,7 +5,7 @@
 - [x] Slice 1 — `2267d11` Win95 combo-box theme control (sunken white field, squared cycle swatch, beveled caret with pixel arrow + pressed state; rows verified untouched, select/cycle verified via Playwright)
 - [x] Slice 2 — `ad4f3a1` Cards as MDI windows (silver ring frames + navy title bars from h1/h2/byline; highlighter pinned badge pulled forward; :target navy ring; verified on board/thread/tools/tags/users, :target jump, 380px viewport, after an artifact rebuild per constraint 5) + follow-up commit unifying the site header onto the same ring frame / full-bleed title bar per user feedback
 - [x] Slice 3 — Title-bar app icon (16px page-with-navy-Z pixel SVG as .eyebrow::before; eyebrow switched from space-between to margin-left:auto on the window buttons so the icon hugs the wordmark; verified at 1000px and 380px)
-- [ ] Slice 4 — System-feel pass (selection, focus, disabled text, popover chrome)
+- [x] Slice 4 — System-feel pass (navy/white ::selection, Win95 dotted focus rects on links/buttons — skipped edit fields as Win95 doesn't draw them there, engraved disabled/dim text, silver popover menu chrome; rows verified untouched; all four verified visually)
 - [ ] Slice 5 — Word detail pass (end-of-document marker, squiggles, highlighter)
 - [ ] Slice 6 — Clippy easter egg (blocked on user confirmation + asset clip)
 - [ ] Slice 7 — Office-suite stretch ideas (deferred; pick up only if wanted)

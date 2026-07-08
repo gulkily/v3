@@ -1786,6 +1786,39 @@ pre {
 
 :root[data-theme="word97"] .site-status-bar__panel--dim {
   color: #808080;
+  text-shadow: 1px 1px 0 #ffffff;
+}
+
+:root[data-theme="word97"] ::selection {
+  background: #000080;
+  color: #ffffff;
+}
+
+:root[data-theme="word97"] a:focus-visible {
+  outline: 1px dotted #000000;
+  outline-offset: 1px;
+}
+
+:root[data-theme="word97"] button:not(.theme-menu__option):focus-visible,
+:root[data-theme="word97"] .nav-link:focus-visible {
+  outline: 1px dotted #000000;
+  outline-offset: -4px;
+}
+
+:root[data-theme="word97"] button[disabled]:not(.theme-menu__option) {
+  color: #808080;
+  text-shadow: 1px 1px 0 #ffffff;
+}
+
+:root[data-theme="word97"] .theme-menu__popover {
+  padding: 4px;
+  border: 1px solid #404040;
+  background-color: #c0c0c0;
+  background-image: none;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #808080,
+    3px 3px 0 0 #404040;
 }
 
 html[data-theme="word97"]::-webkit-scrollbar,
