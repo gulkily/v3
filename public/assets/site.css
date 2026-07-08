@@ -1548,17 +1548,53 @@ pre {
 
 :root[data-theme="word97"] .card,
 :root[data-theme="word97"] .feedback {
-  border: 1px solid #404040;
+  border: 1px solid #808080;
   background: #ffffff;
-  box-shadow: 3px 3px 0 0 #404040;
+  box-shadow:
+    0 0 0 3px #c0c0c0,
+    0 0 0 4px #404040,
+    7px 7px 0 4px #404040;
 }
 
 :root[data-theme="word97"] .card {
-  padding: 1.1rem;
+  padding: 1.5rem;
+}
+
+:root[data-theme="word97"] .post-card {
+  padding-bottom: 2.25rem;
+}
+
+:root[data-theme="word97"] .inline-reply-composer {
+  padding: 0;
 }
 
 :root[data-theme="word97"] .stack > * + * {
-  margin-top: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+:root[data-theme="word97"] .card > h1:first-child,
+:root[data-theme="word97"] .card > h2:first-child,
+:root[data-theme="word97"] .post-card > .meta:first-child {
+  display: block;
+  margin: -1.5rem -1.5rem 1.1rem;
+  padding: 0.22rem 0.55rem;
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+  font-family: var(--ui-font);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+:root[data-theme="word97"] .card > h1:first-child a,
+:root[data-theme="word97"] .card > h2:first-child a,
+:root[data-theme="word97"] .post-card > .meta:first-child a {
+  color: #ffffff;
+  text-decoration: none;
+}
+
+:root[data-theme="word97"] .tags-section-card {
+  background: #ffffff;
 }
 
 :root[data-theme="word97"] a {
@@ -1696,6 +1732,10 @@ pre {
 
 :root[data-theme="word97"] .post-card:target {
   border-color: #000080;
+  box-shadow:
+    0 0 0 3px #c0c0c0,
+    0 0 0 4px #000080,
+    7px 7px 0 4px #404040;
 }
 
 :root[data-theme="word97"] body {
@@ -1811,9 +1851,9 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 }
 
 :root[data-theme="word97"] .pinned-thread-marker {
-  color: #ffffff;
-  background: #000080;
-  border-color: #000080;
+  color: #000000;
+  background: #ffff00;
+  border-color: #000000;
 }
 
 .feedback {
