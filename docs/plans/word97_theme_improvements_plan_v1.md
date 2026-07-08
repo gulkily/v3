@@ -3,7 +3,7 @@
 ## Progress
 
 - [x] Slice 1 — `2267d11` Win95 combo-box theme control (sunken white field, squared cycle swatch, beveled caret with pixel arrow + pressed state; rows verified untouched, select/cycle verified via Playwright)
-- [ ] Slice 2 — Cards as MDI windows (title-bar headings + window frames, all cards)
+- [x] Slice 2 — `ad4f3a1` Cards as MDI windows (silver ring frames + navy title bars from h1/h2/byline; highlighter pinned badge pulled forward; :target navy ring; verified on board/thread/tools/tags/users, :target jump, 380px viewport, after an artifact rebuild per constraint 5) + follow-up commit unifying the site header onto the same ring frame / full-bleed title bar per user feedback
 - [ ] Slice 3 — Title-bar app icon
 - [ ] Slice 4 — System-feel pass (selection, focus, disabled text, popover chrome)
 - [ ] Slice 5 — Word detail pass (end-of-document marker, squiggles, highlighter)
