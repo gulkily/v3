@@ -52,6 +52,16 @@
     <main class="main">
 <?= $indent($content, 3) ?>
     </main>
+    <footer class="site-status-bar" aria-hidden="true">
+      <span class="site-status-bar__panel">Page 1</span>
+      <span class="site-status-bar__panel">Sec 1</span>
+      <span class="site-status-bar__panel">1/1</span>
+      <span class="site-status-bar__panel site-status-bar__panel--wide">At 1&quot;&nbsp;&nbsp;Ln 1&nbsp;&nbsp;Col 1</span>
+      <span class="site-status-bar__panel site-status-bar__panel--dim">REC</span>
+      <span class="site-status-bar__panel site-status-bar__panel--dim">TRK</span>
+      <span class="site-status-bar__panel site-status-bar__panel--dim">EXT</span>
+      <span class="site-status-bar__panel site-status-bar__panel--dim">OVR</span>
+    </footer>
   </div>
 </body>
 </html>

@@ -418,6 +418,10 @@ pre {
   justify-content: space-between;
 }
 
+.site-status-bar {
+  display: none;
+}
+
 .app-version-banner {
   position: sticky;
   top: 0;
@@ -1647,6 +1651,44 @@ pre {
 
 :root[data-theme="word97"] .post-card:target {
   border-color: #000080;
+}
+
+:root[data-theme="word97"] body {
+  padding-bottom: 2.2rem;
+}
+
+:root[data-theme="word97"] .site-status-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  gap: 2px;
+  align-items: stretch;
+  padding: 2px 3px 3px;
+  overflow: hidden;
+  border-top: 1px solid #ffffff;
+  background: #c0c0c0;
+  color: #000000;
+  font-family: var(--ui-font);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+:root[data-theme="word97"] .site-status-bar__panel {
+  padding: 0.08rem 0.5rem;
+  border: 1px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  white-space: nowrap;
+}
+
+:root[data-theme="word97"] .site-status-bar__panel--wide {
+  min-width: 12rem;
+}
+
+:root[data-theme="word97"] .site-status-bar__panel--dim {
+  color: #808080;
 }
 
 :root[data-theme="word97"] .pinned-thread-marker {

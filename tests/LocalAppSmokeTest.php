@@ -431,6 +431,7 @@ final class LocalAppSmokeTest
         assertStringContains('data-theme-option="auto"', $board);
         assertStringContains('data-theme-option="thermal"', $board);
         assertStringContains('data-theme-option="word97"', $board);
+        assertStringContains('class="site-status-bar"', $board);
         assertStringContains('data-heat="', $thread);
         assertStringContains('data-heat="', $tagPage);
         assertStringContains('data-action="theme-cycle"', $board);
