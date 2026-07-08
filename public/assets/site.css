@@ -1609,6 +1609,18 @@ pre {
   background: #c0c0c0;
 }
 
+:root[data-theme="word97"] .card > .body,
+:root[data-theme="word97"] .card > p:not([class]) {
+  margin: 0.9rem 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid #949494;
+  background: #e3e3e3;
+}
+
+:root[data-theme="word97"] .card > p:not([class]) + p:not([class]) {
+  margin-top: 0.9rem;
+}
+
 :root[data-theme="word97"] a {
   color: #0000ff;
 }
