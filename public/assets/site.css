@@ -1621,6 +1621,54 @@ pre {
   margin-top: 0.9rem;
 }
 
+:root[data-theme="word97"] .tool-launcher-button {
+  border: 1px solid #404040;
+  background: #c0c0c0;
+  color: #000000;
+  font-weight: 600;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #808080;
+}
+
+:root[data-theme="word97"] .tool-launcher-button:active {
+  box-shadow:
+    inset -1px -1px 0 0 #ffffff,
+    inset 1px 1px 0 0 #808080;
+}
+
+:root[data-theme="word97"] .tool-launcher-button::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+}
+
+:root[data-theme="word97"] .tool-launcher-button[href="/activity/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='1' y='8' width='3' height='1' fill='%23008000'/><rect x='4' y='4' width='1' height='5' fill='%23008000'/><rect x='5' y='4' width='1' height='1' fill='%23008000'/><rect x='6' y='4' width='1' height='8' fill='%23008000'/><rect x='7' y='11' width='1' height='1' fill='%23008000'/><rect x='8' y='6' width='1' height='6' fill='%23008000'/><rect x='9' y='6' width='1' height='1' fill='%23008000'/><rect x='10' y='6' width='1' height='3' fill='%23008000'/><rect x='11' y='8' width='4' height='1' fill='%23008000'/></svg>");
+}
+
+:root[data-theme="word97"] .tool-launcher-button[href="/tools/bookmarklets/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='7' y='1' width='2' height='3' fill='%23c8a000'/><rect x='6' y='4' width='4' height='2' fill='%23c8a000'/><rect x='1' y='6' width='14' height='2' fill='%23c8a000'/><rect x='3' y='8' width='10' height='2' fill='%23c8a000'/><rect x='4' y='10' width='8' height='1' fill='%23c8a000'/><rect x='3' y='11' width='4' height='2' fill='%23c8a000'/><rect x='9' y='11' width='4' height='2' fill='%23c8a000'/><rect x='2' y='13' width='3' height='2' fill='%23c8a000'/><rect x='11' y='13' width='3' height='2' fill='%23c8a000'/></svg>");
+}
+
+:root[data-theme="word97"] .tool-launcher-button[href="/tools/backup/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='1' y='1' width='14' height='14' fill='%23000080'/><rect x='2' y='2' width='12' height='12' fill='%23000080'/><rect x='4' y='1' width='8' height='6' fill='%23ffffff'/><rect x='9' y='2' width='2' height='4' fill='%23000080'/><rect x='3' y='9' width='10' height='6' fill='%23ffffff'/><rect x='4' y='10' width='8' height='1' fill='%23808080'/><rect x='4' y='12' width='8' height='1' fill='%23808080'/><rect x='14' y='1' width='1' height='1' fill='%23c0c0c0'/></svg>");
+}
+
+:root[data-theme="word97"] .tool-launcher-button[href="/tools/codebase/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='1' y='1' width='14' height='10' fill='%23000000'/><rect x='2' y='2' width='12' height='8' fill='%23008080'/><rect x='3' y='3' width='6' height='1' fill='%23ffffff'/><rect x='3' y='5' width='8' height='1' fill='%23ffffff'/><rect x='3' y='7' width='5' height='1' fill='%23ffffff'/><rect x='6' y='11' width='4' height='2' fill='%23808080'/><rect x='3' y='13' width='10' height='2' fill='%23c0c0c0'/><rect x='3' y='13' width='10' height='1' fill='%23ffffff'/></svg>");
+}
+
+:root[data-theme="word97"] .tool-launcher-button[href="/tools/feature-flags/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='1' width='2' height='14' fill='%23404040'/><rect x='5' y='2' width='9' height='7' fill='%23cc0000'/><rect x='12' y='3' width='3' height='5' fill='%23cc0000'/></svg>");
+}
+
+:root[data-theme="word97"] .tool-launcher-button[href="/account/key/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='2' y='5' width='5' height='2' fill='%23c8a000'/><rect x='2' y='9' width='5' height='2' fill='%23c8a000'/><rect x='2' y='7' width='2' height='2' fill='%23c8a000'/><rect x='5' y='7' width='2' height='2' fill='%23c8a000'/><rect x='7' y='7' width='7' height='2' fill='%23c8a000'/><rect x='11' y='9' width='1' height='2' fill='%23c8a000'/><rect x='13' y='9' width='1' height='3' fill='%23c8a000'/></svg>");
+}
+
 :root[data-theme="word97"] a {
   color: #0000ff;
 }
@@ -1911,6 +1959,48 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   color: #000000;
   background: #ffff00;
   border-color: #000000;
+}
+
+.tool-launcher-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.tool-launcher-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tool-launcher-button {
+  flex: 0 0 11rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  background: var(--button-bg);
+  font-family: var(--ui-font);
+  text-decoration: none;
+}
+
+.tool-launcher-description {
+  margin: 0;
+}
+
+@media (max-width: 560px) {
+  .tool-launcher-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+  }
+
+  .tool-launcher-button {
+    flex: 1 1 auto;
+  }
 }
 
 .feedback {
