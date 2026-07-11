@@ -136,6 +136,28 @@ Visual verification (look at the screenshots, don't just take them):
 
 ## Process
 
+- **Be bold about appearance; be conservative about function.** A theme is
+  not a palette swap — the good ones reshape the page until it reads as a
+  different artifact entirely (Word 97 turned cards into MDI windows with
+  title bars, a ruler, and a status bar; Thermal colors every card by
+  activity; Chicago widens the shell and re-chromes every control). Freely
+  override layout, spacing, shell width, borders, shadows, typography, and
+  per-element structure illusions; add decorative pseudo-elements; make
+  the base look unrecognizable. What must survive, exactly:
+  - every interactive element remains visible, reachable, and clickable
+    (don't cover controls with decoration; `pointer-events` stays sane);
+  - JS hooks keep working — never rename or repurpose `data-*` attributes,
+    roles, or classes that scripts select on; decorative buttons that do
+    nothing must be pseudo-elements, not real elements;
+  - keyboard focus, text selection, and error/status states stay visibly
+    distinct in the new palette;
+  - text stays readable (contrast, line length) and the page still works
+    at ~380px;
+  - other themes are untouched — boldness lives inside the scoped section
+    and theme-neutral markup changes.
+  When torn between a tasteful tweak and the committed bit, do the
+  committed bit and verify function afterward; the sweep exists so you
+  can take risks.
 - Work in slices, one commit each, with a plan doc in `docs/plans/`
   (`word97_theme_improvements_plan_v1.md` is the template: progress
   checklist with commit hashes, context, constraints, per-slice steps,
