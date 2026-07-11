@@ -1609,6 +1609,39 @@ pre {
   background: #c0c0c0;
 }
 
+:root[data-theme="word97"] .compact-thread-compose {
+  position: relative;
+}
+
+:root[data-theme="word97"] .compact-thread-compose::before {
+  content: "New Thread";
+  display: block;
+  padding: 0.22rem 0.55rem;
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+  font-family: var(--ui-font);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+:root[data-theme="word97"] .compact-thread-compose::after {
+  content: "\2715";
+  position: absolute;
+  top: 0.3rem;
+  right: 0.32rem;
+  padding: 0.05rem 0.3rem;
+  border: 1px solid #404040;
+  color: #000000;
+  background: #c0c0c0;
+  font-family: var(--ui-font);
+  font-size: 0.62rem;
+  line-height: 1.35;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #808080;
+}
+
 :root[data-theme="word97"] .card > .body,
 :root[data-theme="word97"] .card > p:not([class]) {
   margin: 0.9rem 0;
