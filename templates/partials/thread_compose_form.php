@@ -8,10 +8,7 @@ $threadComposeSubmitLabel = $isCompactThreadCompose ? 'Post' : 'Create thread';
 $threadComposeAnonymousLabel = $isCompactThreadCompose ? 'Post anonymously' : 'Create thread anonymously';
 ?>
 <form method="post" class="<?= $e($threadComposeFormClass) ?>" data-compose-form data-compose-kind="thread">
-  <input type="hidden" name="author_identity_id" value="">
 <?php if ($isCompactThreadCompose): ?>
-  <input type="hidden" name="board_tags" value="<?= $e($boardTags) ?>">
-  <input type="hidden" name="subject" data-compose-field-label="Subject" value="<?= $e($subject) ?>">
   <textarea name="body" data-compose-field-label="Body" rows="<?= $e($threadComposeBodyRows) ?>" placeholder="<?= $e($threadComposeBodyPlaceholder) ?>" aria-label="Body"><?= $e($body) ?></textarea>
 <?php else: ?>
   <label>Board tags<input type="text" name="board_tags" value="<?= $e($boardTags) ?>"></label>
@@ -56,4 +53,9 @@ $threadComposeAnonymousLabel = $isCompactThreadCompose ? 'Post anonymously' : 'C
     <button type="submit" data-action="submit-anonymous-compose"><?= $e($threadComposeAnonymousLabel) ?></button>
     <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
   </div>
+  <input type="hidden" name="author_identity_id" value="">
+<?php if ($isCompactThreadCompose): ?>
+  <input type="hidden" name="board_tags" value="<?= $e($boardTags) ?>">
+  <input type="hidden" name="subject" data-compose-field-label="Subject" value="<?= $e($subject) ?>">
+<?php endif; ?>
 </form>

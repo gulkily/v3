@@ -904,7 +904,15 @@ pre {
 }
 
 .inline-reply-expanded {
-  padding: 0.9rem;
+  padding: 1rem 0.9rem;
+}
+
+.inline-reply-expanded [data-compose-form] > :first-child {
+  margin-top: 0;
+}
+
+.inline-reply-expanded [data-compose-form] textarea {
+  display: block;
 }
 
 .inline-reply-expanded h2 {
@@ -915,8 +923,9 @@ pre {
   display: none;
 }
 
-.inline-reply-identity-status[data-kind] {
+.inline-reply-identity-status[data-kind]:not([data-kind=""]) {
   display: block;
+  margin-bottom: 1rem;
 }
 
 :root[data-theme="chicago"] .shell {
@@ -2377,6 +2386,10 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   align-items: center;
   gap: 0.65rem;
   margin: -0.1rem 0 0;
+}
+
+.compose-normalization-inline[hidden] {
+  display: none;
 }
 
 .compose-normalization-inline-action {

@@ -25,7 +25,7 @@
           readonly
         ></textarea>
       </summary>
-      <div class="inline-reply-expanded stack">
+      <div class="inline-reply-expanded">
         <p class="meta inline-reply-identity-status" data-role="compose-identity-status" hidden></p>
 <?= $indent($partial('partials/thread_compose_form.php', [
     'boardTags' => 'general',

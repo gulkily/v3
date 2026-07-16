@@ -8,10 +8,6 @@ if ($bodyRows < 1) {
 $showBodyLabel = (bool) ($showBodyLabel ?? true);
 ?>
 <form method="post" action="/compose/reply" class="<?= $e($formClass) ?>" data-compose-form data-compose-kind="reply">
-  <input type="hidden" name="thread_id" value="<?= $e($threadId) ?>">
-  <input type="hidden" name="parent_id" value="<?= $e($parentId) ?>">
-  <input type="hidden" name="author_identity_id" value="">
-  <input type="hidden" name="board_tags" value="<?= $e($boardTags) ?>">
 <?php if ($showBodyLabel): ?>
   <label>Body<textarea name="body" data-compose-field-label="Body" rows="<?= $e($bodyRows) ?>" placeholder="Reply body"><?= $e($body) ?></textarea></label>
 <?php else: ?>
@@ -35,4 +31,8 @@ $showBodyLabel = (bool) ($showBodyLabel ?? true);
     <button type="submit" data-action="submit-anonymous-compose">Post anonymous reply</button>
     <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
   </div>
+  <input type="hidden" name="thread_id" value="<?= $e($threadId) ?>">
+  <input type="hidden" name="parent_id" value="<?= $e($parentId) ?>">
+  <input type="hidden" name="author_identity_id" value="">
+  <input type="hidden" name="board_tags" value="<?= $e($boardTags) ?>">
 </form>
