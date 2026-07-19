@@ -34,6 +34,7 @@
     'source_commit_href' => $item['source_commit_href'] ?? '',
     'source_signature_path' => $item['source_signature_path'] ?? '',
     'source_signature_href' => $item['source_signature_href'] ?? '',
+    'source_signature_status' => $item['source_signature_status'] ?? '',
 ]), 2) ?>
     <p class="meta"><?= $contentMeta($item, 'created_at', '') ?></p>
   </article>

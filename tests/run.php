@@ -16,6 +16,7 @@ $testFiles = [
     __DIR__ . '/LazyComposeSigningTest.php',
     __DIR__ . '/OpenPgpLoaderTest.php',
     __DIR__ . '/OpenPgpKeyInspectorTest.php',
+    __DIR__ . '/PostSignatureAuditCommandTest.php',
     __DIR__ . '/RelatedContentSearchServiceTest.php',
     __DIR__ . '/ReadModelBuilderTimingTest.php',
     __DIR__ . '/ReadModelThreadLabelsTest.php',

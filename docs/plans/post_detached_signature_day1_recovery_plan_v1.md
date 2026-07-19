@@ -319,6 +319,8 @@ Acceptance:
 - Operators can audit repository authenticity without relying on page rendering.
 - Historical unsigned posts are visible as legacy rather than silently considered verified.
 
+Status: Implemented. Added `scripts/audit_post_signatures.php` to scan canonical posts and report `signed_valid`, `missing_signature`, `invalid_signature`, `unknown_author_key`, and `anonymous_unsigned` records using the same detached OpenPGP verifier as the write path. Added explicit `Signature: legacy unsigned` / `Signature: anonymous unsigned` metadata for unsigned post sources on post and activity pages, plus command and rendering smoke coverage.
+
 ### Slice 7: Verification
 
 Run:

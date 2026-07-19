@@ -1613,7 +1613,7 @@ final class Application
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_label,
                     posts.created_at, posts.board_tags_json, posts.post_score_total, posts.is_hidden, posts.hidden_reason,
-                    posts.author_profile_slug, profiles.username_token AS author_username_token,
+                    posts.author_identity_id, posts.author_profile_slug, profiles.username_token AS author_username_token,
                     COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM posts
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
@@ -1642,6 +1642,11 @@ final class Application
         $post['source_commit_href'] = $this->sourceCommitHref($sourceCommitSha);
         $post['source_signature_path'] = $signature['path'];
         $post['source_signature_href'] = $signature['href'];
+        $post['source_signature_status'] = $this->sourceSignatureStatus(
+            $sourcePath,
+            (string) ($post['author_identity_id'] ?? ''),
+            $signature['path']
+        );
 
         return $post;
     }
@@ -2524,6 +2529,7 @@ final class Application
         $view = $this->normalizeActivityView($view);
         $rows = $this->pdo()->query(
             'SELECT activity.created_at, activity.kind, activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
+                    activity.author_identity_id,
                     activity.source_path, activity.source_commit_sha,
                     activity.id, activity.author_label, activity.author_profile_slug,
                     activity.author_username_token, activity.author_is_approved
@@ -2550,6 +2556,11 @@ final class Application
                 'source_commit_href' => $this->sourceCommitHref($sourceCommitSha),
                 'source_signature_path' => $signature['path'],
                 'source_signature_href' => $signature['href'],
+                'source_signature_status' => $this->sourceSignatureStatus(
+                    $sourcePath,
+                    (string) ($post['author_identity_id'] ?? ''),
+                    $signature['path']
+                ),
                 'id' => (int) $post['id'],
                 'author_label' => $post['author_label'],
                 'author_profile_slug' => $post['author_profile_slug'],
@@ -2611,6 +2622,31 @@ final class Application
         }
 
         return ['path' => '', 'href' => ''];
+    }
+
+    private function sourceSignatureStatus(string $sourcePath, string $authorIdentityId, string $sourceSignaturePath): string
+    {
+        if ($sourceSignaturePath !== '' || !str_starts_with($sourcePath, 'records/posts/')) {
+            return '';
+        }
+
+        $canonicalAuthorIdentityId = $this->canonicalPostAuthorIdentityId($sourcePath);
+        if ($canonicalAuthorIdentityId !== null) {
+            return $canonicalAuthorIdentityId === '' ? 'anonymous unsigned' : 'legacy unsigned';
+        }
+
+        return $authorIdentityId === '' ? 'anonymous unsigned' : 'legacy unsigned';
+    }
+
+    private function canonicalPostAuthorIdentityId(string $sourcePath): ?string
+    {
+        try {
+            $post = (new CanonicalRecordRepository($this->repositoryRoot))->loadPost($sourcePath);
+        } catch (RuntimeException) {
+            return null;
+        }
+
+        return $post->authorIdentityId ?? '';
     }
 
     /**

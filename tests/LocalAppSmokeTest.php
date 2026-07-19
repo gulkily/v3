@@ -344,6 +344,8 @@ final class LocalAppSmokeTest
         assertStringContains('href="/source/current/records/posts/root-001.txt"', $post);
         assertStringContains('Commit:', $post);
         assertStringContains('commit unavailable', $post);
+        assertStringContains('Signature:', $post);
+        assertStringContains('anonymous unsigned', $post);
         assertStringContains('zenmemes', $instance);
         assertStringContains('Backup', $backup);
         assertStringContains('Backup', $toolsBackup);
@@ -480,6 +482,8 @@ final class LocalAppSmokeTest
         assertStringContains('href="/source/current/records/thread-labels/thread-label-20260415153000-ab12cd34.txt"', $activity);
         assertStringContains('Commit:', $activity);
         assertStringContains('commit unavailable', $activity);
+        assertStringContains('Signature:', $activity);
+        assertStringContains('anonymous unsigned', $activity);
         assertStringNotContains('@ commit unavailable', $activity);
         assertStringContains('GET /about/', $llms);
         assertStringContains('POST /api/analyze_post', $llms);

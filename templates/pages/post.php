@@ -10,6 +10,7 @@
     'source_commit_href' => $post['source_commit_href'] ?? '',
     'source_signature_path' => $post['source_signature_path'] ?? '',
     'source_signature_href' => $post['source_signature_href'] ?? '',
+    'source_signature_status' => $post['source_signature_status'] ?? '',
 ]), 2) ?>
     <p><a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply to this post</a></p>
   </article>

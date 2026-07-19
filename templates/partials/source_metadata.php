@@ -5,6 +5,7 @@ $sourcePathHref = (string) ($source_path_href ?? '');
 $sourceCommitHref = (string) ($source_commit_href ?? '');
 $sourceSignaturePath = (string) ($source_signature_path ?? '');
 $sourceSignatureHref = (string) ($source_signature_href ?? '');
+$sourceSignatureStatus = (string) ($source_signature_status ?? '');
 $sourceCommitIsUnavailable = $sourceCommit === '' || $sourceCommit === 'no-git' || $sourceCommit === 'git-error';
 ?>
 <?php if ($sourcePath !== ''): ?>
@@ -26,12 +27,16 @@ $sourceCommitIsUnavailable = $sourceCommit === '' || $sourceCommit === 'no-git' 
   <span>commit unavailable</span>
 <?php endif; ?>
 </p>
-<?php if ($sourceSignaturePath !== ''): ?>
+<?php if ($sourceSignaturePath !== '' || $sourceSignatureStatus !== ''): ?>
 <p class="meta">Signature:
+<?php if ($sourceSignaturePath !== ''): ?>
 <?php if ($sourceSignatureHref !== ''): ?>
   <a href="<?= $e($sourceSignatureHref) ?>"><?= $e($sourceSignaturePath) ?></a>
 <?php else: ?>
   <span><?= $e($sourceSignaturePath) ?></span>
+<?php endif; ?>
+<?php else: ?>
+  <span><?= $e($sourceSignatureStatus) ?></span>
 <?php endif; ?>
 </p>
 <?php endif; ?>
