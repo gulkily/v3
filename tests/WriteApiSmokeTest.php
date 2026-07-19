@@ -953,6 +953,70 @@ PHP);
         assertFalse(str_contains($threadPage, 'by guest'));
     }
 
+    public function testPrepareThreadReturnsCanonicalRecordWithoutCommittingPost(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $identityId = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_thread?board_tags=general&subject=Prepared%20Thread&body=Prepared%20body&author_identity_id=' . rawurlencode($identityId)
+        );
+        $payload = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame('ok', $payload['status']);
+        assertStringContains('thread-', (string) $payload['post_id']);
+        assertSame($payload['post_id'], $payload['thread_id']);
+        assertSame('records/posts/' . $payload['post_id'] . '.txt', $payload['record_path']);
+        assertStringContains('Post-ID: ' . $payload['post_id'] . "\n", $payload['canonical_record']);
+        assertStringContains("Author-Identity-ID: {$identityId}\n", $payload['canonical_record']);
+        assertStringContains("Subject: Prepared Thread\n\nPrepared body\n", $payload['canonical_record']);
+        assertSame(hash('sha256', $payload['canonical_record']), $payload['canonical_sha256']);
+        assertTrue(is_file(dirname($databasePath) . '/prepared-posts/' . $payload['prepare_token'] . '.json'));
+        assertFalse(is_file($repositoryRoot . '/' . $payload['record_path']));
+    }
+
+    public function testPrepareReplyReturnsCanonicalRecordWithoutCommittingPost(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $identityId = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_reply?thread_id=root-001&parent_id=root-001&board_tags=general&body=Prepared%20reply&author_identity_id=' . rawurlencode($identityId)
+        );
+        $payload = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame('ok', $payload['status']);
+        assertStringContains('reply-', (string) $payload['post_id']);
+        assertSame('root-001', $payload['thread_id']);
+        assertSame('records/posts/' . $payload['post_id'] . '.txt', $payload['record_path']);
+        assertStringContains("Thread-ID: root-001\nParent-ID: root-001\n", $payload['canonical_record']);
+        assertStringContains("Author-Identity-ID: {$identityId}\n\nPrepared reply\n", $payload['canonical_record']);
+        assertTrue(is_file(dirname($databasePath) . '/prepared-posts/' . $payload['prepare_token'] . '.json'));
+        assertFalse(is_file($repositoryRoot . '/' . $payload['record_path']));
+    }
+
+    public function testPrepareThreadRejectsAnonymousPost(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_thread?board_tags=general&subject=Prepared%20Thread&body=Prepared%20body'
+        );
+        $payload = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame('error', $payload['status']);
+        assertSame('author_identity_id is required for signed prepare.', $payload['error']);
+    }
+
     public function testUnicodeAuthoredTextFlagDoesNotWidenMachineFields(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

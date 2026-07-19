@@ -111,12 +111,7 @@ class LocalWriteService
             $authorIdentityId = $this->resolveAuthorIdentityId($input);
             $createdAt = $this->canonicalTimestampNow();
 
-            $thread = $this->canonicalRepository->loadPost('records/posts/' . $threadId . '.txt');
-            $parent = $this->canonicalRepository->loadPost('records/posts/' . $parentId . '.txt');
-            $parentThreadId = $parent->threadId ?? $parent->postId;
-            if ($thread->postId !== $threadId || $parentThreadId !== $threadId) {
-                throw new RuntimeException('Parent post must belong to the target thread.');
-            }
+            $this->assertReplyTarget($threadId, $parentId);
 
             $postId = $this->generateRecordId('reply');
             $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId);
@@ -156,6 +151,92 @@ class LocalWriteService
         });
     }
 
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function prepareThread(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $timings = [];
+            $totalStartedAt = hrtime(true);
+            $postId = $this->generateRecordId('thread');
+            $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
+            $subject = $this->normalizeAuthoredLine((string) ($input['subject'] ?? ''), 'subject');
+            $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
+            $authorIdentityId = $this->requirePreparedAuthorIdentityId($input);
+            $createdAt = $this->canonicalTimestampNow();
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId);
+
+            (new PostRecordParser())->parse($contents);
+            $recordPath = CanonicalPathResolver::post($postId);
+            $prepared = $this->storePreparedPost($recordPath, $contents, [
+                'kind' => 'thread',
+                'post_id' => $postId,
+                'thread_id' => $postId,
+                'parent_id' => null,
+                'author_identity_id' => $authorIdentityId,
+                'created_at' => $createdAt,
+            ]);
+            $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+            return array_merge($prepared, [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $postId,
+                'record_path' => $recordPath,
+                'canonical_record' => $contents,
+                'timings' => $timings,
+            ]);
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function prepareReply(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $timings = [];
+            $totalStartedAt = hrtime(true);
+            $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
+            $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
+            $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
+            $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
+            $authorIdentityId = $this->requirePreparedAuthorIdentityId($input);
+            $createdAt = $this->canonicalTimestampNow();
+
+            $this->assertReplyTarget($threadId, $parentId);
+
+            $postId = $this->generateRecordId('reply');
+            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId);
+
+            (new PostRecordParser())->parse($contents);
+            $recordPath = CanonicalPathResolver::post($postId);
+            $prepared = $this->storePreparedPost($recordPath, $contents, [
+                'kind' => 'reply',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'parent_id' => $parentId,
+                'author_identity_id' => $authorIdentityId,
+                'created_at' => $createdAt,
+            ]);
+            $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+            return array_merge($prepared, [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'record_path' => $recordPath,
+                'canonical_record' => $contents,
+                'timings' => $timings,
+            ]);
+        });
+    }
+
     private function buildThreadPostRecord(
         string $postId,
         string $createdAt,
@@ -188,6 +269,29 @@ class LocalWriteService
             . "Parent-ID: {$parentId}\n"
             . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
             . "\n{$body}";
+    }
+
+    private function assertReplyTarget(string $threadId, string $parentId): void
+    {
+        $thread = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($threadId));
+        $parent = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($parentId));
+        $parentThreadId = $parent->threadId ?? $parent->postId;
+        if ($thread->postId !== $threadId || $parentThreadId !== $threadId) {
+            throw new RuntimeException('Parent post must belong to the target thread.');
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     */
+    private function requirePreparedAuthorIdentityId(array $input): string
+    {
+        $authorIdentityId = $this->resolveAuthorIdentityId($input);
+        if ($authorIdentityId === null) {
+            throw new RuntimeException('author_identity_id is required for signed prepare.');
+        }
+
+        return $authorIdentityId;
     }
 
     /**
@@ -1002,6 +1106,46 @@ class LocalWriteService
         if ($bytes === false) {
             throw new RuntimeException('Unable to write canonical file: ' . $relativePath);
         }
+    }
+
+    /**
+     * @param array<string, mixed> $metadata
+     * @return array{prepare_token:string,expires_at:string,canonical_sha256:string}
+     */
+    private function storePreparedPost(string $recordPath, string $canonicalRecord, array $metadata): array
+    {
+        $token = bin2hex(random_bytes(16));
+        $expiresAt = gmdate('Y-m-d\TH:i:s\Z', time() + 600);
+        $payload = array_merge($metadata, [
+            'prepare_token' => $token,
+            'record_path' => $recordPath,
+            'canonical_sha256' => hash('sha256', $canonicalRecord),
+            'canonical_record' => $canonicalRecord,
+            'expires_at' => $expiresAt,
+        ]);
+        $directory = $this->preparedPostDirectory();
+        if (!is_dir($directory)) {
+            mkdir($directory, 0700, true);
+        }
+
+        $bytes = file_put_contents(
+            $directory . '/' . $token . '.json',
+            json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) . "\n"
+        );
+        if ($bytes === false) {
+            throw new RuntimeException('Unable to store prepared post.');
+        }
+
+        return [
+            'prepare_token' => $token,
+            'expires_at' => $expiresAt,
+            'canonical_sha256' => hash('sha256', $canonicalRecord),
+        ];
+    }
+
+    private function preparedPostDirectory(): string
+    {
+        return dirname($this->databasePath) . '/prepared-posts';
     }
 
     private function assertWritableRepository(): void

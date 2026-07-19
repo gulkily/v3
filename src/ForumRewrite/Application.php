@@ -77,8 +77,18 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_thread') {
+            $this->handlePrepareThread($method, $query);
+            return;
+        }
+
         if ($path === '/api/create_reply') {
             $this->handleCreateReply($method, $query);
+            return;
+        }
+
+        if ($path === '/api/prepare_reply') {
+            $this->handlePrepareReply($method, $query);
             return;
         }
 
@@ -2759,6 +2769,55 @@ final class Application
         } catch (RuntimeException $exception) {
             $this->sendText(
                 "error=" . $exception->getMessage() . "\n",
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handlePrepareThread(string $method, array $query): void
+    {
+        $this->handlePreparePost($method, $query, 'thread');
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handlePrepareReply(string $method, array $query): void
+    {
+        $this->handlePreparePost($method, $query, 'reply');
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handlePreparePost(string $method, array $query, string $kind): void
+    {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+        try {
+            $result = $kind === 'reply'
+                ? $this->writer()->prepareReply($input)
+                : $this->writer()->prepareThread($input);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
+            $headers = $this->serverTimingHeaders($result);
+            unset($result['timings']);
+            $this->sendJson($result, 200, $headers);
+        } catch (RuntimeException $exception) {
+            $this->sendJson(
+                ['status' => 'error', 'error' => $exception->getMessage()],
                 400,
                 $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
             );

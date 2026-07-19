@@ -264,6 +264,8 @@ Acceptance:
 - Prepared post IDs are unique and not committed before finalization.
 - Expired prepare tokens are rejected.
 
+Status: Partially implemented for preparation. Added `/api/prepare_thread` and `/api/prepare_reply`, writer preparation methods, pending prepared-post JSON storage with expiry metadata, and smoke tests that prepared thread/reply records return exact canonical bytes without committing canonical post files. Expiry rejection is deferred to Slice 4 finalization, where prepared tokens are consumed.
+
 ### Slice 4: Signed Finalization Endpoint
 
 Work:
