@@ -340,6 +340,10 @@ final class LocalAppSmokeTest
         assertStringContains('First line preview.', $post);
         assertStringContains('by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $post);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $post);
+        assertStringContains('Source:', $post);
+        assertStringContains('href="/source/current/records/posts/root-001.txt"', $post);
+        assertStringContains('Commit:', $post);
+        assertStringContains('commit unavailable', $post);
         assertStringContains('zenmemes', $instance);
         assertStringContains('Backup', $backup);
         assertStringContains('Backup', $toolsBackup);
@@ -480,6 +484,27 @@ final class LocalAppSmokeTest
         assertStringContains('GET /about/', $llms);
         assertStringContains('POST /api/analyze_post', $llms);
         assertStringContains('GET /api/list_index', $llms);
+    }
+
+    public function testPostAndActivityLinkAdjacentSignatureFiles(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-signature-repo-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        file_put_contents($repositoryRoot . '/records/posts/root-001.txt.asc', "detached signature\n");
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-signature-db-' . bin2hex(random_bytes(6)) . '.sqlite3';
+
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+        $post = $this->render($application, '/posts/root-001');
+        $activity = $this->render($application, '/activity/?view=content');
+        $signature = $this->render($application, '/source/current/records/posts/root-001.txt.asc');
+
+        assertStringContains('Signature:', $post);
+        assertStringContains('href="/source/current/records/posts/root-001.txt.asc"', $post);
+        assertStringContains('Signature:', $activity);
+        assertStringContains('href="/source/current/records/posts/root-001.txt.asc"', $activity);
+        assertSame("detached signature\n", $signature);
     }
 
     public function testAppVersionNotificationCanBeDisabled(): void

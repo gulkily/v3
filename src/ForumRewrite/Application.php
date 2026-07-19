@@ -14,6 +14,7 @@ use ForumRewrite\Analysis\UnicodeRiskInspector;
 use ForumRewrite\Agent\DedalusAgentReplyGenerator;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Agent\AgentIdentityService;
+use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
@@ -1607,7 +1608,46 @@ final class Application
         $stmt->execute(['post_id' => $postId]);
         $post = $stmt->fetch();
 
-        return $post === false ? null : $post;
+        return $post === false ? null : $this->withPostSourceMetadata($post);
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     * @return array<string, mixed>
+     */
+    private function withPostSourceMetadata(array $post): array
+    {
+        $sourcePath = CanonicalPathResolver::post((string) $post['post_id']);
+        $sourceCommitSha = $this->sourceCommitShaForPost((string) $post['post_id'], $sourcePath);
+        $signature = $this->sourceSignatureLink($sourcePath);
+
+        $post['source_path'] = $sourcePath;
+        $post['source_commit_sha'] = $sourceCommitSha;
+        $post['source_path_href'] = $this->sourcePathHref($sourcePath, $sourceCommitSha);
+        $post['source_commit_href'] = $this->sourceCommitHref($sourceCommitSha);
+        $post['source_signature_path'] = $signature['path'];
+        $post['source_signature_href'] = $signature['href'];
+
+        return $post;
+    }
+
+    private function sourceCommitShaForPost(string $postId, string $sourcePath): string
+    {
+        $stmt = $this->pdo()->prepare(
+            'SELECT source_commit_sha
+             FROM activity
+             WHERE post_id = :post_id
+               AND source_path = :source_path
+             ORDER BY CASE WHEN kind IN (\'thread\', \'reply\') THEN 0 ELSE 1 END, id ASC
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'post_id' => $postId,
+            'source_path' => $sourcePath,
+        ]);
+        $value = $stmt->fetchColumn();
+
+        return $value === false ? '' : (string) $value;
     }
 
     private function createdPostIdForThread(string $threadId, string $createdPostId): string
@@ -2481,6 +2521,7 @@ final class Application
         $items = array_map(function (array $post): array {
             $sourcePath = $post['source_path'] !== null ? (string) $post['source_path'] : '';
             $sourceCommitSha = $post['source_commit_sha'] !== null ? (string) $post['source_commit_sha'] : '';
+            $signature = $this->sourceSignatureLink($sourcePath);
             return [
                 'created_at' => $post['created_at'],
                 'kind' => $post['kind'],
@@ -2492,6 +2533,8 @@ final class Application
                 'source_commit_sha' => $sourceCommitSha,
                 'source_path_href' => $this->sourcePathHref($sourcePath, $sourceCommitSha),
                 'source_commit_href' => $this->sourceCommitHref($sourceCommitSha),
+                'source_signature_path' => $signature['path'],
+                'source_signature_href' => $signature['href'],
                 'id' => (int) $post['id'],
                 'author_label' => $post['author_label'],
                 'author_profile_slug' => $post['author_profile_slug'],
@@ -2536,6 +2579,38 @@ final class Application
         }
 
         return '/source/commits/' . $sourceCommitSha;
+    }
+
+    /**
+     * @return array{path:string,href:string}
+     */
+    private function sourceSignatureLink(string $sourcePath): array
+    {
+        foreach ($this->sourceSignaturePathCandidates($sourcePath) as $signaturePath) {
+            if ($this->currentSourcePathExists($signaturePath)) {
+                return [
+                    'path' => $signaturePath,
+                    'href' => '/source/current/' . $this->encodeSourcePathForUrl($signaturePath),
+                ];
+            }
+        }
+
+        return ['path' => '', 'href' => ''];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function sourceSignaturePathCandidates(string $sourcePath): array
+    {
+        if (!$this->isValidCanonicalRecordSourcePath($sourcePath)) {
+            return [];
+        }
+
+        return [
+            $sourcePath . '.asc',
+            $sourcePath . '.sig',
+        ];
     }
 
     private function encodeSourcePathForUrl(string $sourcePath): string
@@ -4141,6 +4216,12 @@ final class Application
 
     private function isValidCanonicalSourcePath(string $relativePath): bool
     {
+        return $this->isValidCanonicalRecordSourcePath($relativePath)
+            || $this->isValidCanonicalDetachedSignaturePath($relativePath);
+    }
+
+    private function isValidCanonicalRecordSourcePath(string $relativePath): bool
+    {
         if (!str_starts_with($relativePath, 'records/')) {
             return false;
         }
@@ -4155,6 +4236,17 @@ final class Application
             || preg_match('#^records/public-keys/openpgp-[A-Fa-f0-9]{40}\.asc$#', $relativePath) === 1;
     }
 
+    private function isValidCanonicalDetachedSignaturePath(string $relativePath): bool
+    {
+        foreach (['.asc', '.sig'] as $suffix) {
+            if (str_ends_with($relativePath, $suffix)) {
+                return $this->isValidCanonicalRecordSourcePath(substr($relativePath, 0, -strlen($suffix)));
+            }
+        }
+
+        return false;
+    }
+
     private function isValidSourceCommitSha(string $commitSha): bool
     {
         return preg_match('/^[A-Fa-f0-9]{40}$/', $commitSha) === 1;
@@ -4162,24 +4254,33 @@ final class Application
 
     private function readCurrentSourceFile(string $relativePath): ?string
     {
+        if (!$this->currentSourcePathExists($relativePath)) {
+            return null;
+        }
+
+        $contents = file_get_contents($this->repositoryRoot . '/' . $relativePath);
+        return $contents === false ? null : $contents;
+    }
+
+    private function currentSourcePathExists(string $relativePath): bool
+    {
         $repositoryRoot = realpath($this->repositoryRoot);
         if ($repositoryRoot === false) {
-            return null;
+            return false;
         }
 
         $path = $this->repositoryRoot . '/' . $relativePath;
         $realPath = realpath($path);
         if ($realPath === false || !is_file($realPath)) {
-            return null;
+            return false;
         }
 
         $rootPrefix = rtrim($repositoryRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
         if (!str_starts_with($realPath, $rootPrefix)) {
-            return null;
+            return false;
         }
 
-        $contents = file_get_contents($realPath);
-        return $contents === false ? null : $contents;
+        return true;
     }
 
     private function readSourceBlob(string $commitSha, string $relativePath): ?string

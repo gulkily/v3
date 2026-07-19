@@ -773,7 +773,12 @@ final class ReadModelBuilder
                 continue;
             }
 
-            $paths[] = substr($item->getPathname(), strlen($this->repositoryRoot) + 1);
+            $relativePath = substr($item->getPathname(), strlen($this->repositoryRoot) + 1);
+            if (!str_ends_with($relativePath, '.txt')) {
+                continue;
+            }
+
+            $paths[] = $relativePath;
         }
 
         sort($paths);
