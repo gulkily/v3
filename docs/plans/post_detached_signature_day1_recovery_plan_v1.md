@@ -329,7 +329,7 @@ Run:
 - `php -l src/ForumRewrite/Application.php`
 - `php -l src/ForumRewrite/Security/OpenPgpSignatureVerifier.php`
 - `php -l tests/WriteApiSmokeTest.php`
-- `php -l tests/OpenPgpSignatureVerifierTest.php`
+- `php -l tests/OpenPgpKeyInspectorTest.php`
 - `php tests/run.php`
 
 Also manually verify:
@@ -339,6 +339,8 @@ Also manually verify:
 - confirm `Source`, `Commit`, and `Signature` links are present;
 - open `/source/current/records/posts/<post-id>.txt.asc`;
 - run local signature verification over the source record and signature file.
+
+Status: Completed with environment caveats. Syntax checks passed for `LocalWriteService.php`, `Application.php`, `OpenPgpSignatureVerifier.php`, `WriteApiSmokeTest.php`, `OpenPgpKeyInspectorTest.php`, and `browser_signing.js`. Focused signature tests passed in the full runner, including detached verifier tests, prepared-post write smoke tests, and `PostSignatureAuditCommandTest`. `php tests/run.php` did not pass overall in this shell because `gpg-agent` cannot start for pre-existing key-generation tests, and the working tree also contains an unrelated uncommitted `DownloadProdDataCommandTest.php` runner entry; the failures were not in the new detached-signature verifier, prepare/finalize, browser-signing, source-link, or audit-command coverage. Browser manual verification was not run from this non-browser shell; the automated transport and write-path tests cover the prepared canonical record, detached signature, committed `.txt.asc`, and rendered signature link path.
 
 ## Rollout Notes
 
