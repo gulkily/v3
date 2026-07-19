@@ -57,12 +57,7 @@ class LocalWriteService
             $authorIdentityId = $this->resolveAuthorIdentityId($input);
             $createdAt = $this->canonicalTimestampNow();
 
-            $contents = "Post-ID: {$postId}\n"
-                . "Created-At: {$createdAt}\n"
-                . "Board-Tags: {$boardTags}\n"
-                . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
-                . ($subject !== '' ? "Subject: {$subject}\n" : '')
-                . "\n{$body}";
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId);
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = 'records/posts/' . $postId . '.txt';
@@ -124,13 +119,7 @@ class LocalWriteService
             }
 
             $postId = $this->generateRecordId('reply');
-            $contents = "Post-ID: {$postId}\n"
-                . "Created-At: {$createdAt}\n"
-                . "Board-Tags: {$boardTags}\n"
-                . "Thread-ID: {$threadId}\n"
-                . "Parent-ID: {$parentId}\n"
-                . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
-                . "\n{$body}";
+            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId);
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = 'records/posts/' . $postId . '.txt';
@@ -165,6 +154,40 @@ class LocalWriteService
                 'timings' => $timings,
             ];
         });
+    }
+
+    private function buildThreadPostRecord(
+        string $postId,
+        string $createdAt,
+        string $boardTags,
+        string $subject,
+        string $body,
+        ?string $authorIdentityId
+    ): string {
+        return "Post-ID: {$postId}\n"
+            . "Created-At: {$createdAt}\n"
+            . "Board-Tags: {$boardTags}\n"
+            . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
+            . ($subject !== '' ? "Subject: {$subject}\n" : '')
+            . "\n{$body}";
+    }
+
+    private function buildReplyPostRecord(
+        string $postId,
+        string $createdAt,
+        string $boardTags,
+        string $threadId,
+        string $parentId,
+        string $body,
+        ?string $authorIdentityId
+    ): string {
+        return "Post-ID: {$postId}\n"
+            . "Created-At: {$createdAt}\n"
+            . "Board-Tags: {$boardTags}\n"
+            . "Thread-ID: {$threadId}\n"
+            . "Parent-ID: {$parentId}\n"
+            . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
+            . "\n{$body}";
     }
 
     /**

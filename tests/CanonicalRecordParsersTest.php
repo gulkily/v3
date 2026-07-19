@@ -13,6 +13,7 @@ use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PublicKeyRecordParser;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
+use ForumRewrite\Write\LocalWriteService;
 
 require __DIR__ . '/../autoload.php';
 
@@ -50,6 +51,64 @@ final class CanonicalRecordParsersTest
         assertSame('root-001', $record->parentId);
         assertNullValue($record->authorIdentityId);
         assertTrue($record->isReply());
+    }
+
+    public function testCanonicalThreadPostBuilderPreservesRecordBytes(): void
+    {
+        $service = $this->localWriteServiceForBuilderTests();
+        $method = new ReflectionMethod(LocalWriteService::class, 'buildThreadPostRecord');
+        $method->setAccessible(true);
+
+        $contents = $method->invoke(
+            $service,
+            'thread-builder-test',
+            '2026-07-19T20:00:00Z',
+            'general meta',
+            'Builder subject',
+            "Builder body.\n",
+            'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'
+        );
+
+        assertSame(
+            "Post-ID: thread-builder-test\n"
+            . "Created-At: 2026-07-19T20:00:00Z\n"
+            . "Board-Tags: general meta\n"
+            . "Author-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n"
+            . "Subject: Builder subject\n"
+            . "\n"
+            . "Builder body.\n",
+            $contents
+        );
+    }
+
+    public function testCanonicalReplyPostBuilderPreservesRecordBytes(): void
+    {
+        $service = $this->localWriteServiceForBuilderTests();
+        $method = new ReflectionMethod(LocalWriteService::class, 'buildReplyPostRecord');
+        $method->setAccessible(true);
+
+        $contents = $method->invoke(
+            $service,
+            'reply-builder-test',
+            '2026-07-19T20:05:00Z',
+            'general',
+            'thread-builder-test',
+            'thread-builder-test',
+            "Reply body.\n",
+            'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'
+        );
+
+        assertSame(
+            "Post-ID: reply-builder-test\n"
+            . "Created-At: 2026-07-19T20:05:00Z\n"
+            . "Board-Tags: general\n"
+            . "Thread-ID: thread-builder-test\n"
+            . "Parent-ID: thread-builder-test\n"
+            . "Author-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n"
+            . "\n"
+            . "Reply body.\n",
+            $contents
+        );
     }
 
     public function testParsesAuthoredReplyHeader(): void
@@ -417,6 +476,18 @@ final class CanonicalRecordParsersTest
         );
         assertSame('records/instance/public.txt', CanonicalPathResolver::instancePublic());
         assertSame('records/instance/feature-flags.txt', CanonicalPathResolver::featureFlags());
+    }
+
+    private function localWriteServiceForBuilderTests(): LocalWriteService
+    {
+        $repositoryRoot = dirname($this->fixtureRoot);
+
+        return new LocalWriteService(
+            $repositoryRoot,
+            sys_get_temp_dir() . '/unused-builder.sqlite3',
+            sys_get_temp_dir() . '/unused-builder-public',
+            new CanonicalRecordRepository($repositoryRoot)
+        );
     }
 
     private function readFixture(string $relativePath): string

@@ -247,6 +247,8 @@ Acceptance:
 - Existing create-thread/create-reply tests still pass.
 - Extracted builder returns the exact canonical bytes later signed by the browser.
 
+Status: Implemented. Extracted `buildThreadPostRecord()` and `buildReplyPostRecord()` in `LocalWriteService`, kept existing unsigned write paths on those helpers, and added fixed-byte reflection tests for both canonical record builders.
+
 ### Slice 3: Prepare Endpoints
 
 Work:
