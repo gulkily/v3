@@ -232,6 +232,8 @@ Acceptance:
 - Wrong key fails.
 - Missing or malformed signature fails without throwing unhandled warnings.
 
+Status: Implemented. Added `OpenPgpSignatureVerifier` with structured verification results, static public-key/text/signature fixtures, and OpenPGP security tests for valid signatures, tampered text, fingerprint mismatch, and malformed signature input.
+
 ### Slice 2: Canonical Record Builder Extraction
 
 Work:

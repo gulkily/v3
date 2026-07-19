@@ -1,0 +1,7 @@
+Post-ID: signed-test
+Created-At: 2026-07-19T20:00:00Z
+Board-Tags: general
+Author-Identity-ID: openpgp:test
+Subject: Signed test
+
+Signed body.
