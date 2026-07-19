@@ -300,6 +300,8 @@ Acceptance:
 - Anonymous post creation remains possible and unsigned.
 - Failure to sign or verify leaves the draft recoverable.
 
+Status: Implemented. Added browser detached-signature helpers that use the saved private key and OpenPGP.js to sign the exact prepared canonical record, changed browser-identity thread and reply submissions to prepare/sign/finalize through `/api/create_prepared_post`, kept the anonymous submitter on the existing unsigned form path, preserved draft restore on failures, and added browser-side transport tests for signed thread and reply finalization.
+
 ### Slice 6: Audit And UI Clarity
 
 Work:

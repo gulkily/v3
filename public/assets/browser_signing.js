@@ -865,7 +865,121 @@
     }
   }
 
-  async function submitReplyFormToApi(form) {
+  async function submitUrlEncoded(endpoint, fields) {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
+      body: new URLSearchParams(fields).toString(),
+    });
+
+    return {
+      text: await response.text(),
+      serverTiming: parseServerTimingHeader(response.headers && typeof response.headers.get === "function"
+        ? response.headers.get("Server-Timing")
+        : ""),
+    };
+  }
+
+  function parsePreparedPostJsonResponse(text, serverTiming, fallbackMessage) {
+    let data = null;
+    try {
+      data = JSON.parse(String(text || ""));
+    } catch (error) {
+      data = null;
+    }
+
+    if (!data || data.status !== "ok") {
+      return {
+        ok: false,
+        error: data && data.error ? String(data.error) : fallbackMessage,
+        serverTiming: serverTiming || {},
+      };
+    }
+
+    return {
+      ok: true,
+      prepareToken: data.prepare_token || "",
+      postId: data.post_id || "",
+      threadId: data.thread_id || "",
+      recordPath: data.record_path || "",
+      canonicalRecord: data.canonical_record || "",
+      canonicalSha256: data.canonical_sha256 || "",
+      signaturePath: data.signature_path || "",
+      commitSha: data.commit_sha || "",
+      serverTiming: serverTiming || {},
+    };
+  }
+
+  async function prepareReplyFormForSigning(form) {
+    const result = await submitUrlEncoded("/api/prepare_reply", collectReplySubmitFields(form));
+    return parsePreparedPostJsonResponse(result.text, result.serverTiming, "Unable to prepare reply for signing.");
+  }
+
+  async function prepareThreadFormForSigning(form) {
+    const result = await submitUrlEncoded("/api/prepare_thread", collectThreadSubmitFields(form));
+    return parsePreparedPostJsonResponse(result.text, result.serverTiming, "Unable to prepare thread for signing.");
+  }
+
+  async function signCanonicalRecord(canonicalRecord) {
+    const privateKeyArmored = localStorage.getItem(storageKeys.privateKey) || "";
+    if (!privateKeyArmored) {
+      throw new Error("No saved browser private key is available to sign this post.");
+    }
+
+    const openpgp = await ensureOpenPgpApi(["readPrivateKey", "createMessage", "sign"]);
+    const privateKey = await openpgp.readPrivateKey({ armoredKey: privateKeyArmored });
+    const message = await openpgp.createMessage({ text: canonicalRecord });
+    const signature = await openpgp.sign({
+      message: message,
+      signingKeys: privateKey,
+      detached: true,
+    });
+
+    return normalizeNewlines(String(signature || "")).trim() + "\n";
+  }
+
+  async function finalizePreparedPost(fields, prepared, detachedSignature) {
+    const result = await submitUrlEncoded("/api/create_prepared_post", {
+      prepare_token: prepared.prepareToken,
+      post_id: prepared.postId,
+      record_path: prepared.recordPath,
+      author_identity_id: fields.author_identity_id,
+      canonical_record: prepared.canonicalRecord,
+      detached_signature: detachedSignature,
+    });
+
+    return parsePreparedPostJsonResponse(result.text, result.serverTiming, "Unable to finalize signed post.");
+  }
+
+  async function submitSignedPreparedPost(form, prepare, timing) {
+    const fields = isReplyComposeForm(form) ? collectReplySubmitFields(form) : collectThreadSubmitFields(form);
+    const prepared = await prepare(form);
+    markActionTiming(timing, "forum_prepare_complete");
+    if (!prepared.ok) {
+      return prepared;
+    }
+
+    markActionTiming(timing, "forum_signing_start");
+    const detachedSignature = await signCanonicalRecord(prepared.canonicalRecord);
+    markActionTiming(timing, "forum_signing_complete");
+    const finalized = await finalizePreparedPost(fields, prepared, detachedSignature);
+    finalized.serverTiming = Object.assign({}, prepared.serverTiming || {}, finalized.serverTiming || {});
+
+    return finalized;
+  }
+
+  async function submitSignedReplyFormToApi(form, timing) {
+    return submitSignedPreparedPost(form, prepareReplyFormForSigning, timing);
+  }
+
+  async function submitSignedThreadFormToApi(form, timing) {
+    return submitSignedPreparedPost(form, prepareThreadFormForSigning, timing);
+  }
+
+  async function submitUnsignedReplyFormToApi(form) {
     const response = await fetch("/api/create_reply", {
       method: "POST",
       credentials: "same-origin",
@@ -884,7 +998,7 @@
     );
   }
 
-  async function submitThreadFormToApi(form) {
+  async function submitUnsignedThreadFormToApi(form) {
     const response = await fetch("/api/create_thread", {
       method: "POST",
       credentials: "same-origin",
@@ -921,9 +1035,17 @@
       normalizeComposeText: normalizeComposeText,
       parseCreateThreadResponse: parseCreateThreadResponse,
       parseCreateReplyResponse: parseCreateReplyResponse,
+      parsePreparedPostJsonResponse: parsePreparedPostJsonResponse,
       parseServerTimingHeader: parseServerTimingHeader,
-      submitReplyFormToApi: submitReplyFormToApi,
-      submitThreadFormToApi: submitThreadFormToApi,
+      prepareReplyFormForSigning: prepareReplyFormForSigning,
+      prepareThreadFormForSigning: prepareThreadFormForSigning,
+      signCanonicalRecord: signCanonicalRecord,
+      submitReplyFormToApi: submitUnsignedReplyFormToApi,
+      submitThreadFormToApi: submitUnsignedThreadFormToApi,
+      submitSignedReplyFormToApi: submitSignedReplyFormToApi,
+      submitSignedThreadFormToApi: submitSignedThreadFormToApi,
+      submitUnsignedReplyFormToApi: submitUnsignedReplyFormToApi,
+      submitUnsignedThreadFormToApi: submitUnsignedThreadFormToApi,
     };
   }
 
@@ -2134,26 +2256,38 @@
         return true;
       }
 
-      const pendingCard = createPendingReplyCard({
-        parentId: fields.parent_id,
-        body: fields.body,
-      });
-      if (!insertPendingReplyCard(root, pendingCard)) {
-        clearPendingReplyOperation(form, operationKey);
-        return false;
-      }
-      const clearedDraft = clearComposeDraftForPendingSubmit(form);
+      let pendingCard = null;
+      let clearedDraft = null;
 
       try {
-        setStatus(statusNode, "Posting reply...", "ok");
+        setStatus(statusNode, "Preparing signed reply...", "ok");
         markFirstFeedback(timing);
         markActionTiming(timing, "forum_fetch_start");
-        const result = await submitReplyFormToApi(form);
+        const prepared = await prepareReplyFormForSigning(form);
+        markActionTiming(timing, "forum_prepare_complete");
+        timing.serverTiming = prepared.serverTiming || {};
+        if (!prepared.ok) {
+          throw new Error(prepared.error);
+        }
+
+        pendingCard = createPendingReplyCard({
+          pendingId: `post-${prepared.postId}`,
+          parentId: fields.parent_id,
+          body: fields.body,
+        });
+        insertPendingReplyCard(root, pendingCard);
+        clearedDraft = clearComposeDraftForPendingSubmit(form);
+
+        setStatus(statusNode, "Signing reply...", "ok");
+        markActionTiming(timing, "forum_signing_start");
+        const detachedSignature = await signCanonicalRecord(prepared.canonicalRecord);
+        markActionTiming(timing, "forum_signing_complete");
+
+        setStatus(statusNode, "Posting signed reply...", "ok");
+        const result = await finalizePreparedPost(fields, prepared, detachedSignature);
         markActionTiming(timing, "forum_response_received");
-        timing.serverTiming = result.serverTiming || {};
+        timing.serverTiming = Object.assign({}, prepared.serverTiming || {}, result.serverTiming || {});
         if (!result.ok) {
-          removeNode(pendingCard);
-          restoreComposeDraftAfterFailedSubmit(clearedDraft);
           throw new Error(result.error);
         }
 
@@ -2161,6 +2295,10 @@
         completeActionTiming(timing, "ok");
         navigateToCanonicalReply(result);
         return true;
+      } catch (error) {
+        removeNode(pendingCard);
+        restoreComposeDraftAfterFailedSubmit(clearedDraft);
+        throw error;
       } finally {
         clearPendingReplyOperation(form, operationKey);
       }
@@ -2173,24 +2311,38 @@
         return true;
       }
 
-      const pendingShell = createPendingThreadShell({
-        subject: fields.subject,
-        boardTags: fields.board_tags,
-        body: fields.body,
-      });
-      if (!insertPendingThreadShell(root, pendingShell)) {
-        clearPendingThreadOperation(form, operationKey);
-        return false;
-      }
-      const clearedDraft = clearComposeDraftForPendingSubmit(form);
+      let pendingShell = null;
+      let clearedDraft = null;
 
       try {
-        setStatus(statusNode, "Creating thread...", "ok");
+        setStatus(statusNode, "Preparing signed thread...", "ok");
         markFirstFeedback(timing);
         markActionTiming(timing, "forum_fetch_start");
-        const result = await submitThreadFormToApi(form);
+        const prepared = await prepareThreadFormForSigning(form);
+        markActionTiming(timing, "forum_prepare_complete");
+        timing.serverTiming = prepared.serverTiming || {};
+        if (!prepared.ok) {
+          throw new Error(prepared.error);
+        }
+
+        pendingShell = createPendingThreadShell({
+          pendingId: `post-${prepared.postId}`,
+          subject: fields.subject,
+          boardTags: fields.board_tags,
+          body: fields.body,
+        });
+        insertPendingThreadShell(root, pendingShell);
+        clearedDraft = clearComposeDraftForPendingSubmit(form);
+
+        setStatus(statusNode, "Signing thread...", "ok");
+        markActionTiming(timing, "forum_signing_start");
+        const detachedSignature = await signCanonicalRecord(prepared.canonicalRecord);
+        markActionTiming(timing, "forum_signing_complete");
+
+        setStatus(statusNode, "Creating signed thread...", "ok");
+        const result = await finalizePreparedPost(fields, prepared, detachedSignature);
         markActionTiming(timing, "forum_response_received");
-        timing.serverTiming = result.serverTiming || {};
+        timing.serverTiming = Object.assign({}, prepared.serverTiming || {}, result.serverTiming || {});
         if (!result.ok) {
           throw new Error(result.error);
         }
@@ -2205,6 +2357,30 @@
         throw error;
       } finally {
         clearPendingThreadOperation(form, operationKey);
+      }
+    }
+
+    async function submitSignedReplyAndNavigate(timing) {
+      const clearedDraft = clearComposeDraftForPendingSubmit(form);
+      try {
+        setStatus(statusNode, "Posting signed reply...", "ok");
+        markFirstFeedback(timing);
+        markActionTiming(timing, "forum_fetch_start");
+        const result = await submitSignedReplyFormToApi(form, timing);
+        markActionTiming(timing, "forum_response_received");
+        timing.serverTiming = result.serverTiming || {};
+        if (!result.ok) {
+          restoreComposeDraftAfterFailedSubmit(clearedDraft);
+          throw new Error(result.error);
+        }
+
+        markActionTiming(timing, "forum_reconcile_complete");
+        completeActionTiming(timing, "ok");
+        navigateToCanonicalReply(result);
+        return true;
+      } catch (error) {
+        restoreComposeDraftAfterFailedSubmit(clearedDraft);
+        throw error;
       }
     }
 
@@ -2338,10 +2514,13 @@
           return;
         }
 
-        setStatus(statusNode, "Identity ready. Sending post...", "ok");
-        markFirstFeedback(timing);
-        completeActionTiming(timing, "submit");
-        form.submit();
+        if (isReplyComposeForm(form) && await submitSignedReplyAndNavigate(timing)) {
+          return;
+        }
+
+        setStatus(statusNode, "Unable to identify compose form type.", "error");
+        completeActionTiming(timing, "validation_error");
+        restoreComposeUiState();
       } catch (error) {
         timing.errorKind = error instanceof Error && error.name ? error.name : "error";
         const status = statusFromError(error, "Unable to prepare your browser identity. Use /account/key/ manually.");

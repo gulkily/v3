@@ -1883,6 +1883,290 @@ NODE;
         assertSame(14.25, $result['result']['serverTiming']['total']);
     }
 
+    public function testSignedThreadSubmitPreparesSignsAndFinalizes(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: {
+    forum_pki_private_key: '-----BEGIN PGP PRIVATE KEY BLOCK-----\nfixture\n-----END PGP PRIVATE KEY BLOCK-----'
+  },
+  fetchCalls: [],
+  signedText: '',
+  detached: null,
+  privateKeyArmored: ''
+};
+
+function field(name, value) {
+  return { name, value };
+}
+
+const fields = [
+  field('author_identity_id', 'openpgp:def456'),
+  field('board_tags', 'general updates'),
+  field('subject', 'Thread subject'),
+  field('body', 'Thread body')
+];
+const form = {
+  dataset: { composeKind: 'thread' },
+  querySelector(selector) {
+    const match = selector.match(/^\[name="([^"]+)"\]$/);
+    if (!match) {
+      return null;
+    }
+
+    return fields.find((item) => item.name === match[1]) || null;
+  }
+};
+
+global.window = {
+  openpgp: {
+    async readPrivateKey(options) {
+      state.privateKeyArmored = options.armoredKey;
+      return { key: 'private' };
+    },
+    async createMessage(options) {
+      state.signedText = options.text;
+      return { text: options.text };
+    },
+    async sign(options) {
+      state.detached = options.detached;
+      return '-----BEGIN PGP SIGNATURE-----\nfixture-signature\n-----END PGP SIGNATURE-----\n';
+    }
+  }
+};
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+  setItem(key, value) { state.localStore[key] = String(value); },
+  removeItem(key) { delete state.localStore[key]; }
+};
+global.sessionStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener() {},
+  querySelector() { return null; },
+  createElement() { return { setAttribute(){}, style:{}, addEventListener(){}, appendChild(){}, select(){} }; },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url, options) {
+  const body = options && options.body ? String(options.body) : '';
+  state.fetchCalls.push({ url: String(url), body });
+  if (String(url) === '/api/prepare_thread') {
+    return {
+      headers: { get(name) { return name === 'Server-Timing' ? 'prepare;dur=2.5' : ''; } },
+      async text() {
+        return JSON.stringify({
+          status: 'ok',
+          prepare_token: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          post_id: 'thread-123',
+          thread_id: 'thread-123',
+          record_path: 'records/posts/thread-123.txt',
+          canonical_record: 'Post-ID: thread-123\n\nThread body\n',
+          canonical_sha256: 'hash123'
+        });
+      }
+    };
+  }
+  if (String(url) === '/api/create_prepared_post') {
+    return {
+      headers: { get(name) { return name === 'Server-Timing' ? 'total;dur=9.5' : ''; } },
+      async text() {
+        return JSON.stringify({
+          status: 'ok',
+          post_id: 'thread-123',
+          thread_id: 'thread-123',
+          record_path: 'records/posts/thread-123.txt',
+          signature_path: 'records/posts/thread-123.txt.asc',
+          commit_sha: 'def999'
+        });
+      }
+    };
+  }
+
+  throw new Error('Unexpected fetch: ' + url);
+};
+
+vm.runInThisContext(source);
+window.__forumComposeNormalization.submitSignedThreadFormToApi(form).then((result) => {
+  const prepareBody = Object.fromEntries(new URLSearchParams(state.fetchCalls[0].body));
+  const finalizeBody = Object.fromEntries(new URLSearchParams(state.fetchCalls[1].body));
+  process.stdout.write(JSON.stringify({
+    result,
+    urls: state.fetchCalls.map((call) => call.url),
+    prepareBody,
+    finalizeBody,
+    signedText: state.signedText,
+    detached: state.detached,
+    privateKeyArmored: state.privateKeyArmored
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(['/api/prepare_thread', '/api/create_prepared_post'], $result['urls']);
+        assertSame('Thread subject', $result['prepareBody']['subject']);
+        assertSame('Thread body', $result['prepareBody']['body']);
+        assertSame('Post-ID: thread-123' . "\n\n" . 'Thread body' . "\n", $result['signedText']);
+        assertSame(true, $result['detached']);
+        assertStringContains('PRIVATE KEY BLOCK', $result['privateKeyArmored']);
+        assertSame('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', $result['finalizeBody']['prepare_token']);
+        assertSame('thread-123', $result['finalizeBody']['post_id']);
+        assertSame('records/posts/thread-123.txt', $result['finalizeBody']['record_path']);
+        assertSame('openpgp:def456', $result['finalizeBody']['author_identity_id']);
+        assertSame($result['signedText'], $result['finalizeBody']['canonical_record']);
+        assertStringContains('BEGIN PGP SIGNATURE', $result['finalizeBody']['detached_signature']);
+        assertSame(true, $result['result']['ok']);
+        assertSame('thread-123', $result['result']['postId']);
+        assertSame('def999', $result['result']['commitSha']);
+        assertSame(9.5, $result['result']['serverTiming']['total']);
+    }
+
+    public function testSignedReplySubmitPreparesSignsAndFinalizes(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: {
+    forum_pki_private_key: '-----BEGIN PGP PRIVATE KEY BLOCK-----\nfixture\n-----END PGP PRIVATE KEY BLOCK-----'
+  },
+  fetchCalls: [],
+  signedText: ''
+};
+
+function field(name, value) {
+  return { name, value };
+}
+
+const fields = [
+  field('thread_id', 'root-001'),
+  field('parent_id', 'root-001'),
+  field('author_identity_id', 'openpgp:def456'),
+  field('board_tags', 'general'),
+  field('body', 'Reply body')
+];
+const form = {
+  dataset: { composeKind: 'reply' },
+  querySelector(selector) {
+    const match = selector.match(/^\[name="([^"]+)"\]$/);
+    if (!match) {
+      return null;
+    }
+
+    return fields.find((item) => item.name === match[1]) || null;
+  }
+};
+
+global.window = {
+  openpgp: {
+    async readPrivateKey() {
+      return { key: 'private' };
+    },
+    async createMessage(options) {
+      state.signedText = options.text;
+      return { text: options.text };
+    },
+    async sign() {
+      return '-----BEGIN PGP SIGNATURE-----\nreply-signature\n-----END PGP SIGNATURE-----';
+    }
+  }
+};
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+  setItem(key, value) { state.localStore[key] = String(value); },
+  removeItem(key) { delete state.localStore[key]; }
+};
+global.sessionStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener() {},
+  querySelector() { return null; },
+  createElement() { return { setAttribute(){}, style:{}, addEventListener(){}, appendChild(){}, select(){} }; },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url, options) {
+  const body = options && options.body ? String(options.body) : '';
+  state.fetchCalls.push({ url: String(url), body });
+  if (String(url) === '/api/prepare_reply') {
+    return {
+      headers: { get() { return ''; } },
+      async text() {
+        return JSON.stringify({
+          status: 'ok',
+          prepare_token: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          post_id: 'reply-123',
+          thread_id: 'root-001',
+          record_path: 'records/posts/reply-123.txt',
+          canonical_record: 'Post-ID: reply-123\nThread-ID: root-001\nParent-ID: root-001\n\nReply body\n',
+          canonical_sha256: 'hash456'
+        });
+      }
+    };
+  }
+  if (String(url) === '/api/create_prepared_post') {
+    return {
+      headers: { get() { return ''; } },
+      async text() {
+        return JSON.stringify({
+          status: 'ok',
+          post_id: 'reply-123',
+          thread_id: 'root-001',
+          record_path: 'records/posts/reply-123.txt',
+          signature_path: 'records/posts/reply-123.txt.asc',
+          commit_sha: 'abc999'
+        });
+      }
+    };
+  }
+
+  throw new Error('Unexpected fetch: ' + url);
+};
+
+vm.runInThisContext(source);
+window.__forumComposeNormalization.submitSignedReplyFormToApi(form).then((result) => {
+  const prepareBody = Object.fromEntries(new URLSearchParams(state.fetchCalls[0].body));
+  const finalizeBody = Object.fromEntries(new URLSearchParams(state.fetchCalls[1].body));
+  process.stdout.write(JSON.stringify({
+    result,
+    urls: state.fetchCalls.map((call) => call.url),
+    prepareBody,
+    finalizeBody,
+    signedText: state.signedText
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(['/api/prepare_reply', '/api/create_prepared_post'], $result['urls']);
+        assertSame('root-001', $result['prepareBody']['thread_id']);
+        assertSame('root-001', $result['prepareBody']['parent_id']);
+        assertSame('Reply body', $result['prepareBody']['body']);
+        assertSame('Post-ID: reply-123' . "\n" . 'Thread-ID: root-001' . "\n" . 'Parent-ID: root-001' . "\n\n" . 'Reply body' . "\n", $result['signedText']);
+        assertSame('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', $result['finalizeBody']['prepare_token']);
+        assertSame('reply-123', $result['finalizeBody']['post_id']);
+        assertSame('records/posts/reply-123.txt', $result['finalizeBody']['record_path']);
+        assertSame('openpgp:def456', $result['finalizeBody']['author_identity_id']);
+        assertSame($result['signedText'], $result['finalizeBody']['canonical_record']);
+        assertStringContains('reply-signature', $result['finalizeBody']['detached_signature']);
+        assertSame(true, $result['result']['ok']);
+        assertSame('reply-123', $result['result']['postId']);
+        assertSame('root-001', $result['result']['threadId']);
+        assertSame('abc999', $result['result']['commitSha']);
+    }
+
     public function testPendingReplyCardRendererEscapesBodyAndInsertsBeforeComposer(): void
     {
         $script = <<<'NODE'
@@ -2164,7 +2448,7 @@ const state = {
   submitHandler: null,
   fetchCalls: [],
   assignedUrl: '',
-  resolveCreateThread: null,
+  resolveCreatePreparedPost: null,
   formSubmitted: 0,
   marks: [],
   debugEvents: [],
@@ -2289,6 +2573,11 @@ root.querySelectorAll = function() { return []; };
 
 global.window = {
   addEventListener() {},
+  openpgp: {
+    async readPrivateKey() { return { key: 'private' }; },
+    async createMessage(options) { return { text: options.text }; },
+    async sign() { return '-----BEGIN PGP SIGNATURE-----\nthread-signature\n-----END PGP SIGNATURE-----\n'; }
+  },
   location: {
     search: '?debug_timing=1',
     assign(url) {
@@ -2348,13 +2637,36 @@ global.fetch = async function(url, options) {
   if (String(url).indexOf('/api/set_identity_hint') === 0) {
     return { async text() { return 'status=ok\n'; } };
   }
-  if (url === '/api/create_thread') {
+  if (url === '/api/prepare_thread') {
+    return {
+      headers: { get(name) { return name === 'Server-Timing' ? 'prepare;dur=3.5' : ''; } },
+      async text() {
+        return JSON.stringify({
+          status: 'ok',
+          prepare_token: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          post_id: 'thread-001',
+          thread_id: 'thread-001',
+          record_path: 'records/posts/thread-001.txt',
+          canonical_record: 'Post-ID: thread-001\n\nThread body\nsecond line\n',
+          canonical_sha256: 'hash123'
+        });
+      }
+    };
+  }
+  if (url === '/api/create_prepared_post') {
     return new Promise((resolve) => {
-      state.resolveCreateThread = function () {
+      state.resolveCreatePreparedPost = function () {
         resolve({
           headers: { get(name) { return name === 'Server-Timing' ? 'total;dur=11.5' : ''; } },
           async text() {
-            return 'status=ok\npost_id=thread-post-002\nthread_id=thread-001\ncommit_sha=def999\n';
+            return JSON.stringify({
+              status: 'ok',
+              post_id: 'thread-001',
+              thread_id: 'thread-001',
+              record_path: 'records/posts/thread-001.txt',
+              signature_path: 'records/posts/thread-001.txt.asc',
+              commit_sha: 'def999'
+            });
           }
         });
       };
@@ -2369,7 +2681,7 @@ vm.runInThisContext(source);
     submitter: submitButton,
     preventDefault() {}
   });
-  for (let index = 0; index < 20 && state.resolveCreateThread === null; index += 1) {
+  for (let index = 0; index < 20 && state.resolveCreatePreparedPost === null; index += 1) {
     await Promise.resolve();
   }
   const pendingShell = root.children.find((child) => child.attributes && child.attributes['data-pending-thread-id']);
@@ -2388,7 +2700,7 @@ vm.runInThisContext(source);
     draftExists: Object.prototype.hasOwnProperty.call(state.localStore, 'forum_compose_draft:thread'),
     recentlyClearedDraft: state.sessionStore.forum_recently_cleared_compose_draft || ''
   };
-  state.resolveCreateThread();
+  state.resolveCreatePreparedPost();
   await submitPromise;
   process.stdout.write(JSON.stringify({
     optimistic,
@@ -2409,21 +2721,22 @@ NODE;
         assertSame([
             '/api/set_identity_hint?identity_hint=openpgp%3Adef456',
             '/api/set_identity_hint?identity_hint=openpgp%3Adef456',
-            '/api/create_thread',
+            '/api/prepare_thread',
+            '/api/create_prepared_post',
         ], $result['optimistic']['fetchUrls']);
         assertSame(true, $result['optimistic']['pendingExists']);
-        assertSame(['intro', 'pending-thread:1', 'compose-card'], $result['optimistic']['order']);
+        assertSame(['intro', 'post-thread-001', 'compose-card'], $result['optimistic']['order']);
         assertSame('Thread subject', $result['optimistic']['pendingSubject']);
         assertSame('Board tags: general', $result['optimistic']['pendingTags']);
         assertSame("Thread body\nsecond line", $result['optimistic']['pendingBody']);
         assertSame(0, $result['optimistic']['pendingBodyChildren']);
-        assertSame('Creating thread...', $result['optimistic']['status']);
+        assertSame('Creating signed thread...', $result['optimistic']['status']);
         assertSame(true, $result['optimistic']['submitDisabled']);
         assertSame('openpgp:def456', $result['optimistic']['authorIdentityId']);
         assertSame(0, $result['optimistic']['formSubmitted']);
         assertSame(false, $result['optimistic']['draftExists']);
         assertSame('forum_compose_draft:thread', $result['optimistic']['recentlyClearedDraft']);
-        assertSame('/threads/thread-001?created_post_id=thread-post-002&__v=def999', $result['assignedUrl']);
+        assertSame('/threads/thread-001?created_post_id=thread-001&__v=def999', $result['assignedUrl']);
         assertSame(['forum_compose_draft:thread'], $result['removeCalls']);
         assertSame(0, $result['finalFormSubmitted']);
         assertSame(
@@ -2435,6 +2748,9 @@ NODE;
                 'forum_identity_ready',
                 'forum_first_feedback',
                 'forum_fetch_start',
+                'forum_prepare_complete',
+                'forum_signing_start',
+                'forum_signing_complete',
                 'forum_response_received',
                 'forum_reconcile_complete',
                 'forum_action_complete',
@@ -2442,7 +2758,7 @@ NODE;
             array_column($result['marks'], 'name')
         );
         assertSame('compose_thread', $result['marks'][0]['action']);
-        assertSame('ok', $result['marks'][9]['status']);
+        assertSame('ok', $result['marks'][12]['status']);
         assertSame('[forum timing]', $result['debugEvents'][0]['label']);
         assertSame('compose_thread', $result['debugEvents'][0]['payload']['action']);
         assertSame('ok', $result['debugEvents'][0]['payload']['status']);
@@ -2587,6 +2903,11 @@ root.querySelectorAll = function() { return []; };
 
 global.window = {
   addEventListener() {},
+  openpgp: {
+    async readPrivateKey() { return { key: 'private' }; },
+    async createMessage(options) { return { text: options.text }; },
+    async sign() { return '-----BEGIN PGP SIGNATURE-----\nthread-signature\n-----END PGP SIGNATURE-----\n'; }
+  },
   location: {
     search: '',
     assign(url) {
@@ -2625,11 +2946,27 @@ global.fetch = async function(url, options) {
   if (String(url).indexOf('/api/set_identity_hint') === 0) {
     return { async text() { return 'status=ok\n'; } };
   }
-  if (url === '/api/create_thread') {
+  if (url === '/api/prepare_thread') {
     return {
       headers: { get() { return ''; } },
       async text() {
-        return 'error=Subject is required.\n';
+        return JSON.stringify({
+          status: 'ok',
+          prepare_token: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          post_id: 'thread-001',
+          thread_id: 'thread-001',
+          record_path: 'records/posts/thread-001.txt',
+          canonical_record: 'Post-ID: thread-001\n\nThread body\n',
+          canonical_sha256: 'hash123'
+        });
+      }
+    };
+  }
+  if (url === '/api/create_prepared_post') {
+    return {
+      headers: { get() { return ''; } },
+      async text() {
+        return JSON.stringify({ status: 'error', error: 'Subject is required.' });
       }
     };
   }
@@ -2662,7 +2999,8 @@ NODE;
 
         $result = $this->runScript($script);
 
-        assertSame('/api/create_thread', $result['fetchUrls'][2]);
+        assertSame('/api/prepare_thread', $result['fetchUrls'][2]);
+        assertSame('/api/create_prepared_post', $result['fetchUrls'][3]);
         assertSame(0, $result['pendingCount']);
         assertSame(['intro', 'compose-card'], $result['order']);
         assertSame('Subject is required.', $result['status']);
@@ -2691,9 +3029,10 @@ const state = {
     forum_pki_published_fingerprint: 'DEF456'
   },
   submitHandler: null,
-  createFetchCount: 0,
+  prepareFetchCount: 0,
+  finalizeFetchCount: 0,
   preventDefaultCount: 0,
-  resolveFirstCreateThread: null,
+  resolveFirstFinalize: null,
   assignedUrl: ''
 };
 
@@ -2814,6 +3153,11 @@ function submitEvent() {
 
 global.window = {
   addEventListener() {},
+  openpgp: {
+    async readPrivateKey() { return { key: 'private' }; },
+    async createMessage(options) { return { text: options.text }; },
+    async sign() { return '-----BEGIN PGP SIGNATURE-----\nthread-signature\n-----END PGP SIGNATURE-----\n'; }
+  },
   location: {
     search: '',
     assign(url) {
@@ -2843,14 +3187,31 @@ global.navigator = {};
 global.fetch = async function(url) {
   if (String(url).indexOf('/api/get_profile') === 0) return { ok: true };
   if (String(url).indexOf('/api/set_identity_hint') === 0) return { async text() { return 'status=ok\n'; } };
-  if (url === '/api/create_thread') {
-    state.createFetchCount += 1;
-    if (state.createFetchCount === 1) {
+  if (url === '/api/prepare_thread') {
+    state.prepareFetchCount += 1;
+    return {
+      headers: { get() { return ''; } },
+      async text() {
+        return JSON.stringify({
+          status: 'ok',
+          prepare_token: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          post_id: 'thread-001',
+          thread_id: 'thread-001',
+          record_path: 'records/posts/thread-001.txt',
+          canonical_record: 'Post-ID: thread-001\n\nRetry body\n',
+          canonical_sha256: 'hash123'
+        });
+      }
+    };
+  }
+  if (url === '/api/create_prepared_post') {
+    state.finalizeFetchCount += 1;
+    if (state.finalizeFetchCount === 1) {
       return new Promise((resolve) => {
-        state.resolveFirstCreateThread = function () {
+        state.resolveFirstFinalize = function () {
           resolve({
             headers: { get() { return ''; } },
-            async text() { return 'error=Temporary failure.\n'; }
+            async text() { return JSON.stringify({ status: 'error', error: 'Temporary failure.' }); }
           });
         };
       });
@@ -2858,7 +3219,14 @@ global.fetch = async function(url) {
     return {
       headers: { get() { return ''; } },
       async text() {
-        return 'status=ok\npost_id=thread-post-002\nthread_id=thread-001\ncommit_sha=def999\n';
+        return JSON.stringify({
+          status: 'ok',
+          post_id: 'thread-001',
+          thread_id: 'thread-001',
+          record_path: 'records/posts/thread-001.txt',
+          signature_path: 'records/posts/thread-001.txt.asc',
+          commit_sha: 'def999'
+        });
       }
     };
   }
@@ -2868,20 +3236,22 @@ global.fetch = async function(url) {
 vm.runInThisContext(source);
 (async function () {
   const firstSubmit = state.submitHandler(submitEvent());
-  for (let index = 0; index < 20 && state.resolveFirstCreateThread === null; index += 1) {
+  for (let index = 0; index < 20 && state.resolveFirstFinalize === null; index += 1) {
     await Promise.resolve();
   }
   await state.submitHandler(submitEvent());
   const duplicateSnapshot = {
-    createFetchCount: state.createFetchCount,
+    prepareFetchCount: state.prepareFetchCount,
+    finalizeFetchCount: state.finalizeFetchCount,
     preventDefaultCount: state.preventDefaultCount,
     submitDisabled: submitButton.disabled,
     pendingCount: root.children.filter((child) => child.attributes && child.attributes['data-pending-thread-id']).length
   };
-  state.resolveFirstCreateThread();
+  state.resolveFirstFinalize();
   await firstSubmit;
   const afterFailure = {
-    createFetchCount: state.createFetchCount,
+    prepareFetchCount: state.prepareFetchCount,
+    finalizeFetchCount: state.finalizeFetchCount,
     submitDisabled: submitButton.disabled,
     pendingCount: root.children.filter((child) => child.attributes && child.attributes['data-pending-thread-id']).length,
     status: statusNode.textContent
@@ -2890,7 +3260,8 @@ vm.runInThisContext(source);
   process.stdout.write(JSON.stringify({
     duplicateSnapshot,
     afterFailure,
-    finalCreateFetchCount: state.createFetchCount,
+    finalPrepareFetchCount: state.prepareFetchCount,
+    finalFinalizeFetchCount: state.finalizeFetchCount,
     finalPreventDefaultCount: state.preventDefaultCount,
     finalPendingCount: root.children.filter((child) => child.attributes && child.attributes['data-pending-thread-id']).length,
     assignedUrl: state.assignedUrl
@@ -2903,18 +3274,21 @@ NODE;
 
         $result = $this->runScript($script);
 
-        assertSame(1, $result['duplicateSnapshot']['createFetchCount']);
+        assertSame(1, $result['duplicateSnapshot']['prepareFetchCount']);
+        assertSame(1, $result['duplicateSnapshot']['finalizeFetchCount']);
         assertSame(2, $result['duplicateSnapshot']['preventDefaultCount']);
         assertSame(true, $result['duplicateSnapshot']['submitDisabled']);
         assertSame(1, $result['duplicateSnapshot']['pendingCount']);
-        assertSame(1, $result['afterFailure']['createFetchCount']);
+        assertSame(1, $result['afterFailure']['prepareFetchCount']);
+        assertSame(1, $result['afterFailure']['finalizeFetchCount']);
         assertSame(false, $result['afterFailure']['submitDisabled']);
         assertSame(0, $result['afterFailure']['pendingCount']);
         assertSame('Temporary failure.', $result['afterFailure']['status']);
-        assertSame(2, $result['finalCreateFetchCount']);
+        assertSame(2, $result['finalPrepareFetchCount']);
+        assertSame(2, $result['finalFinalizeFetchCount']);
         assertSame(3, $result['finalPreventDefaultCount']);
         assertSame(1, $result['finalPendingCount']);
-        assertSame('/threads/thread-001?created_post_id=thread-post-002&__v=def999', $result['assignedUrl']);
+        assertSame('/threads/thread-001?created_post_id=thread-001&__v=def999', $result['assignedUrl']);
     }
 
     public function testInlineReplySubmitRendersPendingCardBeforeApiResponseAndNavigatesOnSuccess(): void
@@ -2937,7 +3311,7 @@ const state = {
   submitHandler: null,
   fetchCalls: [],
   assignedUrl: '',
-  resolveCreateReply: null,
+  resolveCreatePreparedPost: null,
   formSubmitted: 0,
   marks: [],
   debugEvents: [],
@@ -3068,6 +3442,11 @@ parent.children.push({ id: 'existing-reply' }, root);
 
 global.window = {
   addEventListener() {},
+  openpgp: {
+    async readPrivateKey() { return { key: 'private' }; },
+    async createMessage(options) { return { text: options.text }; },
+    async sign() { return '-----BEGIN PGP SIGNATURE-----\nreply-signature\n-----END PGP SIGNATURE-----\n'; }
+  },
   location: {
     search: '?debug_timing=1',
     assign(url) {
@@ -3127,13 +3506,36 @@ global.fetch = async function(url, options) {
   if (String(url).indexOf('/api/set_identity_hint') === 0) {
     return { async text() { return 'status=ok\n'; } };
   }
-  if (url === '/api/create_reply') {
+  if (url === '/api/prepare_reply') {
+    return {
+      headers: { get(name) { return name === 'Server-Timing' ? 'prepare;dur=2.5' : ''; } },
+      async text() {
+        return JSON.stringify({
+          status: 'ok',
+          prepare_token: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          post_id: 'reply-002',
+          thread_id: 'root-001',
+          record_path: 'records/posts/reply-002.txt',
+          canonical_record: 'Post-ID: reply-002\nThread-ID: root-001\nParent-ID: root-001\n\nHello <b>world</b>\nsecond line\n',
+          canonical_sha256: 'hash456'
+        });
+      }
+    };
+  }
+  if (url === '/api/create_prepared_post') {
     return new Promise((resolve) => {
-      state.resolveCreateReply = function () {
+      state.resolveCreatePreparedPost = function () {
         resolve({
           headers: { get(name) { return name === 'Server-Timing' ? 'lock_wait;dur=1.5, total;dur=7.5' : ''; } },
           async text() {
-            return 'status=ok\npost_id=reply-002\nthread_id=root-001\ncommit_sha=abc999\n';
+            return JSON.stringify({
+              status: 'ok',
+              post_id: 'reply-002',
+              thread_id: 'root-001',
+              record_path: 'records/posts/reply-002.txt',
+              signature_path: 'records/posts/reply-002.txt.asc',
+              commit_sha: 'abc999'
+            });
           }
         });
       };
@@ -3148,7 +3550,7 @@ vm.runInThisContext(source);
     submitter: submitButton,
     preventDefault() {}
   });
-  for (let index = 0; index < 20 && state.resolveCreateReply === null; index += 1) {
+  for (let index = 0; index < 20 && state.resolveCreatePreparedPost === null; index += 1) {
     await Promise.resolve();
   }
   const pendingCard = parent.children.find((child) => child.attributes && child.attributes['data-pending-reply-id']);
@@ -3166,7 +3568,7 @@ vm.runInThisContext(source);
     draftExists: Object.prototype.hasOwnProperty.call(state.localStore, 'forum_compose_draft:reply:root-001:root-001'),
     recentlyClearedDraft: state.sessionStore.forum_recently_cleared_compose_draft || ''
   };
-  state.resolveCreateReply();
+  state.resolveCreatePreparedPost();
   await submitPromise;
   process.stdout.write(JSON.stringify({
     optimistic,
@@ -3187,13 +3589,14 @@ NODE;
         assertSame([
             '/api/set_identity_hint?identity_hint=openpgp%3Aabc123',
             '/api/set_identity_hint?identity_hint=openpgp%3Aabc123',
-            '/api/create_reply',
+            '/api/prepare_reply',
+            '/api/create_prepared_post',
         ], $result['optimistic']['fetchUrls']);
         assertSame(true, $result['optimistic']['pendingExists']);
-        assertSame(['existing-reply', 'pending-reply:1', 'composer'], $result['optimistic']['order']);
+        assertSame(['existing-reply', 'post-reply-002', 'composer'], $result['optimistic']['order']);
         assertSame("Hello <b>world</b>\nsecond line", $result['optimistic']['pendingBody']);
         assertSame(0, $result['optimistic']['pendingBodyChildren']);
-        assertSame('Posting reply...', $result['optimistic']['status']);
+        assertSame('Posting signed reply...', $result['optimistic']['status']);
         assertSame("Hello <b>world</b>\nsecond line", $result['optimistic']['bodyValue']);
         assertSame(true, $result['optimistic']['submitDisabled']);
         assertSame('openpgp:abc123', $result['optimistic']['authorIdentityId']);
@@ -3212,6 +3615,9 @@ NODE;
                 'forum_identity_ready',
                 'forum_first_feedback',
                 'forum_fetch_start',
+                'forum_prepare_complete',
+                'forum_signing_start',
+                'forum_signing_complete',
                 'forum_response_received',
                 'forum_reconcile_complete',
                 'forum_action_complete',
@@ -3219,7 +3625,7 @@ NODE;
             array_column($result['marks'], 'name')
         );
         assertSame('compose_reply', $result['marks'][0]['action']);
-        assertSame('ok', $result['marks'][9]['status']);
+        assertSame('ok', $result['marks'][12]['status']);
         assertSame('[forum timing]', $result['debugEvents'][0]['label']);
         assertSame('compose_reply', $result['debugEvents'][0]['payload']['action']);
         assertSame('ok', $result['debugEvents'][0]['payload']['status']);
@@ -3356,7 +3762,15 @@ const root = {
 };
 parent.children.push({ id: 'existing-reply' }, root);
 
-global.window = { addEventListener() {}, location: { assign() {} } };
+global.window = {
+  addEventListener() {},
+  openpgp: {
+    async readPrivateKey() { return { key: 'private' }; },
+    async createMessage(options) { return { text: options.text }; },
+    async sign() { return '-----BEGIN PGP SIGNATURE-----\nreply-signature\n-----END PGP SIGNATURE-----\n'; }
+  },
+  location: { assign() {} }
+};
 global.localStorage = {
   getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
   setItem(key, value) { state.localStore[key] = String(value); },
@@ -3384,10 +3798,26 @@ global.fetch = async function(url) {
   state.fetchCalls.push(url);
   if (String(url).indexOf('/api/get_profile') === 0) return { ok: true };
   if (String(url).indexOf('/api/set_identity_hint') === 0) return { async text() { return 'status=ok\n'; } };
-  if (url === '/api/create_reply') {
+  if (url === '/api/prepare_reply') {
     return {
       headers: { get() { return ''; } },
-      async text() { return 'error=Body is required.\n'; }
+      async text() {
+        return JSON.stringify({
+          status: 'ok',
+          prepare_token: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          post_id: 'reply-002',
+          thread_id: 'root-001',
+          record_path: 'records/posts/reply-002.txt',
+          canonical_record: 'Post-ID: reply-002\nThread-ID: root-001\nParent-ID: root-001\n\nDraft body\n',
+          canonical_sha256: 'hash456'
+        });
+      }
+    };
+  }
+  if (url === '/api/create_prepared_post') {
+    return {
+      headers: { get() { return ''; } },
+      async text() { return JSON.stringify({ status: 'error', error: 'Body is required.' }); }
     };
   }
   throw new Error('Unexpected fetch ' + url);
@@ -3428,7 +3858,8 @@ NODE;
         assertSame([
             '/api/set_identity_hint?identity_hint=openpgp%3Aabc123',
             '/api/set_identity_hint?identity_hint=openpgp%3Aabc123',
-            '/api/create_reply',
+            '/api/prepare_reply',
+            '/api/create_prepared_post',
         ], $result['fetchCalls']);
     }
 
@@ -3447,9 +3878,10 @@ const state = {
     forum_pki_published_fingerprint: 'ABC123'
   },
   submitHandler: null,
-  createFetchCount: 0,
+  prepareFetchCount: 0,
+  finalizeFetchCount: 0,
   preventDefaultCount: 0,
-  resolveFirstCreateReply: null,
+  resolveFirstFinalize: null,
   assignedUrl: ''
 };
 
@@ -3575,6 +4007,11 @@ function submitEvent() {
 
 global.window = {
   addEventListener() {},
+  openpgp: {
+    async readPrivateKey() { return { key: 'private' }; },
+    async createMessage(options) { return { text: options.text }; },
+    async sign() { return '-----BEGIN PGP SIGNATURE-----\nreply-signature\n-----END PGP SIGNATURE-----\n'; }
+  },
   location: {
     assign(url) {
       state.assignedUrl = url;
@@ -3603,14 +4040,31 @@ global.navigator = {};
 global.fetch = async function(url) {
   if (String(url).indexOf('/api/get_profile') === 0) return { ok: true };
   if (String(url).indexOf('/api/set_identity_hint') === 0) return { async text() { return 'status=ok\n'; } };
-  if (url === '/api/create_reply') {
-    state.createFetchCount += 1;
-    if (state.createFetchCount === 1) {
+  if (url === '/api/prepare_reply') {
+    state.prepareFetchCount += 1;
+    return {
+      headers: { get() { return ''; } },
+      async text() {
+        return JSON.stringify({
+          status: 'ok',
+          prepare_token: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          post_id: 'reply-002',
+          thread_id: 'root-001',
+          record_path: 'records/posts/reply-002.txt',
+          canonical_record: 'Post-ID: reply-002\nThread-ID: root-001\nParent-ID: root-001\n\nRetry body\n',
+          canonical_sha256: 'hash456'
+        });
+      }
+    };
+  }
+  if (url === '/api/create_prepared_post') {
+    state.finalizeFetchCount += 1;
+    if (state.finalizeFetchCount === 1) {
       return new Promise((resolve) => {
-        state.resolveFirstCreateReply = function () {
+        state.resolveFirstFinalize = function () {
           resolve({
             headers: { get() { return ''; } },
-            async text() { return 'error=Temporary failure.\n'; }
+            async text() { return JSON.stringify({ status: 'error', error: 'Temporary failure.' }); }
           });
         };
       });
@@ -3618,7 +4072,14 @@ global.fetch = async function(url) {
     return {
       headers: { get() { return ''; } },
       async text() {
-        return 'status=ok\npost_id=reply-002\nthread_id=root-001\ncommit_sha=abc999\n';
+        return JSON.stringify({
+          status: 'ok',
+          post_id: 'reply-002',
+          thread_id: 'root-001',
+          record_path: 'records/posts/reply-002.txt',
+          signature_path: 'records/posts/reply-002.txt.asc',
+          commit_sha: 'abc999'
+        });
       }
     };
   }
@@ -3628,20 +4089,22 @@ global.fetch = async function(url) {
 vm.runInThisContext(source);
 (async function () {
   const firstSubmit = state.submitHandler(submitEvent());
-  for (let index = 0; index < 20 && state.resolveFirstCreateReply === null; index += 1) {
+  for (let index = 0; index < 20 && state.resolveFirstFinalize === null; index += 1) {
     await Promise.resolve();
   }
   await state.submitHandler(submitEvent());
   const duplicateSnapshot = {
-    createFetchCount: state.createFetchCount,
+    prepareFetchCount: state.prepareFetchCount,
+    finalizeFetchCount: state.finalizeFetchCount,
     preventDefaultCount: state.preventDefaultCount,
     submitDisabled: submitButton.disabled,
     pendingCount: parent.children.filter((child) => child.attributes && child.attributes['data-pending-reply-id']).length
   };
-  state.resolveFirstCreateReply();
+  state.resolveFirstFinalize();
   await firstSubmit;
   const afterFailure = {
-    createFetchCount: state.createFetchCount,
+    prepareFetchCount: state.prepareFetchCount,
+    finalizeFetchCount: state.finalizeFetchCount,
     submitDisabled: submitButton.disabled,
     pendingCount: parent.children.filter((child) => child.attributes && child.attributes['data-pending-reply-id']).length,
     status: statusNode.textContent
@@ -3650,7 +4113,8 @@ vm.runInThisContext(source);
   process.stdout.write(JSON.stringify({
     duplicateSnapshot,
     afterFailure,
-    finalCreateFetchCount: state.createFetchCount,
+    finalPrepareFetchCount: state.prepareFetchCount,
+    finalFinalizeFetchCount: state.finalizeFetchCount,
     finalPreventDefaultCount: state.preventDefaultCount,
     assignedUrl: state.assignedUrl
   }));
@@ -3662,15 +4126,18 @@ NODE;
 
         $result = $this->runScript($script);
 
-        assertSame(1, $result['duplicateSnapshot']['createFetchCount']);
+        assertSame(1, $result['duplicateSnapshot']['prepareFetchCount']);
+        assertSame(1, $result['duplicateSnapshot']['finalizeFetchCount']);
         assertSame(2, $result['duplicateSnapshot']['preventDefaultCount']);
         assertSame(true, $result['duplicateSnapshot']['submitDisabled']);
         assertSame(1, $result['duplicateSnapshot']['pendingCount']);
-        assertSame(1, $result['afterFailure']['createFetchCount']);
+        assertSame(1, $result['afterFailure']['prepareFetchCount']);
+        assertSame(1, $result['afterFailure']['finalizeFetchCount']);
         assertSame(false, $result['afterFailure']['submitDisabled']);
         assertSame(0, $result['afterFailure']['pendingCount']);
         assertSame('Temporary failure.', $result['afterFailure']['status']);
-        assertSame(2, $result['finalCreateFetchCount']);
+        assertSame(2, $result['finalPrepareFetchCount']);
+        assertSame(2, $result['finalFinalizeFetchCount']);
         assertSame(3, $result['finalPreventDefaultCount']);
         assertSame('/threads/root-001?created_post_id=reply-002&__v=abc999#post-reply-002', $result['assignedUrl']);
     }
