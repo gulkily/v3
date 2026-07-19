@@ -23,6 +23,7 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\UnicodeTextPolicy;
 use ForumRewrite\Security\OpenPgpKeyInspector;
+use ForumRewrite\Security\OpenPgpSignatureVerifier;
 use RuntimeException;
 
 class LocalWriteService
@@ -35,6 +36,7 @@ class LocalWriteService
         private readonly string $artifactRoot,
         private readonly CanonicalRecordRepository $canonicalRepository,
         private readonly OpenPgpKeyInspector $keyInspector = new OpenPgpKeyInspector(),
+        private readonly OpenPgpSignatureVerifier $signatureVerifier = new OpenPgpSignatureVerifier(),
         private readonly FeatureFlagEvaluator $featureFlags = new FeatureFlagEvaluator(),
         private readonly array $additionalArtifactRoots = [],
     ) {
@@ -234,6 +236,97 @@ class LocalWriteService
                 'canonical_record' => $contents,
                 'timings' => $timings,
             ]);
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function createPreparedPost(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $timings = [];
+            $totalStartedAt = hrtime(true);
+            $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($prepareToken);
+
+            if (strtotime((string) $prepared['expires_at']) < time()) {
+                throw new RuntimeException('Prepared post has expired.');
+            }
+
+            $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+            if ($canonicalRecord === '' || hash('sha256', $canonicalRecord) !== (string) $prepared['canonical_sha256']) {
+                throw new RuntimeException('Prepared post canonical record mismatch.');
+            }
+
+            $recordPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $postId = $this->requirePreparedMatch($input, $prepared, 'post_id');
+            $threadId = (string) $prepared['thread_id'];
+            $authorIdentityId = $this->requireOpenPgpIdentityId(
+                $this->requirePreparedMatch($input, $prepared, 'author_identity_id'),
+                'author_identity_id'
+            );
+
+            if (is_file($this->repositoryRoot . '/' . $recordPath) || is_file($this->repositoryRoot . '/' . $recordPath . '.asc')) {
+                throw new RuntimeException('Prepared post target already exists.');
+            }
+
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($authorIdentityId);
+            $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
+            if (!$verification['ok']) {
+                throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+            }
+
+            $record = (new PostRecordParser())->parse($canonicalRecord);
+            if ($record->postId !== $postId || CanonicalPathResolver::post($record->postId) !== $recordPath) {
+                throw new RuntimeException('Prepared post canonical record does not match target path.');
+            }
+            if (($record->threadId ?? $record->postId) !== $threadId || $record->authorIdentityId !== $authorIdentityId) {
+                throw new RuntimeException('Prepared post canonical record does not match prepared metadata.');
+            }
+
+            $threadLabels = $this->extractThreadLabelsFromBody($record->body);
+            $labelRecordPath = null;
+            $phaseStartedAt = hrtime(true);
+            $this->writeFile($recordPath, $canonicalRecord);
+            $this->writeFile($recordPath . '.asc', $signature);
+            if ($threadLabels !== []) {
+                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($threadId, $threadLabels, $authorIdentityId, $record->createdAt);
+                $this->writeFile($labelRecordPath, $labelContents);
+            }
+            $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+            $writtenPaths = [$recordPath, $recordPath . '.asc'];
+            if ($labelRecordPath !== null) {
+                $writtenPaths[] = $labelRecordPath;
+            }
+            $commitResult = $this->commitCanonicalWrite($writtenPaths, ($record->isReply() ? 'Create signed reply ' : 'Create signed thread ') . $postId);
+            $commitSha = $commitResult['commit_sha'];
+            $timings = array_merge($timings, $commitResult['timings']);
+            $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha, $labelRecordPath !== null));
+
+            $phaseStartedAt = hrtime(true);
+            if ($record->isReply()) {
+                $this->invalidator()->invalidateReply($threadId, $postId);
+            } else {
+                $this->invalidator()->invalidateBoardThread($postId);
+            }
+            $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $this->deletePreparedPost($prepareToken);
+            $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+            return [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'record_path' => $recordPath,
+                'signature_path' => $recordPath . '.asc',
+                'commit_sha' => $commitSha,
+                'timings' => $timings,
+            ];
         });
     }
 
@@ -1143,9 +1236,72 @@ class LocalWriteService
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function loadPreparedPost(string $token): array
+    {
+        $path = $this->preparedPostPath($token);
+        if (!is_file($path)) {
+            throw new RuntimeException('Prepared post not found.');
+        }
+
+        $payload = json_decode((string) file_get_contents($path), true);
+        if (!is_array($payload)) {
+            throw new RuntimeException('Prepared post is invalid.');
+        }
+
+        return $payload;
+    }
+
+    private function deletePreparedPost(string $token): void
+    {
+        $path = $this->preparedPostPath($token);
+        if (is_file($path) && !unlink($path)) {
+            throw new RuntimeException('Unable to delete prepared post.');
+        }
+    }
+
+    private function preparedPostPath(string $token): string
+    {
+        return $this->preparedPostDirectory() . '/' . $token . '.json';
+    }
+
     private function preparedPostDirectory(): string
     {
         return dirname($this->databasePath) . '/prepared-posts';
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @param array<string, mixed> $prepared
+     */
+    private function requirePreparedMatch(array $input, array $prepared, string $field): string
+    {
+        $submitted = (string) ($input[$field] ?? '');
+        $expected = (string) ($prepared[$field] ?? '');
+        if ($submitted === '' || $submitted !== $expected) {
+            throw new RuntimeException('Prepared post ' . $field . ' mismatch.');
+        }
+
+        return $submitted;
+    }
+
+    /**
+     * @return array{string,string}
+     */
+    private function publicKeyForIdentity(string $authorIdentityId): array
+    {
+        $fingerprintLower = substr($authorIdentityId, strlen('openpgp:'));
+        $identity = $this->canonicalRepository->loadIdentity(CanonicalPathResolver::identity($fingerprintLower));
+        $publicKeyPath = CanonicalPathResolver::publicKey($identity->signerFingerprint);
+        if (!is_file($this->repositoryRoot . '/' . $publicKeyPath)) {
+            throw new RuntimeException('author_identity_id does not resolve to a stored public key.');
+        }
+
+        $publicKey = $this->canonicalRepository->loadPublicKey($publicKeyPath);
+
+        return [$publicKey->armoredKey, $identity->signerFingerprint];
     }
 
     private function assertWritableRepository(): void
@@ -1530,6 +1686,16 @@ class LocalWriteService
         $value = trim($value);
         if ($value === '' || preg_match('/[^A-Za-z0-9._:-]/', $value)) {
             throw new RuntimeException("{$field} is required and must be an ASCII token.");
+        }
+
+        return $value;
+    }
+
+    private function requireHexToken(string $value, string $field): string
+    {
+        $value = trim($value);
+        if (!preg_match('/^[a-f0-9]{32}$/', $value)) {
+            throw new RuntimeException("{$field} is required and must be a prepared post token.");
         }
 
         return $value;

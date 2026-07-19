@@ -1,7 +1,7 @@
 Post-ID: signed-test
 Created-At: 2026-07-19T20:00:00Z
 Board-Tags: general
-Author-Identity-ID: openpgp:test
+Author-Identity-ID: openpgp:15c2ef95baee78f4c635a43323b6ae7ec7af9919
 Subject: Signed test
 
 Signed body.

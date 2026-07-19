@@ -282,6 +282,8 @@ Acceptance:
 - Invalid signature creates no files and no commit.
 - Signature file is included in the same commit as the post record.
 
+Status: Implemented. Added `/api/create_prepared_post`, prepared-token loading and expiry enforcement, canonical hash and metadata matching, canonical author identity public-key lookup, detached OpenPGP verification, atomic post-plus-signature canonical commits, and smoke tests covering valid finalization, invalid signatures, expired tokens, committed signature paths, and the `/posts/<id>` signature link.
+
 ### Slice 5: Browser Signed Compose
 
 Work:

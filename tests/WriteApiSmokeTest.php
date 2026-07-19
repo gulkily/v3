@@ -1017,6 +1017,124 @@ PHP);
         assertSame('author_identity_id is required for signed prepare.', $payload['error']);
     }
 
+    public function testCreatePreparedPostVerifiesDetachedSignatureAndCommitsSignatureFile(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->installOpenPgpSignatureFixtureIdentity($repositoryRoot);
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $canonicalRecord = $this->readOpenPgpSignatureFixture('signed-post.txt');
+        $signature = $this->readOpenPgpSignatureFixture('signed-post.txt.asc');
+        $token = str_repeat('a', 32);
+        $this->storePreparedPostFixture($databasePath, $token, $canonicalRecord, [
+            'kind' => 'thread',
+            'post_id' => 'signed-test',
+            'thread_id' => 'signed-test',
+            'parent_id' => null,
+            'author_identity_id' => 'openpgp:15c2ef95baee78f4c635a43323b6ae7ec7af9919',
+            'created_at' => '2026-07-19T20:00:00Z',
+        ]);
+
+        $_POST = [
+            'prepare_token' => $token,
+            'post_id' => 'signed-test',
+            'record_path' => 'records/posts/signed-test.txt',
+            'author_identity_id' => 'openpgp:15c2ef95baee78f4c635a43323b6ae7ec7af9919',
+            'canonical_record' => $canonicalRecord,
+            'detached_signature' => $signature,
+        ];
+        $response = $this->renderMethod($application, 'POST', '/api/create_prepared_post');
+        $_POST = [];
+        $payload = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame('ok', $payload['status']);
+        assertSame('signed-test', $payload['post_id']);
+        assertSame('records/posts/signed-test.txt', $payload['record_path']);
+        assertSame('records/posts/signed-test.txt.asc', $payload['signature_path']);
+        assertTrue(strlen((string) $payload['commit_sha']) === 40);
+        assertSame($canonicalRecord, (string) file_get_contents($repositoryRoot . '/records/posts/signed-test.txt'));
+        assertSame($signature, (string) file_get_contents($repositoryRoot . '/records/posts/signed-test.txt.asc'));
+        assertFalse(is_file(dirname($databasePath) . '/prepared-posts/' . $token . '.json'));
+
+        $committedFiles = $this->gitOutput($repositoryRoot, 'show --name-only --format= ' . escapeshellarg((string) $payload['commit_sha']));
+        assertStringContains('records/posts/signed-test.txt', $committedFiles);
+        assertStringContains('records/posts/signed-test.txt.asc', $committedFiles);
+
+        $postPage = $this->renderMethod($application, 'GET', '/posts/signed-test');
+        assertStringContains('Source:', $postPage);
+        assertStringContains('Signature:', $postPage);
+        assertStringContains('/source/current/records/posts/signed-test.txt.asc', $postPage);
+    }
+
+    public function testCreatePreparedPostRejectsInvalidDetachedSignatureWithoutWritingFiles(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->installOpenPgpSignatureFixtureIdentity($repositoryRoot);
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $canonicalRecord = $this->readOpenPgpSignatureFixture('signed-post.txt');
+        $token = str_repeat('b', 32);
+        $this->storePreparedPostFixture($databasePath, $token, $canonicalRecord, [
+            'kind' => 'thread',
+            'post_id' => 'signed-test',
+            'thread_id' => 'signed-test',
+            'parent_id' => null,
+            'author_identity_id' => 'openpgp:15c2ef95baee78f4c635a43323b6ae7ec7af9919',
+            'created_at' => '2026-07-19T20:00:00Z',
+        ]);
+
+        $_POST = [
+            'prepare_token' => $token,
+            'post_id' => 'signed-test',
+            'record_path' => 'records/posts/signed-test.txt',
+            'author_identity_id' => 'openpgp:15c2ef95baee78f4c635a43323b6ae7ec7af9919',
+            'canonical_record' => $canonicalRecord,
+            'detached_signature' => str_replace('kipu', 'fail', $this->readOpenPgpSignatureFixture('signed-post.txt.asc')),
+        ];
+        $response = $this->renderMethod($application, 'POST', '/api/create_prepared_post');
+        $_POST = [];
+        $payload = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame('error', $payload['status']);
+        assertStringContains('Detached signature verification failed:', $payload['error']);
+        assertFalse(is_file($repositoryRoot . '/records/posts/signed-test.txt'));
+        assertFalse(is_file($repositoryRoot . '/records/posts/signed-test.txt.asc'));
+        assertTrue(is_file(dirname($databasePath) . '/prepared-posts/' . $token . '.json'));
+    }
+
+    public function testCreatePreparedPostRejectsExpiredPrepareToken(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->installOpenPgpSignatureFixtureIdentity($repositoryRoot);
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $canonicalRecord = $this->readOpenPgpSignatureFixture('signed-post.txt');
+        $token = str_repeat('c', 32);
+        $this->storePreparedPostFixture($databasePath, $token, $canonicalRecord, [
+            'kind' => 'thread',
+            'post_id' => 'signed-test',
+            'thread_id' => 'signed-test',
+            'parent_id' => null,
+            'author_identity_id' => 'openpgp:15c2ef95baee78f4c635a43323b6ae7ec7af9919',
+            'created_at' => '2026-07-19T20:00:00Z',
+            'expires_at' => '2026-01-01T00:00:00Z',
+        ]);
+
+        $_POST = [
+            'prepare_token' => $token,
+            'post_id' => 'signed-test',
+            'record_path' => 'records/posts/signed-test.txt',
+            'author_identity_id' => 'openpgp:15c2ef95baee78f4c635a43323b6ae7ec7af9919',
+            'canonical_record' => $canonicalRecord,
+            'detached_signature' => $this->readOpenPgpSignatureFixture('signed-post.txt.asc'),
+        ];
+        $response = $this->renderMethod($application, 'POST', '/api/create_prepared_post');
+        $_POST = [];
+        $payload = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame('error', $payload['status']);
+        assertSame('Prepared post has expired.', $payload['error']);
+        assertFalse(is_file($repositoryRoot . '/records/posts/signed-test.txt'));
+        assertFalse(is_file($repositoryRoot . '/records/posts/signed-test.txt.asc'));
+    }
+
     public function testUnicodeAuthoredTextFlagDoesNotWidenMachineFields(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -2643,6 +2761,58 @@ PHP);
     private function readFixturePublicKey(): string
     {
         return (string) file_get_contents(__DIR__ . '/fixtures/parity_minimal_v1/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc');
+    }
+
+    private function readOpenPgpSignatureFixture(string $name): string
+    {
+        return (string) file_get_contents(__DIR__ . '/fixtures/openpgp_signature/' . $name);
+    }
+
+    private function installOpenPgpSignatureFixtureIdentity(string $repositoryRoot): void
+    {
+        $fingerprintUpper = '15C2EF95BAEE78F4C635A43323B6AE7EC7AF9919';
+        $fingerprintLower = strtolower($fingerprintUpper);
+        $publicKey = $this->readOpenPgpSignatureFixture('public-key.asc');
+        $publicKeyPath = $repositoryRoot . '/records/public-keys/openpgp-' . $fingerprintUpper . '.asc';
+        $identityPath = $repositoryRoot . '/records/identity/identity-openpgp-' . $fingerprintLower . '.txt';
+        file_put_contents($publicKeyPath, $publicKey);
+        file_put_contents(
+            $identityPath,
+            "Post-ID: identity-openpgp-{$fingerprintLower}\n"
+            . "Board-Tags: identity\n"
+            . "Subject: identity bootstrap\n"
+            . "Username: signature-test\n"
+            . "Identity-ID: openpgp:{$fingerprintLower}\n"
+            . "Signer-Fingerprint: {$fingerprintUpper}\n"
+            . "Bootstrap-By-Post: root-001\n"
+            . "Bootstrap-By-Thread: root-001\n"
+            . "\n{$publicKey}"
+        );
+        $this->runCommand(
+            $repositoryRoot,
+            'git add records/public-keys/openpgp-' . $fingerprintUpper . '.asc records/identity/identity-openpgp-' . $fingerprintLower . '.txt'
+        );
+        $this->runCommand($repositoryRoot, 'git commit -m "Add signature fixture identity"');
+    }
+
+    /**
+     * @param array<string, mixed> $metadata
+     */
+    private function storePreparedPostFixture(string $databasePath, string $token, string $canonicalRecord, array $metadata): void
+    {
+        $directory = dirname($databasePath) . '/prepared-posts';
+        if (!is_dir($directory)) {
+            mkdir($directory, 0700, true);
+        }
+
+        $payload = array_merge([
+            'prepare_token' => $token,
+            'record_path' => 'records/posts/signed-test.txt',
+            'canonical_sha256' => hash('sha256', $canonicalRecord),
+            'canonical_record' => $canonicalRecord,
+            'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 600),
+        ], $metadata);
+        file_put_contents($directory . '/' . $token . '.json', json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) . "\n");
     }
 
     private function renderMethod(Application $application, string $method, string $path): string

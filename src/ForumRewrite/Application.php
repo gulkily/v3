@@ -92,6 +92,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/create_prepared_post') {
+            $this->handleCreatePreparedPost($method, $query);
+            return;
+        }
+
         if ($path === '/api/analyze_post') {
             $this->handleAnalyzePost($method, $query);
             return;
@@ -2811,6 +2816,37 @@ final class Application
             $result = $kind === 'reply'
                 ? $this->writer()->prepareReply($input)
                 : $this->writer()->prepareThread($input);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
+            $headers = $this->serverTimingHeaders($result);
+            unset($result['timings']);
+            $this->sendJson($result, 200, $headers);
+        } catch (RuntimeException $exception) {
+            $this->sendJson(
+                ['status' => 'error', 'error' => $exception->getMessage()],
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleCreatePreparedPost(string $method, array $query): void
+    {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+        try {
+            $result = $this->writer()->createPreparedPost($input);
             $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
             $headers = $this->serverTimingHeaders($result);
             unset($result['timings']);
