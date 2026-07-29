@@ -20,7 +20,7 @@
 - Verification approach: Manually load a page with `?density=compact`, confirm `document.documentElement.dataset.threadDensity === "compact"` via browser dev tools, reload without the param, and confirm the attribute persists from `localStorage`.
 - Risks or open questions: Ensure the added logic doesn't interfere with the existing theme script sharing the same `<script>` block; keep query-param parsing defensive (invalid/missing values fall back silently, matching the theme script's `try/catch` pattern).
 - Canonical components/API contracts touched: `templates/layout.php`; no new routes.
-- Status: Not started.
+- Status: Implemented. Extended the existing inline theme script in `templates/layout.php` with a second `try/catch` block that reads a `density` query param (persisting valid values to `localStorage['zenmemes-thread-density']`) or falls back to the stored value, setting `data-thread-density="compact"` on `<html>` before paint. Full test suite passes.
 
 ## Stage 3
 - Goal: Add the interactive toggle button, wired to the storage mechanism from Stage 2.

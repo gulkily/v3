@@ -14,6 +14,22 @@
         }
       } catch (error) {
       }
+
+      try {
+        var densityStorageKey = 'zenmemes-thread-density';
+        var densityParam = new URLSearchParams(location.search).get('density');
+        var density;
+        if (densityParam === 'compact' || densityParam === 'comfortable') {
+          density = densityParam;
+          localStorage.setItem(densityStorageKey, density);
+        } else {
+          density = localStorage.getItem(densityStorageKey);
+        }
+        if (density === 'compact') {
+          document.documentElement.setAttribute('data-thread-density', 'compact');
+        }
+      } catch (error) {
+      }
     })();
   </script>
 <?php if ($appVersionNotificationEnabled): ?>
