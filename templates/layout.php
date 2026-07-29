@@ -43,6 +43,7 @@
 <?php endforeach; ?>
   <script src="<?= $e($composeDraftClearScriptPath) ?>" defer></script>
   <script src="<?= $e($themeToggleScriptPath) ?>" defer></script>
+  <script src="<?= $e($threadDensityToggleScriptPath) ?>" defer></script>
 <?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>
 <?php endif; ?>
@@ -62,6 +63,7 @@
       <p class="eyebrow"><?= $e($siteName) ?></p>
       <div class="site-header-actions">
 <?= $indent($partial('partials/nav.php'), 4) ?>
+<?= $indent($partial('partials/thread_density_toggle.php'), 4) ?>
 <?= $indent($partial('partials/theme_menu.php'), 4) ?>
       </div>
     </header>

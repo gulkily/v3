@@ -29,7 +29,7 @@
 - Verification approach: Load any page, click the toggle, confirm the `data-thread-density` attribute and button `aria-pressed`/label update; reload and confirm the state persists.
 - Risks or open questions: None expected; button has no visual effect on card layout until Stage 4 adds CSS, so this stage is purely mechanical and independently verifiable.
 - Canonical components/API contracts touched: `src/ForumRewrite/View/TemplateRenderer.php`, `templates/layout.php`, new `templates/partials/thread_density_toggle.php`, new `public/assets/thread_density_toggle.js`.
-- Status: Not started.
+- Status: Implemented. Added the toggle button partial and `thread_density_toggle.js` (modeled on `theme_toggle.js`), wired `threadDensityToggleScriptPath` into `TemplateRenderer.php` and the `<script defer>` tag plus partial placement (next to `theme_menu.php`) in `layout.php`. `php -l` and `node --check` pass on new files; full test suite passes.
 
 ## Stage 4
 - Goal: Make compact mode visually effective by hiding body previews and tightening spacing on thread-listing pages only.

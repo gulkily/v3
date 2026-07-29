@@ -63,6 +63,7 @@ final class TemplateRenderer
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
             'siteCssPath' => $this->assetPath('/assets/site.css'),
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
+            'threadDensityToggleScriptPath' => $this->assetPath('/assets/thread_density_toggle.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
             'themes' => ThemeRegistry::all(),
