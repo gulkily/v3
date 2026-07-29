@@ -491,6 +491,8 @@ pre {
 
 .thread-density-toggle {
   display: inline-block;
+  width: auto;
+  margin-top: 0;
   padding: 0.45rem 0.7rem;
   border: 1px solid var(--line);
   background: var(--input-bg);

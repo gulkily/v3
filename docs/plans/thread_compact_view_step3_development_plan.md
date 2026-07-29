@@ -53,7 +53,9 @@
 - Verification approach: Run `php -l` on all changed PHP files and the full local smoke/test suite (`php tests/run.php` or equivalent); manually re-run the Stage 4 browser walkthrough end to end (toggle, reload persistence, `?density=` override, clean `localStorage` first-visit behavior).
 - Risks or open questions: If the full suite surfaces an unrelated pre-existing failure, note it in this plan rather than expanding scope to fix it.
 - Canonical components/API contracts touched: `tests/LocalAppSmokeTest.php`; no runtime contract changes.
-- Status: Not started.
+- Status: Implemented. Added assertions for `data-role="thread-density-toggle"`, the `thread_density_toggle.js` fingerprinted asset, and `class="card thread-card"` on both board (`/threads/?view=all&sort=newest`) and tag-page routes. Full test suite passes.
+  Manual browser verification (Playwright/Chromium against `./v3 start`, screenshots taken): toggle hides body previews and tightens spacing on both board and tag pages; state persists across reload and across pages via `localStorage`; `?density=compact` applies immediately on a fresh session and then persists without the param on subsequent navigation; no console errors.
+  Found and fixed one bug during manual verification: the new `.thread-density-toggle` button inherited the stylesheet's generic `button { width: 100%; margin-top: 0.35rem; }` rule (meant for form buttons), which combined with `flex: 0 0 auto` (flex-basis: auto resolves to the specified width) stretched the button to fill the header row. Fixed by adding explicit `width: auto; margin-top: 0;`, matching the existing `.theme-menu__trigger` pattern that guards against the same rule.
 
 ## Planned Commit Cadence
 - Commit 1: Add thread compact view plans (this document plus `thread_compact_view_plan_v1.md`).
