@@ -2325,9 +2325,25 @@ final class Application
         $this->sendDownload(
             $download['path'],
             $download['contentType'],
-            SiteConfig::SITE_NAME . '-repository-' . $this->repositoryShortCommit() . '.' . $download['extension'],
+            $this->repositoryArchiveDownloadFilename($download['extension']),
             true
         );
+    }
+
+    private function repositoryArchiveDownloadFilename(string $extension): string
+    {
+        return SiteConfig::SITE_NAME
+            . '-repository-'
+            . $this->downloadTimestamp()
+            . '-'
+            . $this->repositoryShortCommit()
+            . '.'
+            . $extension;
+    }
+
+    private function downloadTimestamp(): string
+    {
+        return gmdate('Y-m-d_H-i-s\Z');
     }
 
     /**

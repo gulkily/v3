@@ -883,6 +883,24 @@ final class LocalAppSmokeTest
         assertStringContains('SQLite format 3', substr($sqliteDatabase, 0, 32));
     }
 
+    public function testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+        $method = new ReflectionMethod(Application::class, 'repositoryArchiveDownloadFilename');
+        $method->setAccessible(true);
+
+        $filename = $method->invoke($application, 'tar.gz');
+
+        assertStringMatches(
+            '/^zenmemes-repository-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}Z-[a-f0-9]+\.tar\.gz$/',
+            $filename
+        );
+    }
+
     public function testIdentityHintRouteSetsCookieValue(): void
     {
         @unlink($this->databasePath);
