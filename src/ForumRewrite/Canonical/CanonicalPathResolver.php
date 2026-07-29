@@ -11,6 +11,30 @@ final class CanonicalPathResolver
         return 'records/posts/' . $postId . '.txt';
     }
 
+    public static function datedPost(string $postId, string $createdAt): string
+    {
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})T/', $createdAt, $matches) !== 1) {
+            return self::post($postId);
+        }
+
+        return 'records/posts/' . $matches[1] . '/' . $matches[2] . '/' . $matches[3] . '/' . $postId . '.txt';
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function postCandidates(string $postId): array
+    {
+        $paths = [];
+        if (preg_match('/-(\d{4})(\d{2})(\d{2})\d{6}-/', $postId, $matches) === 1) {
+            $paths[] = 'records/posts/' . $matches[1] . '/' . $matches[2] . '/' . $matches[3] . '/' . $postId . '.txt';
+        }
+
+        $paths[] = self::post($postId);
+
+        return array_values(array_unique($paths));
+    }
+
     public static function identity(string $lowercaseFingerprint): string
     {
         return 'records/identity/identity-openpgp-' . $lowercaseFingerprint . '.txt';

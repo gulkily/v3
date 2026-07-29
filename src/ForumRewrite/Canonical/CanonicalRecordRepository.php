@@ -22,6 +22,7 @@ final class CanonicalRecordRepository
     public function loadPost(string $relativePath): PostRecord
     {
         $this->assertPathIsWithinFamily($relativePath, 'records/posts/');
+        $relativePath = $this->resolvePostPath($relativePath);
         $contents = $this->read($relativePath);
 
         try {
@@ -39,12 +40,39 @@ final class CanonicalRecordRepository
             $record = $this->postParser->parse($this->withCreatedAtHeader($contents, $legacyCreatedAt));
         }
 
-        $expectedPath = CanonicalPathResolver::post($record->postId);
-        if ($relativePath !== $expectedPath) {
+        if (!$this->isAllowedPostPath($relativePath, $record)) {
             throw new CanonicalRecordParseException('Post record path must match Post-ID.');
         }
 
         return $record;
+    }
+
+    private function resolvePostPath(string $relativePath): string
+    {
+        if (is_file($this->repositoryRoot . '/' . $relativePath)) {
+            return $relativePath;
+        }
+
+        if (preg_match('#^records/posts/([^/]+)\.txt$#', $relativePath, $matches) !== 1) {
+            return $relativePath;
+        }
+
+        foreach (CanonicalPathResolver::postCandidates($matches[1]) as $candidate) {
+            if (is_file($this->repositoryRoot . '/' . $candidate)) {
+                return $candidate;
+            }
+        }
+
+        return $relativePath;
+    }
+
+    private function isAllowedPostPath(string $relativePath, PostRecord $record): bool
+    {
+        if ($relativePath === CanonicalPathResolver::post($record->postId)) {
+            return true;
+        }
+
+        return $relativePath === CanonicalPathResolver::datedPost($record->postId, $record->createdAt);
     }
 
     public function loadIdentity(string $relativePath): IdentityBootstrapRecord

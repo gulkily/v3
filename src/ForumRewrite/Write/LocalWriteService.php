@@ -62,7 +62,7 @@ class LocalWriteService
             $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId);
 
             $record = (new PostRecordParser())->parse($contents);
-            $recordPath = 'records/posts/' . $postId . '.txt';
+            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
             $threadLabels = $this->extractThreadLabelsFromBody($body);
             $labelRecordPath = null;
             $phaseStartedAt = hrtime(true);
@@ -119,7 +119,7 @@ class LocalWriteService
             $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId);
 
             $record = (new PostRecordParser())->parse($contents);
-            $recordPath = 'records/posts/' . $postId . '.txt';
+            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
             $threadLabels = $this->extractThreadLabelsFromBody($body);
             $labelRecordPath = null;
             $phaseStartedAt = hrtime(true);
@@ -172,7 +172,7 @@ class LocalWriteService
             $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId);
 
             (new PostRecordParser())->parse($contents);
-            $recordPath = CanonicalPathResolver::post($postId);
+            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
             $prepared = $this->storePreparedPost($recordPath, $contents, [
                 'kind' => 'thread',
                 'post_id' => $postId,
@@ -217,7 +217,7 @@ class LocalWriteService
             $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId);
 
             (new PostRecordParser())->parse($contents);
-            $recordPath = CanonicalPathResolver::post($postId);
+            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
             $prepared = $this->storePreparedPost($recordPath, $contents, [
                 'kind' => 'reply',
                 'post_id' => $postId,
@@ -269,7 +269,7 @@ class LocalWriteService
                 'author_identity_id'
             );
 
-            if (is_file($this->repositoryRoot . '/' . $recordPath) || is_file($this->repositoryRoot . '/' . $recordPath . '.asc')) {
+            if ($this->postTargetExists($postId)) {
                 throw new RuntimeException('Prepared post target already exists.');
             }
 
@@ -281,7 +281,7 @@ class LocalWriteService
             }
 
             $record = (new PostRecordParser())->parse($canonicalRecord);
-            if ($record->postId !== $postId || CanonicalPathResolver::post($record->postId) !== $recordPath) {
+            if ($record->postId !== $postId || CanonicalPathResolver::datedPost($record->postId, $record->createdAt) !== $recordPath) {
                 throw new RuntimeException('Prepared post canonical record does not match target path.');
             }
             if (($record->threadId ?? $record->postId) !== $threadId || $record->authorIdentityId !== $authorIdentityId) {
@@ -634,7 +634,7 @@ class LocalWriteService
                 . "\nApprove-Identity-ID: {$targetIdentityId}\n";
 
             $record = (new PostRecordParser())->parse($contents);
-            $recordPath = CanonicalPathResolver::post($postId);
+            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
             $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $contents);
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -1287,6 +1287,17 @@ class LocalWriteService
         return $submitted;
     }
 
+    private function postTargetExists(string $postId): bool
+    {
+        foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
+            if (is_file($this->repositoryRoot . '/' . $candidate) || is_file($this->repositoryRoot . '/' . $candidate . '.asc')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * @return array{string,string}
      */
@@ -1609,7 +1620,7 @@ class LocalWriteService
             . "\nAutomatic account bootstrap anchor.\n";
 
         (new PostRecordParser())->parse($contents);
-        $bootstrapPath = CanonicalPathResolver::post($bootstrapPostId);
+        $bootstrapPath = CanonicalPathResolver::datedPost($bootstrapPostId, $createdAt);
         $this->writeFile($bootstrapPath, $contents);
 
         return [$bootstrapPostId, $bootstrapPostId, $bootstrapPath];

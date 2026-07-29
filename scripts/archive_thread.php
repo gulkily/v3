@@ -76,8 +76,8 @@ try {
  */
 function discoverThreadComponentPaths(string $repositoryRoot, CanonicalRecordRepository $repository, string $threadId): array
 {
-    $rootPath = CanonicalPathResolver::post($threadId);
-    if (!is_file($repositoryRoot . '/' . $rootPath)) {
+    $rootPath = existingPostPath($repositoryRoot, $threadId);
+    if ($rootPath === null) {
         throw new RuntimeException('Thread root post does not exist: ' . $threadId);
     }
 
@@ -89,8 +89,7 @@ function discoverThreadComponentPaths(string $repositoryRoot, CanonicalRecordRep
     $paths = [$rootPath];
     $threadPostIds = [$threadId => true];
 
-    foreach (glob($repositoryRoot . '/records/posts/*.txt') ?: [] as $path) {
-        $relativePath = repositoryRelativePath($repositoryRoot, $path);
+    foreach (postRecordPaths($repositoryRoot) as $relativePath) {
         if ($relativePath === $rootPath) {
             continue;
         }
@@ -372,7 +371,7 @@ function removeStaleStaticArtifacts(string $artifactRoot, string $threadId, arra
 {
     $postIds = [$threadId => true];
     foreach ($componentPaths as $relativePath) {
-        if (preg_match('#^records/posts/([^/]+)\.txt$#', $relativePath, $matches) === 1) {
+        if (preg_match('#^records/posts/(?:\d{4}/\d{2}/\d{2}/)?([^/]+)\.txt$#', $relativePath, $matches) === 1) {
             $postIds[(string) $matches[1]] = true;
         }
     }
@@ -421,6 +420,50 @@ function repositoryRelativePath(string $repositoryRoot, string $path): string
     }
 
     return substr($path, strlen($prefix));
+}
+
+/**
+ * @return list<string>
+ */
+function postRecordPaths(string $repositoryRoot): array
+{
+    $paths = [];
+    $postsRoot = $repositoryRoot . '/records/posts';
+    if (!is_dir($postsRoot)) {
+        return [];
+    }
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($postsRoot, FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($iterator as $item) {
+        if (!$item->isFile() || !str_ends_with($item->getFilename(), '.txt')) {
+            continue;
+        }
+
+        $paths[] = repositoryRelativePath($repositoryRoot, $item->getPathname());
+    }
+
+    sort($paths);
+
+    return $paths;
+}
+
+function existingPostPath(string $repositoryRoot, string $postId): ?string
+{
+    foreach (CanonicalPathResolver::postCandidates($postId) as $relativePath) {
+        if (is_file($repositoryRoot . '/' . $relativePath)) {
+            return $relativePath;
+        }
+    }
+
+    foreach (postRecordPaths($repositoryRoot) as $relativePath) {
+        if (basename($relativePath) === $postId . '.txt') {
+            return $relativePath;
+        }
+    }
+
+    return null;
 }
 
 function sourceCommit(string $repositoryRoot): ?string

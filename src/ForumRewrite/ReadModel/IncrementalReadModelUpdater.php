@@ -315,7 +315,7 @@ class IncrementalReadModelUpdater
             $pdo,
             $bootstrapPost,
             $boardTagsJson,
-            $this->sourceCommitShaForPath(CanonicalPathResolver::post($bootstrapPost->postId)) ?? 'no-git'
+            $this->sourceCommitShaForPath($this->postSourcePath($bootstrapPost->postId)) ?? 'no-git'
         );
         if ($bootstrapPost->authorIdentityId !== null && !$this->isHiddenBootstrapBoardTags($bootstrapPost->boardTags)) {
             $this->updateProfileCounts($pdo, $bootstrapPost);
@@ -856,9 +856,53 @@ class IncrementalReadModelUpdater
             'author_username_token' => $author['username_token'],
             'author_label' => $author['label'],
             'author_is_approved' => $author['is_approved'],
-            'source_path' => CanonicalPathResolver::post($record->postId),
+            'source_path' => $this->postSourcePath($record->postId),
             'source_commit_sha' => $commitSha,
         ]);
+    }
+
+    private function postSourcePath(string $postId): string
+    {
+        foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
+            if (is_file($this->repositoryRoot . '/' . $candidate)) {
+                return $candidate;
+            }
+        }
+
+        foreach ($this->postRecordPaths() as $candidate) {
+            if (basename($candidate) === $postId . '.txt') {
+                return $candidate;
+            }
+        }
+
+        return CanonicalPathResolver::post($postId);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function postRecordPaths(): array
+    {
+        $paths = [];
+        $postsRoot = $this->repositoryRoot . '/records/posts';
+        if (!is_dir($postsRoot)) {
+            return [];
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($postsRoot, \FilesystemIterator::SKIP_DOTS)
+        );
+        foreach ($iterator as $item) {
+            if (!$item->isFile() || !str_ends_with($item->getFilename(), '.txt')) {
+                continue;
+            }
+
+            $paths[] = str_replace('\\', '/', substr($item->getPathname(), strlen($this->repositoryRoot) + 1));
+        }
+
+        sort($paths);
+
+        return $paths;
     }
 
     private function updateProfileCounts(PDO $pdo, PostRecord $record): void

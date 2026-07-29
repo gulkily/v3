@@ -115,8 +115,20 @@ function normalizePath(string $path): string
 function postRecordPaths(string $repositoryRoot): array
 {
     $paths = [];
-    foreach (glob($repositoryRoot . '/records/posts/*.txt') ?: [] as $path) {
-        $paths[] = 'records/posts/' . basename($path);
+    $postsRoot = $repositoryRoot . '/records/posts';
+    if (!is_dir($postsRoot)) {
+        return [];
+    }
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($postsRoot, FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($iterator as $item) {
+        if (!$item->isFile() || !str_ends_with($item->getFilename(), '.txt')) {
+            continue;
+        }
+
+        $paths[] = str_replace('\\', '/', substr($item->getPathname(), strlen($repositoryRoot) + 1));
     }
 
     sort($paths);

@@ -44,9 +44,9 @@ if ($threadId === null) {
     exit(1);
 }
 
-$rootPath = CanonicalPathResolver::post($threadId);
+$rootPath = existingPostPath($repositoryRoot, $threadId);
 
-if (!is_file($repositoryRoot . '/' . $rootPath)) {
+if ($rootPath === null) {
     fwrite(STDERR, "Thread root post does not exist: {$threadId}\n");
     fwrite(STDERR, "Repository: {$repositoryRoot}\n");
     exit(1);
@@ -205,9 +205,8 @@ function resolveTargetInfo(string $repositoryRoot, CanonicalRecordRepository $re
     sort($matches);
 
     if ($matches === []) {
-        $postPath = CanonicalPathResolver::post($target);
         return [
-            'path' => $postPath,
+            'path' => CanonicalPathResolver::post($target),
             'thread_id' => $target,
             'metadata' => [
                 'target' => $target,
@@ -335,7 +334,7 @@ function loadTargetInfo(string $repositoryRoot, CanonicalRecordRepository $repos
 
 function resolvePostThreadId(string $repositoryRoot, CanonicalRecordRepository $repository, string $postId): ?string
 {
-    $relativePath = CanonicalPathResolver::post($postId);
+    $relativePath = existingPostPath($repositoryRoot, $postId) ?? CanonicalPathResolver::post($postId);
     try {
         if (is_file($repositoryRoot . '/' . $relativePath)) {
             $record = $repository->loadPost($relativePath);
@@ -358,11 +357,10 @@ function resolvePostThreadId(string $repositoryRoot, CanonicalRecordRepository $
  */
 function candidateRecordPaths(string $target): array
 {
-    $paths = [
-        CanonicalPathResolver::post($target),
+    $paths = array_merge(CanonicalPathResolver::postCandidates($target), [
         CanonicalPathResolver::threadLabel($target),
         CanonicalPathResolver::postReaction($target),
-    ];
+    ]);
 
     if (preg_match('/^identity-openpgp-([a-fA-F0-9]{40})$/', $target, $matches) === 1) {
         $paths[] = CanonicalPathResolver::identity(strtolower($matches[1]));
@@ -497,13 +495,12 @@ function loadReplyPaths(
     }
 
     $replyPaths = [];
-    foreach (glob($repositoryRoot . '/records/posts/*.txt') ?: [] as $path) {
-        $relativePath = repositoryRelativePath($repositoryRoot, $path);
+    foreach (postRecordPaths($repositoryRoot) as $relativePath) {
         if ($relativePath === $rootPath) {
             continue;
         }
 
-        if (postHeaderThreadId($path) !== $threadId) {
+        if (postHeaderThreadId($repositoryRoot . '/' . $relativePath) !== $threadId) {
             continue;
         }
 
@@ -552,8 +549,8 @@ function loadReadModelReplyPaths(string $repositoryRoot, string $databasePath, s
             return null;
         }
 
-        $relativePath = CanonicalPathResolver::post($postId);
-        if (!is_file($repositoryRoot . '/' . $relativePath)) {
+        $relativePath = existingPostPath($repositoryRoot, $postId);
+        if ($relativePath === null) {
             return null;
         }
 
@@ -734,6 +731,50 @@ function repositoryRelativePath(string $repositoryRoot, string $path): string
     }
 
     return ltrim($path, '/');
+}
+
+/**
+ * @return list<string>
+ */
+function postRecordPaths(string $repositoryRoot): array
+{
+    $paths = [];
+    $postsRoot = $repositoryRoot . '/records/posts';
+    if (!is_dir($postsRoot)) {
+        return [];
+    }
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($postsRoot, FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($iterator as $item) {
+        if (!$item->isFile() || !str_ends_with($item->getFilename(), '.txt')) {
+            continue;
+        }
+
+        $paths[] = repositoryRelativePath($repositoryRoot, $item->getPathname());
+    }
+
+    sort($paths);
+
+    return $paths;
+}
+
+function existingPostPath(string $repositoryRoot, string $postId): ?string
+{
+    foreach (CanonicalPathResolver::postCandidates($postId) as $relativePath) {
+        if (is_file($repositoryRoot . '/' . $relativePath)) {
+            return $relativePath;
+        }
+    }
+
+    foreach (postRecordPaths($repositoryRoot) as $relativePath) {
+        if (basename($relativePath) === $postId . '.txt') {
+            return $relativePath;
+        }
+    }
+
+    return null;
 }
 
 function normalizePath(string $path): string

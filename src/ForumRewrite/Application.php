@@ -1632,7 +1632,7 @@ final class Application
      */
     private function withPostSourceMetadata(array $post): array
     {
-        $sourcePath = CanonicalPathResolver::post((string) $post['post_id']);
+        $sourcePath = $this->postSourcePath((string) $post['post_id']);
         $sourceCommitSha = $this->sourceCommitShaForPost((string) $post['post_id'], $sourcePath);
         $signature = $this->sourceSignatureLink($sourcePath);
 
@@ -1649,6 +1649,65 @@ final class Application
         );
 
         return $post;
+    }
+
+    private function postSourcePath(string $postId): string
+    {
+        $stmt = $this->pdo()->prepare(
+            'SELECT source_path
+             FROM activity
+             WHERE post_id = :post_id
+               AND kind IN (\'thread\', \'reply\')
+               AND source_path IS NOT NULL
+             ORDER BY id ASC
+             LIMIT 1'
+        );
+        $stmt->execute(['post_id' => $postId]);
+        $value = $stmt->fetchColumn();
+        if (is_string($value) && $value !== '') {
+            return $value;
+        }
+
+        foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
+            if (is_file($this->repositoryRoot . '/' . $candidate)) {
+                return $candidate;
+            }
+        }
+
+        foreach ($this->postRecordPaths() as $candidate) {
+            if (basename($candidate) === $postId . '.txt') {
+                return $candidate;
+            }
+        }
+
+        return CanonicalPathResolver::post($postId);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function postRecordPaths(): array
+    {
+        $paths = [];
+        $postsRoot = $this->repositoryRoot . '/records/posts';
+        if (!is_dir($postsRoot)) {
+            return [];
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($postsRoot, \FilesystemIterator::SKIP_DOTS)
+        );
+        foreach ($iterator as $item) {
+            if (!$item->isFile() || !str_ends_with($item->getFilename(), '.txt')) {
+                continue;
+            }
+
+            $paths[] = str_replace('\\', '/', substr($item->getPathname(), strlen($this->repositoryRoot) + 1));
+        }
+
+        sort($paths);
+
+        return $paths;
     }
 
     private function sourceCommitShaForPost(string $postId, string $sourcePath): string
@@ -4359,7 +4418,7 @@ final class Application
 
         return $relativePath === 'records/instance/public.txt'
             || $relativePath === 'records/instance/feature-flags.txt'
-            || preg_match('#^records/posts/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
+            || preg_match('#^records/posts/(?:\d{4}/\d{2}/\d{2}/)?[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/thread-labels/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/post-reactions/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/identity/identity-openpgp-[A-Fa-f0-9]{40}\.txt$#', $relativePath) === 1

@@ -81,7 +81,7 @@ final class AgentIdentityService
         (new ApprovalSeedRecordParser())->parse($approvalContents);
 
         $written = [
-            CanonicalPathResolver::post($bootstrapPostId) => $bootstrapContents,
+            CanonicalPathResolver::datedPost($bootstrapPostId, $createdAt) => $bootstrapContents,
             CanonicalPathResolver::publicKey($fingerprintUpper) => $publicKey,
             CanonicalPathResolver::identity($fingerprintLower) => $identityContents,
             CanonicalPathResolver::approvalSeed($fingerprintLower) => $approvalContents,

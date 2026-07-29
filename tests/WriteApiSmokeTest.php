@@ -8,6 +8,7 @@ use ForumRewrite\Application;
 use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
@@ -72,14 +73,16 @@ final class WriteApiSmokeTest
 
         assertStringContains('status=ok', $threadResponse);
         assertTrue(strlen($threadCommitSha) === 40);
-        assertTrue(is_file($repositoryRoot . '/records/posts/' . $threadId . '.txt'));
-        assertStringContains('Created-At: ', (string) file_get_contents($repositoryRoot . '/records/posts/' . $threadId . '.txt'));
+        $threadRecordPath = $this->canonicalPostPath($repositoryRoot, $threadId);
+        assertTrue(preg_match('#^records/posts/\d{4}/\d{2}/\d{2}/' . preg_quote($threadId, '#') . '\.txt$#', $threadRecordPath) === 1);
+        assertStringContains('Created-At: ', (string) file_get_contents($repositoryRoot . '/' . $threadRecordPath));
         assertStringContains('New Thread', $threadPage);
         assertFalse(is_file($artifactRoot . '/index.html'));
         assertStringContains('status=ok', $replyResponse);
         assertTrue(strlen($replyCommitSha) === 40);
-        assertTrue(is_file($repositoryRoot . '/records/posts/' . $replyId . '.txt'));
-        assertStringContains('Created-At: ', (string) file_get_contents($repositoryRoot . '/records/posts/' . $replyId . '.txt'));
+        $replyRecordPath = $this->canonicalPostPath($repositoryRoot, $replyId);
+        assertTrue(preg_match('#^records/posts/\d{4}/\d{2}/\d{2}/' . preg_quote($replyId, '#') . '\.txt$#', $replyRecordPath) === 1);
+        assertStringContains('Created-At: ', (string) file_get_contents($repositoryRoot . '/' . $replyRecordPath));
         assertStringContains('Reply body', $postPage);
         assertStringContains('by guest on <time datetime="', $postPage);
         assertFalse(is_file($artifactRoot . '/threads/' . $threadId . '.html'));
@@ -104,10 +107,10 @@ final class WriteApiSmokeTest
 
             $_COOKIE = [];
             $first = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
-            $postCountAfterFirstAnalyze = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+            $postCountAfterFirstAnalyze = $this->countCanonicalPostFiles($repositoryRoot);
             $_COOKIE = ['identity_hint' => 'guest'];
             $second = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
-            $postCountAfterSecondAnalyze = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+            $postCountAfterSecondAnalyze = $this->countCanonicalPostFiles($repositoryRoot);
             $_COOKIE = [];
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId) . '?created_post_id=' . rawurlencode($postId));
             $_COOKIE = [];
@@ -122,7 +125,7 @@ final class WriteApiSmokeTest
             $generatedRow = $pdo->query('SELECT provider, provider_model, raw_response_json FROM post_generated_responses')->fetch();
             $rawResponse = json_decode((string) $generatedRow['raw_response_json'], true);
             $agentPostId = (string) $first['agent_reply_post_id'];
-            $replyRecord = (string) file_get_contents($repositoryRoot . '/records/posts/' . $agentPostId . '.txt');
+            $replyRecord = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $agentPostId));
 
             assertSame('ok', $first['status']);
             assertSame('complete', $first['analysis_status']);
@@ -439,14 +442,14 @@ PHP);
             $postId = $this->createAnalyzedThread($application, $databasePath, [
                 'respondability' => ['overall_score' => 0.4],
             ]);
-            $postCountBefore = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+            $postCountBefore = $this->countCanonicalPostFiles($repositoryRoot);
 
             $_COOKIE = [];
             $anonymous = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = ['identity_hint' => 'guest'];
             $approved = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = [];
-            $postCountAfter = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+            $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
             $pdo = new PDO('sqlite:' . $databasePath);
 
             assertSame(false, $anonymous['agent_reply_generation_allowed']);
@@ -512,12 +515,12 @@ PHP);
 
             $first = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $agentPostId = (string) $first['agent_post_id'];
-            $postCountAfterFirst = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+            $postCountAfterFirst = $this->countCanonicalPostFiles($repositoryRoot);
             $second = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
-            $postCountAfter = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+            $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
             $pdo = new PDO('sqlite:' . $databasePath);
             $row = $pdo->query('SELECT status, provider, response_text, agent_post_id, agent_identity_id, agent_profile_slug, posted_at FROM post_generated_responses')->fetch();
-            $replyRecord = (string) file_get_contents($repositoryRoot . '/records/posts/' . $agentPostId . '.txt');
+            $replyRecord = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $agentPostId));
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
             $createdThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId) . '?created_post_id=' . rawurlencode($postId));
             $agentProfile = $this->renderMethod($application, 'GET', '/profiles/' . rawurlencode((string) $row['agent_profile_slug']));
@@ -583,7 +586,7 @@ PHP);
             $statement = $pdo->prepare('SELECT response_text, agent_post_id FROM post_generated_responses WHERE target_post_id = :post_id');
             $statement->execute(['post_id' => $postId]);
             $row = $statement->fetch();
-            $replyRecord = (string) file_get_contents($repositoryRoot . '/records/posts/' . $row['agent_post_id'] . '.txt');
+            $replyRecord = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, (string) $row['agent_post_id']));
             $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode((string) $row['agent_post_id']));
 
             assertSame('generated', $response['generation_status']);
@@ -656,10 +659,10 @@ PHP);
                 'content_hash' => $contentHash,
                 'analysis_hash' => 'already-running',
             ]);
-            $postCountBefore = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+            $postCountBefore = $this->countCanonicalPostFiles($repositoryRoot);
 
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
-            $postCountAfter = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+            $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
             $row = $store->findByTarget($postId, $contentHash);
 
             assertSame('ok', $response['status']);
@@ -710,11 +713,11 @@ PHP);
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
             $postId = $this->createAnalyzedThread($application, $databasePath);
-            $postCountBefore = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+            $postCountBefore = $this->countCanonicalPostFiles($repositoryRoot);
 
             $analysis = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
-            $postCountAfter = count(glob($repositoryRoot . '/records/posts/*.txt') ?: []);
+            $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
             $pdo = new PDO('sqlite:' . $databasePath);
 
             assertSame(false, $analysis['agent_reply_generation_allowed']);
@@ -819,7 +822,7 @@ PHP);
 
         $bootstrapPostId = $this->extractValue($response, 'bootstrap_post_id');
         $bootstrapThreadId = $this->extractValue($response, 'bootstrap_thread_id');
-        $bootstrapRecord = (string) file_get_contents($repositoryRoot . '/records/posts/' . $bootstrapPostId . '.txt');
+        $bootstrapRecord = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $bootstrapPostId));
         $board = $this->renderMethod($application, 'GET', '/');
         $activity = $this->renderMethod($application, 'GET', '/activity/?view=all');
         $identityActivity = $this->renderMethod($application, 'GET', '/activity/?view=identity');
@@ -969,7 +972,7 @@ PHP);
         assertSame('ok', $payload['status']);
         assertStringContains('thread-', (string) $payload['post_id']);
         assertSame($payload['post_id'], $payload['thread_id']);
-        assertSame('records/posts/' . $payload['post_id'] . '.txt', $payload['record_path']);
+        assertTrue(preg_match('#^records/posts/\d{4}/\d{2}/\d{2}/' . preg_quote((string) $payload['post_id'], '#') . '\.txt$#', (string) $payload['record_path']) === 1);
         assertStringContains('Post-ID: ' . $payload['post_id'] . "\n", $payload['canonical_record']);
         assertStringContains("Author-Identity-ID: {$identityId}\n", $payload['canonical_record']);
         assertStringContains("Subject: Prepared Thread\n\nPrepared body\n", $payload['canonical_record']);
@@ -994,7 +997,7 @@ PHP);
         assertSame('ok', $payload['status']);
         assertStringContains('reply-', (string) $payload['post_id']);
         assertSame('root-001', $payload['thread_id']);
-        assertSame('records/posts/' . $payload['post_id'] . '.txt', $payload['record_path']);
+        assertTrue(preg_match('#^records/posts/\d{4}/\d{2}/\d{2}/' . preg_quote((string) $payload['post_id'], '#') . '\.txt$#', (string) $payload['record_path']) === 1);
         assertStringContains("Thread-ID: root-001\nParent-ID: root-001\n", $payload['canonical_record']);
         assertStringContains("Author-Identity-ID: {$identityId}\n\nPrepared reply\n", $payload['canonical_record']);
         assertTrue(is_file(dirname($databasePath) . '/prepared-posts/' . $payload['prepare_token'] . '.json'));
@@ -1037,7 +1040,7 @@ PHP);
         $_POST = [
             'prepare_token' => $token,
             'post_id' => 'signed-test',
-            'record_path' => 'records/posts/signed-test.txt',
+            'record_path' => 'records/posts/2026/07/19/signed-test.txt',
             'author_identity_id' => 'openpgp:15c2ef95baee78f4c635a43323b6ae7ec7af9919',
             'canonical_record' => $canonicalRecord,
             'detached_signature' => $signature,
@@ -1048,21 +1051,21 @@ PHP);
 
         assertSame('ok', $payload['status']);
         assertSame('signed-test', $payload['post_id']);
-        assertSame('records/posts/signed-test.txt', $payload['record_path']);
-        assertSame('records/posts/signed-test.txt.asc', $payload['signature_path']);
+        assertSame('records/posts/2026/07/19/signed-test.txt', $payload['record_path']);
+        assertSame('records/posts/2026/07/19/signed-test.txt.asc', $payload['signature_path']);
         assertTrue(strlen((string) $payload['commit_sha']) === 40);
-        assertSame($canonicalRecord, (string) file_get_contents($repositoryRoot . '/records/posts/signed-test.txt'));
-        assertSame($signature, (string) file_get_contents($repositoryRoot . '/records/posts/signed-test.txt.asc'));
+        assertSame($canonicalRecord, (string) file_get_contents($repositoryRoot . '/records/posts/2026/07/19/signed-test.txt'));
+        assertSame($signature, (string) file_get_contents($repositoryRoot . '/records/posts/2026/07/19/signed-test.txt.asc'));
         assertFalse(is_file(dirname($databasePath) . '/prepared-posts/' . $token . '.json'));
 
         $committedFiles = $this->gitOutput($repositoryRoot, 'show --name-only --format= ' . escapeshellarg((string) $payload['commit_sha']));
-        assertStringContains('records/posts/signed-test.txt', $committedFiles);
-        assertStringContains('records/posts/signed-test.txt.asc', $committedFiles);
+        assertStringContains('records/posts/2026/07/19/signed-test.txt', $committedFiles);
+        assertStringContains('records/posts/2026/07/19/signed-test.txt.asc', $committedFiles);
 
         $postPage = $this->renderMethod($application, 'GET', '/posts/signed-test');
         assertStringContains('Source:', $postPage);
         assertStringContains('Signature:', $postPage);
-        assertStringContains('/source/current/records/posts/signed-test.txt.asc', $postPage);
+        assertStringContains('/source/current/records/posts/2026/07/19/signed-test.txt.asc', $postPage);
     }
 
     public function testCreatePreparedPostRejectsInvalidDetachedSignatureWithoutWritingFiles(): void
@@ -1084,7 +1087,7 @@ PHP);
         $_POST = [
             'prepare_token' => $token,
             'post_id' => 'signed-test',
-            'record_path' => 'records/posts/signed-test.txt',
+            'record_path' => 'records/posts/2026/07/19/signed-test.txt',
             'author_identity_id' => 'openpgp:15c2ef95baee78f4c635a43323b6ae7ec7af9919',
             'canonical_record' => $canonicalRecord,
             'detached_signature' => str_replace('kipu', 'fail', $this->readOpenPgpSignatureFixture('signed-post.txt.asc')),
@@ -1095,8 +1098,8 @@ PHP);
 
         assertSame('error', $payload['status']);
         assertStringContains('Detached signature verification failed:', $payload['error']);
-        assertFalse(is_file($repositoryRoot . '/records/posts/signed-test.txt'));
-        assertFalse(is_file($repositoryRoot . '/records/posts/signed-test.txt.asc'));
+        assertFalse(is_file($repositoryRoot . '/records/posts/2026/07/19/signed-test.txt'));
+        assertFalse(is_file($repositoryRoot . '/records/posts/2026/07/19/signed-test.txt.asc'));
         assertTrue(is_file(dirname($databasePath) . '/prepared-posts/' . $token . '.json'));
     }
 
@@ -1120,7 +1123,7 @@ PHP);
         $_POST = [
             'prepare_token' => $token,
             'post_id' => 'signed-test',
-            'record_path' => 'records/posts/signed-test.txt',
+            'record_path' => 'records/posts/2026/07/19/signed-test.txt',
             'author_identity_id' => 'openpgp:15c2ef95baee78f4c635a43323b6ae7ec7af9919',
             'canonical_record' => $canonicalRecord,
             'detached_signature' => $this->readOpenPgpSignatureFixture('signed-post.txt.asc'),
@@ -1131,8 +1134,8 @@ PHP);
 
         assertSame('error', $payload['status']);
         assertSame('Prepared post has expired.', $payload['error']);
-        assertFalse(is_file($repositoryRoot . '/records/posts/signed-test.txt'));
-        assertFalse(is_file($repositoryRoot . '/records/posts/signed-test.txt.asc'));
+        assertFalse(is_file($repositoryRoot . '/records/posts/2026/07/19/signed-test.txt'));
+        assertFalse(is_file($repositoryRoot . '/records/posts/2026/07/19/signed-test.txt.asc'));
     }
 
     public function testUnicodeAuthoredTextFlagDoesNotWidenMachineFields(): void
@@ -1147,7 +1150,7 @@ PHP);
                 'subject' => 'Привет',
                 'body' => 'Привет мир',
             ]);
-            $record = (string) file_get_contents($repositoryRoot . '/records/posts/' . $threadResult['thread_id'] . '.txt');
+            $record = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $threadResult['thread_id']));
 
             assertStringContains('Board-Tags: bug', $record);
             assertStringNotContains('тест', $record);
@@ -1214,7 +1217,7 @@ PHP);
                 '/api/create_thread?board_tags=general&subject=' . rawurlencode('Привет') . '&body=' . rawurlencode('Привет мир')
             );
             $postId = $this->extractValue($response, 'post_id');
-            $record = (string) file_get_contents($repositoryRoot . '/records/posts/' . $postId . '.txt');
+            $record = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $postId));
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
             $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
             $activity = $this->renderMethod($application, 'GET', '/activity/');
@@ -1257,7 +1260,7 @@ PHP);
             '/api/create_thread?board_tags=general&subject=' . rawurlencode('Привет') . '&body=' . rawurlencode('Привет мир')
         );
         $postId = $this->extractValue($response, 'post_id');
-        $record = (string) file_get_contents($repositoryRoot . '/records/posts/' . $postId . '.txt');
+        $record = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $postId));
 
         assertStringContains('status=ok', $response);
         assertStringContains('Subject: Привет', $record);
@@ -1279,7 +1282,7 @@ PHP);
             '/api/create_thread?board_tags=general&subject=' . rawurlencode('Hello 🙂') . '&body=' . rawurlencode('Looks good 🙂')
         );
         $postId = $this->extractValue($response, 'post_id');
-        $record = (string) file_get_contents($repositoryRoot . '/records/posts/' . $postId . '.txt');
+        $record = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $postId));
 
         assertStringContains('status=ok', $response);
         assertStringContains('Subject: Hello 🙂', $record);
@@ -2543,7 +2546,8 @@ PHP);
         $_COOKIE = [];
 
         $matchingApprovals = 0;
-        foreach (glob($repositoryRoot . '/records/posts/*.txt') ?: [] as $path) {
+        foreach ($this->listCanonicalPostPaths($repositoryRoot) as $relativePath) {
+            $path = $repositoryRoot . '/' . $relativePath;
             $contents = (string) file_get_contents($path);
             if (str_contains($contents, 'Thread-ID: ' . $target['bootstrap_thread_id'])
                 && str_contains($contents, 'Parent-ID: ' . $target['bootstrap_post_id'])
@@ -2807,7 +2811,7 @@ PHP);
 
         $payload = array_merge([
             'prepare_token' => $token,
-            'record_path' => 'records/posts/signed-test.txt',
+            'record_path' => 'records/posts/2026/07/19/signed-test.txt',
             'canonical_sha256' => hash('sha256', $canonicalRecord),
             'canonical_record' => $canonicalRecord,
             'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 600),
@@ -2971,13 +2975,62 @@ PHP);
     private function listCanonicalPostIds(string $repositoryRoot): array
     {
         $ids = [];
-        foreach (glob($repositoryRoot . '/records/posts/*.txt') ?: [] as $path) {
-            $ids[] = basename($path, '.txt');
+        foreach ($this->listCanonicalPostPaths($repositoryRoot) as $relativePath) {
+            $ids[] = basename($relativePath, '.txt');
         }
 
         sort($ids);
 
         return $ids;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function listCanonicalPostPaths(string $repositoryRoot): array
+    {
+        $paths = [];
+        $postsRoot = $repositoryRoot . '/records/posts';
+        if (!is_dir($postsRoot)) {
+            return [];
+        }
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($postsRoot, FilesystemIterator::SKIP_DOTS)
+        );
+        foreach ($iterator as $item) {
+            if (!$item->isFile() || !str_ends_with($item->getFilename(), '.txt')) {
+                continue;
+            }
+
+            $paths[] = str_replace('\\', '/', substr($item->getPathname(), strlen($repositoryRoot) + 1));
+        }
+
+        sort($paths);
+
+        return $paths;
+    }
+
+    private function countCanonicalPostFiles(string $repositoryRoot): int
+    {
+        return count($this->listCanonicalPostPaths($repositoryRoot));
+    }
+
+    private function canonicalPostPath(string $repositoryRoot, string $postId): string
+    {
+        foreach (CanonicalPathResolver::postCandidates($postId) as $relativePath) {
+            if (is_file($repositoryRoot . '/' . $relativePath)) {
+                return $relativePath;
+            }
+        }
+
+        foreach ($this->listCanonicalPostPaths($repositoryRoot) as $relativePath) {
+            if (basename($relativePath) === $postId . '.txt') {
+                return $relativePath;
+            }
+        }
+
+        throw new RuntimeException('Canonical post file not found: ' . $postId);
     }
 
     private function latestCommitSha(string $repositoryRoot): string
