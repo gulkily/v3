@@ -489,6 +489,19 @@ pre {
   margin-left: auto;
 }
 
+.thread-density-toggle {
+  display: inline-block;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--line);
+  background: var(--input-bg);
+  font-family: var(--ui-font);
+  flex: 0 0 auto;
+}
+
+.thread-density-toggle[aria-pressed="true"] {
+  background: var(--panel);
+}
+
 .theme-toggle {
   width: 1.5rem;
   min-width: 1.5rem;
@@ -2746,4 +2759,16 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   .tag-groups {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+:root[data-thread-density="compact"] .thread-card__preview {
+  display: none;
+}
+
+:root[data-thread-density="compact"] .thread-list .thread-card {
+  padding: 0.45rem 0.6rem;
+}
+
+:root[data-thread-density="compact"] .thread-list > * + * {
+  margin-top: 0.35rem;
 }

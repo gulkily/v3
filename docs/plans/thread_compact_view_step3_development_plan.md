@@ -44,7 +44,7 @@
 - Verification approach: Manually toggle compact mode on `/`, `/threads/?view=liked`, `/threads/?sort=top`, and `/tags/<tag>`; confirm body previews disappear and card spacing tightens on all four, and confirm no unrelated `.stack` usage (e.g. `thread.php`'s reply list, compose forms) is affected since compact rules are scoped to `.thread-list`.
 - Risks or open questions: Confirm the appended rules actually win over theme-specific `.card`/`.stack` overrides (sticker/arena/word97 blocks) in each theme; if a theme's override still wins due to more specific selectors, increase specificity rather than reordering the whole stylesheet.
 - Canonical components/API contracts touched: `public/assets/site.css`, `templates/partials/thread_card.php`.
-- Status: Not started.
+- Status: Implemented. Appended compact-mode rules (hide `.thread-card__preview`, tighten `.thread-list .thread-card` padding and `.thread-list` child spacing) at the end of `site.css`; the `:root[data-thread-density="compact"]` attribute selector combined with two classes outranks the existing single-class `.card` media-query and per-theme overrides on specificity, so no reordering of existing rules was needed. Added `.thread-density-toggle` button styling (matches `.nav-link` look) near `.theme-toggle`. Full test suite passes; visual/browser verification deferred to Stage 5.
 
 ## Stage 5
 - Goal: Add automated coverage and finish verification.
