@@ -11,7 +11,7 @@
 - Verification approach: Run the local smoke suite and manually diff rendered HTML for `/`, `/threads/?view=liked`, `/threads/?sort=top`, and `/tags/<tag>` before/after to confirm byte-for-byte equivalence aside from the added `thread-list`/`thread-card` classes.
 - Risks or open questions: Keep the pinned-marker vs. labels-line difference as a partial parameter rather than two partials, to avoid re-introducing duplication.
 - Canonical components/API contracts touched: `templates/pages/board.php`, `templates/pages/tag.php`, new `templates/partials/thread_card.php`; no route or data contract changes.
-- Status: Not started.
+- Status: Implemented. Extracted `templates/partials/thread_card.php` (with `showPinnedMarker`/`showLabels` params covering the board-vs-tag differences), added the `thread-card__preview` class on the body-preview paragraph, added `thread-list` to the wrapping `<section class="stack">` in both `board.php` and `tag.php`. Full test suite (`php tests/run.php`) passes.
 
 ## Stage 2
 - Goal: Wire the density preference's storage and FOUC-free application, with no user-visible control yet.

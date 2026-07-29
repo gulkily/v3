@@ -1,4 +1,4 @@
-<section class="stack">
+<section class="stack thread-list">
   <article class="card">
     <div class="nav board-controls-nav">
       <a class="nav-link" href="/tags/">Tags</a>
@@ -39,15 +39,9 @@
     </details>
   </article>
 <?php foreach ($threads as $thread): ?>
-<?php $subject = $threadTitle($thread); ?>
-<?php $isPinned = in_array('pinned', $thread['thread_labels'] ?? [], true); ?>
-  <article class="card" data-heat="<?= $heat($thread['last_activity_at'] ?? null, (int) ($thread['reply_count'] ?? 0)) ?>">
-    <h2><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($subject) ?></a><?php if ($isPinned): ?> <span class="pinned-thread-marker">Pinned</span><?php endif; ?></h2>
-    <p class="meta"><?= $contentMeta($thread, 'root_post_created_at', '') ?></p>
-    <p><?= $br($thread['body_preview']) ?></p>
-<?php if ((int) $thread['reply_count'] > 0): ?>
-    <p class="meta"><?= (int) $thread['reply_count'] ?> <?= (int) $thread['reply_count'] === 1 ? 'reply' : 'replies' ?></p>
-<?php endif; ?>
-  </article>
+<?= $indent($partial('partials/thread_card.php', [
+    'thread' => $thread,
+    'showPinnedMarker' => true,
+]), 1) ?>
 <?php endforeach; ?>
 </section>
