@@ -57,6 +57,15 @@
   Manual browser verification (Playwright/Chromium against `./v3 start`, screenshots taken): toggle hides body previews and tightens spacing on both board and tag pages; state persists across reload and across pages via `localStorage`; `?density=compact` applies immediately on a fresh session and then persists without the param on subsequent navigation; no console errors.
   Found and fixed one bug during manual verification: the new `.thread-density-toggle` button inherited the stylesheet's generic `button { width: 100%; margin-top: 0.35rem; }` rule (meant for form buttons), which combined with `flex: 0 0 auto` (flex-basis: auto resolves to the specified width) stretched the button to fill the header row. Fixed by adding explicit `width: auto; margin-top: 0;`, matching the existing `.theme-menu__trigger` pattern that guards against the same rule.
 
+## Stage 6 (follow-up)
+- Goal: Tighten compact mode further per user feedback after testing against real data (498 threads) — reduce padding, inter-line spacing, and font size within each compact thread card.
+- Dependencies: Stages 1-5 committed; real content repository copied into `state/local_repository` for realistic manual testing.
+- Expected changes: In `public/assets/site.css`, reduce `.thread-list .thread-card` padding, add an explicit smaller `font-size`/`line-height`, reset default browser margins on all direct children (`> *`) and replace with a small consistent `> * + *` gap, and explicitly shrink `.meta` text within compact cards (the site-wide `.meta` rule uses `rem`, which doesn't inherit from an ancestor's `font-size`, so it needs its own override).
+- Verification approach: Manual browser check (Playwright/Chromium) against the real 498-thread dataset; confirm card height drops substantially, text stays legible, and `php tests/run.php` still passes.
+- Risks or open questions: None; purely a CSS density adjustment scoped to `[data-thread-density="compact"]`.
+- Canonical components/API contracts touched: `public/assets/site.css`.
+- Status: Implemented. Card padding reduced to `0.35rem 0.5rem`, card `font-size: 0.85rem`/`line-height: 1.3`, child margins reset with a `0.15rem` gap, `.meta` text explicitly set to `0.78rem`. Verified against real data: card height dropped from ~130px to ~58px; full test suite passes.
+
 ## Planned Commit Cadence
 - Commit 1: Add thread compact view plans (this document plus `thread_compact_view_plan_v1.md`).
 - Commit 2: Extract shared `thread_card.php` partial (Stage 1).
