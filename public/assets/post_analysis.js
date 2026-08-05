@@ -134,7 +134,7 @@
 
   function applyGenerationResult(node, result, analysis) {
     if (!result || result.status !== "ok") {
-      return;
+      return false;
     }
 
     if (result.generation_status === "generated" && result.agent_post_id) {
@@ -144,7 +144,7 @@
         agentReplyAnchorUrl(result.agent_post_id),
         "View agent reply."
       );
-      return;
+      return true;
     }
 
     if (result.generation_status === "already_posted" && result.agent_post_id) {
@@ -154,35 +154,82 @@
         agentReplyAnchorUrl(result.agent_post_id),
         "View agent reply."
       );
-      return;
+      return true;
+    }
+
+    if (result.generation_status === "requested") {
+      setFeedback(node, "Agent reply requested.");
+      return true;
     }
 
     if (result.generation_status === "not_recommended") {
       if (result.reason === "config_disabled") {
-        return;
+        return false;
       }
 
       setFeedback(node, "Agent reply skipped" + skippedReason(result, analysis) + ".", "");
-      return;
+      return true;
     }
 
     if (result.generation_status === "analysis_required") {
       setFeedback(node, "Agent reply skipped: analysis required.", "");
-      return;
+      return true;
     }
 
     if (result.generation_status === "in_progress") {
-      return;
+      setFeedback(node, "Agent reply request in progress.");
+      return true;
     }
 
     if (result.generation_status === "failed") {
-      return;
+      setFeedback(node, "Agent reply request failed.", "");
+      return true;
     }
 
     setFeedback(node, "Agent reply skipped.", "");
+    return true;
+  }
+
+  function bindAgentReplyRequestButtons() {
+    document.querySelectorAll('[data-action="request-agent-reply"]').forEach(function (button) {
+      if (button.getAttribute("data-agent-reply-request-bound") === "1") {
+        return;
+      }
+
+      button.setAttribute("data-agent-reply-request-bound", "1");
+      button.addEventListener("click", async function () {
+        const postId = button.getAttribute("data-post-id") || "";
+        if (postId === "" || !markGenerationStarted(postId)) {
+          return;
+        }
+
+        const originalText = button.textContent;
+        const feedback = feedbackForPost(postId);
+        button.disabled = true;
+        button.textContent = "Requesting...";
+        setFeedback(feedback, "Requesting agent reply...");
+
+        try {
+          const result = await generateAgentReply(postId);
+          const handled = applyGenerationResult(feedback, result, null);
+          if (handled && result && result.status === "ok") {
+            button.hidden = true;
+            return;
+          }
+        } catch (error) {
+        }
+
+        generationStartedPostIds.delete(postId);
+        button.disabled = false;
+        button.textContent = originalText;
+        setFeedback(feedback, "Agent reply request failed.");
+      });
+    });
   }
 
   function boot() {
+    bindAgentReplyRequestButtons();
+
     const root = document.querySelector("[data-created-post-id]");
     if (!root) {
       return;

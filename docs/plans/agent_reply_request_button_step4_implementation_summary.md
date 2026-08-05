@@ -39,3 +39,16 @@
   - Focused `WriteApiSmokeTest` run via `php -r ...`: Stage 2 endpoint tests plus `testApprovedViewerSeesAgentReplyRequestButtonUntilRequestExists` passed.
 - Notes:
   - The static rendered page shows request state after refresh/revisit; live fulfillment updates remain deferred until later UX work.
+
+## Stage 4 - Request Button Browser Behavior
+- Changes:
+  - Extended `post_analysis.js` to bind `Request agent response` buttons.
+  - Added async request submission, duplicate-click prevention, busy text, success hiding, and same-card feedback.
+  - Added handling for the new `requested` result and visible in-progress/failed request states.
+  - Extended script smoke assertions for the new request-button behavior.
+- Verification:
+  - `node --check public/assets/post_analysis.js`
+  - `php -l tests/WriteApiSmokeTest.php`
+  - Focused `WriteApiSmokeTest` run via `php -r ...`: `testPostAnalysisScriptDoesNotExposeInProgressReplyGeneration`, `testGenerateAgentReplyRequiresApprovedViewerAndRecordsRequest`, and `testApprovedViewerSeesAgentReplyRequestButtonUntilRequestExists` passed.
+- Notes:
+  - The client does not poll for cron fulfillment completion; users see fulfillment results on refresh/revisit.
