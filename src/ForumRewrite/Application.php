@@ -11,6 +11,7 @@ use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Analysis\SqliteUnicodeRiskStore;
 use ForumRewrite\Analysis\StubPostAnalyzer;
 use ForumRewrite\Analysis\UnicodeRiskInspector;
+use ForumRewrite\Agent\AgentReplyFulfillmentService;
 use ForumRewrite\Agent\DedalusAgentReplyGenerator;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Agent\AgentIdentityService;
@@ -3180,139 +3181,7 @@ final class Application
             ]);
         }
 
-        $context = $this->postAnalysisContext($post);
-        $store = new SqliteAgentReplyGenerationStore($this->pdo());
-        $existing = $store->findByTarget((string) $context['post_id'], (string) $context['content_hash']);
-        if ($existing !== null && $existing['agent_post_id'] !== null) {
-            return $this->agentReplyStatusResponse('already_posted', $postId, [
-                'agent_post_id' => $existing['agent_post_id'],
-                'agent_post_url' => '/posts/' . $existing['agent_post_id'],
-            ]);
-        }
-        if ($existing !== null && $existing['status'] === 'failed') {
-            return $this->failedAgentReplyResponse($existing);
-        }
-        if ($existing !== null && in_array($existing['status'], ['pending', 'posting'], true)) {
-            return $this->agentReplyStatusResponse('in_progress', $postId);
-        }
-
-        $analysis = (new SqlitePostAnalysisStore($this->pdo()))->find(
-            (string) $context['post_id'],
-            (string) $context['content_hash']
-        );
-        if ($analysis === null || ($analysis['status'] ?? null) !== 'complete') {
-            return $this->agentReplyStatusResponse('analysis_required', $postId, [
-                'reason' => $analysis === null ? 'missing_analysis' : 'analysis_not_complete',
-                'analysis_status' => $analysis['status'] ?? null,
-                'failure_code' => $analysis['failure_code'] ?? null,
-            ]);
-        }
-
-        $gateFailure = $this->agentReplyGateFailure($post, $analysis);
-        if ($gateFailure !== null) {
-            return $this->agentReplyStatusResponse('not_recommended', $postId, $gateFailure);
-        }
-
-        $generationContext = $context;
-        $generationContext['analysis'] = [
-            'moderation' => $analysis['moderation'] ?? [],
-            'engagement' => $analysis['engagement'] ?? [],
-            'quality' => $analysis['quality'] ?? [],
-            'respondability' => $analysis['respondability'] ?? [],
-        ];
-        $generationContext['analysis_hash'] = $this->analysisHash($analysis);
-
-        $stored = $existing !== null && $existing['status'] === 'complete' ? $existing : null;
-        if ($stored === null) {
-            $reservation = $store->reserveGeneration($generationContext);
-            if (($reservation['reserved'] ?? false) !== true) {
-                if ($reservation['agent_post_id'] !== null) {
-                    return $this->agentReplyStatusResponse('already_posted', $postId, [
-                        'agent_post_id' => $reservation['agent_post_id'],
-                        'agent_post_url' => '/posts/' . $reservation['agent_post_id'],
-                    ]);
-                }
-                if ($reservation['status'] === 'complete') {
-                    $stored = $reservation;
-                } elseif ($reservation['status'] === 'failed') {
-                    return $this->failedAgentReplyResponse($reservation);
-                } else {
-                    return $this->agentReplyStatusResponse('in_progress', $postId);
-                }
-            }
-        }
-
-        if ($stored === null) {
-            try {
-                $generation = $this->agentReplyGenerationFromAnalysis($analysis);
-                $stored = $store->saveComplete($generationContext, $generation);
-            } catch (\Throwable $throwable) {
-                $failed = $store->saveFailed(
-                    (string) $context['post_id'],
-                    (string) $context['content_hash'],
-                    (string) $generationContext['analysis_hash'],
-                    'analysis_suggestion_error',
-                    $throwable->getMessage()
-                );
-                return $this->failedAgentReplyResponse($failed);
-            }
-        }
-
-        $latest = $store->findByTarget((string) $context['post_id'], (string) $context['content_hash']);
-        if ($latest !== null && $latest['agent_post_id'] !== null) {
-            return $this->agentReplyStatusResponse('already_posted', $postId, [
-                'agent_post_id' => $latest['agent_post_id'],
-                'agent_post_url' => '/posts/' . $latest['agent_post_id'],
-            ]);
-        }
-        if ($latest !== null && $latest['status'] === 'failed') {
-            return $this->failedAgentReplyResponse($latest);
-        }
-
-        $posting = $store->reservePosting((string) $context['post_id'], (string) $context['content_hash']);
-        if ($posting === null || ($posting['reserved'] ?? false) !== true) {
-            if ($posting !== null && $posting['agent_post_id'] !== null) {
-                return $this->agentReplyStatusResponse('already_posted', $postId, [
-                    'agent_post_id' => $posting['agent_post_id'],
-                    'agent_post_url' => '/posts/' . $posting['agent_post_id'],
-                ]);
-            }
-            if ($posting !== null && $posting['status'] === 'failed') {
-                return $this->failedAgentReplyResponse($posting);
-            }
-
-            return $this->agentReplyStatusResponse('in_progress', $postId);
-        }
-        $stored = $posting;
-
-        try {
-            $identity = $this->agentIdentityService()->ensureReplyAgentIdentity();
-            $writeResult = $this->writer()->createReply([
-                'thread_id' => (string) $post['thread_id'],
-                'parent_id' => (string) $post['post_id'],
-                'board_tags' => 'general',
-                'body' => (string) ($stored['response_text'] ?? ''),
-                'author_identity_id' => (string) $identity['identity_id'],
-            ]);
-            $posted = $store->markPosted(
-                (string) $context['post_id'],
-                (string) $context['content_hash'],
-                (string) $writeResult['post_id'],
-                (string) $identity['identity_id'],
-                (string) $identity['profile_slug']
-            );
-
-            return $this->generatedAgentReplyResponse($posted, $existing !== null);
-        } catch (\Throwable $throwable) {
-            $failed = $store->saveFailed(
-                (string) $context['post_id'],
-                (string) $context['content_hash'],
-                (string) $generationContext['analysis_hash'],
-                'posting_error',
-                $throwable->getMessage()
-            );
-            return $this->failedAgentReplyResponse($failed);
-        }
+        return $this->agentReplyFulfillmentService()->publishForPost($post);
     }
 
     /**
@@ -3691,6 +3560,19 @@ final class Application
             $this->artifactRoot ?? ($this->projectRoot . '/public'),
             $this->projectRoot . '/state/private/agent-reply',
             new CanonicalRecordRepository($this->repositoryRoot),
+        );
+    }
+
+    private function agentReplyFulfillmentService(): AgentReplyFulfillmentService
+    {
+        return new AgentReplyFulfillmentService(
+            new SqliteAgentReplyGenerationStore($this->pdo()),
+            new SqlitePostAnalysisStore($this->pdo()),
+            $this->agentIdentityService(),
+            $this->writer(),
+            $this->featureFlags(),
+            fn (array $post): array => $this->postAnalysisContext($post),
+            fn (array $post, array $analysis): ?array => $this->agentReplyGateFailure($post, $analysis),
         );
     }
 

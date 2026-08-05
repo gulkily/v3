@@ -52,3 +52,15 @@
   - Focused `WriteApiSmokeTest` run via `php -r ...`: `testPostAnalysisScriptDoesNotExposeInProgressReplyGeneration`, `testGenerateAgentReplyRequiresApprovedViewerAndRecordsRequest`, and `testApprovedViewerSeesAgentReplyRequestButtonUntilRequestExists` passed.
 - Notes:
   - The client does not poll for cron fulfillment completion; users see fulfillment results on refresh/revisit.
+
+## Stage 5 - Publish Path Service
+- Changes:
+  - Added `AgentReplyFulfillmentService` for publish-from-completed-analysis behavior.
+  - Moved existing gate/generate/post/idempotency behavior behind the service while keeping result payloads stable.
+  - Changed `Application::agentReplyResultForPost()` to delegate to the service after config gating.
+- Verification:
+  - `php -l src/ForumRewrite/Agent/AgentReplyFulfillmentService.php`
+  - `php -l src/ForumRewrite/Application.php`
+  - Focused `WriteApiSmokeTest` run via `php -r ...`: `testPostAnalysisEndpointStoresStubResultIdempotently` and `testAnalyzePostGateFailureUsesCompactVisibilityRules` passed.
+- Notes:
+  - The service currently receives context/gate callbacks from `Application`; Stage 6 will add claimed-request fulfillment on top of the extracted publish path.
