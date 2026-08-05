@@ -1,8 +1,23 @@
 <?php
 $agentReply = $agentRepliesByPostId[$post['post_id']] ?? null;
 $agentReplyPostedId = is_array($agentReply) && isset($agentReply['agent_post_id']) ? (string) $agentReply['agent_post_id'] : '';
+$agentReplyStatus = is_array($agentReply) ? (string) ($agentReply['status'] ?? '') : '';
 $agentReplyWork = (string) ($agentReplyWorkByPostId[$post['post_id']] ?? '');
 $isAgentPost = (string) ($post['author_label'] ?? '') === 'reply-agent';
+$viewerCanRequestAgentReply = (bool) ($viewerCanRequestAgentReply ?? $viewerCanSeePostAnalysis ?? false);
+$showAgentReplyRequestButton = $viewerCanRequestAgentReply && !$isAgentPost && !is_array($agentReply);
+$agentReplyFeedbackText = '';
+if ($agentReplyPostedId !== '') {
+    $agentReplyFeedbackText = 'Agent reply available.';
+} elseif ($agentReplyStatus === 'requested') {
+    $agentReplyFeedbackText = 'Agent reply requested.';
+} elseif (in_array($agentReplyStatus, ['pending', 'complete', 'posting'], true)) {
+    $agentReplyFeedbackText = 'Agent reply request in progress.';
+} elseif ($agentReplyStatus === 'skipped') {
+    $agentReplyFeedbackText = 'Agent reply skipped.';
+} elseif ($agentReplyStatus === 'failed') {
+    $agentReplyFeedbackText = 'Agent reply failed.';
+}
 $viewerHasLikedPost = isset($viewerPostLikes[(string) $post['post_id']]);
 $viewerHasFlaggedPost = isset($viewerPostFlags[(string) $post['post_id']]);
 $postPermalinkLabel = 'Post ' . (string) $post['post_id'];
@@ -78,8 +93,16 @@ if (!is_array($postAnalysisLabels)) {
       aria-pressed="<?= $viewerHasFlaggedPost ? 'true' : 'false' ?>"
 <?= $viewerHasFlaggedPost ? ' disabled="disabled"' : '' ?>
     ><?= $viewerHasFlaggedPost ? 'Flagged' : 'Flag' ?></button>
+<?php if ($showAgentReplyRequestButton): ?>
+    <button
+      type="button"
+      class="thread-reaction-button"
+      data-action="request-agent-reply"
+      data-post-id="<?= $e($post['post_id']) ?>"
+    >Request agent response</button>
+<?php endif; ?>
     <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
-    <p class="meta agent-reply-feedback" data-role="agent-reply-feedback" hidden></p>
+    <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"<?= $agentReplyFeedbackText === '' ? ' hidden' : '' ?>><?= $e($agentReplyFeedbackText) ?><?php if ($agentReplyPostedId !== ''): ?> <a href="/posts/<?= $e($agentReplyPostedId) ?>">View agent reply.</a><?php endif; ?></p>
 <?php if (is_array($postAnalysis) && ($postAnalysis['status'] ?? '') === 'complete'): ?>
   <details class="post-analysis">
     <summary>Post analysis</summary>

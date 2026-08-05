@@ -25,3 +25,17 @@
   - Focused `WriteApiSmokeTest` run via `php -r ...`: `testGenerateAgentReplyRequiresApprovedViewerAndRecordsRequest`, `testAutomaticAgentReplyWorkCanBeDisabledWithoutDisablingApi`, `testGenerateAgentReplyRejectsAgentAuthoredTarget`, and `testGenerateAgentReplyDoesNotStartWhenGenerationIsAlreadyPending` passed.
 - Notes:
   - Older smoke tests that expected `/api/generate_agent_reply` to publish inline will be moved to the fulfillment service/command stages.
+
+## Stage 3 - Request Button Rendering
+- Changes:
+  - Added the request button to post cards and thread root cards for approved viewers when no generated-response row exists for current content.
+  - Hid the button for anonymous/unapproved viewers, `reply-agent` posts, and posts with existing request/generated-response state.
+  - Rendered existing generated-response states in the existing agent-reply feedback node, including requested, in-progress, skipped, failed, and posted states.
+  - Added render smoke coverage for the approved-viewer button lifecycle.
+- Verification:
+  - `php -l templates/partials/post_card.php`
+  - `php -l templates/partials/thread_root_card.php`
+  - `php -l tests/WriteApiSmokeTest.php`
+  - Focused `WriteApiSmokeTest` run via `php -r ...`: Stage 2 endpoint tests plus `testApprovedViewerSeesAgentReplyRequestButtonUntilRequestExists` passed.
+- Notes:
+  - The static rendered page shows request state after refresh/revisit; live fulfillment updates remain deferred until later UX work.

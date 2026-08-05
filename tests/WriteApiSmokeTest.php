@@ -388,6 +388,37 @@ PHP);
         }
     }
 
+    public function testApprovedViewerSeesAgentReplyRequestButtonUntilRequestExists(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Agent%20Request&body=Should%20the%20agent%20join%3F'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = [];
+            $anonymousThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $approvedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $requestedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+
+            assertStringNotContains('data-action="request-agent-reply"', $anonymousThreadPage);
+            assertStringContains('data-action="request-agent-reply"', $approvedThreadPage);
+            assertStringContains('Request agent response', $approvedThreadPage);
+            assertSame('requested', $response['generation_status']);
+            assertStringNotContains('data-action="request-agent-reply"', $requestedThreadPage);
+            assertStringContains('Agent reply requested.', $requestedThreadPage);
+        } finally {
+            $_COOKIE = [];
+        }
+    }
+
     public function testGenerateAgentReplyReportsFailedAnalysisAsRequired(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
