@@ -310,7 +310,7 @@ final class WriteApiSmokeTest
         }
     }
 
-    public function testGenerateAgentReplyRequiresCompletedCurrentAnalysis(): void
+    public function testGenerateAgentReplyRequiresApprovedViewerAndRecordsRequest(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED=true');
@@ -324,14 +324,30 @@ final class WriteApiSmokeTest
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId) . '?created_post_id=' . rawurlencode($postId));
+            $postCountBefore = $this->countCanonicalPostFiles($repositoryRoot);
+
+            $_COOKIE = [];
+            $forbidden = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $stmt = $pdo->prepare('SELECT status, request_context_json FROM post_generated_responses WHERE target_post_id = :post_id');
+            $stmt->execute(['post_id' => $postId]);
+            $row = $stmt->fetch();
+            $requestContext = json_decode((string) $row['request_context_json'], true);
 
             assertStringContains('data-agent-reply-work="analyze"', $threadPage);
+            assertSame('error', $forbidden['status']);
+            assertSame('forbidden', $forbidden['error']);
             assertSame('ok', $response['status']);
-            assertSame('analysis_required', $response['generation_status']);
-            assertSame('missing_analysis', $response['reason']);
+            assertSame('requested', $response['generation_status']);
+            assertSame($postCountBefore, $postCountAfter);
+            assertSame('requested', $row['status']);
+            assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $requestContext['agent_reply_request']['requested_by_identity_id']);
         } finally {
             putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED');
+            $_COOKIE = [];
         }
     }
 
@@ -359,15 +375,16 @@ PHP);
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId) . '?created_post_id=' . rawurlencode($postId));
+            $_COOKIE = ['identity_hint' => 'guest'];
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
 
             assertStringNotContains('data-agent-reply-work=', $threadPage);
             assertSame('ok', $response['status']);
-            assertSame('analysis_required', $response['generation_status']);
-            assertSame('missing_analysis', $response['reason']);
+            assertSame('requested', $response['generation_status']);
         } finally {
             putenv('FORUM_SECRETS_PATH');
             @unlink($secretsPath);
+            $_COOKIE = [];
         }
     }
 
@@ -495,12 +512,14 @@ PHP);
             $postId = $this->extractValue($threadResponse, 'post_id');
             $this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId));
 
+            $_COOKIE = ['identity_hint' => 'guest'];
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
 
             assertSame('not_recommended', $response['generation_status']);
             assertSame('agent_loop_prevention', $response['reason']);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
+            $_COOKIE = [];
         }
     }
 
@@ -661,6 +680,7 @@ PHP);
             ]);
             $postCountBefore = $this->countCanonicalPostFiles($repositoryRoot);
 
+            $_COOKIE = ['identity_hint' => 'guest'];
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
             $row = $store->findByTarget($postId, $contentHash);
@@ -672,6 +692,7 @@ PHP);
             assertSame(null, $row['agent_post_id']);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
+            $_COOKIE = [];
         }
     }
 

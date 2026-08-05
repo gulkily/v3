@@ -3089,13 +3089,81 @@ final class Application
         }
 
         $phaseStartedAt = hrtime(true);
-        $response = $this->agentReplyResultForPost($post);
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
+        if ($viewerProfile === null || ((int) ($viewerProfile['is_approved'] ?? 0)) !== 1) {
+            $this->sendJson(['status' => 'error', 'error' => 'forbidden'], 403, $headersWithTimings());
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $response = $this->agentReplyRequestResultForPost($post, $viewerProfile);
         $timings['agent_reply'] = $this->elapsedMilliseconds($phaseStartedAt);
         foreach ($this->timingMetricsFrom($response['timings'] ?? null) as $name => $duration) {
             $timings[$name] = $duration;
         }
 
         $this->sendJson($response, 200, $headersWithTimings());
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     * @param array<string, mixed> $viewerProfile
+     * @return array<string, mixed>
+     */
+    private function agentReplyRequestResultForPost(array $post, array $viewerProfile): array
+    {
+        $postId = (string) ($post['post_id'] ?? '');
+        if ((string) ($post['author_label'] ?? '') === AgentIdentityService::USERNAME) {
+            return $this->agentReplyStatusResponse('not_recommended', $postId, [
+                'reason' => 'agent_loop_prevention',
+            ]);
+        }
+
+        $context = $this->postAnalysisContext($post, false);
+        $store = new SqliteAgentReplyGenerationStore($this->pdo());
+        $row = $store->requestForTarget($context, [
+            'requested_by_identity_id' => (string) ($viewerProfile['identity_id'] ?? ''),
+            'requested_by_profile_slug' => (string) ($viewerProfile['profile_slug'] ?? ''),
+            'requested_by_username' => (string) ($viewerProfile['username'] ?? ''),
+        ]);
+
+        return $this->agentReplyResponseForStoredRequest($row, $postId);
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    private function agentReplyResponseForStoredRequest(array $row, string $postId): array
+    {
+        if ($row['agent_post_id'] !== null) {
+            return $this->agentReplyStatusResponse('already_posted', $postId, [
+                'agent_post_id' => $row['agent_post_id'],
+                'agent_post_url' => '/posts/' . $row['agent_post_id'],
+            ]);
+        }
+
+        $status = (string) ($row['status'] ?? '');
+        if ($status === 'requested') {
+            return $this->agentReplyStatusResponse('requested', $postId);
+        }
+
+        if (in_array($status, ['pending', 'complete', 'posting'], true)) {
+            return $this->agentReplyStatusResponse('in_progress', $postId);
+        }
+
+        if ($status === 'skipped') {
+            return $this->agentReplyStatusResponse('not_recommended', $postId, [
+                'reason' => (string) ($row['failure_code'] ?? 'not_recommended'),
+            ]);
+        }
+
+        if ($status === 'failed') {
+            return $this->failedAgentReplyResponse($row);
+        }
+
+        return $this->agentReplyStatusResponse('in_progress', $postId);
     }
 
     /**
