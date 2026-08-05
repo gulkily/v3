@@ -75,6 +75,15 @@
 - Canonical components/API contracts touched: `public/assets/site.css`.
 - Status: Implemented and verified visually. Note: full test suite run during this stage surfaced `LocalAppSmokeTest::testFrontControllerShowsBusyErrorForExecutionLockContention` failing; confirmed via `git stash`/`git checkout main` that this failure is pre-existing on `main` and unrelated to any change on this branch (environment-specific `flock()` timing, not a regression) — left as-is.
 
+## Stage 8 (follow-up)
+- Goal: Per user feedback, scope the compact-view toggle button to only appear on pages where it has an effect (board and tag-page thread listings), rather than globally in the header on every page.
+- Dependencies: Stage 7 committed.
+- Expected changes: `TemplateRenderer::renderPageTemplate` derives `$showThreadDensityToggle` from the page template name (`board.php`/`tag.php` only, via a new `THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES` constant) and threads it through a new optional `renderLayout` parameter (default `false`, so the other direct `renderLayout` caller in `Application::renderPage` is unaffected); `templates/layout.php` wraps the toggle partial include in `<?php if ($showThreadDensityToggle): ?>`. `tags.php` (the tag index) intentionally does not get the toggle since it renders a compact preview list with no `.thread-card` elements — compact mode has no effect there. Reused `activeSection` was considered but rejected: board.php/tag.php/tags.php/thread.php/post.php all share `activeSection === 'board'`, so it can't distinguish applicable pages.
+- Verification approach: Extended `LocalAppSmokeTest::testApplicationRendersCoreRoutes` with negative assertions (toggle absent on thread detail, about, tags index, tools pages) alongside the existing positive assertions (present on board, tag page). Manually curled `/`, `/about/`, `/tags/`, `/tools/`, a thread detail page, and a tag page against the real dataset to confirm presence/absence.
+- Risks or open questions: None.
+- Canonical components/API contracts touched: `src/ForumRewrite/View/TemplateRenderer.php`, `templates/layout.php`, `tests/LocalAppSmokeTest.php`.
+- Status: Implemented and verified (curl + full test suite, aside from the pre-existing unrelated lock-contention flake noted in Stage 7).
+
 ## Planned Commit Cadence
 - Commit 1: Add thread compact view plans (this document plus `thread_compact_view_plan_v1.md`).
 - Commit 2: Extract shared `thread_card.php` partial (Stage 1).

@@ -63,7 +63,9 @@
       <p class="eyebrow"><?= $e($siteName) ?></p>
       <div class="site-header-actions">
 <?= $indent($partial('partials/nav.php'), 4) ?>
+<?php if ($showThreadDensityToggle): ?>
 <?= $indent($partial('partials/thread_density_toggle.php'), 4) ?>
+<?php endif; ?>
 <?= $indent($partial('partials/theme_menu.php'), 4) ?>
       </div>
     </header>

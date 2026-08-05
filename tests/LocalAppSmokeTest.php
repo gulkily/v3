@@ -449,6 +449,10 @@ final class LocalAppSmokeTest
         assertFingerprintedAsset($board, 'thread_density_toggle.js');
         assertStringContains('data-role="thread-density-toggle"', $board);
         assertStringContains('data-role="thread-density-toggle"', $tagPage);
+        assertStringNotContains('data-role="thread-density-toggle"', $thread);
+        assertStringNotContains('data-role="thread-density-toggle"', $about);
+        assertStringNotContains('data-role="thread-density-toggle"', $tags);
+        assertStringNotContains('data-role="thread-density-toggle"', $tools);
         assertStringContains('class="card thread-card"', $boardAllThreads);
         assertStringContains('class="card thread-card"', $tagPage);
         assertStringContains('data-role="app-version-banner"', $board);
