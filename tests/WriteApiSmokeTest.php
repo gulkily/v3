@@ -554,6 +554,76 @@ PHP);
         }
     }
 
+    public function testClaimedAgentReplyRequestAnalyzesAndPublishes(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Queued%20Agent&body=What%20should%20we%20consider%20next%3F'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = [];
+            $postCountBefore = $this->countCanonicalPostFiles($repositoryRoot);
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $claimed = $store->claimNextRequested();
+
+            $result = $this->agentReplyFulfillmentService($application)->fulfillRequest($claimed[0]);
+            $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
+            $row = $store->findByTarget($postId, $claimed[0]['target_content_hash']);
+            $second = $this->agentReplyFulfillmentService($application)->fulfillRequest($claimed[0]);
+
+            assertSame('requested', $request['generation_status']);
+            assertSame(1, count($claimed));
+            assertSame('generated', $result['generation_status']);
+            assertSame(true, $result['posted']);
+            assertSame(true, $postCountAfter > $postCountBefore);
+            assertSame('posted', $row['status']);
+            assertSame($result['agent_post_id'], $row['agent_post_id']);
+            assertSame('already_posted', $second['generation_status']);
+            assertSame($postCountAfter, $this->countCanonicalPostFiles($repositoryRoot));
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            $_COOKIE = [];
+        }
+    }
+
+    public function testClaimedAgentReplyRequestStoresGateSkip(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $postId = $this->createAnalyzedThread($application, $databasePath, [
+                'respondability' => ['overall_score' => 0.4],
+            ]);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = [];
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $claimed = $store->claimNextRequested();
+
+            $result = $this->agentReplyFulfillmentService($application)->fulfillRequest($claimed[0]);
+            $row = $store->findByTarget($postId, $claimed[0]['target_content_hash']);
+
+            assertSame('requested', $request['generation_status']);
+            assertSame('not_recommended', $result['generation_status']);
+            assertSame('respondability_score_low', $result['reason']);
+            assertSame('skipped', $row['status']);
+            assertSame('respondability_score_low', $row['failure_code']);
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            $_COOKIE = [];
+        }
+    }
+
     public function testGenerateAgentReplyCreatesCanonicalReplyAndIsIdempotent(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -2880,6 +2950,14 @@ PHP);
         ob_start();
         $application->handle($method, $path);
         return (string) ob_get_clean();
+    }
+
+    private function agentReplyFulfillmentService(Application $application): object
+    {
+        $method = new ReflectionMethod(Application::class, 'agentReplyFulfillmentService');
+        $method->setAccessible(true);
+
+        return $method->invoke($application);
     }
 
     private function extractValue(string $response, string $key): string

@@ -3568,9 +3568,11 @@ final class Application
         return new AgentReplyFulfillmentService(
             new SqliteAgentReplyGenerationStore($this->pdo()),
             new SqlitePostAnalysisStore($this->pdo()),
+            $this->postAnalysisService(),
             $this->agentIdentityService(),
             $this->writer(),
             $this->featureFlags(),
+            fn (string $postId): ?array => $this->fetchPost($postId),
             fn (array $post): array => $this->postAnalysisContext($post),
             fn (array $post, array $analysis): ?array => $this->agentReplyGateFailure($post, $analysis),
         );

@@ -64,3 +64,17 @@
   - Focused `WriteApiSmokeTest` run via `php -r ...`: `testPostAnalysisEndpointStoresStubResultIdempotently` and `testAnalyzePostGateFailureUsesCompactVisibilityRules` passed.
 - Notes:
   - The service currently receives context/gate callbacks from `Application`; Stage 6 will add claimed-request fulfillment on top of the extracted publish path.
+
+## Stage 6 - Claimed Request Fulfillment
+- Changes:
+  - Added `AgentReplyFulfillmentService::fulfillRequest()` for claimed generated-response request rows.
+  - Added missing-analysis execution, target-missing/content-changed safeguards, gate skips, and publish handoff for claimed rows.
+  - Treated claimed request rows as worker-owned `pending` rows so fulfillment can proceed without colliding with duplicate in-progress detection.
+  - Added focused smoke coverage for queued request analysis/publish and durable gate skip.
+- Verification:
+  - `php -l src/ForumRewrite/Agent/AgentReplyFulfillmentService.php`
+  - `php -l src/ForumRewrite/Application.php`
+  - `php -l tests/WriteApiSmokeTest.php`
+  - Focused `WriteApiSmokeTest` run via `php -r ...`: `testClaimedAgentReplyRequestAnalyzesAndPublishes` and `testClaimedAgentReplyRequestStoresGateSkip` passed.
+- Notes:
+  - Claimed rows currently use the existing `pending` status; recovery of stale pending rows remains a minimal V1 policy for the command stage.

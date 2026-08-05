@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Agent;
 
 use ForumRewrite\Analysis\PostAnalysisStore;
+use ForumRewrite\Analysis\PostAnalysisService;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Write\LocalWriteService;
@@ -13,18 +14,64 @@ use RuntimeException;
 final class AgentReplyFulfillmentService
 {
     /**
+     * @param callable(string): array<string, mixed>|null $postForId
      * @param callable(array<string, mixed>): array<string, mixed> $contextForPost
      * @param callable(array<string, mixed>, array<string, mixed>): array<string, mixed>|null $gateFailureForPost
      */
     public function __construct(
         private readonly AgentReplyGenerationStore $generationStore,
         private readonly PostAnalysisStore $analysisStore,
+        private readonly PostAnalysisService $analysisService,
         private readonly AgentIdentityService $identityService,
         private readonly LocalWriteService $writer,
         private readonly FeatureFlagEvaluator $featureFlags,
+        private readonly mixed $postForId,
         private readonly mixed $contextForPost,
         private readonly mixed $gateFailureForPost,
     ) {
+    }
+
+    /**
+     * @param array<string, mixed> $requestRow
+     * @return array<string, mixed>
+     */
+    public function fulfillRequest(array $requestRow): array
+    {
+        $postId = (string) ($requestRow['target_post_id'] ?? '');
+        $contentHash = (string) ($requestRow['target_content_hash'] ?? '');
+        $post = ($this->postForId)($postId);
+        if ($post === null) {
+            return $this->markSkippedResponse($postId, $contentHash, 'target_post_missing');
+        }
+
+        if ((string) ($post['author_label'] ?? '') === AgentIdentityService::USERNAME) {
+            return $this->markSkippedResponse($postId, $contentHash, 'agent_loop_prevention');
+        }
+
+        $context = ($this->contextForPost)($post);
+        if ((string) ($context['content_hash'] ?? '') !== $contentHash) {
+            return $this->markSkippedResponse($postId, $contentHash, 'target_content_changed');
+        }
+
+        $analysis = $this->analysisStore->find($postId, $contentHash);
+        if ($analysis === null || ($analysis['status'] ?? null) !== 'complete') {
+            $analysis = $this->analysisService->analyze($context);
+        }
+
+        if (($analysis['status'] ?? null) !== 'complete') {
+            return $this->markSkippedResponse($postId, $contentHash, [
+                'reason' => array_key_exists('status', $analysis) ? 'analysis_not_complete' : 'missing_analysis',
+                'analysis_status' => $analysis['status'] ?? null,
+                'failure_code' => $analysis['failure_code'] ?? null,
+            ]);
+        }
+
+        $gateFailure = ($this->gateFailureForPost)($post, $analysis);
+        if ($gateFailure !== null) {
+            return $this->markSkippedResponse($postId, $contentHash, $gateFailure);
+        }
+
+        return $this->publishForPost($post);
     }
 
     /**
@@ -36,6 +83,10 @@ final class AgentReplyFulfillmentService
         $postId = (string) ($post['post_id'] ?? '');
         $context = ($this->contextForPost)($post);
         $existing = $this->generationStore->findByTarget((string) $context['post_id'], (string) $context['content_hash']);
+        $existingIsClaimedRequest = $existing !== null
+            && $existing['status'] === 'pending'
+            && is_array($existing['request_context'] ?? null)
+            && is_array($existing['request_context']['agent_reply_request'] ?? null);
         if ($existing !== null && $existing['agent_post_id'] !== null) {
             return $this->statusResponse('already_posted', $postId, [
                 'agent_post_id' => $existing['agent_post_id'],
@@ -45,7 +96,7 @@ final class AgentReplyFulfillmentService
         if ($existing !== null && $existing['status'] === 'failed') {
             return $this->failedResponse($existing);
         }
-        if ($existing !== null && in_array($existing['status'], ['pending', 'posting'], true)) {
+        if ($existing !== null && in_array($existing['status'], ['pending', 'posting'], true) && !$existingIsClaimedRequest) {
             return $this->statusResponse('in_progress', $postId);
         }
 
@@ -76,7 +127,7 @@ final class AgentReplyFulfillmentService
         $generationContext['analysis_hash'] = $this->analysisHash($analysis);
 
         $stored = $existing !== null && $existing['status'] === 'complete' ? $existing : null;
-        if ($stored === null) {
+        if ($stored === null && !$existingIsClaimedRequest) {
             $reservation = $this->generationStore->reserveGeneration($generationContext);
             if (($reservation['reserved'] ?? false) !== true) {
                 if ($reservation['agent_post_id'] !== null) {
@@ -261,5 +312,23 @@ final class AgentReplyFulfillmentService
             'failure_message' => $row['failure_message'] ?? null,
             'retry_after' => $row['retry_after'] ?? null,
         ];
+    }
+
+    /**
+     * @param string|array<string, mixed> $reason
+     * @return array<string, mixed>
+     */
+    private function markSkippedResponse(string $postId, string $contentHash, string|array $reason): array
+    {
+        $details = is_array($reason) ? $reason : ['reason' => $reason];
+        $stored = $this->generationStore->markSkipped(
+            $postId,
+            $contentHash,
+            (string) ($details['reason'] ?? 'not_recommended')
+        );
+
+        return $this->statusResponse('not_recommended', $postId, array_merge([
+            'reason' => (string) ($stored['failure_code'] ?? 'not_recommended'),
+        ], $details));
     }
 }
