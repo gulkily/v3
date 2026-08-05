@@ -51,6 +51,15 @@ final class Application
     ) {
     }
 
+    /**
+     * @param array<string, mixed> $requestRow
+     * @return array<string, mixed>
+     */
+    public function fulfillAgentReplyRequest(array $requestRow): array
+    {
+        return $this->agentReplyFulfillmentService()->fulfillRequest($requestRow);
+    }
+
     public function handle(string $method, string $requestUri): void
     {
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';

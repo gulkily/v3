@@ -209,6 +209,51 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
         });
     }
 
+    public function claimRequestedForPost(string $postId): ?array
+    {
+        $claimed = $this->withImmediateTransaction(function () use ($postId): array {
+            $stmt = $this->pdo->prepare(
+                'SELECT id, target_post_id, target_content_hash
+                 FROM post_generated_responses
+                 WHERE status = :status AND target_post_id = :target_post_id
+                 ORDER BY requested_at ASC, id ASC
+                 LIMIT 1'
+            );
+            $stmt->execute([
+                'status' => 'requested',
+                'target_post_id' => $postId,
+            ]);
+            $row = $stmt->fetch();
+            if ($row === false) {
+                return [];
+            }
+
+            $update = $this->pdo->prepare(
+                'UPDATE post_generated_responses
+                 SET status = :pending
+                 WHERE id = :id AND status = :requested'
+            );
+            $update->execute([
+                'pending' => 'pending',
+                'id' => (int) $row['id'],
+                'requested' => 'requested',
+            ]);
+            if ($update->rowCount() < 1) {
+                return [];
+            }
+
+            $claimedRow = $this->findByTarget((string) $row['target_post_id'], (string) $row['target_content_hash']);
+            if ($claimedRow === null) {
+                return [];
+            }
+
+            $claimedRow['claimed'] = true;
+            return [$claimedRow];
+        });
+
+        return $claimed[0] ?? null;
+    }
+
     public function reservePosting(string $postId, string $contentHash): ?array
     {
         $stmt = $this->pdo->prepare(

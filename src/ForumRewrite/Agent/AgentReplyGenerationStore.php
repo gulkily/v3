@@ -39,6 +39,11 @@ interface AgentReplyGenerationStore
     /**
      * @return array<string, mixed>|null
      */
+    public function claimRequestedForPost(string $postId): ?array;
+
+    /**
+     * @return array<string, mixed>|null
+     */
     public function reservePosting(string $postId, string $contentHash): ?array;
 
     /**

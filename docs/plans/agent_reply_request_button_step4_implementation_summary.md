@@ -78,3 +78,21 @@
   - Focused `WriteApiSmokeTest` run via `php -r ...`: `testClaimedAgentReplyRequestAnalyzesAndPublishes` and `testClaimedAgentReplyRequestStoresGateSkip` passed.
 - Notes:
   - Claimed rows currently use the existing `pending` status; recovery of stale pending rows remains a minimal V1 policy for the command stage.
+
+## Stage 7 - Periodic Fulfillment Command
+- Changes:
+  - Added `scripts/run_agent_reply_requests.php` with `--limit`, `--dry-run`, `--post-id`, `--repository-root`, and `--database-path`.
+  - Added `Application::fulfillAgentReplyRequest()` as the non-HTTP entry point for claimed rows.
+  - Added targeted generated-response claiming for the command's `--post-id` option.
+  - Added command smoke coverage for dry run, one queued fulfillment, and duplicate-free repeat execution.
+- Verification:
+  - `php -l scripts/run_agent_reply_requests.php`
+  - `php -l src/ForumRewrite/Agent/SqliteAgentReplyGenerationStore.php`
+  - `php -l src/ForumRewrite/Agent/AgentReplyGenerationStore.php`
+  - `php -l src/ForumRewrite/Application.php`
+  - `php -l tests/WriteApiSmokeTest.php`
+  - `php -l tests/AgentReplyGenerationTest.php`
+  - Focused `WriteApiSmokeTest` run via `php -r ...`: `testAgentReplyRequestCommandProcessesQueuedRequestOnce`, `testClaimedAgentReplyRequestAnalyzesAndPublishes`, and `testClaimedAgentReplyRequestStoresGateSkip` passed.
+  - Focused `AgentReplyGenerationTest` run via `php -r ...`: `testStoreClaimsRequestedRowsOnce` and `testStoreClaimsRequestedRowForSpecificPost` passed.
+- Notes:
+  - The command exits successfully when the process lock is already held; row-level claims still provide the correctness boundary for duplicate prevention.

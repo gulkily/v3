@@ -574,10 +574,10 @@ PHP);
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
             $claimed = $store->claimNextRequested();
 
-            $result = $this->agentReplyFulfillmentService($application)->fulfillRequest($claimed[0]);
+            $result = $application->fulfillAgentReplyRequest($claimed[0]);
             $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
             $row = $store->findByTarget($postId, $claimed[0]['target_content_hash']);
-            $second = $this->agentReplyFulfillmentService($application)->fulfillRequest($claimed[0]);
+            $second = $application->fulfillAgentReplyRequest($claimed[0]);
 
             assertSame('requested', $request['generation_status']);
             assertSame(1, count($claimed));
@@ -610,7 +610,7 @@ PHP);
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
             $claimed = $store->claimNextRequested();
 
-            $result = $this->agentReplyFulfillmentService($application)->fulfillRequest($claimed[0]);
+            $result = $application->fulfillAgentReplyRequest($claimed[0]);
             $row = $store->findByTarget($postId, $claimed[0]['target_content_hash']);
 
             assertSame('requested', $request['generation_status']);
@@ -620,6 +620,46 @@ PHP);
             assertSame('respondability_score_low', $row['failure_code']);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
+            $_COOKIE = [];
+        }
+    }
+
+    public function testAgentReplyRequestCommandProcessesQueuedRequestOnce(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        putenv('FORUM_PUBLIC_ARTIFACT_ROOT=' . $artifactRoot);
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Command%20Agent&body=What%20should%20the%20command%20do%3F'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = [];
+
+            $baseCommand = 'php scripts/run_agent_reply_requests.php --limit=1'
+                . ' --repository-root=' . escapeshellarg($repositoryRoot)
+                . ' --database-path=' . escapeshellarg($databasePath);
+            $dryRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --dry-run');
+            $firstRun = $this->runCommand(dirname(__DIR__), $baseCommand);
+            $secondRun = $this->runCommand(dirname(__DIR__), $baseCommand);
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $row = $pdo->query('SELECT status, agent_post_id FROM post_generated_responses')->fetch();
+
+            assertSame('requested', $request['generation_status']);
+            assertStringContains('Queued requests: 1', $dryRun);
+            assertStringContains('Claimed: 1, generated: 1', $firstRun);
+            assertStringContains('Claimed: 0, generated: 0', $secondRun);
+            assertSame('posted', $row['status']);
+            assertSame(true, is_string($row['agent_post_id']) && $row['agent_post_id'] !== '');
+        } finally {
+            putenv('DEDALUS_ANALYSIS_MODE');
+            putenv('FORUM_PUBLIC_ARTIFACT_ROOT');
             $_COOKIE = [];
         }
     }
@@ -2950,14 +2990,6 @@ PHP);
         ob_start();
         $application->handle($method, $path);
         return (string) ob_get_clean();
-    }
-
-    private function agentReplyFulfillmentService(Application $application): object
-    {
-        $method = new ReflectionMethod(Application::class, 'agentReplyFulfillmentService');
-        $method->setAccessible(true);
-
-        return $method->invoke($application);
     }
 
     private function extractValue(string $response, string $key): string
