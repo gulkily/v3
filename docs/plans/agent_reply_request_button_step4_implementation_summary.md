@@ -96,3 +96,17 @@
   - Focused `AgentReplyGenerationTest` run via `php -r ...`: `testStoreClaimsRequestedRowsOnce` and `testStoreClaimsRequestedRowForSpecificPost` passed.
 - Notes:
   - The command exits successfully when the process lock is already held; row-level claims still provide the correctness boundary for duplicate prevention.
+
+## Stage 8 - Documentation And Regression
+- Changes:
+  - Updated production documentation with the request/fulfillment split, non-blocking button behavior, one-minute cron example, manual worker commands, and overlap-safety expectations.
+  - Updated production examples to show the cron invocation and separate automatic-agent-reply defaults from manual request fulfillment.
+  - Revised legacy write API smoke tests so `/api/generate_agent_reply` assertions cover request creation, while posting, skip, unicode, context, idempotency, and posting-failure assertions run through claimed request fulfillment.
+- Verification:
+  - `php -l tests/WriteApiSmokeTest.php`
+  - `php -l scripts/run_agent_reply_requests.php`
+  - `php -l src/ForumRewrite/Agent/AgentReplyFulfillmentService.php && php -l src/ForumRewrite/Agent/SqliteAgentReplyGenerationStore.php && php -l src/ForumRewrite/Application.php`
+  - Direct affected-method run for the updated `WriteApiSmokeTest` agent reply cases passed.
+  - `php tests/run.php` passed all updated agent reply request/button/worker tests and failed only `LocalAppSmokeTest::testFrontControllerShowsBusyErrorForExecutionLockContention`.
+- Notes:
+  - The full suite failure was already present earlier in Step 4; the run also emitted pre-existing asset fingerprint filename-length warnings.

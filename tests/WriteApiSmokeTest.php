@@ -430,14 +430,24 @@ PHP);
             $contentHash = $this->contentHashForAnalysis($databasePath, $postId);
             (new SqlitePostAnalysisStore(new PDO('sqlite:' . $databasePath)))->saveFailed($postId, $contentHash, 'provider_error', 'analysis failed');
 
+            $_COOKIE = ['identity_hint' => 'guest'];
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = [];
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $claimed = $store->claimNextRequested();
+            $result = $application->fulfillAgentReplyRequest($claimed[0]);
+            $row = $store->findByTarget($postId, $contentHash);
 
             assertSame('ok', $response['status']);
-            assertSame('analysis_required', $response['generation_status']);
-            assertSame('analysis_not_complete', $response['reason']);
-            assertSame('failed', $response['analysis_status']);
+            assertSame('requested', $response['generation_status']);
+            assertSame('not_recommended', $result['generation_status']);
+            assertSame('analysis_not_complete', $result['reason']);
+            assertSame('failed', $result['analysis_status']);
+            assertSame('skipped', $row['status']);
+            assertSame('analysis_not_complete', $row['failure_code']);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
+            $_COOKIE = [];
         }
     }
 
@@ -462,11 +472,22 @@ PHP);
                 'engagement' => ['response_should_be_public' => false],
             ]);
 
-            $low = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($lowPostId)), true);
-            $risk = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($riskPostId)), true);
-            $moderation = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($moderationPostId)), true);
-            $private = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($privatePostId)), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $lowRequest = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($lowPostId)), true);
+            $riskRequest = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($riskPostId)), true);
+            $moderationRequest = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($moderationPostId)), true);
+            $privateRequest = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($privatePostId)), true);
+            $_COOKIE = [];
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $low = $application->fulfillAgentReplyRequest($store->claimRequestedForPost($lowPostId));
+            $risk = $application->fulfillAgentReplyRequest($store->claimRequestedForPost($riskPostId));
+            $moderation = $application->fulfillAgentReplyRequest($store->claimRequestedForPost($moderationPostId));
+            $private = $application->fulfillAgentReplyRequest($store->claimRequestedForPost($privatePostId));
 
+            assertSame('requested', $lowRequest['generation_status']);
+            assertSame('requested', $riskRequest['generation_status']);
+            assertSame('requested', $moderationRequest['generation_status']);
+            assertSame('requested', $privateRequest['generation_status']);
             assertSame('not_recommended', $low['generation_status']);
             assertSame('respondability_score_low', $low['reason']);
             assertSame('not_recommended', $risk['generation_status']);
@@ -477,6 +498,7 @@ PHP);
             assertSame('response_not_public', $private['reason']);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
+            $_COOKIE = [];
         }
     }
 
@@ -673,10 +695,15 @@ PHP);
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
             $postId = $this->createAnalyzedThread($application, $databasePath);
 
-            $first = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = [];
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $claimed = $store->claimRequestedForPost($postId);
+            $first = $application->fulfillAgentReplyRequest($claimed);
             $agentPostId = (string) $first['agent_post_id'];
             $postCountAfterFirst = $this->countCanonicalPostFiles($repositoryRoot);
-            $second = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $second = $application->fulfillAgentReplyRequest($claimed);
             $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
             $pdo = new PDO('sqlite:' . $databasePath);
             $row = $pdo->query('SELECT status, provider, response_text, agent_post_id, agent_identity_id, agent_profile_slug, posted_at FROM post_generated_responses')->fetch();
@@ -687,8 +714,9 @@ PHP);
             $users = $this->renderMethod($application, 'GET', '/users/');
             $activity = $this->renderMethod($application, 'GET', '/activity/?view=content');
 
+            assertSame('requested', $request['generation_status']);
             assertSame('generated', $first['generation_status']);
-            assertSame(false, $first['cached']);
+            assertSame(true, $first['cached']);
             assertSame('stub', $first['provider']);
             assertSame('stub/post-analysis', $first['provider_model']);
             assertStringContains('strongest reason', $first['response_text']);
@@ -724,6 +752,7 @@ PHP);
             assertStringContains('automated reply agent', $activity);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
+            $_COOKIE = [];
         }
     }
 
@@ -741,7 +770,11 @@ PHP);
                 ],
             ]);
 
-            $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = [];
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $response = $application->fulfillAgentReplyRequest($store->claimRequestedForPost($postId));
             $pdo = new PDO('sqlite:' . $databasePath);
             $statement = $pdo->prepare('SELECT response_text, agent_post_id FROM post_generated_responses WHERE target_post_id = :post_id');
             $statement->execute(['post_id' => $postId]);
@@ -749,6 +782,7 @@ PHP);
             $replyRecord = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, (string) $row['agent_post_id']));
             $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode((string) $row['agent_post_id']));
 
+            assertSame('requested', $request['generation_status']);
             assertSame('generated', $response['generation_status']);
             assertStringContains("'Хорошо'", (string) $row['response_text']);
             assertStringContains("'Хорошо'", $replyRecord);
@@ -756,6 +790,7 @@ PHP);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
             putenv('FORUM_UNICODE_AUTHORED_TEXT');
+            $_COOKIE = [];
         }
     }
 
@@ -783,11 +818,16 @@ PHP);
             $replyId = $this->extractValue($replyResponse, 'post_id');
             $this->analyzePostWithoutAgentReply($application, $replyId);
 
-            $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($replyId)), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($replyId)), true);
+            $_COOKIE = [];
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $response = $application->fulfillAgentReplyRequest($store->claimRequestedForPost($replyId));
             $pdo = new PDO('sqlite:' . $databasePath);
             $contextJson = (string) $pdo->query('SELECT request_context_json FROM post_generated_responses')->fetchColumn();
             $context = json_decode($contextJson, true);
 
+            assertSame('requested', $request['generation_status']);
             assertSame('generated', $response['generation_status']);
             assertSame($replyId, $context['post_id']);
             assertSame($threadId, $context['thread_comments'][0]['post_id']);
@@ -801,6 +841,7 @@ PHP);
             assertSame(false, $context['thread_comments'][1]['is_parent']);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
+            $_COOKIE = [];
         }
     }
 
@@ -882,9 +923,12 @@ PHP);
             $postCountBefore = $this->countCanonicalPostFiles($repositoryRoot);
 
             $analysis = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = [];
             $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
             $pdo = new PDO('sqlite:' . $databasePath);
+            $rowCount = (int) $pdo->query('SELECT COUNT(*) FROM post_generated_responses')->fetchColumn();
 
             assertSame(false, $analysis['agent_reply_generation_allowed']);
             assertSame('not_recommended', $analysis['agent_reply_generation_status']);
@@ -893,13 +937,13 @@ PHP);
             assertSame(null, $analysis['agent_reply_post_url']);
             assertSame('config_disabled', $analysis['agent_reply_reason']);
             assertSame(null, $analysis['agent_reply_failure_code']);
-            assertSame('not_recommended', $response['generation_status']);
-            assertSame('config_disabled', $response['reason']);
+            assertSame('requested', $response['generation_status']);
             assertSame($postCountBefore, $postCountAfter);
-            assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM sqlite_master WHERE type = "table" AND name = "post_generated_responses"')->fetchColumn());
+            assertSame(1, $rowCount);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
             putenv('DEDALUS_AGENT_REPLIES_ENABLED');
+            $_COOKIE = [];
         }
     }
 
@@ -913,10 +957,15 @@ PHP);
             $postId = $this->createAnalyzedThread($application, $databasePath);
             $this->deleteTree($repositoryRoot . '/.git');
 
-            $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = [];
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $response = $application->fulfillAgentReplyRequest($store->claimRequestedForPost($postId));
             $pdo = new PDO('sqlite:' . $databasePath);
             $row = $pdo->query('SELECT status, failure_code, failure_message, agent_post_id FROM post_generated_responses')->fetch();
 
+            assertSame('requested', $request['generation_status']);
             assertSame('failed', $response['generation_status']);
             assertSame('posting_error', $response['failure_code']);
             assertSame('failed', $row['status']);
@@ -925,6 +974,7 @@ PHP);
             assertSame(null, $row['agent_post_id']);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
+            $_COOKIE = [];
         }
     }
 
@@ -2121,7 +2171,11 @@ PHP);
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
             $postId = $this->createAnalyzedThread($application, $databasePath);
-            $reply = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = [];
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $reply = $application->fulfillAgentReplyRequest($store->claimRequestedForPost($postId));
             $agentPostId = (string) $reply['agent_post_id'];
 
             $_COOKIE = ['identity_hint' => 'guest'];
