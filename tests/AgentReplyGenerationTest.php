@@ -90,6 +90,76 @@ final class AgentReplyGenerationTest
         assertSame(1, (int) $pdo->query('SELECT COUNT(*) FROM post_generated_responses')->fetchColumn());
     }
 
+    public function testStoreRecordsAgentReplyRequestOncePerTarget(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $store = new SqliteAgentReplyGenerationStore($pdo);
+
+        $first = $store->requestForTarget($this->context(), [
+            'requested_by_identity_id' => 'openpgp:requester',
+            'requested_by_profile_slug' => 'requester',
+        ]);
+        $second = $store->requestForTarget($this->context(), [
+            'requested_by_identity_id' => 'openpgp:other',
+            'requested_by_profile_slug' => 'other',
+        ]);
+
+        assertSame('requested', $first['status']);
+        assertSame(true, $first['requested']);
+        assertSame($first['id'], $second['id']);
+        assertSame(false, $second['requested']);
+        assertSame('openpgp:requester', $second['request_context']['agent_reply_request']['requested_by_identity_id']);
+        assertSame(1, (int) $pdo->query('SELECT COUNT(*) FROM post_generated_responses')->fetchColumn());
+    }
+
+    public function testStoreDoesNotReplaceExistingPostedRowWithRequest(): void
+    {
+        $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));
+        $store->saveComplete($this->context(), [
+            'provider' => 'stub',
+            'provider_model' => 'stub/agent-reply',
+            'response_text' => 'First reply.',
+            'response_style' => 'curious',
+            'response_intent' => 'answer',
+        ]);
+        $store->reservePosting('root-001', 'hash-001');
+        $store->markPosted('root-001', 'hash-001', 'reply-123', 'openpgp:agent', 'reply-agent');
+
+        $requested = $store->requestForTarget($this->context(), [
+            'requested_by_identity_id' => 'openpgp:requester',
+        ]);
+
+        assertSame('posted', $requested['status']);
+        assertSame(false, $requested['requested']);
+        assertSame('reply-123', $requested['agent_post_id']);
+    }
+
+    public function testStoreClaimsRequestedRowsOnce(): void
+    {
+        $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));
+        $store->requestForTarget($this->context(), ['requested_by_identity_id' => 'openpgp:requester']);
+
+        $first = $store->claimNextRequested();
+        $second = $store->claimNextRequested();
+
+        assertSame(1, count($first));
+        assertSame('pending', $first[0]['status']);
+        assertSame(true, $first[0]['claimed']);
+        assertSame([], $second);
+    }
+
+    public function testStoreMarksRequestedRowSkipped(): void
+    {
+        $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));
+        $store->requestForTarget($this->context(), ['requested_by_identity_id' => 'openpgp:requester']);
+
+        $skipped = $store->markSkipped('root-001', 'hash-001', 'respondability_not_recommended');
+
+        assertSame('skipped', $skipped['status']);
+        assertSame('respondability_not_recommended', $skipped['failure_code']);
+        assertSame('openpgp:requester', $skipped['request_context']['agent_reply_request']['requested_by_identity_id']);
+    }
+
     public function testStoreReservesPostingOncePerTarget(): void
     {
         $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));

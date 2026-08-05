@@ -25,6 +25,18 @@ interface AgentReplyGenerationStore
     public function reserveGeneration(array $context): array;
 
     /**
+     * @param array<string, mixed> $context
+     * @param array<string, mixed> $requestContext
+     * @return array<string, mixed>
+     */
+    public function requestForTarget(array $context, array $requestContext): array;
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function claimNextRequested(int $limit = 1): array;
+
+    /**
      * @return array<string, mixed>|null
      */
     public function reservePosting(string $postId, string $contentHash): ?array;
@@ -33,6 +45,11 @@ interface AgentReplyGenerationStore
      * @return array<string, mixed>
      */
     public function saveFailed(string $postId, string $contentHash, string $analysisHash, string $failureCode, string $failureMessage): array;
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function markSkipped(string $postId, string $contentHash, string $reason): array;
 
     /**
      * @return array<string, mixed>
