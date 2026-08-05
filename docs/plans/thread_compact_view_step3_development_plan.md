@@ -66,6 +66,15 @@
 - Canonical components/API contracts touched: `public/assets/site.css`.
 - Status: Implemented. Card padding reduced to `0.35rem 0.5rem`, card `font-size: 0.85rem`/`line-height: 1.3`, child margins reset with a `0.15rem` gap, `.meta` text explicitly set to `0.78rem`. Verified against real data: card height dropped from ~130px to ~58px; full test suite passes.
 
+## Stage 7 (follow-up)
+- Goal: Per further user feedback, remove the remaining gaps between consecutive thread cards in compact mode and merge them into one continuous list block instead of visually separate boxes.
+- Dependencies: Stage 6 committed.
+- Expected changes: In `public/assets/site.css`, add `.thread-list .thread-card + .thread-card { margin-top: -1px; }`, overlapping each card's top border onto the previous card's bottom border (both `var(--line)`) so adjacent thread cards read as one bordered block with hairline row dividers, while leaving the gap before the first thread card (after the controls/compose cards) untouched.
+- Verification approach: Manual browser check (Playwright/Chromium) against the real 498-thread dataset; screenshot confirms a single seamless block with no doubled borders or gaps between rows.
+- Risks or open questions: None; selector specificity (`.thread-list .thread-card + .thread-card`, 3 classes) cleanly overrides the general `.thread-list > * + *` gap rule (lower specificity) for just the thread-card-to-thread-card case.
+- Canonical components/API contracts touched: `public/assets/site.css`.
+- Status: Implemented and verified visually. Note: full test suite run during this stage surfaced `LocalAppSmokeTest::testFrontControllerShowsBusyErrorForExecutionLockContention` failing; confirmed via `git stash`/`git checkout main` that this failure is pre-existing on `main` and unrelated to any change on this branch (environment-specific `flock()` timing, not a regression) — left as-is.
+
 ## Planned Commit Cadence
 - Commit 1: Add thread compact view plans (this document plus `thread_compact_view_plan_v1.md`).
 - Commit 2: Extract shared `thread_card.php` partial (Stage 1).

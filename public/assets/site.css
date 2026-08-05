@@ -2785,6 +2785,10 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   font-size: 0.78rem;
 }
 
+:root[data-thread-density="compact"] .thread-list .thread-card + .thread-card {
+  margin-top: -1px;
+}
+
 :root[data-thread-density="compact"] .thread-list > * + * {
   margin-top: 0.35rem;
 }
