@@ -670,15 +670,41 @@ PHP);
             $dryRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --dry-run');
             $firstRun = $this->runCommand(dirname(__DIR__), $baseCommand);
             $secondRun = $this->runCommand(dirname(__DIR__), $baseCommand);
+            $secondThreadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Quiet%20Command%20Agent&body=Should%20quiet%20mode%20still%20work%3F'
+            );
+            $secondPostId = $this->extractValue($secondThreadResponse, 'post_id');
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $secondRequest = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($secondPostId)), true);
+            $_COOKIE = [];
+            $quietRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --quiet --post-id=' . escapeshellarg($secondPostId));
             $pdo = new PDO('sqlite:' . $databasePath);
-            $row = $pdo->query('SELECT status, agent_post_id FROM post_generated_responses')->fetch();
+            $statement = $pdo->prepare('SELECT status, agent_post_id FROM post_generated_responses WHERE target_post_id = :post_id');
+            $statement->execute(['post_id' => $postId]);
+            $row = $statement->fetch();
+            $statement->execute(['post_id' => $secondPostId]);
+            $quietRow = $statement->fetch();
 
             assertSame('requested', $request['generation_status']);
+            assertSame('requested', $secondRequest['generation_status']);
             assertStringContains('Queued requests: 1', $dryRun);
+            assertStringContains('Artifact root: ' . $artifactRoot, $dryRun);
+            assertStringContains('Queued before claim: 1', $firstRun);
+            assertStringContains('Claimed rows: 1', $firstRun);
+            assertStringContains('Processing request id=', $firstRun);
+            assertStringContains('target_post_id=' . $postId, $firstRun);
+            assertStringContains('Result: request_id=', $firstRun);
+            assertStringContains('status=generated', $firstRun);
             assertStringContains('Claimed: 1, generated: 1', $firstRun);
+            assertStringContains('Queued after run: 0', $firstRun);
             assertStringContains('Claimed: 0, generated: 0', $secondRun);
+            assertSame('', $quietRun);
             assertSame('posted', $row['status']);
             assertSame(true, is_string($row['agent_post_id']) && $row['agent_post_id'] !== '');
+            assertSame('posted', $quietRow['status']);
+            assertSame(true, is_string($quietRow['agent_post_id']) && $quietRow['agent_post_id'] !== '');
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
             putenv('FORUM_PUBLIC_ARTIFACT_ROOT');

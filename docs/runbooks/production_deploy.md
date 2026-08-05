@@ -91,10 +91,12 @@ Approved users can request a `reply-agent` response from eligible post cards. Th
 Fulfillment is handled by a periodic PHP command. A typical cron entry is:
 
 ```cron
-* * * * * cd /srv/forum-rewrite/app && php scripts/run_agent_reply_requests.php --limit=10 >> /var/log/forum-agent-replies.log 2>&1
+* * * * * cd /srv/forum-rewrite/app && php scripts/run_agent_reply_requests.php --quiet --limit=10 >> /var/log/forum-agent-replies.log 2>&1
 ```
 
 The command uses the same repository, database, private Dedalus config, `reply-agent` key directory, and artifact paths as the web app. It exits successfully if another fulfillment run is already active, and queued-row claims prevent duplicate `reply-agent` posts for the same requested post content.
+
+Without `--quiet`, the command prints repository/database/artifact paths, queue counts before and after the run, claimed-row count, one processing/result line per request, reason totals, and elapsed time. `--quiet` suppresses successful STDOUT for cron while preserving STDERR errors.
 
 Useful manual commands:
 

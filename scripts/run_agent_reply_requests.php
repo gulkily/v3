@@ -17,6 +17,7 @@ $artifactRoot = getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public
 $limit = max(1, (int) ($options['limit'] ?? 10));
 $postId = isset($options['post-id']) ? trim((string) $options['post-id']) : '';
 $dryRun = ($options['dry-run'] ?? false) === true;
+$quiet = ($options['quiet'] ?? false) === true;
 $startedAt = microtime(true);
 
 try {
@@ -26,10 +27,13 @@ try {
 
     if ($dryRun) {
         $count = countRequestedRows($pdo, $postId);
-        fwrite(STDOUT, "Agent reply request dry run\n");
-        fwrite(STDOUT, "Repository: {$repositoryRoot}\n");
-        fwrite(STDOUT, "Database: {$databasePath}\n");
-        fwrite(STDOUT, "Queued requests: {$count}\n");
+        emit($quiet, "Agent reply request dry run\n");
+        emit($quiet, "Repository: {$repositoryRoot}\n");
+        emit($quiet, "Database: {$databasePath}\n");
+        emit($quiet, "Artifact root: {$artifactRoot}\n");
+        emit($quiet, "Post filter: " . ($postId === '' ? '(none)' : $postId) . "\n");
+        emit($quiet, "Limit: {$limit}\n");
+        emit($quiet, "Queued requests: {$count}\n");
         exit(0);
     }
 
@@ -43,8 +47,17 @@ try {
         'in_progress' => 0,
     ];
     $reasons = [];
+    $queuedBefore = countRequestedRows($pdo, $postId);
 
-    $run = static function () use ($store, $application, $limit, $postId, &$summary, &$reasons): void {
+    emit($quiet, "Agent reply request fulfillment starting\n");
+    emit($quiet, "Repository: {$repositoryRoot}\n");
+    emit($quiet, "Database: {$databasePath}\n");
+    emit($quiet, "Artifact root: {$artifactRoot}\n");
+    emit($quiet, "Post filter: " . ($postId === '' ? '(none)' : $postId) . "\n");
+    emit($quiet, "Limit: {$limit}\n");
+    emit($quiet, "Queued before claim: {$queuedBefore}\n");
+
+    $run = static function () use ($store, $application, $limit, $postId, $quiet, &$summary, &$reasons): void {
         $claimedRows = [];
         if ($postId !== '') {
             $claimed = $store->claimRequestedForPost($postId);
@@ -53,10 +66,29 @@ try {
             $claimedRows = $store->claimNextRequested($limit);
         }
 
+        emit($quiet, 'Claimed rows: ' . count($claimedRows) . "\n");
+
         foreach ($claimedRows as $row) {
             $summary['claimed']++;
+            $requestId = (string) ($row['id'] ?? '');
+            $targetPostId = (string) ($row['target_post_id'] ?? '');
+            $contentHash = (string) ($row['target_content_hash'] ?? '');
+            emit($quiet, sprintf(
+                "Processing request id=%s target_post_id=%s content_hash=%s\n",
+                $requestId === '' ? '(unknown)' : $requestId,
+                $targetPostId === '' ? '(unknown)' : $targetPostId,
+                $contentHash === '' ? '(unknown)' : $contentHash
+            ));
+
             $result = $application->fulfillAgentReplyRequest($row);
             $status = (string) ($result['generation_status'] ?? 'failed');
+            $detail = [
+                'request_id' => $requestId,
+                'target_post_id' => $targetPostId,
+                'status' => $status,
+                'reason' => null,
+                'agent_post_id' => isset($result['agent_post_id']) ? (string) $result['agent_post_id'] : null,
+            ];
             if ($status === 'generated') {
                 $summary['generated']++;
             } elseif ($status === 'already_posted') {
@@ -64,15 +96,30 @@ try {
             } elseif ($status === 'not_recommended') {
                 $summary['skipped']++;
                 $reason = (string) ($result['reason'] ?? 'not_recommended');
+                $detail['reason'] = $reason;
                 $reasons[$reason] = ($reasons[$reason] ?? 0) + 1;
             } elseif ($status === 'failed') {
                 $summary['failed']++;
                 $reason = (string) ($result['failure_code'] ?? 'failed');
+                $detail['reason'] = $reason;
                 $reasons[$reason] = ($reasons[$reason] ?? 0) + 1;
             } else {
                 $summary['in_progress']++;
+                $detail['reason'] = $status;
                 $reasons[$status] = ($reasons[$status] ?? 0) + 1;
             }
+            $parts = [
+                'request_id=' . ($requestId === '' ? '(unknown)' : $requestId),
+                'target_post_id=' . ($targetPostId === '' ? '(unknown)' : $targetPostId),
+                'status=' . $status,
+            ];
+            if ($detail['reason'] !== null && $detail['reason'] !== '') {
+                $parts[] = 'reason=' . $detail['reason'];
+            }
+            if ($detail['agent_post_id'] !== null && $detail['agent_post_id'] !== '') {
+                $parts[] = 'agent_post_id=' . $detail['agent_post_id'];
+            }
+            emit($quiet, 'Result: ' . implode(' ', $parts) . "\n");
         }
     };
 
@@ -80,17 +127,17 @@ try {
         (new ExecutionLock(dirname($databasePath) . '/forum-rewrite-agent-replies.lock', 0))->withExclusiveLock($run);
     } catch (RuntimeException $exception) {
         if (str_contains($exception->getMessage(), 'Timed out waiting for execution lock')) {
-            fwrite(STDOUT, "Another agent reply request worker is already running.\n");
+            emit($quiet, "Another agent reply request worker is already running.\n");
             exit(0);
         }
 
         throw $exception;
     }
 
-    fwrite(STDOUT, "Agent reply request fulfillment complete\n");
-    fwrite(STDOUT, "Repository: {$repositoryRoot}\n");
-    fwrite(STDOUT, "Database: {$databasePath}\n");
-    fwrite(STDOUT, sprintf(
+    $queuedAfter = countRequestedRows($pdo, $postId);
+
+    emit($quiet, "Agent reply request fulfillment complete\n");
+    emit($quiet, sprintf(
         "Claimed: %d, generated: %d, already posted: %d, skipped: %d, failed: %d, in progress: %d\n",
         $summary['claimed'],
         $summary['generated'],
@@ -99,15 +146,16 @@ try {
         $summary['failed'],
         $summary['in_progress'],
     ));
+    emit($quiet, "Queued after run: {$queuedAfter}\n");
     if ($reasons !== []) {
         ksort($reasons);
-        fwrite(STDOUT, 'Reasons: ' . implode(', ', array_map(
+        emit($quiet, 'Reasons: ' . implode(', ', array_map(
             static fn (string $reason, int $count): string => $reason . '=' . $count,
             array_keys($reasons),
             array_values($reasons)
         )) . "\n");
     }
-    fwrite(STDOUT, sprintf("Elapsed: %.3f seconds\n", microtime(true) - $startedAt));
+    emit($quiet, sprintf("Elapsed: %.3f seconds\n", microtime(true) - $startedAt));
 } catch (Throwable $exception) {
     fwrite(STDERR, 'Error: ' . $exception->getMessage() . "\n\n" . usageText());
     exit(1);
@@ -121,6 +169,11 @@ function parseOptions(array $args): array
 {
     $options = [];
     foreach ($args as $arg) {
+        if ($arg === '--quiet') {
+            $options['quiet'] = true;
+            continue;
+        }
+
         if ($arg === '--dry-run') {
             $options['dry-run'] = true;
             continue;
@@ -139,6 +192,15 @@ function parseOptions(array $args): array
     }
 
     return $options;
+}
+
+function emit(bool $quiet, string $message): void
+{
+    if ($quiet) {
+        return;
+    }
+
+    fwrite(STDOUT, $message);
 }
 
 function countRequestedRows(PDO $pdo, string $postId): int
@@ -161,5 +223,5 @@ function countRequestedRows(PDO $pdo, string $postId): int
 
 function usageText(): string
 {
-    return "Usage: php scripts/run_agent_reply_requests.php [--limit=10] [--dry-run] [--post-id=<id>] [--repository-root=<path>] [--database-path=<path>]\n";
+    return "Usage: php scripts/run_agent_reply_requests.php [--limit=10] [--dry-run] [--quiet] [--post-id=<id>] [--repository-root=<path>] [--database-path=<path>]\n";
 }
