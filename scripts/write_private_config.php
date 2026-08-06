@@ -9,12 +9,18 @@ $options = [
     'path' => $defaultPath,
     'force' => false,
     'api_key_stdin' => false,
+    'view' => false,
     'help' => false,
 ];
 
 foreach (array_slice($argv, 1) as $arg) {
     if ($arg === '--help' || $arg === '-h') {
         $options['help'] = true;
+        continue;
+    }
+
+    if ($arg === 'view' || $arg === '--view') {
+        $options['view'] = true;
         continue;
     }
 
@@ -55,21 +61,19 @@ $defaults = [
     'DEDALUS_MODEL' => 'openai/gpt-5-nano',
     'DEDALUS_TIMEOUT_SECONDS' => 60,
     'DEDALUS_POST_ANALYSIS_PROMPT_PATH' => 'prompts/dedalus_post_analysis_system.txt',
+    'DEDALUS_AGENT_REPLIES_ENABLED' => true,
+    'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED' => false,
 ];
 
 $existing = [];
 if (is_file($path)) {
-    $loaded = require $path;
-    if (!is_array($loaded)) {
-        fwrite(STDERR, "Existing config did not return an array: {$path}\n");
-        exit(1);
-    }
+    $existing = loadConfigFile($path);
+}
 
-    foreach ($loaded as $key => $value) {
-        if (is_string($key)) {
-            $existing[$key] = $value;
-        }
-    }
+if ($options['view']) {
+    printConfigView($path, $defaults, $existing);
+    printUpdateReminder($path);
+    exit(0);
 }
 
 $config = array_merge($defaults, $existing);
@@ -103,6 +107,8 @@ $contents = "<?php\n\n"
     . renderConfigLine('DEDALUS_MODEL', $config['DEDALUS_MODEL'])
     . renderConfigLine('DEDALUS_TIMEOUT_SECONDS', (int) $config['DEDALUS_TIMEOUT_SECONDS'])
     . renderConfigLine('DEDALUS_POST_ANALYSIS_PROMPT_PATH', $config['DEDALUS_POST_ANALYSIS_PROMPT_PATH'])
+    . renderConfigLine('DEDALUS_AGENT_REPLIES_ENABLED', $config['DEDALUS_AGENT_REPLIES_ENABLED'])
+    . renderConfigLine('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $config['DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED'])
     . "];\n";
 
 $temporaryPath = $path . '.tmp-' . bin2hex(random_bytes(4));
@@ -124,6 +130,92 @@ fwrite(STDOUT, "{$action} private config at {$path}\n");
 if (($config['DEDALUS_API_KEY'] ?? '') === 'replace-with-real-key') {
     fwrite(STDOUT, "DEDALUS_API_KEY is still a placeholder. Update it before enabling real analysis.\n");
 }
+printUpdateReminder($path);
+
+/**
+ * @return array<string, mixed>
+ */
+function loadConfigFile(string $path): array
+{
+    $loaded = require $path;
+    if (!is_array($loaded)) {
+        fwrite(STDERR, "Existing config did not return an array: {$path}\n");
+        exit(1);
+    }
+
+    $config = [];
+    foreach ($loaded as $key => $value) {
+        if (is_string($key)) {
+            $config[$key] = $value;
+        }
+    }
+
+    return $config;
+}
+
+/**
+ * @param array<string, mixed> $defaults
+ * @param array<string, mixed> $config
+ */
+function printConfigView(string $path, array $defaults, array $config): void
+{
+    fwrite(STDOUT, "Private config path: {$path}\n");
+    if (!is_file($path)) {
+        fwrite(STDOUT, "Status: missing\n");
+        fwrite(STDOUT, "Values: no private config file found.\n");
+        return;
+    }
+
+    fwrite(STDOUT, "Status: present\n");
+    fwrite(STDOUT, "Values:\n");
+    foreach (array_keys($defaults) as $key) {
+        $hasFileValue = array_key_exists($key, $config);
+        $value = $hasFileValue ? $config[$key] : $defaults[$key];
+        $source = $hasFileValue ? 'file' : 'default';
+        $env = getenv($key);
+        if ($env !== false) {
+            $value = $env;
+            $source = 'environment override';
+        }
+
+        fwrite(STDOUT, '  ' . $key . ' = ' . formatConfigValue($key, $value) . ' (' . $source . ")\n");
+    }
+
+    $extraKeys = array_values(array_diff(array_keys($config), array_keys($defaults)));
+    if ($extraKeys !== []) {
+        sort($extraKeys);
+        fwrite(STDOUT, "Additional file values:\n");
+        foreach ($extraKeys as $key) {
+            fwrite(STDOUT, '  ' . $key . ' = ' . formatConfigValue($key, $config[$key]) . " (file)\n");
+        }
+    }
+}
+
+function formatConfigValue(string $key, mixed $value): string
+{
+    if (preg_match('/(API_KEY|SECRET|TOKEN|PASSWORD|PRIVATE_KEY)/i', $key) === 1) {
+        $stringValue = trim((string) $value);
+        if ($stringValue === '') {
+            return '<empty>';
+        }
+        if ($stringValue === 'replace-with-real-key') {
+            return '<placeholder>';
+        }
+
+        return '<set>';
+    }
+
+    return var_export($value, true);
+}
+
+function printUpdateReminder(string $path): void
+{
+    fwrite(STDOUT, "\nUpdate commands:\n");
+    fwrite(STDOUT, "  ./v3 private-config --force\n");
+    fwrite(STDOUT, "  printf '%s\\n' \"\$DEDALUS_API_KEY\" | ./v3 private-config --api-key-stdin\n");
+    fwrite(STDOUT, "  ./v3 private-config --path=" . escapeshellarg($path) . " --force\n");
+    fwrite(STDOUT, "Edit {$path} directly for booleans such as DEDALUS_AGENT_REPLIES_ENABLED and DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED.\n");
+}
 
 function renderConfigLine(string $key, mixed $value): string
 {
@@ -135,11 +227,14 @@ function printUsage(): void
     fwrite(STDOUT, <<<'TEXT'
 Usage:
   php scripts/write_private_config.php
+  php scripts/write_private_config.php view
+  php scripts/write_private_config.php --view
   php scripts/write_private_config.php --force
   printf '%s\n' "$DEDALUS_API_KEY" | php scripts/write_private_config.php --api-key-stdin
   php scripts/write_private_config.php --path=/private/path/secrets.php
 
 Creates or updates the private PHP config used by ForumRewrite\Support\PrivateConfig.
+Use view/--view to print a redacted summary and update reminders without creating or modifying the file.
 The default local path is ../forum-private/secrets.php relative to this app checkout.
 
 TEXT);

@@ -77,6 +77,12 @@ Create or update the local private config for Dedalus post analysis:
 ./v3 private-config
 ```
 
+View a redacted summary of the current private config and update reminders:
+
+```bash
+./v3 private-config view
+```
+
 For this checkout, the default local file is `/home/wsl/forum-private/secrets.php`. To update only the Dedalus API key without putting it in shell history:
 
 ```bash

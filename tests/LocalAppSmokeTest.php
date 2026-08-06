@@ -78,6 +78,41 @@ final class LocalAppSmokeTest
         assertStringContains('Scanned: ' . $postCount, $combinedOutput);
     }
 
+    public function testPrivateConfigViewRedactsSecretAndShowsUpdateReminder(): void
+    {
+        $secretsPath = sys_get_temp_dir() . '/forum-rewrite-private-config-' . bin2hex(random_bytes(6)) . '/secrets.php';
+        mkdir(dirname($secretsPath), 0700, true);
+        file_put_contents($secretsPath, "<?php\n\nreturn [\n"
+            . "    'DEDALUS_API_KEY' => 'prod-secret-value',\n"
+            . "    'DEDALUS_MODEL' => 'openai/gpt-5-nano',\n"
+            . "    'DEDALUS_AGENT_REPLIES_ENABLED' => true,\n"
+            . "    'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED' => false,\n"
+            . "    'EXTRA_SERVICE_TOKEN' => 'do-not-print',\n"
+            . "];\n");
+
+        try {
+            $output = $this->runCommand(
+                dirname(__DIR__),
+                'FORUM_SECRETS_PATH=' . escapeshellarg($secretsPath) . ' DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED=true ./v3 private-config view'
+            );
+
+            assertStringContains('Private config path: ' . $secretsPath, $output);
+            assertStringContains('Status: present', $output);
+            assertStringContains('DEDALUS_API_KEY = <set> (file)', $output);
+            assertStringContains("DEDALUS_AGENT_REPLIES_ENABLED = true (file)", $output);
+            assertStringContains("DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED = 'true' (environment override)", $output);
+            assertStringContains('Update commands:', $output);
+            assertStringContains('./v3 private-config --force', $output);
+            assertStringContains('./v3 private-config --api-key-stdin', $output);
+            assertStringContains('Edit ' . $secretsPath . ' directly for booleans', $output);
+            assertStringNotContains('prod-secret-value', $output);
+            assertStringNotContains('do-not-print', $output);
+        } finally {
+            @unlink($secretsPath);
+            @rmdir(dirname($secretsPath));
+        }
+    }
+
     public function testInjectApprovalScriptSeedsIdentity(): void
     {
         [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
