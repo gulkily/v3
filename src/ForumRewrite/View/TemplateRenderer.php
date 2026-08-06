@@ -13,6 +13,8 @@ use RuntimeException;
 
 final class TemplateRenderer
 {
+    private const THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES = ['board.php', 'tag.php'];
+
     public function __construct(
         private readonly string $templateRoot,
         private readonly string $appVersion = 'unknown',
@@ -33,8 +35,9 @@ final class TemplateRenderer
         string $routeSource = 'php-fallback',
     ): string {
         $content = $this->renderFile('pages/' . $pageTemplate, $pageData);
+        $showThreadDensityToggle = in_array($pageTemplate, self::THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES, true);
 
-        return $this->renderLayout($title, $content, $activeSection, $scriptPaths, $routeSource);
+        return $this->renderLayout($title, $content, $activeSection, $scriptPaths, $routeSource, $showThreadDensityToggle);
     }
 
     /**
@@ -46,6 +49,7 @@ final class TemplateRenderer
         string $activeSection,
         array $scriptPaths = [],
         string $routeSource = 'php-fallback',
+        bool $showThreadDensityToggle = false,
     ): string {
         $assetScriptPaths = [];
         foreach ($scriptPaths as $scriptPath) {
@@ -58,11 +62,13 @@ final class TemplateRenderer
             'activeSection' => $activeSection,
             'scriptPaths' => $assetScriptPaths,
             'routeSource' => $routeSource,
+            'showThreadDensityToggle' => $showThreadDensityToggle,
             'siteName' => SiteConfig::SITE_NAME,
             'appVersion' => $this->appVersion,
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
             'siteCssPath' => $this->assetPath('/assets/site.css'),
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
+            'threadDensityToggleScriptPath' => $this->assetPath('/assets/thread_density_toggle.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
             'themes' => ThemeRegistry::all(),

@@ -266,6 +266,7 @@ final class LocalAppSmokeTest
         $board = $this->render($application, '/');
         $threadsIndex = $this->render($application, '/threads/');
         $threadsIndexNoSlash = $this->render($application, '/threads');
+        $boardAllThreads = $this->render($application, '/threads/?view=all&sort=newest');
         $about = $this->render($application, '/about/');
         $thread = $this->render($application, '/threads/root-001');
         $post = $this->render($application, '/posts/root-001');
@@ -480,6 +481,19 @@ final class LocalAppSmokeTest
         assertFingerprintedAsset($board, 'theme_toggle.js');
         assertFingerprintedAsset($board, 'compose_draft_clear.js');
         assertFingerprintedAsset($board, 'version_check.js');
+        assertFingerprintedAsset($board, 'thread_density_toggle.js');
+        assertStringContains('data-role="thread-density-toggle"', $board);
+        assertStringContains('data-role="thread-density-toggle"', $tagPage);
+        assertStringNotContains('data-role="thread-density-toggle"', $thread);
+        assertStringNotContains('data-role="thread-density-toggle"', $about);
+        assertStringNotContains('data-role="thread-density-toggle"', $tags);
+        assertStringNotContains('data-role="thread-density-toggle"', $tools);
+        assertStringContains('data-role="thread-density-menu"', $board);
+        assertStringContains('data-thread-density-option="comfortable"', $board);
+        assertStringContains('data-thread-density-option="compact"', $board);
+        assertStringContains('thread-density-menu-popover', $board);
+        assertStringContains('class="card thread-card"', $boardAllThreads);
+        assertStringContains('class="card thread-card"', $tagPage);
         assertStringContains('data-role="app-version-banner"', $board);
         assertStringContains('Compose Thread', $composeThread);
         assertFingerprintedAsset($composeThread, 'browser_signing.js');

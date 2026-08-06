@@ -1,0 +1,128 @@
+# Thread Compact View Step 3 Development Plan
+
+## Scope
+- Implement the approved design in `docs/plans/thread_compact_view_plan_v1.md`: a global, persistent compact-view toggle for thread-listing pages (`board.php`, `tag.php`), controlled by a header button + `localStorage`, overridable via a `?density=` query param.
+- Implement on a dedicated branch after approval, with one request-scoped commit per stage and this plan updated (Status line) in each commit.
+
+## Stage 1
+- Goal: Extract a shared `thread_card.php` partial with no behavior or markup change, eliminating the duplication between `board.php:41-51` and `tag.php:9-21` before any compact-view logic is added.
+- Dependencies: Approved plan; clean worktree to create the feature branch.
+- Expected changes: New `templates/partials/thread_card.php` accepting `thread` and a small badge option (pinned marker for board, labels line for tag); update `board.php` and `tag.php` to call it via `$partial(...)` in place of their inline loops. Add a `thread-list` class to the wrapping `<section class="stack">` in both templates (structural prep only, no CSS yet). No visual output should change.
+- Verification approach: Run the local smoke suite and manually diff rendered HTML for `/`, `/threads/?view=liked`, `/threads/?sort=top`, and `/tags/<tag>` before/after to confirm byte-for-byte equivalence aside from the added `thread-list`/`thread-card` classes.
+- Risks or open questions: Keep the pinned-marker vs. labels-line difference as a partial parameter rather than two partials, to avoid re-introducing duplication.
+- Canonical components/API contracts touched: `templates/pages/board.php`, `templates/pages/tag.php`, new `templates/partials/thread_card.php`; no route or data contract changes.
+- Status: Implemented. Extracted `templates/partials/thread_card.php` (with `showPinnedMarker`/`showLabels` params covering the board-vs-tag differences), added the `thread-card__preview` class on the body-preview paragraph, added `thread-list` to the wrapping `<section class="stack">` in both `board.php` and `tag.php`. Full test suite (`php tests/run.php`) passes.
+
+## Stage 2
+- Goal: Wire the density preference's storage and FOUC-free application, with no user-visible control yet.
+- Dependencies: Stage 1 committed.
+- Expected changes: Extend the existing inline theme script in `templates/layout.php:7-18` to also read a `density` query param (applying and persisting it to `localStorage` under `zenmemes-thread-density` if present) or fall back to the stored value, setting `data-thread-density="compact"` on `<html>` when active.
+- Verification approach: Manually load a page with `?density=compact`, confirm `document.documentElement.dataset.threadDensity === "compact"` via browser dev tools, reload without the param, and confirm the attribute persists from `localStorage`.
+- Risks or open questions: Ensure the added logic doesn't interfere with the existing theme script sharing the same `<script>` block; keep query-param parsing defensive (invalid/missing values fall back silently, matching the theme script's `try/catch` pattern).
+- Canonical components/API contracts touched: `templates/layout.php`; no new routes.
+- Status: Implemented. Extended the existing inline theme script in `templates/layout.php` with a second `try/catch` block that reads a `density` query param (persisting valid values to `localStorage['zenmemes-thread-density']`) or falls back to the stored value, setting `data-thread-density="compact"` on `<html>` before paint. Full test suite passes.
+
+## Stage 3
+- Goal: Add the interactive toggle button, wired to the storage mechanism from Stage 2.
+- Dependencies: Stage 2 committed.
+- Expected changes: New `templates/partials/thread_density_toggle.php` (single button, `data-role="thread-density-toggle"`, `aria-pressed`); new `public/assets/thread_density_toggle.js` modeled on `public/assets/theme_toggle.js` (syncs from query param/`localStorage` on load, toggles `data-thread-density` and `aria-pressed` on click, persists to `localStorage`); wire the script path via `TemplateRenderer.php:66` (`threadDensityToggleScriptPath`) and add the partial + `<script defer>` tag in `templates/layout.php` next to `theme_menu.php` (~line 49) and the theme script tag (~line 29).
+- Verification approach: Load any page, click the toggle, confirm the `data-thread-density` attribute and button `aria-pressed`/label update; reload and confirm the state persists.
+- Risks or open questions: None expected; button has no visual effect on card layout until Stage 4 adds CSS, so this stage is purely mechanical and independently verifiable.
+- Canonical components/API contracts touched: `src/ForumRewrite/View/TemplateRenderer.php`, `templates/layout.php`, new `templates/partials/thread_density_toggle.php`, new `public/assets/thread_density_toggle.js`.
+- Status: Implemented. Added the toggle button partial and `thread_density_toggle.js` (modeled on `theme_toggle.js`), wired `threadDensityToggleScriptPath` into `TemplateRenderer.php` and the `<script defer>` tag plus partial placement (next to `theme_menu.php`) in `layout.php`. `php -l` and `node --check` pass on new files; full test suite passes.
+
+## Stage 4
+- Goal: Make compact mode visually effective by hiding body previews and tightening spacing on thread-listing pages only.
+- Dependencies: Stages 1-3 committed.
+- Expected changes: Append to `public/assets/site.css` (after all per-theme override blocks, so cascade order wins):
+  ```css
+  :root[data-thread-density="compact"] .thread-card__preview { display: none; }
+  :root[data-thread-density="compact"] .thread-list .thread-card { padding: 0.45rem 0.6rem; }
+  :root[data-thread-density="compact"] .thread-list > * + * { margin-top: 0.35rem; }
+  ```
+  Plus toggle-button styling consistent with `.theme-toggle`. Add the `thread-card__preview` class to the body-preview `<p>` inside `thread_card.php` from Stage 1.
+- Verification approach: Manually toggle compact mode on `/`, `/threads/?view=liked`, `/threads/?sort=top`, and `/tags/<tag>`; confirm body previews disappear and card spacing tightens on all four, and confirm no unrelated `.stack` usage (e.g. `thread.php`'s reply list, compose forms) is affected since compact rules are scoped to `.thread-list`.
+- Risks or open questions: Confirm the appended rules actually win over theme-specific `.card`/`.stack` overrides (sticker/arena/word97 blocks) in each theme; if a theme's override still wins due to more specific selectors, increase specificity rather than reordering the whole stylesheet.
+- Canonical components/API contracts touched: `public/assets/site.css`, `templates/partials/thread_card.php`.
+- Status: Implemented. Appended compact-mode rules (hide `.thread-card__preview`, tighten `.thread-list .thread-card` padding and `.thread-list` child spacing) at the end of `site.css`; the `:root[data-thread-density="compact"]` attribute selector combined with two classes outranks the existing single-class `.card` media-query and per-theme overrides on specificity, so no reordering of existing rules was needed. Added `.thread-density-toggle` button styling (matches `.nav-link` look) near `.theme-toggle`. Full test suite passes; visual/browser verification deferred to Stage 5.
+
+## Stage 5
+- Goal: Add automated coverage and finish verification.
+- Dependencies: Stages 1-4 committed.
+- Expected changes: Extend `tests/LocalAppSmokeTest.php` to assert the toggle button markup (`data-role="thread-density-toggle"`) is present on board and tag routes, and that `thread_card.php`'s output (`class="card thread-card"`, title link, reply-count text) still renders correctly on both `board.php` and `tag.php` routes post-refactor.
+- Verification approach: Run `php -l` on all changed PHP files and the full local smoke/test suite (`php tests/run.php` or equivalent); manually re-run the Stage 4 browser walkthrough end to end (toggle, reload persistence, `?density=` override, clean `localStorage` first-visit behavior).
+- Risks or open questions: If the full suite surfaces an unrelated pre-existing failure, note it in this plan rather than expanding scope to fix it.
+- Canonical components/API contracts touched: `tests/LocalAppSmokeTest.php`; no runtime contract changes.
+- Status: Implemented. Added assertions for `data-role="thread-density-toggle"`, the `thread_density_toggle.js` fingerprinted asset, and `class="card thread-card"` on both board (`/threads/?view=all&sort=newest`) and tag-page routes. Full test suite passes.
+  Manual browser verification (Playwright/Chromium against `./v3 start`, screenshots taken): toggle hides body previews and tightens spacing on both board and tag pages; state persists across reload and across pages via `localStorage`; `?density=compact` applies immediately on a fresh session and then persists without the param on subsequent navigation; no console errors.
+  Found and fixed one bug during manual verification: the new `.thread-density-toggle` button inherited the stylesheet's generic `button { width: 100%; margin-top: 0.35rem; }` rule (meant for form buttons), which combined with `flex: 0 0 auto` (flex-basis: auto resolves to the specified width) stretched the button to fill the header row. Fixed by adding explicit `width: auto; margin-top: 0;`, matching the existing `.theme-menu__trigger` pattern that guards against the same rule.
+
+## Stage 6 (follow-up)
+- Goal: Tighten compact mode further per user feedback after testing against real data (498 threads) — reduce padding, inter-line spacing, and font size within each compact thread card.
+- Dependencies: Stages 1-5 committed; real content repository copied into `state/local_repository` for realistic manual testing.
+- Expected changes: In `public/assets/site.css`, reduce `.thread-list .thread-card` padding, add an explicit smaller `font-size`/`line-height`, reset default browser margins on all direct children (`> *`) and replace with a small consistent `> * + *` gap, and explicitly shrink `.meta` text within compact cards (the site-wide `.meta` rule uses `rem`, which doesn't inherit from an ancestor's `font-size`, so it needs its own override).
+- Verification approach: Manual browser check (Playwright/Chromium) against the real 498-thread dataset; confirm card height drops substantially, text stays legible, and `php tests/run.php` still passes.
+- Risks or open questions: None; purely a CSS density adjustment scoped to `[data-thread-density="compact"]`.
+- Canonical components/API contracts touched: `public/assets/site.css`.
+- Status: Implemented. Card padding reduced to `0.35rem 0.5rem`, card `font-size: 0.85rem`/`line-height: 1.3`, child margins reset with a `0.15rem` gap, `.meta` text explicitly set to `0.78rem`. Verified against real data: card height dropped from ~130px to ~58px; full test suite passes.
+
+## Stage 7 (follow-up)
+- Goal: Per further user feedback, remove the remaining gaps between consecutive thread cards in compact mode and merge them into one continuous list block instead of visually separate boxes.
+- Dependencies: Stage 6 committed.
+- Expected changes: In `public/assets/site.css`, add `.thread-list .thread-card + .thread-card { margin-top: -1px; }`, overlapping each card's top border onto the previous card's bottom border (both `var(--line)`) so adjacent thread cards read as one bordered block with hairline row dividers, while leaving the gap before the first thread card (after the controls/compose cards) untouched.
+- Verification approach: Manual browser check (Playwright/Chromium) against the real 498-thread dataset; screenshot confirms a single seamless block with no doubled borders or gaps between rows.
+- Risks or open questions: None; selector specificity (`.thread-list .thread-card + .thread-card`, 3 classes) cleanly overrides the general `.thread-list > * + *` gap rule (lower specificity) for just the thread-card-to-thread-card case.
+- Canonical components/API contracts touched: `public/assets/site.css`.
+- Status: Implemented and verified visually. Note: full test suite run during this stage surfaced `LocalAppSmokeTest::testFrontControllerShowsBusyErrorForExecutionLockContention` failing; confirmed via `git stash`/`git checkout main` that this failure is pre-existing on `main` and unrelated to any change on this branch (environment-specific `flock()` timing, not a regression) — left as-is.
+
+## Stage 8 (follow-up)
+- Goal: Per user feedback, scope the compact-view toggle button to only appear on pages where it has an effect (board and tag-page thread listings), rather than globally in the header on every page.
+- Dependencies: Stage 7 committed.
+- Expected changes: `TemplateRenderer::renderPageTemplate` derives `$showThreadDensityToggle` from the page template name (`board.php`/`tag.php` only, via a new `THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES` constant) and threads it through a new optional `renderLayout` parameter (default `false`, so the other direct `renderLayout` caller in `Application::renderPage` is unaffected); `templates/layout.php` wraps the toggle partial include in `<?php if ($showThreadDensityToggle): ?>`. `tags.php` (the tag index) intentionally does not get the toggle since it renders a compact preview list with no `.thread-card` elements — compact mode has no effect there. Reused `activeSection` was considered but rejected: board.php/tag.php/tags.php/thread.php/post.php all share `activeSection === 'board'`, so it can't distinguish applicable pages.
+- Verification approach: Extended `LocalAppSmokeTest::testApplicationRendersCoreRoutes` with negative assertions (toggle absent on thread detail, about, tags index, tools pages) alongside the existing positive assertions (present on board, tag page). Manually curled `/`, `/about/`, `/tags/`, `/tools/`, a thread detail page, and a tag page against the real dataset to confirm presence/absence.
+- Risks or open questions: None.
+- Canonical components/API contracts touched: `src/ForumRewrite/View/TemplateRenderer.php`, `templates/layout.php`, `tests/LocalAppSmokeTest.php`.
+- Status: Implemented and verified (curl + full test suite, aside from the pre-existing unrelated lock-contention flake noted in Stage 7).
+
+## Stage 9 (follow-up)
+- Goal: Fix a flash of the wrong label ("Compact" briefly shown before switching to "Comfortable"'s opposite, i.e. the button always rendered assuming comfortable was current) on every page load when the user's stored preference is compact, and convert the toggle to a dropdown so the currently selected view is visible at a glance.
+- Dependencies: Stage 8 committed.
+- Root cause of the flash: the button's label/state was only ever corrected by the deferred `thread_density_toggle.js`, which runs after `DOMContentLoaded` — after first paint. The page *content* never flashed (the `data-thread-density` attribute is set synchronously pre-paint by the inline script in `layout.php`), but the button's own text lagged behind by one JS tick, which read as a visible flash since the label said the opposite of the true state.
+- Fix: rebuilt `templates/partials/thread_density_toggle.php` as a trigger + popover dropdown (mirroring `theme_menu.php`'s structure/pattern exactly — trigger button with `aria-haspopup`/`aria-expanded`, a `role="menu"` popover with two `role="menuitemradio"` options). Critically, the trigger's visible label is two `<span>`s toggled purely via CSS attribute selectors keyed off `:root[data-thread-density="compact"]` (already set pre-paint) — not JS-driven text — so the correct label is guaranteed correct on first paint regardless of when/whether the deferred script runs. Verified this directly by blocking `thread_density_toggle.js` from loading entirely (Playwright route interception) with a compact preference stored: the trigger still showed "Compact" immediately at `waitUntil: 'commit'`, the earliest observable point.
+- Expected changes: `templates/partials/thread_density_toggle.php` (dropdown markup), `public/assets/thread_density_toggle.js` (rewritten to drive the popover open/close/keyboard-nav/selection, modeled on `theme_toggle.js`'s menu logic; no longer needs to apply the attribute on load since the inline script already did), `public/assets/site.css` (new `.thread-density-menu`/`__trigger`/`__popover`/`__option` rules replacing the old single-button `.thread-density-toggle` rules, plus the label-swap attribute-selector rules). The `data-role="thread-density-toggle"` attribute was kept on the trigger button so existing page-scoping tests/CSS references from Stage 8 still hold.
+- Verification approach: Extended `LocalAppSmokeTest` with assertions for the new dropdown markup (`data-role="thread-density-menu"`, both `data-thread-density-option` values, popover id). Manual Playwright verification: (1) label-blocked-JS test proving no flash is possible; (2) full open/select/close/reopen flow against the real dataset, screenshotted.
+- Risks or open questions: None.
+- Canonical components/API contracts touched: `templates/partials/thread_density_toggle.php`, `public/assets/thread_density_toggle.js`, `public/assets/site.css`, `tests/LocalAppSmokeTest.php`.
+- Status: Implemented and verified. Full test suite passes aside from the pre-existing unrelated lock-contention flake.
+
+## Stage 10 (follow-up)
+- Goal: Fix a broken compact-view rendering reported in the Word97 theme, where thread titles' "titlebar" styling overlapped adjacent items.
+- Dependencies: Stage 9 committed.
+- Root cause: `:root[data-theme="word97"] .card > h1:first-child, ... h2:first-child` (site.css) fakes a Word97 window titlebar by bleeding the heading to the card's edges via `margin: -1.5rem -1.5rem 1.1rem`, hardcoded to match word97's own `.card { padding: 1.5rem }`. Compact mode's `.thread-list .thread-card { padding: 0.35rem 0.5rem }` rule wins the specificity fight on `padding` (3 classes/attrs beats word97's 2), but the word97 heading rule's `margin` still wins on its own property (its selector has one more type-selector point of specificity than the generic `> *` compact reset). The result: a `-1.5rem` pull against only `0.35rem`/`0.5rem` of actual padding, so the titlebar overshoots the card and overlaps the previous item.
+- Fix: added `:root[data-theme="word97"][data-thread-density="compact"] .thread-list .thread-card > h1:first-child, ... h2:first-child` recomputing the negative margin to match the compact padding (`-0.35rem -0.5rem 0.25rem`) with a smaller font/line-height to fit. Also reduced the theme's heavy 7px-offset drop-shadow "3D window" border to a flatter double-outline for compact cards, and restored a small gap between compact word97 cards (overriding the generic `-1px` border-merge trick) since stacking many heavy 3D-bordered boxes flush against each other reads as visually broken for that theme's aesthetic, unlike the plainer themes.
+- Verification approach: Manual Playwright screenshots against the real dataset in Word97 (before/after) plus a spot-check of sticker, arena, and chicago themes (other themes with custom `.card` chrome) to confirm they weren't affected and don't have the same negative-margin pattern (confirmed via `grep -n "margin: -"` across the stylesheet — word97's heading rule was the only one touching thread-card content).
+- Risks or open questions: None; other themes checked render compact mode cleanly (sticker/arena's outline-based borders merge fine at `margin-top: -1px` since they don't use word97's hardcoded negative-margin heading trick).
+- Canonical components/API contracts touched: `public/assets/site.css`.
+- Status: Implemented and verified. Full test suite passes.
+
+## Stage 11 (follow-up)
+- Goal: Fix a remaining overlap in the Word97 theme, between the "New Thread" compose card and the first thread card below it.
+- Dependencies: Stage 10 committed.
+- Root cause: Stage 10's box-shadow flattening only targeted `.thread-list .thread-card`, not the compose card (`.compact-thread-compose`, a sibling `.card` in `.thread-list` that isn't itself a `.thread-card`). The compose card kept Word97's original 7px-offset drop-shadow (`box-shadow: 0 0 0 3px #c0c0c0, 0 0 0 4px #404040, 7px 7px 0 4px #404040`, reaching ~11px beyond the card edge), while the gap to the next item is only the compact `.thread-list > * + *` value of `0.35rem` (~5.6px) — so the shadow bled onto the first thread card's titlebar.
+- Fix: broadened the box-shadow flattening selector from `.thread-list .thread-card` to `.thread-list > .card`, which covers every direct-child card in the list (controls-nav card, compose card, and thread cards alike) uniformly, so no card in the compact word97 list retains the long offset shadow.
+- Verification approach: Measured the compose-card-to-first-thread-card gap via Playwright bounding boxes (unchanged at ~5.6px) and confirmed visually via a cropped screenshot at that exact boundary, plus a full-page screenshot, that the shadow no longer bleeds into the next card. Full test suite passes.
+- Risks or open questions: None.
+- Canonical components/API contracts touched: `public/assets/site.css`.
+- Status: Implemented and verified.
+
+## Planned Commit Cadence
+- Commit 1: Add thread compact view plans (this document plus `thread_compact_view_plan_v1.md`).
+- Commit 2: Extract shared `thread_card.php` partial (Stage 1).
+- Commit 3: Add density preference storage and FOUC-free application in layout (Stage 2).
+- Commit 4: Add interactive compact-view toggle button and script (Stage 3).
+- Commit 5: Add compact-mode CSS rules (Stage 4).
+- Commit 6: Add test coverage and record final verification (Stage 5).
+
+## Approval Gate
+- Pause here until the user explicitly approves this plan.
+- After approval, create the feature branch, commit the approved plans first, then execute the stages above in order, updating each Stage's Status line in its own commit.

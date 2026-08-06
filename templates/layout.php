@@ -14,6 +14,22 @@
         }
       } catch (error) {
       }
+
+      try {
+        var densityStorageKey = 'zenmemes-thread-density';
+        var densityParam = new URLSearchParams(location.search).get('density');
+        var density;
+        if (densityParam === 'compact' || densityParam === 'comfortable') {
+          density = densityParam;
+          localStorage.setItem(densityStorageKey, density);
+        } else {
+          density = localStorage.getItem(densityStorageKey);
+        }
+        if (density === 'compact') {
+          document.documentElement.setAttribute('data-thread-density', 'compact');
+        }
+      } catch (error) {
+      }
     })();
   </script>
 <?php if ($appVersionNotificationEnabled): ?>
@@ -27,6 +43,7 @@
 <?php endforeach; ?>
   <script src="<?= $e($composeDraftClearScriptPath) ?>" defer></script>
   <script src="<?= $e($themeToggleScriptPath) ?>" defer></script>
+  <script src="<?= $e($threadDensityToggleScriptPath) ?>" defer></script>
 <?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>
 <?php endif; ?>
@@ -46,6 +63,9 @@
       <p class="eyebrow"><?= $e($siteName) ?></p>
       <div class="site-header-actions">
 <?= $indent($partial('partials/nav.php'), 4) ?>
+<?php if ($showThreadDensityToggle): ?>
+<?= $indent($partial('partials/thread_density_toggle.php'), 4) ?>
+<?php endif; ?>
 <?= $indent($partial('partials/theme_menu.php'), 4) ?>
       </div>
     </header>
