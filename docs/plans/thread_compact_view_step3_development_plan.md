@@ -105,6 +105,16 @@
 - Canonical components/API contracts touched: `public/assets/site.css`.
 - Status: Implemented and verified. Full test suite passes.
 
+## Stage 11 (follow-up)
+- Goal: Fix a remaining overlap in the Word97 theme, between the "New Thread" compose card and the first thread card below it.
+- Dependencies: Stage 10 committed.
+- Root cause: Stage 10's box-shadow flattening only targeted `.thread-list .thread-card`, not the compose card (`.compact-thread-compose`, a sibling `.card` in `.thread-list` that isn't itself a `.thread-card`). The compose card kept Word97's original 7px-offset drop-shadow (`box-shadow: 0 0 0 3px #c0c0c0, 0 0 0 4px #404040, 7px 7px 0 4px #404040`, reaching ~11px beyond the card edge), while the gap to the next item is only the compact `.thread-list > * + *` value of `0.35rem` (~5.6px) — so the shadow bled onto the first thread card's titlebar.
+- Fix: broadened the box-shadow flattening selector from `.thread-list .thread-card` to `.thread-list > .card`, which covers every direct-child card in the list (controls-nav card, compose card, and thread cards alike) uniformly, so no card in the compact word97 list retains the long offset shadow.
+- Verification approach: Measured the compose-card-to-first-thread-card gap via Playwright bounding boxes (unchanged at ~5.6px) and confirmed visually via a cropped screenshot at that exact boundary, plus a full-page screenshot, that the shadow no longer bleeds into the next card. Full test suite passes.
+- Risks or open questions: None.
+- Canonical components/API contracts touched: `public/assets/site.css`.
+- Status: Implemented and verified.
+
 ## Planned Commit Cadence
 - Commit 1: Add thread compact view plans (this document plus `thread_compact_view_plan_v1.md`).
 - Commit 2: Extract shared `thread_card.php` partial (Stage 1).

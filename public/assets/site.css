@@ -2881,7 +2881,7 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   line-height: 1.3;
 }
 
-:root[data-theme="word97"][data-thread-density="compact"] .thread-list .thread-card {
+:root[data-theme="word97"][data-thread-density="compact"] .thread-list > .card {
   box-shadow:
     0 0 0 2px #c0c0c0,
     0 0 0 3px #404040;
