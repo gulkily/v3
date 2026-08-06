@@ -122,6 +122,138 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
         return $found;
     }
 
+    public function requestForTarget(array $context, array $requestContext): array
+    {
+        $postId = (string) ($context['post_id'] ?? '');
+        $contentHash = (string) ($context['content_hash'] ?? '');
+        $existing = $this->findByTarget($postId, $contentHash);
+        if ($existing !== null) {
+            $existing['requested'] = false;
+            return $existing;
+        }
+
+        $storedContext = $context;
+        $storedContext['agent_reply_request'] = $requestContext;
+        $now = gmdate('c');
+        $row = [
+            'target_post_id' => $postId,
+            'target_content_hash' => $contentHash,
+            'analysis_hash' => (string) ($context['analysis_hash'] ?? ''),
+            'status' => 'requested',
+            'requested_at' => $now,
+            'completed_at' => null,
+            'provider' => null,
+            'provider_model' => null,
+            'provider_request_id' => null,
+            'response_text' => null,
+            'response_style' => null,
+            'response_intent' => null,
+            'agent_identity_id' => null,
+            'agent_profile_slug' => null,
+            'agent_post_id' => null,
+            'posted_at' => null,
+            'failure_code' => null,
+            'failure_message' => null,
+            'retry_after' => null,
+            'request_context_json' => $this->encode($storedContext),
+            'raw_response_json' => $this->encode([]),
+        ];
+        $this->insertIgnore($row);
+
+        $found = $this->findByTarget($postId, $contentHash) ?? $this->hydrate($row);
+        $found['requested'] = ($found['status'] ?? null) === 'requested';
+
+        return $found;
+    }
+
+    public function claimNextRequested(int $limit = 1): array
+    {
+        $limit = max(1, $limit);
+
+        return $this->withImmediateTransaction(function () use ($limit): array {
+            $stmt = $this->pdo->prepare(
+                'SELECT id, target_post_id, target_content_hash
+                 FROM post_generated_responses
+                 WHERE status = :status
+                 ORDER BY requested_at ASC, id ASC
+                 LIMIT :limit'
+            );
+            $stmt->bindValue('status', 'requested');
+            $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+
+            $claimed = [];
+            foreach ($stmt->fetchAll() as $row) {
+                $update = $this->pdo->prepare(
+                    'UPDATE post_generated_responses
+                     SET status = :pending
+                     WHERE id = :id AND status = :requested'
+                );
+                $update->execute([
+                    'pending' => 'pending',
+                    'id' => (int) $row['id'],
+                    'requested' => 'requested',
+                ]);
+                if ($update->rowCount() < 1) {
+                    continue;
+                }
+
+                $claimedRow = $this->findByTarget((string) $row['target_post_id'], (string) $row['target_content_hash']);
+                if ($claimedRow !== null) {
+                    $claimedRow['claimed'] = true;
+                    $claimed[] = $claimedRow;
+                }
+            }
+
+            return $claimed;
+        });
+    }
+
+    public function claimRequestedForPost(string $postId): ?array
+    {
+        $claimed = $this->withImmediateTransaction(function () use ($postId): array {
+            $stmt = $this->pdo->prepare(
+                'SELECT id, target_post_id, target_content_hash
+                 FROM post_generated_responses
+                 WHERE status = :status AND target_post_id = :target_post_id
+                 ORDER BY requested_at ASC, id ASC
+                 LIMIT 1'
+            );
+            $stmt->execute([
+                'status' => 'requested',
+                'target_post_id' => $postId,
+            ]);
+            $row = $stmt->fetch();
+            if ($row === false) {
+                return [];
+            }
+
+            $update = $this->pdo->prepare(
+                'UPDATE post_generated_responses
+                 SET status = :pending
+                 WHERE id = :id AND status = :requested'
+            );
+            $update->execute([
+                'pending' => 'pending',
+                'id' => (int) $row['id'],
+                'requested' => 'requested',
+            ]);
+            if ($update->rowCount() < 1) {
+                return [];
+            }
+
+            $claimedRow = $this->findByTarget((string) $row['target_post_id'], (string) $row['target_content_hash']);
+            if ($claimedRow === null) {
+                return [];
+            }
+
+            $claimedRow['claimed'] = true;
+            return [$claimedRow];
+        });
+
+        return $claimed[0] ?? null;
+    }
+
     public function reservePosting(string $postId, string $contentHash): ?array
     {
         $stmt = $this->pdo->prepare(
@@ -172,6 +304,61 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
             'failure_code' => $failureCode,
             'failure_message' => substr($failureMessage, 0, 500),
             'retry_after' => gmdate('c', time() + 300),
+            'request_context_json' => $this->encode([]),
+            'raw_response_json' => $this->encode([]),
+        ];
+        $this->upsert($row);
+
+        return $this->findByTarget($postId, $contentHash) ?? $this->hydrate($row);
+    }
+
+    public function markSkipped(string $postId, string $contentHash, string $reason): array
+    {
+        $now = gmdate('c');
+        $stmt = $this->pdo->prepare(
+            'UPDATE post_generated_responses
+             SET status = :status,
+                 completed_at = :completed_at,
+                 failure_code = :failure_code,
+                 failure_message = NULL,
+                 retry_after = NULL
+             WHERE target_post_id = :target_post_id
+               AND target_content_hash = :target_content_hash
+               AND agent_post_id IS NULL'
+        );
+        $stmt->execute([
+            'status' => 'skipped',
+            'completed_at' => $now,
+            'failure_code' => $reason,
+            'target_post_id' => $postId,
+            'target_content_hash' => $contentHash,
+        ]);
+
+        $existing = $this->findByTarget($postId, $contentHash);
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $row = [
+            'target_post_id' => $postId,
+            'target_content_hash' => $contentHash,
+            'analysis_hash' => '',
+            'status' => 'skipped',
+            'requested_at' => $now,
+            'completed_at' => $now,
+            'provider' => null,
+            'provider_model' => null,
+            'provider_request_id' => null,
+            'response_text' => null,
+            'response_style' => null,
+            'response_intent' => null,
+            'agent_identity_id' => null,
+            'agent_profile_slug' => null,
+            'agent_post_id' => null,
+            'posted_at' => null,
+            'failure_code' => $reason,
+            'failure_message' => null,
+            'retry_after' => null,
             'request_context_json' => $this->encode([]),
             'raw_response_json' => $this->encode([]),
         ];
@@ -249,6 +436,27 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
             'CREATE INDEX IF NOT EXISTS idx_post_generated_responses_agent_post
              ON post_generated_responses (agent_post_id)'
         );
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function insertIgnore(array $row): void
+    {
+        $stmt = $this->pdo->prepare(
+            'INSERT OR IGNORE INTO post_generated_responses (
+                target_post_id, target_content_hash, analysis_hash, status, requested_at, completed_at,
+                provider, provider_model, provider_request_id, response_text, response_style, response_intent,
+                agent_identity_id, agent_profile_slug, agent_post_id, posted_at,
+                failure_code, failure_message, retry_after, request_context_json, raw_response_json
+             ) VALUES (
+                :target_post_id, :target_content_hash, :analysis_hash, :status, :requested_at, :completed_at,
+                :provider, :provider_model, :provider_request_id, :response_text, :response_style, :response_intent,
+                :agent_identity_id, :agent_profile_slug, :agent_post_id, :posted_at,
+                :failure_code, :failure_message, :retry_after, :request_context_json, :raw_response_json
+             )'
+        );
+        $stmt->execute($row);
     }
 
     /**
@@ -353,5 +561,23 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
         $decoded = json_decode($json, true);
 
         return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * @template T
+     * @param callable(): T $callback
+     * @return T
+     */
+    private function withImmediateTransaction(callable $callback): mixed
+    {
+        $this->pdo->exec('BEGIN IMMEDIATE');
+        try {
+            $result = $callback();
+            $this->pdo->exec('COMMIT');
+            return $result;
+        } catch (\Throwable $throwable) {
+            $this->pdo->exec('ROLLBACK');
+            throw $throwable;
+        }
     }
 }

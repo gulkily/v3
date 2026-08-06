@@ -61,7 +61,7 @@ The web user must be able to write:
 - the canonical repository checkout at `FORUM_REPOSITORY_ROOT`
 - the parent directory of `FORUM_DATABASE_PATH`
 - the lock file directory next to `FORUM_DATABASE_PATH`
-- `state/private/agent-reply/` under the application root if automatic agent replies are enabled
+- `state/private/agent-reply/` under the application root if agent reply fulfillment is enabled
 - sibling static artifacts in `public/` if production uses `public/*.html`
 
 If sibling `public/*.html` artifacts are used and writes are enabled, the application must be able to invalidate affected artifacts after successful writes.
@@ -83,6 +83,28 @@ FORUM_PUBLIC_ARTIFACT_ROOT=/srv/forum-rewrite/app/public
 ```
 
 `FORUM_STATIC_HTML_ROOT` remains available for separate static roots, but the primary production model for this repo is sibling artifacts in `public/`.
+
+## Agent Reply Requests
+
+Approved users can request a `reply-agent` response from eligible post cards. The button records a durable request in SQLite and returns quickly; it does not wait for provider analysis or canonical posting.
+
+Fulfillment is handled by a periodic PHP command. A typical cron entry is:
+
+```cron
+* * * * * cd /srv/forum-rewrite/app && php scripts/run_agent_reply_requests.php --quiet --limit=10 >> /var/log/forum-agent-replies.log 2>&1
+```
+
+The command uses the same repository, database, private Dedalus config, `reply-agent` key directory, and artifact paths as the web app. It exits successfully if another fulfillment run is already active, and queued-row claims prevent duplicate `reply-agent` posts for the same requested post content.
+
+Without `--quiet`, the command prints repository/database/artifact paths, queue counts before and after the run, claimed-row count, one processing/result line per request, reason totals, and elapsed time. `--quiet` suppresses successful STDOUT for cron while preserving STDERR errors.
+
+Useful manual commands:
+
+```bash
+php scripts/run_agent_reply_requests.php --dry-run
+php scripts/run_agent_reply_requests.php --limit=10
+php scripts/run_agent_reply_requests.php --post-id=<post-id>
+```
 
 ## Site Feature Flags
 
