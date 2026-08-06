@@ -95,6 +95,16 @@
 - Canonical components/API contracts touched: `templates/partials/thread_density_toggle.php`, `public/assets/thread_density_toggle.js`, `public/assets/site.css`, `tests/LocalAppSmokeTest.php`.
 - Status: Implemented and verified. Full test suite passes aside from the pre-existing unrelated lock-contention flake.
 
+## Stage 10 (follow-up)
+- Goal: Fix a broken compact-view rendering reported in the Word97 theme, where thread titles' "titlebar" styling overlapped adjacent items.
+- Dependencies: Stage 9 committed.
+- Root cause: `:root[data-theme="word97"] .card > h1:first-child, ... h2:first-child` (site.css) fakes a Word97 window titlebar by bleeding the heading to the card's edges via `margin: -1.5rem -1.5rem 1.1rem`, hardcoded to match word97's own `.card { padding: 1.5rem }`. Compact mode's `.thread-list .thread-card { padding: 0.35rem 0.5rem }` rule wins the specificity fight on `padding` (3 classes/attrs beats word97's 2), but the word97 heading rule's `margin` still wins on its own property (its selector has one more type-selector point of specificity than the generic `> *` compact reset). The result: a `-1.5rem` pull against only `0.35rem`/`0.5rem` of actual padding, so the titlebar overshoots the card and overlaps the previous item.
+- Fix: added `:root[data-theme="word97"][data-thread-density="compact"] .thread-list .thread-card > h1:first-child, ... h2:first-child` recomputing the negative margin to match the compact padding (`-0.35rem -0.5rem 0.25rem`) with a smaller font/line-height to fit. Also reduced the theme's heavy 7px-offset drop-shadow "3D window" border to a flatter double-outline for compact cards, and restored a small gap between compact word97 cards (overriding the generic `-1px` border-merge trick) since stacking many heavy 3D-bordered boxes flush against each other reads as visually broken for that theme's aesthetic, unlike the plainer themes.
+- Verification approach: Manual Playwright screenshots against the real dataset in Word97 (before/after) plus a spot-check of sticker, arena, and chicago themes (other themes with custom `.card` chrome) to confirm they weren't affected and don't have the same negative-margin pattern (confirmed via `grep -n "margin: -"` across the stylesheet — word97's heading rule was the only one touching thread-card content).
+- Risks or open questions: None; other themes checked render compact mode cleanly (sticker/arena's outline-based borders merge fine at `margin-top: -1px` since they don't use word97's hardcoded negative-margin heading trick).
+- Canonical components/API contracts touched: `public/assets/site.css`.
+- Status: Implemented and verified. Full test suite passes.
+
 ## Planned Commit Cadence
 - Commit 1: Add thread compact view plans (this document plus `thread_compact_view_plan_v1.md`).
 - Commit 2: Extract shared `thread_card.php` partial (Stage 1).
