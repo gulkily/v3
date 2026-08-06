@@ -489,19 +489,99 @@ pre {
   margin-left: auto;
 }
 
-.thread-density-toggle {
-  display: inline-block;
-  width: auto;
-  margin-top: 0;
-  padding: 0.45rem 0.7rem;
+.thread-density-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
   border: 1px solid var(--line);
+  border-radius: 999px;
   background: var(--input-bg);
-  font-family: var(--ui-font);
   flex: 0 0 auto;
 }
 
-.thread-density-toggle[aria-pressed="true"] {
-  background: var(--panel);
+.thread-density-menu__trigger {
+  width: auto;
+  min-width: 0;
+  height: 1.5rem;
+  margin-top: 0;
+  padding: 0 0.6rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--ui-font);
+  font-size: 0.7rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.thread-density-menu__trigger:hover,
+.thread-density-menu__trigger[aria-expanded="true"] {
+  color: var(--ink);
+  background: var(--button-alt-bg);
+}
+
+.thread-density-menu__trigger-label--compact {
+  display: none;
+}
+
+:root[data-thread-density="compact"] .thread-density-menu__trigger-label--comfortable {
+  display: none;
+}
+
+:root[data-thread-density="compact"] .thread-density-menu__trigger-label--compact {
+  display: inline;
+}
+
+.thread-density-menu__popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 30;
+  min-width: 9rem;
+  border: 1px solid var(--line);
+  background-color: var(--page-bg);
+  background-image: linear-gradient(var(--panel), var(--panel));
+  padding: 0.3rem;
+  display: grid;
+  gap: 4px;
+}
+
+.thread-density-menu__popover[hidden] {
+  display: none;
+}
+
+.thread-density-menu__option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-top: 0;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: var(--ui-font);
+  font-size: 0.78rem;
+  min-height: 2rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.thread-density-menu__option:hover {
+  border-color: var(--ink-soft);
+}
+
+.thread-density-menu__option:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}
+
+.thread-density-menu__option[aria-checked="true"] {
+  border-color: var(--ink);
+}
+
+.thread-density-menu__option[aria-checked="true"]::after {
+  content: "✓";
+  margin-left: auto;
 }
 
 .theme-toggle {

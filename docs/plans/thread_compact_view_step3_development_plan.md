@@ -84,6 +84,17 @@
 - Canonical components/API contracts touched: `src/ForumRewrite/View/TemplateRenderer.php`, `templates/layout.php`, `tests/LocalAppSmokeTest.php`.
 - Status: Implemented and verified (curl + full test suite, aside from the pre-existing unrelated lock-contention flake noted in Stage 7).
 
+## Stage 9 (follow-up)
+- Goal: Fix a flash of the wrong label ("Compact" briefly shown before switching to "Comfortable"'s opposite, i.e. the button always rendered assuming comfortable was current) on every page load when the user's stored preference is compact, and convert the toggle to a dropdown so the currently selected view is visible at a glance.
+- Dependencies: Stage 8 committed.
+- Root cause of the flash: the button's label/state was only ever corrected by the deferred `thread_density_toggle.js`, which runs after `DOMContentLoaded` — after first paint. The page *content* never flashed (the `data-thread-density` attribute is set synchronously pre-paint by the inline script in `layout.php`), but the button's own text lagged behind by one JS tick, which read as a visible flash since the label said the opposite of the true state.
+- Fix: rebuilt `templates/partials/thread_density_toggle.php` as a trigger + popover dropdown (mirroring `theme_menu.php`'s structure/pattern exactly — trigger button with `aria-haspopup`/`aria-expanded`, a `role="menu"` popover with two `role="menuitemradio"` options). Critically, the trigger's visible label is two `<span>`s toggled purely via CSS attribute selectors keyed off `:root[data-thread-density="compact"]` (already set pre-paint) — not JS-driven text — so the correct label is guaranteed correct on first paint regardless of when/whether the deferred script runs. Verified this directly by blocking `thread_density_toggle.js` from loading entirely (Playwright route interception) with a compact preference stored: the trigger still showed "Compact" immediately at `waitUntil: 'commit'`, the earliest observable point.
+- Expected changes: `templates/partials/thread_density_toggle.php` (dropdown markup), `public/assets/thread_density_toggle.js` (rewritten to drive the popover open/close/keyboard-nav/selection, modeled on `theme_toggle.js`'s menu logic; no longer needs to apply the attribute on load since the inline script already did), `public/assets/site.css` (new `.thread-density-menu`/`__trigger`/`__popover`/`__option` rules replacing the old single-button `.thread-density-toggle` rules, plus the label-swap attribute-selector rules). The `data-role="thread-density-toggle"` attribute was kept on the trigger button so existing page-scoping tests/CSS references from Stage 8 still hold.
+- Verification approach: Extended `LocalAppSmokeTest` with assertions for the new dropdown markup (`data-role="thread-density-menu"`, both `data-thread-density-option` values, popover id). Manual Playwright verification: (1) label-blocked-JS test proving no flash is possible; (2) full open/select/close/reopen flow against the real dataset, screenshotted.
+- Risks or open questions: None.
+- Canonical components/API contracts touched: `templates/partials/thread_density_toggle.php`, `public/assets/thread_density_toggle.js`, `public/assets/site.css`, `tests/LocalAppSmokeTest.php`.
+- Status: Implemented and verified. Full test suite passes aside from the pre-existing unrelated lock-contention flake.
+
 ## Planned Commit Cadence
 - Commit 1: Add thread compact view plans (this document plus `thread_compact_view_plan_v1.md`).
 - Commit 2: Extract shared `thread_card.php` partial (Stage 1).

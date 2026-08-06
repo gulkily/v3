@@ -453,6 +453,10 @@ final class LocalAppSmokeTest
         assertStringNotContains('data-role="thread-density-toggle"', $about);
         assertStringNotContains('data-role="thread-density-toggle"', $tags);
         assertStringNotContains('data-role="thread-density-toggle"', $tools);
+        assertStringContains('data-role="thread-density-menu"', $board);
+        assertStringContains('data-thread-density-option="comfortable"', $board);
+        assertStringContains('data-thread-density-option="compact"', $board);
+        assertStringContains('thread-density-menu-popover', $board);
         assertStringContains('class="card thread-card"', $boardAllThreads);
         assertStringContains('class="card thread-card"', $tagPage);
         assertStringContains('data-role="app-version-banner"', $board);
