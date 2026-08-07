@@ -116,7 +116,10 @@ final class RelatedContentSearchService
 
         arsort($tokens);
 
-        return array_slice(array_keys($tokens), 0, self::MAX_QUERY_TOKENS);
+        return array_map(
+            static fn (string|int $token): string => (string) $token,
+            array_slice(array_keys($tokens), 0, self::MAX_QUERY_TOKENS)
+        );
     }
 
     /**
@@ -132,20 +135,21 @@ final class RelatedContentSearchService
         $subjectMatched = false;
 
         foreach ($tokens as $token) {
+            $token = (string) $token;
             if ($subject !== '' && str_contains($subject, $token)) {
                 $score += 4;
-                $matchedTokens[$token] = true;
+                $matchedTokens[$token] = $token;
                 $subjectMatched = true;
             }
             if ($body !== '' && str_contains($body, $token)) {
                 $score += 1;
-                $matchedTokens[$token] = true;
+                $matchedTokens[$token] = $token;
             }
         }
 
         return [
             'score' => $score,
-            'matched_tokens' => array_keys($matchedTokens),
+            'matched_tokens' => array_values($matchedTokens),
             'subject_matched' => $subjectMatched,
         ];
     }

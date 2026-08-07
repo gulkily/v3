@@ -82,6 +82,24 @@ final class RelatedContentSearchServiceTest
         assertSame([], $matches);
     }
 
+    public function testFindRelatedContentHandlesNumericTokensAsStrings(): void
+    {
+        $pdo = $this->pdoWithContent();
+        $this->insertPost($pdo, 'root-numeric', 'root-numeric', null, 'Release 1924', 'The 1924 migration note explains issue 1924 in detail.', 7);
+        $this->insertThread($pdo, 'root-numeric', 'Release 1924');
+        $service = new RelatedContentSearchService($pdo);
+
+        $matches = $service->findRelatedContent([
+            'post_id' => 'new-post',
+            'thread_id' => 'new-post',
+            'subject' => '1924',
+            'body' => 'Can someone explain 1924?',
+        ]);
+
+        assertSame('root-numeric', $matches[0]['post_id']);
+        assertSame(true, in_array('1924', $matches[0]['matched_tokens'], true));
+    }
+
     private function pdoWithContent(): PDO
     {
         $pdo = new PDO('sqlite::memory:');
