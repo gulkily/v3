@@ -16,6 +16,7 @@ Usage:
   ./v3 build-static [repository_root] [database_path] [artifact_root]
   ./v3 archive-thread <thread_id> [repository_root] [database_path] [artifact_root] [archive_path]
   ./v3 private-config [view|--view|--force|--api-key-stdin] [--path=/private/path/secrets.php]
+  ./v3 agent-reply-cron [--log=/var/log/forum-agent-replies.log]
   ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
 EOF
@@ -62,6 +63,10 @@ case "${COMMAND}" in
   private-config)
     shift
     php "${ROOT}/scripts/write_private_config.php" "$@"
+    ;;
+  agent-reply-cron)
+    shift
+    php "${ROOT}/scripts/agent_reply_cron_reference.php" "$@"
     ;;
   approval)
     shift

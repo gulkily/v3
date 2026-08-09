@@ -113,6 +113,23 @@ final class LocalAppSmokeTest
         }
     }
 
+    public function testAgentReplyCronReferenceCommandShowsInstallInstructions(): void
+    {
+        $output = $this->runCommand(
+            dirname(__DIR__),
+            './v3 agent-reply-cron --log=/tmp/forum-agent-replies-test.log'
+        );
+
+        assertStringContains('Agent reply request cron reference', $output);
+        assertStringContains('crontab -e', $output);
+        assertStringContains('cd ' . escapeshellarg(dirname(__DIR__)), $output);
+        assertStringContains('php scripts/run_agent_reply_requests.php --quiet --limit=10', $output);
+        assertStringContains('/tmp/forum-agent-replies-test.log', $output);
+        assertStringContains('./v3 private-config view', $output);
+        assertStringContains('php scripts/run_agent_reply_requests.php --dry-run', $output);
+        assertStringContains('worker exits cleanly if a previous run is still active', $output);
+    }
+
     public function testInjectApprovalScriptSeedsIdentity(): void
     {
         [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
