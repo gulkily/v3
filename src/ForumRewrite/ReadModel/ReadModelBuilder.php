@@ -194,6 +194,9 @@ final class ReadModelBuilder
                 source_commit_sha TEXT NULL
             )'
         );
+
+        $pdo->exec('CREATE INDEX activity_recent_idx ON activity (created_at DESC, post_id DESC, id DESC)');
+        $pdo->exec('CREATE INDEX activity_post_id_idx ON activity (post_id)');
     }
 
     /**

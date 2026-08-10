@@ -36,6 +36,7 @@ final class Application
 {
     private const HIDDEN_BOOTSTRAP_TAG = 'identity';
     private const ANALYSIS_SCHEMA_VERSION = 5;
+    private const ACTIVITY_ITEM_LIMIT = 100;
     private const THREAD_CONTEXT_COMMENT_BODY_LIMIT = 3000;
     private const THREAD_CONTEXT_TOTAL_BODY_LIMIT = 18000;
     private ?string $appVersion = null;
@@ -2612,7 +2613,8 @@ final class Application
     private function fetchActivity(string $view): array
     {
         $view = $this->normalizeActivityView($view);
-        $rows = $this->pdo()->query(
+        [$viewWhere, $viewParameters] = $this->activityViewSql($view);
+        $stmt = $this->pdo()->prepare(
             'SELECT activity.created_at, activity.kind, activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
                     activity.author_identity_id,
                     activity.source_path, activity.source_commit_sha,
@@ -2620,9 +2622,17 @@ final class Application
                     activity.author_username_token, activity.author_is_approved
              FROM activity
              LEFT JOIN posts ON posts.post_id = activity.post_id
-             WHERE activity.post_id IS NULL OR COALESCE(posts.is_hidden, 0) = 0
-             ORDER BY activity.created_at DESC, activity.post_id DESC, activity.id DESC'
-        )->fetchAll();
+             WHERE (activity.post_id IS NULL OR COALESCE(posts.is_hidden, 0) = 0)
+             ' . $viewWhere . '
+             ORDER BY activity.created_at DESC, activity.post_id DESC, activity.id DESC
+             LIMIT :limit'
+        );
+        foreach ($viewParameters as $parameter => $value) {
+            $stmt->bindValue($parameter, $value);
+        }
+        $stmt->bindValue('limit', self::ACTIVITY_ITEM_LIMIT, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
 
         $items = array_map(function (array $post): array {
             $sourcePath = $post['source_path'] !== null ? (string) $post['source_path'] : '';
@@ -2644,7 +2654,8 @@ final class Application
                 'source_signature_status' => $this->sourceSignatureStatus(
                     $sourcePath,
                     (string) ($post['author_identity_id'] ?? ''),
-                    $signature['path']
+                    $signature['path'],
+                    true
                 ),
                 'id' => (int) $post['id'],
                 'author_label' => $post['author_label'],
@@ -2667,6 +2678,27 @@ final class Application
                 default => true,
             };
         }));
+    }
+
+    /**
+     * @return array{0:string,1:array<string, string>}
+     */
+    private function activityViewSql(string $view): array
+    {
+        $quotedHiddenTag = '%"' . self::HIDDEN_BOOTSTRAP_TAG . '"%';
+
+        return match ($view) {
+            'identity' => ['AND activity.board_tags_json LIKE :identity_tag', ['identity_tag' => $quotedHiddenTag]],
+            'bootstrap' => [
+                'AND activity.board_tags_json LIKE :identity_tag AND activity.board_tags_json LIKE :internal_tag',
+                ['identity_tag' => $quotedHiddenTag, 'internal_tag' => '%"internal"%'],
+            ],
+            'approval' => [
+                'AND activity.board_tags_json LIKE :identity_tag AND activity.board_tags_json LIKE :approval_tag',
+                ['identity_tag' => $quotedHiddenTag, 'approval_tag' => '%"approval"%'],
+            ],
+            default => ['AND activity.board_tags_json NOT LIKE :hidden_tag', ['hidden_tag' => $quotedHiddenTag]],
+        };
     }
 
     private function sourcePathHref(string $sourcePath, string $sourceCommitSha): ?string
@@ -2709,15 +2741,22 @@ final class Application
         return ['path' => '', 'href' => ''];
     }
 
-    private function sourceSignatureStatus(string $sourcePath, string $authorIdentityId, string $sourceSignaturePath): string
+    private function sourceSignatureStatus(
+        string $sourcePath,
+        string $authorIdentityId,
+        string $sourceSignaturePath,
+        bool $authorIdentityIdIsCanonical = false
+    ): string
     {
         if ($sourceSignaturePath !== '' || !str_starts_with($sourcePath, 'records/posts/')) {
             return '';
         }
 
-        $canonicalAuthorIdentityId = $this->canonicalPostAuthorIdentityId($sourcePath);
-        if ($canonicalAuthorIdentityId !== null) {
-            return $canonicalAuthorIdentityId === '' ? 'anonymous unsigned' : 'legacy unsigned';
+        if (!$authorIdentityIdIsCanonical) {
+            $canonicalAuthorIdentityId = $this->canonicalPostAuthorIdentityId($sourcePath);
+            if ($canonicalAuthorIdentityId !== null) {
+                return $canonicalAuthorIdentityId === '' ? 'anonymous unsigned' : 'legacy unsigned';
+            }
         }
 
         return $authorIdentityId === '' ? 'anonymous unsigned' : 'legacy unsigned';

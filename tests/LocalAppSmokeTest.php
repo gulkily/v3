@@ -728,7 +728,7 @@ final class LocalAppSmokeTest
         assertStringContains('status=ready', $readModelStatus);
         assertStringContains('lock_status=unlocked', $readModelStatus);
         assertStringContains('stale_marker=absent', $readModelStatus);
-        assertStringContains('schema_version=11', $readModelStatus);
+        assertStringContains('schema_version=12', $readModelStatus);
         assertStringContains('<rss version="2.0">', $boardRss);
         assertStringContains('<title>Hello world</title>', $threadRss);
         assertStringContains('<pubDate>Fri, 10 Apr 2026 12:05:00 +0000</pubDate>', $threadRss);
@@ -750,6 +750,62 @@ final class LocalAppSmokeTest
         assertStringContains('Commit:', $activity);
         assertStringContains('>' . substr($postCommitSha, 0, 12) . '</a>', $activity);
         assertStringNotContains('@ ' . substr($postCommitSha, 0, 12), $activity);
+    }
+
+    public function testActivityFetchLimitsAfterApplyingViewFilter(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath);
+        $this->render($application, '/api/read_model_status');
+
+        $pdo = new PDO('sqlite:' . $this->databasePath);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $insert = $pdo->prepare(
+            'INSERT INTO activity (
+                created_at, kind, post_id, thread_id, label, board_tags_json,
+                author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved,
+                source_path, source_commit_sha
+             ) VALUES (
+                :created_at, :kind, NULL, NULL, :label, :board_tags_json,
+                NULL, NULL, NULL, :author_label, 1,
+                NULL, NULL
+             )'
+        );
+
+        for ($i = 0; $i < 120; $i++) {
+            $insert->execute([
+                'created_at' => sprintf('2026-06-01T12:%02d:00Z', $i % 60),
+                'kind' => 'identity_test',
+                'label' => 'new identity row ' . $i,
+                'board_tags_json' => '["identity","internal"]',
+                'author_label' => 'identity test',
+            ]);
+        }
+
+        for ($i = 0; $i < 3; $i++) {
+            $insert->execute([
+                'created_at' => sprintf('2026-05-01T12:%02d:00Z', $i),
+                'kind' => 'content_test',
+                'label' => 'older content row ' . $i,
+                'board_tags_json' => '["general"]',
+                'author_label' => 'content test',
+            ]);
+        }
+
+        $method = new ReflectionMethod($application, 'fetchActivity');
+        $method->setAccessible(true);
+        $contentItems = $method->invoke($application, 'content');
+        $identityItems = $method->invoke($application, 'identity');
+
+        $contentLabels = array_map(static fn (array $item): string => (string) $item['label'], $contentItems);
+        $identityLabels = array_map(static fn (array $item): string => (string) $item['label'], $identityItems);
+
+        assertSame(true, count($identityItems) <= 100);
+        assertStringContains('older content row 0', implode("\n", $contentLabels));
+        assertStringContains('older content row 1', implode("\n", $contentLabels));
+        assertStringContains('older content row 2', implode("\n", $contentLabels));
+        assertStringNotContains('new identity row', implode("\n", $contentLabels));
+        assertStringContains('new identity row', implode("\n", $identityLabels));
     }
 
     public function testCurrentSourceRouteServesOnlyCanonicalRecordFiles(): void
