@@ -13,14 +13,14 @@
 <?php
 $bookmarkletSections = [
     [
-        'heading' => 'Same window',
+        'heading' => 'Same window (for iPhone)',
         'mode' => 'same-window',
-        'note' => 'These replace the current page with Compose Thread.',
+        'note' => 'These replace the current page with Compose Thread. iPhone-compatible.',
     ],
     [
-        'heading' => 'New window',
+        'heading' => 'New window (for anyone)',
         'mode' => 'new-window',
-        'note' => 'These open Compose Thread in a new window and may be affected by popup blockers.',
+        'note' => 'These open Compose Thread in a new window and may be affected by popup blockers. iPhone does not support this.',
     ],
 ];
 ?>
