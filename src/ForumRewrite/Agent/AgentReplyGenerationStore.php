@@ -52,9 +52,10 @@ interface AgentReplyGenerationStore
     public function saveFailed(string $postId, string $contentHash, string $analysisHash, string $failureCode, string $failureMessage): array;
 
     /**
+     * @param array<string, mixed> $details
      * @return array<string, mixed>
      */
-    public function markSkipped(string $postId, string $contentHash, string $reason): array;
+    public function markSkipped(string $postId, string $contentHash, string $reason, array $details = []): array;
 
     /**
      * @return array<string, mixed>

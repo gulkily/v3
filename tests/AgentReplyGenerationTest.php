@@ -168,11 +168,19 @@ final class AgentReplyGenerationTest
         $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));
         $store->requestForTarget($this->context(), ['requested_by_identity_id' => 'openpgp:requester']);
 
-        $skipped = $store->markSkipped('root-001', 'hash-001', 'respondability_not_recommended');
+        $skipped = $store->markSkipped('root-001', 'hash-001', 'analysis_not_complete', [
+            'reason' => 'analysis_not_complete',
+            'analysis_status' => 'failed',
+            'failure_code' => 'provider_error',
+            'failure_message' => 'Provider unavailable',
+        ]);
 
         assertSame('skipped', $skipped['status']);
-        assertSame('respondability_not_recommended', $skipped['failure_code']);
+        assertSame('analysis_not_complete', $skipped['failure_code']);
+        assertStringContains('provider_error', (string) $skipped['failure_message']);
         assertSame('openpgp:requester', $skipped['request_context']['agent_reply_request']['requested_by_identity_id']);
+        assertSame('failed', $skipped['request_context']['agent_reply_skip']['analysis_status']);
+        assertSame('provider_error', $skipped['request_context']['agent_reply_skip']['failure_code']);
     }
 
     public function testStoreReservesPostingOncePerTarget(): void

@@ -63,6 +63,7 @@ final class AgentReplyFulfillmentService
                 'reason' => array_key_exists('status', $analysis) ? 'analysis_not_complete' : 'missing_analysis',
                 'analysis_status' => $analysis['status'] ?? null,
                 'failure_code' => $analysis['failure_code'] ?? null,
+                'failure_message' => $analysis['failure_message'] ?? ($analysis['message'] ?? null),
             ]);
         }
 
@@ -324,7 +325,8 @@ final class AgentReplyFulfillmentService
         $stored = $this->generationStore->markSkipped(
             $postId,
             $contentHash,
-            (string) ($details['reason'] ?? 'not_recommended')
+            (string) ($details['reason'] ?? 'not_recommended'),
+            $details
         );
 
         return $this->statusResponse('not_recommended', $postId, array_merge([

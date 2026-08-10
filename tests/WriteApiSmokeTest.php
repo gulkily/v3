@@ -445,6 +445,9 @@ PHP);
             assertSame('failed', $result['analysis_status']);
             assertSame('skipped', $row['status']);
             assertSame('analysis_not_complete', $row['failure_code']);
+            assertStringContains('provider_error', (string) $row['failure_message']);
+            assertSame('failed', $row['request_context']['agent_reply_skip']['analysis_status']);
+            assertSame('provider_error', $row['request_context']['agent_reply_skip']['failure_code']);
         } finally {
             putenv('DEDALUS_ANALYSIS_MODE');
             $_COOKIE = [];
