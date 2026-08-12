@@ -1179,7 +1179,7 @@ final class Application
                         'description' => 'Browser key setup, identity linking, and technical account details.',
                     ],
                 ],
-                'toolNavOptions' => $this->toolNavOptions('overview'),
+                'toolNavOptions' => $this->toolNavOptions(null),
             ],
             'Tools',
             'tools',
@@ -1258,15 +1258,9 @@ final class Application
         );
     }
 
-    private function toolNavOptions(string $activeKey): array
+    private function toolNavOptions(?string $activeKey): array
     {
         return [
-            [
-                'key' => 'overview',
-                'label' => 'Tools',
-                'href' => '/tools/',
-                'is_active' => $activeKey === 'overview',
-            ],
             [
                 'key' => 'bookmarklets',
                 'label' => 'Bookmarklets',
