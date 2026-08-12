@@ -21,7 +21,7 @@ final class SiteProfileRegistry
             ],
             'chouse' => [
                 'name' => 'chouse',
-                'defaultTheme' => 'auto',
+                'defaultTheme' => 'chouse',
                 'composerPrompt' => 'Start a thread...',
             ],
         ];

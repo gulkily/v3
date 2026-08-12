@@ -1460,7 +1460,7 @@ final class LocalAppSmokeTest
         assertStringContains('<p class="eyebrow">zenmemes</p>', $zenmemesBoard);
         assertStringContains('<p class="eyebrow">chouse</p>', $chouseBoard);
         assertStringContains('data-default-theme="auto"', $zenmemesBoard);
-        assertStringContains('data-default-theme="auto"', $chouseBoard);
+        assertStringContains('data-default-theme="chouse"', $chouseBoard);
     }
 
     public function testApplicationRebuildsWhenRepositoryHeadMetadataIsStale(): void
