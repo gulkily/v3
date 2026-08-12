@@ -310,6 +310,35 @@
   --code-font: "Courier New", monospace;
 }
 
+:root[data-theme="chouse"],
+.theme-menu__option[data-theme-option="chouse"] {
+  color-scheme: dark;
+  --page-bg: #1c130c;
+  --body-background:
+    radial-gradient(circle at top, rgba(217, 169, 74, 0.08), transparent 42%),
+    #1c130c;
+  --ink: #f2e4cf;
+  --ink-soft: #c7a679;
+  --line: #5a4128;
+  --panel: #2b1e13;
+  --input-bg: #17100a;
+  --button-bg: #34261a;
+  --button-alt-bg: #40301f;
+  --feedback-ok-bg: #1c2a17;
+  --feedback-error-bg: #2e150f;
+  --status-error: #ff9a70;
+  --status-ok: #a8d98a;
+  --status-warning: #f0c060;
+  --active-bg: #8a5a24;
+  --active-ink: #fff3dd;
+  --active-line: #d9a94a;
+  --active-ring: rgba(217, 169, 74, 0.22);
+  --body-font: Georgia, "Palatino Linotype", "Book Antiqua", serif;
+  --ui-font: "Copperplate", "Trebuchet MS", "Century Gothic", sans-serif;
+  --code-font: ui-monospace, "Cascadia Code", "SF Mono", "Consolas",
+               "Liberation Mono", monospace;
+}
+
 * {
   box-sizing: border-box;
 }
