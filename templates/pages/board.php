@@ -19,8 +19,8 @@
         <textarea
           class="inline-reply-prompt compact-thread-compose-prompt"
           rows="2"
-          placeholder="Start a thread..."
-          aria-label="Start a thread"
+          placeholder="<?= $e($composerPrompt) ?>"
+          aria-label="<?= $e(rtrim($composerPrompt, '.')) ?>"
           data-inline-reply-trigger
           readonly
         ></textarea>

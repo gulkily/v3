@@ -38,3 +38,15 @@
   - Manual check via `TemplateRenderer::renderLayout()`: `FORUM_SITE_ID` unset renders `data-default-theme="auto"` + `siteName=zenmemes`; `FORUM_SITE_ID=chouse` renders `data-default-theme="auto"` + `siteName=chouse` (both profiles currently share the `auto` default, so output differs only in site name until a profile's `defaultTheme` diverges)
 - Notes:
   - The inline pre-hydration script in `layout.php` (head `<script>`, lines 7-34) still falls back to leaving no `data-theme` attribute when nothing is stored, rather than reading `data-default-theme` itself — for every profile today that resolves to the same visual result (`auto` via CSS `prefers-color-scheme`), since both profiles use `auto`. If a future profile sets a non-`auto` default theme, first-time visitors would see a brief flash of the system-preference theme before `theme_toggle.js` applies the real default on `DOMContentLoaded`. Left out of this stage's scope (the approved plan only called for wiring `TemplateRenderer` → attribute → `theme_toggle.js`); worth revisiting if/when a site profile actually diverges from `auto`.
+
+## Stage 4 - Composer copy wiring
+- Changes:
+  - `TemplateRenderer::renderFile()` adds `'composerPrompt' => SiteProfileRegistry::active()['composerPrompt']` to the same default-merge block that already injects `unicodeAuthoredTextEnabled`/`emojiAuthoredTextEnabled` into every page/partial, so no per-route wiring was needed
+  - `templates/pages/board.php`: the inline composer's `placeholder` and `aria-label` now read `$composerPrompt` (aria-label strips a trailing `.` for phrasing) instead of the literal `"Start a thread..."` / `"Start a thread"` strings
+- Verification:
+  - `php -l` on touched PHP files — no syntax errors
+  - `php tests/run.php` — full suite passes
+  - Manual render check via `TemplateRenderer::renderPageTemplate('board.php', ...)`: output textarea shows `placeholder="Start a thread..."` and `aria-label="Start a thread"`, identical to the pre-change literal, confirming no behavior change for zenmemes
+  - Grepped `templates/` for other occurrences of `"Start a thread"` — none found, so no duplicate copy was missed
+- Notes:
+  - Both profiles still share the same `composerPrompt` value from Stage 1's placeholder data; chouse's copy can diverge later (e.g. in a future chouse-branding feature) by editing only `SiteProfileRegistry::all()`
