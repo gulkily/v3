@@ -11,9 +11,10 @@ use RuntimeException;
 
 final class LocalRepositoryBootstrap
 {
-    public static function defaultRepositoryRoot(string $projectRoot): string
+    public static function defaultRepositoryRoot(string $projectRoot, string $siteId = 'zenmemes'): string
     {
-        $localRepositoryRoot = $projectRoot . '/state/local_repository';
+        $suffix = $siteId === 'zenmemes' ? '' : '_' . $siteId;
+        $localRepositoryRoot = $projectRoot . '/state/local_repository' . $suffix;
         if (is_dir($localRepositoryRoot . '/records') && is_dir($localRepositoryRoot . '/.git')) {
             return $localRepositoryRoot;
         }

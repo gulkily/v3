@@ -50,3 +50,18 @@
   - Grepped `templates/` for other occurrences of `"Start a thread"` — none found, so no duplicate copy was missed
 - Notes:
   - Both profiles still share the same `composerPrompt` value from Stage 1's placeholder data; chouse's copy can diverge later (e.g. in a future chouse-branding feature) by editing only `SiteProfileRegistry::all()`
+
+## Stage 5 - Site-scoped local dev bootstrap
+- Changes:
+  - `LocalRepositoryBootstrap::defaultRepositoryRoot(string $projectRoot, string $siteId = 'zenmemes'): string` — new optional `$siteId` param; `zenmemes` (including the pre-existing default) resolves to the unchanged `state/local_repository` path, any other site ID resolves to a suffixed sibling directory (`state/local_repository_<siteId>`), auto-initialized from the same fixture the same way
+  - `public/index.php` resolves `$siteId` via `SiteProfileRegistry::active()['name']` and applies the same suffix convention to the local defaults for `FORUM_REPOSITORY_ROOT`, `FORUM_DATABASE_PATH`, and `FORUM_STATIC_HTML_ROOT` (all three only take effect when the corresponding env var is unset — explicit env vars still win, unchanged)
+  - All other `LocalRepositoryBootstrap::defaultRepositoryRoot()` call sites (various `scripts/*.php`, `tests/LocalAppSmokeTest.php`) are unaffected — the new parameter defaults to `'zenmemes'`, reproducing today's exact behavior
+- Verification:
+  - `php -l` on touched PHP files — no syntax errors
+  - `php tests/run.php` — full suite passes
+  - Manual check: `LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)` (no site ID) still resolves to the pre-existing `state/local_repository`
+  - Manual check: `LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot, 'chouse')` auto-initializes a distinct `state/local_repository_chouse` with its own `records/` and `.git`
+  - Manual check of the `public/index.php` path-resolution logic: `FORUM_SITE_ID` unset yields the exact pre-existing database/static-html paths; `FORUM_SITE_ID=chouse` yields distinct `_chouse`-suffixed sibling paths
+  - This directly delivers the dev-config ask: `FORUM_SITE_ID=chouse ./v3 start` alone (no other `FORUM_*` vars) now serves a fully separate, auto-initialized chouse sandbox — content, database, and static-artifact paths never overlap with the zenmemes checkout
+- Notes:
+  - `state/local_repository_chouse` is gitignored (same rule that covers `state/local_repository`), so exercising this locally leaves no untracked changes to commit
