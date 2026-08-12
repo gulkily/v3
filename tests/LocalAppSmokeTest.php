@@ -402,7 +402,9 @@ final class LocalAppSmokeTest
         assertStringContains('zenmemes', $instance);
         assertStringContains('Backup', $backup);
         assertStringContains('Backup', $toolsBackup);
-        assertStringNotContains('board-controls-nav', $toolsBackup);
+        assertStringContains('board-controls-nav', $toolsBackup);
+        assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
+        assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
         assertStringContains('/user/guest', $instance);
         assertStringContains('/downloads/repository.tar.gz', $instance);
         assertStringContains('/downloads/repository.zip', $instance);
@@ -418,7 +420,8 @@ final class LocalAppSmokeTest
         assertStringContains('/activity/', $tools);
         assertStringContains('Recent forum activity across content, approvals, and identity events.', $tools);
         assertStringContains('class="nav-link is-active" href="/tools/"', $tools);
-        assertStringNotContains('board-controls-nav', $tools);
+        assertStringContains('board-controls-nav', $tools);
+        assertSame(1, substr_count($tools, 'href="/tools/">Tools</a>'));
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/tools/codebase/', $tools);
@@ -427,7 +430,9 @@ final class LocalAppSmokeTest
         assertStringContains('Registered site feature flags, defaults, effective values, and override sources.', $tools);
         assertStringContains('/account/key/', $tools);
         assertStringContains('System State', $codebase);
-        assertStringNotContains('board-controls-nav', $codebase);
+        assertStringContains('board-controls-nav', $codebase);
+        assertStringContains('class="nav-link is-active" href="/tools/codebase/"', $codebase);
+        assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $codebase);
         assertStringContains('Repository head', $codebase);
         assertStringContains('Read model', $codebase);
         assertStringContains('Schema version', $codebase);
@@ -439,7 +444,9 @@ final class LocalAppSmokeTest
         assertStringContains('SELECT COUNT(*) FROM posts', $codebase);
         assertStringContains('/downloads/repository.tar.gz', $codebase);
         assertStringContains('Feature Flags', $featureFlags);
-        assertStringNotContains('board-controls-nav', $featureFlags);
+        assertStringContains('board-controls-nav', $featureFlags);
+        assertStringContains('class="nav-link is-active" href="/tools/feature-flags/"', $featureFlags);
+        assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $featureFlags);
         assertFingerprintedAsset($featureFlags, 'feature_flags.js');
         assertStringContains('FORUM_UNICODE_AUTHORED_TEXT', $featureFlags);
         assertStringContains('FORUM_EMOJI_AUTHORED_TEXT', $featureFlags);
@@ -518,7 +525,9 @@ final class LocalAppSmokeTest
         assertStringContains('data-role="compose-identity-status" hidden', $composeThread);
         assertStringContains('data-action="submit-anonymous-compose"', $composeThread);
         assertStringContains('Bookmarklets', $bookmarklets);
-        assertStringNotContains('board-controls-nav', $bookmarklets);
+        assertStringContains('board-controls-nav', $bookmarklets);
+        assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
+        assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $bookmarklets);
         assertFingerprintedAsset($bookmarklets, 'tools_bookmarklets.js');
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
         assertStringContains('Thread ID:', $composeReply);
@@ -896,7 +905,9 @@ final class LocalAppSmokeTest
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/tools/feature-flags/', $tools);
         assertFingerprintedAsset($bookmarklets, 'tools_bookmarklets.js');
-        assertStringNotContains('board-controls-nav', $bookmarklets);
+        assertStringContains('board-controls-nav', $bookmarklets);
+        assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
+        assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $bookmarklets);
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
         assertStringContains('window.getSelection().toString().trim()', $bookmarkletAsset);
         assertStringContains('value="Saved Title"', $prefilledCompose);

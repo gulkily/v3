@@ -1,5 +1,13 @@
 <section class="stack">
   <article class="card">
+    <div class="nav board-controls-nav">
+<?php foreach ($toolNavOptions as $option): ?>
+<?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
+      <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
+<?php endforeach; ?>
+    </div>
+  </article>
+  <article class="card">
     <h1>Feature Flags</h1>
     <table class="codebase-facts">
       <thead>
