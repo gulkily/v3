@@ -1425,6 +1425,44 @@ final class LocalAppSmokeTest
         assertTrue(is_file($repositoryRoot . '/records/posts/root-001.txt'));
     }
 
+    public function testDefaultRepositoryBootstrapIsSiteScoped(): void
+    {
+        $projectRoot = sys_get_temp_dir() . '/forum-rewrite-project-' . bin2hex(random_bytes(6));
+        mkdir($projectRoot . '/tests/fixtures/parity_minimal_v1', 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $projectRoot . '/tests/fixtures/parity_minimal_v1');
+
+        $zenmemesRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot, 'zenmemes');
+        $chouseRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot, 'chouse');
+
+        assertSame($projectRoot . '/state/local_repository', $zenmemesRoot);
+        assertSame($projectRoot . '/state/local_repository_chouse', $chouseRoot);
+        assertTrue(is_dir($chouseRoot . '/records'));
+        assertTrue(is_dir($chouseRoot . '/.git'));
+        assertTrue(is_file($chouseRoot . '/records/posts/root-001.txt'));
+        assertTrue($zenmemesRoot !== $chouseRoot);
+    }
+
+    public function testBoardPageRendersActiveSiteProfilePerFormSiteId(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+        putenv('FORUM_SITE_ID');
+        $zenmemesBoard = $this->render($application, '/');
+
+        putenv('FORUM_SITE_ID=chouse');
+        try {
+            $chouseBoard = $this->render($application, '/');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertStringContains('<p class="eyebrow">zenmemes</p>', $zenmemesBoard);
+        assertStringContains('<p class="eyebrow">chouse</p>', $chouseBoard);
+        assertStringContains('data-default-theme="auto"', $zenmemesBoard);
+        assertStringContains('data-default-theme="auto"', $chouseBoard);
+    }
+
     public function testApplicationRebuildsWhenRepositoryHeadMetadataIsStale(): void
     {
         [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();

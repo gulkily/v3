@@ -65,3 +65,15 @@
   - This directly delivers the dev-config ask: `FORUM_SITE_ID=chouse ./v3 start` alone (no other `FORUM_*` vars) now serves a fully separate, auto-initialized chouse sandbox — content, database, and static-artifact paths never overlap with the zenmemes checkout
 - Notes:
   - `state/local_repository_chouse` is gitignored (same rule that covers `state/local_repository`), so exercising this locally leaves no untracked changes to commit
+
+## Stage 6 - Docs and smoke-test coverage
+- Changes:
+  - `docs/examples/apache_vhost.conf`: added a commented `FORUM_SITE_ID` line alongside the existing `FORUM_*` path vars
+  - `docs/examples/env.production.example`: same, as a commented optional var with its default noted
+  - `docs/runbooks/production_deploy.md`: new "Site Profile" section — values, default, precedence/rollback matching the runbook's existing `FORUM_*` style, and the local/CLI `FORUM_SITE_ID=chouse ./v3 start` dev workflow from Stage 5
+  - `tests/LocalAppSmokeTest.php`: added `testDefaultRepositoryBootstrapIsSiteScoped()` (zenmemes path unchanged, chouse resolves to a distinct auto-initialized sibling) and `testBoardPageRendersActiveSiteProfilePerFormSiteId()` (full `Application`-level render confirms site name and default theme both flip correctly between `FORUM_SITE_ID` unset and `chouse`, with proper `putenv` cleanup in `finally`)
+- Verification:
+  - `php -l` on all touched PHP files — no syntax errors
+  - `php tests/run.php` — full suite passes, including both new `LocalAppSmokeTest` cases
+- Notes:
+  - While verifying this stage, `php tests/run.php` initially reported `testFrontControllerShowsBusyErrorForExecutionLockContention` failing. Root cause: an untracked `public/index.html` (gitignored static-artifact cache) had been written to disk as a side effect of this session's own earlier manual `Application`-level rendering checks in Stages 3-5. `FrontController` serves that cached file for `/` before ever reaching the lock/rebuild code path the test exercises, so the test short-circuited into a false failure — not a regression from this feature's changes. Confirmed by running the full suite on a clean `main` worktree (passed) and by inspecting `FrontController::resolveStaticArtifactPath()`, which checks `publicRoot/index.html` first. Fixed by deleting the stray gitignored file; the full suite is green afterward.

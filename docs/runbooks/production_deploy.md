@@ -84,6 +84,28 @@ FORUM_PUBLIC_ARTIFACT_ROOT=/srv/forum-rewrite/app/public
 
 `FORUM_STATIC_HTML_ROOT` remains available for separate static roots, but the primary production model for this repo is sibling artifacts in `public/`.
 
+## Site Profile
+
+`FORUM_SITE_ID` selects which `SiteProfileRegistry` entry (site name, default theme, composer copy) this deployment renders. Values: `zenmemes`, `chouse`. Unset, empty, or unrecognized values resolve to `zenmemes`.
+
+Set it alongside the three path variables above, per vhost:
+
+```text
+FORUM_SITE_ID=zenmemes
+```
+
+It only selects branding — it does not select content or database paths. Those remain on `FORUM_REPOSITORY_ROOT`, `FORUM_DATABASE_PATH`, and `FORUM_PUBLIC_ARTIFACT_ROOT`, set independently per vhost. A vhost with a mismatched `FORUM_SITE_ID` and content paths is a misconfiguration, not a supported mode; the two must be kept paired by whoever edits the vhost config.
+
+Precedence and rollback match the other `FORUM_*` variables in this runbook: environment variable wins, code default (`zenmemes`) applies when absent, and rollback is deleting the `SetEnv` line.
+
+For local/CLI runs, set the same variable before the command:
+
+```bash
+FORUM_SITE_ID=chouse ./v3 start
+```
+
+Omitting `FORUM_REPOSITORY_ROOT`, `FORUM_DATABASE_PATH`, and `FORUM_STATIC_HTML_ROOT` in that case auto-initializes a site-scoped local sandbox (`state/local_repository_chouse` and matching database/static paths) separate from the default `zenmemes` sandbox, so both profiles can be developed from the same checkout.
+
 ## Agent Reply Requests
 
 Approved users can request a `reply-agent` response from eligible post cards. The button records a durable request in SQLite and returns quickly; it does not wait for provider analysis or canonical posting.
