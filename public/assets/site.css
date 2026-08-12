@@ -2952,3 +2952,32 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   padding-top: 0.5rem;
   align-self: center;
 }
+
+:root[data-theme="chouse"] .card {
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba(217, 169, 74, 0.06);
+}
+
+:root[data-theme="chouse"] .card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--active-line), transparent 85%);
+}
+
+:root[data-theme="chouse"] input,
+:root[data-theme="chouse"] textarea {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme="chouse"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  letter-spacing: 0.02em;
+}
+
+:root[data-theme="chouse"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover,
+:root[data-theme="chouse"] .nav-link:hover {
+  border-color: var(--active-line);
+}
