@@ -2513,6 +2513,17 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   white-space: nowrap;
 }
 
+.reply-context-card h2 {
+  margin-top: 0;
+}
+
+.reply-context-body {
+  max-height: 18rem;
+  overflow: auto;
+  padding-left: 0.85rem;
+  border-left: 3px solid var(--line);
+}
+
 .compact-thread-compose {
   padding: 0;
 }

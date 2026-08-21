@@ -370,6 +370,16 @@ final class LocalAppSmokeTest
         assertStringContains('inline-reply-identity-status', $thread);
         assertStringContains('method="post" action="/compose/reply" class="stack" data-compose-form data-compose-kind="reply"', $thread);
         assertStringContains('method="post" action="/compose/reply" class="stack" data-compose-form data-compose-kind="reply"', $composeReply);
+        assertStringContains('<h2 id="reply-context-title">Replying to</h2>', $composeReply);
+        assertStringContains('Post root-001</a>', $composeReply);
+        assertStringContains('First line preview.<br />', $composeReply);
+        assertStringContains('Second line body.', $composeReply);
+        assertStringNotContains('Thread ID:', $composeReply);
+        assertStringNotContains('Parent ID:', $composeReply);
+        assertStringNotContains('<label>Body<textarea name="body"', $composeReply);
+        assertStringContains('aria-label="Body"', $composeReply);
+        assertStringContains('name="thread_id" value="root-001"', $composeReply);
+        assertStringContains('name="parent_id" value="root-001"', $composeReply);
         assertStringContains('name="thread_id" value="root-001"', $thread);
         assertStringContains('name="parent_id" value="root-001"', $thread);
         assertStringContains('type="hidden" name="board_tags" value="general"', $thread);
@@ -530,7 +540,8 @@ final class LocalAppSmokeTest
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $bookmarklets);
         assertFingerprintedAsset($bookmarklets, 'tools_bookmarklets.js');
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
-        assertStringContains('Thread ID:', $composeReply);
+        assertStringNotContains('Thread ID:', $composeReply);
+        assertStringNotContains('Parent ID:', $composeReply);
         assertFingerprintedAsset($composeReply, 'browser_signing.js');
         assertStringNotContains('/assets/inline_reply_form.js', $composeReply);
         assertStringContains('data-role="compose-identity-status" hidden', $composeReply);

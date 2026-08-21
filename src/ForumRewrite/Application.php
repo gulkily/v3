@@ -1322,9 +1322,15 @@ final class Application
         string $body = ''
     ): string
     {
+        $parentPost = $parentId !== '' ? $this->fetchPost($parentId) : null;
+        if (is_array($parentPost) && $threadId !== '' && (string) ($parentPost['thread_id'] ?? '') !== $threadId) {
+            $parentPost = null;
+        }
+
         return $this->renderPageTemplate('compose_reply.php', [
             'threadId' => $threadId,
             'parentId' => $parentId,
+            'parentPost' => $parentPost,
             'notice' => $notice,
             'error' => $error,
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
