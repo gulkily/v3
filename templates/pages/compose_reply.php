@@ -15,7 +15,6 @@
   </article>
 <?php endif; ?>
   <article class="card">
-    <h1>Compose Reply</h1>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
     <p class="meta" data-role="compose-identity-status" hidden></p>
 <?= $indent($partial('partials/reply_form.php', ['showBodyLabel' => false]), 2) ?>

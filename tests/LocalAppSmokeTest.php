@@ -374,6 +374,7 @@ final class LocalAppSmokeTest
         assertStringContains('Post root-001</a>', $composeReply);
         assertStringContains('First line preview.<br />', $composeReply);
         assertStringContains('Second line body.', $composeReply);
+        assertStringNotContains('<h1>Compose Reply</h1>', $composeReply);
         assertStringNotContains('Thread ID:', $composeReply);
         assertStringNotContains('Parent ID:', $composeReply);
         assertStringNotContains('<label>Body<textarea name="body"', $composeReply);
