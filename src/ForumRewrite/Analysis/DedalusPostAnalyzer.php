@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Analysis;
 
-use RuntimeException;
+use ForumRewrite\Llm\OpenAiCompatibleStructuredChatProvider;
+use ForumRewrite\Llm\StructuredChatCompletionDecoder;
+use ForumRewrite\Llm\StructuredChatProvider;
 
 final class DedalusPostAnalyzer implements PostAnalyzer
 {
@@ -22,12 +24,9 @@ final class DedalusPostAnalyzer implements PostAnalyzer
     private const UNICODE_REVIEW_PRIORITIES = ['none', 'low', 'medium', 'high'];
     private const UNICODE_RECOMMENDED_ACTIONS = ['none', 'watch', 'human_review'];
 
-    private string $apiKey;
-    private string $baseUrl;
-    private string $model;
-    private int $timeoutSeconds;
     private string $systemPromptTemplatePath;
     private ?string $loadedSystemPrompt = null;
+    private StructuredChatProvider $provider;
 
     public function __construct(
         string $apiKey,
@@ -35,21 +34,24 @@ final class DedalusPostAnalyzer implements PostAnalyzer
         string $model = 'openai/gpt-5-nano',
         int $timeoutSeconds = 60,
         ?string $systemPromptTemplatePath = null,
+        ?StructuredChatProvider $provider = null,
     ) {
-        $this->apiKey = $apiKey;
-        $this->baseUrl = $baseUrl;
-        $this->model = $model;
-        $this->timeoutSeconds = $timeoutSeconds;
         $this->systemPromptTemplatePath = $systemPromptTemplatePath
             ?? dirname(__DIR__, 3) . '/prompts/dedalus_post_analysis_system.txt';
+        $this->provider = $provider ?? new OpenAiCompatibleStructuredChatProvider(
+            'dedalus',
+            $apiKey,
+            $baseUrl,
+            $model,
+            $timeoutSeconds
+        );
     }
 
     public function analyze(array $context): array
     {
-        $providerStartedAt = hrtime(true);
-        $response = $this->postJson('/v1/chat/completions', [
-            'model' => $this->model,
-            'messages' => [
+        $completion = $this->provider->completeStructuredChat(
+            'ForumPostAnalysis',
+            [
                 [
                     'role' => 'system',
                     'content' => $this->systemPrompt(),
@@ -59,23 +61,15 @@ final class DedalusPostAnalyzer implements PostAnalyzer
                     'content' => json_encode($context, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
                 ],
             ],
-            'response_format' => [
-                'type' => 'json_schema',
-                'json_schema' => [
-                    'name' => 'ForumPostAnalysis',
-                    'schema' => $this->responseSchema(),
-                ],
-            ],
-            'max_completion_tokens' => 8000,
-        ]);
-        $externalProviderTiming = $this->elapsedMilliseconds($providerStartedAt);
-
-        $decoded = self::decodeCompletionPayload($response);
+            $this->responseSchema(),
+            ['max_completion_tokens' => 8000]
+        );
+        $decoded = $completion['decoded'];
 
         return [
-            'provider' => 'dedalus',
-            'provider_model' => (string) ($response['model'] ?? $this->model),
-            'provider_request_id' => isset($response['id']) ? (string) $response['id'] : null,
+            'provider' => (string) $completion['provider'],
+            'provider_model' => (string) $completion['provider_model'],
+            'provider_request_id' => isset($completion['provider_request_id']) ? (string) $completion['provider_request_id'] : null,
             'post_summary' => (string) ($decoded['post_summary'] ?? ''),
             'moderation' => $this->objectOrEmpty($decoded['moderation'] ?? null),
             'engagement' => $this->objectOrEmpty($decoded['engagement'] ?? null),
@@ -83,10 +77,8 @@ final class DedalusPostAnalyzer implements PostAnalyzer
             'respondability' => $this->objectOrEmpty($decoded['respondability'] ?? null),
             'related_content_assessment' => $this->objectOrEmpty($decoded['related_content_assessment'] ?? null),
             'unicode_risk_review' => $this->unicodeRiskReview($decoded['unicode_risk_review'] ?? null),
-            'raw_response' => $response,
-            'timings' => [
-                'external_provider' => $externalProviderTiming,
-            ],
+            'raw_response' => $completion['raw_response'],
+            'timings' => $completion['timings'] ?? [],
         ];
     }
 
@@ -96,79 +88,7 @@ final class DedalusPostAnalyzer implements PostAnalyzer
      */
     public static function decodeCompletionPayload(array $response): array
     {
-        $message = $response['choices'][0]['message'] ?? null;
-        if (is_array($message)) {
-            $parsed = $message['parsed'] ?? null;
-            if (is_array($parsed)) {
-                return $parsed;
-            }
-
-            $content = $message['content'] ?? null;
-            if (is_array($content) && !array_is_list($content)) {
-                return $content;
-            }
-
-            $contentText = self::contentToText($content);
-            if ($contentText !== '') {
-                $decoded = json_decode($contentText, true);
-                if (is_array($decoded)) {
-                    return $decoded;
-                }
-
-                throw new RuntimeException('Dedalus response content was not valid JSON.');
-            }
-        }
-
-        $outputText = self::contentToText($response['output_text'] ?? null);
-        if ($outputText !== '') {
-            $decoded = json_decode($outputText, true);
-            if (is_array($decoded)) {
-                return $decoded;
-            }
-        }
-
-        $finishReason = (string) ($response['choices'][0]['finish_reason'] ?? 'unknown');
-        $completionTokens = (string) ($response['usage']['completion_tokens'] ?? 'unknown');
-        $reasoningTokens = (string) ($response['usage']['completion_tokens_details']['reasoning_tokens'] ?? 'unknown');
-
-        throw new RuntimeException(
-            'Dedalus response did not include parseable message content.'
-            . ' finish_reason=' . $finishReason
-            . ' completion_tokens=' . $completionTokens
-            . ' reasoning_tokens=' . $reasoningTokens
-        );
-    }
-
-    private static function contentToText(mixed $content): string
-    {
-        if (is_string($content)) {
-            return trim($content);
-        }
-
-        if (!is_array($content)) {
-            return '';
-        }
-
-        $parts = [];
-        foreach ($content as $block) {
-            if (is_string($block)) {
-                $parts[] = $block;
-                continue;
-            }
-
-            if (!is_array($block)) {
-                continue;
-            }
-
-            foreach (['text', 'content', 'output_text'] as $key) {
-                if (isset($block[$key]) && is_string($block[$key])) {
-                    $parts[] = $block[$key];
-                    break;
-                }
-            }
-        }
-
-        return trim(implode('', $parts));
+        return StructuredChatCompletionDecoder::decodeOpenAiCompatiblePayload($response);
     }
 
     private function systemPrompt(): string
@@ -261,11 +181,6 @@ final class DedalusPostAnalyzer implements PostAnalyzer
     private function boundedScore(mixed $value): float
     {
         return max(0.0, min(1.0, (float) $value));
-    }
-
-    private function elapsedMilliseconds(int $startedAt): float
-    {
-        return round((hrtime(true) - $startedAt) / 1000000, 1);
     }
 
     /**
@@ -436,63 +351,6 @@ final class DedalusPostAnalyzer implements PostAnalyzer
             ],
             'required' => ['post_summary', 'engagement', 'moderation', 'quality', 'respondability', 'related_content_assessment', 'unicode_risk_review'],
         ];
-    }
-
-    /**
-     * @param array<string, mixed> $payload
-     * @return array<string, mixed>
-     */
-    private function postJson(string $path, array $payload): array
-    {
-        $url = rtrim($this->baseUrl, '/') . $path;
-        $body = json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
-        $headers = [
-            'Content-Type: application/json',
-            'Accept: application/json',
-            'Authorization: Bearer ' . $this->apiKey,
-        ];
-
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'POST',
-                'header' => implode("\r\n", $headers),
-                'content' => $body,
-                'timeout' => max(1, $this->timeoutSeconds),
-                'ignore_errors' => true,
-            ],
-        ]);
-
-        $raw = @file_get_contents($url, false, $context);
-        $statusCode = $this->statusCode($http_response_header ?? []);
-        if ($raw === false) {
-            throw new RuntimeException('Dedalus request failed before receiving a response.');
-        }
-
-        $decoded = json_decode($raw, true);
-        if (!is_array($decoded)) {
-            throw new RuntimeException('Dedalus response was not valid JSON.');
-        }
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            $message = (string) ($decoded['error']['message'] ?? 'Dedalus request failed.');
-            throw new RuntimeException($message);
-        }
-
-        return $decoded;
-    }
-
-    /**
-     * @param string[] $headers
-     */
-    private function statusCode(array $headers): int
-    {
-        foreach ($headers as $header) {
-            if (preg_match('#^HTTP/\S+\s+(\d{3})#', $header, $matches) === 1) {
-                return (int) $matches[1];
-            }
-        }
-
-        return 0;
     }
 
     /**

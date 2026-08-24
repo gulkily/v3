@@ -62,7 +62,7 @@ final class SqlitePostAnalysisStore implements PostAnalysisStore
         return $this->hydrate($row);
     }
 
-    public function saveFailed(string $postId, string $contentHash, string $failureCode, string $failureMessage): array
+    public function saveFailed(string $postId, string $contentHash, string $failureCode, string $failureMessage, array $rawResponse = []): array
     {
         $now = gmdate('c');
         $row = [
@@ -81,7 +81,7 @@ final class SqlitePostAnalysisStore implements PostAnalysisStore
             'respondability_json' => $this->encode([]),
             'related_content_json' => $this->encodeList([]),
             'related_content_assessment_json' => $this->encode([]),
-            'raw_response_json' => $this->encode([]),
+            'raw_response_json' => $this->encode($rawResponse),
             'failure_code' => $failureCode,
             'failure_message' => substr($failureMessage, 0, 500),
             'retry_after' => gmdate('c', time() + 300),
