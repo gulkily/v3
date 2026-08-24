@@ -289,6 +289,8 @@ function printUpdateReminder(string $path): void
     fwrite(STDOUT, "  ./v3 private-config --force\n");
     fwrite(STDOUT, "  printf '%s\\n' \"\$LLM_API_KEY\" | ./v3 private-config --api-key-stdin\n");
     fwrite(STDOUT, "  ./v3 private-config --path=" . escapeshellarg($path) . " --force\n");
+    fwrite(STDOUT, "Supported LLM_PROVIDER values: dedalus, openai, openrouter, anthropic, stub, or an OpenAI-compatible gateway name.\n");
+    fwrite(STDOUT, "OpenAI-compatible providers use LLM_API_BASE_URL + /v1/chat/completions; Anthropic uses LLM_API_BASE_URL + /v1/messages.\n");
     fwrite(STDOUT, "Edit {$path} directly for provider options such as LLM_PROVIDER, LLM_MODEL, and LLM_EXTRA_HEADERS.\n");
     fwrite(STDOUT, "Edit {$path} directly for booleans such as DEDALUS_AGENT_REPLIES_ENABLED and DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED.\n");
 }
@@ -312,6 +314,8 @@ Usage:
 Creates or updates the private PHP config used by ForumRewrite\Support\PrivateConfig.
 Use view/--view to print a redacted summary and update reminders without creating or modifying the file.
 The default local path is ../forum-private/secrets.php relative to this app checkout.
+LLM_PROVIDER supports dedalus, openai, openrouter, anthropic, stub, and OpenAI-compatible gateways.
+Legacy DEDALUS_* LLM settings are still read as fallbacks, but new writes use LLM_* names.
 
 TEXT);
 }

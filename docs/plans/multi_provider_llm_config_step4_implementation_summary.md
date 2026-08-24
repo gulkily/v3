@@ -59,3 +59,19 @@
 - Notes:
   - The full test runner passed, but emitted existing asset fingerprint warnings for already-fingerprinted temporary asset names becoming too long during smoke tests.
   - Unknown non-Anthropic provider names are treated as OpenAI-compatible gateways when a base URL and API key are configured.
+
+## Stage 5 - Operator Docs and Configuration Diagnostics
+- Changes:
+  - Updated `./v3 private-config` help/reminder output with supported providers and endpoint behavior.
+  - Updated the private config example to use canonical `LLM_*` keys.
+  - Added production runbook guidance for Dedalus, OpenAI, OpenRouter, Anthropic, `stub`, LiteLLM, and other OpenAI-compatible gateways.
+  - Clarified that agent reply drafting uses the configured `LLM_*` provider through stored post analysis.
+  - Added command coverage for the provider list and endpoint wording while preserving redaction checks.
+- Verification:
+  - `php -l scripts/write_private_config.php && php -l tests/PrivateConfigCommandTest.php`
+  - `php -d zend.assertions=1 -d assert.exception=1 -r 'require "tests/ApplicationServerTimingTest.php"; require "tests/PrivateConfigCommandTest.php"; $test = new PrivateConfigCommandTest(); foreach (get_class_methods($test) as $method) { if (str_starts_with($method, "test")) { $test->{$method}(); echo "PASS PrivateConfigCommandTest::{$method}\n"; } }'`
+  - `./v3 private-config --help`
+  - `php -d zend.assertions=1 -d assert.exception=1 tests/run.php`
+- Notes:
+  - The full test runner passed, but emitted existing asset fingerprint warnings for already-fingerprinted temporary asset names becoming too long during smoke tests.
+  - `scripts/agent_reply_status.php` already had unrelated uncommitted diagnostic changes in the worktree, so this stage did not stage that file.
