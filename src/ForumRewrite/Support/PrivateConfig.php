@@ -28,10 +28,18 @@ final class PrivateConfig
         }
 
         foreach ([
+            'LLM_PROVIDER',
+            'LLM_API_KEY',
+            'LLM_API_BASE_URL',
+            'LLM_MODEL',
+            'LLM_TIMEOUT_SECONDS',
+            'LLM_EXTRA_HEADERS',
+            'LLM_POST_ANALYSIS_PROMPT_PATH',
             'DEDALUS_API_KEY',
             'DEDALUS_API_BASE_URL',
             'DEDALUS_MODEL',
             'DEDALUS_TIMEOUT_SECONDS',
+            'DEDALUS_POST_ANALYSIS_PROMPT_PATH',
             'DEDALUS_ANALYSIS_MODE',
             'DEDALUS_AGENT_REPLIES_ENABLED',
             'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED',
