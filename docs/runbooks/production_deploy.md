@@ -91,7 +91,10 @@ Post analysis and agent reply drafting use provider-neutral `LLM_*` private conf
 ```bash
 ./v3 private-config --force
 ./v3 private-config view
+./v3 private-config refresh-template
 ```
+
+Use `refresh-template` after upgrades to rewrite the private config with current comments and provider examples while preserving existing effective values.
 
 Supported providers:
 

@@ -35,6 +35,43 @@ final class PrivateConfigCommandTest
         }
     }
 
+    public function testPrivateConfigRefreshTemplatePreservesValuesAndAddsComments(): void
+    {
+        $secretsPath = sys_get_temp_dir() . '/forum-rewrite-private-config-' . bin2hex(random_bytes(6)) . '/secrets.php';
+        mkdir(dirname($secretsPath), 0700, true);
+        file_put_contents($secretsPath, "<?php\n\nreturn [\n"
+            . "    'DEDALUS_API_KEY' => 'prod-secret-value',\n"
+            . "    'DEDALUS_MODEL' => 'openai/gpt-5-nano',\n"
+            . "    'LLM_EXTRA_HEADERS' => ['HTTP-Referer' => 'https://example.test'],\n"
+            . "    'CUSTOM_SETTING' => 'kept',\n"
+            . "];\n");
+
+        try {
+            $output = $this->runCommand(
+                dirname(__DIR__),
+                'FORUM_SECRETS_PATH=' . escapeshellarg($secretsPath) . ' ./v3 private-config refresh-template'
+            );
+            $contents = (string) file_get_contents($secretsPath);
+            $config = require $secretsPath;
+
+            assertStringContains('Refreshed private config at ' . $secretsPath, $output);
+            assertStringNotContains('prod-secret-value', $output);
+            assertSame('dedalus', $config['LLM_PROVIDER']);
+            assertSame('prod-secret-value', $config['LLM_API_KEY']);
+            assertSame('openai/gpt-5-nano', $config['LLM_MODEL']);
+            assertSame('https://example.test', $config['LLM_EXTRA_HEADERS']['HTTP-Referer']);
+            assertSame('prod-secret-value', $config['DEDALUS_API_KEY']);
+            assertSame('kept', $config['CUSTOM_SETTING']);
+            assertStringContains('Run ./v3 private-config refresh-template', $contents);
+            assertStringContains('Provider examples. Copy the relevant values into the returned array above.', $contents);
+            assertStringContains('Direct Anthropic:', $contents);
+            assertStringContains('Additional existing values preserved by refresh-template.', $contents);
+        } finally {
+            @unlink($secretsPath);
+            @rmdir(dirname($secretsPath));
+        }
+    }
+
     private function runCommand(string $cwd, string $command): string
     {
         $descriptor = [

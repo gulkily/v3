@@ -9,6 +9,7 @@ $options = [
     'path' => $defaultPath,
     'force' => false,
     'api_key_stdin' => false,
+    'refresh_template' => false,
     'view' => false,
     'help' => false,
 ];
@@ -21,6 +22,11 @@ foreach (array_slice($argv, 1) as $arg) {
 
     if ($arg === 'view' || $arg === '--view') {
         $options['view'] = true;
+        continue;
+    }
+
+    if ($arg === 'refresh-template' || $arg === '--refresh-template') {
+        $options['refresh_template'] = true;
         continue;
     }
 
@@ -91,8 +97,9 @@ if ($options['api_key_stdin']) {
     $config['LLM_API_KEY'] = $apiKey;
 }
 
-if (is_file($path) && !$options['force'] && !$options['api_key_stdin']) {
+if (is_file($path) && !$options['force'] && !$options['api_key_stdin'] && !$options['refresh_template']) {
     fwrite(STDOUT, "Private config already exists at {$path}\n");
+    fwrite(STDOUT, "Run with refresh-template to add current comments/examples while preserving values.\n");
     fwrite(STDOUT, "Run with --force to rewrite defaults while preserving existing values, or --api-key-stdin to update the key.\n");
     exit(0);
 }
@@ -103,19 +110,7 @@ if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)
     exit(1);
 }
 
-$contents = "<?php\n\n"
-    . "declare(strict_types=1);\n\n"
-    . "return [\n"
-    . renderConfigLine('LLM_PROVIDER', $config['LLM_PROVIDER'])
-    . renderConfigLine('LLM_API_KEY', $config['LLM_API_KEY'])
-    . renderConfigLine('LLM_API_BASE_URL', $config['LLM_API_BASE_URL'])
-    . renderConfigLine('LLM_MODEL', $config['LLM_MODEL'])
-    . renderConfigLine('LLM_TIMEOUT_SECONDS', (int) $config['LLM_TIMEOUT_SECONDS'])
-    . renderConfigLine('LLM_EXTRA_HEADERS', $config['LLM_EXTRA_HEADERS'])
-    . renderConfigLine('LLM_POST_ANALYSIS_PROMPT_PATH', $config['LLM_POST_ANALYSIS_PROMPT_PATH'])
-    . renderConfigLine('DEDALUS_AGENT_REPLIES_ENABLED', $config['DEDALUS_AGENT_REPLIES_ENABLED'])
-    . renderConfigLine('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $config['DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED'])
-    . "];\n";
+$contents = renderPrivateConfigFile($config, $defaults, $existing, true);
 
 $temporaryPath = $path . '.tmp-' . bin2hex(random_bytes(4));
 if (file_put_contents($temporaryPath, $contents, LOCK_EX) === false) {
@@ -131,7 +126,7 @@ if (!rename($temporaryPath, $path)) {
 }
 @chmod($path, 0600);
 
-$action = is_file($path) && $existing !== [] ? 'Updated' : 'Created';
+$action = is_file($path) && $existing !== [] ? ($options['refresh_template'] ? 'Refreshed' : 'Updated') : 'Created';
 fwrite(STDOUT, "{$action} private config at {$path}\n");
 if (($config['LLM_API_KEY'] ?? '') === 'replace-with-real-key') {
     fwrite(STDOUT, "LLM_API_KEY is still a placeholder. Update it before enabling real analysis.\n");
@@ -283,10 +278,119 @@ function formatConfigValue(string $key, mixed $value): string
     return var_export($value, true);
 }
 
+/**
+ * @param array<string, mixed> $config
+ * @param array<string, mixed> $defaults
+ * @param array<string, mixed> $existing
+ */
+function renderPrivateConfigFile(array $config, array $defaults, array $existing, bool $includeComments): string
+{
+    $knownKeys = array_keys($defaults);
+    $additionalKeys = array_values(array_diff(array_keys($existing), $knownKeys));
+    sort($additionalKeys);
+
+    $contents = "<?php\n\n"
+        . "declare(strict_types=1);\n\n";
+    if ($includeComments) {
+        $contents .= "// Private runtime config for this forum instance.\n"
+            . "// This file may contain secrets. Keep it outside public/ and out of git.\n"
+            . "// Run ./v3 private-config view to inspect redacted effective values.\n"
+            . "// Run ./v3 private-config refresh-template to refresh comments/examples without changing values.\n\n";
+    }
+
+    $contents .= "return [\n";
+    if ($includeComments) {
+        $contents .= "    // LLM provider used for post analysis and agent reply drafting.\n"
+            . "    // Supported values: dedalus, openai, openrouter, anthropic, stub, or a custom OpenAI-compatible gateway name.\n";
+    }
+    $contents .= renderConfigLine('LLM_PROVIDER', $config['LLM_PROVIDER']);
+
+    if ($includeComments) {
+        $contents .= "\n    // Provider API key. For LLM_PROVIDER=stub this can stay as the placeholder.\n";
+    }
+    $contents .= renderConfigLine('LLM_API_KEY', $config['LLM_API_KEY']);
+
+    if ($includeComments) {
+        $contents .= "\n    // Base URL without the endpoint path.\n"
+            . "    // OpenAI-compatible providers call /v1/chat/completions; Anthropic calls /v1/messages.\n";
+    }
+    $contents .= renderConfigLine('LLM_API_BASE_URL', $config['LLM_API_BASE_URL']);
+
+    if ($includeComments) {
+        $contents .= "\n    // Provider model identifier.\n";
+    }
+    $contents .= renderConfigLine('LLM_MODEL', $config['LLM_MODEL']);
+
+    if ($includeComments) {
+        $contents .= "\n    // External provider request timeout in seconds.\n";
+    }
+    $contents .= renderConfigLine('LLM_TIMEOUT_SECONDS', (int) $config['LLM_TIMEOUT_SECONDS']);
+
+    if ($includeComments) {
+        $contents .= "\n    // Optional provider headers. OpenRouter commonly uses HTTP-Referer and X-Title.\n";
+    }
+    $contents .= renderConfigLine('LLM_EXTRA_HEADERS', $config['LLM_EXTRA_HEADERS']);
+
+    if ($includeComments) {
+        $contents .= "\n    // Prompt template path, relative to the application root unless absolute.\n";
+    }
+    $contents .= renderConfigLine('LLM_POST_ANALYSIS_PROMPT_PATH', $config['LLM_POST_ANALYSIS_PROMPT_PATH']);
+
+    if ($includeComments) {
+        $contents .= "\n    // Agent reply controls. These names remain Dedalus-prefixed for backward compatibility.\n";
+    }
+    $contents .= renderConfigLine('DEDALUS_AGENT_REPLIES_ENABLED', $config['DEDALUS_AGENT_REPLIES_ENABLED'])
+        . renderConfigLine('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $config['DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED']);
+
+    if ($additionalKeys !== []) {
+        if ($includeComments) {
+            $contents .= "\n    // Additional existing values preserved by refresh-template.\n";
+        }
+        foreach ($additionalKeys as $key) {
+            $contents .= renderConfigLine($key, $existing[$key]);
+        }
+    }
+
+    $contents .= "];\n";
+    if ($includeComments) {
+        $contents .= "\n// Provider examples. Copy the relevant values into the returned array above.\n"
+            . "//\n"
+            . "// Direct OpenAI:\n"
+            . "//   'LLM_PROVIDER' => 'openai',\n"
+            . "//   'LLM_API_BASE_URL' => 'https://api.openai.com',\n"
+            . "//   'LLM_MODEL' => 'gpt-5-nano',\n"
+            . "//\n"
+            . "// Direct Anthropic:\n"
+            . "//   'LLM_PROVIDER' => 'anthropic',\n"
+            . "//   'LLM_API_BASE_URL' => 'https://api.anthropic.com',\n"
+            . "//   'LLM_MODEL' => 'claude-haiku-4-5-20251001',\n"
+            . "//\n"
+            . "// OpenRouter:\n"
+            . "//   'LLM_PROVIDER' => 'openrouter',\n"
+            . "//   'LLM_API_BASE_URL' => 'https://openrouter.ai/api',\n"
+            . "//   'LLM_MODEL' => 'openai/gpt-5-nano',\n"
+            . "//   'LLM_EXTRA_HEADERS' => [\n"
+            . "//       'HTTP-Referer' => 'https://forum.example',\n"
+            . "//       'X-Title' => 'Forum',\n"
+            . "//   ],\n"
+            . "//\n"
+            . "// LiteLLM or another OpenAI-compatible gateway:\n"
+            . "//   'LLM_PROVIDER' => 'litellm',\n"
+            . "//   'LLM_API_BASE_URL' => 'https://llm-gateway.example',\n"
+            . "//   'LLM_MODEL' => 'openai/gpt-5-nano',\n"
+            . "//\n"
+            . "// Offline smoke tests:\n"
+            . "//   'LLM_PROVIDER' => 'stub',\n";
+    }
+
+    return $contents;
+}
+
 function printUpdateReminder(string $path): void
 {
     fwrite(STDOUT, "\nUpdate commands:\n");
     fwrite(STDOUT, "  ./v3 private-config --force\n");
+    fwrite(STDOUT, "  ./v3 private-config refresh-template\n");
     fwrite(STDOUT, "  printf '%s\\n' \"\$LLM_API_KEY\" | ./v3 private-config --api-key-stdin\n");
     fwrite(STDOUT, "  ./v3 private-config --path=" . escapeshellarg($path) . " --force\n");
     fwrite(STDOUT, "Supported LLM_PROVIDER values: dedalus, openai, openrouter, anthropic, stub, or an OpenAI-compatible gateway name.\n");
@@ -307,12 +411,14 @@ Usage:
   php scripts/write_private_config.php
   php scripts/write_private_config.php view
   php scripts/write_private_config.php --view
+  php scripts/write_private_config.php refresh-template
   php scripts/write_private_config.php --force
   printf '%s\n' "$LLM_API_KEY" | php scripts/write_private_config.php --api-key-stdin
   php scripts/write_private_config.php --path=/private/path/secrets.php
 
 Creates or updates the private PHP config used by ForumRewrite\Support\PrivateConfig.
 Use view/--view to print a redacted summary and update reminders without creating or modifying the file.
+Use refresh-template to rewrite the file with current comments/examples while preserving values.
 The default local path is ../forum-private/secrets.php relative to this app checkout.
 LLM_PROVIDER supports dedalus, openai, openrouter, anthropic, stub, and OpenAI-compatible gateways.
 Legacy DEDALUS_* LLM settings are still read as fallbacks, but new writes use LLM_* names.
