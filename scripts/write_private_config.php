@@ -99,6 +99,7 @@ if ($options['api_key_stdin']) {
 
 if (is_file($path) && !$options['force'] && !$options['api_key_stdin'] && !$options['refresh_template']) {
     fwrite(STDOUT, "Private config already exists at {$path}\n");
+    fwrite(STDOUT, "Run with view to inspect redacted current values.\n");
     fwrite(STDOUT, "Run with refresh-template to add current comments/examples while preserving values.\n");
     fwrite(STDOUT, "Run with --force to rewrite defaults while preserving existing values, or --api-key-stdin to update the key.\n");
     exit(0);

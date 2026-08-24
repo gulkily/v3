@@ -4,6 +4,29 @@ declare(strict_types=1);
 
 final class PrivateConfigCommandTest
 {
+    public function testPrivateConfigExistingMessageMentionsView(): void
+    {
+        $secretsPath = sys_get_temp_dir() . '/forum-rewrite-private-config-' . bin2hex(random_bytes(6)) . '/secrets.php';
+        mkdir(dirname($secretsPath), 0700, true);
+        file_put_contents($secretsPath, "<?php\n\nreturn [\n"
+            . "    'LLM_PROVIDER' => 'stub',\n"
+            . "];\n");
+
+        try {
+            $output = $this->runCommand(
+                dirname(__DIR__),
+                'FORUM_SECRETS_PATH=' . escapeshellarg($secretsPath) . ' ./v3 private-config'
+            );
+
+            assertStringContains('Private config already exists at ' . $secretsPath, $output);
+            assertStringContains('Run with view to inspect redacted current values.', $output);
+            assertStringContains('Run with refresh-template to add current comments/examples while preserving values.', $output);
+        } finally {
+            @unlink($secretsPath);
+            @rmdir(dirname($secretsPath));
+        }
+    }
+
     public function testPrivateConfigViewShowsNeutralLlmFallbacksAndRedactsHeaders(): void
     {
         $secretsPath = sys_get_temp_dir() . '/forum-rewrite-private-config-' . bin2hex(random_bytes(6)) . '/secrets.php';
