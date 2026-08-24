@@ -153,6 +153,7 @@ function replyStatusQuery(string $where): string
             pa.provider_model AS analysis_provider_model,
             pa.requested_at AS analysis_requested_at,
             pa.completed_at AS analysis_completed_at,
+            pa.raw_response_json AS analysis_raw_response_json,
             pa.respondability_json,
             pa.engagement_json,
             pa.moderation_json
@@ -196,6 +197,23 @@ function printReplyRow(array $row): void
     printField('provider_model', $row['analysis_provider_model'] ?? null, 4);
     printField('requested_at', $row['analysis_requested_at'] ?? null, 4);
     printField('completed_at', $row['analysis_completed_at'] ?? null, 4);
+    $providerDiagnostics = jsonObject($row['analysis_raw_response_json'] ?? null);
+    if ($providerDiagnostics !== []) {
+        fwrite(STDOUT, "  provider_diagnostics:\n");
+        $request = is_array($providerDiagnostics['request'] ?? null) ? $providerDiagnostics['request'] : [];
+        $response = is_array($providerDiagnostics['response'] ?? null) ? $providerDiagnostics['response'] : [];
+        $error = is_array($providerDiagnostics['error'] ?? null) ? $providerDiagnostics['error'] : [];
+        printField('request.method', scalarValue($request['method'] ?? null), 4);
+        printField('request.url', scalarValue($request['url'] ?? null), 4);
+        printField('request.model', scalarValue($request['payload']['model'] ?? null), 4);
+        printField('request.body', scalarValue($request['body'] ?? null), 4);
+        printField('response.status_code', scalarValue($response['status_code'] ?? null), 4);
+        printField('response.headers', scalarValue($response['headers'] ?? null), 4);
+        printField('response.body', scalarValue($response['body'] ?? null), 4);
+        printField('response.decoded', scalarValue($response['decoded'] ?? null), 4);
+        printField('error.class', scalarValue($error['class'] ?? null), 4);
+        printField('error.message', scalarValue($error['message'] ?? null), 4);
+    }
 
     $respondability = jsonObject($row['respondability_json'] ?? null);
     $engagement = jsonObject($row['engagement_json'] ?? null);

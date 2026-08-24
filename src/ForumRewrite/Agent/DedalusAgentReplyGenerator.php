@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Agent;
 
 use ForumRewrite\Analysis\DedalusPostAnalyzer;
+use ForumRewrite\Analysis\ProviderRequestException;
 use ForumRewrite\Support\UnicodeTextPolicy;
 use RuntimeException;
 
@@ -14,6 +15,8 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
     private const RESPONSE_INTENTS = ['answer', 'clarify', 'ask_followup', 'share_context', 'challenge_gently', 'deescalate'];
 
     private ?string $loadedSystemPrompt = null;
+    /** @var array<string, mixed>|null */
+    private ?array $lastProviderExchange = null;
 
     public function __construct(
         private readonly string $apiKey,
@@ -51,7 +54,15 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
         ]);
         $externalProviderTiming = $this->elapsedMilliseconds($providerStartedAt);
 
-        $decoded = self::decodeCompletionPayload($response);
+        try {
+            $decoded = self::decodeCompletionPayload($response);
+        } catch (\Throwable $throwable) {
+            throw new ProviderRequestException(
+                $throwable->getMessage(),
+                $this->diagnosticsWithError($this->lastProviderExchange ?? [], $throwable),
+                $throwable
+            );
+        }
         $text = self::normalizeGeneratedReplyText((string) ($decoded['response_text'] ?? ''));
         if ($text === '') {
             throw new RuntimeException('Dedalus reply response did not include response_text.');
@@ -178,6 +189,19 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
             'Accept: application/json',
             'Authorization: Bearer ' . $this->apiKey,
         ];
+        $requestDiagnostics = [
+            'method' => 'POST',
+            'url' => $url,
+            'path' => $path,
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'Authorization' => 'Bearer <redacted>',
+            ],
+            'payload' => $payload,
+            'body' => $body,
+            'timeout_seconds' => max(1, $this->timeoutSeconds),
+        ];
 
         $context = stream_context_create([
             'http' => [
@@ -191,21 +215,74 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
 
         $raw = @file_get_contents($url, false, $context);
         $statusCode = $this->statusCode($http_response_header ?? []);
+        $responseHeaders = $http_response_header ?? [];
+        $this->lastProviderExchange = [
+            'request' => $requestDiagnostics,
+            'response' => [
+                'status_code' => $statusCode,
+                'headers' => $responseHeaders,
+                'body' => $raw === false ? null : $raw,
+            ],
+        ];
         if ($raw === false) {
-            throw new RuntimeException('Dedalus agent reply request failed before receiving a response.');
+            $error = error_get_last();
+            $diagnostics = $this->diagnosticsWithError($this->lastProviderExchange, new RuntimeException(
+                isset($error['message']) ? (string) $error['message'] : 'Dedalus agent reply request failed before receiving a response.'
+            ));
+            throw new ProviderRequestException('Dedalus agent reply request failed before receiving a response.', $diagnostics);
         }
 
         $decoded = json_decode($raw, true);
         if (!is_array($decoded)) {
-            throw new RuntimeException('Dedalus agent reply response was not valid JSON.');
+            $diagnostics = $this->diagnosticsWithError(
+                $this->lastProviderExchange,
+                new RuntimeException('Dedalus agent reply response was not valid JSON.')
+            );
+            throw new ProviderRequestException('Dedalus agent reply response was not valid JSON.', $diagnostics);
         }
+        $this->lastProviderExchange['response']['decoded'] = $decoded;
 
         if ($statusCode < 200 || $statusCode >= 300) {
-            $message = (string) ($decoded['error']['message'] ?? 'Dedalus agent reply request failed.');
-            throw new RuntimeException($message);
+            $message = $this->errorMessageFromResponse($decoded);
+            $diagnostics = $this->diagnosticsWithError($this->lastProviderExchange, new RuntimeException($message));
+            throw new ProviderRequestException($message, $diagnostics);
         }
 
         return $decoded;
+    }
+
+    /**
+     * @param array<string, mixed> $decoded
+     */
+    private function errorMessageFromResponse(array $decoded): string
+    {
+        foreach ([
+            $decoded['error']['message'] ?? null,
+            $decoded['detail']['error']['message'] ?? null,
+            $decoded['detail']['message'] ?? null,
+            $decoded['message'] ?? null,
+        ] as $message) {
+            $message = trim((string) $message);
+            if ($message !== '') {
+                return $message;
+            }
+        }
+
+        return 'Dedalus agent reply request failed.';
+    }
+
+    /**
+     * @param array<string, mixed> $diagnostics
+     * @return array<string, mixed>
+     */
+    private function diagnosticsWithError(array $diagnostics, \Throwable $throwable): array
+    {
+        $diagnostics['error'] = [
+            'class' => $throwable::class,
+            'message' => $throwable->getMessage(),
+        ];
+
+        return $diagnostics;
     }
 
     /**

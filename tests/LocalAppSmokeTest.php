@@ -140,7 +140,16 @@ final class LocalAppSmokeTest
         $contentHash = 'hash-agent-status';
 
         try {
-            (new SqlitePostAnalysisStore($pdo))->saveFailed($postId, $contentHash, 'provider_error', 'Dedalus request failed.');
+            (new SqlitePostAnalysisStore($pdo))->saveFailed($postId, $contentHash, 'provider_error', 'Dedalus request failed.', [
+                'request' => [
+                    'url' => 'https://api.dedaluslabs.ai/v1/chat/completions',
+                    'body' => '{"model":"openai/gpt-5-nano"}',
+                ],
+                'response' => [
+                    'status_code' => 400,
+                    'body' => '{"error":{"message":"bad request"}}',
+                ],
+            ]);
             (new SqliteAgentReplyGenerationStore($pdo))->markSkipped($postId, $contentHash, 'analysis_not_complete', [
                 'reason' => 'analysis_not_complete',
                 'analysis_status' => 'failed',
@@ -162,6 +171,11 @@ final class LocalAppSmokeTest
             assertStringContains('failure_message: Dedalus request failed.', $output);
             assertStringContains('analysis:', $output);
             assertStringContains('status: failed', $output);
+            assertStringContains('provider_diagnostics:', $output);
+            assertStringContains('request.url: https://api.dedaluslabs.ai/v1/chat/completions', $output);
+            assertStringContains('request.body: {"model":"openai/gpt-5-nano"}', $output);
+            assertStringContains('response.status_code: 400', $output);
+            assertStringContains('response.body: {"error":{"message":"bad request"}}', $output);
         } finally {
             @unlink($databasePath);
         }

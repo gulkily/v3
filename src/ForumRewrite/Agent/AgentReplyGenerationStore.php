@@ -49,7 +49,7 @@ interface AgentReplyGenerationStore
     /**
      * @return array<string, mixed>
      */
-    public function saveFailed(string $postId, string $contentHash, string $analysisHash, string $failureCode, string $failureMessage): array;
+    public function saveFailed(string $postId, string $contentHash, string $analysisHash, string $failureCode, string $failureMessage, array $rawResponse = []): array;
 
     /**
      * @param array<string, mixed> $details

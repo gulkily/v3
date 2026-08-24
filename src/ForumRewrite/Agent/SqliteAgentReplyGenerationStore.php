@@ -281,7 +281,7 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
         return $row;
     }
 
-    public function saveFailed(string $postId, string $contentHash, string $analysisHash, string $failureCode, string $failureMessage): array
+    public function saveFailed(string $postId, string $contentHash, string $analysisHash, string $failureCode, string $failureMessage, array $rawResponse = []): array
     {
         $now = gmdate('c');
         $row = [
@@ -305,7 +305,7 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
             'failure_message' => substr($failureMessage, 0, 500),
             'retry_after' => gmdate('c', time() + 300),
             'request_context_json' => $this->encode([]),
-            'raw_response_json' => $this->encode([]),
+            'raw_response_json' => $this->encode($rawResponse),
         ];
         $this->upsert($row);
 

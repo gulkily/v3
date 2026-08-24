@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Agent;
 
+use ForumRewrite\Analysis\ProviderRequestException;
 use ForumRewrite\Analysis\PostAnalysisStore;
 use ForumRewrite\Analysis\PostAnalysisService;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -157,7 +158,8 @@ final class AgentReplyFulfillmentService
                     (string) $context['content_hash'],
                     (string) $generationContext['analysis_hash'],
                     'analysis_suggestion_error',
-                    $throwable->getMessage()
+                    $throwable->getMessage(),
+                    $this->failureDiagnostics($throwable)
                 );
                 return $this->failedResponse($failed);
             }
@@ -214,7 +216,8 @@ final class AgentReplyFulfillmentService
                 (string) $context['content_hash'],
                 (string) $generationContext['analysis_hash'],
                 'posting_error',
-                $throwable->getMessage()
+                $throwable->getMessage(),
+                $this->failureDiagnostics($throwable)
             );
             return $this->failedResponse($failed);
         }
@@ -262,6 +265,23 @@ final class AgentReplyFulfillmentService
             'quality' => $analysis['quality'] ?? [],
             'respondability' => $analysis['respondability'] ?? [],
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function failureDiagnostics(\Throwable $throwable): array
+    {
+        if ($throwable instanceof ProviderRequestException) {
+            return $throwable->diagnostics();
+        }
+
+        return [
+            'error' => [
+                'class' => $throwable::class,
+                'message' => $throwable->getMessage(),
+            ],
+        ];
     }
 
     /**

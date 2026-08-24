@@ -43,12 +43,28 @@ final class AgentReplyGenerationTest
     public function testStoreSavesRetryableFailures(): void
     {
         $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));
-        $row = $store->saveFailed('root-001', 'hash-001', 'analysis-hash-001', 'provider_error', 'Provider unavailable');
+        $row = $store->saveFailed('root-001', 'hash-001', 'analysis-hash-001', 'provider_error', 'Provider unavailable', [
+            'request' => [
+                'url' => 'https://api.dedaluslabs.ai/v1/chat/completions',
+                'headers' => [
+                    'Authorization' => 'Bearer <redacted>',
+                ],
+                'body' => '{"model":"openai/gpt-5-nano"}',
+            ],
+            'response' => [
+                'status_code' => 503,
+                'body' => '{"detail":{"error":{"message":"Service unavailable."}}}',
+            ],
+        ]);
 
         assertSame('failed', $row['status']);
         assertSame('provider_error', $row['failure_code']);
         assertSame('Provider unavailable', $row['failure_message']);
         assertSame(true, is_string($row['retry_after']));
+        assertSame('Bearer <redacted>', $row['raw_response']['request']['headers']['Authorization']);
+        assertSame('{"model":"openai/gpt-5-nano"}', $row['raw_response']['request']['body']);
+        assertSame(503, $row['raw_response']['response']['status_code']);
+        assertSame('{"detail":{"error":{"message":"Service unavailable."}}}', $row['raw_response']['response']['body']);
     }
 
     public function testStoreReusesDuplicateCompletedGenerationForSameTarget(): void
@@ -235,6 +251,24 @@ final class AgentReplyGenerationTest
         assertSame('Here is a concise response.', $decoded['response_text']);
         assertSame('clarifying', $decoded['response_style']);
         assertSame('ask_followup', $decoded['response_intent']);
+    }
+
+    public function testDedalusReplyGeneratorExtractsNestedDedalusErrorMessage(): void
+    {
+        $generator = new DedalusAgentReplyGenerator('test-key');
+        $method = new \ReflectionMethod(DedalusAgentReplyGenerator::class, 'errorMessageFromResponse');
+        $method->setAccessible(true);
+
+        $message = $method->invoke($generator, [
+            'detail' => [
+                'error' => [
+                    'message' => 'Service unavailable.',
+                    'request_id' => 'request-001',
+                ],
+            ],
+        ]);
+
+        assertSame('Service unavailable.', $message);
     }
 
     public function testGeneratedReplyTextIsNormalizedToAscii(): void
