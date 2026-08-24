@@ -55,7 +55,7 @@ final class LlmProviderConfig
     private static function defaultModel(string $provider): string
     {
         return match (strtolower($provider)) {
-            'anthropic' => 'claude-3-5-haiku-latest',
+            'anthropic' => 'claude-haiku-4-5-20251001',
             'openai' => 'gpt-5-nano',
             default => 'openai/gpt-5-nano',
         };

@@ -28,3 +28,18 @@
 - Notes:
   - Runtime provider selection is still Dedalus-specific until Stage 4.
   - The OpenAI-compatible adapter is intended for OpenAI, OpenRouter, Dedalus, LiteLLM, and local compatible gateways.
+
+## Stage 3 - Native Anthropic Provider Adapter
+- Changes:
+  - Added `AnthropicStructuredChatProvider` for native Anthropic Messages API requests.
+  - Mapped provider-neutral structured-chat calls to Anthropic `output_config.format` JSON schema payloads.
+  - Added Anthropic-specific response decoding, error extraction, header redaction, and persisted provider diagnostics.
+  - Updated Anthropic default config to `claude-haiku-4-5-20251001`.
+  - Added focused tests for Anthropic payload shape, text JSON decoding, error diagnostics, key redaction, and default model resolution.
+- Verification:
+  - `php -l src/ForumRewrite/Llm/AnthropicStructuredChatProvider.php && php -l tests/AnthropicStructuredChatProviderTest.php && php -l src/ForumRewrite/Llm/LlmProviderConfig.php && php -l tests/LlmProviderConfigTest.php && php -l tests/run.php`
+  - `php -d zend.assertions=1 -d assert.exception=1 -r 'require "tests/ApplicationServerTimingTest.php"; require "tests/AnthropicStructuredChatProviderTest.php"; $test = new AnthropicStructuredChatProviderTest(); $test->testProviderBuildsAnthropicStructuredOutputPayload(); $test->testProviderDecodesTextJsonResponse(); $test->testProviderExtractsAnthropicErrorMessageAndRedactsKey();'`
+  - `php -d zend.assertions=1 -d assert.exception=1 -r 'require "tests/ApplicationServerTimingTest.php"; require "tests/LlmProviderConfigTest.php"; $test = new LlmProviderConfigTest(); $test->testAnthropicDefaultsUseCurrentHaikuModel();'`
+- Notes:
+  - Anthropic runtime selection is wired in Stage 4.
+  - The adapter removes unsupported JSON schema validation keywords before sending schemas to Anthropic structured output.

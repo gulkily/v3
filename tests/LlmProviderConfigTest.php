@@ -58,4 +58,16 @@ final class LlmProviderConfigTest
 
         assertSame('stub', $config->provider);
     }
+
+    public function testAnthropicDefaultsUseCurrentHaikuModel(): void
+    {
+        $config = LlmProviderConfig::fromPrivateConfig([
+            'LLM_PROVIDER' => 'anthropic',
+            'LLM_API_KEY' => 'anthropic-key',
+        ]);
+
+        assertSame('anthropic', $config->provider);
+        assertSame('https://api.anthropic.com', $config->baseUrl);
+        assertSame('claude-haiku-4-5-20251001', $config->model);
+    }
 }
