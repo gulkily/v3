@@ -5,6 +5,8 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
+use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
+use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\Host\FrontController;
 use ForumRewrite\Host\StaticArtifactBuilder;
@@ -128,6 +130,41 @@ final class LocalAppSmokeTest
         assertStringContains('./v3 private-config view', $output);
         assertStringContains('php scripts/run_agent_reply_requests.php --dry-run', $output);
         assertStringContains('worker exits cleanly if a previous run is still active', $output);
+    }
+
+    public function testAgentReplyStatusCommandShowsSkippedReasonAndAnalysisFailure(): void
+    {
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-agent-status-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $postId = 'root-agent-status';
+        $contentHash = 'hash-agent-status';
+
+        try {
+            (new SqlitePostAnalysisStore($pdo))->saveFailed($postId, $contentHash, 'provider_error', 'Dedalus request failed.');
+            (new SqliteAgentReplyGenerationStore($pdo))->markSkipped($postId, $contentHash, 'analysis_not_complete', [
+                'reason' => 'analysis_not_complete',
+                'analysis_status' => 'failed',
+                'failure_code' => 'provider_error',
+                'failure_message' => 'Dedalus request failed.',
+            ]);
+
+            $output = $this->runCommand(
+                dirname(__DIR__),
+                './v3 agent-reply-status ' . escapeshellarg($postId) . ' --database-path=' . escapeshellarg($databasePath)
+            );
+
+            assertStringContains('Agent reply status', $output);
+            assertStringContains('target_post_id: ' . $postId, $output);
+            assertStringContains('reply_status: skipped', $output);
+            assertStringContains('reply_failure: analysis_not_complete', $output);
+            assertStringContains('skip_details:', $output);
+            assertStringContains('failure_code: provider_error', $output);
+            assertStringContains('failure_message: Dedalus request failed.', $output);
+            assertStringContains('analysis:', $output);
+            assertStringContains('status: failed', $output);
+        } finally {
+            @unlink($databasePath);
+        }
     }
 
     public function testInjectApprovalScriptSeedsIdentity(): void

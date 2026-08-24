@@ -110,6 +110,8 @@ Useful manual commands:
 php scripts/run_agent_reply_requests.php --dry-run
 php scripts/run_agent_reply_requests.php --limit=10
 php scripts/run_agent_reply_requests.php --post-id=<post-id>
+./v3 agent-reply-status <post-id>
+./v3 agent-reply-status --limit=25
 ```
 
 ## Site Feature Flags
