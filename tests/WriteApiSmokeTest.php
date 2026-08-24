@@ -198,7 +198,7 @@ final class WriteApiSmokeTest
 
             assertSame('ok', $response['status']);
             assertSame('config_missing', $response['analysis_status']);
-            assertSame('Dedalus API key is not configured.', $response['failure_message']);
+            assertSame('LLM API key is not configured.', $response['failure_message']);
         } finally {
             putenv('FORUM_SECRETS_PATH');
         }

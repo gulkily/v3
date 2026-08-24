@@ -43,3 +43,19 @@
 - Notes:
   - Anthropic runtime selection is wired in Stage 4.
   - The adapter removes unsupported JSON schema validation keywords before sending schemas to Anthropic structured output.
+
+## Stage 4 - Runtime Provider Selection
+- Changes:
+  - Added `PostAnalyzerFactory` to create post analyzers from provider-neutral private config.
+  - Wired `Application::postAnalysisService()` through the factory for `stub`, legacy Dedalus, OpenAI-compatible, OpenRouter, and Anthropic providers.
+  - Reused the same factory in `scripts/backfill_unicode_risk.php` so backfills and web/API analysis resolve providers consistently.
+  - Kept missing API key handling graceful and changed the public failure message to provider-neutral wording.
+  - Added focused factory tests for stub, missing key, legacy Dedalus, OpenRouter extra headers, and Anthropic adapter selection.
+- Verification:
+  - `php -l src/ForumRewrite/Analysis/PostAnalyzerFactory.php && php -l src/ForumRewrite/Application.php && php -l src/ForumRewrite/Analysis/PostAnalysisService.php && php -l scripts/backfill_unicode_risk.php && php -l tests/PostAnalyzerFactoryTest.php && php -l tests/WriteApiSmokeTest.php && php -l tests/run.php`
+  - `php -d zend.assertions=1 -d assert.exception=1 -r 'require "tests/ApplicationServerTimingTest.php"; require "tests/PostAnalyzerFactoryTest.php"; $test = new PostAnalyzerFactoryTest(); foreach (get_class_methods($test) as $method) { if (str_starts_with($method, "test")) { $test->{$method}(); echo "PASS PostAnalyzerFactoryTest::{$method}\n"; } }'`
+  - `php -d zend.assertions=1 -d assert.exception=1 -r 'require "tests/ApplicationServerTimingTest.php"; require "tests/PrivateConfigCommandTest.php"; require "tests/WriteApiSmokeTest.php"; $test = new WriteApiSmokeTest(); foreach (["testPostAnalysisEndpointReportsMissingConfigWithoutStoringAnalysis", "testPostAnalysisEndpointStoresStubResultIdempotently", "testGenerateAgentReplyReportsFailedAnalysisAsRequired"] as $method) { $test->{$method}(); } echo "PASS selected WriteApiSmokeTest methods\n";'`
+  - `php -d zend.assertions=1 -d assert.exception=1 tests/run.php`
+- Notes:
+  - The full test runner passed, but emitted existing asset fingerprint warnings for already-fingerprinted temporary asset names becoming too long during smoke tests.
+  - Unknown non-Anthropic provider names are treated as OpenAI-compatible gateways when a base URL and API key are configured.

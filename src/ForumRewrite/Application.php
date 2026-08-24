@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace ForumRewrite;
 
-use ForumRewrite\Analysis\DedalusPostAnalyzer;
 use ForumRewrite\Analysis\PostAnalysisService;
+use ForumRewrite\Analysis\PostAnalyzerFactory;
 use ForumRewrite\Analysis\RelatedContentSearchService;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Analysis\SqliteUnicodeRiskStore;
-use ForumRewrite\Analysis\StubPostAnalyzer;
 use ForumRewrite\Analysis\UnicodeRiskInspector;
 use ForumRewrite\Agent\AgentReplyFulfillmentService;
 use ForumRewrite\Agent\DedalusAgentReplyGenerator;
@@ -3629,23 +3628,7 @@ final class Application
     private function postAnalysisService(): PostAnalysisService
     {
         $config = PrivateConfig::load($this->projectRoot);
-        $mode = strtolower(trim((string) ($config['DEDALUS_ANALYSIS_MODE'] ?? '')));
-        $analyzer = null;
-
-        if ($mode === 'stub') {
-            $analyzer = new StubPostAnalyzer();
-        } else {
-            $apiKey = trim((string) ($config['DEDALUS_API_KEY'] ?? ''));
-            if ($apiKey !== '') {
-                $analyzer = new DedalusPostAnalyzer(
-                    $apiKey,
-                    trim((string) ($config['DEDALUS_API_BASE_URL'] ?? 'https://api.dedaluslabs.ai')) ?: 'https://api.dedaluslabs.ai',
-                    trim((string) ($config['DEDALUS_MODEL'] ?? 'openai/gpt-5-nano')) ?: 'openai/gpt-5-nano',
-                    max(60, (int) ($config['DEDALUS_TIMEOUT_SECONDS'] ?? 60)),
-                    $this->dedalusPromptTemplatePath($config)
-                );
-            }
-        }
+        $analyzer = PostAnalyzerFactory::fromPrivateConfig($config, $this->projectRoot);
 
         return new PostAnalysisService(
             new SqlitePostAnalysisStore($this->pdo()),
@@ -3705,23 +3688,6 @@ final class Application
         }
 
         return $default;
-    }
-
-    /**
-     * @param array<string, mixed> $config
-     */
-    private function dedalusPromptTemplatePath(array $config): ?string
-    {
-        $path = trim((string) ($config['DEDALUS_POST_ANALYSIS_PROMPT_PATH'] ?? ''));
-        if ($path === '') {
-            return null;
-        }
-
-        if (str_starts_with($path, '/')) {
-            return $path;
-        }
-
-        return $this->projectRoot . '/' . $path;
     }
 
     /**

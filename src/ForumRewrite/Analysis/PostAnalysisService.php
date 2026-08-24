@@ -59,7 +59,7 @@ final class PostAnalysisService
                 'content_hash' => $contentHash,
                 'status' => 'config_missing',
                 'cached' => false,
-                'message' => 'Dedalus API key is not configured.',
+                'message' => 'LLM API key is not configured.',
                 'unicode_risk' => $unicodeRisk,
             ];
         }

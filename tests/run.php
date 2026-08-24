@@ -21,6 +21,7 @@ $testFiles = [
     __DIR__ . '/OpenAiCompatibleStructuredChatProviderTest.php',
     __DIR__ . '/PrivateConfigCommandTest.php',
     __DIR__ . '/PostSignatureAuditCommandTest.php',
+    __DIR__ . '/PostAnalyzerFactoryTest.php',
     __DIR__ . '/RelatedContentSearchServiceTest.php',
     __DIR__ . '/ReadModelBuilderTimingTest.php',
     __DIR__ . '/ReadModelThreadLabelsTest.php',

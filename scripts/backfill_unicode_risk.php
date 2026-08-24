@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/autoload.php';
 
-use ForumRewrite\Analysis\DedalusPostAnalyzer;
 use ForumRewrite\Analysis\PostAnalysisService;
+use ForumRewrite\Analysis\PostAnalyzerFactory;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Analysis\SqliteUnicodeRiskStore;
-use ForumRewrite\Analysis\StubPostAnalyzer;
 use ForumRewrite\Analysis\UnicodeRiskInspector;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 use ForumRewrite\Support\PrivateConfig;
@@ -174,26 +173,7 @@ function decodeStringList(string $json): array
 
 function analyzerFromConfig(string $projectRoot): ?ForumRewrite\Analysis\PostAnalyzer
 {
-    $config = PrivateConfig::load($projectRoot);
-    $mode = strtolower(trim((string) ($config['DEDALUS_ANALYSIS_MODE'] ?? '')));
-    if ($mode === 'stub') {
-        return new StubPostAnalyzer();
-    }
-
-    $apiKey = trim((string) ($config['DEDALUS_API_KEY'] ?? ''));
-    if ($apiKey === '') {
-        return null;
-    }
-
-    $promptPath = trim((string) ($config['DEDALUS_POST_ANALYSIS_PROMPT_PATH'] ?? ''));
-
-    return new DedalusPostAnalyzer(
-        $apiKey,
-        trim((string) ($config['DEDALUS_API_BASE_URL'] ?? 'https://api.dedaluslabs.ai')) ?: 'https://api.dedaluslabs.ai',
-        trim((string) ($config['DEDALUS_MODEL'] ?? 'openai/gpt-5-nano')) ?: 'openai/gpt-5-nano',
-        max(60, (int) ($config['DEDALUS_TIMEOUT_SECONDS'] ?? 60)),
-        $promptPath !== '' ? $promptPath : null,
-    );
+    return PostAnalyzerFactory::fromPrivateConfig(PrivateConfig::load($projectRoot), $projectRoot);
 }
 
 /**
