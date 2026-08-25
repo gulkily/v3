@@ -26,7 +26,7 @@ The application currently exposes LLM setup through Dedalus-specific config, whi
 - `PrivateConfig` loading and environment overrides: reuse as the single source of private provider settings.
 - Post analysis service and stored analysis rows: reuse the existing analysis contract, including provider metadata, raw diagnostics, and failure state.
 - Agent reply fulfillment and generated-response rows: reuse stored analysis and existing reply gates; provider switching must not create a separate reply workflow.
-- `./v3 agent-reply-status`: extend the current diagnostic command output only as needed for provider-neutral labels.
+- `./v3 agent-reply status`: extend the current diagnostic command output only as needed for provider-neutral labels.
 - Production deploy runbook: update the existing operator documentation instead of adding a parallel provider guide.
 - Browser post-analysis and reply feedback UI: reuse unchanged result states unless provider-neutral wording is required.
 
@@ -45,5 +45,5 @@ The application currently exposes LLM setup through Dedalus-specific config, whi
 - A fresh or existing install can run with direct Anthropic by changing private config only.
 - A fresh or existing install can run with OpenRouter or another OpenAI-compatible gateway by changing private config only.
 - Existing Dedalus installs continue to work without immediate config rewrites.
-- Provider failures show provider-neutral diagnostics with redacted secrets in stored rows and `./v3 agent-reply-status`.
+- Provider failures show provider-neutral diagnostics with redacted secrets in stored rows and `./v3 agent-reply status`.
 - Existing post analysis, agent reply request, fulfillment, and rendering tests continue to pass.

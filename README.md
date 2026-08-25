@@ -86,7 +86,13 @@ View a redacted summary of the current private config and update reminders:
 Print a concise reference for installing the queued agent reply cron job:
 
 ```bash
-./v3 agent-reply-cron
+./v3 agent-reply cron
+```
+
+Validate the configured agent reply LLM provider/API key with one live structured prompt:
+
+```bash
+./v3 agent-reply test
 ```
 
 For this checkout, the default local file is `/home/wsl/forum-private/secrets.php`. To update only the Dedalus API key without putting it in shell history:

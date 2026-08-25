@@ -160,7 +160,7 @@ Fulfillment is handled by a periodic PHP command. A typical cron entry is:
 The deployed checkout can also print the current-path reference:
 
 ```bash
-./v3 agent-reply-cron
+./v3 agent-reply cron
 ```
 
 The command uses the same repository, database, private LLM config, `reply-agent` key directory, and artifact paths as the web app. It exits successfully if another fulfillment run is already active, and queued-row claims prevent duplicate `reply-agent` posts for the same requested post content.
@@ -170,11 +170,13 @@ Without `--quiet`, the command prints repository/database/artifact paths, queue 
 Useful manual commands:
 
 ```bash
+./v3 agent-reply test
+./v3 agent-reply test-local
 php scripts/run_agent_reply_requests.php --dry-run
 php scripts/run_agent_reply_requests.php --limit=10
 php scripts/run_agent_reply_requests.php --post-id=<post-id>
-./v3 agent-reply-status <post-id>
-./v3 agent-reply-status --limit=25
+./v3 agent-reply status <post-id>
+./v3 agent-reply status --limit=25
 ```
 
 ## Site Feature Flags

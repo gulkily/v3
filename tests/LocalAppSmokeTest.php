@@ -119,7 +119,7 @@ final class LocalAppSmokeTest
     {
         $output = $this->runCommand(
             dirname(__DIR__),
-            './v3 agent-reply-cron --log=/tmp/forum-agent-replies-test.log'
+            './v3 agent-reply cron --log=/tmp/forum-agent-replies-test.log'
         );
 
         assertStringContains('Agent reply request cron reference', $output);
@@ -128,6 +128,8 @@ final class LocalAppSmokeTest
         assertStringContains('php scripts/run_agent_reply_requests.php --quiet --limit=10', $output);
         assertStringContains('/tmp/forum-agent-replies-test.log', $output);
         assertStringContains('./v3 private-config view', $output);
+        assertStringContains('./v3 agent-reply test', $output);
+        assertStringContains('./v3 agent-reply test-local', $output);
         assertStringContains('php scripts/run_agent_reply_requests.php --dry-run', $output);
         assertStringContains('worker exits cleanly if a previous run is still active', $output);
     }
@@ -159,7 +161,7 @@ final class LocalAppSmokeTest
 
             $output = $this->runCommand(
                 dirname(__DIR__),
-                './v3 agent-reply-status ' . escapeshellarg($postId) . ' --database-path=' . escapeshellarg($databasePath)
+                './v3 agent-reply status ' . escapeshellarg($postId) . ' --database-path=' . escapeshellarg($databasePath)
             );
 
             assertStringContains('Agent reply status', $output);

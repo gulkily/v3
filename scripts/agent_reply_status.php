@@ -316,5 +316,6 @@ function jsonObject(mixed $json): array
 function usageText(): string
 {
     return "Usage: php scripts/agent_reply_status.php [post_id] [--post-id=<id>] [--limit=25] [--database-path=<path>]\n"
+        . "       ./v3 agent-reply status [post_id] [--post-id=<id>] [--limit=25] [--database-path=<path>]\n"
         . "Shows read-only diagnostics for skipped or failed agent reply generation rows.\n";
 }

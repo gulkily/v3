@@ -43,7 +43,7 @@
 ## Stage 5
 - Goal: Update operator docs and diagnostics for provider-neutral operation.
 - Dependencies: Stages 1-4.
-- Expected changes: Update production runbook, private-config help text, and `agent-reply-status` wording to describe OpenAI, Anthropic, OpenRouter, Dedalus, LiteLLM, and compatible gateways; keep secrets redacted.
+- Expected changes: Update production runbook, private-config help text, and `agent-reply status` wording to describe OpenAI, Anthropic, OpenRouter, Dedalus, LiteLLM, and compatible gateways; keep secrets redacted.
 - Verification approach: Local command tests cover help/view/status output; full test suite confirms existing analysis and reply behavior.
 - Risks or open questions:
   - Documentation should not imply every gateway/model enforces schemas equally.

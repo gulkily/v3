@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 $testFiles = [
+    __DIR__ . '/AgentReplyCommandTest.php',
     __DIR__ . '/AgentIdentityServiceTest.php',
     __DIR__ . '/AgentReplyGenerationTest.php',
     __DIR__ . '/ApplicationServerTimingTest.php',
@@ -35,6 +36,8 @@ $testFiles = [
 ];
 
 $failures = [];
+$filters = array_slice($argv, 1);
+$runCount = 0;
 
 foreach ($testFiles as $testFile) {
     require_once $testFile;
@@ -47,12 +50,20 @@ foreach ($declared as $class) {
     }
 
     $testObject = new $class();
+    if (!shouldRunClass($class, $filters)) {
+        continue;
+    }
+
     $methods = get_class_methods($testObject);
 
     foreach ($methods as $method) {
         if (!str_starts_with($method, 'test')) {
             continue;
         }
+        if (!shouldRunMethod($class, $method, $filters)) {
+            continue;
+        }
+        $runCount++;
 
         try {
             $testObject->{$method}();
@@ -64,8 +75,54 @@ foreach ($declared as $class) {
     }
 }
 
+if ($filters !== [] && $runCount === 0) {
+    fwrite(STDERR, "No tests matched the supplied filters.\n");
+    exit(1);
+}
+
 if ($failures !== []) {
     exit(1);
 }
 
 fwrite(STDOUT, "All tests passed.\n");
+
+/**
+ * @param list<string> $filters
+ */
+function shouldRunClass(string $class, array $filters): bool
+{
+    if ($filters === []) {
+        return true;
+    }
+
+    foreach ($filters as $filter) {
+        $filterClass = explode('::', $filter, 2)[0];
+        if ($filterClass === $class) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * @param list<string> $filters
+ */
+function shouldRunMethod(string $class, string $method, array $filters): bool
+{
+    if ($filters === []) {
+        return true;
+    }
+
+    foreach ($filters as $filter) {
+        if ($filter === $class) {
+            return true;
+        }
+
+        if ($filter === $class . '::' . $method) {
+            return true;
+        }
+    }
+
+    return false;
+}
