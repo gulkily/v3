@@ -2490,6 +2490,40 @@ final class Application
     }
 
     /**
+     * @param array<string, mixed>|null $viewerProfile
+     */
+    private function viewerCanUseCodexHandoff(?array $viewerProfile): bool
+    {
+        return $viewerProfile !== null
+            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
+            && $this->requestIsLocalhost();
+    }
+
+    private function requestIsLocalhost(): bool
+    {
+        $host = trim((string) ($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? ''));
+        if ($host !== '') {
+            $host = strtolower($host);
+            if (str_starts_with($host, '[')) {
+                $closingBracket = strpos($host, ']');
+                $host = $closingBracket === false ? $host : substr($host, 1, $closingBracket - 1);
+            } elseif (str_contains($host, ':')) {
+                $host = explode(':', $host, 2)[0];
+            }
+
+            return in_array($host, ['localhost', '127.0.0.1', '::1'], true)
+                || str_ends_with($host, '.localhost');
+        }
+
+        $remoteAddress = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+        if ($remoteAddress === '') {
+            return PHP_SAPI === 'cli';
+        }
+
+        return in_array($remoteAddress, ['127.0.0.1', '::1'], true);
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     private function fetchApprovedUserDirectoryUsers(): array

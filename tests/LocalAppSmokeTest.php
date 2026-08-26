@@ -254,6 +254,33 @@ final class LocalAppSmokeTest
         assertStringNotContains('PHP Fatal error', $combinedOutput);
     }
 
+    public function testCodexHandoffEligibilityRequiresApprovedLocalhostViewer(): void
+    {
+        $application = new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath);
+        $method = new ReflectionMethod(Application::class, 'viewerCanUseCodexHandoff');
+        $approvedViewer = ['is_approved' => 1];
+        $unapprovedViewer = ['is_approved' => 0];
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost:8000';
+            unset($_SERVER['SERVER_NAME'], $_SERVER['REMOTE_ADDR']);
+            assertSame(true, $method->invoke($application, $approvedViewer));
+            assertSame(false, $method->invoke($application, $unapprovedViewer));
+            assertSame(false, $method->invoke($application, null));
+
+            $_SERVER['HTTP_HOST'] = 'example.com';
+            $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+            assertSame(false, $method->invoke($application, $approvedViewer));
+
+            unset($_SERVER['HTTP_HOST'], $_SERVER['SERVER_NAME']);
+            $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+            assertSame(true, $method->invoke($application, $approvedViewer));
+        } finally {
+            $_SERVER = $originalServer;
+        }
+    }
+
     public function testDeleteRecordCommandRemovesRecordCommitsAndRefreshesDerivedState(): void
     {
         [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
