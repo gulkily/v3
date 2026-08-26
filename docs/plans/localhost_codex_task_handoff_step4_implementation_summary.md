@@ -50,3 +50,19 @@
   - `php tests/run.php WriteApiSmokeTest::testCodexHandoffApiRequiresApprovedLocalhostAndPreparesDraft WriteApiSmokeTest::testCodexHandoffApiRejectsNonLocalhostAndSupportsRejectDecision` passed.
 - Notes:
   - Approval is intentionally accepted only from `draft_ready`; a duplicate approval returns an API error instead of silently re-approving.
+
+## Stage 5 - Handoff UI Rendering
+- Changes:
+  - Passed Codex handoff eligibility and current handoff state into thread and post render contexts.
+  - Added a distinct `Handoff to Codex` action on eligible post and thread-root cards.
+  - Added durable status feedback and a draft preview surface with user story, confidence, FDP Step 1 text, and approve/reject controls.
+  - Added small CSS for handoff feedback and preview sizing.
+- Verification:
+  - `php -l src/ForumRewrite/Application.php` passed.
+  - `php -l templates/partials/post_card.php` passed.
+  - `php -l templates/partials/thread_root_card.php` passed.
+  - `php -l tests/WriteApiSmokeTest.php` passed.
+  - `php tests/run.php WriteApiSmokeTest::testApprovedLocalhostViewerSeesCodexHandoffButtonAndPreviewAfterDraft` passed.
+  - `php tests/run.php WriteApiSmokeTest::testCodexHandoffApiRequiresApprovedLocalhostAndPreparesDraft WriteApiSmokeTest::testCodexHandoffApiRejectsNonLocalhostAndSupportsRejectDecision` passed.
+- Notes:
+  - The card action remains compact; detailed review lives in the expandable preview surface.

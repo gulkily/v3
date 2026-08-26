@@ -504,6 +504,52 @@ PHP);
         }
     }
 
+    public function testApprovedLocalhostViewerSeesCodexHandoffButtonAndPreviewAfterDraft(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost:8000';
+            unset($_SERVER['SERVER_NAME'], $_SERVER['REMOTE_ADDR']);
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Codex%20UI&body=Approved%20users%20should%20review%20a%20Codex%20handoff%20before%20execution.'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = ['identity_hint' => 'missing-profile'];
+            $anonymousThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $approvedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $_SERVER['HTTP_HOST'] = 'example.com';
+            $nonLocalThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $_SERVER['HTTP_HOST'] = 'localhost:8000';
+            json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+            $draftThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $draftPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+
+            assertStringNotContains('data-action="request-codex-handoff"', $anonymousThreadPage);
+            assertStringContains('data-action="request-codex-handoff"', $approvedThreadPage);
+            assertStringContains('Handoff to Codex', $approvedThreadPage);
+            assertStringNotContains('data-action="request-codex-handoff"', $nonLocalThreadPage);
+            assertStringNotContains('data-action="request-codex-handoff"', $draftThreadPage);
+            assertStringContains('Codex handoff ready for approval.', $draftThreadPage);
+            assertStringContains('data-role="codex-handoff-preview"', $draftThreadPage);
+            assertStringContains('User story:', $draftThreadPage);
+            assertStringContains('Confidence:', $draftThreadPage);
+            assertStringContains('Step 1 Solution Assessment', $draftThreadPage);
+            assertStringContains('data-action="approve-codex-handoff"', $draftThreadPage);
+            assertStringContains('data-action="reject-codex-handoff"', $draftThreadPage);
+            assertStringContains('data-role="codex-handoff-preview"', $draftPostPage);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
     public function testGenerateAgentReplyReportsFailedAnalysisAsRequired(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

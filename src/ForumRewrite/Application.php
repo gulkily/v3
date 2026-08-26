@@ -762,9 +762,11 @@ final class Application
             ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'like', (string) $viewerProfile['identity_id'])
             : [];
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $viewerCanUseCodexHandoff = $this->viewerCanUseCodexHandoff($viewerProfile);
         $createdPostId = $this->createdPostIdForThread($threadId, $createdPostId);
         $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $this->fetchAgentReplyGenerationsForPosts($posts);
+        $codexHandoffsByPostId = $viewerCanUseCodexHandoff ? $this->fetchCodexHandoffsForPosts($posts) : [];
 
         return $this->renderPageTemplate(
             'thread.php',
@@ -778,8 +780,10 @@ final class Application
                 'viewerPostLikes' => $viewerPostLikes,
                 'createdPostId' => $createdPostId,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
+                'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
+                'codexHandoffsByPostId' => $codexHandoffsByPostId,
                 'agentReplyWorkByPostId' => $this->agentReplyWorkByPostId(
                     $posts,
                     $createdPostId,
@@ -830,9 +834,11 @@ final class Application
             ? $this->viewerPostTagsForPosts([$post['post_id']], 'like', (string) $viewerProfile['identity_id'])
             : [];
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $viewerCanUseCodexHandoff = $this->viewerCanUseCodexHandoff($viewerProfile);
         $posts = [$post];
         $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $this->fetchAgentReplyGenerationsForPosts($posts);
+        $codexHandoffsByPostId = $viewerCanUseCodexHandoff ? $this->fetchCodexHandoffsForPosts($posts) : [];
 
         return $this->renderPageTemplate(
             'post.php',
@@ -841,8 +847,10 @@ final class Application
                 'viewerPostFlags' => $viewerPostFlags,
                 'viewerPostLikes' => $viewerPostLikes,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
+                'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
+                'codexHandoffsByPostId' => $codexHandoffsByPostId,
                 'agentReplyWorkByPostId' => $this->agentReplyWorkByPostId(
                     $posts,
                     '',
@@ -1880,6 +1888,35 @@ final class Application
         }
 
         return $generations;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $posts
+     * @return array<string, array<string, mixed>>
+     */
+    private function fetchCodexHandoffsForPosts(array $posts): array
+    {
+        if ($posts === []) {
+            return [];
+        }
+
+        try {
+            $store = $this->codexHandoffStore();
+        } catch (\Throwable) {
+            return [];
+        }
+
+        $handoffs = [];
+        foreach ($posts as $post) {
+            $handoff = $store->findByPost($post);
+            if ($handoff === null) {
+                continue;
+            }
+
+            $handoffs[(string) $post['post_id']] = $handoff;
+        }
+
+        return $handoffs;
     }
 
     /**

@@ -2355,7 +2355,8 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 }
 
 .post-card-actions .thread-reaction-feedback,
-.post-card-actions .agent-reply-feedback {
+.post-card-actions .agent-reply-feedback,
+.post-card-actions .codex-handoff-feedback {
   margin: 0;
   line-height: inherit;
 }
@@ -2377,12 +2378,23 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   min-width: 0;
 }
 
+.post-card-actions .codex-handoff-preview,
 .post-card-actions .post-analysis[open] {
   flex-basis: 100%;
 }
 
+.post-card-actions .codex-handoff-preview > summary,
 .post-card-actions .post-analysis > summary {
   cursor: pointer;
+}
+
+.codex-handoff-preview {
+  min-width: 0;
+}
+
+.codex-handoff-draft {
+  max-height: 24rem;
+  overflow: auto;
 }
 
 .possibly-related {
