@@ -191,6 +191,38 @@ final class CodexHandoffStore
         return $updated;
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function claimNextApproved(int $limit = 1): array
+    {
+        $limit = max(1, $limit);
+
+        return $this->withImmediateTransaction(function () use ($limit): array {
+            $stmt = $this->pdo->prepare(
+                $this->selectSql()
+                . ' WHERE status = :status ORDER BY approved_at ASC, id ASC LIMIT :limit'
+            );
+            $stmt->bindValue('status', 'approved');
+            $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+
+            $claimed = [];
+            foreach ($stmt->fetchAll() as $row) {
+                $handoffId = (string) ($row['handoff_id'] ?? '');
+                if ($handoffId === '') {
+                    continue;
+                }
+
+                $claimed[] = $this->updateStatus($handoffId, 'running', [
+                    'runner' => 'codex exec',
+                ]);
+            }
+
+            return $claimed;
+        });
+    }
+
     private function ensureSchema(): void
     {
         $this->pdo->exec(
@@ -484,6 +516,24 @@ final class CodexHandoffStore
         $stmt->execute(['name' => $table]);
 
         return $stmt->fetchColumn() !== false;
+    }
+
+    /**
+     * @template T
+     * @param callable(): T $callback
+     * @return T
+     */
+    private function withImmediateTransaction(callable $callback): mixed
+    {
+        $this->pdo->exec('BEGIN IMMEDIATE');
+        try {
+            $result = $callback();
+            $this->pdo->exec('COMMIT');
+            return $result;
+        } catch (\Throwable $throwable) {
+            $this->pdo->exec('ROLLBACK');
+            throw $throwable;
+        }
     }
 
     /**

@@ -93,3 +93,23 @@
   - `php tests/run.php CodexHandoffStoreTest WriteApiSmokeTest::testCodexHandoffLifecycleAppearsInActivityAndSurvivesRebuild` passed.
 - Notes:
   - Activity entries summarize handoff state and origin post only; draft text, prompts, paths, and runner output stay out of activity.
+
+## Stage 8 - Local Codex Runner Command
+- Changes:
+  - Added `CodexHandoffStore::claimNextApproved()` to atomically claim approved handoffs as `running`.
+  - Added `CodexHandoffRunner` to execute approved handoff drafts with `codex exec --json --sandbox workspace-write`.
+  - Added `scripts/run_codex_handoffs.php` with `--limit`, `--dry-run`, `--quiet`, `--database-path`, `--project-root`, and `--codex-bin` options.
+  - Added `./v3 codex-handoff run` and `./v3 codex-handoff test-local` wrapper commands.
+  - Added focused runner and command tests using a fake Codex executable.
+- Verification:
+  - `php -l src/ForumRewrite/Codex/CodexHandoffStore.php` passed.
+  - `php -l src/ForumRewrite/Codex/CodexHandoffRunner.php` passed.
+  - `php -l scripts/run_codex_handoffs.php` passed.
+  - `bash -n v3` passed.
+  - `php -l tests/CodexHandoffRunnerTest.php` passed.
+  - `php -l tests/run.php` passed.
+  - `php tests/run.php CodexHandoffRunnerTest` passed.
+  - `php tests/run.php CodexHandoffStoreTest` passed.
+  - `./v3 codex-handoff test-local` passed.
+- Notes:
+  - The runner is explicit and local-only: browser approval moves a handoff to `approved`, and a separate localhost command performs Codex execution.

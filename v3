@@ -21,6 +21,8 @@ Usage:
   ./v3 agent-reply status [post_id] [--limit=25] [--database-path=/path/post_index.sqlite3]
   ./v3 agent-reply test [--timeout=30]
   ./v3 agent-reply test-local
+  ./v3 codex-handoff run [--limit=1] [--dry-run] [--database-path=/path/post_index.sqlite3] [--codex-bin=/path/codex]
+  ./v3 codex-handoff test-local
   ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
 EOF
@@ -104,6 +106,35 @@ case "${COMMAND}" in
         echo "  ./v3 agent-reply status [post_id] [--limit=25] [--database-path=/path/post_index.sqlite3]" >&2
         echo "  ./v3 agent-reply test [--timeout=30]" >&2
         echo "  ./v3 agent-reply test-local" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  codex-handoff)
+    shift
+    SUBCOMMAND="${1:-}"
+    case "${SUBCOMMAND}" in
+      run)
+        shift
+        php "${ROOT}/scripts/run_codex_handoffs.php" "$@"
+        ;;
+      test-local)
+        shift
+        php "${ROOT}/tests/run.php" \
+          CodexHandoffDraftServiceTest \
+          CodexHandoffStoreTest \
+          CodexHandoffRunnerTest \
+          WriteApiSmokeTest::testCodexHandoffApiRequiresApprovedLocalhostAndPreparesDraft \
+          WriteApiSmokeTest::testCodexHandoffApiRejectsNonLocalhostAndSupportsRejectDecision \
+          WriteApiSmokeTest::testCodexHandoffLifecycleAppearsInActivityAndSurvivesRebuild \
+          WriteApiSmokeTest::testApprovedLocalhostViewerSeesCodexHandoffButtonAndPreviewAfterDraft \
+          WriteApiSmokeTest::testPostAnalysisScriptBindsCodexHandoffActions \
+          "$@"
+        ;;
+      *)
+        echo "Usage:" >&2
+        echo "  ./v3 codex-handoff run [--limit=1] [--dry-run] [--database-path=/path/post_index.sqlite3] [--codex-bin=/path/codex]" >&2
+        echo "  ./v3 codex-handoff test-local" >&2
         exit 1
         ;;
     esac

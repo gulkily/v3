@@ -12,6 +12,7 @@ $testFiles = [
     __DIR__ . '/CanonicalRecordParsersTest.php',
     __DIR__ . '/ArchiveThreadCommandTest.php',
     __DIR__ . '/CodexHandoffDraftServiceTest.php',
+    __DIR__ . '/CodexHandoffRunnerTest.php',
     __DIR__ . '/CodexHandoffStoreTest.php',
     __DIR__ . '/DedalusPostAnalyzerTest.php',
     __DIR__ . '/FeatureFlagEvaluatorTest.php',
