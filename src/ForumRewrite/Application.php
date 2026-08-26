@@ -16,6 +16,8 @@ use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Codex\CodexHandoffDraftService;
+use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelMetadata;
@@ -114,6 +116,16 @@ final class Application
 
         if ($path === '/api/generate_agent_reply') {
             $this->handleGenerateAgentReply($method, $query);
+            return;
+        }
+
+        if ($path === '/api/codex_handoff') {
+            $this->handleCodexHandoff($method, $query);
+            return;
+        }
+
+        if ($path === '/api/codex_handoff_approval') {
+            $this->handleCodexHandoffApproval($method, $query);
             return;
         }
 
@@ -1362,7 +1374,7 @@ final class Application
 
     private function renderApiIndex(): string
     {
-        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nPOST /api/set_identity_hint\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
+        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nPOST /api/set_identity_hint\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
     }
 
     private function renderApiListIndex(): string
@@ -3189,6 +3201,201 @@ final class Application
     }
 
     /**
+     * @param array<string, mixed> $query
+     */
+    private function handleCodexHandoff(string $method, array $query): void
+    {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        $headersWithTimings = function () use (&$timings, $totalStartedAt): array {
+            return $this->noStoreTimingHeaders($this->timingsWithTotal($timings, $totalStartedAt));
+        };
+
+        if (!in_array($method, ['GET', 'POST'], true)) {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $headersWithTimings());
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
+        if (!$this->viewerCanUseCodexHandoff($viewerProfile)) {
+            $this->sendJson(['status' => 'error', 'error' => 'forbidden'], 403, $headersWithTimings());
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+        try {
+            if ($method === 'GET') {
+                $handoff = $this->findCodexHandoffFromInput($input);
+                if ($handoff === null) {
+                    $this->sendJson(['status' => 'error', 'error' => 'handoff not found'], 404, $headersWithTimings());
+                    return;
+                }
+
+                $this->sendJson($this->codexHandoffResponse($handoff), 200, $headersWithTimings());
+                return;
+            }
+
+            $postId = trim((string) ($input['post_id'] ?? ''));
+            if ($postId === '') {
+                $this->sendJson(['status' => 'error', 'error' => 'Missing post_id.'], 400, $headersWithTimings());
+                return;
+            }
+
+            $phaseStartedAt = hrtime(true);
+            $post = $this->fetchPost($postId);
+            $timings['fetch_post'] = $this->elapsedMilliseconds($phaseStartedAt);
+            if ($post === null) {
+                $this->sendJson(['status' => 'error', 'error' => 'post not found'], 404, $headersWithTimings());
+                return;
+            }
+
+            if ((string) ($post['author_label'] ?? '') === AgentIdentityService::USERNAME) {
+                $this->sendJson(['status' => 'error', 'error' => 'codex handoff target is not eligible'], 400, $headersWithTimings());
+                return;
+            }
+
+            $phaseStartedAt = hrtime(true);
+            $store = $this->codexHandoffStore();
+            $handoff = $store->requestForPost($post, $viewerProfile ?? []);
+            if ((string) ($handoff['status'] ?? '') === 'requested') {
+                $draft = $this->codexHandoffDraftService()->prepare($handoff, $post);
+                $handoff = $store->updateStatus((string) $handoff['handoff_id'], 'draft_ready', $draft);
+            }
+            $timings['codex_handoff'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+            $this->sendJson($this->codexHandoffResponse($handoff), 200, $headersWithTimings());
+        } catch (RuntimeException $exception) {
+            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $headersWithTimings());
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleCodexHandoffApproval(string $method, array $query): void
+    {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        $headersWithTimings = function () use (&$timings, $totalStartedAt): array {
+            return $this->noStoreTimingHeaders($this->timingsWithTotal($timings, $totalStartedAt));
+        };
+
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $headersWithTimings());
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
+        if (!$this->viewerCanUseCodexHandoff($viewerProfile)) {
+            $this->sendJson(['status' => 'error', 'error' => 'forbidden'], 403, $headersWithTimings());
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
+        $handoffId = trim((string) ($input['handoff_id'] ?? ''));
+        $decision = trim((string) ($input['decision'] ?? ''));
+        if ($handoffId === '') {
+            $this->sendJson(['status' => 'error', 'error' => 'Missing handoff_id.'], 400, $headersWithTimings());
+            return;
+        }
+
+        try {
+            $store = $this->codexHandoffStore();
+            $handoff = $store->findByHandoffId($handoffId);
+            if ($handoff === null) {
+                $this->sendJson(['status' => 'error', 'error' => 'handoff not found'], 404, $headersWithTimings());
+                return;
+            }
+
+            if ($decision === 'approve') {
+                if ((string) ($handoff['status'] ?? '') !== 'draft_ready') {
+                    $this->sendJson(['status' => 'error', 'error' => 'Codex handoff approval requires draft_ready status.'], 400, $headersWithTimings());
+                    return;
+                }
+
+                $handoff = $store->updateStatus($handoffId, 'approved', [
+                    'approved_by_identity_id' => (string) ($viewerProfile['identity_id'] ?? ''),
+                    'approved_by_profile_slug' => (string) ($viewerProfile['profile_slug'] ?? ''),
+                    'approved_by_username' => (string) ($viewerProfile['username'] ?? ''),
+                ]);
+            } elseif ($decision === 'reject') {
+                $handoff = $store->updateStatus($handoffId, 'rejected', [
+                    'rejected_by_identity_id' => (string) ($viewerProfile['identity_id'] ?? ''),
+                    'rejected_by_profile_slug' => (string) ($viewerProfile['profile_slug'] ?? ''),
+                    'rejected_by_username' => (string) ($viewerProfile['username'] ?? ''),
+                ]);
+            } else {
+                $this->sendJson(['status' => 'error', 'error' => 'decision must be approve or reject'], 400, $headersWithTimings());
+                return;
+            }
+
+            $this->sendJson($this->codexHandoffResponse($handoff), 200, $headersWithTimings());
+        } catch (RuntimeException $exception) {
+            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $headersWithTimings());
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>|null
+     */
+    private function findCodexHandoffFromInput(array $input): ?array
+    {
+        $store = $this->codexHandoffStore();
+        $handoffId = trim((string) ($input['handoff_id'] ?? ''));
+        if ($handoffId !== '') {
+            return $store->findByHandoffId($handoffId);
+        }
+
+        $postId = trim((string) ($input['post_id'] ?? ''));
+        if ($postId === '') {
+            return null;
+        }
+
+        $post = $this->fetchPost($postId);
+        if ($post === null) {
+            return null;
+        }
+
+        return $store->findByPost($post);
+    }
+
+    /**
+     * @param array<string, mixed> $handoff
+     * @return array<string, mixed>
+     */
+    private function codexHandoffResponse(array $handoff): array
+    {
+        return [
+            'status' => 'ok',
+            'handoff_id' => (string) ($handoff['handoff_id'] ?? ''),
+            'handoff_status' => (string) ($handoff['status'] ?? ''),
+            'origin_post_id' => (string) ($handoff['origin_post_id'] ?? ''),
+            'origin_thread_id' => (string) ($handoff['origin_thread_id'] ?? ''),
+            'user_story' => $handoff['user_story'] ?? null,
+            'fdp_step1' => $handoff['fdp_step1'] ?? null,
+            'confidence_summary' => $handoff['confidence_summary'] ?? null,
+            'draft_text' => $handoff['draft_text'] ?? null,
+            'requested_at' => $handoff['requested_at'] ?? null,
+            'draft_ready_at' => $handoff['draft_ready_at'] ?? null,
+            'approved_at' => $handoff['approved_at'] ?? null,
+            'rejected_at' => $handoff['rejected_at'] ?? null,
+            'running_at' => $handoff['running_at'] ?? null,
+            'completed_at' => $handoff['completed_at'] ?? null,
+            'failed_at' => $handoff['failed_at'] ?? null,
+        ];
+    }
+
+    /**
      * @param array<string, mixed> $post
      * @param array<string, mixed> $viewerProfile
      * @return array<string, mixed>
@@ -3657,6 +3864,16 @@ final class Application
             fn (array $post): array => $this->postAnalysisContext($post),
             fn (array $post, array $analysis): ?array => $this->agentReplyGateFailure($post, $analysis),
         );
+    }
+
+    private function codexHandoffStore(): CodexHandoffStore
+    {
+        return new CodexHandoffStore($this->pdo());
+    }
+
+    private function codexHandoffDraftService(): CodexHandoffDraftService
+    {
+        return new CodexHandoffDraftService();
     }
 
     private function postAnalysisService(): PostAnalysisService

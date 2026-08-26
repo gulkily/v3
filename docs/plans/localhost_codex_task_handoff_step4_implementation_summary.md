@@ -37,3 +37,16 @@
   - `php tests/run.php CodexHandoffDraftServiceTest` passed.
 - Notes:
   - Confidence wording is heuristic for V1 and intentionally conservative when requests mention execution, authorization, approval, security, schema, or audit concerns.
+
+## Stage 4 - Handoff Request And Approval APIs
+- Changes:
+  - Added `/api/codex_handoff` for approved-localhost handoff creation and lookup.
+  - Added `/api/codex_handoff_approval` for explicit approve/reject decisions after a draft is ready.
+  - Wired handoff creation to persist state and prepare a draft without starting Codex execution.
+  - Added API index entries and focused write/API smoke coverage.
+- Verification:
+  - `php -l src/ForumRewrite/Application.php` passed.
+  - `php -l tests/WriteApiSmokeTest.php` passed.
+  - `php tests/run.php WriteApiSmokeTest::testCodexHandoffApiRequiresApprovedLocalhostAndPreparesDraft WriteApiSmokeTest::testCodexHandoffApiRejectsNonLocalhostAndSupportsRejectDecision` passed.
+- Notes:
+  - Approval is intentionally accepted only from `draft_ready`; a duplicate approval returns an API error instead of silently re-approving.

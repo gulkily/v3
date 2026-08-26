@@ -419,6 +419,91 @@ PHP);
         }
     }
 
+    public function testCodexHandoffApiRequiresApprovedLocalhostAndPreparesDraft(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost:8000';
+            unset($_SERVER['SERVER_NAME'], $_SERVER['REMOTE_ADDR']);
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Codex%20Handoff&body=Approved%20users%20should%20hand%20off%20tasks%20to%20Codex.'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $created = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+            $fetched = json_decode($this->renderMethod($application, 'GET', '/api/codex_handoff?handoff_id=' . rawurlencode($created['handoff_id'])), true);
+            $approved = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/codex_handoff_approval?handoff_id=' . rawurlencode($created['handoff_id']) . '&decision=approve'
+            ), true);
+            $duplicateApproval = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/codex_handoff_approval?handoff_id=' . rawurlencode($created['handoff_id']) . '&decision=approve'
+            ), true);
+
+            assertSame('ok', $created['status']);
+            assertSame('draft_ready', $created['handoff_status']);
+            assertSame($postId, $created['origin_post_id']);
+            assertStringContains('As an approved local user', $created['user_story']);
+            assertStringContains('Step 1 Solution Assessment', $created['fdp_step1']);
+            assertStringContains('confidence', strtolower((string) $created['confidence_summary']));
+            assertSame($created['handoff_id'], $fetched['handoff_id']);
+            assertSame('draft_ready', $fetched['handoff_status']);
+            assertSame('ok', $approved['status']);
+            assertSame('approved', $approved['handoff_status']);
+            assertSame('error', $duplicateApproval['status']);
+            assertSame('Codex handoff approval requires draft_ready status.', $duplicateApproval['error']);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
+    public function testCodexHandoffApiRejectsNonLocalhostAndSupportsRejectDecision(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Codex%20Reject&body=Please%20prepare%20a%20local%20Codex%20handoff.'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $_SERVER['HTTP_HOST'] = 'example.com';
+            $forbidden = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+
+            $_SERVER['HTTP_HOST'] = 'localhost';
+            $created = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+            $rejected = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/codex_handoff_approval?handoff_id=' . rawurlencode($created['handoff_id']) . '&decision=reject'
+            ), true);
+
+            assertSame('error', $forbidden['status']);
+            assertSame('forbidden', $forbidden['error']);
+            assertSame('draft_ready', $created['handoff_status']);
+            assertSame('ok', $rejected['status']);
+            assertSame('rejected', $rejected['handoff_status']);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
     public function testGenerateAgentReplyReportsFailedAnalysisAsRequired(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
