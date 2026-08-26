@@ -1,0 +1,5 @@
+- things that should be instant take too long
+- clicking things in the menubar should be instant, not ~1 second
+- clicking "post reply" should not take 2-3 seconds
+
+- the "no css loaded yet" flag is annoying/disturbing

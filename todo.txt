@@ -1,0 +1,6 @@
+codebase readability
+====================
+
+\$toolNavOptions should be searchable to its origin point (calling function)
+
+"functionName " should be searchable to its definition (and no other place)
