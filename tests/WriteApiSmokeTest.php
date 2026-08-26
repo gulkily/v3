@@ -432,7 +432,7 @@ PHP);
             $threadResponse = $this->renderMethod(
                 $application,
                 'POST',
-                '/api/create_thread?board_tags=general&subject=Codex%20Handoff&body=Approved%20users%20should%20hand%20off%20tasks%20to%20Codex.'
+                '/api/create_thread?board_tags=feature&subject=Codex%20Handoff&body=Approved%20users%20should%20hand%20off%20tasks%20to%20Codex.'
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
 
@@ -478,7 +478,7 @@ PHP);
             $threadResponse = $this->renderMethod(
                 $application,
                 'POST',
-                '/api/create_thread?board_tags=general&subject=Codex%20Reject&body=Please%20prepare%20a%20local%20Codex%20handoff.'
+                '/api/create_thread?board_tags=feature&subject=Codex%20Reject&body=Please%20prepare%20a%20local%20Codex%20handoff.'
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
 
@@ -505,6 +505,35 @@ PHP);
         }
     }
 
+    public function testCodexHandoffRequiresDevelopmentBoardTagInApiAndUi(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost';
+            unset($_SERVER['SERVER_NAME'], $_SERVER['REMOTE_ADDR']);
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=General%20Codex%20Question&body=Could%20Codex%20look%20at%20this%20later%3F'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $response = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+
+            assertStringNotContains('data-action="request-codex-handoff"', $threadPage);
+            assertSame('error', $response['status']);
+            assertSame('codex handoff target requires a development board tag', $response['error']);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
     public function testCodexHandoffLifecycleAppearsInActivityAndSurvivesRebuild(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -516,7 +545,7 @@ PHP);
             $threadResponse = $this->renderMethod(
                 $application,
                 'POST',
-                '/api/create_thread?board_tags=general&subject=Codex%20Activity&body=Please%20prepare%20a%20Codex%20handoff%20with%20activity%20audit%20entries.'
+                '/api/create_thread?board_tags=feature&subject=Codex%20Activity&body=Please%20prepare%20a%20Codex%20handoff%20with%20activity%20audit%20entries.'
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
 
@@ -560,7 +589,7 @@ PHP);
             $threadResponse = $this->renderMethod(
                 $application,
                 'POST',
-                '/api/create_thread?board_tags=general&subject=Codex%20UI&body=Approved%20users%20should%20review%20a%20Codex%20handoff%20before%20execution.'
+                '/api/create_thread?board_tags=feature&subject=Codex%20UI&body=Approved%20users%20should%20review%20a%20Codex%20handoff%20before%20execution.'
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
 

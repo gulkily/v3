@@ -40,6 +40,7 @@ final class Application
     private const ACTIVITY_ITEM_LIMIT = 100;
     private const THREAD_CONTEXT_COMMENT_BODY_LIMIT = 3000;
     private const THREAD_CONTEXT_TOTAL_BODY_LIMIT = 18000;
+    private const CODEX_HANDOFF_BOARD_TAGS = ['feature', 'bug', 'task', 'dev', 'development', 'codex', 'implementation', 'fdp'];
     private ?string $appVersion = null;
     private ?FeatureFlagEvaluator $featureFlags = null;
 
@@ -767,6 +768,7 @@ final class Application
         $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $this->fetchAgentReplyGenerationsForPosts($posts);
         $codexHandoffsByPostId = $viewerCanUseCodexHandoff ? $this->fetchCodexHandoffsForPosts($posts) : [];
+        $codexHandoffEligiblePostIds = $viewerCanUseCodexHandoff ? $this->codexHandoffEligiblePostIds($posts) : [];
 
         return $this->renderPageTemplate(
             'thread.php',
@@ -784,6 +786,7 @@ final class Application
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
                 'codexHandoffsByPostId' => $codexHandoffsByPostId,
+                'codexHandoffEligiblePostIds' => $codexHandoffEligiblePostIds,
                 'agentReplyWorkByPostId' => $this->agentReplyWorkByPostId(
                     $posts,
                     $createdPostId,
@@ -839,6 +842,7 @@ final class Application
         $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $this->fetchAgentReplyGenerationsForPosts($posts);
         $codexHandoffsByPostId = $viewerCanUseCodexHandoff ? $this->fetchCodexHandoffsForPosts($posts) : [];
+        $codexHandoffEligiblePostIds = $viewerCanUseCodexHandoff ? $this->codexHandoffEligiblePostIds($posts) : [];
 
         return $this->renderPageTemplate(
             'post.php',
@@ -851,6 +855,7 @@ final class Application
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
                 'codexHandoffsByPostId' => $codexHandoffsByPostId,
+                'codexHandoffEligiblePostIds' => $codexHandoffEligiblePostIds,
                 'agentReplyWorkByPostId' => $this->agentReplyWorkByPostId(
                     $posts,
                     '',
@@ -2548,6 +2553,41 @@ final class Application
             && $this->requestIsLocalhost();
     }
 
+    /**
+     * @param array<int, array<string, mixed>> $posts
+     * @return array<string, bool>
+     */
+    private function codexHandoffEligiblePostIds(array $posts): array
+    {
+        $eligible = [];
+        foreach ($posts as $post) {
+            if ($this->postCanUseCodexHandoffTarget($post)) {
+                $eligible[(string) ($post['post_id'] ?? '')] = true;
+            }
+        }
+
+        return $eligible;
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     */
+    private function postCanUseCodexHandoffTarget(array $post): bool
+    {
+        if ((string) ($post['author_label'] ?? '') === AgentIdentityService::USERNAME) {
+            return false;
+        }
+
+        $boardTags = $this->decodeStringList((string) ($post['board_tags_json'] ?? '[]'));
+        foreach ($boardTags as $tag) {
+            if (in_array(strtolower($tag), self::CODEX_HANDOFF_BOARD_TAGS, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function requestIsLocalhost(): bool
     {
         $host = trim((string) ($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? ''));
@@ -3293,6 +3333,10 @@ final class Application
 
             if ((string) ($post['author_label'] ?? '') === AgentIdentityService::USERNAME) {
                 $this->sendJson(['status' => 'error', 'error' => 'codex handoff target is not eligible'], 400, $headersWithTimings());
+                return;
+            }
+            if (!$this->postCanUseCodexHandoffTarget($post)) {
+                $this->sendJson(['status' => 'error', 'error' => 'codex handoff target requires a development board tag'], 400, $headersWithTimings());
                 return;
             }
 
