@@ -10,6 +10,7 @@ Usage:
   ./v3 start [--listen-all|host:port]
   ./v3 test
   ./v3 rebuild [repository_root] [database_path]
+  ./v3 import-repository <archive.tar.gz> [repository_root] [database_path] [artifact_root] [--dry-run] [--no-commit]
   ./v3 thread-attributes <thread_id_or_record> [repository_root] [database_path]
   ./v3 delete-record <record_path_or_id> [repository_root] [database_path] [artifact_root]
   ./v3 unicode-risk-backfill [repository_root] [database_path] [--with-llm]
@@ -42,6 +43,10 @@ case "${COMMAND}" in
   rebuild)
     shift
     php "${ROOT}/scripts/rebuild_read_model.php" "$@"
+    ;;
+  import-repository)
+    shift
+    php "${ROOT}/scripts/import_repository_archive.php" "$@"
     ;;
   thread-attributes)
     shift
