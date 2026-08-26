@@ -1041,7 +1041,10 @@ PHP);
     public function testPostAnalysisScriptDoesNotExposeInProgressReplyGeneration(): void
     {
         $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/post_analysis.js');
+        $scriptPath = dirname(__DIR__) . '/public/assets/post_analysis.js';
+        exec('node --check ' . escapeshellarg($scriptPath) . ' 2>&1', $output, $exitCode);
 
+        assertSame(0, $exitCode);
         assertStringContains('__forumAgentReplyGenerationStartedPostIds', $script);
         assertStringContains('data-agent-reply-work', $script);
         assertStringContains('function agentReplyResultFromAnalysis(analysis)', $script);
@@ -1069,6 +1072,26 @@ PHP);
         assertStringNotContains('Generating agent reply...', $script);
         assertStringNotContains('Agent reply failed', $script);
         assertStringNotContains('Agent reply posted', $script);
+    }
+
+    public function testPostAnalysisScriptBindsCodexHandoffActions(): void
+    {
+        $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/post_analysis.js');
+
+        assertStringContains('__forumCodexHandoffStartedPostIds', $script);
+        assertStringContains('function requestCodexHandoff(postId)', $script);
+        assertStringContains('function decideCodexHandoff(handoffId, decision)', $script);
+        assertStringContains('function bindCodexHandoffButtons()', $script);
+        assertStringContains('/api/codex_handoff', $script);
+        assertStringContains('/api/codex_handoff_approval', $script);
+        assertStringContains('data-action="request-codex-handoff"', $script);
+        assertStringContains('data-action="approve-codex-handoff"', $script);
+        assertStringContains('data-action="reject-codex-handoff"', $script);
+        assertStringContains('Preparing Codex handoff...', $script);
+        assertStringContains('Codex handoff ready for approval.', $script);
+        assertStringContains('Approving Codex handoff...', $script);
+        assertStringContains('Rejecting Codex handoff...', $script);
+        assertStringContains('bindCodexHandoffButtons();', $script);
     }
 
     public function testGenerateAgentReplyRespectsDisabledConfig(): void

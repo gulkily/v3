@@ -66,3 +66,16 @@
   - `php tests/run.php WriteApiSmokeTest::testCodexHandoffApiRequiresApprovedLocalhostAndPreparesDraft WriteApiSmokeTest::testCodexHandoffApiRejectsNonLocalhostAndSupportsRejectDecision` passed.
 - Notes:
   - The card action remains compact; detailed review lives in the expandable preview surface.
+
+## Stage 6 - Browser Handoff Actions
+- Changes:
+  - Extended `post_analysis.js` with Codex handoff request and approve/reject fetch helpers.
+  - Added duplicate-click guards, feedback state updates, dynamic draft preview rendering, and decision-button rebinding.
+  - Added source-level JS assertions and Node syntax coverage through the existing write smoke test style.
+- Verification:
+  - `node --check public/assets/post_analysis.js` passed.
+  - `php -l tests/WriteApiSmokeTest.php` passed.
+  - `php tests/run.php WriteApiSmokeTest::testPostAnalysisScriptDoesNotExposeInProgressReplyGeneration WriteApiSmokeTest::testPostAnalysisScriptBindsCodexHandoffActions` passed.
+  - `php tests/run.php WriteApiSmokeTest::testApprovedLocalhostViewerSeesCodexHandoffButtonAndPreviewAfterDraft` passed.
+- Notes:
+  - The browser creates or updates the in-card preview from the API response; it does not start Codex execution.

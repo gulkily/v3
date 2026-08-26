@@ -13,12 +13,26 @@
     : new Set();
   window.__forumAgentReplyGenerationStartedPostIds = generationStartedPostIds;
 
+  const codexHandoffStartedPostIds = window.__forumCodexHandoffStartedPostIds instanceof Set
+    ? window.__forumCodexHandoffStartedPostIds
+    : new Set();
+  window.__forumCodexHandoffStartedPostIds = codexHandoffStartedPostIds;
+
   function markGenerationStarted(postId) {
     if (generationStartedPostIds.has(postId)) {
       return false;
     }
 
     generationStartedPostIds.add(postId);
+    return true;
+  }
+
+  function markCodexHandoffStarted(postId) {
+    if (codexHandoffStartedPostIds.has(postId)) {
+      return false;
+    }
+
+    codexHandoffStartedPostIds.add(postId);
     return true;
   }
 
@@ -50,6 +64,34 @@
     return response.json();
   }
 
+  async function requestCodexHandoff(postId) {
+    const response = await fetch("/api/codex_handoff", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Accept": "application/json",
+      },
+      body: new URLSearchParams({ post_id: postId }).toString(),
+    });
+
+    return response.json();
+  }
+
+  async function decideCodexHandoff(handoffId, decision) {
+    const response = await fetch("/api/codex_handoff_approval", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Accept": "application/json",
+      },
+      body: new URLSearchParams({ handoff_id: handoffId, decision: decision }).toString(),
+    });
+
+    return response.json();
+  }
+
   function selectorEscape(value) {
     if (window.CSS && typeof window.CSS.escape === "function") {
       return window.CSS.escape(value);
@@ -65,6 +107,15 @@
     }
 
     return card.querySelector('[data-role="agent-reply-feedback"]');
+  }
+
+  function codexFeedbackForPost(postId) {
+    const card = document.querySelector('[data-post-id="' + selectorEscape(postId) + '"]');
+    if (!card) {
+      return null;
+    }
+
+    return card.querySelector('[data-role="codex-handoff-feedback"]');
   }
 
   function cardForPost(postId) {
@@ -94,6 +145,22 @@
     node.textContent = "";
     node.appendChild(document.createTextNode(text + " "));
     node.appendChild(link);
+  }
+
+  function appendTextElement(parent, tagName, label, value) {
+    if (!value) {
+      return;
+    }
+
+    const element = document.createElement(tagName);
+    if (label) {
+      const strong = document.createElement("strong");
+      strong.textContent = label + ":";
+      element.appendChild(strong);
+      element.appendChild(document.createTextNode(" "));
+    }
+    element.appendChild(document.createTextNode(value));
+    parent.appendChild(element);
   }
 
   function agentReplyAnchorUrl(agentPostId) {
@@ -190,6 +257,205 @@
     return true;
   }
 
+  function codexHandoffLabel(status) {
+    if (status === "draft_ready") {
+      return "Ready for approval";
+    }
+    if (status === "approved") {
+      return "Approved";
+    }
+    if (status === "rejected") {
+      return "Rejected";
+    }
+    if (status === "running") {
+      return "Running";
+    }
+    if (status === "completed") {
+      return "Completed";
+    }
+    if (status === "failed") {
+      return "Failed";
+    }
+    return "Requested";
+  }
+
+  function codexHandoffFeedback(status) {
+    if (status === "requested") {
+      return "Codex handoff requested.";
+    }
+    if (status === "draft_ready") {
+      return "Codex handoff ready for approval.";
+    }
+    if (status === "approved") {
+      return "Codex handoff approved.";
+    }
+    if (status === "rejected") {
+      return "Codex handoff rejected.";
+    }
+    if (status === "running") {
+      return "Codex handoff running.";
+    }
+    if (status === "completed") {
+      return "Codex handoff completed.";
+    }
+    if (status === "failed") {
+      return "Codex handoff failed.";
+    }
+    return "Codex handoff updated.";
+  }
+
+  function createCodexHandoffPreview(result) {
+    const details = document.createElement("details");
+    details.className = "codex-handoff-preview";
+    details.setAttribute("data-role", "codex-handoff-preview");
+    details.setAttribute("data-handoff-id", result.handoff_id || "");
+    details.setAttribute("data-handoff-status", result.handoff_status || "");
+    if (result.handoff_status === "draft_ready") {
+      details.open = true;
+    }
+
+    const summary = document.createElement("summary");
+    summary.textContent = "Codex handoff: " + codexHandoffLabel(result.handoff_status || "");
+    details.appendChild(summary);
+
+    const stack = document.createElement("div");
+    stack.className = "stack";
+    appendTextElement(stack, "p", "User story", result.user_story || "");
+    appendTextElement(stack, "p", "Confidence", result.confidence_summary || "");
+    if (result.fdp_step1) {
+      const pre = document.createElement("pre");
+      pre.className = "codex-handoff-draft";
+      pre.textContent = result.fdp_step1;
+      stack.appendChild(pre);
+    }
+
+    if (result.handoff_status === "draft_ready") {
+      const actions = document.createElement("div");
+      actions.className = "button-row button-row-natural codex-handoff-actions";
+
+      const approve = document.createElement("button");
+      approve.type = "button";
+      approve.className = "thread-reaction-button";
+      approve.setAttribute("data-action", "approve-codex-handoff");
+      approve.setAttribute("data-handoff-id", result.handoff_id || "");
+      approve.textContent = "Approve handoff";
+      actions.appendChild(approve);
+
+      const reject = document.createElement("button");
+      reject.type = "button";
+      reject.className = "thread-reaction-button";
+      reject.setAttribute("data-action", "reject-codex-handoff");
+      reject.setAttribute("data-handoff-id", result.handoff_id || "");
+      reject.textContent = "Reject handoff";
+      actions.appendChild(reject);
+
+      stack.appendChild(actions);
+    }
+
+    details.appendChild(stack);
+    return details;
+  }
+
+  function applyCodexHandoffResult(card, result) {
+    if (!card || !result || result.status !== "ok") {
+      return false;
+    }
+
+    const status = result.handoff_status || "";
+    const feedback = card.querySelector('[data-role="codex-handoff-feedback"]');
+    setFeedback(feedback, codexHandoffFeedback(status));
+
+    const requestButton = card.querySelector('[data-action="request-codex-handoff"]');
+    if (requestButton) {
+      requestButton.hidden = true;
+    }
+
+    const existingPreview = card.querySelector('[data-role="codex-handoff-preview"]');
+    if (existingPreview) {
+      existingPreview.remove();
+    }
+
+    const actions = card.querySelector(".post-card-actions");
+    if (actions) {
+      actions.appendChild(createCodexHandoffPreview(result));
+      bindCodexHandoffButtons();
+    }
+
+    return true;
+  }
+
+  function bindCodexHandoffButtons() {
+    document.querySelectorAll('[data-action="request-codex-handoff"]').forEach(function (button) {
+      if (button.getAttribute("data-codex-handoff-bound") === "1") {
+        return;
+      }
+
+      button.setAttribute("data-codex-handoff-bound", "1");
+      button.addEventListener("click", async function () {
+        const postId = button.getAttribute("data-post-id") || "";
+        if (postId === "" || !markCodexHandoffStarted(postId)) {
+          return;
+        }
+
+        const originalText = button.textContent;
+        const card = cardForPost(postId);
+        const feedback = codexFeedbackForPost(postId);
+        button.disabled = true;
+        button.textContent = "Preparing...";
+        setFeedback(feedback, "Preparing Codex handoff...");
+
+        try {
+          const result = await requestCodexHandoff(postId);
+          if (applyCodexHandoffResult(card, result)) {
+            return;
+          }
+        } catch (error) {
+        }
+
+        codexHandoffStartedPostIds.delete(postId);
+        button.disabled = false;
+        button.textContent = originalText;
+        setFeedback(feedback, "Codex handoff request failed.");
+      });
+    });
+
+    document.querySelectorAll('[data-action="approve-codex-handoff"], [data-action="reject-codex-handoff"]').forEach(function (button) {
+      if (button.getAttribute("data-codex-handoff-decision-bound") === "1") {
+        return;
+      }
+
+      button.setAttribute("data-codex-handoff-decision-bound", "1");
+      button.addEventListener("click", async function () {
+        const handoffId = button.getAttribute("data-handoff-id") || "";
+        const decision = button.getAttribute("data-action") === "approve-codex-handoff" ? "approve" : "reject";
+        const preview = button.closest('[data-role="codex-handoff-preview"]');
+        const card = button.closest("[data-post-id]");
+        const feedback = card ? card.querySelector('[data-role="codex-handoff-feedback"]') : null;
+        if (handoffId === "" || !preview || !card) {
+          return;
+        }
+
+        preview.querySelectorAll("button").forEach(function (actionButton) {
+          actionButton.disabled = true;
+        });
+        setFeedback(feedback, decision === "approve" ? "Approving Codex handoff..." : "Rejecting Codex handoff...");
+
+        try {
+          const result = await decideCodexHandoff(handoffId, decision);
+          if (applyCodexHandoffResult(card, result)) {
+            return;
+          }
+        } catch (error) {
+        }
+
+        preview.querySelectorAll("button").forEach(function (actionButton) {
+          actionButton.disabled = false;
+        });
+        setFeedback(feedback, "Codex handoff update failed.");
+      });
+    });
+  }
+
   function bindAgentReplyRequestButtons() {
     document.querySelectorAll('[data-action="request-agent-reply"]').forEach(function (button) {
       if (button.getAttribute("data-agent-reply-request-bound") === "1") {
@@ -229,6 +495,7 @@
 
   function boot() {
     bindAgentReplyRequestButtons();
+    bindCodexHandoffButtons();
 
     const root = document.querySelector("[data-created-post-id]");
     if (!root) {
