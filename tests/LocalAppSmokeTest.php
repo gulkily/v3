@@ -49,6 +49,31 @@ final class LocalAppSmokeTest
         assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/site.000000000000.css'));
     }
 
+    public function testAssetFingerprintCopySkipsAlreadyFingerprintedSourceFiles(): void
+    {
+        $sourceRoot = sys_get_temp_dir() . '/forum-rewrite-source-assets-' . bin2hex(random_bytes(6));
+        $targetRoot = sys_get_temp_dir() . '/forum-rewrite-target-assets-' . bin2hex(random_bytes(6));
+        mkdir($sourceRoot . '/assets', 0777, true);
+        file_put_contents($sourceRoot . '/assets/site.css', 'body { color: #111; }');
+        file_put_contents($sourceRoot . '/assets/site.123456789abc.css', 'body { color: #222; }');
+
+        try {
+            AssetFingerprint::copyFingerprintedAssets($sourceRoot, $targetRoot);
+
+            $copied = array_values(array_filter(
+                scandir($targetRoot . '/assets') ?: [],
+                static fn (string $entry): bool => $entry !== '.' && $entry !== '..'
+            ));
+
+            assertSame(1, count($copied));
+            assertStringMatches('#^site\.[a-f0-9]{12}\.css$#', $copied[0]);
+            assertStringNotContains('123456789abc', $copied[0]);
+        } finally {
+            $this->deleteTree($sourceRoot);
+            $this->deleteTree($targetRoot);
+        }
+    }
+
     public function testUnicodeRiskBackfillScansExistingPostsDeterministically(): void
     {
         @unlink($this->databasePath);

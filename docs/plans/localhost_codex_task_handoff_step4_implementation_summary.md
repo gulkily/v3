@@ -113,3 +113,24 @@
   - `./v3 codex-handoff test-local` passed.
 - Notes:
   - The runner is explicit and local-only: browser approval moves a handoff to `approved`, and a separate localhost command performs Codex execution.
+
+## Final Step 4 Verification
+- Stage coverage:
+  - All eight approved implementation stages were completed.
+  - The first Step 4 commit is the approved Step 1-3 planning commit: `ac80821 Plan localhost Codex task handoff`.
+  - Each planned stage has a stage-scoped implementation commit after the planning commit.
+- Behavior coverage:
+  - Approved localhost users can request a Codex handoff from normal post/thread UI controls.
+  - The UI presents the generated user story, FDP Step 1 draft, confidence summary, and approve/reject controls before execution.
+  - Handoff lifecycle events are available in activity.
+  - Approved handoffs are executed only through the explicit local CLI path: `./v3 codex-handoff run`.
+- Verification:
+  - `git log --oneline --max-count=12` showed one planning commit plus eight stage commits.
+  - PHP syntax checks passed for touched application, Codex, read-model, template, script, and test files.
+  - `node --check public/assets/post_analysis.js` passed.
+  - `bash -n v3` passed.
+  - `./v3 codex-handoff test-local` passed.
+  - `php tests/run.php LocalAppSmokeTest::testAssetFingerprintPathsUseContentHashFilenames LocalAppSmokeTest::testAssetFingerprintCopySkipsAlreadyFingerprintedSourceFiles LocalAppSmokeTest::testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout` passed.
+- Notes:
+  - The full test suite was started, but the interrupted run exposed provider/config expectation failures outside the Codex handoff path before completion.
+  - Static artifact warnings from recursively fingerprinted ignored assets were fixed by skipping already-fingerprinted source asset names during asset copying.
