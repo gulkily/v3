@@ -698,6 +698,24 @@ final class ReadModelBuilder
                 'source_commit_sha' => $event['source_commit_sha'],
             ]);
         }
+
+        foreach ($this->codexHandoffActivityEvents($pdo) as $event) {
+            $stmt->execute([
+                'created_at' => $event['created_at'],
+                'kind' => 'codex_handoff',
+                'post_id' => $event['origin_post_id'],
+                'thread_id' => $event['origin_thread_id'],
+                'label' => $event['label'],
+                'board_tags_json' => '["codex","handoff"]',
+                'author_identity_id' => $event['author_identity_id'],
+                'author_profile_slug' => $event['author_profile_slug'],
+                'author_username_token' => $event['author_username_token'],
+                'author_label' => $event['author_label'],
+                'author_is_approved' => $event['author_is_approved'],
+                'source_path' => null,
+                'source_commit_sha' => null,
+            ]);
+        }
     }
 
     /**
@@ -846,6 +864,52 @@ final class ReadModelBuilder
         }
 
         return $events;
+    }
+
+    /**
+     * @return list<array{created_at:string,origin_post_id:string,origin_thread_id:string,label:string,author_identity_id:?string,author_profile_slug:?string,author_username_token:?string,author_label:string,author_is_approved:int}>
+     */
+    private function codexHandoffActivityEvents(PDO $pdo): array
+    {
+        if (!$this->tableExists($pdo, 'codex_handoff_events')) {
+            return [];
+        }
+
+        $stmt = $pdo->query(
+            'SELECT created_at, origin_post_id, origin_thread_id, label,
+                    author_identity_id, author_profile_slug, author_username_token,
+                    author_label, author_is_approved
+             FROM codex_handoff_events
+             ORDER BY created_at ASC, id ASC'
+        );
+        if ($stmt === false) {
+            return [];
+        }
+
+        $events = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $events[] = [
+                'created_at' => (string) ($row['created_at'] ?? ''),
+                'origin_post_id' => (string) ($row['origin_post_id'] ?? ''),
+                'origin_thread_id' => (string) ($row['origin_thread_id'] ?? ''),
+                'label' => (string) ($row['label'] ?? ''),
+                'author_identity_id' => isset($row['author_identity_id']) ? (string) $row['author_identity_id'] : null,
+                'author_profile_slug' => isset($row['author_profile_slug']) ? (string) $row['author_profile_slug'] : null,
+                'author_username_token' => isset($row['author_username_token']) ? (string) $row['author_username_token'] : null,
+                'author_label' => (string) ($row['author_label'] ?? 'approved user'),
+                'author_is_approved' => (int) ($row['author_is_approved'] ?? 1),
+            ];
+        }
+
+        return $events;
+    }
+
+    private function tableExists(PDO $pdo, string $table): bool
+    {
+        $stmt = $pdo->prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = :name");
+        $stmt->execute(['name' => $table]);
+
+        return $stmt->fetchColumn() !== false;
     }
 
     /**

@@ -79,3 +79,17 @@
   - `php tests/run.php WriteApiSmokeTest::testApprovedLocalhostViewerSeesCodexHandoffButtonAndPreviewAfterDraft` passed.
 - Notes:
   - The browser creates or updates the in-card preview from the API response; it does not start Codex execution.
+
+## Stage 7 - Activity Audit Trail
+- Changes:
+  - Added durable `codex_handoff_events` records for handoff lifecycle transitions.
+  - Mirrored handoff events into the existing `activity` table when activity is available.
+  - Extended read-model rebuild to repopulate Codex handoff activity rows from durable handoff events.
+  - Added smoke coverage for request, draft-ready, and approved activity entries before and after rebuild.
+- Verification:
+  - `php -l src/ForumRewrite/Codex/CodexHandoffStore.php` passed.
+  - `php -l src/ForumRewrite/ReadModel/ReadModelBuilder.php` passed.
+  - `php -l tests/WriteApiSmokeTest.php` passed.
+  - `php tests/run.php CodexHandoffStoreTest WriteApiSmokeTest::testCodexHandoffLifecycleAppearsInActivityAndSurvivesRebuild` passed.
+- Notes:
+  - Activity entries summarize handoff state and origin post only; draft text, prompts, paths, and runner output stay out of activity.

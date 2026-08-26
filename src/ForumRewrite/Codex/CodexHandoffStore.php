@@ -85,6 +85,7 @@ final class CodexHandoffStore
         $this->insert($row);
         $stored = $this->findByHandoffId($row['handoff_id']) ?? $this->hydrate($row);
         $stored['requested'] = true;
+        $this->recordEvent($stored, 'requested', []);
 
         return $stored;
     }
@@ -131,7 +132,8 @@ final class CodexHandoffStore
         }
 
         $currentStatus = (string) $existing['status'];
-        if ($status !== $currentStatus && !in_array($status, self::TRANSITIONS[$currentStatus] ?? [], true)) {
+        $statusChanged = $status !== $currentStatus;
+        if ($statusChanged && !in_array($status, self::TRANSITIONS[$currentStatus] ?? [], true)) {
             throw new RuntimeException('Invalid Codex handoff status transition: ' . $currentStatus . ' to ' . $status);
         }
 
@@ -181,7 +183,12 @@ final class CodexHandoffStore
         );
         $stmt->execute($values);
 
-        return $this->findByHandoffId($handoffId) ?? [];
+        $updated = $this->findByHandoffId($handoffId) ?? [];
+        if ($statusChanged && $updated !== []) {
+            $this->recordEvent($updated, $status, $context);
+        }
+
+        return $updated;
     }
 
     private function ensureSchema(): void
@@ -220,6 +227,27 @@ final class CodexHandoffStore
         $this->pdo->exec(
             'CREATE INDEX IF NOT EXISTS codex_handoffs_origin_post_idx
              ON codex_handoffs (origin_post_id)'
+        );
+        $this->pdo->exec(
+            'CREATE TABLE IF NOT EXISTS codex_handoff_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                handoff_id TEXT NOT NULL,
+                event_status TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                origin_post_id TEXT NOT NULL,
+                origin_thread_id TEXT NOT NULL,
+                label TEXT NOT NULL,
+                author_identity_id TEXT NULL,
+                author_profile_slug TEXT NULL,
+                author_username_token TEXT NULL,
+                author_label TEXT NOT NULL,
+                author_is_approved INTEGER NOT NULL DEFAULT 1,
+                context_json TEXT NOT NULL DEFAULT \'{}\'
+            )'
+        );
+        $this->pdo->exec(
+            'CREATE INDEX IF NOT EXISTS codex_handoff_events_recent_idx
+             ON codex_handoff_events (created_at DESC, id DESC)'
         );
     }
 
@@ -322,9 +350,140 @@ final class CodexHandoffStore
         return 'codex-handoff-' . gmdate('YmdHis', strtotime($now) ?: time()) . '-' . bin2hex(random_bytes(4));
     }
 
+    /**
+     * @param array<string, mixed> $handoff
+     * @param array<string, mixed> $context
+     */
+    private function recordEvent(array $handoff, string $status, array $context): void
+    {
+        $now = gmdate('c');
+        $author = $this->eventAuthor($handoff, $status, $context);
+        $event = [
+            'handoff_id' => (string) ($handoff['handoff_id'] ?? ''),
+            'event_status' => $status,
+            'created_at' => $now,
+            'origin_post_id' => (string) ($handoff['origin_post_id'] ?? ''),
+            'origin_thread_id' => (string) ($handoff['origin_thread_id'] ?? ''),
+            'label' => $this->eventLabel($handoff, $status),
+            'author_identity_id' => $author['identity_id'],
+            'author_profile_slug' => $author['profile_slug'],
+            'author_username_token' => $this->usernameToken($author['username']),
+            'author_label' => $author['username'],
+            'author_is_approved' => 1,
+            'context_json' => $this->encode($context),
+        ];
+
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO codex_handoff_events (
+                handoff_id, event_status, created_at, origin_post_id, origin_thread_id,
+                label, author_identity_id, author_profile_slug, author_username_token,
+                author_label, author_is_approved, context_json
+             ) VALUES (
+                :handoff_id, :event_status, :created_at, :origin_post_id, :origin_thread_id,
+                :label, :author_identity_id, :author_profile_slug, :author_username_token,
+                :author_label, :author_is_approved, :context_json
+             )'
+        );
+        $stmt->execute($event);
+        $this->insertActivityEvent($event);
+    }
+
+    /**
+     * @param array<string, mixed> $event
+     */
+    private function insertActivityEvent(array $event): void
+    {
+        if (!$this->tableExists('activity')) {
+            return;
+        }
+
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO activity (
+                created_at, kind, post_id, thread_id, label, board_tags_json,
+                author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved,
+                source_path, source_commit_sha
+             ) VALUES (
+                :created_at, :kind, :post_id, :thread_id, :label, :board_tags_json,
+                :author_identity_id, :author_profile_slug, :author_username_token, :author_label, :author_is_approved,
+                NULL, NULL
+             )'
+        );
+        $stmt->execute([
+            'created_at' => (string) $event['created_at'],
+            'kind' => 'codex_handoff',
+            'post_id' => (string) $event['origin_post_id'],
+            'thread_id' => (string) $event['origin_thread_id'],
+            'label' => (string) $event['label'],
+            'board_tags_json' => '["codex","handoff"]',
+            'author_identity_id' => $event['author_identity_id'],
+            'author_profile_slug' => $event['author_profile_slug'],
+            'author_username_token' => $event['author_username_token'],
+            'author_label' => (string) $event['author_label'],
+            'author_is_approved' => (int) $event['author_is_approved'],
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $handoff
+     * @param array<string, mixed> $context
+     * @return array{identity_id:?string,profile_slug:?string,username:string}
+     */
+    private function eventAuthor(array $handoff, string $status, array $context): array
+    {
+        $prefix = $status === 'approved' ? 'approved_by' : ($status === 'rejected' ? 'rejected_by' : '');
+        if ($prefix !== '') {
+            return [
+                'identity_id' => isset($context[$prefix . '_identity_id']) ? (string) $context[$prefix . '_identity_id'] : null,
+                'profile_slug' => isset($context[$prefix . '_profile_slug']) ? (string) $context[$prefix . '_profile_slug'] : null,
+                'username' => isset($context[$prefix . '_username']) ? (string) $context[$prefix . '_username'] : 'approved user',
+            ];
+        }
+
+        return [
+            'identity_id' => (string) ($handoff['requester_identity_id'] ?? '') ?: null,
+            'profile_slug' => (string) ($handoff['requester_profile_slug'] ?? '') ?: null,
+            'username' => (string) ($handoff['requester_username'] ?? '') ?: 'approved user',
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $handoff
+     */
+    private function eventLabel(array $handoff, string $status): string
+    {
+        $postId = (string) ($handoff['origin_post_id'] ?? '');
+        return match ($status) {
+            'requested' => 'Requested Codex handoff for post ' . $postId,
+            'draft_ready' => 'Codex handoff draft ready for post ' . $postId,
+            'approved' => 'Approved Codex handoff for post ' . $postId,
+            'rejected' => 'Rejected Codex handoff for post ' . $postId,
+            'running' => 'Started Codex handoff for post ' . $postId,
+            'completed' => 'Completed Codex handoff for post ' . $postId,
+            'failed' => 'Codex handoff failed for post ' . $postId,
+            default => 'Updated Codex handoff for post ' . $postId,
+        };
+    }
+
+    private function usernameToken(string $username): ?string
+    {
+        $token = strtolower(trim($username));
+        $token = preg_replace('/[^a-z0-9]+/', '-', $token) ?? '';
+        $token = trim($token, '-');
+
+        return $token !== '' ? $token : null;
+    }
+
     private function encode(mixed $value): string
     {
         return json_encode(is_array($value) ? $value : [], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+    }
+
+    private function tableExists(string $table): bool
+    {
+        $stmt = $this->pdo->prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = :name");
+        $stmt->execute(['name' => $table]);
+
+        return $stmt->fetchColumn() !== false;
     }
 
     /**

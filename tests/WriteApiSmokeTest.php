@@ -12,6 +12,7 @@ use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
+use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
@@ -498,6 +499,49 @@ PHP);
             assertSame('draft_ready', $created['handoff_status']);
             assertSame('ok', $rejected['status']);
             assertSame('rejected', $rejected['handoff_status']);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
+    public function testCodexHandoffLifecycleAppearsInActivityAndSurvivesRebuild(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost';
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Codex%20Activity&body=Please%20prepare%20a%20Codex%20handoff%20with%20activity%20audit%20entries.'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $created = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+            $approved = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/codex_handoff_approval?handoff_id=' . rawurlencode($created['handoff_id']) . '&decision=approve'
+            ), true);
+            $activity = $this->renderMethod($application, 'GET', '/activity/?view=all');
+
+            (new ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot), 'codex-handoff-test'))->rebuild();
+            $rebuiltActivity = $this->renderMethod($application, 'GET', '/activity/?view=all');
+
+            assertSame('approved', $approved['handoff_status']);
+            assertStringContains('codex_handoff', $activity);
+            assertStringContains('Requested Codex handoff for post ' . $postId, $activity);
+            assertStringContains('Codex handoff draft ready for post ' . $postId, $activity);
+            assertStringContains('Approved Codex handoff for post ' . $postId, $activity);
+            assertStringContains('/posts/' . $postId, $activity);
+            assertStringContains('codex_handoff', $rebuiltActivity);
+            assertStringContains('Requested Codex handoff for post ' . $postId, $rebuiltActivity);
+            assertStringContains('Codex handoff draft ready for post ' . $postId, $rebuiltActivity);
+            assertStringContains('Approved Codex handoff for post ' . $postId, $rebuiltActivity);
         } finally {
             $_SERVER = $originalServer;
             $_COOKIE = [];
