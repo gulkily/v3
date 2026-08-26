@@ -54,7 +54,7 @@ register_shutdown_function(
             return;
         }
 
-        printSlowestTests($testDurations, $currentTest, $currentTestStartedAt, true, STDERR);
+        printSlowTestsOverThreshold($testDurations, $currentTest, $currentTestStartedAt, true, STDERR);
     }
 );
 
@@ -63,7 +63,7 @@ if (function_exists('pcntl_async_signals') && function_exists('pcntl_signal')) {
     foreach ([SIGINT, SIGTERM] as $signal) {
         pcntl_signal($signal, static function (int $receivedSignal) use (&$testDurations, &$currentTest, &$currentTestStartedAt, &$timingReportPrinted): void {
             fwrite(STDERR, "\nInterrupted by signal {$receivedSignal}.\n");
-            printSlowestTests($testDurations, $currentTest, $currentTestStartedAt, true, STDERR);
+            printSlowTestsOverThreshold($testDurations, $currentTest, $currentTestStartedAt, true, STDERR);
             exit(128 + $receivedSignal);
         });
     }
@@ -118,12 +118,12 @@ if ($filters !== [] && $runCount === 0) {
 }
 
 if ($failures !== []) {
-    printSlowestTests($testDurations, null, null, false, STDOUT);
+    printSlowTestsOverThreshold($testDurations, null, null, false, STDOUT);
     exit(1);
 }
 
 fwrite(STDOUT, "All tests passed.\n");
-printSlowestTests($testDurations, null, null, false, STDOUT);
+printSlowTestsOverThreshold($testDurations, null, null, false, STDOUT);
 
 /**
  * @param list<string> $filters
@@ -147,7 +147,7 @@ function shouldRunClass(string $class, array $filters): bool
 /**
  * @param array<string, float> $testDurations
  */
-function printSlowestTests(
+function printSlowTestsOverThreshold(
     array $testDurations,
     ?string $currentTest,
     ?int $currentTestStartedAt,
@@ -161,8 +161,13 @@ function printSlowestTests(
     }
 
     $timingReportPrinted = true;
+    $thresholdSeconds = slowTestReportThresholdSeconds();
     $rows = [];
     foreach ($testDurations as $testName => $seconds) {
+        if ($seconds < $thresholdSeconds) {
+            continue;
+        }
+
         $rows[] = [
             'name' => $testName,
             'seconds' => $seconds,
@@ -171,11 +176,18 @@ function printSlowestTests(
     }
 
     if ($currentTest !== null && $currentTestStartedAt !== null) {
-        $rows[] = [
-            'name' => $currentTest,
-            'seconds' => (hrtime(true) - $currentTestStartedAt) / 1_000_000_000,
-            'running' => true,
-        ];
+        $currentSeconds = (hrtime(true) - $currentTestStartedAt) / 1_000_000_000;
+        if ($currentSeconds >= $thresholdSeconds) {
+            $rows[] = [
+                'name' => $currentTest,
+                'seconds' => $currentSeconds,
+                'running' => true,
+            ];
+        }
+    }
+
+    if ($rows === []) {
+        return;
     }
 
     usort(
@@ -183,10 +195,11 @@ function printSlowestTests(
         static fn (array $left, array $right): int => $right['seconds'] <=> $left['seconds']
     );
 
-    $limit = slowTestReportLimit();
-    $title = $partial ? 'Slowest tests so far:' : 'Slowest tests:';
+    $title = $partial
+        ? sprintf('Tests at or above %.2f seconds so far:', $thresholdSeconds)
+        : sprintf('Tests at or above %.2f seconds:', $thresholdSeconds);
     fwrite($stream, $title . "\n");
-    foreach (array_slice($rows, 0, $limit) as $index => $row) {
+    foreach ($rows as $index => $row) {
         $suffix = $row['running'] ? ' (running when interrupted)' : '';
         fwrite(
             $stream,
@@ -201,14 +214,18 @@ function printSlowestTests(
     }
 }
 
-function slowTestReportLimit(): int
+function slowTestReportThresholdSeconds(): float
 {
-    $rawLimit = getenv('FORUM_TEST_SLOW_REPORT_LIMIT');
-    if ($rawLimit === false || $rawLimit === '') {
-        return 10;
+    $rawThreshold = getenv('FORUM_TEST_SLOW_REPORT_THRESHOLD_SECONDS');
+    if ($rawThreshold === false || trim($rawThreshold) === '') {
+        return 5.0;
     }
 
-    return max(1, (int) $rawLimit);
+    if (!is_numeric($rawThreshold)) {
+        return 5.0;
+    }
+
+    return max(0.0, (float) $rawThreshold);
 }
 
 /**

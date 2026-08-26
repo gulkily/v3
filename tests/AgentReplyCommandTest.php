@@ -41,6 +41,28 @@ final class AgentReplyCommandTest
         assertSame('', $stderr);
     }
 
+    public function testAgentReplyLiveTestRejectsStubProviderConfig(): void
+    {
+        $secretsPath = sys_get_temp_dir() . '/forum-rewrite-agent-reply-stub-' . bin2hex(random_bytes(6)) . '.php';
+        file_put_contents(
+            $secretsPath,
+            "<?php\n\nreturn [\n    'LLM_PROVIDER' => 'stub',\n    'LLM_API_KEY' => 'test-key',\n];\n"
+        );
+
+        try {
+            [$exitCode, $stdout, $stderr] = $this->runCommand(
+                dirname(__DIR__),
+                'FORUM_SECRETS_PATH=' . escapeshellarg($secretsPath) . ' ./v3 agent-reply test --timeout=1'
+            );
+
+            assertSame(1, $exitCode);
+            assertStringContains('Provider: stub', $stdout);
+            assertStringContains('LLM_PROVIDER is stub; configure a live provider/API key', $stderr);
+        } finally {
+            @unlink($secretsPath);
+        }
+    }
+
     /**
      * @return array{0:int, 1:string, 2:string}
      */

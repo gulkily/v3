@@ -95,7 +95,7 @@ final class WriteApiSmokeTest
     public function testPostAnalysisEndpointStoresStubResultIdempotently(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -181,7 +181,7 @@ final class WriteApiSmokeTest
             assertStringContains('Suggested response:', $approvedThreadPage);
             assertFalse(is_dir($repositoryRoot . '/records/post-analyses'));
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -208,7 +208,7 @@ final class WriteApiSmokeTest
     public function testUnicodeRiskAnalysisFlagsMixedScriptIdentifierForApprovedViewersOnly(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
         putenv('FORUM_UNICODE_AUTHORED_TEXT=true');
 
         try {
@@ -240,7 +240,7 @@ final class WriteApiSmokeTest
             assertStringContains('confusable_identifier_like_text', $approvedPostPage);
             assertStringNotContains('Unicode risk:', $anonymousPostPage);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             putenv('FORUM_UNICODE_AUTHORED_TEXT');
             $_COOKIE = [];
         }
@@ -249,7 +249,7 @@ final class WriteApiSmokeTest
     public function testPostAnalysisContextIncludesRelatedCrossThreadContent(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
         putenv('DEDALUS_AGENT_REPLIES_ENABLED=false');
 
         try {
@@ -305,7 +305,7 @@ final class WriteApiSmokeTest
             assertStringContains('/posts/' . $relatedPostId, $approvedPostPage);
             assertSame(false, in_array($targetPostId, array_column($relatedContent, 'post_id'), true));
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             putenv('DEDALUS_AGENT_REPLIES_ENABLED');
             $_COOKIE = [];
         }
@@ -693,7 +693,7 @@ PHP);
     public function testGenerateAgentReplyReportsFailedAnalysisAsRequired(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -720,7 +720,7 @@ PHP);
             assertSame('failed', $row['request_context']['agent_reply_skip']['analysis_status']);
             assertSame('provider_error', $row['request_context']['agent_reply_skip']['failure_code']);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -728,7 +728,7 @@ PHP);
     public function testGenerateAgentReplyRejectsLowRespondabilityHighRiskHighModerationAndPrivateResponse(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -771,7 +771,7 @@ PHP);
             assertSame('not_recommended', $private['generation_status']);
             assertSame('response_not_public', $private['reason']);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -779,7 +779,7 @@ PHP);
     public function testAnalyzePostGateFailureUsesCompactVisibilityRules(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -812,7 +812,7 @@ PHP);
             assertSame($postCountBefore, $postCountAfter);
             assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM sqlite_master WHERE type = "table" AND name = "post_generated_responses"')->fetchColumn());
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -820,7 +820,7 @@ PHP);
     public function testGenerateAgentReplyRejectsAgentAuthoredTarget(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $identity = (new AgentIdentityService(
@@ -845,7 +845,7 @@ PHP);
             assertSame('not_recommended', $response['generation_status']);
             assertSame('agent_loop_prevention', $response['reason']);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -853,7 +853,7 @@ PHP);
     public function testClaimedAgentReplyRequestAnalyzesAndPublishes(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -885,7 +885,7 @@ PHP);
             assertSame('already_posted', $second['generation_status']);
             assertSame($postCountAfter, $this->countCanonicalPostFiles($repositoryRoot));
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -893,7 +893,7 @@ PHP);
     public function testClaimedAgentReplyRequestStoresGateSkip(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -915,7 +915,7 @@ PHP);
             assertSame('skipped', $row['status']);
             assertSame('respondability_score_low', $row['failure_code']);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -923,7 +923,7 @@ PHP);
     public function testAgentReplyRequestCommandProcessesQueuedRequestOnce(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
         putenv('FORUM_PUBLIC_ARTIFACT_ROOT=' . $artifactRoot);
 
         try {
@@ -980,7 +980,7 @@ PHP);
             assertSame('posted', $quietRow['status']);
             assertSame(true, is_string($quietRow['agent_post_id']) && $quietRow['agent_post_id'] !== '');
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             putenv('FORUM_PUBLIC_ARTIFACT_ROOT');
             $_COOKIE = [];
         }
@@ -989,7 +989,7 @@ PHP);
     public function testGenerateAgentReplyCreatesCanonicalReplyAndIsIdempotent(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -1051,7 +1051,7 @@ PHP);
             assertStringContains('Author: reply-agent', $activity);
             assertStringContains('automated reply agent', $activity);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -1059,7 +1059,7 @@ PHP);
     public function testGenerateAgentReplyPreservesVisibleUnicodeWhenAuthoredTextFlagIsEnabled(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
         putenv('FORUM_UNICODE_AUTHORED_TEXT=true');
 
         try {
@@ -1088,7 +1088,7 @@ PHP);
             assertStringContains("'Хорошо'", $replyRecord);
             assertStringContains('Хорошо', $postPage);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             putenv('FORUM_UNICODE_AUTHORED_TEXT');
             $_COOKIE = [];
         }
@@ -1097,7 +1097,7 @@ PHP);
     public function testGenerateAgentReplyPersistsThreadCommentContext(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -1140,7 +1140,7 @@ PHP);
             assertSame(true, $context['thread_comments'][1]['is_target']);
             assertSame(false, $context['thread_comments'][1]['is_parent']);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -1148,7 +1148,7 @@ PHP);
     public function testGenerateAgentReplyDoesNotStartWhenGenerationIsAlreadyPending(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -1173,7 +1173,7 @@ PHP);
             assertSame('pending', $row['status']);
             assertSame(null, $row['agent_post_id']);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -1237,7 +1237,7 @@ PHP);
     public function testGenerateAgentReplyRespectsDisabledConfig(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
         putenv('DEDALUS_AGENT_REPLIES_ENABLED=false');
 
         try {
@@ -1264,7 +1264,7 @@ PHP);
             assertSame($postCountBefore, $postCountAfter);
             assertSame(1, $rowCount);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             putenv('DEDALUS_AGENT_REPLIES_ENABLED');
             $_COOKIE = [];
         }
@@ -1273,7 +1273,7 @@ PHP);
     public function testGenerateAgentReplyRecordsPostingFailureAfterGeneration(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -1296,7 +1296,7 @@ PHP);
             assertStringContains('Writable repository must be a git checkout', $row['failure_message']);
             assertSame(null, $row['agent_post_id']);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -2489,7 +2489,7 @@ PHP);
     public function testApprovedFlagOnReplyAgentPostHidesPublicSurfaces(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -2518,7 +2518,7 @@ PHP);
             assertStringContains('post not found', $postApi);
             assertStringNotContains($agentPostId, $activity);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -3433,6 +3433,38 @@ PHP);
             } else {
                 putenv('DEDALUS_AGENT_REPLIES_ENABLED=' . $previous);
             }
+        }
+    }
+
+    /**
+     * @return array<string, string|false>
+     */
+    private function useStubLlmProvider(): array
+    {
+        $previous = [
+            'LLM_PROVIDER' => getenv('LLM_PROVIDER'),
+            'DEDALUS_ANALYSIS_MODE' => getenv('DEDALUS_ANALYSIS_MODE'),
+        ];
+
+        putenv('LLM_PROVIDER=stub');
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+
+        return $previous;
+    }
+
+    /**
+     * @param array<string, string|false> $previous
+     */
+    private function restoreLlmProviderEnv(array $previous): void
+    {
+        foreach (['LLM_PROVIDER', 'DEDALUS_ANALYSIS_MODE'] as $key) {
+            $value = $previous[$key] ?? false;
+            if ($value === false) {
+                putenv($key);
+                continue;
+            }
+
+            putenv($key . '=' . $value);
         }
     }
 

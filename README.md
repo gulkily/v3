@@ -193,3 +193,7 @@ Run the current parser, rebuild, and app smoke tests:
 ```bash
 ./v3 test
 ```
+
+The custom test runner reports tests that take at least 5 seconds by default.
+Override the cutoff with `FORUM_TEST_SLOW_REPORT_THRESHOLD_SECONDS`, for example
+`FORUM_TEST_SLOW_REPORT_THRESHOLD_SECONDS=1 ./v3 test`.
