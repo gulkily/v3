@@ -40,7 +40,7 @@ final class Application
     private const ACTIVITY_ITEM_LIMIT = 100;
     private const THREAD_CONTEXT_COMMENT_BODY_LIMIT = 3000;
     private const THREAD_CONTEXT_TOTAL_BODY_LIMIT = 18000;
-    private const CODEX_HANDOFF_BOARD_TAGS = ['feature', 'bug', 'task', 'dev', 'development', 'codex', 'implementation', 'fdp'];
+    private const CODEX_HANDOFF_DEVELOPMENT_TAGS = ['feature', 'bug', 'task', 'dev', 'development', 'codex', 'implementation', 'fdp'];
     private ?string $appVersion = null;
     private ?FeatureFlagEvaluator $featureFlags = null;
 
@@ -768,7 +768,7 @@ final class Application
         $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $this->fetchAgentReplyGenerationsForPosts($posts);
         $codexHandoffsByPostId = $viewerCanUseCodexHandoff ? $this->fetchCodexHandoffsForPosts($posts) : [];
-        $codexHandoffEligiblePostIds = $viewerCanUseCodexHandoff ? $this->codexHandoffEligiblePostIds($posts) : [];
+        $codexHandoffEligiblePostIds = $viewerCanUseCodexHandoff ? $this->codexHandoffEligiblePostIds($posts, $threadRow) : [];
 
         return $this->renderPageTemplate(
             'thread.php',
@@ -842,7 +842,8 @@ final class Application
         $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $this->fetchAgentReplyGenerationsForPosts($posts);
         $codexHandoffsByPostId = $viewerCanUseCodexHandoff ? $this->fetchCodexHandoffsForPosts($posts) : [];
-        $codexHandoffEligiblePostIds = $viewerCanUseCodexHandoff ? $this->codexHandoffEligiblePostIds($posts) : [];
+        $threadRow = $this->fetchThread((string) $post['thread_id']);
+        $codexHandoffEligiblePostIds = $viewerCanUseCodexHandoff ? $this->codexHandoffEligiblePostIds($posts, $threadRow) : [];
 
         return $this->renderPageTemplate(
             'post.php',
@@ -2555,13 +2556,14 @@ final class Application
 
     /**
      * @param array<int, array<string, mixed>> $posts
+     * @param array<string, mixed>|null $thread
      * @return array<string, bool>
      */
-    private function codexHandoffEligiblePostIds(array $posts): array
+    private function codexHandoffEligiblePostIds(array $posts, ?array $thread = null): array
     {
         $eligible = [];
         foreach ($posts as $post) {
-            if ($this->postCanUseCodexHandoffTarget($post)) {
+            if ($this->postCanUseCodexHandoffTarget($post, $thread)) {
                 $eligible[(string) ($post['post_id'] ?? '')] = true;
             }
         }
@@ -2571,16 +2573,39 @@ final class Application
 
     /**
      * @param array<string, mixed> $post
+     * @param array<string, mixed>|null $thread
      */
-    private function postCanUseCodexHandoffTarget(array $post): bool
+    private function postCanUseCodexHandoffTarget(array $post, ?array $thread = null): bool
     {
         if ((string) ($post['author_label'] ?? '') === AgentIdentityService::USERNAME) {
             return false;
         }
 
-        $boardTags = $this->decodeStringList((string) ($post['board_tags_json'] ?? '[]'));
-        foreach ($boardTags as $tag) {
-            if (in_array(strtolower($tag), self::CODEX_HANDOFF_BOARD_TAGS, true)) {
+        if ($this->hasCodexHandoffTag($this->decodeStringList((string) ($post['board_tags_json'] ?? '[]')))) {
+            return true;
+        }
+
+        if ((string) ($post['post_id'] ?? '') !== (string) ($post['thread_id'] ?? '')) {
+            return false;
+        }
+
+        $threadLabels = [];
+        if ($thread !== null) {
+            $threadLabels = is_array($thread['thread_labels'] ?? null)
+                ? array_map('strval', $thread['thread_labels'])
+                : $this->decodeStringList((string) ($thread['thread_labels_json'] ?? '[]'));
+        }
+
+        return $this->hasCodexHandoffTag($threadLabels);
+    }
+
+    /**
+     * @param list<string> $tags
+     */
+    private function hasCodexHandoffTag(array $tags): bool
+    {
+        foreach ($tags as $tag) {
+            if (in_array(strtolower($tag), self::CODEX_HANDOFF_DEVELOPMENT_TAGS, true)) {
                 return true;
             }
         }
@@ -3335,8 +3360,9 @@ final class Application
                 $this->sendJson(['status' => 'error', 'error' => 'codex handoff target is not eligible'], 400, $headersWithTimings());
                 return;
             }
-            if (!$this->postCanUseCodexHandoffTarget($post)) {
-                $this->sendJson(['status' => 'error', 'error' => 'codex handoff target requires a development board tag'], 400, $headersWithTimings());
+            $thread = $this->fetchThread((string) ($post['thread_id'] ?? ''));
+            if (!$this->postCanUseCodexHandoffTarget($post, $thread)) {
+                $this->sendJson(['status' => 'error', 'error' => 'codex handoff target requires a development tag or thread label'], 400, $headersWithTimings());
                 return;
             }
 

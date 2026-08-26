@@ -505,7 +505,7 @@ PHP);
         }
     }
 
-    public function testCodexHandoffRequiresDevelopmentBoardTagInApiAndUi(): void
+    public function testCodexHandoffRequiresDevelopmentTagOrThreadLabelInApiAndUi(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $originalServer = $_SERVER;
@@ -527,7 +527,74 @@ PHP);
 
             assertStringNotContains('data-action="request-codex-handoff"', $threadPage);
             assertSame('error', $response['status']);
-            assertSame('codex handoff target requires a development board tag', $response['error']);
+            assertSame('codex handoff target requires a development tag or thread label', $response['error']);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
+    public function testCodexHandoffAllowsDevelopmentThreadLabelsOnRootPost(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost';
+            unset($_SERVER['SERVER_NAME'], $_SERVER['REMOTE_ADDR']);
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Root%20Task%20Label&body='
+                . rawurlencode("Please prepare this for Codex.\n#task\n")
+            );
+            $rootPostId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($rootPostId));
+            $created = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($rootPostId)), true);
+
+            assertStringContains('Labels: task', $threadPage);
+            assertStringContains('data-action="request-codex-handoff"', $threadPage);
+            assertSame('ok', $created['status']);
+            assertSame('draft_ready', $created['handoff_status']);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
+    public function testCodexHandoffReplyAddedThreadLabelShowsRootButtonOnly(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost';
+            unset($_SERVER['SERVER_NAME'], $_SERVER['REMOTE_ADDR']);
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Reply%20Task%20Label&body=This%20starts%20as%20a%20general%20thread.'
+            );
+            $threadId = $this->extractValue($threadResponse, 'thread_id');
+            $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_reply?thread_id=' . rawurlencode($threadId) . '&parent_id=' . rawurlencode($threadId) . '&body='
+                . rawurlencode("This reply marks the thread for implementation.\n#task\n")
+            );
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($threadId));
+            $created = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($threadId)), true);
+
+            assertStringContains('Labels: task', $threadPage);
+            assertSame(1, substr_count($threadPage, 'data-action="request-codex-handoff"'));
+            assertSame('ok', $created['status']);
+            assertSame('draft_ready', $created['handoff_status']);
         } finally {
             $_SERVER = $originalServer;
             $_COOKIE = [];

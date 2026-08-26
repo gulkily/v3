@@ -126,7 +126,9 @@ case "${COMMAND}" in
           CodexHandoffRunnerTest \
           WriteApiSmokeTest::testCodexHandoffApiRequiresApprovedLocalhostAndPreparesDraft \
           WriteApiSmokeTest::testCodexHandoffApiRejectsNonLocalhostAndSupportsRejectDecision \
-          WriteApiSmokeTest::testCodexHandoffRequiresDevelopmentBoardTagInApiAndUi \
+          WriteApiSmokeTest::testCodexHandoffRequiresDevelopmentTagOrThreadLabelInApiAndUi \
+          WriteApiSmokeTest::testCodexHandoffAllowsDevelopmentThreadLabelsOnRootPost \
+          WriteApiSmokeTest::testCodexHandoffReplyAddedThreadLabelShowsRootButtonOnly \
           WriteApiSmokeTest::testCodexHandoffLifecycleAppearsInActivityAndSurvivesRebuild \
           WriteApiSmokeTest::testApprovedLocalhostViewerSeesCodexHandoffButtonAndPreviewAfterDraft \
           WriteApiSmokeTest::testPostAnalysisScriptBindsCodexHandoffActions \
