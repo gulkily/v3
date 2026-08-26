@@ -24,3 +24,16 @@
   - `php tests/run.php CodexHandoffStoreTest` passed.
 - Notes:
   - Stage 2 intentionally keeps the handoff store separate from agent-reply generation state so code automation cannot be confused with public reply publishing.
+
+## Stage 3 - Handoff Draft Preparation
+- Changes:
+  - Added `CodexHandoffDraftService` to prepare a user story, FDP Step 1 solution assessment, implementation-confidence summary, and combined draft text.
+  - Kept drafting deterministic and side-effect free so no Codex execution or live provider call starts during draft preparation.
+  - Added focused draft-service tests and registered them in the test runner.
+- Verification:
+  - `php -l src/ForumRewrite/Codex/CodexHandoffDraftService.php` passed.
+  - `php -l tests/CodexHandoffDraftServiceTest.php` passed.
+  - `php -l tests/run.php` passed.
+  - `php tests/run.php CodexHandoffDraftServiceTest` passed.
+- Notes:
+  - Confidence wording is heuristic for V1 and intentionally conservative when requests mention execution, authorization, approval, security, schema, or audit concerns.
