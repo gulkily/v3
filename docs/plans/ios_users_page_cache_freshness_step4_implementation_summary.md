@@ -10,3 +10,13 @@
   - `php tests/run.php --filter LocalAppSmokeTest` passed.
 - Notes:
   - The invalidation remains route/data driven and does not add user-agent-specific behavior.
+
+## Stage 2 - Static Users Route Preservation
+- Changes:
+  - Added regression coverage that both `/users/` and `/users` serve the same current static HTML artifact.
+  - Left front-controller and artifact-builder route eligibility unchanged.
+- Verification:
+  - `php -l tests/LocalAppSmokeTest.php` passed.
+  - `php tests/run.php --filter LocalAppSmokeTest` passed.
+- Notes:
+  - `/users/` remains eligible for anonymous, queryless static serving when the artifact is current.

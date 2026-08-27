@@ -1411,6 +1411,10 @@ final class LocalAppSmokeTest
         assertStringContains('Users', $usersResponse);
         assertStringContains('route-source: static-html', $usersResponse);
 
+        $usersNoSlashResponse = $this->renderFrontController($controller, 'GET', '/users', []);
+        assertSame($usersResponse, $usersNoSlashResponse);
+        assertStringContains('route-source: static-html', $usersNoSlashResponse);
+
         $tagsResponse = $this->renderFrontController($controller, 'GET', '/tags/', []);
         assertStringContains('class="nav-link is-active" href="/tags/"', $tagsResponse);
         assertStringContains('route-source: static-html', $tagsResponse);
