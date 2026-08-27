@@ -12,6 +12,7 @@ use ForumRewrite\Host\FrontController;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
+use ForumRewrite\Write\StaticArtifactInvalidator;
 
 final class LocalAppSmokeTest
 {
@@ -1522,6 +1523,51 @@ final class LocalAppSmokeTest
         assertStringContains('site_feature_flag', $activityResponse);
         assertStringContains('Set feature flag FORUM_APP_VERSION_NOTIFICATION=false', $activityResponse);
         assertStringNotContains('stale activity', $activityResponse);
+    }
+
+    public function testUsersStaticArtifactsAreInvalidatedByDirectoryAffectingWrites(): void
+    {
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        mkdir($publicRoot . '/users', 0777, true);
+        mkdir($staticHtmlRoot . '/users', 0777, true);
+
+        $invalidations = [
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateBoardThread('thread-001');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateReply('thread-001', 'reply-001');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateProfile('openpgp-example');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateIdentityLink('openpgp-example', 'thread-001', 'post-001');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateApproval('openpgp-example', 'thread-001', 'post-001', 'approval-001');
+            },
+        ];
+
+        try {
+            foreach ($invalidations as $invalidate) {
+                file_put_contents($publicRoot . '/users.html', 'stale public users');
+                file_put_contents($publicRoot . '/users/index.html', 'stale public users index');
+                file_put_contents($staticHtmlRoot . '/users.html', 'stale alternate users');
+                file_put_contents($staticHtmlRoot . '/users/index.html', 'stale alternate users index');
+
+                $invalidate(new StaticArtifactInvalidator($publicRoot, $staticHtmlRoot));
+
+                assertFalse(is_file($publicRoot . '/users.html'));
+                assertFalse(is_file($publicRoot . '/users/index.html'));
+                assertFalse(is_file($staticHtmlRoot . '/users.html'));
+                assertFalse(is_file($staticHtmlRoot . '/users/index.html'));
+            }
+        } finally {
+            $this->deleteTree($publicRoot);
+            $this->deleteTree($staticHtmlRoot);
+        }
     }
 
     public function testDefaultRepositoryBootstrapCreatesWritableLocalRepository(): void
