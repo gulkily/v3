@@ -756,6 +756,275 @@ NODE;
         assertSame(false, $result['buttonDisabled']);
     }
 
+    public function testPrivateKeyImportHelpersDeriveAndSaveIdentityLocally(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const privateKey = '-----BEGIN PGP PRIVATE KEY BLOCK-----\nprivate fixture\n-----END PGP PRIVATE KEY BLOCK-----';
+const publicKey = '-----BEGIN PGP PUBLIC KEY BLOCK-----\npublic fixture\n-----END PGP PUBLIC KEY BLOCK-----';
+const state = {
+  localStore: {
+    forum_pki_published_fingerprint: 'OLDPUBLISHED',
+    forum_pki_compose_prompt_cancelled: '1'
+  },
+  setCalls: [],
+  removeCalls: [],
+  readPrivateKeyInput: ''
+};
+
+global.window = {
+  openpgp: {
+    async readPrivateKey(options) {
+      state.readPrivateKeyInput = options.armoredKey;
+      return {
+        getFingerprint() { return '0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'; },
+        getUserIDs() { return ['forum-user <forum@example.test>']; },
+        isDecrypted() { return true; },
+        toPublic() {
+          return {
+            async armor() { return publicKey; }
+          };
+        }
+      };
+    }
+  }
+};
+global.openpgp = global.window.openpgp;
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+  setItem(key, value) {
+    state.setCalls.push([key, String(value)]);
+    state.localStore[key] = String(value);
+  },
+  removeItem(key) {
+    state.removeCalls.push(key);
+    delete state.localStore[key];
+  }
+};
+global.document = {
+  addEventListener(){},
+  querySelector(){ return null; },
+  querySelectorAll(){ return []; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+
+window.__forumBrowserIdentity.deriveIdentityFromPrivateKey(privateKey).then((identity) => {
+  window.__forumBrowserIdentity.saveImportedBrowserIdentity(identity);
+  process.stdout.write(JSON.stringify({
+    identity,
+    localStore: state.localStore,
+    setCalls: state.setCalls,
+    removeCalls: state.removeCalls,
+    readPrivateKeyInput: state.readPrivateKeyInput
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame("-----BEGIN PGP PRIVATE KEY BLOCK-----\nprivate fixture\n-----END PGP PRIVATE KEY BLOCK-----\n", $result['readPrivateKeyInput']);
+        assertSame('forum-user', $result['identity']['username']);
+        assertSame("-----BEGIN PGP PUBLIC KEY BLOCK-----\npublic fixture\n-----END PGP PUBLIC KEY BLOCK-----\n", $result['identity']['publicKey']);
+        assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $result['identity']['fingerprint']);
+        assertSame('forum-user', $result['localStore']['forum_pki_username']);
+        assertSame("-----BEGIN PGP PRIVATE KEY BLOCK-----\nprivate fixture\n-----END PGP PRIVATE KEY BLOCK-----\n", $result['localStore']['forum_pki_private_key']);
+        assertSame("-----BEGIN PGP PUBLIC KEY BLOCK-----\npublic fixture\n-----END PGP PUBLIC KEY BLOCK-----\n", $result['localStore']['forum_pki_public_key']);
+        assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $result['localStore']['forum_pki_fingerprint']);
+        assertSame(false, array_key_exists('forum_pki_published_fingerprint', $result['localStore']));
+        assertSame(false, array_key_exists('forum_pki_compose_prompt_cancelled', $result['localStore']));
+        assertSame([
+            'forum_pki_published_fingerprint',
+            'forum_pki_compose_prompt_cancelled',
+        ], $result['removeCalls']);
+    }
+
+    public function testPrivateKeyImportRejectsNonPrivateKeyArmorWithoutStorageChanges(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  readPrivateKeyCalled: false,
+  setCalls: [],
+  removeCalls: []
+};
+
+global.window = {
+  openpgp: {
+    async readPrivateKey() {
+      state.readPrivateKeyCalled = true;
+      throw new Error('readPrivateKey should not be called');
+    }
+  }
+};
+global.localStorage = {
+  getItem(){ return null; },
+  setItem(key, value) { state.setCalls.push([key, String(value)]); },
+  removeItem(key) { state.removeCalls.push(key); }
+};
+global.document = {
+  addEventListener(){},
+  querySelector(){ return null; },
+  querySelectorAll(){ return []; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+
+window.__forumBrowserIdentity.deriveIdentityFromPrivateKey('not a private key').then(() => {
+  process.stderr.write('unexpected success');
+  process.exit(1);
+}).catch((error) => {
+  process.stdout.write(JSON.stringify({
+    message: error.message,
+    readPrivateKeyCalled: state.readPrivateKeyCalled,
+    setCalls: state.setCalls,
+    removeCalls: state.removeCalls
+  }));
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('Paste an armored OpenPGP private key block.', $result['message']);
+        assertSame(false, $result['readPrivateKeyCalled']);
+        assertSame([], $result['setCalls']);
+        assertSame([], $result['removeCalls']);
+    }
+
+    public function testPrivateKeyImportRejectsUnreadablePrivateKeyWithoutStorageChanges(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const privateKey = '-----BEGIN PGP PRIVATE KEY BLOCK-----\nbad fixture\n-----END PGP PRIVATE KEY BLOCK-----';
+const state = {
+  setCalls: [],
+  removeCalls: []
+};
+
+global.window = {
+  openpgp: {
+    async readPrivateKey() {
+      throw new Error('packet parse failed');
+    }
+  }
+};
+global.localStorage = {
+  getItem(){ return null; },
+  setItem(key, value) { state.setCalls.push([key, String(value)]); },
+  removeItem(key) { state.removeCalls.push(key); }
+};
+global.document = {
+  addEventListener(){},
+  querySelector(){ return null; },
+  querySelectorAll(){ return []; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+
+window.__forumBrowserIdentity.deriveIdentityFromPrivateKey(privateKey).then(() => {
+  process.stderr.write('unexpected success');
+  process.exit(1);
+}).catch((error) => {
+  process.stdout.write(JSON.stringify({
+    message: error.message,
+    technicalDetails: error.technicalDetails || '',
+    setCalls: state.setCalls,
+    removeCalls: state.removeCalls
+  }));
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('Could not read that private key. Paste an armored OpenPGP private key block.', $result['message']);
+        assertSame('packet parse failed', $result['technicalDetails']);
+        assertSame([], $result['setCalls']);
+        assertSame([], $result['removeCalls']);
+    }
+
+    public function testPrivateKeyImportRejectsEncryptedKeyWithoutStorageChanges(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const privateKey = '-----BEGIN PGP PRIVATE KEY BLOCK-----\nencrypted fixture\n-----END PGP PRIVATE KEY BLOCK-----';
+const state = {
+  setCalls: [],
+  removeCalls: [],
+  toPublicCalled: false
+};
+
+global.window = {
+  openpgp: {
+    async readPrivateKey() {
+      return {
+        getFingerprint() { return '0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'; },
+        getUserIDs() { return ['forum-user']; },
+        isDecrypted() { return false; },
+        toPublic() {
+          state.toPublicCalled = true;
+          return { async armor() { return 'public'; } };
+        }
+      };
+    }
+  }
+};
+global.localStorage = {
+  getItem(){ return null; },
+  setItem(key, value) { state.setCalls.push([key, String(value)]); },
+  removeItem(key) { state.removeCalls.push(key); }
+};
+global.document = {
+  addEventListener(){},
+  querySelector(){ return null; },
+  querySelectorAll(){ return []; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+
+window.__forumBrowserIdentity.deriveIdentityFromPrivateKey(privateKey).then(() => {
+  process.stderr.write('unexpected success');
+  process.exit(1);
+}).catch((error) => {
+  process.stdout.write(JSON.stringify({
+    message: error.message,
+    toPublicCalled: state.toPublicCalled,
+    setCalls: state.setCalls,
+    removeCalls: state.removeCalls
+  }));
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('That private key is passphrase protected. Import an unencrypted browser private key.', $result['message']);
+        assertSame(false, $result['toPublicCalled']);
+        assertSame([], $result['setCalls']);
+        assertSame([], $result['removeCalls']);
+    }
+
     public function testReadyIdentityRetriesTransientPublicKeyInspectionFailure(): void
     {
         $script = <<<'NODE'

@@ -1326,6 +1326,20 @@
     document.body.removeChild(textarea);
   }
 
+  async function readClipboardText() {
+    if (typeof navigator !== "undefined"
+      && navigator.clipboard
+      && typeof navigator.clipboard.readText === "function") {
+      return navigator.clipboard.readText();
+    }
+
+    if (typeof window.prompt === "function") {
+      return window.prompt("Paste your armored private key:", "") || "";
+    }
+
+    throw new Error("Clipboard read is unavailable. Paste the private key manually.");
+  }
+
   function setStatus(node, message, kind) {
     const technicalDetails = arguments.length > 3 && arguments[3] && typeof arguments[3].technicalDetails === "string"
       ? arguments[3].technicalDetails.trim()
@@ -1637,6 +1651,110 @@
     });
   }
 
+  function normalizedArmoredPrivateKey(text) {
+    const armored = normalizeNewlines(String(text || "")).trim();
+    if (armored === "") {
+      throw new Error("Paste an armored OpenPGP private key first.");
+    }
+
+    if (armored.indexOf("-----BEGIN PGP PRIVATE KEY BLOCK-----") === -1) {
+      throw new Error("Paste an armored OpenPGP private key block.");
+    }
+
+    return armored + "\n";
+  }
+
+  function privateKeyLooksDecrypted(privateKey) {
+    if (privateKey && typeof privateKey.isDecrypted === "function") {
+      return privateKey.isDecrypted();
+    }
+
+    if (privateKey && typeof privateKey.getKeys === "function") {
+      const keys = privateKey.getKeys();
+      if (Array.isArray(keys) && keys.length > 0) {
+        return keys.every(function (key) {
+          const packet = key && key.keyPacket ? key.keyPacket : null;
+          return !packet || typeof packet.isDecrypted !== "function" || packet.isDecrypted();
+        });
+      }
+    }
+
+    return true;
+  }
+
+  function usernameFromPrivateKey(privateKey) {
+    if (privateKey && typeof privateKey.getUserIDs === "function") {
+      const userIds = privateKey.getUserIDs();
+      if (Array.isArray(userIds) && userIds.length > 0) {
+        const firstUserId = String(userIds[0] || "").trim();
+        const displayName = firstUserId.replace(/\s*<[^>]*>\s*$/, "").trim();
+        return normalizeUsername(displayName || firstUserId || "guest");
+      }
+    }
+
+    return normalizeUsername(localStorage.getItem(storageKeys.username) || "guest");
+  }
+
+  async function armoredPublicKeyFromPrivateKey(privateKey) {
+    if (!privateKey || typeof privateKey.toPublic !== "function") {
+      throw new Error("Could not derive a public key from that private key.");
+    }
+
+    const publicKey = privateKey.toPublic();
+    if (typeof publicKey === "string") {
+      return normalizeNewlines(publicKey).trim() + "\n";
+    }
+
+    if (publicKey && typeof publicKey.armor === "function") {
+      return normalizeNewlines(String(await publicKey.armor())).trim() + "\n";
+    }
+
+    throw new Error("Could not export the derived public key.");
+  }
+
+  async function deriveIdentityFromPrivateKey(armoredPrivateKey) {
+    const privateKeyArmored = normalizedArmoredPrivateKey(armoredPrivateKey);
+    const openpgp = await ensureOpenPgpApi(["readPrivateKey"]);
+    let privateKey;
+
+    try {
+      privateKey = await openpgp.readPrivateKey({ armoredKey: privateKeyArmored });
+    } catch (error) {
+      throw buildFriendlyError(
+        "Could not read that private key. Paste an armored OpenPGP private key block.",
+        error instanceof Error ? error.message : String(error || "")
+      );
+    }
+
+    const fingerprint = String(privateKey && typeof privateKey.getFingerprint === "function"
+      ? privateKey.getFingerprint()
+      : "").trim().toUpperCase();
+    if (fingerprint === "") {
+      throw new Error("That private key is missing a readable fingerprint.");
+    }
+
+    if (!privateKeyLooksDecrypted(privateKey)) {
+      throw new Error("That private key is passphrase protected. Import an unencrypted browser private key.");
+    }
+
+    return {
+      username: usernameFromPrivateKey(privateKey),
+      publicKey: await armoredPublicKeyFromPrivateKey(privateKey),
+      privateKey: privateKeyArmored,
+      fingerprint: fingerprint,
+    };
+  }
+
+  function saveImportedBrowserIdentity(identity) {
+    localStorage.setItem(storageKeys.username, normalizeUsername(identity.username || "guest"));
+    localStorage.setItem(storageKeys.publicKey, normalizeNewlines(String(identity.publicKey || "")).trim() + "\n");
+    localStorage.setItem(storageKeys.privateKey, normalizedArmoredPrivateKey(identity.privateKey || ""));
+    localStorage.setItem(storageKeys.fingerprint, String(identity.fingerprint || "").trim().toUpperCase());
+    localStorage.removeItem(storageKeys.publishedFingerprint);
+    localStorage.removeItem(storageKeys.composePromptCancelled);
+    clearClearedKeypairBackup();
+  }
+
   function scheduleIdentityPrewarm(root) {
     if (identityPrewarmStarted || !pageHasSignedActionSurfaces(root)) {
       return false;
@@ -1934,6 +2052,9 @@
       classifyIdentityBootstrapFailure: classifyIdentityBootstrapFailure,
       statusFromError: statusFromError,
       ensureOpenPgpApi: ensureOpenPgpApi,
+      deriveIdentityFromPrivateKey: deriveIdentityFromPrivateKey,
+      saveImportedBrowserIdentity: saveImportedBrowserIdentity,
+      readClipboardText: readClipboardText,
     };
   }
 
