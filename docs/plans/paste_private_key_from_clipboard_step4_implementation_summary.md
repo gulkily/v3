@@ -31,3 +31,15 @@
   - `php tests/run.php BrowserSigningNormalizationTest::testAccountSetupPublishesGeneratedPublicKey BrowserSigningNormalizationTest::testAccountRestorePrivateKeyPublishesDerivedPublicKeyOnly BrowserSigningNormalizationTest::testAccountRestorePrivateKeyRollsBackWhenPublishFails` passed.
 - Notes:
   - Import link requests send only `public_key`; the tests assert the derived link body does not contain private key material.
+
+## Stage 4 - Regression Verification
+- Changes:
+  - Completed regression verification for the browser identity and account key restore surface.
+  - No additional implementation changes were needed in this stage.
+- Verification:
+  - `node --check public/assets/browser_signing.js` passed.
+  - `php -l templates/pages/account_key.php` passed.
+  - `php tests/run.php BrowserSigningNormalizationTest` passed.
+  - `php tests/run.php` passed.
+- Notes:
+  - Full-suite verification completed without unrelated failures in this environment.
