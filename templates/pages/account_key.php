@@ -47,6 +47,7 @@ if (is_array($viewerProfile)) {
           </div>
           <div class="button-row account-key-advanced-actions">
             <button type="button" data-action="load-browser-key">Load Saved Public Key</button>
+            <button type="button" data-action="restore-private-key">Restore Private Key</button>
             <button type="button" data-action="copy-public-key">Copy Public Key</button>
             <button type="button" data-action="copy-private-key">Copy Private Key</button>
             <button type="button" data-action="clear-browser-key">Clear Saved Keypair</button>
