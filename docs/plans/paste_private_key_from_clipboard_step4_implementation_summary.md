@@ -18,3 +18,16 @@
   - `php tests/run.php BrowserSigningNormalizationTest::testPrivateKeyImportHelpersDeriveAndSaveIdentityLocally BrowserSigningNormalizationTest::testPrivateKeyImportRejectsNonPrivateKeyArmorWithoutStorageChanges BrowserSigningNormalizationTest::testPrivateKeyImportRejectsUnreadablePrivateKeyWithoutStorageChanges BrowserSigningNormalizationTest::testPrivateKeyImportRejectsEncryptedKeyWithoutStorageChanges` passed.
 - Notes:
   - Private key material remains confined to local helper inputs and local storage; the helper stage does not add network behavior.
+
+## Stage 3 - Account Restore Wiring
+- Changes:
+  - Wired the restore private key control into the account key page binding.
+  - Added a transactional local identity swap: imported identities are saved only after validation, and previous local identity state is restored if publishing fails.
+  - Reused the existing public-key publish/link flow and simple account status mirroring for restored identities.
+  - Added account-page coverage for successful restore, public-key-only network body, ready status, field updates, button re-enable behavior, and publish-failure rollback.
+- Verification:
+  - `node --check public/assets/browser_signing.js` passed.
+  - `php -l templates/pages/account_key.php` passed.
+  - `php tests/run.php BrowserSigningNormalizationTest::testAccountSetupPublishesGeneratedPublicKey BrowserSigningNormalizationTest::testAccountRestorePrivateKeyPublishesDerivedPublicKeyOnly BrowserSigningNormalizationTest::testAccountRestorePrivateKeyRollsBackWhenPublishFails` passed.
+- Notes:
+  - Import link requests send only `public_key`; the tests assert the derived link body does not contain private key material.

@@ -117,6 +117,10 @@ No browser private key saved yet.
         return 'All set! Posting as ' + username + '.';
       }
 
+      if (rawMessage.indexOf('Restored browser keypair for ') === 0) {
+        return 'All set! Posting as ' + username + '.';
+      }
+
       if (rawMessage === 'Loaded the saved browser public key into the form.') {
         return 'Loaded your saved public key into the advanced form.';
       }

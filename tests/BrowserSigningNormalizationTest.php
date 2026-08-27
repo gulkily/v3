@@ -1025,6 +1025,389 @@ NODE;
         assertSame([], $result['removeCalls']);
     }
 
+    public function testAccountRestorePrivateKeyPublishesDerivedPublicKeyOnly(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const privateKey = '-----BEGIN PGP PRIVATE KEY BLOCK-----\nprivate fixture\n-----END PGP PRIVATE KEY BLOCK-----';
+const publicKey = '-----BEGIN PGP PUBLIC KEY BLOCK-----\npublic fixture\n-----END PGP PUBLIC KEY BLOCK-----';
+const fingerprint = '0168FF20EB09C3EA6193BD3C92A73AA7D20A0954';
+const state = {
+  localStore: {},
+  fetches: [],
+  domContentLoaded: null,
+  restoreClickHandler: null
+};
+
+function makeElement(text) {
+  return {
+    textContent: text || '',
+    value: '',
+    dataset: {},
+    hidden: false,
+    disabled: false,
+    href: '',
+    addEventListener() {},
+    setAttribute() {},
+    removeAttribute() {},
+    querySelector() { return null; },
+    querySelectorAll() { return []; },
+    appendChild(child) { return child; },
+    select() {}
+  };
+}
+
+const statusMessage = makeElement('Ready.');
+const statusNode = {
+  textContent: '',
+  dataset: {},
+  querySelector(selector) {
+    if (selector === '[data-role="browser-key-status-message"]') {
+      return statusMessage;
+    }
+    return null;
+  }
+};
+const publicKeyField = makeElement('');
+const usernameField = makeElement('');
+const privateKeyViewer = makeElement('');
+const publicKeyViewer = makeElement('');
+const identityIdField = makeElement('');
+const profileLink = makeElement('');
+const profileLinkWrap = makeElement('');
+const undoLink = makeElement('');
+const restoreButton = {
+  disabled: false,
+  addEventListener(type, handler) {
+    if (type === 'click') {
+      state.restoreClickHandler = handler;
+    }
+  }
+};
+
+const root = {
+  querySelector(selector) {
+    if (selector === '[data-role="browser-key-status"]') return statusNode;
+    if (selector === '[data-role="public-key-field"]') return publicKeyField;
+    if (selector === '[data-action="generate-browser-key"]') return null;
+    if (selector === '[data-action="load-browser-key"]') return null;
+    if (selector === '[data-action="clear-browser-key"]') return null;
+    if (selector === '[data-action="clear-browser-identity"]') return null;
+    if (selector === '[data-action="undo-clear-browser-key"]') return undoLink;
+    if (selector === '[data-action="copy-public-key"]') return null;
+    if (selector === '[data-action="copy-private-key"]') return null;
+    if (selector === '[data-action="restore-private-key"]') return restoreButton;
+    if (selector === '[data-role="username-field"]') return usernameField;
+    if (selector === '[data-role="private-key-viewer"]') return privateKeyViewer;
+    if (selector === '[data-role="public-key-viewer"]') return publicKeyViewer;
+    if (selector === '[data-role="identity-id-field"]') return identityIdField;
+    if (selector === '[data-role="profile-link"]') return profileLink;
+    if (selector === '[data-role="profile-link-wrap"]') return profileLinkWrap;
+    return null;
+  }
+};
+
+global.window = {
+  addEventListener() {},
+  openpgp: {
+    async readPrivateKey() {
+      return {
+        getFingerprint() { return fingerprint; },
+        getUserIDs() { return ['forum-user <forum@example.test>']; },
+        isDecrypted() { return true; },
+        toPublic() {
+          return {
+            async armor() { return publicKey; }
+          };
+        }
+      };
+    },
+    async readKey() {
+      return { getFingerprint() { return fingerprint; } };
+    }
+  },
+  localStorage: {
+    getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+    setItem(key, value) { state.localStore[key] = String(value); },
+    removeItem(key) { delete state.localStore[key]; }
+  }
+};
+global.openpgp = global.window.openpgp;
+global.localStorage = global.window.localStorage;
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      state.domContentLoaded = handler;
+    }
+  },
+  querySelector(selector) {
+    if (selector === '[data-account-key-root]') {
+      return root;
+    }
+    return null;
+  },
+  createElement() { return makeElement(''); },
+  createTextNode(text) { return makeElement(text); },
+  body: { appendChild() {}, removeChild() {} }
+};
+Object.defineProperty(global, 'navigator', {
+  configurable: true,
+  value: {
+    clipboard: {
+      async readText() { return privateKey; }
+    }
+  }
+});
+global.fetch = async function (url, options) {
+  const body = options && options.body ? String(options.body) : '';
+  state.fetches.push({ url: String(url), method: options && options.method ? options.method : 'GET', body });
+  if (String(url).indexOf('/api/set_identity_hint?') === 0) {
+    return { ok: true, status: 200, text: async () => 'identity_hint=openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n' };
+  }
+  if (String(url) === '/api/link_identity') {
+    return { ok: true, status: 200, text: async () => 'status=ok\nidentity_id=openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n' };
+  }
+
+  throw new Error('Unexpected fetch: ' + url);
+};
+
+vm.runInThisContext(source);
+state.domContentLoaded();
+
+Promise.resolve(state.restoreClickHandler()).then(() => {
+  const linkFetch = state.fetches.find((fetch) => fetch.url === '/api/link_identity') || { body: '' };
+  process.stdout.write(JSON.stringify({
+    fetches: state.fetches,
+    linkBody: linkFetch.body,
+    linkBodyContainsPrivateKey: linkFetch.body.indexOf('private') !== -1 || linkFetch.body.indexOf('PRIVATE%20KEY') !== -1,
+    username: usernameField.textContent,
+    identityId: identityIdField.textContent,
+    publicKeyField: publicKeyField.value,
+    publicKeyViewer: publicKeyViewer.textContent,
+    privateKeyViewer: privateKeyViewer.textContent,
+    publishedFingerprint: state.localStore.forum_pki_published_fingerprint || '',
+    status: statusMessage.textContent,
+    statusKind: statusNode.dataset.kind || '',
+    buttonDisabled: restoreButton.disabled
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('/api/link_identity', $result['fetches'][0]['url']);
+        assertSame('/api/set_identity_hint?identity_hint=openpgp%3A0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][1]['url']);
+        assertStringContains('public_key=', $result['linkBody']);
+        assertSame(false, $result['linkBodyContainsPrivateKey']);
+        assertSame('forum-user', $result['username']);
+        assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['identityId']);
+        assertSame("-----BEGIN PGP PUBLIC KEY BLOCK-----\npublic fixture\n-----END PGP PUBLIC KEY BLOCK-----\n", $result['publicKeyField']);
+        assertSame("-----BEGIN PGP PUBLIC KEY BLOCK-----\npublic fixture\n-----END PGP PUBLIC KEY BLOCK-----\n", $result['publicKeyViewer']);
+        assertSame("-----BEGIN PGP PRIVATE KEY BLOCK-----\nprivate fixture\n-----END PGP PRIVATE KEY BLOCK-----\n", $result['privateKeyViewer']);
+        assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $result['publishedFingerprint']);
+        assertSame('Restored browser keypair for forum-user. Public key linked.', $result['status']);
+        assertSame('ok', $result['statusKind']);
+        assertSame(false, $result['buttonDisabled']);
+    }
+
+    public function testAccountRestorePrivateKeyRollsBackWhenPublishFails(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const importedPrivateKey = '-----BEGIN PGP PRIVATE KEY BLOCK-----\nimported private\n-----END PGP PRIVATE KEY BLOCK-----';
+const importedPublicKey = '-----BEGIN PGP PUBLIC KEY BLOCK-----\nimported public\n-----END PGP PUBLIC KEY BLOCK-----';
+const state = {
+  localStore: {
+    forum_pki_username: 'old-user',
+    forum_pki_public_key: '-----BEGIN PGP PUBLIC KEY BLOCK-----\nold public\n-----END PGP PUBLIC KEY BLOCK-----\n',
+    forum_pki_private_key: '-----BEGIN PGP PRIVATE KEY BLOCK-----\nold private\n-----END PGP PRIVATE KEY BLOCK-----\n',
+    forum_pki_fingerprint: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    forum_pki_published_fingerprint: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+  },
+  fetches: [],
+  domContentLoaded: null,
+  restoreClickHandler: null
+};
+
+function makeElement(text) {
+  return {
+    textContent: text || '',
+    value: '',
+    dataset: {},
+    hidden: false,
+    disabled: false,
+    href: '',
+    addEventListener() {},
+    setAttribute() {},
+    removeAttribute() {},
+    querySelector() { return null; },
+    querySelectorAll() { return []; },
+    appendChild(child) { return child; },
+    select() {}
+  };
+}
+
+const statusMessage = makeElement('Ready.');
+const statusNode = {
+  textContent: '',
+  dataset: {},
+  querySelector(selector) {
+    if (selector === '[data-role="browser-key-status-message"]') {
+      return statusMessage;
+    }
+    return null;
+  }
+};
+const publicKeyField = makeElement('');
+const usernameField = makeElement('');
+const privateKeyViewer = makeElement('');
+const publicKeyViewer = makeElement('');
+const identityIdField = makeElement('');
+const profileLink = makeElement('');
+const profileLinkWrap = makeElement('');
+const undoLink = makeElement('');
+const restoreButton = {
+  disabled: false,
+  addEventListener(type, handler) {
+    if (type === 'click') {
+      state.restoreClickHandler = handler;
+    }
+  }
+};
+
+const root = {
+  querySelector(selector) {
+    if (selector === '[data-role="browser-key-status"]') return statusNode;
+    if (selector === '[data-role="public-key-field"]') return publicKeyField;
+    if (selector === '[data-action="generate-browser-key"]') return null;
+    if (selector === '[data-action="load-browser-key"]') return null;
+    if (selector === '[data-action="clear-browser-key"]') return null;
+    if (selector === '[data-action="clear-browser-identity"]') return null;
+    if (selector === '[data-action="undo-clear-browser-key"]') return undoLink;
+    if (selector === '[data-action="copy-public-key"]') return null;
+    if (selector === '[data-action="copy-private-key"]') return null;
+    if (selector === '[data-action="restore-private-key"]') return restoreButton;
+    if (selector === '[data-role="username-field"]') return usernameField;
+    if (selector === '[data-role="private-key-viewer"]') return privateKeyViewer;
+    if (selector === '[data-role="public-key-viewer"]') return publicKeyViewer;
+    if (selector === '[data-role="identity-id-field"]') return identityIdField;
+    if (selector === '[data-role="profile-link"]') return profileLink;
+    if (selector === '[data-role="profile-link-wrap"]') return profileLinkWrap;
+    return null;
+  }
+};
+
+global.window = {
+  addEventListener() {},
+  openpgp: {
+    async readPrivateKey() {
+      return {
+        getFingerprint() { return 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'; },
+        getUserIDs() { return ['new-user']; },
+        isDecrypted() { return true; },
+        toPublic() {
+          return {
+            async armor() { return importedPublicKey; }
+          };
+        }
+      };
+    },
+    async readKey() {
+      return { getFingerprint() { return 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'; } };
+    }
+  },
+  localStorage: {
+    getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+    setItem(key, value) { state.localStore[key] = String(value); },
+    removeItem(key) { delete state.localStore[key]; }
+  }
+};
+global.openpgp = global.window.openpgp;
+global.localStorage = global.window.localStorage;
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      state.domContentLoaded = handler;
+    }
+  },
+  querySelector(selector) {
+    if (selector === '[data-account-key-root]') {
+      return root;
+    }
+    return null;
+  },
+  createElement() { return makeElement(''); },
+  createTextNode(text) { return makeElement(text); },
+  body: { appendChild() {}, removeChild() {} }
+};
+Object.defineProperty(global, 'navigator', {
+  configurable: true,
+  value: {
+    clipboard: {
+      async readText() { return importedPrivateKey; }
+    }
+  }
+});
+global.fetch = async function (url, options) {
+  const body = options && options.body ? String(options.body) : '';
+  state.fetches.push({ url: String(url), method: options && options.method ? options.method : 'GET', body });
+  if (String(url).indexOf('/api/set_identity_hint?') === 0) {
+    return { ok: true, status: 200, text: async () => 'identity_hint=openpgp:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n' };
+  }
+  if (String(url) === '/api/link_identity') {
+    return { ok: false, status: 500, text: async () => 'error=Unable to inspect OpenPGP public key.\n' };
+  }
+
+  throw new Error('Unexpected fetch: ' + url);
+};
+
+vm.runInThisContext(source);
+state.domContentLoaded();
+
+Promise.resolve(state.restoreClickHandler()).then(() => {
+  process.stdout.write(JSON.stringify({
+    fetches: state.fetches,
+    localStore: state.localStore,
+    username: usernameField.textContent,
+    identityId: identityIdField.textContent,
+    publicKeyField: publicKeyField.value,
+    publicKeyViewer: publicKeyViewer.textContent,
+    privateKeyViewer: privateKeyViewer.textContent,
+    status: statusMessage.textContent,
+    statusKind: statusNode.dataset.kind || '',
+    buttonDisabled: restoreButton.disabled
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('/api/link_identity', $result['fetches'][2]['url']);
+        assertSame('old-user', $result['localStore']['forum_pki_username']);
+        assertSame("-----BEGIN PGP PUBLIC KEY BLOCK-----\nold public\n-----END PGP PUBLIC KEY BLOCK-----\n", $result['localStore']['forum_pki_public_key']);
+        assertSame("-----BEGIN PGP PRIVATE KEY BLOCK-----\nold private\n-----END PGP PRIVATE KEY BLOCK-----\n", $result['localStore']['forum_pki_private_key']);
+        assertSame('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', $result['localStore']['forum_pki_fingerprint']);
+        assertSame('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', $result['localStore']['forum_pki_published_fingerprint']);
+        assertSame('old-user', $result['username']);
+        assertSame('openpgp:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', $result['identityId']);
+        assertSame("-----BEGIN PGP PUBLIC KEY BLOCK-----\nold public\n-----END PGP PUBLIC KEY BLOCK-----\n", $result['publicKeyField']);
+        assertSame("-----BEGIN PGP PUBLIC KEY BLOCK-----\nold public\n-----END PGP PUBLIC KEY BLOCK-----\n", $result['publicKeyViewer']);
+        assertSame("-----BEGIN PGP PRIVATE KEY BLOCK-----\nold private\n-----END PGP PRIVATE KEY BLOCK-----\n", $result['privateKeyViewer']);
+        assertSame('Could not verify the new browser key automatically. Open /account/key/ to finish manually.', $result['status']);
+        assertSame('error', $result['statusKind']);
+        assertSame(false, $result['buttonDisabled']);
+    }
+
     public function testReadyIdentityRetriesTransientPublicKeyInspectionFailure(): void
     {
         $script = <<<'NODE'

@@ -1330,7 +1330,13 @@
     if (typeof navigator !== "undefined"
       && navigator.clipboard
       && typeof navigator.clipboard.readText === "function") {
-      return navigator.clipboard.readText();
+      try {
+        return await navigator.clipboard.readText();
+      } catch (error) {
+        if (typeof window.prompt !== "function") {
+          throw error;
+        }
+      }
     }
 
     if (typeof window.prompt === "function") {
@@ -1755,6 +1761,42 @@
     clearClearedKeypairBackup();
   }
 
+  function browserIdentitySnapshot() {
+    const keys = [
+      storageKeys.username,
+      storageKeys.publicKey,
+      storageKeys.privateKey,
+      storageKeys.fingerprint,
+      storageKeys.publishedFingerprint,
+      storageKeys.composePromptCancelled,
+    ];
+    const snapshot = {};
+    keys.forEach(function (key) {
+      const value = localStorage.getItem(key);
+      if (value !== null) {
+        snapshot[key] = String(value);
+      }
+    });
+    return snapshot;
+  }
+
+  function restoreBrowserIdentitySnapshot(snapshot) {
+    [
+      storageKeys.username,
+      storageKeys.publicKey,
+      storageKeys.privateKey,
+      storageKeys.fingerprint,
+      storageKeys.publishedFingerprint,
+      storageKeys.composePromptCancelled,
+    ].forEach(function (key) {
+      if (Object.prototype.hasOwnProperty.call(snapshot, key)) {
+        localStorage.setItem(key, snapshot[key]);
+      } else {
+        localStorage.removeItem(key);
+      }
+    });
+  }
+
   function scheduleIdentityPrewarm(root) {
     if (identityPrewarmStarted || !pageHasSignedActionSurfaces(root)) {
       return false;
@@ -2133,6 +2175,7 @@
     const undoClearLink = root.querySelector('[data-action="undo-clear-browser-key"]');
     const copyPublicButton = root.querySelector('[data-action="copy-public-key"]');
     const copyPrivateButton = root.querySelector('[data-action="copy-private-key"]');
+    const restorePrivateButton = root.querySelector('[data-action="restore-private-key"]');
 
     renderSavedState(root);
     if (hasBrowserKeypair()) {
@@ -2171,6 +2214,43 @@
           publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
         }
         setStatus(statusNode, "Loaded the saved browser public key into the form.", "ok");
+      });
+    }
+
+    if (restorePrivateButton) {
+      restorePrivateButton.addEventListener("click", async function () {
+        const previousIdentity = browserIdentitySnapshot();
+        restorePrivateButton.disabled = true;
+
+        try {
+          setStatus(statusNode, "Reading private key from clipboard...", "info");
+          const clipboardText = await readClipboardText();
+          setStatus(statusNode, "Validating private key...", "info");
+          const identity = await deriveIdentityFromPrivateKey(clipboardText);
+          saveImportedBrowserIdentity(identity);
+          renderSavedState(root);
+          if (publicKeyField) {
+            publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
+          }
+
+          setStatus(statusNode, "Publishing your public key in the background...", "info");
+          await publishPublicKeyWithRetry(root);
+          if (publicKeyField) {
+            publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
+          }
+          setStatus(statusNode, `Restored browser keypair for ${identity.username}. Public key linked.`, "ok");
+        } catch (error) {
+          restoreBrowserIdentitySnapshot(previousIdentity);
+          renderSavedState(root);
+          if (publicKeyField) {
+            publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
+          }
+
+          const status = statusFromError(error, "Unable to restore browser private key.");
+          setStatus(statusNode, status.message, "error", { technicalDetails: status.technicalDetails });
+        } finally {
+          restorePrivateButton.disabled = false;
+        }
       });
     }
 
