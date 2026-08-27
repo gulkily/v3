@@ -277,7 +277,12 @@ class LocalWriteService
             [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($authorIdentityId);
             $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
             if (!$verification['ok']) {
-                throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+                $message = 'Detached signature verification failed: ' . $verification['status'];
+                if ($verification['details'] !== '') {
+                    $message .= ' (' . $verification['details'] . ')';
+                }
+
+                throw new RuntimeException($message);
             }
 
             $record = (new PostRecordParser())->parse($canonicalRecord);

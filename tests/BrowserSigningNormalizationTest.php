@@ -515,7 +515,13 @@ const state = {
   localSetCalls: []
 };
 
-global.window = {};
+global.window = {
+  openpgp: {
+    async readKey() {
+      return { getFingerprint() { return '0168FF20EB09C3EA6193BD3C92A73AA7D20A0954'; } };
+    }
+  }
+};
 global.localStorage = {
   getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
   setItem(key, value) {
@@ -1891,6 +1897,7 @@ const vm = require('vm');
 const source = fs.readFileSync(process.argv[1], 'utf8');
 const state = {
   localStore: {
+    forum_pki_public_key: '-----BEGIN PGP PUBLIC KEY BLOCK-----\nfixture\n-----END PGP PUBLIC KEY BLOCK-----',
     forum_pki_private_key: '-----BEGIN PGP PRIVATE KEY BLOCK-----\nfixture\n-----END PGP PRIVATE KEY BLOCK-----'
   },
   fetchCalls: [],
@@ -1923,9 +1930,13 @@ const form = {
 
 global.window = {
   openpgp: {
+    async readKey(options) {
+      state.publicKeyArmored = options.armoredKey;
+      return { getFingerprint() { return 'DEF456'; } };
+    },
     async readPrivateKey(options) {
       state.privateKeyArmored = options.armoredKey;
-      return { key: 'private' };
+      return { key: 'private', getFingerprint() { return 'DEF456'; } };
     },
     async createMessage(options) {
       state.signedText = options.text;
@@ -2028,6 +2039,408 @@ NODE;
         assertSame(9.5, $result['result']['serverTiming']['total']);
     }
 
+    public function testSignedThreadSubmitRejectsMismatchedStoredKeypairBeforeFinalize(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: {
+    forum_pki_public_key: '-----BEGIN PGP PUBLIC KEY BLOCK-----\npublic\n-----END PGP PUBLIC KEY BLOCK-----',
+    forum_pki_private_key: '-----BEGIN PGP PRIVATE KEY BLOCK-----\nprivate\n-----END PGP PRIVATE KEY BLOCK-----'
+  },
+  fetchCalls: []
+};
+
+function field(name, value) {
+  return { name, value };
+}
+
+const fields = [
+  field('author_identity_id', 'openpgp:def456'),
+  field('board_tags', 'general'),
+  field('subject', 'Thread subject'),
+  field('body', 'Thread body')
+];
+const form = {
+  dataset: { composeKind: 'thread' },
+  querySelector(selector) {
+    const match = selector.match(/^\[name="([^"]+)"\]$/);
+    if (!match) {
+      return null;
+    }
+
+    return fields.find((item) => item.name === match[1]) || null;
+  }
+};
+
+global.window = {
+  openpgp: {
+    async readKey() {
+      return { getFingerprint() { return 'DEF456'; } };
+    },
+    async readPrivateKey() {
+      return { getFingerprint() { return 'ABC123'; } };
+    },
+    async createMessage() {
+      throw new Error('createMessage should not run for mismatched keys');
+    },
+    async sign() {
+      throw new Error('sign should not run for mismatched keys');
+    }
+  }
+};
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+  setItem(key, value) { state.localStore[key] = String(value); },
+  removeItem(key) { delete state.localStore[key]; }
+};
+global.sessionStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener() {},
+  querySelector() { return null; },
+  createElement() { return { setAttribute(){}, style:{}, addEventListener(){}, appendChild(){}, select(){} }; },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url, options) {
+  state.fetchCalls.push({ url: String(url), body: options && options.body ? String(options.body) : '' });
+  if (String(url) === '/api/prepare_thread') {
+    return {
+      headers: { get() { return ''; } },
+      async text() {
+        return JSON.stringify({
+          status: 'ok',
+          prepare_token: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          post_id: 'thread-123',
+          thread_id: 'thread-123',
+          record_path: 'records/posts/thread-123.txt',
+          canonical_record: 'Post-ID: thread-123\n\nThread body\n',
+          canonical_sha256: 'hash123'
+        });
+      }
+    };
+  }
+
+  throw new Error('Unexpected fetch: ' + url);
+};
+
+vm.runInThisContext(source);
+window.__forumComposeNormalization.submitSignedThreadFormToApi(form).then(() => {
+  process.stderr.write('submit should have failed');
+  process.exit(1);
+}).catch((error) => {
+  process.stdout.write(JSON.stringify({
+    message: error.message,
+    technicalDetails: error.technicalDetails || '',
+    urls: state.fetchCalls.map((call) => call.url)
+  }));
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(['/api/prepare_thread'], $result['urls']);
+        assertStringContains('private key does not match', $result['message']);
+        assertStringContains('public_key_fingerprint=DEF456', $result['technicalDetails']);
+        assertStringContains('private_key_fingerprint=ABC123', $result['technicalDetails']);
+    }
+
+    public function testSignedThreadSubmitRefreshesCachedAuthorIdentityBeforePrepare(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const oldFingerprint = '1111111111111111111111111111111111111111';
+const newFingerprint = '2222222222222222222222222222222222222222';
+const state = {
+  localStore: {
+    forum_pki_public_key: '-----BEGIN PGP PUBLIC KEY BLOCK-----\nnew public\n-----END PGP PUBLIC KEY BLOCK-----',
+    forum_pki_private_key: '-----BEGIN PGP PRIVATE KEY BLOCK-----\nnew private\n-----END PGP PRIVATE KEY BLOCK-----',
+    forum_pki_fingerprint: oldFingerprint
+  },
+  fetchCalls: [],
+  signedText: ''
+};
+
+function field(name, value) {
+  return { name, value };
+}
+
+const fields = [
+  field('author_identity_id', 'openpgp:' + oldFingerprint),
+  field('board_tags', 'general'),
+  field('subject', 'Thread subject'),
+  field('body', 'Thread body')
+];
+const form = {
+  dataset: { composeKind: 'thread' },
+  querySelector(selector) {
+    const match = selector.match(/^\[name="([^"]+)"\]$/);
+    if (!match) {
+      return null;
+    }
+
+    return fields.find((item) => item.name === match[1]) || null;
+  },
+  appendChild(node) {
+    fields.push(node);
+  }
+};
+
+global.window = {
+  openpgp: {
+    async readKey() {
+      return { getFingerprint() { return newFingerprint.toUpperCase(); } };
+    },
+    async readPrivateKey() {
+      return { key: 'private', getFingerprint() { return newFingerprint.toUpperCase(); } };
+    },
+    async createMessage(options) {
+      state.signedText = options.text;
+      return { text: options.text };
+    },
+    async sign() {
+      return '-----BEGIN PGP SIGNATURE-----\nsignature\n-----END PGP SIGNATURE-----\n';
+    }
+  }
+};
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+  setItem(key, value) { state.localStore[key] = String(value); },
+  removeItem(key) { delete state.localStore[key]; }
+};
+global.sessionStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener() {},
+  querySelector() { return null; },
+  createElement() { return { type: '', name: '', value: '', setAttribute(){}, style:{}, addEventListener(){}, appendChild(){}, select(){} }; },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url, options) {
+  const body = options && options.body ? String(options.body) : '';
+  state.fetchCalls.push({ url: String(url), body });
+  if (String(url) === '/api/prepare_thread') {
+    const submitted = Object.fromEntries(new URLSearchParams(body));
+    return {
+      headers: { get() { return ''; } },
+      async text() {
+        return JSON.stringify({
+          status: 'ok',
+          prepare_token: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          post_id: 'thread-123',
+          thread_id: 'thread-123',
+          record_path: 'records/posts/thread-123.txt',
+          canonical_record: 'Post-ID: thread-123\nAuthor-Identity-ID: ' + submitted.author_identity_id + '\n\nThread body\n',
+          canonical_sha256: 'hash123'
+        });
+      }
+    };
+  }
+  if (String(url) === '/api/create_prepared_post') {
+    return {
+      headers: { get() { return ''; } },
+      async text() {
+        return JSON.stringify({
+          status: 'ok',
+          post_id: 'thread-123',
+          thread_id: 'thread-123',
+          record_path: 'records/posts/thread-123.txt',
+          signature_path: 'records/posts/thread-123.txt.asc',
+          commit_sha: 'abc123'
+        });
+      }
+    };
+  }
+
+  throw new Error('Unexpected fetch: ' + url);
+};
+
+vm.runInThisContext(source);
+window.__forumComposeNormalization.submitSignedThreadFormToApi(form).then((result) => {
+  const prepareBody = Object.fromEntries(new URLSearchParams(state.fetchCalls[0].body));
+  const finalizeBody = Object.fromEntries(new URLSearchParams(state.fetchCalls[1].body));
+  process.stdout.write(JSON.stringify({
+    result,
+    prepareBody,
+    finalizeBody,
+    hiddenAuthorIdentityId: fields.find((item) => item.name === 'author_identity_id').value,
+    storedFingerprint: state.localStore.forum_pki_fingerprint,
+    signedText: state.signedText
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        $expectedIdentityId = 'openpgp:2222222222222222222222222222222222222222';
+        assertSame(true, $result['result']['ok']);
+        assertSame($expectedIdentityId, $result['prepareBody']['author_identity_id']);
+        assertSame($expectedIdentityId, $result['finalizeBody']['author_identity_id']);
+        assertSame($expectedIdentityId, $result['hiddenAuthorIdentityId']);
+        assertSame('2222222222222222222222222222222222222222', strtolower($result['storedFingerprint']));
+        assertStringContains('Author-Identity-ID: ' . $expectedIdentityId, $result['signedText']);
+    }
+
+    public function testSignedThreadSubmitRetriesDetachedSignatureFailureWithFreshPreparedRecord(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = {
+  localStore: {
+    forum_pki_public_key: '-----BEGIN PGP PUBLIC KEY BLOCK-----\nfixture\n-----END PGP PUBLIC KEY BLOCK-----',
+    forum_pki_private_key: '-----BEGIN PGP PRIVATE KEY BLOCK-----\nfixture\n-----END PGP PRIVATE KEY BLOCK-----'
+  },
+  fetchCalls: [],
+  prepareCount: 0,
+  finalizeCount: 0,
+  signedTexts: []
+};
+
+function field(name, value) {
+  return { name, value };
+}
+
+const fields = [
+  field('author_identity_id', 'openpgp:def456'),
+  field('board_tags', 'general'),
+  field('subject', 'Thread subject'),
+  field('body', 'Thread body')
+];
+const form = {
+  dataset: { composeKind: 'thread' },
+  querySelector(selector) {
+    const match = selector.match(/^\[name="([^"]+)"\]$/);
+    if (!match) {
+      return null;
+    }
+
+    return fields.find((item) => item.name === match[1]) || null;
+  }
+};
+
+global.window = {
+  openpgp: {
+    async readKey() {
+      return { getFingerprint() { return 'DEF456'; } };
+    },
+    async readPrivateKey() {
+      return { getFingerprint() { return 'DEF456'; } };
+    },
+    async createMessage(options) {
+      state.signedTexts.push(options.text);
+      return { text: options.text };
+    },
+    async sign() {
+      return '-----BEGIN PGP SIGNATURE-----\nsignature-' + state.signedTexts.length + '\n-----END PGP SIGNATURE-----\n';
+    }
+  }
+};
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
+  setItem(key, value) { state.localStore[key] = String(value); },
+  removeItem(key) { delete state.localStore[key]; }
+};
+global.sessionStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener() {},
+  querySelector() { return null; },
+  createElement() { return { setAttribute(){}, style:{}, addEventListener(){}, appendChild(){}, select(){} }; },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url, options) {
+  const body = options && options.body ? String(options.body) : '';
+  state.fetchCalls.push({ url: String(url), body });
+  if (String(url) === '/api/prepare_thread') {
+    state.prepareCount += 1;
+    const suffix = String(state.prepareCount);
+    return {
+      headers: { get() { return ''; } },
+      async text() {
+        return JSON.stringify({
+          status: 'ok',
+          prepare_token: suffix.repeat(32),
+          post_id: 'thread-' + suffix,
+          thread_id: 'thread-' + suffix,
+          record_path: 'records/posts/thread-' + suffix + '.txt',
+          canonical_record: 'Post-ID: thread-' + suffix + '\n\nThread body\n',
+          canonical_sha256: 'hash-' + suffix
+        });
+      }
+    };
+  }
+  if (String(url) === '/api/create_prepared_post') {
+    state.finalizeCount += 1;
+    if (state.finalizeCount === 1) {
+      return {
+        headers: { get() { return ''; } },
+        async text() {
+          return JSON.stringify({
+            status: 'error',
+            error: 'Detached signature verification failed: signature_verification_failed ([GNUPG:] BADSIG DEF456 alice)'
+          });
+        }
+      };
+    }
+
+    return {
+      headers: { get() { return ''; } },
+      async text() {
+        return JSON.stringify({
+          status: 'ok',
+          post_id: 'thread-2',
+          thread_id: 'thread-2',
+          record_path: 'records/posts/thread-2.txt',
+          signature_path: 'records/posts/thread-2.txt.asc',
+          commit_sha: 'abc999'
+        });
+      }
+    };
+  }
+
+  throw new Error('Unexpected fetch: ' + url);
+};
+
+vm.runInThisContext(source);
+window.__forumComposeNormalization.submitSignedThreadFormToApi(form).then((result) => {
+  const firstFinalizeBody = Object.fromEntries(new URLSearchParams(state.fetchCalls[1].body));
+  const secondFinalizeBody = Object.fromEntries(new URLSearchParams(state.fetchCalls[3].body));
+  process.stdout.write(JSON.stringify({
+    result,
+    urls: state.fetchCalls.map((call) => call.url),
+    signedTexts: state.signedTexts,
+    firstFinalizeBody,
+    secondFinalizeBody
+  }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(['/api/prepare_thread', '/api/create_prepared_post', '/api/prepare_thread', '/api/create_prepared_post'], $result['urls']);
+        assertSame(['Post-ID: thread-1' . "\n\n" . 'Thread body' . "\n", 'Post-ID: thread-2' . "\n\n" . 'Thread body' . "\n"], $result['signedTexts']);
+        assertSame('11111111111111111111111111111111', $result['firstFinalizeBody']['prepare_token']);
+        assertSame('22222222222222222222222222222222', $result['secondFinalizeBody']['prepare_token']);
+        assertStringContains('signature-2', $result['secondFinalizeBody']['detached_signature']);
+        assertSame(true, $result['result']['ok']);
+        assertSame('thread-2', $result['result']['postId']);
+    }
+
     public function testSignedReplySubmitPreparesSignsAndFinalizes(): void
     {
         $script = <<<'NODE'
@@ -2036,6 +2449,7 @@ const vm = require('vm');
 const source = fs.readFileSync(process.argv[1], 'utf8');
 const state = {
   localStore: {
+    forum_pki_public_key: '-----BEGIN PGP PUBLIC KEY BLOCK-----\nfixture\n-----END PGP PUBLIC KEY BLOCK-----',
     forum_pki_private_key: '-----BEGIN PGP PRIVATE KEY BLOCK-----\nfixture\n-----END PGP PRIVATE KEY BLOCK-----'
   },
   fetchCalls: [],
@@ -2067,8 +2481,11 @@ const form = {
 
 global.window = {
   openpgp: {
+    async readKey() {
+      return { getFingerprint() { return 'DEF456'; } };
+    },
     async readPrivateKey() {
-      return { key: 'private' };
+      return { key: 'private', getFingerprint() { return 'DEF456'; } };
     },
     async createMessage(options) {
       state.signedText = options.text;
@@ -2574,7 +2991,8 @@ root.querySelectorAll = function() { return []; };
 global.window = {
   addEventListener() {},
   openpgp: {
-    async readPrivateKey() { return { key: 'private' }; },
+    async readKey() { return { getFingerprint() { return 'DEF456'; } }; },
+    async readPrivateKey() { return { key: 'private', getFingerprint() { return 'DEF456'; } }; },
     async createMessage(options) { return { text: options.text }; },
     async sign() { return '-----BEGIN PGP SIGNATURE-----\nthread-signature\n-----END PGP SIGNATURE-----\n'; }
   },
@@ -2904,7 +3322,8 @@ root.querySelectorAll = function() { return []; };
 global.window = {
   addEventListener() {},
   openpgp: {
-    async readPrivateKey() { return { key: 'private' }; },
+    async readKey() { return { getFingerprint() { return 'DEF456'; } }; },
+    async readPrivateKey() { return { key: 'private', getFingerprint() { return 'DEF456'; } }; },
     async createMessage(options) { return { text: options.text }; },
     async sign() { return '-----BEGIN PGP SIGNATURE-----\nthread-signature\n-----END PGP SIGNATURE-----\n'; }
   },
@@ -3154,7 +3573,8 @@ function submitEvent() {
 global.window = {
   addEventListener() {},
   openpgp: {
-    async readPrivateKey() { return { key: 'private' }; },
+    async readKey() { return { getFingerprint() { return 'DEF456'; } }; },
+    async readPrivateKey() { return { key: 'private', getFingerprint() { return 'DEF456'; } }; },
     async createMessage(options) { return { text: options.text }; },
     async sign() { return '-----BEGIN PGP SIGNATURE-----\nthread-signature\n-----END PGP SIGNATURE-----\n'; }
   },
@@ -3443,7 +3863,8 @@ parent.children.push({ id: 'existing-reply' }, root);
 global.window = {
   addEventListener() {},
   openpgp: {
-    async readPrivateKey() { return { key: 'private' }; },
+    async readKey() { return { getFingerprint() { return 'ABC123'; } }; },
+    async readPrivateKey() { return { key: 'private', getFingerprint() { return 'ABC123'; } }; },
     async createMessage(options) { return { text: options.text }; },
     async sign() { return '-----BEGIN PGP SIGNATURE-----\nreply-signature\n-----END PGP SIGNATURE-----\n'; }
   },
@@ -3765,7 +4186,8 @@ parent.children.push({ id: 'existing-reply' }, root);
 global.window = {
   addEventListener() {},
   openpgp: {
-    async readPrivateKey() { return { key: 'private' }; },
+    async readKey() { return { getFingerprint() { return 'ABC123'; } }; },
+    async readPrivateKey() { return { key: 'private', getFingerprint() { return 'ABC123'; } }; },
     async createMessage(options) { return { text: options.text }; },
     async sign() { return '-----BEGIN PGP SIGNATURE-----\nreply-signature\n-----END PGP SIGNATURE-----\n'; }
   },
@@ -4008,7 +4430,8 @@ function submitEvent() {
 global.window = {
   addEventListener() {},
   openpgp: {
-    async readPrivateKey() { return { key: 'private' }; },
+    async readKey() { return { getFingerprint() { return 'ABC123'; } }; },
+    async readPrivateKey() { return { key: 'private', getFingerprint() { return 'ABC123'; } }; },
     async createMessage(options) { return { text: options.text }; },
     async sign() { return '-----BEGIN PGP SIGNATURE-----\nreply-signature\n-----END PGP SIGNATURE-----\n'; }
   },

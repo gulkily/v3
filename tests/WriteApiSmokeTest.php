@@ -1637,6 +1637,7 @@ PHP);
 
         assertSame('error', $payload['status']);
         assertStringContains('Detached signature verification failed:', $payload['error']);
+        assertStringContains('[GNUPG:] NODATA', $payload['error']);
         assertFalse(is_file($repositoryRoot . '/records/posts/2026/07/19/signed-test.txt'));
         assertFalse(is_file($repositoryRoot . '/records/posts/2026/07/19/signed-test.txt.asc'));
         assertTrue(is_file(dirname($databasePath) . '/prepared-posts/' . $token . '.json'));
