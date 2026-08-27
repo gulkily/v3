@@ -20,3 +20,14 @@
   - `php tests/run.php --filter LocalAppSmokeTest` passed.
 - Notes:
   - `/users/` remains eligible for anonymous, queryless static serving when the artifact is current.
+
+## Stage 3 - Client-Agnostic Freshness Verification
+- Changes:
+  - Completed verification-only stage; no additional production code was needed.
+- Verification:
+  - `php tests/run.php --filter LocalAppSmokeTest` passed.
+  - `php tests/run.php --filter VersionCheckBehaviorTest` passed.
+  - `git diff b43ca9b..HEAD -- src tests | rg -n "iOS|iPhone|HTTP_USER_AGENT|User-Agent|user_agent|navigator\\.userAgent"` returned no matches.
+- Notes:
+  - Pending users behavior remains covered by the local smoke test.
+  - The implementation is route/data driven and does not branch on client type.
