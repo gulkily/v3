@@ -519,6 +519,11 @@ final class LocalAppSmokeTest
         assertStringContains('zenmemes', $instance);
         assertStringContains('Backup', $backup);
         assertStringContains('Backup', $toolsBackup);
+        assertStringContains('Snapshot freshness', $instance);
+        assertStringContains('Generated at:', $instance);
+        assertStringContains('Recent included items', $instance);
+        assertStringContains('Repository snapshot:', $instance);
+        assertStringContains('preview, not a complete archive listing', $instance);
         assertStringContains('board-controls-nav', $toolsBackup);
         assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);

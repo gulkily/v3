@@ -23,6 +23,35 @@
     </p>
   </article>
   <article class="card">
+    <h2>Snapshot freshness</h2>
+<?php if (($backupSnapshot['generated_at'] ?? '') === ''): ?>
+    <p class="meta">Freshness information is not available yet.</p>
+<?php else: ?>
+    <p><strong>Generated at:</strong> <?= $timestamp($backupSnapshot['generated_at']) ?></p>
+<?php endif; ?>
+<?php if (($backupSnapshot['repository_head'] ?? '') !== ''): ?>
+    <p class="meta"><strong>Repository snapshot:</strong> <?= $e(substr((string) $backupSnapshot['repository_head'], 0, 12)) ?></p>
+<?php endif; ?>
+    <h3>Recent included items</h3>
+<?php if (($backupSnapshot['items'] ?? []) === []): ?>
+    <p>No recent content items are available in this snapshot.</p>
+<?php else: ?>
+    <ul class="backup-preview">
+<?php foreach ($backupSnapshot['items'] as $item): ?>
+<?php if (($item['kind'] ?? '') === 'thread_label_add'): ?>
+<?php $href = '/threads/' . ($item['thread_id'] ?? ''); ?>
+<?php $linkLabel = $item['thread_id'] ?? ''; ?>
+<?php else: ?>
+<?php $href = '/posts/' . ($item['post_id'] ?? ''); ?>
+<?php $linkLabel = $item['post_id'] ?? ''; ?>
+<?php endif; ?>
+      <li><a href="<?= $e($href) ?>"><?= $e($linkLabel) ?></a> - <?= $e($item['label'] ?? '') ?> <span class="meta"><?= $e($item['kind'] ?? '') ?></span></li>
+<?php endforeach; ?>
+    </ul>
+    <p class="meta">Showing the five most recent content items when available; this is a preview, not a complete archive listing.</p>
+<?php endif; ?>
+  </article>
+  <article class="card">
     <h2>Downloads</h2>
     <ul>
 <?php foreach ($downloads as $download): ?>

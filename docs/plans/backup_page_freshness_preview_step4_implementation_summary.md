@@ -10,3 +10,15 @@
   - `php tests/run.php LocalAppSmokeTest` — all tests passed.
 - Notes:
   - The timestamp currently represents the read-model rebuild time, paired with the repository head recorded in the same metadata set.
+
+## Stage 2 - Render freshness and preview
+- Changes:
+  - Extended the canonical Backup page with snapshot freshness metadata and repository identity.
+  - Added recent included-item links, bounded-preview messaging, and an explicit empty-state message.
+  - Added focused smoke assertions for the new Backup page content.
+- Verification:
+  - `php -l templates/pages/instance.php` — passed.
+  - `php -l tests/LocalAppSmokeTest.php` — passed.
+  - `php tests/run.php LocalAppSmokeTest::testApplicationRendersCoreRoutes` — passed.
+- Notes:
+  - Existing repository archive and SQLite download links remain unchanged.
