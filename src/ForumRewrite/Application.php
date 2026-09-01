@@ -38,6 +38,7 @@ final class Application
     private const HIDDEN_BOOTSTRAP_TAG = 'identity';
     private const ANALYSIS_SCHEMA_VERSION = 5;
     private const ACTIVITY_ITEM_LIMIT = 100;
+    private const BACKUP_PREVIEW_LIMIT = 5;
     private const THREAD_CONTEXT_COMMENT_BODY_LIMIT = 3000;
     private const THREAD_CONTEXT_TOTAL_BODY_LIMIT = 18000;
     private const CODEX_HANDOFF_DEVELOPMENT_TAGS = ['feature', 'bug', 'task', 'dev', 'development', 'codex', 'implementation', 'fdp'];
@@ -985,12 +986,15 @@ final class Application
 
     private function renderBackup(): string
     {
+        $backupSnapshot = $this->fetchBackupSnapshot();
+
         return $this->renderPageTemplate(
             'instance.php',
             [
                 'siteName' => SiteConfig::SITE_NAME,
                 'admins' => $this->fetchSeedApprovedUsers(),
                 'toolNavOptions' => $this->toolNavOptions('backup'),
+                'backupSnapshot' => $backupSnapshot,
                 'downloads' => [
                     [
                         'href' => '/downloads/repository.tar.gz',
@@ -1012,6 +1016,27 @@ final class Application
             'Backup',
             'tools',
         );
+    }
+
+    /**
+     * @return array{generated_at:string,repository_head:string,items:array<int,array<string,mixed>>}
+     */
+    private function fetchBackupSnapshot(): array
+    {
+        $metadata = [];
+        $pdo = $this->pdo();
+        if ($this->readModelTableExists($pdo, 'metadata')) {
+            $rows = $pdo->query('SELECT key, value FROM metadata')->fetchAll();
+            foreach ($rows as $row) {
+                $metadata[(string) $row['key']] = (string) $row['value'];
+            }
+        }
+
+        return [
+            'generated_at' => $metadata['rebuilt_at'] ?? '',
+            'repository_head' => $metadata['repository_head'] ?? ReadModelMetadata::repositoryHead($this->repositoryRoot),
+            'items' => array_slice($this->fetchActivity('content'), 0, self::BACKUP_PREVIEW_LIMIT),
+        ];
     }
 
     private function renderAbout(): string
