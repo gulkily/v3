@@ -522,6 +522,7 @@ final class LocalAppSmokeTest
         assertStringContains('Snapshot freshness', $instance);
         assertStringContains('Generated at:', $instance);
         assertStringContains('Recent included items', $instance);
+        assertStringContains('href="/activity/">See all recent activity</a>', $instance);
         assertStringContains('Repository snapshot:', $instance);
         assertStringContains('preview, not a complete archive listing', $instance);
         assertStringContains('board-controls-nav', $toolsBackup);

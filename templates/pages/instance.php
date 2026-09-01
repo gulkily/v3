@@ -50,6 +50,7 @@
     </ul>
     <p class="meta">Showing the five most recent content items when available; this is a preview, not a complete archive listing.</p>
 <?php endif; ?>
+    <p><a href="/activity/">See all recent activity</a></p>
   </article>
   <article class="card">
     <h2>Downloads</h2>

@@ -42,3 +42,14 @@
   - `./v3 build-static tests/fixtures/parity_minimal_v1 <temporary database> <temporary artifact root>` followed by inspection of `instance.html` — freshness timestamp, repository snapshot, recent-items heading, and preview disclaimer all present.
 - Notes:
   - The feature is implemented without database schema changes or changes to download endpoint behavior.
+
+## Stage 5 - Link to full activity
+- Changes:
+  - Added a direct link from the Backup freshness preview to the full Activity page.
+  - Added a smoke assertion for the new navigation link.
+- Verification:
+  - `php -l templates/pages/instance.php` — passed.
+  - `php -l tests/LocalAppSmokeTest.php` — passed.
+  - `php tests/run.php LocalAppSmokeTest::testApplicationRendersCoreRoutes` — passed.
+- Notes:
+  - This is navigation only; snapshot metadata, preview limits, and download behavior are unchanged.
