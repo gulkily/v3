@@ -32,3 +32,13 @@
   - `php tests/run.php LocalAppSmokeTest::testBackupStaticArtifactsAreInvalidatedByContentWrites LocalAppSmokeTest::testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout LocalAppSmokeTest::testFrontControllerServesStaticArtifactForBackupAlias` — all passed.
 - Notes:
   - Existing `/backup/` and `/tools/backup/` resolution already maps to the canonical instance artifact; no duplicate route artifact was introduced.
+
+## Stage 4 - Final verification
+- Changes:
+  - Completed final regression coverage and manual static-artifact inspection.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest` — all tests passed.
+  - `php tests/run.php` — full repository test suite passed.
+  - `./v3 build-static tests/fixtures/parity_minimal_v1 <temporary database> <temporary artifact root>` followed by inspection of `instance.html` — freshness timestamp, repository snapshot, recent-items heading, and preview disclaimer all present.
+- Notes:
+  - The feature is implemented without database schema changes or changes to download endpoint behavior.
