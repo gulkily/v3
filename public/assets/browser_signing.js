@@ -1847,8 +1847,12 @@
     const privateKeyViewer = root.querySelector('[data-role="private-key-viewer"]');
     const publicKeyViewer = root.querySelector('[data-role="public-key-viewer"]');
     const identityIdField = root.querySelector('[data-role="identity-id-field"]');
-    const profileLink = root.querySelector('[data-role="profile-link"]');
-    const profileLinkWrap = root.querySelector('[data-role="profile-link-wrap"]');
+    const profileLinks = root.querySelectorAll
+      ? Array.from(root.querySelectorAll('[data-role="profile-link"]'))
+      : [root.querySelector('[data-role="profile-link"]')].filter(Boolean);
+    const profileLinkWraps = root.querySelectorAll
+      ? Array.from(root.querySelectorAll('[data-role="profile-link-wrap"]'))
+      : [root.querySelector('[data-role="profile-link-wrap"]')].filter(Boolean);
 
     if (publicKeyField && !publicKeyField.value) {
       publicKeyField.value = publicKey;
@@ -1870,15 +1874,13 @@
       identityIdField.textContent = fingerprint ? `openpgp:${fingerprint}` : "none";
     }
 
-    if (profileLink && profileLinkWrap) {
-      if (fingerprint) {
-        profileLink.href = `/profiles/openpgp-${fingerprint}`;
-        profileLinkWrap.hidden = false;
-      } else {
-        profileLink.href = "/account/key/";
-        profileLinkWrap.hidden = true;
-      }
-    }
+    profileLinks.forEach(function (profileLink) {
+      profileLink.href = fingerprint ? `/profiles/openpgp-${fingerprint}` : "/account/key/";
+      profileLink.textContent = fingerprint ? "View profile" : "Open profile";
+    });
+    profileLinkWraps.forEach(function (profileLinkWrap) {
+      profileLinkWrap.hidden = !fingerprint;
+    });
 
     renderUndoState(root);
   }
@@ -2181,6 +2183,16 @@
     if (hasBrowserKeypair()) {
       void syncIdentityHint(preferredIdentityHint());
     }
+
+    window.addEventListener("pageshow", function () {
+      renderSavedState(root);
+      if (hasBrowserKeypair()) {
+        void ensureStoredFingerprint().then(function () {
+          renderSavedState(root);
+          return syncIdentityHint(preferredIdentityHint());
+        }).catch(function () {});
+      }
+    });
 
     if (generateButton) {
       generateButton.addEventListener("click", async function () {

@@ -1075,8 +1075,10 @@ const usernameField = makeElement('');
 const privateKeyViewer = makeElement('');
 const publicKeyViewer = makeElement('');
 const identityIdField = makeElement('');
-const profileLink = makeElement('');
-const profileLinkWrap = makeElement('');
+const profileLinks = [makeElement('View profile'), makeElement('Open profile')];
+profileLinks[0].href = '/profiles/openpgp-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+profileLinks[1].href = '/profiles/openpgp-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const profileLinkWraps = [makeElement(''), makeElement('')];
 const undoLink = makeElement('');
 const restoreButton = {
   disabled: false,
@@ -1103,9 +1105,14 @@ const root = {
     if (selector === '[data-role="private-key-viewer"]') return privateKeyViewer;
     if (selector === '[data-role="public-key-viewer"]') return publicKeyViewer;
     if (selector === '[data-role="identity-id-field"]') return identityIdField;
-    if (selector === '[data-role="profile-link"]') return profileLink;
-    if (selector === '[data-role="profile-link-wrap"]') return profileLinkWrap;
+    if (selector === '[data-role="profile-link"]') return profileLinks[0];
+    if (selector === '[data-role="profile-link-wrap"]') return profileLinkWraps[0];
     return null;
+  },
+  querySelectorAll(selector) {
+    if (selector === '[data-role="profile-link"]') return profileLinks;
+    if (selector === '[data-role="profile-link-wrap"]') return profileLinkWraps;
+    return [];
   }
 };
 
@@ -1188,6 +1195,9 @@ Promise.resolve(state.restoreClickHandler()).then(() => {
     publicKeyViewer: publicKeyViewer.textContent,
     privateKeyViewer: privateKeyViewer.textContent,
     publishedFingerprint: state.localStore.forum_pki_published_fingerprint || '',
+    profileHrefs: profileLinks.map((link) => link.href),
+    profileTexts: profileLinks.map((link) => link.textContent),
+    profileHidden: profileLinkWraps.map((wrap) => wrap.hidden),
     status: statusMessage.textContent,
     statusKind: statusNode.dataset.kind || '',
     buttonDisabled: restoreButton.disabled
@@ -1210,6 +1220,12 @@ NODE;
         assertSame("-----BEGIN PGP PUBLIC KEY BLOCK-----\npublic fixture\n-----END PGP PUBLIC KEY BLOCK-----\n", $result['publicKeyViewer']);
         assertSame("-----BEGIN PGP PRIVATE KEY BLOCK-----\nprivate fixture\n-----END PGP PRIVATE KEY BLOCK-----\n", $result['privateKeyViewer']);
         assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $result['publishedFingerprint']);
+        assertSame([
+            '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+            '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+        ], $result['profileHrefs']);
+        assertSame(['View profile', 'View profile'], $result['profileTexts']);
+        assertSame([false, false], $result['profileHidden']);
         assertSame('Restored browser keypair for forum-user. Public key linked.', $result['status']);
         assertSame('ok', $result['statusKind']);
         assertSame(false, $result['buttonDisabled']);

@@ -26,7 +26,7 @@ if (is_array($viewerProfile)) {
           <p class="account-key-label">Signed in as</p>
           <p class="account-key-username" data-role="username-field">guest</p>
 <?php if ($viewerProfileHref !== ''): ?>
-          <p class="meta account-key-profile-link"><a href="<?= $e($viewerProfileHref) ?>"><?= $e($viewerProfileLabel) ?></a></p>
+          <p class="meta account-key-profile-link" data-role="profile-link-wrap"><a data-role="profile-link" href="<?= $e($viewerProfileHref) ?>"><?= $e($viewerProfileLabel) ?></a></p>
 <?php endif; ?>
         </div>
         <div class="account-key-simple-actions">
@@ -108,6 +108,10 @@ No browser private key saved yet.
       return readStorageValue('forum_pki_public_key') !== '' && readStorageValue('forum_pki_private_key') !== '';
     }
 
+    function storedFingerprint() {
+      return readStorageValue('forum_pki_fingerprint').trim().toLowerCase();
+    }
+
     function friendlyStatusMessage(rawMessage, username, ready) {
       if (!rawMessage || rawMessage === 'Ready.') {
         return ready ? 'All set! Posting as ' + username + '.' : 'Choose a name to set up this browser.';
@@ -182,6 +186,23 @@ No browser private key saved yet.
       if (simpleStatus && !simpleStatus.dataset.kind) {
         simpleStatus.textContent = ready ? 'All set! Posting as ' + username + '.' : 'Choose a name to set up this browser.';
       }
+
+      syncProfileLinks(root);
+    }
+
+    function syncProfileLinks(root) {
+      var fingerprint = storedFingerprint();
+      var links = root.querySelectorAll('[data-role="profile-link"]');
+      var wraps = root.querySelectorAll('[data-role="profile-link-wrap"]');
+
+      links.forEach(function (link) {
+        link.href = fingerprint ? '/profiles/openpgp-' + fingerprint : '/account/key/';
+        link.textContent = fingerprint ? 'View profile' : 'Open profile';
+      });
+
+      wraps.forEach(function (wrap) {
+        wrap.hidden = fingerprint === '';
+      });
     }
 
     function mirrorAdvancedStatus() {
@@ -239,6 +260,8 @@ No browser private key saved yet.
       mirrorAdvancedStatus();
       window.addEventListener('storage', syncSimpleUI);
       window.addEventListener('storage', mirrorAdvancedStatus);
+      window.addEventListener('pageshow', syncSimpleUI);
+      window.addEventListener('pageshow', mirrorAdvancedStatus);
 
       if (statusNode && typeof MutationObserver === 'function') {
         new MutationObserver(function () {
