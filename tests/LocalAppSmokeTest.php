@@ -1579,6 +1579,47 @@ final class LocalAppSmokeTest
         }
     }
 
+    public function testBackupStaticArtifactsAreInvalidatedByContentWrites(): void
+    {
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        mkdir($staticHtmlRoot . '/instance', 0777, true);
+
+        try {
+            foreach ([
+                static function (StaticArtifactInvalidator $invalidator): void {
+                    $invalidator->invalidateBoardThread('thread-001');
+                },
+                static function (StaticArtifactInvalidator $invalidator): void {
+                    $invalidator->invalidateReply('thread-001', 'reply-001');
+                },
+                static function (StaticArtifactInvalidator $invalidator): void {
+                    $invalidator->invalidateIdentityLink('openpgp-example', 'thread-001', 'post-001');
+                },
+                static function (StaticArtifactInvalidator $invalidator): void {
+                    $invalidator->invalidateApproval('openpgp-example', 'thread-001', 'post-001', 'approval-001');
+                },
+            ] as $invalidate) {
+                mkdir($publicRoot, 0777, true);
+                file_put_contents($publicRoot . '/instance.html', 'stale public backup');
+                file_put_contents($publicRoot . '/activity.html', 'stale public activity');
+                file_put_contents($staticHtmlRoot . '/instance/index.html', 'stale alternate backup');
+                file_put_contents($staticHtmlRoot . '/activity.html', 'stale alternate activity');
+
+                $invalidate(new StaticArtifactInvalidator($publicRoot, $staticHtmlRoot));
+
+                assertFalse(is_file($publicRoot . '/instance.html'));
+                assertFalse(is_file($publicRoot . '/activity.html'));
+                assertFalse(is_file($staticHtmlRoot . '/instance/index.html'));
+                assertFalse(is_file($staticHtmlRoot . '/activity.html'));
+                rmdir($publicRoot);
+            }
+        } finally {
+            $this->deleteTree($publicRoot);
+            $this->deleteTree($staticHtmlRoot);
+        }
+    }
+
     public function testDefaultRepositoryBootstrapCreatesWritableLocalRepository(): void
     {
         $projectRoot = sys_get_temp_dir() . '/forum-rewrite-project-' . bin2hex(random_bytes(6));

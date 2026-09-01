@@ -22,3 +22,13 @@
   - `php tests/run.php LocalAppSmokeTest::testApplicationRendersCoreRoutes` — passed.
 - Notes:
   - Existing repository archive and SQLite download links remain unchanged.
+
+## Stage 3 - Invalidate static freshness artifacts
+- Changes:
+  - Extended content-related static invalidation to remove Backup and Activity artifacts.
+  - Covered both flat public artifacts and alternate Apache-friendly index layouts.
+  - Added regression coverage for board, reply, identity-link, and approval invalidations.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testBackupStaticArtifactsAreInvalidatedByContentWrites LocalAppSmokeTest::testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout LocalAppSmokeTest::testFrontControllerServesStaticArtifactForBackupAlias` — all passed.
+- Notes:
+  - Existing `/backup/` and `/tools/backup/` resolution already maps to the canonical instance artifact; no duplicate route artifact was introduced.
