@@ -24,3 +24,14 @@
   - `php tests/run.php` — all tests passed.
 - Notes:
   - Profile rendering remains unchanged and continues to expose keys under advanced technical details for approved and unapproved profiles.
+
+## Stage 3 - Verify public-key visibility
+- Changes:
+  - Added rendering assertions for the approved profile and linked bootstrap post in standalone and thread views.
+  - Added approved and unapproved profile assertions around the approval transition.
+  - Added a keyless-profile regression case for the bootstrap-post unavailable state.
+- Verification:
+  - `php -l tests/LocalAppSmokeTest.php` — passed.
+  - `php tests/run.php` — all tests passed.
+- Notes:
+  - Coverage confirms approval state does not control public-key visibility.

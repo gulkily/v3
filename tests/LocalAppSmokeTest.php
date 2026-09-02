@@ -245,6 +245,11 @@ final class LocalAppSmokeTest
         $_POST = [];
         $targetIdentityId = $this->extractResponseValue($response, 'identity_id');
         $targetProfileSlug = $this->extractResponseValue($response, 'profile_slug');
+        $unapprovedProfile = $this->render($application, '/profiles/' . $targetProfileSlug);
+
+        assertStringContains('Approved:</strong> no', $unapprovedProfile);
+        assertStringContains('Public key', $unapprovedProfile);
+        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $unapprovedProfile);
 
         $command = sprintf(
             '%s approval approve %s %s %s %s %s',
@@ -258,10 +263,14 @@ final class LocalAppSmokeTest
         exec($command, $output, $exitCode);
 
         $profile = $this->render($application, '/api/get_profile?profile_slug=' . rawurlencode($targetProfileSlug));
+        $approvedProfile = $this->render($application, '/profiles/' . $targetProfileSlug);
 
         assertSame(0, $exitCode);
         assertStringContains('Approved ' . $targetIdentityId, implode("\n", $output));
         assertStringContains('Approved: yes', $profile);
+        assertStringContains('Approved:</strong> yes', $approvedProfile);
+        assertStringContains('Public key', $approvedProfile);
+        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $approvedProfile);
     }
 
     public function testInjectApprovalScriptRejectsMissingApproveArguments(): void
@@ -508,6 +517,10 @@ final class LocalAppSmokeTest
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $thread);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=reply-001', $thread);
         assertStringContains('First line preview.', $post);
+        assertStringContains('Public key', $thread);
+        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $thread);
+        assertStringContains('Public key', $post);
+        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $post);
         assertStringContains('by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $post);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $post);
         assertStringContains('Source:', $post);
@@ -589,6 +602,8 @@ final class LocalAppSmokeTest
         assertStringContains('continuous social graph', $about);
         assertStringContains('/tools/backup/', $about);
         assertStringContains('Identity ID', $profile);
+        assertStringContains('Public key', $profile);
+        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $profile);
         assertStringContains('Approved by:</strong>', $profile);
         assertStringContains('root', $profile);
         assertStringContains('User guest', $username);
@@ -692,6 +707,24 @@ final class LocalAppSmokeTest
         assertStringContains('GET /about/', $llms);
         assertStringContains('POST /api/analyze_post', $llms);
         assertStringContains('GET /api/list_index', $llms);
+    }
+
+    public function testBootstrapPostShowsUnavailablePublicKeyWhenProfileKeyIsEmpty(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $pdo = new PDO('sqlite:' . $this->databasePath);
+        $pdo->exec("UPDATE profiles SET public_key = '' WHERE profile_slug = 'openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'");
+
+        $post = $this->render($application, '/posts/root-001');
+
+        assertStringContains('Public key unavailable.', $post);
+        assertStringNotContains('BEGIN PGP PUBLIC KEY BLOCK', $post);
     }
 
     public function testPostAndActivityLinkAdjacentSignatureFiles(): void
