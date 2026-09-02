@@ -1257,6 +1257,26 @@ final class LocalAppSmokeTest
         assertStringContains('database.exec(query)', $script);
     }
 
+    public function testSqliteViewerCapsAndScrollsResultSurfaces(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $viewer = $this->render($application, '/tools/sqlite/');
+        $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite_viewer.js');
+        $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+
+        assertStringContains('sqlite-result-scroll', $viewer);
+        assertStringContains('maxQueryRows = 50', $script);
+        assertStringContains('LIMIT " + maxQueryRows', $script);
+        assertStringContains('Showing the first " + maxRows + " rows.', $script);
+        assertStringContains('.sqlite-result-scroll', $css);
+        assertStringContains('overflow-x: auto', $css);
+    }
+
     public function testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp(): void
     {
         $application = new Application(

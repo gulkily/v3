@@ -21,6 +21,9 @@
     var queryResults = root.querySelector('[data-role="sqlite-query-results"]');
     var databaseUrl = "/downloads/read_model.sqlite3";
     var database = null;
+    var maxPreviewRows = 20;
+    var maxQueryRows = 50;
+    var querySelectorPopulated = false;
     var presetQueries = [
       {
         label: "Recent posts",
@@ -81,7 +84,7 @@
       }
     }
 
-    function renderRows(node, result, emptyMessage) {
+    function renderRows(node, result, emptyMessage, maxRows) {
       clearNode(node);
       if (!node) {
         return;
@@ -94,6 +97,7 @@
         return;
       }
 
+      var visibleRows = maxRows ? result.values.slice(0, maxRows) : result.values;
       var table = document.createElement("table");
       var head = document.createElement("thead");
       var headRow = document.createElement("tr");
@@ -107,7 +111,7 @@
       table.appendChild(head);
 
       var body = document.createElement("tbody");
-      result.values.forEach(function (row) {
+      visibleRows.forEach(function (row) {
         var rowNode = document.createElement("tr");
         row.forEach(function (value) {
           var cell = document.createElement("td");
@@ -118,6 +122,12 @@
       });
       table.appendChild(body);
       node.appendChild(table);
+      if (maxRows && result.values.length > maxRows) {
+        var truncated = document.createElement("p");
+        truncated.className = "meta";
+        truncated.textContent = "Showing the first " + maxRows + " rows.";
+        node.appendChild(truncated);
+      }
     }
 
     function quoteIdentifier(identifier) {
@@ -133,7 +143,7 @@
         var columns = database.exec("PRAGMA table_info(" + quotedName + ")")[0];
         var rows = database.exec("SELECT * FROM " + quotedName + " LIMIT 20")[0];
         renderRows(tableDetails, columns, "No column information is available.");
-        renderRows(tablePreview, rows, "This table has no rows.");
+        renderRows(tablePreview, rows, "This table has no rows.", maxPreviewRows);
       } catch (error) {
         clearNode(tableDetails);
         clearNode(tablePreview);
@@ -171,9 +181,10 @@
     }
 
     function populateQuerySelector() {
-      if (!querySelect) {
+      if (!querySelect || querySelectorPopulated) {
         return;
       }
+      querySelectorPopulated = true;
       presetQueries.forEach(function (preset, index) {
         var option = document.createElement("option");
         option.value = String(index);
@@ -205,9 +216,10 @@
         return;
       }
       try {
-        var result = database.exec(query)[0];
-        renderRows(queryResults, result, "The query returned no rows.");
-        setQueryStatus("Query completed locally.", "ok");
+        var normalized = query.trim().replace(/;+$/, "").trim();
+        var result = database.exec("SELECT * FROM (" + normalized + ") LIMIT " + maxQueryRows)[0];
+        renderRows(queryResults, result, "The query returned no rows.", maxQueryRows);
+        setQueryStatus("Query completed locally. Results are capped at " + maxQueryRows + " rows.", "ok");
       } catch (error) {
         clearNode(queryResults);
         setQueryStatus(error && error.message ? error.message : "The query could not be run.", "error");

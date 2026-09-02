@@ -2754,7 +2754,7 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
     border-top: 0;
   }
 
-  [data-role="pending-approvals-table-element"] td::before {
+[data-role="pending-approvals-table-element"] td::before {
     content: attr(data-label);
     display: block;
     margin-bottom: 0.08rem;
@@ -2912,4 +2912,14 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 
 :root[data-theme="word97"][data-thread-density="compact"] .thread-list .thread-card + .thread-card {
   margin-top: 0.5rem;
+}
+ .sqlite-result-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+[data-role="sqlite-query-input"] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  width: 100%;
+  box-sizing: border-box;
 }

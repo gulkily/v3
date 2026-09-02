@@ -47,3 +47,16 @@
   - Result: `PASS`; all tests passed.
 - Notes:
   - Full-text search, `WITH` queries, PRAGMAs, writes, and multi-statement input remain outside V1.
+
+## Stage 5 - Result limits and interaction polish
+- Changes:
+  - Capped table previews at 20 rows and query results at 50 rows with visible truncation feedback.
+  - Wrapped result tables in horizontally scrollable containers and styled the SQL input for technical use.
+  - Added clear no-results and query-error handling while preserving text-only DOM rendering for values.
+  - Prevented duplicate preset options/listeners when the database is reloaded.
+  - Added smoke coverage for result caps and responsive result containers.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testSqliteViewerCapsAndScrollsResultSurfaces`
+  - Result: `PASS`; all tests passed.
+- Notes:
+  - Result limits are enforced in the browser query wrapper and renderer; persistent caching remains out of scope.
