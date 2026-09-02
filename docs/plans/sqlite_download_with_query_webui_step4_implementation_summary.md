@@ -74,3 +74,13 @@
   - Full `php tests/run.php` was also run; three unrelated pre-existing `LocalAppSmokeTest` failures remain in approval/core-route fixture coverage (`testInjectApprovalScriptApprovesExistingUser`, `testApplicationRendersCoreRoutes`, and `testBootstrapPostShowsUnavailablePublicKeyWhenProfileKeyIsEmpty`).
 - Notes:
   - Implementation remains client-side and read-only. FTS, persistent browser caching, server-side SQL, and writes were not added.
+  - Post-stage Chromium verification found and corrected the viewer-root scope bug that kept the sibling explorer/query panels hidden.
+
+## Stage 6 - Viewer reveal correction
+- Changes:
+  - Moved the viewer root marker to the wrapping section so the load script can access the explorer and query sibling cards.
+- Verification:
+  - Real Chromium click verification against `/tools/sqlite/` confirmed database load success, visible explorer and query panels, 12 discovered tables, and four preset queries.
+  - Re-ran the route, schema, and preset-query smoke tests; all passed.
+- Notes:
+  - This is a corrective follow-up to Stage 6 and does not add feature scope.

@@ -1190,6 +1190,7 @@ final class LocalAppSmokeTest
         $viewer = $this->render($application, '/tools/sqlite/');
 
         assertStringContains('<h1>SQLite Viewer</h1>', $viewer);
+        assertStringContains('<section class="stack" data-sqlite-viewer>', $viewer);
         assertStringContains('href="/downloads/read_model.sqlite3"', $viewer);
         assertStringContains('queries run locally', $viewer);
         assertStringContains('class="nav-link is-active" href="/tools/sqlite/"', $viewer);
@@ -1234,6 +1235,7 @@ final class LocalAppSmokeTest
         assertStringContains('sqlite_master', $script);
         assertStringContains('LIMIT 20', $script);
         assertStringContains('PRAGMA table_info', $script);
+        assertStringContains('explorer.removeAttribute("hidden")', $script);
     }
 
     public function testSqliteViewerIncludesPresetReadOnlyQueryContract(): void
@@ -1255,6 +1257,7 @@ final class LocalAppSmokeTest
         assertStringContains('isSingleSelectQuery', $script);
         assertStringContains('Only one read-only SELECT statement is allowed.', $script);
         assertStringContains('database.exec("SELECT * FROM (" + normalized +', $script);
+        assertStringContains('queryPanel.removeAttribute("hidden")', $script);
     }
 
     public function testSqliteViewerCapsAndScrollsResultSurfaces(): void

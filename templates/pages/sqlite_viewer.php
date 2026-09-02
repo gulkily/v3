@@ -1,4 +1,4 @@
-<section class="stack">
+<section class="stack" data-sqlite-viewer>
   <article class="card">
     <div class="nav board-controls-nav">
 <?php foreach ($toolNavOptions as $option): ?>
@@ -7,7 +7,7 @@
 <?php endforeach; ?>
     </div>
   </article>
-  <article class="card" data-sqlite-viewer>
+  <article class="card">
     <h1>SQLite Viewer</h1>
     <p>Inspect the published read-model database in your browser. This viewer is read-only: queries run locally against a copy loaded into this page, and are not sent to the server.</p>
     <p><strong>Source:</strong> <a href="/downloads/read_model.sqlite3">/downloads/read_model.sqlite3</a></p>
