@@ -15,7 +15,7 @@
     <p class="meta" data-role="sqlite-status" aria-live="polite">Database not loaded.</p>
   </article>
   <article class="card" data-role="sqlite-query-panel" hidden>
-    <h2>Run a read-only query</h2>
+    <h2>Run query</h2>
     <label>Preset query
       <select data-role="sqlite-query-select">
         <option value="">Choose a query</option>

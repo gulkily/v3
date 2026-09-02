@@ -2920,7 +2920,14 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 }
 
 [data-role="sqlite-explorer"] {
-  width: 100%;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  box-sizing: border-box;
+}
+
+[data-role="sqlite-query-panel"] {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
   box-sizing: border-box;
 }
 

@@ -114,3 +114,13 @@
   - Re-ran the preset-query and query-first layout smoke tests; all passed.
 - Notes:
   - The preset intentionally has no query-level limit so the viewer’s existing 50-row safety wrapper remains the only result cap.
+
+## Post-completion UI adjustment - full-width query modules
+- Changes:
+  - Renamed the query module heading to `Run query`.
+  - Made both the Run query and Explore tables cards span the viewport width, with their result regions retaining independent horizontal scrolling.
+- Verification:
+  - Re-ran the preset-query and result-surface smoke tests; both pass.
+  - Rechecked JavaScript syntax and the scoped full-width CSS contract.
+- Notes:
+  - This is a presentation-only adjustment; query semantics and result limits are unchanged.

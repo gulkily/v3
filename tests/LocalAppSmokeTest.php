@@ -1253,6 +1253,7 @@ final class LocalAppSmokeTest
         assertStringContains('data-role="sqlite-query-select"', $viewer);
         assertStringContains('data-role="sqlite-query-input"', $viewer);
         assertStringContains('data-action="run-sqlite-query"', $viewer);
+        assertStringContains('<h2>Run query</h2>', $viewer);
         assertStringContains('Recent posts', $script);
         assertStringContains('Board: Liked + Newest', $script);
         assertStringContains('json_each(threads.board_tags_json)', $script);
@@ -1297,6 +1298,9 @@ final class LocalAppSmokeTest
         assertStringContains('Showing the first " + maxRows + " rows.', $script);
         assertStringContains('.sqlite-result-scroll', $css);
         assertStringContains('[data-role="sqlite-explorer"]', $css);
+        assertStringContains('[data-role="sqlite-query-panel"]', $css);
+        assertStringContains('width: 100vw', $css);
+        assertStringContains('margin-left: calc(50% - 50vw)', $css);
         assertStringContains('width: max-content', $css);
         assertStringContains('overflow-x: auto', $css);
     }
