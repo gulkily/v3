@@ -11,3 +11,15 @@
   - Result: `PASS`; all tests passed.
 - Notes:
   - The load control remains disabled until the browser SQLite runtime is added in Stage 2.
+
+## Stage 2 - Browser database loading
+- Changes:
+  - Vendored the pinned `sql.js` 1.13.0 browser runtime and WASM asset.
+  - Added page-specific loading JavaScript that fetches `/downloads/read_model.sqlite3`, opens it in a browser session, and reports loading, success, download, runtime, and invalid-database failures.
+  - Enabled the viewer’s load control and loaded the runtime assets through the existing fingerprinted asset pipeline.
+  - Added smoke coverage for the local runtime assets and database source contract.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testSqliteViewerLoadsLocalRuntimeAssets`
+  - Result: `PASS`; all tests passed.
+- Notes:
+  - The database is currently held only in the page’s in-memory SQLite session; no persistent browser cache was added.

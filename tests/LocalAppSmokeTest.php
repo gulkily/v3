@@ -1196,6 +1196,26 @@ final class LocalAppSmokeTest
         assertStringContains('href="/tools/sqlite/"', $this->render($application, '/tools/'));
     }
 
+    public function testSqliteViewerLoadsLocalRuntimeAssets(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $viewer = $this->render($application, '/tools/sqlite/');
+        $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite_viewer.js');
+
+        assertStringMatches('#/assets/sql-wasm\.[a-f0-9]{12}\.js#', $viewer);
+        assertStringMatches('#/assets/sqlite_viewer\.[a-f0-9]{12}\.js#', $viewer);
+        assertTrue(is_file(dirname(__DIR__) . '/public/assets/sql-wasm.js'));
+        assertTrue(is_file(dirname(__DIR__) . '/public/assets/sql-wasm.wasm'));
+        assertStringContains('/downloads/read_model.sqlite3', $script);
+        assertStringContains('initSqlJs', $script);
+        assertStringContains('locateFile', $script);
+    }
+
     public function testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp(): void
     {
         $application = new Application(

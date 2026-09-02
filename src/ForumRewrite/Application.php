@@ -1295,6 +1295,7 @@ final class Application
             ],
             'SQLite Viewer',
             'tools',
+            ['/assets/sql-wasm.js', '/assets/sqlite_viewer.js'],
         );
     }
 
