@@ -13,8 +13,36 @@
     var tableSelect = root.querySelector('[data-role="sqlite-table-select"]');
     var tableDetails = root.querySelector('[data-role="sqlite-table-details"]');
     var tablePreview = root.querySelector('[data-role="sqlite-table-preview"]');
+    var queryPanel = root.querySelector('[data-role="sqlite-query-panel"]');
+    var querySelect = root.querySelector('[data-role="sqlite-query-select"]');
+    var queryInput = root.querySelector('[data-role="sqlite-query-input"]');
+    var queryButton = root.querySelector('[data-action="run-sqlite-query"]');
+    var queryStatus = root.querySelector('[data-role="sqlite-query-status"]');
+    var queryResults = root.querySelector('[data-role="sqlite-query-results"]');
     var databaseUrl = "/downloads/read_model.sqlite3";
     var database = null;
+    var presetQueries = [
+      {
+        label: "Recent posts",
+        description: "Show the ten newest indexed posts.",
+        sql: "SELECT post_id, created_at, subject, author_label FROM posts ORDER BY created_at DESC LIMIT 10"
+      },
+      {
+        label: "Threads by reply count",
+        description: "Show the most active indexed threads.",
+        sql: "SELECT root_post_id, subject, reply_count, last_activity_at FROM threads ORDER BY reply_count DESC LIMIT 10"
+      },
+      {
+        label: "Approved profiles",
+        description: "Show approved profiles in the read model.",
+        sql: "SELECT profile_slug, username, post_count, thread_count FROM profiles WHERE is_approved = 1 ORDER BY username LIMIT 20"
+      },
+      {
+        label: "Recent activity",
+        description: "Show the ten newest activity records.",
+        sql: "SELECT created_at, kind, label, author_label FROM activity ORDER BY created_at DESC, id DESC LIMIT 10"
+      }
+    ];
 
     function setStatus(message, state) {
       if (status) {
@@ -23,6 +51,17 @@
           status.dataset.state = state;
         } else {
           delete status.dataset.state;
+        }
+      }
+    }
+
+    function setQueryStatus(message, state) {
+      if (queryStatus) {
+        queryStatus.textContent = message;
+        if (state) {
+          queryStatus.dataset.state = state;
+        } else {
+          delete queryStatus.dataset.state;
         }
       }
     }
@@ -131,6 +170,50 @@
       renderTable(tableSelect.value);
     }
 
+    function populateQuerySelector() {
+      if (!querySelect) {
+        return;
+      }
+      presetQueries.forEach(function (preset, index) {
+        var option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = preset.label + " — " + preset.description;
+        querySelect.appendChild(option);
+      });
+      querySelect.addEventListener("change", function () {
+        var preset = presetQueries[Number(querySelect.value)];
+        if (preset && queryInput) {
+          queryInput.value = preset.sql;
+        }
+      });
+    }
+
+    function isSingleSelectQuery(query) {
+      var normalized = query.trim().replace(/;+$/, "").trim();
+      return normalized !== "" && /^SELECT\b/i.test(normalized) && normalized.indexOf(";") === -1;
+    }
+
+    function runQuery() {
+      if (!database || !queryInput) {
+        setQueryStatus("Load the database before running a query.", "error");
+        return;
+      }
+      var query = queryInput.value;
+      if (!isSingleSelectQuery(query)) {
+        clearNode(queryResults);
+        setQueryStatus("Only one read-only SELECT statement is allowed.", "error");
+        return;
+      }
+      try {
+        var result = database.exec(query)[0];
+        renderRows(queryResults, result, "The query returned no rows.");
+        setQueryStatus("Query completed locally.", "ok");
+      } catch (error) {
+        clearNode(queryResults);
+        setQueryStatus(error && error.message ? error.message : "The query could not be run.", "error");
+      }
+    }
+
     async function loadDatabase() {
       setLoading(true);
       setStatus("Downloading the published database...", "loading");
@@ -153,6 +236,10 @@
         });
         database = new SQL.Database(bytes);
         populateExplorer();
+        populateQuerySelector();
+        if (queryPanel) {
+          queryPanel.hidden = false;
+        }
         setStatus("Database loaded. Browsing and queries will run locally in this page.", "ok");
         if (loadButton) {
           loadButton.textContent = "Reload Database";
@@ -168,6 +255,9 @@
 
     if (loadButton) {
       loadButton.addEventListener("click", loadDatabase);
+    }
+    if (queryButton) {
+      queryButton.addEventListener("click", runQuery);
     }
   });
 })();

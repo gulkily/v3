@@ -1236,6 +1236,27 @@ final class LocalAppSmokeTest
         assertStringContains('PRAGMA table_info', $script);
     }
 
+    public function testSqliteViewerIncludesPresetReadOnlyQueryContract(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $viewer = $this->render($application, '/tools/sqlite/');
+        $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite_viewer.js');
+
+        assertStringContains('data-role="sqlite-query-panel"', $viewer);
+        assertStringContains('data-role="sqlite-query-select"', $viewer);
+        assertStringContains('data-role="sqlite-query-input"', $viewer);
+        assertStringContains('data-action="run-sqlite-query"', $viewer);
+        assertStringContains('Recent posts', $script);
+        assertStringContains('isSingleSelectQuery', $script);
+        assertStringContains('Only one read-only SELECT statement is allowed.', $script);
+        assertStringContains('database.exec(query)', $script);
+    }
+
     public function testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp(): void
     {
         $application = new Application(

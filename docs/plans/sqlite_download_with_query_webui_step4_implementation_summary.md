@@ -35,3 +35,15 @@
   - Result: `PASS`; all tests passed.
 - Notes:
   - The explorer discovers tables from SQLite metadata and does not assume only the current read-model table list.
+
+## Stage 4 - Preset and read-only query runner
+- Changes:
+  - Added a viewer-owned preset catalog with obvious post, thread, profile, and activity queries.
+  - Added preset selection, SQL editing, local execution, result rendering, and query status feedback.
+  - Enforced a conservative one-statement `SELECT`-only contract in the browser; no query endpoint was added.
+  - Added smoke coverage for the query controls, preset catalog, and read-only validation contract.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testSqliteViewerIncludesPresetReadOnlyQueryContract`
+  - Result: `PASS`; all tests passed.
+- Notes:
+  - Full-text search, `WITH` queries, PRAGMAs, writes, and multi-statement input remain outside V1.
