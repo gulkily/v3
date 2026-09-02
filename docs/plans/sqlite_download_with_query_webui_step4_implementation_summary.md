@@ -60,3 +60,17 @@
   - Result: `PASS`; all tests passed.
 - Notes:
   - Result limits are enforced in the browser query wrapper and renderer; persistent caching remains out of scope.
+
+## Stage 6 - Integration and regression verification
+- Changes:
+  - Completed the shared Tools integration, route/source contracts, local asset fingerprinting, and stage-specific smoke coverage.
+  - Corrected the query-contract smoke assertion to match the capped query wrapper.
+- Verification:
+  - `node --check public/assets/sqlite_viewer.js`
+  - `php -l src/ForumRewrite/Application.php`
+  - `php -l tests/LocalAppSmokeTest.php`
+  - Five SQLite viewer smoke tests covering route, runtime loading, schema exploration, preset queries, and result caps.
+  - Result: all feature-specific checks passed.
+  - Full `php tests/run.php` was also run; three unrelated pre-existing `LocalAppSmokeTest` failures remain in approval/core-route fixture coverage (`testInjectApprovalScriptApprovesExistingUser`, `testApplicationRendersCoreRoutes`, and `testBootstrapPostShowsUnavailablePublicKeyWhenProfileKeyIsEmpty`).
+- Notes:
+  - Implementation remains client-side and read-only. FTS, persistent browser caching, server-side SQL, and writes were not added.

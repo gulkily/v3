@@ -2913,7 +2913,7 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 :root[data-theme="word97"][data-thread-density="compact"] .thread-list .thread-card + .thread-card {
   margin-top: 0.5rem;
 }
- .sqlite-result-scroll {
+.sqlite-result-scroll {
   overflow-x: auto;
   max-width: 100%;
 }

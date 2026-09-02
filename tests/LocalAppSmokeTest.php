@@ -1254,7 +1254,7 @@ final class LocalAppSmokeTest
         assertStringContains('Recent posts', $script);
         assertStringContains('isSingleSelectQuery', $script);
         assertStringContains('Only one read-only SELECT statement is allowed.', $script);
-        assertStringContains('database.exec(query)', $script);
+        assertStringContains('database.exec("SELECT * FROM (" + normalized +', $script);
     }
 
     public function testSqliteViewerCapsAndScrollsResultSurfaces(): void
