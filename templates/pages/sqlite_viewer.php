@@ -14,14 +14,6 @@
     <p><button type="button" data-action="load-sqlite">Load Database</button></p>
     <p class="meta" data-role="sqlite-status" aria-live="polite">Database not loaded.</p>
   </article>
-  <article class="card" data-role="sqlite-explorer" hidden>
-    <h2>Explore tables</h2>
-    <label>Table
-      <select data-role="sqlite-table-select"></select>
-    </label>
-    <div class="sqlite-result-scroll" data-role="sqlite-table-details"></div>
-    <div class="sqlite-result-scroll" data-role="sqlite-table-preview"></div>
-  </article>
   <article class="card" data-role="sqlite-query-panel" hidden>
     <h2>Run a read-only query</h2>
     <label>Preset query
@@ -35,5 +27,13 @@
     <p><button type="button" data-action="run-sqlite-query">Run Query</button></p>
     <p class="meta" data-role="sqlite-query-status" aria-live="polite">Queries run only after the database is loaded.</p>
     <div class="sqlite-result-scroll" data-role="sqlite-query-results"></div>
+  </article>
+  <article class="card" data-role="sqlite-explorer" hidden>
+    <h2>Explore tables</h2>
+    <label>Table
+      <select data-role="sqlite-table-select"></select>
+    </label>
+    <div class="sqlite-result-scroll" data-role="sqlite-table-details"></div>
+    <div class="sqlite-result-scroll" data-role="sqlite-table-preview"></div>
   </article>
 </section>

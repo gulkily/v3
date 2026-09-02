@@ -1258,6 +1258,21 @@ final class LocalAppSmokeTest
         assertStringContains('Only one read-only SELECT statement is allowed.', $script);
         assertStringContains('database.exec("SELECT * FROM (" + normalized +', $script);
         assertStringContains('queryPanel.removeAttribute("hidden")', $script);
+        assertStringContains('querySelect.value = "0"', $script);
+        assertStringContains('queryInput.value = presetQueries[0].sql', $script);
+    }
+
+    public function testSqliteViewerPlacesQueryRunnerBeforeTableExplorer(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $viewer = $this->render($application, '/tools/sqlite/');
+
+        assertTrue(strpos($viewer, 'data-role="sqlite-query-panel"') < strpos($viewer, 'data-role="sqlite-explorer"'));
     }
 
     public function testSqliteViewerCapsAndScrollsResultSurfaces(): void

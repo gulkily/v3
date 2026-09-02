@@ -197,6 +197,10 @@
           queryInput.value = preset.sql;
         }
       });
+      querySelect.value = "0";
+      if (queryInput) {
+        queryInput.value = presetQueries[0].sql;
+      }
     }
 
     function isSingleSelectQuery(query) {

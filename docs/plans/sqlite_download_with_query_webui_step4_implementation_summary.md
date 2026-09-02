@@ -94,3 +94,13 @@
   - Rechecked the viewer CSS and JavaScript syntax; no errors reported.
 - Notes:
   - This is a presentation-only adjustment; query behavior and data limits are unchanged.
+
+## Post-completion UI adjustment - query-first layout
+- Changes:
+  - Moved the query runner before the table explorer in the viewer flow.
+  - Preselected and prefilled the first preset, Recent posts, after the database loads; execution remains user-triggered.
+- Verification:
+  - Re-ran the viewer preset and result-surface smoke tests; both pass.
+  - Added coverage confirming query markup precedes the table explorer markup.
+- Notes:
+  - No query scope, result limit, or database behavior changed.
