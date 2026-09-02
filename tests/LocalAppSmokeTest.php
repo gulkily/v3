@@ -553,6 +553,10 @@ final class LocalAppSmokeTest
         assertStringContains('Registered site feature flags, defaults, effective values, and override sources.', $tools);
         assertStringContains('/account/key/', $tools);
         assertStringContains('System State', $codebase);
+        assertStringContains('<strong>Name:</strong> zenmemes', $codebase);
+        assertStringContains('<strong>Admin:</strong>', $codebase);
+        assertStringContains('grep &#039;^Instance-Name:&#039; state/local_repository/records/instance/public.txt', $codebase);
+        assertStringContains("SELECT username_token, MIN(username) AS username FROM profiles WHERE approved_by_label = &#039;root&#039; GROUP BY username_token ORDER BY username_token ASC;", $codebase);
         assertStringContains('board-controls-nav', $codebase);
         assertStringContains('class="nav-link is-active" href="/tools/codebase/"', $codebase);
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $codebase);
@@ -561,10 +565,10 @@ final class LocalAppSmokeTest
         assertStringContains('Schema version', $codebase);
         assertStringContains('Lock status', $codebase);
         assertStringContains('Read-model rows', $codebase);
-        assertStringContains('git -C REPOSITORY rev-parse HEAD', $codebase);
-        assertStringContains("SELECT value FROM metadata WHERE key = &#039;schema_version&#039;", $codebase);
-        assertStringContains('flock DATABASE_DIR/forum-rewrite.lock', $codebase);
-        assertStringContains('SELECT COUNT(*) FROM posts', $codebase);
+        assertStringContains('git -C state/local_repository rev-parse HEAD', $codebase);
+        assertStringContains("SELECT value FROM metadata WHERE key = &#039;schema_version&#039;;", $codebase);
+        assertStringContains('flock -n state/cache/forum-rewrite.lock -c true', $codebase);
+        assertStringContains('SELECT COUNT(*) FROM posts;', $codebase);
         assertStringContains('/downloads/repository.tar.gz', $codebase);
         assertStringContains('Feature Flags', $featureFlags);
         assertStringContains('board-controls-nav', $featureFlags);

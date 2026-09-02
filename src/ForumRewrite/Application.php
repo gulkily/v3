@@ -1243,6 +1243,8 @@ final class Application
             [
                 'state' => $this->collectCodebaseState(),
                 'toolNavOptions' => $this->toolNavOptions('codebase'),
+                'siteName' => SiteConfig::SITE_NAME,
+                'admins' => $this->fetchSeedApprovedUsers(),
             ],
             'System State',
             'tools',
