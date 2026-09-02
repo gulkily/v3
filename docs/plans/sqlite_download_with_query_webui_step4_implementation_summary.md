@@ -104,3 +104,13 @@
   - Added coverage confirming query markup precedes the table explorer markup.
 - Notes:
   - No query scope, result limit, or database behavior changed.
+
+## Post-completion query adjustment - default liked/newest board view
+- Changes:
+  - Added a complete `Board: Liked + Newest` preset matching the board’s root-post/profile joins, selected fields, hidden identity filtering, like-label and non-negative-score constraints, pinned-first ordering, and newest tie-break ordering.
+  - Made this board-view preset the default selected and prefilled query.
+- Verification:
+  - Browser-level verification selected the new preset and executed it against the published database, returning 50 rows under the existing viewer cap.
+  - Re-ran the preset-query and query-first layout smoke tests; all passed.
+- Notes:
+  - The preset intentionally has no query-level limit so the viewer’s existing 50-row safety wrapper remains the only result cap.

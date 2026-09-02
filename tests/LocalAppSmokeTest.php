@@ -1254,6 +1254,10 @@ final class LocalAppSmokeTest
         assertStringContains('data-role="sqlite-query-input"', $viewer);
         assertStringContains('data-action="run-sqlite-query"', $viewer);
         assertStringContains('Recent posts', $script);
+        assertStringContains('Board: Liked + Newest', $script);
+        assertStringContains('json_each(threads.board_tags_json)', $script);
+        assertStringContains('posts.post_score_total >= 0', $script);
+        assertStringContains('author_username_token', $script);
         assertStringContains('isSingleSelectQuery', $script);
         assertStringContains('Only one read-only SELECT statement is allowed.', $script);
         assertStringContains('database.exec("SELECT * FROM (" + normalized +', $script);
