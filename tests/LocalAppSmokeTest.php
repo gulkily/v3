@@ -1243,6 +1243,9 @@ final class LocalAppSmokeTest
         assertStringContains('explorer.removeAttribute("hidden")', $script);
         assertStringContains('activateTableTab("data")', $script);
         assertStringContains('tablePreview.hidden = tabName !== "data"', $script);
+        assertStringContains('sqlite-sort-button', $script);
+        assertStringContains('aria-sort', $script);
+        assertStringContains('sortDirections', $script);
     }
 
     public function testSqliteViewerIncludesPresetReadOnlyQueryContract(): void

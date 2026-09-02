@@ -151,3 +151,13 @@
   - Rechecked JavaScript syntax and tab markup contracts.
 - Notes:
   - Existing row bounds and intrinsic column-details sizing are unchanged.
+
+## Post-completion UI adjustment - sortable data columns
+- Changes:
+  - Made Explore tables Data-tab headers keyboard-accessible sort buttons with ascending/descending toggling.
+  - Added type-aware comparison for numeric, textual, and NULL values; Columns and query-result tables remain unchanged.
+- Verification:
+  - Re-ran the schema explorer and result-surface smoke tests; both pass.
+  - Rechecked JavaScript syntax and sortable-header contracts.
+- Notes:
+  - Sorting applies to the bounded rows currently displayed in the data preview.

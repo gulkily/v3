@@ -104,7 +104,7 @@
       }
     }
 
-    function renderRows(node, result, emptyMessage, maxRows) {
+    function renderRows(node, result, emptyMessage, maxRows, sortable) {
       clearNode(node);
       if (!node) {
         return;
@@ -121,25 +121,72 @@
       var table = document.createElement("table");
       var head = document.createElement("thead");
       var headRow = document.createElement("tr");
-      result.columns.forEach(function (column) {
+      var body = document.createElement("tbody");
+      var sortDirections = {};
+
+      function compareValues(left, right) {
+        if (left === right) {
+          return 0;
+        }
+        if (left === null) {
+          return 1;
+        }
+        if (right === null) {
+          return -1;
+        }
+        var leftNumber = Number(left);
+        var rightNumber = Number(right);
+        if (String(left).trim() !== "" && String(right).trim() !== "" && !Number.isNaN(leftNumber) && !Number.isNaN(rightNumber)) {
+          return leftNumber - rightNumber;
+        }
+        return String(left).localeCompare(String(right), undefined, { numeric: true, sensitivity: "base" });
+      }
+
+      function renderBody(rows) {
+        clearNode(body);
+        rows.forEach(function (row) {
+          var rowNode = document.createElement("tr");
+          row.forEach(function (value) {
+            var cell = document.createElement("td");
+            cell.textContent = value === null ? "NULL" : String(value);
+            rowNode.appendChild(cell);
+          });
+          body.appendChild(rowNode);
+        });
+      }
+
+      result.columns.forEach(function (column, columnIndex) {
         var heading = document.createElement("th");
         heading.scope = "col";
-        heading.textContent = column;
+        heading.setAttribute("aria-sort", "none");
+        if (sortable) {
+          var sortButton = document.createElement("button");
+          sortButton.type = "button";
+          sortButton.className = "sqlite-sort-button";
+          sortButton.textContent = column;
+          sortButton.addEventListener("click", function () {
+            var direction = sortDirections[columnIndex] === "ascending" ? "descending" : "ascending";
+            sortDirections = {};
+            sortDirections[columnIndex] = direction;
+            var sortedRows = visibleRows.slice().sort(function (left, right) {
+              return compareValues(left[columnIndex], right[columnIndex]) * (direction === "ascending" ? 1 : -1);
+            });
+            headRow.querySelectorAll("th").forEach(function (header) {
+              header.setAttribute("aria-sort", "none");
+            });
+            heading.setAttribute("aria-sort", direction);
+            renderBody(sortedRows);
+          });
+          heading.appendChild(sortButton);
+        } else {
+          heading.textContent = column;
+        }
         headRow.appendChild(heading);
       });
       head.appendChild(headRow);
       table.appendChild(head);
 
-      var body = document.createElement("tbody");
-      visibleRows.forEach(function (row) {
-        var rowNode = document.createElement("tr");
-        row.forEach(function (value) {
-          var cell = document.createElement("td");
-          cell.textContent = value === null ? "NULL" : String(value);
-          rowNode.appendChild(cell);
-        });
-        body.appendChild(rowNode);
-      });
+      renderBody(visibleRows);
       table.appendChild(body);
       node.appendChild(table);
       if (maxRows && result.values.length > maxRows) {
@@ -163,7 +210,7 @@
         var columns = database.exec("PRAGMA table_info(" + quotedName + ")")[0];
         var rows = database.exec("SELECT * FROM " + quotedName + " LIMIT 20")[0];
         renderRows(tableDetails, columns, "No column information is available.");
-        renderRows(tablePreview, rows, "This table has no rows.", maxPreviewRows);
+        renderRows(tablePreview, rows, "This table has no rows.", maxPreviewRows, true);
       } catch (error) {
         clearNode(tableDetails);
         clearNode(tablePreview);

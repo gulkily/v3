@@ -2949,6 +2949,17 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   white-space: nowrap;
 }
 
+.sqlite-sort-button {
+  margin: -0.4rem -0.55rem;
+  padding: 0.4rem 0.55rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 [data-role="sqlite-query-input"] {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   width: 100%;
