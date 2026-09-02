@@ -181,6 +181,8 @@ final class ReadModelBuilder
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 created_at TEXT NOT NULL,
                 kind TEXT NOT NULL,
+                record_family TEXT NOT NULL DEFAULT \'post\',
+                action_key TEXT NULL,
                 post_id TEXT NULL,
                 thread_id TEXT NULL,
                 label TEXT NOT NULL,
@@ -197,6 +199,7 @@ final class ReadModelBuilder
 
         $pdo->exec('CREATE INDEX activity_recent_idx ON activity (created_at DESC, post_id DESC, id DESC)');
         $pdo->exec('CREATE INDEX activity_post_id_idx ON activity (post_id)');
+        $pdo->exec('CREATE INDEX activity_action_key_idx ON activity (action_key)');
     }
 
     /**

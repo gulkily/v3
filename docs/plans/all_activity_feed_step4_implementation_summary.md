@@ -14,3 +14,15 @@
 - Notes:
   - Frontend-only interactions with no canonical repository write are outside this feature.
   - Codex handoff and agent-reply workflow state are not included unless they acquire canonical repository records in a later scope decision.
+
+## Stage 2 - Read-model activity representation
+- Changes:
+  - Added nullable `action_key` and required `record_family` fields to the activity read model for deterministic action grouping and non-post event classification.
+  - Added an activity action-key index.
+  - Bumped the read-model schema version from 12 to 13 so existing databases rebuild into the new representation.
+- Verification:
+  - `php -l src/ForumRewrite/ReadModel/ReadModelMetadata.php` passed.
+  - `php -l src/ForumRewrite/ReadModel/ReadModelBuilder.php` passed.
+  - `php tests/run.php ReadModelBuilderTimingTest LocalAppSmokeTest::testActivityRssAndBackupSnapshot` passed.
+- Notes:
+  - Existing activity insert paths continue to work through the column default; later stages will populate family/action values for each event type.

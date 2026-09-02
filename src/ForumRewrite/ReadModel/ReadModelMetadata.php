@@ -6,7 +6,7 @@ namespace ForumRewrite\ReadModel;
 
 final class ReadModelMetadata
 {
-    public const SCHEMA_VERSION = '12';
+    public const SCHEMA_VERSION = '13';
 
     public static function repositoryHead(string $repositoryRoot): string
     {
