@@ -84,3 +84,13 @@
   - Re-ran the route, schema, and preset-query smoke tests; all passed.
 - Notes:
   - This is a corrective follow-up to Stage 6 and does not add feature scope.
+
+## Post-completion UI adjustment - full-width explorer tables
+- Changes:
+  - Made the Explore tables card explicitly use the full available content width.
+  - Made each explorer/result table use an independently scrollable horizontal container while retaining a full-width minimum.
+- Verification:
+  - Re-ran `LocalAppSmokeTest::testSqliteViewerCapsAndScrollsResultSurfaces`; result: `PASS`.
+  - Rechecked the viewer CSS and JavaScript syntax; no errors reported.
+- Notes:
+  - This is a presentation-only adjustment; query behavior and data limits are unchanged.

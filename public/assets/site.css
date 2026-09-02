@@ -2914,8 +2914,28 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   margin-top: 0.5rem;
 }
 .sqlite-result-scroll {
+  width: 100%;
   overflow-x: auto;
   max-width: 100%;
+}
+
+[data-role="sqlite-explorer"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sqlite-result-scroll table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+}
+
+.sqlite-result-scroll th,
+.sqlite-result-scroll td {
+  padding: 0.4rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
 }
 
 [data-role="sqlite-query-input"] {

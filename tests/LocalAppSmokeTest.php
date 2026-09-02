@@ -1277,6 +1277,8 @@ final class LocalAppSmokeTest
         assertStringContains('LIMIT " + maxQueryRows', $script);
         assertStringContains('Showing the first " + maxRows + " rows.', $script);
         assertStringContains('.sqlite-result-scroll', $css);
+        assertStringContains('[data-role="sqlite-explorer"]', $css);
+        assertStringContains('width: max-content', $css);
         assertStringContains('overflow-x: auto', $css);
     }
 
