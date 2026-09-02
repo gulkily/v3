@@ -14,4 +14,12 @@
     <p><button type="button" data-action="load-sqlite">Load Database</button></p>
     <p class="meta" data-role="sqlite-status" aria-live="polite">Database not loaded.</p>
   </article>
+  <article class="card" data-role="sqlite-explorer" hidden>
+    <h2>Explore tables</h2>
+    <label>Table
+      <select data-role="sqlite-table-select"></select>
+    </label>
+    <div data-role="sqlite-table-details"></div>
+    <div data-role="sqlite-table-preview"></div>
+  </article>
 </section>

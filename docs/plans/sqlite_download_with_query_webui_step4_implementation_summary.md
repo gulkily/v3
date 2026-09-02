@@ -23,3 +23,15 @@
   - Result: `PASS`; all tests passed.
 - Notes:
   - The database is currently held only in the page’s in-memory SQLite session; no persistent browser cache was added.
+
+## Stage 3 - Schema explorer
+- Changes:
+  - Added a post-load table selector and schema explorer surface.
+  - Added browser-side inspection of user tables, columns, and up to 20 rows per preview.
+  - Added empty and inspection-error states with DOM text rendering for database values.
+  - Added smoke coverage for the explorer markup and bounded inspection contract.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testSqliteViewerIncludesSchemaExplorerContract`
+  - Result: `PASS`; all tests passed.
+- Notes:
+  - The explorer discovers tables from SQLite metadata and does not assume only the current read-model table list.

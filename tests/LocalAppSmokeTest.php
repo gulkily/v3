@@ -1216,6 +1216,26 @@ final class LocalAppSmokeTest
         assertStringContains('locateFile', $script);
     }
 
+    public function testSqliteViewerIncludesSchemaExplorerContract(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $viewer = $this->render($application, '/tools/sqlite/');
+        $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite_viewer.js');
+
+        assertStringContains('data-role="sqlite-explorer"', $viewer);
+        assertStringContains('data-role="sqlite-table-select"', $viewer);
+        assertStringContains('data-role="sqlite-table-details"', $viewer);
+        assertStringContains('data-role="sqlite-table-preview"', $viewer);
+        assertStringContains('sqlite_master', $script);
+        assertStringContains('LIMIT 20', $script);
+        assertStringContains('PRAGMA table_info', $script);
+    }
+
     public function testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp(): void
     {
         $application = new Application(
