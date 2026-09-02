@@ -175,7 +175,7 @@
         renderTable(tableSelect.value);
       });
       if (explorer) {
-        explorer.hidden = false;
+        explorer.removeAttribute("hidden");
       }
       renderTable(tableSelect.value);
     }
@@ -249,8 +249,11 @@
         database = new SQL.Database(bytes);
         populateExplorer();
         populateQuerySelector();
+        if (explorer) {
+          explorer.removeAttribute("hidden");
+        }
         if (queryPanel) {
-          queryPanel.hidden = false;
+          queryPanel.removeAttribute("hidden");
         }
         setStatus("Database loaded. Browsing and queries will run locally in this page.", "ok");
         if (loadButton) {
