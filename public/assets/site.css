@@ -2937,6 +2937,10 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   border-collapse: collapse;
 }
 
+[data-role="sqlite-table-details"] table {
+  min-width: 0;
+}
+
 .sqlite-result-scroll th,
 .sqlite-result-scroll td {
   padding: 0.4rem 0.55rem;

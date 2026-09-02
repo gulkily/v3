@@ -132,3 +132,11 @@
   - Re-ran `LocalAppSmokeTest::testSqliteViewerCapsAndScrollsResultSurfaces`; result: `PASS`.
 - Notes:
   - Result-table horizontal scrolling remains local to the result containers.
+
+## Post-completion UI adjustment - intrinsic column details width
+- Changes:
+  - Removed the 100% minimum width from the Explore tables column-details table so its columns use intrinsic content width without artificial spacing.
+- Verification:
+  - Re-ran `LocalAppSmokeTest::testSqliteViewerCapsAndScrollsResultSurfaces`; result: `PASS`.
+- Notes:
+  - Table previews and query results retain their existing full-width minimum and horizontal scrolling behavior.

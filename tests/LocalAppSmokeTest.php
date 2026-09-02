@@ -1301,6 +1301,8 @@ final class LocalAppSmokeTest
         assertStringContains('[data-role="sqlite-query-panel"]', $css);
         assertStringContains('width: calc(100vw - 2rem)', $css);
         assertStringContains('margin-left: calc(50% - 50vw + 1rem)', $css);
+        assertStringContains('[data-role="sqlite-table-details"] table', $css);
+        assertStringContains('min-width: 0', $css);
         assertStringContains('width: max-content', $css);
         assertStringContains('overflow-x: auto', $css);
     }
