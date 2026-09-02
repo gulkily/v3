@@ -1957,25 +1957,12 @@
 
   async function publishPublicKey(root, timing) {
     const publicKey = localStorage.getItem(storageKeys.publicKey) || "";
-    const username = localStorage.getItem(storageKeys.username) || "guest";
     const fingerprint = await ensureStoredFingerprint();
     if (!publicKey) {
       throw new Error("No browser public key is available to publish.");
     }
 
-    markActionTiming(timing, "forum_link_identity_fetch_start");
-    const response = await fetch(`/api/link_identity`, {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-      },
-      body: new URLSearchParams({ public_key: publicKey }).toString(),
-    });
-    const text = await response.text();
-    markActionTiming(timing, "forum_link_identity_response");
-
-    if (text.includes("status=ok") || text.includes("Identity already exists for this fingerprint.")) {
+    if (await serverKnowsCurrentIdentity(fingerprint)) {
       if (fingerprint) {
         localStorage.setItem(storageKeys.publishedFingerprint, fingerprint);
       }
@@ -1984,8 +1971,64 @@
       return;
     }
 
-    const failure = classifyIdentityBootstrapFailure(parseApiErrorResponse(text));
-    throw buildFriendlyError(failure.friendlyMessage, failure.technicalDetails);
+    markActionTiming(timing, "forum_link_identity_fetch_start");
+    const preparedResponse = await fetch(`/api/prepare_identity`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
+      body: new URLSearchParams({ public_key: publicKey }).toString(),
+    });
+    const preparedText = await preparedResponse.text();
+    markActionTiming(timing, "forum_link_identity_response");
+
+    let prepared;
+    try {
+      prepared = JSON.parse(preparedText);
+    } catch (error) {
+      prepared = null;
+    }
+    if (!prepared || prepared.status !== "ok") {
+      const rawError = prepared && prepared.error ? String(prepared.error) : "Unable to prepare browser identity.";
+      if (rawError === "Identity already exists for this fingerprint.") {
+        localStorage.setItem(storageKeys.publishedFingerprint, fingerprint);
+        await syncIdentityHint(preferredIdentityHint(), timing);
+        renderSavedState(root);
+        return;
+      }
+      throw new Error(rawError);
+    }
+
+    const detachedSignature = await signCanonicalRecord(String(prepared.canonical_record || ""));
+    const finalizedResponse = await fetch(`/api/create_identity`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
+      body: new URLSearchParams({
+        prepare_token: String(prepared.prepare_token || ""),
+        canonical_record: String(prepared.canonical_record || ""),
+        detached_signature: detachedSignature,
+      }).toString(),
+    });
+    const finalizedText = await finalizedResponse.text();
+    let finalized;
+    try {
+      finalized = JSON.parse(finalizedText);
+    } catch (error) {
+      finalized = null;
+    }
+    if (!finalized || finalized.status !== "ok") {
+      throw new Error(finalized && finalized.error ? String(finalized.error) : "Unable to finalize browser identity.");
+    }
+
+    if (fingerprint) {
+      localStorage.setItem(storageKeys.publishedFingerprint, fingerprint);
+    }
+    await syncIdentityHint(preferredIdentityHint(), timing);
+    renderSavedState(root);
   }
 
   async function publishPublicKeyWithRetry(root, timing) {

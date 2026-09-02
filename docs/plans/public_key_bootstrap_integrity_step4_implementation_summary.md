@@ -12,3 +12,13 @@
   - `php tests/run.php` — all tests passed.
 - Notes:
   - Browser setup is not yet connected to these endpoints; that is Stage 2.
+
+## Stage 2 - Sign automatic bootstrap statements in the browser
+- Changes:
+  - Changed normal browser identity publication to prepare an automatic bootstrap statement, sign it locally, and finalize it through the new identity endpoint.
+  - Reused the existing local OpenPGP signing helper and server-known-identity check for duplicate/recovery behavior.
+  - Kept private-key material in browser storage and sent only the detached signature to the server.
+- Verification:
+  - `node --check public/assets/browser_signing.js` — passed.
+- Notes:
+  - Existing browser test fixtures still mock the legacy link transport and will be updated with the signed lifecycle in Stage 4.
