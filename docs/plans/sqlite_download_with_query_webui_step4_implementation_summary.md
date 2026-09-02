@@ -161,3 +161,12 @@
   - Rechecked JavaScript syntax and sortable-header contracts.
 - Notes:
   - Sorting applies to the bounded rows currently displayed in the data preview.
+
+## Post-completion UI adjustment - sort indicators
+- Changes:
+  - Added visible ascending and descending arrows to the active Data-tab sort header.
+  - Bound indicators to the existing `aria-sort` state so inactive columns remain unmarked.
+- Verification:
+  - Re-ran the sortable data-table smoke coverage; result: `PASS`.
+- Notes:
+  - Sort behavior and displayed-row bounds are unchanged.

@@ -1246,6 +1246,10 @@ final class LocalAppSmokeTest
         assertStringContains('sqlite-sort-button', $script);
         assertStringContains('aria-sort', $script);
         assertStringContains('sortDirections', $script);
+        assertStringContains('aria-sort="ascending"', $css);
+        assertStringContains('aria-sort="descending"', $css);
+        assertStringContains('content: " ▲"', $css);
+        assertStringContains('content: " ▼"', $css);
     }
 
     public function testSqliteViewerIncludesPresetReadOnlyQueryContract(): void

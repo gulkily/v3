@@ -2960,6 +2960,14 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   white-space: nowrap;
 }
 
+[data-role="sqlite-table-preview"] th[aria-sort="ascending"] .sqlite-sort-button::after {
+  content: " ▲";
+}
+
+[data-role="sqlite-table-preview"] th[aria-sort="descending"] .sqlite-sort-button::after {
+  content: " ▼";
+}
+
 [data-role="sqlite-query-input"] {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   width: 100%;
