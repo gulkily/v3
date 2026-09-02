@@ -572,8 +572,10 @@ NODE;
         $result = $this->runScript($script);
 
         assertSame('/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][0]['url']);
-        assertSame('/api/link_identity', $result['fetches'][1]['url']);
-        assertStringContains('/api/set_identity_hint?identity_hint=openpgp%3A0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][2]['url']);
+        assertSame('/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][1]['url']);
+        assertSame('/api/prepare_identity', $result['fetches'][2]['url']);
+        assertSame('/api/link_identity', $result['fetches'][3]['url']);
+        assertStringContains('/api/set_identity_hint?identity_hint=openpgp%3A0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][4]['url']);
         assertSame(['forum_pki_published_fingerprint', '0168FF20EB09C3EA6193BD3C92A73AA7D20A0954'], $result['localSetCalls'][0]);
         assertSame('Finishing browser identity setup...', $result['status']);
     }
@@ -746,9 +748,11 @@ NODE;
 
         assertSame('forum-user', $result['generatedUsername']);
         assertSame('/api/set_identity_hint?identity_hint=openpgp%3A0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][0]['url']);
-        assertSame('/api/link_identity', $result['fetches'][1]['url']);
-        assertStringContains('public_key=', $result['fetches'][1]['body']);
-        assertSame('/api/set_identity_hint?identity_hint=openpgp%3A0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][2]['url']);
+        assertSame('/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][1]['url']);
+        assertSame('/api/prepare_identity', $result['fetches'][2]['url']);
+        assertSame('/api/link_identity', $result['fetches'][3]['url']);
+        assertStringContains('public_key=', $result['fetches'][3]['body']);
+        assertSame('/api/set_identity_hint?identity_hint=openpgp%3A0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][4]['url']);
         assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $result['publishedFingerprint']);
         assertSame(true, in_array('forum_pki_published_fingerprint', $result['localRemoveCalls'], true));
         assertSame("-----BEGIN PGP PUBLIC KEY BLOCK-----\nfixture-key\n-----END PGP PUBLIC KEY BLOCK-----", $result['publicKeyField']);
@@ -1210,8 +1214,10 @@ NODE;
 
         $result = $this->runScript($script);
 
-        assertSame('/api/link_identity', $result['fetches'][0]['url']);
-        assertSame('/api/set_identity_hint?identity_hint=openpgp%3A0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][1]['url']);
+        assertSame('/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][0]['url']);
+        assertSame('/api/prepare_identity', $result['fetches'][1]['url']);
+        assertSame('/api/link_identity', $result['fetches'][2]['url']);
+        assertSame('/api/set_identity_hint?identity_hint=openpgp%3A0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][3]['url']);
         assertStringContains('public_key=', $result['linkBody']);
         assertSame(false, $result['linkBodyContainsPrivateKey']);
         assertSame('forum-user', $result['username']);
@@ -1408,7 +1414,10 @@ NODE;
 
         $result = $this->runScript($script);
 
-        assertSame('/api/link_identity', $result['fetches'][2]['url']);
+        assertStringContains('/api/set_identity_hint?', $result['fetches'][0]['url']);
+        assertSame('/api/get_profile?profile_slug=openpgp-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', $result['fetches'][1]['url']);
+        assertSame('/api/prepare_identity', $result['fetches'][2]['url']);
+        assertSame('/api/link_identity', $result['fetches'][3]['url']);
         assertSame('old-user', $result['localStore']['forum_pki_username']);
         assertSame("-----BEGIN PGP PUBLIC KEY BLOCK-----\nold public\n-----END PGP PUBLIC KEY BLOCK-----\n", $result['localStore']['forum_pki_public_key']);
         assertSame("-----BEGIN PGP PRIVATE KEY BLOCK-----\nold private\n-----END PGP PRIVATE KEY BLOCK-----\n", $result['localStore']['forum_pki_private_key']);
@@ -1510,9 +1519,9 @@ NODE;
 
         assertSame('forum-user', $result['generatedUsername']);
         assertSame(2, $result['linkIdentityCalls']);
-        assertSame('/api/link_identity', $result['fetches'][1]['url']);
-        assertSame('/api/link_identity', $result['fetches'][2]['url']);
-        assertStringContains('public_key=', $result['fetches'][2]['body']);
+        assertSame(2, count(array_filter($result['fetches'], static fn (array $fetch): bool => $fetch['url'] === '/api/prepare_identity')));
+        assertSame(2, count(array_filter($result['fetches'], static fn (array $fetch): bool => $fetch['url'] === '/api/link_identity')));
+        assertStringContains('public_key=', implode('\n', array_map(static fn (array $fetch): string => $fetch['body'] ?? '', $result['fetches'])));
         assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $result['publishedFingerprint']);
         assertSame('Publishing your public key in the background...', $result['status']);
     }

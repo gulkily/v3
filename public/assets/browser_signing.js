@@ -1972,14 +1972,39 @@
     }
 
     markActionTiming(timing, "forum_link_identity_fetch_start");
-    const preparedResponse = await fetch(`/api/prepare_identity`, {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-      },
-      body: new URLSearchParams({ public_key: publicKey }).toString(),
-    });
+    let preparedResponse;
+    try {
+      preparedResponse = await fetch(`/api/prepare_identity`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
+        body: new URLSearchParams({ public_key: publicKey }).toString(),
+      });
+    } catch (error) {
+      // Older installations may not expose the signed identity endpoints yet.
+      const legacyResponse = await fetch(`/api/link_identity`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
+        body: new URLSearchParams({ public_key: publicKey }).toString(),
+      });
+      if (!legacyResponse.ok) {
+        throw buildFriendlyError(
+          "Could not verify the new browser key automatically. Open /account/key/ to finish manually.",
+          "Unable to inspect OpenPGP public key."
+        );
+      }
+      if (fingerprint) {
+        localStorage.setItem(storageKeys.publishedFingerprint, fingerprint);
+      }
+      await syncIdentityHint(preferredIdentityHint(), timing);
+      renderSavedState(root);
+      return;
+    }
     const preparedText = await preparedResponse.text();
     markActionTiming(timing, "forum_link_identity_response");
 
@@ -2054,15 +2079,19 @@
       return false;
     }
 
-    const response = await fetch(
-      `/api/get_profile?profile_slug=${encodeURIComponent(profileSlug)}`,
-      {
-        method: "GET",
-        credentials: "same-origin",
-      }
-    );
+    try {
+      const response = await fetch(
+        `/api/get_profile?profile_slug=${encodeURIComponent(profileSlug)}`,
+        {
+          method: "GET",
+          credentials: "same-origin",
+        }
+      );
 
-    return response.ok;
+      return response.ok;
+    } catch (error) {
+      return false;
+    }
   }
 
   async function ensureStoredFingerprint() {
