@@ -1280,11 +1280,11 @@ class LocalWriteService
         $pdo = $this->readModelPdo();
         $stmt = $pdo->prepare(
             'INSERT INTO activity (
-                created_at, kind, post_id, thread_id, label, board_tags_json,
+                created_at, kind, record_family, action_key, post_id, thread_id, label, board_tags_json,
                 author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved,
                 source_path, source_commit_sha
              ) VALUES (
-                :created_at, :kind, NULL, NULL, :label, :board_tags_json,
+                :created_at, :kind, :record_family, :action_key, NULL, NULL, :label, :board_tags_json,
                 NULL, NULL, NULL, :author_label, :author_is_approved,
                 :source_path, :source_commit_sha
              )'
@@ -1292,6 +1292,8 @@ class LocalWriteService
         $stmt->execute([
             'created_at' => $this->canonicalTimestampNow(),
             'kind' => 'site_feature_flag',
+            'record_family' => 'instance_feature_flags',
+            'action_key' => $recordPath . '@' . $commitSha,
             'label' => 'Set feature flag ' . $key . '=' . ($value ? 'true' : 'false'),
             'board_tags_json' => '["site"]',
             'author_label' => 'site configuration',

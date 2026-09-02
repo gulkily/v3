@@ -186,6 +186,11 @@ class IncrementalReadModelUpdater
                 'update_post_reactions',
                 fn (): mixed => $this->updatePostReactions($pdo, $postId, $state)
             );
+            $this->measure(
+                $timings,
+                'refresh_post_reaction_activity',
+                fn (): mixed => $this->refreshPostReactionActivity($pdo, $post, $records, $commitSha)
+            );
             $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
             $pdo->commit();
 
@@ -830,16 +835,33 @@ class IncrementalReadModelUpdater
         }
     }
 
+    private function activityRecordFamilyForPost(PostRecord $record): string
+    {
+        if (!in_array('identity', $record->boardTags, true)) {
+            return 'post';
+        }
+
+        if (in_array('internal', $record->boardTags, true)) {
+            return 'identity_bootstrap';
+        }
+
+        if (in_array('approval', $record->boardTags, true)) {
+            return 'approval';
+        }
+
+        return 'identity';
+    }
+
     private function insertActivity(PDO $pdo, PostRecord $record, string $boardTagsJson, string $commitSha): void
     {
         $author = $this->loadAuthorProfile($pdo, $record->authorIdentityId);
         $stmt = $pdo->prepare(
             'INSERT INTO activity (
-                created_at, kind, post_id, thread_id, label, board_tags_json,
+                created_at, kind, record_family, action_key, post_id, thread_id, label, board_tags_json,
                 author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved,
                 source_path, source_commit_sha
              ) VALUES (
-                :created_at, :kind, :post_id, :thread_id, :label, :board_tags_json,
+                :created_at, :kind, :record_family, :action_key, :post_id, :thread_id, :label, :board_tags_json,
                 :author_identity_id, :author_profile_slug, :author_username_token, :author_label, :author_is_approved,
                 :source_path, :source_commit_sha
              )'
@@ -847,6 +869,8 @@ class IncrementalReadModelUpdater
         $stmt->execute([
             'created_at' => $record->createdAt,
             'kind' => $record->isReply() ? 'reply' : 'thread',
+            'record_family' => $this->activityRecordFamilyForPost($record),
+            'action_key' => $this->postSourcePath($record->postId),
             'post_id' => $record->postId,
             'thread_id' => $record->threadId ?? $record->postId,
             'label' => $record->subject ?? $this->preview($record->body),
@@ -1137,11 +1161,11 @@ class IncrementalReadModelUpdater
     }
 
     /**
-     * @return array{post_id:string,thread_id:string,author_label:string}
+     * @return array{post_id:string,thread_id:string,author_label:string,board_tags_json:string}
      */
     private function loadPostReactionTarget(PDO $pdo, string $postId): array
     {
-        $stmt = $pdo->prepare('SELECT post_id, thread_id, author_label FROM posts WHERE post_id = :post_id');
+        $stmt = $pdo->prepare('SELECT post_id, thread_id, author_label, board_tags_json FROM posts WHERE post_id = :post_id');
         $stmt->execute(['post_id' => $postId]);
         $row = $stmt->fetch();
         if (!is_array($row)) {
@@ -1152,6 +1176,7 @@ class IncrementalReadModelUpdater
             'post_id' => (string) $row['post_id'],
             'thread_id' => (string) $row['thread_id'],
             'author_label' => (string) $row['author_label'],
+            'board_tags_json' => (string) $row['board_tags_json'],
         ];
     }
 
@@ -1272,6 +1297,53 @@ class IncrementalReadModelUpdater
     }
 
     /**
+     * @param array{post_id:string,thread_id:string,board_tags_json:string} $post
+     * @param list<PostReactionRecord> $records
+     */
+    private function refreshPostReactionActivity(PDO $pdo, array $post, array $records, string $commitSha): void
+    {
+        $delete = $pdo->prepare('DELETE FROM activity WHERE kind = :kind AND post_id = :post_id');
+        $delete->execute([
+            'kind' => 'post_reaction_add',
+            'post_id' => $post['post_id'],
+        ]);
+
+        $insert = $pdo->prepare(
+            'INSERT INTO activity (
+                created_at, kind, record_family, action_key, post_id, thread_id, label, board_tags_json,
+                author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved,
+                source_path, source_commit_sha
+             ) VALUES (
+                :created_at, :kind, :record_family, :action_key, :post_id, :thread_id, :label, :board_tags_json,
+                :author_identity_id, :author_profile_slug, :author_username_token, :author_label, :author_is_approved,
+                :source_path, :source_commit_sha
+             )'
+        );
+
+        foreach ($records as $record) {
+            $sourcePath = CanonicalPathResolver::postReaction($record->recordId);
+            $author = $this->resolveActivityAuthor($pdo, $record->authorIdentityId);
+            $insert->execute([
+                'created_at' => $record->createdAt,
+                'kind' => 'post_reaction_add',
+                'record_family' => 'post_reaction',
+                'action_key' => $sourcePath,
+                'post_id' => $post['post_id'],
+                'thread_id' => $post['thread_id'],
+                'label' => 'Tags added: ' . implode(', ', $record->tags),
+                'board_tags_json' => $post['board_tags_json'],
+                'author_identity_id' => $record->authorIdentityId,
+                'author_profile_slug' => $author['author_profile_slug'],
+                'author_username_token' => $author['author_username_token'],
+                'author_label' => $author['author_label'],
+                'author_is_approved' => $author['author_is_approved'],
+                'source_path' => $sourcePath,
+                'source_commit_sha' => $commitSha,
+            ]);
+        }
+    }
+
+    /**
      * @return array<string, true>
      */
     private function loadApprovedIdentityIds(PDO $pdo): array
@@ -1375,17 +1447,13 @@ class IncrementalReadModelUpdater
             'thread_id' => $thread['root_post_id'],
         ]);
 
-        if ($this->isHiddenBootstrapBoardTagsJson($thread['board_tags_json'])) {
-            return;
-        }
-
         $insert = $pdo->prepare(
             'INSERT INTO activity (
-                created_at, kind, post_id, thread_id, label, board_tags_json,
+                created_at, kind, record_family, action_key, post_id, thread_id, label, board_tags_json,
                 author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved,
                 source_path, source_commit_sha
              ) VALUES (
-                :created_at, :kind, :post_id, :thread_id, :label, :board_tags_json,
+                :created_at, :kind, :record_family, :action_key, :post_id, :thread_id, :label, :board_tags_json,
                 :author_identity_id, :author_profile_slug, :author_username_token, :author_label, :author_is_approved,
                 :source_path, :source_commit_sha
              )'
@@ -1396,6 +1464,8 @@ class IncrementalReadModelUpdater
             $insert->execute([
                 'created_at' => $event['created_at'],
                 'kind' => 'thread_label_add',
+                'record_family' => 'thread_label',
+                'action_key' => $event['source_path'],
                 'post_id' => $thread['root_post_id'],
                 'thread_id' => $thread['root_post_id'],
                 'label' => 'Labels added: ' . implode(', ', $event['labels_added']),

@@ -41,3 +41,17 @@
   - Full suite was run; existing unrelated failures remain, while the schema-version expectation was corrected in this stage.
 - Notes:
   - Public-key, approval-seed, and instance-public files remain state evidence attached to their creating/changing action rather than standalone raw-file events.
+
+## Stage 4 - Immediate incremental activity
+- Changes:
+  - Classified incremental post activity with the same family mapping used by full rebuilds.
+  - Added immediate post-reaction activity refresh after reaction writes, including actor, target, action key, and source commit.
+  - Updated incremental thread-label refresh to retain internal events and action metadata.
+  - Added family/action metadata to incremental site feature-flag activity.
+- Verification:
+  - `php -l src/ForumRewrite/ReadModel/IncrementalReadModelUpdater.php` passed.
+  - `php -l src/ForumRewrite/Write/LocalWriteService.php` passed.
+  - Warm read-model tests for post tags, thread tags, labels, and feature flags passed.
+  - Warm identity-link and approval tests, including incremental/rebuild parity, passed.
+- Notes:
+  - Reaction activity is refreshed per affected post to keep the derived activity set rerun-safe and duplicate-free.
