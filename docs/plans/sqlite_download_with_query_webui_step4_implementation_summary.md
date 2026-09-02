@@ -170,3 +170,11 @@
   - Re-ran the sortable data-table smoke coverage; result: `PASS`.
 - Notes:
   - Sort behavior and displayed-row bounds are unchanged.
+
+## Post-completion UI adjustment - readable preset SQL
+- Changes:
+  - Reformatted all built-in SQL presets with line breaks and indentation, including the default liked/newest board query.
+- Verification:
+  - Re-ran the preset-query smoke test and JavaScript syntax check; both pass.
+- Notes:
+  - Ad hoc SQL entered by users is not reformatted.

@@ -1279,6 +1279,9 @@ final class LocalAppSmokeTest
         assertStringContains('queryPanel.removeAttribute("hidden")', $script);
         assertStringContains('querySelect.value = "0"', $script);
         assertStringContains('queryInput.value = presetQueries[0].sql', $script);
+        assertStringContains('threads.root_post_id,\\n', $script);
+        assertStringContains('"       threads.root_post_created_at,\\n"', $script);
+        assertStringContains('"FROM threads\\n"', $script);
     }
 
     public function testSqliteViewerPlacesQueryRunnerBeforeTableExplorer(): void
