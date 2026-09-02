@@ -96,6 +96,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_identity') {
+            $this->handlePrepareIdentity($method, $query);
+            return;
+        }
+
         if ($path === '/api/create_reply') {
             $this->handleCreateReply($method, $query);
             return;
@@ -108,6 +113,11 @@ final class Application
 
         if ($path === '/api/create_prepared_post') {
             $this->handleCreatePreparedPost($method, $query);
+            return;
+        }
+
+        if ($path === '/api/create_identity') {
+            $this->handleCreateIdentity($method, $query);
             return;
         }
 
@@ -1415,7 +1425,7 @@ final class Application
 
     private function renderApiIndex(): string
     {
-        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nPOST /api/set_identity_hint\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
+        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nPOST /api/set_identity_hint\nPOST /api/prepare_identity\nPOST /api/create_identity\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
     }
 
     private function renderApiListIndex(): string
@@ -3127,6 +3137,27 @@ final class Application
     /**
      * @param array<string, mixed> $query
      */
+    private function handlePrepareIdentity(string $method, array $query): void
+    {
+        $totalStartedAt = hrtime(true);
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+
+        try {
+            $result = $this->writer()->prepareIdentityBootstrap($this->requestData($query));
+            $result = $this->mergeResultTimings($result, [], $totalStartedAt);
+            unset($result['timings']);
+            $this->sendJson($result, 200, $this->serverTimingHeaders($result));
+        } catch (RuntimeException $exception) {
+            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
     private function handlePrepareReply(string $method, array $query): void
     {
         $this->handlePreparePost($method, $query, 'reply');
@@ -3193,6 +3224,27 @@ final class Application
                 400,
                 $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
             );
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleCreateIdentity(string $method, array $query): void
+    {
+        $totalStartedAt = hrtime(true);
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+
+        try {
+            $result = $this->writer()->createIdentityBootstrap($this->requestData($query));
+            $result = $this->mergeResultTimings($result, [], $totalStartedAt);
+            unset($result['timings']);
+            $this->sendJson($result, 200, $this->serverTimingHeaders($result));
+        } catch (RuntimeException $exception) {
+            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400);
         }
     }
 

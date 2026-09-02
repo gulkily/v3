@@ -602,6 +602,150 @@ class LocalWriteService
 
     /**
      * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function prepareIdentityBootstrap(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $publicKey = $this->normalizeAsciiBody((string) ($input['public_key'] ?? ''), 'public_key');
+            $inspected = $this->keyInspector->inspect($publicKey);
+            $fingerprintUpper = $inspected['fingerprint'];
+            $fingerprintLower = strtolower($fingerprintUpper);
+            $identityId = 'openpgp:' . $fingerprintLower;
+            $identityPath = 'records/identity/identity-openpgp-' . $fingerprintLower . '.txt';
+            if (is_file($this->repositoryRoot . '/' . $identityPath)) {
+                throw new RuntimeException('Identity already exists for this fingerprint.');
+            }
+
+            $postId = $this->generateRecordId('bootstrap');
+            $createdAt = $this->canonicalTimestampNow();
+            $contents = $this->buildThreadPostRecord(
+                $postId,
+                $createdAt,
+                self::HIDDEN_BOOTSTRAP_BOARD_TAGS,
+                'account bootstrap',
+                "Automatic account bootstrap anchor.\n",
+                $identityId,
+            );
+            (new PostRecordParser())->parse($contents);
+            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
+            $prepared = $this->storePreparedPost($recordPath, $contents, [
+                'kind' => 'identity-bootstrap',
+                'post_id' => $postId,
+                'thread_id' => $postId,
+                'author_identity_id' => $identityId,
+                'created_at' => $createdAt,
+                'public_key' => $publicKey,
+                'fingerprint' => $fingerprintUpper,
+                'username' => $inspected['username'],
+            ]);
+
+            return array_merge($prepared, [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $postId,
+                'record_path' => $recordPath,
+                'canonical_record' => $contents,
+            ]);
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function createIdentityBootstrap(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($prepareToken);
+            if (($prepared['kind'] ?? '') !== 'identity-bootstrap') {
+                throw new RuntimeException('Prepared post is not an identity bootstrap.');
+            }
+            if (strtotime((string) ($prepared['expires_at'] ?? '')) < time()) {
+                throw new RuntimeException('Prepared identity bootstrap has expired.');
+            }
+
+            $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+            if ($canonicalRecord === '' || hash('sha256', $canonicalRecord) !== (string) $prepared['canonical_sha256']) {
+                throw new RuntimeException('Prepared identity bootstrap canonical record mismatch.');
+            }
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            $verification = $this->signatureVerifier->verifyDetached(
+                (string) $prepared['public_key'],
+                $canonicalRecord,
+                $signature,
+                (string) $prepared['fingerprint'],
+            );
+            if (!$verification['ok']) {
+                throw new RuntimeException('Identity bootstrap signature verification failed: ' . $verification['status']);
+            }
+
+            $record = (new PostRecordParser())->parse($canonicalRecord);
+            $identityId = (string) $prepared['author_identity_id'];
+            if ($record->postId !== (string) $prepared['post_id']
+                || $record->createdAt !== (string) $prepared['created_at']
+                || $record->authorIdentityId !== $identityId
+                || ($record->threadId ?? $record->postId) !== (string) $prepared['thread_id']) {
+                throw new RuntimeException('Prepared identity bootstrap does not match its metadata.');
+            }
+
+            $fingerprintUpper = (string) $prepared['fingerprint'];
+            $fingerprintLower = strtolower($fingerprintUpper);
+            $identityPath = 'records/identity/identity-openpgp-' . $fingerprintLower . '.txt';
+            if (is_file($this->repositoryRoot . '/' . $identityPath)) {
+                throw new RuntimeException('Identity already exists for this fingerprint.');
+            }
+
+            $publicKey = (string) $prepared['public_key'];
+            $identityContents = "Post-ID: identity-openpgp-{$fingerprintLower}\n"
+                . "Board-Tags: identity\n"
+                . "Subject: identity bootstrap\n"
+                . "Username: " . (string) $prepared['username'] . "\n"
+                . "Identity-ID: {$identityId}\n"
+                . "Signer-Fingerprint: {$fingerprintUpper}\n"
+                . "Bootstrap-By-Post: " . (string) $prepared['post_id'] . "\n"
+                . "Bootstrap-By-Thread: " . (string) $prepared['thread_id'] . "\n"
+                . "\n{$publicKey}";
+            (new IdentityBootstrapRecordParser())->parse($identityContents);
+
+            $recordPath = (string) $prepared['record_path'];
+            $publicKeyPath = 'records/public-keys/openpgp-' . $fingerprintUpper . '.asc';
+            $this->writeFile($recordPath, $canonicalRecord);
+            $this->writeFile($recordPath . '.asc', $signature);
+            if (!is_file($this->repositoryRoot . '/' . $publicKeyPath)) {
+                $this->writeFile($publicKeyPath, $publicKey);
+            }
+            $this->writeFile($identityPath, $identityContents);
+            $commitResult = $this->commitCanonicalWrite(
+                [$recordPath, $recordPath . '.asc', $publicKeyPath, $identityPath],
+                'Link signed identity ' . $identityPath,
+            );
+            $this->synchronizeIdentityDerivedState($identityPath, $commitResult['commit_sha']);
+            $this->invalidator()->invalidateIdentityLink(
+                'openpgp-' . $fingerprintLower,
+                (string) $prepared['thread_id'],
+                (string) $prepared['post_id'],
+            );
+            $this->deletePreparedPost($prepareToken);
+
+            return [
+                'status' => 'ok',
+                'identity_id' => $identityId,
+                'profile_slug' => 'openpgp-' . $fingerprintLower,
+                'username' => (string) $prepared['username'],
+                'bootstrap_post_id' => (string) $prepared['post_id'],
+                'bootstrap_thread_id' => (string) $prepared['thread_id'],
+                'signature_path' => $recordPath . '.asc',
+                'commit_sha' => $commitResult['commit_sha'],
+            ];
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
      * @return array<string, string>
      */
     public function approveUser(array $input): array
