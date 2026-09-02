@@ -68,3 +68,13 @@
   - `LocalAppSmokeTest::testApplicationRendersTextApisAndRss` passed.
 - Notes:
   - One unrelated pre-existing core-route smoke failure remains (`Missing template: pages/profile.php` / `Public key` assertion); it is outside this stage’s changes.
+
+## Stage 6 - Coverage and rebuild parity
+- Changes:
+  - Added immediate incremental post-reaction activity assertions, including family, target, and canonical source path.
+  - Added a fresh-application rebuild assertion that the reaction event remains visible in All Activity.
+- Verification:
+  - `php tests/run.php WriteApiSmokeTest::testApplyPostTagUsesIncrementalReadModelUpdateWhenDatabaseIsWarm` passed.
+  - Full `php tests/run.php` completed with feature-related tests passing; three unrelated baseline failures remain in core-route/profile fixture coverage.
+- Notes:
+  - The complete feed implementation and all six planned stages are now committed on `feature/all-activity-feed`.

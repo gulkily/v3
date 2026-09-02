@@ -2356,6 +2356,7 @@ PHP);
 
         $pdo = new PDO('sqlite:' . $databasePath);
         $row = $pdo->query("SELECT post_tags_json, post_score_total, approved_flag_count, is_hidden FROM posts WHERE post_id = 'reply-001'")->fetch();
+        $activityRow = $pdo->query("SELECT kind, record_family, post_id, source_path FROM activity WHERE kind = 'post_reaction_add' AND post_id = 'reply-001' ORDER BY id DESC LIMIT 1")->fetch();
 
         assertSame(true, isset($result['timings']['read_model_incremental_update']));
         assertSame(false, isset($result['timings']['read_model_rebuild']));
@@ -2368,6 +2369,16 @@ PHP);
         assertSame('-100', (string) $row['post_score_total']);
         assertSame('1', (string) $row['approved_flag_count']);
         assertSame('0', (string) $row['is_hidden']);
+        assertSame('post_reaction_add', $activityRow['kind']);
+        assertSame('post_reaction', $activityRow['record_family']);
+        assertSame('reply-001', $activityRow['post_id']);
+        assertStringContains('records/post-reactions/post-reaction-', $activityRow['source_path']);
+
+        $freshDatabasePath = sys_get_temp_dir() . '/forum-rewrite-write-db-reaction-parity-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $freshApplication = new Application(dirname(__DIR__), $repositoryRoot, $freshDatabasePath, $artifactRoot);
+        $freshActivity = $this->renderMethod($freshApplication, 'GET', '/activity/?view=all');
+        assertStringContains('post_reaction_add', $freshActivity);
+        assertStringContains('records/post-reactions/', $freshActivity);
     }
 
     public function testApplyThreadTagApiWritesApprovedLikeAndReportsUpdatedScore(): void
