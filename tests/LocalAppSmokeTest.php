@@ -1178,6 +1178,24 @@ final class LocalAppSmokeTest
         assertStringContains('SQLite format 3', substr($sqliteDatabase, 0, 32));
     }
 
+    public function testSqliteViewerRouteUsesToolsShellAndPublishedSource(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $viewer = $this->render($application, '/tools/sqlite/');
+
+        assertStringContains('<h1>SQLite Viewer</h1>', $viewer);
+        assertStringContains('href="/downloads/read_model.sqlite3"', $viewer);
+        assertStringContains('queries run locally', $viewer);
+        assertStringContains('class="nav-link is-active" href="/tools/sqlite/"', $viewer);
+        assertStringContains('href="/tools/sqlite/"', $this->render($application, '/tools/'));
+    }
+
     public function testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp(): void
     {
         $application = new Application(

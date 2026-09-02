@@ -231,6 +231,11 @@ final class Application
             return;
         }
 
+        if ($path === '/tools/sqlite/' || $path === '/tools/sqlite') {
+            $this->sendHtml($this->renderSqliteViewer(), 200);
+            return;
+        }
+
         if ($path === '/downloads/repository.tar.gz') {
             $this->handleRepositoryDownload($method, 'tar.gz');
             return;
@@ -1225,6 +1230,11 @@ final class Application
                         'description' => 'Portable downloads of the repository and current read-model database.',
                     ],
                     [
+                        'label' => 'SQLite Viewer',
+                        'href' => '/tools/sqlite/',
+                        'description' => 'Inspect the published SQLite read model in your browser.',
+                    ],
+                    [
                         'label' => 'System State',
                         'href' => '/tools/codebase/',
                         'description' => 'Current application version, repository head, and read-model health.',
@@ -1273,6 +1283,18 @@ final class Application
             'Feature Flags',
             'tools',
             ['/assets/feature_flags.js'],
+        );
+    }
+
+    private function renderSqliteViewer(): string
+    {
+        return $this->renderPageTemplate(
+            'sqlite_viewer.php',
+            [
+                'toolNavOptions' => $this->toolNavOptions('sqlite'),
+            ],
+            'SQLite Viewer',
+            'tools',
         );
     }
 
@@ -1335,6 +1357,12 @@ final class Application
                 'label' => 'Backup',
                 'href' => '/tools/backup/',
                 'is_active' => $activeKey === 'backup',
+            ],
+            [
+                'key' => 'sqlite',
+                'label' => 'SQLite Viewer',
+                'href' => '/tools/sqlite/',
+                'is_active' => $activeKey === 'sqlite',
             ],
             [
                 'key' => 'codebase',
