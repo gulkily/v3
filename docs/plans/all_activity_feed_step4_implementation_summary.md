@@ -26,3 +26,18 @@
   - `php tests/run.php ReadModelBuilderTimingTest LocalAppSmokeTest::testActivityRssAndBackupSnapshot` passed.
 - Notes:
   - Existing activity insert paths continue to work through the column default; later stages will populate family/action values for each event type.
+
+## Stage 3 - Full-rebuild activity coverage
+- Changes:
+  - Classified rebuilt post activity as `post`, `identity`, `identity_bootstrap`, or `approval` from canonical board tags.
+  - Added rebuilt `post_reaction` activity events with target post/thread links, actor data, and canonical reaction source paths.
+  - Added deterministic action keys for post, label, reaction, feature-flag, and classified identity activity rows.
+  - Preserved label events for internal records so All Activity can include them in the rendering stage.
+  - Updated the read-model smoke expectation for schema version 13.
+- Verification:
+  - `php -l src/ForumRewrite/ReadModel/ReadModelBuilder.php` passed.
+  - `php tests/run.php ReadModelBuilderTimingTest ReadModelPostReactionsTest` passed.
+  - Full rebuild of `state/local_repository` into a fresh temporary database produced 1,662 activity rows across approval, identity bootstrap, instance feature flags, post, post reaction, and thread-label families.
+  - Full suite was run; existing unrelated failures remain, while the schema-version expectation was corrected in this stage.
+- Notes:
+  - Public-key, approval-seed, and instance-public files remain state evidence attached to their creating/changing action rather than standalone raw-file events.
