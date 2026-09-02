@@ -10,3 +10,17 @@
   - `php tests/run.php` — all tests passed.
 - Notes:
   - The data is now available to standalone post, thread-root, and reusable post-card presentation paths for Stage 2.
+
+## Stage 2 - Add bootstrap-post key disclosure
+- Changes:
+  - Added a shared advanced technical-details partial for bootstrap-post public keys.
+  - Integrated the disclosure into standalone post cards and thread-root cards.
+  - Displays the armored key when present and `Public key unavailable.` when absent.
+  - Limits the disclosure to root/bootstrap posts so ordinary replies are unchanged.
+- Verification:
+  - `php -l templates/partials/post_identity_details.php` — passed.
+  - `php -l templates/partials/post_card.php` — passed.
+  - `php -l templates/partials/thread_root_card.php` — passed.
+  - `php tests/run.php` — all tests passed.
+- Notes:
+  - Profile rendering remains unchanged and continues to expose keys under advanced technical details for approved and unapproved profiles.

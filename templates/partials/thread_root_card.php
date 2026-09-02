@@ -60,6 +60,7 @@ $postAnchorId = 'post-' . (string) $post['post_id'];
   <p class="meta"><span class="agent-label">Agent-authored reply</span></p>
 <?php endif; ?>
   <div class="body"><?= $br($post['body']) ?></div>
+<?= $indent($partial('partials/post_identity_details.php', ['post' => $post]), 1) ?>
 <?php
 $postAnalysis = ((bool) ($viewerCanSeePostAnalysis ?? false))
     ? (($postAnalysesByPostId[$post['post_id']] ?? null))
