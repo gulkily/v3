@@ -657,12 +657,18 @@ final class ReadModelBuilder
         foreach ($posts as $post) {
             $postsById[$post['post_id']] = $post;
             $author = $this->resolveActivityAuthor($pdo, $post['author_identity_id']);
-            $kind = $post['post_id'] === $post['thread_id'] ? 'thread' : 'reply';
+            $recordFamily = $this->activityRecordFamilyForPost($post);
+            $kind = match ($recordFamily) {
+                'identity_bootstrap' => 'identity_bootstrap',
+                'approval' => 'approval',
+                'identity' => 'identity',
+                default => $post['post_id'] === $post['thread_id'] ? 'thread' : 'reply',
+            };
             $label = $post['subject'] ?? $this->preview($post['body']);
             $stmt->execute([
                 'created_at' => $post['created_at'],
                 'kind' => $kind,
-                'record_family' => $this->activityRecordFamilyForPost($post),
+                'record_family' => $recordFamily,
                 'action_key' => $post['source_path'],
                 'post_id' => $post['post_id'],
                 'thread_id' => $post['thread_id'],

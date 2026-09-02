@@ -852,6 +852,16 @@ class IncrementalReadModelUpdater
         return 'identity';
     }
 
+    private function activityKindForPost(PostRecord $record): string
+    {
+        return match ($this->activityRecordFamilyForPost($record)) {
+            'identity_bootstrap' => 'identity_bootstrap',
+            'approval' => 'approval',
+            'identity' => 'identity',
+            default => $record->isReply() ? 'reply' : 'thread',
+        };
+    }
+
     private function insertActivity(PDO $pdo, PostRecord $record, string $boardTagsJson, string $commitSha): void
     {
         $author = $this->loadAuthorProfile($pdo, $record->authorIdentityId);
@@ -868,7 +878,7 @@ class IncrementalReadModelUpdater
         );
         $stmt->execute([
             'created_at' => $record->createdAt,
-            'kind' => $record->isReply() ? 'reply' : 'thread',
+            'kind' => $this->activityKindForPost($record),
             'record_family' => $this->activityRecordFamilyForPost($record),
             'action_key' => $this->postSourcePath($record->postId),
             'post_id' => $record->postId,

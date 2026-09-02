@@ -2802,14 +2802,15 @@ final class Application
         $view = $this->normalizeActivityView($view);
         [$viewWhere, $viewParameters] = $this->activityViewSql($view);
         $stmt = $this->pdo()->prepare(
-            'SELECT activity.created_at, activity.kind, activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
+            'SELECT activity.created_at, activity.kind, activity.record_family, activity.action_key,
+                    activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
                     activity.author_identity_id,
                     activity.source_path, activity.source_commit_sha,
                     activity.id, activity.author_label, activity.author_profile_slug,
                     activity.author_username_token, activity.author_is_approved
              FROM activity
              LEFT JOIN posts ON posts.post_id = activity.post_id
-             WHERE (activity.post_id IS NULL OR COALESCE(posts.is_hidden, 0) = 0)
+             WHERE 1 = 1
              ' . $viewWhere . '
              ORDER BY activity.created_at DESC, activity.post_id DESC, activity.id DESC
              LIMIT :limit'
@@ -2828,6 +2829,8 @@ final class Application
             return [
                 'created_at' => $post['created_at'],
                 'kind' => $post['kind'],
+                'record_family' => $post['record_family'],
+                'action_key' => $post['action_key'],
                 'post_id' => $post['post_id'],
                 'thread_id' => $post['thread_id'],
                 'label' => $post['label'],
@@ -2857,7 +2860,7 @@ final class Application
             $hidden = $this->isHiddenBootstrapBoardTagsJson($boardTagsJson);
 
             return match ($view) {
-                'all' => !$hidden,
+                'all' => true,
                 'content' => !$hidden,
                 'identity' => $this->hasBoardTag($boardTagsJson, 'identity'),
                 'bootstrap' => $this->hasBoardTag($boardTagsJson, 'identity') && $this->hasBoardTag($boardTagsJson, 'internal'),
@@ -2884,7 +2887,12 @@ final class Application
                 'AND activity.board_tags_json LIKE :identity_tag AND activity.board_tags_json LIKE :approval_tag',
                 ['identity_tag' => $quotedHiddenTag, 'approval_tag' => '%"approval"%'],
             ],
-            default => ['AND activity.board_tags_json NOT LIKE :hidden_tag', ['hidden_tag' => $quotedHiddenTag]],
+            'content' => [
+                'AND activity.board_tags_json NOT LIKE :hidden_tag
+                 AND (activity.post_id IS NULL OR COALESCE(posts.is_hidden, 0) = 0)',
+                ['hidden_tag' => $quotedHiddenTag],
+            ],
+            default => ['', []],
         };
     }
 

@@ -55,3 +55,16 @@
   - Warm identity-link and approval tests, including incremental/rebuild parity, passed.
 - Notes:
   - Reaction activity is refreshed per affected post to keep the derived activity set rerun-safe and duplicate-free.
+
+## Stage 5 - Complete feed rendering
+- Changes:
+  - All Activity now includes internal/bootstrap/approval and other hidden activity rows instead of applying public-content suppression.
+  - Visible Content retains its hidden/internal filters and category views remain scoped subsets.
+  - Activity items now expose record family/action metadata and classify identity bootstrap and approval items with explicit kinds.
+  - Updated activity smoke expectations and retained existing HTML/RSS/source-link projections.
+- Verification:
+  - PHP syntax checks for `Application.php`, `ReadModelBuilder.php`, and `IncrementalReadModelUpdater.php` passed.
+  - Activity rendering, limit/filter, bootstrap, approval, and incremental/rebuild parity tests passed.
+  - `LocalAppSmokeTest::testApplicationRendersTextApisAndRss` passed.
+- Notes:
+  - One unrelated pre-existing core-route smoke failure remains (`Missing template: pages/profile.php` / `Public key` assertion); it is outside this stage’s changes.
