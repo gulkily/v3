@@ -553,6 +553,10 @@ class LocalWriteService
                 throw new RuntimeException('Identity already exists for this fingerprint.');
             }
 
+            if (trim((string) ($input['bootstrap_post_id'] ?? '')) === '') {
+                throw new RuntimeException('A signed browser setup is required to create a new bootstrap post.');
+            }
+
             [$bootstrapPostId, $bootstrapThreadId, $bootstrapPath] = $this->resolveBootstrapAnchor($input);
 
             $publicKeyPath = 'records/public-keys/openpgp-' . $fingerprintUpper . '.asc';

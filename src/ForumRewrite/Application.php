@@ -29,6 +29,7 @@ use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\Support\ThreadTitle;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
+use ForumRewrite\Security\OpenPgpKeyInspector;
 use PDO;
 use RuntimeException;
 use PDOStatement;
@@ -4657,6 +4658,18 @@ final class Application
                 $this->serverTimingHeaders($result)
             );
         } catch (RuntimeException $exception) {
+            if ($exception->getMessage() === 'Identity already exists for this fingerprint.') {
+                try {
+                    $key = (new OpenPgpKeyInspector())->inspect((string) ($input['public_key'] ?? ''));
+                    $this->sendRedirect(
+                        '/profiles/openpgp-' . strtolower($key['fingerprint']),
+                        'This identity is already linked. Showing its existing profile.',
+                    );
+                    return;
+                } catch (RuntimeException) {
+                    // Keep the normal form error when the submitted key cannot be inspected.
+                }
+            }
             $this->sendHtml(
                 $this->renderAccountKeyPage(null, $exception->getMessage()),
                 400,
