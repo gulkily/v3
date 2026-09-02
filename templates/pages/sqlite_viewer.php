@@ -33,7 +33,11 @@
     <label>Table
       <select data-role="sqlite-table-select"></select>
     </label>
-    <div class="sqlite-result-scroll" data-role="sqlite-table-details"></div>
-    <div class="sqlite-result-scroll" data-role="sqlite-table-preview"></div>
+    <div class="sqlite-tabs" role="tablist" aria-label="Table view">
+      <button type="button" class="sqlite-tab is-active" role="tab" aria-selected="true" aria-controls="sqlite-data-panel" id="sqlite-data-tab" data-sqlite-tab="data">Data</button>
+      <button type="button" class="sqlite-tab" role="tab" aria-selected="false" aria-controls="sqlite-columns-panel" id="sqlite-columns-tab" data-sqlite-tab="columns">Columns</button>
+    </div>
+    <div class="sqlite-tab-panel sqlite-result-scroll" data-role="sqlite-table-preview" id="sqlite-data-panel" role="tabpanel" aria-labelledby="sqlite-data-tab" tabindex="0"></div>
+    <div class="sqlite-tab-panel sqlite-result-scroll" data-role="sqlite-table-details" id="sqlite-columns-panel" role="tabpanel" aria-labelledby="sqlite-columns-tab" tabindex="0" hidden></div>
   </article>
 </section>

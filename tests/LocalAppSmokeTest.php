@@ -1232,10 +1232,17 @@ final class LocalAppSmokeTest
         assertStringContains('data-role="sqlite-table-select"', $viewer);
         assertStringContains('data-role="sqlite-table-details"', $viewer);
         assertStringContains('data-role="sqlite-table-preview"', $viewer);
+        assertStringContains('role="tablist"', $viewer);
+        assertStringContains('data-sqlite-tab="data"', $viewer);
+        assertStringContains('data-sqlite-tab="columns"', $viewer);
+        assertStringContains('id="sqlite-data-panel"', $viewer);
+        assertStringContains('id="sqlite-columns-panel"', $viewer);
         assertStringContains('sqlite_master', $script);
         assertStringContains('LIMIT 20', $script);
         assertStringContains('PRAGMA table_info', $script);
         assertStringContains('explorer.removeAttribute("hidden")', $script);
+        assertStringContains('activateTableTab("data")', $script);
+        assertStringContains('tablePreview.hidden = tabName !== "data"', $script);
     }
 
     public function testSqliteViewerIncludesPresetReadOnlyQueryContract(): void

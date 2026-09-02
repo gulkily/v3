@@ -2954,3 +2954,25 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   width: 100%;
   box-sizing: border-box;
 }
+
+.sqlite-tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0.8rem 0 0.55rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.sqlite-tab {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  margin-top: 0;
+}
+
+.sqlite-tab.is-active {
+  background: var(--active-bg);
+  color: var(--active-ink);
+}
+
+.sqlite-tab-panel[hidden] {
+  display: none;
+}

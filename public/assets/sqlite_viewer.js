@@ -13,6 +13,7 @@
     var tableSelect = root.querySelector('[data-role="sqlite-table-select"]');
     var tableDetails = root.querySelector('[data-role="sqlite-table-details"]');
     var tablePreview = root.querySelector('[data-role="sqlite-table-preview"]');
+    var tableTabs = root.querySelectorAll("[data-sqlite-tab]");
     var queryPanel = root.querySelector('[data-role="sqlite-query-panel"]');
     var querySelect = root.querySelector('[data-role="sqlite-query-select"]');
     var queryInput = root.querySelector('[data-role="sqlite-query-input"]');
@@ -86,6 +87,20 @@
         while (node.firstChild) {
           node.removeChild(node.firstChild);
         }
+      }
+    }
+
+    function activateTableTab(tabName) {
+      tableTabs.forEach(function (tab) {
+        var active = tab.dataset.sqliteTab === tabName;
+        tab.classList.toggle("is-active", active);
+        tab.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      if (tablePreview) {
+        tablePreview.hidden = tabName !== "data";
+      }
+      if (tableDetails) {
+        tableDetails.hidden = tabName !== "columns";
       }
     }
 
@@ -283,5 +298,11 @@
     if (queryButton) {
       queryButton.addEventListener("click", runQuery);
     }
+    tableTabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        activateTableTab(tab.dataset.sqliteTab || "data");
+      });
+    });
+    activateTableTab("data");
   });
 })();

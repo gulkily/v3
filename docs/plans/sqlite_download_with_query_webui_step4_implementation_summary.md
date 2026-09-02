@@ -140,3 +140,14 @@
   - Re-ran `LocalAppSmokeTest::testSqliteViewerCapsAndScrollsResultSurfaces`; result: `PASS`.
 - Notes:
   - Table previews and query results retain their existing full-width minimum and horizontal scrolling behavior.
+
+## Post-completion UI adjustment - Explore tables tabs
+- Changes:
+  - Split Explore tables into Data and Columns tabs.
+  - Made Data the first and default tab; Columns remains available without changing the selected table.
+  - Added accessible tab and panel semantics with keyboard-focusable panels.
+- Verification:
+  - Re-ran the schema explorer and result-surface smoke tests; both pass.
+  - Rechecked JavaScript syntax and tab markup contracts.
+- Notes:
+  - Existing row bounds and intrinsic column-details sizing are unchanged.
