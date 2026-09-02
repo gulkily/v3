@@ -2920,14 +2920,14 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 }
 
 [data-role="sqlite-explorer"] {
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
+  width: calc(100vw - 2rem);
+  margin-left: calc(50% - 50vw + 1rem);
   box-sizing: border-box;
 }
 
 [data-role="sqlite-query-panel"] {
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
+  width: calc(100vw - 2rem);
+  margin-left: calc(50% - 50vw + 1rem);
   box-sizing: border-box;
 }
 

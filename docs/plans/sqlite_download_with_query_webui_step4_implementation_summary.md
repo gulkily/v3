@@ -124,3 +124,11 @@
   - Rechecked JavaScript syntax and the scoped full-width CSS contract.
 - Notes:
   - This is a presentation-only adjustment; query semantics and result limits are unchanged.
+
+## Post-completion UI adjustment - viewport gutters
+- Changes:
+  - Reduced both full-width query modules to `calc(100vw - 2rem)` and added matching 1rem side gutters to prevent page-level horizontal overflow.
+- Verification:
+  - Re-ran `LocalAppSmokeTest::testSqliteViewerCapsAndScrollsResultSurfaces`; result: `PASS`.
+- Notes:
+  - Result-table horizontal scrolling remains local to the result containers.

@@ -1299,8 +1299,8 @@ final class LocalAppSmokeTest
         assertStringContains('.sqlite-result-scroll', $css);
         assertStringContains('[data-role="sqlite-explorer"]', $css);
         assertStringContains('[data-role="sqlite-query-panel"]', $css);
-        assertStringContains('width: 100vw', $css);
-        assertStringContains('margin-left: calc(50% - 50vw)', $css);
+        assertStringContains('width: calc(100vw - 2rem)', $css);
+        assertStringContains('margin-left: calc(50% - 50vw + 1rem)', $css);
         assertStringContains('width: max-content', $css);
         assertStringContains('overflow-x: auto', $css);
     }
