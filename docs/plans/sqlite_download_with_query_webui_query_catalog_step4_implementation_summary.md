@@ -31,3 +31,15 @@
   - `php tests/run.php SqliteQueryCatalogTest`
 - Notes:
   - Browser output is deterministic and remains a single viewer asset; the local-use pack is Stage 4.
+
+## Stage 4 - Provide the local-use query pack
+- Changes:
+  - Extended the generator to produce `public/assets/sqlite_query_catalog.sql` from the same canonical sources.
+  - Added a read-only download route and linked the pack from the SQLite viewer.
+  - Kept the SQLite database schema and existing database download unchanged.
+- Verification:
+  - `php scripts/build_sqlite_query_catalog.php`
+  - `php tests/run.php LocalAppSmokeTest::testInstanceDownloadRoutesReturnRepositoryArchivesAndSqliteDatabase`
+  - Manual artifact inspection confirmed the pack contains metadata and all current presets.
+- Notes:
+  - The pack is a plain SQL companion file for local SQLite use; it does not add views to the database.

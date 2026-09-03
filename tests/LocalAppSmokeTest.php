@@ -1172,10 +1172,13 @@ final class LocalAppSmokeTest
         $repoArchive = $this->renderMethod($application, 'GET', '/downloads/repository.tar.gz');
         $repoZipArchive = $this->renderMethod($application, 'GET', '/downloads/repository.zip');
         $sqliteDatabase = $this->renderMethod($application, 'GET', '/downloads/read_model.sqlite3');
+        $queryPack = $this->renderMethod($application, 'GET', '/downloads/sqlite_query_catalog.sql');
 
         assertSame("\x1f\x8b", substr($repoArchive, 0, 2));
         assertSame("PK", substr($repoZipArchive, 0, 2));
         assertStringContains('SQLite format 3', substr($sqliteDatabase, 0, 32));
+        assertStringContains('-- SQLite Viewer Query Catalog', $queryPack);
+        assertStringContains('-- Board: Liked + Newest', $queryPack);
     }
 
     public function testSqliteViewerRouteUsesToolsShellAndPublishedSource(): void
@@ -1192,6 +1195,7 @@ final class LocalAppSmokeTest
         assertStringContains('<h1>SQLite Viewer</h1>', $viewer);
         assertStringContains('<section class="stack" data-sqlite-viewer>', $viewer);
         assertStringContains('href="/downloads/read_model.sqlite3"', $viewer);
+        assertStringContains('href="/downloads/sqlite_query_catalog.sql"', $viewer);
         assertStringContains('queries run locally', $viewer);
         assertStringContains('class="nav-link is-active" href="/tools/sqlite/"', $viewer);
         assertStringContains('href="/tools/sqlite/"', $this->render($application, '/tools/'));

@@ -251,6 +251,11 @@ final class Application
             return;
         }
 
+        if ($path === '/downloads/sqlite_query_catalog.sql') {
+            $this->handleSqliteQueryCatalogDownload($method);
+            return;
+        }
+
         if ($path === '/activity/' || $path === '/activity') {
             if (($query['format'] ?? null) === 'rss') {
                 $this->sendXml($this->renderActivityRss((string) ($query['view'] ?? 'all')), 200);
@@ -2543,6 +2548,22 @@ final class Application
         }
 
         $this->sendDownload($this->databasePath, 'application/x-sqlite3', SiteConfig::SITE_NAME . '-read-model.sqlite3');
+    }
+
+    private function handleSqliteQueryCatalogDownload(string $method): void
+    {
+        if ($method !== 'GET') {
+            $this->sendHtml($this->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported for downloads.', 'none'), 405);
+            return;
+        }
+
+        $path = $this->projectRoot . '/public/assets/sqlite_query_catalog.sql';
+        if (!is_file($path)) {
+            $this->sendHtml($this->renderMessagePage('Not Found', 'Not Found', 'SQLite query catalog is not available yet.', 'instance'), 404);
+            return;
+        }
+
+        $this->sendDownload($path, 'application/sql; charset=utf-8', SiteConfig::SITE_NAME . '-sqlite-query-catalog.sql');
     }
 
     private function sendDownload(string $path, string $contentType, string $filename, bool $deleteAfterSend = false): void

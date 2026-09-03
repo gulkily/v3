@@ -9,6 +9,7 @@ use ForumRewrite\Tools\SqliteQueryCatalog;
 $projectRoot = dirname(__DIR__);
 $sourceDirectory = $argv[1] ?? ($projectRoot . '/queries/sqlite');
 $browserPath = $argv[2] ?? ($projectRoot . '/public/assets/sqlite_viewer.js');
+$localPath = $argv[3] ?? ($projectRoot . '/public/assets/sqlite_query_catalog.sql');
 
 $catalog = SqliteQueryCatalog::load($sourceDirectory);
 $browserSource = file_get_contents($browserPath);
@@ -44,4 +45,21 @@ if (file_put_contents($browserPath, $updated) === false) {
     throw new RuntimeException('Unable to write browser viewer asset: ' . $browserPath);
 }
 
-fwrite(STDOUT, sprintf("Generated %d SQLite browser queries in %s\n", count($catalog), $browserPath));
+$pack = "-- SQLite Viewer Query Catalog\n"
+    . "-- Generated from repository query sources.\n\n";
+foreach ($catalog as $entry) {
+    $source = file_get_contents($sourceDirectory . '/' . $entry['filename']);
+    if ($source === false) {
+        throw new RuntimeException('Unable to read query source for local pack: ' . $entry['filename']);
+    }
+    $pack .= "-- -----------------------------------------------------------------------------\n"
+        . '-- ' . $entry['label'] . "\n"
+        . '-- ' . $entry['description'] . "\n"
+        . "-- -----------------------------------------------------------------------------\n\n"
+        . trim($source) . "\n\n";
+}
+if (file_put_contents($localPath, $pack) === false) {
+    throw new RuntimeException('Unable to write local SQLite query pack: ' . $localPath);
+}
+
+fwrite(STDOUT, sprintf("Generated %d SQLite queries in %s and %s\n", count($catalog), $browserPath, $localPath));
