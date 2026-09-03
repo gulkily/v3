@@ -43,3 +43,16 @@
   - Manual artifact inspection confirmed the pack contains metadata and all current presets.
 - Notes:
   - The pack is a plain SQL companion file for local SQLite use; it does not add views to the database.
+
+## Stage 5 - Add prioritized interface and statistics presets
+- Changes:
+  - Added all-board and liked-oldest parity presets with the interface's hidden-record, label, score, join, and ordering rules.
+  - Added activity all/content views, activity counts by kind, and content totals.
+  - Kept aggregate and list results bounded for browser use.
+- Verification:
+  - `php scripts/build_sqlite_query_catalog.php`
+  - `node --check public/assets/sqlite_viewer.js`
+  - `php tests/run.php SqliteQueryCatalogTest`
+  - Representative catalog queries were executed against the current read model with no schema changes.
+- Notes:
+  - FTS, optional analysis-table queries, and unbounded exploratory queries remain deferred.

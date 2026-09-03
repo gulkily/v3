@@ -53,7 +53,7 @@ final class SqliteQueryCatalogTest
         $catalog = SqliteQueryCatalog::load(__DIR__ . '/../queries/sqlite');
 
         assertSame(
-            ['board-liked-newest', 'recent-posts', 'threads-by-reply-count', 'approved-profiles', 'recent-activity'],
+            ['board-liked-newest', 'recent-posts', 'threads-by-reply-count', 'approved-profiles', 'recent-activity', 'board-all-newest', 'board-liked-oldest', 'activity-all', 'activity-content', 'activity-counts-by-kind', 'content-totals'],
             array_column($catalog, 'id')
         );
         assertSame('Board: Liked + Newest', $catalog[0]['label']);

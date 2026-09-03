@@ -61,6 +61,48 @@
         "description": "Show the ten newest activity records.",
         "category": "activity",
         "sql": "SELECT created_at, kind, label, author_label\nFROM activity\nORDER BY created_at DESC, id DESC\nLIMIT 10"
+    },
+    {
+        "id": "board-all-newest",
+        "label": "Board: All + Newest",
+        "description": "Reproduce the all-threads board view with pinned-first newest ordering.",
+        "category": "board",
+        "sql": "SELECT threads.root_post_id,\n       threads.root_post_created_at,\n       threads.last_activity_at,\n       threads.subject,\n       threads.body_preview,\n       threads.reply_count,\n       threads.score_total,\n       threads.board_tags_json,\n       threads.thread_labels_json,\n       posts.author_label,\n       posts.author_profile_slug,\n       posts.post_score_total AS root_post_score_total,\n       profiles.username_token AS author_username_token,\n       COALESCE(profiles.is_approved, 0) AS author_is_approved\nFROM threads\nJOIN posts ON posts.post_id = threads.root_post_id\nLEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id\nWHERE NOT EXISTS (\n  SELECT 1\n  FROM json_each(threads.board_tags_json)\n  WHERE json_each.value = 'identity'\n)\nORDER BY CASE WHEN EXISTS (\n  SELECT 1\n  FROM json_each(threads.thread_labels_json)\n  WHERE json_each.value = 'pinned'\n) THEN 0 ELSE 1 END,\n         threads.root_post_created_at DESC,\n         threads.root_post_id DESC\nLIMIT 100"
+    },
+    {
+        "id": "board-liked-oldest",
+        "label": "Board: Liked + Oldest",
+        "description": "Reproduce liked threads with pinned-first oldest ordering.",
+        "category": "board",
+        "sql": "SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at,\n       threads.subject, threads.body_preview, threads.reply_count, threads.score_total,\n       threads.board_tags_json, threads.thread_labels_json, posts.author_label,\n       posts.author_profile_slug, posts.post_score_total AS root_post_score_total,\n       profiles.username_token AS author_username_token,\n       COALESCE(profiles.is_approved, 0) AS author_is_approved\nFROM threads\nJOIN posts ON posts.post_id = threads.root_post_id\nLEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id\nWHERE NOT EXISTS (SELECT 1 FROM json_each(threads.board_tags_json) WHERE json_each.value = 'identity')\n  AND EXISTS (SELECT 1 FROM json_each(threads.thread_labels_json) WHERE json_each.value = 'like')\n  AND posts.post_score_total >= 0\nORDER BY CASE WHEN EXISTS (SELECT 1 FROM json_each(threads.thread_labels_json) WHERE json_each.value = 'pinned') THEN 0 ELSE 1 END,\n         threads.root_post_created_at ASC, threads.root_post_id ASC\nLIMIT 100"
+    },
+    {
+        "id": "activity-all",
+        "label": "Activity: All",
+        "description": "Reproduce the activity page's newest-first activity records.",
+        "category": "activity",
+        "sql": "SELECT activity.created_at, activity.kind, activity.record_family, activity.action_key,\n       activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,\n       activity.author_identity_id, activity.source_path, activity.source_commit_sha,\n       activity.id, activity.author_label, activity.author_profile_slug,\n       activity.author_username_token, activity.author_is_approved\nFROM activity\nLEFT JOIN posts ON posts.post_id = activity.post_id\nORDER BY activity.created_at DESC, activity.post_id DESC, activity.id DESC\nLIMIT 100"
+    },
+    {
+        "id": "activity-content",
+        "label": "Activity: Content",
+        "description": "Reproduce the activity page's visible content-only view.",
+        "category": "activity",
+        "sql": "SELECT activity.created_at, activity.kind, activity.record_family, activity.action_key,\n       activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,\n       activity.author_identity_id, activity.source_path, activity.source_commit_sha,\n       activity.id, activity.author_label, activity.author_profile_slug,\n       activity.author_username_token, activity.author_is_approved\nFROM activity\nLEFT JOIN posts ON posts.post_id = activity.post_id\nWHERE activity.board_tags_json NOT LIKE '%\"identity\"%'\n  AND (activity.post_id IS NULL OR COALESCE(posts.is_hidden, 0) = 0)\nORDER BY activity.created_at DESC, activity.post_id DESC, activity.id DESC\nLIMIT 100"
+    },
+    {
+        "id": "activity-counts-by-kind",
+        "label": "Activity counts by kind",
+        "description": "Summarize activity volume by kind with the newest event time.",
+        "category": "statistics",
+        "sql": "SELECT kind, COUNT(*) AS activity_count, MAX(created_at) AS newest_activity_at\nFROM activity\nGROUP BY kind\nORDER BY activity_count DESC, kind\nLIMIT 50"
+    },
+    {
+        "id": "content-totals",
+        "label": "Content totals",
+        "description": "Summarize row counts for the primary content and profile tables.",
+        "category": "statistics",
+        "sql": "SELECT 'posts' AS table_name, COUNT(*) AS row_count FROM posts\nUNION ALL\nSELECT 'threads', COUNT(*) FROM threads\nUNION ALL\nSELECT 'profiles', COUNT(*) FROM profiles\nUNION ALL\nSELECT 'username_routes', COUNT(*) FROM username_routes\nORDER BY row_count DESC, table_name\nLIMIT 20"
     }
 ];
     // END GENERATED SQLITE QUERY CATALOG
