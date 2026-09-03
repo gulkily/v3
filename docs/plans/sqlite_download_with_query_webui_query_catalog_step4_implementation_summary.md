@@ -56,3 +56,18 @@
   - Representative catalog queries were executed against the current read model with no schema changes.
 - Notes:
   - FTS, optional analysis-table queries, and unbounded exploratory queries remain deferred.
+
+## Stage 6 - Complete verification and contributor handoff
+- Changes:
+  - Added contributor documentation for metadata headers, read-only query rules, and catalog generation.
+  - Retained focused parser, generator, viewer, download, and artifact coverage.
+- Verification:
+  - `php -l src/ForumRewrite/Tools/SqliteQueryCatalog.php`
+  - `php -l scripts/build_sqlite_query_catalog.php`
+  - `php -l src/ForumRewrite/Application.php`
+  - `node --check public/assets/sqlite_viewer.js`
+  - `php scripts/build_sqlite_query_catalog.php`
+  - `php tests/run.php`
+  - `git diff --check`
+- Notes:
+  - The full suite retains four unrelated baseline failures in `LocalAppSmokeTest`: missing `pages/profile.php`, a core-route `Public key` assertion, a missing `profiles` fixture table, and an existing undefined `$css` assertion. Focused query-catalog and SQLite download tests pass.
