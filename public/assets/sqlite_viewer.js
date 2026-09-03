@@ -316,6 +316,7 @@
         var preset = presetQueries[Number(querySelect.value)];
         if (preset && queryInput) {
           queryInput.value = preset.sql;
+          runQuery();
         }
       });
       querySelect.value = "0";
