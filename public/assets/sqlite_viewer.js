@@ -25,6 +25,7 @@
     var maxPreviewRows = 20;
     var maxQueryRows = 50;
     var querySelectorPopulated = false;
+    // BEGIN GENERATED SQLITE QUERY CATALOG
     var presetQueries = [
     {
         "id": "board-liked-newest",
@@ -62,6 +63,7 @@
         "sql": "SELECT created_at, kind, label, author_label\nFROM activity\nORDER BY created_at DESC, id DESC\nLIMIT 10"
     }
 ];
+    // END GENERATED SQLITE QUERY CATALOG
 
     function setStatus(message, state) {
       if (status) {

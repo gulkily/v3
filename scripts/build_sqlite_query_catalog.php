@@ -5,7 +5,6 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Tools\SqliteQueryCatalog;
-use RuntimeException;
 
 $projectRoot = dirname(__DIR__);
 $sourceDirectory = $argv[1] ?? ($projectRoot . '/queries/sqlite');
@@ -30,8 +29,14 @@ $encoded = json_encode($browserEntries, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASH
 if ($encoded === false) {
     throw new RuntimeException('Unable to encode SQLite query catalog.');
 }
-$replacement = '    var presetQueries = ' . $encoded . ';';
-$updated = preg_replace('/    var presetQueries = \[.*?^    \];/ms', $replacement, $browserSource, 1, $count);
+$replacement = "    // BEGIN GENERATED SQLITE QUERY CATALOG\n"
+    . '    var presetQueries = ' . $encoded . ";\n"
+    . '    // END GENERATED SQLITE QUERY CATALOG';
+$pattern = '/    \/\/ BEGIN GENERATED SQLITE QUERY CATALOG.*?    \/\/ END GENERATED SQLITE QUERY CATALOG/s';
+$updated = preg_replace($pattern, $replacement, $browserSource, 1, $count);
+if ($count === 0) {
+    $updated = preg_replace('/    var presetQueries = \[.*?^\];/ms', $replacement, $browserSource, 1, $count);
+}
 if ($updated === null || $count !== 1) {
     throw new RuntimeException('Could not find the generated query catalog block in ' . $browserPath);
 }

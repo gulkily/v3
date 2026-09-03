@@ -67,6 +67,7 @@ final class SqliteQueryCatalogTest
         assertTrue($browserSource !== false);
         assertStringContains('"id": "board-liked-newest"', $browserSource);
         assertStringContains('"id": "recent-activity"', $browserSource);
-        assertStringNotContains('var presetQueries = [\n      {', $browserSource);
+        assertStringContains('BEGIN GENERATED SQLITE QUERY CATALOG', $browserSource);
+        assertStringContains('END GENERATED SQLITE QUERY CATALOG', $browserSource);
     }
 }
