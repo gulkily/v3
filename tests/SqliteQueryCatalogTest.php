@@ -60,4 +60,13 @@ final class SqliteQueryCatalogTest
         assertStringContains('JOIN posts ON posts.post_id = threads.root_post_id', $catalog[0]['sql']);
         assertStringContains("json_each.value = 'pinned'", $catalog[0]['sql']);
     }
+
+    public function testBrowserAssetUsesGeneratedCatalogEntries(): void
+    {
+        $browserSource = file_get_contents(__DIR__ . '/../public/assets/sqlite_viewer.js');
+        assertTrue($browserSource !== false);
+        assertStringContains('"id": "board-liked-newest"', $browserSource);
+        assertStringContains('"id": "recent-activity"', $browserSource);
+        assertStringNotContains('var presetQueries = [\n      {', $browserSource);
+    }
 }

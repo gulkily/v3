@@ -26,79 +26,42 @@
     var maxQueryRows = 50;
     var querySelectorPopulated = false;
     var presetQueries = [
-      {
-        label: "Board: Liked + Newest",
-        description: "Reproduce the default board view with its joins, filters, fields, and ordering.",
-        sql: "SELECT threads.root_post_id,\n" +
-          "       threads.root_post_created_at,\n" +
-          "       threads.last_activity_at,\n" +
-          "       threads.subject,\n" +
-          "       threads.body_preview,\n" +
-          "       threads.reply_count,\n" +
-          "       threads.score_total,\n" +
-          "       threads.board_tags_json,\n" +
-          "       threads.thread_labels_json,\n" +
-          "       posts.author_label,\n" +
-          "       posts.author_profile_slug,\n" +
-          "       posts.post_score_total AS root_post_score_total,\n" +
-          "       profiles.username_token AS author_username_token,\n" +
-          "       COALESCE(profiles.is_approved, 0) AS author_is_approved\n" +
-          "FROM threads\n" +
-          "JOIN posts ON posts.post_id = threads.root_post_id\n" +
-          "LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id\n" +
-          "WHERE NOT EXISTS (\n" +
-          "  SELECT 1\n" +
-          "  FROM json_each(threads.board_tags_json)\n" +
-          "  WHERE json_each.value = 'identity'\n" +
-          ")\n" +
-          "AND EXISTS (\n" +
-          "  SELECT 1\n" +
-          "  FROM json_each(threads.thread_labels_json)\n" +
-          "  WHERE json_each.value = 'like'\n" +
-          ")\n" +
-          "AND posts.post_score_total >= 0\n" +
-          "ORDER BY CASE WHEN EXISTS (\n" +
-          "  SELECT 1\n" +
-          "  FROM json_each(threads.thread_labels_json)\n" +
-          "  WHERE json_each.value = 'pinned'\n" +
-          ") THEN 0 ELSE 1 END,\n" +
-          "         threads.root_post_created_at DESC,\n" +
-          "         threads.root_post_id DESC"
-      },
-      {
-        label: "Recent posts",
-        description: "Show the ten newest indexed posts.",
-        sql: "SELECT post_id, created_at, subject, author_label\n" +
-          "FROM posts\n" +
-          "ORDER BY created_at DESC\n" +
-          "LIMIT 10"
-      },
-      {
-        label: "Threads by reply count",
-        description: "Show the most active indexed threads.",
-        sql: "SELECT root_post_id, subject, reply_count, last_activity_at\n" +
-          "FROM threads\n" +
-          "ORDER BY reply_count DESC\n" +
-          "LIMIT 10"
-      },
-      {
-        label: "Approved profiles",
-        description: "Show approved profiles in the read model.",
-        sql: "SELECT profile_slug, username, post_count, thread_count\n" +
-          "FROM profiles\n" +
-          "WHERE is_approved = 1\n" +
-          "ORDER BY username\n" +
-          "LIMIT 20"
-      },
-      {
-        label: "Recent activity",
-        description: "Show the ten newest activity records.",
-        sql: "SELECT created_at, kind, label, author_label\n" +
-          "FROM activity\n" +
-          "ORDER BY created_at DESC, id DESC\n" +
-          "LIMIT 10"
-      }
-    ];
+    {
+        "id": "board-liked-newest",
+        "label": "Board: Liked + Newest",
+        "description": "Reproduce the default board view with its joins, filters, fields, and ordering.",
+        "category": "board",
+        "sql": "SELECT threads.root_post_id,\n       threads.root_post_created_at,\n       threads.last_activity_at,\n       threads.subject,\n       threads.body_preview,\n       threads.reply_count,\n       threads.score_total,\n       threads.board_tags_json,\n       threads.thread_labels_json,\n       posts.author_label,\n       posts.author_profile_slug,\n       posts.post_score_total AS root_post_score_total,\n       profiles.username_token AS author_username_token,\n       COALESCE(profiles.is_approved, 0) AS author_is_approved\nFROM threads\nJOIN posts ON posts.post_id = threads.root_post_id\nLEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id\nWHERE NOT EXISTS (\n  SELECT 1\n  FROM json_each(threads.board_tags_json)\n  WHERE json_each.value = 'identity'\n)\nAND EXISTS (\n  SELECT 1\n  FROM json_each(threads.thread_labels_json)\n  WHERE json_each.value = 'like'\n)\nAND posts.post_score_total >= 0\nORDER BY CASE WHEN EXISTS (\n  SELECT 1\n  FROM json_each(threads.thread_labels_json)\n  WHERE json_each.value = 'pinned'\n) THEN 0 ELSE 1 END,\n         threads.root_post_created_at DESC,\n         threads.root_post_id DESC"
+    },
+    {
+        "id": "recent-posts",
+        "label": "Recent posts",
+        "description": "Show the ten newest indexed posts.",
+        "category": "content",
+        "sql": "SELECT post_id, created_at, subject, author_label\nFROM posts\nORDER BY created_at DESC\nLIMIT 10"
+    },
+    {
+        "id": "threads-by-reply-count",
+        "label": "Threads by reply count",
+        "description": "Show the most active indexed threads.",
+        "category": "content",
+        "sql": "SELECT root_post_id, subject, reply_count, last_activity_at\nFROM threads\nORDER BY reply_count DESC\nLIMIT 10"
+    },
+    {
+        "id": "approved-profiles",
+        "label": "Approved profiles",
+        "description": "Show approved profiles in the read model.",
+        "category": "people",
+        "sql": "SELECT profile_slug, username, post_count, thread_count\nFROM profiles\nWHERE is_approved = 1\nORDER BY username\nLIMIT 20"
+    },
+    {
+        "id": "recent-activity",
+        "label": "Recent activity",
+        "description": "Show the ten newest activity records.",
+        "category": "activity",
+        "sql": "SELECT created_at, kind, label, author_label\nFROM activity\nORDER BY created_at DESC, id DESC\nLIMIT 10"
+    }
+];
 
     function setStatus(message, state) {
       if (status) {

@@ -20,3 +20,14 @@
   - `php tests/run.php SqliteQueryCatalogTest`
 - Notes:
   - Browser generation still consumes the existing inline catalog until Stage 3.
+
+## Stage 3 - Generate the browser query catalog
+- Changes:
+  - Added `scripts/build_sqlite_query_catalog.php` to generate the preset array in `public/assets/sqlite_viewer.js` from the canonical SQL files.
+  - Removed browser-maintained duplicate query text while preserving the existing selector and runner contract.
+- Verification:
+  - `php scripts/build_sqlite_query_catalog.php`
+  - `node --check public/assets/sqlite_viewer.js`
+  - `php tests/run.php SqliteQueryCatalogTest`
+- Notes:
+  - Browser output is deterministic and remains a single viewer asset; the local-use pack is Stage 4.
