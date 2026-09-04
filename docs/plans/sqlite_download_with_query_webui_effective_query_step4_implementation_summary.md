@@ -11,3 +11,14 @@
   - `php tests/run.php LocalAppSmokeTest::testSqliteViewerIncludesPresetReadOnlyQueryContract`
 - Notes:
   - Execution-state wiring and synchronization are deferred to Stages 2–3.
+
+## Stage 2 - Capture exact effective statements
+- Changes:
+  - Added explicit count and paginated data SQL variables to the existing query execution path.
+  - Displayed those exact statements before local execution so runtime failures retain the attempted SQL context.
+  - Kept page size and offset synchronized with the same values passed to sql.js.
+- Verification:
+  - `node --check public/assets/sqlite_viewer.js`
+  - `php tests/run.php LocalAppSmokeTest::testSqliteViewerIncludesPresetReadOnlyQueryContract`
+- Notes:
+  - Validation-state cleanup and failure semantics are handled in Stage 3.

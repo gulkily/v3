@@ -1290,7 +1290,7 @@ final class LocalAppSmokeTest
         assertStringContains('author_username_token', $script);
         assertStringContains('isSingleSelectQuery', $script);
         assertStringContains('Only one read-only SELECT statement is allowed.', $script);
-        assertStringContains('database.exec("SELECT * FROM (" + normalized +', $script);
+        assertStringContains('database.exec(dataSql)', $script);
         assertStringContains('queryPanel.removeAttribute("hidden")', $script);
         assertStringContains('querySelect.value = "0"', $script);
         assertStringContains('queryInput.value = presetQueries[0].sql', $script);
@@ -1300,6 +1300,10 @@ final class LocalAppSmokeTest
         assertStringContains('function renderEffectiveQuery(countSql, dataSql)', $script);
         assertStringContains('effectiveCount.textContent = countSql', $script);
         assertStringContains('effectiveData.textContent = dataSql', $script);
+        assertStringContains('var countSql = "SELECT COUNT(*) AS total_rows FROM (" + normalized + ")"', $script);
+        assertStringContains('var dataSql = "SELECT * FROM (" + normalized + ") LIMIT " + (maxQueryRows + 1)', $script);
+        assertStringContains('database.exec(countSql)', $script);
+        assertStringContains('database.exec(dataSql)', $script);
         assertStringContains('var queryPage = 0', $script);
         assertStringContains('LIMIT " + (maxQueryRows + 1) + " OFFSET " + (queryPage * maxQueryRows)', $script);
         assertStringContains('runQuery(queryPage + 1)', $script);

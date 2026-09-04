@@ -471,10 +471,13 @@
       }
       try {
         var normalized = query.trim().replace(/;+$/, "").trim();
-        var totalRowsResult = database.exec("SELECT COUNT(*) AS total_rows FROM (" + normalized + ")")[0];
+        var countSql = "SELECT COUNT(*) AS total_rows FROM (" + normalized + ")";
+        var dataSql = "SELECT * FROM (" + normalized + ") LIMIT " + (maxQueryRows + 1) + " OFFSET " + (queryPage * maxQueryRows);
+        renderEffectiveQuery(countSql, dataSql);
+        var totalRowsResult = database.exec(countSql)[0];
         var totalRows = totalRowsResult && totalRowsResult.values.length > 0 ? Number(totalRowsResult.values[0][0]) : 0;
         var totalPages = Math.max(1, Math.ceil(totalRows / maxQueryRows));
-        var result = database.exec("SELECT * FROM (" + normalized + ") LIMIT " + (maxQueryRows + 1) + " OFFSET " + (queryPage * maxQueryRows))[0];
+        var result = database.exec(dataSql)[0];
         renderRows(queryResults, result, "The query returned no rows.", maxQueryRows, false, {
           page: queryPage,
           pageSize: maxQueryRows,
