@@ -16,5 +16,8 @@ interface PostAnalysisStore
      */
     public function saveComplete(string $postId, string $contentHash, array $analysis): array;
 
-    public function saveFailed(string $postId, string $contentHash, string $failureCode, string $failureMessage): array;
+    /**
+     * @param array<string, mixed> $rawResponse
+     */
+    public function saveFailed(string $postId, string $contentHash, string $failureCode, string $failureMessage, array $rawResponse = []): array;
 }

@@ -26,7 +26,7 @@ if (is_array($viewerProfile)) {
           <p class="account-key-label">Signed in as</p>
           <p class="account-key-username" data-role="username-field">guest</p>
 <?php if ($viewerProfileHref !== ''): ?>
-          <p class="meta account-key-profile-link"><a href="<?= $e($viewerProfileHref) ?>"><?= $e($viewerProfileLabel) ?></a></p>
+          <p class="meta account-key-profile-link" data-role="profile-link-wrap"><a data-role="profile-link" href="<?= $e($viewerProfileHref) ?>"><?= $e($viewerProfileLabel) ?></a></p>
 <?php endif; ?>
         </div>
         <div class="account-key-simple-actions">
@@ -47,6 +47,7 @@ if (is_array($viewerProfile)) {
           </div>
           <div class="button-row account-key-advanced-actions">
             <button type="button" data-action="load-browser-key">Load Saved Public Key</button>
+            <button type="button" data-action="restore-private-key">Restore Private Key</button>
             <button type="button" data-action="copy-public-key">Copy Public Key</button>
             <button type="button" data-action="copy-private-key">Copy Private Key</button>
             <button type="button" data-action="clear-browser-key">Clear Saved Keypair</button>
@@ -107,12 +108,20 @@ No browser private key saved yet.
       return readStorageValue('forum_pki_public_key') !== '' && readStorageValue('forum_pki_private_key') !== '';
     }
 
+    function storedFingerprint() {
+      return readStorageValue('forum_pki_fingerprint').trim().toLowerCase();
+    }
+
     function friendlyStatusMessage(rawMessage, username, ready) {
       if (!rawMessage || rawMessage === 'Ready.') {
         return ready ? 'All set! Posting as ' + username + '.' : 'Choose a name to set up this browser.';
       }
 
       if (rawMessage.indexOf('Browser keypair ready for ') === 0) {
+        return 'All set! Posting as ' + username + '.';
+      }
+
+      if (rawMessage.indexOf('Restored browser keypair for ') === 0) {
         return 'All set! Posting as ' + username + '.';
       }
 
@@ -177,6 +186,23 @@ No browser private key saved yet.
       if (simpleStatus && !simpleStatus.dataset.kind) {
         simpleStatus.textContent = ready ? 'All set! Posting as ' + username + '.' : 'Choose a name to set up this browser.';
       }
+
+      syncProfileLinks(root);
+    }
+
+    function syncProfileLinks(root) {
+      var fingerprint = storedFingerprint();
+      var links = root.querySelectorAll('[data-role="profile-link"]');
+      var wraps = root.querySelectorAll('[data-role="profile-link-wrap"]');
+
+      links.forEach(function (link) {
+        link.href = fingerprint ? '/profiles/openpgp-' + fingerprint : '/account/key/';
+        link.textContent = fingerprint ? 'View profile' : 'Open profile';
+      });
+
+      wraps.forEach(function (wrap) {
+        wrap.hidden = fingerprint === '';
+      });
     }
 
     function mirrorAdvancedStatus() {
@@ -234,6 +260,8 @@ No browser private key saved yet.
       mirrorAdvancedStatus();
       window.addEventListener('storage', syncSimpleUI);
       window.addEventListener('storage', mirrorAdvancedStatus);
+      window.addEventListener('pageshow', syncSimpleUI);
+      window.addEventListener('pageshow', mirrorAdvancedStatus);
 
       if (statusNode && typeof MutationObserver === 'function') {
         new MutationObserver(function () {

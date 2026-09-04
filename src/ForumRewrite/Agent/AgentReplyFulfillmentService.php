@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Agent;
 
+use ForumRewrite\Analysis\ProviderRequestException;
 use ForumRewrite\Analysis\PostAnalysisStore;
 use ForumRewrite\Analysis\PostAnalysisService;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -63,6 +64,7 @@ final class AgentReplyFulfillmentService
                 'reason' => array_key_exists('status', $analysis) ? 'analysis_not_complete' : 'missing_analysis',
                 'analysis_status' => $analysis['status'] ?? null,
                 'failure_code' => $analysis['failure_code'] ?? null,
+                'failure_message' => $analysis['failure_message'] ?? ($analysis['message'] ?? null),
             ]);
         }
 
@@ -156,7 +158,8 @@ final class AgentReplyFulfillmentService
                     (string) $context['content_hash'],
                     (string) $generationContext['analysis_hash'],
                     'analysis_suggestion_error',
-                    $throwable->getMessage()
+                    $throwable->getMessage(),
+                    $this->failureDiagnostics($throwable)
                 );
                 return $this->failedResponse($failed);
             }
@@ -213,7 +216,8 @@ final class AgentReplyFulfillmentService
                 (string) $context['content_hash'],
                 (string) $generationContext['analysis_hash'],
                 'posting_error',
-                $throwable->getMessage()
+                $throwable->getMessage(),
+                $this->failureDiagnostics($throwable)
             );
             return $this->failedResponse($failed);
         }
@@ -261,6 +265,23 @@ final class AgentReplyFulfillmentService
             'quality' => $analysis['quality'] ?? [],
             'respondability' => $analysis['respondability'] ?? [],
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function failureDiagnostics(\Throwable $throwable): array
+    {
+        if ($throwable instanceof ProviderRequestException) {
+            return $throwable->diagnostics();
+        }
+
+        return [
+            'error' => [
+                'class' => $throwable::class,
+                'message' => $throwable->getMessage(),
+            ],
+        ];
     }
 
     /**
@@ -324,7 +345,8 @@ final class AgentReplyFulfillmentService
         $stored = $this->generationStore->markSkipped(
             $postId,
             $contentHash,
-            (string) ($details['reason'] ?? 'not_recommended')
+            (string) ($details['reason'] ?? 'not_recommended'),
+            $details
         );
 
         return $this->statusResponse('not_recommended', $postId, array_merge([

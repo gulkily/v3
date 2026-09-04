@@ -87,6 +87,8 @@ try {
                 'target_post_id' => $targetPostId,
                 'status' => $status,
                 'reason' => null,
+                'analysis_status' => isset($result['analysis_status']) ? (string) $result['analysis_status'] : null,
+                'analysis_failure_code' => isset($result['failure_code']) ? (string) $result['failure_code'] : null,
                 'agent_post_id' => isset($result['agent_post_id']) ? (string) $result['agent_post_id'] : null,
             ];
             if ($status === 'generated') {
@@ -115,6 +117,12 @@ try {
             ];
             if ($detail['reason'] !== null && $detail['reason'] !== '') {
                 $parts[] = 'reason=' . $detail['reason'];
+            }
+            if ($detail['analysis_status'] !== null && $detail['analysis_status'] !== '') {
+                $parts[] = 'analysis_status=' . $detail['analysis_status'];
+            }
+            if ($detail['analysis_failure_code'] !== null && $detail['analysis_failure_code'] !== '') {
+                $parts[] = 'analysis_failure_code=' . $detail['analysis_failure_code'];
             }
             if ($detail['agent_post_id'] !== null && $detail['agent_post_id'] !== '') {
                 $parts[] = 'agent_post_id=' . $detail['agent_post_id'];

@@ -281,7 +281,7 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
         return $row;
     }
 
-    public function saveFailed(string $postId, string $contentHash, string $analysisHash, string $failureCode, string $failureMessage): array
+    public function saveFailed(string $postId, string $contentHash, string $analysisHash, string $failureCode, string $failureMessage, array $rawResponse = []): array
     {
         $now = gmdate('c');
         $row = [
@@ -305,23 +305,33 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
             'failure_message' => substr($failureMessage, 0, 500),
             'retry_after' => gmdate('c', time() + 300),
             'request_context_json' => $this->encode([]),
-            'raw_response_json' => $this->encode([]),
+            'raw_response_json' => $this->encode($rawResponse),
         ];
         $this->upsert($row);
 
         return $this->findByTarget($postId, $contentHash) ?? $this->hydrate($row);
     }
 
-    public function markSkipped(string $postId, string $contentHash, string $reason): array
+    /**
+     * @param array<string, mixed> $details
+     */
+    public function markSkipped(string $postId, string $contentHash, string $reason, array $details = []): array
     {
         $now = gmdate('c');
+        $existing = $this->findByTarget($postId, $contentHash);
+        $requestContext = is_array($existing['request_context'] ?? null) ? $existing['request_context'] : [];
+        if ($details !== []) {
+            $requestContext['agent_reply_skip'] = $details;
+        }
+        $failureMessage = $details === [] ? null : substr($this->encode($details), 0, 500);
         $stmt = $this->pdo->prepare(
             'UPDATE post_generated_responses
              SET status = :status,
                  completed_at = :completed_at,
                  failure_code = :failure_code,
-                 failure_message = NULL,
-                 retry_after = NULL
+                 failure_message = :failure_message,
+                 retry_after = NULL,
+                 request_context_json = :request_context_json
              WHERE target_post_id = :target_post_id
                AND target_content_hash = :target_content_hash
                AND agent_post_id IS NULL'
@@ -330,6 +340,8 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
             'status' => 'skipped',
             'completed_at' => $now,
             'failure_code' => $reason,
+            'failure_message' => $failureMessage,
+            'request_context_json' => $this->encode($requestContext),
             'target_post_id' => $postId,
             'target_content_hash' => $contentHash,
         ]);
@@ -357,9 +369,9 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
             'agent_post_id' => null,
             'posted_at' => null,
             'failure_code' => $reason,
-            'failure_message' => null,
+            'failure_message' => $failureMessage,
             'retry_after' => null,
-            'request_context_json' => $this->encode([]),
+            'request_context_json' => $this->encode($requestContext),
             'raw_response_json' => $this->encode([]),
         ];
         $this->upsert($row);

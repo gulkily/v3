@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace ForumRewrite;
 
-use ForumRewrite\Analysis\DedalusPostAnalyzer;
 use ForumRewrite\Analysis\PostAnalysisService;
+use ForumRewrite\Analysis\PostAnalyzerFactory;
 use ForumRewrite\Analysis\RelatedContentSearchService;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Analysis\SqliteUnicodeRiskStore;
-use ForumRewrite\Analysis\StubPostAnalyzer;
 use ForumRewrite\Analysis\UnicodeRiskInspector;
 use ForumRewrite\Agent\AgentReplyFulfillmentService;
 use ForumRewrite\Agent\DedalusAgentReplyGenerator;
@@ -17,6 +16,8 @@ use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Codex\CodexHandoffDraftService;
+use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelMetadata;
@@ -28,6 +29,7 @@ use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\Support\ThreadTitle;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
+use ForumRewrite\Security\OpenPgpKeyInspector;
 use PDO;
 use RuntimeException;
 use PDOStatement;
@@ -37,8 +39,10 @@ final class Application
     private const HIDDEN_BOOTSTRAP_TAG = 'identity';
     private const ANALYSIS_SCHEMA_VERSION = 5;
     private const ACTIVITY_ITEM_LIMIT = 100;
+    private const BACKUP_PREVIEW_LIMIT = 5;
     private const THREAD_CONTEXT_COMMENT_BODY_LIMIT = 3000;
     private const THREAD_CONTEXT_TOTAL_BODY_LIMIT = 18000;
+    private const CODEX_HANDOFF_DEVELOPMENT_TAGS = ['feature', 'bug', 'task', 'dev', 'development', 'codex', 'implementation', 'fdp'];
     private ?string $appVersion = null;
     private ?FeatureFlagEvaluator $featureFlags = null;
 
@@ -93,6 +97,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_identity') {
+            $this->handlePrepareIdentity($method, $query);
+            return;
+        }
+
         if ($path === '/api/create_reply') {
             $this->handleCreateReply($method, $query);
             return;
@@ -108,6 +117,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/create_identity') {
+            $this->handleCreateIdentity($method, $query);
+            return;
+        }
+
         if ($path === '/api/analyze_post') {
             $this->handleAnalyzePost($method, $query);
             return;
@@ -115,6 +129,16 @@ final class Application
 
         if ($path === '/api/generate_agent_reply') {
             $this->handleGenerateAgentReply($method, $query);
+            return;
+        }
+
+        if ($path === '/api/codex_handoff') {
+            $this->handleCodexHandoff($method, $query);
+            return;
+        }
+
+        if ($path === '/api/codex_handoff_approval') {
+            $this->handleCodexHandoffApproval($method, $query);
             return;
         }
 
@@ -207,6 +231,11 @@ final class Application
             return;
         }
 
+        if ($path === '/tools/sqlite/' || $path === '/tools/sqlite') {
+            $this->sendHtml($this->renderSqliteViewer(), 200);
+            return;
+        }
+
         if ($path === '/downloads/repository.tar.gz') {
             $this->handleRepositoryDownload($method, 'tar.gz');
             return;
@@ -219,6 +248,11 @@ final class Application
 
         if ($path === '/downloads/read_model.sqlite3') {
             $this->handleReadModelDatabaseDownload($method);
+            return;
+        }
+
+        if ($path === '/downloads/sqlite_query_catalog.sql') {
+            $this->handleSqliteQueryCatalogDownload($method);
             return;
         }
 
@@ -751,9 +785,12 @@ final class Application
             ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'like', (string) $viewerProfile['identity_id'])
             : [];
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $viewerCanUseCodexHandoff = $this->viewerCanUseCodexHandoff($viewerProfile);
         $createdPostId = $this->createdPostIdForThread($threadId, $createdPostId);
         $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $this->fetchAgentReplyGenerationsForPosts($posts);
+        $codexHandoffsByPostId = $viewerCanUseCodexHandoff ? $this->fetchCodexHandoffsForPosts($posts) : [];
+        $codexHandoffEligiblePostIds = $viewerCanUseCodexHandoff ? $this->codexHandoffEligiblePostIds($posts, $threadRow) : [];
 
         return $this->renderPageTemplate(
             'thread.php',
@@ -767,8 +804,11 @@ final class Application
                 'viewerPostLikes' => $viewerPostLikes,
                 'createdPostId' => $createdPostId,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
+                'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
+                'codexHandoffsByPostId' => $codexHandoffsByPostId,
+                'codexHandoffEligiblePostIds' => $codexHandoffEligiblePostIds,
                 'agentReplyWorkByPostId' => $this->agentReplyWorkByPostId(
                     $posts,
                     $createdPostId,
@@ -819,9 +859,13 @@ final class Application
             ? $this->viewerPostTagsForPosts([$post['post_id']], 'like', (string) $viewerProfile['identity_id'])
             : [];
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $viewerCanUseCodexHandoff = $this->viewerCanUseCodexHandoff($viewerProfile);
         $posts = [$post];
         $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $this->fetchAgentReplyGenerationsForPosts($posts);
+        $codexHandoffsByPostId = $viewerCanUseCodexHandoff ? $this->fetchCodexHandoffsForPosts($posts) : [];
+        $threadRow = $this->fetchThread((string) $post['thread_id']);
+        $codexHandoffEligiblePostIds = $viewerCanUseCodexHandoff ? $this->codexHandoffEligiblePostIds($posts, $threadRow) : [];
 
         return $this->renderPageTemplate(
             'post.php',
@@ -830,8 +874,11 @@ final class Application
                 'viewerPostFlags' => $viewerPostFlags,
                 'viewerPostLikes' => $viewerPostLikes,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
+                'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
+                'codexHandoffsByPostId' => $codexHandoffsByPostId,
+                'codexHandoffEligiblePostIds' => $codexHandoffEligiblePostIds,
                 'agentReplyWorkByPostId' => $this->agentReplyWorkByPostId(
                     $posts,
                     '',
@@ -960,12 +1007,15 @@ final class Application
 
     private function renderBackup(): string
     {
+        $backupSnapshot = $this->fetchBackupSnapshot();
+
         return $this->renderPageTemplate(
             'instance.php',
             [
                 'siteName' => SiteConfig::siteName(),
                 'admins' => $this->fetchSeedApprovedUsers(),
                 'toolNavOptions' => $this->toolNavOptions('backup'),
+                'backupSnapshot' => $backupSnapshot,
                 'downloads' => [
                     [
                         'href' => '/downloads/repository.tar.gz',
@@ -987,6 +1037,27 @@ final class Application
             'Backup',
             'tools',
         );
+    }
+
+    /**
+     * @return array{generated_at:string,repository_head:string,items:array<int,array<string,mixed>>}
+     */
+    private function fetchBackupSnapshot(): array
+    {
+        $metadata = [];
+        $pdo = $this->pdo();
+        if ($this->readModelTableExists($pdo, 'metadata')) {
+            $rows = $pdo->query('SELECT key, value FROM metadata')->fetchAll();
+            foreach ($rows as $row) {
+                $metadata[(string) $row['key']] = (string) $row['value'];
+            }
+        }
+
+        return [
+            'generated_at' => $metadata['rebuilt_at'] ?? '',
+            'repository_head' => $metadata['repository_head'] ?? ReadModelMetadata::repositoryHead($this->repositoryRoot),
+            'items' => array_slice($this->fetchActivity('content'), 0, self::BACKUP_PREVIEW_LIMIT),
+        ];
     }
 
     private function renderAbout(): string
@@ -1164,6 +1235,11 @@ final class Application
                         'description' => 'Portable downloads of the repository and current read-model database.',
                     ],
                     [
+                        'label' => 'SQLite Viewer',
+                        'href' => '/tools/sqlite/',
+                        'description' => 'Inspect the published SQLite read model in your browser.',
+                    ],
+                    [
                         'label' => 'System State',
                         'href' => '/tools/codebase/',
                         'description' => 'Current application version, repository head, and read-model health.',
@@ -1179,7 +1255,7 @@ final class Application
                         'description' => 'Browser key setup, identity linking, and technical account details.',
                     ],
                 ],
-                'toolNavOptions' => $this->toolNavOptions('overview'),
+                'toolNavOptions' => $this->toolNavOptions(null),
             ],
             'Tools',
             'tools',
@@ -1193,6 +1269,8 @@ final class Application
             [
                 'state' => $this->collectCodebaseState(),
                 'toolNavOptions' => $this->toolNavOptions('codebase'),
+                'siteName' => SiteConfig::siteName(),
+                'admins' => $this->fetchSeedApprovedUsers(),
             ],
             'System State',
             'tools',
@@ -1210,6 +1288,19 @@ final class Application
             'Feature Flags',
             'tools',
             ['/assets/feature_flags.js'],
+        );
+    }
+
+    private function renderSqliteViewer(): string
+    {
+        return $this->renderPageTemplate(
+            'sqlite_viewer.php',
+            [
+                'toolNavOptions' => $this->toolNavOptions('sqlite'),
+            ],
+            'SQLite Viewer',
+            'tools',
+            ['/assets/sql-wasm.js', '/assets/sqlite_viewer.js'],
         );
     }
 
@@ -1258,15 +1349,9 @@ final class Application
         );
     }
 
-    private function toolNavOptions(string $activeKey): array
+    private function toolNavOptions(?string $activeKey): array
     {
         return [
-            [
-                'key' => 'overview',
-                'label' => 'Tools',
-                'href' => '/tools/',
-                'is_active' => $activeKey === 'overview',
-            ],
             [
                 'key' => 'bookmarklets',
                 'label' => 'Bookmarklets',
@@ -1278,6 +1363,12 @@ final class Application
                 'label' => 'Backup',
                 'href' => '/tools/backup/',
                 'is_active' => $activeKey === 'backup',
+            ],
+            [
+                'key' => 'sqlite',
+                'label' => 'SQLite Viewer',
+                'href' => '/tools/sqlite/',
+                'is_active' => $activeKey === 'sqlite',
             ],
             [
                 'key' => 'codebase',
@@ -1328,9 +1419,15 @@ final class Application
         string $body = ''
     ): string
     {
+        $parentPost = $parentId !== '' ? $this->fetchPost($parentId) : null;
+        if (is_array($parentPost) && $threadId !== '' && (string) ($parentPost['thread_id'] ?? '') !== $threadId) {
+            $parentPost = null;
+        }
+
         return $this->renderPageTemplate('compose_reply.php', [
             'threadId' => $threadId,
             'parentId' => $parentId,
+            'parentPost' => $parentPost,
             'notice' => $notice,
             'error' => $error,
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
@@ -1363,7 +1460,7 @@ final class Application
 
     private function renderApiIndex(): string
     {
-        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nPOST /api/set_identity_hint\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
+        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nPOST /api/set_identity_hint\nPOST /api/prepare_identity\nPOST /api/create_identity\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
     }
 
     private function renderApiListIndex(): string
@@ -1603,7 +1700,8 @@ final class Application
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_identity_id, posts.author_label,
                     posts.created_at, posts.board_tags_json,
                     posts.author_profile_slug, profiles.username_token AS author_username_token,
-                    COALESCE(profiles.is_approved, 0) AS author_is_approved
+                    COALESCE(profiles.is_approved, 0) AS author_is_approved,
+                    profiles.public_key AS author_public_key
              FROM posts
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
              WHERE posts.thread_id = :thread_id
@@ -1625,7 +1723,8 @@ final class Application
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_label,
                     posts.created_at, posts.board_tags_json, posts.post_score_total, posts.is_hidden, posts.hidden_reason,
                     posts.author_identity_id, posts.author_profile_slug, profiles.username_token AS author_username_token,
-                    COALESCE(profiles.is_approved, 0) AS author_is_approved
+                    COALESCE(profiles.is_approved, 0) AS author_is_approved,
+                    profiles.public_key AS author_public_key
              FROM posts
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
              WHERE posts.post_id = :post_id'
@@ -1869,6 +1968,35 @@ final class Application
         }
 
         return $generations;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $posts
+     * @return array<string, array<string, mixed>>
+     */
+    private function fetchCodexHandoffsForPosts(array $posts): array
+    {
+        if ($posts === []) {
+            return [];
+        }
+
+        try {
+            $store = $this->codexHandoffStore();
+        } catch (\Throwable) {
+            return [];
+        }
+
+        $handoffs = [];
+        foreach ($posts as $post) {
+            $handoff = $store->findByPost($post);
+            if ($handoff === null) {
+                continue;
+            }
+
+            $handoffs[(string) $post['post_id']] = $handoff;
+        }
+
+        return $handoffs;
     }
 
     /**
@@ -2422,6 +2550,22 @@ final class Application
         $this->sendDownload($this->databasePath, 'application/x-sqlite3', SiteConfig::siteName() . '-read-model.sqlite3');
     }
 
+    private function handleSqliteQueryCatalogDownload(string $method): void
+    {
+        if ($method !== 'GET') {
+            $this->sendHtml($this->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported for downloads.', 'none'), 405);
+            return;
+        }
+
+        $path = $this->projectRoot . '/public/assets/sqlite_query_catalog.sql';
+        if (!is_file($path)) {
+            $this->sendHtml($this->renderMessagePage('Not Found', 'Not Found', 'SQLite query catalog is not available yet.', 'instance'), 404);
+            return;
+        }
+
+        $this->sendDownload($path, 'application/sql; charset=utf-8', SiteConfig::siteName() . '-sqlite-query-catalog.sql');
+    }
+
     private function sendDownload(string $path, string $contentType, string $filename, bool $deleteAfterSend = false): void
     {
         $size = filesize($path);
@@ -2488,6 +2632,99 @@ final class Application
         return $viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
             && (string) ($viewerProfile['approved_by_label'] ?? '') === 'root';
+    }
+
+    /**
+     * @param array<string, mixed>|null $viewerProfile
+     */
+    private function viewerCanUseCodexHandoff(?array $viewerProfile): bool
+    {
+        return $viewerProfile !== null
+            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
+            && $this->requestIsLocalhost();
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $posts
+     * @param array<string, mixed>|null $thread
+     * @return array<string, bool>
+     */
+    private function codexHandoffEligiblePostIds(array $posts, ?array $thread = null): array
+    {
+        $eligible = [];
+        foreach ($posts as $post) {
+            if ($this->postCanUseCodexHandoffTarget($post, $thread)) {
+                $eligible[(string) ($post['post_id'] ?? '')] = true;
+            }
+        }
+
+        return $eligible;
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     * @param array<string, mixed>|null $thread
+     */
+    private function postCanUseCodexHandoffTarget(array $post, ?array $thread = null): bool
+    {
+        if ((string) ($post['author_label'] ?? '') === AgentIdentityService::USERNAME) {
+            return false;
+        }
+
+        if ($this->hasCodexHandoffTag($this->decodeStringList((string) ($post['board_tags_json'] ?? '[]')))) {
+            return true;
+        }
+
+        if ((string) ($post['post_id'] ?? '') !== (string) ($post['thread_id'] ?? '')) {
+            return false;
+        }
+
+        $threadLabels = [];
+        if ($thread !== null) {
+            $threadLabels = is_array($thread['thread_labels'] ?? null)
+                ? array_map('strval', $thread['thread_labels'])
+                : $this->decodeStringList((string) ($thread['thread_labels_json'] ?? '[]'));
+        }
+
+        return $this->hasCodexHandoffTag($threadLabels);
+    }
+
+    /**
+     * @param list<string> $tags
+     */
+    private function hasCodexHandoffTag(array $tags): bool
+    {
+        foreach ($tags as $tag) {
+            if (in_array(strtolower($tag), self::CODEX_HANDOFF_DEVELOPMENT_TAGS, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function requestIsLocalhost(): bool
+    {
+        $host = trim((string) ($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? ''));
+        if ($host !== '') {
+            $host = strtolower($host);
+            if (str_starts_with($host, '[')) {
+                $closingBracket = strpos($host, ']');
+                $host = $closingBracket === false ? $host : substr($host, 1, $closingBracket - 1);
+            } elseif (str_contains($host, ':')) {
+                $host = explode(':', $host, 2)[0];
+            }
+
+            return in_array($host, ['localhost', '127.0.0.1', '::1'], true)
+                || str_ends_with($host, '.localhost');
+        }
+
+        $remoteAddress = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+        if ($remoteAddress === '') {
+            return PHP_SAPI === 'cli';
+        }
+
+        return in_array($remoteAddress, ['127.0.0.1', '::1'], true);
     }
 
     /**
@@ -2615,14 +2852,15 @@ final class Application
         $view = $this->normalizeActivityView($view);
         [$viewWhere, $viewParameters] = $this->activityViewSql($view);
         $stmt = $this->pdo()->prepare(
-            'SELECT activity.created_at, activity.kind, activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
+            'SELECT activity.created_at, activity.kind, activity.record_family, activity.action_key,
+                    activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
                     activity.author_identity_id,
                     activity.source_path, activity.source_commit_sha,
                     activity.id, activity.author_label, activity.author_profile_slug,
                     activity.author_username_token, activity.author_is_approved
              FROM activity
              LEFT JOIN posts ON posts.post_id = activity.post_id
-             WHERE (activity.post_id IS NULL OR COALESCE(posts.is_hidden, 0) = 0)
+             WHERE 1 = 1
              ' . $viewWhere . '
              ORDER BY activity.created_at DESC, activity.post_id DESC, activity.id DESC
              LIMIT :limit'
@@ -2641,6 +2879,8 @@ final class Application
             return [
                 'created_at' => $post['created_at'],
                 'kind' => $post['kind'],
+                'record_family' => $post['record_family'],
+                'action_key' => $post['action_key'],
                 'post_id' => $post['post_id'],
                 'thread_id' => $post['thread_id'],
                 'label' => $post['label'],
@@ -2670,7 +2910,7 @@ final class Application
             $hidden = $this->isHiddenBootstrapBoardTagsJson($boardTagsJson);
 
             return match ($view) {
-                'all' => !$hidden,
+                'all' => true,
                 'content' => !$hidden,
                 'identity' => $this->hasBoardTag($boardTagsJson, 'identity'),
                 'bootstrap' => $this->hasBoardTag($boardTagsJson, 'identity') && $this->hasBoardTag($boardTagsJson, 'internal'),
@@ -2697,7 +2937,12 @@ final class Application
                 'AND activity.board_tags_json LIKE :identity_tag AND activity.board_tags_json LIKE :approval_tag',
                 ['identity_tag' => $quotedHiddenTag, 'approval_tag' => '%"approval"%'],
             ],
-            default => ['AND activity.board_tags_json NOT LIKE :hidden_tag', ['hidden_tag' => $quotedHiddenTag]],
+            'content' => [
+                'AND activity.board_tags_json NOT LIKE :hidden_tag
+                 AND (activity.post_id IS NULL OR COALESCE(posts.is_hidden, 0) = 0)',
+                ['hidden_tag' => $quotedHiddenTag],
+            ],
+            default => ['', []],
         };
     }
 
@@ -2951,6 +3196,27 @@ final class Application
     /**
      * @param array<string, mixed> $query
      */
+    private function handlePrepareIdentity(string $method, array $query): void
+    {
+        $totalStartedAt = hrtime(true);
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+
+        try {
+            $result = $this->writer()->prepareIdentityBootstrap($this->requestData($query));
+            $result = $this->mergeResultTimings($result, [], $totalStartedAt);
+            unset($result['timings']);
+            $this->sendJson($result, 200, $this->serverTimingHeaders($result));
+        } catch (RuntimeException $exception) {
+            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
     private function handlePrepareReply(string $method, array $query): void
     {
         $this->handlePreparePost($method, $query, 'reply');
@@ -3017,6 +3283,27 @@ final class Application
                 400,
                 $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
             );
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleCreateIdentity(string $method, array $query): void
+    {
+        $totalStartedAt = hrtime(true);
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+
+        try {
+            $result = $this->writer()->createIdentityBootstrap($this->requestData($query));
+            $result = $this->mergeResultTimings($result, [], $totalStartedAt);
+            unset($result['timings']);
+            $this->sendJson($result, 200, $this->serverTimingHeaders($result));
+        } catch (RuntimeException $exception) {
+            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400);
         }
     }
 
@@ -3153,6 +3440,206 @@ final class Application
         }
 
         $this->sendJson($response, 200, $headersWithTimings());
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleCodexHandoff(string $method, array $query): void
+    {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        $headersWithTimings = function () use (&$timings, $totalStartedAt): array {
+            return $this->noStoreTimingHeaders($this->timingsWithTotal($timings, $totalStartedAt));
+        };
+
+        if (!in_array($method, ['GET', 'POST'], true)) {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $headersWithTimings());
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
+        if (!$this->viewerCanUseCodexHandoff($viewerProfile)) {
+            $this->sendJson(['status' => 'error', 'error' => 'forbidden'], 403, $headersWithTimings());
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+        try {
+            if ($method === 'GET') {
+                $handoff = $this->findCodexHandoffFromInput($input);
+                if ($handoff === null) {
+                    $this->sendJson(['status' => 'error', 'error' => 'handoff not found'], 404, $headersWithTimings());
+                    return;
+                }
+
+                $this->sendJson($this->codexHandoffResponse($handoff), 200, $headersWithTimings());
+                return;
+            }
+
+            $postId = trim((string) ($input['post_id'] ?? ''));
+            if ($postId === '') {
+                $this->sendJson(['status' => 'error', 'error' => 'Missing post_id.'], 400, $headersWithTimings());
+                return;
+            }
+
+            $phaseStartedAt = hrtime(true);
+            $post = $this->fetchPost($postId);
+            $timings['fetch_post'] = $this->elapsedMilliseconds($phaseStartedAt);
+            if ($post === null) {
+                $this->sendJson(['status' => 'error', 'error' => 'post not found'], 404, $headersWithTimings());
+                return;
+            }
+
+            if ((string) ($post['author_label'] ?? '') === AgentIdentityService::USERNAME) {
+                $this->sendJson(['status' => 'error', 'error' => 'codex handoff target is not eligible'], 400, $headersWithTimings());
+                return;
+            }
+            $thread = $this->fetchThread((string) ($post['thread_id'] ?? ''));
+            if (!$this->postCanUseCodexHandoffTarget($post, $thread)) {
+                $this->sendJson(['status' => 'error', 'error' => 'codex handoff target requires a development tag or thread label'], 400, $headersWithTimings());
+                return;
+            }
+
+            $phaseStartedAt = hrtime(true);
+            $store = $this->codexHandoffStore();
+            $handoff = $store->requestForPost($post, $viewerProfile ?? []);
+            if ((string) ($handoff['status'] ?? '') === 'requested') {
+                $draft = $this->codexHandoffDraftService()->prepare($handoff, $post);
+                $handoff = $store->updateStatus((string) $handoff['handoff_id'], 'draft_ready', $draft);
+            }
+            $timings['codex_handoff'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+            $this->sendJson($this->codexHandoffResponse($handoff), 200, $headersWithTimings());
+        } catch (RuntimeException $exception) {
+            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $headersWithTimings());
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleCodexHandoffApproval(string $method, array $query): void
+    {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        $headersWithTimings = function () use (&$timings, $totalStartedAt): array {
+            return $this->noStoreTimingHeaders($this->timingsWithTotal($timings, $totalStartedAt));
+        };
+
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $headersWithTimings());
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
+        if (!$this->viewerCanUseCodexHandoff($viewerProfile)) {
+            $this->sendJson(['status' => 'error', 'error' => 'forbidden'], 403, $headersWithTimings());
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
+        $handoffId = trim((string) ($input['handoff_id'] ?? ''));
+        $decision = trim((string) ($input['decision'] ?? ''));
+        if ($handoffId === '') {
+            $this->sendJson(['status' => 'error', 'error' => 'Missing handoff_id.'], 400, $headersWithTimings());
+            return;
+        }
+
+        try {
+            $store = $this->codexHandoffStore();
+            $handoff = $store->findByHandoffId($handoffId);
+            if ($handoff === null) {
+                $this->sendJson(['status' => 'error', 'error' => 'handoff not found'], 404, $headersWithTimings());
+                return;
+            }
+
+            if ($decision === 'approve') {
+                if ((string) ($handoff['status'] ?? '') !== 'draft_ready') {
+                    $this->sendJson(['status' => 'error', 'error' => 'Codex handoff approval requires draft_ready status.'], 400, $headersWithTimings());
+                    return;
+                }
+
+                $handoff = $store->updateStatus($handoffId, 'approved', [
+                    'approved_by_identity_id' => (string) ($viewerProfile['identity_id'] ?? ''),
+                    'approved_by_profile_slug' => (string) ($viewerProfile['profile_slug'] ?? ''),
+                    'approved_by_username' => (string) ($viewerProfile['username'] ?? ''),
+                ]);
+            } elseif ($decision === 'reject') {
+                $handoff = $store->updateStatus($handoffId, 'rejected', [
+                    'rejected_by_identity_id' => (string) ($viewerProfile['identity_id'] ?? ''),
+                    'rejected_by_profile_slug' => (string) ($viewerProfile['profile_slug'] ?? ''),
+                    'rejected_by_username' => (string) ($viewerProfile['username'] ?? ''),
+                ]);
+            } else {
+                $this->sendJson(['status' => 'error', 'error' => 'decision must be approve or reject'], 400, $headersWithTimings());
+                return;
+            }
+
+            $this->sendJson($this->codexHandoffResponse($handoff), 200, $headersWithTimings());
+        } catch (RuntimeException $exception) {
+            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $headersWithTimings());
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>|null
+     */
+    private function findCodexHandoffFromInput(array $input): ?array
+    {
+        $store = $this->codexHandoffStore();
+        $handoffId = trim((string) ($input['handoff_id'] ?? ''));
+        if ($handoffId !== '') {
+            return $store->findByHandoffId($handoffId);
+        }
+
+        $postId = trim((string) ($input['post_id'] ?? ''));
+        if ($postId === '') {
+            return null;
+        }
+
+        $post = $this->fetchPost($postId);
+        if ($post === null) {
+            return null;
+        }
+
+        return $store->findByPost($post);
+    }
+
+    /**
+     * @param array<string, mixed> $handoff
+     * @return array<string, mixed>
+     */
+    private function codexHandoffResponse(array $handoff): array
+    {
+        return [
+            'status' => 'ok',
+            'handoff_id' => (string) ($handoff['handoff_id'] ?? ''),
+            'handoff_status' => (string) ($handoff['status'] ?? ''),
+            'origin_post_id' => (string) ($handoff['origin_post_id'] ?? ''),
+            'origin_thread_id' => (string) ($handoff['origin_thread_id'] ?? ''),
+            'user_story' => $handoff['user_story'] ?? null,
+            'fdp_step1' => $handoff['fdp_step1'] ?? null,
+            'confidence_summary' => $handoff['confidence_summary'] ?? null,
+            'draft_text' => $handoff['draft_text'] ?? null,
+            'requested_at' => $handoff['requested_at'] ?? null,
+            'draft_ready_at' => $handoff['draft_ready_at'] ?? null,
+            'approved_at' => $handoff['approved_at'] ?? null,
+            'rejected_at' => $handoff['rejected_at'] ?? null,
+            'running_at' => $handoff['running_at'] ?? null,
+            'completed_at' => $handoff['completed_at'] ?? null,
+            'failed_at' => $handoff['failed_at'] ?? null,
+        ];
     }
 
     /**
@@ -3626,26 +4113,20 @@ final class Application
         );
     }
 
+    private function codexHandoffStore(): CodexHandoffStore
+    {
+        return new CodexHandoffStore($this->pdo());
+    }
+
+    private function codexHandoffDraftService(): CodexHandoffDraftService
+    {
+        return new CodexHandoffDraftService();
+    }
+
     private function postAnalysisService(): PostAnalysisService
     {
         $config = PrivateConfig::load($this->projectRoot);
-        $mode = strtolower(trim((string) ($config['DEDALUS_ANALYSIS_MODE'] ?? '')));
-        $analyzer = null;
-
-        if ($mode === 'stub') {
-            $analyzer = new StubPostAnalyzer();
-        } else {
-            $apiKey = trim((string) ($config['DEDALUS_API_KEY'] ?? ''));
-            if ($apiKey !== '') {
-                $analyzer = new DedalusPostAnalyzer(
-                    $apiKey,
-                    trim((string) ($config['DEDALUS_API_BASE_URL'] ?? 'https://api.dedaluslabs.ai')) ?: 'https://api.dedaluslabs.ai',
-                    trim((string) ($config['DEDALUS_MODEL'] ?? 'openai/gpt-5-nano')) ?: 'openai/gpt-5-nano',
-                    max(60, (int) ($config['DEDALUS_TIMEOUT_SECONDS'] ?? 60)),
-                    $this->dedalusPromptTemplatePath($config)
-                );
-            }
-        }
+        $analyzer = PostAnalyzerFactory::fromPrivateConfig($config, $this->projectRoot);
 
         return new PostAnalysisService(
             new SqlitePostAnalysisStore($this->pdo()),
@@ -3705,23 +4186,6 @@ final class Application
         }
 
         return $default;
-    }
-
-    /**
-     * @param array<string, mixed> $config
-     */
-    private function dedalusPromptTemplatePath(array $config): ?string
-    {
-        $path = trim((string) ($config['DEDALUS_POST_ANALYSIS_PROMPT_PATH'] ?? ''));
-        if ($path === '') {
-            return null;
-        }
-
-        if (str_starts_with($path, '/')) {
-            return $path;
-        }
-
-        return $this->projectRoot . '/' . $path;
     }
 
     /**
@@ -4252,6 +4716,18 @@ final class Application
                 $this->serverTimingHeaders($result)
             );
         } catch (RuntimeException $exception) {
+            if ($exception->getMessage() === 'Identity already exists for this fingerprint.') {
+                try {
+                    $key = (new OpenPgpKeyInspector())->inspect((string) ($input['public_key'] ?? ''));
+                    $this->sendRedirect(
+                        '/profiles/openpgp-' . strtolower($key['fingerprint']),
+                        'This identity is already linked. Showing its existing profile.',
+                    );
+                    return;
+                } catch (RuntimeException) {
+                    // Keep the normal form error when the submitted key cannot be inspected.
+                }
+            }
             $this->sendHtml(
                 $this->renderAccountKeyPage(null, $exception->getMessage()),
                 400,

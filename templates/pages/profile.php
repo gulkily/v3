@@ -70,6 +70,7 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
         </div>
         <div>
           <p class="account-key-label">Bootstrap post</p>
+          <p class="meta">Internal setup artifact; excluded from normal feeds and counts.</p>
           <p><a href="/posts/<?= $e($profile['bootstrap_post_id']) ?>"><?= $e($profile['bootstrap_post_id']) ?></a></p>
         </div>
         <div>

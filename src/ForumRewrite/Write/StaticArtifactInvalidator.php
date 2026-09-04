@@ -27,6 +27,12 @@ final class StaticArtifactInvalidator
     {
         $this->deletePaths([
             '/index.html',
+            '/instance.html',
+            '/instance/index.html',
+            '/activity.html',
+            '/activity/index.html',
+            '/users.html',
+            '/users/index.html',
             '/threads/' . $threadId . '.html',
             '/threads/' . $threadId . '/index.html',
             '/posts/' . $threadId . '.html',
@@ -38,6 +44,12 @@ final class StaticArtifactInvalidator
     {
         $this->deletePaths([
             '/index.html',
+            '/instance.html',
+            '/instance/index.html',
+            '/activity.html',
+            '/activity/index.html',
+            '/users.html',
+            '/users/index.html',
             '/threads/' . $threadId . '.html',
             '/threads/' . $threadId . '/index.html',
             '/posts/' . $postId . '.html',
@@ -48,6 +60,8 @@ final class StaticArtifactInvalidator
     public function invalidateProfile(string $profileSlug): void
     {
         $this->deletePaths([
+            '/users.html',
+            '/users/index.html',
             '/profiles/' . $profileSlug . '.html',
             '/profiles/' . $profileSlug . '/index.html',
         ]);
@@ -56,6 +70,12 @@ final class StaticArtifactInvalidator
     public function invalidateIdentityLink(string $profileSlug, string $threadId, string $postId): void
     {
         $this->deletePaths([
+            '/instance.html',
+            '/instance/index.html',
+            '/activity.html',
+            '/activity/index.html',
+            '/users.html',
+            '/users/index.html',
             '/profiles/' . $profileSlug . '.html',
             '/profiles/' . $profileSlug . '/index.html',
             '/threads/' . $threadId . '.html',
@@ -68,6 +88,12 @@ final class StaticArtifactInvalidator
     public function invalidateApproval(string $profileSlug, string $threadId, string $parentPostId, string $approvalPostId): void
     {
         $this->deletePaths([
+            '/instance.html',
+            '/instance/index.html',
+            '/activity.html',
+            '/activity/index.html',
+            '/users.html',
+            '/users/index.html',
             '/profiles/' . $profileSlug . '.html',
             '/profiles/' . $profileSlug . '/index.html',
             '/threads/' . $threadId . '.html',

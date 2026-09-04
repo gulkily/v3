@@ -86,7 +86,13 @@ View a redacted summary of the current private config and update reminders:
 Print a concise reference for installing the queued agent reply cron job:
 
 ```bash
-./v3 agent-reply-cron
+./v3 agent-reply cron
+```
+
+Validate the configured agent reply LLM provider/API key with one live structured prompt:
+
+```bash
+./v3 agent-reply test
 ```
 
 For this checkout, the default local file is `/home/wsl/forum-private/secrets.php`. To update only the Dedalus API key without putting it in shell history:
@@ -187,3 +193,7 @@ Run the current parser, rebuild, and app smoke tests:
 ```bash
 ./v3 test
 ```
+
+The custom test runner reports tests that take at least 5 seconds by default.
+Override the cutoff with `FORUM_TEST_SLOW_REPORT_THRESHOLD_SECONDS`, for example
+`FORUM_TEST_SLOW_REPORT_THRESHOLD_SECONDS=1 ./v3 test`.

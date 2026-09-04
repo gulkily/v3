@@ -7,9 +7,11 @@ require __DIR__ . '/../autoload.php';
 use ForumRewrite\Analysis\DedalusPostAnalyzer;
 use ForumRewrite\Analysis\PostAnalyzer;
 use ForumRewrite\Analysis\PostAnalysisService;
+use ForumRewrite\Analysis\ProviderRequestException;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Analysis\SqliteUnicodeRiskStore;
 use ForumRewrite\Analysis\UnicodeRiskInspector;
+use ForumRewrite\Llm\StructuredChatProvider;
 
 final class DedalusPostAnalyzerTest
 {
@@ -155,6 +157,47 @@ final class DedalusPostAnalyzerTest
         assertSame(true, str_contains($source, "'max_completion_tokens' => 8000"));
     }
 
+    public function testAnalyzerDelegatesStructuredCompletionToProvider(): void
+    {
+        $analyzer = new DedalusPostAnalyzer('test-key', provider: new class($this->analysisPayload()) implements StructuredChatProvider {
+            /**
+             * @param array<string, mixed> $payload
+             */
+            public function __construct(private readonly array $payload)
+            {
+            }
+
+            public function completeStructuredChat(string $schemaName, array $messages, array $jsonSchema, array $options = []): array
+            {
+                assertSame('ForumPostAnalysis', $schemaName);
+                assertSame('system', $messages[0]['role']);
+                assertSame('user', $messages[1]['role']);
+                assertSame('object', $jsonSchema['type']);
+                assertSame(8000, $options['max_completion_tokens']);
+
+                return [
+                    'provider' => 'dedalus',
+                    'provider_model' => 'openai/gpt-5-nano',
+                    'provider_request_id' => 'req-1',
+                    'decoded' => $this->payload,
+                    'raw_response' => ['id' => 'req-1'],
+                    'timings' => ['external_provider' => 1.2],
+                ];
+            }
+        });
+
+        $analysis = $analyzer->analyze([
+            'post_id' => 'post-1',
+            'content_hash' => 'hash-1',
+        ]);
+
+        assertSame('dedalus', $analysis['provider']);
+        assertSame('openai/gpt-5-nano', $analysis['provider_model']);
+        assertSame('req-1', $analysis['provider_request_id']);
+        assertSame('The post asks how to make replies more useful.', $analysis['post_summary']);
+        assertSame(1.2, $analysis['timings']['external_provider']);
+    }
+
     public function testSqliteStorePersistsAndHydratesPostSummary(): void
     {
         $store = new SqlitePostAnalysisStore(new PDO('sqlite::memory:'));
@@ -202,6 +245,71 @@ final class DedalusPostAnalyzerTest
 
         assertSame(false, $hydrated['related_content_assessment']['related_results_appropriate']);
         assertSame(0.2, $hydrated['related_content_assessment']['solicitation_score']);
+    }
+
+    public function testSqliteStorePersistsFailedRawProviderDiagnostics(): void
+    {
+        $store = new SqlitePostAnalysisStore(new PDO('sqlite::memory:'));
+        $store->saveFailed('root-001', 'hash-001', 'provider_error', 'Dedalus request failed.', [
+            'request' => [
+                'url' => 'https://api.dedaluslabs.ai/v1/chat/completions',
+                'headers' => [
+                    'Authorization' => 'Bearer <redacted>',
+                ],
+                'body' => '{"model":"openai/gpt-5-nano"}',
+            ],
+            'response' => [
+                'status_code' => 400,
+                'body' => '{"error":{"message":"bad request"}}',
+            ],
+        ]);
+
+        $hydrated = $store->find('root-001', 'hash-001');
+
+        assertSame('provider_error', $hydrated['failure_code']);
+        assertSame('Bearer <redacted>', $hydrated['raw_response']['request']['headers']['Authorization']);
+        assertSame('{"model":"openai/gpt-5-nano"}', $hydrated['raw_response']['request']['body']);
+        assertSame(400, $hydrated['raw_response']['response']['status_code']);
+        assertSame('{"error":{"message":"bad request"}}', $hydrated['raw_response']['response']['body']);
+    }
+
+    public function testPostAnalysisServicePersistsProviderExceptionDiagnostics(): void
+    {
+        $store = new SqlitePostAnalysisStore(new PDO('sqlite::memory:'));
+        $service = new PostAnalysisService($store, new class implements PostAnalyzer {
+            public function analyze(array $context): array
+            {
+                throw new ProviderRequestException('Dedalus request failed.', [
+                    'request' => [
+                        'url' => 'https://api.dedaluslabs.ai/v1/chat/completions',
+                        'headers' => [
+                            'Authorization' => 'Bearer <redacted>',
+                        ],
+                        'body' => '{"model":"openai/gpt-5-nano"}',
+                    ],
+                    'response' => [
+                        'status_code' => 500,
+                        'body' => '{"error":{"message":"upstream failed"}}',
+                    ],
+                    'error' => [
+                        'class' => RuntimeException::class,
+                        'message' => 'Dedalus request failed.',
+                    ],
+                ]);
+            }
+        });
+
+        $analysis = $service->analyze([
+            'post_id' => 'target',
+            'content_hash' => 'hash-provider-failure',
+        ]);
+
+        assertSame('failed', $analysis['status']);
+        assertSame('provider_error', $analysis['failure_code']);
+        assertSame('https://api.dedaluslabs.ai/v1/chat/completions', $analysis['raw_response']['request']['url']);
+        assertSame('Bearer <redacted>', $analysis['raw_response']['request']['headers']['Authorization']);
+        assertSame(500, $analysis['raw_response']['response']['status_code']);
+        assertSame('{"error":{"message":"upstream failed"}}', $analysis['raw_response']['response']['body']);
     }
 
     public function testPostAnalysisServicePersistsOnlyApprovedRelatedContent(): void

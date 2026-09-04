@@ -12,6 +12,7 @@ use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
+use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
@@ -94,7 +95,7 @@ final class WriteApiSmokeTest
     public function testPostAnalysisEndpointStoresStubResultIdempotently(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -180,7 +181,7 @@ final class WriteApiSmokeTest
             assertStringContains('Suggested response:', $approvedThreadPage);
             assertFalse(is_dir($repositoryRoot . '/records/post-analyses'));
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -198,7 +199,7 @@ final class WriteApiSmokeTest
 
             assertSame('ok', $response['status']);
             assertSame('config_missing', $response['analysis_status']);
-            assertSame('Dedalus API key is not configured.', $response['failure_message']);
+            assertSame('LLM API key is not configured.', $response['failure_message']);
         } finally {
             putenv('FORUM_SECRETS_PATH');
         }
@@ -207,7 +208,7 @@ final class WriteApiSmokeTest
     public function testUnicodeRiskAnalysisFlagsMixedScriptIdentifierForApprovedViewersOnly(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
         putenv('FORUM_UNICODE_AUTHORED_TEXT=true');
 
         try {
@@ -239,7 +240,7 @@ final class WriteApiSmokeTest
             assertStringContains('confusable_identifier_like_text', $approvedPostPage);
             assertStringNotContains('Unicode risk:', $anonymousPostPage);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             putenv('FORUM_UNICODE_AUTHORED_TEXT');
             $_COOKIE = [];
         }
@@ -248,7 +249,7 @@ final class WriteApiSmokeTest
     public function testPostAnalysisContextIncludesRelatedCrossThreadContent(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
         putenv('DEDALUS_AGENT_REPLIES_ENABLED=false');
 
         try {
@@ -304,7 +305,7 @@ final class WriteApiSmokeTest
             assertStringContains('/posts/' . $relatedPostId, $approvedPostPage);
             assertSame(false, in_array($targetPostId, array_column($relatedContent, 'post_id'), true));
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             putenv('DEDALUS_AGENT_REPLIES_ENABLED');
             $_COOKIE = [];
         }
@@ -419,10 +420,280 @@ PHP);
         }
     }
 
+    public function testCodexHandoffApiRequiresApprovedLocalhostAndPreparesDraft(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost:8000';
+            unset($_SERVER['SERVER_NAME'], $_SERVER['REMOTE_ADDR']);
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=feature&subject=Codex%20Handoff&body=Approved%20users%20should%20hand%20off%20tasks%20to%20Codex.'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $created = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+            $fetched = json_decode($this->renderMethod($application, 'GET', '/api/codex_handoff?handoff_id=' . rawurlencode($created['handoff_id'])), true);
+            $approved = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/codex_handoff_approval?handoff_id=' . rawurlencode($created['handoff_id']) . '&decision=approve'
+            ), true);
+            $duplicateApproval = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/codex_handoff_approval?handoff_id=' . rawurlencode($created['handoff_id']) . '&decision=approve'
+            ), true);
+
+            assertSame('ok', $created['status']);
+            assertSame('draft_ready', $created['handoff_status']);
+            assertSame($postId, $created['origin_post_id']);
+            assertStringContains('As an approved local user', $created['user_story']);
+            assertStringContains('Step 1 Solution Assessment', $created['fdp_step1']);
+            assertStringContains('confidence', strtolower((string) $created['confidence_summary']));
+            assertSame($created['handoff_id'], $fetched['handoff_id']);
+            assertSame('draft_ready', $fetched['handoff_status']);
+            assertSame('ok', $approved['status']);
+            assertSame('approved', $approved['handoff_status']);
+            assertSame('error', $duplicateApproval['status']);
+            assertSame('Codex handoff approval requires draft_ready status.', $duplicateApproval['error']);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
+    public function testCodexHandoffApiRejectsNonLocalhostAndSupportsRejectDecision(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=feature&subject=Codex%20Reject&body=Please%20prepare%20a%20local%20Codex%20handoff.'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $_SERVER['HTTP_HOST'] = 'example.com';
+            $forbidden = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+
+            $_SERVER['HTTP_HOST'] = 'localhost';
+            $created = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+            $rejected = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/codex_handoff_approval?handoff_id=' . rawurlencode($created['handoff_id']) . '&decision=reject'
+            ), true);
+
+            assertSame('error', $forbidden['status']);
+            assertSame('forbidden', $forbidden['error']);
+            assertSame('draft_ready', $created['handoff_status']);
+            assertSame('ok', $rejected['status']);
+            assertSame('rejected', $rejected['handoff_status']);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
+    public function testCodexHandoffRequiresDevelopmentTagOrThreadLabelInApiAndUi(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost';
+            unset($_SERVER['SERVER_NAME'], $_SERVER['REMOTE_ADDR']);
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=General%20Codex%20Question&body=Could%20Codex%20look%20at%20this%20later%3F'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $response = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+
+            assertStringNotContains('data-action="request-codex-handoff"', $threadPage);
+            assertSame('error', $response['status']);
+            assertSame('codex handoff target requires a development tag or thread label', $response['error']);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
+    public function testCodexHandoffAllowsDevelopmentThreadLabelsOnRootPost(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost';
+            unset($_SERVER['SERVER_NAME'], $_SERVER['REMOTE_ADDR']);
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Root%20Task%20Label&body='
+                . rawurlencode("Please prepare this for Codex.\n#task\n")
+            );
+            $rootPostId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($rootPostId));
+            $created = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($rootPostId)), true);
+
+            assertStringContains('Labels: task', $threadPage);
+            assertStringContains('data-action="request-codex-handoff"', $threadPage);
+            assertSame('ok', $created['status']);
+            assertSame('draft_ready', $created['handoff_status']);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
+    public function testCodexHandoffReplyAddedThreadLabelShowsRootButtonOnly(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost';
+            unset($_SERVER['SERVER_NAME'], $_SERVER['REMOTE_ADDR']);
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Reply%20Task%20Label&body=This%20starts%20as%20a%20general%20thread.'
+            );
+            $threadId = $this->extractValue($threadResponse, 'thread_id');
+            $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_reply?thread_id=' . rawurlencode($threadId) . '&parent_id=' . rawurlencode($threadId) . '&body='
+                . rawurlencode("This reply marks the thread for implementation.\n#task\n")
+            );
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($threadId));
+            $created = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($threadId)), true);
+
+            assertStringContains('Labels: task', $threadPage);
+            assertSame(1, substr_count($threadPage, 'data-action="request-codex-handoff"'));
+            assertSame('ok', $created['status']);
+            assertSame('draft_ready', $created['handoff_status']);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
+    public function testCodexHandoffLifecycleAppearsInActivityAndSurvivesRebuild(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost';
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=feature&subject=Codex%20Activity&body=Please%20prepare%20a%20Codex%20handoff%20with%20activity%20audit%20entries.'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $created = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+            $approved = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/codex_handoff_approval?handoff_id=' . rawurlencode($created['handoff_id']) . '&decision=approve'
+            ), true);
+            $activity = $this->renderMethod($application, 'GET', '/activity/?view=all');
+
+            (new ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot), 'codex-handoff-test'))->rebuild();
+            $rebuiltActivity = $this->renderMethod($application, 'GET', '/activity/?view=all');
+
+            assertSame('approved', $approved['handoff_status']);
+            assertStringContains('codex_handoff', $activity);
+            assertStringContains('Requested Codex handoff for post ' . $postId, $activity);
+            assertStringContains('Codex handoff draft ready for post ' . $postId, $activity);
+            assertStringContains('Approved Codex handoff for post ' . $postId, $activity);
+            assertStringContains('/posts/' . $postId, $activity);
+            assertStringContains('codex_handoff', $rebuiltActivity);
+            assertStringContains('Requested Codex handoff for post ' . $postId, $rebuiltActivity);
+            assertStringContains('Codex handoff draft ready for post ' . $postId, $rebuiltActivity);
+            assertStringContains('Approved Codex handoff for post ' . $postId, $rebuiltActivity);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
+    public function testApprovedLocalhostViewerSeesCodexHandoffButtonAndPreviewAfterDraft(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost:8000';
+            unset($_SERVER['SERVER_NAME'], $_SERVER['REMOTE_ADDR']);
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=feature&subject=Codex%20UI&body=Approved%20users%20should%20review%20a%20Codex%20handoff%20before%20execution.'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = ['identity_hint' => 'missing-profile'];
+            $anonymousThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $approvedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $_SERVER['HTTP_HOST'] = 'example.com';
+            $nonLocalThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $_SERVER['HTTP_HOST'] = 'localhost:8000';
+            json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+            $draftThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $draftPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+
+            assertStringNotContains('data-action="request-codex-handoff"', $anonymousThreadPage);
+            assertStringContains('data-action="request-codex-handoff"', $approvedThreadPage);
+            assertStringContains('Handoff to Codex', $approvedThreadPage);
+            assertStringNotContains('data-action="request-codex-handoff"', $nonLocalThreadPage);
+            assertStringNotContains('data-action="request-codex-handoff"', $draftThreadPage);
+            assertStringContains('Codex handoff ready for approval.', $draftThreadPage);
+            assertStringContains('data-role="codex-handoff-preview"', $draftThreadPage);
+            assertStringContains('User story:', $draftThreadPage);
+            assertStringContains('Confidence:', $draftThreadPage);
+            assertStringContains('Step 1 Solution Assessment', $draftThreadPage);
+            assertStringContains('data-action="approve-codex-handoff"', $draftThreadPage);
+            assertStringContains('data-action="reject-codex-handoff"', $draftThreadPage);
+            assertStringContains('data-role="codex-handoff-preview"', $draftPostPage);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
     public function testGenerateAgentReplyReportsFailedAnalysisAsRequired(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -445,8 +716,11 @@ PHP);
             assertSame('failed', $result['analysis_status']);
             assertSame('skipped', $row['status']);
             assertSame('analysis_not_complete', $row['failure_code']);
+            assertStringContains('provider_error', (string) $row['failure_message']);
+            assertSame('failed', $row['request_context']['agent_reply_skip']['analysis_status']);
+            assertSame('provider_error', $row['request_context']['agent_reply_skip']['failure_code']);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -454,7 +728,7 @@ PHP);
     public function testGenerateAgentReplyRejectsLowRespondabilityHighRiskHighModerationAndPrivateResponse(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -497,7 +771,7 @@ PHP);
             assertSame('not_recommended', $private['generation_status']);
             assertSame('response_not_public', $private['reason']);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -505,7 +779,7 @@ PHP);
     public function testAnalyzePostGateFailureUsesCompactVisibilityRules(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -538,7 +812,7 @@ PHP);
             assertSame($postCountBefore, $postCountAfter);
             assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM sqlite_master WHERE type = "table" AND name = "post_generated_responses"')->fetchColumn());
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -546,7 +820,7 @@ PHP);
     public function testGenerateAgentReplyRejectsAgentAuthoredTarget(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $identity = (new AgentIdentityService(
@@ -571,7 +845,7 @@ PHP);
             assertSame('not_recommended', $response['generation_status']);
             assertSame('agent_loop_prevention', $response['reason']);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -579,7 +853,7 @@ PHP);
     public function testClaimedAgentReplyRequestAnalyzesAndPublishes(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -611,7 +885,7 @@ PHP);
             assertSame('already_posted', $second['generation_status']);
             assertSame($postCountAfter, $this->countCanonicalPostFiles($repositoryRoot));
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -619,7 +893,7 @@ PHP);
     public function testClaimedAgentReplyRequestStoresGateSkip(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -641,7 +915,7 @@ PHP);
             assertSame('skipped', $row['status']);
             assertSame('respondability_score_low', $row['failure_code']);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -649,7 +923,7 @@ PHP);
     public function testAgentReplyRequestCommandProcessesQueuedRequestOnce(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
         putenv('FORUM_PUBLIC_ARTIFACT_ROOT=' . $artifactRoot);
 
         try {
@@ -706,7 +980,7 @@ PHP);
             assertSame('posted', $quietRow['status']);
             assertSame(true, is_string($quietRow['agent_post_id']) && $quietRow['agent_post_id'] !== '');
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             putenv('FORUM_PUBLIC_ARTIFACT_ROOT');
             $_COOKIE = [];
         }
@@ -715,7 +989,7 @@ PHP);
     public function testGenerateAgentReplyCreatesCanonicalReplyAndIsIdempotent(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -777,7 +1051,7 @@ PHP);
             assertStringContains('Author: reply-agent', $activity);
             assertStringContains('automated reply agent', $activity);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -785,7 +1059,7 @@ PHP);
     public function testGenerateAgentReplyPreservesVisibleUnicodeWhenAuthoredTextFlagIsEnabled(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
         putenv('FORUM_UNICODE_AUTHORED_TEXT=true');
 
         try {
@@ -814,7 +1088,7 @@ PHP);
             assertStringContains("'Хорошо'", $replyRecord);
             assertStringContains('Хорошо', $postPage);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             putenv('FORUM_UNICODE_AUTHORED_TEXT');
             $_COOKIE = [];
         }
@@ -823,7 +1097,7 @@ PHP);
     public function testGenerateAgentReplyPersistsThreadCommentContext(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -866,7 +1140,7 @@ PHP);
             assertSame(true, $context['thread_comments'][1]['is_target']);
             assertSame(false, $context['thread_comments'][1]['is_parent']);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -874,7 +1148,7 @@ PHP);
     public function testGenerateAgentReplyDoesNotStartWhenGenerationIsAlreadyPending(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -899,7 +1173,7 @@ PHP);
             assertSame('pending', $row['status']);
             assertSame(null, $row['agent_post_id']);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -907,7 +1181,10 @@ PHP);
     public function testPostAnalysisScriptDoesNotExposeInProgressReplyGeneration(): void
     {
         $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/post_analysis.js');
+        $scriptPath = dirname(__DIR__) . '/public/assets/post_analysis.js';
+        exec('node --check ' . escapeshellarg($scriptPath) . ' 2>&1', $output, $exitCode);
 
+        assertSame(0, $exitCode);
         assertStringContains('__forumAgentReplyGenerationStartedPostIds', $script);
         assertStringContains('data-agent-reply-work', $script);
         assertStringContains('function agentReplyResultFromAnalysis(analysis)', $script);
@@ -937,10 +1214,30 @@ PHP);
         assertStringNotContains('Agent reply posted', $script);
     }
 
+    public function testPostAnalysisScriptBindsCodexHandoffActions(): void
+    {
+        $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/post_analysis.js');
+
+        assertStringContains('__forumCodexHandoffStartedPostIds', $script);
+        assertStringContains('function requestCodexHandoff(postId)', $script);
+        assertStringContains('function decideCodexHandoff(handoffId, decision)', $script);
+        assertStringContains('function bindCodexHandoffButtons()', $script);
+        assertStringContains('/api/codex_handoff', $script);
+        assertStringContains('/api/codex_handoff_approval', $script);
+        assertStringContains('data-action="request-codex-handoff"', $script);
+        assertStringContains('data-action="approve-codex-handoff"', $script);
+        assertStringContains('data-action="reject-codex-handoff"', $script);
+        assertStringContains('Preparing Codex handoff...', $script);
+        assertStringContains('Codex handoff ready for approval.', $script);
+        assertStringContains('Approving Codex handoff...', $script);
+        assertStringContains('Rejecting Codex handoff...', $script);
+        assertStringContains('bindCodexHandoffButtons();', $script);
+    }
+
     public function testGenerateAgentReplyRespectsDisabledConfig(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
         putenv('DEDALUS_AGENT_REPLIES_ENABLED=false');
 
         try {
@@ -967,7 +1264,7 @@ PHP);
             assertSame($postCountBefore, $postCountAfter);
             assertSame(1, $rowCount);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             putenv('DEDALUS_AGENT_REPLIES_ENABLED');
             $_COOKIE = [];
         }
@@ -976,7 +1273,7 @@ PHP);
     public function testGenerateAgentReplyRecordsPostingFailureAfterGeneration(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -999,7 +1296,7 @@ PHP);
             assertStringContains('Writable repository must be a git checkout', $row['failure_message']);
             assertSame(null, $row['agent_post_id']);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -1081,7 +1378,8 @@ PHP);
         assertStringContains('Board-Tags: identity internal', $bootstrapRecord);
         assertStringContains('Subject: account bootstrap', $bootstrapRecord);
         assertStringNotContains($bootstrapPostId, $board);
-        assertStringNotContains($bootstrapPostId, $activity);
+        assertStringContains($bootstrapPostId, $activity);
+        assertStringContains('identity_bootstrap', $activity);
         assertStringContains($bootstrapPostId, $identityActivity);
         assertStringContains($bootstrapPostId, $bootstrapActivity);
         assertStringContains('Automatic account bootstrap anchor.', $bootstrapPostPage);
@@ -1340,6 +1638,7 @@ PHP);
 
         assertSame('error', $payload['status']);
         assertStringContains('Detached signature verification failed:', $payload['error']);
+        assertStringContains('[GNUPG:] NODATA', $payload['error']);
         assertFalse(is_file($repositoryRoot . '/records/posts/2026/07/19/signed-test.txt'));
         assertFalse(is_file($repositoryRoot . '/records/posts/2026/07/19/signed-test.txt.asc'));
         assertTrue(is_file(dirname($databasePath) . '/prepared-posts/' . $token . '.json'));
@@ -2057,6 +2356,7 @@ PHP);
 
         $pdo = new PDO('sqlite:' . $databasePath);
         $row = $pdo->query("SELECT post_tags_json, post_score_total, approved_flag_count, is_hidden FROM posts WHERE post_id = 'reply-001'")->fetch();
+        $activityRow = $pdo->query("SELECT kind, record_family, post_id, source_path FROM activity WHERE kind = 'post_reaction_add' AND post_id = 'reply-001' ORDER BY id DESC LIMIT 1")->fetch();
 
         assertSame(true, isset($result['timings']['read_model_incremental_update']));
         assertSame(false, isset($result['timings']['read_model_rebuild']));
@@ -2069,6 +2369,16 @@ PHP);
         assertSame('-100', (string) $row['post_score_total']);
         assertSame('1', (string) $row['approved_flag_count']);
         assertSame('0', (string) $row['is_hidden']);
+        assertSame('post_reaction_add', $activityRow['kind']);
+        assertSame('post_reaction', $activityRow['record_family']);
+        assertSame('reply-001', $activityRow['post_id']);
+        assertStringContains('records/post-reactions/post-reaction-', $activityRow['source_path']);
+
+        $freshDatabasePath = sys_get_temp_dir() . '/forum-rewrite-write-db-reaction-parity-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $freshApplication = new Application(dirname(__DIR__), $repositoryRoot, $freshDatabasePath, $artifactRoot);
+        $freshActivity = $this->renderMethod($freshApplication, 'GET', '/activity/?view=all');
+        assertStringContains('post_reaction_add', $freshActivity);
+        assertStringContains('records/post-reactions/', $freshActivity);
     }
 
     public function testApplyThreadTagApiWritesApprovedLikeAndReportsUpdatedScore(): void
@@ -2192,7 +2502,7 @@ PHP);
     public function testApprovedFlagOnReplyAgentPostHidesPublicSurfaces(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('DEDALUS_ANALYSIS_MODE=stub');
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -2221,7 +2531,7 @@ PHP);
             assertStringContains('post not found', $postApi);
             assertStringNotContains($agentPostId, $activity);
         } finally {
-            putenv('DEDALUS_ANALYSIS_MODE');
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
@@ -2665,7 +2975,8 @@ PHP);
         assertStringNotContains('Approve user', $targetProfile);
         assertFalse(is_file($artifactRoot . '/profiles/' . $targetProfileSlug . '.html'));
         assertStringNotContains($approvalPostId, $board);
-        assertStringNotContains($approvalPostId, $activity);
+        assertStringContains($approvalPostId, $activity);
+        assertStringContains('approval', $activity);
         assertStringContains($approvalPostId, $identityActivity);
         assertStringContains($approvalPostId, $approvalActivity);
         assertStringContains($approvalPostId, $bootstrapThread);
@@ -3136,6 +3447,38 @@ PHP);
             } else {
                 putenv('DEDALUS_AGENT_REPLIES_ENABLED=' . $previous);
             }
+        }
+    }
+
+    /**
+     * @return array<string, string|false>
+     */
+    private function useStubLlmProvider(): array
+    {
+        $previous = [
+            'LLM_PROVIDER' => getenv('LLM_PROVIDER'),
+            'DEDALUS_ANALYSIS_MODE' => getenv('DEDALUS_ANALYSIS_MODE'),
+        ];
+
+        putenv('LLM_PROVIDER=stub');
+        putenv('DEDALUS_ANALYSIS_MODE=stub');
+
+        return $previous;
+    }
+
+    /**
+     * @param array<string, string|false> $previous
+     */
+    private function restoreLlmProviderEnv(array $previous): void
+    {
+        foreach (['LLM_PROVIDER', 'DEDALUS_ANALYSIS_MODE'] as $key) {
+            $value = $previous[$key] ?? false;
+            if ($value === false) {
+                putenv($key);
+                continue;
+            }
+
+            putenv($key . '=' . $value);
         }
     }
 

@@ -1,0 +1,136 @@
+# Localhost Codex Task Handoff Step 4 Implementation Summary
+
+## Stage 1 - Local Eligibility And Authorization
+- Changes:
+  - Added `Application::viewerCanUseCodexHandoff()` to require an approved viewer and a local request.
+  - Added `Application::requestIsLocalhost()` for direct localhost host detection with CLI/local-address fallback and no proxy-header trust.
+  - Added smoke coverage for approved localhost, unapproved localhost, missing identity, explicit non-local host, and local remote-address fallback.
+- Verification:
+  - `php -l src/ForumRewrite/Application.php` passed.
+  - `php -l tests/LocalAppSmokeTest.php` passed.
+  - `php tests/run.php LocalAppSmokeTest::testCodexHandoffEligibilityRequiresApprovedLocalhostViewer` passed.
+- Notes:
+  - Host headers take precedence over remote address so a non-local public host is not treated as local because of proxy/server address details.
+
+## Stage 2 - Durable Handoff State
+- Changes:
+  - Added `CodexHandoffStore` with a dedicated `codex_handoffs` SQLite table and indexes.
+  - Added current-post-content dedupe, handoff lookup, explicit lifecycle statuses, timestamp hydration, and guarded status transitions.
+  - Added focused store tests and registered them in the test runner.
+- Verification:
+  - `php -l src/ForumRewrite/Codex/CodexHandoffStore.php` passed.
+  - `php -l tests/CodexHandoffStoreTest.php` passed.
+  - `php -l tests/run.php` passed.
+  - `php tests/run.php CodexHandoffStoreTest` passed.
+- Notes:
+  - Stage 2 intentionally keeps the handoff store separate from agent-reply generation state so code automation cannot be confused with public reply publishing.
+
+## Stage 3 - Handoff Draft Preparation
+- Changes:
+  - Added `CodexHandoffDraftService` to prepare a user story, FDP Step 1 solution assessment, implementation-confidence summary, and combined draft text.
+  - Kept drafting deterministic and side-effect free so no Codex execution or live provider call starts during draft preparation.
+  - Added focused draft-service tests and registered them in the test runner.
+- Verification:
+  - `php -l src/ForumRewrite/Codex/CodexHandoffDraftService.php` passed.
+  - `php -l tests/CodexHandoffDraftServiceTest.php` passed.
+  - `php -l tests/run.php` passed.
+  - `php tests/run.php CodexHandoffDraftServiceTest` passed.
+- Notes:
+  - Confidence wording is heuristic for V1 and intentionally conservative when requests mention execution, authorization, approval, security, schema, or audit concerns.
+
+## Stage 4 - Handoff Request And Approval APIs
+- Changes:
+  - Added `/api/codex_handoff` for approved-localhost handoff creation and lookup.
+  - Added `/api/codex_handoff_approval` for explicit approve/reject decisions after a draft is ready.
+  - Wired handoff creation to persist state and prepare a draft without starting Codex execution.
+  - Added API index entries and focused write/API smoke coverage.
+- Verification:
+  - `php -l src/ForumRewrite/Application.php` passed.
+  - `php -l tests/WriteApiSmokeTest.php` passed.
+  - `php tests/run.php WriteApiSmokeTest::testCodexHandoffApiRequiresApprovedLocalhostAndPreparesDraft WriteApiSmokeTest::testCodexHandoffApiRejectsNonLocalhostAndSupportsRejectDecision` passed.
+- Notes:
+  - Approval is intentionally accepted only from `draft_ready`; a duplicate approval returns an API error instead of silently re-approving.
+
+## Stage 5 - Handoff UI Rendering
+- Changes:
+  - Passed Codex handoff eligibility and current handoff state into thread and post render contexts.
+  - Added a distinct `Handoff to Codex` action on eligible post and thread-root cards.
+  - Added durable status feedback and a draft preview surface with user story, confidence, FDP Step 1 text, and approve/reject controls.
+  - Added small CSS for handoff feedback and preview sizing.
+- Verification:
+  - `php -l src/ForumRewrite/Application.php` passed.
+  - `php -l templates/partials/post_card.php` passed.
+  - `php -l templates/partials/thread_root_card.php` passed.
+  - `php -l tests/WriteApiSmokeTest.php` passed.
+  - `php tests/run.php WriteApiSmokeTest::testApprovedLocalhostViewerSeesCodexHandoffButtonAndPreviewAfterDraft` passed.
+  - `php tests/run.php WriteApiSmokeTest::testCodexHandoffApiRequiresApprovedLocalhostAndPreparesDraft WriteApiSmokeTest::testCodexHandoffApiRejectsNonLocalhostAndSupportsRejectDecision` passed.
+- Notes:
+  - The card action remains compact; detailed review lives in the expandable preview surface.
+
+## Stage 6 - Browser Handoff Actions
+- Changes:
+  - Extended `post_analysis.js` with Codex handoff request and approve/reject fetch helpers.
+  - Added duplicate-click guards, feedback state updates, dynamic draft preview rendering, and decision-button rebinding.
+  - Added source-level JS assertions and Node syntax coverage through the existing write smoke test style.
+- Verification:
+  - `node --check public/assets/post_analysis.js` passed.
+  - `php -l tests/WriteApiSmokeTest.php` passed.
+  - `php tests/run.php WriteApiSmokeTest::testPostAnalysisScriptDoesNotExposeInProgressReplyGeneration WriteApiSmokeTest::testPostAnalysisScriptBindsCodexHandoffActions` passed.
+  - `php tests/run.php WriteApiSmokeTest::testApprovedLocalhostViewerSeesCodexHandoffButtonAndPreviewAfterDraft` passed.
+- Notes:
+  - The browser creates or updates the in-card preview from the API response; it does not start Codex execution.
+
+## Stage 7 - Activity Audit Trail
+- Changes:
+  - Added durable `codex_handoff_events` records for handoff lifecycle transitions.
+  - Mirrored handoff events into the existing `activity` table when activity is available.
+  - Extended read-model rebuild to repopulate Codex handoff activity rows from durable handoff events.
+  - Added smoke coverage for request, draft-ready, and approved activity entries before and after rebuild.
+- Verification:
+  - `php -l src/ForumRewrite/Codex/CodexHandoffStore.php` passed.
+  - `php -l src/ForumRewrite/ReadModel/ReadModelBuilder.php` passed.
+  - `php -l tests/WriteApiSmokeTest.php` passed.
+  - `php tests/run.php CodexHandoffStoreTest WriteApiSmokeTest::testCodexHandoffLifecycleAppearsInActivityAndSurvivesRebuild` passed.
+- Notes:
+  - Activity entries summarize handoff state and origin post only; draft text, prompts, paths, and runner output stay out of activity.
+
+## Stage 8 - Local Codex Runner Command
+- Changes:
+  - Added `CodexHandoffStore::claimNextApproved()` to atomically claim approved handoffs as `running`.
+  - Added `CodexHandoffRunner` to execute approved handoff drafts with `codex exec --json --sandbox workspace-write`.
+  - Added `scripts/run_codex_handoffs.php` with `--limit`, `--dry-run`, `--quiet`, `--database-path`, `--project-root`, and `--codex-bin` options.
+  - Added `./v3 codex-handoff run` and `./v3 codex-handoff test-local` wrapper commands.
+  - Added focused runner and command tests using a fake Codex executable.
+- Verification:
+  - `php -l src/ForumRewrite/Codex/CodexHandoffStore.php` passed.
+  - `php -l src/ForumRewrite/Codex/CodexHandoffRunner.php` passed.
+  - `php -l scripts/run_codex_handoffs.php` passed.
+  - `bash -n v3` passed.
+  - `php -l tests/CodexHandoffRunnerTest.php` passed.
+  - `php -l tests/run.php` passed.
+  - `php tests/run.php CodexHandoffRunnerTest` passed.
+  - `php tests/run.php CodexHandoffStoreTest` passed.
+  - `./v3 codex-handoff test-local` passed.
+- Notes:
+  - The runner is explicit and local-only: browser approval moves a handoff to `approved`, and a separate localhost command performs Codex execution.
+
+## Final Step 4 Verification
+- Stage coverage:
+  - All eight approved implementation stages were completed.
+  - The first Step 4 commit is the approved Step 1-3 planning commit: `ac80821 Plan localhost Codex task handoff`.
+  - Each planned stage has a stage-scoped implementation commit after the planning commit.
+- Behavior coverage:
+  - Approved localhost users can request a Codex handoff from normal post/thread UI controls.
+  - The UI presents the generated user story, FDP Step 1 draft, confidence summary, and approve/reject controls before execution.
+  - Handoff lifecycle events are available in activity.
+  - Approved handoffs are executed only through the explicit local CLI path: `./v3 codex-handoff run`.
+- Verification:
+  - `git log --oneline --max-count=12` showed one planning commit plus eight stage commits.
+  - PHP syntax checks passed for touched application, Codex, read-model, template, script, and test files.
+  - `node --check public/assets/post_analysis.js` passed.
+  - `bash -n v3` passed.
+  - `./v3 codex-handoff test-local` passed.
+  - `php tests/run.php LocalAppSmokeTest::testAssetFingerprintPathsUseContentHashFilenames LocalAppSmokeTest::testAssetFingerprintCopySkipsAlreadyFingerprintedSourceFiles LocalAppSmokeTest::testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout` passed.
+- Notes:
+  - The full test suite was started, but the interrupted run exposed provider/config expectation failures outside the Codex handoff path before completion.
+  - Static artifact warnings from recursively fingerprinted ignored assets were fixed by skipping already-fingerprinted source asset names during asset copying.

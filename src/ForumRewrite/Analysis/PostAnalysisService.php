@@ -59,7 +59,7 @@ final class PostAnalysisService
                 'content_hash' => $contentHash,
                 'status' => 'config_missing',
                 'cached' => false,
-                'message' => 'Dedalus API key is not configured.',
+                'message' => 'LLM API key is not configured.',
                 'unicode_risk' => $unicodeRisk,
             ];
         }
@@ -85,7 +85,16 @@ final class PostAnalysisService
             return $stored;
         } catch (\Throwable $throwable) {
             $providerTiming = isset($providerStartedAt) ? $this->elapsedMilliseconds($providerStartedAt) : 0.0;
-            $stored = $this->store->saveFailed($postId, $contentHash, 'provider_error', $throwable->getMessage());
+            $rawResponse = [
+                'error' => [
+                    'class' => $throwable::class,
+                    'message' => $throwable->getMessage(),
+                ],
+            ];
+            if ($throwable instanceof ProviderRequestException) {
+                $rawResponse = $throwable->diagnostics();
+            }
+            $stored = $this->store->saveFailed($postId, $contentHash, 'provider_error', $throwable->getMessage(), $rawResponse);
             if ($unicodeRisk !== null) {
                 $unicodeRisk = $this->storeUnicodeRiskFailure($postId, $contentHash, $unicodeRisk, $throwable->getMessage());
                 $stored['unicode_risk'] = $unicodeRisk;

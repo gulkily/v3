@@ -106,6 +106,69 @@ FORUM_SITE_ID=chouse ./v3 start
 
 Omitting `FORUM_REPOSITORY_ROOT`, `FORUM_DATABASE_PATH`, and `FORUM_STATIC_HTML_ROOT` in that case auto-initializes a site-scoped local sandbox (`state/local_repository_chouse` and matching database/static paths) separate from the default `zenmemes` sandbox, so both profiles can be developed from the same checkout.
 
+## LLM Provider Config
+
+Post analysis and agent reply drafting use provider-neutral `LLM_*` private config. Create or inspect the private config with:
+
+```bash
+./v3 private-config --force
+./v3 private-config view
+./v3 private-config refresh-template
+```
+
+Use `refresh-template` after upgrades to rewrite the private config with current comments and provider examples while preserving existing effective values.
+
+Supported providers:
+
+- `dedalus`: OpenAI-compatible Dedalus endpoint, the default for existing installs
+- `openai`: direct OpenAI API
+- `openrouter`: OpenRouter API, with optional attribution headers
+- `anthropic`: direct Anthropic Messages API
+- `stub`: deterministic local analysis for smoke tests and offline operation
+- custom OpenAI-compatible gateways such as LiteLLM, vLLM, llama.cpp, or internal routers
+
+The common keys are:
+
+```php
+'LLM_PROVIDER' => 'dedalus',
+'LLM_API_KEY' => 'replace-with-real-key',
+'LLM_API_BASE_URL' => 'https://api.dedaluslabs.ai',
+'LLM_MODEL' => 'openai/gpt-5-nano',
+'LLM_TIMEOUT_SECONDS' => 60,
+'LLM_EXTRA_HEADERS' => [],
+'LLM_POST_ANALYSIS_PROMPT_PATH' => 'prompts/dedalus_post_analysis_system.txt',
+```
+
+Provider examples:
+
+```php
+// Direct OpenAI
+'LLM_PROVIDER' => 'openai',
+'LLM_API_BASE_URL' => 'https://api.openai.com',
+'LLM_MODEL' => 'gpt-5-nano',
+
+// Direct Anthropic
+'LLM_PROVIDER' => 'anthropic',
+'LLM_API_BASE_URL' => 'https://api.anthropic.com',
+'LLM_MODEL' => 'claude-haiku-4-5-20251001',
+
+// OpenRouter
+'LLM_PROVIDER' => 'openrouter',
+'LLM_API_BASE_URL' => 'https://openrouter.ai/api',
+'LLM_MODEL' => 'openai/gpt-5-nano',
+'LLM_EXTRA_HEADERS' => [
+    'HTTP-Referer' => 'https://forum.example',
+    'X-Title' => 'Forum',
+],
+
+// LiteLLM or another OpenAI-compatible gateway
+'LLM_PROVIDER' => 'litellm',
+'LLM_API_BASE_URL' => 'https://llm-gateway.example',
+'LLM_MODEL' => 'openai/gpt-5-nano',
+```
+
+OpenAI-compatible providers are called at `LLM_API_BASE_URL + /v1/chat/completions`. Anthropic is called at `LLM_API_BASE_URL + /v1/messages`. Direct `DEDALUS_*` LLM settings remain supported as fallbacks for current deployments, but new config writes use `LLM_*`.
+
 ## Agent Reply Requests
 
 Approved users can request a `reply-agent` response from eligible post cards. The button records a durable request in SQLite and returns quickly; it does not wait for provider analysis or canonical posting.
@@ -119,19 +182,23 @@ Fulfillment is handled by a periodic PHP command. A typical cron entry is:
 The deployed checkout can also print the current-path reference:
 
 ```bash
-./v3 agent-reply-cron
+./v3 agent-reply cron
 ```
 
-The command uses the same repository, database, private Dedalus config, `reply-agent` key directory, and artifact paths as the web app. It exits successfully if another fulfillment run is already active, and queued-row claims prevent duplicate `reply-agent` posts for the same requested post content.
+The command uses the same repository, database, private LLM config, `reply-agent` key directory, and artifact paths as the web app. It exits successfully if another fulfillment run is already active, and queued-row claims prevent duplicate `reply-agent` posts for the same requested post content.
 
 Without `--quiet`, the command prints repository/database/artifact paths, queue counts before and after the run, claimed-row count, one processing/result line per request, reason totals, and elapsed time. `--quiet` suppresses successful STDOUT for cron while preserving STDERR errors.
 
 Useful manual commands:
 
 ```bash
+./v3 agent-reply test
+./v3 agent-reply test-local
 php scripts/run_agent_reply_requests.php --dry-run
 php scripts/run_agent_reply_requests.php --limit=10
 php scripts/run_agent_reply_requests.php --post-id=<post-id>
+./v3 agent-reply status <post-id>
+./v3 agent-reply status --limit=25
 ```
 
 ## Site Feature Flags
@@ -228,7 +295,7 @@ Automatic replies can be disabled with:
 DEDALUS_AGENT_REPLIES_ENABLED=false
 ```
 
-Agent replies are drafted by the post-analysis prompt and posted from the stored `engagement.suggested_response` when respondability gates pass. Production uses `DEDALUS_API_KEY` and `DEDALUS_MODEL` for that single analysis call.
+Agent replies are drafted by the post-analysis prompt and posted from the stored `engagement.suggested_response` when respondability gates pass. Production uses the configured `LLM_*` provider for that analysis call.
 
 On first successful agent reply, the app bootstraps a canonical `reply-agent` OpenPGP identity and stores the private key under:
 

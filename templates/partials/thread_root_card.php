@@ -6,6 +6,31 @@ $agentReplyWork = (string) ($agentReplyWorkByPostId[$post['post_id']] ?? '');
 $isAgentPost = (string) ($post['author_label'] ?? '') === 'reply-agent';
 $viewerCanRequestAgentReply = (bool) ($viewerCanRequestAgentReply ?? $viewerCanSeePostAnalysis ?? false);
 $showAgentReplyRequestButton = $viewerCanRequestAgentReply && !$isAgentPost && !is_array($agentReply);
+$codexHandoff = $codexHandoffsByPostId[$post['post_id']] ?? null;
+$codexHandoffStatus = is_array($codexHandoff) ? (string) ($codexHandoff['status'] ?? '') : '';
+$codexHandoffId = is_array($codexHandoff) ? (string) ($codexHandoff['handoff_id'] ?? '') : '';
+$viewerCanUseCodexHandoff = (bool) ($viewerCanUseCodexHandoff ?? false);
+$postCanUseCodexHandoff = (bool) (($codexHandoffEligiblePostIds[(string) $post['post_id']] ?? false));
+$showCodexHandoffButton = $viewerCanUseCodexHandoff && $postCanUseCodexHandoff && !is_array($codexHandoff);
+$codexHandoffFeedbackText = match ($codexHandoffStatus) {
+    'requested' => 'Codex handoff requested.',
+    'draft_ready' => 'Codex handoff ready for approval.',
+    'approved' => 'Codex handoff approved.',
+    'rejected' => 'Codex handoff rejected.',
+    'running' => 'Codex handoff running.',
+    'completed' => 'Codex handoff completed.',
+    'failed' => 'Codex handoff failed.',
+    default => '',
+};
+$codexHandoffSummaryLabel = match ($codexHandoffStatus) {
+    'draft_ready' => 'Ready for approval',
+    'approved' => 'Approved',
+    'rejected' => 'Rejected',
+    'running' => 'Running',
+    'completed' => 'Completed',
+    'failed' => 'Failed',
+    default => 'Requested',
+};
 $agentReplyFeedbackText = '';
 if ($agentReplyPostedId !== '') {
     $agentReplyFeedbackText = 'Agent reply available.';
@@ -35,6 +60,7 @@ $postAnchorId = 'post-' . (string) $post['post_id'];
   <p class="meta"><span class="agent-label">Agent-authored reply</span></p>
 <?php endif; ?>
   <div class="body"><?= $br($post['body']) ?></div>
+<?= $indent($partial('partials/post_identity_details.php', ['post' => $post]), 1) ?>
 <?php
 $postAnalysis = ((bool) ($viewerCanSeePostAnalysis ?? false))
     ? (($postAnalysesByPostId[$post['post_id']] ?? null))
@@ -106,9 +132,40 @@ if (!is_array($postAnalysisLabels)) {
       data-post-id="<?= $e($post['post_id']) ?>"
     >Request agent response</button>
 <?php endif; ?>
+<?php if ($showCodexHandoffButton): ?>
+    <button
+      type="button"
+      class="thread-reaction-button"
+      data-action="request-codex-handoff"
+      data-post-id="<?= $e($post['post_id']) ?>"
+    >Handoff to Codex</button>
+<?php endif; ?>
     <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
     <p class="meta thread-reaction-feedback" data-role="thread-reaction-feedback" hidden></p>
     <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"<?= $agentReplyFeedbackText === '' ? ' hidden' : '' ?>><?= $e($agentReplyFeedbackText) ?><?php if ($agentReplyPostedId !== ''): ?> <a href="/posts/<?= $e($agentReplyPostedId) ?>">View agent reply.</a><?php endif; ?></p>
+    <p class="meta codex-handoff-feedback" data-role="codex-handoff-feedback"<?= $codexHandoffFeedbackText === '' ? ' hidden' : '' ?>><?= $e($codexHandoffFeedbackText) ?></p>
+<?php if (is_array($codexHandoff)): ?>
+  <details class="codex-handoff-preview" data-role="codex-handoff-preview" data-handoff-id="<?= $e($codexHandoffId) ?>" data-handoff-status="<?= $e($codexHandoffStatus) ?>"<?= $codexHandoffStatus === 'draft_ready' ? ' open' : '' ?>>
+    <summary>Codex handoff: <?= $e($codexHandoffSummaryLabel) ?></summary>
+    <div class="stack">
+<?php if (trim((string) ($codexHandoff['user_story'] ?? '')) !== ''): ?>
+      <p><strong>User story:</strong> <?= $e($codexHandoff['user_story']) ?></p>
+<?php endif; ?>
+<?php if (trim((string) ($codexHandoff['confidence_summary'] ?? '')) !== ''): ?>
+      <p><strong>Confidence:</strong> <?= $e($codexHandoff['confidence_summary']) ?></p>
+<?php endif; ?>
+<?php if (trim((string) ($codexHandoff['fdp_step1'] ?? '')) !== ''): ?>
+      <pre class="codex-handoff-draft"><?= $e($codexHandoff['fdp_step1']) ?></pre>
+<?php endif; ?>
+<?php if ($codexHandoffStatus === 'draft_ready'): ?>
+      <div class="button-row button-row-natural codex-handoff-actions">
+        <button type="button" class="thread-reaction-button" data-action="approve-codex-handoff" data-handoff-id="<?= $e($codexHandoffId) ?>">Approve handoff</button>
+        <button type="button" class="thread-reaction-button" data-action="reject-codex-handoff" data-handoff-id="<?= $e($codexHandoffId) ?>">Reject handoff</button>
+      </div>
+<?php endif; ?>
+    </div>
+  </details>
+<?php endif; ?>
 <?php if (is_array($postAnalysis) && ($postAnalysis['status'] ?? '') === 'complete'): ?>
   <details class="post-analysis">
     <summary>Post analysis</summary>

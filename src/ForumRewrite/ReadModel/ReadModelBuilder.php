@@ -23,6 +23,8 @@ final class ReadModelBuilder
     private int $invalidThreadLabelRecordCount = 0;
     /** @var array<int, array{created_at:string,thread_id:string,author_identity_id:?string,labels_added:list<string>,source_path:string,source_commit_sha:?string}> */
     private array $threadLabelActivityEvents = [];
+    /** @var array<int, array{created_at:string,post_id:string,thread_id:string,author_identity_id:?string,tags:list<string>,board_tags_json:string,source_path:string,source_commit_sha:?string}> */
+    private array $postReactionActivityEvents = [];
     private ?string $sourceCommitShaForRebuild = null;
 
     public function __construct(
@@ -46,6 +48,7 @@ final class ReadModelBuilder
         $this->timings = [];
         $this->invalidThreadLabelRecordCount = 0;
         $this->threadLabelActivityEvents = [];
+        $this->postReactionActivityEvents = [];
         $this->sourceCommitShaForRebuild = null;
         $pdo->beginTransaction();
         try {
@@ -181,6 +184,8 @@ final class ReadModelBuilder
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 created_at TEXT NOT NULL,
                 kind TEXT NOT NULL,
+                record_family TEXT NOT NULL DEFAULT \'post\',
+                action_key TEXT NULL,
                 post_id TEXT NULL,
                 thread_id TEXT NULL,
                 label TEXT NOT NULL,
@@ -197,6 +202,7 @@ final class ReadModelBuilder
 
         $pdo->exec('CREATE INDEX activity_recent_idx ON activity (created_at DESC, post_id DESC, id DESC)');
         $pdo->exec('CREATE INDEX activity_post_id_idx ON activity (post_id)');
+        $pdo->exec('CREATE INDEX activity_action_key_idx ON activity (action_key)');
     }
 
     /**
@@ -394,11 +400,13 @@ final class ReadModelBuilder
      */
     private function indexPostReactions(PDO $pdo, array $approvalState): void
     {
-        $postRows = $pdo->query('SELECT post_id, author_label FROM posts')->fetchAll();
+        $postRows = $pdo->query('SELECT post_id, thread_id, author_label, board_tags_json FROM posts')->fetchAll();
         $knownPosts = [];
         foreach ($postRows as $row) {
             $knownPosts[(string) $row['post_id']] = [
+                'thread_id' => (string) $row['thread_id'],
                 'author_label' => (string) $row['author_label'],
+                'board_tags_json' => (string) $row['board_tags_json'],
             ];
         }
 
@@ -427,6 +435,17 @@ final class ReadModelBuilder
             if (!isset($knownPosts[$record->postId])) {
                 continue;
             }
+
+            $this->postReactionActivityEvents[] = [
+                'created_at' => $record->createdAt,
+                'post_id' => $record->postId,
+                'thread_id' => $knownPosts[$record->postId]['thread_id'],
+                'author_identity_id' => $record->authorIdentityId,
+                'tags' => $record->tags,
+                'board_tags_json' => $knownPosts[$record->postId]['board_tags_json'],
+                'source_path' => CanonicalPathResolver::postReaction($record->recordId),
+                'source_commit_sha' => $this->sourceCommitShaForPath(CanonicalPathResolver::postReaction($record->recordId)),
+            ];
 
             $tagsByPost[$record->postId] ??= [];
             $scoreByPost[$record->postId] ??= 0;
@@ -624,11 +643,11 @@ final class ReadModelBuilder
     {
         $stmt = $pdo->prepare(
             'INSERT INTO activity (
-                created_at, kind, post_id, thread_id, label, board_tags_json,
+                created_at, kind, record_family, action_key, post_id, thread_id, label, board_tags_json,
                 author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved,
                 source_path, source_commit_sha
              ) VALUES (
-                :created_at, :kind, :post_id, :thread_id, :label, :board_tags_json,
+                :created_at, :kind, :record_family, :action_key, :post_id, :thread_id, :label, :board_tags_json,
                 :author_identity_id, :author_profile_slug, :author_username_token, :author_label, :author_is_approved,
                 :source_path, :source_commit_sha
              )'
@@ -638,11 +657,19 @@ final class ReadModelBuilder
         foreach ($posts as $post) {
             $postsById[$post['post_id']] = $post;
             $author = $this->resolveActivityAuthor($pdo, $post['author_identity_id']);
-            $kind = $post['post_id'] === $post['thread_id'] ? 'thread' : 'reply';
+            $recordFamily = $this->activityRecordFamilyForPost($post);
+            $kind = match ($recordFamily) {
+                'identity_bootstrap' => 'identity_bootstrap',
+                'approval' => 'approval',
+                'identity' => 'identity',
+                default => $post['post_id'] === $post['thread_id'] ? 'thread' : 'reply',
+            };
             $label = $post['subject'] ?? $this->preview($post['body']);
             $stmt->execute([
                 'created_at' => $post['created_at'],
                 'kind' => $kind,
+                'record_family' => $recordFamily,
+                'action_key' => $post['source_path'],
                 'post_id' => $post['post_id'],
                 'thread_id' => $post['thread_id'],
                 'label' => $label,
@@ -659,7 +686,7 @@ final class ReadModelBuilder
 
         foreach ($this->threadLabelActivityEvents as $event) {
             $thread = $postsById[$event['thread_id']] ?? null;
-            if ($thread === null || $this->isHiddenBootstrapBoardTagsJson($thread['board_tags_json'])) {
+            if ($thread === null) {
                 continue;
             }
 
@@ -667,6 +694,8 @@ final class ReadModelBuilder
             $stmt->execute([
                 'created_at' => $event['created_at'],
                 'kind' => 'thread_label_add',
+                'record_family' => 'thread_label',
+                'action_key' => $event['source_path'],
                 'post_id' => $event['thread_id'],
                 'thread_id' => $event['thread_id'],
                 'label' => 'Labels added: ' . implode(', ', $event['labels_added']),
@@ -681,10 +710,33 @@ final class ReadModelBuilder
             ]);
         }
 
+        foreach ($this->postReactionActivityEvents as $event) {
+            $author = $this->resolveActivityAuthor($pdo, $event['author_identity_id']);
+            $stmt->execute([
+                'created_at' => $event['created_at'],
+                'kind' => 'post_reaction_add',
+                'record_family' => 'post_reaction',
+                'action_key' => $event['source_path'],
+                'post_id' => $event['post_id'],
+                'thread_id' => $event['thread_id'],
+                'label' => 'Tags added: ' . implode(', ', $event['tags']),
+                'board_tags_json' => $event['board_tags_json'],
+                'author_identity_id' => $event['author_identity_id'],
+                'author_profile_slug' => $author['author_profile_slug'],
+                'author_username_token' => $author['author_username_token'],
+                'author_label' => $author['author_label'],
+                'author_is_approved' => $author['author_is_approved'],
+                'source_path' => $event['source_path'],
+                'source_commit_sha' => $event['source_commit_sha'],
+            ]);
+        }
+
         foreach ($this->featureFlagActivityEvents() as $event) {
             $stmt->execute([
                 'created_at' => $event['created_at'],
                 'kind' => 'site_feature_flag',
+                'record_family' => 'instance_feature_flags',
+                'action_key' => CanonicalPathResolver::featureFlags() . '@' . $event['source_commit_sha'],
                 'post_id' => null,
                 'thread_id' => null,
                 'label' => $event['label'],
@@ -696,6 +748,26 @@ final class ReadModelBuilder
                 'author_is_approved' => 1,
                 'source_path' => CanonicalPathResolver::featureFlags(),
                 'source_commit_sha' => $event['source_commit_sha'],
+            ]);
+        }
+
+        foreach ($this->codexHandoffActivityEvents($pdo) as $event) {
+            $stmt->execute([
+                'created_at' => $event['created_at'],
+                'kind' => 'codex_handoff',
+                'record_family' => 'codex_handoff',
+                'action_key' => null,
+                'post_id' => $event['origin_post_id'],
+                'thread_id' => $event['origin_thread_id'],
+                'label' => $event['label'],
+                'board_tags_json' => '["codex","handoff"]',
+                'author_identity_id' => $event['author_identity_id'],
+                'author_profile_slug' => $event['author_profile_slug'],
+                'author_username_token' => $event['author_username_token'],
+                'author_label' => $event['author_label'],
+                'author_is_approved' => $event['author_is_approved'],
+                'source_path' => null,
+                'source_commit_sha' => null,
             ]);
         }
     }
@@ -735,6 +807,27 @@ final class ReadModelBuilder
             'author_label' => (string) $row['username'],
             'author_is_approved' => (int) $row['is_approved'],
         ];
+    }
+
+    /**
+     * @param array{board_tags_json:string} $post
+     */
+    private function activityRecordFamilyForPost(array $post): string
+    {
+        $boardTags = json_decode($post['board_tags_json'], true);
+        if (!is_array($boardTags) || !in_array('identity', $boardTags, true)) {
+            return 'post';
+        }
+
+        if (in_array('internal', $boardTags, true)) {
+            return 'identity_bootstrap';
+        }
+
+        if (in_array('approval', $boardTags, true)) {
+            return 'approval';
+        }
+
+        return 'identity';
     }
 
     private function writeMetadata(PDO $pdo): void
@@ -846,6 +939,52 @@ final class ReadModelBuilder
         }
 
         return $events;
+    }
+
+    /**
+     * @return list<array{created_at:string,origin_post_id:string,origin_thread_id:string,label:string,author_identity_id:?string,author_profile_slug:?string,author_username_token:?string,author_label:string,author_is_approved:int}>
+     */
+    private function codexHandoffActivityEvents(PDO $pdo): array
+    {
+        if (!$this->tableExists($pdo, 'codex_handoff_events')) {
+            return [];
+        }
+
+        $stmt = $pdo->query(
+            'SELECT created_at, origin_post_id, origin_thread_id, label,
+                    author_identity_id, author_profile_slug, author_username_token,
+                    author_label, author_is_approved
+             FROM codex_handoff_events
+             ORDER BY created_at ASC, id ASC'
+        );
+        if ($stmt === false) {
+            return [];
+        }
+
+        $events = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $events[] = [
+                'created_at' => (string) ($row['created_at'] ?? ''),
+                'origin_post_id' => (string) ($row['origin_post_id'] ?? ''),
+                'origin_thread_id' => (string) ($row['origin_thread_id'] ?? ''),
+                'label' => (string) ($row['label'] ?? ''),
+                'author_identity_id' => isset($row['author_identity_id']) ? (string) $row['author_identity_id'] : null,
+                'author_profile_slug' => isset($row['author_profile_slug']) ? (string) $row['author_profile_slug'] : null,
+                'author_username_token' => isset($row['author_username_token']) ? (string) $row['author_username_token'] : null,
+                'author_label' => (string) ($row['author_label'] ?? 'approved user'),
+                'author_is_approved' => (int) ($row['author_is_approved'] ?? 1),
+            ];
+        }
+
+        return $events;
+    }
+
+    private function tableExists(PDO $pdo, string $table): bool
+    {
+        $stmt = $pdo->prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = :name");
+        $stmt->execute(['name' => $table]);
+
+        return $stmt->fetchColumn() !== false;
     }
 
     /**

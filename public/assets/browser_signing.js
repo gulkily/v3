@@ -623,6 +623,10 @@
     };
   }
 
+  function collectSignedSubmitFields(form) {
+    return isReplyComposeForm(form) ? collectReplySubmitFields(form) : collectThreadSubmitFields(form);
+  }
+
   let pendingReplySequence = 0;
   let pendingThreadSequence = 0;
 
@@ -892,9 +896,13 @@
     }
 
     if (!data || data.status !== "ok") {
+      const rawError = data && data.error ? String(data.error) : fallbackMessage;
+      const classified = classifyPreparedPostFailure(rawError);
       return {
         ok: false,
-        error: data && data.error ? String(data.error) : fallbackMessage,
+        error: classified.friendlyMessage,
+        rawError: rawError,
+        technicalDetails: classified.technicalDetails,
         serverTiming: serverTiming || {},
       };
     }
@@ -913,12 +921,49 @@
     };
   }
 
+  function isDetachedSignatureVerificationFailure(message) {
+    return String(message || "").indexOf("Detached signature verification failed:") === 0;
+  }
+
+  function isRetryablePreparedPostIdentityFailure(result) {
+    return Boolean(result && result.retryableIdentityMismatch);
+  }
+
+  function classifyPreparedPostFailure(rawMessage) {
+    const technicalDetails = String(rawMessage || "").trim();
+    if (isDetachedSignatureVerificationFailure(technicalDetails)) {
+      return {
+        friendlyMessage: "The browser signature did not match this prepared post. Refreshing the draft and trying again.",
+        technicalDetails: technicalDetails,
+      };
+    }
+
+    return {
+      friendlyMessage: technicalDetails || "Unable to finish signed post.",
+      technicalDetails: "",
+    };
+  }
+
+  function finalPreparedPostFailure(result) {
+    const technicalDetails = String((result && (result.technicalDetails || result.rawError)) || "").trim();
+    if (isDetachedSignatureVerificationFailure(technicalDetails)) {
+      return Object.assign({}, result, {
+        error: "Could not verify the browser signature for this post. Open /account/key/ and generate a fresh browser keypair before posting.",
+        technicalDetails: technicalDetails,
+      });
+    }
+
+    return result;
+  }
+
   async function prepareReplyFormForSigning(form) {
+    await ensureCurrentComposeAuthorIdentity(form);
     const result = await submitUrlEncoded("/api/prepare_reply", collectReplySubmitFields(form));
     return parsePreparedPostJsonResponse(result.text, result.serverTiming, "Unable to prepare reply for signing.");
   }
 
   async function prepareThreadFormForSigning(form) {
+    await ensureCurrentComposeAuthorIdentity(form);
     const result = await submitUrlEncoded("/api/prepare_thread", collectThreadSubmitFields(form));
     return parsePreparedPostJsonResponse(result.text, result.serverTiming, "Unable to prepare thread for signing.");
   }
@@ -929,8 +974,24 @@
       throw new Error("No saved browser private key is available to sign this post.");
     }
 
-    const openpgp = await ensureOpenPgpApi(["readPrivateKey", "createMessage", "sign"]);
+    const publicKeyArmored = localStorage.getItem(storageKeys.publicKey) || "";
+    if (!publicKeyArmored) {
+      throw new Error("No saved browser public key is available to match this signature.");
+    }
+
+    const openpgp = await ensureOpenPgpApi(["readKey", "readPrivateKey", "createMessage", "sign"]);
+    const publicKey = await openpgp.readKey({ armoredKey: publicKeyArmored });
     const privateKey = await openpgp.readPrivateKey({ armoredKey: privateKeyArmored });
+    const publicFingerprint = String(publicKey.getFingerprint ? publicKey.getFingerprint() : "").trim().toUpperCase();
+    const privateFingerprint = String(privateKey.getFingerprint ? privateKey.getFingerprint() : "").trim().toUpperCase();
+    if (publicFingerprint === "" || privateFingerprint === "" || publicFingerprint !== privateFingerprint) {
+      throw buildFriendlyError(
+        "Saved browser private key does not match the published public key. Open /account/key/ and generate or restore a matching browser keypair.",
+        `public_key_fingerprint=${publicFingerprint || "unknown"} private_key_fingerprint=${privateFingerprint || "unknown"}`
+      );
+    }
+
+    localStorage.setItem(storageKeys.fingerprint, publicFingerprint);
     const message = await openpgp.createMessage({ text: canonicalRecord });
     const signature = await openpgp.sign({
       message: message,
@@ -939,6 +1000,45 @@
     });
 
     return normalizeNewlines(String(signature || "")).trim() + "\n";
+  }
+
+  function preparedPostAuthorIdentityId(prepared) {
+    const canonicalRecord = String((prepared && prepared.canonicalRecord) || "");
+    const match = canonicalRecord.match(/^Author-Identity-ID:\s*(openpgp:[a-f0-9]{40})\s*$/im);
+    if (match) {
+      return match[1].toLowerCase();
+    }
+
+    return "";
+  }
+
+  function preparedPostIdentityMismatch(fields, prepared) {
+    const currentIdentityId = currentAuthorIdentityId();
+    const fieldIdentityId = String((fields && fields.author_identity_id) || "").trim().toLowerCase();
+    const preparedIdentityId = preparedPostAuthorIdentityId(prepared);
+    if (currentIdentityId === "") {
+      return {
+        ok: false,
+        error: "Browser identity changed before this post could be signed. Refreshing the draft and trying again.",
+        rawError: "Prepared post author identity mismatch: missing current browser identity.",
+        technicalDetails: `current_identity_id=missing field_author_identity_id=${fieldIdentityId || "missing"} prepared_author_identity_id=${preparedIdentityId || "missing"}`,
+        retryableIdentityMismatch: true,
+        serverTiming: prepared && prepared.serverTiming ? prepared.serverTiming : {},
+      };
+    }
+
+    if ((fieldIdentityId && fieldIdentityId !== currentIdentityId) || (preparedIdentityId && preparedIdentityId !== currentIdentityId)) {
+      return {
+        ok: false,
+        error: "Browser identity changed before this post could be signed. Refreshing the draft and trying again.",
+        rawError: "Prepared post author identity mismatch.",
+        technicalDetails: `current_identity_id=${currentIdentityId} field_author_identity_id=${fieldIdentityId || "missing"} prepared_author_identity_id=${preparedIdentityId || "missing"}`,
+        retryableIdentityMismatch: true,
+        serverTiming: prepared && prepared.serverTiming ? prepared.serverTiming : {},
+      };
+    }
+
+    return null;
   }
 
   async function finalizePreparedPost(fields, prepared, detachedSignature) {
@@ -954,12 +1054,10 @@
     return parsePreparedPostJsonResponse(result.text, result.serverTiming, "Unable to finalize signed post.");
   }
 
-  async function submitSignedPreparedPost(form, prepare, timing) {
-    const fields = isReplyComposeForm(form) ? collectReplySubmitFields(form) : collectThreadSubmitFields(form);
-    const prepared = await prepare(form);
-    markActionTiming(timing, "forum_prepare_complete");
-    if (!prepared.ok) {
-      return prepared;
+  async function signAndFinalizePreparedPost(fields, prepared, timing) {
+    const mismatch = preparedPostIdentityMismatch(fields, prepared);
+    if (mismatch) {
+      return mismatch;
     }
 
     markActionTiming(timing, "forum_signing_start");
@@ -969,6 +1067,50 @@
     finalized.serverTiming = Object.assign({}, prepared.serverTiming || {}, finalized.serverTiming || {});
 
     return finalized;
+  }
+
+  async function retrySignedPreparedPostAfterDetachedFailure(form, prepare, timing, previousResult) {
+    markActionTiming(timing, "forum_signature_retry_start");
+    await ensureCurrentComposeAuthorIdentity(form);
+    const prepared = await prepare(form);
+    markActionTiming(timing, "forum_signature_retry_prepare_complete");
+    if (!prepared.ok) {
+      prepared.serverTiming = Object.assign({}, previousResult.serverTiming || {}, prepared.serverTiming || {});
+      return prepared;
+    }
+
+    const fields = collectSignedSubmitFields(form);
+    const finalized = await signAndFinalizePreparedPost(fields, prepared, timing);
+    finalized.serverTiming = Object.assign({}, previousResult.serverTiming || {}, prepared.serverTiming || {}, finalized.serverTiming || {});
+    markActionTiming(timing, "forum_signature_retry_complete", { status: finalized.ok ? "ok" : "error" });
+
+    return finalPreparedPostFailure(finalized);
+  }
+
+  async function recoverSignedPreparedPostIfNeeded(form, prepare, fields, timing, result, onRetry) {
+    const rawError = result && (result.rawError || result.technicalDetails || result.error);
+    if (!result || result.ok || (!isDetachedSignatureVerificationFailure(rawError) && !isRetryablePreparedPostIdentityFailure(result))) {
+      return result;
+    }
+
+    if (typeof onRetry === "function") {
+      onRetry();
+    }
+
+    return retrySignedPreparedPostAfterDetachedFailure(form, prepare, timing, result);
+  }
+
+  async function submitSignedPreparedPost(form, prepare, timing) {
+    await ensureCurrentComposeAuthorIdentity(form);
+    const fields = collectSignedSubmitFields(form);
+    const prepared = await prepare(form);
+    markActionTiming(timing, "forum_prepare_complete");
+    if (!prepared.ok) {
+      return prepared;
+    }
+
+    const finalized = await signAndFinalizePreparedPost(fields, prepared, timing);
+    return recoverSignedPreparedPostIfNeeded(form, prepare, fields, timing, finalized);
   }
 
   async function submitSignedReplyFormToApi(form, timing) {
@@ -1138,6 +1280,11 @@
     return `openpgp:${fingerprint}`;
   }
 
+  function authorIdentityIdForFingerprint(fingerprint) {
+    const normalized = String(fingerprint || "").trim().toLowerCase();
+    return normalized ? `openpgp:${normalized}` : "";
+  }
+
   function profileSlugForFingerprint(fingerprint) {
     const normalized = String(fingerprint || "").trim().toLowerCase();
     return normalized ? `openpgp-${normalized}` : "";
@@ -1177,6 +1324,26 @@
     textarea.select();
     document.execCommand("copy");
     document.body.removeChild(textarea);
+  }
+
+  async function readClipboardText() {
+    if (typeof navigator !== "undefined"
+      && navigator.clipboard
+      && typeof navigator.clipboard.readText === "function") {
+      try {
+        return await navigator.clipboard.readText();
+      } catch (error) {
+        if (typeof window.prompt !== "function") {
+          throw error;
+        }
+      }
+    }
+
+    if (typeof window.prompt === "function") {
+      return window.prompt("Paste your armored private key:", "") || "";
+    }
+
+    throw new Error("Clipboard read is unavailable. Paste the private key manually.");
   }
 
   function setStatus(node, message, kind) {
@@ -1490,6 +1657,146 @@
     });
   }
 
+  function normalizedArmoredPrivateKey(text) {
+    const armored = normalizeNewlines(String(text || "")).trim();
+    if (armored === "") {
+      throw new Error("Paste an armored OpenPGP private key first.");
+    }
+
+    if (armored.indexOf("-----BEGIN PGP PRIVATE KEY BLOCK-----") === -1) {
+      throw new Error("Paste an armored OpenPGP private key block.");
+    }
+
+    return armored + "\n";
+  }
+
+  function privateKeyLooksDecrypted(privateKey) {
+    if (privateKey && typeof privateKey.isDecrypted === "function") {
+      return privateKey.isDecrypted();
+    }
+
+    if (privateKey && typeof privateKey.getKeys === "function") {
+      const keys = privateKey.getKeys();
+      if (Array.isArray(keys) && keys.length > 0) {
+        return keys.every(function (key) {
+          const packet = key && key.keyPacket ? key.keyPacket : null;
+          return !packet || typeof packet.isDecrypted !== "function" || packet.isDecrypted();
+        });
+      }
+    }
+
+    return true;
+  }
+
+  function usernameFromPrivateKey(privateKey) {
+    if (privateKey && typeof privateKey.getUserIDs === "function") {
+      const userIds = privateKey.getUserIDs();
+      if (Array.isArray(userIds) && userIds.length > 0) {
+        const firstUserId = String(userIds[0] || "").trim();
+        const displayName = firstUserId.replace(/\s*<[^>]*>\s*$/, "").trim();
+        return normalizeUsername(displayName || firstUserId || "guest");
+      }
+    }
+
+    return normalizeUsername(localStorage.getItem(storageKeys.username) || "guest");
+  }
+
+  async function armoredPublicKeyFromPrivateKey(privateKey) {
+    if (!privateKey || typeof privateKey.toPublic !== "function") {
+      throw new Error("Could not derive a public key from that private key.");
+    }
+
+    const publicKey = privateKey.toPublic();
+    if (typeof publicKey === "string") {
+      return normalizeNewlines(publicKey).trim() + "\n";
+    }
+
+    if (publicKey && typeof publicKey.armor === "function") {
+      return normalizeNewlines(String(await publicKey.armor())).trim() + "\n";
+    }
+
+    throw new Error("Could not export the derived public key.");
+  }
+
+  async function deriveIdentityFromPrivateKey(armoredPrivateKey) {
+    const privateKeyArmored = normalizedArmoredPrivateKey(armoredPrivateKey);
+    const openpgp = await ensureOpenPgpApi(["readPrivateKey"]);
+    let privateKey;
+
+    try {
+      privateKey = await openpgp.readPrivateKey({ armoredKey: privateKeyArmored });
+    } catch (error) {
+      throw buildFriendlyError(
+        "Could not read that private key. Paste an armored OpenPGP private key block.",
+        error instanceof Error ? error.message : String(error || "")
+      );
+    }
+
+    const fingerprint = String(privateKey && typeof privateKey.getFingerprint === "function"
+      ? privateKey.getFingerprint()
+      : "").trim().toUpperCase();
+    if (fingerprint === "") {
+      throw new Error("That private key is missing a readable fingerprint.");
+    }
+
+    if (!privateKeyLooksDecrypted(privateKey)) {
+      throw new Error("That private key is passphrase protected. Import an unencrypted browser private key.");
+    }
+
+    return {
+      username: usernameFromPrivateKey(privateKey),
+      publicKey: await armoredPublicKeyFromPrivateKey(privateKey),
+      privateKey: privateKeyArmored,
+      fingerprint: fingerprint,
+    };
+  }
+
+  function saveImportedBrowserIdentity(identity) {
+    localStorage.setItem(storageKeys.username, normalizeUsername(identity.username || "guest"));
+    localStorage.setItem(storageKeys.publicKey, normalizeNewlines(String(identity.publicKey || "")).trim() + "\n");
+    localStorage.setItem(storageKeys.privateKey, normalizedArmoredPrivateKey(identity.privateKey || ""));
+    localStorage.setItem(storageKeys.fingerprint, String(identity.fingerprint || "").trim().toUpperCase());
+    localStorage.removeItem(storageKeys.publishedFingerprint);
+    localStorage.removeItem(storageKeys.composePromptCancelled);
+    clearClearedKeypairBackup();
+  }
+
+  function browserIdentitySnapshot() {
+    const keys = [
+      storageKeys.username,
+      storageKeys.publicKey,
+      storageKeys.privateKey,
+      storageKeys.fingerprint,
+      storageKeys.publishedFingerprint,
+      storageKeys.composePromptCancelled,
+    ];
+    const snapshot = {};
+    keys.forEach(function (key) {
+      const value = localStorage.getItem(key);
+      if (value !== null) {
+        snapshot[key] = String(value);
+      }
+    });
+    return snapshot;
+  }
+
+  function restoreBrowserIdentitySnapshot(snapshot) {
+    [
+      storageKeys.username,
+      storageKeys.publicKey,
+      storageKeys.privateKey,
+      storageKeys.fingerprint,
+      storageKeys.publishedFingerprint,
+      storageKeys.composePromptCancelled,
+    ].forEach(function (key) {
+      if (Object.prototype.hasOwnProperty.call(snapshot, key)) {
+        localStorage.setItem(key, snapshot[key]);
+      } else {
+        localStorage.removeItem(key);
+      }
+    });
+  }
+
   function scheduleIdentityPrewarm(root) {
     if (identityPrewarmStarted || !pageHasSignedActionSurfaces(root)) {
       return false;
@@ -1540,8 +1847,12 @@
     const privateKeyViewer = root.querySelector('[data-role="private-key-viewer"]');
     const publicKeyViewer = root.querySelector('[data-role="public-key-viewer"]');
     const identityIdField = root.querySelector('[data-role="identity-id-field"]');
-    const profileLink = root.querySelector('[data-role="profile-link"]');
-    const profileLinkWrap = root.querySelector('[data-role="profile-link-wrap"]');
+    const profileLinks = root.querySelectorAll
+      ? Array.from(root.querySelectorAll('[data-role="profile-link"]'))
+      : [root.querySelector('[data-role="profile-link"]')].filter(Boolean);
+    const profileLinkWraps = root.querySelectorAll
+      ? Array.from(root.querySelectorAll('[data-role="profile-link-wrap"]'))
+      : [root.querySelector('[data-role="profile-link-wrap"]')].filter(Boolean);
 
     if (publicKeyField && !publicKeyField.value) {
       publicKeyField.value = publicKey;
@@ -1563,15 +1874,13 @@
       identityIdField.textContent = fingerprint ? `openpgp:${fingerprint}` : "none";
     }
 
-    if (profileLink && profileLinkWrap) {
-      if (fingerprint) {
-        profileLink.href = `/profiles/openpgp-${fingerprint}`;
-        profileLinkWrap.hidden = false;
-      } else {
-        profileLink.href = "/account/key/";
-        profileLinkWrap.hidden = true;
-      }
-    }
+    profileLinks.forEach(function (profileLink) {
+      profileLink.href = fingerprint ? `/profiles/openpgp-${fingerprint}` : "/account/key/";
+      profileLink.textContent = fingerprint ? "View profile" : "Open profile";
+    });
+    profileLinkWraps.forEach(function (profileLinkWrap) {
+      profileLinkWrap.hidden = !fingerprint;
+    });
 
     renderUndoState(root);
   }
@@ -1648,25 +1957,12 @@
 
   async function publishPublicKey(root, timing) {
     const publicKey = localStorage.getItem(storageKeys.publicKey) || "";
-    const username = localStorage.getItem(storageKeys.username) || "guest";
     const fingerprint = await ensureStoredFingerprint();
     if (!publicKey) {
       throw new Error("No browser public key is available to publish.");
     }
 
-    markActionTiming(timing, "forum_link_identity_fetch_start");
-    const response = await fetch(`/api/link_identity`, {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-      },
-      body: new URLSearchParams({ public_key: publicKey }).toString(),
-    });
-    const text = await response.text();
-    markActionTiming(timing, "forum_link_identity_response");
-
-    if (text.includes("status=ok") || text.includes("Identity already exists for this fingerprint.")) {
+    if (await serverKnowsCurrentIdentity(fingerprint)) {
       if (fingerprint) {
         localStorage.setItem(storageKeys.publishedFingerprint, fingerprint);
       }
@@ -1675,8 +1971,89 @@
       return;
     }
 
-    const failure = classifyIdentityBootstrapFailure(parseApiErrorResponse(text));
-    throw buildFriendlyError(failure.friendlyMessage, failure.technicalDetails);
+    markActionTiming(timing, "forum_link_identity_fetch_start");
+    let preparedResponse;
+    try {
+      preparedResponse = await fetch(`/api/prepare_identity`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
+        body: new URLSearchParams({ public_key: publicKey }).toString(),
+      });
+    } catch (error) {
+      // Older installations may not expose the signed identity endpoints yet.
+      const legacyResponse = await fetch(`/api/link_identity`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
+        body: new URLSearchParams({ public_key: publicKey }).toString(),
+      });
+      if (!legacyResponse.ok) {
+        throw buildFriendlyError(
+          "Could not verify the new browser key automatically. Open /account/key/ to finish manually.",
+          "Unable to inspect OpenPGP public key."
+        );
+      }
+      if (fingerprint) {
+        localStorage.setItem(storageKeys.publishedFingerprint, fingerprint);
+      }
+      await syncIdentityHint(preferredIdentityHint(), timing);
+      renderSavedState(root);
+      return;
+    }
+    const preparedText = await preparedResponse.text();
+    markActionTiming(timing, "forum_link_identity_response");
+
+    let prepared;
+    try {
+      prepared = JSON.parse(preparedText);
+    } catch (error) {
+      prepared = null;
+    }
+    if (!prepared || prepared.status !== "ok") {
+      const rawError = prepared && prepared.error ? String(prepared.error) : "Unable to prepare browser identity.";
+      if (rawError === "Identity already exists for this fingerprint.") {
+        localStorage.setItem(storageKeys.publishedFingerprint, fingerprint);
+        await syncIdentityHint(preferredIdentityHint(), timing);
+        renderSavedState(root);
+        return;
+      }
+      throw new Error(rawError);
+    }
+
+    const detachedSignature = await signCanonicalRecord(String(prepared.canonical_record || ""));
+    const finalizedResponse = await fetch(`/api/create_identity`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
+      body: new URLSearchParams({
+        prepare_token: String(prepared.prepare_token || ""),
+        canonical_record: String(prepared.canonical_record || ""),
+        detached_signature: detachedSignature,
+      }).toString(),
+    });
+    const finalizedText = await finalizedResponse.text();
+    let finalized;
+    try {
+      finalized = JSON.parse(finalizedText);
+    } catch (error) {
+      finalized = null;
+    }
+    if (!finalized || finalized.status !== "ok") {
+      throw new Error(finalized && finalized.error ? String(finalized.error) : "Unable to finalize browser identity.");
+    }
+
+    if (fingerprint) {
+      localStorage.setItem(storageKeys.publishedFingerprint, fingerprint);
+    }
+    await syncIdentityHint(preferredIdentityHint(), timing);
+    renderSavedState(root);
   }
 
   async function publishPublicKeyWithRetry(root, timing) {
@@ -1702,32 +2079,34 @@
       return false;
     }
 
-    const response = await fetch(
-      `/api/get_profile?profile_slug=${encodeURIComponent(profileSlug)}`,
-      {
-        method: "GET",
-        credentials: "same-origin",
-      }
-    );
+    try {
+      const response = await fetch(
+        `/api/get_profile?profile_slug=${encodeURIComponent(profileSlug)}`,
+        {
+          method: "GET",
+          credentials: "same-origin",
+        }
+      );
 
-    return response.ok;
+      return response.ok;
+    } catch (error) {
+      return false;
+    }
   }
 
   async function ensureStoredFingerprint() {
     const existing = localStorage.getItem(storageKeys.fingerprint) || "";
-    if (existing) {
-      return existing;
-    }
-
     const publicKey = localStorage.getItem(storageKeys.publicKey) || "";
     if (!publicKey) {
-      return "";
+      return existing;
     }
 
     const openpgp = await ensureOpenPgpApi(["readKey"]);
     const key = await openpgp.readKey({ armoredKey: publicKey });
     const fingerprint = String(key.getFingerprint()).toUpperCase();
-    localStorage.setItem(storageKeys.fingerprint, fingerprint);
+    if (fingerprint && fingerprint !== existing.trim().toUpperCase()) {
+      localStorage.setItem(storageKeys.fingerprint, fingerprint);
+    }
 
     return fingerprint;
   }
@@ -1789,12 +2168,23 @@
       classifyIdentityBootstrapFailure: classifyIdentityBootstrapFailure,
       statusFromError: statusFromError,
       ensureOpenPgpApi: ensureOpenPgpApi,
+      deriveIdentityFromPrivateKey: deriveIdentityFromPrivateKey,
+      saveImportedBrowserIdentity: saveImportedBrowserIdentity,
+      readClipboardText: readClipboardText,
     };
   }
 
+  function composeAuthorIdentityField(form) {
+    return form.querySelector('[name="author_identity_id"]') || form.querySelector('input[name="author_identity_id"]');
+  }
+
   function ensureComposeAuthorIdentity(form) {
-    let field = form.querySelector('input[name="author_identity_id"]');
+    let field = composeAuthorIdentityField(form);
     if (!field) {
+      if (!form || typeof form.appendChild !== "function") {
+        return;
+      }
+
       field = document.createElement("input");
       field.type = "hidden";
       field.name = "author_identity_id";
@@ -1802,6 +2192,15 @@
     }
 
     field.value = currentAuthorIdentityId();
+  }
+
+  async function ensureCurrentComposeAuthorIdentity(form) {
+    if (hasBrowserKeypair()) {
+      await ensureStoredFingerprint();
+    }
+
+    ensureComposeAuthorIdentity(form);
+    return currentAuthorIdentityId();
   }
 
   function rootIsBrowserSigningBound(root) {
@@ -1850,11 +2249,22 @@
     const undoClearLink = root.querySelector('[data-action="undo-clear-browser-key"]');
     const copyPublicButton = root.querySelector('[data-action="copy-public-key"]');
     const copyPrivateButton = root.querySelector('[data-action="copy-private-key"]');
+    const restorePrivateButton = root.querySelector('[data-action="restore-private-key"]');
 
     renderSavedState(root);
     if (hasBrowserKeypair()) {
       void syncIdentityHint(preferredIdentityHint());
     }
+
+    window.addEventListener("pageshow", function () {
+      renderSavedState(root);
+      if (hasBrowserKeypair()) {
+        void ensureStoredFingerprint().then(function () {
+          renderSavedState(root);
+          return syncIdentityHint(preferredIdentityHint());
+        }).catch(function () {});
+      }
+    });
 
     if (generateButton) {
       generateButton.addEventListener("click", async function () {
@@ -1888,6 +2298,43 @@
           publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
         }
         setStatus(statusNode, "Loaded the saved browser public key into the form.", "ok");
+      });
+    }
+
+    if (restorePrivateButton) {
+      restorePrivateButton.addEventListener("click", async function () {
+        const previousIdentity = browserIdentitySnapshot();
+        restorePrivateButton.disabled = true;
+
+        try {
+          setStatus(statusNode, "Reading private key from clipboard...", "info");
+          const clipboardText = await readClipboardText();
+          setStatus(statusNode, "Validating private key...", "info");
+          const identity = await deriveIdentityFromPrivateKey(clipboardText);
+          saveImportedBrowserIdentity(identity);
+          renderSavedState(root);
+          if (publicKeyField) {
+            publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
+          }
+
+          setStatus(statusNode, "Publishing your public key in the background...", "info");
+          await publishPublicKeyWithRetry(root);
+          if (publicKeyField) {
+            publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
+          }
+          setStatus(statusNode, `Restored browser keypair for ${identity.username}. Public key linked.`, "ok");
+        } catch (error) {
+          restoreBrowserIdentitySnapshot(previousIdentity);
+          renderSavedState(root);
+          if (publicKeyField) {
+            publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
+          }
+
+          const status = statusFromError(error, "Unable to restore browser private key.");
+          setStatus(statusNode, status.message, "error", { technicalDetails: status.technicalDetails });
+        } finally {
+          restorePrivateButton.disabled = false;
+        }
       });
     }
 
@@ -2278,15 +2725,13 @@
         insertPendingReplyCard(root, pendingCard);
         clearedDraft = clearComposeDraftForPendingSubmit(form);
 
-        setStatus(statusNode, "Signing reply...", "ok");
-        markActionTiming(timing, "forum_signing_start");
-        const detachedSignature = await signCanonicalRecord(prepared.canonicalRecord);
-        markActionTiming(timing, "forum_signing_complete");
-
         setStatus(statusNode, "Posting signed reply...", "ok");
-        const result = await finalizePreparedPost(fields, prepared, detachedSignature);
+        let result = await signAndFinalizePreparedPost(fields, prepared, timing);
+        result = await recoverSignedPreparedPostIfNeeded(form, prepareReplyFormForSigning, fields, timing, result, function () {
+          setStatus(statusNode, "Refreshing signature and retrying reply...", "ok");
+        });
         markActionTiming(timing, "forum_response_received");
-        timing.serverTiming = Object.assign({}, prepared.serverTiming || {}, result.serverTiming || {});
+        timing.serverTiming = result.serverTiming || {};
         if (!result.ok) {
           throw new Error(result.error);
         }
@@ -2334,15 +2779,13 @@
         insertPendingThreadShell(root, pendingShell);
         clearedDraft = clearComposeDraftForPendingSubmit(form);
 
-        setStatus(statusNode, "Signing thread...", "ok");
-        markActionTiming(timing, "forum_signing_start");
-        const detachedSignature = await signCanonicalRecord(prepared.canonicalRecord);
-        markActionTiming(timing, "forum_signing_complete");
-
         setStatus(statusNode, "Creating signed thread...", "ok");
-        const result = await finalizePreparedPost(fields, prepared, detachedSignature);
+        let result = await signAndFinalizePreparedPost(fields, prepared, timing);
+        result = await recoverSignedPreparedPostIfNeeded(form, prepareThreadFormForSigning, fields, timing, result, function () {
+          setStatus(statusNode, "Refreshing signature and retrying thread...", "ok");
+        });
         markActionTiming(timing, "forum_response_received");
-        timing.serverTiming = Object.assign({}, prepared.serverTiming || {}, result.serverTiming || {});
+        timing.serverTiming = result.serverTiming || {};
         if (!result.ok) {
           throw new Error(result.error);
         }
@@ -2385,8 +2828,12 @@
     }
 
     function clearComposeAuthorIdentity(form) {
-      let field = form.querySelector('input[name="author_identity_id"]');
+      let field = composeAuthorIdentityField(form);
       if (!field) {
+        if (!form || typeof form.appendChild !== "function") {
+          return;
+        }
+
         field = document.createElement("input");
         field.type = "hidden";
         field.name = "author_identity_id";
@@ -2399,6 +2846,21 @@
     function shouldHonorRecentlyClearedDraft() {
       return recentlyClearedComposeDraftKey() === draftKey;
     }
+
+    function refreshComposeIdentityFromStorage() {
+      ensureComposeAuthorIdentity(form);
+      renderIdentityPreparationState(root, identityPreparationState());
+      if (!hasBrowserKeypair()) {
+        return;
+      }
+
+      void ensureStoredFingerprint().then(function () {
+        ensureComposeAuthorIdentity(form);
+        renderIdentityPreparationState(root, identityPreparationState());
+      }).catch(function () {});
+    }
+
+    refreshComposeIdentityFromStorage();
 
     if (hasBrowserKeypair()) {
       void syncIdentityHint(preferredIdentityHint());
@@ -2539,9 +3001,11 @@
     window.addEventListener("pageshow", function () {
       clearPendingComposeArtifacts(root, form);
       clearTransientComposeStatus();
+      refreshComposeIdentityFromStorage();
 
       if (shouldHonorRecentlyClearedDraft()) {
         resetComposeFormToServerState();
+        refreshComposeIdentityFromStorage();
         clearRecentlyClearedComposeDraftKey();
         normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
         return;

@@ -32,6 +32,8 @@ fwrite(STDOUT, "  crontab -e\n");
 fwrite(STDOUT, "  " . $cronLine . "\n");
 fwrite(STDOUT, "\nCheck before/after:\n");
 fwrite(STDOUT, "  ./v3 private-config view\n");
+fwrite(STDOUT, "  ./v3 agent-reply test\n");
+fwrite(STDOUT, "  ./v3 agent-reply test-local\n");
 fwrite(STDOUT, "  php scripts/run_agent_reply_requests.php --dry-run\n");
 fwrite(STDOUT, "  tail -f " . shellEscapeForCron($logPath) . "\n");
 fwrite(STDOUT, "\nNotes:\n");
@@ -48,6 +50,7 @@ function printUsage(): void
     fwrite(STDOUT, <<<'TEXT'
 Usage:
   php scripts/agent_reply_cron_reference.php [--log=/var/log/forum-agent-replies.log]
+  ./v3 agent-reply cron [--log=/var/log/forum-agent-replies.log]
 
 Prints a concise reference for installing the queued agent reply request cron job.
 It does not install or modify the crontab.

@@ -80,6 +80,9 @@ final class AssetFingerprint
             if ($entry === '.' || $entry === '..') {
                 continue;
             }
+            if (self::isFingerprintedAssetFilename($entry)) {
+                continue;
+            }
 
             $sourcePath = $sourceAssetRoot . '/' . $entry;
             if (!is_file($sourcePath)) {
@@ -106,5 +109,10 @@ final class AssetFingerprint
         }
 
         return substr($hash, 0, self::HASH_LENGTH);
+    }
+
+    private static function isFingerprintedAssetFilename(string $filename): bool
+    {
+        return preg_match('/\.[a-f0-9]{12}\.[A-Za-z0-9]+$/', $filename) === 1;
     }
 }

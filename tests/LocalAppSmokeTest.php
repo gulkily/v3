@@ -5,11 +5,14 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
+use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
+use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\Host\FrontController;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
+use ForumRewrite\Write\StaticArtifactInvalidator;
 
 final class LocalAppSmokeTest
 {
@@ -45,6 +48,31 @@ final class LocalAppSmokeTest
         assertStringMatches('#^/assets/site\.[a-f0-9]{12}\.css$#', $siteCssPath);
         assertSame($publicRoot . '/assets/site.css', AssetFingerprint::sourcePathForFingerprint($publicRoot, $siteCssPath));
         assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/site.000000000000.css'));
+    }
+
+    public function testAssetFingerprintCopySkipsAlreadyFingerprintedSourceFiles(): void
+    {
+        $sourceRoot = sys_get_temp_dir() . '/forum-rewrite-source-assets-' . bin2hex(random_bytes(6));
+        $targetRoot = sys_get_temp_dir() . '/forum-rewrite-target-assets-' . bin2hex(random_bytes(6));
+        mkdir($sourceRoot . '/assets', 0777, true);
+        file_put_contents($sourceRoot . '/assets/site.css', 'body { color: #111; }');
+        file_put_contents($sourceRoot . '/assets/site.123456789abc.css', 'body { color: #222; }');
+
+        try {
+            AssetFingerprint::copyFingerprintedAssets($sourceRoot, $targetRoot);
+
+            $copied = array_values(array_filter(
+                scandir($targetRoot . '/assets') ?: [],
+                static fn (string $entry): bool => $entry !== '.' && $entry !== '..'
+            ));
+
+            assertSame(1, count($copied));
+            assertStringMatches('#^site\.[a-f0-9]{12}\.css$#', $copied[0]);
+            assertStringNotContains('123456789abc', $copied[0]);
+        } finally {
+            $this->deleteTree($sourceRoot);
+            $this->deleteTree($targetRoot);
+        }
     }
 
     public function testUnicodeRiskBackfillScansExistingPostsDeterministically(): void
@@ -117,7 +145,7 @@ final class LocalAppSmokeTest
     {
         $output = $this->runCommand(
             dirname(__DIR__),
-            './v3 agent-reply-cron --log=/tmp/forum-agent-replies-test.log'
+            './v3 agent-reply cron --log=/tmp/forum-agent-replies-test.log'
         );
 
         assertStringContains('Agent reply request cron reference', $output);
@@ -126,8 +154,59 @@ final class LocalAppSmokeTest
         assertStringContains('php scripts/run_agent_reply_requests.php --quiet --limit=10', $output);
         assertStringContains('/tmp/forum-agent-replies-test.log', $output);
         assertStringContains('./v3 private-config view', $output);
+        assertStringContains('./v3 agent-reply test', $output);
+        assertStringContains('./v3 agent-reply test-local', $output);
         assertStringContains('php scripts/run_agent_reply_requests.php --dry-run', $output);
         assertStringContains('worker exits cleanly if a previous run is still active', $output);
+    }
+
+    public function testAgentReplyStatusCommandShowsSkippedReasonAndAnalysisFailure(): void
+    {
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-agent-status-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $postId = 'root-agent-status';
+        $contentHash = 'hash-agent-status';
+
+        try {
+            (new SqlitePostAnalysisStore($pdo))->saveFailed($postId, $contentHash, 'provider_error', 'Dedalus request failed.', [
+                'request' => [
+                    'url' => 'https://api.dedaluslabs.ai/v1/chat/completions',
+                    'body' => '{"model":"openai/gpt-5-nano"}',
+                ],
+                'response' => [
+                    'status_code' => 400,
+                    'body' => '{"error":{"message":"bad request"}}',
+                ],
+            ]);
+            (new SqliteAgentReplyGenerationStore($pdo))->markSkipped($postId, $contentHash, 'analysis_not_complete', [
+                'reason' => 'analysis_not_complete',
+                'analysis_status' => 'failed',
+                'failure_code' => 'provider_error',
+                'failure_message' => 'Dedalus request failed.',
+            ]);
+
+            $output = $this->runCommand(
+                dirname(__DIR__),
+                './v3 agent-reply status ' . escapeshellarg($postId) . ' --database-path=' . escapeshellarg($databasePath)
+            );
+
+            assertStringContains('Agent reply status', $output);
+            assertStringContains('target_post_id: ' . $postId, $output);
+            assertStringContains('reply_status: skipped', $output);
+            assertStringContains('reply_failure: analysis_not_complete', $output);
+            assertStringContains('skip_details:', $output);
+            assertStringContains('failure_code: provider_error', $output);
+            assertStringContains('failure_message: Dedalus request failed.', $output);
+            assertStringContains('analysis:', $output);
+            assertStringContains('status: failed', $output);
+            assertStringContains('provider_diagnostics:', $output);
+            assertStringContains('request.url: https://api.dedaluslabs.ai/v1/chat/completions', $output);
+            assertStringContains('request.body: {"model":"openai/gpt-5-nano"}', $output);
+            assertStringContains('response.status_code: 400', $output);
+            assertStringContains('response.body: {"error":{"message":"bad request"}}', $output);
+        } finally {
+            @unlink($databasePath);
+        }
     }
 
     public function testInjectApprovalScriptSeedsIdentity(): void
@@ -166,6 +245,11 @@ final class LocalAppSmokeTest
         $_POST = [];
         $targetIdentityId = $this->extractResponseValue($response, 'identity_id');
         $targetProfileSlug = $this->extractResponseValue($response, 'profile_slug');
+        $unapprovedProfile = $this->render($application, '/profiles/' . $targetProfileSlug);
+
+        assertStringContains('Approved:</strong> no', $unapprovedProfile);
+        assertStringContains('Public key', $unapprovedProfile);
+        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $unapprovedProfile);
 
         $command = sprintf(
             '%s approval approve %s %s %s %s %s',
@@ -179,10 +263,14 @@ final class LocalAppSmokeTest
         exec($command, $output, $exitCode);
 
         $profile = $this->render($application, '/api/get_profile?profile_slug=' . rawurlencode($targetProfileSlug));
+        $approvedProfile = $this->render($application, '/profiles/' . $targetProfileSlug);
 
         assertSame(0, $exitCode);
         assertStringContains('Approved ' . $targetIdentityId, implode("\n", $output));
         assertStringContains('Approved: yes', $profile);
+        assertStringContains('Approved:</strong> yes', $approvedProfile);
+        assertStringContains('Public key', $approvedProfile);
+        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $approvedProfile);
     }
 
     public function testInjectApprovalScriptRejectsMissingApproveArguments(): void
@@ -199,6 +287,33 @@ final class LocalAppSmokeTest
         assertStringContains('Missing required argument: approver_identity_id.', $combinedOutput);
         assertStringContains('Usage:', $combinedOutput);
         assertStringNotContains('PHP Fatal error', $combinedOutput);
+    }
+
+    public function testCodexHandoffEligibilityRequiresApprovedLocalhostViewer(): void
+    {
+        $application = new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath);
+        $method = new ReflectionMethod(Application::class, 'viewerCanUseCodexHandoff');
+        $approvedViewer = ['is_approved' => 1];
+        $unapprovedViewer = ['is_approved' => 0];
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost:8000';
+            unset($_SERVER['SERVER_NAME'], $_SERVER['REMOTE_ADDR']);
+            assertSame(true, $method->invoke($application, $approvedViewer));
+            assertSame(false, $method->invoke($application, $unapprovedViewer));
+            assertSame(false, $method->invoke($application, null));
+
+            $_SERVER['HTTP_HOST'] = 'example.com';
+            $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+            assertSame(false, $method->invoke($application, $approvedViewer));
+
+            unset($_SERVER['HTTP_HOST'], $_SERVER['SERVER_NAME']);
+            $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+            assertSame(true, $method->invoke($application, $approvedViewer));
+        } finally {
+            $_SERVER = $originalServer;
+        }
     }
 
     public function testDeleteRecordCommandRemovesRecordCommitsAndRefreshesDerivedState(): void
@@ -370,6 +485,17 @@ final class LocalAppSmokeTest
         assertStringContains('inline-reply-identity-status', $thread);
         assertStringContains('method="post" action="/compose/reply" class="stack" data-compose-form data-compose-kind="reply"', $thread);
         assertStringContains('method="post" action="/compose/reply" class="stack" data-compose-form data-compose-kind="reply"', $composeReply);
+        assertStringContains('<h2 id="reply-context-title">Replying to</h2>', $composeReply);
+        assertStringContains('Post root-001</a>', $composeReply);
+        assertStringContains('First line preview.<br />', $composeReply);
+        assertStringContains('Second line body.', $composeReply);
+        assertStringNotContains('<h1>Compose Reply</h1>', $composeReply);
+        assertStringNotContains('Thread ID:', $composeReply);
+        assertStringNotContains('Parent ID:', $composeReply);
+        assertStringNotContains('<label>Body<textarea name="body"', $composeReply);
+        assertStringContains('aria-label="Body"', $composeReply);
+        assertStringContains('name="thread_id" value="root-001"', $composeReply);
+        assertStringContains('name="parent_id" value="root-001"', $composeReply);
         assertStringContains('name="thread_id" value="root-001"', $thread);
         assertStringContains('name="parent_id" value="root-001"', $thread);
         assertStringContains('type="hidden" name="board_tags" value="general"', $thread);
@@ -391,6 +517,10 @@ final class LocalAppSmokeTest
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $thread);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=reply-001', $thread);
         assertStringContains('First line preview.', $post);
+        assertStringContains('Public key', $thread);
+        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $thread);
+        assertStringContains('Public key', $post);
+        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $post);
         assertStringContains('by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $post);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $post);
         assertStringContains('Source:', $post);
@@ -402,7 +532,15 @@ final class LocalAppSmokeTest
         assertStringContains('zenmemes', $instance);
         assertStringContains('Backup', $backup);
         assertStringContains('Backup', $toolsBackup);
+        assertStringContains('Snapshot freshness', $instance);
+        assertStringContains('Generated at:', $instance);
+        assertStringContains('Recent included items', $instance);
+        assertStringContains('href="/activity/">See all recent activity</a>', $instance);
+        assertStringContains('Repository snapshot:', $instance);
+        assertStringContains('preview, not a complete archive listing', $instance);
+        assertStringContains('board-controls-nav', $toolsBackup);
         assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
+        assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
         assertStringContains('/user/guest', $instance);
         assertStringContains('/downloads/repository.tar.gz', $instance);
         assertStringContains('/downloads/repository.zip', $instance);
@@ -418,6 +556,8 @@ final class LocalAppSmokeTest
         assertStringContains('/activity/', $tools);
         assertStringContains('Recent forum activity across content, approvals, and identity events.', $tools);
         assertStringContains('class="nav-link is-active" href="/tools/"', $tools);
+        assertStringContains('board-controls-nav', $tools);
+        assertSame(1, substr_count($tools, 'href="/tools/">Tools</a>'));
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/tools/codebase/', $tools);
@@ -426,19 +566,27 @@ final class LocalAppSmokeTest
         assertStringContains('Registered site feature flags, defaults, effective values, and override sources.', $tools);
         assertStringContains('/account/key/', $tools);
         assertStringContains('System State', $codebase);
+        assertStringContains('<strong>Name:</strong> zenmemes', $codebase);
+        assertStringContains('<strong>Admin:</strong>', $codebase);
+        assertStringContains('grep &#039;^Instance-Name:&#039; state/local_repository/records/instance/public.txt', $codebase);
+        assertStringContains("SELECT username_token, MIN(username) AS username FROM profiles WHERE approved_by_label = &#039;root&#039; GROUP BY username_token ORDER BY username_token ASC;", $codebase);
+        assertStringContains('board-controls-nav', $codebase);
         assertStringContains('class="nav-link is-active" href="/tools/codebase/"', $codebase);
+        assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $codebase);
         assertStringContains('Repository head', $codebase);
         assertStringContains('Read model', $codebase);
         assertStringContains('Schema version', $codebase);
         assertStringContains('Lock status', $codebase);
         assertStringContains('Read-model rows', $codebase);
-        assertStringContains('git -C REPOSITORY rev-parse HEAD', $codebase);
-        assertStringContains("SELECT value FROM metadata WHERE key = &#039;schema_version&#039;", $codebase);
-        assertStringContains('flock DATABASE_DIR/forum-rewrite.lock', $codebase);
-        assertStringContains('SELECT COUNT(*) FROM posts', $codebase);
+        assertStringContains('git -C state/local_repository rev-parse HEAD', $codebase);
+        assertStringContains("SELECT value FROM metadata WHERE key = &#039;schema_version&#039;;", $codebase);
+        assertStringContains('flock -n state/cache/forum-rewrite.lock -c true', $codebase);
+        assertStringContains('SELECT COUNT(*) FROM posts;', $codebase);
         assertStringContains('/downloads/repository.tar.gz', $codebase);
         assertStringContains('Feature Flags', $featureFlags);
+        assertStringContains('board-controls-nav', $featureFlags);
         assertStringContains('class="nav-link is-active" href="/tools/feature-flags/"', $featureFlags);
+        assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $featureFlags);
         assertFingerprintedAsset($featureFlags, 'feature_flags.js');
         assertStringContains('FORUM_UNICODE_AUTHORED_TEXT', $featureFlags);
         assertStringContains('FORUM_EMOJI_AUTHORED_TEXT', $featureFlags);
@@ -454,6 +602,8 @@ final class LocalAppSmokeTest
         assertStringContains('continuous social graph', $about);
         assertStringContains('/tools/backup/', $about);
         assertStringContains('Identity ID', $profile);
+        assertStringContains('Public key', $profile);
+        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $profile);
         assertStringContains('Approved by:</strong>', $profile);
         assertStringContains('root', $profile);
         assertStringContains('User guest', $username);
@@ -517,10 +667,13 @@ final class LocalAppSmokeTest
         assertStringContains('data-role="compose-identity-status" hidden', $composeThread);
         assertStringContains('data-action="submit-anonymous-compose"', $composeThread);
         assertStringContains('Bookmarklets', $bookmarklets);
+        assertStringContains('board-controls-nav', $bookmarklets);
         assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
+        assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $bookmarklets);
         assertFingerprintedAsset($bookmarklets, 'tools_bookmarklets.js');
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
-        assertStringContains('Thread ID:', $composeReply);
+        assertStringNotContains('Thread ID:', $composeReply);
+        assertStringNotContains('Parent ID:', $composeReply);
         assertFingerprintedAsset($composeReply, 'browser_signing.js');
         assertStringNotContains('/assets/inline_reply_form.js', $composeReply);
         assertStringContains('data-role="compose-identity-status" hidden', $composeReply);
@@ -554,6 +707,24 @@ final class LocalAppSmokeTest
         assertStringContains('GET /about/', $llms);
         assertStringContains('POST /api/analyze_post', $llms);
         assertStringContains('GET /api/list_index', $llms);
+    }
+
+    public function testBootstrapPostShowsUnavailablePublicKeyWhenProfileKeyIsEmpty(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $pdo = new PDO('sqlite:' . $this->databasePath);
+        $pdo->exec("UPDATE profiles SET public_key = '' WHERE profile_slug = 'openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'");
+
+        $post = $this->render($application, '/posts/root-001');
+
+        assertStringContains('Public key unavailable.', $post);
+        assertStringNotContains('BEGIN PGP PUBLIC KEY BLOCK', $post);
     }
 
     public function testPostAndActivityLinkAdjacentSignatureFiles(): void
@@ -728,7 +899,7 @@ final class LocalAppSmokeTest
         assertStringContains('status=ready', $readModelStatus);
         assertStringContains('lock_status=unlocked', $readModelStatus);
         assertStringContains('stale_marker=absent', $readModelStatus);
-        assertStringContains('schema_version=12', $readModelStatus);
+        assertStringContains('schema_version=13', $readModelStatus);
         assertStringContains('<rss version="2.0">', $boardRss);
         assertStringContains('<title>Hello world</title>', $threadRss);
         assertStringContains('<pubDate>Fri, 10 Apr 2026 12:05:00 +0000</pubDate>', $threadRss);
@@ -895,7 +1066,9 @@ final class LocalAppSmokeTest
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/tools/feature-flags/', $tools);
         assertFingerprintedAsset($bookmarklets, 'tools_bookmarklets.js');
+        assertStringContains('board-controls-nav', $bookmarklets);
         assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
+        assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $bookmarklets);
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
         assertStringContains('window.getSelection().toString().trim()', $bookmarkletAsset);
         assertStringContains('value="Saved Title"', $prefilledCompose);
@@ -999,10 +1172,216 @@ final class LocalAppSmokeTest
         $repoArchive = $this->renderMethod($application, 'GET', '/downloads/repository.tar.gz');
         $repoZipArchive = $this->renderMethod($application, 'GET', '/downloads/repository.zip');
         $sqliteDatabase = $this->renderMethod($application, 'GET', '/downloads/read_model.sqlite3');
+        $queryPack = $this->renderMethod($application, 'GET', '/downloads/sqlite_query_catalog.sql');
 
         assertSame("\x1f\x8b", substr($repoArchive, 0, 2));
         assertSame("PK", substr($repoZipArchive, 0, 2));
         assertStringContains('SQLite format 3', substr($sqliteDatabase, 0, 32));
+        assertStringContains('-- SQLite Viewer Query Catalog', $queryPack);
+        assertStringContains('-- Board: Liked + Newest', $queryPack);
+    }
+
+    public function testSqliteViewerRouteUsesToolsShellAndPublishedSource(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $viewer = $this->render($application, '/tools/sqlite/');
+
+        assertStringContains('<h1>SQLite Viewer</h1>', $viewer);
+        assertStringContains('<section class="stack" data-sqlite-viewer>', $viewer);
+        assertStringContains('href="/downloads/read_model.sqlite3"', $viewer);
+        assertStringContains('href="/downloads/sqlite_query_catalog.sql"', $viewer);
+        assertStringContains('queries run locally', $viewer);
+        assertStringContains('class="nav-link is-active" href="/tools/sqlite/"', $viewer);
+        assertStringContains('href="/tools/sqlite/"', $this->render($application, '/tools/'));
+    }
+
+    public function testSqliteViewerLoadsLocalRuntimeAssets(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $viewer = $this->render($application, '/tools/sqlite/');
+        $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite_viewer.js');
+
+        assertStringMatches('#/assets/sql-wasm\.[a-f0-9]{12}\.js#', $viewer);
+        assertStringMatches('#/assets/sqlite_viewer\.[a-f0-9]{12}\.js#', $viewer);
+        assertTrue(is_file(dirname(__DIR__) . '/public/assets/sql-wasm.js'));
+        assertTrue(is_file(dirname(__DIR__) . '/public/assets/sql-wasm.wasm'));
+        assertStringContains('/downloads/read_model.sqlite3', $script);
+        assertStringContains('initSqlJs', $script);
+        assertStringContains('locateFile', $script);
+    }
+
+    public function testSqliteViewerIncludesSchemaExplorerContract(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $viewer = $this->render($application, '/tools/sqlite/');
+        $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite_viewer.js');
+
+        assertStringContains('data-role="sqlite-explorer"', $viewer);
+        assertStringContains('data-role="sqlite-table-select"', $viewer);
+        assertStringContains('data-role="sqlite-table-details"', $viewer);
+        assertStringContains('data-role="sqlite-table-preview"', $viewer);
+        assertStringContains('role="tablist"', $viewer);
+        assertStringContains('data-sqlite-tab="data"', $viewer);
+        assertStringContains('data-sqlite-tab="columns"', $viewer);
+        assertStringContains('id="sqlite-data-panel"', $viewer);
+        assertStringContains('id="sqlite-columns-panel"', $viewer);
+        assertStringContains('sqlite_master', $script);
+        assertStringContains('LIMIT 20', $script);
+        assertStringContains('PRAGMA table_info', $script);
+        assertStringContains('explorer.removeAttribute("hidden")', $script);
+        assertStringContains('activateTableTab("data")', $script);
+        assertStringContains('tablePreview.hidden = tabName !== "data"', $script);
+        assertStringContains('sqlite-sort-button', $script);
+        assertStringContains('aria-sort', $script);
+        assertStringContains('sortDirections', $script);
+        assertStringContains('var tablePage = 0', $script);
+        assertStringContains('var tableSortColumn = null', $script);
+        assertStringContains('ORDER BY " + quoteIdentifier', $script);
+        assertStringContains('onSort: function (columnIndex, direction)', $script);
+        assertStringContains('renderTable(tableName, 0)', $script);
+        assertStringContains('LIMIT " + (maxPreviewRows + 1) + " OFFSET " + (tablePage * maxPreviewRows)', $script);
+        assertStringContains('renderTable(tableName, tablePage + 1)', $script);
+        assertStringContains('renderTable(tableSelect.value, 0)', $script);
+        assertStringContains('aria-sort="ascending"', $css);
+        assertStringContains('aria-sort="descending"', $css);
+        assertStringContains('content: " ▲"', $css);
+        assertStringContains('content: " ▼"', $css);
+    }
+
+    public function testSqliteViewerIncludesPresetReadOnlyQueryContract(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $viewer = $this->render($application, '/tools/sqlite/');
+        $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite_viewer.js');
+
+        assertStringContains('data-role="sqlite-query-panel"', $viewer);
+        assertStringContains('data-role="sqlite-query-select"', $viewer);
+        assertStringContains('data-role="sqlite-query-input"', $viewer);
+        assertStringContains('data-action="run-sqlite-query"', $viewer);
+        assertStringContains('data-role="sqlite-effective-query" hidden', $viewer);
+        assertStringContains('data-role="sqlite-effective-count"', $viewer);
+        assertStringContains('data-role="sqlite-effective-data"', $viewer);
+        assertStringContains('class="sqlite-query-bottom"', $viewer);
+        assertStringContains('data-role="sqlite-query-pagination"', $viewer);
+        assertStringContains('<h2>Run query</h2>', $viewer);
+        assertStringContains('Recent posts', $script);
+        assertStringContains('Board: Liked + Newest', $script);
+        assertStringContains('json_each(threads.board_tags_json)', $script);
+        assertStringContains('posts.post_score_total >= 0', $script);
+        assertStringContains('author_username_token', $script);
+        assertStringContains('isSingleSelectQuery', $script);
+        assertStringContains('Only one read-only SELECT statement is allowed.', $script);
+        assertStringContains('database.exec(dataSql)', $script);
+        assertStringContains('queryPanel.removeAttribute("hidden")', $script);
+        assertStringContains('querySelect.value = "0"', $script);
+        assertStringContains('queryInput.value = presetQueries[0].sql', $script);
+        assertStringContains('queryButton.addEventListener("click", function ()', $script);
+        assertStringContains('queryPage = typeof page === "number"', $script);
+        assertStringContains('Query failed: ', $script);
+        assertStringContains('function renderEffectiveQuery(countSql, dataSql)', $script);
+        assertStringContains('effectiveCount.textContent = countSql', $script);
+        assertStringContains('effectiveData.textContent = dataSql', $script);
+        assertStringContains('var queryPagination = root.querySelector', $script);
+        assertStringContains('container: queryPagination', $script);
+        assertStringContains('var target = pagination.container || node', $script);
+        assertStringContains('function clearEffectiveQuery()', $script);
+        assertStringContains('No effective query was executed.', $script);
+        assertStringContains('effectiveQuery.setAttribute("hidden", "hidden")', $script);
+        assertStringContains('var countSql = "SELECT COUNT(*) AS total_rows FROM (" + normalized + ")"', $script);
+        assertStringContains('var dataSql = "SELECT * FROM (" + normalized + ") LIMIT " + (maxQueryRows + 1)', $script);
+        assertStringContains('database.exec(countSql)', $script);
+        assertStringContains('database.exec(dataSql)', $script);
+        assertStringContains('var queryPage = 0', $script);
+        assertStringContains('LIMIT " + (maxQueryRows + 1) + " OFFSET " + (queryPage * maxQueryRows)', $script);
+        assertStringContains('runQuery(queryPage + 1)', $script);
+        assertStringContains("queryInput.value = preset.sql;\n          runQuery();", $script);
+        assertStringContains('function renderPagination(node, pagination)', $script);
+        assertStringContains('className = "sqlite-pagination"', $script);
+        assertStringContains('Page " + (pagination.page + 1)', $script);
+        assertStringContains('pagination.pageSize', $script);
+        assertStringContains('recordRange', $script);
+        assertStringContains('"-" + Math.min', $script);
+        assertStringContains('pagination.totalPages', $script);
+        assertStringContains('pagination.totalRows', $script);
+        assertStringContains('function preserveScroll(callback)', $script);
+        assertStringContains('window.scrollTo(scrollX, scrollY)', $script);
+        assertStringContains('SELECT COUNT(*) AS total_rows FROM (" + normalized + ")', $script);
+        assertStringContains('previous.disabled = !pagination.hasPrevious', $script);
+        assertStringContains('next.disabled = !pagination.hasNext', $script);
+        assertStringContains('threads.root_post_id,\\n', $script);
+        assertStringContains('\\n       threads.root_post_created_at,\\n', $script);
+        assertStringContains('\\nFROM threads\\n', $script);
+    }
+
+    public function testSqliteViewerPlacesQueryRunnerBeforeTableExplorer(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $viewer = $this->render($application, '/tools/sqlite/');
+
+        assertTrue(strpos($viewer, 'data-role="sqlite-query-panel"') < strpos($viewer, 'data-role="sqlite-explorer"'));
+    }
+
+    public function testSqliteViewerCapsAndScrollsResultSurfaces(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $viewer = $this->render($application, '/tools/sqlite/');
+        $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite_viewer.js');
+        $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+
+        assertStringContains('sqlite-result-scroll', $viewer);
+        assertStringContains('maxPreviewRows = 25', $script);
+        assertStringContains('maxQueryRows = 25', $script);
+        assertStringContains('LIMIT " + (maxQueryRows + 1)', $script);
+        assertStringContains('.sqlite-result-scroll', $css);
+        assertStringContains('[data-role="sqlite-explorer"]', $css);
+        assertStringContains('[data-role="sqlite-query-panel"]', $css);
+        assertStringContains('width: calc(100vw - 2rem)', $css);
+        assertStringContains('margin-left: calc(50% - 50vw + 1rem)', $css);
+        assertStringContains('[data-role="sqlite-table-details"] table', $css);
+        assertStringContains('min-width: 0', $css);
+        assertStringContains('width: max-content', $css);
+        assertStringContains('overflow-x: auto', $css);
+        assertStringContains('.sqlite-pagination', $css);
+        assertStringContains('flex: 0 0 100%', $css);
+        assertStringContains('[data-role="sqlite-effective-query"] summary', $css);
+        assertStringContains('text-align: right', $css);
+        assertStringContains('.sqlite-pagination button', $css);
+        assertStringContains('width: auto', $css);
+        assertStringContains('.sqlite-cell-toggle', $css);
+        assertStringContains('aria-expanded', $script);
+        assertStringContains('Click to expand this value', $script);
+        assertStringContains('aria-live', $script);
     }
 
     public function testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp(): void
@@ -1281,6 +1660,10 @@ final class LocalAppSmokeTest
         assertStringContains('Users', $usersResponse);
         assertStringContains('route-source: static-html', $usersResponse);
 
+        $usersNoSlashResponse = $this->renderFrontController($controller, 'GET', '/users', []);
+        assertSame($usersResponse, $usersNoSlashResponse);
+        assertStringContains('route-source: static-html', $usersNoSlashResponse);
+
         $tagsResponse = $this->renderFrontController($controller, 'GET', '/tags/', []);
         assertStringContains('class="nav-link is-active" href="/tags/"', $tagsResponse);
         assertStringContains('route-source: static-html', $tagsResponse);
@@ -1393,6 +1776,92 @@ final class LocalAppSmokeTest
         assertStringContains('site_feature_flag', $activityResponse);
         assertStringContains('Set feature flag FORUM_APP_VERSION_NOTIFICATION=false', $activityResponse);
         assertStringNotContains('stale activity', $activityResponse);
+    }
+
+    public function testUsersStaticArtifactsAreInvalidatedByDirectoryAffectingWrites(): void
+    {
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        mkdir($publicRoot . '/users', 0777, true);
+        mkdir($staticHtmlRoot . '/users', 0777, true);
+
+        $invalidations = [
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateBoardThread('thread-001');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateReply('thread-001', 'reply-001');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateProfile('openpgp-example');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateIdentityLink('openpgp-example', 'thread-001', 'post-001');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateApproval('openpgp-example', 'thread-001', 'post-001', 'approval-001');
+            },
+        ];
+
+        try {
+            foreach ($invalidations as $invalidate) {
+                file_put_contents($publicRoot . '/users.html', 'stale public users');
+                file_put_contents($publicRoot . '/users/index.html', 'stale public users index');
+                file_put_contents($staticHtmlRoot . '/users.html', 'stale alternate users');
+                file_put_contents($staticHtmlRoot . '/users/index.html', 'stale alternate users index');
+
+                $invalidate(new StaticArtifactInvalidator($publicRoot, $staticHtmlRoot));
+
+                assertFalse(is_file($publicRoot . '/users.html'));
+                assertFalse(is_file($publicRoot . '/users/index.html'));
+                assertFalse(is_file($staticHtmlRoot . '/users.html'));
+                assertFalse(is_file($staticHtmlRoot . '/users/index.html'));
+            }
+        } finally {
+            $this->deleteTree($publicRoot);
+            $this->deleteTree($staticHtmlRoot);
+        }
+    }
+
+    public function testBackupStaticArtifactsAreInvalidatedByContentWrites(): void
+    {
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        mkdir($staticHtmlRoot . '/instance', 0777, true);
+
+        try {
+            foreach ([
+                static function (StaticArtifactInvalidator $invalidator): void {
+                    $invalidator->invalidateBoardThread('thread-001');
+                },
+                static function (StaticArtifactInvalidator $invalidator): void {
+                    $invalidator->invalidateReply('thread-001', 'reply-001');
+                },
+                static function (StaticArtifactInvalidator $invalidator): void {
+                    $invalidator->invalidateIdentityLink('openpgp-example', 'thread-001', 'post-001');
+                },
+                static function (StaticArtifactInvalidator $invalidator): void {
+                    $invalidator->invalidateApproval('openpgp-example', 'thread-001', 'post-001', 'approval-001');
+                },
+            ] as $invalidate) {
+                mkdir($publicRoot, 0777, true);
+                file_put_contents($publicRoot . '/instance.html', 'stale public backup');
+                file_put_contents($publicRoot . '/activity.html', 'stale public activity');
+                file_put_contents($staticHtmlRoot . '/instance/index.html', 'stale alternate backup');
+                file_put_contents($staticHtmlRoot . '/activity.html', 'stale alternate activity');
+
+                $invalidate(new StaticArtifactInvalidator($publicRoot, $staticHtmlRoot));
+
+                assertFalse(is_file($publicRoot . '/instance.html'));
+                assertFalse(is_file($publicRoot . '/activity.html'));
+                assertFalse(is_file($staticHtmlRoot . '/instance/index.html'));
+                assertFalse(is_file($staticHtmlRoot . '/activity.html'));
+                rmdir($publicRoot);
+            }
+        } finally {
+            $this->deleteTree($publicRoot);
+            $this->deleteTree($staticHtmlRoot);
+        }
     }
 
     public function testDefaultRepositoryBootstrapCreatesWritableLocalRepository(): void
