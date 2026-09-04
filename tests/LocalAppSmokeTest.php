@@ -1250,6 +1250,10 @@ final class LocalAppSmokeTest
         assertStringContains('sqlite-sort-button', $script);
         assertStringContains('aria-sort', $script);
         assertStringContains('sortDirections', $script);
+        assertStringContains('var tablePage = 0', $script);
+        assertStringContains('LIMIT " + (maxPreviewRows + 1) + " OFFSET " + (tablePage * maxPreviewRows)', $script);
+        assertStringContains('renderTable(tableName, tablePage + 1)', $script);
+        assertStringContains('renderTable(tableSelect.value, 0)', $script);
         assertStringContains('aria-sort="ascending"', $css);
         assertStringContains('aria-sort="descending"', $css);
         assertStringContains('content: " ▲"', $css);
@@ -1322,7 +1326,7 @@ final class LocalAppSmokeTest
         assertStringContains('sqlite-result-scroll', $viewer);
         assertStringContains('maxQueryRows = 50', $script);
         assertStringContains('LIMIT " + maxQueryRows', $script);
-        assertStringContains('Showing the first " + maxRows + " rows.', $script);
+        assertStringContains('Showing " + maxRows + " rows per page.', $script);
         assertStringContains('.sqlite-result-scroll', $css);
         assertStringContains('[data-role="sqlite-explorer"]', $css);
         assertStringContains('[data-role="sqlite-query-panel"]', $css);

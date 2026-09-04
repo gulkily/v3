@@ -10,3 +10,14 @@
   - `php tests/run.php LocalAppSmokeTest::testSqliteViewerIncludesSchemaExplorerContract`
 - Notes:
   - Retrieval and page-state wiring are intentionally deferred to Stages 2–4.
+
+## Stage 2 - Paginate Explore tables data
+- Changes:
+  - Added table page state and local page retrieval with one lookahead row to determine whether Next is available.
+  - Reset table pagination when changing tables and retained safe identifier quoting.
+  - Updated the result message to describe per-page display limits.
+- Verification:
+  - `node --check public/assets/sqlite_viewer.js`
+  - `php tests/run.php LocalAppSmokeTest::testSqliteViewerIncludesSchemaExplorerContract LocalAppSmokeTest::testSqliteViewerCapsAndScrollsResultSurfaces`
+- Notes:
+  - Cross-page table sorting is handled in Stage 4; current sorting behavior remains available for rendered rows.

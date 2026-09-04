@@ -24,6 +24,7 @@
     var database = null;
     var maxPreviewRows = 20;
     var maxQueryRows = 50;
+    var tablePage = 0;
     var querySelectorPopulated = false;
     // BEGIN GENERATED SQLITE QUERY CATALOG
     var presetQueries = [
@@ -276,7 +277,7 @@
       if (maxRows && result.values.length > maxRows) {
         var truncated = document.createElement("p");
         truncated.className = "meta";
-        truncated.textContent = "Showing the first " + maxRows + " rows.";
+        truncated.textContent = "Showing " + maxRows + " rows per page.";
         node.appendChild(truncated);
       }
       renderPagination(node, pagination);
@@ -286,16 +287,27 @@
       return '"' + identifier.replace(/"/g, '""') + '"';
     }
 
-    function renderTable(tableName) {
+    function renderTable(tableName, page) {
       if (!database || !tableName) {
         return;
       }
+      tablePage = page || 0;
       try {
         var quotedName = quoteIdentifier(tableName);
         var columns = database.exec("PRAGMA table_info(" + quotedName + ")")[0];
-        var rows = database.exec("SELECT * FROM " + quotedName + " LIMIT 20")[0];
+        var rows = database.exec("SELECT * FROM " + quotedName + " LIMIT " + (maxPreviewRows + 1) + " OFFSET " + (tablePage * maxPreviewRows))[0];
         renderRows(tableDetails, columns, "No column information is available.");
-        renderRows(tablePreview, rows, "This table has no rows.", maxPreviewRows, true);
+        renderRows(tablePreview, rows, "This table has no rows.", maxPreviewRows, true, {
+          page: tablePage,
+          hasPrevious: tablePage > 0,
+          hasNext: !!rows && rows.values.length > maxPreviewRows,
+          onPrevious: function () {
+            renderTable(tableName, tablePage - 1);
+          },
+          onNext: function () {
+            renderTable(tableName, tablePage + 1);
+          }
+        });
       } catch (error) {
         clearNode(tableDetails);
         clearNode(tablePreview);
@@ -324,12 +336,12 @@
         tableSelect.appendChild(option);
       });
       tableSelect.addEventListener("change", function () {
-        renderTable(tableSelect.value);
+        renderTable(tableSelect.value, 0);
       });
       if (explorer) {
         explorer.removeAttribute("hidden");
       }
-      renderTable(tableSelect.value);
+      renderTable(tableSelect.value, 0);
     }
 
     function populateQuerySelector() {
