@@ -179,7 +179,7 @@
       var position = document.createElement("span");
       position.className = "meta";
       position.setAttribute("aria-live", "polite");
-      position.textContent = "Page " + (pagination.page + 1);
+      position.textContent = "Page " + (pagination.page + 1) + " of " + pagination.totalPages + " · " + pagination.totalRows + " records";
 
       var next = document.createElement("button");
       next.type = "button";
@@ -193,6 +193,20 @@
       node.appendChild(navigation);
     }
 
+    function preserveScroll(callback) {
+      var scrollX = window.scrollX;
+      var scrollY = window.scrollY;
+      callback();
+      var restore = function () {
+        window.scrollTo(scrollX, scrollY);
+      };
+      if (window.requestAnimationFrame) {
+        window.requestAnimationFrame(restore);
+      } else {
+        window.setTimeout(restore, 0);
+      }
+    }
+
     function renderRows(node, result, emptyMessage, maxRows, sortable, pagination) {
       clearNode(node);
       if (!node) {
@@ -203,6 +217,7 @@
         empty.className = "meta";
         empty.textContent = emptyMessage;
         node.appendChild(empty);
+        renderPagination(node, pagination);
         return;
       }
 
@@ -327,6 +342,9 @@
       try {
         var quotedName = quoteIdentifier(tableName);
         var columns = database.exec("PRAGMA table_info(" + quotedName + ")")[0];
+        var totalRowsResult = database.exec("SELECT COUNT(*) AS total_rows FROM " + quotedName)[0];
+        var totalRows = totalRowsResult && totalRowsResult.values.length > 0 ? Number(totalRowsResult.values[0][0]) : 0;
+        var totalPages = Math.max(1, Math.ceil(totalRows / maxPreviewRows));
         var orderBy = "";
         if (tableSortColumn !== null && columns && columns.values[tableSortColumn]) {
           orderBy = " ORDER BY " + quoteIdentifier(String(columns.values[tableSortColumn][1])) + " " + tableSortDirection;
@@ -338,17 +356,25 @@
           sortColumn: tableSortColumn,
           sortDirection: tableSortDirection === "DESC" ? "descending" : "ascending",
           hasPrevious: tablePage > 0,
-          hasNext: !!rows && rows.values.length > maxPreviewRows,
+          totalPages: totalPages,
+          totalRows: totalRows,
+          hasNext: tablePage + 1 < totalPages,
           onPrevious: function () {
-            renderTable(tableName, tablePage - 1);
+            preserveScroll(function () {
+              renderTable(tableName, tablePage - 1);
+            });
           },
           onNext: function () {
-            renderTable(tableName, tablePage + 1);
+            preserveScroll(function () {
+              renderTable(tableName, tablePage + 1);
+            });
           },
           onSort: function (columnIndex, direction) {
             tableSortColumn = columnIndex;
             tableSortDirection = direction === "descending" ? "DESC" : "ASC";
-            renderTable(tableName, 0);
+            preserveScroll(function () {
+              renderTable(tableName, 0);
+            });
           }
         });
       } catch (error) {
@@ -432,16 +458,25 @@
       }
       try {
         var normalized = query.trim().replace(/;+$/, "").trim();
+        var totalRowsResult = database.exec("SELECT COUNT(*) AS total_rows FROM (" + normalized + ")")[0];
+        var totalRows = totalRowsResult && totalRowsResult.values.length > 0 ? Number(totalRowsResult.values[0][0]) : 0;
+        var totalPages = Math.max(1, Math.ceil(totalRows / maxQueryRows));
         var result = database.exec("SELECT * FROM (" + normalized + ") LIMIT " + (maxQueryRows + 1) + " OFFSET " + (queryPage * maxQueryRows))[0];
         renderRows(queryResults, result, "The query returned no rows.", maxQueryRows, false, {
           page: queryPage,
+          totalPages: totalPages,
+          totalRows: totalRows,
           hasPrevious: queryPage > 0,
-          hasNext: !!result && result.values.length > maxQueryRows,
+          hasNext: queryPage + 1 < totalPages,
           onPrevious: function () {
-            runQuery(queryPage - 1);
+            preserveScroll(function () {
+              runQuery(queryPage - 1);
+            });
           },
           onNext: function () {
-            runQuery(queryPage + 1);
+            preserveScroll(function () {
+              runQuery(queryPage + 1);
+            });
           }
         });
         setQueryStatus("Query completed locally. Results are shown " + maxQueryRows + " rows per page.", "ok");

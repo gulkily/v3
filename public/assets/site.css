@@ -2927,6 +2927,12 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   flex-wrap: wrap;
 }
 
+.sqlite-pagination button {
+  width: auto;
+  min-width: 0;
+  padding: 0.25rem 0.65rem;
+}
+
 [data-role="sqlite-explorer"] {
   width: calc(100vw - 2rem);
   margin-left: calc(50% - 50vw + 1rem);

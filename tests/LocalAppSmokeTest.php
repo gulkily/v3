@@ -1301,6 +1301,11 @@ final class LocalAppSmokeTest
         assertStringContains('function renderPagination(node, pagination)', $script);
         assertStringContains('className = "sqlite-pagination"', $script);
         assertStringContains('Page " + (pagination.page + 1)', $script);
+        assertStringContains('pagination.totalPages', $script);
+        assertStringContains('pagination.totalRows', $script);
+        assertStringContains('function preserveScroll(callback)', $script);
+        assertStringContains('window.scrollTo(scrollX, scrollY)', $script);
+        assertStringContains('SELECT COUNT(*) AS total_rows FROM (" + normalized + ")', $script);
         assertStringContains('previous.disabled = !pagination.hasPrevious', $script);
         assertStringContains('next.disabled = !pagination.hasNext', $script);
         assertStringContains('threads.root_post_id,\\n', $script);
@@ -1347,6 +1352,8 @@ final class LocalAppSmokeTest
         assertStringContains('width: max-content', $css);
         assertStringContains('overflow-x: auto', $css);
         assertStringContains('.sqlite-pagination', $css);
+        assertStringContains('.sqlite-pagination button', $css);
+        assertStringContains('width: auto', $css);
         assertStringContains('.sqlite-cell-toggle', $css);
         assertStringContains('aria-expanded', $script);
         assertStringContains('Click to expand this value', $script);
