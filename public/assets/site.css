@@ -2989,7 +2989,21 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 }
 
 [data-role="sqlite-effective-query"] {
-  margin: 0.75rem 0;
+  flex: 1 1 30rem;
+  min-width: min(100%, 20rem);
+  margin: 0;
+}
+
+.sqlite-query-bottom {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+[data-role="sqlite-query-pagination"] {
+  flex: 0 0 auto;
 }
 
 [data-role="sqlite-effective-query"] pre {

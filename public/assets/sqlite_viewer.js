@@ -23,6 +23,7 @@
     var effectiveCount = root.querySelector('[data-role="sqlite-effective-count"]');
     var effectiveData = root.querySelector('[data-role="sqlite-effective-data"]');
     var queryResults = root.querySelector('[data-role="sqlite-query-results"]');
+    var queryPagination = root.querySelector('[data-role="sqlite-query-pagination"]');
     var databaseUrl = "/downloads/read_model.sqlite3";
     var database = null;
     var maxPreviewRows = 25;
@@ -193,6 +194,10 @@
       if (!node || !pagination) {
         return;
       }
+      var target = pagination.container || node;
+      if (pagination.container) {
+        clearNode(target);
+      }
       var navigation = document.createElement("nav");
       navigation.className = "sqlite-pagination";
       navigation.setAttribute("aria-label", "Result pages");
@@ -220,7 +225,7 @@
       navigation.appendChild(previous);
       navigation.appendChild(position);
       navigation.appendChild(next);
-      node.appendChild(navigation);
+      target.appendChild(navigation);
     }
 
     function preserveScroll(callback) {
@@ -492,6 +497,7 @@
         var totalPages = Math.max(1, Math.ceil(totalRows / maxQueryRows));
         var result = database.exec(dataSql)[0];
         renderRows(queryResults, result, "The query returned no rows.", maxQueryRows, false, {
+          container: queryPagination,
           page: queryPage,
           pageSize: maxQueryRows,
           totalPages: totalPages,

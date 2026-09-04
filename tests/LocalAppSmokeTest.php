@@ -1282,6 +1282,8 @@ final class LocalAppSmokeTest
         assertStringContains('data-role="sqlite-effective-query" hidden', $viewer);
         assertStringContains('data-role="sqlite-effective-count"', $viewer);
         assertStringContains('data-role="sqlite-effective-data"', $viewer);
+        assertStringContains('class="sqlite-query-bottom"', $viewer);
+        assertStringContains('data-role="sqlite-query-pagination"', $viewer);
         assertStringContains('<h2>Run query</h2>', $viewer);
         assertStringContains('Recent posts', $script);
         assertStringContains('Board: Liked + Newest', $script);
@@ -1300,6 +1302,9 @@ final class LocalAppSmokeTest
         assertStringContains('function renderEffectiveQuery(countSql, dataSql)', $script);
         assertStringContains('effectiveCount.textContent = countSql', $script);
         assertStringContains('effectiveData.textContent = dataSql', $script);
+        assertStringContains('var queryPagination = root.querySelector', $script);
+        assertStringContains('container: queryPagination', $script);
+        assertStringContains('var target = pagination.container || node', $script);
         assertStringContains('function clearEffectiveQuery()', $script);
         assertStringContains('No effective query was executed.', $script);
         assertStringContains('effectiveQuery.setAttribute("hidden", "hidden")', $script);
