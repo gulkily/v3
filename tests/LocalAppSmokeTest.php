@@ -1291,6 +1291,9 @@ final class LocalAppSmokeTest
         assertStringContains('queryPanel.removeAttribute("hidden")', $script);
         assertStringContains('querySelect.value = "0"', $script);
         assertStringContains('queryInput.value = presetQueries[0].sql', $script);
+        assertStringContains('queryButton.addEventListener("click", function ()', $script);
+        assertStringContains('queryPage = typeof page === "number"', $script);
+        assertStringContains('Query failed: ', $script);
         assertStringContains('var queryPage = 0', $script);
         assertStringContains('LIMIT " + (maxQueryRows + 1) + " OFFSET " + (queryPage * maxQueryRows)', $script);
         assertStringContains('runQuery(queryPage + 1)', $script);
@@ -1344,6 +1347,9 @@ final class LocalAppSmokeTest
         assertStringContains('width: max-content', $css);
         assertStringContains('overflow-x: auto', $css);
         assertStringContains('.sqlite-pagination', $css);
+        assertStringContains('.sqlite-cell-toggle', $css);
+        assertStringContains('aria-expanded', $script);
+        assertStringContains('Click to expand this value', $script);
         assertStringContains('aria-live', $script);
         assertStringContains('Showing " + maxRows + " rows per page.', $script);
     }

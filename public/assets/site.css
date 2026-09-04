@@ -2957,6 +2957,31 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   white-space: nowrap;
 }
 
+.sqlite-cell-toggle {
+  display: block;
+  max-width: min(28rem, 70vw);
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sqlite-cell-toggle.is-expanded {
+  max-width: min(48rem, 70vw);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+[data-role="sqlite-query-status"][data-state="error"] {
+  color: var(--status-error);
+  font-weight: 700;
+}
+
 .sqlite-sort-button {
   margin: -0.4rem -0.55rem;
   padding: 0.4rem 0.55rem;

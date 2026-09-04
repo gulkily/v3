@@ -237,7 +237,25 @@
           var rowNode = document.createElement("tr");
           row.forEach(function (value) {
             var cell = document.createElement("td");
-            cell.textContent = value === null ? "NULL" : String(value);
+            var cellText = value === null ? "NULL" : String(value);
+            if (cellText.length > 120) {
+              var cellToggle = document.createElement("button");
+              var collapsedText = cellText.slice(0, 120) + "…";
+              cellToggle.type = "button";
+              cellToggle.className = "sqlite-cell-toggle";
+              cellToggle.setAttribute("aria-expanded", "false");
+              cellToggle.title = "Click to expand this value";
+              cellToggle.textContent = collapsedText;
+              cellToggle.addEventListener("click", function () {
+                var expanded = cellToggle.getAttribute("aria-expanded") === "true";
+                cellToggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+                cellToggle.classList.toggle("is-expanded", !expanded);
+                cellToggle.textContent = expanded ? collapsedText : cellText;
+              });
+              cell.appendChild(cellToggle);
+            } else {
+              cell.textContent = cellText;
+            }
             rowNode.appendChild(cell);
           });
           body.appendChild(rowNode);
@@ -405,7 +423,7 @@
         setQueryStatus("Load the database before running a query.", "error");
         return;
       }
-      queryPage = page || 0;
+      queryPage = typeof page === "number" && Number.isFinite(page) && page >= 0 ? page : 0;
       var query = queryInput.value;
       if (!isSingleSelectQuery(query)) {
         clearNode(queryResults);
@@ -429,7 +447,7 @@
         setQueryStatus("Query completed locally. Results are shown " + maxQueryRows + " rows per page.", "ok");
       } catch (error) {
         clearNode(queryResults);
-        setQueryStatus(error && error.message ? error.message : "The query could not be run.", "error");
+        setQueryStatus("Query failed: " + (error && error.message ? error.message : "The query could not be run."), "error");
       }
     }
 
@@ -479,7 +497,9 @@
       loadButton.addEventListener("click", loadDatabase);
     }
     if (queryButton) {
-      queryButton.addEventListener("click", runQuery);
+      queryButton.addEventListener("click", function () {
+        runQuery();
+      });
     }
     tableTabs.forEach(function (tab) {
       tab.addEventListener("click", function () {
