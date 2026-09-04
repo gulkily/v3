@@ -33,3 +33,17 @@
   - `php tests/run.php LocalAppSmokeTest::testSqliteViewerIncludesPresetReadOnlyQueryContract`
 - Notes:
   - Runtime error text continues to include the underlying sql.js message.
+
+## Stage 4 - Complete verification and handoff
+- Changes:
+  - Completed focused viewer contract coverage for disclosure structure, safe SQL text rendering, exact statement capture, pagination synchronization, and validation cleanup.
+  - Kept effective SQL display client-side, read-only, collapsed by default, and without persistence or export behavior.
+- Verification:
+  - `php -l templates/pages/sqlite_viewer.php`
+  - `php -l tests/LocalAppSmokeTest.php`
+  - `node --check public/assets/sqlite_viewer.js`
+  - `php tests/run.php LocalAppSmokeTest::testSqliteViewerIncludesPresetReadOnlyQueryContract`
+  - `git diff --check`
+  - Full `php tests/run.php` run; unrelated pre-existing `LocalAppSmokeTest` failures remain and are not effective-query failures.
+- Notes:
+  - Effective SQL disclosure/export remains intentionally deferred; this feature only provides an on-page selectable disclosure.
