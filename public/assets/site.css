@@ -2989,9 +2989,14 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 }
 
 [data-role="sqlite-effective-query"] {
-  flex: 1 1 30rem;
-  min-width: min(100%, 20rem);
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 0;
   margin: 0;
+}
+
+[data-role="sqlite-effective-query"] summary {
+  text-align: right;
 }
 
 .sqlite-query-bottom {

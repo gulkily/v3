@@ -1373,6 +1373,9 @@ final class LocalAppSmokeTest
         assertStringContains('width: max-content', $css);
         assertStringContains('overflow-x: auto', $css);
         assertStringContains('.sqlite-pagination', $css);
+        assertStringContains('flex: 0 0 100%', $css);
+        assertStringContains('[data-role="sqlite-effective-query"] summary', $css);
+        assertStringContains('text-align: right', $css);
         assertStringContains('.sqlite-pagination button', $css);
         assertStringContains('width: auto', $css);
         assertStringContains('.sqlite-cell-toggle', $css);
