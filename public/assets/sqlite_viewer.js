@@ -25,6 +25,8 @@
     var maxPreviewRows = 20;
     var maxQueryRows = 50;
     var tablePage = 0;
+    var tableSortColumn = null;
+    var tableSortDirection = null;
     var queryPage = 0;
     var querySelectorPopulated = false;
     // BEGIN GENERATED SQLITE QUERY CATALOG
@@ -245,13 +247,23 @@
         var heading = document.createElement("th");
         heading.scope = "col";
         heading.setAttribute("aria-sort", "none");
+        if (pagination && pagination.sortColumn === columnIndex) {
+          heading.setAttribute("aria-sort", pagination.sortDirection);
+        }
         if (sortable) {
           var sortButton = document.createElement("button");
           sortButton.type = "button";
           sortButton.className = "sqlite-sort-button";
           sortButton.textContent = column;
           sortButton.addEventListener("click", function () {
-            var direction = sortDirections[columnIndex] === "ascending" ? "descending" : "ascending";
+            var currentDirection = pagination && pagination.sortColumn === columnIndex
+              ? pagination.sortDirection
+              : sortDirections[columnIndex];
+            var direction = currentDirection === "ascending" ? "descending" : "ascending";
+            if (pagination && pagination.onSort) {
+              pagination.onSort(columnIndex, direction);
+              return;
+            }
             sortDirections = {};
             sortDirections[columnIndex] = direction;
             var sortedRows = visibleRows.slice().sort(function (left, right) {
@@ -296,10 +308,16 @@
       try {
         var quotedName = quoteIdentifier(tableName);
         var columns = database.exec("PRAGMA table_info(" + quotedName + ")")[0];
-        var rows = database.exec("SELECT * FROM " + quotedName + " LIMIT " + (maxPreviewRows + 1) + " OFFSET " + (tablePage * maxPreviewRows))[0];
+        var orderBy = "";
+        if (tableSortColumn !== null && columns && columns.values[tableSortColumn]) {
+          orderBy = " ORDER BY " + quoteIdentifier(String(columns.values[tableSortColumn][1])) + " " + tableSortDirection;
+        }
+        var rows = database.exec("SELECT * FROM " + quotedName + orderBy + " LIMIT " + (maxPreviewRows + 1) + " OFFSET " + (tablePage * maxPreviewRows))[0];
         renderRows(tableDetails, columns, "No column information is available.");
         renderRows(tablePreview, rows, "This table has no rows.", maxPreviewRows, true, {
           page: tablePage,
+          sortColumn: tableSortColumn,
+          sortDirection: tableSortDirection === "DESC" ? "descending" : "ascending",
           hasPrevious: tablePage > 0,
           hasNext: !!rows && rows.values.length > maxPreviewRows,
           onPrevious: function () {
@@ -307,6 +325,11 @@
           },
           onNext: function () {
             renderTable(tableName, tablePage + 1);
+          },
+          onSort: function (columnIndex, direction) {
+            tableSortColumn = columnIndex;
+            tableSortDirection = direction === "descending" ? "DESC" : "ASC";
+            renderTable(tableName, 0);
           }
         });
       } catch (error) {
@@ -337,6 +360,8 @@
         tableSelect.appendChild(option);
       });
       tableSelect.addEventListener("change", function () {
+        tableSortColumn = null;
+        tableSortDirection = null;
         renderTable(tableSelect.value, 0);
       });
       if (explorer) {

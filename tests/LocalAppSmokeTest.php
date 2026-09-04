@@ -1251,6 +1251,10 @@ final class LocalAppSmokeTest
         assertStringContains('aria-sort', $script);
         assertStringContains('sortDirections', $script);
         assertStringContains('var tablePage = 0', $script);
+        assertStringContains('var tableSortColumn = null', $script);
+        assertStringContains('ORDER BY " + quoteIdentifier', $script);
+        assertStringContains('onSort: function (columnIndex, direction)', $script);
+        assertStringContains('renderTable(tableName, 0)', $script);
         assertStringContains('LIMIT " + (maxPreviewRows + 1) + " OFFSET " + (tablePage * maxPreviewRows)', $script);
         assertStringContains('renderTable(tableName, tablePage + 1)', $script);
         assertStringContains('renderTable(tableSelect.value, 0)', $script);

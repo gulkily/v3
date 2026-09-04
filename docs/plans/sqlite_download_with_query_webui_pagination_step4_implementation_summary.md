@@ -32,3 +32,14 @@
   - `php tests/run.php LocalAppSmokeTest::testSqliteViewerIncludesPresetReadOnlyQueryContract LocalAppSmokeTest::testSqliteViewerCapsAndScrollsResultSurfaces`
 - Notes:
   - Exact total counts are not computed; the controls expose current position and whether another page exists.
+
+## Stage 4 - Integrate table sorting with pagination
+- Changes:
+  - Applied the selected table column and direction before page retrieval, rather than sorting only the currently visible rows.
+  - Reset table pagination to page one when selecting or changing a sort column/direction.
+  - Preserved existing sort indicators and safe identifier quoting.
+- Verification:
+  - `node --check public/assets/sqlite_viewer.js`
+  - `php tests/run.php LocalAppSmokeTest::testSqliteViewerIncludesSchemaExplorerContract LocalAppSmokeTest::testSqliteViewerCapsAndScrollsResultSurfaces`
+- Notes:
+  - The pre-existing schema contract test still contains an unrelated undefined `$css` assertion in this repository state.
