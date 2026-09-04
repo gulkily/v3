@@ -1301,6 +1301,9 @@ final class LocalAppSmokeTest
         assertStringContains('function renderPagination(node, pagination)', $script);
         assertStringContains('className = "sqlite-pagination"', $script);
         assertStringContains('Page " + (pagination.page + 1)', $script);
+        assertStringContains('pagination.pageSize', $script);
+        assertStringContains('recordRange', $script);
+        assertStringContains('"-" + Math.min', $script);
         assertStringContains('pagination.totalPages', $script);
         assertStringContains('pagination.totalRows', $script);
         assertStringContains('function preserveScroll(callback)', $script);
@@ -1339,9 +1342,9 @@ final class LocalAppSmokeTest
         $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
 
         assertStringContains('sqlite-result-scroll', $viewer);
-        assertStringContains('maxQueryRows = 50', $script);
+        assertStringContains('maxPreviewRows = 25', $script);
+        assertStringContains('maxQueryRows = 25', $script);
         assertStringContains('LIMIT " + (maxQueryRows + 1)', $script);
-        assertStringContains('Showing " + maxRows + " rows per page.', $script);
         assertStringContains('.sqlite-result-scroll', $css);
         assertStringContains('[data-role="sqlite-explorer"]', $css);
         assertStringContains('[data-role="sqlite-query-panel"]', $css);
@@ -1358,7 +1361,6 @@ final class LocalAppSmokeTest
         assertStringContains('aria-expanded', $script);
         assertStringContains('Click to expand this value', $script);
         assertStringContains('aria-live', $script);
-        assertStringContains('Showing " + maxRows + " rows per page.', $script);
     }
 
     public function testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp(): void

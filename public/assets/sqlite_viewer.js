@@ -22,8 +22,8 @@
     var queryResults = root.querySelector('[data-role="sqlite-query-results"]');
     var databaseUrl = "/downloads/read_model.sqlite3";
     var database = null;
-    var maxPreviewRows = 20;
-    var maxQueryRows = 50;
+    var maxPreviewRows = 25;
+    var maxQueryRows = 25;
     var tablePage = 0;
     var tableSortColumn = null;
     var tableSortDirection = null;
@@ -179,7 +179,10 @@
       var position = document.createElement("span");
       position.className = "meta";
       position.setAttribute("aria-live", "polite");
-      position.textContent = "Page " + (pagination.page + 1) + " of " + pagination.totalPages + " · " + pagination.totalRows + " records";
+      var recordRange = pagination.totalRows === 0
+        ? "0 records"
+        : (pagination.page * pagination.pageSize + 1) + "-" + Math.min((pagination.page + 1) * pagination.pageSize, pagination.totalRows) + " of " + pagination.totalRows + " records";
+      position.textContent = "Page " + (pagination.page + 1) + " of " + pagination.totalPages + " · " + recordRange;
 
       var next = document.createElement("button");
       next.type = "button";
@@ -321,12 +324,6 @@
       renderBody(visibleRows);
       table.appendChild(body);
       node.appendChild(table);
-      if (maxRows && result.values.length > maxRows) {
-        var truncated = document.createElement("p");
-        truncated.className = "meta";
-        truncated.textContent = "Showing " + maxRows + " rows per page.";
-        node.appendChild(truncated);
-      }
       renderPagination(node, pagination);
     }
 
@@ -353,6 +350,7 @@
         renderRows(tableDetails, columns, "No column information is available.");
         renderRows(tablePreview, rows, "This table has no rows.", maxPreviewRows, true, {
           page: tablePage,
+          pageSize: maxPreviewRows,
           sortColumn: tableSortColumn,
           sortDirection: tableSortDirection === "DESC" ? "descending" : "ascending",
           hasPrevious: tablePage > 0,
@@ -464,6 +462,7 @@
         var result = database.exec("SELECT * FROM (" + normalized + ") LIMIT " + (maxQueryRows + 1) + " OFFSET " + (queryPage * maxQueryRows))[0];
         renderRows(queryResults, result, "The query returned no rows.", maxQueryRows, false, {
           page: queryPage,
+          pageSize: maxQueryRows,
           totalPages: totalPages,
           totalRows: totalRows,
           hasPrevious: queryPage > 0,
@@ -479,7 +478,7 @@
             });
           }
         });
-        setQueryStatus("Query completed locally. Results are shown " + maxQueryRows + " rows per page.", "ok");
+        setQueryStatus("Query completed locally.", "ok");
       } catch (error) {
         clearNode(queryResults);
         setQueryStatus("Query failed: " + (error && error.message ? error.message : "The query could not be run."), "error");
