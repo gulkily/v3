@@ -1287,6 +1287,9 @@ final class LocalAppSmokeTest
         assertStringContains('queryPanel.removeAttribute("hidden")', $script);
         assertStringContains('querySelect.value = "0"', $script);
         assertStringContains('queryInput.value = presetQueries[0].sql', $script);
+        assertStringContains('var queryPage = 0', $script);
+        assertStringContains('LIMIT " + (maxQueryRows + 1) + " OFFSET " + (queryPage * maxQueryRows)', $script);
+        assertStringContains('runQuery(queryPage + 1)', $script);
         assertStringContains("queryInput.value = preset.sql;\n          runQuery();", $script);
         assertStringContains('function renderPagination(node, pagination)', $script);
         assertStringContains('className = "sqlite-pagination"', $script);
@@ -1325,7 +1328,7 @@ final class LocalAppSmokeTest
 
         assertStringContains('sqlite-result-scroll', $viewer);
         assertStringContains('maxQueryRows = 50', $script);
-        assertStringContains('LIMIT " + maxQueryRows', $script);
+        assertStringContains('LIMIT " + (maxQueryRows + 1)', $script);
         assertStringContains('Showing " + maxRows + " rows per page.', $script);
         assertStringContains('.sqlite-result-scroll', $css);
         assertStringContains('[data-role="sqlite-explorer"]', $css);

@@ -25,6 +25,7 @@
     var maxPreviewRows = 20;
     var maxQueryRows = 50;
     var tablePage = 0;
+    var queryPage = 0;
     var querySelectorPopulated = false;
     // BEGIN GENERATED SQLITE QUERY CATALOG
     var presetQueries = [
@@ -373,11 +374,12 @@
       return normalized !== "" && /^SELECT\b/i.test(normalized) && normalized.indexOf(";") === -1;
     }
 
-    function runQuery() {
+    function runQuery(page) {
       if (!database || !queryInput) {
         setQueryStatus("Load the database before running a query.", "error");
         return;
       }
+      queryPage = page || 0;
       var query = queryInput.value;
       if (!isSingleSelectQuery(query)) {
         clearNode(queryResults);
@@ -386,9 +388,19 @@
       }
       try {
         var normalized = query.trim().replace(/;+$/, "").trim();
-        var result = database.exec("SELECT * FROM (" + normalized + ") LIMIT " + maxQueryRows)[0];
-        renderRows(queryResults, result, "The query returned no rows.", maxQueryRows);
-        setQueryStatus("Query completed locally. Results are capped at " + maxQueryRows + " rows.", "ok");
+        var result = database.exec("SELECT * FROM (" + normalized + ") LIMIT " + (maxQueryRows + 1) + " OFFSET " + (queryPage * maxQueryRows))[0];
+        renderRows(queryResults, result, "The query returned no rows.", maxQueryRows, false, {
+          page: queryPage,
+          hasPrevious: queryPage > 0,
+          hasNext: !!result && result.values.length > maxQueryRows,
+          onPrevious: function () {
+            runQuery(queryPage - 1);
+          },
+          onNext: function () {
+            runQuery(queryPage + 1);
+          }
+        });
+        setQueryStatus("Query completed locally. Results are shown " + maxQueryRows + " rows per page.", "ok");
       } catch (error) {
         clearNode(queryResults);
         setQueryStatus(error && error.message ? error.message : "The query could not be run.", "error");

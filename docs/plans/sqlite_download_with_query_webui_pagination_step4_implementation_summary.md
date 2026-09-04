@@ -21,3 +21,14 @@
   - `php tests/run.php LocalAppSmokeTest::testSqliteViewerIncludesSchemaExplorerContract LocalAppSmokeTest::testSqliteViewerCapsAndScrollsResultSurfaces`
 - Notes:
   - Cross-page table sorting is handled in Stage 4; current sorting behavior remains available for rendered rows.
+
+## Stage 3 - Paginate Run query results
+- Changes:
+  - Added query page state and local retrieval with a lookahead row for Next availability.
+  - Reset query pagination when running a new query or selecting a preset, while preserving preset auto-run behavior and read-only validation.
+  - Kept intentional limits inside individual preset SQL statements intact.
+- Verification:
+  - `node --check public/assets/sqlite_viewer.js`
+  - `php tests/run.php LocalAppSmokeTest::testSqliteViewerIncludesPresetReadOnlyQueryContract LocalAppSmokeTest::testSqliteViewerCapsAndScrollsResultSurfaces`
+- Notes:
+  - Exact total counts are not computed; the controls expose current position and whether another page exists.
