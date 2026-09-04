@@ -2919,6 +2919,14 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   max-width: 100%;
 }
 
+.sqlite-pagination {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
 [data-role="sqlite-explorer"] {
   width: calc(100vw - 2rem);
   margin-left: calc(50% - 50vw + 1rem);

@@ -1343,6 +1343,9 @@ final class LocalAppSmokeTest
         assertStringContains('min-width: 0', $css);
         assertStringContains('width: max-content', $css);
         assertStringContains('overflow-x: auto', $css);
+        assertStringContains('.sqlite-pagination', $css);
+        assertStringContains('aria-live', $script);
+        assertStringContains('Showing " + maxRows + " rows per page.', $script);
     }
 
     public function testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp(): void

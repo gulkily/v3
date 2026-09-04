@@ -178,6 +178,7 @@
 
       var position = document.createElement("span");
       position.className = "meta";
+      position.setAttribute("aria-live", "polite");
       position.textContent = "Page " + (pagination.page + 1);
 
       var next = document.createElement("button");
