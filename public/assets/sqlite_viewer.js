@@ -158,7 +158,37 @@
       }
     }
 
-    function renderRows(node, result, emptyMessage, maxRows, sortable) {
+    function renderPagination(node, pagination) {
+      if (!node || !pagination) {
+        return;
+      }
+      var navigation = document.createElement("nav");
+      navigation.className = "sqlite-pagination";
+      navigation.setAttribute("aria-label", "Result pages");
+
+      var previous = document.createElement("button");
+      previous.type = "button";
+      previous.textContent = "Previous";
+      previous.disabled = !pagination.hasPrevious;
+      previous.addEventListener("click", pagination.onPrevious);
+
+      var position = document.createElement("span");
+      position.className = "meta";
+      position.textContent = "Page " + (pagination.page + 1);
+
+      var next = document.createElement("button");
+      next.type = "button";
+      next.textContent = "Next";
+      next.disabled = !pagination.hasNext;
+      next.addEventListener("click", pagination.onNext);
+
+      navigation.appendChild(previous);
+      navigation.appendChild(position);
+      navigation.appendChild(next);
+      node.appendChild(navigation);
+    }
+
+    function renderRows(node, result, emptyMessage, maxRows, sortable, pagination) {
       clearNode(node);
       if (!node) {
         return;
@@ -249,6 +279,7 @@
         truncated.textContent = "Showing the first " + maxRows + " rows.";
         node.appendChild(truncated);
       }
+      renderPagination(node, pagination);
     }
 
     function quoteIdentifier(identifier) {
