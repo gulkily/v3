@@ -27,6 +27,13 @@
     </label>
     <p><button type="button" data-action="run-sqlite-query">Run Query</button></p>
     <p class="meta" data-role="sqlite-query-status" aria-live="polite" role="alert">Queries run only after the database is loaded.</p>
+    <details data-role="sqlite-effective-query" hidden>
+      <summary>View effective query</summary>
+      <h3>Count query</h3>
+      <pre data-role="sqlite-effective-count"></pre>
+      <h3>Data query</h3>
+      <pre data-role="sqlite-effective-data"></pre>
+    </details>
     <div class="sqlite-result-scroll" data-role="sqlite-query-results"></div>
   </article>
   <article class="card" data-role="sqlite-explorer" hidden>

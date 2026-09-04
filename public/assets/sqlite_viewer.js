@@ -19,6 +19,9 @@
     var queryInput = root.querySelector('[data-role="sqlite-query-input"]');
     var queryButton = root.querySelector('[data-action="run-sqlite-query"]');
     var queryStatus = root.querySelector('[data-role="sqlite-query-status"]');
+    var effectiveQuery = root.querySelector('[data-role="sqlite-effective-query"]');
+    var effectiveCount = root.querySelector('[data-role="sqlite-effective-count"]');
+    var effectiveData = root.querySelector('[data-role="sqlite-effective-data"]');
     var queryResults = root.querySelector('[data-role="sqlite-query-results"]');
     var databaseUrl = "/downloads/read_model.sqlite3";
     var database = null;
@@ -130,6 +133,18 @@
         } else {
           delete queryStatus.dataset.state;
         }
+      }
+    }
+
+    function renderEffectiveQuery(countSql, dataSql) {
+      if (effectiveCount) {
+        effectiveCount.textContent = countSql;
+      }
+      if (effectiveData) {
+        effectiveData.textContent = dataSql;
+      }
+      if (effectiveQuery) {
+        effectiveQuery.removeAttribute("hidden");
       }
     }
 

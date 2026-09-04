@@ -1279,6 +1279,9 @@ final class LocalAppSmokeTest
         assertStringContains('data-role="sqlite-query-select"', $viewer);
         assertStringContains('data-role="sqlite-query-input"', $viewer);
         assertStringContains('data-action="run-sqlite-query"', $viewer);
+        assertStringContains('data-role="sqlite-effective-query" hidden', $viewer);
+        assertStringContains('data-role="sqlite-effective-count"', $viewer);
+        assertStringContains('data-role="sqlite-effective-data"', $viewer);
         assertStringContains('<h2>Run query</h2>', $viewer);
         assertStringContains('Recent posts', $script);
         assertStringContains('Board: Liked + Newest', $script);
@@ -1294,6 +1297,9 @@ final class LocalAppSmokeTest
         assertStringContains('queryButton.addEventListener("click", function ()', $script);
         assertStringContains('queryPage = typeof page === "number"', $script);
         assertStringContains('Query failed: ', $script);
+        assertStringContains('function renderEffectiveQuery(countSql, dataSql)', $script);
+        assertStringContains('effectiveCount.textContent = countSql', $script);
+        assertStringContains('effectiveData.textContent = dataSql', $script);
         assertStringContains('var queryPage = 0', $script);
         assertStringContains('LIMIT " + (maxQueryRows + 1) + " OFFSET " + (queryPage * maxQueryRows)', $script);
         assertStringContains('runQuery(queryPage + 1)', $script);

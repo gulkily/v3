@@ -2988,6 +2988,19 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   font-weight: 700;
 }
 
+[data-role="sqlite-effective-query"] {
+  margin: 0.75rem 0;
+}
+
+[data-role="sqlite-effective-query"] pre {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0.75rem;
+  background: var(--input-bg);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .sqlite-sort-button {
   margin: -0.4rem -0.55rem;
   padding: 0.4rem 0.55rem;
