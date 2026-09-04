@@ -22,3 +22,14 @@
   - `php tests/run.php LocalAppSmokeTest::testSqliteViewerIncludesPresetReadOnlyQueryContract`
 - Notes:
   - Validation-state cleanup and failure semantics are handled in Stage 3.
+
+## Stage 3 - Clarify validation and runtime failure context
+- Changes:
+  - Cleared stale effective SQL when input fails read-only/single-statement validation.
+  - Added explicit status copy stating that no effective query was executed for rejected input.
+  - Preserved displayed attempted statements when the local count or data execution raises a runtime error.
+- Verification:
+  - `node --check public/assets/sqlite_viewer.js`
+  - `php tests/run.php LocalAppSmokeTest::testSqliteViewerIncludesPresetReadOnlyQueryContract`
+- Notes:
+  - Runtime error text continues to include the underlying sql.js message.

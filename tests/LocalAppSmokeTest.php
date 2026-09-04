@@ -1300,6 +1300,9 @@ final class LocalAppSmokeTest
         assertStringContains('function renderEffectiveQuery(countSql, dataSql)', $script);
         assertStringContains('effectiveCount.textContent = countSql', $script);
         assertStringContains('effectiveData.textContent = dataSql', $script);
+        assertStringContains('function clearEffectiveQuery()', $script);
+        assertStringContains('No effective query was executed.', $script);
+        assertStringContains('effectiveQuery.setAttribute("hidden", "hidden")', $script);
         assertStringContains('var countSql = "SELECT COUNT(*) AS total_rows FROM (" + normalized + ")"', $script);
         assertStringContains('var dataSql = "SELECT * FROM (" + normalized + ") LIMIT " + (maxQueryRows + 1)', $script);
         assertStringContains('database.exec(countSql)', $script);

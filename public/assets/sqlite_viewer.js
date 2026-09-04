@@ -148,6 +148,18 @@
       }
     }
 
+    function clearEffectiveQuery() {
+      if (effectiveCount) {
+        effectiveCount.textContent = "";
+      }
+      if (effectiveData) {
+        effectiveData.textContent = "";
+      }
+      if (effectiveQuery) {
+        effectiveQuery.setAttribute("hidden", "hidden");
+      }
+    }
+
     function setLoading(isLoading) {
       if (loadButton) {
         loadButton.disabled = isLoading;
@@ -466,7 +478,8 @@
       var query = queryInput.value;
       if (!isSingleSelectQuery(query)) {
         clearNode(queryResults);
-        setQueryStatus("Only one read-only SELECT statement is allowed.", "error");
+        clearEffectiveQuery();
+        setQueryStatus("Only one read-only SELECT statement is allowed. No effective query was executed.", "error");
         return;
       }
       try {
