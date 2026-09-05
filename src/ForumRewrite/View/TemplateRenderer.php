@@ -6,6 +6,7 @@ namespace ForumRewrite\View;
 
 use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\SiteConfig;
+use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\ThreadTitle;
@@ -63,7 +64,7 @@ final class TemplateRenderer
             'scriptPaths' => $assetScriptPaths,
             'routeSource' => $routeSource,
             'showThreadDensityToggle' => $showThreadDensityToggle,
-            'siteName' => SiteConfig::SITE_NAME,
+            'siteName' => SiteConfig::siteName(),
             'appVersion' => $this->appVersion,
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
             'siteCssPath' => $this->assetPath('/assets/site.css'),
@@ -73,6 +74,7 @@ final class TemplateRenderer
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
             'themes' => ThemeRegistry::all(),
             'explicitThemeNames' => ThemeRegistry::explicitNames(),
+            'defaultTheme' => SiteProfileRegistry::active()['defaultTheme'],
             'navItems' => [
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],
                 ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
@@ -95,6 +97,7 @@ final class TemplateRenderer
         $data = array_merge([
             'unicodeAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
             'emojiAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT),
+            'composerPrompt' => SiteProfileRegistry::active()['composerPrompt'],
         ], $data);
 
         $e = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');

@@ -310,6 +310,35 @@
   --code-font: "Courier New", monospace;
 }
 
+:root[data-theme="chouse"],
+.theme-menu__option[data-theme-option="chouse"] {
+  color-scheme: dark;
+  --page-bg: #1c130c;
+  --body-background:
+    radial-gradient(circle at top, rgba(217, 169, 74, 0.08), transparent 42%),
+    #1c130c;
+  --ink: #f2e4cf;
+  --ink-soft: #c7a679;
+  --line: #5a4128;
+  --panel: #2b1e13;
+  --input-bg: #17100a;
+  --button-bg: #34261a;
+  --button-alt-bg: #40301f;
+  --feedback-ok-bg: #1c2a17;
+  --feedback-error-bg: #2e150f;
+  --status-error: #ff9a70;
+  --status-ok: #a8d98a;
+  --status-warning: #f0c060;
+  --active-bg: #8a5a24;
+  --active-ink: #fff3dd;
+  --active-line: #d9a94a;
+  --active-ring: rgba(217, 169, 74, 0.22);
+  --body-font: Georgia, "Palatino Linotype", "Book Antiqua", serif;
+  --ui-font: "Copperplate", "Trebuchet MS", "Century Gothic", sans-serif;
+  --code-font: ui-monospace, "Cascadia Code", "SF Mono", "Consolas",
+               "Liberation Mono", monospace;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -695,6 +724,13 @@ pre {
   box-shadow:
     inset -1px -1px 0 0 #808080,
     inset 1px 1px 0 0 #ffffff;
+}
+
+.theme-swatch[data-theme="chouse"] {
+  background:
+    radial-gradient(circle at 35% 35%, #d9a94a 0 32%, #2b1e13 33% 100%);
+  border-color: #8a5a24;
+  box-shadow: inset 0 0 0 0.22rem #1c130c;
 }
 
 .theme-menu {
@@ -2913,6 +2949,62 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 :root[data-theme="word97"][data-thread-density="compact"] .thread-list .thread-card + .thread-card {
   margin-top: 0.5rem;
 }
+
+:root[data-theme="chouse"] .site-header {
+  display: flex;
+  align-items: stretch;
+  gap: 1rem;
+  padding: 0 0 1rem;
+}
+
+:root[data-theme="chouse"] .eyebrow {
+  writing-mode: vertical-rl;
+  margin: 0;
+  padding: 0.9rem 0.55rem;
+  background: var(--active-bg);
+  color: var(--active-ink);
+  border: 1px solid var(--active-line);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.3em;
+  flex: 0 0 auto;
+}
+
+:root[data-theme="chouse"] .site-header-actions {
+  flex: 1 1 auto;
+  padding-top: 0.5rem;
+  align-self: center;
+}
+
+:root[data-theme="chouse"] .card {
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba(217, 169, 74, 0.06);
+}
+
+:root[data-theme="chouse"] .card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--active-line), transparent 85%);
+}
+
+:root[data-theme="chouse"] input,
+:root[data-theme="chouse"] textarea {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme="chouse"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  letter-spacing: 0.02em;
+}
+
+:root[data-theme="chouse"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover,
+:root[data-theme="chouse"] .nav-link:hover {
+  border-color: var(--active-line);
+}
+
 .sqlite-result-scroll {
   width: 100%;
   overflow-x: auto;

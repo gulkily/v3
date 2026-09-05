@@ -33,12 +33,17 @@
       return theme !== "auto" && themes.indexOf(theme) !== -1;
     }
 
+    function defaultTheme() {
+      var attr = document.documentElement.getAttribute("data-default-theme");
+      return attr && themes.indexOf(attr) !== -1 ? attr : "auto";
+    }
+
     function readStoredTheme() {
       try {
         var storedTheme = localStorage.getItem(storageKey);
-        return themes.indexOf(storedTheme) === -1 ? "auto" : storedTheme;
+        return themes.indexOf(storedTheme) === -1 ? defaultTheme() : storedTheme;
       } catch (error) {
-        return "auto";
+        return defaultTheme();
       }
     }
 

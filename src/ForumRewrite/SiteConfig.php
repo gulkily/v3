@@ -9,7 +9,10 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 
 final class SiteConfig
 {
-    public const SITE_NAME = 'zenmemes';
+    public static function siteName(): string
+    {
+        return SiteProfileRegistry::active()['name'];
+    }
 
     public static function unicodeAuthoredTextEnabled(): bool
     {

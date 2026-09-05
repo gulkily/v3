@@ -1012,7 +1012,7 @@ final class Application
         return $this->renderPageTemplate(
             'instance.php',
             [
-                'siteName' => SiteConfig::SITE_NAME,
+                'siteName' => SiteConfig::siteName(),
                 'admins' => $this->fetchSeedApprovedUsers(),
                 'toolNavOptions' => $this->toolNavOptions('backup'),
                 'backupSnapshot' => $backupSnapshot,
@@ -1065,7 +1065,7 @@ final class Application
         return $this->renderPageTemplate(
             'about.php',
             [
-                'siteName' => SiteConfig::SITE_NAME,
+                'siteName' => SiteConfig::siteName(),
             ],
             'About',
             'about',
@@ -1269,7 +1269,7 @@ final class Application
             [
                 'state' => $this->collectCodebaseState(),
                 'toolNavOptions' => $this->toolNavOptions('codebase'),
-                'siteName' => SiteConfig::SITE_NAME,
+                'siteName' => SiteConfig::siteName(),
                 'admins' => $this->fetchSeedApprovedUsers(),
             ],
             'System State',
@@ -2471,7 +2471,7 @@ final class Application
 
     private function repositoryArchiveDownloadFilename(string $extension): string
     {
-        return SiteConfig::SITE_NAME
+        return SiteConfig::siteName()
             . '-repository-'
             . $this->downloadTimestamp()
             . '-'
@@ -2547,7 +2547,7 @@ final class Application
             return;
         }
 
-        $this->sendDownload($this->databasePath, 'application/x-sqlite3', SiteConfig::SITE_NAME . '-read-model.sqlite3');
+        $this->sendDownload($this->databasePath, 'application/x-sqlite3', SiteConfig::siteName() . '-read-model.sqlite3');
     }
 
     private function handleSqliteQueryCatalogDownload(string $method): void
@@ -2563,7 +2563,7 @@ final class Application
             return;
         }
 
-        $this->sendDownload($path, 'application/sql; charset=utf-8', SiteConfig::SITE_NAME . '-sqlite-query-catalog.sql');
+        $this->sendDownload($path, 'application/sql; charset=utf-8', SiteConfig::siteName() . '-sqlite-query-catalog.sql');
     }
 
     private function sendDownload(string $path, string $contentType, string $filename, bool $deleteAfterSend = false): void
