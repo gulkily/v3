@@ -634,11 +634,12 @@ final class LocalAppSmokeTest
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="no-git"', $board);
-        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","word97","chouse"];', $board);
+        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","word97","chouse"];', $board);
         assertStringContains('data-role="theme-menu"', $board);
         assertStringContains('aria-haspopup="menu"', $board);
         assertStringContains('data-theme-option="auto"', $board);
         assertStringContains('data-theme-option="thermal"', $board);
+        assertStringContains('data-theme-option="whitehot"', $board);
         assertStringContains('data-theme-option="word97"', $board);
         assertStringContains('class="site-status-bar"', $board);
         assertStringContains('data-heat="', $thread);

@@ -23,6 +23,7 @@ final class ThemeRegistry
             ['name' => 'sticker', 'label' => 'Sticker', 'mode' => 'light'],
             ['name' => 'arena', 'label' => 'Arena', 'mode' => 'dark'],
             ['name' => 'thermal', 'label' => 'Thermal', 'mode' => 'dark'],
+            ['name' => 'whitehot', 'label' => 'Whitehot', 'mode' => 'light'],
             ['name' => 'word97', 'label' => 'Word 97', 'mode' => 'light'],
             ['name' => 'chouse', 'label' => 'Chouse', 'mode' => 'dark'],
         ];
