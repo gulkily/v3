@@ -17,27 +17,31 @@
   </article>
   <article class="card" data-role="sqlite-query-panel" hidden>
     <h2>Run query</h2>
-    <label>Preset query
-      <select data-role="sqlite-query-select">
-        <option value="">Choose a query</option>
-      </select>
-    </label>
-    <label>SQL
-      <textarea data-role="sqlite-query-input" rows="6" spellcheck="false" placeholder="SELECT ..."></textarea>
-    </label>
-    <p><button type="button" data-action="run-sqlite-query">Run Query</button></p>
-    <p class="meta" data-role="sqlite-query-status" aria-live="polite" role="alert">Queries run only after the database is loaded.</p>
-    <div class="sqlite-query-output">
-      <div class="sqlite-result-scroll" data-role="sqlite-query-results"></div>
-      <div class="sqlite-query-bottom">
-        <div data-role="sqlite-query-pagination"></div>
-        <details data-role="sqlite-effective-query" hidden>
-          <summary>View effective query</summary>
-          <h3>Count query</h3>
-          <pre data-role="sqlite-effective-count"></pre>
-          <h3>Data query</h3>
-          <pre data-role="sqlite-effective-data"></pre>
-        </details>
+    <div class="sqlite-query-layout" data-query-layout>
+      <div class="sqlite-query-editor">
+        <label>Preset query
+          <select data-role="sqlite-query-select">
+            <option value="">Choose a query</option>
+          </select>
+        </label>
+        <label>SQL
+          <textarea data-role="sqlite-query-input" rows="6" spellcheck="false" placeholder="SELECT ..."></textarea>
+        </label>
+        <p><button type="button" data-action="run-sqlite-query">Run Query</button></p>
+        <p class="meta" data-role="sqlite-query-status" aria-live="polite" role="alert">Queries run only after the database is loaded.</p>
+      </div>
+      <div class="sqlite-query-output">
+        <div class="sqlite-result-scroll" data-role="sqlite-query-results"></div>
+        <div class="sqlite-query-bottom">
+          <div data-role="sqlite-query-pagination"></div>
+          <details data-role="sqlite-effective-query" hidden>
+            <summary>View effective query</summary>
+            <h3>Count query</h3>
+            <pre data-role="sqlite-effective-count"></pre>
+            <h3>Data query</h3>
+            <pre data-role="sqlite-effective-data"></pre>
+          </details>
+        </div>
       </div>
     </div>
   </article>
