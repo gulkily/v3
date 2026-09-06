@@ -3395,6 +3395,11 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   box-sizing: border-box;
 }
 
+[data-role="sqlite-query-select"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .sqlite-tabs {
   display: flex;
   gap: 0.35rem;

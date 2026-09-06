@@ -24,3 +24,11 @@
   - Screenshotted all three scenarios (wide split, narrow stacked, wide overflow check) and visually confirmed correct layout
 - Notes:
   - Breakpoint chosen (960px) is new, wider than the existing 640px breakpoint in `site.css`, since two columns need more room than the existing narrow/wide split point provides
+
+## Post-implementation fix - Preset query select overflow
+- Changes:
+  - `public/assets/site.css`: added `[data-role="sqlite-query-select"] { width: 100%; box-sizing: border-box; }` — the global `input, textarea, button` width rule doesn't cover `<select>`, so the preset dropdown was sizing to its longest option text and overlapping the results column in split layout
+- Verification:
+  - Confirmed via Playwright screenshot at 1400px that the select now stays within the editor column and no longer overlaps the results
+- Notes:
+  - Scoped to this specific select (not the shared `input, textarea, button` rule) to avoid affecting the unrelated `<select>` on the Feature Flags page, which sits inline next to a submit button
