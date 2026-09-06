@@ -12,3 +12,17 @@
   - `git diff --check` was clean for Stage 1 files; it reports a pre-existing whitespace issue in unrelated `todo.txt`.
 - Notes:
   - The database is only configured in this stage; exchange schema, capture, and web access are staged separately.
+
+## Stage 2 - Exact provider exchange capture
+- Changes:
+  - Added `LlmExchangeRecorder` with a separate SQLite exchange table and indexes for chronological and related-post lookup.
+  - Captured redacted request data and exact response data at OpenAI-compatible and Anthropic provider boundaries.
+  - Added exchange context for post analysis and direct agent reply generation, including call type, post, content hash, provider, model, and request ID.
+  - Recorded completed, provider-error, malformed-response, and transport-error outcomes while honoring the recording flag.
+  - Added focused recorder tests and registered them with the test runner.
+- Verification:
+  - PHP syntax checks passed for all changed source and test files.
+  - `./v3 test FeatureFlagEvaluatorTest LlmExchangeDatabaseConfigTest LlmExchangeRecorderTest OpenAiCompatibleStructuredChatProviderTest AnthropicStructuredChatProviderTest DedalusPostAnalyzerTest` passed all tests.
+  - `git diff --check` passed for Stage 2 files.
+- Notes:
+  - Read APIs and web presentation remain in later stages; the recorder currently stores request headers in redacted form and does not receive API keys.

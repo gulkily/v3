@@ -19,13 +19,15 @@ final class OpenAiCompatibleStructuredChatProvider implements StructuredChatProv
         private readonly string $model,
         private readonly int $timeoutSeconds = 60,
         private readonly array $extraHeaders = [],
+        private readonly ?LlmExchangeRecorder $exchangeRecorder = null,
     ) {
     }
 
     public function completeStructuredChat(string $schemaName, array $messages, array $jsonSchema, array $options = []): array
     {
         $startedAt = hrtime(true);
-        $response = $this->postJson('/v1/chat/completions', $this->payloadFor($schemaName, $messages, $jsonSchema, $options));
+        $payload = $this->payloadFor($schemaName, $messages, $jsonSchema, $options);
+        $response = $this->postJson('/v1/chat/completions', $payload, $this->exchangeContext($options));
         $decoded = StructuredChatCompletionDecoder::decodeOpenAiCompatiblePayload($response);
 
         return [
@@ -66,8 +68,9 @@ final class OpenAiCompatibleStructuredChatProvider implements StructuredChatProv
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
      */
-    private function postJson(string $path, array $payload): array
+    private function postJson(string $path, array $payload, array $exchangeContext = []): array
     {
+        $startedAt = hrtime(true);
         $url = rtrim($this->baseUrl, '/') . $path;
         $body = json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
         $headers = array_merge([
@@ -106,6 +109,7 @@ final class OpenAiCompatibleStructuredChatProvider implements StructuredChatProv
         $diagnostics['response']['status_code'] = $this->statusCode($http_response_header ?? []);
         $diagnostics['response']['headers'] = $http_response_header ?? [];
         $diagnostics['response']['body'] = $raw === false ? null : $raw;
+        $this->recordExchange($exchangeContext, $diagnostics, 'transport_error', $startedAt);
 
         if ($raw === false) {
             $error = error_get_last();
@@ -125,6 +129,12 @@ final class OpenAiCompatibleStructuredChatProvider implements StructuredChatProv
             );
         }
         $diagnostics['response']['decoded'] = $decoded;
+        $this->recordExchange(
+            $exchangeContext,
+            $diagnostics,
+            $diagnostics['response']['status_code'] >= 200 && $diagnostics['response']['status_code'] < 300 ? 'completed' : 'provider_error',
+            $startedAt
+        );
 
         if ($diagnostics['response']['status_code'] < 200 || $diagnostics['response']['status_code'] >= 300) {
             $message = $this->errorMessageFromResponse($decoded);
@@ -132,6 +142,34 @@ final class OpenAiCompatibleStructuredChatProvider implements StructuredChatProv
         }
 
         return $decoded;
+    }
+
+    /** @param array<string, mixed> $options @return array<string, mixed> */
+    private function exchangeContext(array $options): array
+    {
+        return is_array($options['exchange_context'] ?? null) ? $options['exchange_context'] : [];
+    }
+
+    /** @param array<string, mixed> $context @param array<string, mixed> $diagnostics */
+    private function recordExchange(array $context, array $diagnostics, string $status, int $startedAt): void
+    {
+        if ($this->exchangeRecorder === null) {
+            return;
+        }
+
+        $response = is_array($diagnostics['response'] ?? null) ? $diagnostics['response'] : [];
+        $request = is_array($diagnostics['request'] ?? null) ? $diagnostics['request'] : [];
+        $context['provider'] = $context['provider'] ?? $this->providerName;
+        $context['provider_model'] = $context['provider_model'] ?? $this->model;
+        $context['provider_request_id'] = $context['provider_request_id'] ?? ($response['decoded']['id'] ?? null);
+        $this->exchangeRecorder->record(
+            $context,
+            $request,
+            $response,
+            $status,
+            $this->elapsedMilliseconds($startedAt),
+            is_array($diagnostics['error'] ?? null) ? $diagnostics['error'] : []
+        );
     }
 
     /**

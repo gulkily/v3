@@ -6,6 +6,7 @@ namespace ForumRewrite\Agent;
 
 use ForumRewrite\Analysis\DedalusPostAnalyzer;
 use ForumRewrite\Analysis\ProviderRequestException;
+use ForumRewrite\Llm\LlmExchangeRecorder;
 use ForumRewrite\Support\UnicodeTextPolicy;
 use RuntimeException;
 
@@ -25,6 +26,7 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
         private readonly int $timeoutSeconds = 60,
         private readonly ?string $systemPromptTemplatePath = null,
         private readonly int $maxCompletionTokens = 6000,
+        private readonly ?LlmExchangeRecorder $exchangeRecorder = null,
     ) {
     }
 
@@ -51,6 +53,10 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
                 ],
             ],
             'max_completion_tokens' => max(1200, $this->maxCompletionTokens),
+        ], [
+            'call_type' => 'agent_reply_generation',
+            'post_id' => $context['post_id'] ?? null,
+            'content_hash' => $context['content_hash'] ?? null,
         ]);
         $externalProviderTiming = $this->elapsedMilliseconds($providerStartedAt);
 
@@ -180,8 +186,9 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
      */
-    private function postJson(string $path, array $payload): array
+    private function postJson(string $path, array $payload, array $exchangeContext = []): array
     {
+        $startedAt = hrtime(true);
         $url = rtrim($this->baseUrl, '/') . $path;
         $body = json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
         $headers = [
@@ -229,6 +236,7 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
             $diagnostics = $this->diagnosticsWithError($this->lastProviderExchange, new RuntimeException(
                 isset($error['message']) ? (string) $error['message'] : 'Dedalus agent reply request failed before receiving a response.'
             ));
+            $this->recordExchange($exchangeContext, $diagnostics, 'transport_error', $startedAt);
             throw new ProviderRequestException('Dedalus agent reply request failed before receiving a response.', $diagnostics);
         }
 
@@ -238,6 +246,7 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
                 $this->lastProviderExchange,
                 new RuntimeException('Dedalus agent reply response was not valid JSON.')
             );
+            $this->recordExchange($exchangeContext, $diagnostics, 'malformed_response', $startedAt);
             throw new ProviderRequestException('Dedalus agent reply response was not valid JSON.', $diagnostics);
         }
         $this->lastProviderExchange['response']['decoded'] = $decoded;
@@ -245,10 +254,35 @@ final class DedalusAgentReplyGenerator implements AgentReplyGenerator
         if ($statusCode < 200 || $statusCode >= 300) {
             $message = $this->errorMessageFromResponse($decoded);
             $diagnostics = $this->diagnosticsWithError($this->lastProviderExchange, new RuntimeException($message));
+            $this->recordExchange($exchangeContext, $diagnostics, 'provider_error', $startedAt);
             throw new ProviderRequestException($message, $diagnostics);
         }
 
+        $this->recordExchange($exchangeContext, $this->lastProviderExchange, 'completed', $startedAt);
+
         return $decoded;
+    }
+
+    /** @param array<string, mixed> $context @param array<string, mixed> $diagnostics */
+    private function recordExchange(array $context, array $diagnostics, string $status, int $startedAt): void
+    {
+        if ($this->exchangeRecorder === null) {
+            return;
+        }
+
+        $request = is_array($diagnostics['request'] ?? null) ? $diagnostics['request'] : [];
+        $response = is_array($diagnostics['response'] ?? null) ? $diagnostics['response'] : [];
+        $context['provider'] = 'dedalus';
+        $context['provider_model'] = $this->model;
+        $context['provider_request_id'] = $context['provider_request_id'] ?? ($response['decoded']['id'] ?? null);
+        $this->exchangeRecorder->record(
+            $context,
+            $request,
+            $response,
+            $status,
+            $this->elapsedMilliseconds($startedAt),
+            is_array($diagnostics['error'] ?? null) ? $diagnostics['error'] : []
+        );
     }
 
     /**

@@ -29,6 +29,8 @@ use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\Support\ThreadTitle;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
+use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
+use ForumRewrite\Llm\LlmExchangeRecorder;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use PDO;
 use RuntimeException;
@@ -45,6 +47,8 @@ final class Application
     private const CODEX_HANDOFF_DEVELOPMENT_TAGS = ['feature', 'bug', 'task', 'dev', 'development', 'codex', 'implementation', 'fdp'];
     private ?string $appVersion = null;
     private ?FeatureFlagEvaluator $featureFlags = null;
+    private ?LlmExchangeRecorder $llmExchangeRecorder = null;
+    private bool $llmExchangeRecorderInitialized = false;
 
     public function __construct(
         private readonly string $projectRoot,
@@ -4126,7 +4130,7 @@ final class Application
     private function postAnalysisService(): PostAnalysisService
     {
         $config = PrivateConfig::load($this->projectRoot);
-        $analyzer = PostAnalyzerFactory::fromPrivateConfig($config, $this->projectRoot);
+        $analyzer = PostAnalyzerFactory::fromPrivateConfig($config, $this->projectRoot, $this->llmExchangeRecorder());
 
         return new PostAnalysisService(
             new SqlitePostAnalysisStore($this->pdo()),
@@ -4134,6 +4138,29 @@ final class Application
             new UnicodeRiskInspector(),
             new SqliteUnicodeRiskStore($this->pdo())
         );
+    }
+
+    private function llmExchangeRecorder(): ?LlmExchangeRecorder
+    {
+        if ($this->llmExchangeRecorderInitialized) {
+            return $this->llmExchangeRecorder;
+        }
+
+        $this->llmExchangeRecorderInitialized = true;
+        if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::LLM_CONVERSATION_RECORDING_ENABLED)) {
+            return null;
+        }
+
+        $config = PrivateConfig::load($this->projectRoot);
+        $path = LlmExchangeDatabaseConfig::path($this->projectRoot, $config);
+        $directory = dirname($path);
+        if ($directory !== '' && !is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
+            throw new RuntimeException('LLM exchange database directory is not writable: ' . $directory);
+        }
+
+        $this->llmExchangeRecorder = new LlmExchangeRecorder(new PDO('sqlite:' . $path));
+
+        return $this->llmExchangeRecorder;
     }
 
     private function agentRepliesEnabled(): bool
