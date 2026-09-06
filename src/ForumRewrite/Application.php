@@ -31,6 +31,7 @@ use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
 use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
 use ForumRewrite\Llm\LlmExchangeRecorder;
+use ForumRewrite\Llm\SqliteLlmExchangeStore;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use PDO;
 use RuntimeException;
@@ -49,6 +50,8 @@ final class Application
     private ?FeatureFlagEvaluator $featureFlags = null;
     private ?LlmExchangeRecorder $llmExchangeRecorder = null;
     private bool $llmExchangeRecorderInitialized = false;
+    private ?SqliteLlmExchangeStore $llmExchangeStore = null;
+    private bool $llmExchangeStoreInitialized = false;
 
     public function __construct(
         private readonly string $projectRoot,
@@ -237,6 +240,16 @@ final class Application
 
         if ($path === '/tools/sqlite/' || $path === '/tools/sqlite') {
             $this->sendHtml($this->renderSqliteViewer(), 200);
+            return;
+        }
+
+        if ($path === '/tools/llm-exchanges/' || $path === '/tools/llm-exchanges') {
+            $this->handleLlmExchangeList();
+            return;
+        }
+
+        if (preg_match('#^/tools/llm-exchanges/(\d+)/?$#', $path, $matches) === 1) {
+            $this->handleLlmExchangeDetail((int) $matches[1]);
             return;
         }
 
@@ -1244,6 +1257,11 @@ final class Application
                         'description' => 'Inspect the published SQLite read model in your browser.',
                     ],
                     [
+                        'label' => 'LLM Exchanges',
+                        'href' => '/tools/llm-exchanges/',
+                        'description' => 'Review private LLM prompts and responses chronologically.',
+                    ],
+                    [
                         'label' => 'System State',
                         'href' => '/tools/codebase/',
                         'description' => 'Current application version, repository head, and read-model health.',
@@ -1306,6 +1324,62 @@ final class Application
             'tools',
             ['/assets/sql-wasm.js', '/assets/sqlite_viewer.js'],
         );
+    }
+
+    private function handleLlmExchangeList(): void
+    {
+        if (!$this->viewerCanInspectLlmExchanges()) {
+            $this->sendHtml($this->renderMessagePage('LLM Exchanges', 'LLM Exchanges', 'Only approved users can view LLM exchanges, and the exchange UI must be enabled.', 'tools'), 403);
+            return;
+        }
+
+        $this->sendHtml($this->renderLlmExchangeList(), 200);
+    }
+
+    private function handleLlmExchangeDetail(int $exchangeId): void
+    {
+        if (!$this->viewerCanInspectLlmExchanges()) {
+            $this->sendHtml($this->renderMessagePage('LLM Exchange', 'LLM Exchange', 'Only approved users can view LLM exchanges, and the exchange UI must be enabled.', 'tools'), 403);
+            return;
+        }
+
+        $exchange = $this->llmExchangeStore()?->find($exchangeId);
+        if ($exchange === null) {
+            $this->sendHtml($this->renderMessagePage('Not Found', 'Not Found', 'LLM exchange not found.', 'tools'), 404);
+            return;
+        }
+
+        $this->sendHtml($this->renderPageTemplate(
+            'llm_exchange.php',
+            [
+                'exchange' => $exchange,
+                'toolNavOptions' => $this->toolNavOptions('llm-exchanges'),
+            ],
+            'LLM Exchange ' . $exchangeId,
+            'tools'
+        ), 200);
+    }
+
+    private function renderLlmExchangeList(): string
+    {
+        return $this->renderPageTemplate(
+            'llm_exchanges.php',
+            [
+                'exchanges' => $this->llmExchangeStore()?->recent() ?? [],
+                'toolNavOptions' => $this->toolNavOptions('llm-exchanges'),
+            ],
+            'LLM Exchanges',
+            'tools'
+        );
+    }
+
+    private function viewerCanInspectLlmExchanges(): bool
+    {
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+
+        return $this->featureFlags()->isEnabled(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED)
+            && $viewerProfile !== null
+            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
     }
 
     private function renderBookmarklets(): string
@@ -1373,6 +1447,12 @@ final class Application
                 'label' => 'SQLite Viewer',
                 'href' => '/tools/sqlite/',
                 'is_active' => $activeKey === 'sqlite',
+            ],
+            [
+                'key' => 'llm-exchanges',
+                'label' => 'LLM Exchanges',
+                'href' => '/tools/llm-exchanges/',
+                'is_active' => $activeKey === 'llm-exchanges',
             ],
             [
                 'key' => 'codebase',
@@ -4161,6 +4241,28 @@ final class Application
         $this->llmExchangeRecorder = new LlmExchangeRecorder(new PDO('sqlite:' . $path));
 
         return $this->llmExchangeRecorder;
+    }
+
+    private function llmExchangeStore(): ?SqliteLlmExchangeStore
+    {
+        if ($this->llmExchangeStoreInitialized) {
+            return $this->llmExchangeStore;
+        }
+
+        $this->llmExchangeStoreInitialized = true;
+        if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED)) {
+            return null;
+        }
+
+        $config = PrivateConfig::load($this->projectRoot);
+        $path = LlmExchangeDatabaseConfig::path($this->projectRoot, $config);
+        if (!is_file($path)) {
+            return null;
+        }
+
+        $this->llmExchangeStore = new SqliteLlmExchangeStore(new PDO('sqlite:' . $path));
+
+        return $this->llmExchangeStore;
     }
 
     private function agentRepliesEnabled(): bool

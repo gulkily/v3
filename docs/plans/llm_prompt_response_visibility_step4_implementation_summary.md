@@ -38,3 +38,16 @@
   - `git diff --check -- src tests` passed.
 - Notes:
   - Authorization is enforced by the application routes in the next UI stage; the store itself remains a private-database adapter.
+
+## Stage 4 - Tools exchange list and conversation pages
+- Changes:
+  - Added approved-user-only `/tools/llm-exchanges/` chronological listing and `/tools/llm-exchanges/{id}/` read-only detail routes.
+  - Added Tools navigation and a dedicated page entry for LLM Exchanges.
+  - Added list and detail templates showing call metadata, related post, exact stored request/prompt, response, and errors.
+  - Applied the independent UI feature flag and existing approved-profile authorization before loading exchange data.
+  - Kept the private exchange database out of the existing public SQLite viewer/download surfaces.
+- Verification:
+  - PHP syntax checks passed for `Application.php` and both new templates.
+  - `./v3 test LocalAppSmokeTest FeatureFlagEvaluatorTest` preserved the relevant existing route/feature-flag passes; the run also reported pre-existing failures in unrelated profile/core-route/SQLite-viewer/busy-page tests.
+- Notes:
+  - Per-post contextual links and broader exchange capture wiring remain in the next planned stage.
