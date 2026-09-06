@@ -18,6 +18,7 @@ Usage:
   ./v3 archive-thread <thread_id> [repository_root] [database_path] [artifact_root] [archive_path]
   ./v3 private-config [view|refresh-template|--view|--force|--api-key-stdin] [--path=/private/path/secrets.php]
   ./v3 agent-reply cron [--log=/var/log/forum-agent-replies.log]
+  ./v3 agent-response cron run [--limit=10] [--dry-run] [--quiet] [--post-id=<id>]
   ./v3 agent-reply status [post_id] [--limit=25] [--database-path=/path/post_index.sqlite3]
   ./v3 agent-reply test [--timeout=30]
   ./v3 agent-reply test-local
@@ -106,6 +107,32 @@ case "${COMMAND}" in
         echo "  ./v3 agent-reply status [post_id] [--limit=25] [--database-path=/path/post_index.sqlite3]" >&2
         echo "  ./v3 agent-reply test [--timeout=30]" >&2
         echo "  ./v3 agent-reply test-local" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  agent-response)
+    shift
+    SUBCOMMAND="${1:-}"
+    case "${SUBCOMMAND}" in
+      cron)
+        shift
+        CRON_ACTION="${1:-}"
+        case "${CRON_ACTION}" in
+          run)
+            shift
+            php "${ROOT}/scripts/run_agent_reply_requests.php" "$@"
+            ;;
+          *)
+            echo "Usage:" >&2
+            echo "  ./v3 agent-response cron run [--limit=10] [--dry-run] [--quiet] [--post-id=<id>]" >&2
+            exit 1
+            ;;
+        esac
+        ;;
+      *)
+        echo "Usage:" >&2
+        echo "  ./v3 agent-response cron run [--limit=10] [--dry-run] [--quiet] [--post-id=<id>]" >&2
         exit 1
         ;;
     esac
