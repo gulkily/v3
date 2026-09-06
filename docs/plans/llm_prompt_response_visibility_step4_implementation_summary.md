@@ -63,3 +63,14 @@
   - Manual source review confirmed links use the canonical `/tools/llm-exchanges/{id}` detail route and public download paths remain unchanged.
 - Notes:
   - Historical calls without captured exchanges remain unavailable rather than reconstructed.
+
+## Stage 6 - Operations and final verification
+- Changes:
+  - Documented private exchange database configuration, default path, writable-directory requirements, feature flags, and deployment isolation.
+  - Added the private database path to the production environment example.
+- Verification:
+  - Full `./v3 test` run completed; all feature-specific tests passed, including exchange recorder/store, provider, feature-flag, post, and web workflow coverage.
+  - Five pre-existing `LocalAppSmokeTest` failures remain unrelated to this feature: missing profile template, core-route/public-key fixture mismatch, bootstrap schema fixture, SQLite viewer CSS assertion, and busy-page assertion.
+  - Confirmed changed source/templates pass PHP syntax checks and changed files pass whitespace validation.
+- Notes:
+  - The implementation is complete on `feature/llm-prompt-response-visibility`; unrelated existing worktree changes were left untouched.

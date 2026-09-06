@@ -53,6 +53,9 @@ Optional runtime setting:
 - `FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS`: seconds a request waits for the shared write/read-model lock before returning a busy error. The default is `5`.
 - `FORUM_UNICODE_AUTHORED_TEXT`: when set to `true`, subject/body prose may contain visible UTF-8 text such as Cyrillic. The default is disabled.
 - `FORUM_APP_VERSION_NOTIFICATION`: when set to `false`, disables browser-side app version polling and the reload banner. The default is enabled.
+- `LLM_CONVERSATION_RECORDING_ENABLED`: controls private exact-prompt/response capture. The default is enabled.
+- `LLM_CONVERSATION_UI_ENABLED`: controls approved-user/operator web visibility of captured exchanges. The default is enabled.
+- `LLM_EXCHANGE_DATABASE_PATH`: optional private SQLite path; defaults to `<application-root>/state/private/llm_exchanges.sqlite3`.
 
 ## Writable Paths
 
@@ -62,6 +65,7 @@ The web user must be able to write:
 - the parent directory of `FORUM_DATABASE_PATH`
 - the lock file directory next to `FORUM_DATABASE_PATH`
 - `state/private/agent-reply/` under the application root if agent reply fulfillment is enabled
+- the parent directory of `LLM_EXCHANGE_DATABASE_PATH` if LLM conversation recording is enabled
 - sibling static artifacts in `public/` if production uses `public/*.html`
 
 If sibling `public/*.html` artifacts are used and writes are enabled, the application must be able to invalidate affected artifacts after successful writes.
@@ -83,6 +87,8 @@ FORUM_PUBLIC_ARTIFACT_ROOT=/srv/forum-rewrite/app/public
 ```
 
 `FORUM_STATIC_HTML_ROOT` remains available for separate static roots, but the primary production model for this repo is sibling artifacts in `public/`.
+
+LLM exchange records are private runtime data. Keep `LLM_EXCHANGE_DATABASE_PATH` outside `public/`, the canonical repository, and the published read-model database; restrict the file to the deployment/web users. The exchange UI is available only to approved viewers and can be disabled independently with `LLM_CONVERSATION_UI_ENABLED=false`.
 
 ## Site Profile
 
