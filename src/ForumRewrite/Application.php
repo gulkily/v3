@@ -806,6 +806,7 @@ final class Application
         $createdPostId = $this->createdPostIdForThread($threadId, $createdPostId);
         $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $this->fetchAgentReplyGenerationsForPosts($posts);
+        $llmExchangesByPostId = $this->viewerCanInspectLlmExchanges() ? $this->fetchLlmExchangesForPosts($posts) : [];
         $codexHandoffsByPostId = $viewerCanUseCodexHandoff ? $this->fetchCodexHandoffsForPosts($posts) : [];
         $codexHandoffEligiblePostIds = $viewerCanUseCodexHandoff ? $this->codexHandoffEligiblePostIds($posts, $threadRow) : [];
 
@@ -824,6 +825,7 @@ final class Application
                 'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
+                'llmExchangesByPostId' => $llmExchangesByPostId,
                 'codexHandoffsByPostId' => $codexHandoffsByPostId,
                 'codexHandoffEligiblePostIds' => $codexHandoffEligiblePostIds,
                 'agentReplyWorkByPostId' => $this->agentReplyWorkByPostId(
@@ -880,6 +882,7 @@ final class Application
         $posts = [$post];
         $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $this->fetchAgentReplyGenerationsForPosts($posts);
+        $llmExchangesByPostId = $this->viewerCanInspectLlmExchanges() ? $this->fetchLlmExchangesForPosts($posts) : [];
         $codexHandoffsByPostId = $viewerCanUseCodexHandoff ? $this->fetchCodexHandoffsForPosts($posts) : [];
         $threadRow = $this->fetchThread((string) $post['thread_id']);
         $codexHandoffEligiblePostIds = $viewerCanUseCodexHandoff ? $this->codexHandoffEligiblePostIds($posts, $threadRow) : [];
@@ -894,6 +897,7 @@ final class Application
                 'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
+                'llmExchangesByPostId' => $llmExchangesByPostId,
                 'codexHandoffsByPostId' => $codexHandoffsByPostId,
                 'codexHandoffEligiblePostIds' => $codexHandoffEligiblePostIds,
                 'agentReplyWorkByPostId' => $this->agentReplyWorkByPostId(
@@ -2052,6 +2056,33 @@ final class Application
         }
 
         return $generations;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $posts
+     * @return array<string, list<array<string, mixed>>>
+     */
+    private function fetchLlmExchangesForPosts(array $posts): array
+    {
+        $store = $this->llmExchangeStore();
+        if ($store === null) {
+            return [];
+        }
+
+        $exchanges = [];
+        foreach ($posts as $post) {
+            $postId = (string) ($post['post_id'] ?? '');
+            if ($postId === '') {
+                continue;
+            }
+
+            $rows = $store->forPost($postId, 20);
+            if ($rows !== []) {
+                $exchanges[$postId] = $rows;
+            }
+        }
+
+        return $exchanges;
     }
 
     /**

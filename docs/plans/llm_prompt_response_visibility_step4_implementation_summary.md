@@ -51,3 +51,15 @@
   - `./v3 test LocalAppSmokeTest FeatureFlagEvaluatorTest` preserved the relevant existing route/feature-flag passes; the run also reported pre-existing failures in unrelated profile/core-route/SQLite-viewer/busy-page tests.
 - Notes:
   - Per-post contextual links and broader exchange capture wiring remain in the next planned stage.
+
+## Stage 5 - Per-post links and operator diagnostics
+- Changes:
+  - Loaded related exchanges for authorized thread/post rendering and added links to each exchange detail page.
+  - Added the private exchange database path to `agent_reply_status.php` and displayed canonical exchange metadata, exact request, response, and errors.
+  - Preserved hidden links and exchange contents for unapproved/anonymous viewers.
+- Verification:
+  - PHP syntax checks passed for `Application.php`, the operator CLI, and both post-card templates.
+  - `./v3 test LocalAppSmokeTest AgentReplyGenerationTest WriteApiSmokeTest` preserved the relevant passes; the run reported the same pre-existing unrelated LocalAppSmokeTest failures.
+  - Manual source review confirmed links use the canonical `/tools/llm-exchanges/{id}` detail route and public download paths remain unchanged.
+- Notes:
+  - Historical calls without captured exchanges remain unavailable rather than reconstructed.
