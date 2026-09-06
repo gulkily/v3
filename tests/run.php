@@ -37,6 +37,7 @@ $testFiles = [
     __DIR__ . '/TestRunnerBehaviorTest.php',
     __DIR__ . '/ThreadTitleTest.php',
     __DIR__ . '/SqliteQueryCatalogTest.php',
+    __DIR__ . '/SqliteLlmExchangeStoreTest.php',
     __DIR__ . '/UnicodeRiskInspectorTest.php',
     __DIR__ . '/UnicodeRiskStoreTest.php',
     __DIR__ . '/UnicodeTextPolicyTest.php',

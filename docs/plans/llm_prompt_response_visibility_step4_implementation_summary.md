@@ -26,3 +26,15 @@
   - `git diff --check` passed for Stage 2 files.
 - Notes:
   - Read APIs and web presentation remain in later stages; the recorder currently stores request headers in redacted form and does not receive API keys.
+
+## Stage 3 - Authorized exchange read service
+- Changes:
+  - Added `SqliteLlmExchangeStore` for bounded chronological, individual, and related-post exchange lookup.
+  - Hydrated stored request, response, error, and context JSON into read-model arrays for later safe presentation.
+  - Added focused store coverage for ordering, individual lookup, per-post lookup, and payload hydration.
+- Verification:
+  - PHP syntax checks passed for the new source and test files.
+  - `./v3 test LlmExchangeRecorderTest SqliteLlmExchangeStoreTest` passed all tests.
+  - `git diff --check -- src tests` passed.
+- Notes:
+  - Authorization is enforced by the application routes in the next UI stage; the store itself remains a private-database adapter.
