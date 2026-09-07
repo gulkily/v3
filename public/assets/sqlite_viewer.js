@@ -500,7 +500,7 @@
         var normalized = query.trim().replace(/;+$/, "").trim();
         var countSql = "SELECT COUNT(*) AS total_rows FROM (" + normalized + ")";
         var resultSql = "SELECT * FROM (" + normalized + ")";
-        var resultShape = database.exec(resultSql + " LIMIT 0")[0];
+        var resultShape = database.exec(resultSql + " LIMIT 1")[0];
         var hasSort = resultShape && querySortColumn !== null && querySortColumn >= 0 && querySortColumn < resultShape.columns.length && querySortDirection;
         var orderBy = hasSort ? " ORDER BY " + (querySortColumn + 1) + " " + querySortDirection : "";
         var dataSql = resultSql + orderBy + " LIMIT " + (maxQueryRows + 1) + " OFFSET " + (queryPage * maxQueryRows);

@@ -24,4 +24,17 @@
   - `php tests/LocalAppSmokeTest.php` — passed.
   - Confirmed the staged feature diff is limited to query-result rendering and pagination callbacks.
 - Notes:
-  - The current smoke test suite does not yet assert the new query-sort contract; focused assertions are planned for Stage 3.
+  - Focused assertions for the new query-sort contract were added during Stage 3.
+
+## Stage 3 - Regression coverage and verification
+- Changes:
+  - Extended `LocalAppSmokeTest` query-runner contract assertions for sort state, outer ordering, sortable rendering, active indicators, and sort-preserving pagination.
+  - Corrected the result-shape probe to use one row so sql.js exposes column metadata; empty results still fall back to the authored ordering.
+- Verification:
+  - `node --check public/assets/sqlite_viewer.js` — passed.
+  - `php -l tests/LocalAppSmokeTest.php` — passed.
+  - `php tests/run.php LocalAppSmokeTest::testSqliteViewerIncludesPresetReadOnlyQueryContract` — passed.
+  - sql.js in-memory smoke verified descending ordering across the wrapped query result before pagination — passed.
+  - `php tests/run.php` completed with four unrelated pre-existing failures in `LocalAppSmokeTest`; the query-runner contract test passed after updating its expected SQL contract.
+- Notes:
+  - The full-suite baseline failures concern missing profile fixtures/templates, a missing `profiles` table in an existing bootstrap test, and an existing undefined `$css` test variable; none involve query-result sorting.
