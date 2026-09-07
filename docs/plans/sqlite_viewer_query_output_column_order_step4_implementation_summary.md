@@ -25,3 +25,15 @@
   - Ran `php tests/SqliteQueryCatalogTest.php` successfully.
 - Notes:
   - Query expressions, aliases, filters, grouping, ordering, limits, and metadata remain unchanged.
+
+## Stage 3 - Reorder board and activity-detail outputs
+- Changes:
+  - Reordered all three board presets to lead with subject, preview, author, dates, scores, and reply counts before IDs and opaque metadata.
+  - Reordered `activity-all` and `activity-content` to lead with label, author, kind, and timestamp before event identifiers, JSON, provenance, and approval metadata.
+  - Preserved every selected expression, including aliases and internal fields.
+- Verification:
+  - Ran `git diff --check` on all Stage 3 query sources successfully.
+  - Ran `php tests/SqliteQueryCatalogTest.php` successfully.
+  - Reviewed the focused diff to confirm only `SELECT` expression order changed.
+- Notes:
+  - Existing joins, filters, `ORDER BY` clauses, limits, and preset metadata are unchanged.
