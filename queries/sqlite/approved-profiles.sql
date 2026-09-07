@@ -4,7 +4,7 @@
 -- category: people
 -- order: 40
 
-SELECT profile_slug, username, post_count, thread_count
+SELECT username, profile_slug, post_count, thread_count
 FROM profiles
 WHERE is_approved = 1
 ORDER BY username

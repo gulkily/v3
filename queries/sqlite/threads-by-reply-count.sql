@@ -4,7 +4,7 @@
 -- category: content
 -- order: 30
 
-SELECT root_post_id, subject, reply_count, last_activity_at
+SELECT subject, reply_count, last_activity_at, root_post_id
 FROM threads
 ORDER BY reply_count DESC
 LIMIT 10

@@ -13,3 +13,15 @@
   - No runtime or query behavior changed in this stage.
   - The existing `UNION ALL` summary query will retain compatible output positions while keeping its readable summary fields first.
 
+## Stage 2 - Reorder simple preset outputs
+- Changes:
+  - Reordered `recent-posts` to show subject and author before date and post ID.
+  - Reordered `threads-by-reply-count` to show subject and reply activity before date and root-post ID.
+  - Reordered `approved-profiles` to show username before profile slug and counts.
+  - Reordered `recent-activity` to show label and author before kind and timestamp.
+  - Confirmed `activity-counts-by-kind` and `content-totals` already lead with their useful grouping/summary fields and required no source change.
+- Verification:
+  - Reviewed `git diff -- queries/sqlite` to confirm only selected-column order changed.
+  - Ran `php tests/SqliteQueryCatalogTest.php` successfully.
+- Notes:
+  - Query expressions, aliases, filters, grouping, ordering, limits, and metadata remain unchanged.
