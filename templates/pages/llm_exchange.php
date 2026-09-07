@@ -1,7 +1,21 @@
 <?php
-$formatContent = static function ($content) use (&$formatContent) {
+$formatText = static function ($text) {
+    if (is_scalar($text)) {
+        $text = (string) $text;
+    } elseif (!is_string($text)) {
+        return '';
+    }
+
+    $decoded = json_decode($text, true);
+    if (json_last_error() === JSON_ERROR_NONE && (is_array($decoded) || is_object($decoded))) {
+        return (string) json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
+
+    return $text;
+};
+$formatContent = static function ($content) use (&$formatContent, $formatText) {
     if (is_scalar($content)) {
-        return (string) $content;
+        return $formatText($content);
     }
     if (!is_array($content)) {
         return '';
@@ -10,11 +24,11 @@ $formatContent = static function ($content) use (&$formatContent) {
     $parts = [];
     foreach ($content as $item) {
         if (is_array($item) && array_key_exists('text', $item)) {
-            $parts[] = $formatContent($item['text']);
+            $parts[] = $formatText($item['text']);
         } elseif (is_array($item) && array_key_exists('content', $item)) {
             $parts[] = $formatContent($item['content']);
         } elseif (is_scalar($item)) {
-            $parts[] = (string) $item;
+            $parts[] = $formatText($item);
         }
     }
 
@@ -24,14 +38,14 @@ $formatContent = static function ($content) use (&$formatContent) {
 
     return $formatted !== '' ? $formatted : (string) json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 };
-$formatBody = static function ($body) use ($formatContent) {
+$formatBody = static function ($body) {
     if (!is_string($body) || trim($body) === '') {
         return '';
     }
 
     $decoded = json_decode($body, true);
-    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-        return $formatContent($decoded);
+    if (json_last_error() === JSON_ERROR_NONE && (is_array($decoded) || is_object($decoded))) {
+        return (string) json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
 
     return $body;
