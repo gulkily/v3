@@ -509,22 +509,29 @@
         var totalRows = totalRowsResult && totalRowsResult.values.length > 0 ? Number(totalRowsResult.values[0][0]) : 0;
         var totalPages = Math.max(1, Math.ceil(totalRows / maxQueryRows));
         var result = database.exec(dataSql)[0];
-        renderRows(queryResults, result, "The query returned no rows.", maxQueryRows, false, {
+        renderRows(queryResults, result, "The query returned no rows.", maxQueryRows, true, {
           container: queryPagination,
           page: queryPage,
           pageSize: maxQueryRows,
+          sortColumn: querySortColumn,
+          sortDirection: querySortDirection === "DESC" ? "descending" : "ascending",
           totalPages: totalPages,
           totalRows: totalRows,
           hasPrevious: queryPage > 0,
           hasNext: queryPage + 1 < totalPages,
           onPrevious: function () {
             preserveScroll(function () {
-              runQuery(queryPage - 1);
+              runQuery(queryPage - 1, querySortColumn, querySortDirection);
             });
           },
           onNext: function () {
             preserveScroll(function () {
-              runQuery(queryPage + 1);
+              runQuery(queryPage + 1, querySortColumn, querySortDirection);
+            });
+          },
+          onSort: function (columnIndex, direction) {
+            preserveScroll(function () {
+              runQuery(0, columnIndex, direction === "descending" ? "DESC" : "ASC");
             });
           }
         });

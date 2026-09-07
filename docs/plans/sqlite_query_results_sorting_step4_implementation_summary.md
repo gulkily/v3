@@ -12,3 +12,16 @@
   - Full UI interaction is deferred until Stage 2 enables query-result sort headers.
 - Notes:
   - The unrelated pre-existing `todo.txt` worktree change causes a repository-wide `git diff --check` warning and was not modified.
+
+## Stage 2 - Expose query sorting through shared headers
+- Changes:
+  - Enabled the existing sortable-header interaction for query-result tables.
+  - Passed query sort state into the shared renderer so active direction is represented through the existing `aria-sort` contract.
+  - Routed query-result header clicks to the full-result ordering path and preserved the selected sort while navigating pages.
+  - Kept table-preview sorting behavior unchanged.
+- Verification:
+  - `node --check public/assets/sqlite_viewer.js` — passed.
+  - `php tests/LocalAppSmokeTest.php` — passed.
+  - Confirmed the staged feature diff is limited to query-result rendering and pagination callbacks.
+- Notes:
+  - The current smoke test suite does not yet assert the new query-sort contract; focused assertions are planned for Stage 3.
