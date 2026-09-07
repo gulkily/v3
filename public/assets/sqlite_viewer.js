@@ -32,6 +32,8 @@
     var tableSortColumn = null;
     var tableSortDirection = null;
     var queryPage = 0;
+    var querySortColumn = null;
+    var querySortDirection = null;
     var querySelectorPopulated = false;
     // BEGIN GENERATED SQLITE QUERY CATALOG
     var presetQueries = [
@@ -474,10 +476,17 @@
       return normalized !== "" && /^SELECT\b/i.test(normalized) && normalized.indexOf(";") === -1;
     }
 
-    function runQuery(page) {
+    function runQuery(page, sortColumn, sortDirection) {
       if (!database || !queryInput) {
         setQueryStatus("Load the database before running a query.", "error");
         return;
+      }
+      if (arguments.length < 2) {
+        querySortColumn = null;
+        querySortDirection = null;
+      } else {
+        querySortColumn = typeof sortColumn === "number" ? sortColumn : null;
+        querySortDirection = sortDirection === "ASC" || sortDirection === "DESC" ? sortDirection : null;
       }
       queryPage = typeof page === "number" && Number.isFinite(page) && page >= 0 ? page : 0;
       var query = queryInput.value;
@@ -490,7 +499,11 @@
       try {
         var normalized = query.trim().replace(/;+$/, "").trim();
         var countSql = "SELECT COUNT(*) AS total_rows FROM (" + normalized + ")";
-        var dataSql = "SELECT * FROM (" + normalized + ") LIMIT " + (maxQueryRows + 1) + " OFFSET " + (queryPage * maxQueryRows);
+        var resultSql = "SELECT * FROM (" + normalized + ")";
+        var resultShape = database.exec(resultSql + " LIMIT 0")[0];
+        var hasSort = resultShape && querySortColumn !== null && querySortColumn >= 0 && querySortColumn < resultShape.columns.length && querySortDirection;
+        var orderBy = hasSort ? " ORDER BY " + (querySortColumn + 1) + " " + querySortDirection : "";
+        var dataSql = resultSql + orderBy + " LIMIT " + (maxQueryRows + 1) + " OFFSET " + (queryPage * maxQueryRows);
         renderEffectiveQuery(countSql, dataSql);
         var totalRowsResult = database.exec(countSql)[0];
         var totalRows = totalRowsResult && totalRowsResult.values.length > 0 ? Number(totalRowsResult.values[0][0]) : 0;
