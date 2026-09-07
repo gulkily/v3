@@ -87,10 +87,12 @@ Print a concise reference for installing the queued agent reply cron job:
 
 ```bash
 ./v3 agent-reply cron
+```
 
 Run the queued agent reply worker directly:
 
-./v3 agent-response cron run --limit=10
+```bash
+./v3 agent-reply cron run --limit=10
 ```
 
 Validate the configured agent reply LLM provider/API key with one live structured prompt:

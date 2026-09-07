@@ -205,8 +205,8 @@ php scripts/run_agent_reply_requests.php --limit=10
 php scripts/run_agent_reply_requests.php --post-id=<post-id>
 ./v3 agent-reply status <post-id>
 ./v3 agent-reply status --limit=25
-./v3 agent-response cron run --limit=10
-./v3 agent-response cron run --dry-run
+./v3 agent-reply cron run --limit=10
+./v3 agent-reply cron run --dry-run
 ```
 
 ## Site Feature Flags

@@ -51,6 +51,7 @@ function printUsage(): void
 Usage:
   php scripts/agent_reply_cron_reference.php [--log=/var/log/forum-agent-replies.log]
   ./v3 agent-reply cron [--log=/var/log/forum-agent-replies.log]
+  ./v3 agent-reply cron run [--limit=10] [--dry-run] [--quiet] [--post-id=<id>]
 
 Prints a concise reference for installing the queued agent reply request cron job.
 It does not install or modify the crontab.
