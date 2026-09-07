@@ -37,3 +37,14 @@
   - Reviewed the focused diff to confirm only `SELECT` expression order changed.
 - Notes:
   - Existing joins, filters, `ORDER BY` clauses, limits, and preset metadata are unchanged.
+
+## Stage 4 - Regenerate catalog outputs
+- Changes:
+  - Regenerated the browser preset catalog in `public/assets/sqlite_viewer.js`.
+  - Regenerated the downloadable local query pack in `public/assets/sqlite_query_catalog.sql`.
+- Verification:
+  - Ran `php scripts/build_sqlite_query_catalog.php` successfully; it generated all 11 queries.
+  - Ran `git diff --check` on both generated outputs successfully.
+  - Confirmed the generated diff is limited to the reordered SQL payloads and corresponding query-pack text.
+- Notes:
+  - The generated browser and local artifacts remain synchronized with `queries/sqlite/`.
