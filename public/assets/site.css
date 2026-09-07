@@ -3262,6 +3262,39 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   box-sizing: border-box;
 }
 
+.sqlite-query-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sqlite-query-editor,
+.sqlite-query-output {
+  min-width: 0;
+}
+
+/* Explicit overrides reserved for a future front-end layout toggle. */
+.sqlite-query-layout[data-query-layout="stacked"] {
+  display: flex;
+  flex-direction: column;
+}
+
+.sqlite-query-layout[data-query-layout="split"] {
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) 1fr;
+  align-items: start;
+  gap: 1.5rem;
+}
+
+@media (min-width: 960px) {
+  .sqlite-query-layout:not([data-query-layout="stacked"]) {
+    display: grid;
+    grid-template-columns: minmax(280px, 420px) 1fr;
+    align-items: start;
+    gap: 1.5rem;
+  }
+}
+
 .sqlite-result-scroll table {
   width: max-content;
   min-width: 100%;
@@ -3358,6 +3391,11 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 
 [data-role="sqlite-query-input"] {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+[data-role="sqlite-query-select"] {
   width: 100%;
   box-sizing: border-box;
 }
