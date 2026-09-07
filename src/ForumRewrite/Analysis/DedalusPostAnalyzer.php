@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Analysis;
 
 use ForumRewrite\Llm\OpenAiCompatibleStructuredChatProvider;
+use ForumRewrite\Llm\LlmExchangeRecorder;
 use ForumRewrite\Llm\StructuredChatCompletionDecoder;
 use ForumRewrite\Llm\StructuredChatProvider;
 
@@ -35,6 +36,7 @@ final class DedalusPostAnalyzer implements PostAnalyzer
         int $timeoutSeconds = 60,
         ?string $systemPromptTemplatePath = null,
         ?StructuredChatProvider $provider = null,
+        ?LlmExchangeRecorder $exchangeRecorder = null,
     ) {
         $this->systemPromptTemplatePath = $systemPromptTemplatePath
             ?? dirname(__DIR__, 3) . '/prompts/dedalus_post_analysis_system.txt';
@@ -43,7 +45,8 @@ final class DedalusPostAnalyzer implements PostAnalyzer
             $apiKey,
             $baseUrl,
             $model,
-            $timeoutSeconds
+            $timeoutSeconds,
+            exchangeRecorder: $exchangeRecorder,
         );
     }
 
@@ -62,7 +65,14 @@ final class DedalusPostAnalyzer implements PostAnalyzer
                 ],
             ],
             $this->responseSchema(),
-            ['max_completion_tokens' => 8000]
+            [
+                'max_completion_tokens' => 8000,
+                'exchange_context' => [
+                    'call_type' => 'post_analysis',
+                    'post_id' => $context['post_id'] ?? null,
+                    'content_hash' => $context['content_hash'] ?? null,
+                ],
+            ]
         );
         $decoded = $completion['decoded'];
 

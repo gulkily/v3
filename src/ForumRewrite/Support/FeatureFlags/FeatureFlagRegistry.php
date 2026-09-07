@@ -11,6 +11,8 @@ final class FeatureFlagRegistry
     public const APP_VERSION_NOTIFICATION = 'FORUM_APP_VERSION_NOTIFICATION';
     public const DEDALUS_AGENT_REPLIES_ENABLED = 'DEDALUS_AGENT_REPLIES_ENABLED';
     public const DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED = 'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED';
+    public const LLM_CONVERSATION_RECORDING_ENABLED = 'LLM_CONVERSATION_RECORDING_ENABLED';
+    public const LLM_CONVERSATION_UI_ENABLED = 'LLM_CONVERSATION_UI_ENABLED';
 
     /**
      * @return list<FeatureFlagDefinition>
@@ -57,6 +59,22 @@ final class FeatureFlagRegistry
                 'Allow eligible post pages to trigger agent reply work automatically.',
                 true,
                 self::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
+                'private',
+            ),
+            new FeatureFlagDefinition(
+                self::LLM_CONVERSATION_RECORDING_ENABLED,
+                'LLM conversation recording',
+                'Record exact LLM prompts and responses in the private exchange database.',
+                true,
+                self::LLM_CONVERSATION_RECORDING_ENABLED,
+                'private',
+            ),
+            new FeatureFlagDefinition(
+                self::LLM_CONVERSATION_UI_ENABLED,
+                'LLM conversation UI',
+                'Make recorded LLM prompts and responses available in the approved-user/operator web UI.',
+                true,
+                self::LLM_CONVERSATION_UI_ENABLED,
                 'private',
             ),
         ];

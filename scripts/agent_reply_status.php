@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/autoload.php';
 
+use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
+use ForumRewrite\Llm\SqliteLlmExchangeStore;
+use ForumRewrite\Support\PrivateConfig;
+
 $projectRoot = dirname(__DIR__);
 
 try {
@@ -28,6 +32,7 @@ try {
     fwrite(STDOUT, "Database: {$databasePath}\n");
     fwrite(STDOUT, 'Post filter: ' . ($postId === '' ? '(recent skipped rows)' : $postId) . "\n");
     fwrite(STDOUT, "Limit: {$limit}\n\n");
+    printExchangeRows($projectRoot, $postId, $limit);
 
     if (!tableExists($pdo, 'post_generated_responses')) {
         fwrite(STDOUT, "No post_generated_responses table exists yet.\n");
@@ -259,6 +264,35 @@ function printAnalysisOnlyRows(PDO $pdo, string $postId): void
             . ' completed_at=' . value($row['completed_at'] ?? null)
             . "\n");
     }
+}
+
+function printExchangeRows(string $projectRoot, string $postId, int $limit): void
+{
+    $path = LlmExchangeDatabaseConfig::path($projectRoot, PrivateConfig::load($projectRoot));
+    if (!is_file($path)) {
+        return;
+    }
+
+    $store = new SqliteLlmExchangeStore(new PDO('sqlite:' . $path));
+    $rows = $postId === '' ? $store->recent($limit) : $store->forPost($postId, $limit);
+    if ($rows === []) {
+        return;
+    }
+
+    fwrite(STDOUT, "LLM exchanges (private database):\n");
+    foreach ($rows as $row) {
+        fwrite(STDOUT, "  Exchange #" . $row['id'] . "\n");
+        printField('call_type', $row['call_type'], 4);
+        printField('occurred_at', $row['occurred_at'], 4);
+        printField('status', $row['status'], 4);
+        printField('provider', $row['provider'], 4);
+        printField('provider_model', $row['provider_model'], 4);
+        printField('provider_request_id', $row['provider_request_id'], 4);
+        printField('request', $row['request'], 4);
+        printField('response', $row['response'], 4);
+        printField('error', $row['error'], 4);
+    }
+    fwrite(STDOUT, "\n");
 }
 
 function printField(string $name, mixed $value, int $indent = 2): void

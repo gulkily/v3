@@ -1,0 +1,76 @@
+# LLM Prompt and Response Visibility Step 4 Implementation Summary
+
+## Stage 1 - Private exchange boundary and feature flags
+- Changes:
+  - Added private-configured `LLM_EXCHANGE_DATABASE_PATH` with a default under `state/private/llm_exchanges.sqlite3`.
+  - Added independent private feature flags for `LLM_CONVERSATION_RECORDING_ENABLED` and `LLM_CONVERSATION_UI_ENABLED`, both defaulting to enabled.
+  - Added the new settings to the private secrets example and feature-flag registry/config loading.
+  - Added focused coverage for default/override database paths and default-on flag behavior.
+- Verification:
+  - `php -l` passed for all changed PHP source/test files.
+  - `./v3 test FeatureFlagEvaluatorTest LlmExchangeDatabaseConfigTest` passed all tests.
+  - `git diff --check` was clean for Stage 1 files; it reports a pre-existing whitespace issue in unrelated `todo.txt`.
+- Notes:
+  - The database is only configured in this stage; exchange schema, capture, and web access are staged separately.
+
+## Stage 2 - Exact provider exchange capture
+- Changes:
+  - Added `LlmExchangeRecorder` with a separate SQLite exchange table and indexes for chronological and related-post lookup.
+  - Captured redacted request data and exact response data at OpenAI-compatible and Anthropic provider boundaries.
+  - Added exchange context for post analysis and direct agent reply generation, including call type, post, content hash, provider, model, and request ID.
+  - Recorded completed, provider-error, malformed-response, and transport-error outcomes while honoring the recording flag.
+  - Added focused recorder tests and registered them with the test runner.
+- Verification:
+  - PHP syntax checks passed for all changed source and test files.
+  - `./v3 test FeatureFlagEvaluatorTest LlmExchangeDatabaseConfigTest LlmExchangeRecorderTest OpenAiCompatibleStructuredChatProviderTest AnthropicStructuredChatProviderTest DedalusPostAnalyzerTest` passed all tests.
+  - `git diff --check` passed for Stage 2 files.
+- Notes:
+  - Read APIs and web presentation remain in later stages; the recorder currently stores request headers in redacted form and does not receive API keys.
+
+## Stage 3 - Authorized exchange read service
+- Changes:
+  - Added `SqliteLlmExchangeStore` for bounded chronological, individual, and related-post exchange lookup.
+  - Hydrated stored request, response, error, and context JSON into read-model arrays for later safe presentation.
+  - Added focused store coverage for ordering, individual lookup, per-post lookup, and payload hydration.
+- Verification:
+  - PHP syntax checks passed for the new source and test files.
+  - `./v3 test LlmExchangeRecorderTest SqliteLlmExchangeStoreTest` passed all tests.
+  - `git diff --check -- src tests` passed.
+- Notes:
+  - Authorization is enforced by the application routes in the next UI stage; the store itself remains a private-database adapter.
+
+## Stage 4 - Tools exchange list and conversation pages
+- Changes:
+  - Added approved-user-only `/tools/llm-exchanges/` chronological listing and `/tools/llm-exchanges/{id}/` read-only detail routes.
+  - Added Tools navigation and a dedicated page entry for LLM Exchanges.
+  - Added list and detail templates showing call metadata, related post, exact stored request/prompt, response, and errors.
+  - Applied the independent UI feature flag and existing approved-profile authorization before loading exchange data.
+  - Kept the private exchange database out of the existing public SQLite viewer/download surfaces.
+- Verification:
+  - PHP syntax checks passed for `Application.php` and both new templates.
+  - `./v3 test LocalAppSmokeTest FeatureFlagEvaluatorTest` preserved the relevant existing route/feature-flag passes; the run also reported pre-existing failures in unrelated profile/core-route/SQLite-viewer/busy-page tests.
+- Notes:
+  - Per-post contextual links and broader exchange capture wiring remain in the next planned stage.
+
+## Stage 5 - Per-post links and operator diagnostics
+- Changes:
+  - Loaded related exchanges for authorized thread/post rendering and added links to each exchange detail page.
+  - Added the private exchange database path to `agent_reply_status.php` and displayed canonical exchange metadata, exact request, response, and errors.
+  - Preserved hidden links and exchange contents for unapproved/anonymous viewers.
+- Verification:
+  - PHP syntax checks passed for `Application.php`, the operator CLI, and both post-card templates.
+  - `./v3 test LocalAppSmokeTest AgentReplyGenerationTest WriteApiSmokeTest` preserved the relevant passes; the run reported the same pre-existing unrelated LocalAppSmokeTest failures.
+  - Manual source review confirmed links use the canonical `/tools/llm-exchanges/{id}` detail route and public download paths remain unchanged.
+- Notes:
+  - Historical calls without captured exchanges remain unavailable rather than reconstructed.
+
+## Stage 6 - Operations and final verification
+- Changes:
+  - Documented private exchange database configuration, default path, writable-directory requirements, feature flags, and deployment isolation.
+  - Added the private database path to the production environment example.
+- Verification:
+  - Full `./v3 test` run completed; all feature-specific tests passed, including exchange recorder/store, provider, feature-flag, post, and web workflow coverage.
+  - Five pre-existing `LocalAppSmokeTest` failures remain unrelated to this feature: missing profile template, core-route/public-key fixture mismatch, bootstrap schema fixture, SQLite viewer CSS assertion, and busy-page assertion.
+  - Confirmed changed source/templates pass PHP syntax checks and changed files pass whitespace validation.
+- Notes:
+  - The implementation is complete on `feature/llm-prompt-response-visibility`; unrelated existing worktree changes were left untouched.

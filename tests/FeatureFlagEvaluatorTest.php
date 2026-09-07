@@ -19,6 +19,8 @@ final class FeatureFlagEvaluatorTest
             $notification = $evaluator->evaluate(FeatureFlagRegistry::APP_VERSION_NOTIFICATION);
             $agentReplies = $evaluator->evaluate(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED);
             $automaticAgentReplies = $evaluator->evaluate(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED);
+            $conversationRecording = $evaluator->evaluate(FeatureFlagRegistry::LLM_CONVERSATION_RECORDING_ENABLED);
+            $conversationUi = $evaluator->evaluate(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED);
 
             assertSame(false, $unicode->effectiveValue);
             assertSame('default', $unicode->source);
@@ -33,6 +35,10 @@ final class FeatureFlagEvaluatorTest
             assertSame('default', $agentReplies->source);
             assertSame(true, $automaticAgentReplies->effectiveValue);
             assertSame('default', $automaticAgentReplies->source);
+            assertSame(true, $conversationRecording->effectiveValue);
+            assertSame('default', $conversationRecording->source);
+            assertSame(true, $conversationUi->effectiveValue);
+            assertSame('default', $conversationUi->source);
         });
     }
 
@@ -75,6 +81,8 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
+            FeatureFlagRegistry::LLM_CONVERSATION_RECORDING_ENABLED,
+            FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED,
         ], $keys);
     }
 
@@ -168,6 +176,8 @@ PHP);
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
+            FeatureFlagRegistry::LLM_CONVERSATION_RECORDING_ENABLED,
+            FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED,
         ];
         $previous = [];
         foreach ($keys as $key) {

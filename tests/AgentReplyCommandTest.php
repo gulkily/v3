@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../autoload.php';
+
+use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
+
 final class AgentReplyCommandTest
 {
     public function testRootUsageShowsConsolidatedAgentReplyCommand(): void
@@ -10,9 +14,11 @@ final class AgentReplyCommandTest
 
         assertSame(1, $exitCode);
         assertStringContains('./v3 agent-reply cron', $stdout);
+        assertStringContains('./v3 agent-reply cron run', $stdout);
         assertStringContains('./v3 agent-reply status', $stdout);
         assertStringContains('./v3 agent-reply test', $stdout);
         assertStringContains('./v3 agent-reply test-local', $stdout);
+        assertStringNotContains('./v3 agent-response cron run', $stdout);
         assertStringNotContains('agent-reply-cron', $stdout);
         assertStringNotContains('agent-reply-status', $stdout);
         assertSame('', $stderr);
@@ -25,9 +31,30 @@ final class AgentReplyCommandTest
         assertSame(1, $exitCode);
         assertSame('', $stdout);
         assertStringContains('./v3 agent-reply cron', $stderr);
+        assertStringContains('./v3 agent-reply cron run', $stderr);
         assertStringContains('./v3 agent-reply status', $stderr);
         assertStringContains('./v3 agent-reply test', $stderr);
         assertStringContains('./v3 agent-reply test-local', $stderr);
+    }
+
+    public function testAgentReplyCronRunCommandUsesFulfillmentWorker(): void
+    {
+        $databasePath = sys_get_temp_dir() . '/forum-agent-response-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $pdo = new PDO('sqlite:' . $databasePath);
+        new SqliteAgentReplyGenerationStore($pdo);
+
+        try {
+            [$exitCode, $stdout, $stderr] = $this->runCommand(
+                dirname(__DIR__),
+                './v3 agent-reply cron run --database-path=' . escapeshellarg($databasePath) . ' --dry-run'
+            );
+        } finally {
+            @unlink($databasePath);
+        }
+
+        assertSame(0, $exitCode);
+        assertStringContains('Agent reply request dry run', $stdout);
+        assertSame('', $stderr);
     }
 
     public function testAgentReplyLiveTestHelpDescribesProviderCheck(): void
