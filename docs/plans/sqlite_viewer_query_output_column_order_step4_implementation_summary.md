@@ -48,3 +48,17 @@
   - Confirmed the generated diff is limited to the reordered SQL payloads and corresponding query-pack text.
 - Notes:
   - The generated browser and local artifacts remain synchronized with `queries/sqlite/`.
+
+## Stage 5 - Complete regression and manual verification
+- Changes:
+  - Finalized the implementation summary and made no additional runtime changes.
+- Verification:
+  - Ran `php tests/run.php SqliteQueryCatalogTest`; all four catalog tests passed.
+  - Ran the four SQLite viewer-focused `LocalAppSmokeTest` cases for routing, assets, preset read-only behavior, and result scrolling/caps; all passed.
+  - Executed all 11 canonical preset queries successfully against `state/cache/post_index.sqlite3` with the SQLite CLI.
+  - Regenerated the catalog once more and confirmed no generated-output diff remained.
+  - Ran focused `git diff --check` successfully for the feature files.
+  - Ran the full `php tests/run.php`; SQLite-related tests passed, while four unrelated existing `LocalAppSmokeTest` failures remained (`profile.php` missing, a public-key assertion, missing `profiles` table in a bootstrap fixture, and an undefined `$css` fixture variable).
+- Notes:
+  - No schema, renderer, ad hoc query, or layout changes were introduced.
+  - The full-suite failures are outside the touched files and did not occur in the focused SQLite viewer checks.
