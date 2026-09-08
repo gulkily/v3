@@ -11,3 +11,12 @@
   - Cross-checked against `/tags/?x=1` (forcing PHP-fallback rendering rather than a stale cached static artifact — the plain `/tags/` request was serving an out-of-date static HTML artifact from before this session's test-suite run added fixture data, an unrelated pre-existing staleness characteristic of this dev environment): counts and tag names matched exactly (`general: 3`, plus `bug`, `like`, `meta`, `needs-review`, `pinned`), confirming Stage 1 reuses `groupThreadsByTag()`'s real data correctly.
 - Notes:
   - The initial comparison against the cached `/tags/` static artifact showed a mismatch (missing `#like`, stale count for `#general`); re-checking with a PHP-fallback request resolved it as static-artifact staleness, not a Forte bug.
+
+## Stage 2 - Flat thread-list pane
+- Changes:
+  - `templates/partials/paned_board_thread_list.php`: new partial rendering every thread as a flat row (Subject via the existing `$threadTitle` closure, From/Date via `$author`/`$timestamp`, Replies count), each row carrying `data-paned-thread-id` and a `data-paned-thread-tags` attribute built from the same board-tags-plus-thread-labels merge logic `groupThreadsByTag()` uses (kept local to this partial since that merge isn't exposed as a reusable helper), so folder filtering in Stage 4 matches the folder tree's own tag membership exactly.
+  - `templates/pages/forte_board.php`: wired the new partial in below the folder tree.
+- Verification:
+  - `php -l`: no syntax errors.
+  - `GET /forte` shows exactly 3 thread rows (`thread-20260908062125-3c6c6e01`, `thread-zenmemes-rules`, `root-001`), matching the real board page's thread set and order when checked with the same `?x=1` PHP-fallback technique (`thanks`, `The Rules of ZenMemes.com`, `Hello world` — same 3 threads, same newest-first order).
+- Notes: none.
