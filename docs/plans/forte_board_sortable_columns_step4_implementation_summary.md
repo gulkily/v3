@@ -13,3 +13,12 @@
   - Re-ran the full 39-real-tag filter check and a keyboard arrow-navigation check on the folder tree: both pass with zero regressions.
   - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures - no regressions.
 - Notes: none.
+
+## Stage 2 - Row data attributes for real sort values
+- Changes:
+  - `templates/partials/paned_board_thread_list.php`: each row gains `data-paned-sort-subject`/`data-paned-sort-from` (lowercased, via the same `$threadTitle()`/`$authorText()` closures already used for display - lowercased specifically to match `forteBoardSortValue()`'s case-insensitive server comparison exactly), `data-paned-sort-date` (raw ISO timestamp), and `data-paned-sort-replies` (raw integer).
+- Verification:
+  - `php -l`: clean.
+  - Raw HTML check against the live instance: a sample row carries `data-paned-sort-subject="a tour of oodi"`, `data-paned-sort-from="ilyag"`, `data-paned-sort-date="2026-09-08T08:14:29Z"`, `data-paned-sort-replies="0"` - lowercased text and raw values as intended, not the formatted display text ("Sep 8, 2026 at ...") shown elsewhere in the row.
+  - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures - no regressions.
+- Notes: none.
