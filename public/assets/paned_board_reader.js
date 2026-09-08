@@ -41,7 +41,10 @@
 
     function selectFolder(tag) {
       folderItems.forEach(function (item) {
-        item.classList.toggle("paned-folder-item--selected", item.getAttribute("data-paned-folder") === tag);
+        var isSelected = item.getAttribute("data-paned-folder") === tag;
+        item.classList.toggle("paned-folder-item--selected", isSelected);
+        item.setAttribute("aria-selected", isSelected ? "true" : "false");
+        item.setAttribute("tabindex", isSelected ? "0" : "-1");
       });
 
       var selectedRowNowHidden = false;
