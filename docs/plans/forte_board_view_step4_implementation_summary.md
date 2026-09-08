@@ -29,3 +29,12 @@
   - `php -l`: no syntax errors.
   - `GET /forte`: `root-001`'s preview block has the correct subject/author/date, is `hidden` by default (correct — nothing selected yet), and its link points to `/threads/root-001/forte` (verified with a direct grep).
 - Notes: none.
+
+## Stage 4 - Client-side folder/thread interaction
+- Changes:
+  - `public/assets/paned_board_reader.js`: new script. Clicking a folder item filters visible thread rows to that tag (exact match against each row's `data-paned-thread-tags` list, split on comma), or shows all for "All Threads" (`data-paned-folder=""`); clicking a visible thread row shows its preview in the content pane and hides the placeholder. If a folder switch hides the currently-selected row, the content pane resets back to the placeholder rather than leaving a stale preview visible.
+  - `renderForteBoard()` now passes `['/assets/paned_board_reader.js']` as script paths.
+- Verification:
+  - `node --check`: no syntax errors.
+  - Real interactive check with headless Chromium (throwaway Puppeteer script, not committed): selecting the "bug" folder correctly hid the other two threads and left only `root-001` visible; selecting that row showed its correct preview ("Hello world") and hid the placeholder; switching to the "pinned" folder (which `root-001` doesn't have) correctly hid it, showed `thread-zenmemes-rules` instead, and reset the content pane back to the placeholder since the previously-selected thread was no longer visible. Zero console/page errors throughout.
+- Notes: none.

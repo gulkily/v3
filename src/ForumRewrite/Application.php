@@ -837,6 +837,7 @@ final class Application
             ],
             'Forte',
             'paned-reader-body',
+            ['/assets/paned_board_reader.js'],
         );
     }
 
