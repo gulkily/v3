@@ -215,6 +215,72 @@
       selectThread(visible[nextIndex].getAttribute("data-paned-thread-id"));
     }
 
+    var sortDefaultDir = { subject: "asc", from: "asc", date: "desc", replies: "desc" };
+    var sortHead = document.querySelector("[data-paned-sort-head]");
+    var sortButtons = sortHead ? Array.prototype.slice.call(sortHead.querySelectorAll("[data-paned-sort-column]")) : [];
+
+    function currentSortState() {
+      for (var i = 0; i < sortButtons.length; i++) {
+        var ariaSort = sortButtons[i].parentElement.getAttribute("aria-sort");
+        if (ariaSort === "ascending" || ariaSort === "descending") {
+          return {
+            column: sortButtons[i].getAttribute("data-paned-sort-column"),
+            dir: ariaSort === "descending" ? "desc" : "asc",
+          };
+        }
+      }
+      return { column: "", dir: "" };
+    }
+
+    function sortValueFor(row, column) {
+      if (column === "replies") {
+        return parseInt(row.getAttribute("data-paned-sort-replies"), 10) || 0;
+      }
+      return row.getAttribute("data-paned-sort-" + column) || "";
+    }
+
+    function applySort(column, dir) {
+      rows.sort(function (a, b) {
+        var va = sortValueFor(a, column);
+        var vb = sortValueFor(b, column);
+        if (va < vb) {
+          return -1;
+        }
+        if (va > vb) {
+          return 1;
+        }
+        return 0;
+      });
+      if (dir === "desc") {
+        rows.reverse();
+      }
+      rows.forEach(function (row) {
+        listBody.appendChild(row);
+      });
+
+      sortButtons.forEach(function (button) {
+        var isActive = button.getAttribute("data-paned-sort-column") === column;
+        button.parentElement.setAttribute("aria-sort", isActive ? (dir === "desc" ? "descending" : "ascending") : "none");
+      });
+    }
+
+    if (sortHead) {
+      sortHead.addEventListener("click", function (event) {
+        var button = event.target.closest ? event.target.closest("[data-paned-sort-column]") : null;
+        if (!button) {
+          return;
+        }
+
+        var column = button.getAttribute("data-paned-sort-column");
+        var current = currentSortState();
+        var dir = current.column === column
+          ? (current.dir === "desc" ? "asc" : "desc")
+          : (sortDefaultDir[column] || "asc");
+
+        applySort(column, dir);
+      });
+    }
+
     var prevButton = document.querySelector("[data-paned-board-prev]");
     var nextButton = document.querySelector("[data-paned-board-next]");
     if (prevButton) {

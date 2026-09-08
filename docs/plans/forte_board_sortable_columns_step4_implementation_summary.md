@@ -22,3 +22,13 @@
   - Raw HTML check against the live instance: a sample row carries `data-paned-sort-subject="a tour of oodi"`, `data-paned-sort-from="ilyag"`, `data-paned-sort-date="2026-09-08T08:14:29Z"`, `data-paned-sort-replies="0"` - lowercased text and raw values as intended, not the formatted display text ("Sep 8, 2026 at ...") shown elsewhere in the row.
   - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures - no regressions.
 - Notes: none.
+
+## Stage 3 - Client-side instant re-sort on header click
+- Changes:
+  - `public/assets/paned_board_reader.js`: `currentSortState()` reads sort state fresh from the DOM's `aria-sort` attributes each time (single source of truth, matching how the server also expresses state via `aria-sort` - no separate JS variable that could drift from what's visually shown). `applySort(column, dir)` sorts the shared `rows` array in place using the Stage 2 data attributes (numeric compare for replies, string compare otherwise - lexicographic ISO-date comparison sorts chronologically correctly), then re-inserts each row into `listBody` via `appendChild` in the new order - moving the *existing* elements rather than rebuilding them, so each row's `hidden`/`tabindex`/`aria-selected` state survives the reorder untouched - then updates `aria-sort` on all four headers so exactly one is non-`"none"`. A click handler on the header row computes the next direction (flip if the same column is clicked again, otherwise the same per-column default used server-side) and calls `applySort()`.
+- Verification:
+  - `node --check`: clean.
+  - Headless-browser check: selected a thread first (giving it the roving tabindex), then clicked "Subject" - list re-sorted alphabetically (quote-prefixed titles first, correct lexicographic order), `aria-sort="ascending"` on Subject and `"none"` on Date, and the previously-selected thread's row **still held `tabindex="0"`** after being moved - confirming the DOM-move approach (not a rebuild) preserved existing row state. Clicking "Subject" again correctly reversed to descending order (Cyrillic-titled threads sorting after Latin ones, as expected for code-point comparison) and flipped `aria-sort` to `"descending"`.
+  - Re-ran the full 39-real-tag filter check: zero mismatches, confirming re-sorting doesn't interfere with tag-filter visibility logic.
+  - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures - no regressions.
+- Notes: none.
