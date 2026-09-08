@@ -42,3 +42,13 @@
   - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures - no regressions.
   - Re-ran the full 39-real-tag filter check and the original tag-only popstate check: both still pass with zero regressions.
 - Notes: none.
+
+## Stage 5 - Integration verification: tag filter and keyboard nav after sorting
+- Changes: none - pure verification against the explicit Step 1/2 integration point; no defects found, so no code changes this stage.
+- Verification (all against the live 513-thread instance):
+  - Sorted by Subject (ascending), then applied the `#bug` tag filter: exactly 4 rows visible, in correct alphabetical order (`Feature requests 8/10`, `Hello world`, `Users page shows outdated data`, `When characters are updated the cursor position is reset`) - confirms sort order and filter visibility compose correctly rather than one undoing the other.
+  - Arrow-keyed through that sorted+filtered list: focus moved through exactly those 4 rows in the sorted order and correctly clamped at the last one (repeated on further ArrowDown, no error, no leaking into hidden/filtered-out rows).
+  - Re-sorted by Date while a row was keyboard-focused (mid-navigation): the roving tabindex correctly stayed on that exact same thread after the reorder (`matchesPreviouslyFocused: true`, still visible) - confirming the DOM-move approach from Stage 3 keeps `tabindex="0"` attached to the physical row element regardless of how sorting moves it, so a keyboard user's position is never lost mid-sort.
+  - One test-script mistake surfaced along the way (not an application defect): an unscoped `document.querySelector('[tabindex="0"]')` matched the folder tree's own roving-tabindex item (earlier in DOM order) instead of the thread list's, since both panes use the same attribute independently - scoping the query to `[data-paned-board-list-body]` fixed the check. Worth remembering for any future test against this page: tabindex-based queries must be scoped per-pane.
+  - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures - no regressions.
+- Notes: none.
