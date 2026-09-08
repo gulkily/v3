@@ -1,8 +1,26 @@
+<?php
+/**
+ * @var array<int, array<string, mixed>> $threads
+ * @var array<int, array{tag: string, count: int, threads: array}> $tagGroups
+ * @var string $selectedTag
+ */
+$selectedTag ??= '';
+$visibleThreadCount = count($threads);
+if ($selectedTag !== '') {
+    foreach ($tagGroups as $group) {
+        if ($group['tag'] === $selectedTag) {
+            $visibleThreadCount = $group['count'];
+            break;
+        }
+    }
+}
+$titleLabel = $selectedTag === '' ? 'All Threads' : ('#' . $selectedTag);
+?>
 <div class="paned-window">
   <div class="paned-titlebar">
     <span class="paned-titlebar-label">
       <svg class="paned-titlebar-icon" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect width="14" height="14" fill="#dfe8ff"/><rect x="2" y="2" width="10" height="2" fill="#0a246a"/><rect x="2" y="5" width="7" height="2" fill="#0a246a"/><rect x="2" y="8" width="9" height="2" fill="#0a246a"/></svg>
-      <span data-paned-board-title-label>Forte — [All Threads]</span>
+      <span data-paned-board-title-label>Forte — [<?= $e($titleLabel) ?>]</span>
     </span>
     <span class="paned-titlebar-controls"><span>_</span><span>&#9633;</span><span>&times;</span></span>
   </div>
@@ -30,14 +48,14 @@
     </button>
   </div>
   <div class="paned-board-layout">
-<?= $indent($partial('partials/paned_folder_tree.php', ['tagGroups' => $tagGroups, 'totalThreadCount' => count($threads)]), 2) ?>
+<?= $indent($partial('partials/paned_folder_tree.php', ['tagGroups' => $tagGroups, 'totalThreadCount' => count($threads), 'selectedTag' => $selectedTag]), 2) ?>
     <div class="paned-board-main paned-panes-stack">
-<?= $indent($partial('partials/paned_board_thread_list.php', ['threads' => $threads]), 3) ?>
+<?= $indent($partial('partials/paned_board_thread_list.php', ['threads' => $threads, 'selectedTag' => $selectedTag]), 3) ?>
 <?= $indent($partial('partials/paned_board_content_pane.php', ['threads' => $threads]), 3) ?>
     </div>
   </div>
   <div class="paned-statusbar">
-    <span data-paned-board-status-count data-paned-board-total-count="<?= count($threads) ?>" data-paned-board-tag-count="<?= count($tagGroups) ?>"><?= count($threads) ?> thread<?= count($threads) === 1 ? '' : 's' ?> · <?= count($tagGroups) ?> tags</span>
+    <span data-paned-board-status-count data-paned-board-total-count="<?= count($threads) ?>" data-paned-board-tag-count="<?= count($tagGroups) ?>"><?php if ($selectedTag === ''): ?><?= count($threads) ?> thread<?= count($threads) === 1 ? '' : 's' ?> · <?= count($tagGroups) ?> tags<?php else: ?>Showing <?= $visibleThreadCount ?> of <?= count($threads) ?> threads (#<?= $e($selectedTag) ?>)<?php endif; ?></span>
     <span>Forte reader</span>
   </div>
 </div>
