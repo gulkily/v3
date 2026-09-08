@@ -3625,6 +3625,10 @@ body.paned-reader-body {
   border-bottom: 1px solid var(--paned-chrome-dark);
 }
 
+.paned-list-row[hidden] {
+  display: none;
+}
+
 .paned-list-row:hover {
   background: #e7edf7;
 }

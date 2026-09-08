@@ -73,3 +73,14 @@
   - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures as every prior check in this feature branch — no regressions.
 - Notes:
   - The reply-tree fragment endpoint is read-only and returns no data beyond what a viewer could already see by visiting `/threads/{id}/forte` directly — no new information exposure, just a different, more convenient delivery path.
+
+## Stage 7 - Fix: hiding a `.paned-list-row` via the `hidden` attribute had no visual effect
+- Root cause: `.paned-list-row { display: flex; ... }` (site.css) has equal CSS specificity to the browser's built-in `[hidden] { display: none }` rule; author styles win that tie regardless of source order, so every row stayed visually `display: flex` even after JS set `row.hidden = true`. This affected **both** the board view's tag filtering and the single-thread reader's reply collapse/expand, since both toggle the same `.paned-list-row` class's `hidden` attribute.
+- Why prior automated checks missed it: every previous verification pass (Stages 4-6, and the earlier single-thread Stage 5) asserted on the `.hidden` DOM *property* (`row.hidden === true`) as proof filtering/collapsing worked, never on the actual computed `display` or rendered bounding box — so the tests and the bug shared the exact same blind spot. The user's direct report ("tag highlights, but list doesn't change") was the only signal that actually caught this; this also fully explains an earlier reproducible screenshot anomaly (a real mouse click landing on a row that was marked `hidden` but still visually present and clickable) that was never root-caused at the time.
+- Fix: added `.paned-list-row[hidden] { display: none; }` (site.css) — same class plus attribute selector, higher specificity than the class alone, so it wins regardless of source order.
+- Verification (corrected methodology - computed style and bounding-rect visibility, not the DOM property):
+  - Re-ran the all-39-real-tags check using `getComputedStyle(row).display !== 'none'` as the visibility test instead of `!row.hidden`: zero mismatches, and (unlike before) this now reflects what a real user actually sees.
+  - Single-thread Forte reader: confirmed the reply row's computed `display` goes from `flex` to `none` on collapse, and `getBoundingClientRect().height` goes to 0 - genuinely invisible now, not just DOM-flagged.
+  - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures - no regressions.
+- Notes:
+  - This is a good general lesson for this feature going forward: any future `hidden`-toggling code should be paired with an explicit `[hidden] { display: none }` rule wherever the toggled element's own class sets `display`, and verification should check computed style / rendered geometry, not just the DOM property.
