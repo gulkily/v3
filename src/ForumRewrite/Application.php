@@ -802,16 +802,51 @@ final class Application
         }
 
         $title = $this->displayThreadTitle($threadRow);
+        $posts = $this->fetchThreadPosts($threadId);
+        $replyTree = $this->buildReplyTree($posts);
 
         return $this->renderPageTemplate(
             'forte.php',
             [
                 'thread' => $threadRow,
                 'title' => $title,
+                'replyTree' => $replyTree,
             ],
             $title,
             'board',
         );
+    }
+
+    /**
+     * Nests a flat, sequence_number-ordered post list into a reply tree using
+     * each post's parent_id. A post whose parent_id is missing or not present
+     * in the fetched set (e.g. hidden/deleted) is treated as a root.
+     *
+     * @param array<int, array<string, mixed>> $posts
+     * @return array<int, array{post: array<string, mixed>, children: array}>
+     */
+    private function buildReplyTree(array $posts): array
+    {
+        $nodesByPostId = [];
+        foreach ($posts as $post) {
+            $nodesByPostId[(string) $post['post_id']] = [
+                'post' => $post,
+                'children' => [],
+            ];
+        }
+
+        $roots = [];
+        foreach ($nodesByPostId as $postId => &$node) {
+            $parentId = $node['post']['parent_id'] !== null ? (string) $node['post']['parent_id'] : null;
+            if ($parentId !== null && $parentId !== $postId && isset($nodesByPostId[$parentId])) {
+                $nodesByPostId[$parentId]['children'][] = &$node;
+            } else {
+                $roots[] = &$node;
+            }
+        }
+        unset($node);
+
+        return $roots;
     }
 
     private function renderThread(string $threadId, string $createdPostId = ''): ?string

@@ -15,3 +15,13 @@
 - Notes:
   - `root-001`'s default `/threads/root-001` response is served from a prebuilt static HTML artifact (`route-source: static-html`), so the new link won't appear there until the next `php scripts/build_static_artifacts.php` run — this is expected/existing static-artifact behavior, not a Stage 1 defect, and isn't part of this stage's scope.
   - No naming collision found with `/tags/`, `/posts/`, or other existing route segments.
+
+## Stage 2 - Build reply-tree data shaping
+- Changes:
+  - `src/ForumRewrite/Application.php`: added `buildReplyTree(array $posts): array`, a pure function that nests the flat, `sequence_number`-ordered post list from `fetchThreadPosts()` into a tree using each post's `parent_id`. A post whose `parent_id` is missing or not present in the fetched set falls back to being treated as a root. No changes to `fetchThread()`/`fetchThreadPosts()`, no new SQL.
+  - `renderForte()` now calls `fetchThreadPosts()` and `buildReplyTree()` and passes the result as `replyTree` into the (still-stub) page template's data; the stub template does not consume it yet — that's Stage 3.
+- Verification:
+  - `php -l`: no syntax errors.
+  - Wrote a throwaway script (not committed) that used reflection to call the private `buildReplyTree()` directly with a synthetic post set covering: a root, a 3-deep reply chain (p1→p2→p3→p4), a second branch (p1→p5→p6), and an orphaned `parent_id` pointing at a post not in the set (p7). Output matched expectations exactly: both branches nested correctly under p1 in original sibling order, and the orphan (p7) fell back to appearing as a root rather than being dropped or erroring.
+- Notes:
+  - Orphan-parent fallback (treat as root) was the open question flagged in the Step 3 plan for this stage; resolved as above and confirmed by the test above.
