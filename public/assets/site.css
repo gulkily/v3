@@ -3545,7 +3545,7 @@ body.paned-reader-body {
   border-right: 1px solid var(--paned-border-dark);
 }
 
-.paned-sort-button {
+button.paned-sort-button {
   display: block;
   width: 100%;
   margin: 0;
