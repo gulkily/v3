@@ -1,5 +1,12 @@
 # Forte Step 4 Implementation Summary
 
+## Final Verification (Step 4 After)
+- Ran the full automated suite (`./v3 test`) on `feature/forte`: 404 passing, 4 failing.
+- Ran the same suite on `main` (pre-Forte) for comparison: identical 404 passing / same 4 failing, with the same failure messages (a missing/broken `profile.php` template lookup, a stale `profiles` table in a test's SQLite fixture, and a null-argument bug in an unrelated `testSqliteViewerIncludesSchemaExplorerContract` test). Confirms all 4 are pre-existing environment issues, not regressions introduced by this feature.
+- Feature is reachable through normal UI navigation, not just direct URLs: the standard thread page links to Forte ("Open in Forte view") and Forte links back ("Back to standard view"), both confirmed via screenshots in Stage 6.
+- No new roles, migrations, or schema changes were introduced at any stage (per Step 2's explicit non-goal), so there is nothing pending there.
+- Commit count on this branch is 7 (1 planning-doc commit + 6 stage commits), matching FDP's `1 + stage count` minimum; each stage commit includes the corresponding update to this summary in the same commit.
+
 ## Stage 1 - New Forte route and entry-point link
 - Changes:
   - `src/ForumRewrite/Application.php`: added route `^/threads/([^/]+)/forte/?$` (right after the standard thread route) dispatching to a new `renderForte(string $threadId): ?string`, which calls the existing `fetchThread()` (returns `null` → 404 on a missing thread) and renders a stub page via `renderPageTemplate('forte.php', ...)`. No new SQL, no change to existing thread rendering.
