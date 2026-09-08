@@ -19,6 +19,12 @@
     var rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
     var contentPosts = Array.prototype.slice.call(contentPane.querySelectorAll(".paned-content-post"));
 
+    function visibleRows() {
+      return rows.filter(function (row) {
+        return !row.hidden;
+      });
+    }
+
     function selectPost(postId) {
       contentPosts.forEach(function (article) {
         article.hidden = article.getAttribute("data-paned-content-post-id") !== postId;
@@ -26,6 +32,8 @@
       rows.forEach(function (row) {
         var isSelected = row.getAttribute("data-paned-post-id") === postId;
         row.classList.toggle("paned-list-row--selected", isSelected);
+        row.setAttribute("aria-selected", isSelected ? "true" : "false");
+        row.setAttribute("tabindex", isSelected ? "0" : "-1");
       });
     }
 
@@ -35,6 +43,10 @@
       var countMarker = row.querySelector("[data-paned-collapse-count]");
       var collapsing = !countMarker || countMarker.hidden;
       var index = rows.indexOf(row);
+      var currentTabRow = rows.filter(function (r) {
+        return r.getAttribute("tabindex") === "0";
+      })[0];
+      var currentTabRowNowHidden = false;
 
       for (var i = index + 1; i < rows.length; i++) {
         var candidateDepth = parseInt(rows[i].getAttribute("data-paned-depth"), 10);
@@ -42,6 +54,14 @@
           break;
         }
         rows[i].hidden = collapsing;
+        if (collapsing && rows[i] === currentTabRow) {
+          currentTabRowNowHidden = true;
+        }
+      }
+
+      if (currentTabRowNowHidden) {
+        currentTabRow.setAttribute("tabindex", "-1");
+        row.setAttribute("tabindex", "0");
       }
 
       if (toggle) {
@@ -89,9 +109,7 @@
     }
 
     function stepSelection(delta) {
-      var visible = rows.filter(function (row) {
-        return !row.hidden;
-      });
+      var visible = visibleRows();
       if (visible.length === 0) {
         return;
       }
@@ -125,5 +143,27 @@
         stepSelection(1);
       });
     }
+
+    listBody.addEventListener("keydown", function (event) {
+      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
+        return;
+      }
+
+      var visible = visibleRows();
+      var currentIndex = visible.indexOf(document.activeElement);
+      if (currentIndex === -1) {
+        return;
+      }
+
+      var nextIndex = currentIndex + (event.key === "ArrowDown" ? 1 : -1);
+      if (nextIndex < 0 || nextIndex >= visible.length) {
+        return;
+      }
+
+      event.preventDefault();
+      var nextRow = visible[nextIndex];
+      selectPost(nextRow.getAttribute("data-paned-post-id"));
+      nextRow.focus();
+    });
   });
 })();

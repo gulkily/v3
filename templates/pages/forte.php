@@ -27,7 +27,7 @@
     </button>
   </div>
   <div class="paned-panes-stack">
-<?= $indent($partial('partials/paned_list_pane.php', ['replyTree' => $replyTree]), 2) ?>
+<?= $indent($partial('partials/paned_list_pane.php', ['replyTree' => $replyTree, 'rootPostId' => (string) $thread['root_post_id']]), 2) ?>
 <?= $indent($partial('partials/paned_content_pane.php', ['posts' => $posts, 'thread' => $thread]), 2) ?>
   </div>
   <div class="paned-statusbar">

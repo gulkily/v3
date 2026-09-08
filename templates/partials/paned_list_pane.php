@@ -1,6 +1,7 @@
 <?php
 /**
  * @var array<int, array{post: array<string, mixed>, children: array}> $replyTree
+ * @var string $rootPostId
  */
 $countDescendants = null;
 $countDescendants = function (array $node) use (&$countDescendants): int {
@@ -31,15 +32,17 @@ $fallbackSubject = static function (array $post): string {
 };
 
 $renderNode = null;
-$renderNode = function (array $node, int $depth) use (&$renderNode, $countDescendants, $fallbackSubject, $e, $author, $timestamp): string {
+$renderNode = function (array $node, int $depth) use (&$renderNode, $countDescendants, $fallbackSubject, $e, $author, $timestamp, $rootPostId): string {
     $post = $node['post'];
     $postId = (string) $post['post_id'];
     $isAgentPost = (string) ($post['author_label'] ?? '') === 'reply-agent';
     $hasChildren = $node['children'] !== [];
     $descendantCount = $hasChildren ? $countDescendants($node) : 0;
+    $isSelected = $postId === $rootPostId;
 
     $html = '<div class="paned-list-row" data-paned-post-id="' . $e($postId) . '" data-paned-depth="' . $depth . '"'
-        . ($hasChildren ? ' data-paned-has-children="1"' : '') . '>';
+        . ($hasChildren ? ' data-paned-has-children="1"' : '')
+        . ' role="option" aria-selected="' . ($isSelected ? 'true' : 'false') . '" tabindex="' . ($isSelected ? '0' : '-1') . '">';
     $html .= '<span class="paned-list-toggle"' . ($hasChildren ? ' data-paned-toggle="' . $e($postId) . '"' : '') . '>'
         . ($hasChildren ? '&#9662;' : '') . '</span>';
     $html .= '<span class="paned-list-subject" style="padding-left:' . ($depth * 16) . 'px">';
@@ -74,5 +77,5 @@ foreach ($replyTree as $rootNode) {
     <span class="paned-list-from-head">From</span>
     <span class="paned-list-date-head">Date</span>
   </div>
-  <div class="paned-list-body" data-paned-list-body><?= $listRowsHtml ?></div>
+  <div class="paned-list-body" data-paned-list-body role="listbox" aria-label="Replies"><?= $listRowsHtml ?></div>
 </div>

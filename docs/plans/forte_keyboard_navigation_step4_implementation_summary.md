@@ -32,3 +32,15 @@
   - Re-ran the full 39-real-tag filter check and the popstate back/forward check: both still pass with zero mismatches after these changes.
   - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures - no regressions.
 - Notes: none.
+
+## Stage 4 - Single-thread reply list: same pattern, second file
+- Changes:
+  - `templates/pages/forte.php` / `templates/partials/paned_list_pane.php`: the page now passes `rootPostId` through so the recursive row-rendering closure can mark the root post's row `role="option" aria-selected="true" tabindex="0"` (matching the content pane's own default-selected post) and every other row `tabindex="-1"`; the list body container gets `role="listbox"`.
+  - `public/assets/paned_reader.js`: extracted `visibleRows()` and switched both the existing `stepSelection()` (used by the Prev/Next toolbar buttons) and the new keydown handler to call it, so the two can't compute "visible" differently, per the Step 3 plan's explicit risk note. `selectPost()` now also sets `aria-selected`/`tabindex` in its existing loop. `toggleCollapse()` now also detects whether collapsing a branch just hid the row currently holding the roving tabindex and, if so, moves it to the toggled (ancestor) row - a necessary addition beyond the plan's literal wording: without it, a keyboard user who arrowed into a deeply nested reply and then had a mouse-driven collapse hide that row would lose the ability to Tab back into the list at all (no row would have `tabindex="0"`), a worse regression than anything explicitly listed as a Stage 4 risk.
+- Verification:
+  - `php -l` / `node --check`: clean.
+  - Raw HTML check: on a real thread, the root post's row carries `role="option" aria-selected="true" tabindex="0"` and its reply carries `tabindex="-1"`, in the server response.
+  - Headless-browser check on a real 2-reply thread: ArrowDown from the root moved focus+selection through both replies correctly, with the content pane updating to match at each step. Selecting a reply via **keyboard**, then real-mouse-clicking the root's collapse toggle (hiding that reply), correctly moved `tabindex="0"` to the root row (still visible) rather than leaving it stranded on the now-hidden reply - confirmed via `page.click()` (real coordinate-based clicks), after an initial pass with synthetic `.click()` calls gave a false negative (synthetic clicks don't reliably move real DOM focus the way a real click does, the same lesson learned earlier in this feature's development).
+  - Re-ran the full 39-real-tag filter check on the board view: zero mismatches, confirming the shared `.paned-list-row` CSS/behavior changes didn't cross-contaminate the two pages.
+  - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures - no regressions.
+- Notes: none.
