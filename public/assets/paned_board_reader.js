@@ -9,6 +9,7 @@
 
     var folderItems = Array.prototype.slice.call(folderTree.querySelectorAll("[data-paned-folder]"));
     var rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
+    var originalRowOrder = rows.slice();
     var placeholder = contentPane.querySelector("[data-paned-board-content-placeholder]");
     var contentPosts = Array.prototype.slice.call(contentPane.querySelectorAll("[data-paned-board-content-post-id]"));
     var statusCount = document.querySelector("[data-paned-board-status-count]");
@@ -110,15 +111,29 @@
       return new URLSearchParams(location.search).get("tag") || "";
     }
 
-    function urlForTag(tag) {
-      return tag === "" ? "/forte" : "/forte?tag=" + encodeURIComponent(tag);
+    function urlForState(tag, sortColumn, sortDir) {
+      var params = new URLSearchParams();
+      if (tag !== "") {
+        params.set("tag", tag);
+      }
+      if (sortColumn !== "") {
+        params.set("sort", sortColumn);
+        params.set("dir", sortDir);
+      }
+      var qs = params.toString();
+      return "/forte" + (qs ? "?" + qs : "");
+    }
+
+    function pushStateIfChanged(url) {
+      if (url !== location.pathname + location.search) {
+        history.pushState(null, "", url);
+      }
     }
 
     function applyFolderSelection(tag) {
       selectFolder(tag);
-      if (tag !== currentTagFromUrl()) {
-        history.pushState({ paneTag: tag }, "", urlForTag(tag));
-      }
+      var sort = currentSortState();
+      pushStateIfChanged(urlForState(tag, sort.column, sort.dir));
     }
 
     folderTree.addEventListener("click", function (event) {
@@ -149,8 +164,31 @@
       nextItem.focus();
     });
 
+    function restoreOriginalOrder() {
+      rows = originalRowOrder.slice();
+      rows.forEach(function (row) {
+        listBody.appendChild(row);
+      });
+      sortButtons.forEach(function (button) {
+        button.parentElement.setAttribute("aria-sort", "none");
+      });
+    }
+
     window.addEventListener("popstate", function () {
       selectFolder(currentTagFromUrl());
+
+      var params = new URLSearchParams(location.search);
+      var sortColumn = params.get("sort") || "";
+      var sortDir = params.get("dir") || "";
+      if (sortColumn === "") {
+        restoreOriginalOrder();
+        return;
+      }
+
+      if (sortDir !== "asc" && sortDir !== "desc") {
+        sortDir = sortDefaultDir[sortColumn] || "asc";
+      }
+      applySort(sortColumn, sortDir);
     });
 
     listBody.addEventListener("click", function (event) {
@@ -278,6 +316,7 @@
           : (sortDefaultDir[column] || "asc");
 
         applySort(column, dir);
+        pushStateIfChanged(urlForState(currentTagFromUrl(), column, dir));
       });
     }
 

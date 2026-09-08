@@ -32,3 +32,13 @@
   - Re-ran the full 39-real-tag filter check: zero mismatches, confirming re-sorting doesn't interfere with tag-filter visibility logic.
   - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures - no regressions.
 - Notes: none.
+
+## Stage 4 - URL sync for sort state
+- Changes:
+  - `public/assets/paned_board_reader.js`: replaced the tag-only `urlForTag()` with `urlForState(tag, sortColumn, sortDir)`, which combines both into one URL (`?tag=&sort=&dir=`, omitting either param when empty) so tag and sort never clobber each other; `pushStateIfChanged()` centralizes the "don't push a duplicate history entry" check for both the folder-click and the sort-click handlers. The sort-header click handler now also calls `pushStateIfChanged()`. Captured `originalRowOrder` (a snapshot of the initial DOM order) right after `rows` is first read, so `popstate` can restore the true original order when navigating back past the point where any sort was ever applied - not just clear the `aria-sort` indicators. The `popstate` handler now restores both tag (as before) and sort (new): re-applies `applySort()` for a `sort` param present in the URL, or calls the new `restoreOriginalOrder()` when there isn't one.
+- Verification:
+  - `node --check`: clean.
+  - Headless-browser check on the live instance: clicked `#bug` then "Subject" - URL became `?tag=bug&sort=subject&dir=asc`; clicked "Subject" again - `?tag=bug&sort=subject&dir=desc`. Pressed back three times in sequence and got, in order: `dir=asc` restored, then no-sort-but-`tag=bug` restored (list correctly back to `#bug`'s natural order, not sorted), then the true initial state (`/forte`, all 513 visible, "A tour of Oodi" first - confirming `restoreOriginalOrder()` correctly recovered the pre-sort order rather than leaving it in whatever order the last sort left it). Forward twice replayed both steps correctly. A direct load of `/forte?tag=testing&sort=replies&dir=asc` combined both params correctly server-side (3 visible rows, matching `#testing`'s real count).
+  - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures - no regressions.
+  - Re-ran the full 39-real-tag filter check and the original tag-only popstate check: both still pass with zero regressions.
+- Notes: none.
