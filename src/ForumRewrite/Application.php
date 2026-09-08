@@ -433,6 +433,17 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/threads/([^/]+)/forte/?$#', $path, $matches) === 1) {
+            $html = $this->renderForte($matches[1]);
+            if ($html === null) {
+                $this->notFound();
+                return;
+            }
+
+            $this->sendHtml($html, 200);
+            return;
+        }
+
         if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)/?$#', $path, $matches) === 1) {
             $html = $this->renderTagPage($matches[1]);
             if ($html === null) {
@@ -777,6 +788,26 @@ final class Application
             'tag.php',
             [
                 'group' => $group,
+            ],
+            $title,
+            'board',
+        );
+    }
+
+    private function renderForte(string $threadId): ?string
+    {
+        $threadRow = $this->fetchThread($threadId);
+        if ($threadRow === null) {
+            return null;
+        }
+
+        $title = $this->displayThreadTitle($threadRow);
+
+        return $this->renderPageTemplate(
+            'forte.php',
+            [
+                'thread' => $threadRow,
+                'title' => $title,
             ],
             $title,
             'board',

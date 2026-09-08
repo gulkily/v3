@@ -1,4 +1,5 @@
 <section class="stack"<?= $createdPostId !== '' ? ' data-created-post-id="' . $e($createdPostId) . '"' : '' ?>>
+<p class="meta"><a href="/threads/<?= $e($thread['root_post_id']) ?>/forte">Open in Forte view</a></p>
 <?php
 $rootPost = null;
 $replyPosts = [];
