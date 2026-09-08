@@ -30,17 +30,15 @@ $postId = (string) $post['post_id'];
 $isAgentPost = (string) ($post['author_label'] ?? '') === 'reply-agent';
 $isSelectedByDefault = $postId === $rootPostId;
 ?>
-  <article class="card paned-content-post" data-paned-content-post-id="<?= $e($postId) ?>"<?= $isSelectedByDefault ? '' : ' hidden' ?>>
-    <h2><?= $e($fallbackSubject($post)) ?></h2>
-    <p class="meta"><?= $contentMeta($post, 'created_at', '') ?></p>
-<?php if ($isAgentPost): ?>
-    <p class="meta"><span class="agent-label">Agent-authored reply</span></p>
-<?php endif; ?>
-    <div class="body"><?= $br($post['body']) ?></div>
-    <div class="button-row button-row-natural paned-content-actions">
-      <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($postId) ?>">Reply</a>
-      <a href="/posts/<?= $e($postId) ?>">Permalink</a>
+  <article class="paned-content-post" data-paned-content-post-id="<?= $e($postId) ?>"<?= $isSelectedByDefault ? '' : ' hidden' ?>>
+    <div class="paned-content-head">
+      <div class="paned-content-subject"><?= $e($fallbackSubject($post)) ?><?php if ($isAgentPost): ?> <span class="agent-label">(agent-authored)</span><?php endif; ?></div>
+      <div class="paned-content-meta">
+        <span>From: <?= $author($post) ?></span>
+        <span><?= $timestamp((string) ($post['created_at'] ?? '')) ?></span>
+      </div>
     </div>
+    <div class="body"><?= $br($post['body']) ?></div>
   </article>
 <?php endforeach; ?>
 </div>

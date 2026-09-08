@@ -805,7 +805,7 @@ final class Application
         $posts = $this->fetchThreadPosts($threadId);
         $replyTree = $this->buildReplyTree($posts);
 
-        return $this->renderPageTemplate(
+        return $this->renderer()->renderStandalonePage(
             'forte.php',
             [
                 'thread' => $threadRow,
@@ -814,7 +814,7 @@ final class Application
                 'replyTree' => $replyTree,
             ],
             $title,
-            'board',
+            'paned-reader-body',
             ['/assets/paned_reader.js'],
         );
     }

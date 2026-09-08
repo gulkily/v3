@@ -67,5 +67,63 @@
         selectPost(row.getAttribute("data-paned-post-id"));
       }
     });
+
+    function currentSelectedId() {
+      var selectedRow = null;
+      rows.forEach(function (row) {
+        if (row.classList.contains("paned-list-row--selected")) {
+          selectedRow = row;
+        }
+      });
+      if (selectedRow) {
+        return selectedRow.getAttribute("data-paned-post-id");
+      }
+
+      var visiblePost = null;
+      contentPosts.forEach(function (post) {
+        if (!visiblePost && !post.hidden) {
+          visiblePost = post;
+        }
+      });
+      return visiblePost ? visiblePost.getAttribute("data-paned-content-post-id") : null;
+    }
+
+    function stepSelection(delta) {
+      var visible = rows.filter(function (row) {
+        return !row.hidden;
+      });
+      if (visible.length === 0) {
+        return;
+      }
+
+      var currentId = currentSelectedId();
+      var index = -1;
+      for (var i = 0; i < visible.length; i++) {
+        if (visible[i].getAttribute("data-paned-post-id") === currentId) {
+          index = i;
+          break;
+        }
+      }
+
+      var nextIndex = index === -1 ? 0 : index + delta;
+      if (nextIndex < 0 || nextIndex >= visible.length) {
+        return;
+      }
+
+      selectPost(visible[nextIndex].getAttribute("data-paned-post-id"));
+    }
+
+    var prevButton = document.querySelector("[data-paned-prev]");
+    var nextButton = document.querySelector("[data-paned-next]");
+    if (prevButton) {
+      prevButton.addEventListener("click", function () {
+        stepSelection(-1);
+      });
+    }
+    if (nextButton) {
+      nextButton.addEventListener("click", function () {
+        stepSelection(1);
+      });
+    }
   });
 })();

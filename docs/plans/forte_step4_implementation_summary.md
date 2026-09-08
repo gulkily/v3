@@ -1,5 +1,23 @@
 # Forte Step 4 Implementation Summary
 
+## Stage 7 - Post-delivery revision: full isolation and mockup fidelity
+- Changes (per user feedback after initial delivery, reflected in the updated Step 2 doc):
+  - Removed the "Open in Forte view" link from `templates/pages/thread.php` and the "Back to standard view" link from Forte's toolbar — the two pages are now fully isolated in both directions; Forte is reachable only via its direct URL (`/threads/{id}/forte`). This supersedes the "Final Verification" note below about link-based reachability.
+  - Forte no longer renders through the shared `layout.php` (site nav bar, theme selector, global status bar). Added `TemplateRenderer::renderStandalonePage()` and `templates/standalone_layout.php` — a minimal doctype/head/body shell with just the page's own CSS/JS, no site chrome — and switched `renderForte()` to use it.
+  - `.paned-window` now sizes to `min(94vw, 1600px)` with a small margin, centered on a fixed desktop-colored backdrop (`body.paned-reader-body` overriding the `--body-background` token), instead of being constrained to the standard page's 760px content column.
+  - Toolbar rebuilt with icon+label buttons (New, Reply, Prev, Next, Refresh) matching the reference mockup; New/Reply/Refresh are inert (`disabled`) since Forte has no compose/refresh functionality, Prev/Next are wired in `paned_reader.js` to step the selection through the currently visible list rows.
+  - Content pane restyled with a gray meta bar (`.paned-content-head`) showing subject and From/Date above the post body, matching the mockup; the Reply/Permalink action row was removed entirely (Forte is read-only).
+  - Added a status bar (`.paned-statusbar`) showing post count and a static "Forte reader" label.
+  - Added a small SVG icon to the title bar, matching the mockup.
+- Verification:
+  - `php -l` / `node --check` on all touched files; CSS brace-balance check: clean.
+  - Screenshotted Forte at 1280px and 420px with headless Chromium: chrome renders as intended at both widths, backdrop margin visible, no nav bar/theme selector present.
+  - Screenshotted the standard thread page: no Forte link present anywhere, page otherwise unchanged.
+  - Re-ran the Puppeteer interaction script: row selection and collapse/expand still work correctly with zero console errors after the markup rewrite.
+  - Confirmed via `curl` that the standard thread page's HTML contains zero occurrences of "forte"/"Forte".
+- Notes:
+  - The main board/index page has no Forte view — Forte was scoped to single-thread reading only. Flagged to the user as a question rather than assumed; a board-level Forte view (listing threads, not replies) would be a separate follow-up feature if wanted.
+
 ## Final Verification (Step 4 After)
 - Ran the full automated suite (`./v3 test`) on `feature/forte`: 404 passing, 4 failing.
 - Ran the same suite on `main` (pre-Forte) for comparison: identical 404 passing / same 4 failing, with the same failure messages (a missing/broken `profile.php` template lookup, a stale `profiles` table in a test's SQLite fixture, and a null-argument bug in an unrelated `testSqliteViewerIncludesSchemaExplorerContract` test). Confirms all 4 are pre-existing environment issues, not regressions introduced by this feature.

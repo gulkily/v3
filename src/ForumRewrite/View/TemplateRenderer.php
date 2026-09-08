@@ -86,6 +86,36 @@ final class TemplateRenderer
     }
 
     /**
+     * Renders a page with no shared site chrome (no nav bar, theme menu, or
+     * global status bar) - for pages that intentionally present their own
+     * complete, self-contained UI.
+     *
+     * @param array<string, mixed> $pageData
+     * @param string[] $scriptPaths
+     */
+    public function renderStandalonePage(
+        string $pageTemplate,
+        array $pageData,
+        string $title,
+        string $bodyClass = '',
+        array $scriptPaths = [],
+    ): string {
+        $content = $this->renderFile('pages/' . $pageTemplate, $pageData);
+        $assetScriptPaths = [];
+        foreach ($scriptPaths as $scriptPath) {
+            $assetScriptPaths[] = $this->assetPath($scriptPath);
+        }
+
+        return $this->renderFile('standalone_layout.php', [
+            'title' => $title,
+            'content' => $content,
+            'bodyClass' => $bodyClass,
+            'scriptPaths' => $assetScriptPaths,
+            'siteCssPath' => $this->assetPath('/assets/site.css'),
+        ]);
+    }
+
+    /**
      * @param array<string, mixed> $data
      */
     private function renderFile(string $relativePath, array $data): string

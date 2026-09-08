@@ -13,27 +13,28 @@ Users want a two-pane, Forte-Agent-styled thread reader — a nested-reply title
 - List pane shows post titles/subjects indented by reply depth (root post at top, replies nested under their actual parent).
 - Content pane displays the selected post's full body, author, and date, reusing the same fields already rendered today.
 - Selecting a list item updates the content pane in place, without a full page reload.
-- Visual style follows Forte Agent's reference look (toolbar, columned list header, distinct list/content split) at a moderate fidelity — layout and chrome, not a pixel-exact clone.
-- Paned reader lives at its own page/route for a thread, separate from the standard thread page; the standard thread page is unchanged and remains fully accessible — no in-place mode toggle.
+- Visual style follows Forte Agent's reference look (icon toolbar, menu bar, columned list header, gray subject/from/date bar above post content, status bar) at a moderate fidelity — layout and chrome, not a pixel-exact clone.
+- Paned reader lives at its own page/route for a thread, fully isolated from the standard thread page: no link from the standard page to Forte, no link from Forte back to the standard page, and no site nav bar or theme selector on the Forte page — it presents its own complete, self-contained UI reachable only by its direct URL.
+- Forte's window occupies the majority of the viewport on desktop, with a slight margin around it (not capped to the standard page's content-column width).
+- No reply/compose affordances in Forte (no Reply or Permalink links) — this is a read-only reader.
 
 ## Shared Component Inventory
 - `fetchThread()` / `fetchThreadPosts()` (`src/ForumRewrite/Application.php`) — reused unchanged; each post already carries `parent_id`, used to build the nested tree client-/server-side — no new backend calls.
-- `templates/partials/thread_root_card.php` / `post_card.php` — existing per-post fields (author, date, body, reactions, agent-reply markers) are the source of truth for the content pane; **extended** into a new content-pane partial rather than duplicating field definitions.
-- Standard thread page — **extended** with a simple link/button to open the new paned-reader route for the same thread; no toggle mechanism needed since this is a separate page, not an in-place view swap.
-- New surface (does not exist today, called out explicitly since Option B accepts a larger UI surface than Option A): a nested-list partial (title + depth indent per post), a two-pane layout shell, and a new page/route to host them.
+- Author/date rendering helpers (`$author`, `$timestamp`) already used elsewhere in templates — reused for the content pane's subject/from/date bar rather than duplicating formatting logic.
+- New surface (does not exist today, called out explicitly since Option B accepts a larger UI surface than Option A): a nested-list partial, a content-pane partial, a two-pane layout shell, a new page/route to host them, and a standalone page-rendering path with no site chrome (since Forte does not use the shared nav/theme layout).
 - Read/unread state: still absent from the data model; still explicitly out of scope for this feature.
 
 ## Simple User Flow
-1. User opens an existing thread page.
-2. User opens the paned reader via a link on that thread page; it loads as a separate page for the same thread.
-3. Page renders two panes: list pane with posts nested by `parent_id`, content pane showing the root post by default.
-4. User clicks any list item; content pane updates to that post's full content.
-5. User replies or reacts using existing controls, now surfaced within the content pane.
-6. User returns to the standard thread page via plain navigation (link/back) at any time; it is unaffected by having visited the paned reader.
+1. User navigates directly to a thread's Forte URL (no link from the standard thread page).
+2. Page renders as its own self-contained window: title bar, menu bar, icon toolbar, list pane with posts nested by `parent_id`, content pane showing the root post by default, status bar.
+3. User clicks any list item, or uses the toolbar's Prev/Next buttons; content pane updates to that post's full content.
+4. User reads through the thread; there is no reply/compose action inside Forte.
+5. The standard thread page is entirely unaffected by Forte's existence — visiting one has no bearing on the other, and both can be open in separate tabs simultaneously.
 
 ## Success Criteria
 - Every reply appears nested under its actual parent in the list pane, matching `parent_id` data exactly.
-- Selecting any list item shows the correct corresponding post content with no page navigation.
+- Selecting any list item (via row click or toolbar Prev/Next) shows the correct corresponding post content with no page navigation.
 - No new database fields, tables, or API endpoints introduced — only new rendering/layout surfaces and one new page route.
-- Paned reader is reachable via a link from the standard thread page; the standard thread page remains fully accessible and unmodified.
-- Visual treatment is recognizably Forte-Agent-like (toolbar + columned list + split pane) per user review.
+- Forte and the standard thread page are fully isolated: no cross-links in either direction, and the standard page's markup/behavior is completely unmodified by Forte's existence.
+- Forte page has no site nav bar and no theme selector, and its window fills the majority of the desktop viewport with a slight margin.
+- Visual treatment is recognizably Forte-Agent-like (icon toolbar + menu bar + columned list + gray content meta bar + status bar) per user review.

@@ -3422,10 +3422,19 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   display: none;
 }
 
-/* Forte paned reader: a fixed, Forte-Agent-styled window chrome. Deliberately
-   uses its own fixed palette rather than the active site theme's tokens, since
-   the point is to evoke a classic newsreader regardless of theme. */
+/* Forte paned reader: a fixed, Forte-Agent-styled window chrome, rendered on
+   its own standalone page (no site nav/theme chrome). Deliberately uses its
+   own fixed palette rather than the active site theme's tokens, since the
+   point is to evoke a classic newsreader regardless of theme. */
+body.paned-reader-body {
+  --body-background: #5c7290;
+  margin: 0;
+  min-height: 100vh;
+}
+
 .paned-window {
+  width: min(94vw, 1600px);
+  margin: 1.25rem auto;
   --paned-chrome: #ece9d8;
   --paned-chrome-dark: #d4d0c8;
   --paned-titlebar-start: #0a246a;
@@ -3456,9 +3465,16 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 }
 
 .paned-titlebar-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.paned-titlebar-icon {
+  flex-shrink: 0;
 }
 
 .paned-titlebar-controls {
@@ -3494,17 +3510,43 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 }
 
 .paned-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   padding: 0.3rem 0.4rem;
   border-bottom: 1px solid var(--paned-border-dark);
 }
 
-.paned-toolbar-button {
-  display: inline-block;
-  padding: 0.2rem 0.6rem;
+.paned-toolbar-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  width: 3rem;
+  padding: 0.2rem 0.1rem;
   background: var(--paned-chrome);
   color: var(--paned-ink);
-  border: 1px solid;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.65rem;
+  cursor: pointer;
+}
+
+.paned-toolbar-btn:not(:disabled):hover {
   border-color: var(--paned-border-light) var(--paned-border-dark) var(--paned-border-dark) var(--paned-border-light);
+}
+
+.paned-toolbar-btn:disabled {
+  color: var(--paned-ink-soft);
+  cursor: default;
+}
+
+.paned-toolbar-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 0.15rem 0.3rem;
+  background: var(--paned-border-dark);
+  box-shadow: 1px 0 0 var(--paned-border-light);
 }
 
 .paned-list-pane {
@@ -3618,20 +3660,46 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 
 .paned-content-pane {
   margin: 0.5rem;
-  padding: 0.75rem;
   background: var(--paned-content-bg);
   border: 1px solid;
   border-color: var(--paned-border-dark) var(--paned-border-light) var(--paned-border-light) var(--paned-border-dark);
 }
 
-.paned-content-pane .paned-content-post {
-  background: var(--paned-content-bg);
-  border: none;
-  padding: 0;
+.paned-content-head {
+  padding: 0.5rem 0.75rem;
+  background: var(--paned-chrome-dark);
+  border-bottom: 1px solid var(--paned-border-dark);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.paned-content-subject {
+  font-weight: 700;
+  color: var(--paned-ink);
+}
+
+.paned-content-meta {
+  display: flex;
+  gap: 1rem;
+  color: var(--paned-ink-soft);
+  font-size: 0.78rem;
 }
 
 .paned-content-post .body {
+  padding: 0.75rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.85rem;
   line-height: 1.5;
+  color: var(--paned-ink);
+}
+
+.paned-statusbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.2rem 0.6rem;
+  background: var(--paned-chrome);
+  border-top: 1px solid var(--paned-border-light);
+  color: var(--paned-ink-soft);
+  font-size: 0.75rem;
 }
