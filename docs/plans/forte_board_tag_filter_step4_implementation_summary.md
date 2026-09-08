@@ -30,3 +30,12 @@
   - `node --check`: no syntax errors.
   - Headless-browser check: clicking through `#bug` → `#testing` → back to "All Threads" updated `location.href` to `/forte?tag=bug` → `/forte?tag=testing` → `/forte` at each step; only 1 `document`-type network request occurred for the whole session (the initial load) - confirms no reload ever happens; re-clicking the already-selected `#testing` folder left `history.length` unchanged (4 before and after).
 - Notes: none.
+
+## Stage 4 - Back/forward support
+- Changes:
+  - `public/assets/paned_board_reader.js`: added a `popstate` listener that calls the existing `selectFolder()` (the same function the click handler uses) with the tag read from `location.search`, applying the filter without pushing a new history entry - only the click handler calls `pushState`, so back/forward can't recursively rewrite history.
+- Verification:
+  - `node --check`: no syntax errors.
+  - Headless-browser check: clicked through `#bug` → `#testing` → `#todo` (three history entries), then pressed back three times and forward once, checking URL, visible row count, and selected folder at every step. Every step matched exactly in both directions (e.g. back from `#todo` correctly restored `#testing`'s 3 visible rows and its folder highlighted, all the way back to "All Threads" showing all 513, then forward correctly restored `#bug`). Zero console errors throughout.
+  - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures - no regressions.
+- Notes: none.

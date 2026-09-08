@@ -92,6 +92,10 @@
       }
     });
 
+    window.addEventListener("popstate", function () {
+      selectFolder(currentTagFromUrl());
+    });
+
     listBody.addEventListener("click", function (event) {
       var row = event.target.closest ? event.target.closest(".paned-list-row") : null;
       if (row) {
