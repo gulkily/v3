@@ -3281,7 +3281,7 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 
 .sqlite-query-layout[data-query-layout="split"] {
   display: grid;
-  grid-template-columns: minmax(280px, 420px) 1fr;
+  grid-template-columns: minmax(360px, 560px) 1fr;
   align-items: start;
   gap: 1.5rem;
 }
@@ -3289,7 +3289,7 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 @media (min-width: 960px) {
   .sqlite-query-layout:not([data-query-layout="stacked"]) {
     display: grid;
-    grid-template-columns: minmax(280px, 420px) 1fr;
+    grid-template-columns: minmax(360px, 560px) 1fr;
     align-items: start;
     gap: 1.5rem;
   }

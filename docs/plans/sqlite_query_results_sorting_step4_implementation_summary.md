@@ -38,3 +38,13 @@
   - `php tests/run.php` completed with four unrelated pre-existing failures in `LocalAppSmokeTest`; the query-runner contract test passed after updating its expected SQL contract.
 - Notes:
   - The full-suite baseline failures concern missing profile fixtures/templates, a missing `profiles` table in an existing bootstrap test, and an existing undefined `$css` test variable; none involve query-result sorting.
+
+## Post-completion UI adjustment - widen and increase query editor
+- Changes:
+  - Increased the SQL textarea to 80 columns and 24 rows.
+  - Widened the responsive split-layout editor column to make the larger field visible on wide screens.
+- Verification:
+  - Focused viewer contract verification confirms the textarea sizing attributes and existing query panel markup remain present.
+  - Existing JavaScript behavior is unchanged.
+- Notes:
+  - Narrow viewports continue to use the existing stacked layout and width constraints.

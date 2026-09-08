@@ -1279,6 +1279,7 @@ final class LocalAppSmokeTest
         assertStringContains('data-role="sqlite-query-panel"', $viewer);
         assertStringContains('data-role="sqlite-query-select"', $viewer);
         assertStringContains('data-role="sqlite-query-input"', $viewer);
+        assertStringContains('data-role="sqlite-query-input" cols="80" rows="24"', $viewer);
         assertStringContains('data-action="run-sqlite-query"', $viewer);
         assertStringContains('data-role="sqlite-effective-query" hidden', $viewer);
         assertStringContains('data-role="sqlite-effective-count"', $viewer);

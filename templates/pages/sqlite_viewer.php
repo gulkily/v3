@@ -25,7 +25,7 @@
           </select>
         </label>
         <label>SQL
-          <textarea data-role="sqlite-query-input" rows="6" spellcheck="false" placeholder="SELECT ..."></textarea>
+          <textarea data-role="sqlite-query-input" cols="80" rows="24" spellcheck="false" placeholder="SELECT ..."></textarea>
         </label>
         <p><button type="button" data-action="run-sqlite-query">Run Query</button></p>
         <p class="meta" data-role="sqlite-query-status" aria-live="polite" role="alert">Queries run only after the database is loaded.</p>
