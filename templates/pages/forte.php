@@ -1,11 +1,4 @@
 <div class="paned-window">
-  <div class="paned-titlebar">
-    <span class="paned-titlebar-label">
-      <svg class="paned-titlebar-icon" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect width="14" height="14" fill="#dfe8ff"/><rect x="2" y="2" width="10" height="2" fill="#0a246a"/><rect x="2" y="5" width="7" height="2" fill="#0a246a"/><rect x="2" y="8" width="9" height="2" fill="#0a246a"/></svg>
-      Forte — [<?= $e($title) ?>]
-    </span>
-    <span class="paned-titlebar-controls"><span>_</span><span>&#9633;</span><span>&times;</span></span>
-  </div>
   <div class="paned-menubar">
     <span>File</span><span>Edit</span><span>View</span><span>Thread</span><span>Navigate</span><span>Help</span>
   </div>

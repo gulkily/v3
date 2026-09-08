@@ -11,7 +11,6 @@
     var rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
     var placeholder = contentPane.querySelector("[data-paned-board-content-placeholder]");
     var contentPosts = Array.prototype.slice.call(contentPane.querySelectorAll("[data-paned-board-content-post-id]"));
-    var titleLabel = document.querySelector("[data-paned-board-title-label]");
     var statusCount = document.querySelector("[data-paned-board-status-count]");
     var totalThreadCount = statusCount ? parseInt(statusCount.getAttribute("data-paned-board-total-count"), 10) : rows.length;
     var totalTagCount = statusCount ? parseInt(statusCount.getAttribute("data-paned-board-tag-count"), 10) : folderItems.length;
@@ -60,10 +59,6 @@
 
       if (selectedRowNowHidden) {
         resetContentPane();
-      }
-
-      if (titleLabel) {
-        titleLabel.textContent = "Forte — [" + (tag === "" ? "All Threads" : "#" + tag) + "]";
       }
 
       if (statusCount) {
