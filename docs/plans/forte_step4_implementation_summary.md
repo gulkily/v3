@@ -60,3 +60,17 @@
   - Real interactive check with headless Chromium (via a throwaway Puppeteer script, not committed) against the live local server: loaded `/threads/root-001/forte`, clicked the reply row and confirmed the content pane swapped (root's block became `hidden`, reply's became visible) and the row gained the selected class; then clicked the root row's disclosure toggle and confirmed the reply row became `hidden`, the toggle glyph flipped to "▸", and the `[+N]` count marker became visible. Zero console/page errors throughout.
 - Notes:
   - Browser back/forward and reload were not separately exercised (this stage has no URL/history state to restore — selection is pure in-memory DOM state, so reload simply resets to the root post, which is the intended default), narrowing the plan's original verification note about that risk to a non-issue for this implementation.
+
+## Stage 6 - Layout integration and polish
+- Changes:
+  - `templates/pages/forte.php`: wrapped the list/content panes in a `.paned-window` chrome shell — title bar (thread title + decorative window controls), static menu bar, and a toolbar holding the "Back to standard view" link (moved here from the plain link used in Stages 1-4).
+  - `public/assets/site.css`: appended a scoped block of rules (`.paned-window` and descendants) implementing the Forte-Agent-styled chrome — beveled borders, gradient title bar, columned list header, selected-row highlight, monospace post body — using a fixed palette local to `.paned-window` rather than the site's active theme tokens, since the goal is to evoke a classic newsreader regardless of theme (documented as a deliberate choice via a CSS comment). No existing selectors were changed; the standard thread page's styling is untouched.
+  - The page intentionally does not override `.shell`'s existing 760px column width, since "fills the main content area at the same footprint as the standard view" (confirmed with the user earlier in Step 2) just means it should sit in the same content column, not break out of it.
+- Verification:
+  - Brace-balance check on `site.css` (533 → 534 open/close pairs, matching the one new rule block added) and `php -l` on `forte.php`: both clean.
+  - Screenshotted the Forte page with headless Chromium at two widths (1280px and 420px): chrome renders as intended (title bar, menu bar, toolbar, columned list, bordered content pane) at both; at 420px the columns compress without any horizontal overflow.
+  - Screenshotted the standard thread page at 1280px: pixel-identical to its pre-Stage-6 appearance (still shows the Stage 1 "Open in Forte view" link at top), confirming the new CSS is fully scoped to `.paned-window` and doesn't leak.
+  - Re-ran the Stage 5 Puppeteer interaction script against the Stage 6 markup: row selection and collapse/expand both still work correctly with zero console errors, confirming the new wrapper markup didn't break the existing selectors the script depends on.
+- Notes:
+  - At the 420px width the Subject column gets quite narrow (long titles truncate hard against the fixed 9rem From/Date columns) — a real rough edge, but not a page-breaking one, and narrowing/hiding secondary columns responsively would be a reasonable follow-up rather than something this stage needs to solve.
+  - The deep-nesting indentation cap flagged as an open question in Stage 3 was not specifically revisited; the fixed-width chrome accommodates the depths seen in testing without needing one yet.
