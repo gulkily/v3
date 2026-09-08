@@ -3547,7 +3547,9 @@ body.paned-reader-body {
 }
 
 button.paned-sort-button {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
   width: 100%;
   margin: 0;
   padding: 0;
@@ -3559,6 +3561,11 @@ button.paned-sort-button {
   font-weight: inherit;
   text-align: inherit;
   cursor: pointer;
+}
+
+.paned-sort-button::-moz-focus-inner {
+  border: 0;
+  padding: 0;
 }
 
 .paned-sort-button:hover {
@@ -3580,24 +3587,34 @@ button.paned-sort-button {
 
 .paned-list-toggle-head {
   width: 1.4rem;
+  flex-shrink: 0;
 }
 
 .paned-list-subject-head {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .paned-list-from-head {
   width: 9rem;
+  flex-shrink: 0;
 }
 
 .paned-list-date-head {
   width: 13rem;
+  flex-shrink: 0;
 }
 
 .paned-list-replies-head,
 .paned-list-replies {
   width: 5rem;
+  flex-shrink: 0;
   text-align: right;
+}
+
+.paned-list-replies-head .paned-sort-button {
+  justify-content: flex-end;
 }
 
 .paned-list-head span:last-child {
@@ -3647,6 +3664,7 @@ button.paned-sort-button {
 
 .paned-list-subject {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 0.3rem;
@@ -3665,10 +3683,12 @@ button.paned-sort-button {
 
 .paned-list-from {
   width: 9rem;
+  flex-shrink: 0;
 }
 
 .paned-list-date {
   width: 13rem;
+  flex-shrink: 0;
 }
 
 .paned-list-replies {
