@@ -21,6 +21,11 @@ $threadTags = static function (array $thread): array {
 
     return $tags;
 };
+$authorText = static function (array $thread): string {
+    $label = trim((string) ($thread['author_label'] ?? ''));
+
+    return $label === '' ? 'guest' : $label;
+};
 ?>
 <div class="paned-list-pane">
   <div class="paned-list-head">
@@ -37,7 +42,7 @@ $visible = $selectedTag === '' || in_array($selectedTag, $tags, true);
 ?>
     <div class="paned-list-row" data-paned-thread-id="<?= $e($thread['root_post_id']) ?>" data-paned-thread-tags="<?= $e(implode(',', $tags)) ?>"<?= $visible ? '' : ' hidden' ?>>
       <span class="paned-list-subject"><?= $e($threadTitle($thread)) ?></span>
-      <span class="paned-list-from"><?= $author($thread) ?></span>
+      <span class="paned-list-from"><?= $e($authorText($thread)) ?></span>
       <span class="paned-list-date"><?= $timestamp((string) ($thread['root_post_created_at'] ?? '')) ?></span>
       <span class="paned-list-replies"><?= (int) $thread['reply_count'] ?></span>
     </div>
