@@ -445,7 +445,11 @@ final class Application
         }
 
         if (preg_match('#^/forte/?$#', $path) === 1) {
-            $this->sendHtml($this->renderForteBoard((string) ($query['tag'] ?? '')), 200);
+            $this->sendHtml($this->renderForteBoard(
+                (string) ($query['tag'] ?? ''),
+                (string) ($query['sort'] ?? ''),
+                (string) ($query['dir'] ?? ''),
+            ), 200);
             return;
         }
 
@@ -835,11 +839,13 @@ final class Application
         );
     }
 
-    private function renderForteBoard(string $requestedTag = ''): string
+    private function renderForteBoard(string $requestedTag = '', string $requestedSortColumn = '', string $requestedSortDir = ''): string
     {
         $threads = $this->fetchThreads();
         $tagGroups = $this->groupThreadsByTag($threads);
         $selectedTag = $this->resolveForteBoardTag($requestedTag, $tagGroups);
+        $sort = $this->resolveForteBoardSort($requestedSortColumn, $requestedSortDir);
+        $threads = $this->applyForteBoardSort($threads, $sort['column'], $sort['dir']);
 
         return $this->renderer()->renderStandalonePage(
             'forte_board.php',
@@ -847,6 +853,8 @@ final class Application
                 'threads' => $threads,
                 'tagGroups' => $tagGroups,
                 'selectedTag' => $selectedTag,
+                'sortColumn' => $sort['column'],
+                'sortDir' => $sort['dir'],
             ],
             'Forte',
             'paned-reader-body',
@@ -873,6 +881,61 @@ final class Application
         }
 
         return '';
+    }
+
+    /**
+     * Resolves requested ?sort=/?dir= values against the four sortable
+     * columns, falling back to '' (today's default newest-first order,
+     * unrelated to any single column) when the column is missing or
+     * unrecognized. An unrecognized direction falls back to a per-column
+     * default: ascending for text columns, descending for date/replies.
+     *
+     * @return array{column: string, dir: string}
+     */
+    private function resolveForteBoardSort(string $requestedColumn, string $requestedDir): array
+    {
+        $validColumns = ['subject', 'from', 'date', 'replies'];
+        if (!in_array($requestedColumn, $validColumns, true)) {
+            return ['column' => '', 'dir' => ''];
+        }
+
+        $defaultDir = in_array($requestedColumn, ['date', 'replies'], true) ? 'desc' : 'asc';
+        $dir = in_array($requestedDir, ['asc', 'desc'], true) ? $requestedDir : $defaultDir;
+
+        return ['column' => $requestedColumn, 'dir' => $dir];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $threads
+     * @return array<int, array<string, mixed>>
+     */
+    private function applyForteBoardSort(array $threads, string $column, string $dir): array
+    {
+        if ($column === '') {
+            return $threads;
+        }
+
+        $sorted = $threads;
+        usort($sorted, function (array $left, array $right) use ($column): int {
+            return $this->forteBoardSortValue($left, $column) <=> $this->forteBoardSortValue($right, $column);
+        });
+
+        return $dir === 'desc' ? array_reverse($sorted) : $sorted;
+    }
+
+    private function forteBoardSortValue(array $thread, string $column): string|int
+    {
+        return match ($column) {
+            'subject' => mb_strtolower(ThreadTitle::displayTitle(
+                (string) ($thread['subject'] ?? ''),
+                (string) ($thread['body_preview'] ?? ''),
+                (string) $thread['root_post_id'],
+            )),
+            'from' => mb_strtolower(trim((string) ($thread['author_label'] ?? '')) ?: 'guest'),
+            'date' => (string) ($thread['root_post_created_at'] ?? ''),
+            'replies' => (int) ($thread['reply_count'] ?? 0),
+            default => '',
+        };
     }
 
     /**

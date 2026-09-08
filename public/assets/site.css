@@ -3545,6 +3545,38 @@ body.paned-reader-body {
   border-right: 1px solid var(--paned-border-dark);
 }
 
+.paned-sort-button {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.paned-sort-button:hover {
+  text-decoration: underline;
+}
+
+.paned-sort-button:focus-visible {
+  outline: 2px solid #f2b705;
+  outline-offset: -2px;
+}
+
+.paned-list-head span[aria-sort="ascending"] .paned-sort-button::after {
+  content: " \25B2";
+}
+
+.paned-list-head span[aria-sort="descending"] .paned-sort-button::after {
+  content: " \25BC";
+}
+
 .paned-list-toggle-head {
   width: 1.4rem;
 }
