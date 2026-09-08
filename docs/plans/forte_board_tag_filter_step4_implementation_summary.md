@@ -22,3 +22,11 @@
   - `GET /forte?tag=doesnotexist` behaves identically to `GET /forte` (all 513 visible, "All Threads" title) — confirms the Stage 1 fallback flows through correctly to the templates.
   - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures — no regressions.
 - Notes: none.
+
+## Stage 3 - Push URL state on tag selection
+- Changes:
+  - `public/assets/paned_board_reader.js`: the folder-click handler now also calls `history.pushState` with `/forte?tag={tag}` (or plain `/forte` for "All Threads") after applying the existing filter logic, via two small new helpers (`currentTagFromUrl()`, `urlForTag()`). Skips pushing when the clicked tag already matches the current URL, so re-clicking the same tag doesn't add a duplicate history entry.
+- Verification:
+  - `node --check`: no syntax errors.
+  - Headless-browser check: clicking through `#bug` → `#testing` → back to "All Threads" updated `location.href` to `/forte?tag=bug` → `/forte?tag=testing` → `/forte` at each step; only 1 `document`-type network request occurred for the whole session (the initial load) - confirms no reload ever happens; re-clicking the already-selected `#testing` folder left `history.length` unchanged (4 before and after).
+- Notes: none.

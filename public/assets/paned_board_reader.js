@@ -73,10 +73,22 @@
       }
     }
 
+    function currentTagFromUrl() {
+      return new URLSearchParams(location.search).get("tag") || "";
+    }
+
+    function urlForTag(tag) {
+      return tag === "" ? "/forte" : "/forte?tag=" + encodeURIComponent(tag);
+    }
+
     folderTree.addEventListener("click", function (event) {
       var item = event.target.closest ? event.target.closest("[data-paned-folder]") : null;
       if (item) {
-        selectFolder(item.getAttribute("data-paned-folder"));
+        var tag = item.getAttribute("data-paned-folder");
+        selectFolder(tag);
+        if (tag !== currentTagFromUrl()) {
+          history.pushState({ paneTag: tag }, "", urlForTag(tag));
+        }
       }
     });
 
