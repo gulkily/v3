@@ -444,6 +444,11 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/forte/?$#', $path) === 1) {
+            $this->sendHtml($this->renderForteBoard(), 200);
+            return;
+        }
+
         if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)/?$#', $path, $matches) === 1) {
             $html = $this->renderTagPage($matches[1]);
             if ($html === null) {
@@ -816,6 +821,22 @@ final class Application
             $title,
             'paned-reader-body',
             ['/assets/paned_reader.js'],
+        );
+    }
+
+    private function renderForteBoard(): string
+    {
+        $threads = $this->fetchThreads();
+        $tagGroups = $this->groupThreadsByTag($threads);
+
+        return $this->renderer()->renderStandalonePage(
+            'forte_board.php',
+            [
+                'threads' => $threads,
+                'tagGroups' => $tagGroups,
+            ],
+            'Forte',
+            'paned-reader-body',
         );
     }
 
