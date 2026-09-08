@@ -26,6 +26,7 @@ $authorText = static function (array $thread): string {
 
     return $label === '' ? 'guest' : $label;
 };
+$tabStopAssigned = false;
 ?>
 <div class="paned-list-pane">
   <div class="paned-list-head">
@@ -34,13 +35,25 @@ $authorText = static function (array $thread): string {
     <span class="paned-list-date-head">Date</span>
     <span class="paned-list-replies-head">Replies</span>
   </div>
-  <div class="paned-list-body" data-paned-board-list-body>
+  <div class="paned-list-body" data-paned-board-list-body role="listbox" aria-label="Threads">
 <?php foreach ($threads as $thread): ?>
 <?php
 $tags = $threadTags($thread);
 $visible = $selectedTag === '' || in_array($selectedTag, $tags, true);
+$isTabStop = $visible && !$tabStopAssigned;
+if ($isTabStop) {
+    $tabStopAssigned = true;
+}
 ?>
-    <div class="paned-list-row" data-paned-thread-id="<?= $e($thread['root_post_id']) ?>" data-paned-thread-tags="<?= $e(implode(',', $tags)) ?>"<?= $visible ? '' : ' hidden' ?>>
+    <div
+      class="paned-list-row"
+      data-paned-thread-id="<?= $e($thread['root_post_id']) ?>"
+      data-paned-thread-tags="<?= $e(implode(',', $tags)) ?>"
+      role="option"
+      aria-selected="false"
+      tabindex="<?= $isTabStop ? '0' : '-1' ?>"
+      <?= $visible ? '' : 'hidden' ?>
+    >
       <span class="paned-list-subject"><?= $e($threadTitle($thread)) ?></span>
       <span class="paned-list-from"><?= $e($authorText($thread)) ?></span>
       <span class="paned-list-date"><?= $timestamp((string) ($thread['root_post_created_at'] ?? '')) ?></span>

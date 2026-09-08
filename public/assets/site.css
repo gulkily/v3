@@ -3590,6 +3590,11 @@ body.paned-reader-body {
   background: #e7edf7;
 }
 
+.paned-list-row:focus-visible {
+  outline: 2px solid #f2b705;
+  outline-offset: -2px;
+}
+
 .paned-list-row--selected,
 .paned-list-row--selected:hover {
   background: var(--paned-select-bg);

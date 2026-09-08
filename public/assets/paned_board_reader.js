@@ -15,13 +15,28 @@
     var totalThreadCount = statusCount ? parseInt(statusCount.getAttribute("data-paned-board-total-count"), 10) : rows.length;
     var totalTagCount = statusCount ? parseInt(statusCount.getAttribute("data-paned-board-tag-count"), 10) : folderItems.length;
 
+    function firstVisibleRow() {
+      for (var i = 0; i < rows.length; i++) {
+        if (!rows[i].hidden) {
+          return rows[i];
+        }
+      }
+      return null;
+    }
+
     function resetContentPane() {
       contentPosts.forEach(function (article) {
         article.hidden = true;
       });
       rows.forEach(function (row) {
         row.classList.remove("paned-list-row--selected");
+        row.setAttribute("aria-selected", "false");
+        row.setAttribute("tabindex", "-1");
       });
+      var fallback = firstVisibleRow();
+      if (fallback) {
+        fallback.setAttribute("tabindex", "0");
+      }
       if (placeholder) {
         placeholder.hidden = false;
       }
@@ -35,7 +50,10 @@
         article.hidden = article.getAttribute("data-paned-board-content-post-id") !== threadId;
       });
       rows.forEach(function (row) {
-        row.classList.toggle("paned-list-row--selected", row.getAttribute("data-paned-thread-id") === threadId);
+        var isSelected = row.getAttribute("data-paned-thread-id") === threadId;
+        row.classList.toggle("paned-list-row--selected", isSelected);
+        row.setAttribute("aria-selected", isSelected ? "true" : "false");
+        row.setAttribute("tabindex", isSelected ? "0" : "-1");
       });
     }
 
@@ -48,6 +66,10 @@
       });
 
       var selectedRowNowHidden = false;
+      var currentTabRow = rows.filter(function (row) {
+        return row.getAttribute("tabindex") === "0";
+      })[0];
+      var currentTabRowNowHidden = false;
       var visibleCount = 0;
       rows.forEach(function (row) {
         var visible = tag === "" || (row.getAttribute("data-paned-thread-tags") || "").split(",").indexOf(tag) !== -1;
@@ -58,10 +80,23 @@
         if (!visible && row.classList.contains("paned-list-row--selected")) {
           selectedRowNowHidden = true;
         }
+        if (!visible && row === currentTabRow) {
+          currentTabRowNowHidden = true;
+        }
       });
 
       if (selectedRowNowHidden) {
         resetContentPane();
+      } else if (currentTabRowNowHidden) {
+        // Selection itself wasn't affected, but the roving tabindex was
+        // sitting on a row that's no longer visible - move it forward.
+        if (currentTabRow) {
+          currentTabRow.setAttribute("tabindex", "-1");
+        }
+        var fallback = firstVisibleRow();
+        if (fallback) {
+          fallback.setAttribute("tabindex", "0");
+        }
       }
 
       if (statusCount) {
@@ -123,6 +158,30 @@
       if (row) {
         selectThread(row.getAttribute("data-paned-thread-id"));
       }
+    });
+
+    listBody.addEventListener("keydown", function (event) {
+      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
+        return;
+      }
+
+      var visible = rows.filter(function (row) {
+        return !row.hidden;
+      });
+      var currentIndex = visible.indexOf(document.activeElement);
+      if (currentIndex === -1) {
+        return;
+      }
+
+      var nextIndex = currentIndex + (event.key === "ArrowDown" ? 1 : -1);
+      if (nextIndex < 0 || nextIndex >= visible.length) {
+        return;
+      }
+
+      event.preventDefault();
+      var nextRow = visible[nextIndex];
+      selectThread(nextRow.getAttribute("data-paned-thread-id"));
+      nextRow.focus();
     });
 
     function stepSelection(delta) {
