@@ -79,15 +79,39 @@
       return tag === "" ? "/forte" : "/forte?tag=" + encodeURIComponent(tag);
     }
 
+    function applyFolderSelection(tag) {
+      selectFolder(tag);
+      if (tag !== currentTagFromUrl()) {
+        history.pushState({ paneTag: tag }, "", urlForTag(tag));
+      }
+    }
+
     folderTree.addEventListener("click", function (event) {
       var item = event.target.closest ? event.target.closest("[data-paned-folder]") : null;
       if (item) {
-        var tag = item.getAttribute("data-paned-folder");
-        selectFolder(tag);
-        if (tag !== currentTagFromUrl()) {
-          history.pushState({ paneTag: tag }, "", urlForTag(tag));
-        }
+        applyFolderSelection(item.getAttribute("data-paned-folder"));
       }
+    });
+
+    folderTree.addEventListener("keydown", function (event) {
+      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
+        return;
+      }
+
+      var currentIndex = folderItems.indexOf(document.activeElement);
+      if (currentIndex === -1) {
+        return;
+      }
+
+      var nextIndex = currentIndex + (event.key === "ArrowDown" ? 1 : -1);
+      if (nextIndex < 0 || nextIndex >= folderItems.length) {
+        return;
+      }
+
+      event.preventDefault();
+      var nextItem = folderItems[nextIndex];
+      applyFolderSelection(nextItem.getAttribute("data-paned-folder"));
+      nextItem.focus();
     });
 
     window.addEventListener("popstate", function () {

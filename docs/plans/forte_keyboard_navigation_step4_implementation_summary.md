@@ -11,3 +11,11 @@
   - Headless-browser check: pressing Tab from page load lands on the folder tree after 3 tabs (past the New/Prev/Next toolbar buttons, which is expected/correct), landing on an element with `role="option"`; clicking a different tag moves `tabindex="0"`/`aria-selected="true"` to exactly that one item and off all others.
   - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures - no regressions.
 - Notes: none.
+
+## Stage 2 - Board folder tree: arrow-key navigation
+- Changes:
+  - `public/assets/paned_board_reader.js`: extracted `applyFolderSelection(tag)` (the existing `selectFolder()` call plus the existing conditional `pushState`) so both the click handler and a new keydown handler share exactly one "select + sync URL" path. A `keydown` listener on the folder tree handles `ArrowUp`/`ArrowDown`, computes the adjacent item by index, calls `applyFolderSelection()` on it, and moves real focus to it; movement clamps at the first/last item (no wrap, no Home/End, both explicitly out of scope per Step 2).
+- Verification:
+  - `node --check`: no syntax errors.
+  - Headless-browser check, starting with "All Threads" focused: `ArrowDown` → `#general` (509 visible rows, matching the known real count), `ArrowDown` → `#like` (130 visible), `ArrowUp` → back to `#general`, `ArrowUp` → back to "All Threads" (513 visible), one more `ArrowUp` at the top is a no-op (stays on "All Threads", no error). URL and `aria-selected` tracked correctly at every step. Zero console errors.
+- Notes: none.
