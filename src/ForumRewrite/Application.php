@@ -445,7 +445,7 @@ final class Application
         }
 
         if (preg_match('#^/forte/?$#', $path) === 1) {
-            $this->sendHtml($this->renderForteBoard(), 200);
+            $this->sendHtml($this->renderForteBoard((string) ($query['tag'] ?? '')), 200);
             return;
         }
 
@@ -835,21 +835,44 @@ final class Application
         );
     }
 
-    private function renderForteBoard(): string
+    private function renderForteBoard(string $requestedTag = ''): string
     {
         $threads = $this->fetchThreads();
         $tagGroups = $this->groupThreadsByTag($threads);
+        $selectedTag = $this->resolveForteBoardTag($requestedTag, $tagGroups);
 
         return $this->renderer()->renderStandalonePage(
             'forte_board.php',
             [
                 'threads' => $threads,
                 'tagGroups' => $tagGroups,
+                'selectedTag' => $selectedTag,
             ],
             'Forte',
             'paned-reader-body',
             ['/assets/paned_board_reader.js'],
         );
+    }
+
+    /**
+     * Resolves a requested ?tag= value against real tag names, falling back
+     * to '' (All Threads) when missing or unrecognized.
+     *
+     * @param array<int, array{tag: string, count: int, threads: array}> $tagGroups
+     */
+    private function resolveForteBoardTag(string $requestedTag, array $tagGroups): string
+    {
+        if ($requestedTag === '') {
+            return '';
+        }
+
+        foreach ($tagGroups as $group) {
+            if ($group['tag'] === $requestedTag) {
+                return $requestedTag;
+            }
+        }
+
+        return '';
     }
 
     /**
