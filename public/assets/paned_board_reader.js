@@ -11,6 +11,7 @@
     var rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
     var placeholder = contentPane.querySelector("[data-paned-board-content-placeholder]");
     var contentPosts = Array.prototype.slice.call(contentPane.querySelectorAll("[data-paned-board-content-post-id]"));
+    var titleLabel = document.querySelector("[data-paned-board-title-label]");
 
     function resetContentPane() {
       contentPosts.forEach(function (article) {
@@ -53,6 +54,10 @@
       if (selectedRowNowHidden) {
         resetContentPane();
       }
+
+      if (titleLabel) {
+        titleLabel.textContent = "Forte — [" + (tag === "" ? "All Threads" : "#" + tag) + "]";
+      }
     }
 
     folderTree.addEventListener("click", function (event) {
@@ -68,5 +73,49 @@
         selectThread(row.getAttribute("data-paned-thread-id"));
       }
     });
+
+    function stepSelection(delta) {
+      var visible = rows.filter(function (row) {
+        return !row.hidden;
+      });
+      if (visible.length === 0) {
+        return;
+      }
+
+      var currentId = null;
+      rows.forEach(function (row) {
+        if (row.classList.contains("paned-list-row--selected")) {
+          currentId = row.getAttribute("data-paned-thread-id");
+        }
+      });
+
+      var index = -1;
+      for (var i = 0; i < visible.length; i++) {
+        if (visible[i].getAttribute("data-paned-thread-id") === currentId) {
+          index = i;
+          break;
+        }
+      }
+
+      var nextIndex = index === -1 ? 0 : index + delta;
+      if (nextIndex < 0 || nextIndex >= visible.length) {
+        return;
+      }
+
+      selectThread(visible[nextIndex].getAttribute("data-paned-thread-id"));
+    }
+
+    var prevButton = document.querySelector("[data-paned-board-prev]");
+    var nextButton = document.querySelector("[data-paned-board-next]");
+    if (prevButton) {
+      prevButton.addEventListener("click", function () {
+        stepSelection(-1);
+      });
+    }
+    if (nextButton) {
+      nextButton.addEventListener("click", function () {
+        stepSelection(1);
+      });
+    }
   });
 })();

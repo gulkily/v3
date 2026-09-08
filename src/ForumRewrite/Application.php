@@ -1336,6 +1336,11 @@ final class Application
                         'description' => 'Recent forum activity across content, approvals, and identity events.',
                     ],
                     [
+                        'label' => 'Forte',
+                        'href' => '/forte',
+                        'description' => 'Classic three-pane newsreader view of the whole board - folders, thread list, and preview.',
+                    ],
+                    [
                         'label' => 'Bookmarklets',
                         'href' => '/tools/bookmarklets/',
                         'description' => 'Bookmarklet links for clipping URLs and selections straight into Compose Thread.',
