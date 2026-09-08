@@ -25,3 +25,14 @@
   - Wrote a throwaway script (not committed) that used reflection to call the private `buildReplyTree()` directly with a synthetic post set covering: a root, a 3-deep reply chain (p1→p2→p3→p4), a second branch (p1→p5→p6), and an orphaned `parent_id` pointing at a post not in the set (p7). Output matched expectations exactly: both branches nested correctly under p1 in original sibling order, and the orphan (p7) fell back to appearing as a root rather than being dropped or erroring.
 - Notes:
   - Orphan-parent fallback (treat as root) was the open question flagged in the Step 3 plan for this stage; resolved as above and confirmed by the test above.
+
+## Stage 3 - List-pane partial with nesting
+- Changes:
+  - `templates/partials/paned_list_pane.php`: new partial rendering the Stage 2 reply tree as an indented list — a disclosure toggle and hidden `[+N]` collapse-count marker per branch (shown/toggled by Stage 5's script), an "AGENT" badge derived the same way `post_card.php`/`thread_root_card.php` already derive it (`author_label === 'reply-agent'`), and From/Date columns reusing the existing `$author`/`$timestamp` template helpers. Subject falls back to a short body excerpt when a post has no subject, since reply posts commonly don't set one.
+  - `templates/pages/forte.php`: stub now renders the list pane via `$partial('partials/paned_list_pane.php', ['replyTree' => $replyTree])`.
+- Verification:
+  - `php -l`: no syntax errors.
+  - Real-data check via the running app: `GET /threads/root-001/forte` renders a correct two-row list (root + one reply) with correct depth/indentation, correct author rendering, and a `[+1]` collapse marker on the root — no PHP warnings in the server log.
+  - Synthetic check (throwaway script, not committed): rendered the partial directly against a fabricated 4-post tree with a 3-level-deep chain (p1→p2→p3, p3 authored by `reply-agent`) plus a second branch (p1→p4). Confirmed: correct indentation at each depth, AGENT badge appears only on the agent-authored post, `[+N]` counts are correct per branch (`[+3]` at the root, `[+1]` at the mid-level node), and the no-subject fallback truncates long bodies to ~60 characters with a trailing ellipsis.
+- Notes:
+  - Real fixture data only had one level of replies available, so the deeper-nesting check relied on the synthetic render — consistent with how Stage 2's tree-building was also verified synthetically.
