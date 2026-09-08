@@ -20,3 +20,12 @@
   - `php -l`: no syntax errors.
   - `GET /forte` shows exactly 3 thread rows (`thread-20260908062125-3c6c6e01`, `thread-zenmemes-rules`, `root-001`), matching the real board page's thread set and order when checked with the same `?x=1` PHP-fallback technique (`thanks`, `The Rules of ZenMemes.com`, `Hello world` — same 3 threads, same newest-first order).
 - Notes: none.
+
+## Stage 3 - Board-level content pane
+- Changes:
+  - `templates/partials/paned_board_content_pane.php`: new partial rendering a placeholder block ("No thread selected", shown by default) plus one hidden preview block per thread (subject via `$threadTitle`, From/Date via `$author`/`$timestamp`, `body_preview` via `$br`), each with an "Open in Forte →" link to that thread's existing `/threads/{id}/forte` reader. No reply rendering at this level, per Step 2's scope.
+  - `templates/pages/forte_board.php`: wired the new partial in below the thread list.
+- Verification:
+  - `php -l`: no syntax errors.
+  - `GET /forte`: `root-001`'s preview block has the correct subject/author/date, is `hidden` by default (correct — nothing selected yet), and its link points to `/threads/root-001/forte` (verified with a direct grep).
+- Notes: none.
