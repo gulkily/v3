@@ -31,8 +31,14 @@ $fallbackSubject = static function (array $post): string {
     return mb_substr($bodyText, 0, 60) . '...';
 };
 
+$authorText = static function (array $post): string {
+    $label = trim((string) ($post['author_label'] ?? ''));
+
+    return $label === '' ? 'guest' : $label;
+};
+
 $renderNode = null;
-$renderNode = function (array $node, int $depth) use (&$renderNode, $countDescendants, $fallbackSubject, $e, $author, $timestamp, $rootPostId): string {
+$renderNode = function (array $node, int $depth) use (&$renderNode, $countDescendants, $fallbackSubject, $authorText, $e, $timestamp, $rootPostId): string {
     $post = $node['post'];
     $postId = (string) $post['post_id'];
     $isAgentPost = (string) ($post['author_label'] ?? '') === 'reply-agent';
@@ -54,7 +60,7 @@ $renderNode = function (array $node, int $depth) use (&$renderNode, $countDescen
     }
     $html .= '<span>' . $e($fallbackSubject($post)) . '</span>';
     $html .= '</span>';
-    $html .= '<span class="paned-list-from">' . $author($post) . '</span>';
+    $html .= '<span class="paned-list-from">' . $e($authorText($post)) . '</span>';
     $html .= '<span class="paned-list-date">' . $timestamp((string) ($post['created_at'] ?? '')) . '</span>';
     $html .= '</div>';
 

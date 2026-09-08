@@ -44,3 +44,15 @@
   - Re-ran the full 39-real-tag filter check on the board view: zero mismatches, confirming the shared `.paned-list-row` CSS/behavior changes didn't cross-contaminate the two pages.
   - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures - no regressions.
 - Notes: none.
+
+## Stage 5 - End-to-end Tab-order and regression pass
+- Changes (one real defect found and fixed, beyond pure verification):
+  - `templates/partials/paned_list_pane.php`: the single-thread reply list's "From" column was still rendering a real `<a href="/user/...">` link via `$author($post)` for approved authors. That anchor is natively focusable regardless of its ancestor row's `tabindex`, so it added an uncontrolled extra Tab stop inside what was supposed to be a single, roving-tabindex-controlled option - breaking the "exactly one Tab stop per pane" guarantee for any thread whose author has a profile link (not visible in the small local fixture, which only has non-linked "guest" authors, but confirmed on the live 513-thread instance). Replaced with a plain-text `$authorText()` closure, mirroring the identical fix already applied to the board view's thread list for an earlier, unrelated request ("remove links from usernames in thread listing") - the same underlying problem, found independently here via the Tab-order walk rather than a user report this time.
+- Verification:
+  - `php -l`: clean.
+  - Headless-browser Tab-order walk on `/forte`: Prev → Next → folder tree (1 stop) → thread list (1 stop) → page exit (correct - the placeholder content pane has nothing focusable when no thread is selected yet, matching Step 2's "no artificial stop for a pane with nothing interactive in it").
+  - Headless-browser Tab-order walk on `/threads/root-001/forte`: Prev → Next → reply list (1 stop, now truly one stop after the fix above) → content pane's author link → page exit (that thread's one reply has no further links or reply-toggle, since it's a single-reply thread with no nested replies).
+  - Pure-keyboard end-to-end walk on the live 513-thread board instance (no mouse at any point): Tab into the folder tree, Tab into the thread list, arrow down until landing on a thread with replies, Tab → correctly reached the content pane's author link, Tab again → correctly reached the "Show N replies" toggle button. This exercises every success criterion from Step 2 in one pass, using only the keyboard.
+  - Re-ran the full 39-real-tag filter check, the popstate back/forward check, and the collapse tabindex-recovery check from Stage 4: all still pass with zero regressions after the Stage 5 fix.
+  - Full test suite re-run: 404 passing, same 4 pre-existing unrelated failures - no regressions.
+- Notes: none.
