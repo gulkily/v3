@@ -49,3 +49,14 @@
   - `GET /threads/root-001/forte`: content pane renders both posts' blocks; the root post's block has no `hidden` attribute and the reply's block does, matching the "content pane shows the root post by default" requirement. Body, author link, and timestamp all render correctly via existing helpers; no PHP warnings in the server log.
 - Notes:
   - Follow-up (not required by Step 2's success criteria, since reactions/handoff/analysis were never in this feature's explicit scope): if a future iteration wants like/flag buttons or Codex/analysis panels inside Forte, that should be scoped as its own stage/feature rather than folded in here, since it requires importing the signing/identity JS assets onto the Forte page.
+
+## Stage 5 - Client-side pane sync
+- Changes:
+  - `public/assets/paned_reader.js`: new script, delegated click handling on the list pane. Clicking a row selects it (shows its `paned-content-post` block, hides the rest, marks the row `paned-list-row--selected`); clicking a row's disclosure toggle collapses/expands its descendant rows (by walking forward through the flat row list until a row at the same or shallower depth is reached) and flips the toggle glyph and the `[+N]` count marker's visibility.
+  - `renderForte()` now passes `['/assets/paned_reader.js']` as the page's `scriptPaths`, following the same convention as `renderThread()`.
+- Verification:
+  - `node --check public/assets/paned_reader.js`: no syntax errors.
+  - Confirmed the fingerprinted script URL the layout emits (`/assets/paned_reader.{hash}.js`) resolves and serves with `Content-Type: application/javascript` via `FrontController::resolveFingerprintedAssetPath()`, with no physical fingerprinted file needing to exist on disk (it resolves back to the source file dynamically) — same mechanism every other page's scripts already rely on.
+  - Real interactive check with headless Chromium (via a throwaway Puppeteer script, not committed) against the live local server: loaded `/threads/root-001/forte`, clicked the reply row and confirmed the content pane swapped (root's block became `hidden`, reply's became visible) and the row gained the selected class; then clicked the root row's disclosure toggle and confirmed the reply row became `hidden`, the toggle glyph flipped to "▸", and the `[+N]` count marker became visible. Zero console/page errors throughout.
+- Notes:
+  - Browser back/forward and reload were not separately exercised (this stage has no URL/history state to restore — selection is pure in-memory DOM state, so reload simply resets to the root post, which is the intended default), narrowing the plan's original verification note about that risk to a non-issue for this implementation.

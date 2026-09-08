@@ -815,6 +815,7 @@ final class Application
             ],
             $title,
             'board',
+            ['/assets/paned_reader.js'],
         );
     }
 
