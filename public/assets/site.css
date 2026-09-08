@@ -3466,6 +3466,7 @@ body.paned-reader-body {
 
 .paned-menubar span {
   padding: 0.1rem 0.5rem;
+  cursor: pointer;
 }
 
 .paned-menubar span:hover {
@@ -3585,9 +3586,12 @@ button.paned-sort-button {
   flex: 1;
 }
 
-.paned-list-from-head,
-.paned-list-date-head {
+.paned-list-from-head {
   width: 9rem;
+}
+
+.paned-list-date-head {
+  width: 13rem;
 }
 
 .paned-list-replies-head,
@@ -3646,18 +3650,25 @@ button.paned-sort-button {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.15rem 0.5rem 0.15rem 0;
+  padding: 0.15rem 0.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .paned-list-from,
 .paned-list-date {
-  width: 9rem;
   padding: 0.15rem 0.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--paned-ink-soft);
+}
+
+.paned-list-from {
+  width: 9rem;
+}
+
+.paned-list-date {
+  width: 13rem;
 }
 
 .paned-list-replies {

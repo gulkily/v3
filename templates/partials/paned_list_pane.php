@@ -51,7 +51,7 @@ $renderNode = function (array $node, int $depth) use (&$renderNode, $countDescen
         . ' role="option" aria-selected="' . ($isSelected ? 'true' : 'false') . '" tabindex="' . ($isSelected ? '0' : '-1') . '">';
     $html .= '<span class="paned-list-toggle"' . ($hasChildren ? ' data-paned-toggle="' . $e($postId) . '"' : '') . '>'
         . ($hasChildren ? '&#9662;' : '') . '</span>';
-    $html .= '<span class="paned-list-subject" style="padding-left:' . ($depth * 16) . 'px">';
+    $html .= '<span class="paned-list-subject" style="padding-left:calc(0.5rem + ' . ($depth * 16) . 'px)">';
     if ($isAgentPost) {
         $html .= '<span class="paned-agent-badge">AGENT</span> ';
     }
