@@ -33,8 +33,10 @@
       <span>Refresh</span>
     </button>
   </div>
-<?= $indent($partial('partials/paned_list_pane.php', ['replyTree' => $replyTree]), 1) ?>
-<?= $indent($partial('partials/paned_content_pane.php', ['posts' => $posts, 'thread' => $thread]), 1) ?>
+  <div class="paned-panes-stack">
+<?= $indent($partial('partials/paned_list_pane.php', ['replyTree' => $replyTree]), 2) ?>
+<?= $indent($partial('partials/paned_content_pane.php', ['posts' => $posts, 'thread' => $thread]), 2) ?>
+  </div>
   <div class="paned-statusbar">
     <span><?= count($posts) ?> post<?= count($posts) === 1 ? '' : 's' ?> in thread</span>
     <span>Forte reader</span>

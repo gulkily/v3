@@ -12,6 +12,9 @@
     var placeholder = contentPane.querySelector("[data-paned-board-content-placeholder]");
     var contentPosts = Array.prototype.slice.call(contentPane.querySelectorAll("[data-paned-board-content-post-id]"));
     var titleLabel = document.querySelector("[data-paned-board-title-label]");
+    var statusCount = document.querySelector("[data-paned-board-status-count]");
+    var totalThreadCount = statusCount ? parseInt(statusCount.getAttribute("data-paned-board-total-count"), 10) : rows.length;
+    var totalTagCount = statusCount ? parseInt(statusCount.getAttribute("data-paned-board-tag-count"), 10) : folderItems.length;
 
     function resetContentPane() {
       contentPosts.forEach(function (article) {
@@ -43,9 +46,13 @@
       });
 
       var selectedRowNowHidden = false;
+      var visibleCount = 0;
       rows.forEach(function (row) {
         var visible = tag === "" || (row.getAttribute("data-paned-thread-tags") || "").split(",").indexOf(tag) !== -1;
         row.hidden = !visible;
+        if (visible) {
+          visibleCount++;
+        }
         if (!visible && row.classList.contains("paned-list-row--selected")) {
           selectedRowNowHidden = true;
         }
@@ -57,6 +64,12 @@
 
       if (titleLabel) {
         titleLabel.textContent = "Forte — [" + (tag === "" ? "All Threads" : "#" + tag) + "]";
+      }
+
+      if (statusCount) {
+        statusCount.textContent = tag === ""
+          ? totalThreadCount + " thread" + (totalThreadCount === 1 ? "" : "s") + " · " + totalTagCount + " tags"
+          : "Showing " + visibleCount + " of " + totalThreadCount + " threads (#" + tag + ")";
       }
     }
 
@@ -117,5 +130,59 @@
         stepSelection(1);
       });
     }
+
+    var replyCache = {};
+
+    function toggleReplies(button) {
+      var threadId = button.getAttribute("data-paned-reply-toggle");
+      var container = contentPane.querySelector('[data-paned-reply-container="' + threadId + '"]');
+      if (!container) {
+        return;
+      }
+
+      var expanded = button.getAttribute("aria-expanded") === "true";
+      if (expanded) {
+        container.hidden = true;
+        button.setAttribute("aria-expanded", "false");
+        button.textContent = button.getAttribute("data-paned-reply-label-collapsed");
+        return;
+      }
+
+      button.setAttribute("aria-expanded", "true");
+      button.textContent = button.getAttribute("data-paned-reply-label-expanded");
+      container.hidden = false;
+
+      if (replyCache[threadId]) {
+        container.innerHTML = replyCache[threadId];
+        return;
+      }
+
+      var url = button.getAttribute("data-paned-reply-url");
+      button.disabled = true;
+      fetch(url)
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("Request failed: " + response.status);
+          }
+          return response.text();
+        })
+        .then(function (html) {
+          replyCache[threadId] = html;
+          container.innerHTML = html;
+        })
+        .catch(function () {
+          container.innerHTML = '<p class="paned-reply-error">Could not load replies.</p>';
+        })
+        .then(function () {
+          button.disabled = false;
+        });
+    }
+
+    contentPane.addEventListener("click", function (event) {
+      var toggle = event.target.closest ? event.target.closest("[data-paned-reply-toggle]") : null;
+      if (toggle) {
+        toggleReplies(toggle);
+      }
+    });
   });
 })();

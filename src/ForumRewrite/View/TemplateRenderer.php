@@ -86,6 +86,18 @@ final class TemplateRenderer
     }
 
     /**
+     * Renders a single partial with no page/layout wrapper at all - for
+     * small HTML fragments returned to client-side JS (e.g. lazy-loaded
+     * content), not full pages.
+     *
+     * @param array<string, mixed> $data
+     */
+    public function renderFragment(string $partialPath, array $data): string
+    {
+        return $this->renderFile($partialPath, $data);
+    }
+
+    /**
      * Renders a page with no shared site chrome (no nav bar, theme menu, or
      * global status bar) - for pages that intentionally present their own
      * complete, self-contained UI.

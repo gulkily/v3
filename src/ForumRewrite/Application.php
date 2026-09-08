@@ -449,6 +449,17 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/forte/threads/([^/]+)/replies/?$#', $path, $matches) === 1) {
+            $html = $this->renderForteThreadReplies($matches[1]);
+            if ($html === null) {
+                $this->notFound();
+                return;
+            }
+
+            $this->sendHtml($html, 200);
+            return;
+        }
+
         if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)/?$#', $path, $matches) === 1) {
             $html = $this->renderTagPage($matches[1]);
             if ($html === null) {
@@ -839,6 +850,33 @@ final class Application
             'paned-reader-body',
             ['/assets/paned_board_reader.js'],
         );
+    }
+
+    /**
+     * Small HTML fragment (not a full page) with a thread's reply tree,
+     * fetched lazily by the board Forte view on first expand. The one
+     * deliberate exception to "no new backend calls" in this feature: at
+     * real scale, precomputing every thread's reply tree upfront (the
+     * pattern used everywhere else in Forte) would bloat the board page.
+     */
+    private function renderForteThreadReplies(string $threadId): ?string
+    {
+        $threadRow = $this->fetchThread($threadId);
+        if ($threadRow === null) {
+            return null;
+        }
+
+        $posts = $this->fetchThreadPosts($threadId);
+        $rootPostId = (string) $threadRow['root_post_id'];
+        $replyPosts = array_values(array_filter(
+            $posts,
+            fn (array $post): bool => (string) $post['post_id'] !== $rootPostId
+        ));
+        $replyTree = $this->buildReplyTree($replyPosts);
+
+        return $this->renderer()->renderFragment('partials/paned_thread_reply_tree.php', [
+            'replyTree' => $replyTree,
+        ]);
     }
 
     /**
@@ -1817,6 +1855,7 @@ final class Application
         $rows = $this->pdo()->query(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
                     threads.reply_count, threads.score_total, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
+                    posts.body AS root_post_body,
                     posts.post_score_total AS root_post_score_total,
                     profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM threads

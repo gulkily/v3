@@ -31,13 +31,13 @@
   </div>
   <div class="paned-board-layout">
 <?= $indent($partial('partials/paned_folder_tree.php', ['tagGroups' => $tagGroups, 'totalThreadCount' => count($threads)]), 2) ?>
-    <div class="paned-board-main">
+    <div class="paned-board-main paned-panes-stack">
 <?= $indent($partial('partials/paned_board_thread_list.php', ['threads' => $threads]), 3) ?>
 <?= $indent($partial('partials/paned_board_content_pane.php', ['threads' => $threads]), 3) ?>
     </div>
   </div>
   <div class="paned-statusbar">
-    <span><?= count($threads) ?> thread<?= count($threads) === 1 ? '' : 's' ?> · <?= count($tagGroups) ?> tags</span>
+    <span data-paned-board-status-count data-paned-board-total-count="<?= count($threads) ?>" data-paned-board-tag-count="<?= count($tagGroups) ?>"><?= count($threads) ?> thread<?= count($threads) === 1 ? '' : 's' ?> · <?= count($tagGroups) ?> tags</span>
     <span>Forte reader</span>
   </div>
 </div>
