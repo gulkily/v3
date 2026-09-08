@@ -36,3 +36,16 @@
   - Synthetic check (throwaway script, not committed): rendered the partial directly against a fabricated 4-post tree with a 3-level-deep chain (p1→p2→p3, p3 authored by `reply-agent`) plus a second branch (p1→p4). Confirmed: correct indentation at each depth, AGENT badge appears only on the agent-authored post, `[+N]` counts are correct per branch (`[+3]` at the root, `[+1]` at the mid-level node), and the no-subject fallback truncates long bodies to ~60 characters with a trailing ellipsis.
 - Notes:
   - Real fixture data only had one level of replies available, so the deeper-nesting check relied on the synthetic render — consistent with how Stage 2's tree-building was also verified synthetically.
+
+## Stage 4 - Content-pane partial
+- Changes:
+  - `templates/partials/paned_content_pane.php`: new partial that renders every post in the thread as a content block (subject-or-body-excerpt heading, `$contentMeta`/`$br` for author+date+body, the same agent-authored marker text used elsewhere), all `hidden` except the root post's block by default. Rendering every post up front (rather than fetching on demand) is what lets Stage 5 swap the visible block with no new backend call, per Step 2's "no new API calls" requirement.
+  - Reply/permalink links reuse the exact existing href patterns (`/compose/reply?thread_id=...&parent_id=...`, `/posts/{id}`) already used by `post_card.php`.
+  - `renderForte()` now also passes `posts` into the page template data.
+  - `templates/pages/forte.php`: renders the content pane after the list pane.
+- Scope note (deviation from the Step 3 plan's literal wording): the plan described reusing `post_card.php`/`thread_root_card.php` directly. Doing that verbatim would require reusing every context array those partials read (post analysis, Codex handoff, LLM exchanges, viewer like/flag state) — a much larger, viewer-permission-sensitive data-assembly surface than a single stage. Instead this stage reuses the same *fields and helpers* (`$author`/`$timestamp` via `$contentMeta`, `$br`, the `author_label === 'reply-agent'` check, the same link hrefs) in a new, smaller partial, matching Step 2's Core Requirement ("full body, author, and date, reusing the same fields already rendered today") without pulling in the analysis/Codex/reaction-button subsystems. Reaction buttons (like/flag) and Codex/analysis panels are deferred — flagging this rather than silently expanding or silently shrinking scope.
+- Verification:
+  - `php -l`: no syntax errors.
+  - `GET /threads/root-001/forte`: content pane renders both posts' blocks; the root post's block has no `hidden` attribute and the reply's block does, matching the "content pane shows the root post by default" requirement. Body, author link, and timestamp all render correctly via existing helpers; no PHP warnings in the server log.
+- Notes:
+  - Follow-up (not required by Step 2's success criteria, since reactions/handoff/analysis were never in this feature's explicit scope): if a future iteration wants like/flag buttons or Codex/analysis panels inside Forte, that should be scoped as its own stage/feature rather than folded in here, since it requires importing the signing/identity JS assets onto the Forte page.

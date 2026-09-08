@@ -810,6 +810,7 @@ final class Application
             [
                 'thread' => $threadRow,
                 'title' => $title,
+                'posts' => $posts,
                 'replyTree' => $replyTree,
             ],
             $title,
