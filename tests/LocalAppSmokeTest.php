@@ -818,6 +818,7 @@ final class LocalAppSmokeTest
         assertStringNotContains($href, $thread);
         assertStringContains($href, $post);
         assertSame(1, substr_count($post, $href));
+        assertOrdered($post, 'Signature:', 'Public key:');
     }
 
     public function testPostAndActivityLinkAdjacentSignatureFiles(): void

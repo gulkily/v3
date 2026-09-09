@@ -36,3 +36,13 @@
   - Existing keyless-post and adjacent-signature behavior remain covered.
 - Notes:
   - This follows the clarified placement requirement without adding a new route or data contract.
+
+## Stage 4 - Place link below signature metadata
+- Changes:
+  - Moved the individual post public-key link below the existing source and signature metadata block.
+  - Added a regression assertion for the required ordering.
+- Verification:
+  - Focused post rendering test confirms `Signature:` precedes `Public key:`.
+  - PHP syntax checks and whitespace validation pass.
+- Notes:
+  - The link remains limited to individual post details pages.
