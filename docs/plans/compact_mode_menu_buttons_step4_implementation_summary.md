@@ -10,3 +10,13 @@
   - `git diff --check` passed for the stage files.
 - Notes:
   - The source stylesheet is fingerprinted dynamically by the existing asset pipeline; no generated asset was edited.
+
+## Stage 2 - Verify compact density and focus contract
+- Changes:
+  - Added regression coverage for the compact-only selectors, preserved navigation target height, and existing density-menu focus styling.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testCompactModeMenuStylesUseScopedDensitySelectors`
+  - `php tests/run.php LocalAppSmokeTest::testAssetFingerprintPathsUseContentHashFilenames`
+  - `git diff --check` passed for the stage files.
+- Notes:
+  - Exact visual comparison remains a manual viewport check because CSS string assertions cannot measure rendered dimensions.
