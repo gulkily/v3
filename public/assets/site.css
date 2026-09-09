@@ -3169,14 +3169,6 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   padding: 0;
 }
 
-:root[data-thread-density="compact"] .thread-list > .compact-thread-compose {
-  margin-top: 0;
-}
-
-:root[data-thread-density="compact"] .thread-list > .compact-thread-compose + * {
-  margin-top: 0;
-}
-
 :root[data-thread-density="compact"] article.card:has(> .board-controls-nav) {
   padding: 0;
   border: 0;
