@@ -3539,6 +3539,8 @@ body.paned-reader-body {
   background: var(--paned-chrome-dark);
   font-weight: 700;
   border-bottom: 1px solid var(--paned-border-dark);
+  overflow-y: hidden;
+  scrollbar-gutter: stable;
 }
 
 .paned-list-head span {
@@ -3626,6 +3628,7 @@ button.paned-sort-button {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .paned-list-row {
