@@ -3165,6 +3165,10 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   padding: 0;
 }
 
+:root[data-thread-density="compact"] .compact-thread-compose {
+  padding: 0;
+}
+
 :root[data-thread-density="compact"] article.card:has(> .board-controls-nav) {
   padding: 0;
   border: 0;

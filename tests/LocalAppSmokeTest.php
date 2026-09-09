@@ -1502,6 +1502,7 @@ final class LocalAppSmokeTest
         assertStringContains('border: 0', $css);
         assertStringContains('.compact-thread-compose', $css);
         assertStringContains('.compact-thread-compose .inline-reply-summary', $css);
+        assertStringContains(':root[data-thread-density="compact"] .compact-thread-compose', $css);
         assertStringContains(':root[data-thread-density="compact"] .thread-density-menu__trigger', $css);
         assertStringContains(':root[data-thread-density="compact"] .thread-density-menu__option', $css);
         assertStringContains('.thread-density-menu__option:focus-visible', $css);
