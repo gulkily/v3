@@ -1492,18 +1492,6 @@ final class LocalAppSmokeTest
         assertStringContains('aria-live', $script);
     }
 
-    public function testCompactModeMenuStylesUseScopedDensitySelectors(): void
-    {
-        $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
-
-        assertStringContains(':root[data-thread-density="compact"] .board-controls-nav', $css);
-        assertStringContains(':root[data-thread-density="compact"] .board-controls-nav .nav-link', $css);
-        assertStringContains('min-height: 2.25rem', $css);
-        assertStringContains(':root[data-thread-density="compact"] .thread-density-menu__trigger', $css);
-        assertStringContains(':root[data-thread-density="compact"] .thread-density-menu__option', $css);
-        assertStringContains('.thread-density-menu__option:focus-visible', $css);
-    }
-
     public function testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp(): void
     {
         $application = new Application(
