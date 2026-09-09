@@ -1,8 +1,15 @@
+<?php
+$authorPublicKeyPath = trim((string) ($post['author_public_key_path'] ?? ''));
+$authorPublicKeyHref = trim((string) ($post['author_public_key_href'] ?? ''));
+?>
 <section class="stack">
   <article class="card">
     <h1>Post <?= $e($post['post_id']) ?></h1>
     <p class="meta">Thread <a href="/threads/<?= $e($post['thread_id']) ?>"><?= $e($post['thread_id']) ?></a></p>
     <p class="meta">Score: <?= (int) ($post['post_score_total'] ?? 0) ?></p>
+<?php if ($authorPublicKeyHref !== ''): ?>
+    <p class="meta">Public key: <a href="<?= $e($authorPublicKeyHref) ?>"><?= $e($authorPublicKeyPath !== '' ? $authorPublicKeyPath : 'Open public key') ?></a></p>
+<?php endif; ?>
 <?= $indent($partial('partials/source_metadata.php', [
     'source_path' => $post['source_path'] ?? '',
     'source_commit_sha' => $post['source_commit_sha'] ?? '',

@@ -1798,10 +1798,7 @@ final class Application
         );
         $stmt->execute(['thread_id' => $threadId]);
 
-        return array_map(
-            fn (array $post): array => $this->withAuthorPublicKeyMetadata($post),
-            $stmt->fetchAll(),
-        );
+        return $stmt->fetchAll();
     }
 
     /**

@@ -815,7 +815,7 @@ final class LocalAppSmokeTest
         $post = $this->render($application, '/posts/root-001');
         $href = 'href="/source/current/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc"';
 
-        assertStringContains($href, $thread);
+        assertStringNotContains($href, $thread);
         assertStringContains($href, $post);
         assertSame(1, substr_count($post, $href));
     }

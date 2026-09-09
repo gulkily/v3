@@ -25,3 +25,14 @@
   - `git diff --check` passed for the stage files.
 - Notes:
   - Coverage uses the existing parity fixture and read-model profile data; no fixture or schema changes were required.
+
+## Stage 3 - Move link to post details page
+- Changes:
+  - Removed the public-key link from shared thread and post-card identity details.
+  - Added the conditional link to the individual post details header at `/posts/{post_id}`.
+  - Kept the existing bootstrap-post technical key display unchanged.
+- Verification:
+  - Focused rendering coverage confirms the link is absent from the thread view and present once on the individual post view.
+  - Existing keyless-post and adjacent-signature behavior remain covered.
+- Notes:
+  - This follows the clarified placement requirement without adding a new route or data contract.
