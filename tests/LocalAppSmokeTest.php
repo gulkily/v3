@@ -1497,9 +1497,10 @@ final class LocalAppSmokeTest
         $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
 
         assertStringContains(':root[data-thread-density="compact"] .board-controls-nav', $css);
-        assertStringContains('article.card:has(> .board-controls-nav)', $css);
-        assertStringContains('padding: 0', $css);
-        assertStringContains('border: 0', $css);
+        assertStringContains(':root[data-thread-density="compact"] .board-controls-nav .nav-link', $css);
+        assertStringContains('min-height: 2.25rem', $css);
+        assertStringContains('border-color: transparent', $css);
+        assertStringContains('background: transparent', $css);
         assertStringContains(':root[data-thread-density="compact"] .thread-density-menu__trigger', $css);
         assertStringContains(':root[data-thread-density="compact"] .thread-density-menu__option', $css);
         assertStringContains('.thread-density-menu__option:focus-visible', $css);
