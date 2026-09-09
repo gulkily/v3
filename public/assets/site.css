@@ -3157,6 +3157,26 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   margin-top: 0.35rem;
 }
 
+:root[data-thread-density="compact"] .board-controls-nav {
+  gap: 0.3rem;
+}
+
+:root[data-thread-density="compact"] .board-controls-nav .nav-link {
+  min-height: 2.25rem;
+  padding: 0.3rem 0.5rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+:root[data-thread-density="compact"] .thread-density-menu__trigger {
+  padding-right: 0.45rem;
+  padding-left: 0.45rem;
+}
+
+:root[data-thread-density="compact"] .thread-density-menu__option {
+  padding: 0.3rem 0.45rem;
+}
+
 :root[data-theme="word97"][data-thread-density="compact"] .thread-list .thread-card > h1:first-child,
 :root[data-theme="word97"][data-thread-density="compact"] .thread-list .thread-card > h2:first-child {
   margin: -0.35rem -0.5rem 0.25rem;
