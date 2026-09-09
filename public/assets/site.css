@@ -2799,8 +2799,6 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 
 .compact-thread-compose {
   padding: 0;
-  border: 0;
-  background: transparent;
 }
 
 .compact-thread-compose label {
@@ -3161,6 +3159,10 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 
 :root[data-thread-density="compact"] .board-controls-nav {
   gap: 0.3rem;
+}
+
+:root[data-thread-density="compact"] .compact-thread-compose .inline-reply-summary {
+  padding: 0;
 }
 
 :root[data-thread-density="compact"] article.card:has(> .board-controls-nav) {
