@@ -1500,6 +1500,8 @@ final class LocalAppSmokeTest
         assertStringContains('article.card:has(> .board-controls-nav)', $css);
         assertStringContains('padding: 0', $css);
         assertStringContains('border: 0', $css);
+        assertStringContains('.compact-thread-compose', $css);
+        assertStringContains('background: transparent', $css);
         assertStringContains(':root[data-thread-density="compact"] .thread-density-menu__trigger', $css);
         assertStringContains(':root[data-thread-density="compact"] .thread-density-menu__option', $css);
         assertStringContains('.thread-density-menu__option:focus-visible', $css);
