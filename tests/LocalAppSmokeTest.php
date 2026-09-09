@@ -254,6 +254,46 @@ final class LocalAppSmokeTest
         assertTrue(is_file($repositoryRoot . '/records/approval-seeds/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt'));
     }
 
+    public function testStartAcceptsPortShorthand(): void
+    {
+        $port = random_int(18000, 18999);
+        $command = sprintf(
+            'timeout 1s %s start %s 2>&1',
+            escapeshellarg(__DIR__ . '/../v3'),
+            escapeshellarg((string) $port),
+        );
+        exec($command, $output, $exitCode);
+
+        assertSame(124, $exitCode);
+        assertStringContains('127.0.0.1:' . $port, implode("\n", $output));
+    }
+
+    public function testStartAcceptsColonPortShorthand(): void
+    {
+        $port = random_int(19000, 19999);
+        $command = sprintf(
+            'timeout 1s %s start %s 2>&1',
+            escapeshellarg(__DIR__ . '/../v3'),
+            escapeshellarg(':' . $port),
+        );
+        exec($command, $output, $exitCode);
+
+        assertSame(124, $exitCode);
+        assertStringContains('127.0.0.1:' . $port, implode("\n", $output));
+    }
+
+    public function testStartRejectsOutOfRangePortShorthand(): void
+    {
+        $command = sprintf(
+            '%s start 65536 2>&1',
+            escapeshellarg(__DIR__ . '/../v3'),
+        );
+        exec($command, $output, $exitCode);
+
+        assertSame(1, $exitCode);
+        assertStringContains('Invalid port: 65536', implode("\n", $output));
+    }
+
     public function testInjectApprovalScriptApprovesExistingUser(): void
     {
         [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
