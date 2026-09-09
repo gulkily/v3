@@ -24,6 +24,7 @@ Usage:
   ./v3 agent-reply test-local
   ./v3 codex-handoff run [--limit=1] [--dry-run] [--database-path=/path/post_index.sqlite3] [--codex-bin=/path/codex]
   ./v3 codex-handoff test-local
+  ./v3 approve <identity_id> [seed_reason] [repository_root] [database_path]
   ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
 EOF
@@ -152,6 +153,10 @@ case "${COMMAND}" in
   approval)
     shift
     php "${ROOT}/scripts/inject_approval.php" "$@"
+    ;;
+  approve)
+    shift
+    php "${ROOT}/scripts/inject_approval.php" seed "$@"
     ;;
   *)
     echo "Unknown command: ${COMMAND}" >&2

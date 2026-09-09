@@ -233,6 +233,27 @@ final class LocalAppSmokeTest
         assertStringContains('Approved: yes', $profile);
     }
 
+    public function testApproveShortcutSeedsIdentity(): void
+    {
+        [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $this->deleteDirectoryContents($repositoryRoot . '/records/approval-seeds');
+
+        $command = sprintf(
+            '%s %s %s %s %s %s',
+            escapeshellarg(__DIR__ . '/../v3'),
+            'approve',
+            escapeshellarg('openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'),
+            escapeshellarg('shortcut seeded approval'),
+            escapeshellarg($repositoryRoot),
+            escapeshellarg($databasePath),
+        );
+        exec($command, $output, $exitCode);
+
+        assertSame(0, $exitCode);
+        assertStringContains('Seeded approval for openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', implode("\n", $output));
+        assertTrue(is_file($repositoryRoot . '/records/approval-seeds/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt'));
+    }
+
     public function testInjectApprovalScriptApprovesExistingUser(): void
     {
         [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
