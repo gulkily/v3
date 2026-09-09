@@ -31,3 +31,13 @@
   - Focused compact-mode test and `git diff --check` pass.
 - Notes:
   - This affects compact board navigation links only; comfortable mode is unchanged.
+
+## Stage 4 - Remove surrounding control card chrome
+- Changes:
+  - Restored the normal compact menu-link appearance instead of making the links borderless.
+  - Removed the containing card’s padding, border, and background in compact mode when it wraps the board controls.
+- Verification:
+  - Updated the compact CSS contract test for the surrounding card selector and chrome removal.
+  - Focused compact-mode test and `git diff --check` pass.
+- Notes:
+  - Button labels and their own visual styling remain unchanged; only the area around the control group is removed.
