@@ -3550,6 +3550,7 @@ button.paned-sort-button {
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  gap: 0.3em;
   width: 100%;
   margin: 0;
   padding: 0;
@@ -3578,11 +3579,11 @@ button.paned-sort-button {
 }
 
 .paned-list-head span[aria-sort="ascending"] .paned-sort-button::after {
-  content: " \25B2";
+  content: "\25B2";
 }
 
 .paned-list-head span[aria-sort="descending"] .paned-sort-button::after {
-  content: " \25BC";
+  content: "\25BC";
 }
 
 .paned-list-toggle-head {
