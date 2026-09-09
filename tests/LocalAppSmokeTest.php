@@ -224,7 +224,7 @@ final class LocalAppSmokeTest
         );
         exec($command, $output, $exitCode);
 
-        $application = new Application($projectRoot, $repositoryRoot, $databasePath, $artifactRoot);
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         $profile = $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
         assertSame(0, $exitCode);
@@ -787,6 +787,37 @@ final class LocalAppSmokeTest
 
         assertStringContains('Public key unavailable.', $post);
         assertStringNotContains('BEGIN PGP PUBLIC KEY BLOCK', $post);
+    }
+
+    public function testPostPagesExposeAvailableAuthorPublicKeyLink(): void
+    {
+        [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $this->render($application, '/posts/root-001');
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $pdo->exec("UPDATE posts SET author_identity_id = NULL, author_profile_slug = NULL WHERE post_id = 'root-001'");
+        $keylessPost = $this->render($application, '/posts/root-001');
+        assertStringNotContains('/source/current/records/public-keys/', $keylessPost);
+
+        $statement = $pdo->prepare(
+            'UPDATE posts
+             SET author_identity_id = :identity_id, author_profile_slug = :profile_slug
+             WHERE post_id = :post_id'
+        );
+        $statement->execute([
+            'identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+            'profile_slug' => 'openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+            'post_id' => 'root-001',
+        ]);
+
+        $thread = $this->render($application, '/threads/root-001');
+        $post = $this->render($application, '/posts/root-001');
+        $href = 'href="/source/current/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc"';
+
+        assertStringContains($href, $thread);
+        assertStringContains($href, $post);
+        assertSame(1, substr_count($post, $href));
     }
 
     public function testPostAndActivityLinkAdjacentSignatureFiles(): void
