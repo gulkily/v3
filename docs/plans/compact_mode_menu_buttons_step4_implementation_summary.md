@@ -70,3 +70,13 @@
   - `git diff --check` passes.
 - Notes:
   - Compact spacing is now consistent across mobile and desktop breakpoints.
+
+## Stage 8 - Remove composer stack gaps
+- Changes:
+  - Removed the compact-mode vertical gaps immediately before and after the start-thread composer.
+  - Preserved the composer border, background, field border, and internal field padding.
+- Verification:
+  - Extended the compact CSS contract test for the composer stack-gap selectors.
+  - Focused compact-mode test and `git diff --check` pass.
+- Notes:
+  - Other compact thread-card spacing remains unchanged.
