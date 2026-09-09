@@ -6,10 +6,16 @@ $isBootstrapPost = $isBootstrapPost
     && in_array('identity', $boardTags, true)
     && in_array('internal', $boardTags, true);
 $authorPublicKey = trim((string) ($post['author_public_key'] ?? ''));
-if (!$isBootstrapPost) {
+$authorPublicKeyPath = trim((string) ($post['author_public_key_path'] ?? ''));
+$authorPublicKeyHref = trim((string) ($post['author_public_key_href'] ?? ''));
+if (!$isBootstrapPost && $authorPublicKeyHref === '') {
     return;
 }
 ?>
+<?php if ($authorPublicKeyHref !== ''): ?>
+  <p class="meta">Public key: <a href="<?= $e($authorPublicKeyHref) ?>"><?= $e($authorPublicKeyPath !== '' ? $authorPublicKeyPath : 'Open public key') ?></a></p>
+<?php endif; ?>
+<?php if ($isBootstrapPost): ?>
   <details class="account-key-advanced">
     <summary>Advanced / technical details</summary>
     <div class="stack">
@@ -23,3 +29,4 @@ if (!$isBootstrapPost) {
       </div>
     </div>
   </details>
+<?php endif; ?>

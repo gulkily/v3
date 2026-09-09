@@ -1798,7 +1798,10 @@ final class Application
         );
         $stmt->execute(['thread_id' => $threadId]);
 
-        return $stmt->fetchAll();
+        return array_map(
+            fn (array $post): array => $this->withAuthorPublicKeyMetadata($post),
+            $stmt->fetchAll(),
+        );
     }
 
     /**
@@ -1845,6 +1848,38 @@ final class Application
             (string) ($post['author_identity_id'] ?? ''),
             $signature['path']
         );
+
+        return $this->withAuthorPublicKeyMetadata($post);
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     * @return array<string, mixed>
+     */
+    private function withAuthorPublicKeyMetadata(array $post): array
+    {
+        $post['author_public_key_path'] = '';
+        $post['author_public_key_href'] = '';
+        if (trim((string) ($post['author_public_key'] ?? '')) === '') {
+            return $post;
+        }
+
+        $identityId = strtolower(trim((string) ($post['author_identity_id'] ?? '')));
+        if (preg_match('/^openpgp:([a-f0-9]{40})$/', $identityId, $matches) !== 1) {
+            return $post;
+        }
+
+        $fingerprint = $matches[1];
+        foreach ([strtoupper($fingerprint), $fingerprint] as $storedFingerprint) {
+            $path = 'records/public-keys/openpgp-' . $storedFingerprint . '.asc';
+            if (!$this->currentSourcePathExists($path)) {
+                continue;
+            }
+
+            $post['author_public_key_path'] = $path;
+            $post['author_public_key_href'] = '/source/current/' . $this->encodeSourcePathForUrl($path);
+            break;
+        }
 
         return $post;
     }
