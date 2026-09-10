@@ -104,6 +104,7 @@ final class TemplateRenderer
      *
      * @param array<string, mixed> $pageData
      * @param string[] $scriptPaths
+     * @param string[] $additionalCssPaths
      */
     public function renderStandalonePage(
         string $pageTemplate,
@@ -111,11 +112,16 @@ final class TemplateRenderer
         string $title,
         string $bodyClass = '',
         array $scriptPaths = [],
+        array $additionalCssPaths = [],
     ): string {
         $content = $this->renderFile('pages/' . $pageTemplate, $pageData);
         $assetScriptPaths = [];
         foreach ($scriptPaths as $scriptPath) {
             $assetScriptPaths[] = $this->assetPath($scriptPath);
+        }
+        $assetAdditionalCssPaths = [];
+        foreach ($additionalCssPaths as $additionalCssPath) {
+            $assetAdditionalCssPaths[] = $this->assetPath($additionalCssPath);
         }
 
         return $this->renderFile('standalone_layout.php', [
@@ -124,6 +130,7 @@ final class TemplateRenderer
             'bodyClass' => $bodyClass,
             'scriptPaths' => $assetScriptPaths,
             'siteCssPath' => $this->assetPath('/assets/site.css'),
+            'additionalCssPaths' => $assetAdditionalCssPaths,
         ]);
     }
 

@@ -6,6 +6,9 @@
   <title><?= $e($title) ?></title>
   <link rel="icon" href="/favicon.ico" sizes="32x32">
   <link rel="stylesheet" href="<?= $e($siteCssPath) ?>">
+<?php foreach ($additionalCssPaths as $additionalCssPath): ?>
+  <link rel="stylesheet" href="<?= $e($additionalCssPath) ?>">
+<?php endforeach; ?>
 <?php foreach ($scriptPaths as $scriptPath): ?>
   <script src="<?= $e($scriptPath) ?>" defer></script>
 <?php endforeach; ?>
