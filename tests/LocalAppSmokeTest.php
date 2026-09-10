@@ -50,6 +50,19 @@ final class LocalAppSmokeTest
         assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/site.000000000000.css'));
     }
 
+    public function testCompactModeMenuStylesUseScopedDensitySelectors(): void
+    {
+        $css = file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+        if ($css === false) {
+            throw new RuntimeException('Unable to read site stylesheet.');
+        }
+
+        assertStringContains(':root[data-thread-density="compact"] .thread-card__preview', $css);
+        assertStringContains(':root[data-thread-density="compact"] .thread-list .thread-card', $css);
+        assertStringContains(':root[data-thread-density="compact"] .thread-list > * + *', $css);
+        assertStringContains(':root[data-theme="word97"][data-thread-density="compact"]', $css);
+    }
+
     public function testAssetFingerprintCopySkipsAlreadyFingerprintedSourceFiles(): void
     {
         $sourceRoot = sys_get_temp_dir() . '/forum-rewrite-source-assets-' . bin2hex(random_bytes(6));
