@@ -50,6 +50,24 @@ final class LocalAppSmokeTest
         assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/site.000000000000.css'));
     }
 
+    public function testAssetFingerprintDistinguishesCurrentAndStaleAssetPaths(): void
+    {
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-fingerprint-' . bin2hex(random_bytes(6));
+        mkdir($publicRoot . '/assets', 0777, true);
+        file_put_contents($publicRoot . '/assets/example.css', 'body { color: red; }');
+
+        try {
+            $currentPath = AssetFingerprint::fingerprintedPath($publicRoot, '/assets/example.css');
+            assertSame($publicRoot . '/assets/example.css', AssetFingerprint::sourcePathForFingerprint($publicRoot, $currentPath));
+            assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/example.000000000000.css'));
+            assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/missing.000000000000.css'));
+        } finally {
+            @unlink($publicRoot . '/assets/example.css');
+            @rmdir($publicRoot . '/assets');
+            @rmdir($publicRoot);
+        }
+    }
+
     public function testCompactModeMenuStylesUseScopedDensitySelectors(): void
     {
         $css = file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
