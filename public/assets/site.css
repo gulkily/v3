@@ -3157,6 +3157,28 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   margin-top: 0.35rem;
 }
 
+:root[data-thread-density="compact"] article.card:has(> .board-controls-nav) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+:root[data-thread-density="compact"] .compact-thread-compose {
+  padding: 0;
+}
+
+:root[data-thread-density="compact"] .compact-thread-compose .inline-reply-summary {
+  padding: 0;
+}
+
+:root[data-thread-density="compact"] .thread-list > .compact-thread-compose {
+  margin-top: 0;
+}
+
+:root[data-thread-density="compact"] .thread-list > .compact-thread-compose + * {
+  margin-top: 0;
+}
+
 :root[data-theme="word97"][data-thread-density="compact"] .thread-list .thread-card > h1:first-child,
 :root[data-theme="word97"][data-thread-density="compact"] .thread-list .thread-card > h2:first-child {
   margin: -0.35rem -0.5rem 0.25rem;

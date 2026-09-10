@@ -60,6 +60,11 @@ final class LocalAppSmokeTest
         assertStringContains(':root[data-thread-density="compact"] .thread-card__preview', $css);
         assertStringContains(':root[data-thread-density="compact"] .thread-list .thread-card', $css);
         assertStringContains(':root[data-thread-density="compact"] .thread-list > * + *', $css);
+        assertStringContains(':root[data-thread-density="compact"] article.card:has(> .board-controls-nav)', $css);
+        assertStringContains(':root[data-thread-density="compact"] .compact-thread-compose', $css);
+        assertStringContains('.compact-thread-compose .inline-reply-summary', $css);
+        assertStringContains(':root[data-thread-density="compact"] .thread-list > .compact-thread-compose', $css);
+        assertStringContains('margin-top: 0', $css);
         assertStringContains(':root[data-theme="word97"][data-thread-density="compact"]', $css);
     }
 
