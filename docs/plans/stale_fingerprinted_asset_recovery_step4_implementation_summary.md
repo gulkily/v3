@@ -25,3 +25,15 @@
 - Notes:
   - Current fingerprints continue to receive immutable asset responses; only stale references redirect.
   - Unknown assets remain unresolved rather than becoming arbitrary file access.
+
+## Stage 3 - Guard static artifact publication
+- Changes:
+  - Added a publication guard that refuses to write generated HTML when it references a fingerprinted asset missing from the target artifact root.
+  - Extended the static artifact smoke test to verify generated index HTML references files present in the same artifact set.
+  - Kept atomic temporary-file-to-final-path replacement for each generated HTML artifact.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout`
+  - `git diff --check -- src/ForumRewrite/Host/StaticArtifactBuilder.php tests/LocalAppSmokeTest.php`
+  - Static artifact generation and reference checks passed.
+- Notes:
+  - This prevents new builds from publishing HTML with missing fingerprinted assets; runtime recovery remains the defense for already-published stale HTML.

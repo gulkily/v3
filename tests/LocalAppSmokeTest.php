@@ -1788,6 +1788,11 @@ final class LocalAppSmokeTest
         assertTrue(is_file($artifactRoot . '/posts/root-001.html'));
         assertTrue(is_file($artifactRoot . '/posts/thread-zenmemes-rules.html'));
         assertTrue(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
+        $indexArtifact = (string) file_get_contents($artifactRoot . '/index.html');
+        assertTrue(preg_match_all('#/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+#', $indexArtifact, $assetMatches) !== false);
+        foreach (array_unique($assetMatches[0]) as $assetPath) {
+            assertTrue(is_file($artifactRoot . $assetPath));
+        }
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/index.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/index.html'));
