@@ -60,6 +60,9 @@ final class LocalAppSmokeTest
             $currentPath = AssetFingerprint::fingerprintedPath($publicRoot, '/assets/example.css');
             assertSame($publicRoot . '/assets/example.css', AssetFingerprint::sourcePathForFingerprint($publicRoot, $currentPath));
             assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/example.000000000000.css'));
+            assertSame($currentPath, AssetFingerprint::replacementPathForFingerprint($publicRoot, '/assets/example.000000000000.css'));
+            assertSame(null, AssetFingerprint::replacementPathForFingerprint($publicRoot, $currentPath));
+            assertSame(null, AssetFingerprint::replacementPathForFingerprint($publicRoot, '/assets/missing.000000000000.css'));
             assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/missing.000000000000.css'));
         } finally {
             @unlink($publicRoot . '/assets/example.css');
@@ -1626,6 +1629,36 @@ final class LocalAppSmokeTest
 
         assertStringContains('Static Board', $response);
         assertStringContains('route-source: static-html', $response);
+    }
+
+    public function testFrontControllerRecoversStaleFingerprintedAssetRequests(): void
+    {
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        mkdir($publicRoot . '/assets', 0777, true);
+        mkdir($staticHtmlRoot, 0777, true);
+        file_put_contents($publicRoot . '/assets/example.css', 'body { color: red; }');
+
+        $controller = new FrontController(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $staticHtmlRoot,
+            $publicRoot,
+        );
+
+        try {
+            http_response_code(200);
+            $response = $this->renderFrontController($controller, 'GET', '/assets/example.000000000000.css', []);
+
+            assertSame('', $response);
+            assertSame(302, http_response_code());
+        } finally {
+            @unlink($publicRoot . '/assets/example.css');
+            @rmdir($publicRoot . '/assets');
+            @rmdir($publicRoot);
+            @rmdir($staticHtmlRoot);
+        }
     }
 
     public function testFrontControllerServesStaticArtifactForBackupAlias(): void
