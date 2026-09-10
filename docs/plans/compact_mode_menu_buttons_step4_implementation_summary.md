@@ -23,3 +23,16 @@
   - Focused compact-mode test passed.
 - Notes:
   - All selectors are scoped to the compact density attribute and existing board/thread-list markup.
+
+## Stage 3 - Remove compact thread-list side rails
+- Changes:
+  - Removed only the left and right borders from direct cards in the compact thread-list surface.
+  - Kept the cards' top and bottom borders so row separators remain visible.
+  - Extended the focused stylesheet contract test for the side-border rules.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testCompactModeMenuStylesUseScopedDensitySelectors`
+  - `git diff --check -- public/assets/site.css tests/LocalAppSmokeTest.php`
+  - `php tests/run.php`
+  - Focused test and diff check passed. The full suite completed with unrelated existing failures involving missing profile/template fixtures, public-key fixture expectations, a SQLite schema fixture, an existing undefined CSS variable in a SQLite viewer test, and the execution-lock timing test.
+- Notes:
+  - The side-border change is limited to compact thread-list cards; comfortable mode and other pages are unchanged.

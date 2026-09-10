@@ -3179,6 +3179,11 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   margin-top: 0;
 }
 
+:root[data-thread-density="compact"] .thread-list > .card {
+  border-left: 0;
+  border-right: 0;
+}
+
 :root[data-theme="word97"][data-thread-density="compact"] .thread-list .thread-card > h1:first-child,
 :root[data-theme="word97"][data-thread-density="compact"] .thread-list .thread-card > h2:first-child {
   margin: -0.35rem -0.5rem 0.25rem;
