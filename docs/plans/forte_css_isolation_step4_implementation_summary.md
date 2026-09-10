@@ -24,3 +24,14 @@
   - Classic UI pages never reference `forte.css` (unaffected; not reloaded in this stage).
 - Notes:
   - `site.css` still contains the duplicated block; Stage 3 removes it now that `forte.css` is confirmed live.
+
+## Stage 3 - Remove the paned block from site.css
+- Changes:
+  - Deleted the `.paned-*`/`body.paned-reader-body` block (previously lines 3425-3878) from `public/assets/site.css`; file now ends after `.sqlite-tab-panel[hidden]`.
+- Verification:
+  - `grep -c paned public/assets/site.css` — 0.
+  - `curl http://127.0.0.1:8001/forte` and the `/threads/{id}/forte` route still emit both stylesheet links (200 OK); headless-Chromium screenshot of `/forte` under OS dark mode is pixel-identical to Stage 2's (toolbar/sort/reply-toggle buttons and link color still correct — now sourced solely from `forte.css`).
+  - Classic UI: `curl http://127.0.0.1:8001/threads/{id}` shows the current (post-edit) `site.*.css` hash; headless-Chromium screenshot of that page under dark mode renders correctly.
+  - Aside (not a regression from this change, noted for the record): `curl http://127.0.0.1:8001/` and a couple of other root-level routes are served from pre-existing static snapshots in `public/*.html` (from an earlier `build_static_artifacts.php` run, unrelated to this feature) that PHP's built-in server prefers over the live route when a same-named file exists, so they don't reflect live `site.css` edits until rebuilt. `/threads/{id}` and all Forte routes have no such static twin and always hit the live app.
+- Notes:
+  - No other `site.css` rule referenced `.paned-*` selectors, so nothing else needed adjustment.
