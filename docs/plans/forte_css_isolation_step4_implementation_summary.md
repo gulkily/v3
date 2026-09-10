@@ -35,3 +35,12 @@
   - Aside (not a regression from this change, noted for the record): `curl http://127.0.0.1:8001/` and a couple of other root-level routes are served from pre-existing static snapshots in `public/*.html` (from an earlier `build_static_artifacts.php` run, unrelated to this feature) that PHP's built-in server prefers over the live route when a same-named file exists, so they don't reflect live `site.css` edits until rebuilt. `/threads/{id}` and all Forte routes have no such static twin and always hit the live app.
 - Notes:
   - No other `site.css` rule referenced `.paned-*` selectors, so nothing else needed adjustment.
+
+## Stage 4 - Confirm static-build asset fingerprinting picks up forte.css
+- Changes:
+  - None — verification only, as anticipated in the plan.
+- Verification:
+  - Ran `FORUM_PUBLIC_ARTIFACT_ROOT=<scratch dir> php scripts/build_static_artifacts.php` against a scratch copy of `public/`.
+  - Output `assets/` contains `forte.00b2e8fed466.css`, whose hash matches `sha256sum public/assets/forte.css` (first 12 hex chars: `00b2e8fed466`) — `AssetFingerprint::copyFingerprintedAssets()` picked up the new file with no special-casing needed, exactly as expected from its generic directory scan.
+- Notes:
+  - No code changes were required for this stage; the generic asset-fingerprinting path already covered the new file.
