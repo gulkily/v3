@@ -37,3 +37,19 @@
   - Static artifact generation and reference checks passed.
 - Notes:
   - This prevents new builds from publishing HTML with missing fingerprinted assets; runtime recovery remains the defense for already-published stale HTML.
+
+## Stage 4 - Add release health check
+- Changes:
+  - Added `scripts/check_static_artifacts.php` to scan generated HTML and fail when any fingerprinted CSS or JavaScript reference is missing.
+  - Added smoke coverage for both healthy and missing-asset artifact sets.
+  - Updated on-demand single-route artifact generation to copy the fingerprinted asset set before applying the publication guard.
+- Verification:
+  - `php -l scripts/check_static_artifacts.php`
+  - `php tests/run.php LocalAppSmokeTest::testStaticArtifactHealthCheckDetectsMissingFingerprint`
+  - `php tests/run.php LocalAppSmokeTest::testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout`
+  - `php tests/run.php LocalAppSmokeTest::testFrontControllerBuildsMissingArtifactAfterEligibleAnonymousFallback`
+  - `php tests/run.php LocalAppSmokeTest`
+  - Focused artifact, on-demand build, syntax, and diff checks passed. The LocalAppSmokeTest run retained unrelated existing failures for missing profile/template fixtures, public-key fixture expectations, a SQLite schema test variable, and execution-lock timing.
+- Notes:
+  - Deployment can run the new script against the published artifact root as a release gate.
+  - Unrelated worktree changes remain unstaged.

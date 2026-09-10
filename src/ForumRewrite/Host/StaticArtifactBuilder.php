@@ -95,6 +95,7 @@ final class StaticArtifactBuilder
             return false;
         }
 
+        AssetFingerprint::copyFingerprintedAssets($this->projectRoot . '/public', $this->artifactRoot);
         return $this->writeRouteArtifactsWithLock($this->application(), $normalizedRoute, $artifactPaths);
     }
 

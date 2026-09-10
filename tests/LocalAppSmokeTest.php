@@ -1854,6 +1854,30 @@ final class LocalAppSmokeTest
         assertStringContains('route-source: static-html', $tagsResponse);
     }
 
+    public function testStaticArtifactHealthCheckDetectsMissingFingerprint(): void
+    {
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-assets-' . bin2hex(random_bytes(6));
+        mkdir($artifactRoot . '/assets', 0777, true);
+        file_put_contents($artifactRoot . '/assets/example.000000000000.css', 'body { color: red; }');
+        file_put_contents($artifactRoot . '/index.html', '<link rel="stylesheet" href="/assets/example.000000000000.css">');
+
+        $command = sprintf(
+            'php %s %s',
+            escapeshellarg(__DIR__ . '/../scripts/check_static_artifacts.php'),
+            escapeshellarg($artifactRoot),
+        );
+
+        try {
+            exec($command, $output, $exitCode);
+            assertSame(0, $exitCode);
+            unlink($artifactRoot . '/assets/example.000000000000.css');
+            exec($command, $outputAfterRemoval, $exitCodeAfterRemoval);
+            assertSame(1, $exitCodeAfterRemoval);
+        } finally {
+            $this->deleteTree($artifactRoot);
+        }
+    }
+
     public function testFrontControllerBuildsMissingArtifactAfterEligibleAnonymousFallback(): void
     {
         @unlink($this->databasePath);
