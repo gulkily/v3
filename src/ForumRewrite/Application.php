@@ -836,6 +836,7 @@ final class Application
             $title,
             'paned-reader-body',
             ['/assets/paned_reader.js'],
+            ['/assets/forte.css'],
         );
     }
 
@@ -859,6 +860,7 @@ final class Application
             'Forte',
             'paned-reader-body',
             ['/assets/paned_board_reader.js'],
+            ['/assets/forte.css'],
         );
     }
 
