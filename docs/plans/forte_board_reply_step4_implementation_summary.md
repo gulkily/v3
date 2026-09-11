@@ -11,3 +11,13 @@
   - `curl http://127.0.0.1:8001/threads/root-001/forte` — unaffected (0 matches for board-specific hooks), confirming the single-thread reader wasn't touched.
 - Notes:
   - `reply_form.php` reused unchanged, same as in `forte_reply`.
+
+## Stage 2 - Wire toggle and selection-based enable/disable
+- Changes:
+  - `public/assets/paned_board_reader.js`: hoisted `replyButton`/`composePanel` lookups near the top of `DOMContentLoaded`; added a click handler on `[data-paned-board-reply]` toggling the panel's `hidden` attribute (guarded by both refs existing, mirroring `paned_reader.js`'s pattern); `selectThread()` now enables the button; `resetContentPane()` (the existing no-selection path, also used when a tag filter hides the selected thread) now disables the button and re-hides the panel.
+- Verification:
+  - `node --check public/assets/paned_board_reader.js` clean.
+  - Headless-browser test (Selenium + `chromium-browser`) on `/forte`: Reply starts `disabled` and the panel starts `hidden`; selecting the "hi" thread enables Reply; clicking it twice toggles the panel open then closed; zero `SEVERE` console log entries.
+  - Screenshot of the opened panel confirms it renders identically to the single-thread reader's composer (same beveled "Compose Reply" head, monospace textarea, toolbar-style buttons) — no new CSS was needed, as planned.
+- Notes:
+  - Disabling the button also naturally blocks its click handler in the browser (disabled buttons don't fire `click`), so no extra guard was needed beyond setting `.disabled`.

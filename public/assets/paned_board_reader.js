@@ -15,6 +15,8 @@
     var statusCount = document.querySelector("[data-paned-board-status-count]");
     var totalThreadCount = statusCount ? parseInt(statusCount.getAttribute("data-paned-board-total-count"), 10) : rows.length;
     var totalTagCount = statusCount ? parseInt(statusCount.getAttribute("data-paned-board-tag-count"), 10) : folderItems.length;
+    var replyButton = document.querySelector("[data-paned-board-reply]");
+    var composePanel = document.querySelector("[data-paned-compose-panel]");
 
     function firstVisibleRow() {
       for (var i = 0; i < rows.length; i++) {
@@ -41,6 +43,12 @@
       if (placeholder) {
         placeholder.hidden = false;
       }
+      if (replyButton) {
+        replyButton.disabled = true;
+      }
+      if (composePanel) {
+        composePanel.hidden = true;
+      }
     }
 
     function selectThread(threadId) {
@@ -56,6 +64,9 @@
         row.setAttribute("aria-selected", isSelected ? "true" : "false");
         row.setAttribute("tabindex", isSelected ? "0" : "-1");
       });
+      if (replyButton) {
+        replyButton.disabled = false;
+      }
     }
 
     function selectFolder(tag) {
@@ -330,6 +341,12 @@
     if (nextButton) {
       nextButton.addEventListener("click", function () {
         stepSelection(1);
+      });
+    }
+
+    if (replyButton && composePanel) {
+      replyButton.addEventListener("click", function () {
+        composePanel.hidden = !composePanel.hidden;
       });
     }
 
