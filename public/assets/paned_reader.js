@@ -155,6 +155,13 @@
     if (replyButton && composePanel) {
       replyButton.addEventListener("click", function () {
         composePanel.hidden = !composePanel.hidden;
+        if (!composePanel.hidden) {
+          composePanel.scrollIntoView({ block: "nearest" });
+          var bodyField = composePanel.querySelector('textarea[name="body"]');
+          if (bodyField) {
+            bodyField.focus();
+          }
+        }
       });
     }
 
