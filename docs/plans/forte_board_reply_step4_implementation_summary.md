@@ -21,3 +21,12 @@
   - Screenshot of the opened panel confirms it renders identically to the single-thread reader's composer (same beveled "Compose Reply" head, monospace textarea, toolbar-style buttons) — no new CSS was needed, as planned.
 - Notes:
   - Disabling the button also naturally blocks its click handler in the browser (disabled buttons don't fire `click`), so no extra guard was needed beyond setting `.disabled`.
+
+## Stage 3 - Sync compose target with board selection
+- Changes:
+  - `public/assets/paned_board_reader.js`: added a shared `setComposeTarget(threadId)` helper (used by both `selectThread()` and `resetContentPane()`, avoiding the duplicated field-lookup logic a first pass had) that sets the panel's hidden `thread_id`/`parent_id` inputs to the given value. `selectThread()` calls it with the selected thread's id; `resetContentPane()` calls it with `""` to clear both fields when nothing is selected (including when a tag-filter change hides the previously selected thread, which already routed through `resetContentPane()`).
+- Verification:
+  - `node --check public/assets/paned_board_reader.js` clean.
+  - Headless-browser test (Selenium + `chromium-browser`) on `/forte`: selecting thread A sets both hidden fields to A's `root_post_id`; selecting thread B updates them to B's id; clicking a folder tag that excludes the selected thread B triggers the existing `resetContentPane()` path, clearing both fields to `""` and re-disabling Reply. Zero `SEVERE` console log entries.
+- Notes:
+  - No changes needed to the tag-filter (`selectFolder`) or prev/next/keyboard handlers — they already funnel through `selectThread`/`resetContentPane`, same reuse win as `forte_reply` Stage 3.

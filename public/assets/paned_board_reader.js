@@ -18,6 +18,20 @@
     var replyButton = document.querySelector("[data-paned-board-reply]");
     var composePanel = document.querySelector("[data-paned-compose-panel]");
 
+    function setComposeTarget(threadId) {
+      if (!composePanel) {
+        return;
+      }
+      var threadIdField = composePanel.querySelector('input[name="thread_id"]');
+      var parentIdField = composePanel.querySelector('input[name="parent_id"]');
+      if (threadIdField) {
+        threadIdField.value = threadId;
+      }
+      if (parentIdField) {
+        parentIdField.value = threadId;
+      }
+    }
+
     function firstVisibleRow() {
       for (var i = 0; i < rows.length; i++) {
         if (!rows[i].hidden) {
@@ -49,6 +63,7 @@
       if (composePanel) {
         composePanel.hidden = true;
       }
+      setComposeTarget("");
     }
 
     function selectThread(threadId) {
@@ -67,6 +82,7 @@
       if (replyButton) {
         replyButton.disabled = false;
       }
+      setComposeTarget(threadId);
     }
 
     function selectFolder(tag) {
