@@ -34,3 +34,13 @@
   - Headless-browser test (Selenium + `chromium-browser`): loading `/forte?tag=general&selected=root-001` directly shows that row selected, its content unhidden, and Reply enabled — all from a fresh page load, no interaction. Loading `/forte?selected=does-not-exist-xyz` leaves the default placeholder state untouched with Reply disabled and no console errors, confirming the "thread no longer exists" fallback from Step 2's core requirements.
 - Notes:
   - The `!row.hidden` guard means a `selected` id for a thread that's filtered out by the current `tag` is treated the same as a nonexistent one (falls back to no selection) rather than fighting the active filter — consistent with "restore only if it makes sense" rather than forcing a filter change the reader didn't ask for.
+
+## Stage 4 - Full round trip and regression verification
+- Changes: none (integration/regression verification only, as planned).
+- Verification:
+  - Headless-browser test (Selenium + `chromium-browser`) covering the full flow: filter by a tag → select a thread → open the composer and confirm `return_to` is `/forte?tag=...&selected=root-001` → submit a reply → confirm the post-submit URL carries the same `tag`/`selected` → confirm the reloaded page shows that thread selected (`paned-list-row--selected` present) and Reply enabled. Zero console errors.
+  - `curl http://127.0.0.1:8001/forte/threads/root-001/replies` after that submission shows the new reply body, confirming the reply itself was created correctly through the full flow (not just the redirect).
+  - Edge case (Step 2's stated requirement): loading `/forte` fresh with no filter/no selection yields `return_to = '/forte'` exactly as before this feature — no regression for the common case.
+  - Regression check: the single-thread reader's compose panel at `/threads/root-001/forte` still has `return_to = /threads/root-001/forte`, confirming `forte_reply`'s return path is completely untouched by this feature.
+- Notes:
+  - This completes all 4 planned stages for `forte_board_reply_restore`. Together with `forte_reply` and `forte_board_reply`, Forte's reply flow now preserves reader context (selection, and on the board view, tag filter) across every reply surface.
