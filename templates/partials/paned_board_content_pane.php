@@ -1,6 +1,7 @@
 <?php
 /**
  * @var array<int, array<string, mixed>> $threads
+ * @var array<string, array<int, array{post: array<string, mixed>, children: array}>> $replyTreesByThreadId
  */
 ?>
 <div class="paned-content-pane" data-paned-board-content-pane>
@@ -22,16 +23,7 @@
     </div>
     <div class="body"><?= $br($thread['root_post_body'] ?? $thread['body_preview']) ?></div>
 <?php if ($replyCount > 0): ?>
-    <button
-      type="button"
-      class="paned-reply-toggle"
-      data-paned-reply-toggle="<?= $e($thread['root_post_id']) ?>"
-      data-paned-reply-url="/forte/threads/<?= $e($thread['root_post_id']) ?>/replies"
-      data-paned-reply-label-collapsed="Show <?= $replyCount ?> repl<?= $replyCount === 1 ? 'y' : 'ies' ?>"
-      data-paned-reply-label-expanded="Hide replies"
-      aria-expanded="false"
-    >Show <?= $replyCount ?> repl<?= $replyCount === 1 ? 'y' : 'ies' ?></button>
-    <div class="paned-reply-container" data-paned-reply-container="<?= $e($thread['root_post_id']) ?>" hidden></div>
+<?= $indent($partial('partials/paned_thread_reply_tree.php', ['replyTree' => $replyTreesByThreadId[$thread['root_post_id']] ?? []]), 2) ?>
 <?php endif; ?>
   </article>
 <?php endforeach; ?>

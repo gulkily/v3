@@ -848,6 +848,13 @@ final class Application
         $sort = $this->resolveForteBoardSort($requestedSortColumn, $requestedSortDir);
         $threads = $this->applyForteBoardSort($threads, $sort['column'], $sort['dir']);
 
+        $replyPostsByThreadId = $this->fetchAllThreadReplyPosts();
+        $replyTreesByThreadId = [];
+        foreach ($threads as $thread) {
+            $threadId = (string) $thread['root_post_id'];
+            $replyTreesByThreadId[$threadId] = $this->buildReplyTree($replyPostsByThreadId[$threadId] ?? []);
+        }
+
         return $this->renderer()->renderStandalonePage(
             'forte_board.php',
             [
@@ -856,6 +863,7 @@ final class Application
                 'selectedTag' => $selectedTag,
                 'sortColumn' => $sort['column'],
                 'sortDir' => $sort['dir'],
+                'replyTreesByThreadId' => $replyTreesByThreadId,
             ],
             'Forte',
             'paned-reader-body',
@@ -2021,6 +2029,36 @@ final class Application
         $stmt->execute(['thread_id' => $threadId]);
 
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Bulk equivalent of fetchThreadPosts() across every thread at once (a
+     * single query grouped in PHP), used by the Forte board view so it can
+     * render every thread's reply tree without one query per thread.
+     *
+     * @return array<string, array<int, array<string, mixed>>> posts keyed by thread_id
+     */
+    private function fetchAllThreadReplyPosts(): array
+    {
+        $rows = $this->pdo()->query(
+            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_identity_id, posts.author_label,
+                    posts.created_at, posts.board_tags_json,
+                    posts.author_profile_slug, profiles.username_token AS author_username_token,
+                    COALESCE(profiles.is_approved, 0) AS author_is_approved,
+                    profiles.public_key AS author_public_key
+             FROM posts
+             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
+             WHERE posts.thread_id != posts.post_id
+               AND posts.is_hidden = 0
+             ORDER BY posts.thread_id ASC, posts.sequence_number ASC'
+        )->fetchAll();
+
+        $postsByThreadId = [];
+        foreach ($rows as $row) {
+            $postsByThreadId[(string) $row['thread_id']][] = $row;
+        }
+
+        return $postsByThreadId;
     }
 
     /**
