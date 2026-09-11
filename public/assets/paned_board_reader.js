@@ -18,17 +18,45 @@
     var replyButton = document.querySelector("[data-paned-board-reply]");
     var composePanel = document.querySelector("[data-paned-compose-panel]");
 
+    function currentTagFromUrl() {
+      return new URLSearchParams(location.search).get("tag") || "";
+    }
+
+    function currentSelectedThreadId() {
+      var selectedRow = rows.filter(function (row) {
+        return row.classList.contains("paned-list-row--selected");
+      })[0];
+      return selectedRow ? selectedRow.getAttribute("data-paned-thread-id") : "";
+    }
+
+    function composeReturnToUrl(threadId) {
+      var params = new URLSearchParams();
+      var tag = currentTagFromUrl();
+      if (tag !== "") {
+        params.set("tag", tag);
+      }
+      if (threadId !== "") {
+        params.set("selected", threadId);
+      }
+      var qs = params.toString();
+      return "/forte" + (qs ? "?" + qs : "");
+    }
+
     function setComposeTarget(threadId) {
       if (!composePanel) {
         return;
       }
       var threadIdField = composePanel.querySelector('input[name="thread_id"]');
       var parentIdField = composePanel.querySelector('input[name="parent_id"]');
+      var returnToField = composePanel.querySelector('input[name="return_to"]');
       if (threadIdField) {
         threadIdField.value = threadId;
       }
       if (parentIdField) {
         parentIdField.value = threadId;
+      }
+      if (returnToField) {
+        returnToField.value = composeReturnToUrl(threadId);
       }
     }
 
@@ -134,10 +162,6 @@
       }
     }
 
-    function currentTagFromUrl() {
-      return new URLSearchParams(location.search).get("tag") || "";
-    }
-
     function urlForState(tag, sortColumn, sortDir) {
       var params = new URLSearchParams();
       if (tag !== "") {
@@ -161,6 +185,7 @@
       selectFolder(tag);
       var sort = currentSortState();
       pushStateIfChanged(urlForState(tag, sort.column, sort.dir));
+      setComposeTarget(currentSelectedThreadId());
     }
 
     folderTree.addEventListener("click", function (event) {
