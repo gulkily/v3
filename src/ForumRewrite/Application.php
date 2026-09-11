@@ -453,17 +453,6 @@ final class Application
             return;
         }
 
-        if (preg_match('#^/forte/threads/([^/]+)/replies/?$#', $path, $matches) === 1) {
-            $html = $this->renderForteThreadReplies($matches[1]);
-            if ($html === null) {
-                $this->notFound();
-                return;
-            }
-
-            $this->sendHtml($html, 200);
-            return;
-        }
-
         if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)/?$#', $path, $matches) === 1) {
             $html = $this->renderTagPage($matches[1]);
             if ($html === null) {
@@ -946,33 +935,6 @@ final class Application
             'replies' => (int) ($thread['reply_count'] ?? 0),
             default => '',
         };
-    }
-
-    /**
-     * Small HTML fragment (not a full page) with a thread's reply tree,
-     * fetched lazily by the board Forte view on first expand. The one
-     * deliberate exception to "no new backend calls" in this feature: at
-     * real scale, precomputing every thread's reply tree upfront (the
-     * pattern used everywhere else in Forte) would bloat the board page.
-     */
-    private function renderForteThreadReplies(string $threadId): ?string
-    {
-        $threadRow = $this->fetchThread($threadId);
-        if ($threadRow === null) {
-            return null;
-        }
-
-        $posts = $this->fetchThreadPosts($threadId);
-        $rootPostId = (string) $threadRow['root_post_id'];
-        $replyPosts = array_values(array_filter(
-            $posts,
-            fn (array $post): bool => (string) $post['post_id'] !== $rootPostId
-        ));
-        $replyTree = $this->buildReplyTree($replyPosts);
-
-        return $this->renderer()->renderFragment('partials/paned_thread_reply_tree.php', [
-            'replyTree' => $replyTree,
-        ]);
     }
 
     /**

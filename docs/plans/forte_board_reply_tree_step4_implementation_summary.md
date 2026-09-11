@@ -21,3 +21,13 @@
   - Headless-browser test (Selenium + `chromium-browser`): selecting `root-001` shows all 34 reply nodes immediately (no click needed); a fresh reply submitted from the board view still redirects back with the new reply highlighted and in view; zero console errors.
 - Notes:
   - No changes needed elsewhere — `selectThread()`/`resetContentPane()`'s existing `clearHighlights()` call still works unchanged since it targets the `.paned-highlight-new` class, not anything toggle-related.
+
+## Stage 3 - Remove the now-unused backend endpoint
+- Changes:
+  - `Application.php`: removed the `/forte/threads/{id}/replies` route match and the `renderForteThreadReplies()` method it dispatched to.
+- Verification:
+  - `php -l` clean.
+  - `curl http://127.0.0.1:8001/forte/threads/root-001/replies` → `404` (route gone).
+  - `curl http://127.0.0.1:8001/forte` and `curl http://127.0.0.1:8001/threads/root-001/forte` both still `200`.
+- Notes:
+  - `TemplateRenderer::renderFragment()` (the generic method `renderForteThreadReplies()` called) is now unused but was left in place — it's a small, general-purpose public method on the renderer, not feature-specific, and removing it wasn't part of this stage's scope. Flagging it here in case a future cleanup pass wants to remove it once confirmed nothing else needs a bare-fragment render.
