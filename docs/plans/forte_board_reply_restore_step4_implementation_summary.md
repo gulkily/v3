@@ -25,3 +25,12 @@
   - Regression checks unchanged from `forte_reply`/`forte_board_reply`: a fully foreign `return_to` and a missing `return_to` both still fall back to the classic `/threads/{id}` location; the existing `/threads/{id}/forte` single-thread return path still resolves correctly.
 - Notes:
   - The double-`?` bug was only reachable once `return_to` could carry its own query string (as of Stage 1), so it couldn't have been hit by `forte_reply`/`forte_board_reply`'s earlier, always-bare `return_to` values — this was a genuine gap opened by this feature, not a preexisting one.
+
+## Stage 3 - Restore selection on page load
+- Changes:
+  - `public/assets/paned_board_reader.js`: at the end of the `DOMContentLoaded` setup, reads `selected` from `location.search`; if it matches a rendered, currently-visible (`!row.hidden`) row, calls the existing `selectThread()` to restore it. Tag restoration needed no client change — it was already fully server-rendered via `$selectedTag`/the `hidden` attribute on rows (confirmed by inspecting `paned_board_thread_list.php`), so this stage only needed to add the selection half.
+- Verification:
+  - `node --check public/assets/paned_board_reader.js` clean.
+  - Headless-browser test (Selenium + `chromium-browser`): loading `/forte?tag=general&selected=root-001` directly shows that row selected, its content unhidden, and Reply enabled — all from a fresh page load, no interaction. Loading `/forte?selected=does-not-exist-xyz` leaves the default placeholder state untouched with Reply disabled and no console errors, confirming the "thread no longer exists" fallback from Step 2's core requirements.
+- Notes:
+  - The `!row.hidden` guard means a `selected` id for a thread that's filtered out by the current `tag` is treated the same as a nonexistent one (falls back to no selection) rather than fighting the active filter — consistent with "restore only if it makes sense" rather than forcing a filter change the reader didn't ask for.

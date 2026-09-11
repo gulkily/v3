@@ -444,5 +444,15 @@
         toggleReplies(toggle);
       }
     });
+
+    var initialSelected = new URLSearchParams(location.search).get("selected") || "";
+    if (initialSelected !== "") {
+      var initialSelectedRow = rows.filter(function (row) {
+        return row.getAttribute("data-paned-thread-id") === initialSelected && !row.hidden;
+      })[0];
+      if (initialSelectedRow) {
+        selectThread(initialSelected);
+      }
+    }
   });
 })();
