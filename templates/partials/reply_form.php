@@ -35,4 +35,5 @@ $showBodyLabel = (bool) ($showBodyLabel ?? true);
   <input type="hidden" name="parent_id" value="<?= $e($parentId) ?>">
   <input type="hidden" name="author_identity_id" value="">
   <input type="hidden" name="board_tags" value="<?= $e($boardTags) ?>">
+  <input type="hidden" name="return_to" value="<?= $e($returnTo ?? '') ?>">
 </form>

@@ -5051,7 +5051,8 @@ final class Application
             $result = $this->writer()->createReply($input);
             $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
             $this->queueComposeDraftClear($this->composeDraftStorageKey('reply', $threadId, $parentId));
-            $location = '/threads/' . $result['thread_id']
+            $returnTo = $this->resolveComposeReplyReturnTo((string) ($input['return_to'] ?? ''), $result['thread_id']);
+            $location = $returnTo
                 . '?created_post_id=' . rawurlencode($result['post_id'])
                 . '&__v=' . rawurlencode($result['commit_sha'])
                 . '#post-' . rawurlencode($result['post_id']);
@@ -5075,6 +5076,15 @@ final class Application
                 $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
             );
         }
+    }
+
+    private function resolveComposeReplyReturnTo(string $requestedReturnTo, string $threadId): string
+    {
+        if (preg_match('#^/threads/' . preg_quote($threadId, '#') . '/forte$#', $requestedReturnTo) === 1) {
+            return $requestedReturnTo;
+        }
+
+        return '/threads/' . $threadId;
     }
 
     /**

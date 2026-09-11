@@ -14,5 +14,6 @@ $rootPostId = (string) $thread['root_post_id'];
     'submitLabel' => 'Post reply',
     'showBodyLabel' => false,
     'formClass' => 'paned-compose-form',
+    'returnTo' => '/threads/' . $rootPostId . '/forte',
 ]), 1) ?>
 </div>

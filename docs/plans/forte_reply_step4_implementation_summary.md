@@ -43,3 +43,19 @@
   - `git status --short public/assets/` confirms only `forte.css` changed among stylesheets.
 - Notes:
   - This stage is a good illustration of Step 2's stated maintenance risk: reusing `reply_form.php`'s classes across two independently-styled surfaces means a classic-side layout rule can leak into Forte until explicitly overridden.
+
+## Stage 5 - Return to Forte after replying
+- Changes:
+  - `partials/reply_form.php`: added a hidden `return_to` input, defaulting to `''` when the caller doesn't pass one (classic callers are unchanged).
+  - `partials/paned_compose_panel.php`: passes `returnTo` = `/threads/{root_post_id}/forte`.
+  - `Application.php::handleComposeReplySubmit`: on success, resolves the redirect target via new `resolveComposeReplyReturnTo(string $requestedReturnTo, string $threadId): string`, which only honors `return_to` if it exactly matches `/threads/{the actual created reply's thread_id}/forte`; anything else (empty, a foreign URL, or a mismatched thread id) falls back to the original `/threads/{thread_id}` classic location. This closes an open-redirect/header-injection risk from trusting a client-supplied hidden field outright.
+  - Validation-error path (`renderComposeReplyPage`) intentionally still renders the classic compose-error page rather than a Forte-native one — building that view is materially larger scope (a new template) than this stage's budget, and the common/success path now stays in Forte. Flagged as a known follow-up rather than silently expanded.
+- Verification:
+  - `php -l` clean on all three changed files.
+  - `curl -i -X POST /compose/reply` with a valid `return_to=/threads/root-001/forte` — `303` redirect `Location` correctly targets `/threads/root-001/forte?created_post_id=...#post-...`.
+  - Same request with no `return_to` — redirects to the original classic `/threads/root-001?...` location (unchanged behavior).
+  - Same request with `return_to=https://evil.example.com` and with `return_to` pointing at a *different* thread's Forte URL — both fall back to the classic `/threads/root-001?...` location (open-redirect/cross-thread guard confirmed).
+  - `curl http://127.0.0.1:8001/threads/root-001/forte` after a successful post-from-Forte submission shows the new reply body text in the rendered page.
+- Notes:
+  - No changes needed to `post_card.php`/`thread_root_card.php`'s classic "Reply" links or `thread.php`'s inline composer — they don't pass `returnTo`, so they keep the pre-existing classic redirect behavior automatically.
+
