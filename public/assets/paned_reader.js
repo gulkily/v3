@@ -12,6 +12,7 @@
   document.addEventListener("DOMContentLoaded", function () {
     var listBody = document.querySelector("[data-paned-list-body]");
     var contentPane = document.querySelector("[data-paned-content-pane]");
+    var composePanel = document.querySelector("[data-paned-compose-panel]");
     if (!listBody || !contentPane) {
       return;
     }
@@ -35,6 +36,12 @@
         row.setAttribute("aria-selected", isSelected ? "true" : "false");
         row.setAttribute("tabindex", isSelected ? "0" : "-1");
       });
+      if (composePanel) {
+        var parentIdField = composePanel.querySelector('input[name="parent_id"]');
+        if (parentIdField) {
+          parentIdField.value = postId;
+        }
+      }
     }
 
     function toggleCollapse(row) {
@@ -145,7 +152,6 @@
     }
 
     var replyButton = document.querySelector("[data-paned-reply]");
-    var composePanel = document.querySelector("[data-paned-compose-panel]");
     if (replyButton && composePanel) {
       replyButton.addEventListener("click", function () {
         composePanel.hidden = !composePanel.hidden;
