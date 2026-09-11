@@ -144,6 +144,14 @@
       });
     }
 
+    var replyButton = document.querySelector("[data-paned-reply]");
+    var composePanel = document.querySelector("[data-paned-compose-panel]");
+    if (replyButton && composePanel) {
+      replyButton.addEventListener("click", function () {
+        composePanel.hidden = !composePanel.hidden;
+      });
+    }
+
     listBody.addEventListener("keydown", function (event) {
       if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
         return;
