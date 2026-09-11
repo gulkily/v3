@@ -5053,7 +5053,7 @@ final class Application
             $this->queueComposeDraftClear($this->composeDraftStorageKey('reply', $threadId, $parentId));
             $returnTo = $this->resolveComposeReplyReturnTo((string) ($input['return_to'] ?? ''), $result['thread_id']);
             $location = $returnTo
-                . '?created_post_id=' . rawurlencode($result['post_id'])
+                . (str_contains($returnTo, '?') ? '&' : '?') . 'created_post_id=' . rawurlencode($result['post_id'])
                 . '&__v=' . rawurlencode($result['commit_sha'])
                 . '#post-' . rawurlencode($result['post_id']);
             $this->sendRedirect(
@@ -5084,11 +5084,36 @@ final class Application
             return $requestedReturnTo;
         }
 
-        if ($requestedReturnTo === '/forte') {
-            return $requestedReturnTo;
+        if (preg_match('#^/forte(?:\?(.*))?$#', $requestedReturnTo, $matches) === 1) {
+            return $this->buildForteBoardReturnTo($matches[1] ?? '');
         }
 
         return '/threads/' . $threadId;
+    }
+
+    /**
+     * Rebuilds a `/forte` return URL from only a fixed, character-restricted
+     * allowlist of query params (`tag`, `selected`), discarding anything else
+     * so the client-supplied query string is never passed through verbatim.
+     */
+    private function buildForteBoardReturnTo(string $requestedQueryString): string
+    {
+        parse_str($requestedQueryString, $params);
+        $allowed = [];
+
+        $tag = (string) ($params['tag'] ?? '');
+        if ($tag !== '' && preg_match('/^[a-z0-9-]+$/', $tag) === 1) {
+            $allowed['tag'] = $tag;
+        }
+
+        $selected = (string) ($params['selected'] ?? '');
+        if ($selected !== '' && preg_match('/^[A-Za-z0-9._:-]+$/', $selected) === 1) {
+            $allowed['selected'] = $selected;
+        }
+
+        $queryString = http_build_query($allowed);
+
+        return '/forte' . ($queryString !== '' ? '?' . $queryString : '');
     }
 
     /**
