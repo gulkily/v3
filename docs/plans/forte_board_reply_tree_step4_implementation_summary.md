@@ -11,3 +11,13 @@
   - Spot-checked the heaviest thread (`root-001`, 34 replies after this session's testing): all 34 reply nodes render inline with correct, unique `data-paned-reply-post-id`s, in the same chronological order `sequence_number` would produce, content matching what was actually posted (confirmed a specific reply's text is present).
 - Notes:
   - Page weight/timing (1.1MB / ~124ms for 513 threads / 503 replies) is well within the "acceptable" bar Step 2 called for — no further optimization needed at this data volume.
+
+## Stage 2 - Remove dead client-side lazy-load logic
+- Changes:
+  - `public/assets/paned_board_reader.js`: removed `replyCache`, `toggleReplies()`, and the `contentPane` click listener that dispatched to it (no `[data-paned-reply-toggle]` elements exist anymore after Stage 1).
+  - Simplified the "highlight the new reply after a board-view submit" logic: it now looks up `[data-paned-reply-post-id="..."]` directly within `contentPane` (the tree is already rendered) instead of calling `toggleReplies()` to expand it first.
+- Verification:
+  - `node --check public/assets/paned_board_reader.js` clean; `grep` confirms zero remaining references to `toggleReplies`, `replyCache`, or any `data-paned-reply-toggle`/`-url`/`-container` attribute.
+  - Headless-browser test (Selenium + `chromium-browser`): selecting `root-001` shows all 34 reply nodes immediately (no click needed); a fresh reply submitted from the board view still redirects back with the new reply highlighted and in view; zero console errors.
+- Notes:
+  - No changes needed elsewhere — `selectThread()`/`resetContentPane()`'s existing `clearHighlights()` call still works unchanged since it targets the `.paned-highlight-new` class, not anything toggle-related.

@@ -405,66 +405,6 @@
       });
     }
 
-    var replyCache = {};
-
-    function toggleReplies(button, onExpanded) {
-      var threadId = button.getAttribute("data-paned-reply-toggle");
-      var container = contentPane.querySelector('[data-paned-reply-container="' + threadId + '"]');
-      if (!container) {
-        return;
-      }
-
-      var expanded = button.getAttribute("aria-expanded") === "true";
-      if (expanded) {
-        container.hidden = true;
-        button.setAttribute("aria-expanded", "false");
-        button.textContent = button.getAttribute("data-paned-reply-label-collapsed");
-        return;
-      }
-
-      button.setAttribute("aria-expanded", "true");
-      button.textContent = button.getAttribute("data-paned-reply-label-expanded");
-      container.hidden = false;
-
-      if (replyCache[threadId]) {
-        container.innerHTML = replyCache[threadId];
-        if (onExpanded) {
-          onExpanded(container);
-        }
-        return;
-      }
-
-      var url = button.getAttribute("data-paned-reply-url");
-      button.disabled = true;
-      fetch(url)
-        .then(function (response) {
-          if (!response.ok) {
-            throw new Error("Request failed: " + response.status);
-          }
-          return response.text();
-        })
-        .then(function (html) {
-          replyCache[threadId] = html;
-          container.innerHTML = html;
-          if (onExpanded) {
-            onExpanded(container);
-          }
-        })
-        .catch(function () {
-          container.innerHTML = '<p class="paned-reply-error">Could not load replies.</p>';
-        })
-        .then(function () {
-          button.disabled = false;
-        });
-    }
-
-    contentPane.addEventListener("click", function (event) {
-      var toggle = event.target.closest ? event.target.closest("[data-paned-reply-toggle]") : null;
-      if (toggle) {
-        toggleReplies(toggle);
-      }
-    });
-
     var initialSelected = new URLSearchParams(location.search).get("selected") || "";
     var initialCreatedPostId = new URLSearchParams(location.search).get("created_post_id") || "";
     if (!/^[A-Za-z0-9._:-]+$/.test(initialCreatedPostId)) {
@@ -477,15 +417,10 @@
       if (initialSelectedRow) {
         selectThread(initialSelected);
         if (initialCreatedPostId !== "") {
-          var replyToggle = contentPane.querySelector('[data-paned-reply-toggle="' + initialSelected + '"]');
-          if (replyToggle) {
-            toggleReplies(replyToggle, function (container) {
-              var newReplyNode = container.querySelector('[data-paned-reply-post-id="' + initialCreatedPostId + '"]');
-              if (newReplyNode) {
-                newReplyNode.classList.add("paned-highlight-new");
-                newReplyNode.scrollIntoView({ block: "nearest" });
-              }
-            });
+          var newReplyNode = contentPane.querySelector('[data-paned-reply-post-id="' + initialCreatedPostId + '"]');
+          if (newReplyNode) {
+            newReplyNode.classList.add("paned-highlight-new");
+            newReplyNode.scrollIntoView({ block: "nearest" });
           }
         }
       }
