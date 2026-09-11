@@ -31,3 +31,14 @@
   - `curl http://127.0.0.1:8001/forte` and `curl http://127.0.0.1:8001/threads/root-001/forte` both still `200`.
 - Notes:
   - `TemplateRenderer::renderFragment()` (the generic method `renderForteThreadReplies()` called) is now unused but was left in place — it's a small, general-purpose public method on the renderer, not feature-specific, and removing it wasn't part of this stage's scope. Flagging it here in case a future cleanup pass wants to remove it once confirmed nothing else needs a bare-fragment render.
+
+## Stage 4 - Full regression and scale spot-check
+- Changes: none (verification only, as planned).
+- Verification:
+  - `grep -c "paned-reply-toggle\|Show .* repl\|Hide replies"` on `/forte`'s HTML → `0`; no toggle/expand affordance remains anywhere.
+  - Final page weight/timing: `/forte` is 1.15MB in ~45ms at current volume (513 threads / 503 replies) — consistent with Stage 1's measurement, confirming Stage 2/3's removals didn't regress anything.
+  - Re-ran the full board-view round trip from `forte_board_reply_restore` (filter by tag → select thread → open composer, confirming `return_to` still reflects both → submit → redirect carries the same `tag`/`selected` → thread re-selected and Reply enabled on reload) — all still passes unchanged against the now-eager reply tree.
+  - Re-ran the single-thread reader's own highlight-on-reply test (`/threads/root-001/forte`) — unaffected, as expected, since that page never used the lazy endpoint.
+  - Zero console errors across all of the above.
+- Notes:
+  - This completes all 4 planned stages for `forte_board_reply_tree`. The "Show N replies" button and its network round-trip are gone; replies are simply part of the board page now, at an acceptable cost given the site's current data volume.
