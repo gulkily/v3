@@ -35,4 +35,5 @@
 <?php endif; ?>
   </article>
 <?php endforeach; ?>
+<?= $indent($partial('partials/paned_board_compose_panel.php'), 1) ?>
 </div>
