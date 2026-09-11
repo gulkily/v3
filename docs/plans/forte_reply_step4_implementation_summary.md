@@ -32,3 +32,14 @@
   - Headless-browser test (Selenium + `chromium-browser`): on `/threads/root-001/forte`, `parent_id` starts as `root-001`; clicking the `reply-001` row updates it to `reply-001`; clicking back to the `root-001` row restores `root-001`; zero `SEVERE` console log entries.
 - Notes:
   - No change needed to the prev/next or arrow-key handlers since they all call the same `selectPost`.
+
+## Stage 4 - Style compose panel to match Forte chrome
+- Changes:
+  - `public/assets/forte.css`: added scoped rules for `.paned-compose-panel`/`.paned-compose-head` (beveled panel matching `.paned-content-head`'s look), `.paned-compose-form textarea` (monospace body font, sunken-bevel border matching `.paned-content-pane`), and `.paned-window .paned-compose-form button` (raised-bevel toolbar-style buttons). No `site.css` changes.
+  - Fixed a real cross-stylesheet leak found during visual verification: `site.css`'s `.compose-form-actions > button[type="submit"] { flex: 1 1 auto }` (from the classic compose UI) was stretching the reused submit buttons full-width inside the Forte panel since the new rules hadn't overridden `flex`. Added `.paned-window .paned-compose-form .compose-form-actions > button { flex: 0 0 auto; width: auto; }` (higher specificity than the site.css rule) so the buttons render at their natural, toolbar-like width instead.
+- Verification:
+  - `grep -c paned-compose public/assets/site.css` — 0 (no leakage into the classic stylesheet).
+  - Headless-browser screenshots (Selenium + `chromium-browser`) of `/threads/root-001/forte` with the composer open: panel head, textarea, and buttons all render in the paned beveled/monospace style consistent with the rest of the window; buttons are compact and toolbar-like rather than the classic full-width bars, after the flex fix above.
+  - `git status --short public/assets/` confirms only `forte.css` changed among stylesheets.
+- Notes:
+  - This stage is a good illustration of Step 2's stated maintenance risk: reusing `reply_form.php`'s classes across two independently-styled surfaces means a classic-side layout rule can leak into Forte until explicitly overridden.

@@ -386,6 +386,71 @@ body.paned-reader-body {
   color: var(--paned-ink);
 }
 
+.paned-compose-panel {
+  margin: 0 0.5rem 0.5rem;
+  background: var(--paned-content-bg);
+  border: 1px solid;
+  border-color: var(--paned-border-dark) var(--paned-border-light) var(--paned-border-light) var(--paned-border-dark);
+}
+
+.paned-compose-head {
+  padding: 0.4rem 0.75rem;
+  background: var(--paned-chrome-dark);
+  border-bottom: 1px solid var(--paned-border-dark);
+  font-weight: 700;
+}
+
+.paned-compose-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.paned-window .paned-compose-form textarea {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--paned-ink);
+  background: var(--paned-content-bg);
+  border: 1px solid;
+  border-color: var(--paned-border-dark) var(--paned-border-light) var(--paned-border-light) var(--paned-border-dark);
+  padding: 0.4rem;
+  resize: vertical;
+}
+
+.paned-compose-form .compose-form-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.paned-window .paned-compose-form .compose-form-actions > button {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.paned-window .paned-compose-form button {
+  padding: 0.25rem 0.7rem;
+  background: var(--paned-chrome);
+  color: var(--paned-ink);
+  border: 1px solid;
+  border-color: var(--paned-border-light) var(--paned-border-dark) var(--paned-border-dark) var(--paned-border-light);
+  border-radius: 0;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.paned-window .paned-compose-form button:hover {
+  border-color: var(--paned-border-dark) var(--paned-border-light) var(--paned-border-light) var(--paned-border-dark);
+}
+
+.paned-compose-form .meta {
+  font-size: 0.75rem;
+  color: var(--paned-ink-soft);
+}
+
 .paned-statusbar {
   flex-shrink: 0;
   display: flex;
