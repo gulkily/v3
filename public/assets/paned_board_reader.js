@@ -94,7 +94,14 @@
       setComposeTarget("");
     }
 
+    function clearHighlights() {
+      Array.prototype.slice.call(contentPane.querySelectorAll(".paned-highlight-new")).forEach(function (el) {
+        el.classList.remove("paned-highlight-new");
+      });
+    }
+
     function selectThread(threadId) {
+      clearHighlights();
       if (placeholder) {
         placeholder.hidden = true;
       }
@@ -400,7 +407,7 @@
 
     var replyCache = {};
 
-    function toggleReplies(button) {
+    function toggleReplies(button, onExpanded) {
       var threadId = button.getAttribute("data-paned-reply-toggle");
       var container = contentPane.querySelector('[data-paned-reply-container="' + threadId + '"]');
       if (!container) {
@@ -421,6 +428,9 @@
 
       if (replyCache[threadId]) {
         container.innerHTML = replyCache[threadId];
+        if (onExpanded) {
+          onExpanded(container);
+        }
         return;
       }
 
@@ -436,6 +446,9 @@
         .then(function (html) {
           replyCache[threadId] = html;
           container.innerHTML = html;
+          if (onExpanded) {
+            onExpanded(container);
+          }
         })
         .catch(function () {
           container.innerHTML = '<p class="paned-reply-error">Could not load replies.</p>';
@@ -453,12 +466,28 @@
     });
 
     var initialSelected = new URLSearchParams(location.search).get("selected") || "";
+    var initialCreatedPostId = new URLSearchParams(location.search).get("created_post_id") || "";
+    if (!/^[A-Za-z0-9._:-]+$/.test(initialCreatedPostId)) {
+      initialCreatedPostId = "";
+    }
     if (initialSelected !== "") {
       var initialSelectedRow = rows.filter(function (row) {
         return row.getAttribute("data-paned-thread-id") === initialSelected && !row.hidden;
       })[0];
       if (initialSelectedRow) {
         selectThread(initialSelected);
+        if (initialCreatedPostId !== "") {
+          var replyToggle = contentPane.querySelector('[data-paned-reply-toggle="' + initialSelected + '"]');
+          if (replyToggle) {
+            toggleReplies(replyToggle, function (container) {
+              var newReplyNode = container.querySelector('[data-paned-reply-post-id="' + initialCreatedPostId + '"]');
+              if (newReplyNode) {
+                newReplyNode.classList.add("paned-highlight-new");
+                newReplyNode.scrollIntoView({ block: "nearest" });
+              }
+            });
+          }
+        }
       }
     }
   });

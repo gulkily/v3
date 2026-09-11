@@ -7,7 +7,8 @@ $renderNode = function (array $node, int $depth) use (&$renderNode, $e, $author,
     $post = $node['post'];
     $isAgentPost = (string) ($post['author_label'] ?? '') === 'reply-agent';
 
-    $html = '<div class="paned-reply-node" style="margin-left:' . ($depth * 1.25) . 'rem">';
+    $postId = (string) $post['post_id'];
+    $html = '<div class="paned-reply-node" data-paned-reply-post-id="' . $e($postId) . '" style="margin-left:' . ($depth * 1.25) . 'rem">';
     $html .= '<div class="paned-reply-meta">';
     if ($isAgentPost) {
         $html .= '<span class="paned-agent-badge">AGENT</span> ';

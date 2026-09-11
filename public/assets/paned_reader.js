@@ -26,7 +26,14 @@
       });
     }
 
+    function clearHighlights() {
+      Array.prototype.slice.call(contentPane.querySelectorAll(".paned-highlight-new")).forEach(function (el) {
+        el.classList.remove("paned-highlight-new");
+      });
+    }
+
     function selectPost(postId) {
+      clearHighlights();
       contentPosts.forEach(function (article) {
         article.hidden = article.getAttribute("data-paned-content-post-id") !== postId;
       });
@@ -186,5 +193,19 @@
       selectPost(nextRow.getAttribute("data-paned-post-id"));
       nextRow.focus();
     });
+
+    var initialCreatedPostId = new URLSearchParams(location.search).get("created_post_id") || "";
+    if (!/^[A-Za-z0-9._:-]+$/.test(initialCreatedPostId)) {
+      initialCreatedPostId = "";
+    }
+    if (initialCreatedPostId !== "") {
+      var newContentPost = contentPane.querySelector('[data-paned-content-post-id="' + initialCreatedPostId + '"]');
+      var newRow = listBody.querySelector('[data-paned-post-id="' + initialCreatedPostId + '"]');
+      if (newContentPost && newRow) {
+        selectPost(initialCreatedPostId);
+        newContentPost.classList.add("paned-highlight-new");
+        newRow.scrollIntoView({ block: "nearest" });
+      }
+    }
   });
 })();

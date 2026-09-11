@@ -373,6 +373,11 @@ body.paned-reader-body {
   border-left: 2px solid var(--paned-border-dark);
 }
 
+.paned-highlight-new {
+  background: #fff8c9;
+  border-left-color: #e0c200;
+}
+
 .paned-reply-meta {
   font-size: 0.75rem;
   color: var(--paned-ink-soft);
