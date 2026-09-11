@@ -40,6 +40,12 @@ final class FrontController
             return;
         }
 
+        $assetReplacement = $this->resolveStaleFingerprintedAssetPath($method, $requestUri);
+        if ($assetReplacement !== null) {
+            $this->sendAssetRedirect($assetReplacement);
+            return;
+        }
+
         $staticArtifact = $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
         if ($staticArtifact !== null && is_file($staticArtifact)) {
             $contents = file_get_contents($staticArtifact);
@@ -80,6 +86,16 @@ final class FrontController
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
 
         return AssetFingerprint::sourcePathForFingerprint($this->publicRoot, $path);
+    }
+
+    private function resolveStaleFingerprintedAssetPath(string $method, string $requestUri): ?string
+    {
+        if ($method !== 'GET' && $method !== 'HEAD') {
+            return null;
+        }
+
+        $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+        return AssetFingerprint::replacementPathForFingerprint($this->publicRoot, $path);
     }
 
     private function configurationError(): ?string
@@ -305,6 +321,14 @@ final class FrontController
         if ($method !== 'HEAD') {
             echo $contents;
         }
+    }
+
+    private function sendAssetRedirect(string $path): void
+    {
+        http_response_code(302);
+        header('Location: ' . $path);
+        header('Cache-Control: no-store');
+        header('Content-Length: 0');
     }
 
     private function contentTypeForAsset(string $path): string

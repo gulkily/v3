@@ -50,6 +50,27 @@ final class LocalAppSmokeTest
         assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/site.000000000000.css'));
     }
 
+    public function testAssetFingerprintDistinguishesCurrentAndStaleAssetPaths(): void
+    {
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-fingerprint-' . bin2hex(random_bytes(6));
+        mkdir($publicRoot . '/assets', 0777, true);
+        file_put_contents($publicRoot . '/assets/example.css', 'body { color: red; }');
+
+        try {
+            $currentPath = AssetFingerprint::fingerprintedPath($publicRoot, '/assets/example.css');
+            assertSame($publicRoot . '/assets/example.css', AssetFingerprint::sourcePathForFingerprint($publicRoot, $currentPath));
+            assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/example.000000000000.css'));
+            assertSame($currentPath, AssetFingerprint::replacementPathForFingerprint($publicRoot, '/assets/example.000000000000.css'));
+            assertSame(null, AssetFingerprint::replacementPathForFingerprint($publicRoot, $currentPath));
+            assertSame(null, AssetFingerprint::replacementPathForFingerprint($publicRoot, '/assets/missing.000000000000.css'));
+            assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/missing.000000000000.css'));
+        } finally {
+            @unlink($publicRoot . '/assets/example.css');
+            @rmdir($publicRoot . '/assets');
+            @rmdir($publicRoot);
+        }
+    }
+
     public function testCompactModeMenuStylesUseScopedDensitySelectors(): void
     {
         $css = file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
@@ -1610,6 +1631,36 @@ final class LocalAppSmokeTest
         assertStringContains('route-source: static-html', $response);
     }
 
+    public function testFrontControllerRecoversStaleFingerprintedAssetRequests(): void
+    {
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        mkdir($publicRoot . '/assets', 0777, true);
+        mkdir($staticHtmlRoot, 0777, true);
+        file_put_contents($publicRoot . '/assets/example.css', 'body { color: red; }');
+
+        $controller = new FrontController(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $staticHtmlRoot,
+            $publicRoot,
+        );
+
+        try {
+            http_response_code(200);
+            $response = $this->renderFrontController($controller, 'GET', '/assets/example.000000000000.css', []);
+
+            assertSame('', $response);
+            assertSame(302, http_response_code());
+        } finally {
+            @unlink($publicRoot . '/assets/example.css');
+            @rmdir($publicRoot . '/assets');
+            @rmdir($publicRoot);
+            @rmdir($staticHtmlRoot);
+        }
+    }
+
     public function testFrontControllerServesStaticArtifactForBackupAlias(): void
     {
         @unlink($this->databasePath);
@@ -1737,6 +1788,11 @@ final class LocalAppSmokeTest
         assertTrue(is_file($artifactRoot . '/posts/root-001.html'));
         assertTrue(is_file($artifactRoot . '/posts/thread-zenmemes-rules.html'));
         assertTrue(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
+        $indexArtifact = (string) file_get_contents($artifactRoot . '/index.html');
+        assertTrue(preg_match_all('#/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+#', $indexArtifact, $assetMatches) !== false);
+        foreach (array_unique($assetMatches[0]) as $assetPath) {
+            assertTrue(is_file($artifactRoot . $assetPath));
+        }
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/index.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/index.html'));
@@ -1796,6 +1852,30 @@ final class LocalAppSmokeTest
         $tagsResponse = $this->renderFrontController($controller, 'GET', '/tags/', []);
         assertStringContains('class="nav-link is-active" href="/tags/"', $tagsResponse);
         assertStringContains('route-source: static-html', $tagsResponse);
+    }
+
+    public function testStaticArtifactHealthCheckDetectsMissingFingerprint(): void
+    {
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-assets-' . bin2hex(random_bytes(6));
+        mkdir($artifactRoot . '/assets', 0777, true);
+        file_put_contents($artifactRoot . '/assets/example.000000000000.css', 'body { color: red; }');
+        file_put_contents($artifactRoot . '/index.html', '<link rel="stylesheet" href="/assets/example.000000000000.css">');
+
+        $command = sprintf(
+            'php %s %s',
+            escapeshellarg(__DIR__ . '/../scripts/check_static_artifacts.php'),
+            escapeshellarg($artifactRoot),
+        );
+
+        try {
+            exec($command, $output, $exitCode);
+            assertSame(0, $exitCode);
+            unlink($artifactRoot . '/assets/example.000000000000.css');
+            exec($command, $outputAfterRemoval, $exitCodeAfterRemoval);
+            assertSame(1, $exitCodeAfterRemoval);
+        } finally {
+            $this->deleteTree($artifactRoot);
+        }
     }
 
     public function testFrontControllerBuildsMissingArtifactAfterEligibleAnonymousFallback(): void
