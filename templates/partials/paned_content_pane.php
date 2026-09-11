@@ -41,4 +41,5 @@ $isSelectedByDefault = $postId === $rootPostId;
     <div class="body"><?= $br($post['body']) ?></div>
   </article>
 <?php endforeach; ?>
+<?= $indent($partial('partials/paned_compose_panel.php', ['thread' => $thread]), 1) ?>
 </div>
