@@ -30,3 +30,15 @@
   - Headless-browser test (Selenium + `chromium-browser`) on `/forte`: selecting thread A sets both hidden fields to A's `root_post_id`; selecting thread B updates them to B's id; clicking a folder tag that excludes the selected thread B triggers the existing `resetContentPane()` path, clearing both fields to `""` and re-disabling Reply. Zero `SEVERE` console log entries.
 - Notes:
   - No changes needed to the tag-filter (`selectFolder`) or prev/next/keyboard handlers — they already funnel through `selectThread`/`resetContentPane`, same reuse win as `forte_reply` Stage 3.
+
+## Stage 4 - Return to board view after replying
+- Changes:
+  - `Application.php::resolveComposeReplyReturnTo()`: extended (not duplicated) to also accept the literal `/forte` as a valid return target, alongside the existing `/threads/{threadId}/forte` pattern; anything else still falls back to the classic `/threads/{threadId}` location.
+  - `paned_board_compose_panel.php` already passed `returnTo = '/forte'` (set in Stage 1), so no further wiring was needed there.
+- Verification:
+  - `php -l` clean.
+  - `curl -i -X POST /compose/reply` with `return_to=/forte` → `303` redirect `Location` targets `/forte?created_post_id=...#post-...`.
+  - Regression checks, all unchanged from `forte_reply`: no `return_to` falls back to classic `/threads/{id}`; a malicious `return_to` (`https://evil.example.com`) falls back to classic; the existing `/threads/{id}/forte` return path still resolves correctly for single-thread submissions.
+  - `curl http://127.0.0.1:8001/forte/threads/root-001/replies` after submitting from the board view shows the new reply body — board-view replies load lazily via that endpoint rather than being embedded in `/forte`'s initial HTML, which is existing (unchanged) behavior, not a regression.
+- Notes:
+  - This completes all 4 planned stages for `forte_board_reply`.

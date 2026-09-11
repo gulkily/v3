@@ -5084,6 +5084,10 @@ final class Application
             return $requestedReturnTo;
         }
 
+        if ($requestedReturnTo === '/forte') {
+            return $requestedReturnTo;
+        }
+
         return '/threads/' . $threadId;
     }
 
