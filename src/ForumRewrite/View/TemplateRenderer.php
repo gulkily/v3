@@ -86,6 +86,55 @@ final class TemplateRenderer
     }
 
     /**
+     * Renders a single partial with no page/layout wrapper at all - for
+     * small HTML fragments returned to client-side JS (e.g. lazy-loaded
+     * content), not full pages.
+     *
+     * @param array<string, mixed> $data
+     */
+    public function renderFragment(string $partialPath, array $data): string
+    {
+        return $this->renderFile($partialPath, $data);
+    }
+
+    /**
+     * Renders a page with no shared site chrome (no nav bar, theme menu, or
+     * global status bar) - for pages that intentionally present their own
+     * complete, self-contained UI.
+     *
+     * @param array<string, mixed> $pageData
+     * @param string[] $scriptPaths
+     * @param string[] $additionalCssPaths
+     */
+    public function renderStandalonePage(
+        string $pageTemplate,
+        array $pageData,
+        string $title,
+        string $bodyClass = '',
+        array $scriptPaths = [],
+        array $additionalCssPaths = [],
+    ): string {
+        $content = $this->renderFile('pages/' . $pageTemplate, $pageData);
+        $assetScriptPaths = [];
+        foreach ($scriptPaths as $scriptPath) {
+            $assetScriptPaths[] = $this->assetPath($scriptPath);
+        }
+        $assetAdditionalCssPaths = [];
+        foreach ($additionalCssPaths as $additionalCssPath) {
+            $assetAdditionalCssPaths[] = $this->assetPath($additionalCssPath);
+        }
+
+        return $this->renderFile('standalone_layout.php', [
+            'title' => $title,
+            'content' => $content,
+            'bodyClass' => $bodyClass,
+            'scriptPaths' => $assetScriptPaths,
+            'siteCssPath' => $this->assetPath('/assets/site.css'),
+            'additionalCssPaths' => $assetAdditionalCssPaths,
+        ]);
+    }
+
+    /**
      * @param array<string, mixed> $data
      */
     private function renderFile(string $relativePath, array $data): string

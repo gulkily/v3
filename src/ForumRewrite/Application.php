@@ -433,6 +433,37 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/threads/([^/]+)/forte/?$#', $path, $matches) === 1) {
+            $html = $this->renderForte($matches[1]);
+            if ($html === null) {
+                $this->notFound();
+                return;
+            }
+
+            $this->sendHtml($html, 200);
+            return;
+        }
+
+        if (preg_match('#^/forte/?$#', $path) === 1) {
+            $this->sendHtml($this->renderForteBoard(
+                (string) ($query['tag'] ?? ''),
+                (string) ($query['sort'] ?? ''),
+                (string) ($query['dir'] ?? ''),
+            ), 200);
+            return;
+        }
+
+        if (preg_match('#^/forte/threads/([^/]+)/replies/?$#', $path, $matches) === 1) {
+            $html = $this->renderForteThreadReplies($matches[1]);
+            if ($html === null) {
+                $this->notFound();
+                return;
+            }
+
+            $this->sendHtml($html, 200);
+            return;
+        }
+
         if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)/?$#', $path, $matches) === 1) {
             $html = $this->renderTagPage($matches[1]);
             if ($html === null) {
@@ -781,6 +812,191 @@ final class Application
             $title,
             'board',
         );
+    }
+
+    private function renderForte(string $threadId): ?string
+    {
+        $threadRow = $this->fetchThread($threadId);
+        if ($threadRow === null) {
+            return null;
+        }
+
+        $title = $this->displayThreadTitle($threadRow);
+        $posts = $this->fetchThreadPosts($threadId);
+        $replyTree = $this->buildReplyTree($posts);
+
+        return $this->renderer()->renderStandalonePage(
+            'forte.php',
+            [
+                'thread' => $threadRow,
+                'title' => $title,
+                'posts' => $posts,
+                'replyTree' => $replyTree,
+            ],
+            $title,
+            'paned-reader-body',
+            ['/assets/paned_reader.js'],
+            ['/assets/forte.css'],
+        );
+    }
+
+    private function renderForteBoard(string $requestedTag = '', string $requestedSortColumn = '', string $requestedSortDir = ''): string
+    {
+        $threads = $this->fetchThreads();
+        $tagGroups = $this->groupThreadsByTag($threads);
+        $selectedTag = $this->resolveForteBoardTag($requestedTag, $tagGroups);
+        $sort = $this->resolveForteBoardSort($requestedSortColumn, $requestedSortDir);
+        $threads = $this->applyForteBoardSort($threads, $sort['column'], $sort['dir']);
+
+        return $this->renderer()->renderStandalonePage(
+            'forte_board.php',
+            [
+                'threads' => $threads,
+                'tagGroups' => $tagGroups,
+                'selectedTag' => $selectedTag,
+                'sortColumn' => $sort['column'],
+                'sortDir' => $sort['dir'],
+            ],
+            'Forte',
+            'paned-reader-body',
+            ['/assets/paned_board_reader.js'],
+            ['/assets/forte.css'],
+        );
+    }
+
+    /**
+     * Resolves a requested ?tag= value against real tag names, falling back
+     * to '' (All Threads) when missing or unrecognized.
+     *
+     * @param array<int, array{tag: string, count: int, threads: array}> $tagGroups
+     */
+    private function resolveForteBoardTag(string $requestedTag, array $tagGroups): string
+    {
+        if ($requestedTag === '') {
+            return '';
+        }
+
+        foreach ($tagGroups as $group) {
+            if ($group['tag'] === $requestedTag) {
+                return $requestedTag;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Resolves requested ?sort=/?dir= values against the four sortable
+     * columns, falling back to '' (today's default newest-first order,
+     * unrelated to any single column) when the column is missing or
+     * unrecognized. An unrecognized direction falls back to a per-column
+     * default: ascending for text columns, descending for date/replies.
+     *
+     * @return array{column: string, dir: string}
+     */
+    private function resolveForteBoardSort(string $requestedColumn, string $requestedDir): array
+    {
+        $validColumns = ['subject', 'from', 'date', 'replies'];
+        if (!in_array($requestedColumn, $validColumns, true)) {
+            return ['column' => '', 'dir' => ''];
+        }
+
+        $defaultDir = in_array($requestedColumn, ['date', 'replies'], true) ? 'desc' : 'asc';
+        $dir = in_array($requestedDir, ['asc', 'desc'], true) ? $requestedDir : $defaultDir;
+
+        return ['column' => $requestedColumn, 'dir' => $dir];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $threads
+     * @return array<int, array<string, mixed>>
+     */
+    private function applyForteBoardSort(array $threads, string $column, string $dir): array
+    {
+        if ($column === '') {
+            return $threads;
+        }
+
+        $sorted = $threads;
+        usort($sorted, function (array $left, array $right) use ($column): int {
+            return $this->forteBoardSortValue($left, $column) <=> $this->forteBoardSortValue($right, $column);
+        });
+
+        return $dir === 'desc' ? array_reverse($sorted) : $sorted;
+    }
+
+    private function forteBoardSortValue(array $thread, string $column): string|int
+    {
+        return match ($column) {
+            'subject' => mb_strtolower(ThreadTitle::displayTitle(
+                (string) ($thread['subject'] ?? ''),
+                (string) ($thread['body_preview'] ?? ''),
+                (string) $thread['root_post_id'],
+            )),
+            'from' => mb_strtolower(trim((string) ($thread['author_label'] ?? '')) ?: 'guest'),
+            'date' => (string) ($thread['root_post_created_at'] ?? ''),
+            'replies' => (int) ($thread['reply_count'] ?? 0),
+            default => '',
+        };
+    }
+
+    /**
+     * Small HTML fragment (not a full page) with a thread's reply tree,
+     * fetched lazily by the board Forte view on first expand. The one
+     * deliberate exception to "no new backend calls" in this feature: at
+     * real scale, precomputing every thread's reply tree upfront (the
+     * pattern used everywhere else in Forte) would bloat the board page.
+     */
+    private function renderForteThreadReplies(string $threadId): ?string
+    {
+        $threadRow = $this->fetchThread($threadId);
+        if ($threadRow === null) {
+            return null;
+        }
+
+        $posts = $this->fetchThreadPosts($threadId);
+        $rootPostId = (string) $threadRow['root_post_id'];
+        $replyPosts = array_values(array_filter(
+            $posts,
+            fn (array $post): bool => (string) $post['post_id'] !== $rootPostId
+        ));
+        $replyTree = $this->buildReplyTree($replyPosts);
+
+        return $this->renderer()->renderFragment('partials/paned_thread_reply_tree.php', [
+            'replyTree' => $replyTree,
+        ]);
+    }
+
+    /**
+     * Nests a flat, sequence_number-ordered post list into a reply tree using
+     * each post's parent_id. A post whose parent_id is missing or not present
+     * in the fetched set (e.g. hidden/deleted) is treated as a root.
+     *
+     * @param array<int, array<string, mixed>> $posts
+     * @return array<int, array{post: array<string, mixed>, children: array}>
+     */
+    private function buildReplyTree(array $posts): array
+    {
+        $nodesByPostId = [];
+        foreach ($posts as $post) {
+            $nodesByPostId[(string) $post['post_id']] = [
+                'post' => $post,
+                'children' => [],
+            ];
+        }
+
+        $roots = [];
+        foreach ($nodesByPostId as $postId => &$node) {
+            $parentId = $node['post']['parent_id'] !== null ? (string) $node['post']['parent_id'] : null;
+            if ($parentId !== null && $parentId !== $postId && isset($nodesByPostId[$parentId])) {
+                $nodesByPostId[$parentId]['children'][] = &$node;
+            } else {
+                $roots[] = &$node;
+            }
+        }
+        unset($node);
+
+        return $roots;
     }
 
     private function renderThread(string $threadId, string $createdPostId = ''): ?string
@@ -1244,6 +1460,11 @@ final class Application
                         'label' => 'Activity',
                         'href' => '/activity/',
                         'description' => 'Recent forum activity across content, approvals, and identity events.',
+                    ],
+                    [
+                        'label' => 'Forte',
+                        'href' => '/forte',
+                        'description' => 'Classic three-pane newsreader view of the whole board - folders, thread list, and preview.',
                     ],
                     [
                         'label' => 'Bookmarklets',
@@ -1722,6 +1943,7 @@ final class Application
         $rows = $this->pdo()->query(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
                     threads.reply_count, threads.score_total, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
+                    posts.body AS root_post_body,
                     posts.post_score_total AS root_post_score_total,
                     profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM threads
