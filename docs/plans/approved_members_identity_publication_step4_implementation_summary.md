@@ -27,3 +27,13 @@
   - Private dev-server smoke rendered both browser identity and private-auth scripts on Lobby; unauthenticated profile access remained 404.
 - Notes:
   - The user-facing flow no longer requires manually opening Account to publish a keypair already saved in browser storage.
+
+## Stage 3 - Approval inheritance and authenticated access
+- Changes:
+  - Confirmed the existing approval-derived profile state remains the authority after identity publication.
+  - Added a regression check that an approved authenticated session can open its own profile and the full board.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testApprovedPrivateSessionCanViewOwnProfileAndBoard` passed.
+  - The test confirmed the approved fixture identity sees `This is your profile.` and the Board page under private mode.
+- Notes:
+  - Approval may be seeded before or after identity publication because it is resolved when the profile/read model is synchronized.

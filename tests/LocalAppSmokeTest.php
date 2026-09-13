@@ -40,6 +40,35 @@ final class LocalAppSmokeTest
         assertTrue(is_file($this->databasePath));
     }
 
+    public function testApprovedPrivateSessionCanViewOwnProfileAndBoard(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        $sessionId = 'private-approved-' . bin2hex(random_bytes(8));
+
+        try {
+            session_id($sessionId);
+            session_start();
+            $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+            session_write_close();
+
+            $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-session-' . bin2hex(random_bytes(6)) . '.sqlite3';
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
+            $profile = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+            $board = $this->render($application, '/');
+
+            assertStringContains('This is your profile.', $profile);
+            assertStringContains('Board', $board);
+        } finally {
+            @unlink($databasePath ?? '');
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
     public function testAssetFingerprintPathsUseContentHashFilenames(): void
     {
         $publicRoot = dirname(__DIR__) . '/public';
