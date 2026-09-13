@@ -3631,6 +3631,7 @@ final class Application
         $challenge = bin2hex(random_bytes(32));
         $_SESSION['forum_auth_challenge'] = $challenge;
         $_SESSION['forum_auth_challenge_expires_at'] = time() + 300;
+        session_write_close();
         $this->sendText("challenge={$challenge}\n", 200, $this->noStoreHeaders());
     }
 
@@ -3676,6 +3677,7 @@ final class Application
 
         $_SESSION['authenticated_identity_id'] = $identityId;
         unset($_SESSION['forum_auth_challenge'], $_SESSION['forum_auth_challenge_expires_at']);
+        session_write_close();
         $approved = ((int) ($profile['is_approved'] ?? 0)) === 1 ? '1' : '0';
         $this->sendText("status=ok\nidentity_id={$identityId}\napproved={$approved}\n", 200, $this->noStoreHeaders());
     }
