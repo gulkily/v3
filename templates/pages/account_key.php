@@ -3,13 +3,8 @@ $viewerProfile = $viewerProfile ?? null;
 $viewerProfileHref = '';
 $viewerProfileLabel = '';
 if (is_array($viewerProfile)) {
-    if (((int) ($viewerProfile['is_approved'] ?? 0)) === 1) {
-        $viewerProfileHref = '/user/' . rawurlencode((string) ($viewerProfile['username_token'] ?? ''));
-        $viewerProfileLabel = 'View user page';
-    } else {
-        $viewerProfileHref = '/profiles/' . rawurlencode((string) ($viewerProfile['profile_slug'] ?? ''));
-        $viewerProfileLabel = 'View profile';
-    }
+    $viewerProfileHref = '/profiles/' . rawurlencode((string) ($viewerProfile['profile_slug'] ?? ''));
+    $viewerProfileLabel = 'View profile';
 }
 ?>
 <section class="stack" data-account-key-root>
@@ -58,9 +53,6 @@ if (is_array($viewerProfile)) {
             <p class="meta">
               <strong>Saved browser identity:</strong>
               <span data-role="identity-id-field">none</span>
-              <span data-role="profile-link-wrap" hidden>
-                · <a data-role="profile-link" href="/account/key/">Open profile</a>
-              </span>
             </p>
           </div>
           <form method="post" class="stack">
