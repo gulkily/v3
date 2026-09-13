@@ -58,6 +58,8 @@ FORUM_APP_VERSION_NOTIFICATION=false ./v3 start
 
 Registered site feature flags are visible at `/tools/feature-flags/`. Root-approved users can change mutable site flags there; those changes are written to `records/instance/feature-flags.txt` in the content repository and committed to git.
 
+To lock an instance to approved members, enable `FORUM_APPROVED_MEMBERS_ONLY=true` in its feature-flags record or deployment environment. Unapproved visitors can access only the Lobby, Account, and their own profile; all other pages, feeds, APIs, downloads, backups, and content artifacts are blocked. The flag is independent of `FORUM_SITE_ID` and theme selection.
+
 Runtime precedence is:
 
 1. `FORUM_*` environment override

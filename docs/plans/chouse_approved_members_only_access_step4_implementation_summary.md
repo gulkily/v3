@@ -47,6 +47,8 @@
     direct protected content remains 404.
   - Added Apache rewrite protection for private instances while preserving
     direct asset delivery.
+  - Documented `FORUM_APPROVED_MEMBERS_ONLY` in the production runbook,
+    Apache vhost example, environment example, and README.
 - Verification:
   - Flagged direct thread request returned 404 and root request redirected to
     `/lobby/`.
@@ -58,3 +60,4 @@
     directly exposed outside the protected rewrite path.
   - Follow-up hardening prevents the Account page from using an identity-hint
     cookie as the own-profile source while the private flag is enabled.
+  - Existing unrelated worktree changes remain untouched.

@@ -229,6 +229,26 @@ Runtime precedence is:
 
 Use `FORUM_*` environment variables for emergency or deployment-level overrides. While an environment variable is present, the corresponding flag is effectively pinned by the process and the site UI reports the environment source.
 
+### Approved-members-only access
+
+`FORUM_APPROVED_MEMBERS_ONLY=true` enables the private-site boundary
+independently of the site profile or theme. Unapproved visitors are limited
+to `/lobby/`, `/account/key/`, and their own authenticated `/profiles/<slug>`
+page. Other routes, feeds, APIs, downloads, backups, and generated HTML
+return 404 or are routed through PHP for the access decision. Required static
+assets remain directly servable.
+
+Enable it in the instance feature-flags record:
+
+```text
+FORUM_APPROVED_MEMBERS_ONLY: true
+```
+
+For a deployment-level pin, set `FORUM_APPROVED_MEMBERS_ONLY=true` in the
+vhost environment. Keep the flag off for public instances. When enabled,
+verify that Apache sees the variable and that old public HTML artifacts are
+not served outside the checked-in private-instance rewrite rule.
+
 Audit site-level changes with:
 
 ```bash
@@ -241,7 +261,7 @@ Rollback options:
 - set the previous value through `/tools/feature-flags/`
 - or revert the relevant content-repository commit
 
-If production serves prebuilt static HTML artifacts, rebuild artifacts after changing flags outside the web write path. Changes made through the web path invalidate common shell/tool artifacts automatically.
+If production serves prebuilt static HTML artifacts, rebuild artifacts after changing flags outside the web write path. Private instances must not serve those content artifacts directly; the application and Apache rewrite checks route them through the access gate.
 
 ## App Version Notification
 
