@@ -94,7 +94,7 @@ final class Application
 
         $this->ensureReadModel();
 
-        if ($this->approvedMembersOnlyEnabled() && $this->membersOnlyLobbyRedirect($method, $path)) {
+        if ($this->approvedMembersOnlyEnabled() && $this->membersOnlyLobbyRedirect($method, $path, $query)) {
             $this->sendRedirect('/lobby/', 'Entering lobby.', statusCode: 303, activeSection: 'account');
             return;
         }
@@ -3084,9 +3084,13 @@ final class Application
         );
     }
 
-    private function membersOnlyLobbyRedirect(string $method, string $path): bool
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function membersOnlyLobbyRedirect(string $method, string $path, array $query): bool
     {
         return $method === 'GET' && in_array($path, ['/', '/threads', '/threads/'], true)
+            && $query === []
             && $this->authenticatedViewerProfile() === null;
     }
 

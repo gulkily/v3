@@ -37,3 +37,14 @@
   - The test confirmed the approved fixture identity sees `This is your profile.` and the Board page under private mode.
 - Notes:
   - Approval may be seeded before or after identity publication because it is resolved when the profile/read model is synchronized.
+
+## Stage 4 - Private lobby route boundary
+- Changes:
+  - Fixed private-mode root handling so only a plain root/threads request redirects to Lobby.
+  - Root RSS requests and other query variants now remain inaccessible and return 404.
+  - Added a route-matrix regression check covering Lobby, Account, content, profile API, backup, and RSS access.
+- Verification:
+  - `php -l src/ForumRewrite/Application.php` passed.
+  - `php tests/run.php LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces` passed.
+- Notes:
+  - The private web-server rewrite still must route non-asset requests through the application when enabled in production.
