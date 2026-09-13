@@ -77,7 +77,11 @@ final class Application
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
-        $this->startViewerSession();
+        if ($this->approvedMembersOnlyEnabled()
+            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity'], true)
+        ) {
+            $this->startViewerSession();
+        }
 
         if ($path === '/api/version') {
             $this->sendText($this->appVersion() . "\n", 200, [
@@ -89,6 +93,14 @@ final class Application
         }
 
         $this->ensureReadModel();
+
+        if ($this->approvedMembersOnlyEnabled() && !$this->membersOnlyRequestAllowed($method, $path)) {
+            $this->sendHtml(
+                $this->renderMessagePage('Not Found', 'Not Found', 'The requested page does not exist.', 'none'),
+                404
+            );
+            return;
+        }
 
         if ($path === '/api/set_identity_hint') {
             $this->handleSetIdentityHint($method, $query);
@@ -241,6 +253,11 @@ final class Application
 
         if ($path === '/about/' || $path === '/about') {
             $this->sendHtml($this->renderAbout(), 200);
+            return;
+        }
+
+        if ($path === '/lobby/' || $path === '/lobby') {
+            $this->sendHtml($this->renderLobby(), 200);
             return;
         }
 
@@ -2986,6 +3003,14 @@ final class Application
      */
     private function resolveViewerProfileFromIdentityHint(): ?array
     {
+        $authenticatedIdentityId = strtolower(trim((string) (($_SESSION ?? [])['authenticated_identity_id'] ?? '')));
+        if ($authenticatedIdentityId !== '') {
+            $authenticatedProfile = $this->fetchProfileByIdentityId($authenticatedIdentityId);
+            if ($authenticatedProfile !== null) {
+                return $authenticatedProfile;
+            }
+        }
+
         $hint = strtolower(trim((string) ($_COOKIE['identity_hint'] ?? '')));
         if ($hint === '') {
             return null;
@@ -3003,6 +3028,67 @@ final class Application
         }
 
         return $this->fetchProfileBySlug($hint);
+    }
+
+    private function approvedMembersOnlyEnabled(): bool
+    {
+        return $this->featureFlags()->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
+    }
+
+    private function authenticatedViewerProfile(): ?array
+    {
+        $identityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
+        if ($identityId === '') {
+            return null;
+        }
+
+        return $this->fetchProfileByIdentityId($identityId);
+    }
+
+    private function membersOnlyRequestAllowed(string $method, string $path): bool
+    {
+        if ($path === '/lobby/' || $path === '/lobby'
+            || $path === '/account/key/' || $path === '/account/key'
+            || $path === '/api/auth_challenge' || $path === '/api/authenticate_identity'
+            || $path === '/api/set_identity_hint' || $path === '/api/link_identity'
+            || $path === '/api/prepare_identity' || $path === '/api/create_identity'
+        ) {
+            return true;
+        }
+
+        $viewerProfile = $this->authenticatedViewerProfile();
+        if ($viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1) {
+            return true;
+        }
+
+        if ($viewerProfile === null || $method !== 'GET') {
+            return false;
+        }
+
+        if (preg_match('#^/profiles/([^/]+)/?$#', $path, $matches) !== 1) {
+            return false;
+        }
+
+        return hash_equals(
+            strtolower((string) ($viewerProfile['profile_slug'] ?? '')),
+            strtolower(rawurldecode($matches[1]))
+        );
+    }
+
+    private function renderLobby(): string
+    {
+        return $this->renderPageTemplate(
+            'lobby.php',
+            [
+                'viewerProfile' => $this->authenticatedViewerProfile(),
+            ],
+            'Lobby',
+            'account',
+            [
+                '/assets/openpgp_loader.js',
+                '/assets/private_site_auth.js',
+            ]
+        );
     }
 
     /**

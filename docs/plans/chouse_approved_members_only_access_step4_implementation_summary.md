@@ -23,3 +23,18 @@
 - Notes:
   - The access gate is not enabled yet; Stage 3 will consume the authenticated
     session and enforce the lobby allowlist.
+
+## Stage 3 - Enforce lobby allowlist
+- Changes:
+  - Added the shared `FORUM_APPROVED_MEMBERS_ONLY` access decision.
+  - Added the `/lobby/` page.
+  - Allowed lobby users only Lobby, Account, and their authenticated own
+    profile; protected other dynamic routes return 404.
+  - Approved users retain the existing full-site route access.
+- Verification:
+  - PHP/template lint passed.
+  - Flagged direct thread request returned 404.
+  - Flagged Lobby request rendered successfully.
+  - `php tests/run.php FeatureFlagEvaluatorTest` — all tests passed.
+- Notes:
+  - Static artifact serving is addressed in Stage 4.
