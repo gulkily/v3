@@ -56,3 +56,5 @@
 - Notes:
   - Production must set the flag in Apache and ensure generated HTML is not
     directly exposed outside the protected rewrite path.
+  - Follow-up hardening prevents the Account page from using an identity-hint
+    cookie as the own-profile source while the private flag is enabled.

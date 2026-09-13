@@ -3008,6 +3008,10 @@ final class Application
      */
     private function resolveViewerProfileFromIdentityHint(): ?array
     {
+        if ($this->approvedMembersOnlyEnabled()) {
+            return $this->authenticatedViewerProfile();
+        }
+
         $authenticatedIdentityId = strtolower(trim((string) (($_SESSION ?? [])['authenticated_identity_id'] ?? '')));
         if ($authenticatedIdentityId !== '') {
             $authenticatedProfile = $this->fetchProfileByIdentityId($authenticatedIdentityId);
