@@ -41,11 +41,20 @@
     }
 
     var challenge = challengeMatch[1];
-    var key = await openpgp.readPrivateKey({ armoredKey: privateKey });
+    var publicKeyObject = await openpgp.readKey({ armoredKey: publicKey });
+    var privateKeyObject = await openpgp.readPrivateKey({ armoredKey: privateKey });
+    var publicFingerprint = String(publicKeyObject.getFingerprint()).trim().toLowerCase();
+    var privateFingerprint = String(privateKeyObject.getFingerprint()).trim().toLowerCase();
+    if (!/^[a-f0-9]{40}$/.test(publicFingerprint) || publicFingerprint !== privateFingerprint) {
+      return;
+    }
+
+    // The public key is authoritative; the stored fingerprint may be stale.
+    fingerprint = publicFingerprint;
     var message = await openpgp.createMessage({ text: challenge });
     var signature = await openpgp.sign({
       message: message,
-      signingKeys: key,
+      signingKeys: privateKeyObject,
       detached: true,
       format: "armored"
     });
