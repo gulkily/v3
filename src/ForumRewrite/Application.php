@@ -77,6 +77,7 @@ final class Application
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
+        $this->startViewerSession();
 
         if ($path === '/api/version') {
             $this->sendText($this->appVersion() . "\n", 200, [
@@ -91,6 +92,16 @@ final class Application
 
         if ($path === '/api/set_identity_hint') {
             $this->handleSetIdentityHint($method, $query);
+            return;
+        }
+
+        if ($path === '/api/auth_challenge') {
+            $this->handleAuthChallenge($method);
+            return;
+        }
+
+        if ($path === '/api/authenticate_identity') {
+            $this->handleAuthenticateIdentity($method, $query);
             return;
         }
 
@@ -1764,12 +1775,13 @@ final class Application
         ], 'Account Key', 'account', [
             '/assets/openpgp_loader.js',
             '/assets/browser_signing.js',
+            '/assets/private_site_auth.js',
         ]);
     }
 
     private function renderApiIndex(): string
     {
-        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nPOST /api/set_identity_hint\nPOST /api/prepare_identity\nPOST /api/create_identity\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
+        return "GET /api/\nGET /api/version\nGET /api/auth_challenge\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nPOST /api/set_identity_hint\nPOST /api/authenticate_identity\nPOST /api/prepare_identity\nPOST /api/create_identity\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
     }
 
     private function renderApiListIndex(): string
@@ -3488,6 +3500,82 @@ final class Application
 
         $_COOKIE['identity_hint'] = $hint;
         $this->sendText("identity_hint={$hint}\n", 200);
+    }
+
+    private function startViewerSession(): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            return;
+        }
+
+        if (headers_sent()) {
+            return;
+        }
+
+        session_start([
+            'cookie_httponly' => true,
+            'cookie_samesite' => 'Lax',
+            'cookie_secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+            'use_strict_mode' => true,
+        ]);
+    }
+
+    private function handleAuthChallenge(string $method): void
+    {
+        if ($method !== 'GET') {
+            $this->sendText("method not allowed\n", 405);
+            return;
+        }
+
+        $challenge = bin2hex(random_bytes(32));
+        $_SESSION['forum_auth_challenge'] = $challenge;
+        $_SESSION['forum_auth_challenge_expires_at'] = time() + 300;
+        $this->sendText("challenge={$challenge}\n", 200, $this->noStoreHeaders());
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleAuthenticateIdentity(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->sendText("method not allowed\n", 405);
+            return;
+        }
+
+        $input = $this->requestData($query);
+        $challenge = trim((string) ($input['challenge'] ?? ''));
+        $signature = trim((string) ($input['detached_signature'] ?? ''));
+        $identityId = strtolower(trim((string) ($input['identity_id'] ?? '')));
+        $storedChallenge = (string) ($_SESSION['forum_auth_challenge'] ?? '');
+        $expiresAt = (int) ($_SESSION['forum_auth_challenge_expires_at'] ?? 0);
+
+        if ($challenge === '' || !hash_equals($storedChallenge, $challenge) || $expiresAt < time()) {
+            $this->sendText("error=Authentication challenge is missing or expired.\n", 400, $this->noStoreHeaders());
+            return;
+        }
+
+        $profile = $this->fetchProfileByIdentityId($identityId);
+        if ($profile === null) {
+            $this->sendText("error=Identity not found.\n", 400, $this->noStoreHeaders());
+            return;
+        }
+
+        $fingerprint = strtoupper(trim((string) ($profile['signer_fingerprint'] ?? '')));
+        $verification = (new OpenPgpSignatureVerifier())->verifyDetached(
+            (string) ($profile['public_key'] ?? ''),
+            $challenge,
+            $signature,
+            $fingerprint,
+        );
+        if (!$verification['ok']) {
+            $this->sendText("error=Identity signature verification failed.\n", 403, $this->noStoreHeaders());
+            return;
+        }
+
+        $_SESSION['authenticated_identity_id'] = $identityId;
+        unset($_SESSION['forum_auth_challenge'], $_SESSION['forum_auth_challenge_expires_at']);
+        $this->sendText("status=ok\nidentity_id={$identityId}\n", 200, $this->noStoreHeaders());
     }
 
     /**

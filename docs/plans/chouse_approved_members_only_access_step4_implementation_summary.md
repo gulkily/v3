@@ -9,3 +9,17 @@
   - `php tests/run.php FeatureFlagEvaluatorTest` — all tests passed.
 - Notes:
   - Route behavior is not changed yet; later stages consume this flag.
+
+## Stage 2 - Authenticate browser identity
+- Changes:
+  - Added a short-lived server challenge endpoint and detached OpenPGP
+    signature verification endpoint.
+  - Added browser-side authentication using the existing local browser keypair.
+  - Added the authentication endpoints to the API index.
+- Verification:
+  - `php -l src/ForumRewrite/Application.php` — passed.
+  - `node --check public/assets/private_site_auth.js` — passed.
+  - Existing OpenPGP signature tests — passed.
+- Notes:
+  - The access gate is not enabled yet; Stage 3 will consume the authenticated
+    session and enforce the lobby allowlist.
