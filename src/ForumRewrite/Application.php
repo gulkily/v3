@@ -3676,7 +3676,8 @@ final class Application
 
         $_SESSION['authenticated_identity_id'] = $identityId;
         unset($_SESSION['forum_auth_challenge'], $_SESSION['forum_auth_challenge_expires_at']);
-        $this->sendText("status=ok\nidentity_id={$identityId}\n", 200, $this->noStoreHeaders());
+        $approved = ((int) ($profile['is_approved'] ?? 0)) === 1 ? '1' : '0';
+        $this->sendText("status=ok\nidentity_id={$identityId}\napproved={$approved}\n", 200, $this->noStoreHeaders());
     }
 
     /**
