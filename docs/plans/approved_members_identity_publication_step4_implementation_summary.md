@@ -13,3 +13,17 @@
   - Private dev-server smoke rendered `data-approved-members-only="1"`; unauthenticated own-profile request returned 404.
 - Notes:
   - This stage does not yet complete the prepared identity observed for fingerprint `d0ee...`; Stage 2 addresses automatic finalization and recovery.
+
+## Stage 2 - Automatic lobby identity publication
+- Changes:
+  - Loaded the existing browser identity-publication service on the Lobby page.
+  - Made Lobby automatically publish any saved browser keypair before attempting authentication.
+  - Reused the existing prepare/finalize flow so new identities are created and existing identities are handled by the canonical duplicate response.
+- Verification:
+  - `php -l src/ForumRewrite/Application.php` passed.
+  - `node --check public/assets/private_site_auth.js` passed.
+  - `node --check public/assets/browser_signing.js` passed.
+  - `php tests/run.php BrowserSigningNormalizationTest` passed all tests.
+  - Private dev-server smoke rendered both browser identity and private-auth scripts on Lobby; unauthenticated profile access remained 404.
+- Notes:
+  - The user-facing flow no longer requires manually opening Account to publish a keypair already saved in browser storage.

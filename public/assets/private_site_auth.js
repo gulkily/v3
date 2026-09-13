@@ -22,12 +22,19 @@
     var privateKey = stored("forum_pki_private_key");
     var fingerprint = storedFingerprint();
     var loader = window.__forumOpenPgpLoader;
+    var browserIdentity = window.__forumBrowserIdentity;
 
     if (!publicKey || !privateKey || !/^[a-f0-9]{40}$/.test(fingerprint) || !loader) {
       return;
     }
 
     await loader.ready;
+    if (browserIdentity && typeof browserIdentity.ensureReadyIdentity === "function") {
+      await browserIdentity.ensureReadyIdentity(null, null, { verifyPublishedIdentity: true });
+      publicKey = stored("forum_pki_public_key");
+      privateKey = stored("forum_pki_private_key");
+      fingerprint = storedFingerprint();
+    }
     var openpgp = window.openpgp;
     var challengeResponse = await fetch("/api/auth_challenge", { credentials: "same-origin" });
     if (!challengeResponse.ok) {
