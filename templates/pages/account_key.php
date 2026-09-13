@@ -20,9 +20,7 @@ if (is_array($viewerProfile)) {
         <div>
           <p class="account-key-label">Signed in as</p>
           <p class="account-key-username" data-role="username-field">guest</p>
-<?php if ($viewerProfileHref !== ''): ?>
-          <p class="meta account-key-profile-link" data-role="profile-link-wrap"><a data-role="profile-link" href="<?= $e($viewerProfileHref) ?>"><?= $e($viewerProfileLabel) ?></a></p>
-<?php endif; ?>
+          <p class="meta account-key-profile-link" data-role="profile-link-wrap"<?= $viewerProfileHref === '' ? ' hidden' : '' ?>><a data-role="profile-link" href="<?= $e($viewerProfileHref !== '' ? $viewerProfileHref : '/account/key/') ?>"><?= $e($viewerProfileLabel !== '' ? $viewerProfileLabel : 'View profile') ?></a></p>
         </div>
         <div class="account-key-simple-actions">
           <button type="button" class="account-key-primary-button" data-action="generate-browser-key">Set up this browser</button>
