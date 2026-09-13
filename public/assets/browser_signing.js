@@ -2079,6 +2079,12 @@
       return false;
     }
 
+    // Profile lookup is intentionally unavailable to lobby users. In private
+    // mode, the prepare endpoint remains the authoritative duplicate check.
+    if (document.documentElement && document.documentElement.dataset.approvedMembersOnly === "1") {
+      return false;
+    }
+
     try {
       const response = await fetch(
         `/api/get_profile?profile_slug=${encodeURIComponent(profileSlug)}`,

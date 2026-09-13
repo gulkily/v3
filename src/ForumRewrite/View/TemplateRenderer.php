@@ -75,6 +75,7 @@ final class TemplateRenderer
             'themes' => ThemeRegistry::all(),
             'explicitThemeNames' => ThemeRegistry::explicitNames(),
             'defaultTheme' => SiteProfileRegistry::active()['defaultTheme'],
+            'approvedMembersOnlyEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
             'navItems' => [
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],
                 ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
