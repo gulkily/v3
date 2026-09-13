@@ -3,6 +3,14 @@ DirectoryIndex index.html index.php
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
+# A private instance must route every non-asset request through PHP so the
+# approved-members-only gate can run. SetEnv values are exposed to rewrite as
+# environment variables by Apache/mod_rewrite.
+RewriteCond %{ENV:FORUM_APPROVED_MEMBERS_ONLY} ^(?:1|true|yes|on)$ [NC]
+RewriteCond %{REQUEST_URI} !^/assets(?:/|$) [NC]
+RewriteCond %{REQUEST_URI} !^/favicon\.ico$ [NC]
+RewriteRule ^ index.php [L]
+
 # Serve existing files and directories directly.
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d

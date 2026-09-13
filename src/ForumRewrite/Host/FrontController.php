@@ -6,6 +6,8 @@ namespace ForumRewrite\Host;
 
 use ForumRewrite\Application;
 use ForumRewrite\SiteConfig;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use RuntimeException;
 use Throwable;
 
@@ -34,6 +36,9 @@ final class FrontController
             return;
         }
 
+        $approvedMembersOnly = FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)
+            ->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
+
         $assetPath = $this->resolveFingerprintedAssetPath($method, $requestUri);
         if ($assetPath !== null) {
             $this->sendAsset($assetPath, $method);
@@ -46,7 +51,7 @@ final class FrontController
             return;
         }
 
-        $staticArtifact = $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
+        $staticArtifact = $approvedMembersOnly ? null : $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
         if ($staticArtifact !== null && is_file($staticArtifact)) {
             $contents = file_get_contents($staticArtifact);
             if ($contents === false) {
@@ -66,7 +71,9 @@ final class FrontController
                 $this->staticHtmlRoot,
             );
             $application->handle($method, $requestUri);
-            $this->buildStaticArtifactOnEligibleMiss($method, $requestUri, $cookies, $staticArtifact);
+            if (!$approvedMembersOnly) {
+                $this->buildStaticArtifactOnEligibleMiss($method, $requestUri, $cookies, $staticArtifact);
+            }
         } catch (Throwable $throwable) {
             if (str_starts_with($throwable->getMessage(), 'Timed out waiting for execution lock: ')) {
                 $this->sendHtml($this->renderBusyError(), 503);

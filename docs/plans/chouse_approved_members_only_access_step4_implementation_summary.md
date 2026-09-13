@@ -38,3 +38,21 @@
   - `php tests/run.php FeatureFlagEvaluatorTest` — all tests passed.
 - Notes:
   - Static artifact serving is addressed in Stage 4.
+
+## Stage 4 - Close static and Apache bypasses
+- Changes:
+  - Disabled application static-artifact reads/builds while the private-site
+    flag is enabled.
+  - Added root/board redirection to the Lobby for unidentified visitors;
+    direct protected content remains 404.
+  - Added Apache rewrite protection for private instances while preserving
+    direct asset delivery.
+- Verification:
+  - Flagged direct thread request returned 404 and root request redirected to
+    `/lobby/`.
+  - PHP lint passed.
+  - Full suite attempted; existing repository baseline has unrelated failures
+    in legacy smoke/write cases and requires separate cleanup.
+- Notes:
+  - Production must set the flag in Apache and ensure generated HTML is not
+    directly exposed outside the protected rewrite path.

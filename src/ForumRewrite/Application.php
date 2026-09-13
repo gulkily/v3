@@ -94,6 +94,11 @@ final class Application
 
         $this->ensureReadModel();
 
+        if ($this->approvedMembersOnlyEnabled() && $this->membersOnlyLobbyRedirect($method, $path)) {
+            $this->sendRedirect('/lobby/', 'Entering lobby.', statusCode: 303, activeSection: 'account');
+            return;
+        }
+
         if ($this->approvedMembersOnlyEnabled() && !$this->membersOnlyRequestAllowed($method, $path)) {
             $this->sendHtml(
                 $this->renderMessagePage('Not Found', 'Not Found', 'The requested page does not exist.', 'none'),
@@ -3073,6 +3078,12 @@ final class Application
             strtolower((string) ($viewerProfile['profile_slug'] ?? '')),
             strtolower(rawurldecode($matches[1]))
         );
+    }
+
+    private function membersOnlyLobbyRedirect(string $method, string $path): bool
+    {
+        return $method === 'GET' && in_array($path, ['/', '/threads', '/threads/'], true)
+            && $this->authenticatedViewerProfile() === null;
     }
 
     private function renderLobby(): string
