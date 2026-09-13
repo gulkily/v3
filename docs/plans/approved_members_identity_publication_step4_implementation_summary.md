@@ -48,3 +48,16 @@
   - `php tests/run.php LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces` passed.
 - Notes:
   - The private web-server rewrite still must route non-asset requests through the application when enabled in production.
+
+## Stage 5 - Regression coverage and operator documentation
+- Changes:
+  - Documented one-shot Lobby publication and authentication behavior in the README and production runbook.
+  - Documented that manual Account linking is a recovery path rather than the normal user flow.
+- Verification:
+  - `php tests/run.php FeatureFlagEvaluatorTest` passed all tests.
+  - `php tests/run.php BrowserSigningNormalizationTest` passed all tests.
+  - `php tests/run.php LocalAppSmokeTest::testApprovedPrivateSessionCanViewOwnProfileAndBoard` passed.
+  - `php tests/run.php LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces` passed.
+  - PHP and JavaScript syntax checks passed for the changed runtime files.
+- Notes:
+  - The complete legacy suite remains outside this focused verification because it has pre-existing unrelated failures; no production cutover should occur until those failures are triaged separately.

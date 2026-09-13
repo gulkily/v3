@@ -234,9 +234,11 @@ Use `FORUM_*` environment variables for emergency or deployment-level overrides.
 `FORUM_APPROVED_MEMBERS_ONLY=true` enables the private-site boundary
 independently of the site profile or theme. Unapproved visitors are limited
 to `/lobby/`, `/account/key/`, and their own authenticated `/profiles/<slug>`
-page. Other routes, feeds, APIs, downloads, backups, and generated HTML
-return 404 or are routed through PHP for the access decision. Required static
-assets remain directly servable.
+page. When a browser keypair is already saved, Lobby automatically publishes
+the public key and completes identity setup before authentication. Other
+routes, feeds, APIs, downloads, backups, and generated HTML return 404 or are
+routed through PHP for the access decision. Required static assets remain
+directly servable.
 
 Enable it in the instance feature-flags record:
 

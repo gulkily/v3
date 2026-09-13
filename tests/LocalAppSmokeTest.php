@@ -60,6 +60,10 @@ final class LocalAppSmokeTest
             assertStringContains('This is your profile.', $profile);
             assertStringContains('Board', $board);
         } finally {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            session_id('');
             @unlink($databasePath ?? '');
             if ($previousFlag === false) {
                 putenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -84,6 +88,10 @@ final class LocalAppSmokeTest
             assertStringContains('The requested page does not exist.', $this->render($application, '/backup/'));
             assertStringContains('The requested page does not exist.', $this->render($application, '/?format=rss'));
         } finally {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            session_id('');
             @unlink($databasePath);
             if ($previousFlag === false) {
                 putenv('FORUM_APPROVED_MEMBERS_ONLY');
