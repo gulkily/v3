@@ -1921,7 +1921,17 @@ final class Application
 
     private function renderPage(string $title, string $content, string $activeSection, array $scriptPaths = []): string
     {
-        return $this->renderer()->renderLayout($title, $content, $activeSection, $scriptPaths, $this->routeSource);
+        $viewerProfile = $this->approvedMembersOnlyEnabled() ? $this->authenticatedViewerProfile() : null;
+
+        return $this->renderer()->renderLayout(
+            $title,
+            $content,
+            $activeSection,
+            $scriptPaths,
+            $this->routeSource,
+            false,
+            $viewerProfile,
+        );
     }
 
     /**
@@ -1935,6 +1945,10 @@ final class Application
         string $activeSection,
         array $scriptPaths = [],
     ): string {
+        if ($this->approvedMembersOnlyEnabled() && !array_key_exists('viewerProfile', $pageData)) {
+            $pageData['viewerProfile'] = $this->authenticatedViewerProfile();
+        }
+
         return $this->renderer()->renderPageTemplate(
             $pageTemplate,
             $pageData,
@@ -3103,7 +3117,7 @@ final class Application
                 'viewerProfile' => $this->authenticatedViewerProfile(),
             ],
             'Lobby',
-            'account',
+            'lobby',
             [
                 '/assets/openpgp_loader.js',
                 '/assets/browser_signing.js',

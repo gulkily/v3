@@ -122,8 +122,19 @@ final class LocalAppSmokeTest
 
         try {
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
-            assertStringContains('<h1>Lobby</h1>', $this->render($application, '/lobby/'));
-            assertStringContains('Account Key', $this->render($application, '/account/key/'));
+            $lobby = $this->render($application, '/lobby/');
+            $account = $this->render($application, '/account/key/');
+            assertStringContains('<h1>Lobby</h1>', $lobby);
+            assertStringContains('class="nav-link is-active" href="/lobby/"', $lobby);
+            assertStringContains('class="nav-link" href="/account/key/"', $lobby);
+            assertStringNotContains('href="/">Board</a>', $lobby);
+            assertStringNotContains('href="/about/">About</a>', $lobby);
+            assertStringNotContains('href="/users/">Users</a>', $lobby);
+            assertStringNotContains('href="/tools/">Tools</a>', $lobby);
+            assertStringContains('Account Key', $account);
+            assertStringContains('class="nav-link" href="/lobby/"', $account);
+            assertStringContains('class="nav-link is-active" href="/account/key/"', $account);
+            assertStringNotContains('href="/">Board</a>', $account);
             assertStringContains('The requested page does not exist.', $this->render($application, '/threads/root-001'));
             assertStringContains('The requested page does not exist.', $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'));
             assertStringContains('The requested page does not exist.', $this->render($application, '/backup/'));
@@ -133,6 +144,51 @@ final class LocalAppSmokeTest
                 session_write_close();
             }
             session_id('');
+            @unlink($databasePath);
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
+    public function testPendingPrivateSessionNavigationOnlyShowsLobbyOwnProfileAndAccount(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-private-pending-nav-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory($this->repositoryRoot, $repositoryRoot);
+        $this->deleteDirectoryContents($repositoryRoot . '/records/approval-seeds');
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-pending-nav-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $sessionId = 'private-pending-nav-' . bin2hex(random_bytes(8));
+
+        try {
+            session_id($sessionId);
+            session_start();
+            $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+            session_write_close();
+
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $lobby = $this->render($application, '/lobby/');
+
+            assertStringContains('class="nav-link is-active" href="/lobby/"', $lobby);
+            assertStringContains(
+                'class="nav-link" href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954">Profile</a>',
+                $lobby,
+            );
+            assertStringContains('class="nav-link" href="/account/key/"', $lobby);
+            assertStringNotContains('href="/">Board</a>', $lobby);
+            assertStringNotContains('href="/about/">About</a>', $lobby);
+            assertStringNotContains('href="/users/">Users</a>', $lobby);
+            assertStringNotContains('href="/tools/">Tools</a>', $lobby);
+        } finally {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            session_id('');
+            $this->deleteTree($repositoryRoot);
             @unlink($databasePath);
             if ($previousFlag === false) {
                 putenv('FORUM_APPROVED_MEMBERS_ONLY');

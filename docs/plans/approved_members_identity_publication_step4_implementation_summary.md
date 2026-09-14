@@ -78,3 +78,16 @@
 - Notes:
   - The two reproduced root causes were independent: a null-root browser exception suppressed before challenge creation, followed by a missing PHP class import that returned 503 after the browser path was repaired.
   - All browser writes and approval seeds used an isolated temporary repository and database; the active local repository was not modified.
+
+## Stage 7 - Lobby-only navigation
+- Changes:
+  - Made the shared navigation derive its private-site menu from the server-authenticated viewer profile.
+  - Anonymous Lobby users now see only Lobby and Account; authenticated pending users additionally see only their own Profile link.
+  - Approved users retain the normal Board, About, Users, Tools, and Account navigation.
+  - Applied the restricted navigation to private-mode message/404 pages as well as Lobby and Account.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces LocalAppSmokeTest::testPendingPrivateSessionNavigationOnlyShowsLobbyOwnProfileAndAccount LocalAppSmokeTest::testApprovedPrivateSessionCanViewOwnProfileAndBoard` passed.
+  - PHP syntax checks passed for the renderer, application, and focused smoke tests.
+  - Live dev-server HTML for anonymous Lobby and Account contained only Lobby and Account navigation links.
+- Notes:
+  - The own-profile navigation link is emitted only from the authenticated server profile, never directly from the browser identity hint or localStorage.
