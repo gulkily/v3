@@ -73,6 +73,47 @@ final class LocalAppSmokeTest
         }
     }
 
+    public function testPrivateAuthenticationEndpointReachesSignatureVerifier(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        $previousPost = $_POST;
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        $sessionId = 'private-auth-verifier-' . bin2hex(random_bytes(8));
+        $challenge = bin2hex(random_bytes(32));
+
+        try {
+            session_id($sessionId);
+            session_start();
+            $_SESSION['forum_auth_challenge'] = $challenge;
+            $_SESSION['forum_auth_challenge_expires_at'] = time() + 300;
+            session_write_close();
+
+            $_POST = [
+                'identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+                'challenge' => $challenge,
+                'detached_signature' => 'invalid detached signature',
+            ];
+            $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-auth-' . bin2hex(random_bytes(6)) . '.sqlite3';
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
+
+            $response = $this->renderMethod($application, 'POST', '/api/authenticate_identity');
+
+            assertStringContains('error=Identity signature verification failed.', $response);
+        } finally {
+            $_POST = $previousPost;
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            session_id('');
+            @unlink($databasePath ?? '');
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
     public function testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');

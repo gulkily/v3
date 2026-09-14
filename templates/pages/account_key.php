@@ -6,8 +6,11 @@ if (is_array($viewerProfile)) {
     $viewerProfileHref = '/profiles/' . rawurlencode((string) ($viewerProfile['profile_slug'] ?? ''));
     $viewerProfileLabel = 'View profile';
 }
+$authenticatedIdentityId = is_array($viewerProfile)
+    ? strtolower(trim((string) ($viewerProfile['identity_id'] ?? '')))
+    : '';
 ?>
-<section class="stack" data-account-key-root>
+<section class="stack" data-account-key-root data-private-site-auth-state data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>">
   <article class="card">
     <h1>Account Key</h1>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
@@ -27,6 +30,7 @@ if (is_array($viewerProfile)) {
           <button type="button" class="account-key-secondary-button" data-action="clear-browser-identity" hidden>Clear identity</button>
         </div>
         <p class="meta account-key-simple-status" id="simple-status">Choose a name to set up this browser.</p>
+        <p class="meta" data-role="private-site-auth-status" hidden></p>
       </div>
       <details class="account-key-advanced">
         <summary>Advanced / technical details</summary>

@@ -61,3 +61,20 @@
   - PHP and JavaScript syntax checks passed for the changed runtime files.
 - Notes:
   - The complete legacy suite remains outside this focused verification because it has pre-existing unrelated failures; no production cutover should occur until those failures are triaged separately.
+
+## Stage 6 - Browser authentication and own-profile recovery
+- Changes:
+  - Fixed the verified existing-identity path so presentation-free identity checks no longer dereference a null Account-page root before authentication starts.
+  - Imported the signature verifier into the application namespace; `/api/authenticate_identity` previously failed with a 503 before it could verify any signature.
+  - Made Account key generation and private-key restoration authenticate immediately after publication instead of exposing an own-profile link backed only by local browser state.
+  - Added a server-rendered authenticated identity marker so pending users reload once to receive session-aware Lobby/Account content without entering an authentication loop.
+  - Exposed authentication failures on Lobby/Account and in the browser console, and regenerated the PHP session ID after successful signature verification.
+- Verification:
+  - `php tests/run.php PrivateSiteAuthTest BrowserSigningNormalizationTest LocalAppSmokeTest::testApprovedPrivateSessionCanViewOwnProfileAndBoard LocalAppSmokeTest::testPrivateAuthenticationEndpointReachesSignatureVerifier LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces` passed.
+  - `php tests/run.php FeatureFlagEvaluatorTest` passed.
+  - JavaScript and PHP syntax checks passed for all changed runtime and test files.
+  - Isolated Chromium smoke: a newly generated unapproved identity published automatically, completed challenge authentication with one PHP session, re-rendered Account once, and opened its own profile with HTTP 200.
+  - Isolated Chromium smoke: a newly generated identity with a pre-existing approval seed published automatically, authenticated with a real detached signature, entered the Board, and opened its own profile with `This is your profile.`
+- Notes:
+  - The two reproduced root causes were independent: a null-root browser exception suppressed before challenge creation, followed by a missing PHP class import that returned 503 after the browser path was repaired.
+  - All browser writes and approval seeds used an isolated temporary repository and database; the active local repository was not modified.

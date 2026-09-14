@@ -33,6 +33,7 @@ use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
 use ForumRewrite\Llm\LlmExchangeRecorder;
 use ForumRewrite\Llm\SqliteLlmExchangeStore;
 use ForumRewrite\Security\OpenPgpKeyInspector;
+use ForumRewrite\Security\OpenPgpSignatureVerifier;
 use PDO;
 use RuntimeException;
 use PDOStatement;
@@ -3680,6 +3681,7 @@ final class Application
             return;
         }
 
+        session_regenerate_id(true);
         $_SESSION['authenticated_identity_id'] = $identityId;
         unset($_SESSION['forum_auth_challenge'], $_SESSION['forum_auth_challenge_expires_at']);
         session_write_close();

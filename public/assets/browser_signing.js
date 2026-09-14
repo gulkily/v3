@@ -1836,6 +1836,10 @@
   }
 
   function renderSavedState(root) {
+    if (!root || typeof root.querySelector !== "function") {
+      return;
+    }
+
     const publicKey = localStorage.getItem(storageKeys.publicKey) || "";
     const privateKey = localStorage.getItem(storageKeys.privateKey) || "";
     const username = localStorage.getItem(storageKeys.username) || "guest";
@@ -2154,6 +2158,17 @@
     }
   }
 
+  async function authenticatePrivateSiteIfAvailable() {
+    const privateSiteEnabled = document.documentElement
+      && document.documentElement.dataset.approvedMembersOnly === "1";
+    const privateSiteAuth = window.PrivateSiteAuth;
+    if (!privateSiteEnabled || !privateSiteAuth || typeof privateSiteAuth.authenticate !== "function") {
+      return;
+    }
+
+    await privateSiteAuth.authenticate();
+  }
+
   async function ensureComposeIdentity(root, statusNode, timing) {
     await ensureReadyIdentity(root, statusNode, {
       promptForUsername: promptForComposeUsername,
@@ -2285,6 +2300,7 @@
           }
           setStatus(statusNode, "Publishing your public key in the background...", "info");
           await publishPublicKeyWithRetry(root);
+          await authenticatePrivateSiteIfAvailable();
           if (publicKeyField) {
             publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
           }
@@ -2325,6 +2341,7 @@
 
           setStatus(statusNode, "Publishing your public key in the background...", "info");
           await publishPublicKeyWithRetry(root);
+          await authenticatePrivateSiteIfAvailable();
           if (publicKeyField) {
             publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
           }
