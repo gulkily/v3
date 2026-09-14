@@ -12,7 +12,7 @@ $projectRoot = dirname(__DIR__);
 $siteId = SiteProfileRegistry::active()['name'];
 $localStateSuffix = $siteId === 'zenmemes' ? '' : '_' . $siteId;
 $repositoryRoot = getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot, $siteId);
-$databasePath = getenv('FORUM_DATABASE_PATH') ?: $projectRoot . '/state/cache/post_index' . $localStateSuffix . '.sqlite3';
+$databasePath = getenv('FORUM_DATABASE_PATH') ?: LocalRepositoryBootstrap::defaultDatabasePath($projectRoot, $siteId);
 $staticHtmlRoot = getenv('FORUM_STATIC_HTML_ROOT') ?: ($projectRoot . '/state/static_html' . $localStateSuffix);
 
 $controller = new FrontController($projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot);

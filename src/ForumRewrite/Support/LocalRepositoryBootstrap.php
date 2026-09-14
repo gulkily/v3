@@ -24,6 +24,13 @@ final class LocalRepositoryBootstrap
         return $localRepositoryRoot;
     }
 
+    public static function defaultDatabasePath(string $projectRoot, string $siteId = 'zenmemes'): string
+    {
+        $suffix = $siteId === 'zenmemes' ? '' : '_' . $siteId;
+
+        return $projectRoot . '/state/cache/post_index' . $suffix . '.sqlite3';
+    }
+
     public static function initializeLocalRepository(string $projectRoot, string $target): void
     {
         $source = $projectRoot . '/tests/fixtures/parity_minimal_v1';

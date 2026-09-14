@@ -2298,6 +2298,8 @@ final class LocalAppSmokeTest
 
         assertSame($projectRoot . '/state/local_repository', $zenmemesRoot);
         assertSame($projectRoot . '/state/local_repository_chouse', $chouseRoot);
+        assertSame($projectRoot . '/state/cache/post_index.sqlite3', LocalRepositoryBootstrap::defaultDatabasePath($projectRoot, 'zenmemes'));
+        assertSame($projectRoot . '/state/cache/post_index_chouse.sqlite3', LocalRepositoryBootstrap::defaultDatabasePath($projectRoot, 'chouse'));
         assertTrue(is_dir($chouseRoot . '/records'));
         assertTrue(is_dir($chouseRoot . '/.git'));
         assertTrue(is_file($chouseRoot . '/records/posts/root-001.txt'));

@@ -120,3 +120,17 @@
   - PHP syntax and scoped whitespace checks passed for all changed test files.
 - Notes:
   - The leaked flag and authenticated session produced a misleading cascade of route, write API, static artifact, read-model, and authorization failures; those downstream failures were not independent private-site regressions.
+
+## Stage 10 - Site-scoped approval tooling and live session diagnostics
+- Changes:
+  - Made approval CLI defaults honor `FORUM_SITE_ID`, matching the web server's site-scoped repository and read-model paths.
+  - Centralized the default site-scoped database path alongside the existing repository-path helper.
+  - Added CLI-server-only private-session diagnostics for each application request, including the request, session ID, authenticated identity, resolved profile, approval result, repository, and database without logging key material or challenges.
+  - Seeded the reported D0EE identity in the actual Chouse repository and rebuilt `state/cache/post_index_chouse.sqlite3`.
+- Verification:
+  - Focused site-profile, local-state-path, approval-command, and private-session tests passed.
+  - A controlled authenticated request to the active Chouse server returned HTTP 200 for the Board and the D0EE profile rendered `Approved: yes`.
+  - `php tests/run.php` passed the complete test suite.
+  - PHP syntax and scoped whitespace checks passed for all changed runtime and test files.
+- Notes:
+  - The original `./v3 approval seed ...` command ran without `FORUM_SITE_ID=chouse`, so it inspected the default Zenmemes repository. The Chouse server independently used `state/local_repository_chouse` and `state/cache/post_index_chouse.sqlite3`, where the identity existed but had no approval seed.
