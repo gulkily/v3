@@ -43,6 +43,7 @@ final class LocalAppSmokeTest
     public function testApprovedPrivateSessionCanViewOwnProfileAndBoard(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        $previousSession = $_SESSION ?? null;
         putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
         $sessionId = 'private-approved-' . bin2hex(random_bytes(8));
 
@@ -64,6 +65,11 @@ final class LocalAppSmokeTest
                 session_write_close();
             }
             session_id('');
+            if ($previousSession === null) {
+                unset($_SESSION);
+            } else {
+                $_SESSION = $previousSession;
+            }
             @unlink($databasePath ?? '');
             if ($previousFlag === false) {
                 putenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -77,6 +83,7 @@ final class LocalAppSmokeTest
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
         $previousPost = $_POST;
+        $previousSession = $_SESSION ?? null;
         putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
         $sessionId = 'private-auth-verifier-' . bin2hex(random_bytes(8));
         $challenge = bin2hex(random_bytes(32));
@@ -105,6 +112,11 @@ final class LocalAppSmokeTest
                 session_write_close();
             }
             session_id('');
+            if ($previousSession === null) {
+                unset($_SESSION);
+            } else {
+                $_SESSION = $previousSession;
+            }
             @unlink($databasePath ?? '');
             if ($previousFlag === false) {
                 putenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -156,6 +168,7 @@ final class LocalAppSmokeTest
     public function testPendingPrivateSessionNavigationOnlyShowsLobbyOwnProfileAndAccount(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        $previousSession = $_SESSION ?? null;
         putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-private-pending-nav-' . bin2hex(random_bytes(6));
         mkdir($repositoryRoot, 0777, true);
@@ -188,6 +201,11 @@ final class LocalAppSmokeTest
                 session_write_close();
             }
             session_id('');
+            if ($previousSession === null) {
+                unset($_SESSION);
+            } else {
+                $_SESSION = $previousSession;
+            }
             $this->deleteTree($repositoryRoot);
             @unlink($databasePath);
             if ($previousFlag === false) {
@@ -497,7 +515,7 @@ final class LocalAppSmokeTest
     public function testInjectApprovalScriptApprovesExistingUser(): void
     {
         [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
-        $application = new Application($projectRoot, $repositoryRoot, $databasePath, $artifactRoot);
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
 
         $_POST = [
             'public_key' => $this->generatePublicKey('alice'),
@@ -778,10 +796,10 @@ final class LocalAppSmokeTest
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $thread);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=reply-001', $thread);
         assertStringContains('First line preview.', $post);
-        assertStringContains('Public key', $thread);
-        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $thread);
+        assertStringNotContains('/source/current/records/public-keys/', $thread);
         assertStringContains('Public key', $post);
-        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $post);
+        assertStringContains('/source/current/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc', $post);
+        assertStringNotContains('BEGIN PGP PUBLIC KEY BLOCK', $post);
         assertStringContains('by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $post);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $post);
         assertStringContains('Source:', $post);
@@ -980,8 +998,11 @@ final class LocalAppSmokeTest
             $this->databasePath,
         );
 
+        $this->render($application, '/');
+
         $pdo = new PDO('sqlite:' . $this->databasePath);
         $pdo->exec("UPDATE profiles SET public_key = '' WHERE profile_slug = 'openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'");
+        $pdo->exec("UPDATE posts SET board_tags_json = '[\"identity\",\"internal\"]' WHERE post_id = 'root-001'");
 
         $post = $this->render($application, '/posts/root-001');
 
@@ -1525,6 +1546,7 @@ final class LocalAppSmokeTest
 
         $viewer = $this->render($application, '/tools/sqlite/');
         $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite_viewer.js');
+        $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
 
         assertStringContains('data-role="sqlite-explorer"', $viewer);
         assertStringContains('data-role="sqlite-table-select"', $viewer);
@@ -1884,12 +1906,15 @@ final class LocalAppSmokeTest
         [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
         @unlink($databasePath);
         $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
         mkdir($staticHtmlRoot, 0777, true);
+        mkdir($publicRoot, 0777, true);
         $controller = new FrontController(
             dirname(__DIR__),
             $repositoryRoot,
             $databasePath,
             $staticHtmlRoot,
+            $publicRoot,
         );
 
         putenv('FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS=0');
@@ -1898,6 +1923,7 @@ final class LocalAppSmokeTest
             $response = $lock->withExclusiveLock(fn () => $this->renderFrontController($controller, 'GET', '/', []));
         } finally {
             putenv('FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS');
+            @rmdir($publicRoot);
         }
 
         assertStringContains('Meme Oven Is Busy', $response);

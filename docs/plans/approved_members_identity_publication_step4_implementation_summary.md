@@ -106,3 +106,17 @@
   - PHP syntax and scoped whitespace checks passed.
 - Notes:
   - Public static HTML hits now incur the front-controller PHP entry cost so a mutable site-level privacy flag remains authoritative; content rendering still uses the prebuilt artifact when eligible.
+
+## Stage 9 - Feature-flag test isolation
+- Changes:
+  - Added `FORUM_APPROVED_MEMBERS_ONLY` to the feature-flag test environment cleanup list.
+  - Prevented the environment-override test from leaving private mode enabled for every subsequent test in the shared PHP test process.
+  - Restored the prior `$_SESSION` value after private-session smoke tests so later authorization tests cannot inherit an approved identity.
+  - Updated the approved Account-page regression to require the direct own-profile link now shown outside the advanced area.
+  - Repaired five older smoke-test setup/expectation defects exposed after the leaked private state was removed: temporary template roots, current public-key presentation, read-model initialization, SQLite viewer CSS loading, and isolated static-routing roots.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest` passed all 77 local application smoke tests.
+  - `php tests/run.php` passed the complete test suite.
+  - PHP syntax and scoped whitespace checks passed for all changed test files.
+- Notes:
+  - The leaked flag and authenticated session produced a misleading cascade of route, write API, static artifact, read-model, and authorization failures; those downstream failures were not independent private-site regressions.

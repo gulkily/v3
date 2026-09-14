@@ -180,6 +180,7 @@ PHP);
     private function withEnvironment(array $values, callable $callback): void
     {
         $keys = [
+            FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,
             FeatureFlagRegistry::EMOJI_AUTHORED_TEXT,
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
