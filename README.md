@@ -113,11 +113,11 @@ The default Dedalus post-analysis prompt is stored in `prompts/dedalus_post_anal
 
 For Apache/shared-host deployment, `public/.htaccess` is now part of the intended runtime model:
 
-- serve existing files and directories directly
-- serve queryless cookie-free sibling `*.html` artifacts directly for `/`, `/instance/`, `/activity/`, `/users/`, `/threads/<id>`, `/posts/<id>`, and `/profiles/<slug>`
-- fall back to `public/index.php` when no static artifact exists
+- serve existing `/assets/*` files and `favicon.ico` directly
+- route every content, API, download, and generated-artifact request through `public/index.php`
+- let the front controller serve eligible queryless cookie-free static HTML on public instances and enforce the private-site gate before any content artifact is read
 
-That matches the planning assumption that Apache should serve static-safe anonymous HTML directly and use PHP only as fallback.
+This keeps immutable presentation assets inexpensive while ensuring a site-level `FORUM_APPROVED_MEMBERS_ONLY` flag cannot be bypassed by an old sibling HTML artifact.
 
 The repo-owned deployment contract is now documented in the production runbook. What remains before a real production launch is mostly host-side validation on the actual Apache target.
 

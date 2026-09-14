@@ -8,7 +8,8 @@ The intended production shape is:
 
 - Apache serves `public/` as the `DocumentRoot`
 - PHP handles dynamic requests through `public/index.php`
-- Apache serves eligible sibling `*.html` artifacts directly when they exist
+- Apache directly serves only existing `/assets/*` files and `favicon.ico`
+- the PHP front controller serves eligible sibling `*.html` artifacts on public instances
 - the canonical writable repository lives outside `public/`
 - derived state under `state/` is writable by the web user
 
@@ -247,9 +248,10 @@ FORUM_APPROVED_MEMBERS_ONLY: true
 ```
 
 For a deployment-level pin, set `FORUM_APPROVED_MEMBERS_ONLY=true` in the
-vhost environment. Keep the flag off for public instances. When enabled,
-verify that Apache sees the variable and that old public HTML artifacts are
-not served outside the checked-in private-instance rewrite rule.
+vhost environment. Keep the flag off for public instances. The checked-in
+rewrite rules route every non-asset request through PHP regardless of whether
+the effective flag comes from the vhost or the instance feature-flags record,
+so old public HTML artifacts cannot bypass a site-level flag change.
 
 Audit site-level changes with:
 
@@ -263,7 +265,7 @@ Rollback options:
 - set the previous value through `/tools/feature-flags/`
 - or revert the relevant content-repository commit
 
-If production serves prebuilt static HTML artifacts, rebuild artifacts after changing flags outside the web write path. Private instances must not serve those content artifacts directly; the application and Apache rewrite checks route them through the access gate.
+If production serves prebuilt static HTML artifacts, rebuild artifacts after changing flags outside the web write path. Private instances do not serve those content artifacts; every content request reaches the application access gate first.
 
 ## App Version Notification
 
@@ -376,7 +378,7 @@ Before launch, verify:
 - profile route loads
 - account route loads
 - compose thread/reply routes load
-- anonymous queryless board/thread/profile requests can be served from sibling `*.html` artifacts
+- anonymous queryless board/thread/profile requests can be served from sibling `*.html` artifacts through the front controller
 - cookie-bearing requests bypass static artifacts and fall back to PHP
 - thread creation works
 - reply creation works

@@ -91,3 +91,18 @@
   - Live dev-server HTML for anonymous Lobby and Account contained only Lobby and Account navigation links.
 - Notes:
   - The own-profile navigation link is emitted only from the authenticated server profile, never directly from the browser identity hint or localStorage.
+
+## Stage 8 - Static content access boundary
+- Changes:
+  - Restricted the development router and Apache rewrite bypass to existing `/assets/*` files and `favicon.ico` only.
+  - Routed all content, API, download, lock-file, and generated-artifact requests through the PHP front controller regardless of whether the private flag comes from the deployment environment or the instance feature-flags record.
+  - Preserved public-instance static HTML acceleration through the front controller's existing eligible-artifact path.
+  - Updated deployment documentation to describe the secure routing model and removed the obsolete requirement that Apache independently observe the private feature flag.
+- Verification:
+  - `php tests/run.php WebServerRoutingTest LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces` passed.
+  - `php tests/run.php LocalAppSmokeTest::testFrontControllerServesStaticArtifactForAnonymousEligibleRoute LocalAppSmokeTest::testFrontControllerBypassesStaticArtifactWhenCookieIsPresent LocalAppSmokeTest::testFrontControllerBuildsMissingArtifactAfterEligibleAnonymousFallback` passed.
+  - Private live server returned 404 for `/index.html`, `/posts/reply-001.html`, a physical `/.locks/*` path, and canonical protected content; `/assets/site.css` and `/favicon.ico` remained 200.
+  - Separate public-mode live server returned 200 for canonical `/` and `/posts/reply-001`, 404 for direct `/index.html` and `/posts/reply-001.html`, and 200 for `/assets/site.css`.
+  - PHP syntax and scoped whitespace checks passed.
+- Notes:
+  - Public static HTML hits now incur the front-controller PHP entry cost so a mutable site-level privacy flag remains authoritative; content rendering still uses the prebuilt artifact when eligible.
