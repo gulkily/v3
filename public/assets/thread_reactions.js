@@ -371,7 +371,18 @@
   }
 
   async function ensureReactionIdentity(root, feedbackNode, timing) {
-    const helper = window.__forumBrowserIdentity;
+    let helper = window.__forumBrowserIdentity;
+    const notReady = !helper || typeof helper.ensureReadyIdentity !== "function";
+    if (notReady && window.ForumLazyComposeSigning && typeof window.ForumLazyComposeSigning.load === "function") {
+      setFeedback(feedbackNode, "Loading identity tools...", "ok");
+      try {
+        await window.ForumLazyComposeSigning.load();
+      } catch (error) {
+        // Fall through -- the check below throws the standard error.
+      }
+      helper = window.__forumBrowserIdentity;
+    }
+
     if (!helper || typeof helper.ensureReadyIdentity !== "function") {
       throw new Error("Identity setup is unavailable. Reload the page and try again.");
     }

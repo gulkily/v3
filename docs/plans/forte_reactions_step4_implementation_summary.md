@@ -43,3 +43,15 @@
   - Headless-browser test: Liked a thread, then did a full fresh page navigation (not a DOM check mid-session) to `/forte`; the Like button loaded already "Liked"/disabled/`aria-pressed="true"` from the server-rendered state, not a client-side memory of the earlier click. Zero unexpected console errors.
   - Timing check (`curl -H "Cookie: identity_hint=..."` against a real previously-created identity, matching the plan's risk note about the new bulk query staying a single scan): 111ms with viewer-state lookups included vs. 76ms anonymous, at the board's current volume (~519 threads) — no per-thread N+1 query pattern.
 - Notes: none identified.
+
+## Stage 5 - Reaction clicks trigger identity prep without touching the composer
+- Changes:
+  - `thread_reactions.js`: `ensureReactionIdentity()` now checks for `window.ForumLazyComposeSigning` (the loader `lazy_compose_signing.js` already exposes globally) and awaits its existing `.load()` before falling through to the original `window.__forumBrowserIdentity` check, instead of only throwing "Identity setup is unavailable."
+- Verification:
+  - `node --check` clean.
+  - Headless-browser test on Forte's board: clicked Like on a thread *without ever touching the composer* — confirmed `openpgp_loader.js`/`browser_signing.js` were absent beforehand, the identity-prep prompt appeared anyway, and the Like confirmed successfully; scripts loaded on demand.
+  - Re-verified the existing composer-first path still works (Like + Flag, independent threads) — unaffected.
+  - Re-verified classic's thread page (where `window.ForumLazyComposeSigning` never exists) is byte-for-byte unaffected — Like still works exactly as before.
+- Notes:
+  - **Deviated from the Step 3 plan's stated mechanism, same outcome:** the plan called for a new site-wide click listener inside `lazy_compose_signing.js`. Implementing it that way would race against `thread_reactions.js`'s own click listener — bubble-phase listeners fire target-outward, so the reaction root's listener (closer to the clicked button) would run *before* a `document`-level listener, meaning the identity check would still fail on the first click. Awaiting `window.ForumLazyComposeSigning.load()` directly inside `ensureReactionIdentity()` guarantees correct ordering and reuses the already-exposed global with no new listener at all. The approved requirement (reaction clicks work without touching the composer first) is unchanged.
+  - **Unrelated finding during verification, not fixed:** this app caches rendered HTML for clean URLs (no query string) and only invalidates on content changes, not asset/source edits — a classic-page `curl` without a cache-busting query param can silently serve a page snapshot from earlier in a dev session, including stale asset hashes for a script edited since. Cache-busted all classic-page verification calls (`?_cb=...`) once this was found. Worth remembering for future sessions iterating on shared JS/CSS; not a bug in this feature.
