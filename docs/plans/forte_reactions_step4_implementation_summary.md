@@ -55,3 +55,15 @@
 - Notes:
   - **Deviated from the Step 3 plan's stated mechanism, same outcome:** the plan called for a new site-wide click listener inside `lazy_compose_signing.js`. Implementing it that way would race against `thread_reactions.js`'s own click listener — bubble-phase listeners fire target-outward, so the reaction root's listener (closer to the clicked button) would run *before* a `document`-level listener, meaning the identity check would still fail on the first click. Awaiting `window.ForumLazyComposeSigning.load()` directly inside `ensureReactionIdentity()` guarantees correct ordering and reuses the already-exposed global with no new listener at all. The approved requirement (reaction clicks work without touching the composer first) is unchanged.
   - **Unrelated finding during verification, not fixed:** this app caches rendered HTML for clean URLs (no query string) and only invalidates on content changes, not asset/source edits — a classic-page `curl` without a cache-busting query param can silently serve a page snapshot from earlier in a dev session, including stale asset hashes for a script edited since. Cache-busted all classic-page verification calls (`?_cb=...`) once this was found. Worth remembering for future sessions iterating on shared JS/CSS; not a bug in this feature.
+
+## Stage 6 - Full regression check
+- Changes: none (verification only, as planned).
+- Verification:
+  - Classic's `thread_root_card.php`/`post_card.php` reaction markup confirmed byte-for-byte unchanged (`git diff` against the pre-feature commit) — this feature only extended shared JS, never classic's templates.
+  - Forte's Reply flow re-verified end-to-end: anonymous reply lands back on `/forte` with tag/selection/highlight restored, unaffected.
+  - Forte's New Thread dialog (a separate, unrelated feature sharing the same board page) re-verified: opens and closes correctly, confirming no interference from the reactions work.
+  - Two additional threads' Like buttons (beyond Stages 2/5's own tests) confirmed working fully independently on the same board load.
+  - Board load timing re-confirmed stable across three repeated cache-busted requests with a real identity: ~110ms each, matching Stage 4's original measurement at ~519 threads.
+  - Zero unexpected console errors across the full regression run.
+- Notes:
+  - This completes all 6 planned stages for `forte_reactions`. Forte's board now supports thread-level Like and post-level Flag (root posts and replies), reusing classic's endpoints and `thread_reactions.js` unchanged in behavior, with viewer reaction state persisted across page loads and reaction clicks able to trigger identity preparation on their own. Reply-level Like (which classic itself supports) was deliberately left out per the approved Step 2 scope — a candidate for a small follow-up cycle.
