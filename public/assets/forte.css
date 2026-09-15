@@ -405,6 +405,14 @@ body.paned-reader-body {
   font-weight: 700;
 }
 
+.paned-compose-status {
+  margin: 0;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.78rem;
+  color: var(--paned-ink-soft);
+  border-bottom: 1px solid var(--paned-border-dark);
+}
+
 .paned-compose-form {
   display: flex;
   flex-direction: column;
