@@ -20,7 +20,7 @@ if ($selectedTag !== '') {
     <span>File</span><span>Edit</span><span>View</span><span>Folder</span><span>Navigate</span><span>Help</span>
   </div>
   <div class="paned-toolbar">
-    <button type="button" class="paned-toolbar-btn" disabled>
+    <button type="button" class="paned-toolbar-btn" data-paned-board-new>
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2" width="12" height="12" fill="none" stroke="currentColor"/><line x1="8" y1="5" x2="8" y2="11" stroke="currentColor"/><line x1="5" y1="8" x2="11" y2="8" stroke="currentColor"/></svg>
       <span>New</span>
     </button>
@@ -54,4 +54,5 @@ if ($selectedTag !== '') {
     <span data-paned-board-status-count data-paned-board-total-count="<?= count($threads) ?>" data-paned-board-tag-count="<?= count($tagGroups) ?>"><?php if ($selectedTag === ''): ?><?= count($threads) ?> thread<?= count($threads) === 1 ? '' : 's' ?> · <?= count($tagGroups) ?> tags<?php else: ?>Showing <?= $visibleThreadCount ?> of <?= count($threads) ?> threads (#<?= $e($selectedTag) ?>)<?php endif; ?></span>
     <span>Forte reader</span>
   </div>
+<?= $indent($partial('partials/paned_board_new_thread_dialog.php'), 1) ?>
 </div>

@@ -17,6 +17,8 @@
     var totalTagCount = statusCount ? parseInt(statusCount.getAttribute("data-paned-board-tag-count"), 10) : folderItems.length;
     var replyButton = document.querySelector("[data-paned-board-reply]");
     var composePanel = document.querySelector("[data-paned-compose-panel]");
+    var newButton = document.querySelector("[data-paned-board-new]");
+    var newThreadDialog = document.querySelector("[data-paned-new-thread-dialog]");
 
     function currentTagFromUrl() {
       return new URLSearchParams(location.search).get("tag") || "";
@@ -402,6 +404,12 @@
             bodyField.focus();
           }
         }
+      });
+    }
+
+    if (newButton && newThreadDialog && typeof newThreadDialog.showModal === "function") {
+      newButton.addEventListener("click", function () {
+        newThreadDialog.showModal();
       });
     }
 
