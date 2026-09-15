@@ -795,16 +795,23 @@
     return Boolean(root && typeof root.querySelector === "function" && root.querySelector("[data-inline-reply-details]"));
   }
 
-  function canonicalReplyUrl(result) {
-    return `/threads/${encodeURIComponent(result.threadId)}?created_post_id=${encodeURIComponent(result.postId)}&__v=${encodeURIComponent(result.commitSha)}#post-${encodeURIComponent(result.postId)}`;
+  function canonicalReplyUrl(result, returnTo) {
+    const suffix = `created_post_id=${encodeURIComponent(result.postId)}&__v=${encodeURIComponent(result.commitSha)}`;
+    const anchor = `#post-${encodeURIComponent(result.postId)}`;
+    if (returnTo) {
+      const separator = returnTo.indexOf("?") === -1 ? "?" : "&";
+      return `${returnTo}${separator}${suffix}${anchor}`;
+    }
+
+    return `/threads/${encodeURIComponent(result.threadId)}?${suffix}${anchor}`;
   }
 
   function canonicalThreadUrl(result) {
     return `/threads/${encodeURIComponent(result.threadId)}?created_post_id=${encodeURIComponent(result.postId)}&__v=${encodeURIComponent(result.commitSha)}`;
   }
 
-  function navigateToCanonicalReply(result) {
-    const url = canonicalReplyUrl(result);
+  function navigateToCanonicalReply(result, returnTo) {
+    const url = canonicalReplyUrl(result, returnTo);
     if (typeof window !== "undefined" && window.location) {
       if (typeof window.location.assign === "function") {
         window.location.assign(url);
@@ -2819,7 +2826,7 @@
 
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
-        navigateToCanonicalReply(result);
+        navigateToCanonicalReply(result, composeFormFieldValue(form, "return_to"));
         return true;
       } catch (error) {
         restoreComposeDraftAfterFailedSubmit(clearedDraft);
