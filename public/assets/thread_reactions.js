@@ -562,12 +562,11 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    const root = document.querySelector("[data-thread-reactions-root]");
-    if (root) {
-      bindThreadReactions(root);
-    }
-
     if (typeof document.querySelectorAll === "function") {
+      document.querySelectorAll("[data-thread-reactions-root]").forEach((root) => {
+        bindThreadReactions(root);
+      });
+
       document.querySelectorAll(".post-card[data-post-id]").forEach((postRoot) => {
         bindPostReactions(postRoot);
       });
