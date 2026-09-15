@@ -32,3 +32,14 @@
   - Headless-browser test: with identity pre-prepared (same stand-in as Stage 2), flagged a reply nested under a thread with existing replies; button correctly transitions through pending ("Publishing your public key in the background...") to confirmed ("Flagged." / disabled). Zero unexpected console errors. Screenshot confirms no interference with reply-tree rendering/indentation.
 - Notes:
   - **Found, not implemented — matches the approved Step 2 scope:** classic's own `post_card.php` actually gives replies both post-level Like *and* Flag (`viewerHasLikedPost`/`viewerHasFlaggedPost`). Step 2 explicitly scoped this feature to thread-level Like + post-level Flag only; adding reply-level Like now would be scope creep beyond what was approved. Worth a quick, low-ambiguity follow-up cycle if wanted, not folded in here.
+
+## Stage 4 - Persisted viewer reaction state on page load
+- Changes:
+  - `Application.php`: new `viewerThreadTagsForThreads(array $threadIds, string $tag, string $identityId): array` — bulk sibling to `viewerHasThreadTag()`, one glob/scan of thread-label records covering every thread at once (mirrors how `viewerPostTagsForPosts()` already scans post-reactions once for many posts, not once per post).
+  - `renderForteBoard()`: resolves the viewer profile, computes `viewerLikedThreadIds` (via the new bulk method, across all thread IDs) and `viewerFlaggedPostIds` (via the existing `viewerPostTagsForPosts()`, across every root post *and* reply post ID on the board), passes both to the page.
+  - `paned_board_content_pane.php` / `paned_thread_reply_tree.php`: Like/Flag buttons render already-disabled with the applied label when the viewer's ID appears in the corresponding lookup.
+- Verification:
+  - `php -l` clean; anonymous page load (`curl`, no cookie) confirmed clean (no PHP warnings/notices, `viewerProfile === null` branch short-circuits to empty arrays).
+  - Headless-browser test: Liked a thread, then did a full fresh page navigation (not a DOM check mid-session) to `/forte`; the Like button loaded already "Liked"/disabled/`aria-pressed="true"` from the server-rendered state, not a client-side memory of the earlier click. Zero unexpected console errors.
+  - Timing check (`curl -H "Cookie: identity_hint=..."` against a real previously-created identity, matching the plan's risk note about the new bulk query staying a single scan): 111ms with viewer-state lookups included vs. 76ms anonymous, at the board's current volume (~519 threads) — no per-thread N+1 query pattern.
+- Notes: none identified.

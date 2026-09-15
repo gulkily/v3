@@ -13,6 +13,8 @@
   </article>
 <?php foreach ($threads as $thread): ?>
 <?php $replyCount = (int) ($thread['reply_count'] ?? 0); ?>
+<?php $viewerHasLiked = isset($viewerLikedThreadIds[(string) $thread['root_post_id']]); ?>
+<?php $viewerHasFlaggedRoot = isset($viewerFlaggedPostIds[(string) $thread['root_post_id']]); ?>
   <article class="paned-content-post" data-paned-board-content-post-id="<?= $e($thread['root_post_id']) ?>" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>" hidden>
     <div class="paned-content-head">
       <div class="paned-content-subject"><?= $e($threadTitle($thread)) ?></div>
@@ -24,8 +26,8 @@
     <div class="post-card paned-post-card" data-post-id="<?= $e($thread['root_post_id']) ?>">
       <div class="body"><?= $br($thread['root_post_body'] ?? $thread['body_preview']) ?></div>
       <div class="paned-reaction-row">
-        <button type="button" class="paned-reaction-button" data-action="apply-thread-tag" data-tag="like" data-applied-label="Liked" aria-pressed="false">Like</button>
-        <button type="button" class="paned-reaction-button" data-action="apply-post-tag" data-tag="flag" data-post-id="<?= $e($thread['root_post_id']) ?>" data-applied-label="Flagged" aria-pressed="false">Flag</button>
+        <button type="button" class="paned-reaction-button" data-action="apply-thread-tag" data-tag="like" data-applied-label="Liked" aria-pressed="<?= $viewerHasLiked ? 'true' : 'false' ?>"<?= $viewerHasLiked ? ' disabled' : '' ?>><?= $viewerHasLiked ? 'Liked' : 'Like' ?></button>
+        <button type="button" class="paned-reaction-button" data-action="apply-post-tag" data-tag="flag" data-post-id="<?= $e($thread['root_post_id']) ?>" data-applied-label="Flagged" aria-pressed="<?= $viewerHasFlaggedRoot ? 'true' : 'false' ?>"<?= $viewerHasFlaggedRoot ? ' disabled' : '' ?>><?= $viewerHasFlaggedRoot ? 'Flagged' : 'Flag' ?></button>
       </div>
       <p class="paned-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
     </div>

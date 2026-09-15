@@ -802,10 +802,24 @@ final class Application
 
         $replyPostsByThreadId = $this->fetchAllThreadReplyPosts();
         $replyTreesByThreadId = [];
+        $allPostIds = [];
         foreach ($threads as $thread) {
             $threadId = (string) $thread['root_post_id'];
             $replyTreesByThreadId[$threadId] = $this->buildReplyTree($replyPostsByThreadId[$threadId] ?? []);
+            $allPostIds[] = $threadId;
+            foreach ($replyPostsByThreadId[$threadId] ?? [] as $replyPost) {
+                $allPostIds[] = (string) $replyPost['post_id'];
+            }
         }
+
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $viewerIdentityId = $viewerProfile !== null ? (string) $viewerProfile['identity_id'] : '';
+        $viewerLikedThreadIds = $viewerProfile !== null
+            ? $this->viewerThreadTagsForThreads(array_column($threads, 'root_post_id'), 'like', $viewerIdentityId)
+            : [];
+        $viewerFlaggedPostIds = $viewerProfile !== null
+            ? $this->viewerPostTagsForPosts($allPostIds, 'flag', $viewerIdentityId)
+            : [];
 
         return $this->renderer()->renderStandalonePage(
             'forte_board.php',
@@ -816,6 +830,8 @@ final class Application
                 'sortColumn' => $sort['column'],
                 'sortDir' => $sort['dir'],
                 'replyTreesByThreadId' => $replyTreesByThreadId,
+                'viewerLikedThreadIds' => $viewerLikedThreadIds,
+                'viewerFlaggedPostIds' => $viewerFlaggedPostIds,
             ],
             'Forte',
             'paned-reader-body',
@@ -3103,6 +3119,36 @@ final class Application
         }
 
         return $taggedPostIds;
+    }
+
+    /**
+     * Bulk sibling to viewerHasThreadTag(): one glob/scan of thread-label
+     * records covering many threads at once, instead of one scan per thread.
+     *
+     * @param array<int, mixed> $threadIds
+     * @return array<string, true>
+     */
+    private function viewerThreadTagsForThreads(array $threadIds, string $tag, string $identityId): array
+    {
+        $threadLookup = array_fill_keys(array_map(static fn (mixed $value): string => (string) $value, $threadIds), true);
+        if ($threadLookup === []) {
+            return [];
+        }
+
+        $repository = new CanonicalRecordRepository($this->repositoryRoot);
+        $taggedThreadIds = [];
+        foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
+            $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path));
+            if (!isset($threadLookup[$record->threadId]) || $record->authorIdentityId !== $identityId) {
+                continue;
+            }
+
+            if (in_array($tag, $record->labels, true)) {
+                $taggedThreadIds[$record->threadId] = true;
+            }
+        }
+
+        return $taggedThreadIds;
     }
 
     private function hasPendingUserDirectoryProfiles(): bool
