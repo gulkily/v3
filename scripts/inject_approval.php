@@ -7,15 +7,13 @@ require dirname(__DIR__) . '/autoload.php';
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
-use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 use ForumRewrite\Write\LocalWriteService;
 
 $projectRoot = dirname(__DIR__);
-$siteId = SiteProfileRegistry::active()['name'];
-$defaultRepositoryRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot, $siteId);
-$defaultDatabasePath = LocalRepositoryBootstrap::defaultDatabasePath($projectRoot, $siteId);
+$defaultRepositoryRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot);
+$defaultDatabasePath = LocalRepositoryBootstrap::defaultDatabasePath($projectRoot);
 $command = $argv[1] ?? '';
 
 try {

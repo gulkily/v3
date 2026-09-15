@@ -111,7 +111,7 @@ For local/CLI runs, set the same variable before the command:
 FORUM_SITE_ID=chouse ./v3 start
 ```
 
-Omitting `FORUM_REPOSITORY_ROOT`, `FORUM_DATABASE_PATH`, and `FORUM_STATIC_HTML_ROOT` in that case auto-initializes a site-scoped local sandbox (`state/local_repository_chouse` and matching database/static paths) separate from the default `zenmemes` sandbox, so both profiles can be developed from the same checkout.
+Omitting `FORUM_REPOSITORY_ROOT` and `FORUM_DATABASE_PATH` uses the same default local instance state for every site profile. Only the disposable static HTML cache remains profile-specific by default, preventing rendered presentation from crossing profiles. Use explicit repository and database paths when developing genuinely separate instances from one checkout.
 
 ## LLM Provider Config
 

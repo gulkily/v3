@@ -60,13 +60,13 @@ Registered site feature flags are visible at `/tools/feature-flags/`. Root-appro
 
 To lock an instance to approved members, enable `FORUM_APPROVED_MEMBERS_ONLY=true` in its feature-flags record or deployment environment. A saved browser keypair is automatically published from the Lobby before authentication; unapproved visitors can access only the Lobby, Account, and their own profile. All other pages, feeds, APIs, downloads, backups, and content artifacts are blocked. The flag is independent of `FORUM_SITE_ID` and theme selection.
 
-Local site profiles use separate repositories and read-model databases. When operating on a Chouse identity from the CLI, include the same site selector used to start the server:
+Local site profiles share the instance's repository and read-model database. The site selector changes presentation but not approval-command state:
 
 ```bash
 FORUM_SITE_ID=chouse ./v3 approval seed openpgp-<fingerprint>
 ```
 
-This targets `state/local_repository_chouse` and `state/cache/post_index_chouse.sqlite3`; an unprefixed command targets the default Zenmemes state.
+This targets the same default instance state as the unprefixed command. Set `FORUM_REPOSITORY_ROOT` and `FORUM_DATABASE_PATH` explicitly only when operating on a genuinely separate instance.
 
 Runtime precedence is:
 

@@ -427,18 +427,18 @@ final class LocalAppSmokeTest
         }
     }
 
-    public function testInjectApprovalScriptSeedsIdentity(): void
+    public function testInjectApprovalScriptUsesInstanceOverridesAcrossSiteProfiles(): void
     {
         [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
         $this->deleteDirectoryContents($repositoryRoot . '/records/approval-seeds');
 
         $command = sprintf(
-            '%s approval seed %s %s %s %s',
+            'FORUM_SITE_ID=chouse FORUM_REPOSITORY_ROOT=%s FORUM_DATABASE_PATH=%s %s approval seed %s %s',
+            escapeshellarg($repositoryRoot),
+            escapeshellarg($databasePath),
             escapeshellarg(__DIR__ . '/../v3'),
             escapeshellarg('openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'),
             escapeshellarg('script seeded approval'),
-            escapeshellarg($repositoryRoot),
-            escapeshellarg($databasePath),
         );
         exec($command, $output, $exitCode);
 
