@@ -33,3 +33,13 @@
   - **Regression check on classic's `compose_reply.php`** (which also reaches `submitSignedReplyAndNavigate` — it has `data-compose-root` but no `data-inline-reply-details`, same shape as Forte): its `return_to` field renders as `value=""` since it never passes a `returnTo` to `reply_form.php`; a live signed submission from that page still lands on `http://127.0.0.1:8001/threads/root-001?created_post_id=...#post-...`, byte-for-byte unchanged from before this patch.
 - Notes:
   - The live test's OpenPGP-style key generation ran successfully in headless Chromium, so this stage's verification is a real end-to-end signed flow, not a code-path-only check — the fallback plan noted as a risk in Step 3 wasn't needed.
+
+## Stage 4 - Full regression check
+- Changes: none (verification only, as planned).
+- Verification:
+  - Re-ran the pre-existing anonymous board-reply round-trip test and discovered it now exercises the *signed* path instead — expected and correct: once signing is loaded, the plain "Post reply" button attempts signed posting (prompting for identity creation), matching classic's own long-standing behavior. Only the explicit "Post anonymous reply" button stays anonymous, same as classic.
+  - Verified the explicit anonymous button directly: submits via the unchanged native `form.submit()` path, lands on `http://127.0.0.1:8001/forte?selected=root-001&created_post_id=...`, zero console errors, zero signing prompts.
+  - Cross-checked authorship on the rendered board page: signed replies from Stages 2/3's tests render as `<a href="/profiles/openpgp-...">guest</a> (unapproved)` (linked to a real, newly-created identity); the Stage 4 anonymous reply renders as plain, unlinked `guest` text — direct visual proof the feature distinguishes signed from anonymous authorship correctly.
+  - Confirmed classic's `compose_reply.php` signed-reply flow is still completely unaffected (verified in Stage 3).
+- Notes:
+  - This completes all 4 planned stages for `forte_identity_signing`. Forte's board view now supports real signed authorship, with signed submissions landing back in Forte (tag filter, thread selection, and new-reply highlight all preserved) exactly like anonymous submissions already did.
