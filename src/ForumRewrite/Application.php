@@ -95,10 +95,6 @@ final class Application
 
         $this->ensureReadModel();
 
-        if ($this->approvedMembersOnlyEnabled()) {
-            $this->logPrivateSessionDiagnostics($method, $path);
-        }
-
         if ($this->approvedMembersOnlyEnabled() && $this->membersOnlyLobbyRedirect($method, $path, $query)) {
             $this->sendRedirect('/lobby/', 'Entering lobby.', statusCode: 303, activeSection: 'account');
             return;
@@ -3071,27 +3067,6 @@ final class Application
         }
 
         return $this->fetchProfileByIdentityId($identityId);
-    }
-
-    private function logPrivateSessionDiagnostics(string $method, string $path): void
-    {
-        if (PHP_SAPI !== 'cli-server') {
-            return;
-        }
-
-        $identityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
-        $profile = $identityId === '' ? null : $this->fetchProfileByIdentityId($identityId);
-        error_log(sprintf(
-            '[private-session] method=%s path=%s session_id=%s authenticated_identity_id=%s profile_slug=%s approved=%s repository=%s database=%s',
-            $method,
-            $path,
-            session_id() !== '' ? session_id() : '(none)',
-            $identityId !== '' ? $identityId : '(none)',
-            $profile !== null ? (string) ($profile['profile_slug'] ?? '(none)') : '(none)',
-            $profile !== null && ((int) ($profile['is_approved'] ?? 0)) === 1 ? 'yes' : 'no',
-            $this->repositoryRoot,
-            $this->databasePath,
-        ));
     }
 
     private function membersOnlyRequestAllowed(string $method, string $path): bool
