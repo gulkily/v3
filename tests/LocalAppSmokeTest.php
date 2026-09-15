@@ -2287,23 +2287,21 @@ final class LocalAppSmokeTest
         assertTrue(is_file($repositoryRoot . '/records/posts/root-001.txt'));
     }
 
-    public function testDefaultRepositoryBootstrapIsSiteScoped(): void
+    public function testDefaultInstanceStateIsIndependentOfSiteProfile(): void
     {
         $projectRoot = sys_get_temp_dir() . '/forum-rewrite-project-' . bin2hex(random_bytes(6));
         mkdir($projectRoot . '/tests/fixtures/parity_minimal_v1', 0777, true);
         $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $projectRoot . '/tests/fixtures/parity_minimal_v1');
 
-        $zenmemesRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot, 'zenmemes');
-        $chouseRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot, 'chouse');
+        $repositoryRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot);
 
-        assertSame($projectRoot . '/state/local_repository', $zenmemesRoot);
-        assertSame($projectRoot . '/state/local_repository_chouse', $chouseRoot);
-        assertSame($projectRoot . '/state/cache/post_index.sqlite3', LocalRepositoryBootstrap::defaultDatabasePath($projectRoot, 'zenmemes'));
-        assertSame($projectRoot . '/state/cache/post_index_chouse.sqlite3', LocalRepositoryBootstrap::defaultDatabasePath($projectRoot, 'chouse'));
-        assertTrue(is_dir($chouseRoot . '/records'));
-        assertTrue(is_dir($chouseRoot . '/.git'));
-        assertTrue(is_file($chouseRoot . '/records/posts/root-001.txt'));
-        assertTrue($zenmemesRoot !== $chouseRoot);
+        assertSame($projectRoot . '/state/local_repository', $repositoryRoot);
+        assertSame($projectRoot . '/state/cache/post_index.sqlite3', LocalRepositoryBootstrap::defaultDatabasePath($projectRoot));
+        assertTrue(is_dir($repositoryRoot . '/records'));
+        assertTrue(is_dir($repositoryRoot . '/.git'));
+        assertTrue(is_file($repositoryRoot . '/records/posts/root-001.txt'));
+        assertFalse(is_dir($projectRoot . '/state/local_repository_chouse'));
+        assertFalse(is_file($projectRoot . '/state/cache/post_index_chouse.sqlite3'));
     }
 
     public function testBoardPageRendersActiveSiteProfilePerFormSiteId(): void
