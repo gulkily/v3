@@ -23,3 +23,12 @@
   - **Bug found and fixed during this stage:** `bindPostReactions` selects `.post-card[data-post-id]` — a hardcoded class name, not a data-attribute-only contract. The wrapper initially used only `paned-post-card`; Flag silently never bound until `post-card` was added alongside it.
   - Adding the (required) `post-card` class also pulls in unrelated site.css rules (`position: relative`, `padding-bottom: 2.25rem`) since that stylesheet loads on this page too; neutralized with a scoped override rather than forking the JS selector.
   - No `data-role="thread-score"` element was added — classic's own `thread_root_card.php` doesn't render one either (`bindThreadReactions`'s score-update code is already a no-op there today), so this isn't a parity gap, just unused capability in the shared script.
+
+## Stage 3 - Flag on reply nodes
+- Changes:
+  - `paned_thread_reply_tree.php`: each reply node's `<div>` gains `post-card`/`paned-post-card` classes and `data-post-id` (same contract Stage 2 established), plus a Flag button and post-reaction-feedback paragraph.
+- Verification:
+  - `php -l` clean.
+  - Headless-browser test: with identity pre-prepared (same stand-in as Stage 2), flagged a reply nested under a thread with existing replies; button correctly transitions through pending ("Publishing your public key in the background...") to confirmed ("Flagged." / disabled). Zero unexpected console errors. Screenshot confirms no interference with reply-tree rendering/indentation.
+- Notes:
+  - **Found, not implemented — matches the approved Step 2 scope:** classic's own `post_card.php` actually gives replies both post-level Like *and* Flag (`viewerHasLikedPost`/`viewerHasFlaggedPost`). Step 2 explicitly scoped this feature to thread-level Like + post-level Flag only; adding reply-level Like now would be scope creep beyond what was approved. Worth a quick, low-ambiguity follow-up cycle if wanted, not folded in here.
