@@ -420,15 +420,20 @@ body.paned-reader-body {
   padding: 0.75rem;
 }
 
-.paned-window .paned-compose-form textarea {
+.paned-window .paned-compose-form textarea,
+.paned-window .paned-compose-form input[type="text"] {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.85rem;
   line-height: 1.4;
+  color-scheme: light;
   color: var(--paned-ink);
   background: var(--paned-content-bg);
   border: 1px solid;
   border-color: var(--paned-border-dark) var(--paned-border-light) var(--paned-border-light) var(--paned-border-dark);
   padding: 0.4rem;
+}
+
+.paned-window .paned-compose-form textarea {
   resize: vertical;
 }
 
@@ -538,6 +543,7 @@ body.paned-reader-body {
   max-width: 92vw;
   border: 2px solid;
   border-color: var(--paned-border-light) var(--paned-border-dark) var(--paned-border-dark) var(--paned-border-light);
+  color-scheme: light;
   background: var(--paned-chrome);
   font-family: "Segoe UI", Tahoma, Verdana, sans-serif;
   font-size: 0.85rem;
@@ -564,6 +570,7 @@ body.paned-reader-body {
   padding: 0;
   line-height: 1;
   font-size: 0.85rem;
+  color-scheme: light;
   background: var(--paned-chrome);
   color: var(--paned-ink);
   border: 1px solid;
