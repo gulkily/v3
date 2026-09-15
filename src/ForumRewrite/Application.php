@@ -819,7 +819,7 @@ final class Application
             ],
             'Forte',
             'paned-reader-body',
-            ['/assets/paned_board_reader.js', '/assets/lazy_compose_signing.js'],
+            ['/assets/paned_board_reader.js', '/assets/lazy_compose_signing.js', '/assets/thread_reactions.js'],
             ['/assets/forte.css'],
         );
     }

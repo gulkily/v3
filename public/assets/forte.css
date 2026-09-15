@@ -584,3 +584,45 @@ body.paned-reader-body {
 .paned-new-thread-dialog .paned-compose-form {
   padding: 0.75rem;
 }
+
+.paned-window .paned-post-card {
+  /* .post-card (site.css) is also present, purely so thread_reactions.js's
+     hardcoded ".post-card[data-post-id]" selector binds Flag correctly;
+     neutralize its unrelated visual side effects here. */
+  position: static;
+  padding-bottom: 0;
+  margin-top: 0.4rem;
+}
+
+.paned-window .paned-reaction-row {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.paned-window .paned-reaction-button {
+  flex: 0 0 auto;
+  width: auto;
+  appearance: none;
+  -webkit-appearance: none;
+  color-scheme: light;
+  padding: 0.2rem 0.6rem;
+  background: var(--paned-chrome);
+  color: var(--paned-ink);
+  border: 1px solid;
+  border-color: var(--paned-border-light) var(--paned-border-dark) var(--paned-border-dark) var(--paned-border-light);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.paned-window .paned-reaction-button:disabled {
+  color: var(--paned-ink-soft);
+  cursor: default;
+}
+
+.paned-window .paned-reaction-feedback {
+  margin: 0.3rem 0 0;
+  font-size: 0.75rem;
+  color: var(--paned-ink-soft);
+}
