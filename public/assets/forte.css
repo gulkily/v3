@@ -554,7 +554,7 @@ body.paned-reader-body {
   background: rgba(10, 20, 40, 0.45);
 }
 
-.paned-dialog-titlebar {
+.paned-window .paned-dialog-titlebar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -564,12 +564,15 @@ body.paned-reader-body {
   font-weight: 700;
 }
 
-.paned-dialog-close {
+.paned-window .paned-dialog-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 1.2rem;
   height: 1.2rem;
   padding: 0;
-  line-height: 1;
-  font-size: 0.85rem;
+  appearance: none;
+  -webkit-appearance: none;
   color-scheme: light;
   background: var(--paned-chrome);
   color: var(--paned-ink);
