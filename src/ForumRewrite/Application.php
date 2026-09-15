@@ -433,17 +433,6 @@ final class Application
             return;
         }
 
-        if (preg_match('#^/threads/([^/]+)/forte/?$#', $path, $matches) === 1) {
-            $html = $this->renderForte($matches[1]);
-            if ($html === null) {
-                $this->notFound();
-                return;
-            }
-
-            $this->sendHtml($html, 200);
-            return;
-        }
-
         if (preg_match('#^/forte/?$#', $path) === 1) {
             $this->sendHtml($this->renderForteBoard(
                 (string) ($query['tag'] ?? ''),
@@ -800,32 +789,6 @@ final class Application
             ],
             $title,
             'board',
-        );
-    }
-
-    private function renderForte(string $threadId): ?string
-    {
-        $threadRow = $this->fetchThread($threadId);
-        if ($threadRow === null) {
-            return null;
-        }
-
-        $title = $this->displayThreadTitle($threadRow);
-        $posts = $this->fetchThreadPosts($threadId);
-        $replyTree = $this->buildReplyTree($posts);
-
-        return $this->renderer()->renderStandalonePage(
-            'forte.php',
-            [
-                'thread' => $threadRow,
-                'title' => $title,
-                'posts' => $posts,
-                'replyTree' => $replyTree,
-            ],
-            $title,
-            'paned-reader-body',
-            ['/assets/paned_reader.js'],
-            ['/assets/forte.css'],
         );
     }
 
