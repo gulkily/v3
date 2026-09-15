@@ -1,14 +1,17 @@
 # Forte Interface — Feature Roadmap
 
-Consolidated backlog of what's still missing, deliberately excluded, or rough around the edges in Forte, based on a gap analysis against the classic UI's full route table (`src/ForumRewrite/Application.php`) and every prior Forte planning doc in `docs/plans/`. This is a menu to pull from, not a plan — each item below still needs its own pass through the FDP steps when picked up. The ordered execution list lives in `forte_fdp_cycles.md`; this doc tracks the gap analysis itself.
+Consolidated backlog of what's still missing, deliberately excluded, or rough around the edges in Forte, based on a gap analysis against the classic UI's full route table (`src/ForumRewrite/Application.php`) and every prior Forte planning doc in `docs/plans/`. This is a menu to pull from, not a plan — each item below still needs its own pass through the FDP steps when picked up.
 
-## Completed
+## Flagged first: not just a UI gap
 
-- **Signed identity / browser-key authorship (board view).** `forte_identity_signing` (Step 1-4, done) wired `lazy_compose_signing.js`/`browser_signing.js` into Forte's board-view composer: signed replies now carry real authorship instead of always posting as anonymous "guest," the identity-status feedback element shows progress, and a successful signed submission lands back in the board view (tag/selection/highlight preserved) instead of redirecting to classic. **Deliberately scoped to the board view only** — the single-thread Forte reader (`/threads/{id}/forte`) was left untouched because it's slated for deprecation next (`forte_deprecate_single_thread_view`), so no per-page-type signing work was done there. See `forte_identity_signing_step4_implementation_summary.md`.
+**✅ Done** — see `forte_identity_signing_step4_implementation_summary.md` (board view only; single-thread view left as-is, pending its own deprecation).
+
+**Forte replies post as anonymous "guest," always.** `reply_form.php`'s `author_identity_id` field is reused as-is in Forte, but Forte never loads the browser-key signing script (`browser_signing.*.js`) that populates it elsewhere. This isn't a missing nice-to-have — it's a silent authorship downgrade: a reader with an approved, signed identity everywhere else on the site becomes anonymous the moment they reply from Forte. Worth prioritizing ahead of purely additive features below.
 
 ## A. Missing capabilities (candidate features)
 
 - **Compose a new thread.** The toolbar's "New" button exists in both Forte views but is permanently `disabled`, wired to nothing. Classic uses a separate canonical form (`thread_compose_form.php`, distinct from the `reply_form.php` Forte already reuses) — porting this means adopting a second shared form, not extending the existing one.
+- **Signed identity / browser-key authorship.** ✅ Done (board view). See flagged item above. Classic's `/account/key` page and `browser_signing.js` would need a Forte-appropriate entry point.
 - **Reactions & moderation.** Like/Flag buttons, agent-reply requests, Codex handoff workflow, user-approval flow — none of this exists in Forte today.
 - **Discovery pages.** `/activity/` (recent activity feed) and `/tags/` (a browsable tag index with shareable per-tag URLs, distinct from the board's filter-only folder tree) have no Forte equivalent. Note: classic itself has no full-text search either, so search isn't a "parity" gap — nothing to match there.
 - **Profiles & permalinks.** No profile pages, no user directory, and no single-post permalink (classic's `/posts/{id}`) — Forte can only select a post within its own thread view, with no shareable direct link to one specific post.
@@ -36,7 +39,6 @@ These were intentional scope calls, not oversights. Still active unless noted ot
 
 ## Suggested sequencing
 
-1. ~~**Signed authorship**~~ — done, board view only (see Completed above).
-2. **Deprecate the single-thread Forte reader** (`forte_deprecate_single_thread_view`) — next up per `forte_fdp_cycles.md` #2. Confirmed low-risk (nothing outside Forte links to `/threads/{id}/forte`, board view is already fully self-contained), and queued right after identity-signing so no later cycle builds more into a view about to be removed.
-3. **Nav back to classic / "way back to the rest of the site"** — needs a conscious decision first (it reverses a stated non-goal), not just an implementation pass.
-4. Everything else in Section A is additive and can be sequenced by whatever the user values most; each should still go through Step 1 (recommended, given real trade-offs exist for most of these) → 2 → 3 → 4 like every other Forte feature so far. See `forte_fdp_cycles.md` for the full ordered backlog (12 cycles) with per-item scope notes.
+1. **Signed authorship** — a real correctness gap, not a feature request; likely worth doing before anything else here. ✅ Done (board view).
+2. **Nav back to classic / "way back to the rest of the site"** — needs a conscious decision first (it reverses a stated non-goal), not just an implementation pass.
+3. Everything else in Section A is additive and can be sequenced by whatever the user values most; each should still go through Step 1 (recommended, given real trade-offs exist for most of these) → 2 → 3 → 4 like every other Forte feature so far.
