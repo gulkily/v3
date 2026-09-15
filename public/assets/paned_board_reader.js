@@ -19,6 +19,7 @@
     var composePanel = document.querySelector("[data-paned-compose-panel]");
     var newButton = document.querySelector("[data-paned-board-new]");
     var newThreadDialog = document.querySelector("[data-paned-new-thread-dialog]");
+    var newThreadCancelButton = document.querySelector("[data-paned-new-thread-cancel]");
 
     function currentTagFromUrl() {
       return new URLSearchParams(location.search).get("tag") || "";
@@ -414,6 +415,16 @@
           returnToField.value = composeReturnToUrl("");
         }
         newThreadDialog.showModal();
+        var subjectField = newThreadDialog.querySelector('input[name="subject"]');
+        if (subjectField) {
+          subjectField.focus();
+        }
+      });
+    }
+
+    if (newThreadCancelButton && newThreadDialog) {
+      newThreadCancelButton.addEventListener("click", function () {
+        newThreadDialog.close();
       });
     }
 

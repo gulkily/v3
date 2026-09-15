@@ -530,3 +530,47 @@ body.paned-reader-body {
 .paned-board-main {
   min-width: 26rem;
 }
+
+.paned-new-thread-dialog {
+  padding: 0;
+  margin: auto;
+  width: min(28rem, 92vw);
+  max-width: 92vw;
+  border: 2px solid;
+  border-color: var(--paned-border-light) var(--paned-border-dark) var(--paned-border-dark) var(--paned-border-light);
+  background: var(--paned-chrome);
+  font-family: "Segoe UI", Tahoma, Verdana, sans-serif;
+  font-size: 0.85rem;
+  color: var(--paned-ink);
+}
+
+.paned-new-thread-dialog::backdrop {
+  background: rgba(10, 20, 40, 0.45);
+}
+
+.paned-dialog-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.5rem;
+  background: var(--paned-titlebar-start);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.paned-dialog-close {
+  width: 1.2rem;
+  height: 1.2rem;
+  padding: 0;
+  line-height: 1;
+  font-size: 0.85rem;
+  background: var(--paned-chrome);
+  color: var(--paned-ink);
+  border: 1px solid;
+  border-color: var(--paned-border-light) var(--paned-border-dark) var(--paned-border-dark) var(--paned-border-light);
+  cursor: pointer;
+}
+
+.paned-new-thread-dialog .paned-compose-form {
+  padding: 0.75rem;
+}

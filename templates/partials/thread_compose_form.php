@@ -1,6 +1,6 @@
 <?php
 $isCompactThreadCompose = (bool) ($compact ?? false);
-$threadComposeFormClass = $isCompactThreadCompose ? 'stack compact-thread-compose-form' : 'stack';
+$threadComposeFormClass = (string) ($formClass ?? ($isCompactThreadCompose ? 'stack compact-thread-compose-form' : 'stack'));
 $threadComposeBodyRows = $isCompactThreadCompose ? 3 : 7;
 $threadComposeSubjectPlaceholder = $isCompactThreadCompose ? 'Subject' : 'Thread subject';
 $threadComposeBodyPlaceholder = $isCompactThreadCompose ? 'What do you want to discuss?' : 'Body';
