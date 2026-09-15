@@ -55,6 +55,7 @@ $threadComposeAction = (string) ($action ?? '');
     <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
   </div>
   <input type="hidden" name="author_identity_id" value="">
+  <input type="hidden" name="return_to" value="<?= $e($returnTo ?? '') ?>">
 <?php if ($isCompactThreadCompose): ?>
   <input type="hidden" name="board_tags" value="<?= $e($boardTags) ?>">
   <input type="hidden" name="subject" data-compose-field-label="Subject" value="<?= $e($subject) ?>">

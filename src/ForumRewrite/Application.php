@@ -4973,8 +4973,9 @@ final class Application
             $result = $this->writer()->createThread($input);
             $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
             $this->queueComposeDraftClear($this->composeDraftStorageKey('thread'));
-            $location = '/threads/' . $result['thread_id']
-                . '?created_post_id=' . rawurlencode($result['post_id'])
+            $returnTo = $this->resolveComposeThreadReturnTo((string) ($input['return_to'] ?? ''), (string) $result['thread_id']);
+            $location = $returnTo
+                . (str_contains($returnTo, '?') ? '&' : '?') . 'created_post_id=' . rawurlencode($result['post_id'])
                 . '&__v=' . rawurlencode($result['commit_sha']);
             $this->sendRedirect(
                 $location,
@@ -5051,11 +5052,30 @@ final class Application
     }
 
     /**
+     * Sibling to resolveComposeReplyReturnTo() for thread creation: there's
+     * no existing thread to whitelist a single-thread return path against
+     * (the thread doesn't exist until after this call), so this only
+     * recognizes the `/forte` board shape and always selects the
+     * newly-created thread there, overriding anything the client sent.
+     */
+    private function resolveComposeThreadReturnTo(string $requestedReturnTo, string $newThreadId): string
+    {
+        if (preg_match('#^/forte(?:\?(.*))?$#', $requestedReturnTo, $matches) === 1) {
+            return $this->buildForteBoardReturnTo($matches[1] ?? '', $newThreadId);
+        }
+
+        return '/threads/' . $newThreadId;
+    }
+
+    /**
      * Rebuilds a `/forte` return URL from only a fixed, character-restricted
      * allowlist of query params (`tag`, `selected`), discarding anything else
      * so the client-supplied query string is never passed through verbatim.
+     * $overrideSelected, when given, wins over any `selected` present in
+     * $requestedQueryString (used by thread creation, where the client can't
+     * know the new thread's ID up front).
      */
-    private function buildForteBoardReturnTo(string $requestedQueryString): string
+    private function buildForteBoardReturnTo(string $requestedQueryString, ?string $overrideSelected = null): string
     {
         parse_str($requestedQueryString, $params);
         $allowed = [];
@@ -5065,7 +5085,7 @@ final class Application
             $allowed['tag'] = $tag;
         }
 
-        $selected = (string) ($params['selected'] ?? '');
+        $selected = $overrideSelected ?? (string) ($params['selected'] ?? '');
         if ($selected !== '' && preg_match('/^[A-Za-z0-9._:-]+$/', $selected) === 1) {
             $allowed['selected'] = $selected;
         }

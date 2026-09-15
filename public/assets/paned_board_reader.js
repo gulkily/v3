@@ -409,6 +409,10 @@
 
     if (newButton && newThreadDialog && typeof newThreadDialog.showModal === "function") {
       newButton.addEventListener("click", function () {
+        var returnToField = newThreadDialog.querySelector('input[name="return_to"]');
+        if (returnToField) {
+          returnToField.value = composeReturnToUrl("");
+        }
         newThreadDialog.showModal();
       });
     }
