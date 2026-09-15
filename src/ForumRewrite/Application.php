@@ -5043,10 +5043,6 @@ final class Application
 
     private function resolveComposeReplyReturnTo(string $requestedReturnTo, string $threadId): string
     {
-        if (preg_match('#^/threads/' . preg_quote($threadId, '#') . '/forte$#', $requestedReturnTo) === 1) {
-            return $requestedReturnTo;
-        }
-
         if (preg_match('#^/forte(?:\?(.*))?$#', $requestedReturnTo, $matches) === 1) {
             return $this->buildForteBoardReturnTo($matches[1] ?? '');
         }
