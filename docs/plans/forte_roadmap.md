@@ -10,7 +10,7 @@ Consolidated backlog of what's still missing, deliberately excluded, or rough ar
 
 ## A. Missing capabilities (candidate features)
 
-- **Compose a new thread.** The toolbar's "New" button exists in both Forte views but is permanently `disabled`, wired to nothing. Classic uses a separate canonical form (`thread_compose_form.php`, distinct from the `reply_form.php` Forte already reuses) — porting this means adopting a second shared form, not extending the existing one.
+- **Compose a new thread.** ✅ Done (board view — the only Forte view left after `forte_deprecate_single_thread_view`). See `forte_compose_thread_step4_implementation_summary.md`. The toolbar's "New" button exists in both Forte views but is permanently `disabled`, wired to nothing. Classic uses a separate canonical form (`thread_compose_form.php`, distinct from the `reply_form.php` Forte already reuses) — porting this means adopting a second shared form, not extending the existing one.
 - **Signed identity / browser-key authorship.** ✅ Done (board view). See flagged item above. Classic's `/account/key` page and `browser_signing.js` would need a Forte-appropriate entry point.
 - **Reactions & moderation.** Like/Flag buttons, agent-reply requests, Codex handoff workflow, user-approval flow — none of this exists in Forte today.
 - **Discovery pages.** `/activity/` (recent activity feed) and `/tags/` (a browsable tag index with shareable per-tag URLs, distinct from the board's filter-only folder tree) have no Forte equivalent. Note: classic itself has no full-text search either, so search isn't a "parity" gap — nothing to match there.
@@ -29,7 +29,7 @@ These were intentional scope calls, not oversights. Still active unless noted ot
 
 ## C. Known rough edges (debt, not new features)
 
-- **New/Refresh toolbar buttons are permanently disabled dead UI** in both Forte views, indefinitely.
+- **New/Refresh toolbar buttons are permanently disabled dead UI** in both Forte views, indefinitely. (✅ New resolved by `forte_compose_thread` — board view only, the only view left. Refresh still has no clear job.)
 - **No empty-state messaging** — a tag filter matching zero threads (or a thread with zero visible posts) renders nothing, no "no results" text. Neither `paned_board_thread_list.php` nor `paned_list_pane.php` (✅ `paned_list_pane.php` removed by `forte_deprecate_single_thread_view` — this item is now board-view-only) has an empty-array branch.
 - **No error handling in the composer JS path** — after `forte_board_reply_tree` removed the old lazy-fetch's `.catch()`, there's no error-surfacing left anywhere in `paned_reader.js`/`paned_board_reader.js`. A failed reply submission silently redirects to the *classic* compose-error page (a known, accepted limitation from `forte_reply` Stage 5). (✅ `paned_reader.js` removed by `forte_deprecate_single_thread_view` — this item is now `paned_board_reader.js`-only.)
 - **Narrow-viewport column squeeze** — `forte_step4_implementation_summary.md` itself flags the Subject column getting "quite narrow" at 420px against fixed-width From/Date columns. Known, unresolved.
