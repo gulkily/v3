@@ -30,3 +30,15 @@
   - `curl` `/forte` (no `selected=`): placeholder visible (no `hidden`), all 520 thread articles still `hidden` — default case unaffected.
   - Re-ran the broader interactive regression suite — all still pass, zero console errors.
 - Notes: none identified.
+
+## Stage 4 - Pre-highlight the requested reply
+- Changes:
+  - Route dispatch reads `?created_post_id=` and passes it to `renderForteBoard()`.
+  - `renderForteBoard()`: validates it against the *resolved selected thread's own* reply posts (found while building `$replyTreesByThreadId`/`$allPostIds` — no extra query), ignoring it if it belongs to a different thread or doesn't exist; passes the validated `highlightedPostId` to the page.
+  - `paned_thread_reply_tree.php`: applies `paned-highlight-new` to the matching node's initial class list.
+- Verification:
+  - `php -l` clean.
+  - `curl` a valid `selected=`+`created_post_id=` pair (a thread and one of its own replies): the target node's class list includes `paned-highlight-new` in the raw response.
+  - `curl` the same `created_post_id` against a *different* `selected=` thread: zero `paned-highlight-new` occurrences anywhere — cross-thread mismatch correctly ignored.
+  - Re-ran the broader regression suite plus the permalink round-trip test — all still pass, zero console errors; the permalink flow now gets its highlight server-side too, not just via the pre-existing client JS.
+- Notes: none identified.

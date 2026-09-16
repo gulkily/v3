@@ -439,6 +439,7 @@ final class Application
                 (string) ($query['sort'] ?? ''),
                 (string) ($query['dir'] ?? ''),
                 (string) ($query['selected'] ?? ''),
+                (string) ($query['created_post_id'] ?? ''),
             ), 200);
             return;
         }
@@ -793,7 +794,7 @@ final class Application
         );
     }
 
-    private function renderForteBoard(string $requestedTag = '', string $requestedSortColumn = '', string $requestedSortDir = '', string $requestedSelected = ''): string
+    private function renderForteBoard(string $requestedTag = '', string $requestedSortColumn = '', string $requestedSortDir = '', string $requestedSelected = '', string $requestedCreatedPostId = ''): string
     {
         $threads = $this->fetchThreads();
         $tagGroups = $this->groupThreadsByTag($threads);
@@ -806,12 +807,17 @@ final class Application
         $replyPostsByThreadId = $this->fetchAllThreadReplyPosts();
         $replyTreesByThreadId = [];
         $allPostIds = [];
+        $highlightedPostId = '';
         foreach ($threads as $thread) {
             $threadId = (string) $thread['root_post_id'];
             $replyTreesByThreadId[$threadId] = $this->buildReplyTree($replyPostsByThreadId[$threadId] ?? []);
             $allPostIds[] = $threadId;
             foreach ($replyPostsByThreadId[$threadId] ?? [] as $replyPost) {
-                $allPostIds[] = (string) $replyPost['post_id'];
+                $postId = (string) $replyPost['post_id'];
+                $allPostIds[] = $postId;
+                if ($threadId === $selectedThreadId && $postId === $requestedCreatedPostId) {
+                    $highlightedPostId = $postId;
+                }
             }
         }
 
@@ -836,6 +842,7 @@ final class Application
                 'replyTreesByThreadId' => $replyTreesByThreadId,
                 'viewerLikedThreadIds' => $viewerLikedThreadIds,
                 'viewerFlaggedPostIds' => $viewerFlaggedPostIds,
+                'highlightedPostId' => $highlightedPostId,
             ],
             'Forte',
             'paned-reader-body',
