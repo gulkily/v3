@@ -862,6 +862,50 @@ final class Application
     }
 
     /**
+     * Resolves a requested ?tag=/?selected= pair for server-side rendering,
+     * so a reader following a link (permalink, reply redirect, or a plain
+     * bookmark) sees the right thread/tag in the very first response
+     * instead of a client-side JS correction after the fact.
+     *
+     * `selected` wins on conflict: if the requested thread doesn't carry the
+     * requested tag, the tag drops to '' (All Threads) rather than losing
+     * the selection - this can only happen via a hand-edited URL or a
+     * thread's tags changing after a link was shared, never from normal
+     * clicking (a click can only ever target an already-visible,
+     * correctly-tagged row).
+     *
+     * @param array<int, array<string, mixed>> $threads
+     * @param array<int, array{tag: string, count: int, threads: array}> $tagGroups
+     * @return array{tag: string, selectedThreadId: string}
+     */
+    private function resolveForteBoardSelection(array $threads, array $tagGroups, string $requestedTag, string $requestedSelected): array
+    {
+        $resolvedTag = $this->resolveForteBoardTag($requestedTag, $tagGroups);
+
+        $selectedThreadId = '';
+        foreach ($threads as $thread) {
+            if ((string) $thread['root_post_id'] === $requestedSelected) {
+                $selectedThreadId = $requestedSelected;
+                break;
+            }
+        }
+
+        if ($selectedThreadId === '') {
+            return ['tag' => $resolvedTag, 'selectedThreadId' => ''];
+        }
+
+        if ($resolvedTag !== '') {
+            $group = $this->findTagGroup($tagGroups, $resolvedTag);
+            $threadIdsInGroup = $group !== null ? array_column($group['threads'], 'root_post_id') : [];
+            if (!in_array($selectedThreadId, $threadIdsInGroup, true)) {
+                $resolvedTag = '';
+            }
+        }
+
+        return ['tag' => $resolvedTag, 'selectedThreadId' => $selectedThreadId];
+    }
+
+    /**
      * Resolves requested ?sort=/?dir= values against the four sortable
      * columns, falling back to '' (today's default newest-first order,
      * unrelated to any single column) when the column is missing or
