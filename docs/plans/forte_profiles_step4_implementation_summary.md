@@ -47,3 +47,17 @@ _(Stage numbers below reflect the Step 3 amendment recorded after this stage —
   - Diffed classic's `/threads/root-001` across two requests: byte-for-byte identical.
   - Re-ran the broader board regression suite — all still pass.
 - Notes: none identified.
+
+## Stage 5 - Quick-glance summary dialog on author-name click
+- Changes:
+  - `TemplateRenderer::renderAuthorHtml()`: Forte-target links gain `data-forte-author-link`/`data-profile-slug` attributes for the click interception to key off.
+  - `paned_profile_summary_dialog.php`: new dialog (same titlebar chrome as the New Thread dialog) with a static skeleton of `data-role`-tagged elements the JS fills via `textContent` — no `innerHTML` string-building from fetched data, matching this project's existing untrusted-text convention (`thread_reactions.js`'s `setFeedback`).
+  - `paned_board_reader.js`: a document-level delegated click listener intercepts `[data-forte-author-link]` clicks, fetches `/api/get_profile?profile_slug=...` (reused unchanged), parses its `Key: Value` text format with a small new `parseColonValue()` (distinct from `thread_reactions.js`'s `parseResponseValue()`, which parses `key=value` — confirmed not reusable as-is, per the Step 3 plan's flagged risk, just close enough in spirit to model after), and populates the dialog.
+- Verification:
+  - `node --check` / `php -l` clean.
+  - Headless-browser test: clicked an author name, confirmed the dialog opens with correct fetched data and the URL/board state never changes (no navigation); confirmed the "View full profile" link's `href` matches the original anchor's `href` exactly, and following it lands on the right page.
+  - **Found and fixed during verification**: the click handler initially called `preventDefault()` unconditionally, which would have hijacked Ctrl/Cmd+Click ("open in new tab") — a real regression against the plan's own stated requirement. Added a guard (`event.button`/`ctrlKey`/`metaKey`/`shiftKey`/`altKey`) so only a plain primary click is intercepted. Verified via a real Ctrl+Click in headless Chromium: a new tab opens to the correct URL and the dialog never appears.
+  - Diffed classic's `/threads/root-001` across two requests: byte-for-byte identical.
+  - Screenshot confirms the dialog reads as a native part of the paned chrome, consistent with the New Thread dialog's own look.
+  - Re-ran the broader board regression suite — all still pass, zero console errors.
+- Notes: none identified.

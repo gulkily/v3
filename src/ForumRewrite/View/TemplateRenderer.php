@@ -234,12 +234,13 @@ final class TemplateRenderer
 
         $profilesBase = $forteTarget ? '/forte/profiles/' : '/profiles/';
         $userBase = $forteTarget ? '/forte/user/' : '/user/';
+        $summaryAttrs = $forteTarget ? ' data-forte-author-link data-profile-slug="' . $escape($authorProfileSlug) . '"' : '';
 
         if ($authorIsApproved && $authorUsernameToken !== '') {
-            return '<a href="' . $userBase . $escape($authorUsernameToken) . '">' . $escape($authorLabel) . '</a>';
+            return '<a href="' . $userBase . $escape($authorUsernameToken) . '"' . $summaryAttrs . '>' . $escape($authorLabel) . '</a>';
         }
 
-        return '<a href="' . $profilesBase . $escape($authorProfileSlug) . '">' . $escape($authorLabel) . '</a> <span class="meta">(unapproved)</span>';
+        return '<a href="' . $profilesBase . $escape($authorProfileSlug) . '"' . $summaryAttrs . '>' . $escape($authorLabel) . '</a> <span class="meta">(unapproved)</span>';
     }
 
     /**

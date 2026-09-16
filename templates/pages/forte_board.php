@@ -57,4 +57,5 @@ if ($selectedTag !== '') {
     <span>Forte reader</span>
   </div>
 <?= $indent($partial('partials/paned_board_new_thread_dialog.php'), 1) ?>
+<?= $indent($partial('partials/paned_profile_summary_dialog.php'), 1) ?>
 </div>

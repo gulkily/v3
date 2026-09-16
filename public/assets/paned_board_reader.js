@@ -510,6 +510,127 @@
       });
     }
 
+    var profileSummaryDialog = document.querySelector("[data-paned-profile-summary-dialog]");
+    var profileSummaryClose = document.querySelector("[data-paned-profile-summary-close]");
+
+    function parseColonValue(text, key) {
+      var prefix = key + ": ";
+      var lines = String(text).split("\n");
+      for (var i = 0; i < lines.length; i++) {
+        if (lines[i].indexOf(prefix) === 0) {
+          return lines[i].slice(prefix.length);
+        }
+      }
+      return "";
+    }
+
+    function showProfileSummary(profileSlug, fullHref) {
+      if (!profileSummaryDialog) {
+        return;
+      }
+
+      var title = profileSummaryDialog.querySelector('[data-role="profile-summary-title"]');
+      var loading = profileSummaryDialog.querySelector('[data-role="profile-summary-loading"]');
+      var content = profileSummaryDialog.querySelector('[data-role="profile-summary-content"]');
+      var errorNode = profileSummaryDialog.querySelector('[data-role="profile-summary-error"]');
+      var approvedNode = profileSummaryDialog.querySelector('[data-role="profile-summary-approved"]');
+      var approvedByRow = profileSummaryDialog.querySelector('[data-role="profile-summary-approved-by-row"]');
+      var approvedByNode = profileSummaryDialog.querySelector('[data-role="profile-summary-approved-by"]');
+      var threadsNode = profileSummaryDialog.querySelector('[data-role="profile-summary-threads"]');
+      var postsNode = profileSummaryDialog.querySelector('[data-role="profile-summary-posts"]');
+      var fullLink = profileSummaryDialog.querySelector('[data-role="profile-summary-full-link"]');
+
+      if (title) {
+        title.textContent = "Profile";
+      }
+      if (loading) {
+        loading.hidden = false;
+      }
+      if (content) {
+        content.hidden = true;
+      }
+      if (errorNode) {
+        errorNode.hidden = true;
+      }
+      if (fullLink) {
+        fullLink.href = fullHref;
+      }
+
+      profileSummaryDialog.showModal();
+
+      fetch("/api/get_profile?profile_slug=" + encodeURIComponent(profileSlug))
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("profile fetch failed");
+          }
+          return response.text();
+        })
+        .then(function (text) {
+          if (loading) {
+            loading.hidden = true;
+          }
+          var username = parseColonValue(text, "Username");
+          var approved = parseColonValue(text, "Approved") === "yes";
+          var approvedBy = parseColonValue(text, "Approved-By");
+          if (title) {
+            title.textContent = username || "Profile";
+          }
+          if (approvedNode) {
+            approvedNode.textContent = approved ? "yes" : "no";
+          }
+          if (approvedByRow && approvedByNode) {
+            if (approved && approvedBy !== "") {
+              approvedByNode.textContent = approvedBy;
+              approvedByRow.hidden = false;
+            } else {
+              approvedByRow.hidden = true;
+            }
+          }
+          if (threadsNode) {
+            threadsNode.textContent = parseColonValue(text, "Threads");
+          }
+          if (postsNode) {
+            postsNode.textContent = parseColonValue(text, "Posts");
+          }
+          if (content) {
+            content.hidden = false;
+          }
+        })
+        .catch(function () {
+          if (loading) {
+            loading.hidden = true;
+          }
+          if (errorNode) {
+            errorNode.hidden = false;
+          }
+        });
+    }
+
+    document.addEventListener("click", function (event) {
+      if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+        return;
+      }
+
+      var link = event.target.closest ? event.target.closest("[data-forte-author-link]") : null;
+      if (!link) {
+        return;
+      }
+
+      var profileSlug = link.getAttribute("data-profile-slug") || "";
+      if (profileSlug === "" || !profileSummaryDialog || typeof profileSummaryDialog.showModal !== "function") {
+        return;
+      }
+
+      event.preventDefault();
+      showProfileSummary(profileSlug, link.getAttribute("href") || "#");
+    });
+
+    if (profileSummaryClose && profileSummaryDialog) {
+      profileSummaryClose.addEventListener("click", function () {
+        profileSummaryDialog.close();
+      });
+    }
+
     restoreSelectionFromUrl(true);
   });
 })();
