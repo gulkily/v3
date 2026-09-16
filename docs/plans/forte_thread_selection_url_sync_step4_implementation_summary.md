@@ -20,3 +20,13 @@
   - `curl` `/forte` (no `selected=`): zero `paned-list-row--selected` occurrences, Reply button still `disabled` — default case unaffected.
   - Re-ran the broader interactive regression suite (New Thread dialog, Reply flow, multi-thread Like) — all still pass, zero console errors.
 - Notes: none identified.
+
+## Stage 3 - Pre-show the selected thread's content article
+- Changes:
+  - `paned_board_content_pane.php`: the placeholder article gets `hidden` when a thread is pre-selected; each thread's own article's `hidden` attribute becomes conditional on matching `selectedThreadId` instead of unconditional.
+- Verification:
+  - `php -l` clean.
+  - `curl` `/forte?selected=root-001`: the target article has no `hidden` attribute, the placeholder does.
+  - `curl` `/forte` (no `selected=`): placeholder visible (no `hidden`), all 520 thread articles still `hidden` — default case unaffected.
+  - Re-ran the broader interactive regression suite — all still pass, zero console errors.
+- Notes: none identified.

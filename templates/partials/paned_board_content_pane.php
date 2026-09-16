@@ -2,10 +2,12 @@
 /**
  * @var array<int, array<string, mixed>> $threads
  * @var array<string, array<int, array{post: array<string, mixed>, children: array}>> $replyTreesByThreadId
+ * @var string $selectedThreadId
  */
+$selectedThreadId ??= '';
 ?>
 <div class="paned-content-pane" data-paned-board-content-pane>
-  <article class="paned-content-post" data-paned-board-content-placeholder>
+  <article class="paned-content-post" data-paned-board-content-placeholder<?= $selectedThreadId !== '' ? ' hidden' : '' ?>>
     <div class="paned-content-head">
       <div class="paned-content-subject">No thread selected</div>
     </div>
@@ -15,7 +17,8 @@
 <?php $replyCount = (int) ($thread['reply_count'] ?? 0); ?>
 <?php $viewerHasLiked = isset($viewerLikedThreadIds[(string) $thread['root_post_id']]); ?>
 <?php $viewerHasFlaggedRoot = isset($viewerFlaggedPostIds[(string) $thread['root_post_id']]); ?>
-  <article class="paned-content-post" data-paned-board-content-post-id="<?= $e($thread['root_post_id']) ?>" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>" hidden>
+<?php $isSelectedThread = $selectedThreadId !== '' && (string) $thread['root_post_id'] === $selectedThreadId; ?>
+  <article class="paned-content-post" data-paned-board-content-post-id="<?= $e($thread['root_post_id']) ?>" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>"<?= $isSelectedThread ? '' : ' hidden' ?>>
     <div class="paned-content-head">
       <div class="paned-content-subject"><?= $e($threadTitle($thread)) ?></div>
       <div class="paned-content-meta">
