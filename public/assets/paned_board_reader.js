@@ -123,6 +123,35 @@
       setComposeTarget(threadId);
     }
 
+    function restoreSelectionFromUrl(scrollRowIntoView) {
+      var params = new URLSearchParams(location.search);
+      var selected = params.get("selected") || "";
+      var createdPostId = params.get("created_post_id") || "";
+      if (!/^[A-Za-z0-9._:-]+$/.test(createdPostId)) {
+        createdPostId = "";
+      }
+      var selectedRow = selected === "" ? null : rows.filter(function (row) {
+        return row.getAttribute("data-paned-thread-id") === selected && !row.hidden;
+      })[0];
+
+      if (!selectedRow) {
+        resetContentPane();
+        return;
+      }
+
+      selectThread(selected);
+      if (scrollRowIntoView) {
+        selectedRow.scrollIntoView({ block: "nearest" });
+      }
+      if (createdPostId !== "") {
+        var highlightNode = contentPane.querySelector('[data-paned-reply-post-id="' + createdPostId + '"]');
+        if (highlightNode) {
+          highlightNode.classList.add("paned-highlight-new");
+          highlightNode.scrollIntoView({ block: "nearest" });
+        }
+      }
+    }
+
     function selectFolder(tag) {
       folderItems.forEach(function (item) {
         var isSelected = item.getAttribute("data-paned-folder") === tag;
@@ -284,6 +313,7 @@
 
     window.addEventListener("popstate", function () {
       selectFolder(currentTagFromUrl());
+      restoreSelectionFromUrl(true);
 
       var params = new URLSearchParams(location.search);
       var sortColumn = params.get("sort") || "";
@@ -480,26 +510,6 @@
       });
     }
 
-    var initialSelected = new URLSearchParams(location.search).get("selected") || "";
-    var initialCreatedPostId = new URLSearchParams(location.search).get("created_post_id") || "";
-    if (!/^[A-Za-z0-9._:-]+$/.test(initialCreatedPostId)) {
-      initialCreatedPostId = "";
-    }
-    if (initialSelected !== "") {
-      var initialSelectedRow = rows.filter(function (row) {
-        return row.getAttribute("data-paned-thread-id") === initialSelected && !row.hidden;
-      })[0];
-      if (initialSelectedRow) {
-        selectThread(initialSelected);
-        initialSelectedRow.scrollIntoView({ block: "nearest" });
-        if (initialCreatedPostId !== "") {
-          var newReplyNode = contentPane.querySelector('[data-paned-reply-post-id="' + initialCreatedPostId + '"]');
-          if (newReplyNode) {
-            newReplyNode.classList.add("paned-highlight-new");
-            newReplyNode.scrollIntoView({ block: "nearest" });
-          }
-        }
-      }
-    }
+    restoreSelectionFromUrl(true);
   });
 })();

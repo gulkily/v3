@@ -53,3 +53,12 @@
   - Headless-browser test, `"never"`: two clicks push zero entries (`history.length` delta 0) and the URL still reflects the final selection.
   - Re-ran the broader regression suite — all still pass, zero console errors.
 - Notes: none identified.
+
+## Stage 6 - Restore thread selection on Back/Forward
+- Changes:
+  - `paned_board_reader.js`: extracted the initial-load restoration block into a shared `restoreSelectionFromUrl(scrollRowIntoView)`, now also resetting to the placeholder (`resetContentPane()`) when the current URL names no thread (or one that's hidden/nonexistent) — needed for popping all the way back to a bare `/forte`. Both the initial-load path and the `popstate` handler now call this same function, so their behavior can't drift apart.
+- Verification:
+  - `node --check` clean.
+  - Headless-browser test: clicked two different threads (content pane correctly updates each time); pressed Back — the *content pane*, not just the list row, correctly reverted to the first thread (this exact restoration never existed before this stage — `popstate` previously only handled tag/sort); pressed Back again — content pane correctly reset to the placeholder with nothing selected.
+  - Re-ran the permalink round-trip and the broader regression suite — all still pass, zero console errors.
+- Notes: none identified.
