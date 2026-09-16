@@ -62,3 +62,14 @@
   - Headless-browser test: clicked two different threads (content pane correctly updates each time); pressed Back — the *content pane*, not just the list row, correctly reverted to the first thread (this exact restoration never existed before this stage — `popstate` previously only handled tag/sort); pressed Back again — content pane correctly reset to the placeholder with nothing selected.
   - Re-ran the permalink round-trip and the broader regression suite — all still pass, zero console errors.
 - Notes: none identified.
+
+## Stage 7 - Full regression check
+- Changes: none (verification only, as planned).
+- Verification:
+  - Flash elimination confirmed via `curl` (no JS) on an existing permalink-shaped URL (`selected=`+`created_post_id=`, no query-string cache-buster aside): both the selected row and the highlighted reply are present in the raw response.
+  - Tag/sort URL syncing re-verified unaffected, and now correctly *preserves* the current selection across a tag click and a sort click (previously would have dropped it, since `urlForState()` didn't carry `selected` before Stage 5).
+  - Mismatch resolution re-verified precisely (not just by construction): picked a thread that genuinely lacks the `bug` tag, requested `?tag=bug&selected={that thread}` — response shows "All Threads" as `aria-selected="true"` and the thread's row correctly selected, confirming tag drops in favor of the thread exactly as specified. A garbage/nonexistent `selected=` alongside a valid tag leaves the tag filter untouched.
+  - Timing: `/forte?selected=root-001&created_post_id=root-001` averaged ~65-73ms across three runs at ~520 threads — no measurable overhead from the new server-side resolution work (it operates entirely on already-fetched data, no new queries).
+  - Full re-run of `forte_reactions` (Like/Flag across threads and replies) and `forte_post_permalink` (root-post and reply permalinks, including the tag-filter-escape case) — all pass, zero console errors.
+- Notes:
+  - This completes all 7 planned stages for `forte_thread_selection_url_sync`. Forte's board now writes `selected=` to the URL on every interactive thread change (push on click, replace on fast keyboard/button stepping by default, adjustable via the three-mode `localStorage` preference), restores it correctly on Back/Forward, and — closing the gap that motivated the deeper half of this feature — renders the correct tag/selection/highlight state server-side for every URL that carries it, eliminating the flash for permalinks and reply redirects that predate this cycle, not just new traffic.
