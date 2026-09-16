@@ -626,3 +626,14 @@ body.paned-reader-body {
   font-size: 0.75rem;
   color: var(--paned-ink-soft);
 }
+
+.paned-window .paned-permalink-link {
+  align-self: center;
+  color: var(--paned-ink-soft);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.paned-window .paned-permalink-link:hover {
+  text-decoration: underline;
+}
