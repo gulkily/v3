@@ -156,6 +156,7 @@ final class TemplateRenderer
         $author = fn (array $record): string => $this->renderAuthorHtml($record, $e);
         $forteAuthor = fn (array $record): string => $this->renderAuthorHtml($record, $e, true);
         $contentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e);
+        $forteContentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e, true);
         $timeMeta = fn (string $label, ?string $timestamp): string => $this->renderTimeMeta($label, $timestamp, $e);
         $heat = fn (?string $timestamp, int $replyCount = 0): int => $this->heatLevel($timestamp, $replyCount);
         $threadTitle = static fn (array $thread): string => ThreadTitle::displayTitle(
@@ -244,9 +245,9 @@ final class TemplateRenderer
     /**
      * @param callable(mixed): string $escape
      */
-    private function renderContentMeta(array $record, string $timeField, string $timeLabel, callable $escape): string
+    private function renderContentMeta(array $record, string $timeField, string $timeLabel, callable $escape, bool $forteTarget = false): string
     {
-        $authorHtml = $this->renderAuthorHtml($record, $escape);
+        $authorHtml = $this->renderAuthorHtml($record, $escape, $forteTarget);
         $timestampHtml = $this->renderTimestampHtml((string) ($record[$timeField] ?? ''), $escape);
         $prefix = trim($timeLabel);
 

@@ -455,6 +455,17 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/forte/user/([^/]+)/?$#', $path, $matches) === 1) {
+            $html = $this->renderForteUsername($matches[1]);
+            if ($html === null) {
+                $this->notFound();
+                return;
+            }
+
+            $this->sendHtml($html, 200);
+            return;
+        }
+
         if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)/?$#', $path, $matches) === 1) {
             $html = $this->renderTagPage($matches[1]);
             if ($html === null) {
@@ -883,6 +894,45 @@ final class Application
                 'profile' => $profile,
             ],
             $pageTitleLabel . ' - Forte Profile',
+            'paned-reader-body',
+            [],
+            ['/assets/forte.css'],
+        );
+    }
+
+    private function renderForteUsername(string $username): ?string
+    {
+        $usernameToken = strtolower($username);
+        $profiles = $this->fetchProfilesByUsernameToken($usernameToken);
+        if ($profiles === []) {
+            return null;
+        }
+
+        $approvedProfiles = array_values(array_filter(
+            $profiles,
+            static fn (array $profile): bool => ((int) $profile['is_approved']) === 1
+        ));
+        $unapprovedProfiles = array_values(array_filter(
+            $profiles,
+            static fn (array $profile): bool => ((int) $profile['is_approved']) !== 1
+        ));
+        $approvedIdentityIds = array_values(array_map(
+            static fn (array $profile): string => (string) $profile['identity_id'],
+            $approvedProfiles
+        ));
+
+        return $this->renderer()->renderStandalonePage(
+            'forte_username.php',
+            [
+                'usernameToken' => $usernameToken,
+                'approvedProfiles' => $approvedProfiles,
+                'unapprovedProfiles' => $unapprovedProfiles,
+                'approvedThreadCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, true),
+                'approvedPostCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, false),
+                'approvedThreads' => $this->fetchVisibleAuthoredThreads($approvedIdentityIds),
+                'approvedPosts' => $this->fetchVisibleAuthoredPosts($approvedIdentityIds),
+            ],
+            'User ' . $usernameToken . ' - Forte',
             'paned-reader-body',
             [],
             ['/assets/forte.css'],
