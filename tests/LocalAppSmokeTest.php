@@ -110,7 +110,7 @@ final class LocalAppSmokeTest
             assertStringContains("status=ok\n", $response);
             assertSame('guest', $_COOKIE['identity_hint'] ?? null);
             assertStringContains('Entering lobby.', $boardAfterClear);
-            assertStringContains('The requested page does not exist.', $aboutAfterClear);
+            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $aboutAfterClear);
             assertStringContains('This is your profile.', $ownProfileAfterClear);
             assertStringContains('Your identity is recognized in the lobby, but member access is cleared.', $lobbyAfterClear);
             assertStringContains(
@@ -210,10 +210,11 @@ final class LocalAppSmokeTest
             assertStringContains('class="nav-link" href="/lobby/"', $account);
             assertStringContains('class="nav-link is-active" href="/account/key/"', $account);
             assertStringNotContains('href="/">Board</a>', $account);
-            assertStringContains('The requested page does not exist.', $this->render($application, '/threads/root-001'));
-            assertStringContains('The requested page does not exist.', $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'));
-            assertStringContains('The requested page does not exist.', $this->render($application, '/backup/'));
-            assertStringContains('The requested page does not exist.', $this->render($application, '/?format=rss'));
+            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/threads/root-001'));
+            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'));
+            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/backup/'));
+            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/?format=rss'));
+            assertStringContains('The requested route does not exist in the local test slice.', $this->render($application, '/asdf'));
         } finally {
             if (session_status() === PHP_SESSION_ACTIVE) {
                 session_write_close();

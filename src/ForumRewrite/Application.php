@@ -101,9 +101,14 @@ final class Application
         }
 
         if ($this->approvedMembersOnlyEnabled() && !$this->membersOnlyRequestAllowed($method, $path)) {
+            if (!$this->isApplicationRoute($path)) {
+                $this->notFound();
+                return;
+            }
+
             $this->sendHtml(
-                $this->renderMessagePage('Not Found', 'Not Found', 'The requested page does not exist.', 'none'),
-                404
+                $this->renderLobbyAccessRequiredPage(),
+                403
             );
             return;
         }
@@ -3134,6 +3139,45 @@ final class Application
         );
     }
 
+    private function isApplicationRoute(string $path): bool
+    {
+        if (in_array($path, [
+            '', '/',
+            '/threads', '/threads/',
+            '/about', '/about/',
+            '/lobby', '/lobby/',
+            '/instance', '/instance/', '/backup', '/backup/', '/tools/backup', '/tools/backup/',
+            '/tools/sqlite', '/tools/sqlite/',
+            '/tools/llm-exchanges', '/tools/llm-exchanges/',
+            '/downloads/repository.tar.gz', '/downloads/repository.zip',
+            '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',
+            '/activity', '/activity/',
+            '/users', '/users/', '/users/pending', '/users/pending/',
+            '/tags', '/tags/',
+            '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/',
+            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
+            '/compose/thread', '/compose/reply',
+            '/account/key', '/account/key/',
+            '/api', '/api/', '/api/version', '/api/list_index',
+            '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username_claim_cta',
+            '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
+            '/api/auth_challenge', '/api/authenticate_identity', '/api/create_thread',
+            '/api/prepare_thread', '/api/prepare_identity', '/api/create_reply',
+            '/api/prepare_reply', '/api/create_prepared_post', '/api/create_identity',
+            '/api/analyze_post', '/api/generate_agent_reply', '/api/codex_handoff',
+            '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag',
+            '/api/set_feature_flag', '/api/link_identity', '/api/approve_user',
+            '/forte', '/forte/', '/llms.txt',
+        ], true)) {
+            return true;
+        }
+
+        return preg_match(
+            '#^/(?:tools/llm-exchanges/\d+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-z0-9]+(?:-[a-z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+)/?$#',
+            $path,
+        ) === 1;
+    }
+
     /**
      * @param array<string, mixed> $query
      */
@@ -5856,6 +5900,20 @@ final class Application
             ],
             $title,
             $activeSection,
+        );
+    }
+
+    private function renderLobbyAccessRequiredPage(): string
+    {
+        return $this->renderPageTemplate(
+            'message.php',
+            [
+                'heading' => 'Approval required',
+                'message' => 'Your access is pending approval. Once you are fully authenticated, you can access this page.',
+                'viewerProfile' => $this->lobbyViewerProfile(),
+            ],
+            'Approval required',
+            'lobby',
         );
     }
 
