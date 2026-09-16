@@ -642,3 +642,44 @@ body.paned-reader-body {
   color: var(--paned-ink-soft);
   font-size: inherit;
 }
+
+.paned-standalone-window {
+  width: min(34rem, 94vw);
+  height: auto;
+  margin: 2rem auto;
+}
+
+.paned-standalone-body {
+  padding: 0.75rem 1rem;
+}
+
+.paned-standalone-body p {
+  margin: 0.5rem 0;
+}
+
+.paned-standalone-advanced {
+  margin: 0.75rem 0;
+  border: 1px solid;
+  border-color: var(--paned-border-dark) var(--paned-border-light) var(--paned-border-light) var(--paned-border-dark);
+  background: var(--paned-content-bg);
+  padding: 0.4rem 0.6rem;
+}
+
+.paned-standalone-advanced summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.paned-standalone-advanced-body pre {
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  background: var(--paned-chrome-dark);
+  padding: 0.4rem;
+}
+
+.paned-standalone-back {
+  border-top: 1px solid var(--paned-border-dark);
+  padding-top: 0.6rem;
+}

@@ -444,6 +444,17 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/forte/profiles/([^/]+)/?$#', $path, $matches) === 1) {
+            $html = $this->renderForteProfile($matches[1]);
+            if ($html === null) {
+                $this->notFound();
+                return;
+            }
+
+            $this->sendHtml($html, 200);
+            return;
+        }
+
         if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)/?$#', $path, $matches) === 1) {
             $html = $this->renderTagPage($matches[1]);
             if ($html === null) {
@@ -847,6 +858,33 @@ final class Application
             'Forte',
             'paned-reader-body',
             ['/assets/paned_board_reader.js', '/assets/lazy_compose_signing.js', '/assets/thread_reactions.js'],
+            ['/assets/forte.css'],
+        );
+    }
+
+    private function renderForteProfile(string $slug): ?string
+    {
+        $profile = $this->fetchProfileBySlug($slug);
+        if ($profile === null) {
+            return null;
+        }
+
+        $pageTitleLabel = trim((string) ($profile['username'] ?? ''));
+        if ($pageTitleLabel === '') {
+            $pageTitleLabel = trim((string) ($profile['fallback_label'] ?? ''));
+        }
+        if ($pageTitleLabel === '') {
+            $pageTitleLabel = (string) $profile['profile_slug'];
+        }
+
+        return $this->renderer()->renderStandalonePage(
+            'forte_profile.php',
+            [
+                'profile' => $profile,
+            ],
+            $pageTitleLabel . ' - Forte Profile',
+            'paned-reader-body',
+            [],
             ['/assets/forte.css'],
         );
     }
