@@ -439,6 +439,7 @@
       })[0];
       if (initialSelectedRow) {
         selectThread(initialSelected);
+        initialSelectedRow.scrollIntoView({ block: "nearest" });
         if (initialCreatedPostId !== "") {
           var newReplyNode = contentPane.querySelector('[data-paned-reply-post-id="' + initialCreatedPostId + '"]');
           if (newReplyNode) {
