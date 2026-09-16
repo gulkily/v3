@@ -1,5 +1,7 @@
 # Forte Profiles — Step 3: Development Plan
 
+_Amended after Stage 1: `/forte/user/{username}` turned out to be a materially different, bigger page than assumed (classic's `username.php` aggregates across every profile sharing that username — approved/unapproved separately, plus thread and post lists — not just an alternate lookup key for the same profile content `/forte/profiles/{slug}` shows). Per explicit user direction, building it anyway rather than simplifying it away; split into its own stage (new Stage 3) instead of folding into the original Stage 2, since it needs its own data-aggregation reuse and template. Stages renumbered accordingly._
+
 ## Stage 1
 - Goal: Add a Forte-target author-link variant without touching classic's rendering.
 - Dependencies: none (Step 2 approved)
@@ -7,44 +9,55 @@
 - Verification approach: `php -l`; confirm classic pages using `$author` are byte-for-byte unchanged (no template calls `$forteAuthor` yet, so purely additive).
 - Risks or open questions: none identified.
 - Canonical components/API contracts touched: `TemplateRenderer::renderAuthorHtml()` (extended, default-safe).
+- Status: done — see Step 4 summary.
 
 ## Stage 2
-- Goal: Stand up the full Forte-styled profile page.
+- Goal: Stand up the full Forte-styled single-profile page.
 - Dependencies: none (independent of Stage 1; nothing links to it yet)
-- Expected changes: new routes `/forte/profiles/{slug}` and `/forte/user/{username}` (mirroring classic's dual scheme) reusing `fetchProfileBySlug()`/`fetchProfilesByUsernameToken()`; new `profile.php`-equivalent Forte template (paned-styled single window, not the full board chrome) showing username, approval status/by-whom, thread/post counts, public key details — no "Approve user" form; includes a link back to `/forte`.
-- Verification approach: `curl` the new routes directly for an approved and an unapproved profile, confirm the right fields render and no approve-action markup appears; confirm classic's own `/profiles/{slug}`/`/user/{username}` are unaffected.
+- Expected changes: new route `/forte/profiles/{slug}` reusing `fetchProfileBySlug()`; new `profile.php`-equivalent Forte template (paned-styled single window, not the full board chrome) showing username, approval status/by-whom, thread/post counts, public key details — no "Approve user" form; includes a link back to `/forte`.
+- Verification approach: `curl` the new route directly for an approved and an unapproved profile, confirm the right fields render and no approve-action markup appears; confirm classic's own `/profiles/{slug}` is unaffected.
 - Risks or open questions: none identified.
-- Canonical components/API contracts touched: `fetchProfileBySlug()` / `fetchProfilesByUsernameToken()` (reused unchanged), new routes + template.
+- Canonical components/API contracts touched: `fetchProfileBySlug()` (reused unchanged), new route + template.
 
 ## Stage 3
+- Goal: Stand up the Forte-styled username aggregate page.
+- Dependencies: none (independent of Stage 2; different route, different data)
+- Expected changes: new route `/forte/user/{username}` reusing `fetchProfilesByUsernameToken()` plus the same aggregation classic's `renderUsername()` already does (`countVisibleAuthoredRows()`, `fetchVisibleAuthoredThreads()`, `fetchVisibleAuthoredPosts()`, approved/unapproved profile split); new `username.php`-equivalent Forte template listing combined thread/post counts, authored threads and posts, and links to each individual `/forte/profiles/{slug}`; link back to `/forte`.
+- Verification approach: `curl` the new route for a username with multiple profiles (approved + unapproved), confirm counts/lists match classic's own `/user/{username}` output for the same username; confirm classic's route is unaffected.
+- Risks or open questions:
+  - Confirm `fetchVisibleAuthoredThreads()`/`fetchVisibleAuthoredPosts()` (or their equivalents) are reusable as-is rather than needing Forte-specific variants — expected yes, since they return plain data rows, not HTML.
+- Canonical components/API contracts touched: `fetchProfilesByUsernameToken()`, `countVisibleAuthoredRows()`, `fetchVisibleAuthoredThreads()`, `fetchVisibleAuthoredPosts()` (all reused unchanged), new route + template.
+
+## Stage 4
 - Goal: Point Forte's own author names at the new profile pages.
-- Dependencies: Stages 1-2 (helper and destination must both exist first, so links are never briefly broken)
+- Dependencies: Stages 1-3 (helper and both destinations must exist first, so links are never briefly broken)
 - Expected changes: `paned_board_content_pane.php` (root post) and `paned_thread_reply_tree.php` (replies) switch from `$author(...)` to `$forteAuthor(...)`.
-- Verification approach: `curl` the board, confirm author links now point at `/forte/profiles/...`/`/forte/user/...`; click through in a headless browser, confirm it lands on a working Forte profile page; confirm classic's thread/board pages (still using `$author`) are unaffected.
+- Verification approach: `curl` the board, confirm author links now point at `/forte/profiles/...`/`/forte/user/...`; click through in a headless browser for both an approved (username-linked) and unapproved (slug-linked) author, confirm each lands on a working Forte page; confirm classic's thread/board pages (still using `$author`) are unaffected.
 - Risks or open questions: none identified.
 - Canonical components/API contracts touched: `paned_board_content_pane.php`, `paned_thread_reply_tree.php` (extended).
 
-## Stage 4
+## Stage 5
 - Goal: Add the quick-glance summary dialog on author-name click.
-- Dependencies: Stage 3 (needs real Forte-target links to intercept and to fall back to)
+- Dependencies: Stage 4 (needs real Forte-target links to intercept and to fall back to)
 - Expected changes: new small dialog (titlebar + body, mirroring the `forte_compose_thread` New Thread `<dialog>` pattern) added to the board page; JS click-intercepts a Forte author link, fetches `/api/get_profile?profile_slug=...` (reused unchanged), renders username/approval/counts plus a "View full profile" link to the same `href` the anchor already had; without JS, the real `href` still navigates straight to the full page.
 - Verification approach: headless-browser test — click an author name, confirm the dialog opens with correct fetched data instead of navigating away; confirm the "View full profile" link matches the anchor's original `href`; confirm keyboard/middle-click still reaches the full page directly (JS never prevents default for those).
 - Risks or open questions:
   - `/api/get_profile` returns plain `Key: Value` text, not JSON — confirm the existing parsing approach already used elsewhere (`thread_reactions.js`'s `parseResponseValue`) is reusable here rather than writing a second parser.
+  - `/api/get_profile` takes only `profile_slug`, not a username token — for an approved author (linked via `/forte/user/{username}`), the dialog still needs a profile slug to fetch; `author_profile_slug` is already present on the same record `$forteAuthor` renders from, so the anchor can carry it via a `data-profile-slug` attribute regardless of which URL scheme the `href` uses.
 - Canonical components/API contracts touched: `/api/get_profile` (reused unchanged), `paned_board_reader.js` (extended).
 
-## Stage 5
+## Stage 6
 - Goal: Add the Forte-styled user directory and a way to reach it from the board.
-- Dependencies: Stage 2 (links to the same full profile pages)
+- Dependencies: Stage 2 (links to the same single-profile pages)
 - Expected changes: new route `/forte/users/` reusing `fetchApprovedUserDirectoryUsers()`; new paned-styled list template linking each entry straight to its full profile page (no dialog detour); a small nav entry point from the board (e.g. a link near the folder tree or statusbar) to reach it.
 - Verification approach: `curl` `/forte/users/`, confirm approved users list with correct counts and working links; confirm the board's new nav entry point reaches it; confirm classic's `/users/` is unaffected.
 - Risks or open questions: none identified.
 - Canonical components/API contracts touched: `fetchApprovedUserDirectoryUsers()` (reused unchanged), new route + template, `forte_board.php` (small nav addition).
 
-## Stage 6
+## Stage 7
 - Goal: Full regression check.
-- Dependencies: Stages 1-5
+- Dependencies: Stages 1-6
 - Expected changes: none (verification only)
-- Verification approach: confirm classic's `/profiles/{slug}`, `/user/{username}`, and `/users/` are byte-for-byte unaffected; confirm no "Approve user" affordance exists anywhere in the new Forte pages; re-verify the existing board regression suite (reactions, permalinks, New Thread, Reply, thread-selection URL sync) is unaffected; confirm summary-dialog and full-profile-page data match classic's own numbers for the same profile (no drift).
+- Verification approach: confirm classic's `/profiles/{slug}`, `/user/{username}`, and `/users/` are byte-for-byte unaffected; confirm no "Approve user" affordance exists anywhere in the new Forte pages; re-verify the existing board regression suite (reactions, permalinks, New Thread, Reply, thread-selection URL sync) is unaffected; confirm summary-dialog, single-profile-page, and username-aggregate-page data all match classic's own numbers for the same profile/username (no drift).
 - Risks or open questions: none identified.
-- Canonical components/API contracts touched: none new — integration check across Stages 1-5.
+- Canonical components/API contracts touched: none new — integration check across Stages 1-6.
