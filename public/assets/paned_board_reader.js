@@ -172,7 +172,7 @@
       }
     }
 
-    function urlForState(tag, sortColumn, sortDir) {
+    function urlForState(tag, sortColumn, sortDir, selectedThreadId) {
       var params = new URLSearchParams();
       if (tag !== "") {
         params.set("tag", tag);
@@ -180,6 +180,9 @@
       if (sortColumn !== "") {
         params.set("sort", sortColumn);
         params.set("dir", sortDir);
+      }
+      if (selectedThreadId) {
+        params.set("selected", selectedThreadId);
       }
       var qs = params.toString();
       return "/forte" + (qs ? "?" + qs : "");
@@ -191,10 +194,53 @@
       }
     }
 
+    function replaceStateIfChanged(url) {
+      if (url !== location.pathname + location.search) {
+        history.replaceState(null, "", url);
+      }
+    }
+
+    function readHistoryMode() {
+      try {
+        var value = localStorage.getItem("forte-board-history-mode");
+        if (value === "always" || value === "never") {
+          return value;
+        }
+      } catch (error) {
+        // Storage unavailable (private browsing, disabled, etc.) -- fall back to the default.
+      }
+      return "click-only";
+    }
+
+    var historyMode = readHistoryMode();
+
+    function selectionUrl(threadId) {
+      var sort = currentSortState();
+      return urlForState(currentTagFromUrl(), sort.column, sort.dir, threadId);
+    }
+
+    function syncSelectionUrlForClick(threadId) {
+      var url = selectionUrl(threadId);
+      if (historyMode === "never") {
+        replaceStateIfChanged(url);
+      } else {
+        pushStateIfChanged(url);
+      }
+    }
+
+    function syncSelectionUrlForStepping(threadId) {
+      var url = selectionUrl(threadId);
+      if (historyMode === "always") {
+        pushStateIfChanged(url);
+      } else {
+        replaceStateIfChanged(url);
+      }
+    }
+
     function applyFolderSelection(tag) {
       selectFolder(tag);
       var sort = currentSortState();
-      pushStateIfChanged(urlForState(tag, sort.column, sort.dir));
+      pushStateIfChanged(urlForState(tag, sort.column, sort.dir, currentSelectedThreadId()));
       setComposeTarget(currentSelectedThreadId());
     }
 
@@ -256,7 +302,9 @@
     listBody.addEventListener("click", function (event) {
       var row = event.target.closest ? event.target.closest(".paned-list-row") : null;
       if (row) {
-        selectThread(row.getAttribute("data-paned-thread-id"));
+        var threadId = row.getAttribute("data-paned-thread-id");
+        selectThread(threadId);
+        syncSelectionUrlForClick(threadId);
       }
     });
 
@@ -280,7 +328,9 @@
 
       event.preventDefault();
       var nextRow = visible[nextIndex];
-      selectThread(nextRow.getAttribute("data-paned-thread-id"));
+      var nextRowThreadId = nextRow.getAttribute("data-paned-thread-id");
+      selectThread(nextRowThreadId);
+      syncSelectionUrlForStepping(nextRowThreadId);
       nextRow.focus();
     });
 
@@ -312,7 +362,9 @@
         return;
       }
 
-      selectThread(visible[nextIndex].getAttribute("data-paned-thread-id"));
+      var steppedThreadId = visible[nextIndex].getAttribute("data-paned-thread-id");
+      selectThread(steppedThreadId);
+      syncSelectionUrlForStepping(steppedThreadId);
     }
 
     var sortDefaultDir = { subject: "asc", from: "asc", date: "desc", replies: "desc" };
@@ -378,7 +430,7 @@
           : (sortDefaultDir[column] || "asc");
 
         applySort(column, dir);
-        pushStateIfChanged(urlForState(currentTagFromUrl(), column, dir));
+        pushStateIfChanged(urlForState(currentTagFromUrl(), column, dir, currentSelectedThreadId()));
       });
     }
 

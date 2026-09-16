@@ -42,3 +42,14 @@
   - `curl` the same `created_post_id` against a *different* `selected=` thread: zero `paned-highlight-new` occurrences anywhere — cross-thread mismatch correctly ignored.
   - Re-ran the broader regression suite plus the permalink round-trip test — all still pass, zero console errors; the permalink flow now gets its highlight server-side too, not just via the pre-existing client JS.
 - Notes: none identified.
+
+## Stage 5 - Push/replace the URL on interactive selection
+- Changes:
+  - `paned_board_reader.js`: `urlForState()` gains a `selectedThreadId` param; new `replaceStateIfChanged()` counterpart to the existing `pushStateIfChanged()`; new `readHistoryMode()` (try/catch-wrapped `localStorage.getItem("forte-board-history-mode")`, validating `"always"`/`"never"`, defaulting to `"click-only"`) read once at load; `syncSelectionUrlForClick()`/`syncSelectionUrlForStepping()` wrap the push-vs-replace decision per Step 1's Option C, wired into the row-click handler, the list's arrow-key keydown handler, and `stepSelection()` (Prev/Next). The tag-click and sort-click URL builders now also pass through the current selection so switching tag/sort doesn't drop it from the URL.
+- Verification:
+  - `node --check` clean.
+  - Headless-browser test, default mode (unset preference): two clicks each push a history entry (Back returns to the prior thread); two subsequent arrow-key steps add zero history entries (`history.length` delta 0), confirming `replaceState`.
+  - Headless-browser test, `"always"`: two arrow-key steps *do* push (`history.length` delta 2).
+  - Headless-browser test, `"never"`: two clicks push zero entries (`history.length` delta 0) and the URL still reflects the final selection.
+  - Re-ran the broader regression suite — all still pass, zero console errors.
+- Notes: none identified.
