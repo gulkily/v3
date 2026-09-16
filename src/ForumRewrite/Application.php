@@ -79,7 +79,7 @@ final class Application
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
         if ($this->approvedMembersOnlyEnabled()
-            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity'], true)
+            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/clear_identity'], true)
         ) {
             $this->startViewerSession();
         }
@@ -110,6 +110,11 @@ final class Application
 
         if ($path === '/api/set_identity_hint') {
             $this->handleSetIdentityHint($method, $query);
+            return;
+        }
+
+        if ($path === '/api/clear_identity') {
+            $this->handleClearIdentity($method);
             return;
         }
 
@@ -1804,7 +1809,7 @@ final class Application
 
     private function renderApiIndex(): string
     {
-        return "GET /api/\nGET /api/version\nGET /api/auth_challenge\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nPOST /api/set_identity_hint\nPOST /api/authenticate_identity\nPOST /api/prepare_identity\nPOST /api/create_identity\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
+        return "GET /api/\nGET /api/version\nGET /api/auth_challenge\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nPOST /api/set_identity_hint\nPOST /api/clear_identity\nPOST /api/authenticate_identity\nPOST /api/prepare_identity\nPOST /api/create_identity\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
     }
 
     private function renderApiListIndex(): string
@@ -3024,7 +3029,7 @@ final class Application
     private function resolveViewerProfileFromIdentityHint(): ?array
     {
         if ($this->approvedMembersOnlyEnabled()) {
-            return $this->authenticatedViewerProfile();
+            return $this->lobbyViewerProfile();
         }
 
         $authenticatedIdentityId = strtolower(trim((string) (($_SESSION ?? [])['authenticated_identity_id'] ?? '')));
@@ -3069,12 +3074,41 @@ final class Application
         return $this->fetchProfileByIdentityId($identityId);
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function lobbyViewerProfile(): ?array
+    {
+        $profile = $this->authenticatedViewerProfile();
+        if ($profile !== null) {
+            $profile['_authenticated_identity'] = true;
+            $profile['_members_only_access'] = ((int) ($profile['is_approved'] ?? 0)) === 1;
+            return $profile;
+        }
+
+        $identityId = strtolower(trim((string) ($_SESSION['lobby_identity_id'] ?? '')));
+        if ($identityId === '') {
+            return null;
+        }
+
+        $profile = $this->fetchProfileByIdentityId($identityId);
+        if ($profile === null) {
+            unset($_SESSION['lobby_identity_id']);
+            return null;
+        }
+
+        $profile['_authenticated_identity'] = false;
+        $profile['_members_only_access'] = false;
+        return $profile;
+    }
+
     private function membersOnlyRequestAllowed(string $method, string $path): bool
     {
         if ($path === '/lobby/' || $path === '/lobby'
             || $path === '/account/key/' || $path === '/account/key'
             || $path === '/api/auth_challenge' || $path === '/api/authenticate_identity'
-            || $path === '/api/set_identity_hint' || $path === '/api/link_identity'
+            || $path === '/api/set_identity_hint' || $path === '/api/clear_identity'
+            || $path === '/api/link_identity'
             || $path === '/api/prepare_identity' || $path === '/api/create_identity'
         ) {
             return true;
@@ -3085,7 +3119,8 @@ final class Application
             return true;
         }
 
-        if ($viewerProfile === null || $method !== 'GET') {
+        $lobbyViewerProfile = $this->lobbyViewerProfile();
+        if ($lobbyViewerProfile === null || $method !== 'GET') {
             return false;
         }
 
@@ -3094,7 +3129,7 @@ final class Application
         }
 
         return hash_equals(
-            strtolower((string) ($viewerProfile['profile_slug'] ?? '')),
+            strtolower((string) ($lobbyViewerProfile['profile_slug'] ?? '')),
             strtolower(rawurldecode($matches[1]))
         );
     }
@@ -3114,7 +3149,7 @@ final class Application
         return $this->renderPageTemplate(
             'lobby.php',
             [
-                'viewerProfile' => $this->authenticatedViewerProfile(),
+                'viewerProfile' => $this->lobbyViewerProfile(),
             ],
             'Lobby',
             'lobby',
@@ -3623,6 +3658,37 @@ final class Application
         $this->sendText("identity_hint={$hint}\n", 200);
     }
 
+    private function handleClearIdentity(string $method): void
+    {
+        if ($method !== 'POST') {
+            $this->sendText("method not allowed\n", 405, $this->noStoreHeaders());
+            return;
+        }
+
+        $authenticatedIdentityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
+        if ($authenticatedIdentityId !== '') {
+            $_SESSION['lobby_identity_id'] = $authenticatedIdentityId;
+        }
+
+        unset(
+            $_SESSION['authenticated_identity_id'],
+            $_SESSION['forum_auth_challenges'],
+        );
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+
+        setcookie('identity_hint', 'guest', [
+            'expires' => time() + 86400 * 30,
+            'path' => '/',
+            'httponly' => false,
+            'samesite' => 'Lax',
+        ]);
+        $_COOKIE['identity_hint'] = 'guest';
+
+        $this->sendText("status=ok\nidentity_hint=guest\n", 200, $this->noStoreHeaders());
+    }
+
     private function startViewerSession(): void
     {
         if (session_status() === PHP_SESSION_ACTIVE) {
@@ -3648,9 +3714,19 @@ final class Application
             return;
         }
 
+        $now = time();
+        $challenges = is_array($_SESSION['forum_auth_challenges'] ?? null)
+            ? $_SESSION['forum_auth_challenges']
+            : [];
+        foreach ($challenges as $value => $expiresAt) {
+            if (!is_string($value) || (int) $expiresAt < $now) {
+                unset($challenges[$value]);
+            }
+        }
+
         $challenge = bin2hex(random_bytes(32));
-        $_SESSION['forum_auth_challenge'] = $challenge;
-        $_SESSION['forum_auth_challenge_expires_at'] = time() + 300;
+        $challenges[$challenge] = $now + 300;
+        $_SESSION['forum_auth_challenges'] = $challenges;
         session_write_close();
         $this->sendText("challenge={$challenge}\n", 200, $this->noStoreHeaders());
     }
@@ -3669,10 +3745,12 @@ final class Application
         $challenge = trim((string) ($input['challenge'] ?? ''));
         $signature = trim((string) ($input['detached_signature'] ?? ''));
         $identityId = strtolower(trim((string) ($input['identity_id'] ?? '')));
-        $storedChallenge = (string) ($_SESSION['forum_auth_challenge'] ?? '');
-        $expiresAt = (int) ($_SESSION['forum_auth_challenge_expires_at'] ?? 0);
+        $challenges = is_array($_SESSION['forum_auth_challenges'] ?? null)
+            ? $_SESSION['forum_auth_challenges']
+            : [];
+        $expiresAt = (int) ($challenges[$challenge] ?? 0);
 
-        if ($challenge === '' || !hash_equals($storedChallenge, $challenge) || $expiresAt < time()) {
+        if ($challenge === '' || $expiresAt < time()) {
             $this->sendText("error=Authentication challenge is missing or expired.\n", 400, $this->noStoreHeaders());
             return;
         }
@@ -3697,7 +3775,10 @@ final class Application
 
         session_regenerate_id(true);
         $_SESSION['authenticated_identity_id'] = $identityId;
-        unset($_SESSION['forum_auth_challenge'], $_SESSION['forum_auth_challenge_expires_at']);
+        unset(
+            $_SESSION['lobby_identity_id'],
+            $_SESSION['forum_auth_challenges'],
+        );
         session_write_close();
         $approved = ((int) ($profile['is_approved'] ?? 0)) === 1 ? '1' : '0';
         $this->sendText("status=ok\nidentity_id={$identityId}\napproved={$approved}\n", 200, $this->noStoreHeaders());

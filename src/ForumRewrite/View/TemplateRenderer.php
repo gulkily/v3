@@ -98,7 +98,9 @@ final class TemplateRenderer
     private function navItems(?array $viewerProfile): array
     {
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)
-            && ($viewerProfile === null || ((int) ($viewerProfile['is_approved'] ?? 0)) !== 1)
+            && ($viewerProfile === null
+                || ((int) ($viewerProfile['is_approved'] ?? 0)) !== 1
+                || (($viewerProfile['_members_only_access'] ?? true) !== true))
         ) {
             $items = [
                 ['href' => '/lobby/', 'label' => 'Lobby', 'section' => 'lobby'],

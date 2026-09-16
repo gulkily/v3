@@ -60,6 +60,11 @@
     }
   }
 
+  function isExpiredChallengeError(error) {
+    return error instanceof Error
+      && error.message === "Authentication challenge is missing or expired.";
+  }
+
   async function authenticateOnce() {
     var publicKey = stored("forum_pki_public_key");
     var privateKey = stored("forum_pki_private_key");
@@ -155,6 +160,14 @@
     }
 
     authenticationInFlight = authenticateOnce()
+      .catch(function (error) {
+        if (!isExpiredChallengeError(error)) {
+          throw error;
+        }
+
+        setStatus("Authentication challenge expired. Retrying...", "info");
+        return authenticateOnce();
+      })
       .catch(function (error) {
         reportFailure(error);
         throw error;

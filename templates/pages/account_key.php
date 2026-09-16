@@ -7,10 +7,11 @@ if (is_array($viewerProfile)) {
     $viewerProfileLabel = 'View profile';
 }
 $authenticatedIdentityId = is_array($viewerProfile)
+    && (($viewerProfile['_authenticated_identity'] ?? true) === true)
     ? strtolower(trim((string) ($viewerProfile['identity_id'] ?? '')))
     : '';
 ?>
-<section class="stack" data-account-key-root data-private-site-auth-state data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>">
+<section class="stack" data-account-key-root data-private-site-auth-state data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
   <article class="card">
     <h1>Account Key</h1>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
@@ -188,14 +189,20 @@ No browser private key saved yet.
       var fingerprint = storedFingerprint();
       var links = root.querySelectorAll('[data-role="profile-link"]');
       var wraps = root.querySelectorAll('[data-role="profile-link-wrap"]');
+      var privateSiteEnabled = document.documentElement
+        && document.documentElement.dataset.approvedMembersOnly === '1';
+      var serverAllowsProfileLink = root.dataset.profileLinkAuthorized === '1';
+      var preserveServerProfileLink = privateSiteEnabled && serverAllowsProfileLink;
 
       links.forEach(function (link) {
-        link.href = fingerprint ? '/profiles/openpgp-' + fingerprint : '/account/key/';
-        link.textContent = fingerprint ? 'View profile' : 'Open profile';
+        if (!preserveServerProfileLink) {
+          link.href = fingerprint ? '/profiles/openpgp-' + fingerprint : '/account/key/';
+          link.textContent = fingerprint ? 'View profile' : 'Open profile';
+        }
       });
 
       wraps.forEach(function (wrap) {
-        wrap.hidden = fingerprint === '';
+        wrap.hidden = privateSiteEnabled ? !serverAllowsProfileLink : fingerprint === '';
       });
     }
 

@@ -207,4 +207,83 @@ NODE;
         assertSame('error', $result['status']['dataset']['kind']);
         assertSame(1, count($result['errors']));
     }
+
+    public function testAuthenticationRetriesOnceWhenItsChallengeExpires(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const fingerprint = '0123456789abcdef0123456789abcdef01234567';
+const fetches = [];
+let challengeCalls = 0;
+let authenticationCalls = 0;
+let assignedUrl = '';
+const status = { hidden: true, textContent: '', dataset: {} };
+
+global.window = {
+  localStorage: {
+    getItem(key) {
+      if (key === 'forum_pki_public_key') return 'public-key';
+      if (key === 'forum_pki_private_key') return 'private-key';
+      if (key === 'forum_pki_fingerprint') return fingerprint;
+      return '';
+    }
+  },
+  __forumOpenPgpLoader: { ready: Promise.resolve({}) },
+  __forumBrowserIdentity: { async ensureReadyIdentity() {} },
+  openpgp: {
+    async readKey() { return { getFingerprint() { return fingerprint; } }; },
+    async readPrivateKey() { return { getFingerprint() { return fingerprint; } }; },
+    async createMessage({ text }) { return { text }; },
+    async sign() { return 'detached-signature'; }
+  },
+  location: {
+    assign(url) { assignedUrl = url; },
+    reload() { throw new Error('approved viewer must not reload'); }
+  }
+};
+global.document = {
+  addEventListener(){},
+  querySelector(selector) {
+    if (selector === '[data-private-site-auth-state]') return { dataset: { authenticatedIdentityId: '' } };
+    if (selector === '[data-role="private-site-auth-status"]') return status;
+    return null;
+  }
+};
+global.fetch = async function(url) {
+  fetches.push(String(url));
+  if (String(url) === '/api/auth_challenge') {
+    challengeCalls += 1;
+    return { ok: true, async text() { return 'challenge=' + (challengeCalls === 1 ? 'abcdef012345' : 'fedcba543210') + '\n'; } };
+  }
+
+  authenticationCalls += 1;
+  if (authenticationCalls === 1) {
+    return { ok: false, async text() { return 'error=Authentication challenge is missing or expired.\n'; } };
+  }
+
+  return { ok: true, async text() { return 'status=ok\napproved=1\n'; } };
+};
+
+vm.runInThisContext(source);
+window.PrivateSiteAuth.authenticate()
+  .then((result) => process.stdout.write(JSON.stringify({ result, fetches, assignedUrl, status })))
+  .catch((error) => {
+    process.stderr.write(error.stack || String(error));
+    process.exit(1);
+  });
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('approved', $result['result']['status']);
+        assertSame([
+            '/api/auth_challenge',
+            '/api/authenticate_identity',
+            '/api/auth_challenge',
+            '/api/authenticate_identity',
+        ], $result['fetches']);
+        assertSame('/', $result['assignedUrl']);
+    }
 }

@@ -401,6 +401,7 @@ const clearIdentityButton = {
 };
 
 const root = {
+  dataset: { profileLinkAuthorized: '0' },
   querySelector(selector) {
     if (selector === '[data-role="browser-key-status"]') return statusNode;
     if (selector === '[data-role="public-key-field"]') return publicKeyField;
@@ -434,6 +435,7 @@ global.window = {
 };
 global.localStorage = global.window.localStorage;
 global.document = {
+  documentElement: { dataset: { approvedMembersOnly: '1' } },
   addEventListener(type, handler) {
     if (type === 'DOMContentLoaded') {
       state.domContentLoaded = handler;
@@ -457,6 +459,7 @@ global.fetch = async function (url, options) {
 
 vm.runInThisContext(source);
 state.domContentLoaded();
+const profileLinkHiddenBeforeClear = profileLinkWrap.hidden;
 
 Promise.resolve(state.clearIdentityClickHandler()).then(() => {
   process.stdout.write(JSON.stringify({
@@ -468,6 +471,7 @@ Promise.resolve(state.clearIdentityClickHandler()).then(() => {
     publicKeyViewer: publicKeyViewer.textContent,
     privateKeyViewer: privateKeyViewer.textContent,
     publicKeyField: publicKeyField.value,
+    profileLinkHiddenBeforeClear,
     status: statusMessage.textContent
   }));
 }).catch((error) => {
@@ -487,13 +491,14 @@ NODE;
             'forum_pki_compose_prompt_cancelled',
         ], $result['removeCalls']);
         assertSame([], $result['remainingKeys']);
-        assertStringContains('/api/set_identity_hint?identity_hint=guest', $result['fetches'][1]['url']);
+        assertSame('/api/clear_identity', $result['fetches'][1]['url']);
         assertSame('POST', $result['fetches'][1]['method']);
         assertSame('guest', $result['username']);
         assertSame('none', $result['identityId']);
         assertSame('No browser public key saved yet.', $result['publicKeyViewer']);
         assertSame('No browser private key saved yet.', $result['privateKeyViewer']);
         assertSame('', $result['publicKeyField']);
+        assertSame(true, $result['profileLinkHiddenBeforeClear']);
         assertSame('Cleared the saved browser keypair from local storage.', $result['status']);
     }
 

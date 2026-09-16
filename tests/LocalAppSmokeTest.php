@@ -79,6 +79,65 @@ final class LocalAppSmokeTest
         }
     }
 
+    public function testClearingIdentityRevokesApprovedPrivateSession(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        $previousCookie = $_COOKIE;
+        $previousSession = $_SESSION ?? null;
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        $sessionId = 'private-clear-identity-' . bin2hex(random_bytes(8));
+
+        try {
+            session_id($sessionId);
+            session_start();
+            $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+            session_write_close();
+
+            $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-clear-identity-' . bin2hex(random_bytes(6)) . '.sqlite3';
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
+
+            assertStringContains('class="nav-link is-active" href="/">Board</a>', $this->render($application, '/'));
+
+            $response = $this->renderMethod($application, 'POST', '/api/clear_identity');
+            $boardAfterClear = $this->render($application, '/');
+            $aboutAfterClear = $this->render($application, '/about/');
+            $ownProfileAfterClear = $this->render(
+                $application,
+                '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+            );
+            $lobbyAfterClear = $this->render($application, '/lobby/');
+
+            assertStringContains("status=ok\n", $response);
+            assertSame('guest', $_COOKIE['identity_hint'] ?? null);
+            assertStringContains('Entering lobby.', $boardAfterClear);
+            assertStringContains('The requested page does not exist.', $aboutAfterClear);
+            assertStringContains('This is your profile.', $ownProfileAfterClear);
+            assertStringContains('Your identity is recognized in the lobby, but member access is cleared.', $lobbyAfterClear);
+            assertStringContains(
+                'class="nav-link" href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954">Profile</a>',
+                $lobbyAfterClear,
+            );
+            assertStringNotContains('href="/">Board</a>', $lobbyAfterClear);
+        } finally {
+            $_COOKIE = $previousCookie;
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            session_id('');
+            if ($previousSession === null) {
+                unset($_SESSION);
+            } else {
+                $_SESSION = $previousSession;
+            }
+            @unlink($databasePath ?? '');
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
     public function testPrivateAuthenticationEndpointReachesSignatureVerifier(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -91,8 +150,10 @@ final class LocalAppSmokeTest
         try {
             session_id($sessionId);
             session_start();
-            $_SESSION['forum_auth_challenge'] = $challenge;
-            $_SESSION['forum_auth_challenge_expires_at'] = time() + 300;
+            $_SESSION['forum_auth_challenges'] = [
+                bin2hex(random_bytes(32)) => time() + 300,
+                $challenge => time() + 300,
+            ];
             session_write_close();
 
             $_POST = [
@@ -144,6 +205,8 @@ final class LocalAppSmokeTest
             assertStringNotContains('href="/users/">Users</a>', $lobby);
             assertStringNotContains('href="/tools/">Tools</a>', $lobby);
             assertStringContains('Account Key', $account);
+            assertStringContains('data-profile-link-authorized="0"', $account);
+            assertStringContains('data-role="profile-link-wrap" hidden', $account);
             assertStringContains('class="nav-link" href="/lobby/"', $account);
             assertStringContains('class="nav-link is-active" href="/account/key/"', $account);
             assertStringNotContains('href="/">Board</a>', $account);
