@@ -637,3 +637,8 @@ body.paned-reader-body {
 .paned-window .paned-permalink-link:hover {
   text-decoration: underline;
 }
+
+.paned-window .meta {
+  color: var(--paned-ink-soft);
+  font-size: inherit;
+}
