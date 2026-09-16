@@ -3139,9 +3139,13 @@ final class Application
      */
     private function membersOnlyLobbyRedirect(string $method, string $path, array $query): bool
     {
+        $viewerProfile = $this->authenticatedViewerProfile();
+        $hasApprovedMemberAccess = $viewerProfile !== null
+            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+
         return $method === 'GET' && in_array($path, ['/', '/threads', '/threads/'], true)
             && $query === []
-            && $this->authenticatedViewerProfile() === null;
+            && !$hasApprovedMemberAccess;
     }
 
     private function renderLobby(): string

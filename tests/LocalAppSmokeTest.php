@@ -248,6 +248,7 @@ final class LocalAppSmokeTest
 
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
             $lobby = $this->render($application, '/lobby/');
+            $root = $this->render($application, '/');
 
             assertStringContains('class="nav-link is-active" href="/lobby/"', $lobby);
             assertStringContains(
@@ -259,6 +260,7 @@ final class LocalAppSmokeTest
             assertStringNotContains('href="/about/">About</a>', $lobby);
             assertStringNotContains('href="/users/">Users</a>', $lobby);
             assertStringNotContains('href="/tools/">Tools</a>', $lobby);
+            assertStringContains('Entering lobby.', $root);
         } finally {
             if (session_status() === PHP_SESSION_ACTIVE) {
                 session_write_close();
