@@ -438,6 +438,7 @@ final class Application
                 (string) ($query['tag'] ?? ''),
                 (string) ($query['sort'] ?? ''),
                 (string) ($query['dir'] ?? ''),
+                (string) ($query['selected'] ?? ''),
             ), 200);
             return;
         }
@@ -792,11 +793,13 @@ final class Application
         );
     }
 
-    private function renderForteBoard(string $requestedTag = '', string $requestedSortColumn = '', string $requestedSortDir = ''): string
+    private function renderForteBoard(string $requestedTag = '', string $requestedSortColumn = '', string $requestedSortDir = '', string $requestedSelected = ''): string
     {
         $threads = $this->fetchThreads();
         $tagGroups = $this->groupThreadsByTag($threads);
-        $selectedTag = $this->resolveForteBoardTag($requestedTag, $tagGroups);
+        $selection = $this->resolveForteBoardSelection($threads, $tagGroups, $requestedTag, $requestedSelected);
+        $selectedTag = $selection['tag'];
+        $selectedThreadId = $selection['selectedThreadId'];
         $sort = $this->resolveForteBoardSort($requestedSortColumn, $requestedSortDir);
         $threads = $this->applyForteBoardSort($threads, $sort['column'], $sort['dir']);
 
@@ -827,6 +830,7 @@ final class Application
                 'threads' => $threads,
                 'tagGroups' => $tagGroups,
                 'selectedTag' => $selectedTag,
+                'selectedThreadId' => $selectedThreadId,
                 'sortColumn' => $sort['column'],
                 'sortDir' => $sort['dir'],
                 'replyTreesByThreadId' => $replyTreesByThreadId,

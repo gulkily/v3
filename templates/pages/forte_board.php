@@ -3,8 +3,10 @@
  * @var array<int, array<string, mixed>> $threads
  * @var array<int, array{tag: string, count: int, threads: array}> $tagGroups
  * @var string $selectedTag
+ * @var string $selectedThreadId
  */
 $selectedTag ??= '';
+$selectedThreadId ??= '';
 $visibleThreadCount = count($threads);
 if ($selectedTag !== '') {
     foreach ($tagGroups as $group) {
@@ -24,7 +26,7 @@ if ($selectedTag !== '') {
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2" width="12" height="12" fill="none" stroke="currentColor"/><line x1="8" y1="5" x2="8" y2="11" stroke="currentColor"/><line x1="5" y1="8" x2="11" y2="8" stroke="currentColor"/></svg>
       <span>New</span>
     </button>
-    <button type="button" class="paned-toolbar-btn" data-paned-board-reply disabled>
+    <button type="button" class="paned-toolbar-btn" data-paned-board-reply<?= $selectedThreadId === '' ? ' disabled' : '' ?>>
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 3 L3 8 L9 13" fill="none" stroke="currentColor"/><path d="M3 8 H13" fill="none" stroke="currentColor"/></svg>
       <span>Reply</span>
     </button>

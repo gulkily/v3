@@ -2,10 +2,12 @@
 /**
  * @var array<int, array<string, mixed>> $threads
  * @var string $selectedTag
+ * @var string $selectedThreadId
  * @var string $sortColumn
  * @var string $sortDir
  */
 $selectedTag ??= '';
+$selectedThreadId ??= '';
 $sortColumn ??= '';
 $sortDir ??= '';
 $ariaSort = static function (string $column) use ($sortColumn, $sortDir): string {
@@ -51,13 +53,14 @@ $tabStopAssigned = false;
 <?php
 $tags = $threadTags($thread);
 $visible = $selectedTag === '' || in_array($selectedTag, $tags, true);
-$isTabStop = $visible && !$tabStopAssigned;
+$isSelected = $selectedThreadId !== '' && (string) $thread['root_post_id'] === $selectedThreadId;
+$isTabStop = $selectedThreadId !== '' ? $isSelected : ($visible && !$tabStopAssigned);
 if ($isTabStop) {
     $tabStopAssigned = true;
 }
 ?>
     <div
-      class="paned-list-row"
+      class="paned-list-row<?= $isSelected ? ' paned-list-row--selected' : '' ?>"
       data-paned-thread-id="<?= $e($thread['root_post_id']) ?>"
       data-paned-thread-tags="<?= $e(implode(',', $tags)) ?>"
       data-paned-sort-subject="<?= $e(mb_strtolower($threadTitle($thread))) ?>"
@@ -65,7 +68,7 @@ if ($isTabStop) {
       data-paned-sort-date="<?= $e((string) ($thread['root_post_created_at'] ?? '')) ?>"
       data-paned-sort-replies="<?= (int) ($thread['reply_count'] ?? 0) ?>"
       role="option"
-      aria-selected="false"
+      aria-selected="<?= $isSelected ? 'true' : 'false' ?>"
       tabindex="<?= $isTabStop ? '0' : '-1' ?>"
       <?= $visible ? '' : 'hidden' ?>
     >
