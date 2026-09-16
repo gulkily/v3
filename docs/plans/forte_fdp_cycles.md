@@ -15,11 +15,13 @@ Exhaustive, ordered list of every Feature Development Process cycle needed to cl
 | 9 | `forte_activity_feed` | A Forte-native view of classic's `/activity/` recent-activity feed. | Optional, but worth a quick Step 1 to scope what "activity" means in a paned layout |
 | 10 | `forte_mobile_responsive` | An engineered (not pragmatic-fallback) mobile/narrow-viewport layout, including fixing the known Subject-column squeeze at 420px. | Yes — genuine breakpoint/layout strategy trade-offs |
 | 11 | `forte_user_approval` | The pending-user approval workflow (`/users/pending/`, approve endpoints) — administrative/moderator-facing. | Recommended — permissions and surface-area questions |
-| 12 | `forte_agent_codex_workflow` | Agent-reply requests and the Codex handoff/approval workflow. | Yes — the largest, least-defined item on this list |
+| 12 | `forte_agent_replies` | Agent responses to comments and posts — requesting/viewing an automated agent reply on a post or thread (classic's `request-agent-reply` action). **Narrowed 2026-09-16**: originally bundled with the Codex handoff/approval workflow; split out per explicit user direction so each gets its own cycle — see item 14. | Recommended — request/visibility UX choices, but smaller than the original bundled item |
 
 | 13 | `forte_thread_selection_url_sync` | ✅ Done — see `forte_thread_selection_url_sync_step4_implementation_summary.md` (grew beyond the original ask to also close the server-side "flash of wrong state" gap for permalinks/reply-redirects). Push `selected={threadId}` to the URL bar on every plain thread-row click/arrow-key selection, mirroring the `pushStateIfChanged(urlForState(...))` pattern tag/sort changes already use — today only tag/sort changes update the URL; selecting a thread doesn't, so a reload loses it. The "restore on load" half already exists (the board already reads `?selected=` on load for the reply-redirect landing case) — this only adds the missing "push on click" half. Related to, but independent of, `forte_post_permalink` (item 5): permalinks are explicit hrefs and work the same regardless of whether this lands. Requested directly by the user, 2026-09-15, to prepare for later — not scoped into item 5. | Optional — small, mirrors an already-proven pattern in the same file |
 
-**Total: 13 FDP cycles.**
+| 14 | `forte_codex_handoff_workflow` | The Codex handoff/approval workflow (classic's `request-codex-handoff` action and the approval steps after it) — administrative/agent-operator-facing. Split out of the original bundled item 12 (`forte_agent_codex_workflow`) per explicit user direction, 2026-09-16, so agent-replies and Codex handoff each get their own cycle. | Yes — the largest, least-defined item on this list |
+
+**Total: 14 FDP cycles.**
 
 ## Not on this list (handled outside FDP)
 
