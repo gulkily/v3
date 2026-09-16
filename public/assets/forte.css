@@ -76,6 +76,7 @@ body.paned-reader-body {
   border: 1px solid transparent;
   font: inherit;
   font-size: 0.65rem;
+  text-decoration: none;
   cursor: pointer;
 }
 

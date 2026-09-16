@@ -44,6 +44,11 @@ if ($selectedTag !== '') {
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8 a5 5 0 1 1 1.6 3.6" fill="none" stroke="currentColor"/><path d="M3 11 v-3 h3" fill="none" stroke="currentColor"/></svg>
       <span>Refresh</span>
     </button>
+    <span class="paned-toolbar-sep"></span>
+    <a href="/forte/users/" class="paned-toolbar-btn">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6" cy="5" r="2.3" fill="none" stroke="currentColor"/><path d="M1.5 13 c0 -3 2 -4.5 4.5 -4.5 s4.5 1.5 4.5 4.5" fill="none" stroke="currentColor"/><circle cx="11.5" cy="6" r="1.8" fill="none" stroke="currentColor"/><path d="M9.7 8.7 c1 -0.5 2 -0.4 2.8 0.3 c0.9 0.8 1.5 2 1.5 4" fill="none" stroke="currentColor"/></svg>
+      <span>Users</span>
+    </a>
   </div>
   <div class="paned-board-layout">
 <?= $indent($partial('partials/paned_folder_tree.php', ['tagGroups' => $tagGroups, 'totalThreadCount' => count($threads), 'selectedTag' => $selectedTag]), 2) ?>
@@ -54,7 +59,6 @@ if ($selectedTag !== '') {
   </div>
   <div class="paned-statusbar">
     <span data-paned-board-status-count data-paned-board-total-count="<?= count($threads) ?>" data-paned-board-tag-count="<?= count($tagGroups) ?>"><?php if ($selectedTag === ''): ?><?= count($threads) ?> thread<?= count($threads) === 1 ? '' : 's' ?> · <?= count($tagGroups) ?> tags<?php else: ?>Showing <?= $visibleThreadCount ?> of <?= count($threads) ?> threads (#<?= $e($selectedTag) ?>)<?php endif; ?></span>
-    <span><a href="/forte/users/" class="paned-statusbar-link">Users</a> &middot; Forte reader</span>
   </div>
 <?= $indent($partial('partials/paned_board_new_thread_dialog.php'), 1) ?>
 <?= $indent($partial('partials/paned_profile_summary_dialog.php'), 1) ?>
