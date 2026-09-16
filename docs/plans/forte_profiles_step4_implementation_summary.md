@@ -61,3 +61,17 @@ _(Stage numbers below reflect the Step 3 amendment recorded after this stage —
   - Screenshot confirms the dialog reads as a native part of the paned chrome, consistent with the New Thread dialog's own look.
   - Re-ran the broader board regression suite — all still pass, zero console errors.
 - Notes: none identified.
+
+## Stage 6 - Forte-styled user directory and board nav entry point
+- Changes:
+  - `Application.php`: new route `/forte/users/` and `renderForteUserDirectory()`, reusing `fetchApprovedUserDirectoryUsers()` unchanged.
+  - `templates/pages/forte_users.php`: paned-styled list, each entry linking straight to `/forte/user/{token}` (no summary-dialog detour — matches Step 2's stated scope, since a directory row already names exactly one destination).
+  - `forte_board.php`: a small "Users" link added to the statusbar as the board's entry point into the directory.
+- Verification:
+  - `php -l` clean.
+  - `curl` `/forte/users/`: entries and counts render correctly, sorted the same way as classic's own directory; every link points at `/forte/user/...`.
+  - Headless-browser test: clicked the board's new "Users" link, confirmed it lands on the directory page.
+  - Diffed classic's `/users/` across two requests: byte-for-byte identical.
+  - Screenshot confirms visual consistency with the other new Forte pages.
+  - Re-ran the broader board regression suite — all still pass, zero console errors.
+- Notes: none identified.

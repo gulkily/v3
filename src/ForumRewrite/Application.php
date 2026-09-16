@@ -444,6 +444,11 @@ final class Application
             return;
         }
 
+        if ($path === '/forte/users/' || $path === '/forte/users') {
+            $this->sendHtml($this->renderForteUserDirectory(), 200);
+            return;
+        }
+
         if (preg_match('#^/forte/profiles/([^/]+)/?$#', $path, $matches) === 1) {
             $html = $this->renderForteProfile($matches[1]);
             if ($html === null) {
@@ -933,6 +938,20 @@ final class Application
                 'approvedPosts' => $this->fetchVisibleAuthoredPosts($approvedIdentityIds),
             ],
             'User ' . $usernameToken . ' - Forte',
+            'paned-reader-body',
+            [],
+            ['/assets/forte.css'],
+        );
+    }
+
+    private function renderForteUserDirectory(): string
+    {
+        return $this->renderer()->renderStandalonePage(
+            'forte_users.php',
+            [
+                'users' => $this->fetchApprovedUserDirectoryUsers(),
+            ],
+            'Users - Forte',
             'paned-reader-body',
             [],
             ['/assets/forte.css'],
