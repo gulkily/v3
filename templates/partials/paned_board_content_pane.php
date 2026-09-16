@@ -22,7 +22,7 @@ $selectedThreadId ??= '';
     <div class="paned-content-head">
       <div class="paned-content-subject"><?= $e($threadTitle($thread)) ?></div>
       <div class="paned-content-meta">
-        <span>From: <?= $author($thread) ?></span>
+        <span>From: <?= $forteAuthor($thread) ?></span>
         <span><?= $timestamp((string) ($thread['root_post_created_at'] ?? '')) ?></span>
       </div>
     </div>

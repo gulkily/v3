@@ -7,7 +7,7 @@
 $viewerFlaggedPostIds ??= [];
 $highlightedPostId ??= '';
 $renderNode = null;
-$renderNode = function (array $node, int $depth) use (&$renderNode, $e, $author, $timestamp, $br, $viewerFlaggedPostIds, $highlightedPostId): string {
+$renderNode = function (array $node, int $depth) use (&$renderNode, $e, $forteAuthor, $timestamp, $br, $viewerFlaggedPostIds, $highlightedPostId): string {
     $post = $node['post'];
     $isAgentPost = (string) ($post['author_label'] ?? '') === 'reply-agent';
 
@@ -21,7 +21,7 @@ $renderNode = function (array $node, int $depth) use (&$renderNode, $e, $author,
     if ($isAgentPost) {
         $html .= '<span class="paned-agent-badge">AGENT</span> ';
     }
-    $html .= $author($post) . ' &middot; ' . $timestamp((string) ($post['created_at'] ?? ''));
+    $html .= $forteAuthor($post) . ' &middot; ' . $timestamp((string) ($post['created_at'] ?? ''));
     $html .= '</div>';
     $html .= '<div class="paned-reply-body">' . $br($post['body']) . '</div>';
     $html .= '<div class="paned-reaction-row"><button type="button" class="paned-reaction-button" data-action="apply-post-tag" data-tag="flag" data-post-id="' . $e($postId) . '" data-applied-label="Flagged" aria-pressed="' . ($viewerHasFlagged ? 'true' : 'false') . '"' . ($viewerHasFlagged ? ' disabled' : '') . '>' . ($viewerHasFlagged ? 'Flagged' : 'Flag') . '</button><a class="paned-permalink-link" href="' . $permalinkHref . '" title="Permalink to this post" aria-label="Permalink to this post">#</a></div>';

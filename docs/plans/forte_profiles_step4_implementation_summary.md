@@ -36,3 +36,14 @@ _(Stage numbers below reflect the Step 3 amendment recorded after this stage —
   - Screenshot confirms visual consistency with the single-profile page; author mentions within thread/post rows now correctly point at `/forte/user/guest`, not classic's `/user/guest`.
   - Re-ran the broader board regression suite — all still pass, zero console errors.
 - Notes: none identified.
+
+## Stage 4 - Point Forte's own author names at the new profile pages
+- Changes:
+  - `paned_board_content_pane.php` (root post) and `paned_thread_reply_tree.php` (replies, including its `use` capture list) switch from `$author(...)` to `$forteAuthor(...)`.
+- Verification:
+  - `php -l` clean.
+  - `curl` the board: every author link across the whole page now points at `/forte/profiles/...`/`/forte/user/...` — zero remaining `/profiles/`/`/user/` occurrences (confirmed by grepping and counting all four link shapes).
+  - Headless-browser test: clicked both an approved (username-linked) and an unapproved (slug-linked) author, confirmed each lands on a working Forte page (title contains "Forte"), zero console errors.
+  - Diffed classic's `/threads/root-001` across two requests: byte-for-byte identical.
+  - Re-ran the broader board regression suite — all still pass.
+- Notes: none identified.
