@@ -17,7 +17,7 @@
 <?php if ($approvedProfiles === []): ?>
     <p>No approved profiles currently use this username.</p>
 <?php else: ?>
-    <p><strong>Approved profiles:</strong> <?= count($approvedProfiles) ?></p>
+    <p><strong>Approved profiles:</strong> <a href="#approved-profiles"><?= count($approvedProfiles) ?></a></p>
     <p><strong>Combined threads:</strong> <?= (int) $approvedThreadCount ?></p>
     <p><strong>Combined posts:</strong> <?= (int) $approvedPostCount ?></p>
 
@@ -39,7 +39,7 @@
 <?php endforeach; ?>
 <?php endif; ?>
 
-    <h2>Approved Profiles</h2>
+    <h2 id="approved-profiles">Approved Profiles</h2>
     <ul>
 <?php foreach ($approvedProfiles as $profile): ?>
       <li><a href="/forte/profiles/<?= $e($profile['profile_slug']) ?>"><?= $e($profile['profile_slug']) ?></a></li>
