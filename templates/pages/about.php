@@ -9,6 +9,13 @@
       <p>This board is meant for extraordinary people: founders, creators, researchers, artists, organizers, and people who make the local internet more alive.</p>
       <p>The initial community is rooted in Boston, especially founders and creators around Harvard St Commons. From there, it can grow outward through real relationships and earned trust.</p>
     </section>
+<?php if ($siteName === 'chouse'): ?>
+    <section class="about-section" data-about-section="hackable">
+      <h2>Hackable by design</h2>
+      <p>chouse is built to be changed. Its open code and legible data make it easy to build tools, experiments, and new ways of participating on top of the forum.</p>
+      <p>Bring an idea, make a fork, or add a small feature: the site is a shared foundation, not a finished product.</p>
+    </section>
+<?php endif; ?>
     <section class="about-section" data-about-section="graph">
       <h2>A continuous social graph</h2>
       <p>Membership grows through a continuous social graph. Every new participant is invited or approved by someone already trusted by the community, so there is always a visible path of accountability back into the group.</p>
