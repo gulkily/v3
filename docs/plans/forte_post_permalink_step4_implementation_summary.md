@@ -17,3 +17,12 @@
   - `php -l` clean.
   - Headless-browser test, fresh navigation: found a thread with a visible reply, read its permalink `href`, opened it cold — the correct thread was selected *and* the specific reply carried `.paned-highlight-new` (the real end-to-end case Option A exists for), zero console errors.
 - Notes: none identified.
+
+## Stage 3 - Full regression check
+- Changes: none (verification only, as planned).
+- Verification:
+  - Tag-filter edge case: grabbed a reply permalink from a thread visible only under `?tag=bug`, confirmed the generated `href` carries no `tag=` param, then loaded it fresh *after* first visiting a different, unrelated tag (`?tag=testing`) — the target thread still selected correctly and the board defaulted to "All Threads," confirming a stale/mismatched filter can never hide the target.
+  - Classic: `git diff` against `main` shows zero changes to `post.php`, `post_card.php`, or `thread_root_card.php`; `/posts/root-001` still renders and its own `post-card-permalink` anchor still points at itself, unchanged.
+  - Zero console errors across the full regression run.
+- Notes:
+  - This completes all 3 planned stages for `forte_post_permalink`. Forte's board now has a working "#" permalink on every post and reply, reusing the board's existing on-load restore logic verbatim with no JS or backend changes — exactly the zero-new-code outcome Option A was chosen for.
