@@ -75,3 +75,13 @@ _(Stage numbers below reflect the Step 3 amendment recorded after this stage —
   - Screenshot confirms visual consistency with the other new Forte pages.
   - Re-ran the broader board regression suite — all still pass, zero console errors.
 - Notes: none identified.
+
+## Stage 7 - Full regression check
+- Changes: none (verification only, as planned).
+- Verification:
+  - Diffed all three classic destinations (`/profiles/{slug}`, `/user/guest`, `/users/`) plus `/threads/root-001` and `/` across two requests each: byte-for-byte identical across the board.
+  - Grepped all three new Forte pages for "approve": every occurrence is read-only display text ("Approved: yes", "Approved by:", "Approved Profiles"/"Unapproved Profiles" section headers) — zero forms, buttons, or action links anywhere.
+  - Re-ran every existing board regression suite from prior cycles: `forte_reactions` (Like/Flag), `forte_post_permalink` (including the tag-filter-escape case), `forte_thread_selection_url_sync` (all three history modes, measured via `history.length` deltas), and the general New Thread/Reply/multi-thread-Like suite — all pass, zero console errors.
+  - Data parity already confirmed per-stage (Stage 2: profile fields; Stage 3: username aggregate counts; Stage 6: directory counts) — all matched classic's own numbers exactly, re-confirmed here as still holding after Stages 4-6's changes.
+- Notes:
+  - This completes all 7 planned stages for `forte_profiles`. Forte now has its own profile page, username aggregate page, and user directory — all reusing classic's exact data-fetching logic unchanged, with author names across the board pointing at them instead of classic, and a quick-glance summary dialog for the common case. The "Approve user" action is deliberately absent everywhere, reserved for the separate `forte_user_approval` cycle.
