@@ -154,6 +154,7 @@ final class TemplateRenderer
         $friendlyTimestamp = fn (?string $timestamp): string => $this->formatFriendlyTimestamp($timestamp);
         $timestamp = fn (?string $timestamp): string => $this->renderTimestampHtml($timestamp, $e);
         $author = fn (array $record): string => $this->renderAuthorHtml($record, $e);
+        $forteAuthor = fn (array $record): string => $this->renderAuthorHtml($record, $e, true);
         $contentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e);
         $timeMeta = fn (string $label, ?string $timestamp): string => $this->renderTimeMeta($label, $timestamp, $e);
         $heat = fn (?string $timestamp, int $replyCount = 0): int => $this->heatLevel($timestamp, $replyCount);
@@ -215,7 +216,7 @@ final class TemplateRenderer
     /**
      * @param callable(mixed): string $escape
      */
-    private function renderAuthorHtml(array $record, callable $escape): string
+    private function renderAuthorHtml(array $record, callable $escape, bool $forteTarget = false): string
     {
         $authorLabel = trim((string) ($record['author_label'] ?? ''));
         if ($authorLabel === '') {
@@ -230,11 +231,14 @@ final class TemplateRenderer
             return $escape($authorLabel);
         }
 
+        $profilesBase = $forteTarget ? '/forte/profiles/' : '/profiles/';
+        $userBase = $forteTarget ? '/forte/user/' : '/user/';
+
         if ($authorIsApproved && $authorUsernameToken !== '') {
-            return '<a href="/user/' . $escape($authorUsernameToken) . '">' . $escape($authorLabel) . '</a>';
+            return '<a href="' . $userBase . $escape($authorUsernameToken) . '">' . $escape($authorLabel) . '</a>';
         }
 
-        return '<a href="/profiles/' . $escape($authorProfileSlug) . '">' . $escape($authorLabel) . '</a> <span class="meta">(unapproved)</span>';
+        return '<a href="' . $profilesBase . $escape($authorProfileSlug) . '">' . $escape($authorLabel) . '</a> <span class="meta">(unapproved)</span>';
     }
 
     /**
