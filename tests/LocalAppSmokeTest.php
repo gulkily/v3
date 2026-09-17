@@ -1351,6 +1351,22 @@ final class LocalAppSmokeTest
         assertSame('ok', $entry['signature_key_status']);
     }
 
+    public function testClassicAndForteActivityRenderTheSameCommitManifest(): void
+    {
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $classic = $this->render($application, '/activity/?view=content');
+        $forte = $this->render($application, '/forte/activity/?view=content');
+
+        assertStringContains('Commit files (', $classic);
+        assertStringContains('Commit files (', $forte);
+        assertStringContains('records/posts/root-001.txt', $classic);
+        assertStringContains('records/posts/root-001.txt', $forte);
+        assertStringContains('post record', $classic);
+        assertStringContains('post record', $forte);
+    }
+
     public function testActivityFetchLimitsAfterApplyingViewFilter(): void
     {
         @unlink($this->databasePath);

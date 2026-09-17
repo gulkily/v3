@@ -36,6 +36,9 @@
     'source_signature_href' => $item['source_signature_href'] ?? '',
     'source_signature_status' => $item['source_signature_status'] ?? '',
 ]), 2) ?>
+<?= $indent($partial('partials/activity_commit_manifest.php', [
+    'files' => $item['source_commit_files'] ?? [],
+]), 2) ?>
     <p class="meta"><?= $contentMeta($item, 'created_at', '') ?></p>
   </article>
 <?php endforeach; ?>

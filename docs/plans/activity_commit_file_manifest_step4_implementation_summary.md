@@ -33,3 +33,14 @@
   - `php tests/run.php LocalAppSmokeTest` passed, including a signature whose signer key predates its commit.
 - Notes:
   - Stage 4 will render this metadata in the Activity-only shared component.
+
+## Stage 4 - Shared Activity rendering
+- Changes:
+  - Added one Activity-only commit-manifest partial listing each changed file's status, role, path, and allowed source link.
+  - Detached-signature entries show signer identity and its public-key link or an explicit unavailable state.
+  - Rendered the same partial in Classic Activity cards and Forte Activity detail panes; added compact shared styling.
+- Verification:
+  - PHP syntax checks passed for the new partial and both consumers.
+  - `php tests/run.php LocalAppSmokeTest` passed, including the Classic/Forte manifest parity check.
+- Notes:
+  - Individual post pages retain their existing source metadata unchanged.

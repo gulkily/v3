@@ -50,6 +50,9 @@ $forteLink = $item['forte_link'] ?? ['href' => '', 'label' => ''];
           'source_signature_href' => $item['source_signature_href'] ?? '',
           'source_signature_status' => $item['source_signature_status'] ?? '',
         ]), 4) ?>
+<?= $indent($partial('partials/activity_commit_manifest.php', [
+          'files' => $item['source_commit_files'] ?? [],
+        ]), 4) ?>
       </div>
     </div>
   </article>

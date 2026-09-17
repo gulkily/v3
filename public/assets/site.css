@@ -2405,6 +2405,31 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   display: block;
 }
 
+.activity-commit-manifest {
+  margin-top: 0.8rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent 28%);
+}
+
+.activity-commit-manifest h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.activity-commit-manifest ul {
+  margin: 0.45rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.activity-commit-manifest li + li {
+  margin-top: 0.4rem;
+}
+
+.activity-commit-manifest__signer,
+.activity-commit-manifest__key {
+  display: block;
+}
+
 .about-section + .about-section {
   margin-top: 1.1rem;
   padding-top: 1.1rem;
