@@ -22,3 +22,15 @@
 - Notes:
   - No behavior change for existing callers: first-page semantics (no cursor) are identical, just wrapped in the new `{items, has_more}` shape.
   - `has_more`/cursor values aren't consumed anywhere yet — Stage 3 wires them into the initial page render and the "Load more" control.
+
+## Stage 2 - Extract shared row-rendering partial
+- Changes:
+  - New `templates/partials/paned_activity_item_row.php` holds the single-item row markup (`data-paned-activity-id`, all 5 `data-paned-activity-view-*` flags, kind/label/date) previously inline in the list partial.
+  - `templates/partials/paned_activity_item_list.php` now loops and calls the existing `$partial()` template helper (`TemplateRenderer::renderFile()`) per item instead of inlining the row markup, using the same `$partial('partials/...', [...])` + `$indent(...)` convention already used by `forte_activity.php` for its other partials.
+  - Tab-stop bookkeeping (`$tabStopAssigned`, computed once per item) stays in the list partial's loop and is passed into the row partial as a plain `isTabStop` boolean, since that state can't live inside a per-row partial call.
+- Verification:
+  - `php -l` on both changed/added template files — no syntax errors.
+  - Rendered `/forte/activity/` before and after the extraction (via `git stash`) and diffed the two HTML outputs: only whitespace differences around the row `<div>`'s closing `>` (an `$indent()` formatting side effect); all data attributes, classes, and text content are identical.
+  - Checked the dev server log for the diffed requests — no new PHP warnings/errors introduced.
+- Notes:
+  - This partial is now the canonical single-row renderer; Stage 4's paging endpoint reuses it directly instead of duplicating row markup in a new place.
