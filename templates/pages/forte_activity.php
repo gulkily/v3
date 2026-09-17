@@ -19,17 +19,11 @@ foreach ($viewCounts as $viewCount) {
   <div class="paned-menubar">
     <span>File</span><span>Edit</span><span>View</span><span>Folder</span><span>Navigate</span><span>Help</span>
   </div>
-  <div class="paned-toolbar">
-    <a href="/forte" class="paned-toolbar-btn">
-      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 L4 8 L10 13" fill="none" stroke="currentColor"/></svg>
-      <span>Board</span>
-    </a>
-    <span class="paned-toolbar-sep"></span>
-    <button type="button" class="paned-toolbar-btn" disabled>
-      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8 a5 5 0 1 1 1.6 3.6" fill="none" stroke="currentColor"/><path d="M3 11 v-3 h3" fill="none" stroke="currentColor"/></svg>
-      <span>Refresh</span>
-    </button>
-  </div>
+<?= $indent($partial('partials/paned_toolbar.php', [
+    'activeView' => 'activity',
+    'boardControlsEnabled' => false,
+    'replyEnabled' => false,
+  ]), 1) ?>
   <div class="paned-board-layout">
 <?= $indent($partial('partials/paned_activity_filter_list.php', ['viewCounts' => $viewCounts, 'selectedView' => $selectedView]), 2) ?>
     <div class="paned-board-main paned-panes-stack">

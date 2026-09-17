@@ -10,3 +10,12 @@
   - Raw HTTP against the live instance (`http://127.0.0.1:8091/forte`): toolbar renders New (enabled), Reply (`disabled`, no thread selected by default - unchanged from before), Prev/Next (enabled), Refresh (`disabled`), Board (`aria-current="page"`), Users (plain), Activity (plain) - confirms the new Board button appears and existing enable/disable behavior for New/Reply/Prev/Next is unchanged.
   - Full test suite: 399 passing / 9 failing, identical failing set to the known pre-existing baseline (5 `BrowserSigningNormalizationTest` + 4 `LocalAppSmokeTest`, unrelated to this change) - no regressions.
 - Notes: none.
+
+## Stage 2 - Activity wiring
+- Changes:
+  - `templates/pages/forte_activity.php`: ad hoc "Board" + "Refresh" toolbar markup replaced with `$partial('partials/paned_toolbar.php', ['activeView' => 'activity', 'boardControlsEnabled' => false, 'replyEnabled' => false])`.
+- Verification:
+  - `php -l`: clean.
+  - Raw HTTP against the live instance (`http://127.0.0.1:8091/forte/activity/`): New/Reply/Prev/Next all `disabled`, Refresh `disabled`, Board/Users plain links, Activity carries `aria-current="page"`.
+  - Full test suite: 399 passing / 9 failing, same set as Stage 1 - no regressions.
+- Notes: none.
