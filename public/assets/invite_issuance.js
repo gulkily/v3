@@ -28,6 +28,27 @@
     return response.json();
   }
 
+  async function copyInvitationLink(link) {
+    if (!link || !link.value) {
+      throw new Error("Generate an invitation before copying it.");
+    }
+
+    link.focus();
+    link.select();
+    if (typeof navigator !== "undefined"
+      && navigator.clipboard
+      && typeof navigator.clipboard.writeText === "function") {
+      await navigator.clipboard.writeText(link.value);
+      return;
+    }
+
+    if (typeof document.execCommand === "function" && document.execCommand("copy")) {
+      return;
+    }
+
+    throw new Error("The invite link is selected. Copy it with your browser's copy command.");
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     const root = document.querySelector("[data-invitation-page]");
     const form = root && root.querySelector("[data-invitation-issue-form]");
@@ -36,6 +57,20 @@
     const result = root.querySelector("[data-role=invitation-result]");
     const link = root.querySelector("[data-role=invitation-link]");
     const hash = root.querySelector("[data-role=invitation-hash]");
+    const copyButton = root.querySelector("[data-action=copy-invitation-link]");
+    const selectInvitationLink = function () {
+      link.select();
+    };
+    link.addEventListener("focus", selectInvitationLink);
+    link.addEventListener("click", selectInvitationLink);
+    if (copyButton) copyButton.addEventListener("click", async function () {
+      try {
+        await copyInvitationLink(link);
+        setFeedback(feedback, "Invitation link copied.", "ok");
+      } catch (error) {
+        setFeedback(feedback, error && error.message || "Unable to copy invitation link.", "error");
+      }
+    });
     form.addEventListener("submit", async function (event) {
       event.preventDefault();
       try {

@@ -25,7 +25,7 @@ $hasMembersOnlyAccess = $viewerProfile !== null
   </article>
   <article class="card" data-invitation-redemption hidden>
     <h2>Board invitation</h2>
-    <p>Set up a new browser key, then redeem this invitation.</p>
+    <p>Redeem this invitation. If you do not yet have a browser key, you will be guided through creating one.</p>
     <button type="button" data-action="redeem-invitation">Redeem invitation</button>
     <p class="meta" data-role="invitation-redemption-feedback" hidden></p>
   </article>

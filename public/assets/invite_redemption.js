@@ -3,6 +3,21 @@
   function post(endpoint, values) {
     return fetch(endpoint, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" }, body: new URLSearchParams(values).toString() }).then(function (response) { return response.json(); });
   }
+  async function ensureRedemptionIdentity(root, status) {
+    const identity = window.__forumBrowserIdentity;
+    if (!identity || typeof identity.ensureReadyIdentity !== "function") {
+      throw new Error("Identity setup is unavailable. Reload the page and try again.");
+    }
+    feedback(status, "Preparing your browser identity…", "ok");
+    await identity.ensureReadyIdentity(root, status, { verifyPublishedIdentity: false });
+    const fingerprint = String(localStorage.getItem("forum_pki_fingerprint") || "")
+      .replace(/^openpgp:/, "")
+      .toLowerCase();
+    if (!/^[a-f0-9]{40}$/.test(fingerprint)) {
+      throw new Error("Unable to prepare a browser key for this invitation.");
+    }
+    return fingerprint;
+  }
   function feedback(node, message, kind) { node.hidden = false; node.textContent = message; node.dataset.status = kind || "ok"; }
   document.addEventListener("DOMContentLoaded", function () {
     const match = window.location.hash.match(/^#invite=([a-f0-9]{64})$/);
@@ -13,8 +28,7 @@
     const status = root.querySelector("[data-role=invitation-redemption-feedback]");
     root.querySelector("[data-action=redeem-invitation]").addEventListener("click", async function () {
       try {
-        const fingerprint = String(localStorage.getItem("forum_pki_fingerprint") || "").replace(/^openpgp:/, "").toLowerCase();
-        if (!/^[a-f0-9]{40}$/.test(fingerprint)) throw new Error("Set up a new browser key in Account before redeeming this invitation.");
+        const fingerprint = await ensureRedemptionIdentity(root, status);
         const prepared = await post("/api/prepare_invitation_redemption", { identity_id: "openpgp:" + fingerprint, invite_token: token });
         if (!prepared || prepared.status !== "ok") throw new Error(prepared && prepared.error || "Unable to redeem invitation.");
         const signature = await window.ForumBrowserSigning.signCanonicalRecord(prepared.canonical_record);

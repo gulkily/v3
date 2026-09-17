@@ -13,7 +13,10 @@
     <p class="meta" data-role="invitation-feedback" hidden></p>
     <div data-role="invitation-result" hidden>
       <label class="account-key-label" for="invite-link">Invite link</label>
-      <textarea id="invite-link" readonly rows="3" data-role="invitation-link"></textarea>
+      <div class="button-row button-row-split">
+        <textarea id="invite-link" readonly rows="3" data-role="invitation-link"></textarea>
+        <button type="button" data-action="copy-invitation-link">Copy</button>
+      </div>
       <p class="meta" data-role="invitation-hash"></p>
     </div>
   </article>

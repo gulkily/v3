@@ -50,10 +50,12 @@
 - Changes:
   - Added private Lobby route-matrix coverage for the redemption preparation endpoint.
   - Documented invite generation, seven-day expiry, revocation, Activity hash visibility, disposable keys, target routing, and secret-leak response in the production runbook.
+  - Made invitation redemption start the standard browser key-generation flow when the recipient has no key, and made generated links select-on-focus with an explicit Copy action.
 - Verification:
   - `php tests/run.php LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces CanonicalRecordParsersTest ReadModelBuilderTimingTest PrivateSiteAuthTest` passed.
   - `php tests/run.php BrowserSigningNormalizationTest` passed after hardening browser initializers for the minimal DOM environment used by the regression suite.
   - `php tests/run.php` passed.
+  - `php tests/run.php BrowserSigningNormalizationTest LocalAppSmokeTest::testApplicationRendersCoreRoutes PrivateSiteAuthTest` passed after the invitation interaction refinement.
   - `git diff --check` passed for feature changes; the pre-existing `todo.txt` trailing-blank-line warning remains unrelated.
 - Notes:
   - The bearer secret is intentionally confined to a browser fragment and the private redemption request; the canonical repository and Activity expose only its verification hash.
