@@ -449,6 +449,14 @@ final class Application
             return;
         }
 
+        if ($path === '/forte/activity/' || $path === '/forte/activity') {
+            $this->sendHtml($this->renderForteActivity(
+                (string) ($query['view'] ?? ''),
+                (string) ($query['selected'] ?? ''),
+            ), 200);
+            return;
+        }
+
         if (preg_match('#^/forte/profiles/([^/]+)/?$#', $path, $matches) === 1) {
             $html = $this->renderForteProfile($matches[1]);
             if ($html === null) {
@@ -956,6 +964,134 @@ final class Application
             [],
             ['/assets/forte.css'],
         );
+    }
+
+    /**
+     * Renders the Forte Activity three-pane view: a left pane of the same 5
+     * category filters classic's `/activity/` offers, a list pane of items
+     * for the selected filter, and a detail pane with the selected item's
+     * full technical metadata.
+     *
+     * Calls `fetchActivity($view)` once per view (5 calls total, each
+     * already its own cheap indexed/limited query - the same call classic's
+     * own `renderActivity()` makes for whichever single view it's showing)
+     * rather than deriving view membership from one superset fetch: a
+     * view's own `LIMIT` window can reach further back in time than the
+     * unfiltered "all" view's window once enough non-matching rows crowd
+     * out its most recent items, so only a real per-view fetch reproduces
+     * classic's exact per-view item set and counts.
+     */
+    private function renderForteActivity(string $requestedView = '', string $requestedSelected = ''): string
+    {
+        $viewLabels = [
+            'all' => 'All Activity',
+            'content' => 'Visible Content',
+            'identity' => 'Identity',
+            'bootstrap' => 'Bootstraps',
+            'approval' => 'Approvals',
+        ];
+
+        $itemsById = [];
+        $viewItemIds = [];
+        foreach (array_keys($viewLabels) as $viewKey) {
+            $viewItemIds[$viewKey] = [];
+            foreach ($this->fetchActivity($viewKey) as $item) {
+                $itemId = (string) $item['id'];
+                $viewItemIds[$viewKey][] = $itemId;
+                if (!isset($itemsById[$itemId])) {
+                    $item['forte_link'] = $this->activityItemBoardLink($item);
+                    $itemsById[$itemId] = $item;
+                }
+            }
+        }
+
+        foreach ($itemsById as $itemId => $item) {
+            // $itemId comes back as an int here (PHP casts numeric string
+            // array keys), so it must be re-stringified before a strict
+            // in_array() against $viewItemIds' string ids.
+            $itemIdString = (string) $itemId;
+            foreach (array_keys($viewLabels) as $viewKey) {
+                $itemsById[$itemId]['view_' . $viewKey] = in_array($itemIdString, $viewItemIds[$viewKey], true);
+            }
+        }
+
+        $items = array_values($itemsById);
+        usort($items, static function (array $a, array $b): int {
+            $result = strcmp((string) $b['created_at'], (string) $a['created_at']);
+            if ($result !== 0) {
+                return $result;
+            }
+            $result = strcmp((string) $b['post_id'], (string) $a['post_id']);
+            if ($result !== 0) {
+                return $result;
+            }
+
+            return $b['id'] <=> $a['id'];
+        });
+
+        $viewCounts = [];
+        foreach ($viewLabels as $viewKey => $viewLabel) {
+            $viewCounts[] = ['key' => $viewKey, 'label' => $viewLabel, 'count' => count($viewItemIds[$viewKey])];
+        }
+
+        $selectedView = $this->normalizeActivityView($requestedView);
+        $selectedItemId = in_array($requestedSelected, $viewItemIds[$selectedView], true)
+            ? $requestedSelected
+            : (string) ($viewItemIds[$selectedView][0] ?? '');
+
+        return $this->renderer()->renderStandalonePage(
+            'forte_activity.php',
+            [
+                'items' => $items,
+                'viewCounts' => $viewCounts,
+                'selectedView' => $selectedView,
+                'selectedItemId' => $selectedItemId,
+            ],
+            'Activity - Forte',
+            'paned-reader-body',
+            ['/assets/paned_activity_reader.js'],
+            ['/assets/forte.css'],
+        );
+    }
+
+    /**
+     * Maps one activity item to its Forte-native destination link, mirroring
+     * `activity.php`'s classic kind-based destinations but pointing
+     * post/thread kinds at the existing `forte_post_permalink` URL shape
+     * instead of classic's own `/threads/`/`/posts/` pages, so clicking
+     * through from the Activity view lands in the Forte board itself.
+     *
+     * @param array<string, mixed> $item
+     * @return array{href: string, label: string}
+     */
+    private function activityItemBoardLink(array $item): array
+    {
+        if ($item['kind'] === 'site_feature_flag') {
+            return ['href' => '/tools/feature-flags/', 'label' => 'site feature flags'];
+        }
+
+        $threadId = (string) ($item['thread_id'] ?? '');
+        $postId = $item['kind'] === 'thread_label_add' ? $threadId : (string) ($item['post_id'] ?? '');
+
+        // Identity/bootstrap/approval-only items are excluded from the
+        // public board (same predicate the "content" view itself uses), so
+        // their underlying post has no row there for a Forte permalink to
+        // land on - that would be a silent dead end. Only board-visible
+        // items get the Forte permalink; everything else keeps classic's
+        // own /posts//threads/ destination, which is real either way.
+        $isBoardVisible = !$this->isHiddenBootstrapBoardTagsJson((string) ($item['board_tags_json'] ?? ''));
+        if ($isBoardVisible && $threadId !== '' && $postId !== '') {
+            return [
+                'href' => '/forte?selected=' . $threadId . '&created_post_id=' . $postId . '#post-' . $postId,
+                'label' => $postId,
+            ];
+        }
+
+        if ($item['kind'] === 'thread_label_add') {
+            return $threadId === '' ? ['href' => '', 'label' => ''] : ['href' => '/threads/' . $threadId, 'label' => $threadId];
+        }
+
+        return $postId === '' ? ['href' => '', 'label' => ''] : ['href' => '/posts/' . $postId, 'label' => $postId];
     }
 
     /**

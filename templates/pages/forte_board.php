@@ -49,6 +49,11 @@ if ($selectedTag !== '') {
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6" cy="5" r="2.3" fill="none" stroke="currentColor"/><path d="M1.5 13 c0 -3 2 -4.5 4.5 -4.5 s4.5 1.5 4.5 4.5" fill="none" stroke="currentColor"/><circle cx="11.5" cy="6" r="1.8" fill="none" stroke="currentColor"/><path d="M9.7 8.7 c1 -0.5 2 -0.4 2.8 0.3 c0.9 0.8 1.5 2 1.5 4" fill="none" stroke="currentColor"/></svg>
       <span>Users</span>
     </a>
+    <span class="paned-toolbar-sep"></span>
+    <a href="/forte/activity/" class="paned-toolbar-btn">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor"/><path d="M8 4.5 V8 L10.5 9.5" fill="none" stroke="currentColor"/></svg>
+      <span>Activity</span>
+    </a>
   </div>
   <div class="paned-board-layout">
 <?= $indent($partial('partials/paned_folder_tree.php', ['tagGroups' => $tagGroups, 'totalThreadCount' => count($threads), 'selectedTag' => $selectedTag]), 2) ?>
