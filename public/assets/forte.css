@@ -89,6 +89,11 @@ body.paned-reader-body {
   cursor: default;
 }
 
+.paned-window .paned-toolbar-btn[aria-current="page"] {
+  background: var(--paned-chrome-dark);
+  border-color: var(--paned-border-dark) var(--paned-border-light) var(--paned-border-light) var(--paned-border-dark);
+}
+
 .paned-toolbar-sep {
   width: 1px;
   align-self: stretch;
