@@ -147,6 +147,72 @@ NODE;
         assertSame(0, $result['removedUnsupportedCount']);
     }
 
+    public function testApprovalSigningPreparesSignsAndFinalizesCanonicalApproval(): void
+    {
+        $script = <<<'NODE'
+const state = {
+  store: {
+    forum_pki_fingerprint: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    forum_pki_public_key: 'public',
+    forum_pki_private_key: 'private'
+  },
+  fetches: []
+};
+global.window = {
+  openpgp: {
+    async readKey(){ return { getFingerprint(){ return 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'; } }; },
+    async readPrivateKey(){ return { getFingerprint(){ return 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'; } }; },
+    async createMessage(input){ return input; },
+    async sign(){ return 'approval-signature'; }
+  }
+};
+global.localStorage = {
+  getItem(key){ return state.store[key] || ''; },
+  setItem(key, value){ state.store[key] = String(value); },
+  removeItem(key){ delete state.store[key]; }
+};
+global.document = {
+  addEventListener(){},
+  querySelector(){ return null; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url, options) {
+  state.fetches.push({ url, body: options.body });
+  const payload = url === '/api/prepare_approval'
+    ? {
+      status: 'ok',
+      prepare_token: 'approval-token',
+      post_id: 'reply-approval',
+      thread_id: 'thread-target',
+      record_path: 'records/posts/2026/01/01/reply-approval.txt',
+      canonical_record: 'Post-ID: reply-approval\nAuthor-Identity-ID: openpgp:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n\nApprove-Identity-ID: openpgp:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n'
+    }
+    : { status: 'ok', post_id: 'reply-approval', signature_path: 'records/posts/2026/01/01/reply-approval.txt.asc' };
+  return { text: async () => JSON.stringify(payload), headers: { get(){ return ''; } } };
+};
+const fs = require('fs');
+const vm = require('vm');
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+window.ForumBrowserSigning.submitSignedApproval('openpgp-target').then((result) => {
+  process.stdout.write(JSON.stringify({ result, fetches: state.fetches }));
+}).catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(true, $result['result']['ok']);
+        assertSame('/api/prepare_approval', $result['fetches'][0]['url']);
+        assertStringContains('profile_slug=openpgp-target', $result['fetches'][0]['body']);
+        assertSame('/api/create_prepared_approval', $result['fetches'][1]['url']);
+        assertStringContains('author_identity_id=openpgp%3Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', $result['fetches'][1]['body']);
+        assertStringContains('detached_signature=approval-signature', $result['fetches'][1]['body']);
+    }
+
     public function testNormalizeComposeAsciiTransliteratesApprovedLatinDiacritics(): void
     {
         $result = $this->runHelper('Café déjà vu. François ate smörgåsbord.');

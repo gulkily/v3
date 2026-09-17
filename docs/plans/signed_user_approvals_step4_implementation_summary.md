@@ -21,3 +21,13 @@
   - The same prepared approval with an invalid signature creates no record and leaves the target unapproved.
 - Notes:
   - Stage 3 will reuse the existing browser signing facilities to drive these two endpoints from the browser.
+
+## Stage 3 - Shared browser approval signing
+- Changes:
+  - Added `ForumBrowserSigning.submitSignedApproval()`, which prepares an approval, verifies the local identity matches the prepared record, signs that exact canonical record, and finalizes it through the signed approval endpoint.
+  - Added approval-specific signature failure wording while preserving the existing browser-key and OpenPGP validation behavior.
+- Verification:
+  - `node --check public/assets/browser_signing.js` passed.
+  - `BrowserSigningNormalizationTest::testApprovalSigningPreparesSignsAndFinalizesCanonicalApproval` passed, confirming the prepare and finalize payloads and detached-signature submission.
+- Notes:
+  - The existing BrowserSigning suite has unrelated merged-test mock failures caused by missing `querySelectorAll` stubs, plus its pre-existing reaction-handler failures; Stage 4 consumes the new helper rather than changing those unrelated tests.

@@ -983,6 +983,18 @@
     return result;
   }
 
+  function finalPreparedApprovalFailure(result) {
+    const technicalDetails = String((result && (result.technicalDetails || result.rawError)) || "").trim();
+    if (isDetachedSignatureVerificationFailure(technicalDetails)) {
+      return Object.assign({}, result, {
+        error: "Could not verify the browser signature for this approval. Open /account/key/ and generate a fresh browser keypair before trying again.",
+        technicalDetails: technicalDetails,
+      });
+    }
+
+    return result;
+  }
+
   async function prepareReplyFormForSigning(form) {
     await ensureCurrentComposeAuthorIdentity(form);
     const result = await submitUrlEncoded("/api/prepare_reply", collectReplySubmitFields(form));
@@ -1094,6 +1106,52 @@
     finalized.serverTiming = Object.assign({}, prepared.serverTiming || {}, finalized.serverTiming || {});
 
     return finalized;
+  }
+
+  async function submitSignedApproval(profileSlug) {
+    const authorIdentityId = currentAuthorIdentityId();
+    if (!authorIdentityId) {
+      return {
+        ok: false,
+        error: "No saved browser identity is available to sign this approval.",
+        technicalDetails: "Approval signing requires a stored browser fingerprint.",
+      };
+    }
+
+    const preparedResponse = await submitUrlEncoded("/api/prepare_approval", {
+      profile_slug: String(profileSlug || ""),
+    });
+    const prepared = parsePreparedPostJsonResponse(
+      preparedResponse.text,
+      preparedResponse.serverTiming,
+      "Unable to prepare approval for signing."
+    );
+    if (!prepared.ok) {
+      return prepared;
+    }
+
+    const mismatch = preparedPostIdentityMismatch({ author_identity_id: authorIdentityId }, prepared);
+    if (mismatch) {
+      return mismatch;
+    }
+
+    const detachedSignature = await signCanonicalRecord(prepared.canonicalRecord);
+    const finalizedResponse = await submitUrlEncoded("/api/create_prepared_approval", {
+      prepare_token: prepared.prepareToken,
+      post_id: prepared.postId,
+      record_path: prepared.recordPath,
+      author_identity_id: authorIdentityId,
+      canonical_record: prepared.canonicalRecord,
+      detached_signature: detachedSignature,
+    });
+    const finalized = parsePreparedPostJsonResponse(
+      finalizedResponse.text,
+      finalizedResponse.serverTiming,
+      "Unable to finalize signed approval."
+    );
+    finalized.serverTiming = Object.assign({}, prepared.serverTiming || {}, finalized.serverTiming || {});
+
+    return finalPreparedApprovalFailure(finalized);
   }
 
   async function retrySignedPreparedPostAfterDetachedFailure(form, prepare, timing, previousResult) {
@@ -3111,6 +3169,7 @@
 
   window.ForumBrowserSigning = window.ForumBrowserSigning || {};
   window.ForumBrowserSigning.init = initBrowserSigning;
+  window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
 
   document.addEventListener("DOMContentLoaded", function () {
     initBrowserSigning(document);
