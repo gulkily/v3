@@ -52,6 +52,8 @@
   - Documented invite generation, seven-day expiry, revocation, Activity hash visibility, disposable keys, target routing, and secret-leak response in the production runbook.
 - Verification:
   - `php tests/run.php LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces CanonicalRecordParsersTest ReadModelBuilderTimingTest PrivateSiteAuthTest` passed.
+  - `php tests/run.php BrowserSigningNormalizationTest` passed after hardening browser initializers for the minimal DOM environment used by the regression suite.
+  - `php tests/run.php` passed.
   - `git diff --check` passed for feature changes; the pre-existing `todo.txt` trailing-blank-line warning remains unrelated.
 - Notes:
   - The bearer secret is intentionally confined to a browser fragment and the private redemption request; the canonical repository and Activity expose only its verification hash.

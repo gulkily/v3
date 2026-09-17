@@ -3161,7 +3161,11 @@
 
     const composeRoots = scope.matches && scope.matches("[data-compose-root]")
       ? [scope]
-      : Array.from(scope.querySelectorAll("[data-compose-root]"));
+      : typeof scope.querySelectorAll === "function"
+        ? Array.from(scope.querySelectorAll("[data-compose-root]"))
+        : typeof scope.querySelector === "function"
+          ? [scope.querySelector("[data-compose-root]")].filter(Boolean)
+          : [];
     composeRoots.forEach(function (composeRoot) {
       bindComposePage(composeRoot);
     });
