@@ -310,8 +310,9 @@ final class CanonicalRecordParsersTest
         throw new RuntimeException('Expected invitation reuse to fail.');
     }
 
-    public function testInvitationBearerTokenAcceptsShortCanonicalEncodingAndLegacyToken(): void
+    public function testInvitationBearerTokenAcceptsNewAndPreviousFormats(): void
     {
+        assertTrue(InvitationToken::isValidBearer(str_repeat('a', 32)));
         assertTrue(InvitationToken::isValidBearer('AbCdEfGhIjKlMnOpQrStUw'));
         assertTrue(InvitationToken::isValidBearer(str_repeat('a', 64)));
         assertFalse(InvitationToken::isValidBearer('AbCdEfGhIjKlMnOpQrStUx'));

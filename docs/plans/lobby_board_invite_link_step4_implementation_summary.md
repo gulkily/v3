@@ -51,7 +51,7 @@
   - Added private Lobby route-matrix coverage for the redemption preparation endpoint.
   - Documented invite generation, seven-day expiry, revocation, Activity hash visibility, disposable keys, target routing, and secret-leak response in the production runbook.
   - Made invitation redemption start the standard browser key-generation flow when the recipient has no key, and made generated links select-on-focus with an explicit Copy action.
-  - Shortened new bearer secrets to canonical 128-bit base64url values (22 characters) while retaining redemption compatibility for previously issued 256-bit hexadecimal links.
+  - Shortened new bearer secrets to 32-character hexadecimal values (128 bits), while retaining redemption compatibility for previously issued base64url and 256-bit hexadecimal links.
 - Verification:
   - `php tests/run.php LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces CanonicalRecordParsersTest ReadModelBuilderTimingTest PrivateSiteAuthTest` passed.
   - `php tests/run.php BrowserSigningNormalizationTest` passed after hardening browser initializers for the minimal DOM environment used by the regression suite.

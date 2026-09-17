@@ -1,6 +1,6 @@
 (function () {
   "use strict";
-  const invitationTokenPattern = /^(?:[a-f0-9]{64}|[A-Za-z0-9_-]{21}[AQgw])$/;
+  const invitationTokenPattern = /^(?:[a-f0-9]{32}|[a-f0-9]{64}|[A-Za-z0-9_-]{21}[AQgw])$/;
   function post(endpoint, values) {
     return fetch(endpoint, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" }, body: new URLSearchParams(values).toString() }).then(function (response) { return response.json(); });
   }
