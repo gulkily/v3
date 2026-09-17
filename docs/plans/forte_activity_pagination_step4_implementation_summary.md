@@ -65,3 +65,17 @@
 - Notes:
   - Response rows are visually identical to Stage 2's row partial output by construction (same partial, same call convention) — no separate markup to drift out of sync.
   - Nothing consumes this endpoint client-side yet; Stage 5 wires the "Load more" button to call it.
+
+## Stage 5 - Client-side Load more wiring
+- Changes:
+  - `templates/partials/paned_activity_item_list.php`: added a `data-paned-activity-has-more` attribute to each Load More button (Stage 3 only rendered the initial `hidden` state, conflating "not the current view" with "exhausted"; JS needs the two tracked separately across filter switches).
+  - `public/assets/paned_activity_reader.js`:
+    - New `updateLoadMoreButtonVisibility(view)` helper: a button is visible only when it's both the current view and still has more, called from `selectFilter()` so filter switches keep every button's visibility correct without duplicating that logic.
+    - New click handler on the load-more button group: reads the clicked button's `view`/`cursor` attributes, disables it with a "Loading…" label, calls `GET /api/forte_activity_page`, and on success appends the returned HTML to the list body, refreshes the `rows` array (so Prev/Next and filter switching see the new rows), updates the button's cursor/has-more attributes, and calls `selectFilter(currentViewFromUrl())` to recompute visible count, status text, and button visibility in one pass (reusing existing logic instead of duplicating it). On failure, re-enables the button and restores its label.
+- Verification (real headless-Chrome, driven over the DevTools Protocol since no browser-automation tool was available in this environment - a raw CDP script was used to navigate, click, and inspect the live DOM, plus check `console` for errors):
+  - Clicking "Load more" on the `all` view: rows grew 300 → 400 in the DOM (100 new rows appended), the button's cursor updated to the second page's `next_cursor`, status text updated from "100 items" to "200 items", `console` had zero messages/exceptions. Screenshot confirms the button renders correctly inline with the existing paned-window chrome.
+  - Paging the smaller `approval` view to exhaustion: after the final page loads (100 → 105 items), the button's `data-paned-activity-has-more` flips to `"0"` and it becomes `hidden`; switching to the `all` filter and back to `approval` leaves the button correctly hidden (state persisted via the DOM attribute) and the row/status count stays at 105 - no re-fetch, no duplication, confirming per-view load progress survives filter switching as required by Step 2.
+  - Prev/Next stepping: selecting the last row of page 1 (id 312) then clicking "Next" once moved selection to id 232 - the exact first row of page 2 confirmed in Stage 4's pagination test - proving `stepSelection`'s fresh `rows.filter()` picks up appended rows with no gap.
+  - Server log clean across all three browser-driven runs.
+- Notes:
+  - This completes all 5 planned stages; Step 4 (Implementation) is done pending the after-checklist and `Approved Step 4`.

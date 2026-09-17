@@ -48,6 +48,7 @@ $cursorJson = $nextCursor !== null ? json_encode($nextCursor) : '';
       data-paned-activity-load-more
       data-paned-activity-view="<?= $e($viewKey) ?>"
       data-paned-activity-cursor="<?= $e($cursorJson) ?>"
+      data-paned-activity-has-more="<?= $hasMore ? '1' : '0' ?>"
       <?= ($viewKey === $selectedView && $hasMore) ? '' : 'hidden' ?>
     >Load more</button>
 <?php endforeach; ?>

@@ -12,6 +12,10 @@
     var placeholder = contentPane.querySelector("[data-paned-activity-content-placeholder]");
     var contentItems = Array.prototype.slice.call(contentPane.querySelectorAll("[data-paned-activity-content-item-id]"));
     var statusCount = document.querySelector("[data-paned-activity-status-count]");
+    var loadMoreGroup = document.querySelector("[data-paned-activity-load-more-group]");
+    var loadMoreButtons = loadMoreGroup
+      ? Array.prototype.slice.call(loadMoreGroup.querySelectorAll("[data-paned-activity-load-more]"))
+      : [];
 
     function currentViewFromUrl() {
       var view = new URLSearchParams(location.search).get("view") || "all";
@@ -69,6 +73,14 @@
       });
     }
 
+    function updateLoadMoreButtonVisibility(view) {
+      loadMoreButtons.forEach(function (button) {
+        var isCurrentView = button.getAttribute("data-paned-activity-view") === view;
+        var hasMore = button.getAttribute("data-paned-activity-has-more") === "1";
+        button.hidden = !(isCurrentView && hasMore);
+      });
+    }
+
     function selectFilter(view) {
       filterItems.forEach(function (item) {
         var isSelected = item.getAttribute("data-paned-activity-view") === view;
@@ -102,6 +114,8 @@
       if (statusCount) {
         statusCount.textContent = visibleCount + " item" + (visibleCount === 1 ? "" : "s");
       }
+
+      updateLoadMoreButtonVisibility(view);
     }
 
     function urlForState(view, itemId) {
@@ -215,6 +229,48 @@
       pushStateIfChanged(urlForState(currentViewFromUrl(), nextItemId));
       nextRow.focus();
     });
+
+    if (loadMoreGroup) {
+      loadMoreGroup.addEventListener("click", function (event) {
+        var button = event.target.closest ? event.target.closest("[data-paned-activity-load-more]") : null;
+        if (!button || button.disabled) {
+          return;
+        }
+
+        var view = button.getAttribute("data-paned-activity-view") || "all";
+        var cursor = button.getAttribute("data-paned-activity-cursor") || "";
+        var originalLabel = button.textContent;
+        button.disabled = true;
+        button.textContent = "Loading…";
+
+        fetch("/api/forte_activity_page?view=" + encodeURIComponent(view) + "&cursor=" + encodeURIComponent(cursor))
+          .then(function (response) {
+            if (!response.ok) {
+              throw new Error("activity page fetch failed");
+            }
+            return response.json();
+          })
+          .then(function (data) {
+            if (data.status !== "ok") {
+              throw new Error("activity page fetch failed");
+            }
+
+            listBody.insertAdjacentHTML("beforeend", data.html);
+            rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
+
+            button.setAttribute("data-paned-activity-cursor", data.next_cursor ? JSON.stringify(data.next_cursor) : "");
+            button.setAttribute("data-paned-activity-has-more", data.has_more ? "1" : "0");
+            button.disabled = false;
+            button.textContent = originalLabel;
+
+            selectFilter(currentViewFromUrl());
+          })
+          .catch(function () {
+            button.disabled = false;
+            button.textContent = originalLabel;
+          });
+      });
+    }
 
     function stepSelection(delta) {
       var visible = rows.filter(function (row) {
