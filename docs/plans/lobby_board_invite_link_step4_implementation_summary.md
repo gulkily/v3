@@ -21,3 +21,15 @@
   - `php tests/run.php CanonicalRecordParsersTest ReadModelBuilderTimingTest LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces` passed.
 - Notes:
   - External and malformed targets are rejected before a signed invitation is created; the final target access check remains part of redemption.
+
+## Stage 3 - Lobby identity creation and redemption
+- Changes:
+  - Added a Lobby redemption surface that reads the bearer secret only from a URL fragment and removes it after successful use.
+  - Added signed redemption preparation/finalization bound to the recipient browser identity, with single-use, expiry, revocation, and hash checks under the write lock.
+  - Kept redemption available to Lobby users while requiring a published browser-key identity before it can proceed.
+- Verification:
+  - PHP lint passed for application, writer, and invitation ledger updates.
+  - `node --check public/assets/invite_redemption.js` passed.
+  - `php tests/run.php CanonicalRecordParsersTest LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces` passed.
+- Notes:
+  - The recipient is intentionally prompted to set up a fresh browser key; no key-restore path was added to the invitation surface.

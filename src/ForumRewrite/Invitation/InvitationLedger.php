@@ -26,6 +26,18 @@ final class InvitationLedger
         return $this->entries[$invitationId] ?? null;
     }
 
+    /** @return array{issued:InvitationRecord,revoked:?InvitationRecord,redeemed:?InvitationRecord}|null */
+    public function findByVerificationHash(string $verificationHash): ?array
+    {
+        foreach ($this->entries as $entry) {
+            if (hash_equals($entry['issued']->verificationHash, $verificationHash)) {
+                return $entry;
+            }
+        }
+
+        return null;
+    }
+
     public function apply(InvitationRecord $record): void
     {
         $entry = $this->entries[$record->invitationId] ?? null;

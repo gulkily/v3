@@ -237,6 +237,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_invitation_redemption') {
+            $this->handlePrepareInvitationRedemption($method, $query);
+            return;
+        }
+
         if ($path === '/invites/' || $path === '/invites') {
             $this->sendHtml($this->renderInvitationPage($query), 200);
             return;
@@ -3551,6 +3556,7 @@ final class Application
             || $path === '/api/set_identity_hint' || $path === '/api/clear_identity'
             || $path === '/api/link_identity'
             || $path === '/api/prepare_identity' || $path === '/api/create_identity'
+            || $path === '/api/prepare_invitation_redemption'
         ) {
             return true;
         }
@@ -3602,7 +3608,7 @@ final class Application
             '/api/prepare_reply', '/api/create_prepared_post', '/api/create_identity',
             '/api/analyze_post', '/api/generate_agent_reply', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag',
-            '/api/prepare_invitation', '/api/create_prepared_invitation',
+            '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/set_feature_flag', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
         ], true)) {
@@ -3642,6 +3648,7 @@ final class Application
                 '/assets/openpgp_loader.js',
                 '/assets/browser_signing.js',
                 '/assets/private_site_auth.js',
+                '/assets/invite_redemption.js',
             ]
         );
     }
@@ -5355,15 +5362,33 @@ final class Application
             return;
         }
         try {
-            $viewer = $this->authenticatedViewerProfile();
-            if ($viewer === null || ((int) ($viewer['is_approved'] ?? 0)) !== 1) {
-                throw new RuntimeException('Only authenticated approved users can issue invitations.');
-            }
             $input = $this->requestData($query);
-            if (strtolower(trim((string) ($input['author_identity_id'] ?? ''))) !== strtolower((string) $viewer['identity_id'])) {
-                throw new RuntimeException('Invitation signer does not match the authenticated identity.');
-            }
             $this->sendJson($this->writer()->finalizePreparedInvitation($input), 200, $this->noStoreHeaders());
+        } catch (RuntimeException $exception) {
+            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->noStoreHeaders());
+        }
+    }
+
+    /** @param array<string, mixed> $query */
+    private function handlePrepareInvitationRedemption(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+        try {
+            $input = $this->requestData($query);
+            $identityId = strtolower(trim((string) ($input['identity_id'] ?? '')));
+            $profile = $this->fetchProfileByIdentityId($identityId);
+            if ($profile === null) {
+                throw new RuntimeException('Identity not found.');
+            }
+            $this->sendJson($this->writer()->prepareInvitationRedemption([
+                'recipient_identity_id' => $identityId,
+                'thread_id' => (string) $profile['bootstrap_thread_id'],
+                'parent_id' => (string) $profile['bootstrap_post_id'],
+                'invite_token' => (string) ($input['invite_token'] ?? ''),
+            ]), 200, $this->noStoreHeaders());
         } catch (RuntimeException $exception) {
             $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->noStoreHeaders());
         }
