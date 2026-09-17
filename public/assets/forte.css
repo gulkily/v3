@@ -476,6 +476,14 @@ body.paned-reader-body {
   border-color: var(--paned-border-dark) var(--paned-border-light) var(--paned-border-light) var(--paned-border-dark);
 }
 
+/* Marks the button that Ctrl+Enter/Cmd+Enter activates from the body
+   textarea (see submitComposeFromKeyboard in browser_signing.js), matching
+   the Windows convention of ringing a dialog's default button. */
+.paned-window .paned-compose-form .compose-form-actions > button[type="submit"]:not([data-action="submit-anonymous-compose"]) {
+  outline: 1px solid var(--paned-ink);
+  outline-offset: 2px;
+}
+
 .paned-compose-form .meta {
   font-size: 0.75rem;
   color: var(--paned-ink-soft);
