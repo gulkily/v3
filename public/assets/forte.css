@@ -16,6 +16,7 @@ body.paned-reader-body {
   display: flex;
   flex-direction: column;
   --paned-chrome: #ece9d8;
+  --paned-chrome-light: #f5f3ea;
   --paned-chrome-dark: #d4d0c8;
   --paned-titlebar-start: #0a246a;
   --paned-ink: #0d0d0d;
@@ -467,6 +468,11 @@ body.paned-reader-body {
 }
 
 .paned-window .paned-compose-form button:hover {
+  background: var(--paned-chrome-light);
+}
+
+.paned-window .paned-compose-form button:active {
+  background: var(--paned-chrome-dark);
   border-color: var(--paned-border-dark) var(--paned-border-light) var(--paned-border-light) var(--paned-border-dark);
 }
 
