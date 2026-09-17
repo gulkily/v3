@@ -24,6 +24,18 @@
       }) ? view : "all";
     }
 
+    // Read straight through with no client-side validation table (unlike
+    // currentViewFromUrl()): whatever lands here, valid or not, gets
+    // normalized server-side by resolveActivitySort() the same way an
+    // omitted/garbage query param already is on a full page load.
+    function currentSortFromUrl() {
+      return new URLSearchParams(location.search).get("sort") || "";
+    }
+
+    function currentDirectionFromUrl() {
+      return new URLSearchParams(location.search).get("dir") || "";
+    }
+
     function firstVisibleRow() {
       for (var i = 0; i < rows.length; i++) {
         if (!rows[i].hidden) {
@@ -167,6 +179,20 @@
       }
     }
 
+    var sortHead = document.querySelector("[data-paned-sort-head]");
+    if (sortHead) {
+      sortHead.addEventListener("click", function (event) {
+        var button = event.target.closest ? event.target.closest("[data-paned-sort-column]") : null;
+        var href = button ? button.getAttribute("data-paned-sort-href") : null;
+        if (href) {
+          // A real navigation, not a client-side re-sort like Board's:
+          // resets to page 1 under the new order, per the Step 1 decision,
+          // so there's no already-loaded-rows-vs-new-sort state to reconcile.
+          window.location.href = href;
+        }
+      });
+    }
+
     filterTree.addEventListener("click", function (event) {
       var item = event.target.closest ? event.target.closest("[data-paned-activity-view]") : null;
       if (item) {
@@ -281,7 +307,12 @@
         button.disabled = true;
         button.textContent = "Loading…";
 
-        fetch("/api/forte_activity_page?view=" + encodeURIComponent(view) + "&cursor=" + encodeURIComponent(cursor))
+        fetch(
+          "/api/forte_activity_page?view=" + encodeURIComponent(view) +
+            "&sort=" + encodeURIComponent(currentSortFromUrl()) +
+            "&dir=" + encodeURIComponent(currentDirectionFromUrl()) +
+            "&cursor=" + encodeURIComponent(cursor)
+        )
           .then(function (response) {
             if (!response.ok) {
               throw new Error("activity page fetch failed");

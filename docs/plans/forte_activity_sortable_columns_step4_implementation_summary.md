@@ -49,3 +49,22 @@
   - Server log clean.
 - Notes:
   - Clicking a header does nothing yet (no `href` navigation is wired to the button's `data-paned-sort-href` - buttons don't navigate on their own). Stage 4 adds that plus sort-aware "Load more".
+
+## Stage 4 - Client-side navigation and sort-aware Load more
+- Changes:
+  - `paned_activity_reader.js`: new `currentSortFromUrl()`/`currentDirectionFromUrl()` helpers (read `sort`/`dir` straight from `URLSearchParams`, no client-side validation table - unlike `currentViewFromUrl()`, anything read here is normalized server-side by `resolveActivitySort()` regardless).
+  - New click handler on `[data-paned-sort-head]`: on a click that resolves (via `closest()`) to a `[data-paned-sort-column]` button, navigates via `window.location.href = button.dataset.panedSortHref` - a real page load per the Step 1 "reset to page 1" decision, so no client-side row/cursor reconciliation is needed.
+  - The "Load more" fetch call now appends `&sort=` + `currentSortFromUrl()` and `&dir=` + `currentDirectionFromUrl()`, so pagination continues in whatever sort is currently active.
+  - Fixed a genuine CSS geometry bug found while verifying this stage: `.paned-window button.paned-sort-button` set `width: 100%` but no `height`, so the button's natural height (21px) overflowed its containing header `<span>` (17px) by a few pixels on both edges. Added `height: 100%`. This selector is shared with Board's own sort buttons, so the fix benefits both, not just Activity.
+- Verification:
+  - `php -l` / JS syntax check - clean.
+  - Full HTTP-level regression sweep (default page, `?sort=kind&dir=asc`, classic RSS still exactly 100 items, `/backup/`, `/api/forte_activity_page?sort=label&dir=desc`) - all 200/`ok`, server log clean.
+  - Browser verification for the click-to-navigate/Load-more chain was attempted extensively (headless Chrome, first via raw CDP, then via `playwright-core` connected over CDP - no browser-download install was needed) but this environment proved unable to sustain a fully clean, deterministic multi-step click session: dozens of debug iterations accumulated leaked renderer processes that degraded the browser, and `connectOverCDP` (attaching Playwright to a browser it didn't launch) has a known limitation tracking post-click navigation/frame lifecycle, which is exactly where every run stalled.
+  - Despite that, real signal was obtained, not just isolated code review:
+    - A raw-CDP hit-test investigation surfaced the button/span height mismatch above as the concrete cause of one class of failed clicks - fixed, and confirmed via `getComputedStyle` that button and span heights now match exactly (17px = 17px) with the correct rule (`display: flex; height: 100%`) matching in the cascade.
+    - With a genuine (non-synthetic, `isTrusted: true`) click via Playwright's `page.click()`, the very first click on the `Kind` header **did** complete end-to-end at least once: the URL changed to `/forte/activity/?sort=kind&dir=asc` and the rendered list was verified sorted ascending by kind - a full, successful pass of click → navigate → correctly-sorted render.
+    - On a later run, Playwright's own action log for the same click showed `click action done` immediately followed by `waiting for scheduled navigations to finish` (where it then stalled) - i.e., Playwright's own instrumentation confirms the click handler ran and initiated a real navigation; the stall is in Playwright's *post-click wait*, not in the page's response to the click.
+  - The click-handling logic itself (`closest()` traversal reading `data-paned-sort-href`) was separately verified correct in isolation by attaching an instrumented copy of the identical logic and confirming it always finds the right button/href for a genuine click target. `window.location.href = url` navigation was separately verified to work correctly in this exact environment when invoked directly (outside a click handler).
+  - Given the above, I'm confident the shipped behavior is correct, but flagging that a fully clean live multi-click browser run could not be completed in this session - worth a follow-up spot-check in a normal browser or a more stable automation environment (e.g., Playwright launching its own browser instead of attaching to an external one) before considering this fully closed.
+- Notes:
+  - This completes all 4 planned stages.
