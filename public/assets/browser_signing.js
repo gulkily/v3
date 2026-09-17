@@ -3170,6 +3170,7 @@
   window.ForumBrowserSigning = window.ForumBrowserSigning || {};
   window.ForumBrowserSigning.init = initBrowserSigning;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
+  window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;
 
   document.addEventListener("DOMContentLoaded", function () {
     initBrowserSigning(document);

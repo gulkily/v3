@@ -42,6 +42,7 @@
   <script src="<?= $e($scriptPath) ?>" defer></script>
 <?php endforeach; ?>
   <script src="<?= $e($composeDraftClearScriptPath) ?>" defer></script>
+  <script src="<?= $e($inviteNavigationScriptPath) ?>" defer></script>
   <script src="<?= $e($themeToggleScriptPath) ?>" defer></script>
   <script src="<?= $e($threadDensityToggleScriptPath) ?>" defer></script>
 <?php if ($appVersionNotificationEnabled): ?>

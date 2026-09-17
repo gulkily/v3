@@ -663,9 +663,10 @@ final class ReadModelBuilder
                 'identity_bootstrap' => 'identity_bootstrap',
                 'approval' => 'approval',
                 'identity' => 'identity',
+                'invitation' => 'invitation',
                 default => $post['post_id'] === $post['thread_id'] ? 'thread' : 'reply',
             };
-            $label = $post['subject'] ?? $this->preview($post['body']);
+            $label = $this->activityLabelForPost($post);
             $stmt->execute([
                 'created_at' => $post['created_at'],
                 'kind' => $kind,
@@ -820,6 +821,10 @@ final class ReadModelBuilder
             return 'post';
         }
 
+        if (in_array('invitation', $boardTags, true)) {
+            return 'invitation';
+        }
+
         if (in_array('internal', $boardTags, true)) {
             return 'identity_bootstrap';
         }
@@ -829,6 +834,19 @@ final class ReadModelBuilder
         }
 
         return 'identity';
+    }
+
+    /** @param array{subject:?string,body:string,board_tags_json:string} $post */
+    private function activityLabelForPost(array $post): string
+    {
+        $boardTags = json_decode($post['board_tags_json'], true);
+        if (is_array($boardTags) && in_array('invitation', $boardTags, true)
+            && preg_match('/^Invitation-Action: (issue|revoke|redeem)$/m', $post['body'], $action)
+            && preg_match('/^Verification-Hash: (sha256:[a-f0-9]{64})$/m', $post['body'], $hash)) {
+            return 'Invitation ' . $action[1] . ': ' . $hash[1];
+        }
+
+        return $post['subject'] ?? $this->preview($post['body']);
     }
 
     private function writeMetadata(PDO $pdo): void

@@ -841,6 +841,10 @@ class IncrementalReadModelUpdater
             return 'post';
         }
 
+        if (in_array('invitation', $record->boardTags, true)) {
+            return 'invitation';
+        }
+
         if (in_array('internal', $record->boardTags, true)) {
             return 'identity_bootstrap';
         }
@@ -858,6 +862,7 @@ class IncrementalReadModelUpdater
             'identity_bootstrap' => 'identity_bootstrap',
             'approval' => 'approval',
             'identity' => 'identity',
+            'invitation' => 'invitation',
             default => $record->isReply() ? 'reply' : 'thread',
         };
     }
@@ -883,7 +888,7 @@ class IncrementalReadModelUpdater
             'action_key' => $this->postSourcePath($record->postId),
             'post_id' => $record->postId,
             'thread_id' => $record->threadId ?? $record->postId,
-            'label' => $record->subject ?? $this->preview($record->body),
+            'label' => $this->activityLabelForPost($record),
             'board_tags_json' => $boardTagsJson,
             'author_identity_id' => $record->authorIdentityId,
             'author_profile_slug' => $author['profile_slug'],
@@ -893,6 +898,17 @@ class IncrementalReadModelUpdater
             'source_path' => $this->postSourcePath($record->postId),
             'source_commit_sha' => $commitSha,
         ]);
+    }
+
+    private function activityLabelForPost(PostRecord $record): string
+    {
+        if (in_array('invitation', $record->boardTags, true)
+            && preg_match('/^Invitation-Action: (issue|revoke|redeem)$/m', $record->body, $action)
+            && preg_match('/^Verification-Hash: (sha256:[a-f0-9]{64})$/m', $record->body, $hash)) {
+            return 'Invitation ' . $action[1] . ': ' . $hash[1];
+        }
+
+        return $record->subject ?? $this->preview($record->body);
     }
 
     private function postSourcePath(string $postId): string
