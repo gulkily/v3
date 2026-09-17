@@ -270,8 +270,8 @@ If production serves prebuilt static HTML artifacts, rebuild artifacts after cha
 ### Redeemable board invitations
 
 Approved, authenticated members can use **Invite** from any board page to
-generate a signed, single-use invitation. The generated URL keeps its bearer
-secret in the browser fragment; share it only with the intended recipient.
+generate a signed, single-use invitation. New links use a 128-bit URL-safe
+bearer secret in the browser fragment; share it only with the intended recipient.
 The Activity feed records issued, revoked, and redeemed events with the
 verification hash, never the secret or the share URL.
 

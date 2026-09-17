@@ -1,5 +1,6 @@
 (function () {
   "use strict";
+  const invitationTokenPattern = /^(?:[a-f0-9]{64}|[A-Za-z0-9_-]{21}[AQgw])$/;
   function post(endpoint, values) {
     return fetch(endpoint, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" }, body: new URLSearchParams(values).toString() }).then(function (response) { return response.json(); });
   }
@@ -20,9 +21,9 @@
   }
   function feedback(node, message, kind) { node.hidden = false; node.textContent = message; node.dataset.status = kind || "ok"; }
   document.addEventListener("DOMContentLoaded", function () {
-    const match = window.location.hash.match(/^#invite=([a-f0-9]{64})$/);
+    const match = window.location.hash.match(/^#invite=(.+)$/);
     const root = document.querySelector("[data-invitation-redemption]");
-    if (!match || !root) return;
+    if (!match || !invitationTokenPattern.test(match[1]) || !root) return;
     root.hidden = false;
     const token = match[1];
     const status = root.querySelector("[data-role=invitation-redemption-feedback]");

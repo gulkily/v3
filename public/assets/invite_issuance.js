@@ -8,9 +8,11 @@
   }
 
   function randomToken() {
-    const bytes = new Uint8Array(32);
+    const bytes = new Uint8Array(16);
     crypto.getRandomValues(bytes);
-    return Array.from(bytes, function (value) { return value.toString(16).padStart(2, "0"); }).join("");
+    let binary = "";
+    bytes.forEach(function (value) { binary += String.fromCharCode(value); });
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   }
 
   async function verificationHash(token) {

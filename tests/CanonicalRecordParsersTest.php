@@ -15,6 +15,7 @@ use ForumRewrite\Canonical\PublicKeyRecordParser;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
 use ForumRewrite\Invitation\InvitationLedger;
+use ForumRewrite\Invitation\InvitationToken;
 use ForumRewrite\Write\LocalWriteService;
 
 require __DIR__ . '/../autoload.php';
@@ -307,6 +308,14 @@ final class CanonicalRecordParsersTest
         }
 
         throw new RuntimeException('Expected invitation reuse to fail.');
+    }
+
+    public function testInvitationBearerTokenAcceptsShortCanonicalEncodingAndLegacyToken(): void
+    {
+        assertTrue(InvitationToken::isValidBearer('AbCdEfGhIjKlMnOpQrStUw'));
+        assertTrue(InvitationToken::isValidBearer(str_repeat('a', 64)));
+        assertFalse(InvitationToken::isValidBearer('AbCdEfGhIjKlMnOpQrStUx'));
+        assertFalse(InvitationToken::isValidBearer('not-an-invitation-token'));
     }
 
     public function testRejectsPostReactionWithUnsupportedOperation(): void

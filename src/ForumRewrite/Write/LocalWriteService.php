@@ -20,6 +20,7 @@ use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\Invitation\InvitationLedger;
+use ForumRewrite\Invitation\InvitationToken;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -1131,7 +1132,7 @@ class LocalWriteService
                 throw new RuntimeException('Approved identities cannot redeem invitations.');
             }
             $token = trim((string) ($input['invite_token'] ?? ''));
-            if (!preg_match('/^[a-f0-9]{64}$/', $token)) {
+            if (!InvitationToken::isValidBearer($token)) {
                 throw new RuntimeException('Invitation token is invalid.');
             }
             $entry = $this->invitationLedger()->findByVerificationHash('sha256:' . hash('sha256', $token));
