@@ -3,9 +3,11 @@
  * @var array<int, array<string, mixed>> $items
  * @var string $selectedView
  * @var string $selectedItemId
+ * @var array<string, array{has_more: bool, next_cursor: array{created_at: string, post_id: ?string, id: int}|null}> $viewPagination
  */
 $selectedView ??= 'all';
 $selectedItemId ??= '';
+$viewPagination ??= [];
 $tabStopAssigned = false;
 ?>
 <div class="paned-list-pane">
@@ -31,6 +33,23 @@ if ($isTabStop) {
     'isTabStop' => $isTabStop,
     'visible' => $visible,
 ]), 2) ?>
+<?php endforeach; ?>
+  </div>
+  <div class="paned-list-load-more-group" data-paned-activity-load-more-group>
+<?php foreach ($viewPagination as $viewKey => $pagination): ?>
+<?php
+$hasMore = (bool) ($pagination['has_more'] ?? false);
+$nextCursor = $pagination['next_cursor'] ?? null;
+$cursorJson = $nextCursor !== null ? json_encode($nextCursor) : '';
+?>
+    <button
+      type="button"
+      class="paned-list-load-more-button"
+      data-paned-activity-load-more
+      data-paned-activity-view="<?= $e($viewKey) ?>"
+      data-paned-activity-cursor="<?= $e($cursorJson) ?>"
+      <?= ($viewKey === $selectedView && $hasMore) ? '' : 'hidden' ?>
+    >Load more</button>
 <?php endforeach; ?>
   </div>
 </div>

@@ -34,3 +34,17 @@
   - Checked the dev server log for the diffed requests — no new PHP warnings/errors introduced.
 - Notes:
   - This partial is now the canonical single-row renderer; Stage 4's paging endpoint reuses it directly instead of duplicating row markup in a new place.
+
+## Stage 3 - Per-view "Load more" control on initial page load
+- Changes:
+  - `renderForteActivity()` (`Application.php`) now captures `$viewPagination[$viewKey] = ['has_more' => bool, 'next_cursor' => {created_at, post_id, id}|null]` per view, derived from each view's `fetchActivity()` result. `has_more` is forced `false` when that view's page came back empty, so a control is never shown without a cursor to page from.
+  - `viewPagination` is threaded through `renderForteActivity()` → `forte_activity.php` → `paned_activity_item_list.php`.
+  - `paned_activity_item_list.php` renders one `<button data-paned-activity-load-more data-paned-activity-view="{key}" data-paned-activity-cursor="{json}">` per view inside a new `.paned-list-load-more-group`, `hidden` unless that view is both the currently selected view and has more items. The cursor is JSON-encoded and HTML-escaped so Stage 5's JS can read it back verbatim via `JSON.parse`.
+  - Minimal styling added to `forte.css` (`.paned-list-load-more-group`, `.paned-list-load-more-button`) matching the existing toolbar-button look.
+- Verification:
+  - `php -l` on all changed PHP files — no syntax errors.
+  - Loaded `/forte/activity/` (default `all` view): only the `all` button lacks `hidden`; the other 4 have it, each with a distinct, correctly-escaped cursor JSON matching that view's last loaded item.
+  - Loaded `/forte/activity/?view=content`: only the `content` button lacks `hidden`, `all`'s button gained `hidden` — control visibility correctly follows `$selectedView` at render time.
+  - Server log showed no new warnings/errors across these requests.
+- Notes:
+  - No client-side behavior changed yet (Stage 5 wires the click handler and swaps `hidden` on filter switch); clicking the button currently does nothing.

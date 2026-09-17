@@ -219,6 +219,28 @@ body.paned-reader-body {
   scrollbar-gutter: stable;
 }
 
+.paned-list-load-more-group {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0.4rem;
+  border-top: 1px solid var(--paned-border-dark);
+}
+
+.paned-list-load-more-button {
+  padding: 0.3rem 0.8rem;
+  background: var(--paned-chrome);
+  color: var(--paned-ink);
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.paned-list-load-more-button:hover {
+  border-color: var(--paned-border-light) var(--paned-border-dark) var(--paned-border-dark) var(--paned-border-light);
+}
+
 .paned-list-row {
   display: flex;
   align-items: center;

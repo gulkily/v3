@@ -4,6 +4,7 @@
  * @var array<int, array{key: string, label: string, count: int}> $viewCounts
  * @var string $selectedView
  * @var string $selectedItemId
+ * @var array<string, array{has_more: bool, next_cursor: array{created_at: string, post_id: ?string, id: int}|null}> $viewPagination
  */
 $selectedView ??= 'all';
 $selectedItemId ??= '';
@@ -28,7 +29,7 @@ foreach ($viewCounts as $viewCount) {
   <div class="paned-board-layout">
 <?= $indent($partial('partials/paned_activity_filter_list.php', ['viewCounts' => $viewCounts, 'selectedView' => $selectedView]), 2) ?>
     <div class="paned-board-main paned-panes-stack">
-<?= $indent($partial('partials/paned_activity_item_list.php', ['items' => $items, 'selectedView' => $selectedView, 'selectedItemId' => $selectedItemId]), 3) ?>
+<?= $indent($partial('partials/paned_activity_item_list.php', ['items' => $items, 'selectedView' => $selectedView, 'selectedItemId' => $selectedItemId, 'viewPagination' => $viewPagination]), 3) ?>
 <?= $indent($partial('partials/paned_activity_detail_pane.php', ['items' => $items, 'selectedItemId' => $selectedItemId]), 3) ?>
     </div>
   </div>

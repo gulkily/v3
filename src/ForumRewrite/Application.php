@@ -1037,9 +1037,11 @@ final class Application
 
         $itemsById = [];
         $viewItemIds = [];
+        $viewPagination = [];
         foreach (array_keys($viewLabels) as $viewKey) {
             $viewItemIds[$viewKey] = [];
-            foreach ($this->fetchActivity($viewKey)['items'] as $item) {
+            $viewResult = $this->fetchActivity($viewKey);
+            foreach ($viewResult['items'] as $item) {
                 $itemId = (string) $item['id'];
                 $viewItemIds[$viewKey][] = $itemId;
                 if (!isset($itemsById[$itemId])) {
@@ -1047,6 +1049,19 @@ final class Application
                     $itemsById[$itemId] = $item;
                 }
             }
+
+            // The cursor is derived from the last item actually returned for
+            // this view, so an empty page never exposes a "Load more"
+            // control with nothing to page from.
+            $lastItem = $viewResult['items'][count($viewResult['items']) - 1] ?? null;
+            $viewPagination[$viewKey] = [
+                'has_more' => $viewResult['has_more'] && $lastItem !== null,
+                'next_cursor' => $lastItem !== null ? [
+                    'created_at' => (string) $lastItem['created_at'],
+                    'post_id' => $lastItem['post_id'] !== null ? (string) $lastItem['post_id'] : null,
+                    'id' => (int) $lastItem['id'],
+                ] : null,
+            ];
         }
 
         foreach ($itemsById as $itemId => $item) {
@@ -1090,6 +1105,7 @@ final class Application
                 'viewCounts' => $viewCounts,
                 'selectedView' => $selectedView,
                 'selectedItemId' => $selectedItemId,
+                'viewPagination' => $viewPagination,
             ],
             'Activity - Forte',
             'paned-reader-body',
