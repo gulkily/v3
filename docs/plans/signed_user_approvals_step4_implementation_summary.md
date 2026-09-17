@@ -43,3 +43,13 @@
   - The legacy API test confirms an unsigned request leaves the pending user in place.
 - Notes:
   - Stage 5 will verify that signed approvals appear with their signature and signing key through the existing source and activity displays.
+
+## Stage 5 - Audit signed approvals through existing views
+- Changes:
+  - Added end-to-end regression coverage for a real signed approval across the post page and both approval activity views.
+  - Reused existing source metadata and shared activity manifest presentation without new display components.
+- Verification:
+  - `php tests/run.php WriteApiSmokeTest` passed.
+  - The test confirms the approval post links its adjacent signature and author public key, while Classic and Forte Activity show the signing identity and public-key link.
+- Notes:
+  - Approval seeds remain unchanged trust anchors and are not expected to carry user signatures.
