@@ -44,3 +44,15 @@
   - `php tests/run.php LocalAppSmokeTest` passed, including the Classic/Forte manifest parity check.
 - Notes:
   - Individual post pages retain their existing source metadata unchanged.
+
+## Stage 5 - Cross-kind verification and rebuild parity
+- Changes:
+  - Ensured full read-model rebuilds retain each source file's latest-touching commit, matching incremental activity writes and preserving correct atomic manifests.
+  - Added normal-route coverage for signer-key rendering in both Activity views and generic coverage for every activity row with a source commit.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest` passed.
+  - `php tests/run.php WriteApiSmokeTest` passed, including incremental/full-rebuild parity tests.
+  - Manual local-server smoke: `curl` to `/activity/?view=content` and `/forte/activity/?view=content` both returned `Commit files (...)` entries.
+  - Full `php tests/run.php` now fails only the five pre-existing browser reaction tests reporting `clickHandler is not a function`.
+- Notes:
+  - The source-commit cache is per rebuild path, so each canonical source path is resolved once per rebuild.

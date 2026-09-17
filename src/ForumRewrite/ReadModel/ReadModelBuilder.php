@@ -25,7 +25,8 @@ final class ReadModelBuilder
     private array $threadLabelActivityEvents = [];
     /** @var array<int, array{created_at:string,post_id:string,thread_id:string,author_identity_id:?string,tags:list<string>,board_tags_json:string,source_path:string,source_commit_sha:?string}> */
     private array $postReactionActivityEvents = [];
-    private ?string $sourceCommitShaForRebuild = null;
+    /** @var array<string, ?string> */
+    private array $sourceCommitShaByPath = [];
 
     public function __construct(
         private readonly string $repositoryRoot,
@@ -49,7 +50,7 @@ final class ReadModelBuilder
         $this->invalidThreadLabelRecordCount = 0;
         $this->threadLabelActivityEvents = [];
         $this->postReactionActivityEvents = [];
-        $this->sourceCommitShaForRebuild = null;
+        $this->sourceCommitShaByPath = [];
         $pdo->beginTransaction();
         try {
             $this->measure('drop_schema', fn (): mixed => $this->dropSchema($pdo));
@@ -890,11 +891,30 @@ final class ReadModelBuilder
 
     private function sourceCommitShaForPath(string $relativePath): ?string
     {
-        if ($this->sourceCommitShaForRebuild === null) {
-            $this->sourceCommitShaForRebuild = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+        if (array_key_exists($relativePath, $this->sourceCommitShaByPath)) {
+            return $this->sourceCommitShaByPath[$relativePath];
         }
 
-        return $this->sourceCommitShaForRebuild;
+        if (!is_dir($this->repositoryRoot . '/.git')) {
+            $this->sourceCommitShaByPath[$relativePath] = null;
+            return null;
+        }
+
+        $command = sprintf(
+            'git -C %s log -1 --format=%%H -- %s 2>/dev/null',
+            escapeshellarg($this->repositoryRoot),
+            escapeshellarg($relativePath),
+        );
+        $output = [];
+        $exitCode = 0;
+        exec($command, $output, $exitCode);
+        $commitSha = trim((string) ($output[0] ?? ''));
+        $this->sourceCommitShaByPath[$relativePath] = $exitCode === 0
+            && preg_match('/^[A-Fa-f0-9]{40}$/', $commitSha) === 1
+            ? $commitSha
+            : null;
+
+        return $this->sourceCommitShaByPath[$relativePath];
     }
 
     /**

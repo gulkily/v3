@@ -1367,6 +1367,43 @@ final class LocalAppSmokeTest
         assertStringContains('post record', $forte);
     }
 
+    public function testClassicAndForteActivityRenderSignatureKeyOutsideCommit(): void
+    {
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $labelPath = 'records/thread-labels/thread-label-20260415153000-ab12cd34.txt';
+        $signaturePath = $labelPath . '.asc';
+        file_put_contents($repositoryRoot . '/' . $labelPath, (string) file_get_contents($repositoryRoot . '/' . $labelPath) . "\n");
+        file_put_contents($repositoryRoot . '/' . $signaturePath, "detached signature\n");
+        $this->runCommand($repositoryRoot, 'git add ' . escapeshellarg($labelPath) . ' ' . escapeshellarg($signaturePath));
+        $this->runCommand($repositoryRoot, 'git commit -m "Sign label record"');
+
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $classic = $this->render($application, '/activity/?view=all');
+        $forte = $this->render($application, '/forte/activity/?view=all');
+        $publicKeyPath = 'records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc';
+
+        assertTrue(preg_match('/Signer:\s+openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954/', $classic) === 1);
+        assertTrue(preg_match('/Signer:\s+openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954/', $forte) === 1);
+        assertTrue(preg_match('#Public key:\s+<a href="/source/current/' . preg_quote($publicKeyPath, '#') . '"#', $classic) === 1);
+        assertTrue(preg_match('#Public key:\s+<a href="/source/current/' . preg_quote($publicKeyPath, '#') . '"#', $forte) === 1);
+    }
+
+    public function testEveryActivityItemWithSourceCommitCarriesManifestData(): void
+    {
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->render($application, '/activity/?view=all');
+        $method = new ReflectionMethod($application, 'fetchActivity');
+        $items = $method->invoke($application, 'all');
+
+        foreach ($items as $item) {
+            assertTrue(array_key_exists('source_commit_files', $item));
+            if (preg_match('/^[a-f0-9]{40}$/i', (string) $item['source_commit_sha']) === 1) {
+                assertTrue($item['source_commit_files'] !== []);
+            }
+        }
+    }
+
     public function testActivityFetchLimitsAfterApplyingViewFilter(): void
     {
         @unlink($this->databasePath);
