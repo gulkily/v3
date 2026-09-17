@@ -11,6 +11,7 @@
     var rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
     var placeholder = contentPane.querySelector("[data-paned-activity-content-placeholder]");
     var contentItems = Array.prototype.slice.call(contentPane.querySelectorAll("[data-paned-activity-content-item-id]"));
+    var commitManifestBlocks = Array.prototype.slice.call(contentPane.querySelectorAll("[data-paned-activity-commit-manifest]"));
     var statusCount = document.querySelector("[data-paned-activity-status-count]");
     var loadMoreGroup = document.querySelector("[data-paned-activity-load-more-group]");
     var loadMoreButtons = loadMoreGroup
@@ -70,12 +71,36 @@
       }
     }
 
+    // Each commit's file manifest is rendered once (not once per item that
+    // happens to share it - some bootstrap/seed commits touch thousands of
+    // files and are referenced by most items, so duplicating that per item
+    // made the page tens of megabytes). Selecting an item moves its
+    // matching shared block into view inside that item's own article.
+    function showCommitManifestFor(article) {
+      var sha = article.getAttribute("data-paned-activity-commit-sha") || "";
+      commitManifestBlocks.forEach(function (block) {
+        if (sha !== "" && block.getAttribute("data-paned-activity-commit-manifest") === sha) {
+          block.hidden = false;
+          var body = article.querySelector(".body");
+          if (body) {
+            body.appendChild(block);
+          }
+        } else {
+          block.hidden = true;
+        }
+      });
+    }
+
     function selectItem(itemId) {
       if (placeholder) {
         placeholder.hidden = true;
       }
       contentItems.forEach(function (article) {
-        article.hidden = article.getAttribute("data-paned-activity-content-item-id") !== itemId;
+        var isSelected = article.getAttribute("data-paned-activity-content-item-id") === itemId;
+        article.hidden = !isSelected;
+        if (isSelected) {
+          showCommitManifestFor(article);
+        }
       });
       rows.forEach(function (row) {
         var isSelected = row.getAttribute("data-paned-activity-id") === itemId;
@@ -287,6 +312,17 @@
       template.innerHTML = html;
       var incomingNodes = Array.prototype.slice.call(template.content.children);
       incomingNodes.forEach(function (node) {
+        // A shared commit-manifest block (dedup by sha) or a per-item
+        // article (dedup by item id) - a batch can contain both, and the
+        // sha a later batch repeats must not be appended twice either.
+        var manifestSha = node.getAttribute("data-paned-activity-commit-manifest");
+        if (manifestSha !== null) {
+          if (!contentPane.querySelector('[data-paned-activity-commit-manifest="' + manifestSha + '"]')) {
+            contentPane.appendChild(node);
+          }
+          return;
+        }
+
         var id = node.getAttribute("data-paned-activity-content-item-id");
         if (!contentPane.querySelector('[data-paned-activity-content-item-id="' + id + '"]')) {
           contentPane.appendChild(node);
@@ -331,6 +367,9 @@
             if (contentPane) {
               contentItems = Array.prototype.slice.call(
                 contentPane.querySelectorAll("[data-paned-activity-content-item-id]")
+              );
+              commitManifestBlocks = Array.prototype.slice.call(
+                contentPane.querySelectorAll("[data-paned-activity-commit-manifest]")
               );
             }
 

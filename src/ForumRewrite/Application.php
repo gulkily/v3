@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite;
 
+use ForumRewrite\Activity\SqliteActivityCommitManifestCache;
 use ForumRewrite\Analysis\PostAnalysisService;
 use ForumRewrite\Analysis\PostAnalyzerFactory;
 use ForumRewrite\Analysis\RelatedContentSearchService;
@@ -57,6 +58,8 @@ final class Application
     private array $sourceCommitFileManifestCache = [];
     /** @var array<string, list<array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}>|null> */
     private array $activityCommitManifestCache = [];
+    private ?SqliteActivityCommitManifestCache $activityCommitManifestCacheStore = null;
+    private bool $activityCommitManifestCacheStoreInitialized = false;
 
     public function __construct(
         private readonly string $projectRoot,
@@ -1203,6 +1206,7 @@ final class Application
 
         $html = '';
         $detailHtml = '';
+        $commitManifestsBySha = [];
         foreach ($result['items'] as $item) {
             $item['forte_link'] = $this->activityItemBoardLink($item);
             foreach (['all', 'content', 'identity', 'bootstrap', 'approval'] as $flagView) {
@@ -1225,6 +1229,23 @@ final class Application
                 'item' => $item,
                 'isSelected' => false,
             ]);
+
+            // Same dedup-by-commit-sha the full page render does (see
+            // paned_activity_detail_pane.php) - the client-side merge also
+            // skips a sha it already has, so a redundant block emitted here
+            // for a commit an earlier page already rendered is harmless.
+            $files = $item['source_commit_files'] ?? [];
+            $sha = (string) ($item['source_commit_sha'] ?? '');
+            if ($files !== [] && $sha !== '' && !isset($commitManifestsBySha[$sha])) {
+                $commitManifestsBySha[$sha] = true;
+                $detailHtml .= '<div data-paned-activity-commit-manifest="' . htmlspecialchars($sha, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '" hidden>'
+                    . $this->renderer()->renderFragment('partials/activity_commit_manifest.php', [
+                        'files' => $files,
+                        'commit_sha' => $sha,
+                        'commit_href' => $item['source_commit_href'] ?? '',
+                    ])
+                    . '</div>';
+            }
         }
 
         $lastItem = $result['items'][count($result['items']) - 1] ?? null;
@@ -5543,6 +5564,30 @@ final class Application
         return $this->llmExchangeRecorder;
     }
 
+    /**
+     * Lazily opens the persistent commit-manifest cache alongside the main
+     * read-model database. Returns null (never throws) on any failure to
+     * open/create it, since this is purely a performance optimization -
+     * activityCommitManifest() must still work correctly, just slower,
+     * when this is unavailable.
+     */
+    private function activityCommitManifestCacheStore(): ?SqliteActivityCommitManifestCache
+    {
+        if ($this->activityCommitManifestCacheStoreInitialized) {
+            return $this->activityCommitManifestCacheStore;
+        }
+
+        $this->activityCommitManifestCacheStoreInitialized = true;
+        $path = dirname($this->databasePath) . '/activity_commit_manifest_cache.sqlite3';
+        try {
+            $this->activityCommitManifestCacheStore = new SqliteActivityCommitManifestCache(new PDO('sqlite:' . $path));
+        } catch (\Throwable) {
+            $this->activityCommitManifestCacheStore = null;
+        }
+
+        return $this->activityCommitManifestCacheStore;
+    }
+
     private function llmExchangeStore(): ?SqliteLlmExchangeStore
     {
         if ($this->llmExchangeStoreInitialized) {
@@ -6605,27 +6650,52 @@ final class Application
             return $this->activityCommitManifestCache[$commitSha];
         }
 
-        $files = $this->sourceCommitFiles($commitSha);
-        if ($files === null) {
-            $this->activityCommitManifestCache[$commitSha] = null;
-            return null;
+        // The expensive part - a `git diff-tree` exec plus a signature/
+        // OpenPGP lookup per file - is cached persistently by commit sha
+        // (see SqliteActivityCommitManifestCache), since a commit's file
+        // list and each file's role/signer never change. Only the
+        // request-specific hrefs below are always recomputed - they're
+        // cheap string formatting, not worth persisting.
+        $rawFiles = $this->activityCommitManifestCacheStore()?->get($commitSha);
+        if ($rawFiles === null) {
+            $files = $this->sourceCommitFiles($commitSha);
+            if ($files === null) {
+                $this->activityCommitManifestCache[$commitSha] = null;
+                return null;
+            }
+
+            $rawFiles = array_map(function (array $file): array {
+                $signature = $this->activityCommitSignatureMetadata($file['path']);
+
+                return [
+                    'status' => $file['status'],
+                    'path' => $file['path'],
+                    'previous_path' => $file['previous_path'],
+                    'role' => $this->sourceCommitFileRole($file['path']),
+                    'signature_signer_identity' => $signature['signer_identity'],
+                    'signature_public_key_path' => $signature['public_key_path'],
+                    'signature_key_status' => $signature['status'],
+                ];
+            }, $files);
+
+            $this->activityCommitManifestCacheStore()?->put($commitSha, $rawFiles);
         }
 
         $manifest = array_map(function (array $file) use ($commitSha): array {
-            $signature = $this->activityCommitSignatureMetadata($file['path']);
-
             return [
                 'status' => $file['status'],
                 'path' => $file['path'],
                 'previous_path' => $file['previous_path'],
-                'role' => $this->sourceCommitFileRole($file['path']),
+                'role' => $file['role'],
                 'href' => $this->sourceCommitFileHref($file['path'], $file['status'], $commitSha),
-                'signature_signer_identity' => $signature['signer_identity'],
-                'signature_public_key_path' => $signature['public_key_path'],
-                'signature_public_key_href' => $signature['public_key_href'],
-                'signature_key_status' => $signature['status'],
+                'signature_signer_identity' => $file['signature_signer_identity'],
+                'signature_public_key_path' => $file['signature_public_key_path'],
+                'signature_public_key_href' => $file['signature_public_key_path'] !== ''
+                    ? '/source/current/' . $this->encodeSourcePathForUrl($file['signature_public_key_path'])
+                    : '',
+                'signature_key_status' => $file['signature_key_status'],
             ];
-        }, $files);
+        }, $rawFiles);
 
         $this->activityCommitManifestCache[$commitSha] = $manifest;
 
