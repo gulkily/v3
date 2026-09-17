@@ -1039,7 +1039,7 @@ final class Application
         $viewItemIds = [];
         foreach (array_keys($viewLabels) as $viewKey) {
             $viewItemIds[$viewKey] = [];
-            foreach ($this->fetchActivity($viewKey) as $item) {
+            foreach ($this->fetchActivity($viewKey)['items'] as $item) {
                 $itemId = (string) $item['id'];
                 $viewItemIds[$viewKey][] = $itemId;
                 if (!isset($itemsById[$itemId])) {
@@ -1584,7 +1584,7 @@ final class Application
         return [
             'generated_at' => $metadata['rebuilt_at'] ?? '',
             'repository_head' => $metadata['repository_head'] ?? ReadModelMetadata::repositoryHead($this->repositoryRoot),
-            'items' => array_slice($this->fetchActivity('content'), 0, self::BACKUP_PREVIEW_LIMIT),
+            'items' => array_slice($this->fetchActivity('content')['items'], 0, self::BACKUP_PREVIEW_LIMIT),
         ];
     }
 
@@ -1640,7 +1640,7 @@ final class Application
                         'is_active' => false,
                     ],
                 ],
-                'items' => $this->fetchActivity($view),
+                'items' => $this->fetchActivity($view)['items'],
             ],
             'Activity',
             'activity',
@@ -2159,7 +2159,7 @@ final class Application
     {
         $view = $this->normalizeActivityView($view);
         $items = [];
-        foreach ($this->fetchActivity($view) as $item) {
+        foreach ($this->fetchActivity($view)['items'] as $item) {
             $link = match ($item['kind']) {
                 'thread_label_add' => '/threads/' . $item['thread_id'],
                 'site_feature_flag' => '/tools/feature-flags/',
@@ -3737,12 +3737,31 @@ final class Application
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * @param array{created_at: string, post_id: ?string, id: int}|null $afterCursor
+     *        Keyset cursor identifying the last item of the previous page,
+     *        matching the ORDER BY below. Pass null for the first page.
+     * @return array{items: array<int, array<string, mixed>>, has_more: bool}
      */
-    private function fetchActivity(string $view): array
+    private function fetchActivity(string $view, ?array $afterCursor = null): array
     {
         $view = $this->normalizeActivityView($view);
         [$viewWhere, $viewParameters] = $this->activityViewSql($view);
+
+        $cursorWhere = '';
+        if ($afterCursor !== null) {
+            // COALESCE(post_id, -1) mirrors SQLite's own NULL-sorts-lowest
+            // rule for `ORDER BY post_id DESC` (NULLs last), since no real
+            // post_id is ever <= -1.
+            $cursorWhere = 'AND (
+                activity.created_at < :cursor_created_at
+                OR (activity.created_at = :cursor_created_at AND COALESCE(activity.post_id, -1) < COALESCE(:cursor_post_id, -1))
+                OR (activity.created_at = :cursor_created_at AND COALESCE(activity.post_id, -1) = COALESCE(:cursor_post_id, -1) AND activity.id < :cursor_id)
+            )';
+            $viewParameters['cursor_created_at'] = $afterCursor['created_at'];
+            $viewParameters['cursor_post_id'] = $afterCursor['post_id'];
+            $viewParameters['cursor_id'] = $afterCursor['id'];
+        }
+
         $stmt = $this->pdo()->prepare(
             'SELECT activity.created_at, activity.kind, activity.record_family, activity.action_key,
                     activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
@@ -3754,15 +3773,23 @@ final class Application
              LEFT JOIN posts ON posts.post_id = activity.post_id
              WHERE 1 = 1
              ' . $viewWhere . '
+             ' . $cursorWhere . '
              ORDER BY activity.created_at DESC, activity.post_id DESC, activity.id DESC
              LIMIT :limit'
         );
         foreach ($viewParameters as $parameter => $value) {
             $stmt->bindValue($parameter, $value);
         }
-        $stmt->bindValue('limit', self::ACTIVITY_ITEM_LIMIT, PDO::PARAM_INT);
+        // Fetch one extra row to detect whether a next page exists, then
+        // trim it back off before building the returned item set.
+        $stmt->bindValue('limit', self::ACTIVITY_ITEM_LIMIT + 1, PDO::PARAM_INT);
         $stmt->execute();
         $rows = $stmt->fetchAll();
+
+        $hasMore = count($rows) > self::ACTIVITY_ITEM_LIMIT;
+        if ($hasMore) {
+            $rows = array_slice($rows, 0, self::ACTIVITY_ITEM_LIMIT);
+        }
 
         $items = array_map(function (array $post): array {
             $sourcePath = $post['source_path'] !== null ? (string) $post['source_path'] : '';
@@ -3797,7 +3824,7 @@ final class Application
             ];
         }, $rows);
 
-        return array_values(array_filter($items, function (array $item) use ($view): bool {
+        $items = array_values(array_filter($items, function (array $item) use ($view): bool {
             $boardTagsJson = (string) $item['board_tags_json'];
             $hidden = $this->isHiddenBootstrapBoardTagsJson($boardTagsJson);
 
@@ -3810,6 +3837,8 @@ final class Application
                 default => true,
             };
         }));
+
+        return ['items' => $items, 'has_more' => $hasMore];
     }
 
     /**
