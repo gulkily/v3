@@ -445,6 +445,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/forte_activity_page') {
+            $this->handleForteActivityPage($query);
+            return;
+        }
+
         if ($path === '/api/get_username_claim_cta') {
             $this->sendText("Generate a browser keypair, choose a username, and bootstrap your identity.\n", 200);
             return;
@@ -1112,6 +1117,85 @@ final class Application
             ['/assets/paned_activity_reader.js'],
             ['/assets/forte.css'],
         );
+    }
+
+    /**
+     * Serves one additional page of activity rows for a single view, reusing
+     * the canonical row partial (`paned_activity_item_row.php`) so appended
+     * rows are byte-identical to the ones the initial page render produces.
+     * Unlike `renderForteActivity()`, this only checks membership in the
+     * requested view - an item's other `view_*` flags are left false, since
+     * paging one view is not supposed to fetch the other 4 views' data too.
+     *
+     * Registered below `handle()`'s blanket non-GET rejection, so (like its
+     * `/api/get_thread`, `/api/get_post`, and `/api/get_profile` siblings)
+     * it never runs for a non-GET request and needs no method check here.
+     *
+     * @param array<string, mixed> $query
+     */
+    private function handleForteActivityPage(array $query): void
+    {
+        $view = $this->normalizeActivityView((string) ($query['view'] ?? ''));
+
+        $rawCursor = trim((string) ($query['cursor'] ?? ''));
+        $cursor = null;
+        if ($rawCursor !== '') {
+            try {
+                $decodedCursor = json_decode($rawCursor, true, 512, JSON_THROW_ON_ERROR);
+            } catch (\JsonException) {
+                $decodedCursor = null;
+            }
+
+            if (
+                !is_array($decodedCursor)
+                || !isset($decodedCursor['created_at'], $decodedCursor['id'])
+                || !is_string($decodedCursor['created_at'])
+                || !is_int($decodedCursor['id'])
+                || !array_key_exists('post_id', $decodedCursor)
+                || !($decodedCursor['post_id'] === null || is_string($decodedCursor['post_id']))
+            ) {
+                $this->sendJson(['status' => 'error', 'error' => 'invalid cursor'], 400);
+                return;
+            }
+
+            $cursor = [
+                'created_at' => $decodedCursor['created_at'],
+                'post_id' => $decodedCursor['post_id'],
+                'id' => $decodedCursor['id'],
+            ];
+        }
+
+        $result = $this->fetchActivity($view, $cursor);
+
+        $html = '';
+        foreach ($result['items'] as $item) {
+            $item['forte_link'] = $this->activityItemBoardLink($item);
+            foreach (['all', 'content', 'identity', 'bootstrap', 'approval'] as $flagView) {
+                $item['view_' . $flagView] = ($flagView === $view);
+            }
+
+            $html .= $this->renderer()->renderFragment('partials/paned_activity_item_row.php', [
+                'item' => $item,
+                'isSelected' => false,
+                'isTabStop' => false,
+                'visible' => true,
+            ]);
+        }
+
+        $lastItem = $result['items'][count($result['items']) - 1] ?? null;
+        $hasMore = $result['has_more'] && $lastItem !== null;
+        $nextCursor = $lastItem !== null ? [
+            'created_at' => (string) $lastItem['created_at'],
+            'post_id' => $lastItem['post_id'] !== null ? (string) $lastItem['post_id'] : null,
+            'id' => (int) $lastItem['id'],
+        ] : null;
+
+        $this->sendJson([
+            'status' => 'ok',
+            'html' => $html,
+            'has_more' => $hasMore,
+            'next_cursor' => $nextCursor,
+        ], 200);
     }
 
     /**

@@ -48,3 +48,20 @@
   - Server log showed no new warnings/errors across these requests.
 - Notes:
   - No client-side behavior changed yet (Stage 5 wires the click handler and swaps `hidden` on filter switch); clicking the button currently does nothing.
+
+## Stage 4 - Paging endpoint
+- Changes:
+  - New route `GET /api/forte_activity_page` (`Application.php`), registered alongside the other read-only `/api/get_*` endpoints (after `handle()`'s blanket non-GET rejection, so — like those siblings — it needs no method check of its own).
+  - `handleForteActivityPage(array $query)`: takes `view` and an optional JSON `cursor` query param, validates the cursor shape (`{created_at: string, post_id: string|null, id: int}`) and returns 400 on malformed input.
+  - Calls `fetchActivity($view, $cursor)`, renders each returned item through the Stage 2 canonical row partial via `TemplateRenderer::renderFragment()` (built for exactly this "HTML fragment for client-side JS" case), and returns JSON: `{status: 'ok', html, has_more, next_cursor}`.
+  - Per the plan, appended items only get the requesting view's `view_*` flag set true; the other 4 are set false rather than rechecked, so paging one view never re-queries the other 4.
+  - No new access-control code added: the endpoint sits after the same blanket members-only gate as every other route, so it is exactly as reachable/unreachable as `/forte/activity/` itself under `FORUM_APPROVED_MEMBERS_ONLY` (neither path is in `isApplicationRoute()`, so both 404 rather than 403 for an unapproved viewer under that mode — a pre-existing gap outside this feature's scope, not something newly introduced here).
+- Verification:
+  - `php -l src/ForumRewrite/Application.php` — no syntax errors.
+  - `GET /api/forte_activity_page?view=all` (empty cursor) then again with the response's `next_cursor` as the next request's cursor: 100 + 100 rows, zero id overlap between the two pages, and the second page's first item immediately follows the first page's last item (id 312 → 232) — confirms no gaps/duplicates in the keyset pagination.
+  - Paged the smaller `approval` view to exhaustion: page 1 returns 100 rows with `has_more: true`, page 2 returns the remaining 5 with `has_more: false`, 105 unique ids total, zero overlap.
+  - Error paths: malformed `cursor` JSON → `400 {"status":"error","error":"invalid cursor"}`; `POST` to the endpoint → `405` (from `handle()`'s existing blanket non-GET rejection, confirming no bypass).
+  - Server log clean across all of the above (no new PHP warnings/errors).
+- Notes:
+  - Response rows are visually identical to Stage 2's row partial output by construction (same partial, same call convention) — no separate markup to drift out of sync.
+  - Nothing consumes this endpoint client-side yet; Stage 5 wires the "Load more" button to call it.
