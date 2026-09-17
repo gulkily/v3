@@ -3,10 +3,15 @@
  * @var array<int, array<string, mixed>> $users
  */
 ?>
-<div class="paned-window paned-standalone-window">
-  <div class="paned-dialog-titlebar">
-    <span>Users</span>
+<div class="paned-window">
+  <div class="paned-menubar">
+    <span>File</span><span>Edit</span><span>View</span><span>Folder</span><span>Navigate</span><span>Help</span>
   </div>
+<?= $indent($partial('partials/paned_toolbar.php', [
+    'activeView' => 'users',
+    'boardControlsEnabled' => false,
+    'replyEnabled' => false,
+  ]), 1) ?>
   <div class="paned-standalone-body">
 <?php if ($users === []): ?>
     <p>No visible users yet.</p>
@@ -19,6 +24,5 @@
     </p>
 <?php endforeach; ?>
 <?php endif; ?>
-    <p class="paned-standalone-back"><a href="/forte">&larr; Back to board</a></p>
   </div>
 </div>

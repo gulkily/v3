@@ -19,3 +19,12 @@
   - Raw HTTP against the live instance (`http://127.0.0.1:8091/forte/activity/`): New/Reply/Prev/Next all `disabled`, Refresh `disabled`, Board/Users plain links, Activity carries `aria-current="page"`.
   - Full test suite: 399 passing / 9 failing, same set as Stage 1 - no regressions.
 - Notes: none.
+
+## Stage 3 - Users wiring and chrome drop
+- Changes:
+  - `templates/pages/forte_users.php`: outer wrapper changed from `paned-window paned-standalone-window` to plain `paned-window`; added the `paned-menubar` row and `$partial('partials/paned_toolbar.php', ['activeView' => 'users', 'boardControlsEnabled' => false, 'replyEnabled' => false])`; removed the `paned-dialog-titlebar` "Users" heading (superseded by the toolbar's selected Users button) and the `paned-standalone-back` link (superseded by the toolbar's Board button). The `paned-standalone-body` user list itself is untouched.
+- Verification:
+  - `php -l`: clean.
+  - Raw HTTP against the live instance (`http://127.0.0.1:8091/forte/users/`): toolbar renders with New/Reply/Prev/Next/Refresh all `disabled`, Board plain, Users `aria-current="page"`; all ~40 user rows render unchanged below it; the old `paned-standalone-back` markup is gone (`grep -c` returns 0).
+  - Full test suite: 399 passing / 9 failing, same set as Stage 1 - no regressions.
+- Notes: headless-browser screenshot verification wasn't usable in this sandbox (Chromium's headless `--screenshot` writes reported success but the file never appeared on the host-visible filesystem - an environment/sandboxing artifact, not an application issue), so the Stage 3 risk flagged in the Step 3 plan (whether dropping `.paned-standalone-window`'s narrow centered width reads poorly) was resolved by CSS inspection instead: `body.paned-reader-body` sets `height: 100vh` but nothing sets `overflow: hidden` on it or `.paned-window`, so a user list taller than the viewport still renders in full and the page scrolls normally rather than clipping - no CSS fix needed. Kept the list at full toolbar width (matching Board/Activity's own full-width chrome) rather than reintroducing a narrower column.
