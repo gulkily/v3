@@ -11,3 +11,14 @@
   - Full `php tests/run.php` reached five unrelated existing browser-reaction failures: `BrowserSigningNormalizationTest` reports `clickHandler is not a function`.
 - Notes:
   - Stage 2 will add canonical roles and safe per-file links; this stage deliberately adds no feed markup.
+
+## Stage 2 - Canonical roles and safe links
+- Changes:
+  - Expanded activity manifest entries with observable canonical roles and historic source links.
+  - Kept deleted and non-canonical paths enumerated but unlinked, preventing broken or unauthorized source navigation.
+  - Added coverage for a canonical post record's role and commit-scoped source link.
+- Verification:
+  - `php -l src/ForumRewrite/Application.php` and `php -l tests/LocalAppSmokeTest.php` passed.
+  - `php tests/run.php LocalAppSmokeTest` passed.
+- Notes:
+  - Stage 3 will add signer/public-key associations only for detached-signature entries.

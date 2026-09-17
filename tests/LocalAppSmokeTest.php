@@ -1304,6 +1304,28 @@ final class LocalAppSmokeTest
         assertStringNotContains('@ ' . substr($postCommitSha, 0, 12), $activity);
     }
 
+    public function testActivityCommitManifestLabelsCanonicalRecordsAndSafeLinks(): void
+    {
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->render($application, '/activity/?view=content');
+        $method = new ReflectionMethod($application, 'fetchActivity');
+        $items = $method->invoke($application, 'content');
+        $postCommitSha = trim($this->runCommand($repositoryRoot, 'git log -1 --format=%H -- records/posts/root-001.txt'));
+
+        $item = array_values(array_filter(
+            $items,
+            static fn (array $item): bool => $item['post_id'] === 'root-001'
+        ))[0];
+        $entry = array_values(array_filter(
+            $item['source_commit_files'],
+            static fn (array $entry): bool => $entry['path'] === 'records/posts/root-001.txt'
+        ))[0];
+
+        assertSame('post record', $entry['role']);
+        assertSame('/source/blob/' . $postCommitSha . '/records/posts/root-001.txt', $entry['href']);
+    }
+
     public function testActivityFetchLimitsAfterApplyingViewFilter(): void
     {
         @unlink($this->databasePath);

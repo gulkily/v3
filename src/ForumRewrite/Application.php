@@ -55,6 +55,8 @@ final class Application
     private bool $llmExchangeStoreInitialized = false;
     /** @var array<string, list<array{status:string,path:string,previous_path:string}>|null> */
     private array $sourceCommitFileManifestCache = [];
+    /** @var array<string, list<array{status:string,path:string,previous_path:string,role:string,href:string}>|null> */
+    private array $activityCommitManifestCache = [];
 
     public function __construct(
         private readonly string $projectRoot,
@@ -3783,7 +3785,7 @@ final class Application
                 'source_commit_sha' => $sourceCommitSha,
                 'source_path_href' => $this->sourcePathHref($sourcePath, $sourceCommitSha),
                 'source_commit_href' => $this->sourceCommitHref($sourceCommitSha),
-                'source_commit_files' => $this->sourceCommitFiles($sourceCommitSha) ?? [],
+                'source_commit_files' => $this->activityCommitManifest($sourceCommitSha) ?? [],
                 'source_signature_path' => $signature['path'],
                 'source_signature_href' => $signature['href'],
                 'source_signature_status' => $this->sourceSignatureStatus(
@@ -6208,6 +6210,63 @@ final class Application
         $this->sourceCommitFileManifestCache[$commitSha] = $files;
 
         return $files;
+    }
+
+    /**
+     * @return list<array{status:string,path:string,previous_path:string,role:string,href:string}>|null
+     */
+    private function activityCommitManifest(string $commitSha): ?array
+    {
+        if (array_key_exists($commitSha, $this->activityCommitManifestCache)) {
+            return $this->activityCommitManifestCache[$commitSha];
+        }
+
+        $files = $this->sourceCommitFiles($commitSha);
+        if ($files === null) {
+            $this->activityCommitManifestCache[$commitSha] = null;
+            return null;
+        }
+
+        $manifest = array_map(fn (array $file): array => [
+            'status' => $file['status'],
+            'path' => $file['path'],
+            'previous_path' => $file['previous_path'],
+            'role' => $this->sourceCommitFileRole($file['path']),
+            'href' => $this->sourceCommitFileHref($file['path'], $file['status'], $commitSha),
+        ], $files);
+
+        $this->activityCommitManifestCache[$commitSha] = $manifest;
+
+        return $manifest;
+    }
+
+    private function sourceCommitFileRole(string $path): string
+    {
+        if ($this->isValidCanonicalDetachedSignaturePath($path)) {
+            return 'detached signature';
+        }
+
+        return match (true) {
+            str_starts_with($path, 'records/posts/') => 'post record',
+            str_starts_with($path, 'records/thread-labels/') => 'thread label record',
+            str_starts_with($path, 'records/post-reactions/') => 'post reaction record',
+            str_starts_with($path, 'records/identity/') => 'identity record',
+            str_starts_with($path, 'records/approval-seeds/') => 'approval seed record',
+            str_starts_with($path, 'records/public-keys/') => 'public key',
+            $path === 'records/instance/public.txt' => 'instance record',
+            $path === 'records/instance/feature-flags.txt' => 'feature flags record',
+            $this->isValidCanonicalRecordSourcePath($path) => 'canonical record',
+            default => 'other committed file',
+        };
+    }
+
+    private function sourceCommitFileHref(string $path, string $status, string $commitSha): string
+    {
+        if ($status === 'deleted' || !$this->isValidCanonicalSourcePath($path)) {
+            return '';
+        }
+
+        return $this->sourcePathHref($path, $commitSha) ?? '';
     }
 
     /**
