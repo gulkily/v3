@@ -95,6 +95,7 @@ final class StaticArtifactBuilder
             return false;
         }
 
+        AssetFingerprint::copyFingerprintedAssets($this->projectRoot . '/public', $this->artifactRoot);
         return $this->writeRouteArtifactsWithLock($this->application(), $normalizedRoute, $artifactPaths);
     }
 
@@ -148,6 +149,7 @@ final class StaticArtifactBuilder
         ob_start();
         $application->handle('GET', $route);
         $contents = (string) ob_get_clean();
+        $this->assertFingerprintReferencesAvailable($contents);
         $temporaryPath = tempnam($directory, 'artifact-');
         if ($temporaryPath === false) {
             throw new RuntimeException('Unable to create temporary artifact path in ' . $directory);
@@ -180,6 +182,7 @@ final class StaticArtifactBuilder
 
     private function writeContentsArtifact(string $path, string $contents): void
     {
+        $this->assertFingerprintReferencesAvailable($contents);
         $directory = dirname($path);
         if (!is_dir($directory)) {
             mkdir($directory, 0777, true);
@@ -198,6 +201,19 @@ final class StaticArtifactBuilder
         if (!rename($temporaryPath, $path)) {
             @unlink($temporaryPath);
             throw new RuntimeException('Unable to move artifact into place: ' . $path);
+        }
+    }
+
+    private function assertFingerprintReferencesAvailable(string $contents): void
+    {
+        if (preg_match_all('#/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+#', $contents, $matches) === false) {
+            return;
+        }
+
+        foreach (array_unique($matches[0]) as $assetPath) {
+            if (!is_file($this->artifactRoot . $assetPath)) {
+                throw new RuntimeException('Static artifact references missing asset: ' . $assetPath);
+            }
         }
     }
 

@@ -2449,6 +2449,10 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   --about-glyph: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M3 3h10.5L17 6.5V17H3z' fill='none' stroke='black' stroke-width='1.6'/><rect x='6.5' y='3.8' width='5' height='3.6' fill='black'/><rect x='5.5' y='11' width='9' height='5' fill='black'/></svg>");
 }
 
+.about-section[data-about-section="hackable"] h2::before {
+  --about-glyph: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M8 5L3.5 10 8 15M12 5l4.5 5-4.5 5M11 3.5L9 16.5' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+}
+
 @media (max-width: 560px) {
   .tool-launcher-item {
     flex-direction: column;
@@ -3157,6 +3161,33 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   margin-top: 0.35rem;
 }
 
+:root[data-thread-density="compact"] article.card:has(> .board-controls-nav) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+:root[data-thread-density="compact"] .compact-thread-compose {
+  padding: 0;
+}
+
+:root[data-thread-density="compact"] .compact-thread-compose .inline-reply-summary {
+  padding: 0;
+}
+
+:root[data-thread-density="compact"] .thread-list > .compact-thread-compose {
+  margin-top: 0;
+}
+
+:root[data-thread-density="compact"] .thread-list > .compact-thread-compose + * {
+  margin-top: 0;
+}
+
+:root[data-thread-density="compact"] .thread-list > .card {
+  border-left: 0;
+  border-right: 0;
+}
+
 :root[data-theme="word97"][data-thread-density="compact"] .thread-list .thread-card > h1:first-child,
 :root[data-theme="word97"][data-thread-density="compact"] .thread-list .thread-card > h2:first-child {
   margin: -0.35rem -0.5rem 0.25rem;
@@ -3421,4 +3452,3 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 .sqlite-tab-panel[hidden] {
   display: none;
 }
-

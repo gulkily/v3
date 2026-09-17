@@ -13,6 +13,7 @@ use ForumRewrite\Write\LocalWriteService;
 
 $projectRoot = dirname(__DIR__);
 $defaultRepositoryRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot);
+$defaultDatabasePath = LocalRepositoryBootstrap::defaultDatabasePath($projectRoot);
 $command = $argv[1] ?? '';
 
 try {
@@ -24,7 +25,7 @@ try {
         $identityId = normalizeCliIdentityId(requireCliArgument($argv, 2, 'identity_id'));
         $seedReason = trim((string) ($argv[3] ?? 'initial approved user'));
         $repositoryRoot = $argv[4] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $defaultRepositoryRoot);
-        $databasePath = $argv[5] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3'));
+        $databasePath = $argv[5] ?? (getenv('FORUM_DATABASE_PATH') ?: $defaultDatabasePath);
 
         seedApprovedIdentity($repositoryRoot, $databasePath, $identityId, $seedReason);
         fwrite(STDOUT, "Seeded approval for {$identityId}\n");
@@ -34,7 +35,7 @@ try {
     $approverIdentityId = normalizeCliIdentityId(requireCliArgument($argv, 2, 'approver_identity_id'));
     $targetIdentityId = normalizeCliIdentityId(requireCliArgument($argv, 3, 'target_identity_id'));
     $repositoryRoot = $argv[4] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $defaultRepositoryRoot);
-    $databasePath = $argv[5] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3'));
+    $databasePath = $argv[5] ?? (getenv('FORUM_DATABASE_PATH') ?: $defaultDatabasePath);
     $artifactRoot = $argv[6] ?? (getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'));
 
     approveExistingUser($repositoryRoot, $databasePath, $artifactRoot, $approverIdentityId, $targetIdentityId);

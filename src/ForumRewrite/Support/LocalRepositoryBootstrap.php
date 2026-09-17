@@ -11,10 +11,9 @@ use RuntimeException;
 
 final class LocalRepositoryBootstrap
 {
-    public static function defaultRepositoryRoot(string $projectRoot, string $siteId = 'zenmemes'): string
+    public static function defaultRepositoryRoot(string $projectRoot): string
     {
-        $suffix = $siteId === 'zenmemes' ? '' : '_' . $siteId;
-        $localRepositoryRoot = $projectRoot . '/state/local_repository' . $suffix;
+        $localRepositoryRoot = $projectRoot . '/state/local_repository';
         if (is_dir($localRepositoryRoot . '/records') && is_dir($localRepositoryRoot . '/.git')) {
             return $localRepositoryRoot;
         }
@@ -22,6 +21,11 @@ final class LocalRepositoryBootstrap
         self::initializeLocalRepository($projectRoot, $localRepositoryRoot);
 
         return $localRepositoryRoot;
+    }
+
+    public static function defaultDatabasePath(string $projectRoot): string
+    {
+        return $projectRoot . '/state/cache/post_index.sqlite3';
     }
 
     public static function initializeLocalRepository(string $projectRoot, string $target): void

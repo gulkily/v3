@@ -1,3 +1,7 @@
+<?php
+$authorPublicKeyPath = trim((string) ($post['author_public_key_path'] ?? ''));
+$authorPublicKeyHref = trim((string) ($post['author_public_key_href'] ?? ''));
+?>
 <section class="stack">
   <article class="card">
     <h1>Post <?= $e($post['post_id']) ?></h1>
@@ -12,6 +16,9 @@
     'source_signature_href' => $post['source_signature_href'] ?? '',
     'source_signature_status' => $post['source_signature_status'] ?? '',
 ]), 2) ?>
+<?php if ($authorPublicKeyHref !== ''): ?>
+    <p class="meta">Public key: <a href="<?= $e($authorPublicKeyHref) ?>"><?= $e($authorPublicKeyPath !== '' ? $authorPublicKeyPath : 'Open public key') ?></a></p>
+<?php endif; ?>
     <p><a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply to this post</a></p>
   </article>
 <?= $indent($partial('partials/post_card.php', ['post' => $post]), 1) ?>

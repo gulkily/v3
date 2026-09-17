@@ -6,6 +6,8 @@ namespace ForumRewrite\Host;
 
 use ForumRewrite\Application;
 use ForumRewrite\SiteConfig;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use RuntimeException;
 use Throwable;
 
@@ -34,13 +36,22 @@ final class FrontController
             return;
         }
 
+        $approvedMembersOnly = FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)
+            ->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
+
         $assetPath = $this->resolveFingerprintedAssetPath($method, $requestUri);
         if ($assetPath !== null) {
             $this->sendAsset($assetPath, $method);
             return;
         }
 
-        $staticArtifact = $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
+        $assetReplacement = $this->resolveStaleFingerprintedAssetPath($method, $requestUri);
+        if ($assetReplacement !== null) {
+            $this->sendAssetRedirect($assetReplacement);
+            return;
+        }
+
+        $staticArtifact = $approvedMembersOnly ? null : $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
         if ($staticArtifact !== null && is_file($staticArtifact)) {
             $contents = file_get_contents($staticArtifact);
             if ($contents === false) {
@@ -60,7 +71,9 @@ final class FrontController
                 $this->staticHtmlRoot,
             );
             $application->handle($method, $requestUri);
-            $this->buildStaticArtifactOnEligibleMiss($method, $requestUri, $cookies, $staticArtifact);
+            if (!$approvedMembersOnly) {
+                $this->buildStaticArtifactOnEligibleMiss($method, $requestUri, $cookies, $staticArtifact);
+            }
         } catch (Throwable $throwable) {
             if (str_starts_with($throwable->getMessage(), 'Timed out waiting for execution lock: ')) {
                 $this->sendHtml($this->renderBusyError(), 503);
@@ -80,6 +93,16 @@ final class FrontController
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
 
         return AssetFingerprint::sourcePathForFingerprint($this->publicRoot, $path);
+    }
+
+    private function resolveStaleFingerprintedAssetPath(string $method, string $requestUri): ?string
+    {
+        if ($method !== 'GET' && $method !== 'HEAD') {
+            return null;
+        }
+
+        $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+        return AssetFingerprint::replacementPathForFingerprint($this->publicRoot, $path);
     }
 
     private function configurationError(): ?string
@@ -305,6 +328,14 @@ final class FrontController
         if ($method !== 'HEAD') {
             echo $contents;
         }
+    }
+
+    private function sendAssetRedirect(string $path): void
+    {
+        http_response_code(302);
+        header('Location: ' . $path);
+        header('Cache-Control: no-store');
+        header('Content-Length: 0');
     }
 
     private function contentTypeForAsset(string $path): string

@@ -3,16 +3,15 @@ $viewerProfile = $viewerProfile ?? null;
 $viewerProfileHref = '';
 $viewerProfileLabel = '';
 if (is_array($viewerProfile)) {
-    if (((int) ($viewerProfile['is_approved'] ?? 0)) === 1) {
-        $viewerProfileHref = '/user/' . rawurlencode((string) ($viewerProfile['username_token'] ?? ''));
-        $viewerProfileLabel = 'View user page';
-    } else {
-        $viewerProfileHref = '/profiles/' . rawurlencode((string) ($viewerProfile['profile_slug'] ?? ''));
-        $viewerProfileLabel = 'View profile';
-    }
+    $viewerProfileHref = '/profiles/' . rawurlencode((string) ($viewerProfile['profile_slug'] ?? ''));
+    $viewerProfileLabel = 'View profile';
 }
+$authenticatedIdentityId = is_array($viewerProfile)
+    && (($viewerProfile['_authenticated_identity'] ?? true) === true)
+    ? strtolower(trim((string) ($viewerProfile['identity_id'] ?? '')))
+    : '';
 ?>
-<section class="stack" data-account-key-root>
+<section class="stack" data-account-key-root data-private-site-auth-state data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
   <article class="card">
     <h1>Account Key</h1>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
@@ -25,15 +24,14 @@ if (is_array($viewerProfile)) {
         <div>
           <p class="account-key-label">Signed in as</p>
           <p class="account-key-username" data-role="username-field">guest</p>
-<?php if ($viewerProfileHref !== ''): ?>
-          <p class="meta account-key-profile-link" data-role="profile-link-wrap"><a data-role="profile-link" href="<?= $e($viewerProfileHref) ?>"><?= $e($viewerProfileLabel) ?></a></p>
-<?php endif; ?>
+          <p class="meta account-key-profile-link" data-role="profile-link-wrap"<?= $viewerProfileHref === '' ? ' hidden' : '' ?>><a data-role="profile-link" href="<?= $e($viewerProfileHref !== '' ? $viewerProfileHref : '/account/key/') ?>"><?= $e($viewerProfileLabel !== '' ? $viewerProfileLabel : 'View profile') ?></a></p>
         </div>
         <div class="account-key-simple-actions">
           <button type="button" class="account-key-primary-button" data-action="generate-browser-key">Set up this browser</button>
           <button type="button" class="account-key-secondary-button" data-action="clear-browser-identity" hidden>Clear identity</button>
         </div>
         <p class="meta account-key-simple-status" id="simple-status">Choose a name to set up this browser.</p>
+        <p class="meta" data-role="private-site-auth-status" hidden></p>
       </div>
       <details class="account-key-advanced">
         <summary>Advanced / technical details</summary>
@@ -58,9 +56,6 @@ if (is_array($viewerProfile)) {
             <p class="meta">
               <strong>Saved browser identity:</strong>
               <span data-role="identity-id-field">none</span>
-              <span data-role="profile-link-wrap" hidden>
-                · <a data-role="profile-link" href="/account/key/">Open profile</a>
-              </span>
             </p>
           </div>
           <form method="post" class="stack">
@@ -194,14 +189,20 @@ No browser private key saved yet.
       var fingerprint = storedFingerprint();
       var links = root.querySelectorAll('[data-role="profile-link"]');
       var wraps = root.querySelectorAll('[data-role="profile-link-wrap"]');
+      var privateSiteEnabled = document.documentElement
+        && document.documentElement.dataset.approvedMembersOnly === '1';
+      var serverAllowsProfileLink = root.dataset.profileLinkAuthorized === '1';
+      var preserveServerProfileLink = privateSiteEnabled && serverAllowsProfileLink;
 
       links.forEach(function (link) {
-        link.href = fingerprint ? '/profiles/openpgp-' + fingerprint : '/account/key/';
-        link.textContent = fingerprint ? 'View profile' : 'Open profile';
+        if (!preserveServerProfileLink) {
+          link.href = fingerprint ? '/profiles/openpgp-' + fingerprint : '/account/key/';
+          link.textContent = fingerprint ? 'View profile' : 'Open profile';
+        }
       });
 
       wraps.forEach(function (wrap) {
-        wrap.hidden = fingerprint === '';
+        wrap.hidden = privateSiteEnabled ? !serverAllowsProfileLink : fingerprint === '';
       });
     }
 

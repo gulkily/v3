@@ -1316,6 +1316,17 @@
     markActionTiming(timing, "forum_identity_hint_response");
   }
 
+  async function clearAuthenticatedIdentity() {
+    const response = await fetch("/api/clear_identity", {
+      method: "POST",
+      credentials: "same-origin",
+    });
+    const responseText = await response.text();
+    if (!response.ok) {
+      throw new Error(parseApiErrorResponse(responseText) || "Unable to clear the authenticated identity.");
+    }
+  }
+
   async function copyText(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(text);
@@ -1843,6 +1854,10 @@
   }
 
   function renderSavedState(root) {
+    if (!root || typeof root.querySelector !== "function") {
+      return;
+    }
+
     const publicKey = localStorage.getItem(storageKeys.publicKey) || "";
     const privateKey = localStorage.getItem(storageKeys.privateKey) || "";
     const username = localStorage.getItem(storageKeys.username) || "guest";
@@ -1860,6 +1875,10 @@
     const profileLinkWraps = root.querySelectorAll
       ? Array.from(root.querySelectorAll('[data-role="profile-link-wrap"]'))
       : [root.querySelector('[data-role="profile-link-wrap"]')].filter(Boolean);
+    const privateSiteEnabled = document.documentElement
+      && document.documentElement.dataset.approvedMembersOnly === "1";
+    const serverAllowsProfileLink = root.dataset && root.dataset.profileLinkAuthorized === "1";
+    const preserveServerProfileLink = privateSiteEnabled && serverAllowsProfileLink;
 
     if (publicKeyField && !publicKeyField.value) {
       publicKeyField.value = publicKey;
@@ -1882,11 +1901,13 @@
     }
 
     profileLinks.forEach(function (profileLink) {
-      profileLink.href = fingerprint ? `/profiles/openpgp-${fingerprint}` : "/account/key/";
-      profileLink.textContent = fingerprint ? "View profile" : "Open profile";
+      if (!preserveServerProfileLink) {
+        profileLink.href = fingerprint ? `/profiles/openpgp-${fingerprint}` : "/account/key/";
+        profileLink.textContent = fingerprint ? "View profile" : "Open profile";
+      }
     });
     profileLinkWraps.forEach(function (profileLinkWrap) {
-      profileLinkWrap.hidden = !fingerprint;
+      profileLinkWrap.hidden = privateSiteEnabled ? !serverAllowsProfileLink : !fingerprint;
     });
 
     renderUndoState(root);
@@ -2086,6 +2107,12 @@
       return false;
     }
 
+    // Profile lookup is intentionally unavailable to lobby users. In private
+    // mode, the prepare endpoint remains the authoritative duplicate check.
+    if (document.documentElement && document.documentElement.dataset.approvedMembersOnly === "1") {
+      return false;
+    }
+
     try {
       const response = await fetch(
         `/api/get_profile?profile_slug=${encodeURIComponent(profileSlug)}`,
@@ -2153,6 +2180,17 @@
         void sync.catch(function () {});
       }
     }
+  }
+
+  async function authenticatePrivateSiteIfAvailable() {
+    const privateSiteEnabled = document.documentElement
+      && document.documentElement.dataset.approvedMembersOnly === "1";
+    const privateSiteAuth = window.PrivateSiteAuth;
+    if (!privateSiteEnabled || !privateSiteAuth || typeof privateSiteAuth.authenticate !== "function") {
+      return;
+    }
+
+    await privateSiteAuth.authenticate();
   }
 
   async function ensureComposeIdentity(root, statusNode, timing) {
@@ -2286,6 +2324,7 @@
           }
           setStatus(statusNode, "Publishing your public key in the background...", "info");
           await publishPublicKeyWithRetry(root);
+          await authenticatePrivateSiteIfAvailable();
           if (publicKeyField) {
             publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
           }
@@ -2326,6 +2365,7 @@
 
           setStatus(statusNode, "Publishing your public key in the background...", "info");
           await publishPublicKeyWithRetry(root);
+          await authenticatePrivateSiteIfAvailable();
           if (publicKeyField) {
             publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
           }
@@ -2347,6 +2387,7 @@
 
     async function clearBrowserIdentity() {
       try {
+        await clearAuthenticatedIdentity();
         saveClearedKeypairBackup();
         localStorage.removeItem(storageKeys.username);
         localStorage.removeItem(storageKeys.publicKey);
@@ -2354,13 +2395,18 @@
         localStorage.removeItem(storageKeys.fingerprint);
         localStorage.removeItem(storageKeys.publishedFingerprint);
         localStorage.removeItem(storageKeys.composePromptCancelled);
-        await syncIdentityHint(preferredIdentityHint());
         renderSavedState(root);
         if (publicKeyField) {
           publicKeyField.value = "";
         }
 
         setStatus(statusNode, "Cleared the saved browser keypair from local storage.", "ok");
+        if (document.documentElement
+          && document.documentElement.dataset.approvedMembersOnly === "1"
+          && window.location
+          && typeof window.location.assign === "function") {
+          window.location.assign("/lobby/");
+        }
       } catch (error) {
         setStatus(statusNode, error instanceof Error ? error.message : "Unable to clear the saved browser keypair.", "error");
       }

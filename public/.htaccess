@@ -1,33 +1,16 @@
-DirectoryIndex index.html index.php
+DirectoryIndex index.php index.html
 
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
-# Serve existing files and directories directly.
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
+# Only public presentation assets may bypass the PHP access gate.
+RewriteCond %{REQUEST_URI} ^/(?:assets(?:/|$)|favicon\.ico$) [NC]
+RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
-# Serve prebuilt anonymous HTML artifacts directly when the route is queryless
-# and no cookies are present.
-RewriteCond %{REQUEST_METHOD} =GET
-RewriteCond %{QUERY_STRING} ^$
-RewriteCond %{HTTP:Cookie} ^$
-RewriteCond %{DOCUMENT_ROOT}/index.html -f
-RewriteRule ^$ index.html [L]
-
-RewriteCond %{REQUEST_METHOD} =GET
-RewriteCond %{QUERY_STRING} ^$
-RewriteCond %{HTTP:Cookie} ^$
-RewriteCond %{DOCUMENT_ROOT}/$1.html -f
-RewriteRule ^(instance|activity|users)/?$ $1.html [L]
-
-RewriteCond %{REQUEST_METHOD} =GET
-RewriteCond %{QUERY_STRING} ^$
-RewriteCond %{HTTP:Cookie} ^$
-RewriteCond %{DOCUMENT_ROOT}/$1/$2.html -f
-RewriteRule ^(threads|posts|profiles)/([^/]+)/?$ $1/$2.html [L]
-
-# Otherwise route the request through the PHP front controller.
+# Every content, API, download, and generated-artifact request goes through the
+# front controller. Public instances still use its static-artifact fast path;
+# private instances always run the approved-members-only gate.
+RewriteRule ^index\.php$ - [L]
 RewriteRule ^ index.php [L]
 </IfModule>

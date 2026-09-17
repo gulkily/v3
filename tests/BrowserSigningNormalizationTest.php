@@ -401,6 +401,7 @@ const clearIdentityButton = {
 };
 
 const root = {
+  dataset: { profileLinkAuthorized: '0' },
   querySelector(selector) {
     if (selector === '[data-role="browser-key-status"]') return statusNode;
     if (selector === '[data-role="public-key-field"]') return publicKeyField;
@@ -434,6 +435,7 @@ global.window = {
 };
 global.localStorage = global.window.localStorage;
 global.document = {
+  documentElement: { dataset: { approvedMembersOnly: '1' } },
   addEventListener(type, handler) {
     if (type === 'DOMContentLoaded') {
       state.domContentLoaded = handler;
@@ -457,6 +459,7 @@ global.fetch = async function (url, options) {
 
 vm.runInThisContext(source);
 state.domContentLoaded();
+const profileLinkHiddenBeforeClear = profileLinkWrap.hidden;
 
 Promise.resolve(state.clearIdentityClickHandler()).then(() => {
   process.stdout.write(JSON.stringify({
@@ -468,6 +471,7 @@ Promise.resolve(state.clearIdentityClickHandler()).then(() => {
     publicKeyViewer: publicKeyViewer.textContent,
     privateKeyViewer: privateKeyViewer.textContent,
     publicKeyField: publicKeyField.value,
+    profileLinkHiddenBeforeClear,
     status: statusMessage.textContent
   }));
 }).catch((error) => {
@@ -487,13 +491,14 @@ NODE;
             'forum_pki_compose_prompt_cancelled',
         ], $result['removeCalls']);
         assertSame([], $result['remainingKeys']);
-        assertStringContains('/api/set_identity_hint?identity_hint=guest', $result['fetches'][1]['url']);
+        assertSame('/api/clear_identity', $result['fetches'][1]['url']);
         assertSame('POST', $result['fetches'][1]['method']);
         assertSame('guest', $result['username']);
         assertSame('none', $result['identityId']);
         assertSame('No browser public key saved yet.', $result['publicKeyViewer']);
         assertSame('No browser private key saved yet.', $result['privateKeyViewer']);
         assertSame('', $result['publicKeyField']);
+        assertSame(true, $result['profileLinkHiddenBeforeClear']);
         assertSame('Cleared the saved browser keypair from local storage.', $result['status']);
     }
 
@@ -6479,6 +6484,83 @@ NODE;
         assertSame(['pending-thread:1', 'pending-reply:1'], $result['removed']);
         assertSame(false, $result['hasThreadKey']);
         assertSame(false, $result['hasReplyKey']);
+    }
+
+    public function testPrivateIdentityVerificationSupportsMissingPresentationRoot(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const fingerprint = '0123456789ABCDEF0123456789ABCDEF01234567';
+const storage = {
+  forum_pki_public_key: 'public-key',
+  forum_pki_private_key: 'private-key',
+  forum_pki_fingerprint: fingerprint,
+  forum_pki_published_fingerprint: fingerprint,
+  forum_pki_username: 'resident'
+};
+const fetchUrls = [];
+
+global.localStorage = {
+  getItem(key) { return storage[key] || ''; },
+  setItem(key, value) { storage[key] = String(value); },
+  removeItem(key) { delete storage[key]; }
+};
+global.window = {
+  localStorage: global.localStorage,
+  __forumOpenPgpLoader: { ready: Promise.resolve({}) },
+  openpgp: {
+    async readKey() {
+      return { getFingerprint() { return fingerprint; } };
+    }
+  }
+};
+global.openpgp = global.window.openpgp;
+global.fetch = async function(url) {
+  fetchUrls.push(String(url));
+  if (String(url) === '/api/prepare_identity') {
+    return {
+      ok: false,
+      async text() {
+        return JSON.stringify({ status: 'error', error: 'Identity already exists for this fingerprint.' });
+      }
+    };
+  }
+
+  return { ok: true, async text() { return 'ok'; } };
+};
+global.document = {
+  documentElement: { dataset: { approvedMembersOnly: '1' } },
+  addEventListener(){},
+  querySelector(){ return null; },
+  querySelectorAll(){ return []; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+window.__forumBrowserIdentity.ensureReadyIdentity(null, null, { verifyPublishedIdentity: true })
+  .then(() => {
+    process.stdout.write(JSON.stringify({ fetchUrls, published: storage.forum_pki_published_fingerprint }));
+  })
+  .catch((error) => {
+    process.stderr.write(error.stack || String(error));
+    process.exit(1);
+  });
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(
+            [
+                '/api/prepare_identity',
+                '/api/set_identity_hint?identity_hint=openpgp%3A0123456789abcdef0123456789abcdef01234567',
+            ],
+            $result['fetchUrls'],
+        );
+        assertSame('0123456789ABCDEF0123456789ABCDEF01234567', $result['published']);
     }
 
 }

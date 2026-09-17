@@ -33,6 +33,7 @@ use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
 use ForumRewrite\Llm\LlmExchangeRecorder;
 use ForumRewrite\Llm\SqliteLlmExchangeStore;
 use ForumRewrite\Security\OpenPgpKeyInspector;
+use ForumRewrite\Security\OpenPgpSignatureVerifier;
 use PDO;
 use RuntimeException;
 use PDOStatement;
@@ -77,6 +78,11 @@ final class Application
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
+        if ($this->approvedMembersOnlyEnabled()
+            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/clear_identity'], true)
+        ) {
+            $this->startViewerSession();
+        }
 
         if ($path === '/api/version') {
             $this->sendText($this->appVersion() . "\n", 200, [
@@ -89,8 +95,41 @@ final class Application
 
         $this->ensureReadModel();
 
+        if ($this->approvedMembersOnlyEnabled() && $this->membersOnlyLobbyRedirect($method, $path, $query)) {
+            $this->sendRedirect('/lobby/', 'Entering lobby.', statusCode: 303, activeSection: 'account');
+            return;
+        }
+
+        if ($this->approvedMembersOnlyEnabled() && !$this->membersOnlyRequestAllowed($method, $path)) {
+            if (!$this->isApplicationRoute($path)) {
+                $this->notFound();
+                return;
+            }
+
+            $this->sendHtml(
+                $this->renderLobbyAccessRequiredPage(),
+                403
+            );
+            return;
+        }
+
         if ($path === '/api/set_identity_hint') {
             $this->handleSetIdentityHint($method, $query);
+            return;
+        }
+
+        if ($path === '/api/clear_identity') {
+            $this->handleClearIdentity($method);
+            return;
+        }
+
+        if ($path === '/api/auth_challenge') {
+            $this->handleAuthChallenge($method);
+            return;
+        }
+
+        if ($path === '/api/authenticate_identity') {
+            $this->handleAuthenticateIdentity($method, $query);
             return;
         }
 
@@ -230,6 +269,11 @@ final class Application
 
         if ($path === '/about/' || $path === '/about') {
             $this->sendHtml($this->renderAbout(), 200);
+            return;
+        }
+
+        if ($path === '/lobby/' || $path === '/lobby') {
+            $this->sendHtml($this->renderLobby(), 200);
             return;
         }
 
@@ -2011,12 +2055,13 @@ final class Application
         ], 'Account Key', 'account', [
             '/assets/openpgp_loader.js',
             '/assets/browser_signing.js',
+            '/assets/private_site_auth.js',
         ]);
     }
 
     private function renderApiIndex(): string
     {
-        return "GET /api/\nGET /api/version\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nPOST /api/set_identity_hint\nPOST /api/prepare_identity\nPOST /api/create_identity\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
+        return "GET /api/\nGET /api/version\nGET /api/auth_challenge\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nPOST /api/set_identity_hint\nPOST /api/clear_identity\nPOST /api/authenticate_identity\nPOST /api/prepare_identity\nPOST /api/create_identity\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
     }
 
     private function renderApiListIndex(): string
@@ -2133,7 +2178,17 @@ final class Application
 
     private function renderPage(string $title, string $content, string $activeSection, array $scriptPaths = []): string
     {
-        return $this->renderer()->renderLayout($title, $content, $activeSection, $scriptPaths, $this->routeSource);
+        $viewerProfile = $this->approvedMembersOnlyEnabled() ? $this->authenticatedViewerProfile() : null;
+
+        return $this->renderer()->renderLayout(
+            $title,
+            $content,
+            $activeSection,
+            $scriptPaths,
+            $this->routeSource,
+            false,
+            $viewerProfile,
+        );
     }
 
     /**
@@ -2147,6 +2202,10 @@ final class Application
         string $activeSection,
         array $scriptPaths = [],
     ): string {
+        if ($this->approvedMembersOnlyEnabled() && !array_key_exists('viewerProfile', $pageData)) {
+            $pageData['viewerProfile'] = $this->authenticatedViewerProfile();
+        }
+
         return $this->renderer()->renderPageTemplate(
             $pageTemplate,
             $pageData,
@@ -2344,6 +2403,38 @@ final class Application
             (string) ($post['author_identity_id'] ?? ''),
             $signature['path']
         );
+
+        return $this->withAuthorPublicKeyMetadata($post);
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     * @return array<string, mixed>
+     */
+    private function withAuthorPublicKeyMetadata(array $post): array
+    {
+        $post['author_public_key_path'] = '';
+        $post['author_public_key_href'] = '';
+        if (trim((string) ($post['author_public_key'] ?? '')) === '') {
+            return $post;
+        }
+
+        $identityId = strtolower(trim((string) ($post['author_identity_id'] ?? '')));
+        if (preg_match('/^openpgp:([a-f0-9]{40})$/', $identityId, $matches) !== 1) {
+            return $post;
+        }
+
+        $fingerprint = $matches[1];
+        foreach ([strtoupper($fingerprint), $fingerprint] as $storedFingerprint) {
+            $path = 'records/public-keys/openpgp-' . $storedFingerprint . '.asc';
+            if (!$this->currentSourcePathExists($path)) {
+                continue;
+            }
+
+            $post['author_public_key_path'] = $path;
+            $post['author_public_key_href'] = '/source/current/' . $this->encodeSourcePathForUrl($path);
+            break;
+        }
 
         return $post;
     }
@@ -3219,6 +3310,18 @@ final class Application
      */
     private function resolveViewerProfileFromIdentityHint(): ?array
     {
+        if ($this->approvedMembersOnlyEnabled()) {
+            return $this->lobbyViewerProfile();
+        }
+
+        $authenticatedIdentityId = strtolower(trim((string) (($_SESSION ?? [])['authenticated_identity_id'] ?? '')));
+        if ($authenticatedIdentityId !== '') {
+            $authenticatedProfile = $this->fetchProfileByIdentityId($authenticatedIdentityId);
+            if ($authenticatedProfile !== null) {
+                return $authenticatedProfile;
+            }
+        }
+
         $hint = strtolower(trim((string) ($_COOKIE['identity_hint'] ?? '')));
         if ($hint === '') {
             return null;
@@ -3236,6 +3339,151 @@ final class Application
         }
 
         return $this->fetchProfileBySlug($hint);
+    }
+
+    private function approvedMembersOnlyEnabled(): bool
+    {
+        return $this->featureFlags()->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
+    }
+
+    private function authenticatedViewerProfile(): ?array
+    {
+        $identityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
+        if ($identityId === '') {
+            return null;
+        }
+
+        return $this->fetchProfileByIdentityId($identityId);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function lobbyViewerProfile(): ?array
+    {
+        $profile = $this->authenticatedViewerProfile();
+        if ($profile !== null) {
+            $profile['_authenticated_identity'] = true;
+            $profile['_members_only_access'] = ((int) ($profile['is_approved'] ?? 0)) === 1;
+            return $profile;
+        }
+
+        $identityId = strtolower(trim((string) ($_SESSION['lobby_identity_id'] ?? '')));
+        if ($identityId === '') {
+            return null;
+        }
+
+        $profile = $this->fetchProfileByIdentityId($identityId);
+        if ($profile === null) {
+            unset($_SESSION['lobby_identity_id']);
+            return null;
+        }
+
+        $profile['_authenticated_identity'] = false;
+        $profile['_members_only_access'] = false;
+        return $profile;
+    }
+
+    private function membersOnlyRequestAllowed(string $method, string $path): bool
+    {
+        if ($path === '/lobby/' || $path === '/lobby'
+            || $path === '/account/key/' || $path === '/account/key'
+            || $path === '/api/auth_challenge' || $path === '/api/authenticate_identity'
+            || $path === '/api/set_identity_hint' || $path === '/api/clear_identity'
+            || $path === '/api/link_identity'
+            || $path === '/api/prepare_identity' || $path === '/api/create_identity'
+        ) {
+            return true;
+        }
+
+        $viewerProfile = $this->authenticatedViewerProfile();
+        if ($viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1) {
+            return true;
+        }
+
+        $lobbyViewerProfile = $this->lobbyViewerProfile();
+        if ($lobbyViewerProfile === null || $method !== 'GET') {
+            return false;
+        }
+
+        if (preg_match('#^/profiles/([^/]+)/?$#', $path, $matches) !== 1) {
+            return false;
+        }
+
+        return hash_equals(
+            strtolower((string) ($lobbyViewerProfile['profile_slug'] ?? '')),
+            strtolower(rawurldecode($matches[1]))
+        );
+    }
+
+    private function isApplicationRoute(string $path): bool
+    {
+        if (in_array($path, [
+            '', '/',
+            '/threads', '/threads/',
+            '/about', '/about/',
+            '/lobby', '/lobby/',
+            '/instance', '/instance/', '/backup', '/backup/', '/tools/backup', '/tools/backup/',
+            '/tools/sqlite', '/tools/sqlite/',
+            '/tools/llm-exchanges', '/tools/llm-exchanges/',
+            '/downloads/repository.tar.gz', '/downloads/repository.zip',
+            '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',
+            '/activity', '/activity/',
+            '/users', '/users/', '/users/pending', '/users/pending/',
+            '/tags', '/tags/',
+            '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/',
+            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
+            '/compose/thread', '/compose/reply',
+            '/account/key', '/account/key/',
+            '/api', '/api/', '/api/version', '/api/list_index',
+            '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username_claim_cta',
+            '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
+            '/api/auth_challenge', '/api/authenticate_identity', '/api/create_thread',
+            '/api/prepare_thread', '/api/prepare_identity', '/api/create_reply',
+            '/api/prepare_reply', '/api/create_prepared_post', '/api/create_identity',
+            '/api/analyze_post', '/api/generate_agent_reply', '/api/codex_handoff',
+            '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag',
+            '/api/set_feature_flag', '/api/link_identity', '/api/approve_user',
+            '/forte', '/forte/', '/llms.txt',
+        ], true)) {
+            return true;
+        }
+
+        return preg_match(
+            '#^/(?:tools/llm-exchanges/\d+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-z0-9]+(?:-[a-z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+)/?$#',
+            $path,
+        ) === 1;
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function membersOnlyLobbyRedirect(string $method, string $path, array $query): bool
+    {
+        $viewerProfile = $this->authenticatedViewerProfile();
+        $hasApprovedMemberAccess = $viewerProfile !== null
+            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+
+        return $method === 'GET' && in_array($path, ['/', '/threads', '/threads/'], true)
+            && $query === []
+            && !$hasApprovedMemberAccess;
+    }
+
+    private function renderLobby(): string
+    {
+        return $this->renderPageTemplate(
+            'lobby.php',
+            [
+                'viewerProfile' => $this->lobbyViewerProfile(),
+            ],
+            'Lobby',
+            'lobby',
+            [
+                '/assets/openpgp_loader.js',
+                '/assets/browser_signing.js',
+                '/assets/private_site_auth.js',
+            ]
+        );
     }
 
     /**
@@ -3763,6 +4011,132 @@ final class Application
 
         $_COOKIE['identity_hint'] = $hint;
         $this->sendText("identity_hint={$hint}\n", 200);
+    }
+
+    private function handleClearIdentity(string $method): void
+    {
+        if ($method !== 'POST') {
+            $this->sendText("method not allowed\n", 405, $this->noStoreHeaders());
+            return;
+        }
+
+        $authenticatedIdentityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
+        if ($authenticatedIdentityId !== '') {
+            $_SESSION['lobby_identity_id'] = $authenticatedIdentityId;
+        }
+
+        unset(
+            $_SESSION['authenticated_identity_id'],
+            $_SESSION['forum_auth_challenges'],
+        );
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+
+        setcookie('identity_hint', 'guest', [
+            'expires' => time() + 86400 * 30,
+            'path' => '/',
+            'httponly' => false,
+            'samesite' => 'Lax',
+        ]);
+        $_COOKIE['identity_hint'] = 'guest';
+
+        $this->sendText("status=ok\nidentity_hint=guest\n", 200, $this->noStoreHeaders());
+    }
+
+    private function startViewerSession(): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            return;
+        }
+
+        if (headers_sent()) {
+            return;
+        }
+
+        session_start([
+            'cookie_httponly' => true,
+            'cookie_samesite' => 'Lax',
+            'cookie_secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+            'use_strict_mode' => true,
+        ]);
+    }
+
+    private function handleAuthChallenge(string $method): void
+    {
+        if ($method !== 'GET') {
+            $this->sendText("method not allowed\n", 405);
+            return;
+        }
+
+        $now = time();
+        $challenges = is_array($_SESSION['forum_auth_challenges'] ?? null)
+            ? $_SESSION['forum_auth_challenges']
+            : [];
+        foreach ($challenges as $value => $expiresAt) {
+            if (!is_string($value) || (int) $expiresAt < $now) {
+                unset($challenges[$value]);
+            }
+        }
+
+        $challenge = bin2hex(random_bytes(32));
+        $challenges[$challenge] = $now + 300;
+        $_SESSION['forum_auth_challenges'] = $challenges;
+        session_write_close();
+        $this->sendText("challenge={$challenge}\n", 200, $this->noStoreHeaders());
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleAuthenticateIdentity(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->sendText("method not allowed\n", 405);
+            return;
+        }
+
+        $input = $this->requestData($query);
+        $challenge = trim((string) ($input['challenge'] ?? ''));
+        $signature = trim((string) ($input['detached_signature'] ?? ''));
+        $identityId = strtolower(trim((string) ($input['identity_id'] ?? '')));
+        $challenges = is_array($_SESSION['forum_auth_challenges'] ?? null)
+            ? $_SESSION['forum_auth_challenges']
+            : [];
+        $expiresAt = (int) ($challenges[$challenge] ?? 0);
+
+        if ($challenge === '' || $expiresAt < time()) {
+            $this->sendText("error=Authentication challenge is missing or expired.\n", 400, $this->noStoreHeaders());
+            return;
+        }
+
+        $profile = $this->fetchProfileByIdentityId($identityId);
+        if ($profile === null) {
+            $this->sendText("error=Identity not found.\n", 400, $this->noStoreHeaders());
+            return;
+        }
+
+        $fingerprint = strtoupper(trim((string) ($profile['signer_fingerprint'] ?? '')));
+        $verification = (new OpenPgpSignatureVerifier())->verifyDetached(
+            (string) ($profile['public_key'] ?? ''),
+            $challenge,
+            $signature,
+            $fingerprint,
+        );
+        if (!$verification['ok']) {
+            $this->sendText("error=Identity signature verification failed.\n", 403, $this->noStoreHeaders());
+            return;
+        }
+
+        session_regenerate_id(true);
+        $_SESSION['authenticated_identity_id'] = $identityId;
+        unset(
+            $_SESSION['lobby_identity_id'],
+            $_SESSION['forum_auth_challenges'],
+        );
+        session_write_close();
+        $approved = ((int) ($profile['is_approved'] ?? 0)) === 1 ? '1' : '0';
+        $this->sendText("status=ok\nidentity_id={$identityId}\napproved={$approved}\n", 200, $this->noStoreHeaders());
     }
 
     /**
@@ -5888,6 +6262,20 @@ final class Application
             ],
             $title,
             $activeSection,
+        );
+    }
+
+    private function renderLobbyAccessRequiredPage(): string
+    {
+        return $this->renderPageTemplate(
+            'message.php',
+            [
+                'heading' => 'Approval required',
+                'message' => 'Your access is pending approval. Once you are fully authenticated, you can access this page.',
+                'viewerProfile' => $this->lobbyViewerProfile(),
+            ],
+            'Approval required',
+            'lobby',
         );
     }
 

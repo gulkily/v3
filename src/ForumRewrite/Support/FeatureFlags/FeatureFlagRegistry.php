@@ -13,6 +13,7 @@ final class FeatureFlagRegistry
     public const DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED = 'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED';
     public const LLM_CONVERSATION_RECORDING_ENABLED = 'LLM_CONVERSATION_RECORDING_ENABLED';
     public const LLM_CONVERSATION_UI_ENABLED = 'LLM_CONVERSATION_UI_ENABLED';
+    public const APPROVED_MEMBERS_ONLY = 'FORUM_APPROVED_MEMBERS_ONLY';
 
     /**
      * @return list<FeatureFlagDefinition>
@@ -20,6 +21,14 @@ final class FeatureFlagRegistry
     public function all(): array
     {
         return [
+            new FeatureFlagDefinition(
+                self::APPROVED_MEMBERS_ONLY,
+                'Approved members only',
+                'Restrict the site to approved members and provide a lobby for unapproved users.',
+                false,
+                self::APPROVED_MEMBERS_ONLY,
+                siteMutable: true,
+            ),
             new FeatureFlagDefinition(
                 self::UNICODE_AUTHORED_TEXT,
                 'Unicode authored text',

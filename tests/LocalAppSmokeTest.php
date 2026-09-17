@@ -40,6 +40,248 @@ final class LocalAppSmokeTest
         assertTrue(is_file($this->databasePath));
     }
 
+    public function testApprovedPrivateSessionCanViewOwnProfileAndBoard(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        $previousSession = $_SESSION ?? null;
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        $sessionId = 'private-approved-' . bin2hex(random_bytes(8));
+
+        try {
+            session_id($sessionId);
+            session_start();
+            $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+            session_write_close();
+
+            $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-session-' . bin2hex(random_bytes(6)) . '.sqlite3';
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
+            $profile = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+            $board = $this->render($application, '/');
+
+            assertStringContains('This is your profile.', $profile);
+            assertStringContains('Board', $board);
+        } finally {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            session_id('');
+            if ($previousSession === null) {
+                unset($_SESSION);
+            } else {
+                $_SESSION = $previousSession;
+            }
+            @unlink($databasePath ?? '');
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
+    public function testClearingIdentityRevokesApprovedPrivateSession(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        $previousCookie = $_COOKIE;
+        $previousSession = $_SESSION ?? null;
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        $sessionId = 'private-clear-identity-' . bin2hex(random_bytes(8));
+
+        try {
+            session_id($sessionId);
+            session_start();
+            $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+            session_write_close();
+
+            $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-clear-identity-' . bin2hex(random_bytes(6)) . '.sqlite3';
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
+
+            assertStringContains('class="nav-link is-active" href="/">Board</a>', $this->render($application, '/'));
+
+            $response = $this->renderMethod($application, 'POST', '/api/clear_identity');
+            $boardAfterClear = $this->render($application, '/');
+            $aboutAfterClear = $this->render($application, '/about/');
+            $ownProfileAfterClear = $this->render(
+                $application,
+                '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+            );
+            $lobbyAfterClear = $this->render($application, '/lobby/');
+
+            assertStringContains("status=ok\n", $response);
+            assertSame('guest', $_COOKIE['identity_hint'] ?? null);
+            assertStringContains('Entering lobby.', $boardAfterClear);
+            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $aboutAfterClear);
+            assertStringContains('This is your profile.', $ownProfileAfterClear);
+            assertStringContains('Your identity is recognized in the lobby, but member access is cleared.', $lobbyAfterClear);
+            assertStringContains(
+                'class="nav-link" href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954">Profile</a>',
+                $lobbyAfterClear,
+            );
+            assertStringNotContains('href="/">Board</a>', $lobbyAfterClear);
+        } finally {
+            $_COOKIE = $previousCookie;
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            session_id('');
+            if ($previousSession === null) {
+                unset($_SESSION);
+            } else {
+                $_SESSION = $previousSession;
+            }
+            @unlink($databasePath ?? '');
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
+    public function testPrivateAuthenticationEndpointReachesSignatureVerifier(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        $previousPost = $_POST;
+        $previousSession = $_SESSION ?? null;
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        $sessionId = 'private-auth-verifier-' . bin2hex(random_bytes(8));
+        $challenge = bin2hex(random_bytes(32));
+
+        try {
+            session_id($sessionId);
+            session_start();
+            $_SESSION['forum_auth_challenges'] = [
+                bin2hex(random_bytes(32)) => time() + 300,
+                $challenge => time() + 300,
+            ];
+            session_write_close();
+
+            $_POST = [
+                'identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+                'challenge' => $challenge,
+                'detached_signature' => 'invalid detached signature',
+            ];
+            $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-auth-' . bin2hex(random_bytes(6)) . '.sqlite3';
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
+
+            $response = $this->renderMethod($application, 'POST', '/api/authenticate_identity');
+
+            assertStringContains('error=Identity signature verification failed.', $response);
+        } finally {
+            $_POST = $previousPost;
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            session_id('');
+            if ($previousSession === null) {
+                unset($_SESSION);
+            } else {
+                $_SESSION = $previousSession;
+            }
+            @unlink($databasePath ?? '');
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
+    public function testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-lobby-' . bin2hex(random_bytes(6)) . '.sqlite3';
+
+        try {
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
+            $lobby = $this->render($application, '/lobby/');
+            $account = $this->render($application, '/account/key/');
+            assertStringContains('<h1>Lobby</h1>', $lobby);
+            assertStringContains('class="nav-link is-active" href="/lobby/"', $lobby);
+            assertStringContains('class="nav-link" href="/account/key/"', $lobby);
+            assertStringNotContains('href="/">Board</a>', $lobby);
+            assertStringNotContains('href="/about/">About</a>', $lobby);
+            assertStringNotContains('href="/users/">Users</a>', $lobby);
+            assertStringNotContains('href="/tools/">Tools</a>', $lobby);
+            assertStringContains('Account Key', $account);
+            assertStringContains('data-profile-link-authorized="0"', $account);
+            assertStringContains('data-role="profile-link-wrap" hidden', $account);
+            assertStringContains('class="nav-link" href="/lobby/"', $account);
+            assertStringContains('class="nav-link is-active" href="/account/key/"', $account);
+            assertStringNotContains('href="/">Board</a>', $account);
+            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/threads/root-001'));
+            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'));
+            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/backup/'));
+            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/?format=rss'));
+            assertStringContains('The requested route does not exist in the local test slice.', $this->render($application, '/asdf'));
+        } finally {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            session_id('');
+            @unlink($databasePath);
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
+    public function testPendingPrivateSessionNavigationOnlyShowsLobbyOwnProfileAndAccount(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        $previousSession = $_SESSION ?? null;
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-private-pending-nav-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory($this->repositoryRoot, $repositoryRoot);
+        $this->deleteDirectoryContents($repositoryRoot . '/records/approval-seeds');
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-pending-nav-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $sessionId = 'private-pending-nav-' . bin2hex(random_bytes(8));
+
+        try {
+            session_id($sessionId);
+            session_start();
+            $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+            session_write_close();
+
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $lobby = $this->render($application, '/lobby/');
+            $root = $this->render($application, '/');
+
+            assertStringContains('class="nav-link is-active" href="/lobby/"', $lobby);
+            assertStringContains(
+                'class="nav-link" href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954">Profile</a>',
+                $lobby,
+            );
+            assertStringContains('class="nav-link" href="/account/key/"', $lobby);
+            assertStringNotContains('href="/">Board</a>', $lobby);
+            assertStringNotContains('href="/about/">About</a>', $lobby);
+            assertStringNotContains('href="/users/">Users</a>', $lobby);
+            assertStringNotContains('href="/tools/">Tools</a>', $lobby);
+            assertStringContains('Entering lobby.', $root);
+        } finally {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            session_id('');
+            if ($previousSession === null) {
+                unset($_SESSION);
+            } else {
+                $_SESSION = $previousSession;
+            }
+            $this->deleteTree($repositoryRoot);
+            @unlink($databasePath);
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
     public function testAssetFingerprintPathsUseContentHashFilenames(): void
     {
         $publicRoot = dirname(__DIR__) . '/public';
@@ -48,6 +290,48 @@ final class LocalAppSmokeTest
         assertStringMatches('#^/assets/site\.[a-f0-9]{12}\.css$#', $siteCssPath);
         assertSame($publicRoot . '/assets/site.css', AssetFingerprint::sourcePathForFingerprint($publicRoot, $siteCssPath));
         assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/site.000000000000.css'));
+    }
+
+    public function testAssetFingerprintDistinguishesCurrentAndStaleAssetPaths(): void
+    {
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-fingerprint-' . bin2hex(random_bytes(6));
+        mkdir($publicRoot . '/assets', 0777, true);
+        file_put_contents($publicRoot . '/assets/example.css', 'body { color: red; }');
+
+        try {
+            $currentPath = AssetFingerprint::fingerprintedPath($publicRoot, '/assets/example.css');
+            assertSame($publicRoot . '/assets/example.css', AssetFingerprint::sourcePathForFingerprint($publicRoot, $currentPath));
+            assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/example.000000000000.css'));
+            assertSame($currentPath, AssetFingerprint::replacementPathForFingerprint($publicRoot, '/assets/example.000000000000.css'));
+            assertSame(null, AssetFingerprint::replacementPathForFingerprint($publicRoot, $currentPath));
+            assertSame(null, AssetFingerprint::replacementPathForFingerprint($publicRoot, '/assets/missing.000000000000.css'));
+            assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/missing.000000000000.css'));
+        } finally {
+            @unlink($publicRoot . '/assets/example.css');
+            @rmdir($publicRoot . '/assets');
+            @rmdir($publicRoot);
+        }
+    }
+
+    public function testCompactModeMenuStylesUseScopedDensitySelectors(): void
+    {
+        $css = file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+        if ($css === false) {
+            throw new RuntimeException('Unable to read site stylesheet.');
+        }
+
+        assertStringContains(':root[data-thread-density="compact"] .thread-card__preview', $css);
+        assertStringContains(':root[data-thread-density="compact"] .thread-list .thread-card', $css);
+        assertStringContains(':root[data-thread-density="compact"] .thread-list > * + *', $css);
+        assertStringContains(':root[data-thread-density="compact"] article.card:has(> .board-controls-nav)', $css);
+        assertStringContains(':root[data-thread-density="compact"] .compact-thread-compose', $css);
+        assertStringContains('.compact-thread-compose .inline-reply-summary', $css);
+        assertStringContains(':root[data-thread-density="compact"] .thread-list > .compact-thread-compose', $css);
+        assertStringContains('margin-top: 0', $css);
+        assertStringContains(':root[data-thread-density="compact"] .thread-list > .card', $css);
+        assertStringContains('border-left: 0', $css);
+        assertStringContains('border-right: 0', $css);
+        assertStringContains(':root[data-theme="word97"][data-thread-density="compact"]', $css);
     }
 
     public function testAssetFingerprintCopySkipsAlreadyFingerprintedSourceFiles(): void
@@ -209,22 +493,22 @@ final class LocalAppSmokeTest
         }
     }
 
-    public function testInjectApprovalScriptSeedsIdentity(): void
+    public function testInjectApprovalScriptUsesInstanceOverridesAcrossSiteProfiles(): void
     {
         [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
         $this->deleteDirectoryContents($repositoryRoot . '/records/approval-seeds');
 
         $command = sprintf(
-            '%s approval seed %s %s %s %s',
+            'FORUM_SITE_ID=chouse FORUM_REPOSITORY_ROOT=%s FORUM_DATABASE_PATH=%s %s approval seed %s %s',
+            escapeshellarg($repositoryRoot),
+            escapeshellarg($databasePath),
             escapeshellarg(__DIR__ . '/../v3'),
             escapeshellarg('openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'),
             escapeshellarg('script seeded approval'),
-            escapeshellarg($repositoryRoot),
-            escapeshellarg($databasePath),
         );
         exec($command, $output, $exitCode);
 
-        $application = new Application($projectRoot, $repositoryRoot, $databasePath, $artifactRoot);
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         $profile = $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
         assertSame(0, $exitCode);
@@ -233,10 +517,71 @@ final class LocalAppSmokeTest
         assertStringContains('Approved: yes', $profile);
     }
 
+    public function testApproveShortcutSeedsIdentity(): void
+    {
+        [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $this->deleteDirectoryContents($repositoryRoot . '/records/approval-seeds');
+
+        $command = sprintf(
+            '%s %s %s %s %s %s',
+            escapeshellarg(__DIR__ . '/../v3'),
+            'approve',
+            escapeshellarg('openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'),
+            escapeshellarg('shortcut seeded approval'),
+            escapeshellarg($repositoryRoot),
+            escapeshellarg($databasePath),
+        );
+        exec($command, $output, $exitCode);
+
+        assertSame(0, $exitCode);
+        assertStringContains('Seeded approval for openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', implode("\n", $output));
+        assertTrue(is_file($repositoryRoot . '/records/approval-seeds/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt'));
+    }
+
+    public function testStartAcceptsPortShorthand(): void
+    {
+        $port = random_int(18000, 18999);
+        $command = sprintf(
+            'timeout 1s %s start %s 2>&1',
+            escapeshellarg(__DIR__ . '/../v3'),
+            escapeshellarg((string) $port),
+        );
+        exec($command, $output, $exitCode);
+
+        assertSame(124, $exitCode);
+        assertStringContains('127.0.0.1:' . $port, implode("\n", $output));
+    }
+
+    public function testStartAcceptsColonPortShorthand(): void
+    {
+        $port = random_int(19000, 19999);
+        $command = sprintf(
+            'timeout 1s %s start %s 2>&1',
+            escapeshellarg(__DIR__ . '/../v3'),
+            escapeshellarg(':' . $port),
+        );
+        exec($command, $output, $exitCode);
+
+        assertSame(124, $exitCode);
+        assertStringContains('127.0.0.1:' . $port, implode("\n", $output));
+    }
+
+    public function testStartRejectsOutOfRangePortShorthand(): void
+    {
+        $command = sprintf(
+            '%s start 65536 2>&1',
+            escapeshellarg(__DIR__ . '/../v3'),
+        );
+        exec($command, $output, $exitCode);
+
+        assertSame(1, $exitCode);
+        assertStringContains('Invalid port: 65536', implode("\n", $output));
+    }
+
     public function testInjectApprovalScriptApprovesExistingUser(): void
     {
         [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
-        $application = new Application($projectRoot, $repositoryRoot, $databasePath, $artifactRoot);
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
 
         $_POST = [
             'public_key' => $this->generatePublicKey('alice'),
@@ -517,10 +862,10 @@ final class LocalAppSmokeTest
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $thread);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=reply-001', $thread);
         assertStringContains('First line preview.', $post);
-        assertStringContains('Public key', $thread);
-        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $thread);
+        assertStringNotContains('/source/current/records/public-keys/', $thread);
         assertStringContains('Public key', $post);
-        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $post);
+        assertStringContains('/source/current/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc', $post);
+        assertStringNotContains('BEGIN PGP PUBLIC KEY BLOCK', $post);
         assertStringContains('by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $post);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $post);
         assertStringContains('Source:', $post);
@@ -719,13 +1064,48 @@ final class LocalAppSmokeTest
             $this->databasePath,
         );
 
+        $this->render($application, '/');
+
         $pdo = new PDO('sqlite:' . $this->databasePath);
         $pdo->exec("UPDATE profiles SET public_key = '' WHERE profile_slug = 'openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'");
+        $pdo->exec("UPDATE posts SET board_tags_json = '[\"identity\",\"internal\"]' WHERE post_id = 'root-001'");
 
         $post = $this->render($application, '/posts/root-001');
 
         assertStringContains('Public key unavailable.', $post);
         assertStringNotContains('BEGIN PGP PUBLIC KEY BLOCK', $post);
+    }
+
+    public function testPostPagesExposeAvailableAuthorPublicKeyLink(): void
+    {
+        [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $this->render($application, '/posts/root-001');
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $pdo->exec("UPDATE posts SET author_identity_id = NULL, author_profile_slug = NULL WHERE post_id = 'root-001'");
+        $keylessPost = $this->render($application, '/posts/root-001');
+        assertStringNotContains('/source/current/records/public-keys/', $keylessPost);
+
+        $statement = $pdo->prepare(
+            'UPDATE posts
+             SET author_identity_id = :identity_id, author_profile_slug = :profile_slug
+             WHERE post_id = :post_id'
+        );
+        $statement->execute([
+            'identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+            'profile_slug' => 'openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+            'post_id' => 'root-001',
+        ]);
+
+        $thread = $this->render($application, '/threads/root-001');
+        $post = $this->render($application, '/posts/root-001');
+        $href = 'href="/source/current/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc"';
+
+        assertStringNotContains($href, $thread);
+        assertStringContains($href, $post);
+        assertSame(1, substr_count($post, $href));
+        assertOrdered($post, 'Signature:', 'Public key:');
     }
 
     public function testPostAndActivityLinkAdjacentSignatureFiles(): void
@@ -1232,6 +1612,7 @@ final class LocalAppSmokeTest
 
         $viewer = $this->render($application, '/tools/sqlite/');
         $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite_viewer.js');
+        $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
 
         assertStringContains('data-role="sqlite-explorer"', $viewer);
         assertStringContains('data-role="sqlite-table-select"', $viewer);
@@ -1496,6 +1877,36 @@ final class LocalAppSmokeTest
         assertStringContains('route-source: static-html', $response);
     }
 
+    public function testFrontControllerRecoversStaleFingerprintedAssetRequests(): void
+    {
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        mkdir($publicRoot . '/assets', 0777, true);
+        mkdir($staticHtmlRoot, 0777, true);
+        file_put_contents($publicRoot . '/assets/example.css', 'body { color: red; }');
+
+        $controller = new FrontController(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $staticHtmlRoot,
+            $publicRoot,
+        );
+
+        try {
+            http_response_code(200);
+            $response = $this->renderFrontController($controller, 'GET', '/assets/example.000000000000.css', []);
+
+            assertSame('', $response);
+            assertSame(302, http_response_code());
+        } finally {
+            @unlink($publicRoot . '/assets/example.css');
+            @rmdir($publicRoot . '/assets');
+            @rmdir($publicRoot);
+            @rmdir($staticHtmlRoot);
+        }
+    }
+
     public function testFrontControllerServesStaticArtifactForBackupAlias(): void
     {
         @unlink($this->databasePath);
@@ -1561,12 +1972,15 @@ final class LocalAppSmokeTest
         [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
         @unlink($databasePath);
         $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
         mkdir($staticHtmlRoot, 0777, true);
+        mkdir($publicRoot, 0777, true);
         $controller = new FrontController(
             dirname(__DIR__),
             $repositoryRoot,
             $databasePath,
             $staticHtmlRoot,
+            $publicRoot,
         );
 
         putenv('FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS=0');
@@ -1575,6 +1989,7 @@ final class LocalAppSmokeTest
             $response = $lock->withExclusiveLock(fn () => $this->renderFrontController($controller, 'GET', '/', []));
         } finally {
             putenv('FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS');
+            @rmdir($publicRoot);
         }
 
         assertStringContains('Meme Oven Is Busy', $response);
@@ -1623,6 +2038,11 @@ final class LocalAppSmokeTest
         assertTrue(is_file($artifactRoot . '/posts/root-001.html'));
         assertTrue(is_file($artifactRoot . '/posts/thread-zenmemes-rules.html'));
         assertTrue(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
+        $indexArtifact = (string) file_get_contents($artifactRoot . '/index.html');
+        assertTrue(preg_match_all('#/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+#', $indexArtifact, $assetMatches) !== false);
+        foreach (array_unique($assetMatches[0]) as $assetPath) {
+            assertTrue(is_file($artifactRoot . $assetPath));
+        }
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/index.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/index.html'));
@@ -1682,6 +2102,30 @@ final class LocalAppSmokeTest
         $tagsResponse = $this->renderFrontController($controller, 'GET', '/tags/', []);
         assertStringContains('class="nav-link is-active" href="/tags/"', $tagsResponse);
         assertStringContains('route-source: static-html', $tagsResponse);
+    }
+
+    public function testStaticArtifactHealthCheckDetectsMissingFingerprint(): void
+    {
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-assets-' . bin2hex(random_bytes(6));
+        mkdir($artifactRoot . '/assets', 0777, true);
+        file_put_contents($artifactRoot . '/assets/example.000000000000.css', 'body { color: red; }');
+        file_put_contents($artifactRoot . '/index.html', '<link rel="stylesheet" href="/assets/example.000000000000.css">');
+
+        $command = sprintf(
+            'php %s %s',
+            escapeshellarg(__DIR__ . '/../scripts/check_static_artifacts.php'),
+            escapeshellarg($artifactRoot),
+        );
+
+        try {
+            exec($command, $output, $exitCode);
+            assertSame(0, $exitCode);
+            unlink($artifactRoot . '/assets/example.000000000000.css');
+            exec($command, $outputAfterRemoval, $exitCodeAfterRemoval);
+            assertSame(1, $exitCodeAfterRemoval);
+        } finally {
+            $this->deleteTree($artifactRoot);
+        }
     }
 
     public function testFrontControllerBuildsMissingArtifactAfterEligibleAnonymousFallback(): void
@@ -1909,21 +2353,21 @@ final class LocalAppSmokeTest
         assertTrue(is_file($repositoryRoot . '/records/posts/root-001.txt'));
     }
 
-    public function testDefaultRepositoryBootstrapIsSiteScoped(): void
+    public function testDefaultInstanceStateIsIndependentOfSiteProfile(): void
     {
         $projectRoot = sys_get_temp_dir() . '/forum-rewrite-project-' . bin2hex(random_bytes(6));
         mkdir($projectRoot . '/tests/fixtures/parity_minimal_v1', 0777, true);
         $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $projectRoot . '/tests/fixtures/parity_minimal_v1');
 
-        $zenmemesRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot, 'zenmemes');
-        $chouseRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot, 'chouse');
+        $repositoryRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot);
 
-        assertSame($projectRoot . '/state/local_repository', $zenmemesRoot);
-        assertSame($projectRoot . '/state/local_repository_chouse', $chouseRoot);
-        assertTrue(is_dir($chouseRoot . '/records'));
-        assertTrue(is_dir($chouseRoot . '/.git'));
-        assertTrue(is_file($chouseRoot . '/records/posts/root-001.txt'));
-        assertTrue($zenmemesRoot !== $chouseRoot);
+        assertSame($projectRoot . '/state/local_repository', $repositoryRoot);
+        assertSame($projectRoot . '/state/cache/post_index.sqlite3', LocalRepositoryBootstrap::defaultDatabasePath($projectRoot));
+        assertTrue(is_dir($repositoryRoot . '/records'));
+        assertTrue(is_dir($repositoryRoot . '/.git'));
+        assertTrue(is_file($repositoryRoot . '/records/posts/root-001.txt'));
+        assertFalse(is_dir($projectRoot . '/state/local_repository_chouse'));
+        assertFalse(is_file($projectRoot . '/state/cache/post_index_chouse.sqlite3'));
     }
 
     public function testBoardPageRendersActiveSiteProfilePerFormSiteId(): void
@@ -1937,6 +2381,7 @@ final class LocalAppSmokeTest
         putenv('FORUM_SITE_ID=chouse');
         try {
             $chouseBoard = $this->render($application, '/');
+            $chouseAbout = $this->render($application, '/about/');
         } finally {
             putenv('FORUM_SITE_ID');
         }
@@ -1945,6 +2390,8 @@ final class LocalAppSmokeTest
         assertStringContains('<p class="eyebrow">chouse</p>', $chouseBoard);
         assertStringContains('data-default-theme="auto"', $zenmemesBoard);
         assertStringContains('data-default-theme="chouse"', $chouseBoard);
+        assertStringContains('Hackable by design', $chouseAbout);
+        assertStringContains('easy to build tools, experiments, and new ways of participating', $chouseAbout);
     }
 
     public function testApplicationRebuildsWhenRepositoryHeadMetadataIsStale(): void

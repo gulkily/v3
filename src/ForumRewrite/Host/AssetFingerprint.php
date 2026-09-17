@@ -59,6 +59,30 @@ final class AssetFingerprint
         return $sourcePath;
     }
 
+    public static function replacementPathForFingerprint(string $publicRoot, string $path): ?string
+    {
+        if (!str_starts_with($path, '/assets/')) {
+            return null;
+        }
+
+        if (preg_match('#^(/assets/.+)\.([a-f0-9]{12})(\.[A-Za-z0-9]+)$#', $path, $matches) !== 1) {
+            return null;
+        }
+
+        $sourceRequestPath = $matches[1] . $matches[3];
+        $sourcePath = $publicRoot . $sourceRequestPath;
+        if (!is_file($sourcePath)) {
+            return null;
+        }
+
+        $currentPath = self::fingerprintedPath($publicRoot, $sourceRequestPath);
+        if ($currentPath === $path) {
+            return null;
+        }
+
+        return $currentPath;
+    }
+
     public static function copyFingerprintedAssets(string $sourcePublicRoot, string $targetPublicRoot): void
     {
         $sourceAssetRoot = $sourcePublicRoot . '/assets';

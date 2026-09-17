@@ -21,6 +21,7 @@ final class FeatureFlagEvaluatorTest
             $automaticAgentReplies = $evaluator->evaluate(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED);
             $conversationRecording = $evaluator->evaluate(FeatureFlagRegistry::LLM_CONVERSATION_RECORDING_ENABLED);
             $conversationUi = $evaluator->evaluate(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED);
+            $approvedMembersOnly = $evaluator->evaluate(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
 
             assertSame(false, $unicode->effectiveValue);
             assertSame('default', $unicode->source);
@@ -39,6 +40,8 @@ final class FeatureFlagEvaluatorTest
             assertSame('default', $conversationRecording->source);
             assertSame(true, $conversationUi->effectiveValue);
             assertSame('default', $conversationUi->source);
+            assertSame(false, $approvedMembersOnly->effectiveValue);
+            assertSame('default', $approvedMembersOnly->source);
         });
     }
 
@@ -48,12 +51,14 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT => 'true',
             FeatureFlagRegistry::EMOJI_AUTHORED_TEXT => 'true',
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION => 'false',
+            FeatureFlagRegistry::APPROVED_MEMBERS_ONLY => 'true',
         ], function (): void {
             $evaluator = new FeatureFlagEvaluator();
 
             $unicode = $evaluator->evaluate(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
             $emoji = $evaluator->evaluate(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT);
             $notification = $evaluator->evaluate(FeatureFlagRegistry::APP_VERSION_NOTIFICATION);
+            $approvedMembersOnly = $evaluator->evaluate(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
 
             assertSame(true, $unicode->effectiveValue);
             assertSame('environment', $unicode->source);
@@ -64,6 +69,9 @@ final class FeatureFlagEvaluatorTest
             assertSame(false, $notification->effectiveValue);
             assertSame('environment', $notification->source);
             assertSame(false, $notification->environmentValue);
+            assertSame(true, $approvedMembersOnly->effectiveValue);
+            assertSame('environment', $approvedMembersOnly->source);
+            assertSame(true, $approvedMembersOnly->environmentValue);
         });
     }
 
@@ -76,6 +84,7 @@ final class FeatureFlagEvaluatorTest
         );
 
         assertSame([
+            FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,
             FeatureFlagRegistry::EMOJI_AUTHORED_TEXT,
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
@@ -171,6 +180,7 @@ PHP);
     private function withEnvironment(array $values, callable $callback): void
     {
         $keys = [
+            FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,
             FeatureFlagRegistry::EMOJI_AUTHORED_TEXT,
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,

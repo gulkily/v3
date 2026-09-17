@@ -10,6 +10,7 @@ if (!$isBootstrapPost) {
     return;
 }
 ?>
+<?php if ($isBootstrapPost): ?>
   <details class="account-key-advanced">
     <summary>Advanced / technical details</summary>
     <div class="stack">
@@ -23,3 +24,4 @@ if (!$isBootstrapPost) {
       </div>
     </div>
   </details>
+<?php endif; ?>

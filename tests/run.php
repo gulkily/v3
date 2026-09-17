@@ -26,6 +26,7 @@ $testFiles = [
     __DIR__ . '/OpenPgpKeyInspectorTest.php',
     __DIR__ . '/OpenAiCompatibleStructuredChatProviderTest.php',
     __DIR__ . '/PrivateConfigCommandTest.php',
+    __DIR__ . '/PrivateSiteAuthTest.php',
     __DIR__ . '/PostSignatureAuditCommandTest.php',
     __DIR__ . '/PostAnalyzerFactoryTest.php',
     __DIR__ . '/RelatedContentSearchServiceTest.php',
@@ -42,6 +43,7 @@ $testFiles = [
     __DIR__ . '/UnicodeRiskStoreTest.php',
     __DIR__ . '/UnicodeTextPolicyTest.php',
     __DIR__ . '/VersionCheckBehaviorTest.php',
+    __DIR__ . '/WebServerRoutingTest.php',
     __DIR__ . '/WriteApiSmokeTest.php',
 ];
 

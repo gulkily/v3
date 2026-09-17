@@ -8,7 +8,8 @@ The intended production shape is:
 
 - Apache serves `public/` as the `DocumentRoot`
 - PHP handles dynamic requests through `public/index.php`
-- Apache serves eligible sibling `*.html` artifacts directly when they exist
+- Apache directly serves only existing `/assets/*` files and `favicon.ico`
+- the PHP front controller serves eligible sibling `*.html` artifacts on public instances
 - the canonical writable repository lives outside `public/`
 - derived state under `state/` is writable by the web user
 
@@ -110,7 +111,7 @@ For local/CLI runs, set the same variable before the command:
 FORUM_SITE_ID=chouse ./v3 start
 ```
 
-Omitting `FORUM_REPOSITORY_ROOT`, `FORUM_DATABASE_PATH`, and `FORUM_STATIC_HTML_ROOT` in that case auto-initializes a site-scoped local sandbox (`state/local_repository_chouse` and matching database/static paths) separate from the default `zenmemes` sandbox, so both profiles can be developed from the same checkout.
+Omitting `FORUM_REPOSITORY_ROOT` and `FORUM_DATABASE_PATH` uses the same default local instance state for every site profile. Only the disposable static HTML cache remains profile-specific by default, preventing rendered presentation from crossing profiles. Use explicit repository and database paths when developing genuinely separate instances from one checkout.
 
 ## LLM Provider Config
 
@@ -229,6 +230,29 @@ Runtime precedence is:
 
 Use `FORUM_*` environment variables for emergency or deployment-level overrides. While an environment variable is present, the corresponding flag is effectively pinned by the process and the site UI reports the environment source.
 
+### Approved-members-only access
+
+`FORUM_APPROVED_MEMBERS_ONLY=true` enables the private-site boundary
+independently of the site profile or theme. Unapproved visitors are limited
+to `/lobby/`, `/account/key/`, and their own authenticated `/profiles/<slug>`
+page. When a browser keypair is already saved, Lobby automatically publishes
+the public key and completes identity setup before authentication. Other
+routes, feeds, APIs, downloads, backups, and generated HTML return 404 or are
+routed through PHP for the access decision. Required static assets remain
+directly servable.
+
+Enable it in the instance feature-flags record:
+
+```text
+FORUM_APPROVED_MEMBERS_ONLY: true
+```
+
+For a deployment-level pin, set `FORUM_APPROVED_MEMBERS_ONLY=true` in the
+vhost environment. Keep the flag off for public instances. The checked-in
+rewrite rules route every non-asset request through PHP regardless of whether
+the effective flag comes from the vhost or the instance feature-flags record,
+so old public HTML artifacts cannot bypass a site-level flag change.
+
 Audit site-level changes with:
 
 ```bash
@@ -241,7 +265,7 @@ Rollback options:
 - set the previous value through `/tools/feature-flags/`
 - or revert the relevant content-repository commit
 
-If production serves prebuilt static HTML artifacts, rebuild artifacts after changing flags outside the web write path. Changes made through the web path invalidate common shell/tool artifacts automatically.
+If production serves prebuilt static HTML artifacts, rebuild artifacts after changing flags outside the web write path. Private instances do not serve those content artifacts; every content request reaches the application access gate first.
 
 ## App Version Notification
 
@@ -354,7 +378,7 @@ Before launch, verify:
 - profile route loads
 - account route loads
 - compose thread/reply routes load
-- anonymous queryless board/thread/profile requests can be served from sibling `*.html` artifacts
+- anonymous queryless board/thread/profile requests can be served from sibling `*.html` artifacts through the front controller
 - cookie-bearing requests bypass static artifacts and fall back to PHP
 - thread creation works
 - reply creation works

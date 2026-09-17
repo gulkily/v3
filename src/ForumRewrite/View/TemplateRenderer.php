@@ -38,7 +38,17 @@ final class TemplateRenderer
         $content = $this->renderFile('pages/' . $pageTemplate, $pageData);
         $showThreadDensityToggle = in_array($pageTemplate, self::THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES, true);
 
-        return $this->renderLayout($title, $content, $activeSection, $scriptPaths, $routeSource, $showThreadDensityToggle);
+        $viewerProfile = is_array($pageData['viewerProfile'] ?? null) ? $pageData['viewerProfile'] : null;
+
+        return $this->renderLayout(
+            $title,
+            $content,
+            $activeSection,
+            $scriptPaths,
+            $routeSource,
+            $showThreadDensityToggle,
+            $viewerProfile,
+        );
     }
 
     /**
@@ -51,6 +61,7 @@ final class TemplateRenderer
         array $scriptPaths = [],
         string $routeSource = 'php-fallback',
         bool $showThreadDensityToggle = false,
+        ?array $viewerProfile = null,
     ): string {
         $assetScriptPaths = [];
         foreach ($scriptPaths as $scriptPath) {
@@ -75,14 +86,45 @@ final class TemplateRenderer
             'themes' => ThemeRegistry::all(),
             'explicitThemeNames' => ThemeRegistry::explicitNames(),
             'defaultTheme' => SiteProfileRegistry::active()['defaultTheme'],
-            'navItems' => [
-                ['href' => '/', 'label' => 'Board', 'section' => 'board'],
-                ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
-                ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
-                ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],
-                ['href' => '/account/key/', 'label' => 'Account', 'section' => 'account'],
-            ],
+            'approvedMembersOnlyEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
+            'navItems' => $this->navItems($viewerProfile),
         ]);
+    }
+
+    /**
+     * @param array<string, mixed>|null $viewerProfile
+     * @return list<array{href:string,label:string,section:string}>
+     */
+    private function navItems(?array $viewerProfile): array
+    {
+        if ($this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)
+            && ($viewerProfile === null
+                || ((int) ($viewerProfile['is_approved'] ?? 0)) !== 1
+                || (($viewerProfile['_members_only_access'] ?? true) !== true))
+        ) {
+            $items = [
+                ['href' => '/lobby/', 'label' => 'Lobby', 'section' => 'lobby'],
+            ];
+            $profileSlug = trim((string) ($viewerProfile['profile_slug'] ?? ''));
+            if ($profileSlug !== '') {
+                $items[] = [
+                    'href' => '/profiles/' . rawurlencode($profileSlug),
+                    'label' => 'Profile',
+                    'section' => 'profiles',
+                ];
+            }
+            $items[] = ['href' => '/account/key/', 'label' => 'Account', 'section' => 'account'];
+
+            return $items;
+        }
+
+        return [
+            ['href' => '/', 'label' => 'Board', 'section' => 'board'],
+            ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
+            ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
+            ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],
+            ['href' => '/account/key/', 'label' => 'Account', 'section' => 'account'],
+        ];
     }
 
     /**
