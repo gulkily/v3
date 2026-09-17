@@ -2425,6 +2425,10 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   margin-top: 0.4rem;
 }
 
+.activity-commit-manifest__path {
+  display: block;
+}
+
 .activity-commit-manifest__signer,
 .activity-commit-manifest__key {
   display: block;

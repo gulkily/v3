@@ -11,6 +11,7 @@ $files ??= [];
 <?php foreach ($files as $file): ?>
     <li>
       <span class="meta"><?= $e($file['status']) ?> · <?= $e($file['role']) ?></span>
+      <span class="activity-commit-manifest__path">
 <?php if ($file['previous_path'] !== ''): ?>
       <span><?= $e($file['previous_path']) ?> → </span>
 <?php endif; ?>
@@ -19,6 +20,7 @@ $files ??= [];
 <?php else: ?>
       <span><?= $e($file['path']) ?></span>
 <?php endif; ?>
+      </span>
 <?php if ($file['role'] === 'detached signature'): ?>
       <span class="activity-commit-manifest__signer meta">Signer:
 <?php if ($file['signature_signer_identity'] !== ''): ?>

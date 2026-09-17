@@ -1365,6 +1365,8 @@ final class LocalAppSmokeTest
         assertStringContains('records/posts/root-001.txt', $forte);
         assertStringContains('post record', $classic);
         assertStringContains('post record', $forte);
+        assertStringContains('class="activity-commit-manifest__path"', $classic);
+        assertStringContains('class="activity-commit-manifest__path"', $forte);
     }
 
     public function testClassicAndForteActivityRenderSignatureKeyOutsideCommit(): void
