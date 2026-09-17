@@ -1,4 +1,5 @@
-<dialog class="paned-new-thread-dialog" data-paned-new-thread-dialog>
+<?php $selectedTag = (string) ($selectedTag ?? ''); ?>
+<dialog class="paned-new-thread-dialog" data-paned-new-thread-dialog data-compose-root>
   <div class="paned-dialog-titlebar">
     <span>New Thread</span>
     <button type="button" class="paned-dialog-close" data-paned-new-thread-cancel aria-label="Cancel">
@@ -12,5 +13,6 @@
     'body' => '',
     'compact' => false,
     'formClass' => 'paned-compose-form',
+    'returnTo' => '/forte' . ($selectedTag !== '' ? ('?tag=' . rawurlencode($selectedTag)) : ''),
 ]), 1) ?>
 </dialog>

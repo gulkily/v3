@@ -727,6 +727,15 @@
       return false;
     }
 
+    // A dialog's own DOM is transient chrome, not part of the thread list,
+    // and the dialog navigates away immediately regardless — inserting the
+    // full-size, site-themed pending-post card here (with nowhere sensible
+    // to put it, since it has no `.card` list ancestor to slot next to)
+    // would just flash oversized, off-theme content inside the modal.
+    if (typeof composeRoot.closest === "function" && composeRoot.closest("dialog")) {
+      return false;
+    }
+
     const form = typeof composeRoot.querySelector === "function" ? composeRoot.querySelector("[data-compose-form]") : null;
     const formCard = form && typeof form.closest === "function" ? form.closest(".card") : null;
     const target = formCard || form || null;
@@ -806,8 +815,19 @@
     return `/threads/${encodeURIComponent(result.threadId)}?${suffix}${anchor}`;
   }
 
-  function canonicalThreadUrl(result) {
-    return `/threads/${encodeURIComponent(result.threadId)}?created_post_id=${encodeURIComponent(result.postId)}&__v=${encodeURIComponent(result.commitSha)}`;
+  function canonicalThreadUrl(result, returnTo) {
+    const suffix = `created_post_id=${encodeURIComponent(result.postId)}&__v=${encodeURIComponent(result.commitSha)}`;
+    if (returnTo && /^\/forte(?:\?|$)/.test(returnTo)) {
+      const separator = returnTo.indexOf("?") === -1 ? "?" : "&";
+      return `${returnTo}${separator}selected=${encodeURIComponent(result.threadId)}&${suffix}`;
+    }
+
+    if (returnTo) {
+      const separator = returnTo.indexOf("?") === -1 ? "?" : "&";
+      return `${returnTo}${separator}${suffix}`;
+    }
+
+    return `/threads/${encodeURIComponent(result.threadId)}?${suffix}`;
   }
 
   function navigateToCanonicalReply(result, returnTo) {
@@ -822,8 +842,8 @@
     }
   }
 
-  function navigateToCanonicalThread(result) {
-    const url = canonicalThreadUrl(result);
+  function navigateToCanonicalThread(result, returnTo) {
+    const url = canonicalThreadUrl(result, returnTo);
     if (typeof window !== "undefined" && window.location) {
       if (typeof window.location.assign === "function") {
         window.location.assign(url);
@@ -2845,7 +2865,7 @@
 
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
-        navigateToCanonicalThread(result);
+        navigateToCanonicalThread(result, composeFormFieldValue(form, "return_to"));
         return true;
       } catch (error) {
         removeNode(pendingShell);
@@ -3081,12 +3101,12 @@
       bindAccountKeyPage(accountRoot);
     }
 
-    const composeRoot = scope.matches && scope.matches("[data-compose-root]")
-      ? scope
-      : scope.querySelector("[data-compose-root]");
-    if (composeRoot) {
+    const composeRoots = scope.matches && scope.matches("[data-compose-root]")
+      ? [scope]
+      : Array.from(scope.querySelectorAll("[data-compose-root]"));
+    composeRoots.forEach(function (composeRoot) {
       bindComposePage(composeRoot);
-    }
+    });
   }
 
   window.ForumBrowserSigning = window.ForumBrowserSigning || {};
