@@ -27,6 +27,7 @@
 <?php if ((string) ($item['author_label'] ?? '') === 'reply-agent'): ?>
     <p class="meta">Author: reply-agent <span class="agent-label">automated reply agent</span></p>
 <?php endif; ?>
+<?php if (($item['source_commit_files'] ?? []) === []): ?>
 <?= $indent($partial('partials/source_metadata.php', [
     'source_path' => $item['source_path'] ?? '',
     'source_commit_sha' => $item['source_commit_sha'] ?? '',
@@ -36,8 +37,11 @@
     'source_signature_href' => $item['source_signature_href'] ?? '',
     'source_signature_status' => $item['source_signature_status'] ?? '',
 ]), 2) ?>
+<?php endif; ?>
 <?= $indent($partial('partials/activity_commit_manifest.php', [
     'files' => $item['source_commit_files'] ?? [],
+    'commit_sha' => $item['source_commit_sha'] ?? '',
+    'commit_href' => $item['source_commit_href'] ?? '',
 ]), 2) ?>
     <p class="meta"><?= $contentMeta($item, 'created_at', '') ?></p>
   </article>

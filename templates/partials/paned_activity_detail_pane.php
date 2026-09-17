@@ -41,6 +41,7 @@ $forteLink = $item['forte_link'] ?? ['href' => '', 'label' => ''];
 <?php if ((string) ($item['author_label'] ?? '') === 'reply-agent'): ?>
         <p class="meta">Author: reply-agent <span class="agent-label">automated reply agent</span></p>
 <?php endif; ?>
+<?php if (($item['source_commit_files'] ?? []) === []): ?>
 <?= $indent($partial('partials/source_metadata.php', [
           'source_path' => $item['source_path'] ?? '',
           'source_commit_sha' => $item['source_commit_sha'] ?? '',
@@ -50,8 +51,11 @@ $forteLink = $item['forte_link'] ?? ['href' => '', 'label' => ''];
           'source_signature_href' => $item['source_signature_href'] ?? '',
           'source_signature_status' => $item['source_signature_status'] ?? '',
         ]), 4) ?>
+<?php endif; ?>
 <?= $indent($partial('partials/activity_commit_manifest.php', [
           'files' => $item['source_commit_files'] ?? [],
+          'commit_sha' => $item['source_commit_sha'] ?? '',
+          'commit_href' => $item['source_commit_href'] ?? '',
         ]), 4) ?>
       </div>
     </div>

@@ -1120,12 +1120,15 @@ final class LocalAppSmokeTest
 
         $post = $this->render($application, '/posts/root-001');
         $activity = $this->render($application, '/activity/?view=content');
+        $forteActivity = $this->render($application, '/forte/activity/?view=content');
         $signature = $this->render($application, '/source/current/records/posts/root-001.txt.asc');
 
         assertStringContains('Signature:', $post);
         assertStringContains('href="/source/current/records/posts/root-001.txt.asc"', $post);
         assertStringContains('Signature:', $activity);
         assertStringContains('href="/source/current/records/posts/root-001.txt.asc"', $activity);
+        assertStringContains('Signature:', $forteActivity);
+        assertStringContains('href="/source/current/records/posts/root-001.txt.asc"', $forteActivity);
         assertSame("detached signature\n", $signature);
     }
 
@@ -1367,6 +1370,10 @@ final class LocalAppSmokeTest
         assertStringContains('post record', $forte);
         assertStringContains('class="activity-commit-manifest__path"', $classic);
         assertStringContains('class="activity-commit-manifest__path"', $forte);
+        assertStringContains('Commit:', $classic);
+        assertStringContains('Commit:', $forte);
+        assertStringNotContains('<p class="meta">Source:', $classic);
+        assertStringNotContains('<p class="meta">Source:', $forte);
     }
 
     public function testClassicAndForteActivityRenderSignatureKeyOutsideCommit(): void

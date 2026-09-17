@@ -3,9 +3,20 @@
  * @var list<array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}> $files
  */
 $files ??= [];
+$commitSha = (string) ($commit_sha ?? '');
+$commitHref = (string) ($commit_href ?? '');
 ?>
 <?php if ($files !== []): ?>
 <section class="activity-commit-manifest">
+<?php if ($commitSha !== ''): ?>
+  <p class="meta">Commit:
+<?php if ($commitHref !== ''): ?>
+    <a href="<?= $e($commitHref) ?>" title="<?= $e($commitSha) ?>"><?= $e(substr($commitSha, 0, 12)) ?></a>
+<?php else: ?>
+    <span title="<?= $e($commitSha) ?>"><?= $e(substr($commitSha, 0, 12)) ?></span>
+<?php endif; ?>
+  </p>
+<?php endif; ?>
   <h3>Commit files (<?= $e((string) count($files)) ?>)</h3>
   <ul>
 <?php foreach ($files as $file): ?>
