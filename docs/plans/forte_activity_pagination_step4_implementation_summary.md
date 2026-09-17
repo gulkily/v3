@@ -112,3 +112,16 @@ The user asked for the left-pane folder counts to show each view's real total ra
   - `time curl` on the full page: 82ms - the 5 added count queries (unindexed full-ish scans over 1629 rows, no per-item transform) added no perceptible cost.
   - CDP-driven browser check: folder count for `all` stays at 1629 before and after a Load More click; status bar moves 100 → 200 as before.
   - Re-ran every prior CDP regression script (button styling, detail-pane-for-paginated-item, approval-view exhaustion + filter-switch persistence, Prev/Next stepping) unchanged - all still pass, no console errors, server log clean.
+
+## Follow-up - Load more moved into the scroll
+The user asked for the "Load more" control to sit at the bottom of the scrollable row list instead of staying pinned below it as an always-visible footer.
+
+- Changes:
+  - `paned_activity_item_list.php`: moved `.paned-list-load-more-group` from a sibling after `.paned-list-body` to its last child, so it scrolls with the rows instead of sitting in a fixed strip below the scroll area. Added `role="presentation"` to the group, since `.paned-list-body` carries `role="listbox"` and a listbox's children are expected to be `option`s - the group (and its buttons) are layout-only, not part of that listbox semantics.
+  - `forte.css`: dropped `flex-shrink: 0` from `.paned-list-load-more-group` (meaningless now that it's not a flex sibling of `.paned-list-body`, just a normal block child within it) and switched its `border-top` from `--paned-border-dark` to `--paned-chrome-dark`, matching the row list's own row-separator color instead of the stronger toolbar/status-bar divider color, so it reads as part of the list rather than a distinct footer.
+  - `paned_activity_reader.js`: `mergeAppendedRows()` now inserts genuinely-new rows with `listBody.insertBefore(node, loadMoreGroup)` instead of `appendChild` - the button group is the last element in `listBody` now, so a plain append would have inserted new rows *after* it.
+- Verification:
+  - `php -l` / JS syntax check - clean.
+  - CDP structural check: `loadMoreGroup.parentElement === listBody` and `listBody.lastElementChild === loadMoreGroup`, both before and after a Load More click (new rows correctly land before the group, which stays last).
+  - Screenshots: button is off-screen at the top of a freshly-loaded list pane, and appears immediately after the last row once scrolled to the bottom; after clicking it from that scrolled position, the newly-appended rows continue directly above it and the status/folder counts update exactly as before.
+  - Re-ran the full CDP regression suite (button styling/counts/detail-pane, approval exhaustion + filter-switch persistence, Prev/Next stepping, fixed totals) unchanged - all pass identically, no console errors, server log clean.

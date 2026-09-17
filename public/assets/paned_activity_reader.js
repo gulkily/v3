@@ -244,7 +244,11 @@
           // instead of appending a second row for the same id.
           existingRow.setAttribute("data-paned-activity-view-" + view, "1");
         } else {
-          listBody.appendChild(node);
+          // The load-more button group lives inside listBody now (so it
+          // scrolls with the rows instead of staying pinned below them)
+          // and must stay last, so new rows are inserted before it rather
+          // than appended after it.
+          listBody.insertBefore(node, loadMoreGroup);
         }
       });
     }

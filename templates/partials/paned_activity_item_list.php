@@ -34,23 +34,23 @@ if ($isTabStop) {
     'visible' => $visible,
 ]), 2) ?>
 <?php endforeach; ?>
-  </div>
-  <div class="paned-list-load-more-group" data-paned-activity-load-more-group>
+    <div class="paned-list-load-more-group" data-paned-activity-load-more-group role="presentation">
 <?php foreach ($viewPagination as $viewKey => $pagination): ?>
 <?php
 $hasMore = (bool) ($pagination['has_more'] ?? false);
 $nextCursor = $pagination['next_cursor'] ?? null;
 $cursorJson = $nextCursor !== null ? json_encode($nextCursor) : '';
 ?>
-    <button
-      type="button"
-      class="paned-list-load-more-button"
-      data-paned-activity-load-more
-      data-paned-activity-view="<?= $e($viewKey) ?>"
-      data-paned-activity-cursor="<?= $e($cursorJson) ?>"
-      data-paned-activity-has-more="<?= $hasMore ? '1' : '0' ?>"
-      <?= ($viewKey === $selectedView && $hasMore) ? '' : 'hidden' ?>
-    >Load more</button>
+      <button
+        type="button"
+        class="paned-list-load-more-button"
+        data-paned-activity-load-more
+        data-paned-activity-view="<?= $e($viewKey) ?>"
+        data-paned-activity-cursor="<?= $e($cursorJson) ?>"
+        data-paned-activity-has-more="<?= $hasMore ? '1' : '0' ?>"
+        <?= ($viewKey === $selectedView && $hasMore) ? '' : 'hidden' ?>
+      >Load more</button>
 <?php endforeach; ?>
+    </div>
   </div>
 </div>
