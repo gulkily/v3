@@ -189,12 +189,24 @@
     })[0];
 
     if (!selectedRow) {
-      var fallback = firstVisibleRow();
-      if (fallback) {
-        selectItem(fallback.getAttribute("data-paned-activity-id"));
-      } else {
-        resetContentPane();
+      // Auto-picking the first row is a reasonable "just show me
+      // something" default under date order (the newest/oldest item),
+      // but under kind/label sort the alphabetically-first item is just
+      // as likely to be some huge bootstrap/seed record as anything else
+      // - dropping the user straight into e.g. a thousand-file commit
+      // manifest they never asked to see reads as broken, not helpful,
+      // so skip auto-selection for those sorts and leave the placeholder
+      // showing until they actually pick something.
+      var sortColumn = currentSortFromUrl();
+      var nonDateSortActive = sortColumn !== "" && sortColumn !== "date";
+      if (!nonDateSortActive) {
+        var fallback = firstVisibleRow();
+        if (fallback) {
+          selectItem(fallback.getAttribute("data-paned-activity-id"));
+          return;
+        }
       }
+      resetContentPane();
       return;
     }
 
