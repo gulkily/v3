@@ -1059,7 +1059,7 @@ final class Application
         $viewPagination = [];
         foreach (array_keys($viewLabels) as $viewKey) {
             $viewItemIds[$viewKey] = [];
-            $viewResult = $this->fetchActivity($viewKey);
+            $viewResult = $this->fetchActivity($viewKey, 'date', 'desc');
             foreach ($viewResult['items'] as $item) {
                 $itemId = (string) $item['id'];
                 $viewItemIds[$viewKey][] = $itemId;
@@ -1076,8 +1076,7 @@ final class Application
             $viewPagination[$viewKey] = [
                 'has_more' => $viewResult['has_more'] && $lastItem !== null,
                 'next_cursor' => $lastItem !== null ? [
-                    'created_at' => (string) $lastItem['created_at'],
-                    'post_id' => $lastItem['post_id'] !== null ? (string) $lastItem['post_id'] : null,
+                    'sort_value' => $this->activitySortValueFromItem($lastItem, 'date'),
                     'id' => (int) $lastItem['id'],
                 ] : null,
             ];
@@ -1171,24 +1170,21 @@ final class Application
 
             if (
                 !is_array($decodedCursor)
-                || !isset($decodedCursor['created_at'], $decodedCursor['id'])
-                || !is_string($decodedCursor['created_at'])
+                || !isset($decodedCursor['sort_value'], $decodedCursor['id'])
+                || !is_string($decodedCursor['sort_value'])
                 || !is_int($decodedCursor['id'])
-                || !array_key_exists('post_id', $decodedCursor)
-                || !($decodedCursor['post_id'] === null || is_string($decodedCursor['post_id']))
             ) {
                 $this->sendJson(['status' => 'error', 'error' => 'invalid cursor'], 400);
                 return;
             }
 
             $cursor = [
-                'created_at' => $decodedCursor['created_at'],
-                'post_id' => $decodedCursor['post_id'],
+                'sort_value' => $decodedCursor['sort_value'],
                 'id' => $decodedCursor['id'],
             ];
         }
 
-        $result = $this->fetchActivity($view, $cursor);
+        $result = $this->fetchActivity($view, 'date', 'desc', $cursor);
 
         $html = '';
         $detailHtml = '';
@@ -1219,8 +1215,7 @@ final class Application
         $lastItem = $result['items'][count($result['items']) - 1] ?? null;
         $hasMore = $result['has_more'] && $lastItem !== null;
         $nextCursor = $lastItem !== null ? [
-            'created_at' => (string) $lastItem['created_at'],
-            'post_id' => $lastItem['post_id'] !== null ? (string) $lastItem['post_id'] : null,
+            'sort_value' => $this->activitySortValueFromItem($lastItem, 'date'),
             'id' => (int) $lastItem['id'],
         ] : null;
 
@@ -1724,7 +1719,7 @@ final class Application
         return [
             'generated_at' => $metadata['rebuilt_at'] ?? '',
             'repository_head' => $metadata['repository_head'] ?? ReadModelMetadata::repositoryHead($this->repositoryRoot),
-            'items' => array_slice($this->fetchActivity('content')['items'], 0, self::BACKUP_PREVIEW_LIMIT),
+            'items' => array_slice($this->fetchActivity('content', 'date', 'desc')['items'], 0, self::BACKUP_PREVIEW_LIMIT),
         ];
     }
 
@@ -1780,7 +1775,7 @@ final class Application
                         'is_active' => false,
                     ],
                 ],
-                'items' => $this->fetchActivity($view)['items'],
+                'items' => $this->fetchActivity($view, 'date', 'desc')['items'],
             ],
             'Activity',
             'activity',
@@ -2303,7 +2298,7 @@ final class Application
     {
         $view = $this->normalizeActivityView($view);
         $items = [];
-        foreach ($this->fetchActivity($view)['items'] as $item) {
+        foreach ($this->fetchActivity($view, 'date', 'desc')['items'] as $item) {
             $link = match ($item['kind']) {
                 'thread_label_add' => '/threads/' . $item['thread_id'],
                 'site_feature_flag' => '/tools/feature-flags/',
@@ -3881,28 +3876,31 @@ final class Application
     }
 
     /**
-     * @param array{created_at: string, post_id: ?string, id: int}|null $afterCursor
+     * @param array{sort_value: string, id: int}|null $afterCursor
      *        Keyset cursor identifying the last item of the previous page,
      *        matching the ORDER BY below. Pass null for the first page.
      * @return array{items: array<int, array<string, mixed>>, has_more: bool}
      */
-    private function fetchActivity(string $view, ?array $afterCursor = null): array
+    private function fetchActivity(string $view, string $sortColumn, string $sortDirection, ?array $afterCursor = null): array
     {
         $view = $this->normalizeActivityView($view);
+        ['column' => $sortColumn, 'direction' => $sortDirection] = $this->resolveActivitySort($sortColumn, $sortDirection);
+        $sortColumnSql = $this->activitySortSql($sortColumn);
+        $sortDirectionSql = $sortDirection === 'desc' ? 'DESC' : 'ASC';
         [$viewWhere, $viewParameters] = $this->activityViewSql($view);
 
         $cursorWhere = '';
         if ($afterCursor !== null) {
-            // COALESCE(post_id, -1) mirrors SQLite's own NULL-sorts-lowest
-            // rule for `ORDER BY post_id DESC` (NULLs last), since no real
-            // post_id is ever <= -1.
+            // `id` is the sole tiebreaker (rather than also comparing
+            // post_id, as the old date-only cursor did): id is already
+            // unique, so it alone guarantees a stable, gapless order
+            // regardless of which column is being sorted on.
+            $comparisonOperator = $sortDirection === 'desc' ? '<' : '>';
             $cursorWhere = 'AND (
-                activity.created_at < :cursor_created_at
-                OR (activity.created_at = :cursor_created_at AND COALESCE(activity.post_id, -1) < COALESCE(:cursor_post_id, -1))
-                OR (activity.created_at = :cursor_created_at AND COALESCE(activity.post_id, -1) = COALESCE(:cursor_post_id, -1) AND activity.id < :cursor_id)
+                ' . $sortColumnSql . ' ' . $comparisonOperator . ' :cursor_sort_value
+                OR (' . $sortColumnSql . ' = :cursor_sort_value AND activity.id ' . $comparisonOperator . ' :cursor_id)
             )';
-            $viewParameters['cursor_created_at'] = $afterCursor['created_at'];
-            $viewParameters['cursor_post_id'] = $afterCursor['post_id'];
+            $viewParameters['cursor_sort_value'] = $afterCursor['sort_value'];
             $viewParameters['cursor_id'] = $afterCursor['id'];
         }
 
@@ -3918,7 +3916,7 @@ final class Application
              WHERE 1 = 1
              ' . $viewWhere . '
              ' . $cursorWhere . '
-             ORDER BY activity.created_at DESC, activity.post_id DESC, activity.id DESC
+             ORDER BY ' . $sortColumnSql . ' ' . $sortDirectionSql . ', activity.id ' . $sortDirectionSql . '
              LIMIT :limit'
         );
         foreach ($viewParameters as $parameter => $value) {
@@ -4056,6 +4054,60 @@ final class Application
                 ['hidden_tag' => $quotedHiddenTag],
             ],
             default => ['', []],
+        };
+    }
+
+    /**
+     * Resolves requested ?sort=/?dir= values for the Activity list against
+     * its three sortable columns, falling back to 'date' when the column is
+     * missing or unrecognized (today's default order). An unrecognized
+     * direction falls back to a per-column default: descending for date,
+     * ascending for the text columns - mirroring `resolveForteBoardSort()`'s
+     * pattern, though Activity always resolves to a real column (never an
+     * empty-string sentinel) since its cursor needs one to key off.
+     *
+     * @return array{column: string, direction: string}
+     */
+    private function resolveActivitySort(string $requestedColumn, string $requestedDirection): array
+    {
+        $validColumns = ['date', 'kind', 'label'];
+        $column = in_array($requestedColumn, $validColumns, true) ? $requestedColumn : 'date';
+
+        $defaultDirection = $column === 'date' ? 'desc' : 'asc';
+        $direction = in_array($requestedDirection, ['asc', 'desc'], true) ? $requestedDirection : $defaultDirection;
+
+        return ['column' => $column, 'direction' => $direction];
+    }
+
+    /**
+     * Maps a column key already validated by `resolveActivitySort()` to its
+     * SQL expression. Not parameterized/bound (like `activityViewSql()`'s
+     * fragments) since it only ever returns one of these fixed literals.
+     */
+    private function activitySortSql(string $column): string
+    {
+        return match ($column) {
+            'kind' => 'activity.kind',
+            'label' => 'activity.label',
+            default => 'activity.created_at',
+        };
+    }
+
+    /**
+     * Reads the value of whichever column is currently the active sort key
+     * out of an already-built `fetchActivity()` item, for constructing that
+     * item's keyset cursor (`{sort_value, id}`). Keeps the column-to-field
+     * mapping in one place alongside `activitySortSql()`'s column-to-SQL
+     * mapping, rather than duplicating a match() at each call site.
+     *
+     * @param array<string, mixed> $item
+     */
+    private function activitySortValueFromItem(array $item, string $column): string
+    {
+        return match ($column) {
+            'kind' => (string) $item['kind'],
+            'label' => (string) $item['label'],
+            default => (string) $item['created_at'],
         };
     }
 

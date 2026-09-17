@@ -1,0 +1,20 @@
+# Forte Activity Sortable Columns — Step 4: Implementation Summary
+
+## Stage 1 - Sort-aware `fetchActivity()` and unified cursor
+- Changes:
+  - New `resolveActivitySort(string $requestedColumn, string $requestedDirection): array{column, direction}` (`Application.php`) - validates against `date`/`kind`/`label`, falls back to `date` and its per-column default direction (`date` desc, `kind`/`label` asc), mirroring `resolveForteBoardSort()`'s pattern. Unlike Board, always resolves to a real column (never an empty-string sentinel), since the cursor needs one.
+  - New `activitySortSql(string $column): string` - maps a validated column to its SQL expression (`kind`→`activity.kind`, `label`→`activity.label`, default→`activity.created_at`), alongside the existing `activityViewSql()`.
+  - New `activitySortValueFromItem(array $item, string $column): string` - the inverse mapping (column → item field), used by callers to build a `next_cursor` from the last returned item without duplicating the column mapping.
+  - `fetchActivity(string $view, string $sortColumn, string $sortDirection, ?array $afterCursor = null): array` - `ORDER BY` is now `<sort column> <direction>, activity.id <direction>`; the cursor shape simplified from the old 3-field `{created_at, post_id, id}` to a uniform 2-field `{sort_value, id}`, with the keyset `WHERE` built generically off whichever column is active.
+  - All 5 existing call sites (`renderForteActivity()`, `handleForteActivityPage()`, backup preview, classic `/activity/` route, RSS feed) updated to the new signature/cursor shape; all 5 pass `'date', 'desc'` explicitly for now (Stage 2 threads real request-derived sort into the two that need it).
+  - `handleForteActivityPage()`'s cursor JSON decode/validation and `next_cursor` construction, and `renderForteActivity()`'s `$viewPagination[...]['next_cursor']` construction, both updated to the new `{sort_value, id}` shape via `activitySortValueFromItem()`.
+- Verification:
+  - `php -l src/ForumRewrite/Application.php` - no syntax errors.
+  - `php scripts/rebuild_read_model.php` then started a local dev server; confirmed the 3 unaffected callers still work: classic `/activity/?view=content` (200), RSS feed (`/activity/?format=rss`, still exactly 100 `<item>`s), `/backup/` (200) - unchanged output for callers Stage 1 didn't touch.
+  - `/api/forte_activity_page` end-to-end with the new cursor shape: page 1 → 100 rows, `next_cursor: {sort_value, id}`; page 2 via that cursor → 100 more rows, zero id overlap, page2's first id immediately follows page1's last id - same no-gap/no-duplicate check used for the original date-order pagination.
+  - Wrote a one-off PHP script (reflection-invoking `fetchActivity()` directly, since Stage 2 hasn't wired `sort`/`dir` query params through yet) covering `kind asc`, `label asc`, `label desc`, and `date desc`: for each, verified page 1's 100 items are correctly ordered by the active column (then `id`), and that page 2 (fetched via the derived cursor) continues immediately after page 1 with zero id overlap - all four passed.
+  - Server log: only the pre-existing, unrelated `sendHtml()` header-timing warning already noted in the pagination feature's own summary (same root cause, just a shifted line number since the file grew) - nothing new.
+- Notes:
+  - Dropping `post_id` as a middle tiebreaker (now just `<sort column>, id`) is a deliberate, minor behavior change flagged in the Step 3 plan: `id` alone already guarantees a unique, gapless order, so pagination correctness is unaffected; only the tie-break order among rows sharing the exact same sort value can shift slightly from before.
+  - `kind`/`label` sorting has no supporting index (only `date`/`post_id`/`id` do, via `activity_recent_idx`), so it's a full sort scan - acceptable at this table's current size (~1600 rows), flagged as a future concern if the table grows substantially.
+  - Nothing in the app actually sends `sort`/`dir` yet - Stage 2 threads real request-derived values through the two callers that need it.
