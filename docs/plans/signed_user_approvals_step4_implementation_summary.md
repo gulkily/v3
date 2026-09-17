@@ -31,3 +31,15 @@
   - `BrowserSigningNormalizationTest::testApprovalSigningPreparesSignsAndFinalizesCanonicalApproval` passed, confirming the prepare and finalize payloads and detached-signature submission.
 - Notes:
   - The existing BrowserSigning suite has unrelated merged-test mock failures caused by missing `querySelectorAll` stubs, plus its pre-existing reaction-handler failures; Stage 4 consumes the new helper rather than changing those unrelated tests.
+
+## Stage 4 - Signed profile and pending-user approvals
+- Changes:
+  - Loaded the OpenPGP and shared browser-signing assets on profile and pending-user approval pages.
+  - Wired both controls through the shared signed approval helper, with progress, duplicate-submission prevention, error feedback, and profile success navigation.
+  - Changed legacy direct approval API and form submissions to return a browser-signature-required error instead of writing an unsigned approval.
+- Verification:
+  - `php tests/run.php WriteApiSmokeTest` passed.
+  - Render coverage confirms both approval surfaces load the signing assets and the profile form exposes the signed-approval contract.
+  - The legacy API test confirms an unsigned request leaves the pending user in place.
+- Notes:
+  - Stage 5 will verify that signed approvals appear with their signature and signing key through the existing source and activity displays.

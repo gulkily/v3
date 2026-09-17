@@ -10,25 +10,17 @@
   }
 
   async function approveUser(profileSlug) {
-    const response = await fetch("/api/approve_user", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-      },
-      body: new URLSearchParams({ profile_slug: profileSlug }).toString(),
-    });
+    const signing = window.ForumBrowserSigning || null;
+    if (!signing || typeof signing.submitSignedApproval !== "function") {
+      throw new Error("Browser signing is unavailable. Refresh this page and try again.");
+    }
 
-    return response.text();
-  }
+    const result = await signing.submitSignedApproval(profileSlug);
+    if (!result || !result.ok) {
+      throw new Error(result && result.error ? result.error : "Unable to approve user.");
+    }
 
-  function parseResponseValue(text, key) {
-    const prefix = `${key}=`;
-    const line = String(text)
-      .split("\n")
-      .find((item) => item.startsWith(prefix));
-
-    return line ? line.slice(prefix.length) : "";
+    return result;
   }
 
   function bindPendingApprovals(root) {
@@ -53,14 +45,10 @@
       }
 
       button.setAttribute("disabled", "disabled");
-      setFeedback(feedback, "Approving user...", "ok");
+      setFeedback(feedback, "Preparing and signing approval...", "ok");
 
       try {
-        const text = await approveUser(profileSlug);
-        if (!text.includes("status=ok")) {
-          const errorMessage = parseResponseValue(text, "error") || "Unable to approve user.";
-          throw new Error(errorMessage);
-        }
+        await approveUser(profileSlug);
 
         const row = button.closest("tr");
         const username = row ? row.getAttribute("data-username") || profileSlug : profileSlug;
@@ -92,10 +80,54 @@
     });
   }
 
+  function bindProfileApproval(form) {
+    const feedback = document.querySelector('[data-role="signed-approval-feedback"]');
+    const button = form.querySelector('button[type="submit"]');
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (button && button.disabled) {
+        return;
+      }
+
+      const profileSlug = form.getAttribute("data-profile-slug") || "";
+      if (!profileSlug) {
+        return;
+      }
+
+      if (button) {
+        button.disabled = true;
+      }
+      if (feedback) {
+        feedback.textContent = "Preparing and signing approval...";
+        feedback.hidden = false;
+      }
+
+      try {
+        const result = await approveUser(profileSlug);
+        const postId = encodeURIComponent(String(result.postId || ""));
+        const commitSha = encodeURIComponent(String(result.commitSha || ""));
+        window.location.assign(`/profiles/${encodeURIComponent(profileSlug)}?approval=success&post_id=${postId}&commit=${commitSha}`);
+      } catch (error) {
+        if (feedback) {
+          feedback.textContent = error instanceof Error ? error.message : "Unable to approve user.";
+          feedback.hidden = false;
+        }
+        if (button) {
+          button.disabled = false;
+        }
+      }
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     const root = document.querySelector("[data-pending-approvals-root]");
     if (root) {
       bindPendingApprovals(root);
+    }
+
+    const profileForm = document.querySelector("[data-signed-approval-form]");
+    if (profileForm) {
+      bindProfileApproval(profileForm);
     }
   });
 })();

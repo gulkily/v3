@@ -1607,6 +1607,11 @@ final class Application
             ],
             $pageTitleLabel . ' - Profile',
             'profiles',
+            [
+                '/assets/openpgp_loader.js',
+                '/assets/browser_signing.js',
+                '/assets/pending_approvals.js',
+            ],
         );
     }
 
@@ -1872,7 +1877,11 @@ final class Application
             ],
             'Users Awaiting Approval',
             'profiles',
-            ['/assets/pending_approvals.js'],
+            [
+                '/assets/openpgp_loader.js',
+                '/assets/browser_signing.js',
+                '/assets/pending_approvals.js',
+            ],
         );
     }
 
@@ -5201,40 +5210,12 @@ final class Application
      */
     private function handleApproveUserApi(string $method, array $query): void
     {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
         if ($method !== 'POST') {
             $this->sendText("method not allowed\n", 405);
             return;
         }
 
-        $phaseStartedAt = hrtime(true);
-        $profileSlug = trim((string) ($this->requestData($query)['profile_slug'] ?? ''));
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        if ($profileSlug === '') {
-            $this->sendText(
-                "error=Missing profile_slug.\n",
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-            return;
-        }
-
-        try {
-            $result = $this->approveUserBySlug($profileSlug, $timings);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $this->sendText(
-                "status=ok\nprofile_slug={$result['profile_slug']}\nusername={$result['username']}\npost_id={$result['post_id']}\ncommit_sha={$result['commit_sha']}\n",
-                200,
-                $this->serverTimingHeaders($result)
-            );
-        } catch (RuntimeException $exception) {
-            $this->sendText(
-                "error=" . $exception->getMessage() . "\n",
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
+        $this->sendText("error=Approval requires a browser signature. Refresh this page and try again.\n", 400);
     }
 
     /**
@@ -6138,35 +6119,21 @@ final class Application
      */
     private function handleApproveUserSubmit(string $slug, array $query): void
     {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        $phaseStartedAt = hrtime(true);
         $profile = $this->fetchProfileBySlug($slug);
-        $timings['target_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
         if ($profile === null) {
             $this->notFound();
             return;
         }
 
-        try {
-            $result = $this->approveUserBySlug($slug, $timings);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $location = '/profiles/' . rawurlencode((string) $profile['profile_slug'])
-                . '?approval=success&post_id=' . rawurlencode((string) $result['post_id'])
-                . '&commit=' . rawurlencode((string) $result['commit_sha']);
-            $this->sendRedirect(
-                $location,
-                'Approved user ' . (string) $profile['username'] . '.',
-                303,
-                $this->serverTimingHeaders($result)
-            );
-        } catch (RuntimeException $exception) {
-            $this->sendHtml(
-                $this->renderProfilePage($profile, false, null, $exception->getMessage()),
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
+        $this->sendHtml(
+            $this->renderProfilePage(
+                $profile,
+                false,
+                null,
+                'Approval requires a browser signature. Enable JavaScript and refresh this page before trying again.'
+            ),
+            400
+        );
     }
 
     /**

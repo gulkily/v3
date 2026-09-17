@@ -2254,7 +2254,7 @@ PHP);
         $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=' . rawurlencode($newThreadId) . '&tag=like');
 
         $alice = $this->linkGeneratedIdentity($application, 'alice');
-        $this->renderMethod($application, 'POST', '/profiles/' . $alice['profile_slug'] . '/approve');
+        $this->approveIdentity(new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot)), $alice);
         $_COOKIE = ['identity_hint' => 'alice'];
         $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=root-001&tag=like');
         $_COOKIE = [];
@@ -2286,7 +2286,7 @@ PHP);
         );
 
         $alice = $this->linkGeneratedIdentity($application, 'alice');
-        $this->renderMethod($application, 'POST', '/profiles/' . $alice['profile_slug'] . '/approve');
+        $this->approveIdentity(new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot)), $alice);
         $_COOKIE = ['identity_hint' => 'alice'];
         $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=root-001&tag=like');
         $_COOKIE = [];
@@ -2936,7 +2936,10 @@ PHP);
             '/profiles/' . $targetProfileSlug . '.html',
         ]);
         $postIdsBefore = $this->listCanonicalPostIds($repositoryRoot);
-        $approvalResponse = $this->renderMethod($application, 'POST', '/profiles/' . $targetProfileSlug . '/approve');
+        $approvalResult = $this->approveIdentity(
+            new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot)),
+            $target
+        );
         $postIdsAfter = $this->listCanonicalPostIds($repositoryRoot);
         $approvalPostIds = array_values(array_diff($postIdsAfter, $postIdsBefore));
         sort($approvalPostIds);
@@ -2946,7 +2949,7 @@ PHP);
             $application,
             'GET',
             '/profiles/' . rawurlencode($targetProfileSlug) . '?approval=success&post_id=' . rawurlencode($approvalPostId)
-                . '&commit=' . rawurlencode($this->latestCommitSha($repositoryRoot))
+                . '&commit=' . rawurlencode($approvalResult['commit_sha'])
         );
         $targetProfile = $this->renderMethod($application, 'GET', '/profiles/' . $targetProfileSlug);
         $targetProfileApi = $this->renderMethod($application, 'GET', '/api/get_profile?profile_slug=' . rawurlencode($targetProfileSlug));
@@ -2958,11 +2961,6 @@ PHP);
         $_COOKIE = [];
 
         assertStringContains('Approve user', $profilePage);
-        assertStringContains('Redirecting', $approvalResponse);
-        assertStringContains('Approved user alice.', $approvalResponse);
-        assertStringContains('/profiles/' . $targetProfileSlug, $approvalResponse);
-        assertStringContains('approval=success', $approvalResponse);
-        assertStringContains('post_id=' . $approvalPostId, $approvalResponse);
         assertSame(1, count($approvalPostIds));
         assertStringContains('Approved user alice', $approvalLanding);
         assertStringContains('/posts/' . $approvalPostId, $approvalLanding);
@@ -2974,7 +2972,6 @@ PHP);
         assertStringContains('>guest</a>', $targetProfile);
         assertStringNotContains('Approve user', $approvalLanding);
         assertStringNotContains('Approve user', $targetProfile);
-        assertFalse(is_file($artifactRoot . '/profiles/' . $targetProfileSlug . '.html'));
         assertStringNotContains($approvalPostId, $board);
         assertStringContains($approvalPostId, $activity);
         assertStringContains('approval', $activity);
@@ -3003,8 +3000,8 @@ PHP);
         );
         $_COOKIE = [];
 
-        assertStringContains('Only approved users can approve other users.', $unapprovedResponse);
-        assertStringContains('Self-approval is not allowed.', $selfResponse);
+        assertStringContains('Approval requires a browser signature.', $unapprovedResponse);
+        assertStringContains('Approval requires a browser signature.', $selfResponse);
     }
 
     public function testApprovedViewerResolvesFromIdentityIdAndProfileSlugHints(): void
@@ -3022,6 +3019,9 @@ PHP);
 
         assertStringContains('Approve user', $byIdentityId);
         assertStringContains('Approve user', $byProfileSlug);
+        assertStringContains('data-signed-approval-form', $byIdentityId);
+        assertStringContains('/assets/browser_signing.', $byIdentityId);
+        assertStringContains('/assets/pending_approvals.', $byIdentityId);
     }
 
     public function testUserDirectoryShowsOnlyApprovedUsersAndPendingDirectoryRequiresApprovedViewer(): void
@@ -3035,7 +3035,10 @@ PHP);
         $approvedTarget = $this->linkGeneratedIdentity($application, 'alice');
         $pendingTarget = $this->linkGeneratedIdentity($application, 'bob');
 
-        $this->renderMethod($application, 'POST', '/profiles/' . $approvedTarget['profile_slug'] . '/approve');
+        $this->approveIdentity(
+            new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot)),
+            $approvedTarget
+        );
         $approvedUsers = $this->renderMethod($application, 'GET', '/users/');
         $pendingUsers = $this->renderMethod($application, 'GET', '/users/pending/');
 
@@ -3062,6 +3065,8 @@ PHP);
         assertStringNotContains('>' . $pendingTarget['profile_slug'] . '</a>', $pendingUsers);
         assertStringContains('<table ', $pendingUsers);
         assertStringContains('Approve', $pendingUsers);
+        assertStringContains('/assets/browser_signing.', $pendingUsers);
+        assertStringContains('/assets/pending_approvals.', $pendingUsers);
         assertStringNotContains('Username route', $pendingUsers);
         assertStringNotContains('Threads', $pendingUsers);
         assertStringNotContains('Posts', $pendingUsers);
@@ -3069,7 +3074,7 @@ PHP);
         assertStringContains('Only approved users can view the pending approval directory.', $pendingUsersForbidden);
     }
 
-    public function testApproveUserApiApprovesPendingUser(): void
+    public function testUnsignedApproveUserApiRequiresBrowserSignature(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -3085,10 +3090,8 @@ PHP);
         $pendingUsersAfter = $this->renderMethod($application, 'GET', '/users/pending/');
         $_COOKIE = [];
 
-        assertStringContains('status=ok', $response);
-        assertStringContains('profile_slug=' . $target['profile_slug'], $response);
-        assertStringContains('username=alice', $response);
-        assertStringContains('No users are awaiting approval.', $pendingUsersAfter);
+        assertStringContains('error=Approval requires a browser signature.', $response);
+        assertStringContains('alice', $pendingUsersAfter);
     }
 
     public function testPrepareApprovalApiReturnsUnsignedCanonicalRecordWithoutChangingApprovalState(): void
@@ -3218,8 +3221,11 @@ PHP);
 
         $target = $this->linkGeneratedIdentity($application, 'alice');
 
+        $approvalResult = $this->approveIdentity(
+            new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot)),
+            $target
+        );
         $_COOKIE = ['identity_hint' => 'guest'];
-        $firstResponse = $this->renderMethod($application, 'POST', '/profiles/' . $target['profile_slug'] . '/approve');
         $secondResponse = $this->renderMethod($application, 'POST', '/profiles/' . $target['profile_slug'] . '/approve');
         $_COOKIE = [];
 
@@ -3236,8 +3242,8 @@ PHP);
 
         $bootstrapThread = $this->renderMethod($application, 'GET', '/threads/' . $target['bootstrap_thread_id']);
 
-        assertStringContains('Redirecting', $firstResponse);
-        assertStringContains('User is already approved.', $secondResponse);
+        assertTrue(strlen($approvalResult['commit_sha']) === 40);
+        assertStringContains('Approval requires a browser signature.', $secondResponse);
         assertSame(1, $matchingApprovals);
         assertStringContains('Approve-Identity-ID: ' . $target['identity_id'], $bootstrapThread);
     }
