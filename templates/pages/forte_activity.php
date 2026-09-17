@@ -1,16 +1,20 @@
 <?php
 /**
  * @var array<int, array<string, mixed>> $items
- * @var array<int, array{key: string, label: string, count: int}> $viewCounts
+ * @var array<int, array{key: string, label: string, count: int, loadedCount: int}> $viewCounts
  * @var string $selectedView
  * @var string $selectedItemId
+ * @var array<string, array{has_more: bool, next_cursor: array{created_at: string, post_id: ?string, id: int}|null}> $viewPagination
  */
 $selectedView ??= 'all';
 $selectedItemId ??= '';
-$selectedViewCount = 0;
+// The status bar tracks how many of the selected view's items are actually
+// loaded/visible right now, not the view's full total (that's the left-pane
+// folder count) - it grows via JS as more pages are loaded.
+$selectedViewLoadedCount = 0;
 foreach ($viewCounts as $viewCount) {
     if ($viewCount['key'] === $selectedView) {
-        $selectedViewCount = $viewCount['count'];
+        $selectedViewLoadedCount = $viewCount['loadedCount'];
         break;
     }
 }
@@ -28,11 +32,11 @@ foreach ($viewCounts as $viewCount) {
   <div class="paned-board-layout">
 <?= $indent($partial('partials/paned_activity_filter_list.php', ['viewCounts' => $viewCounts, 'selectedView' => $selectedView]), 2) ?>
     <div class="paned-board-main paned-panes-stack">
-<?= $indent($partial('partials/paned_activity_item_list.php', ['items' => $items, 'selectedView' => $selectedView, 'selectedItemId' => $selectedItemId]), 3) ?>
+<?= $indent($partial('partials/paned_activity_item_list.php', ['items' => $items, 'selectedView' => $selectedView, 'selectedItemId' => $selectedItemId, 'viewPagination' => $viewPagination]), 3) ?>
 <?= $indent($partial('partials/paned_activity_detail_pane.php', ['items' => $items, 'selectedItemId' => $selectedItemId]), 3) ?>
     </div>
   </div>
   <div class="paned-statusbar">
-    <span data-paned-activity-status-count><?= $selectedViewCount ?> item<?= $selectedViewCount === 1 ? '' : 's' ?></span>
+    <span data-paned-activity-status-count><?= $selectedViewLoadedCount ?> item<?= $selectedViewLoadedCount === 1 ? '' : 's' ?></span>
   </div>
 </div>

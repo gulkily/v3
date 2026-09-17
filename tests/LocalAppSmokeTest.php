@@ -1313,7 +1313,7 @@ final class LocalAppSmokeTest
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         $this->render($application, '/activity/?view=content');
         $method = new ReflectionMethod($application, 'fetchActivity');
-        $items = $method->invoke($application, 'content');
+        $items = $method->invoke($application, 'content')['items'];
         $postCommitSha = trim($this->runCommand($repositoryRoot, 'git log -1 --format=%H -- records/posts/root-001.txt'));
 
         $item = array_values(array_filter(
@@ -1405,7 +1405,7 @@ final class LocalAppSmokeTest
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         $this->render($application, '/activity/?view=all');
         $method = new ReflectionMethod($application, 'fetchActivity');
-        $items = $method->invoke($application, 'all');
+        $items = $method->invoke($application, 'all')['items'];
 
         foreach ($items as $item) {
             assertTrue(array_key_exists('source_commit_files', $item));
@@ -1457,8 +1457,8 @@ final class LocalAppSmokeTest
 
         $method = new ReflectionMethod($application, 'fetchActivity');
         $method->setAccessible(true);
-        $contentItems = $method->invoke($application, 'content');
-        $identityItems = $method->invoke($application, 'identity');
+        $contentItems = $method->invoke($application, 'content')['items'];
+        $identityItems = $method->invoke($application, 'identity')['items'];
 
         $contentLabels = array_map(static fn (array $item): string => (string) $item['label'], $contentItems);
         $identityLabels = array_map(static fn (array $item): string => (string) $item['label'], $identityItems);

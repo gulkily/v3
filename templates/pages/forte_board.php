@@ -36,6 +36,6 @@ if ($selectedTag !== '') {
   <div class="paned-statusbar">
     <span data-paned-board-status-count data-paned-board-total-count="<?= count($threads) ?>" data-paned-board-tag-count="<?= count($tagGroups) ?>"><?php if ($selectedTag === ''): ?><?= count($threads) ?> thread<?= count($threads) === 1 ? '' : 's' ?> · <?= count($tagGroups) ?> tags<?php else: ?>Showing <?= $visibleThreadCount ?> of <?= count($threads) ?> threads (#<?= $e($selectedTag) ?>)<?php endif; ?></span>
   </div>
-<?= $indent($partial('partials/paned_board_new_thread_dialog.php'), 1) ?>
+<?= $indent($partial('partials/paned_board_new_thread_dialog.php', ['selectedTag' => $selectedTag]), 1) ?>
 <?= $indent($partial('partials/paned_profile_summary_dialog.php'), 1) ?>
 </div>

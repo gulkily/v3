@@ -3,9 +3,11 @@
  * @var array<int, array<string, mixed>> $items
  * @var string $selectedView
  * @var string $selectedItemId
+ * @var array<string, array{has_more: bool, next_cursor: array{created_at: string, post_id: ?string, id: int}|null}> $viewPagination
  */
 $selectedView ??= 'all';
 $selectedItemId ??= '';
+$viewPagination ??= [];
 $tabStopAssigned = false;
 ?>
 <div class="paned-list-pane">
@@ -25,23 +27,30 @@ if ($isTabStop) {
     $tabStopAssigned = true;
 }
 ?>
-    <div
-      class="paned-list-row<?= $isSelected ? ' paned-list-row--selected' : '' ?>"
-      data-paned-activity-id="<?= $e($itemId) ?>"
-      data-paned-activity-view-all="<?= $item['view_all'] ? '1' : '0' ?>"
-      data-paned-activity-view-content="<?= $item['view_content'] ? '1' : '0' ?>"
-      data-paned-activity-view-identity="<?= $item['view_identity'] ? '1' : '0' ?>"
-      data-paned-activity-view-bootstrap="<?= $item['view_bootstrap'] ? '1' : '0' ?>"
-      data-paned-activity-view-approval="<?= $item['view_approval'] ? '1' : '0' ?>"
-      role="option"
-      aria-selected="<?= $isSelected ? 'true' : 'false' ?>"
-      tabindex="<?= $isTabStop ? '0' : '-1' ?>"
-      <?= $visible ? '' : 'hidden' ?>
-    >
-      <span class="paned-list-from"><?= $e((string) $item['kind']) ?></span>
-      <span class="paned-list-subject"><?= $e((string) ($item['label'] ?? '')) ?></span>
-      <span class="paned-list-date"><?= $timestamp((string) ($item['created_at'] ?? '')) ?></span>
-    </div>
+<?= $indent($partial('partials/paned_activity_item_row.php', [
+    'item' => $item,
+    'isSelected' => $isSelected,
+    'isTabStop' => $isTabStop,
+    'visible' => $visible,
+]), 2) ?>
 <?php endforeach; ?>
+    <div class="paned-list-load-more-group" data-paned-activity-load-more-group role="presentation">
+<?php foreach ($viewPagination as $viewKey => $pagination): ?>
+<?php
+$hasMore = (bool) ($pagination['has_more'] ?? false);
+$nextCursor = $pagination['next_cursor'] ?? null;
+$cursorJson = $nextCursor !== null ? json_encode($nextCursor) : '';
+?>
+      <button
+        type="button"
+        class="paned-list-load-more-button"
+        data-paned-activity-load-more
+        data-paned-activity-view="<?= $e($viewKey) ?>"
+        data-paned-activity-cursor="<?= $e($cursorJson) ?>"
+        data-paned-activity-has-more="<?= $hasMore ? '1' : '0' ?>"
+        <?= ($viewKey === $selectedView && $hasMore) ? '' : 'hidden' ?>
+      >Load more</button>
+<?php endforeach; ?>
+    </div>
   </div>
 </div>

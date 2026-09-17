@@ -1,6 +1,6 @@
 (function () {
-  const composeRoot = document.querySelector("[data-compose-root]");
-  if (!composeRoot) {
+  const composeRoots = Array.from(document.querySelectorAll("[data-compose-root]"));
+  if (composeRoots.length === 0) {
     return;
   }
 
@@ -33,7 +33,9 @@
 
   function initializeSigning() {
     if (window.ForumBrowserSigning && typeof window.ForumBrowserSigning.init === "function") {
-      window.ForumBrowserSigning.init(composeRoot);
+      composeRoots.forEach(function (composeRoot) {
+        window.ForumBrowserSigning.init(composeRoot);
+      });
     }
   }
 
@@ -57,20 +59,22 @@
     void loadSigningAssets();
   }
 
-  composeRoot.addEventListener("focusin", function (event) {
-    if (event.target && event.target.matches && event.target.matches(intentSelector)) {
-      handleIntent();
-    }
-  });
-  composeRoot.addEventListener("pointerdown", function (event) {
-    if (event.target && event.target.matches && event.target.matches(intentSelector)) {
-      handleIntent();
-    }
-  });
-  composeRoot.addEventListener("input", function (event) {
-    if (event.target && event.target.matches && event.target.matches(intentSelector)) {
-      handleIntent();
-    }
+  composeRoots.forEach(function (composeRoot) {
+    composeRoot.addEventListener("focusin", function (event) {
+      if (event.target && event.target.matches && event.target.matches(intentSelector)) {
+        handleIntent();
+      }
+    });
+    composeRoot.addEventListener("pointerdown", function (event) {
+      if (event.target && event.target.matches && event.target.matches(intentSelector)) {
+        handleIntent();
+      }
+    });
+    composeRoot.addEventListener("input", function (event) {
+      if (event.target && event.target.matches && event.target.matches(intentSelector)) {
+        handleIntent();
+      }
+    });
   });
 
   window.ForumLazyComposeSigning = {

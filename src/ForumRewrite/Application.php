@@ -449,6 +449,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/forte_activity_page') {
+            $this->handleForteActivityPage($query);
+            return;
+        }
+
         if ($path === '/api/get_username_claim_cta') {
             $this->sendText("Generate a browser keypair, choose a username, and bootstrap your identity.\n", 200);
             return;
@@ -1041,9 +1046,11 @@ final class Application
 
         $itemsById = [];
         $viewItemIds = [];
+        $viewPagination = [];
         foreach (array_keys($viewLabels) as $viewKey) {
             $viewItemIds[$viewKey] = [];
-            foreach ($this->fetchActivity($viewKey) as $item) {
+            $viewResult = $this->fetchActivity($viewKey);
+            foreach ($viewResult['items'] as $item) {
                 $itemId = (string) $item['id'];
                 $viewItemIds[$viewKey][] = $itemId;
                 if (!isset($itemsById[$itemId])) {
@@ -1051,6 +1058,19 @@ final class Application
                     $itemsById[$itemId] = $item;
                 }
             }
+
+            // The cursor is derived from the last item actually returned for
+            // this view, so an empty page never exposes a "Load more"
+            // control with nothing to page from.
+            $lastItem = $viewResult['items'][count($viewResult['items']) - 1] ?? null;
+            $viewPagination[$viewKey] = [
+                'has_more' => $viewResult['has_more'] && $lastItem !== null,
+                'next_cursor' => $lastItem !== null ? [
+                    'created_at' => (string) $lastItem['created_at'],
+                    'post_id' => $lastItem['post_id'] !== null ? (string) $lastItem['post_id'] : null,
+                    'id' => (int) $lastItem['id'],
+                ] : null,
+            ];
         }
 
         foreach ($itemsById as $itemId => $item) {
@@ -1079,7 +1099,16 @@ final class Application
 
         $viewCounts = [];
         foreach ($viewLabels as $viewKey => $viewLabel) {
-            $viewCounts[] = ['key' => $viewKey, 'label' => $viewLabel, 'count' => count($viewItemIds[$viewKey])];
+            $viewCounts[] = [
+                'key' => $viewKey,
+                'label' => $viewLabel,
+                // Full total for the view (independent of pagination) - the
+                // left-pane folder count. Separate from how many of those
+                // are actually loaded/visible right now (below), which is
+                // what the status bar tracks.
+                'count' => $this->countActivityViewTotal($viewKey),
+                'loadedCount' => count($viewItemIds[$viewKey]),
+            ];
         }
 
         $selectedView = $this->normalizeActivityView($requestedView);
@@ -1094,12 +1123,104 @@ final class Application
                 'viewCounts' => $viewCounts,
                 'selectedView' => $selectedView,
                 'selectedItemId' => $selectedItemId,
+                'viewPagination' => $viewPagination,
             ],
             'Activity - Forte',
             'paned-reader-body',
             ['/assets/paned_activity_reader.js'],
             ['/assets/forte.css'],
         );
+    }
+
+    /**
+     * Serves one additional page of activity rows for a single view, reusing
+     * the canonical row partial (`paned_activity_item_row.php`) so appended
+     * rows are byte-identical to the ones the initial page render produces.
+     * Unlike `renderForteActivity()`, this only checks membership in the
+     * requested view - an item's other `view_*` flags are left false, since
+     * paging one view is not supposed to fetch the other 4 views' data too.
+     *
+     * Registered below `handle()`'s blanket non-GET rejection, so (like its
+     * `/api/get_thread`, `/api/get_post`, and `/api/get_profile` siblings)
+     * it never runs for a non-GET request and needs no method check here.
+     *
+     * @param array<string, mixed> $query
+     */
+    private function handleForteActivityPage(array $query): void
+    {
+        $view = $this->normalizeActivityView((string) ($query['view'] ?? ''));
+
+        $rawCursor = trim((string) ($query['cursor'] ?? ''));
+        $cursor = null;
+        if ($rawCursor !== '') {
+            try {
+                $decodedCursor = json_decode($rawCursor, true, 512, JSON_THROW_ON_ERROR);
+            } catch (\JsonException) {
+                $decodedCursor = null;
+            }
+
+            if (
+                !is_array($decodedCursor)
+                || !isset($decodedCursor['created_at'], $decodedCursor['id'])
+                || !is_string($decodedCursor['created_at'])
+                || !is_int($decodedCursor['id'])
+                || !array_key_exists('post_id', $decodedCursor)
+                || !($decodedCursor['post_id'] === null || is_string($decodedCursor['post_id']))
+            ) {
+                $this->sendJson(['status' => 'error', 'error' => 'invalid cursor'], 400);
+                return;
+            }
+
+            $cursor = [
+                'created_at' => $decodedCursor['created_at'],
+                'post_id' => $decodedCursor['post_id'],
+                'id' => $decodedCursor['id'],
+            ];
+        }
+
+        $result = $this->fetchActivity($view, $cursor);
+
+        $html = '';
+        $detailHtml = '';
+        foreach ($result['items'] as $item) {
+            $item['forte_link'] = $this->activityItemBoardLink($item);
+            foreach (['all', 'content', 'identity', 'bootstrap', 'approval'] as $flagView) {
+                $item['view_' . $flagView] = ($flagView === $view);
+            }
+
+            $html .= $this->renderer()->renderFragment('partials/paned_activity_item_row.php', [
+                'item' => $item,
+                'isSelected' => false,
+                'isTabStop' => false,
+                'visible' => true,
+            ]);
+
+            // Every appended row needs a matching detail-pane article, or
+            // selecting it leaves the detail pane blank (no article matches
+            // its id, so every existing article - and the placeholder - end
+            // up hidden). Reuses the same partial the initial page render
+            // uses, so this is never selected by default.
+            $detailHtml .= $this->renderer()->renderFragment('partials/paned_activity_detail_article.php', [
+                'item' => $item,
+                'isSelected' => false,
+            ]);
+        }
+
+        $lastItem = $result['items'][count($result['items']) - 1] ?? null;
+        $hasMore = $result['has_more'] && $lastItem !== null;
+        $nextCursor = $lastItem !== null ? [
+            'created_at' => (string) $lastItem['created_at'],
+            'post_id' => $lastItem['post_id'] !== null ? (string) $lastItem['post_id'] : null,
+            'id' => (int) $lastItem['id'],
+        ] : null;
+
+        $this->sendJson([
+            'status' => 'ok',
+            'html' => $html,
+            'detail_html' => $detailHtml,
+            'has_more' => $hasMore,
+            'next_cursor' => $nextCursor,
+        ], 200);
     }
 
     /**
@@ -1588,7 +1709,7 @@ final class Application
         return [
             'generated_at' => $metadata['rebuilt_at'] ?? '',
             'repository_head' => $metadata['repository_head'] ?? ReadModelMetadata::repositoryHead($this->repositoryRoot),
-            'items' => array_slice($this->fetchActivity('content'), 0, self::BACKUP_PREVIEW_LIMIT),
+            'items' => array_slice($this->fetchActivity('content')['items'], 0, self::BACKUP_PREVIEW_LIMIT),
         ];
     }
 
@@ -1644,7 +1765,7 @@ final class Application
                         'is_active' => false,
                     ],
                 ],
-                'items' => $this->fetchActivity($view),
+                'items' => $this->fetchActivity($view)['items'],
             ],
             'Activity',
             'activity',
@@ -2163,7 +2284,7 @@ final class Application
     {
         $view = $this->normalizeActivityView($view);
         $items = [];
-        foreach ($this->fetchActivity($view) as $item) {
+        foreach ($this->fetchActivity($view)['items'] as $item) {
             $link = match ($item['kind']) {
                 'thread_label_add' => '/threads/' . $item['thread_id'],
                 'site_feature_flag' => '/tools/feature-flags/',
@@ -3741,12 +3862,31 @@ final class Application
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * @param array{created_at: string, post_id: ?string, id: int}|null $afterCursor
+     *        Keyset cursor identifying the last item of the previous page,
+     *        matching the ORDER BY below. Pass null for the first page.
+     * @return array{items: array<int, array<string, mixed>>, has_more: bool}
      */
-    private function fetchActivity(string $view): array
+    private function fetchActivity(string $view, ?array $afterCursor = null): array
     {
         $view = $this->normalizeActivityView($view);
         [$viewWhere, $viewParameters] = $this->activityViewSql($view);
+
+        $cursorWhere = '';
+        if ($afterCursor !== null) {
+            // COALESCE(post_id, -1) mirrors SQLite's own NULL-sorts-lowest
+            // rule for `ORDER BY post_id DESC` (NULLs last), since no real
+            // post_id is ever <= -1.
+            $cursorWhere = 'AND (
+                activity.created_at < :cursor_created_at
+                OR (activity.created_at = :cursor_created_at AND COALESCE(activity.post_id, -1) < COALESCE(:cursor_post_id, -1))
+                OR (activity.created_at = :cursor_created_at AND COALESCE(activity.post_id, -1) = COALESCE(:cursor_post_id, -1) AND activity.id < :cursor_id)
+            )';
+            $viewParameters['cursor_created_at'] = $afterCursor['created_at'];
+            $viewParameters['cursor_post_id'] = $afterCursor['post_id'];
+            $viewParameters['cursor_id'] = $afterCursor['id'];
+        }
+
         $stmt = $this->pdo()->prepare(
             'SELECT activity.created_at, activity.kind, activity.record_family, activity.action_key,
                     activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
@@ -3758,15 +3898,23 @@ final class Application
              LEFT JOIN posts ON posts.post_id = activity.post_id
              WHERE 1 = 1
              ' . $viewWhere . '
+             ' . $cursorWhere . '
              ORDER BY activity.created_at DESC, activity.post_id DESC, activity.id DESC
              LIMIT :limit'
         );
         foreach ($viewParameters as $parameter => $value) {
             $stmt->bindValue($parameter, $value);
         }
-        $stmt->bindValue('limit', self::ACTIVITY_ITEM_LIMIT, PDO::PARAM_INT);
+        // Fetch one extra row to detect whether a next page exists, then
+        // trim it back off before building the returned item set.
+        $stmt->bindValue('limit', self::ACTIVITY_ITEM_LIMIT + 1, PDO::PARAM_INT);
         $stmt->execute();
         $rows = $stmt->fetchAll();
+
+        $hasMore = count($rows) > self::ACTIVITY_ITEM_LIMIT;
+        if ($hasMore) {
+            $rows = array_slice($rows, 0, self::ACTIVITY_ITEM_LIMIT);
+        }
 
         $items = array_map(function (array $post): array {
             $sourcePath = $post['source_path'] !== null ? (string) $post['source_path'] : '';
@@ -3802,7 +3950,7 @@ final class Application
             ];
         }, $rows);
 
-        return array_values(array_filter($items, function (array $item) use ($view): bool {
+        $items = array_values(array_filter($items, function (array $item) use ($view): bool {
             $boardTagsJson = (string) $item['board_tags_json'];
             $hidden = $this->isHiddenBootstrapBoardTagsJson($boardTagsJson);
 
@@ -3815,6 +3963,55 @@ final class Application
                 default => true,
             };
         }));
+
+        return ['items' => $items, 'has_more' => $hasMore];
+    }
+
+    /**
+     * Counts the full number of activity rows matching a view, independent
+     * of `ACTIVITY_ITEM_LIMIT`/pagination - for the left-pane folder counts,
+     * which should show real totals rather than "however many happen to be
+     * loaded so far". Mirrors `fetchActivity()`'s exact two-stage filter
+     * (the SQL `WHERE` from `activityViewSql()`, then the same tag-based
+     * PHP re-check) but selects only the columns that check needs, and
+     * skips the per-item transform `fetchActivity()` does for rendering
+     * (signature checks, link building, etc.) - unneeded and expensive
+     * across a potentially large, unlimited row set.
+     */
+    private function countActivityViewTotal(string $view): int
+    {
+        $view = $this->normalizeActivityView($view);
+        [$viewWhere, $viewParameters] = $this->activityViewSql($view);
+        $stmt = $this->pdo()->prepare(
+            'SELECT activity.board_tags_json
+             FROM activity
+             LEFT JOIN posts ON posts.post_id = activity.post_id
+             WHERE 1 = 1
+             ' . $viewWhere
+        );
+        foreach ($viewParameters as $parameter => $value) {
+            $stmt->bindValue($parameter, $value);
+        }
+        $stmt->execute();
+
+        $count = 0;
+        while (($row = $stmt->fetch()) !== false) {
+            $boardTagsJson = (string) $row['board_tags_json'];
+            $hidden = $this->isHiddenBootstrapBoardTagsJson($boardTagsJson);
+            $matches = match ($view) {
+                'all' => true,
+                'content' => !$hidden,
+                'identity' => $this->hasBoardTag($boardTagsJson, 'identity'),
+                'bootstrap' => $this->hasBoardTag($boardTagsJson, 'identity') && $this->hasBoardTag($boardTagsJson, 'internal'),
+                'approval' => $this->hasBoardTag($boardTagsJson, 'identity') && $this->hasBoardTag($boardTagsJson, 'approval'),
+                default => true,
+            };
+            if ($matches) {
+                $count++;
+            }
+        }
+
+        return $count;
     }
 
     /**

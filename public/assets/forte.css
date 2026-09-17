@@ -16,6 +16,7 @@ body.paned-reader-body {
   display: flex;
   flex-direction: column;
   --paned-chrome: #ece9d8;
+  --paned-chrome-light: #f5f3ea;
   --paned-chrome-dark: #d4d0c8;
   --paned-titlebar-start: #0a246a;
   --paned-ink: #0d0d0d;
@@ -216,6 +217,30 @@ body.paned-reader-body {
   min-height: 0;
   overflow-y: auto;
   scrollbar-gutter: stable;
+}
+
+.paned-list-load-more-group {
+  display: flex;
+  justify-content: center;
+  padding: 0.4rem;
+  border-top: 1px solid var(--paned-chrome-dark);
+}
+
+.paned-window .paned-list-load-more-button {
+  width: auto;
+  margin-top: 0;
+  padding: 0.3rem 0.8rem;
+  background: var(--paned-chrome);
+  color: var(--paned-ink);
+  border: 1px solid transparent;
+  border-radius: 0;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.paned-window .paned-list-load-more-button:hover {
+  border-color: var(--paned-border-light) var(--paned-border-dark) var(--paned-border-dark) var(--paned-border-light);
 }
 
 .paned-list-row {
@@ -467,7 +492,20 @@ body.paned-reader-body {
 }
 
 .paned-window .paned-compose-form button:hover {
+  background: var(--paned-chrome-light);
+}
+
+.paned-window .paned-compose-form button:active {
+  background: var(--paned-chrome-dark);
   border-color: var(--paned-border-dark) var(--paned-border-light) var(--paned-border-light) var(--paned-border-dark);
+}
+
+/* Marks the button that Ctrl+Enter/Cmd+Enter activates from the body
+   textarea (see submitComposeFromKeyboard in browser_signing.js), matching
+   the Windows convention of ringing a dialog's default button. */
+.paned-window .paned-compose-form .compose-form-actions > button[type="submit"]:not([data-action="submit-anonymous-compose"]) {
+  outline: 1px solid var(--paned-ink);
+  outline-offset: 2px;
 }
 
 .paned-compose-form .meta {
