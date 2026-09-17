@@ -3091,6 +3091,60 @@ PHP);
         assertStringContains('No users are awaiting approval.', $pendingUsersAfter);
     }
 
+    public function testPrepareApprovalApiReturnsUnsignedCanonicalRecordWithoutChangingApprovalState(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $target = $this->linkGeneratedIdentity($application, 'alice');
+        $postCountBefore = $this->countCanonicalPostFiles($repositoryRoot);
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $response = json_decode($this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_approval?profile_slug=' . rawurlencode($target['profile_slug'])
+        ), true);
+        $targetProfile = $this->renderMethod($application, 'GET', '/api/get_profile?profile_slug=' . rawurlencode($target['profile_slug']));
+        $_COOKIE = [];
+
+        assertSame('ok', $response['status']);
+        assertStringContains('Board-Tags: identity approval', $response['canonical_record']);
+        assertStringContains('Author-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $response['canonical_record']);
+        assertStringContains('Approve-Identity-ID: ' . $target['identity_id'], $response['canonical_record']);
+        assertSame(hash('sha256', $response['canonical_record']), $response['canonical_sha256']);
+        assertTrue(is_file(dirname($databasePath) . '/prepared-posts/' . $response['prepare_token'] . '.json'));
+        assertSame($postCountBefore, $this->countCanonicalPostFiles($repositoryRoot));
+        assertStringContains('Approved: no', $targetProfile);
+    }
+
+    public function testPrepareApprovalApiRejectsIneligibleApprovers(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $target = $this->linkGeneratedIdentity($application, 'alice');
+        $unapproved = $this->linkGeneratedIdentity($application, 'bob');
+
+        $_COOKIE = ['identity_hint' => 'bob'];
+        $unapprovedResponse = json_decode($this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_approval?profile_slug=' . rawurlencode($target['profile_slug'])
+        ), true);
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $selfResponse = json_decode($this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_approval?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'
+        ), true);
+        $_COOKIE = [];
+
+        assertSame('error', $unapprovedResponse['status']);
+        assertSame('Only approved users can approve other users.', $unapprovedResponse['error']);
+        assertSame('error', $selfResponse['status']);
+        assertSame('Self-approval is not allowed.', $selfResponse['error']);
+        assertTrue($unapproved['identity_id'] !== $target['identity_id']);
+    }
+
     public function testAlreadyApprovedUserCannotBeApprovedAgain(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

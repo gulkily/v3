@@ -217,6 +217,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_approval') {
+            $this->handlePrepareUserApproval($method, $query);
+            return;
+        }
+
         if ($path === '/compose/thread' && $method === 'POST') {
             $this->handleComposeThreadSubmit($query);
             return;
@@ -5229,6 +5234,44 @@ final class Application
 
     /**
      * @param array<string, mixed> $query
+     */
+    private function handlePrepareUserApproval(string $method, array $query): void
+    {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $profileSlug = trim((string) ($this->requestData($query)['profile_slug'] ?? ''));
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
+        if ($profileSlug === '') {
+            $this->sendJson(
+                ['status' => 'error', 'error' => 'Missing profile_slug.'],
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
+            return;
+        }
+
+        try {
+            $result = $this->prepareUserApprovalBySlug($profileSlug, $timings);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
+            unset($result['timings']);
+            $this->sendJson($result, 200, $this->serverTimingHeaders($result));
+        } catch (RuntimeException $exception) {
+            $this->sendJson(
+                ['status' => 'error', 'error' => $exception->getMessage()],
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
      * @return array<string, mixed>
      */
     private function requestData(array $query): array
@@ -6135,6 +6178,43 @@ final class Application
             'commit_sha' => (string) $result['commit_sha'],
             'timings' => is_array($result['timings'] ?? null) ? $result['timings'] : [],
         ];
+    }
+
+    /**
+     * @param array<string, float> $timings
+     * @return array<string, mixed>
+     */
+    private function prepareUserApprovalBySlug(string $slug, array &$timings = []): array
+    {
+        $phaseStartedAt = hrtime(true);
+        $profile = $this->fetchProfileBySlug($slug);
+        $timings['target_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
+        if ($profile === null) {
+            throw new RuntimeException('Profile not found.');
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
+        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
+        if ($viewerProfile === null || ((int) $viewerProfile['is_approved']) !== 1) {
+            throw new RuntimeException('Only approved users can approve other users.');
+        }
+
+        if ((string) $viewerProfile['identity_id'] === (string) $profile['identity_id']) {
+            throw new RuntimeException('Self-approval is not allowed.');
+        }
+
+        if ((int) $profile['is_approved'] === 1) {
+            throw new RuntimeException('User is already approved.');
+        }
+
+        return $this->writer()->prepareApproval([
+            'approver_identity_id' => (string) $viewerProfile['identity_id'],
+            'target_identity_id' => (string) $profile['identity_id'],
+            'target_profile_slug' => (string) $profile['profile_slug'],
+            'thread_id' => (string) $profile['bootstrap_thread_id'],
+            'parent_id' => (string) $profile['bootstrap_post_id'],
+        ]);
     }
 
     private function pdo(): PDO

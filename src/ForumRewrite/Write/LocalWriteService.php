@@ -814,6 +814,69 @@ class LocalWriteService
      * @param array<string, mixed> $input
      * @return array<string, mixed>
      */
+    public function prepareApproval(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $timings = [];
+            $totalStartedAt = hrtime(true);
+
+            $approverIdentityId = $this->requireOpenPgpIdentityId((string) ($input['approver_identity_id'] ?? ''), 'approver_identity_id');
+            $targetIdentityId = $this->requireOpenPgpIdentityId((string) ($input['target_identity_id'] ?? ''), 'target_identity_id');
+            $targetProfileSlug = $this->requireAsciiToken((string) ($input['target_profile_slug'] ?? ''), 'target_profile_slug');
+            $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
+            $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
+
+            if ($approverIdentityId === $targetIdentityId) {
+                throw new RuntimeException('Self-approval is not allowed.');
+            }
+
+            $thread = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($threadId));
+            $parent = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($parentId));
+            $parentThreadId = $parent->threadId ?? $parent->postId;
+            if ($thread->postId !== $threadId || $parentThreadId !== $threadId || $parent->postId !== $parentId) {
+                throw new RuntimeException('Approval target bootstrap thread is invalid.');
+            }
+
+            $postId = $this->generateRecordId('reply');
+            $createdAt = $this->canonicalTimestampNow();
+            $contents = "Post-ID: {$postId}\n"
+                . "Created-At: {$createdAt}\n"
+                . "Board-Tags: identity approval\n"
+                . "Thread-ID: {$threadId}\n"
+                . "Parent-ID: {$parentId}\n"
+                . "Author-Identity-ID: {$approverIdentityId}\n"
+                . "\nApprove-Identity-ID: {$targetIdentityId}\n";
+
+            (new PostRecordParser())->parse($contents);
+            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
+            $prepared = $this->storePreparedPost($recordPath, $contents, [
+                'kind' => 'approval',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'parent_id' => $parentId,
+                'author_identity_id' => $approverIdentityId,
+                'target_identity_id' => $targetIdentityId,
+                'target_profile_slug' => $targetProfileSlug,
+                'created_at' => $createdAt,
+            ]);
+            $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+            return array_merge($prepared, [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'record_path' => $recordPath,
+                'canonical_record' => $contents,
+                'timings' => $timings,
+            ]);
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
     public function setFeatureFlag(array $input): array
     {
         return $this->withTimedWriteLock(function () use ($input): array {
