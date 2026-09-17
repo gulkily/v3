@@ -18,3 +18,19 @@
   - Dropping `post_id` as a middle tiebreaker (now just `<sort column>, id`) is a deliberate, minor behavior change flagged in the Step 3 plan: `id` alone already guarantees a unique, gapless order, so pagination correctness is unaffected; only the tie-break order among rows sharing the exact same sort value can shift slightly from before.
   - `kind`/`label` sorting has no supporting index (only `date`/`post_id`/`id` do, via `activity_recent_idx`), so it's a full sort scan - acceptable at this table's current size (~1600 rows), flagged as a future concern if the table grows substantially.
   - Nothing in the app actually sends `sort`/`dir` yet - Stage 2 threads real request-derived values through the two callers that need it.
+
+## Stage 2 - Thread sort/dir through the page render and the paging endpoint
+- Changes:
+  - `/forte/activity/` route now reads `$query['sort']`/`$query['dir']` and passes them to `renderForteActivity()`.
+  - `renderForteActivity()` gained `$requestedSort`/`$requestedDirection` params, resolves them once via `resolveActivitySort()`, and passes the resolved column/direction into all 5 `fetchActivity()` calls (replacing Stage 1's temporary hardcoded `'date', 'desc'`) and into `activitySortValueFromItem()` when building each view's `next_cursor`.
+  - Found and fixed a gap Stage 1 didn't cover: after merging all 5 views' items, `renderForteActivity()` re-sorts the merged pool with its own `usort()` for display - that comparator was still hardcoded to `created_at DESC, post_id DESC, id DESC` regardless of the active sort, so the actual on-screen order would have stayed stuck on date-desc even with sort-aware fetches underneath. Rewrote it to compare via `activitySortValueFromItem($item, $sortColumn)` with direction-aware `strcmp()`/`<=>`, matching each per-view fetch's own DB-level order (same column, same `id` tiebreaker) so the merged display order is consistent with it.
+  - `handleForteActivityPage()` reads `$query['sort']`/`$query['dir']`, resolves them the same way, and passes them to `fetchActivity()` and into `activitySortValueFromItem()` for `next_cursor` (replacing Stage 1's temporary hardcoded values).
+- Verification:
+  - `php -l` - no syntax errors.
+  - `GET /forte/activity/?sort=kind&dir=asc`: extracted all 300 rendered rows' Kind column text and confirmed it's non-decreasing (`kinds == sorted(kinds)`) - the merged, multi-view pool actually displays in the requested order, not just each individual fetch.
+  - `GET /api/forte_activity_page?view=all&sort=kind&dir=asc&cursor=`: returns the identical `next_cursor` the full page's own `all`-view "Load more" button carries - confirms the two code paths (full render vs. endpoint) resolve sort identically. Fetched page 2 with that cursor and diffed its ids against the full page's 100 `all`-flagged rows: zero overlap, and the sort value correctly progressed alphabetically (`approval` → `identity_bootstrap`).
+  - Regression: default (`/forte/activity/`, no `sort`/`dir`), classic `/activity/?format=rss` (still exactly 100 items), `/backup/` all unaffected.
+  - Fallback consistency: an invalid `sort=bogus&dir=bogus` request and a request with no `sort`/`dir` at all both resolve to the exact same `date`/`desc` cursor value - confirms `resolveActivitySort()` is the single source of truth in both places, per Stage 2's own risk note.
+  - Server log clean (only the same pre-existing, unrelated header-timing warning already on file).
+- Notes:
+  - The merged-pool `usort()` fix wasn't explicitly called out in the Step 3 plan (which only mentioned the per-view `fetchActivity()` calls), but it's squarely inside Stage 2's actual goal - "so both use the sort-aware fetchActivity() consistently" - and without it the feature would visibly not work, so it's a correction within Stage 2's own scope, not new scope.

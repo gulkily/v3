@@ -516,6 +516,8 @@ final class Application
             $this->sendHtml($this->renderForteActivity(
                 (string) ($query['view'] ?? ''),
                 (string) ($query['selected'] ?? ''),
+                (string) ($query['sort'] ?? ''),
+                (string) ($query['dir'] ?? ''),
             ), 200);
             return;
         }
@@ -1044,8 +1046,12 @@ final class Application
      * out its most recent items, so only a real per-view fetch reproduces
      * classic's exact per-view item set and counts.
      */
-    private function renderForteActivity(string $requestedView = '', string $requestedSelected = ''): string
-    {
+    private function renderForteActivity(
+        string $requestedView = '',
+        string $requestedSelected = '',
+        string $requestedSort = '',
+        string $requestedDirection = '',
+    ): string {
         $viewLabels = [
             'all' => 'All Activity',
             'content' => 'Visible Content',
@@ -1054,12 +1060,14 @@ final class Application
             'approval' => 'Approvals',
         ];
 
+        ['column' => $sortColumn, 'direction' => $sortDirection] = $this->resolveActivitySort($requestedSort, $requestedDirection);
+
         $itemsById = [];
         $viewItemIds = [];
         $viewPagination = [];
         foreach (array_keys($viewLabels) as $viewKey) {
             $viewItemIds[$viewKey] = [];
-            $viewResult = $this->fetchActivity($viewKey, 'date', 'desc');
+            $viewResult = $this->fetchActivity($viewKey, $sortColumn, $sortDirection);
             foreach ($viewResult['items'] as $item) {
                 $itemId = (string) $item['id'];
                 $viewItemIds[$viewKey][] = $itemId;
@@ -1076,7 +1084,7 @@ final class Application
             $viewPagination[$viewKey] = [
                 'has_more' => $viewResult['has_more'] && $lastItem !== null,
                 'next_cursor' => $lastItem !== null ? [
-                    'sort_value' => $this->activitySortValueFromItem($lastItem, 'date'),
+                    'sort_value' => $this->activitySortValueFromItem($lastItem, $sortColumn),
                     'id' => (int) $lastItem['id'],
                 ] : null,
             ];
@@ -1092,18 +1100,19 @@ final class Application
             }
         }
 
+        // Matches each fetchActivity() call's own DB-level order (same sort
+        // column, same id tiebreaker), so the merged cross-view pool's
+        // display order agrees with any single view's own fetch order.
         $items = array_values($itemsById);
-        usort($items, static function (array $a, array $b): int {
-            $result = strcmp((string) $b['created_at'], (string) $a['created_at']);
-            if ($result !== 0) {
-                return $result;
-            }
-            $result = strcmp((string) $b['post_id'], (string) $a['post_id']);
+        usort($items, function (array $a, array $b) use ($sortColumn, $sortDirection): int {
+            $aValue = $this->activitySortValueFromItem($a, $sortColumn);
+            $bValue = $this->activitySortValueFromItem($b, $sortColumn);
+            $result = $sortDirection === 'desc' ? strcmp($bValue, $aValue) : strcmp($aValue, $bValue);
             if ($result !== 0) {
                 return $result;
             }
 
-            return $b['id'] <=> $a['id'];
+            return $sortDirection === 'desc' ? ($b['id'] <=> $a['id']) : ($a['id'] <=> $b['id']);
         });
 
         $viewCounts = [];
@@ -1158,6 +1167,10 @@ final class Application
     private function handleForteActivityPage(array $query): void
     {
         $view = $this->normalizeActivityView((string) ($query['view'] ?? ''));
+        ['column' => $sortColumn, 'direction' => $sortDirection] = $this->resolveActivitySort(
+            (string) ($query['sort'] ?? ''),
+            (string) ($query['dir'] ?? ''),
+        );
 
         $rawCursor = trim((string) ($query['cursor'] ?? ''));
         $cursor = null;
@@ -1184,7 +1197,7 @@ final class Application
             ];
         }
 
-        $result = $this->fetchActivity($view, 'date', 'desc', $cursor);
+        $result = $this->fetchActivity($view, $sortColumn, $sortDirection, $cursor);
 
         $html = '';
         $detailHtml = '';
@@ -1215,7 +1228,7 @@ final class Application
         $lastItem = $result['items'][count($result['items']) - 1] ?? null;
         $hasMore = $result['has_more'] && $lastItem !== null;
         $nextCursor = $lastItem !== null ? [
-            'sort_value' => $this->activitySortValueFromItem($lastItem, 'date'),
+            'sort_value' => $this->activitySortValueFromItem($lastItem, $sortColumn),
             'id' => (int) $lastItem['id'],
         ] : null;
 
