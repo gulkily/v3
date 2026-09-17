@@ -1419,6 +1419,33 @@ final class LocalAppSmokeTest
         assertSame("Commit not found\n", $missingCommit);
     }
 
+    public function testSourceCommitRouteListsChangedFileStatuses(): void
+    {
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        mkdir($repositoryRoot . '/scratch');
+        file_put_contents($repositoryRoot . '/scratch/modified.txt', "before\n");
+        file_put_contents($repositoryRoot . '/scratch/renamed.txt', "rename me\n");
+        file_put_contents($repositoryRoot . '/scratch/deleted.txt', "delete me\n");
+        $this->runCommand($repositoryRoot, 'git add scratch');
+        $this->runCommand($repositoryRoot, 'git commit -m "Add source manifest fixtures"');
+
+        file_put_contents($repositoryRoot . '/scratch/modified.txt', "after\n");
+        rename($repositoryRoot . '/scratch/renamed.txt', $repositoryRoot . '/scratch/renamed-next.txt');
+        unlink($repositoryRoot . '/scratch/deleted.txt');
+        file_put_contents($repositoryRoot . '/scratch/added.txt', "add me\n");
+        $this->runCommand($repositoryRoot, 'git add -A scratch');
+        $this->runCommand($repositoryRoot, 'git commit -m "Change source manifest fixtures"');
+
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $commitSha = trim($this->runCommand($repositoryRoot, 'git rev-parse HEAD'));
+        $details = $this->render($application, '/source/commits/' . $commitSha);
+
+        assertStringContains('added scratch/added.txt', $details);
+        assertStringContains('modified scratch/modified.txt', $details);
+        assertStringContains('deleted scratch/deleted.txt', $details);
+        assertStringContains('renamed scratch/renamed.txt -> scratch/renamed-next.txt', $details);
+    }
+
     public function testToolsPageRendersBookmarkletsAndComposeThreadAcceptsPrefills(): void
     {
         @unlink($this->databasePath);

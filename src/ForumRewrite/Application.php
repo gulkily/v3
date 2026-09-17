@@ -53,6 +53,8 @@ final class Application
     private bool $llmExchangeRecorderInitialized = false;
     private ?SqliteLlmExchangeStore $llmExchangeStore = null;
     private bool $llmExchangeStoreInitialized = false;
+    /** @var array<string, list<array{status:string,path:string,previous_path:string}>|null> */
+    private array $sourceCommitFileManifestCache = [];
 
     public function __construct(
         private readonly string $projectRoot,
@@ -3781,6 +3783,7 @@ final class Application
                 'source_commit_sha' => $sourceCommitSha,
                 'source_path_href' => $this->sourcePathHref($sourcePath, $sourceCommitSha),
                 'source_commit_href' => $this->sourceCommitHref($sourceCommitSha),
+                'source_commit_files' => $this->sourceCommitFiles($sourceCommitSha) ?? [],
                 'source_signature_path' => $signature['path'],
                 'source_signature_href' => $signature['href'],
                 'source_signature_status' => $this->sourceSignatureStatus(
@@ -6123,15 +6126,8 @@ final class Application
             return null;
         }
 
-        $filesCommand = sprintf(
-            'git -C %s diff-tree --root --no-commit-id --name-only -r %s 2>/dev/null',
-            escapeshellarg($this->repositoryRoot),
-            escapeshellarg($commitSha)
-        );
-        $filesOutput = [];
-        $filesExitCode = 0;
-        exec($filesCommand, $filesOutput, $filesExitCode);
-        if ($filesExitCode !== 0) {
+        $files = $this->sourceCommitFiles($commitSha);
+        if ($files === null) {
             return null;
         }
 
@@ -6142,14 +6138,76 @@ final class Application
             'Files:',
         ];
 
-        foreach ($filesOutput as $file) {
-            $file = trim($file);
-            if ($file !== '') {
-                $lines[] = $file;
+        foreach ($files as $file) {
+            $line = $file['status'] . ' ';
+            if ($file['previous_path'] !== '') {
+                $line .= $file['previous_path'] . ' -> ';
             }
+            $lines[] = $line . $file['path'];
         }
 
         return implode("\n", $lines) . "\n";
+    }
+
+    /**
+     * @return list<array{status:string,path:string,previous_path:string}>|null
+     */
+    private function sourceCommitFiles(string $commitSha): ?array
+    {
+        if (!$this->isValidSourceCommitSha($commitSha) || !is_dir($this->repositoryRoot . '/.git')) {
+            return null;
+        }
+
+        if (array_key_exists($commitSha, $this->sourceCommitFileManifestCache)) {
+            return $this->sourceCommitFileManifestCache[$commitSha];
+        }
+
+        $command = sprintf(
+            'git -C %s diff-tree --root --no-commit-id --name-status -r -M %s 2>/dev/null',
+            escapeshellarg($this->repositoryRoot),
+            escapeshellarg($commitSha)
+        );
+        $output = [];
+        $exitCode = 0;
+        exec($command, $output, $exitCode);
+        if ($exitCode !== 0) {
+            $this->sourceCommitFileManifestCache[$commitSha] = null;
+            return null;
+        }
+
+        $files = [];
+        foreach ($output as $line) {
+            $parts = explode("\t", $line);
+            $rawStatus = trim((string) array_shift($parts));
+            $status = match ($rawStatus[0] ?? '') {
+                'A' => 'added',
+                'M' => 'modified',
+                'D' => 'deleted',
+                'R' => 'renamed',
+                default => 'changed',
+            };
+            $previousPath = '';
+            if ($status === 'renamed') {
+                $previousPath = trim((string) ($parts[0] ?? ''));
+                $path = trim((string) ($parts[1] ?? ''));
+            } else {
+                $path = trim((string) ($parts[0] ?? ''));
+            }
+
+            if ($path === '') {
+                continue;
+            }
+
+            $files[] = [
+                'status' => $status,
+                'path' => $path,
+                'previous_path' => $previousPath,
+            ];
+        }
+
+        $this->sourceCommitFileManifestCache[$commitSha] = $files;
+
+        return $files;
     }
 
     /**
