@@ -1,17 +1,20 @@
 <?php
 /**
  * @var array<int, array<string, mixed>> $items
- * @var array<int, array{key: string, label: string, count: int}> $viewCounts
+ * @var array<int, array{key: string, label: string, count: int, loadedCount: int}> $viewCounts
  * @var string $selectedView
  * @var string $selectedItemId
  * @var array<string, array{has_more: bool, next_cursor: array{created_at: string, post_id: ?string, id: int}|null}> $viewPagination
  */
 $selectedView ??= 'all';
 $selectedItemId ??= '';
-$selectedViewCount = 0;
+// The status bar tracks how many of the selected view's items are actually
+// loaded/visible right now, not the view's full total (that's the left-pane
+// folder count) - it grows via JS as more pages are loaded.
+$selectedViewLoadedCount = 0;
 foreach ($viewCounts as $viewCount) {
     if ($viewCount['key'] === $selectedView) {
-        $selectedViewCount = $viewCount['count'];
+        $selectedViewLoadedCount = $viewCount['loadedCount'];
         break;
     }
 }
@@ -34,6 +37,6 @@ foreach ($viewCounts as $viewCount) {
     </div>
   </div>
   <div class="paned-statusbar">
-    <span data-paned-activity-status-count><?= $selectedViewCount ?> item<?= $selectedViewCount === 1 ? '' : 's' ?></span>
+    <span data-paned-activity-status-count><?= $selectedViewLoadedCount ?> item<?= $selectedViewLoadedCount === 1 ? '' : 's' ?></span>
   </div>
 </div>

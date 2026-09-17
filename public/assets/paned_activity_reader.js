@@ -299,18 +299,10 @@
               );
             }
 
-            // Recomputed the same way selectFilter() counts visible rows,
-            // rather than incrementing by the page size: a merged-in row
-            // that already existed for another view grows this view's true
-            // count too, without adding a new DOM row to count.
-            var countSpan = filterTree.querySelector(
-              '[data-paned-activity-view="' + view + '"] .paned-folder-count'
-            );
-            if (countSpan) {
-              countSpan.textContent = rows.filter(function (row) {
-                return row.getAttribute("data-paned-activity-view-" + view) === "1";
-              }).length;
-            }
+            // The left-pane folder count is the view's fixed total (set once
+            // server-side) and doesn't change as more pages load, so there
+            // is nothing to update here; only the status bar's "loaded so
+            // far" count changes, via selectFilter() below.
 
             button.setAttribute("data-paned-activity-cursor", data.next_cursor ? JSON.stringify(data.next_cursor) : "");
             button.setAttribute("data-paned-activity-has-more", data.has_more ? "1" : "0");

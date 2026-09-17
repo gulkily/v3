@@ -96,3 +96,19 @@ The user reviewed the working Stage 5 build directly and found three problems my
   - Server log clean (no new PHP warnings/errors) across every run in this fix pass.
 - Notes:
   - The dedup behavior also means a view's folder count and its Load More cursor can now both grow from a single click on a *different* view's button, if the two views' item pools overlap - this is expected given the existing per-view independent-fetch design (`renderForteActivity()`'s own doc comment), not a new bug.
+
+## Follow-up - left-pane counts changed to full totals
+The user asked for the left-pane folder counts to show each view's real total rather than however many happen to be loaded. Until now `count` and "how many rows are loaded" were the same number (both derived from `count($viewItemIds[$viewKey])`), so the left pane and the status bar showed the same, pagination-capped value - the original "silently caps at 100" complaint from Step 1, just relocated to the folder tree instead of the row list.
+
+- Changes:
+  - New `countActivityViewTotal(string $view): int` (`Application.php`), placed right after `fetchActivity()`. Mirrors its exact two-stage filter (the same `activityViewSql()` SQL `WHERE`, then the same tag-based PHP re-check) so the total is exactly the number of items a user could eventually page through - but selects only `board_tags_json` (skipping the ~15-column select and the expensive per-item transform `fetchActivity()` does for rendering, e.g. signature checks) and has no `LIMIT`, so it's cheap even though it's unpaginated.
+  - `renderForteActivity()`'s `$viewCounts` now carries two numbers per view: `count` (the new full total, via `countActivityViewTotal()`) and `loadedCount` (the old `count($viewItemIds[$viewKey])` - how many are actually loaded into the DOM right now).
+  - `paned_activity_filter_list.php` (left pane) keeps reading `$view['count']` - now the full total, unchanged markup.
+  - `forte_activity.php`'s status bar switched from `count` to `loadedCount`, so it keeps showing "how many of this view are currently loaded" instead of jumping to the full total on first render.
+  - `paned_activity_reader.js`: removed the folder-count-patching code added in the previous fix pass - the left-pane count is now a fixed total set once server-side and never changes client-side, so there is nothing for Load More to update there anymore (only the status bar's `loadedCount`-derived text still changes, via the existing `selectFilter()` call).
+- Verification:
+  - `php -l` on all changed PHP files - no syntax errors.
+  - `GET /forte/activity/`: left pane now reads All Activity 1629, Visible Content 1338, Identity 269, Bootstraps 164, Approvals 105 - Approvals' 105 matches the exact end-to-end pagination count found in Stage 4's own manual test (100 + 5, page-by-page to exhaustion), confirming the fast count query agrees with the slow "actually page through everything" ground truth. Status bar still reads "100 items" (loaded, not total) on first load.
+  - `time curl` on the full page: 82ms - the 5 added count queries (unindexed full-ish scans over 1629 rows, no per-item transform) added no perceptible cost.
+  - CDP-driven browser check: folder count for `all` stays at 1629 before and after a Load More click; status bar moves 100 → 200 as before.
+  - Re-ran every prior CDP regression script (button styling, detail-pane-for-paginated-item, approval-view exhaustion + filter-switch persistence, Prev/Next stepping) unchanged - all still pass, no console errors, server log clean.

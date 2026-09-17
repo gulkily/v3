@@ -1,6 +1,6 @@
 <?php
 /**
- * @var array<int, array{key: string, label: string, count: int}> $viewCounts
+ * @var array<int, array{key: string, label: string, count: int, loadedCount: int}> $viewCounts
  * @var string $selectedView
  */
 $selectedView ??= 'all';

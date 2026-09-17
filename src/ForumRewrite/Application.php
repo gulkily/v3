@@ -1095,7 +1095,16 @@ final class Application
 
         $viewCounts = [];
         foreach ($viewLabels as $viewKey => $viewLabel) {
-            $viewCounts[] = ['key' => $viewKey, 'label' => $viewLabel, 'count' => count($viewItemIds[$viewKey])];
+            $viewCounts[] = [
+                'key' => $viewKey,
+                'label' => $viewLabel,
+                // Full total for the view (independent of pagination) - the
+                // left-pane folder count. Separate from how many of those
+                // are actually loaded/visible right now (below), which is
+                // what the status bar tracks.
+                'count' => $this->countActivityViewTotal($viewKey),
+                'loadedCount' => count($viewItemIds[$viewKey]),
+            ];
         }
 
         $selectedView = $this->normalizeActivityView($requestedView);
@@ -3951,6 +3960,53 @@ final class Application
         }));
 
         return ['items' => $items, 'has_more' => $hasMore];
+    }
+
+    /**
+     * Counts the full number of activity rows matching a view, independent
+     * of `ACTIVITY_ITEM_LIMIT`/pagination - for the left-pane folder counts,
+     * which should show real totals rather than "however many happen to be
+     * loaded so far". Mirrors `fetchActivity()`'s exact two-stage filter
+     * (the SQL `WHERE` from `activityViewSql()`, then the same tag-based
+     * PHP re-check) but selects only the columns that check needs, and
+     * skips the per-item transform `fetchActivity()` does for rendering
+     * (signature checks, link building, etc.) - unneeded and expensive
+     * across a potentially large, unlimited row set.
+     */
+    private function countActivityViewTotal(string $view): int
+    {
+        $view = $this->normalizeActivityView($view);
+        [$viewWhere, $viewParameters] = $this->activityViewSql($view);
+        $stmt = $this->pdo()->prepare(
+            'SELECT activity.board_tags_json
+             FROM activity
+             LEFT JOIN posts ON posts.post_id = activity.post_id
+             WHERE 1 = 1
+             ' . $viewWhere
+        );
+        foreach ($viewParameters as $parameter => $value) {
+            $stmt->bindValue($parameter, $value);
+        }
+        $stmt->execute();
+
+        $count = 0;
+        while (($row = $stmt->fetch()) !== false) {
+            $boardTagsJson = (string) $row['board_tags_json'];
+            $hidden = $this->isHiddenBootstrapBoardTagsJson($boardTagsJson);
+            $matches = match ($view) {
+                'all' => true,
+                'content' => !$hidden,
+                'identity' => $this->hasBoardTag($boardTagsJson, 'identity'),
+                'bootstrap' => $this->hasBoardTag($boardTagsJson, 'identity') && $this->hasBoardTag($boardTagsJson, 'internal'),
+                'approval' => $this->hasBoardTag($boardTagsJson, 'identity') && $this->hasBoardTag($boardTagsJson, 'approval'),
+                default => true,
+            };
+            if ($matches) {
+                $count++;
+            }
+        }
+
+        return $count;
     }
 
     /**
