@@ -230,6 +230,40 @@
       nextRow.focus();
     });
 
+    function mergeAppendedRows(html, view) {
+      var template = document.createElement("template");
+      template.innerHTML = html;
+      var incomingNodes = Array.prototype.slice.call(template.content.children);
+      incomingNodes.forEach(function (node) {
+        var id = node.getAttribute("data-paned-activity-id");
+        var existingRow = listBody.querySelector('[data-paned-activity-id="' + id + '"]');
+        if (existingRow) {
+          // Same item reached from a different view's own page window
+          // (e.g. a small view's first page can span further back in time
+          // than this view's). Mark it as also belonging to this view
+          // instead of appending a second row for the same id.
+          existingRow.setAttribute("data-paned-activity-view-" + view, "1");
+        } else {
+          listBody.appendChild(node);
+        }
+      });
+    }
+
+    function mergeAppendedDetailArticles(html) {
+      if (!contentPane || !html) {
+        return;
+      }
+      var template = document.createElement("template");
+      template.innerHTML = html;
+      var incomingNodes = Array.prototype.slice.call(template.content.children);
+      incomingNodes.forEach(function (node) {
+        var id = node.getAttribute("data-paned-activity-content-item-id");
+        if (!contentPane.querySelector('[data-paned-activity-content-item-id="' + id + '"]')) {
+          contentPane.appendChild(node);
+        }
+      });
+    }
+
     if (loadMoreGroup) {
       loadMoreGroup.addEventListener("click", function (event) {
         var button = event.target.closest ? event.target.closest("[data-paned-activity-load-more]") : null;
@@ -255,8 +289,28 @@
               throw new Error("activity page fetch failed");
             }
 
-            listBody.insertAdjacentHTML("beforeend", data.html);
+            mergeAppendedRows(data.html, view);
             rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
+
+            mergeAppendedDetailArticles(data.detail_html);
+            if (contentPane) {
+              contentItems = Array.prototype.slice.call(
+                contentPane.querySelectorAll("[data-paned-activity-content-item-id]")
+              );
+            }
+
+            // Recomputed the same way selectFilter() counts visible rows,
+            // rather than incrementing by the page size: a merged-in row
+            // that already existed for another view grows this view's true
+            // count too, without adding a new DOM row to count.
+            var countSpan = filterTree.querySelector(
+              '[data-paned-activity-view="' + view + '"] .paned-folder-count'
+            );
+            if (countSpan) {
+              countSpan.textContent = rows.filter(function (row) {
+                return row.getAttribute("data-paned-activity-view-" + view) === "1";
+              }).length;
+            }
 
             button.setAttribute("data-paned-activity-cursor", data.next_cursor ? JSON.stringify(data.next_cursor) : "");
             button.setAttribute("data-paned-activity-has-more", data.has_more ? "1" : "0");

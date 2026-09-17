@@ -1168,6 +1168,7 @@ final class Application
         $result = $this->fetchActivity($view, $cursor);
 
         $html = '';
+        $detailHtml = '';
         foreach ($result['items'] as $item) {
             $item['forte_link'] = $this->activityItemBoardLink($item);
             foreach (['all', 'content', 'identity', 'bootstrap', 'approval'] as $flagView) {
@@ -1179,6 +1180,16 @@ final class Application
                 'isSelected' => false,
                 'isTabStop' => false,
                 'visible' => true,
+            ]);
+
+            // Every appended row needs a matching detail-pane article, or
+            // selecting it leaves the detail pane blank (no article matches
+            // its id, so every existing article - and the placeholder - end
+            // up hidden). Reuses the same partial the initial page render
+            // uses, so this is never selected by default.
+            $detailHtml .= $this->renderer()->renderFragment('partials/paned_activity_detail_article.php', [
+                'item' => $item,
+                'isSelected' => false,
             ]);
         }
 
@@ -1193,6 +1204,7 @@ final class Application
         $this->sendJson([
             'status' => 'ok',
             'html' => $html,
+            'detail_html' => $detailHtml,
             'has_more' => $hasMore,
             'next_cursor' => $nextCursor,
         ], 200);
