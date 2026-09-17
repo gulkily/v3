@@ -34,3 +34,18 @@
   - Server log clean (only the same pre-existing, unrelated header-timing warning already on file).
 - Notes:
   - The merged-pool `usort()` fix wasn't explicitly called out in the Step 3 plan (which only mentioned the per-view `fetchActivity()` calls), but it's squarely inside Stage 2's actual goal - "so both use the sort-aware fetchActivity() consistently" - and without it the feature would visibly not work, so it's a correction within Stage 2's own scope, not new scope.
+
+## Stage 3 - Sortable header UI
+- Changes:
+  - New `activitySortHeaderLinks(string $view, string $activeColumn, string $activeDirection): array<string, array{ariaSort: string, href: string}>` (`Application.php`) - for each of the 3 sortable columns, computes its `aria-sort` state and a target URL: the active column's link toggles direction, every other column's link points at its own default direction via `resolveActivitySort($column, '')`, so header toggle behavior can never drift out of sync with the backend's own validation. Links always carry `view` (when not `all`) and explicit `sort`/`dir`, and intentionally omit `selected`, matching the "reset to the top" decision from Step 1.
+  - `renderForteActivity()` calls this once (`$selectedView`, `$sortColumn`, `$sortDirection`) and passes `sortHeaderLinks` down through `forte_activity.php` into `paned_activity_item_list.php`.
+  - `paned_activity_item_list.php`'s static `.paned-list-head` spans became Board's exact sortable-header shape (`data-paned-sort-head`, `<span aria-sort>` wrapping `<button class="paned-sort-button" data-paned-sort-column="...">`), reusing `forte.css`'s existing `.paned-sort-button`/`[aria-sort]` rules with no new CSS. Each button additionally carries `data-paned-sort-href` (Board's buttons don't need this, since Board sorts client-side; Activity's click is a real navigation).
+  - Drive-by fix: `paned_activity_item_list.php`'s and `forte_activity.php`'s `@var` docblocks for `$viewPagination`'s cursor shape were still describing the pre-Stage-1 `{created_at, post_id, id}` shape; corrected to `{sort_value, id}`.
+- Verification:
+  - `php -l` on all 3 changed files - no syntax errors.
+  - Loaded the page with no `sort`/`dir` and with explicit `sort=date&dir=desc`: identical header markup in both (`Date` shows `aria-sort="descending"`, `Kind`/`Label` show `aria-sort="none"`) - confirms the default resolves the same way whether implicit or explicit, consistent with Stage 2's own fallback check.
+  - `sort=kind&dir=asc` → `Kind` shows `ascending` with an href toggling to `dir=desc`; `sort=kind&dir=desc` → shows `descending` toggling back to `asc`.
+  - `sort=label&dir=asc&view=approval` → all 3 header hrefs carry `view=approval`, `Label`'s href toggles to `desc`, `Kind`/`Date` point at their own defaults (`asc`/`desc` respectively) - confirms view is preserved and per-column defaults are correct even when a different column is active.
+  - Server log clean.
+- Notes:
+  - Clicking a header does nothing yet (no `href` navigation is wired to the button's `data-paned-sort-href` - buttons don't navigate on their own). Stage 4 adds that plus sort-aware "Load more".

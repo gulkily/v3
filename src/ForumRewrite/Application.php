@@ -1133,6 +1133,7 @@ final class Application
         $selectedItemId = in_array($requestedSelected, $viewItemIds[$selectedView], true)
             ? $requestedSelected
             : (string) ($viewItemIds[$selectedView][0] ?? '');
+        $sortHeaderLinks = $this->activitySortHeaderLinks($selectedView, $sortColumn, $sortDirection);
 
         return $this->renderer()->renderStandalonePage(
             'forte_activity.php',
@@ -1142,6 +1143,7 @@ final class Application
                 'selectedView' => $selectedView,
                 'selectedItemId' => $selectedItemId,
                 'viewPagination' => $viewPagination,
+                'sortHeaderLinks' => $sortHeaderLinks,
             ],
             'Activity - Forte',
             'paned-reader-body',
@@ -4122,6 +4124,45 @@ final class Application
             'label' => (string) $item['label'],
             default => (string) $item['created_at'],
         };
+    }
+
+    /**
+     * Computes each sortable column header's `aria-sort` state and its
+     * click target URL: the active column points at the *toggled*
+     * direction, every other column points at its own default direction
+     * (from `resolveActivitySort()`, so this never drifts out of sync with
+     * the backend's own validation) - mirroring Board's `resolveForteBoardSort`
+     * default-direction table, but resolved into links since Activity's
+     * click behavior is a real navigation, not a client-side re-sort.
+     *
+     * @return array<string, array{ariaSort: string, href: string}>
+     */
+    private function activitySortHeaderLinks(string $view, string $activeColumn, string $activeDirection): array
+    {
+        $links = [];
+        foreach (['kind', 'label', 'date'] as $column) {
+            if ($column === $activeColumn) {
+                $ariaSort = $activeDirection === 'desc' ? 'descending' : 'ascending';
+                $targetDirection = $activeDirection === 'desc' ? 'asc' : 'desc';
+            } else {
+                $ariaSort = 'none';
+                $targetDirection = $this->resolveActivitySort($column, '')['direction'];
+            }
+
+            $params = [];
+            if ($view !== 'all') {
+                $params['view'] = $view;
+            }
+            $params['sort'] = $column;
+            $params['dir'] = $targetDirection;
+
+            $links[$column] = [
+                'ariaSort' => $ariaSort,
+                'href' => '/forte/activity/?' . http_build_query($params),
+            ];
+        }
+
+        return $links;
     }
 
     private function sourcePathHref(string $sourcePath, string $sourceCommitSha): ?string
