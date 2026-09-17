@@ -3,10 +3,12 @@
  * @var string $activeView 'board' | 'activity' | 'users'
  * @var bool $boardControlsEnabled
  * @var bool $replyEnabled
+ * @var bool $prevNextEnabled
  */
 $activeView ??= 'board';
 $boardControlsEnabled ??= false;
 $replyEnabled ??= false;
+$prevNextEnabled ??= $boardControlsEnabled;
 ?>
 <div class="paned-toolbar">
   <button type="button" class="paned-toolbar-btn" data-paned-board-new<?= $boardControlsEnabled ? '' : ' disabled' ?>>
@@ -18,11 +20,11 @@ $replyEnabled ??= false;
     <span>Reply</span>
   </button>
   <span class="paned-toolbar-sep"></span>
-  <button type="button" class="paned-toolbar-btn" data-paned-board-prev<?= $boardControlsEnabled ? '' : ' disabled' ?>>
+  <button type="button" class="paned-toolbar-btn" data-paned-board-prev<?= $prevNextEnabled ? '' : ' disabled' ?>>
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M11 3 L5 8 L11 13" fill="none" stroke="currentColor"/></svg>
     <span>Prev</span>
   </button>
-  <button type="button" class="paned-toolbar-btn" data-paned-board-next<?= $boardControlsEnabled ? '' : ' disabled' ?>>
+  <button type="button" class="paned-toolbar-btn" data-paned-board-next<?= $prevNextEnabled ? '' : ' disabled' ?>>
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3 L11 8 L5 13" fill="none" stroke="currentColor"/></svg>
     <span>Next</span>
   </button>

@@ -23,6 +23,7 @@ foreach ($viewCounts as $viewCount) {
     'activeView' => 'activity',
     'boardControlsEnabled' => false,
     'replyEnabled' => false,
+    'prevNextEnabled' => true,
   ]), 1) ?>
   <div class="paned-board-layout">
 <?= $indent($partial('partials/paned_activity_filter_list.php', ['viewCounts' => $viewCounts, 'selectedView' => $selectedView]), 2) ?>

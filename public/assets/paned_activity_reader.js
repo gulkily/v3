@@ -216,6 +216,48 @@
       nextRow.focus();
     });
 
+    function stepSelection(delta) {
+      var visible = rows.filter(function (row) {
+        return !row.hidden;
+      });
+      if (visible.length === 0) {
+        return;
+      }
+
+      var currentId = currentSelectedItemId();
+      var index = -1;
+      for (var i = 0; i < visible.length; i++) {
+        if (visible[i].getAttribute("data-paned-activity-id") === currentId) {
+          index = i;
+          break;
+        }
+      }
+
+      var nextIndex = index === -1 ? 0 : index + delta;
+      if (nextIndex < 0 || nextIndex >= visible.length) {
+        return;
+      }
+
+      var nextRow = visible[nextIndex];
+      var nextItemId = nextRow.getAttribute("data-paned-activity-id");
+      selectItem(nextItemId);
+      pushStateIfChanged(urlForState(currentViewFromUrl(), nextItemId));
+      nextRow.scrollIntoView({ block: "nearest" });
+    }
+
+    var prevButton = document.querySelector("[data-paned-board-prev]");
+    var nextButton = document.querySelector("[data-paned-board-next]");
+    if (prevButton) {
+      prevButton.addEventListener("click", function () {
+        stepSelection(-1);
+      });
+    }
+    if (nextButton) {
+      nextButton.addEventListener("click", function () {
+        stepSelection(1);
+      });
+    }
+
     window.addEventListener("popstate", function () {
       restoreSelectionFromUrl(true);
     });
