@@ -23,6 +23,7 @@
           author_identity_id: "openpgp:" + fingerprint, canonical_record: prepared.canonical_record, detached_signature: signature,
         });
         if (!finalized || finalized.status !== "ok") throw new Error(finalized && finalized.error || "Unable to redeem invitation.");
+        if (/^\/(?!\/)/.test(String(prepared.destination || ""))) sessionStorage.setItem("forum_invite_destination", String(prepared.destination));
         history.replaceState(null, "", window.location.pathname);
         feedback(status, "Invitation redeemed. Verifying member access…", "ok");
         window.location.reload();

@@ -33,3 +33,15 @@
   - `php tests/run.php CanonicalRecordParsersTest LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces` passed.
 - Notes:
   - The recipient is intentionally prompted to set up a fresh browser key; no key-restore path was added to the invitation surface.
+
+## Stage 4 - Approval derivation and session transition
+- Changes:
+  - Extended both full and incremental approval derivation to recognize a valid issued invitation followed by its signed redemption as an inviter-attributable approval.
+  - Added a redeemed Activity event linked to the same verification hash.
+  - Preserved the validated optional destination through redemption and use it only after browser-key authentication succeeds.
+- Verification:
+  - PHP lint passed for both read-model implementations.
+  - `node --check public/assets/private_site_auth.js` and `node --check public/assets/invite_redemption.js` passed.
+  - `php tests/run.php ReadModelBuilderTimingTest PrivateSiteAuthTest LocalAppSmokeTest::testApprovedPrivateSessionCanViewOwnProfileAndBoard` passed.
+- Notes:
+  - Invalid, expired, revoked, or already redeemed invitations cannot become approval candidates.
