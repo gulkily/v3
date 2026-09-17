@@ -222,6 +222,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/create_prepared_approval') {
+            $this->handleCreatePreparedApproval($method, $query);
+            return;
+        }
+
         if ($path === '/compose/thread' && $method === 'POST') {
             $this->handleComposeThreadSubmit($query);
             return;
@@ -5258,6 +5263,35 @@ final class Application
 
         try {
             $result = $this->prepareUserApprovalBySlug($profileSlug, $timings);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
+            unset($result['timings']);
+            $this->sendJson($result, 200, $this->serverTimingHeaders($result));
+        } catch (RuntimeException $exception) {
+            $this->sendJson(
+                ['status' => 'error', 'error' => $exception->getMessage()],
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleCreatePreparedApproval(string $method, array $query): void
+    {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $input = $this->requestData($query);
+        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
+        try {
+            $result = $this->writer()->finalizePreparedApproval($input);
             $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
             unset($result['timings']);
             $this->sendJson($result, 200, $this->serverTimingHeaders($result));

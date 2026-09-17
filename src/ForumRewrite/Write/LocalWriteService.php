@@ -877,6 +877,106 @@ class LocalWriteService
      * @param array<string, mixed> $input
      * @return array<string, mixed>
      */
+    public function finalizePreparedApproval(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $timings = [];
+            $totalStartedAt = hrtime(true);
+            $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($prepareToken);
+
+            if (($prepared['kind'] ?? '') !== 'approval') {
+                throw new RuntimeException('Prepared post is not an approval.');
+            }
+            if (strtotime((string) $prepared['expires_at']) < time()) {
+                throw new RuntimeException('Prepared post has expired.');
+            }
+
+            $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+            if ($canonicalRecord === '' || hash('sha256', $canonicalRecord) !== (string) $prepared['canonical_sha256']) {
+                throw new RuntimeException('Prepared post canonical record mismatch.');
+            }
+
+            $recordPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $postId = $this->requirePreparedMatch($input, $prepared, 'post_id');
+            $threadId = (string) $prepared['thread_id'];
+            $authorIdentityId = $this->requireOpenPgpIdentityId(
+                $this->requirePreparedMatch($input, $prepared, 'author_identity_id'),
+                'author_identity_id'
+            );
+            $targetIdentityId = $this->requireOpenPgpIdentityId((string) ($prepared['target_identity_id'] ?? ''), 'target_identity_id');
+            $targetProfileSlug = $this->requireAsciiToken((string) ($prepared['target_profile_slug'] ?? ''), 'target_profile_slug');
+
+            if (!$this->isApprovedIdentity($authorIdentityId)) {
+                throw new RuntimeException('Only approved users can approve other users.');
+            }
+            if ($this->isApprovedIdentity($targetIdentityId)) {
+                throw new RuntimeException('User is already approved.');
+            }
+            if ($this->postTargetExists($postId)) {
+                throw new RuntimeException('Prepared post target already exists.');
+            }
+
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($authorIdentityId);
+            $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
+            if (!$verification['ok']) {
+                $message = 'Detached signature verification failed: ' . $verification['status'];
+                if ($verification['details'] !== '') {
+                    $message .= ' (' . $verification['details'] . ')';
+                }
+
+                throw new RuntimeException($message);
+            }
+
+            $record = (new PostRecordParser())->parse($canonicalRecord);
+            if ($record->postId !== $postId || CanonicalPathResolver::datedPost($record->postId, $record->createdAt) !== $recordPath) {
+                throw new RuntimeException('Prepared post canonical record does not match target path.');
+            }
+            if (($record->threadId ?? $record->postId) !== $threadId || $record->authorIdentityId !== $authorIdentityId) {
+                throw new RuntimeException('Prepared post canonical record does not match prepared metadata.');
+            }
+            if (!str_contains($record->body, 'Approve-Identity-ID: ' . $targetIdentityId)) {
+                throw new RuntimeException('Prepared approval canonical record does not match target identity.');
+            }
+
+            $phaseStartedAt = hrtime(true);
+            $this->writeFile($recordPath, $canonicalRecord);
+            $this->writeFile($recordPath . '.asc', $signature);
+            $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+            $commitResult = $this->commitCanonicalWrite(
+                [$recordPath, $recordPath . '.asc'],
+                'Approve user ' . $targetIdentityId . ' by ' . $authorIdentityId
+            );
+            $timings = array_merge($timings, $commitResult['timings']);
+            $commitSha = $commitResult['commit_sha'];
+            $timings = array_merge($timings, $this->synchronizeApprovalDerivedState($record, $commitSha));
+
+            $phaseStartedAt = hrtime(true);
+            $this->invalidator()->invalidateApproval($targetProfileSlug, $threadId, (string) $prepared['parent_id'], $postId);
+            $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $this->deletePreparedPost($prepareToken);
+            $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+            return [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'profile_slug' => $targetProfileSlug,
+                'record_path' => $recordPath,
+                'signature_path' => $recordPath . '.asc',
+                'commit_sha' => $commitSha,
+                'timings' => $timings,
+            ];
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
     public function setFeatureFlag(array $input): array
     {
         return $this->withTimedWriteLock(function () use ($input): array {

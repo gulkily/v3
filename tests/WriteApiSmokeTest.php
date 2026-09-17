@@ -3145,6 +3145,72 @@ PHP);
         assertTrue($unapproved['identity_id'] !== $target['identity_id']);
     }
 
+    public function testFinalizePreparedApprovalVerifiesSignatureBeforeCreatingApproval(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $signingKey = $this->createSigningKey('approval-signer');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $_POST = ['public_key' => $signingKey['public_key']];
+            $signerResponse = $this->renderMethod($application, 'POST', '/api/link_identity');
+            $_POST = [];
+            $signerIdentityId = $this->extractValue($signerResponse, 'identity_id');
+            $this->seedApprovedIdentity($repositoryRoot, $signerIdentityId);
+            $target = $this->linkGeneratedIdentity($application, 'approval-target');
+            $_COOKIE = ['identity_hint' => $signerIdentityId];
+            $prepared = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/prepare_approval?profile_slug=' . rawurlencode($target['profile_slug'])
+            ), true, 512, JSON_THROW_ON_ERROR);
+            $postCountBefore = $this->countCanonicalPostFiles($repositoryRoot);
+
+            $_POST = [
+                'prepare_token' => $prepared['prepare_token'],
+                'post_id' => $prepared['post_id'],
+                'record_path' => $prepared['record_path'],
+                'author_identity_id' => $signerIdentityId,
+                'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => 'invalid detached signature',
+            ];
+            $invalid = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_approval'), true, 512, JSON_THROW_ON_ERROR);
+            $_POST = [];
+
+            assertSame('error', $invalid['status']);
+            assertStringContains('Detached signature verification failed:', $invalid['error']);
+            assertSame($postCountBefore, $this->countCanonicalPostFiles($repositoryRoot));
+            assertTrue(is_file(dirname($databasePath) . '/prepared-posts/' . $prepared['prepare_token'] . '.json'));
+
+            $signature = $this->signCanonicalRecord($signingKey['home'], $prepared['canonical_record']);
+            $_POST = [
+                'prepare_token' => $prepared['prepare_token'],
+                'post_id' => $prepared['post_id'],
+                'record_path' => $prepared['record_path'],
+                'author_identity_id' => $signerIdentityId,
+                'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $signature,
+            ];
+            $finalized = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_approval'), true, 512, JSON_THROW_ON_ERROR);
+            $_POST = [];
+            $targetProfile = $this->renderMethod($application, 'GET', '/api/get_profile?profile_slug=' . rawurlencode($target['profile_slug']));
+
+            assertSame('ok', $finalized['status']);
+            assertSame($prepared['record_path'] . '.asc', $finalized['signature_path']);
+            assertSame($prepared['canonical_record'], (string) file_get_contents($repositoryRoot . '/' . $prepared['record_path']));
+            assertSame($signature, (string) file_get_contents($repositoryRoot . '/' . $prepared['record_path'] . '.asc'));
+            assertFalse(is_file(dirname($databasePath) . '/prepared-posts/' . $prepared['prepare_token'] . '.json'));
+            assertStringContains('Approved: yes', $targetProfile);
+            $committedFiles = $this->gitOutput($repositoryRoot, 'show --name-only --format= ' . escapeshellarg($finalized['commit_sha']));
+            assertStringContains($prepared['record_path'], $committedFiles);
+            assertStringContains($prepared['record_path'] . '.asc', $committedFiles);
+        } finally {
+            $_POST = [];
+            $_COOKIE = [];
+            $this->deleteTree($signingKey['home']);
+        }
+    }
+
     public function testAlreadyApprovedUserCannotBeApprovedAgain(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -3782,6 +3848,55 @@ PHP);
         $this->deleteTree($home);
 
         return trim($publicKey) . "\n";
+    }
+
+    /**
+     * @return array{home:string,public_key:string}
+     */
+    private function createSigningKey(string $username): array
+    {
+        $home = sys_get_temp_dir() . '/forum-rewrite-approval-gpg-' . bin2hex(random_bytes(6));
+        mkdir($home, 0700, true);
+        $homedir = escapeshellarg($home);
+        $this->runCommand(
+            $home,
+            'gpg --batch --no-tty --pinentry-mode loopback --passphrase "" --homedir '
+            . $homedir . ' --quick-generate-key ' . escapeshellarg($username) . ' ed25519 sign 0'
+        );
+
+        return [
+            'home' => $home,
+            'public_key' => trim($this->runCommand(
+                $home,
+                'gpg --batch --no-tty --homedir ' . $homedir . ' --armor --export'
+            )) . "\n",
+        ];
+    }
+
+    private function signCanonicalRecord(string $home, string $canonicalRecord): string
+    {
+        $recordPath = $home . '/approval-record.txt';
+        $signaturePath = $recordPath . '.asc';
+        file_put_contents($recordPath, $canonicalRecord);
+        $this->runCommand(
+            $home,
+            'gpg --batch --no-tty --pinentry-mode loopback --passphrase "" --homedir ' . escapeshellarg($home)
+            . ' --armor --detach-sign --output ' . escapeshellarg($signaturePath) . ' ' . escapeshellarg($recordPath)
+        );
+
+        return (string) file_get_contents($signaturePath);
+    }
+
+    private function seedApprovedIdentity(string $repositoryRoot, string $identityId): void
+    {
+        $fingerprint = substr($identityId, strlen('openpgp:'));
+        $path = 'records/approval-seeds/openpgp-' . $fingerprint . '.txt';
+        file_put_contents(
+            $repositoryRoot . '/' . $path,
+            "Approved-Identity-ID: {$identityId}\nSeed-Reason: test signer\n\nTest trust anchor.\n"
+        );
+        $this->runCommand($repositoryRoot, 'git add ' . escapeshellarg($path));
+        $this->runCommand($repositoryRoot, 'git commit -m "Seed approval test signer"');
     }
 
     private function gitOutput(string $repositoryRoot, string $command): string

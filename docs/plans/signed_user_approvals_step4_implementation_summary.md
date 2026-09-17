@@ -9,3 +9,15 @@
   - Coverage confirms prepared replies contain the expected approval fields, do not create a post or approval, and reject unapproved/self approvers.
 - Notes:
   - Stage 2 will verify the detached signature and make the paired record/signature write atomic.
+
+## Stage 2 - Verify and finalize signed approvals
+- Changes:
+  - Added `/api/create_prepared_approval` and approval-specific finalization using the existing detached-signature verifier.
+  - Valid approvals now commit the canonical reply and adjacent `.asc` signature together, then use the existing approval-derived-state refresh and invalidation path.
+  - Invalid signatures leave the prepared record available for retry without creating a post or changing approval state.
+- Verification:
+  - `php tests/run.php WriteApiSmokeTest` passed.
+  - A generated signing key produced a valid approval signature; the test confirms the paired commit, target approval, and cleanup of the prepared token after success.
+  - The same prepared approval with an invalid signature creates no record and leaves the target unapproved.
+- Notes:
+  - Stage 3 will reuse the existing browser signing facilities to drive these two endpoints from the browser.
