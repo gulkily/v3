@@ -55,7 +55,7 @@ final class Application
     private bool $llmExchangeStoreInitialized = false;
     /** @var array<string, list<array{status:string,path:string,previous_path:string}>|null> */
     private array $sourceCommitFileManifestCache = [];
-    /** @var array<string, list<array{status:string,path:string,previous_path:string,role:string,href:string}>|null> */
+    /** @var array<string, list<array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}>|null> */
     private array $activityCommitManifestCache = [];
 
     public function __construct(
@@ -6213,7 +6213,7 @@ final class Application
     }
 
     /**
-     * @return list<array{status:string,path:string,previous_path:string,role:string,href:string}>|null
+     * @return list<array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}>|null
      */
     private function activityCommitManifest(string $commitSha): ?array
     {
@@ -6227,13 +6227,21 @@ final class Application
             return null;
         }
 
-        $manifest = array_map(fn (array $file): array => [
-            'status' => $file['status'],
-            'path' => $file['path'],
-            'previous_path' => $file['previous_path'],
-            'role' => $this->sourceCommitFileRole($file['path']),
-            'href' => $this->sourceCommitFileHref($file['path'], $file['status'], $commitSha),
-        ], $files);
+        $manifest = array_map(function (array $file) use ($commitSha): array {
+            $signature = $this->activityCommitSignatureMetadata($file['path']);
+
+            return [
+                'status' => $file['status'],
+                'path' => $file['path'],
+                'previous_path' => $file['previous_path'],
+                'role' => $this->sourceCommitFileRole($file['path']),
+                'href' => $this->sourceCommitFileHref($file['path'], $file['status'], $commitSha),
+                'signature_signer_identity' => $signature['signer_identity'],
+                'signature_public_key_path' => $signature['public_key_path'],
+                'signature_public_key_href' => $signature['public_key_href'],
+                'signature_key_status' => $signature['status'],
+            ];
+        }, $files);
 
         $this->activityCommitManifestCache[$commitSha] = $manifest;
 
@@ -6267,6 +6275,92 @@ final class Application
         }
 
         return $this->sourcePathHref($path, $commitSha) ?? '';
+    }
+
+    /**
+     * @return array{signer_identity:string,public_key_path:string,public_key_href:string,status:string}
+     */
+    private function activityCommitSignatureMetadata(string $signaturePath): array
+    {
+        $empty = [
+            'signer_identity' => '',
+            'public_key_path' => '',
+            'public_key_href' => '',
+            'status' => '',
+        ];
+        $recordPath = $this->sourceSignatureRecordPath($signaturePath);
+        if ($recordPath === null) {
+            return $empty;
+        }
+
+        $identityId = $this->signatureSignerIdentityId($recordPath);
+        if ($identityId === null) {
+            return [...$empty, 'status' => 'signing identity unavailable'];
+        }
+
+        $fingerprint = $this->openPgpFingerprintFromIdentityId($identityId);
+        if ($fingerprint === null) {
+            return [...$empty, 'signer_identity' => $identityId, 'status' => 'signing key unavailable'];
+        }
+
+        foreach ([CanonicalPathResolver::publicKey($fingerprint), 'records/public-keys/openpgp-' . strtolower($fingerprint) . '.asc'] as $path) {
+            if (!$this->currentSourcePathExists($path)) {
+                continue;
+            }
+
+            return [
+                'signer_identity' => $identityId,
+                'public_key_path' => $path,
+                'public_key_href' => '/source/current/' . $this->encodeSourcePathForUrl($path),
+                'status' => 'ok',
+            ];
+        }
+
+        return [...$empty, 'signer_identity' => $identityId, 'status' => 'signing key unavailable'];
+    }
+
+    private function sourceSignatureRecordPath(string $signaturePath): ?string
+    {
+        foreach (['.asc', '.sig'] as $suffix) {
+            if (str_ends_with($signaturePath, $suffix)) {
+                $recordPath = substr($signaturePath, 0, -strlen($suffix));
+                return $this->isValidCanonicalRecordSourcePath($recordPath) ? $recordPath : null;
+            }
+        }
+
+        return null;
+    }
+
+    private function signatureSignerIdentityId(string $recordPath): ?string
+    {
+        try {
+            $repository = new CanonicalRecordRepository($this->repositoryRoot);
+            if (str_starts_with($recordPath, 'records/posts/')) {
+                return $repository->loadPost($recordPath)->authorIdentityId;
+            }
+            if (str_starts_with($recordPath, 'records/identity/')) {
+                return $repository->loadIdentity($recordPath)->identityId;
+            }
+            if (str_starts_with($recordPath, 'records/thread-labels/')) {
+                return $repository->loadThreadLabel($recordPath)->authorIdentityId;
+            }
+            if (str_starts_with($recordPath, 'records/post-reactions/')) {
+                return $repository->loadPostReaction($recordPath)->authorIdentityId;
+            }
+        } catch (RuntimeException) {
+            return null;
+        }
+
+        return null;
+    }
+
+    private function openPgpFingerprintFromIdentityId(string $identityId): ?string
+    {
+        if (preg_match('/^openpgp:([a-f0-9]{40})$/i', trim($identityId), $matches) !== 1) {
+            return null;
+        }
+
+        return strtoupper($matches[1]);
     }
 
     /**

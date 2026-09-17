@@ -1326,6 +1326,31 @@ final class LocalAppSmokeTest
         assertSame('/source/blob/' . $postCommitSha . '/records/posts/root-001.txt', $entry['href']);
     }
 
+    public function testActivityCommitManifestLinksSignatureSignerKeyOutsideCommit(): void
+    {
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $signaturePath = 'records/thread-labels/thread-label-20260415153000-ab12cd34.txt.asc';
+        file_put_contents($repositoryRoot . '/' . $signaturePath, "detached signature\n");
+        $this->runCommand($repositoryRoot, 'git add ' . escapeshellarg($signaturePath));
+        $this->runCommand($repositoryRoot, 'git commit -m "Add detached label signature"');
+
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $method = new ReflectionMethod($application, 'activityCommitManifest');
+        $commitSha = trim($this->runCommand($repositoryRoot, 'git rev-parse HEAD'));
+        $manifest = $method->invoke($application, $commitSha);
+        $entry = array_values(array_filter(
+            $manifest,
+            static fn (array $entry): bool => $entry['path'] === $signaturePath
+        ))[0];
+        $fingerprint = '0168FF20EB09C3EA6193BD3C92A73AA7D20A0954';
+        $publicKeyPath = 'records/public-keys/openpgp-' . $fingerprint . '.asc';
+
+        assertSame('openpgp:' . strtolower($fingerprint), $entry['signature_signer_identity']);
+        assertSame($publicKeyPath, $entry['signature_public_key_path']);
+        assertSame('/source/current/' . $publicKeyPath, $entry['signature_public_key_href']);
+        assertSame('ok', $entry['signature_key_status']);
+    }
+
     public function testActivityFetchLimitsAfterApplyingViewFilter(): void
     {
         @unlink($this->databasePath);

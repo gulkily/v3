@@ -22,3 +22,14 @@
   - `php tests/run.php LocalAppSmokeTest` passed.
 - Notes:
   - Stage 3 will add signer/public-key associations only for detached-signature entries.
+
+## Stage 3 - Signature signer keys
+- Changes:
+  - Added detached-signature signer identity and canonical public-key metadata to manifest entries.
+  - Resolves signer identity from the signed canonical record and finds its current canonical public key independently of the commit's file set.
+  - Added explicit unavailable states for missing signer identities or keys.
+- Verification:
+  - `php -l src/ForumRewrite/Application.php` and `php -l tests/LocalAppSmokeTest.php` passed.
+  - `php tests/run.php LocalAppSmokeTest` passed, including a signature whose signer key predates its commit.
+- Notes:
+  - Stage 4 will render this metadata in the Activity-only shared component.
