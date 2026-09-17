@@ -6,6 +6,7 @@
       <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1 1 L9 9 M9 1 L1 9" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
     </button>
   </div>
+  <p class="paned-compose-status" data-role="compose-identity-status">Ready</p>
 <?= $indent($partial('partials/thread_compose_form.php', [
     'action' => '/compose/thread',
     'boardTags' => 'general',
