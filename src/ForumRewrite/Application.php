@@ -3557,6 +3557,7 @@ final class Application
             || $path === '/api/link_identity'
             || $path === '/api/prepare_identity' || $path === '/api/create_identity'
             || $path === '/api/prepare_invitation_redemption'
+            || $path === '/api/create_prepared_invitation'
         ) {
             return true;
         }

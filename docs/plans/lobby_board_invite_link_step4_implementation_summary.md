@@ -45,3 +45,13 @@
   - `php tests/run.php ReadModelBuilderTimingTest PrivateSiteAuthTest LocalAppSmokeTest::testApprovedPrivateSessionCanViewOwnProfileAndBoard` passed.
 - Notes:
   - Invalid, expired, revoked, or already redeemed invitations cannot become approval candidates.
+
+## Stage 5 - Security regression coverage and operator guidance
+- Changes:
+  - Added private Lobby route-matrix coverage for the redemption preparation endpoint.
+  - Documented invite generation, seven-day expiry, revocation, Activity hash visibility, disposable keys, target routing, and secret-leak response in the production runbook.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces CanonicalRecordParsersTest ReadModelBuilderTimingTest PrivateSiteAuthTest` passed.
+  - `git diff --check` passed for feature changes; the pre-existing `todo.txt` trailing-blank-line warning remains unrelated.
+- Notes:
+  - The bearer secret is intentionally confined to a browser fragment and the private redemption request; the canonical repository and Activity expose only its verification hash.

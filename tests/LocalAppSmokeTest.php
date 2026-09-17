@@ -214,6 +214,7 @@ final class LocalAppSmokeTest
             assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'));
             assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/backup/'));
             assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/?format=rss'));
+            assertStringContains('Identity not found.', $this->renderMethod($application, 'POST', '/api/prepare_invitation_redemption'));
             assertStringContains('The requested route does not exist in the local test slice.', $this->render($application, '/asdf'));
         } finally {
             if (session_status() === PHP_SESSION_ACTIVE) {

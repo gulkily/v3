@@ -267,6 +267,26 @@ Rollback options:
 
 If production serves prebuilt static HTML artifacts, rebuild artifacts after changing flags outside the web write path. Private instances do not serve those content artifacts; every content request reaches the application access gate first.
 
+### Redeemable board invitations
+
+Approved, authenticated members can use **Invite** from any board page to
+generate a signed, single-use invitation. The generated URL keeps its bearer
+secret in the browser fragment; share it only with the intended recipient.
+The Activity feed records issued, revoked, and redeemed events with the
+verification hash, never the secret or the share URL.
+
+Recipients create a disposable browser key in Lobby, redeem the invitation,
+authenticate with that key, and then enter the selected internal destination
+or the board. Invitations expire after seven days. An issuer can revoke an
+unused invitation from the Invite page using its invitation ID and verification
+hash.
+
+If an invitation is sent to the wrong person or its secret leaks, revoke it
+immediately. A redeemed invitation has already produced an auditable approval;
+use the normal membership/approval recovery process rather than deleting
+canonical invitation records. Never paste bearer secrets into board posts,
+Activity, tickets, logs, or shell history.
+
 ## App Version Notification
 
 `FORUM_APP_VERSION_NOTIFICATION=false` disables the browser-side `/api/version` polling and the "A new version is available." reload banner.
