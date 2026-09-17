@@ -2429,6 +2429,12 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   display: block;
 }
 
+.activity-commit-manifest__signature-divider {
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent 28%);
+  margin: 0.45rem 0;
+}
+
 .activity-commit-manifest__signer,
 .activity-commit-manifest__key {
   display: block;

@@ -33,6 +33,7 @@ $commitHref = (string) ($commit_href ?? '');
 <?php endif; ?>
       </span>
 <?php if ($file['role'] === 'detached signature'): ?>
+      <hr class="activity-commit-manifest__signature-divider">
       <span class="activity-commit-manifest__signer meta">Signer:
 <?php if ($file['signature_signer_identity'] !== ''): ?>
         <?= $e($file['signature_signer_identity']) ?>

@@ -1393,6 +1393,8 @@ final class LocalAppSmokeTest
 
         assertTrue(preg_match('/Signer:\s+openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954/', $classic) === 1);
         assertTrue(preg_match('/Signer:\s+openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954/', $forte) === 1);
+        assertStringContains('class="activity-commit-manifest__signature-divider"', $classic);
+        assertStringContains('class="activity-commit-manifest__signature-divider"', $forte);
         assertTrue(preg_match('#Public key:\s+<a href="/source/current/' . preg_quote($publicKeyPath, '#') . '"#', $classic) === 1);
         assertTrue(preg_match('#Public key:\s+<a href="/source/current/' . preg_quote($publicKeyPath, '#') . '"#', $forte) === 1);
     }
