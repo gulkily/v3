@@ -7,6 +7,7 @@ $testFiles = [
     __DIR__ . '/AgentIdentityServiceTest.php',
     __DIR__ . '/AgentReplyGenerationTest.php',
     __DIR__ . '/ApplicationServerTimingTest.php',
+    __DIR__ . '/AuthNavigationTest.php',
     __DIR__ . '/AnthropicStructuredChatProviderTest.php',
     __DIR__ . '/BrowserSigningNormalizationTest.php',
     __DIR__ . '/CanonicalRecordParsersTest.php',

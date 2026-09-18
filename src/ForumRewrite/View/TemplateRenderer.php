@@ -63,6 +63,20 @@ final class TemplateRenderer
         bool $showThreadDensityToggle = false,
         ?array $viewerProfile = null,
     ): string {
+        if ($this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)
+            && $viewerProfile !== null
+            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
+            && (($viewerProfile['_members_only_access'] ?? true) === true)
+        ) {
+            $scriptPaths = array_merge($scriptPaths, [
+                '/assets/openpgp_loader.js',
+                '/assets/browser_signing.js',
+                '/assets/private_site_auth.js',
+                '/assets/auth_navigation.js',
+            ]);
+        }
+
+        $scriptPaths = array_values(array_unique($scriptPaths));
         $assetScriptPaths = [];
         foreach ($scriptPaths as $scriptPath) {
             $assetScriptPaths[] = $this->assetPath($scriptPath);

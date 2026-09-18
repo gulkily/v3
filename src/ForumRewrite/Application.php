@@ -88,7 +88,7 @@ final class Application
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
         if ($this->approvedMembersOnlyEnabled()
-            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/clear_identity'], true)
+            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity'], true)
         ) {
             $this->startViewerSession();
         }
@@ -147,6 +147,11 @@ final class Application
 
         if ($path === '/api/authenticate_identity') {
             $this->handleAuthenticateIdentity($method, $query);
+            return;
+        }
+
+        if ($path === '/api/auth_status') {
+            $this->handleAuthenticationStatus($method);
             return;
         }
 
@@ -2266,7 +2271,7 @@ final class Application
 
     private function renderApiIndex(): string
     {
-        return "GET /api/\nGET /api/version\nGET /api/auth_challenge\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nPOST /api/set_identity_hint\nPOST /api/clear_identity\nPOST /api/authenticate_identity\nPOST /api/prepare_identity\nPOST /api/create_identity\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
+        return "GET /api/\nGET /api/version\nGET /api/auth_challenge\nGET /api/auth_status\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nPOST /api/set_identity_hint\nPOST /api/clear_identity\nPOST /api/authenticate_identity\nPOST /api/prepare_identity\nPOST /api/create_identity\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
     }
 
     private function renderApiListIndex(): string
@@ -3593,7 +3598,7 @@ final class Application
     {
         if ($path === '/lobby/' || $path === '/lobby'
             || $path === '/account/key/' || $path === '/account/key'
-            || $path === '/api/auth_challenge' || $path === '/api/authenticate_identity'
+            || $path === '/api/auth_challenge' || $path === '/api/authenticate_identity' || $path === '/api/auth_status'
             || $path === '/api/set_identity_hint' || $path === '/api/clear_identity'
             || $path === '/api/link_identity'
             || $path === '/api/prepare_identity' || $path === '/api/create_identity'
@@ -3645,7 +3650,7 @@ final class Application
             '/api', '/api/', '/api/version', '/api/list_index',
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username_claim_cta',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
-            '/api/auth_challenge', '/api/authenticate_identity', '/api/create_thread',
+            '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread',
             '/api/prepare_thread', '/api/prepare_identity', '/api/create_reply',
             '/api/prepare_reply', '/api/create_prepared_post', '/api/create_identity',
             '/api/analyze_post', '/api/generate_agent_reply', '/api/codex_handoff',
@@ -3705,6 +3710,22 @@ final class Application
                 '/assets/browser_signing.js',
                 '/assets/private_site_auth.js',
             ],
+        );
+    }
+
+    private function handleAuthenticationStatus(string $method): void
+    {
+        if ($method !== 'GET') {
+            $this->sendText("method not allowed\n", 405, $this->noStoreHeaders());
+            return;
+        }
+
+        $viewerProfile = $this->authenticatedViewerProfile();
+        $isApproved = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $this->sendText(
+            $isApproved ? "status=authenticated\n" : "status=unauthenticated\n",
+            $isApproved ? 200 : 401,
+            $this->noStoreHeaders(),
         );
     }
 

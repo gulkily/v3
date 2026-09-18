@@ -57,9 +57,12 @@ final class LocalAppSmokeTest
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
             $profile = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
             $board = $this->render($application, '/');
+            $authStatus = $this->render($application, '/api/auth_status');
 
             assertStringContains('This is your profile.', $profile);
             assertStringContains('Board', $board);
+            assertStringContains('/assets/auth_navigation.', $board);
+            assertSame("status=authenticated\n", $authStatus);
         } finally {
             if (session_status() === PHP_SESSION_ACTIVE) {
                 session_write_close();
@@ -114,6 +117,7 @@ final class LocalAppSmokeTest
 
             $response = $this->renderMethod($application, 'POST', '/api/clear_identity');
             $boardAfterClear = $this->render($application, '/');
+            $authStatusAfterClear = $this->render($application, '/api/auth_status');
             $aboutAfterClear = $this->render($application, '/about/');
             $ownProfileAfterClear = $this->render(
                 $application,
@@ -122,6 +126,7 @@ final class LocalAppSmokeTest
             $lobbyAfterClear = $this->render($application, '/lobby/');
 
             assertStringContains("status=ok\n", $response);
+            assertSame("status=unauthenticated\n", $authStatusAfterClear);
             assertSame('guest', $_COOKIE['identity_hint'] ?? null);
             assertStringContains('Entering lobby.', $boardAfterClear);
             assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $aboutAfterClear);

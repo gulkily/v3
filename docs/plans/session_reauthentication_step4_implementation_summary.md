@@ -29,3 +29,14 @@
   - `node --check public/assets/private_site_auth.js` — passed.
 - Notes:
   - The existing invitation destination remains the fallback when no resume destination is configured.
+
+## Stage 4 - In-page navigation recovery
+- Changes:
+  - Added the read-only `/api/auth_status` contract and loaded a shared navigation guard for approved-member pages.
+  - The guard checks the session before same-origin protected navigation, authenticates once when needed, preserves fragments, and sends unavailable-key recovery to Account.
+  - Prevented automatic authentication from running on ordinary approved pages merely because the shared scripts are loaded.
+- Verification:
+  - `node --check public/assets/private_site_auth.js` and `node --check public/assets/auth_navigation.js` — passed.
+  - `php tests/run.php AuthNavigationTest PrivateSiteAuthTest LocalAppSmokeTest::testApprovedPrivateSessionCanViewOwnProfileAndBoard LocalAppSmokeTest::testClearingIdentityRevokesApprovedPrivateSession` — passed (9 tests).
+- Notes:
+  - One tab suppresses duplicate clicks while authentication is in flight; parallel tabs retain the existing server-side challenge retry behavior.

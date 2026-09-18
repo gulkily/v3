@@ -74,10 +74,14 @@
     return safeRelativeDestination(node && node.dataset ? node.dataset.authReturnTo : "");
   }
 
+  function requestedReturnDestination(options) {
+    return safeRelativeDestination(options && options.returnTo) || configuredReturnDestination();
+  }
+
   function approvedDestination(options) {
-    var explicitDestination = safeRelativeDestination(options && options.returnTo);
-    if (explicitDestination) {
-      return explicitDestination;
+    var requestedDestination = requestedReturnDestination(options);
+    if (requestedDestination) {
+      return requestedDestination;
     }
 
     var configuredDestination = configuredReturnDestination();
@@ -114,7 +118,7 @@
     var browserIdentity = window.__forumBrowserIdentity;
 
     if (!publicKey || !privateKey || !/^[a-f0-9]{40}$/.test(fingerprint)) {
-      if (configuredReturnDestination() !== "") {
+      if (requestedReturnDestination(options) !== "") {
         setStatus("This browser key is unavailable. Check your browser key to continue.", "error");
       }
       return { status: "not-configured" };
@@ -123,7 +127,7 @@
     var identityId = "openpgp:" + fingerprint;
     if (authenticatedIdentityId() === identityId) {
       setStatus("", "ok");
-      if (configuredReturnDestination() !== "") {
+      if (requestedReturnDestination(options) !== "") {
         navigateAfterApproval(options);
       }
       return { status: "authenticated", identityId: identityId };
@@ -195,7 +199,7 @@
     }
 
     setStatus("Identity verified. Approval is still pending.", "ok");
-    var returnTo = configuredReturnDestination();
+    var returnTo = requestedReturnDestination(options);
     if (returnTo !== "") {
       window.location.replace("/lobby/?return_to=" + encodeURIComponent(returnTo));
       return { status: "pending", identityId: identityId };
@@ -233,6 +237,8 @@
 
   window.PrivateSiteAuth = { authenticate: authenticate };
   document.addEventListener("DOMContentLoaded", function () {
-    authenticate().catch(function () {});
+    if (document.querySelector("[data-private-site-auth-state]")) {
+      authenticate().catch(function () {});
+    }
   });
 })();
