@@ -467,6 +467,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/forte_commit_detail') {
+            $this->handleForteCommitDetail($query);
+            return;
+        }
+
         if ($path === '/api/get_username_claim_cta') {
             $this->sendText("Generate a browser keypair, choose a username, and bootstrap your identity.\n", 200);
             return;
@@ -1333,6 +1338,39 @@ final class Application
             'has_more' => $hasMore,
             'next_cursor' => $nextCursor,
         ], 200);
+    }
+
+    /**
+     * A commit's full file manifest is fetched on demand, not pre-rendered
+     * for every loaded row the way activity items' detail articles are -
+     * some commits touch thousands of files, and only one is ever viewed at
+     * a time, so eagerly rendering all of them (as Stage 3's row list does)
+     * would recreate the exact page-bloat problem the shared-manifest-block
+     * mechanism was built to work around.
+     *
+     * @param array<string, mixed> $query
+     */
+    private function handleForteCommitDetail(array $query): void
+    {
+        $sha = (string) ($query['sha'] ?? '');
+        if (preg_match('/^[0-9a-f]{40}$/', $sha) !== 1) {
+            $this->sendJson(['status' => 'error', 'error' => 'invalid sha'], 400);
+            return;
+        }
+
+        $files = $this->activityCommitManifest($sha);
+        if ($files === null) {
+            $this->sendJson(['status' => 'error', 'error' => 'commit not found'], 404);
+            return;
+        }
+
+        $html = $this->renderer()->renderFragment('partials/activity_commit_manifest.php', [
+            'files' => $files,
+            'commit_sha' => $sha,
+            'commit_href' => $this->sourceCommitHref($sha) ?? '',
+        ]);
+
+        $this->sendJson(['status' => 'ok', 'html' => $html], 200);
     }
 
     /**

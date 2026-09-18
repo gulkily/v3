@@ -7,6 +7,7 @@
   var placeholder;
   var contentItems = [];
   var commitManifestBlocks = [];
+  var commitDetailCache = Object.create(null);
   var statusCount;
   var loadMoreGroup;
   var loadMoreButtons = [];
@@ -54,6 +55,10 @@
     contentItems.forEach(function (article) {
       article.hidden = true;
     });
+    var existingCommitArticle = contentPane ? contentPane.querySelector("[data-paned-activity-commit-detail]") : null;
+    if (existingCommitArticle) {
+      existingCommitArticle.hidden = true;
+    }
     rows.forEach(function (row) {
       row.classList.remove("paned-list-row--selected");
       row.setAttribute("aria-selected", "false");
@@ -88,17 +93,137 @@
     });
   }
 
+  // A commit row's detail isn't one of contentItems' pre-rendered articles
+  // (unlike activity items, a commit's full manifest is fetched on demand -
+  // see showCommitDetail) - it's a one-off article created/reused here and
+  // kept out of the contentItems array entirely.
+  function commitDetailArticle() {
+    return contentPane ? contentPane.querySelector("[data-paned-activity-commit-detail]") : null;
+  }
+
+  function commitRowSubjectAndDate(sha) {
+    var row = rows.filter(function (candidate) {
+      return candidate.getAttribute("data-paned-activity-commit-sha") === sha;
+    })[0];
+    if (!row) {
+      return { subject: "", date: "" };
+    }
+    var subjectEl = row.querySelector(".paned-list-subject");
+    var dateEl = row.querySelector(".paned-list-date");
+    return {
+      subject: subjectEl ? subjectEl.textContent : "",
+      date: dateEl ? dateEl.textContent : "",
+    };
+  }
+
+  function renderCommitDetailArticle(sha, bodyHtml) {
+    var article = commitDetailArticle();
+    if (!article) {
+      article = document.createElement("article");
+      article.className = "paned-content-post";
+      contentPane.appendChild(article);
+    }
+    article.setAttribute("data-paned-activity-commit-detail", sha);
+    article.hidden = false;
+
+    // The head (subject/date) comes straight from the already-rendered row,
+    // so it appears immediately - only the file manifest itself needs a
+    // fetch, since that's the part too expensive to pre-render per row.
+    var rowInfo = commitRowSubjectAndDate(sha);
+    var head = document.createElement("div");
+    head.className = "paned-content-head";
+    var subjectDiv = document.createElement("div");
+    subjectDiv.className = "paned-content-subject";
+    subjectDiv.textContent = rowInfo.subject || sha.slice(0, 12);
+    head.appendChild(subjectDiv);
+    if (rowInfo.date) {
+      var metaDiv = document.createElement("div");
+      metaDiv.className = "paned-content-meta";
+      var dateSpan = document.createElement("span");
+      dateSpan.textContent = rowInfo.date;
+      metaDiv.appendChild(dateSpan);
+      head.appendChild(metaDiv);
+    }
+
+    var card = document.createElement("div");
+    card.className = "post-card paned-post-card";
+    var body = document.createElement("div");
+    body.className = "body";
+    body.innerHTML = bodyHtml;
+    card.appendChild(body);
+
+    article.innerHTML = "";
+    article.appendChild(head);
+    article.appendChild(card);
+  }
+
+  function showCommitDetail(sha) {
+    if (!contentPane) {
+      return;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(commitDetailCache, sha)) {
+      renderCommitDetailArticle(sha, commitDetailCache[sha]);
+      return;
+    }
+
+    renderCommitDetailArticle(sha, '<p class="meta">Loading…</p>');
+
+    fetch("/api/forte_commit_detail?sha=" + encodeURIComponent(sha))
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error("commit detail fetch failed");
+        }
+        return response.json();
+      })
+      .then(function (data) {
+        if (data.status !== "ok") {
+          throw new Error("commit detail fetch failed");
+        }
+        commitDetailCache[sha] = data.html;
+        // A slower, now-stale response for a commit the user has since
+        // navigated away from must not clobber whatever is shown now.
+        var article = commitDetailArticle();
+        if (article && article.getAttribute("data-paned-activity-commit-detail") === sha) {
+          var body = article.querySelector(".body");
+          if (body) {
+            body.innerHTML = data.html;
+          }
+        }
+      })
+      .catch(function () {
+        var article = commitDetailArticle();
+        if (article && article.getAttribute("data-paned-activity-commit-detail") === sha) {
+          var body = article.querySelector(".body");
+          if (body) {
+            body.innerHTML = '<p class="meta">Failed to load commit details.</p>';
+          }
+        }
+      });
+  }
+
   function selectItem(itemId) {
     if (placeholder) {
       placeholder.hidden = true;
     }
+
+    var isCommit = itemId.indexOf("commit-") === 0;
+
     contentItems.forEach(function (article) {
-      var isSelected = article.getAttribute("data-paned-activity-content-item-id") === itemId;
+      var isSelected = !isCommit && article.getAttribute("data-paned-activity-content-item-id") === itemId;
       article.hidden = !isSelected;
       if (isSelected) {
         showCommitManifestFor(article);
       }
     });
+
+    var existingCommitArticle = commitDetailArticle();
+    if (isCommit) {
+      showCommitDetail(itemId.slice("commit-".length));
+    } else if (existingCommitArticle) {
+      existingCommitArticle.hidden = true;
+    }
+
     rows.forEach(function (row) {
       var isSelected = row.getAttribute("data-paned-activity-id") === itemId;
       row.classList.toggle("paned-list-row--selected", isSelected);
