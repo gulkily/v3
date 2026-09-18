@@ -4148,6 +4148,115 @@ final class Application
     }
 
     /**
+     * Mirrors `fetchActivity()`'s keyset-cursor pagination shape, over the
+     * `commits` table instead of `activity` - a commit has no "view" to
+     * filter by, so this is simpler than `fetchActivity()` (no WHERE
+     * fragment beyond the cursor itself).
+     *
+     * @param array{sort_value: string, id: int}|null $afterCursor
+     * @return array{items: array<int, array<string, mixed>>, has_more: bool}
+     */
+    private function fetchCommits(string $sortColumn, string $sortDirection, ?array $afterCursor = null): array
+    {
+        ['column' => $sortColumn, 'direction' => $sortDirection] = $this->resolveCommitSort($sortColumn, $sortDirection);
+        $sortColumnSql = $this->commitSortSql($sortColumn);
+        $sortDirectionSql = $sortDirection === 'desc' ? 'DESC' : 'ASC';
+
+        $cursorWhere = '';
+        $parameters = [];
+        if ($afterCursor !== null) {
+            $comparisonOperator = $sortDirection === 'desc' ? '<' : '>';
+            $cursorWhere = 'WHERE (
+                ' . $sortColumnSql . ' ' . $comparisonOperator . ' :cursor_sort_value
+                OR (' . $sortColumnSql . ' = :cursor_sort_value AND commits.id ' . $comparisonOperator . ' :cursor_id)
+            )';
+            $parameters['cursor_sort_value'] = $afterCursor['sort_value'];
+            $parameters['cursor_id'] = $afterCursor['id'];
+        }
+
+        $stmt = $this->pdo()->prepare(
+            'SELECT commits.sha, commits.author_name, commits.author_email, commits.committed_at,
+                    commits.subject, commits.file_count, commits.id
+             FROM commits
+             ' . $cursorWhere . '
+             ORDER BY ' . $sortColumnSql . ' ' . $sortDirectionSql . ', commits.id ' . $sortDirectionSql . '
+             LIMIT :limit'
+        );
+        foreach ($parameters as $parameter => $value) {
+            $stmt->bindValue($parameter, $value);
+        }
+        // Reuses the same page size as fetchActivity(): fetch one extra row
+        // to detect whether a next page exists, then trim it back off.
+        $stmt->bindValue('limit', self::ACTIVITY_ITEM_LIMIT + 1, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        $hasMore = count($rows) > self::ACTIVITY_ITEM_LIMIT;
+        if ($hasMore) {
+            $rows = array_slice($rows, 0, self::ACTIVITY_ITEM_LIMIT);
+        }
+
+        $items = array_map(static fn (array $row): array => [
+            'sha' => (string) $row['sha'],
+            'author_name' => (string) $row['author_name'],
+            'author_email' => (string) $row['author_email'],
+            'committed_at' => (string) $row['committed_at'],
+            'subject' => (string) $row['subject'],
+            'file_count' => (int) $row['file_count'],
+            'id' => (int) $row['id'],
+        ], $rows);
+
+        return ['items' => $items, 'has_more' => $hasMore];
+    }
+
+    /**
+     * Full commit count for the Commits view's left-pane folder count -
+     * mirrors `countActivityViewTotal()`'s purpose, but every commit
+     * counts (no per-view filter to apply).
+     */
+    private function countCommitsTotal(): int
+    {
+        return (int) $this->pdo()->query('SELECT COUNT(*) FROM commits')->fetchColumn();
+    }
+
+    /**
+     * Mirrors `resolveActivitySort()`'s shape for the Commits view. Only
+     * `date` is sortable for now - kept as its own small resolver (not
+     * folded into `resolveActivitySort()`) since the two views' valid
+     * column sets are unrelated.
+     *
+     * @return array{column: string, direction: string}
+     */
+    private function resolveCommitSort(string $requestedColumn, string $requestedDirection): array
+    {
+        $validColumns = ['date'];
+        $column = in_array($requestedColumn, $validColumns, true) ? $requestedColumn : 'date';
+        $direction = in_array($requestedDirection, ['asc', 'desc'], true) ? $requestedDirection : 'desc';
+
+        return ['column' => $column, 'direction' => $direction];
+    }
+
+    private function commitSortSql(string $column): string
+    {
+        return match ($column) {
+            default => 'commits.committed_at',
+        };
+    }
+
+    /**
+     * Mirrors `activitySortValueFromItem()`, for building a commit's
+     * keyset cursor from the last item on a page.
+     *
+     * @param array<string, mixed> $item
+     */
+    private function commitSortValueFromItem(array $item, string $column): string
+    {
+        return match ($column) {
+            default => (string) $item['committed_at'],
+        };
+    }
+
+    /**
      * Computes each sortable column header's `aria-sort` state and its
      * click target URL: the active column points at the *toggled*
      * direction, every other column points at its own default direction
