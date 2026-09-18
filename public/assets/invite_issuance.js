@@ -56,7 +56,6 @@
     const feedback = root.querySelector("[data-role=invitation-feedback]");
     const result = root.querySelector("[data-role=invitation-result]");
     const link = root.querySelector("[data-role=invitation-link]");
-    const hash = root.querySelector("[data-role=invitation-hash]");
     const copyButton = root.querySelector("[data-action=copy-invitation-link]");
     const selectInvitationLink = function () {
       link.select();
@@ -91,9 +90,8 @@
         });
         if (!finalized || finalized.status !== "ok") throw new Error(finalized && finalized.error || "Unable to create invitation.");
         link.value = window.location.origin + "/lobby/#invite=" + token;
-        hash.textContent = "Verification hash: " + finalized.verification_hash;
         result.hidden = false;
-        setFeedback(feedback, "Invitation created. Copy the link now; the secret is not stored by the site.", "ok");
+        setFeedback(feedback, "Invitation created.", "ok");
       } catch (error) {
         setFeedback(feedback, error && error.message || "Unable to create invitation.", "error");
       }
