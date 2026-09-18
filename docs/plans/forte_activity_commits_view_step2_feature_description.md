@@ -12,7 +12,7 @@ The Activity view has no way to browse commits themselves, and an individual act
 - A new "Commits" filter/view in the Activity page's left pane, alongside the existing 5 (All/Visible Content/Identity/Bootstraps/Approvals), listing one row per commit.
 - Commit rows are backed by a new, persisted `commits` table populated during read-model rebuild from git's own commit history (authoritative sha/date/author/message) - not inferred from activity rows, and not fetched from git at request time.
 - Selecting a commit in the Commits view shows its full file listing - today's "show everything" behavior moves here unchanged.
-- Selecting an individual action (in the other 5 views) shows only files in its own provenance chain: its own record(s) and its detached signature (if any) - not the rest of the commit. The signer's public key is shown as part of the signature's own entry (it's already named and linked there), not as a separate row - a signature and "its" key never disagree, so listing the same file twice adds nothing. Most actions have exactly one record; identity bootstraps are a compound action that also establishes a separate identity record, so their relevant set is record + identity record + signature(-with-key).
+- Selecting an individual action (in the other 5 views) shows only files in its own provenance chain: its own record(s), its detached signature (if any), and, when this action's own commit actually introduced it, the signer's public key - not the rest of the commit. A key already established by some earlier, unrelated commit (the common case for an ordinary signed post) isn't a file this action added, and it's already named and linked on the signature's own entry, so it doesn't get a separate row then. Most actions have exactly one record; identity bootstraps are a compound action that also establishes a separate identity record (and typically the signing key itself, in the same commit), so their relevant set is usually record + identity record + signature + key.
 - The Commits view supports the same pagination, sorting, and filter-switching behavior already built for the other 5 views.
 
 ## Shared Component Inventory
@@ -32,7 +32,7 @@ The Activity view has no way to browse commits themselves, and an individual act
 5. Commit rows continue to use today's existing link mechanism; anything richer (e.g. linking directly to a commit view) is explicitly deferred.
 
 ## Success Criteria
-- An action's detail view only ever shows files in that action's own provenance chain (record(s), signature - with the signer's public key named on the signature itself, not a separate row) - regardless of how many other, unrelated files the underlying commit touched.
+- An action's detail view only ever shows files in that action's own provenance chain (record(s), signature, and the signer's public key when this action's own commit introduced it) - regardless of how many other, unrelated files the underlying commit touched. A key from an earlier, unrelated commit is named on the signature's own entry rather than listed a second time.
 - A commit's full file list is still reachable in full, just from the Commits view instead of from every action that happens to share it.
 - The Commits view supports the same "Load more" pagination and sort options as the other 5 views.
 - Serving the Commits view's list requires no git subprocess calls at request time - commit metadata comes from the persisted table.
