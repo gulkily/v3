@@ -40,3 +40,15 @@
   - `php tests/run.php AuthNavigationTest PrivateSiteAuthTest LocalAppSmokeTest::testApprovedPrivateSessionCanViewOwnProfileAndBoard LocalAppSmokeTest::testClearingIdentityRevokesApprovedPrivateSession` — passed (9 tests).
 - Notes:
   - One tab suppresses duplicate clicks while authentication is in flight; parallel tabs retain the existing server-side challenge retry behavior.
+
+## Stage 5 - Persistent low-friction sign-in policy
+- Changes:
+  - Made the PHP viewer-session cookie persistent for 400 days, the common browser retention ceiling, so ordinary browser restarts retain the session identifier.
+  - Documented that the saved browser key, plus automatic recovery when PHP state is cleared, provides the no-user-facing-timeout policy.
+  - Did not add a new feature flag or approval-revocation behavior; both are outside this cycle's implementation scope.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testPrivateViewerSessionCookiePersistsAcrossBrowserRestart LocalAppSmokeTest::testApprovedPrivateSessionCanViewOwnProfileAndBoard LocalAppSmokeTest::testClearingIdentityRevokesApprovedPrivateSession ResumeTargetTest PrivateSiteAuthTest AuthNavigationTest` — passed (13 tests).
+  - `node --check public/assets/private_site_auth.js` and `node --check public/assets/auth_navigation.js` — passed.
+- Notes:
+  - Browser and server-session storage may still discard state; the browser key restores approved access without a manual sign-in.
+  - No aggregate recovery telemetry was added because the application has no privacy-preserving telemetry sink; adding one should be a separate observability decision.

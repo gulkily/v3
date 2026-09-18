@@ -82,6 +82,33 @@ final class LocalAppSmokeTest
         }
     }
 
+    public function testPrivateViewerSessionCookiePersistsAcrossBrowserRestart(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        $previousCookieParameters = session_get_cookie_params();
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-cookie-' . bin2hex(random_bytes(6)) . '.sqlite3';
+
+        try {
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
+            $this->render($application, '/api/auth_status');
+
+            assertSame(34560000, session_get_cookie_params()['lifetime']);
+        } finally {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            session_id('');
+            session_set_cookie_params($previousCookieParameters);
+            @unlink($databasePath);
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
     public function testInviteNavigationHighlightsOnlyInvite(): void
     {
         $renderer = new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__) . '/templates');

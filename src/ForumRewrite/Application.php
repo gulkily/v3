@@ -43,6 +43,7 @@ use PDOStatement;
 
 final class Application
 {
+    private const PERSISTENT_VIEWER_SESSION_COOKIE_LIFETIME = 34560000;
     private const HIDDEN_BOOTSTRAP_TAG = 'identity';
     private const ANALYSIS_SCHEMA_VERSION = 5;
     private const ACTIVITY_ITEM_LIMIT = 100;
@@ -4506,6 +4507,7 @@ final class Application
         }
 
         session_start([
+            'cookie_lifetime' => self::PERSISTENT_VIEWER_SESSION_COOKIE_LIFETIME,
             'cookie_httponly' => true,
             'cookie_samesite' => 'Lax',
             'cookie_secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
