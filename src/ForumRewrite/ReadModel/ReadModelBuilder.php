@@ -678,9 +678,10 @@ final class ReadModelBuilder
                 'identity_bootstrap' => 'identity_bootstrap',
                 'approval' => 'approval',
                 'identity' => 'identity',
+                'invitation' => 'invitation',
                 default => $post['post_id'] === $post['thread_id'] ? 'thread' : 'reply',
             };
-            $label = $post['subject'] ?? $this->preview($post['body']);
+            $label = $this->activityLabelForPost($post);
             $stmt->execute([
                 'created_at' => $post['created_at'],
                 'kind' => $kind,
@@ -898,6 +899,10 @@ final class ReadModelBuilder
             return 'post';
         }
 
+        if (in_array('invitation', $boardTags, true)) {
+            return 'invitation';
+        }
+
         if (in_array('internal', $boardTags, true)) {
             return 'identity_bootstrap';
         }
@@ -907,6 +912,19 @@ final class ReadModelBuilder
         }
 
         return 'identity';
+    }
+
+    /** @param array{subject:?string,body:string,board_tags_json:string} $post */
+    private function activityLabelForPost(array $post): string
+    {
+        $boardTags = json_decode($post['board_tags_json'], true);
+        if (is_array($boardTags) && in_array('invitation', $boardTags, true)
+            && preg_match('/^Invitation-Action: (issue|revoke|redeem)$/m', $post['body'], $action)
+            && preg_match('/^Verification-Hash: (sha256:[a-f0-9]{64})$/m', $post['body'], $hash)) {
+            return 'Invitation ' . $action[1] . ': ' . $hash[1];
+        }
+
+        return $post['subject'] ?? $this->preview($post['body']);
     }
 
     private function writeMetadata(PDO $pdo): void
@@ -1136,6 +1154,24 @@ final class ReadModelBuilder
                 ];
                 $changed = true;
             }
+            foreach ($this->invitationApprovalCandidates($posts) as $candidate) {
+                $targetIdentityId = $candidate['target_identity_id'];
+                $approverIdentityId = $candidate['approver_identity_id'];
+                if (!isset($profiles[$targetIdentityId]) || isset($approved[$targetIdentityId]) || !isset($approved[$approverIdentityId])) {
+                    continue;
+                }
+                $targetProfile = $profiles[$targetIdentityId];
+                if ($candidate['thread_id'] !== $targetProfile['bootstrap_thread_id'] || $candidate['parent_id'] !== $targetProfile['bootstrap_post_id']) {
+                    continue;
+                }
+                $approverProfile = $profiles[$approverIdentityId] ?? null;
+                $approved[$targetIdentityId] = [
+                    'approved_by_identity_id' => $approverIdentityId,
+                    'approved_by_profile_slug' => $approverProfile['profile_slug'] ?? null,
+                    'approved_by_label' => $approverProfile['username'] ?? $approverIdentityId,
+                ];
+                $changed = true;
+            }
         }
 
         return $approved;
@@ -1144,6 +1180,47 @@ final class ReadModelBuilder
     /**
      * @return list<string>
      */
+    /**
+     * @param array<int, array{thread_id:string,parent_id:?string,body:string,board_tags_json:string,author_identity_id:?string}> $posts
+     * @return list<array{target_identity_id:string,approver_identity_id:string,thread_id:string,parent_id:?string}>
+     */
+    private function invitationApprovalCandidates(array $posts): array
+    {
+        $issued = [];
+        $candidates = [];
+        foreach ($posts as $post) {
+            $tags = json_decode($post['board_tags_json'], true);
+            if (!is_array($tags) || !in_array('invitation', $tags, true)) {
+                continue;
+            }
+            if (preg_match('/^Invitation-ID: (invite-[a-z0-9]{16,64})$/m', $post['body'], $id) !== 1
+                || preg_match('/^Invitation-Action: (issue|revoke|redeem)$/m', $post['body'], $action) !== 1
+                || preg_match('/^Verification-Hash: (sha256:[a-f0-9]{64})$/m', $post['body'], $hash) !== 1) {
+                continue;
+            }
+            $key = $id[1];
+            if ($action[1] === 'issue' && $post['author_identity_id'] !== null
+                && preg_match('/^Expires-At: (.+)$/m', $post['body'], $expires) === 1) {
+                $issued[$key] = ['hash' => $hash[1], 'issuer' => $post['author_identity_id'], 'expires' => $expires[1], 'revoked' => false, 'redeemed' => false];
+                continue;
+            }
+            if (!isset($issued[$key]) || !hash_equals($issued[$key]['hash'], $hash[1])) {
+                continue;
+            }
+            if ($action[1] === 'revoke' && $post['author_identity_id'] === $issued[$key]['issuer']) {
+                $issued[$key]['revoked'] = true;
+                continue;
+            }
+            if ($action[1] === 'redeem' && !$issued[$key]['revoked'] && !$issued[$key]['redeemed']
+                && strtotime($issued[$key]['expires']) > time() && $post['author_identity_id'] !== null) {
+                $issued[$key]['redeemed'] = true;
+                $candidates[] = ['target_identity_id' => $post['author_identity_id'], 'approver_identity_id' => $issued[$key]['issuer'], 'thread_id' => $post['thread_id'], 'parent_id' => $post['parent_id']];
+            }
+        }
+
+        return $candidates;
+    }
+
     private function loadApprovalSeedIdentityIds(): array
     {
         $identityIds = [];

@@ -60,6 +60,12 @@
     }
   }
 
+  function approvedDestination() {
+    var value = "";
+    try { value = sessionStorage.getItem("forum_invite_destination") || ""; sessionStorage.removeItem("forum_invite_destination"); } catch (error) {}
+    return /^\/(?!\/)/.test(value) && value.indexOf("#") === -1 ? value : "/";
+  }
+
   function isExpiredChallengeError(error) {
     return error instanceof Error
       && error.message === "Authentication challenge is missing or expired.";
@@ -143,7 +149,7 @@
 
     if (/^approved=1$/m.test(authenticationResult)) {
       setStatus("Identity verified. Entering the site...", "ok");
-      window.location.assign("/");
+      window.location.assign(approvedDestination());
       return { status: "approved", identityId: identityId };
     }
 

@@ -35,8 +35,10 @@ class IncrementalReadModelUpdater
         $pdo->beginTransaction();
 
         try {
-            $this->measure($timings, 'ensure_bootstrap_post', fn (): mixed => $this->ensureBootstrapPost($pdo, $record));
             $profile = $this->measure($timings, 'insert_profile', fn (): array => $this->insertProfile($pdo, $record));
+            // A freshly created bootstrap post is authored by this identity, so
+            // its author profile must exist before the post can be materialized.
+            $this->measure($timings, 'ensure_bootstrap_post', fn (): mixed => $this->ensureBootstrapPost($pdo, $record));
             $this->measure($timings, 'ensure_username_route', fn (): mixed => $this->ensureUsernameRoute($pdo, $profile));
             $this->measure($timings, 'link_posts', fn (): mixed => $this->linkIdentityPosts($pdo, $profile));
             $this->measure($timings, 'link_activity', fn (): mixed => $this->linkIdentityActivity($pdo, $profile));
@@ -666,6 +668,24 @@ class IncrementalReadModelUpdater
                 ];
                 $changed = true;
             }
+            foreach ($this->invitationApprovalCandidates($posts) as $candidate) {
+                $targetIdentityId = $candidate['target_identity_id'];
+                $approverIdentityId = $candidate['approver_identity_id'];
+                if (!isset($profiles[$targetIdentityId]) || isset($approved[$targetIdentityId]) || !isset($approved[$approverIdentityId])) {
+                    continue;
+                }
+                $targetProfile = $profiles[$targetIdentityId];
+                if ($candidate['thread_id'] !== $targetProfile['bootstrap_thread_id'] || $candidate['parent_id'] !== $targetProfile['bootstrap_post_id']) {
+                    continue;
+                }
+                $approverProfile = $profiles[$approverIdentityId] ?? null;
+                $approved[$targetIdentityId] = [
+                    'approved_by_identity_id' => $approverIdentityId,
+                    'approved_by_profile_slug' => $approverProfile['profile_slug'] ?? null,
+                    'approved_by_label' => $approverProfile['username'] ?? $approverIdentityId,
+                ];
+                $changed = true;
+            }
         }
 
         return $approved;
@@ -712,6 +732,38 @@ class IncrementalReadModelUpdater
     /**
      * @return list<string>
      */
+    /**
+     * @param list<array{thread_id:string,parent_id:?string,body:string,board_tags_json:string,author_identity_id:?string,sequence_number:int}> $posts
+     * @return list<array{target_identity_id:string,approver_identity_id:string,thread_id:string,parent_id:?string}>
+     */
+    private function invitationApprovalCandidates(array $posts): array
+    {
+        $issued = [];
+        $candidates = [];
+        foreach ($posts as $post) {
+            $tags = json_decode($post['board_tags_json'], true);
+            if (!is_array($tags) || !in_array('invitation', $tags, true)) continue;
+            if (preg_match('/^Invitation-ID: (invite-[a-z0-9]{16,64})$/m', $post['body'], $id) !== 1
+                || preg_match('/^Invitation-Action: (issue|revoke|redeem)$/m', $post['body'], $action) !== 1
+                || preg_match('/^Verification-Hash: (sha256:[a-f0-9]{64})$/m', $post['body'], $hash) !== 1) continue;
+            $key = $id[1];
+            if ($action[1] === 'issue' && $post['author_identity_id'] !== null && preg_match('/^Expires-At: (.+)$/m', $post['body'], $expires) === 1) {
+                $issued[$key] = ['hash' => $hash[1], 'issuer' => $post['author_identity_id'], 'expires' => $expires[1], 'revoked' => false, 'redeemed' => false];
+                continue;
+            }
+            if (!isset($issued[$key]) || !hash_equals($issued[$key]['hash'], $hash[1])) continue;
+            if ($action[1] === 'revoke' && $post['author_identity_id'] === $issued[$key]['issuer']) {
+                $issued[$key]['revoked'] = true;
+                continue;
+            }
+            if ($action[1] === 'redeem' && !$issued[$key]['revoked'] && !$issued[$key]['redeemed'] && strtotime($issued[$key]['expires']) > time() && $post['author_identity_id'] !== null) {
+                $issued[$key]['redeemed'] = true;
+                $candidates[] = ['target_identity_id' => $post['author_identity_id'], 'approver_identity_id' => $issued[$key]['issuer'], 'thread_id' => $post['thread_id'], 'parent_id' => $post['parent_id']];
+            }
+        }
+        return $candidates;
+    }
+
     private function loadApprovalSeedIdentityIds(): array
     {
         $repository = new CanonicalRecordRepository($this->repositoryRoot);
@@ -841,6 +893,10 @@ class IncrementalReadModelUpdater
             return 'post';
         }
 
+        if (in_array('invitation', $record->boardTags, true)) {
+            return 'invitation';
+        }
+
         if (in_array('internal', $record->boardTags, true)) {
             return 'identity_bootstrap';
         }
@@ -858,6 +914,7 @@ class IncrementalReadModelUpdater
             'identity_bootstrap' => 'identity_bootstrap',
             'approval' => 'approval',
             'identity' => 'identity',
+            'invitation' => 'invitation',
             default => $record->isReply() ? 'reply' : 'thread',
         };
     }
@@ -883,7 +940,7 @@ class IncrementalReadModelUpdater
             'action_key' => $this->postSourcePath($record->postId),
             'post_id' => $record->postId,
             'thread_id' => $record->threadId ?? $record->postId,
-            'label' => $record->subject ?? $this->preview($record->body),
+            'label' => $this->activityLabelForPost($record),
             'board_tags_json' => $boardTagsJson,
             'author_identity_id' => $record->authorIdentityId,
             'author_profile_slug' => $author['profile_slug'],
@@ -893,6 +950,17 @@ class IncrementalReadModelUpdater
             'source_path' => $this->postSourcePath($record->postId),
             'source_commit_sha' => $commitSha,
         ]);
+    }
+
+    private function activityLabelForPost(PostRecord $record): string
+    {
+        if (in_array('invitation', $record->boardTags, true)
+            && preg_match('/^Invitation-Action: (issue|revoke|redeem)$/m', $record->body, $action)
+            && preg_match('/^Verification-Hash: (sha256:[a-f0-9]{64})$/m', $record->body, $hash)) {
+            return 'Invitation ' . $action[1] . ': ' . $hash[1];
+        }
+
+        return $record->subject ?? $this->preview($record->body);
     }
 
     private function postSourcePath(string $postId): string

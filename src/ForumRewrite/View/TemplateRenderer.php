@@ -82,6 +82,7 @@ final class TemplateRenderer
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
             'threadDensityToggleScriptPath' => $this->assetPath('/assets/thread_density_toggle.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
+            'inviteNavigationScriptPath' => $this->assetPath('/assets/invite_navigation.js'),
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
             'themes' => ThemeRegistry::all(),
             'explicitThemeNames' => ThemeRegistry::explicitNames(),
@@ -118,13 +119,21 @@ final class TemplateRenderer
             return $items;
         }
 
-        return [
+        $items = [
             ['href' => '/', 'label' => 'Board', 'section' => 'board'],
             ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
             ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
             ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],
             ['href' => '/account/key/', 'label' => 'Account', 'section' => 'account'],
         ];
+
+        if ($viewerProfile !== null
+            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
+            && (($viewerProfile['_authenticated_identity'] ?? true) === true)) {
+            $items[] = ['href' => '/invites/', 'label' => 'Invite', 'section' => 'invite', 'invite_action' => true];
+        }
+
+        return $items;
     }
 
     /**

@@ -7,6 +7,7 @@ namespace ForumRewrite\Write;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
+use ForumRewrite\Canonical\InvitationRecordParser;
 use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
@@ -18,6 +19,8 @@ use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
+use ForumRewrite\Invitation\InvitationLedger;
+use ForumRewrite\Invitation\InvitationToken;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -606,49 +609,61 @@ class LocalWriteService
      */
     public function prepareIdentityBootstrap(array $input): array
     {
-        return $this->withTimedWriteLock(function () use ($input): array {
-            $this->assertWritableRepository();
-            $publicKey = $this->normalizeAsciiBody((string) ($input['public_key'] ?? ''), 'public_key');
-            $inspected = $this->keyInspector->inspect($publicKey);
-            $fingerprintUpper = $inspected['fingerprint'];
-            $fingerprintLower = strtolower($fingerprintUpper);
-            $identityId = 'openpgp:' . $fingerprintLower;
-            $identityPath = 'records/identity/identity-openpgp-' . $fingerprintLower . '.txt';
-            if (is_file($this->repositoryRoot . '/' . $identityPath)) {
-                throw new RuntimeException('Identity already exists for this fingerprint.');
-            }
+        $timings = [];
+        $totalStartedAt = hrtime(true);
+        try {
+            return $this->withTimedWriteLock(function () use ($input, &$timings, $totalStartedAt): array {
+                $this->assertWritableRepository();
+                $publicKey = $this->normalizeAsciiBody((string) ($input['public_key'] ?? ''), 'public_key');
+                $inspected = $this->timePhase($timings, 'gpg_key_inspect', fn (): array => $this->keyInspector->inspect($publicKey));
+                $fingerprintUpper = $inspected['fingerprint'];
+                $fingerprintLower = strtolower($fingerprintUpper);
+                $identityId = 'openpgp:' . $fingerprintLower;
+                $identityPath = 'records/identity/identity-openpgp-' . $fingerprintLower . '.txt';
+                if (is_file($this->repositoryRoot . '/' . $identityPath)) {
+                    throw new RuntimeException('Identity already exists for this fingerprint.');
+                }
 
-            $postId = $this->generateRecordId('bootstrap');
-            $createdAt = $this->canonicalTimestampNow();
-            $contents = $this->buildThreadPostRecord(
-                $postId,
-                $createdAt,
-                self::HIDDEN_BOOTSTRAP_BOARD_TAGS,
-                'account bootstrap',
-                "Automatic account bootstrap anchor.\n",
-                $identityId,
+                $postId = $this->generateRecordId('bootstrap');
+                $createdAt = $this->canonicalTimestampNow();
+                $contents = $this->buildThreadPostRecord(
+                    $postId,
+                    $createdAt,
+                    self::HIDDEN_BOOTSTRAP_BOARD_TAGS,
+                    'account bootstrap',
+                    "Automatic account bootstrap anchor.\n",
+                    $identityId,
+                );
+                (new PostRecordParser())->parse($contents);
+                $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
+                $prepared = $this->timePhase($timings, 'prepared_post_store', fn (): array => $this->storePreparedPost($recordPath, $contents, [
+                    'kind' => 'identity-bootstrap',
+                    'post_id' => $postId,
+                    'thread_id' => $postId,
+                    'author_identity_id' => $identityId,
+                    'created_at' => $createdAt,
+                    'public_key' => $publicKey,
+                    'fingerprint' => $fingerprintUpper,
+                    'username' => $inspected['username'],
+                ]));
+                $timings['write_total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+                return array_merge($prepared, [
+                    'status' => 'ok',
+                    'post_id' => $postId,
+                    'thread_id' => $postId,
+                    'record_path' => $recordPath,
+                    'canonical_record' => $contents,
+                    'timings' => $timings,
+                ]);
+            });
+        } catch (RuntimeException $exception) {
+            throw new IdentityBootstrapTimingException(
+                $exception->getMessage(),
+                $this->timingsWithTotal($timings, $totalStartedAt),
+                $exception,
             );
-            (new PostRecordParser())->parse($contents);
-            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
-            $prepared = $this->storePreparedPost($recordPath, $contents, [
-                'kind' => 'identity-bootstrap',
-                'post_id' => $postId,
-                'thread_id' => $postId,
-                'author_identity_id' => $identityId,
-                'created_at' => $createdAt,
-                'public_key' => $publicKey,
-                'fingerprint' => $fingerprintUpper,
-                'username' => $inspected['username'],
-            ]);
-
-            return array_merge($prepared, [
-                'status' => 'ok',
-                'post_id' => $postId,
-                'thread_id' => $postId,
-                'record_path' => $recordPath,
-                'canonical_record' => $contents,
-            ]);
-        });
+        }
     }
 
     /**
@@ -657,7 +672,10 @@ class LocalWriteService
      */
     public function createIdentityBootstrap(array $input): array
     {
-        return $this->withTimedWriteLock(function () use ($input): array {
+        $timings = [];
+        $totalStartedAt = hrtime(true);
+        try {
+            return $this->withTimedWriteLock(function () use ($input, &$timings, $totalStartedAt): array {
             $this->assertWritableRepository();
             $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
             $prepared = $this->loadPreparedPost($prepareToken);
@@ -673,17 +691,22 @@ class LocalWriteService
                 throw new RuntimeException('Prepared identity bootstrap canonical record mismatch.');
             }
             $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
-            $verification = $this->signatureVerifier->verifyDetached(
-                (string) $prepared['public_key'],
-                $canonicalRecord,
-                $signature,
-                (string) $prepared['fingerprint'],
+            $verification = $this->timePhase(
+                $timings,
+                'identity_signature_verify',
+                fn (): array => $this->signatureVerifier->verifyDetached(
+                    (string) $prepared['public_key'],
+                    $canonicalRecord,
+                    $signature,
+                    (string) $prepared['fingerprint'],
+                ),
             );
+            $timings = array_merge($timings, $verification['timings']);
             if (!$verification['ok']) {
                 throw new RuntimeException('Identity bootstrap signature verification failed: ' . $verification['status']);
             }
 
-            $record = (new PostRecordParser())->parse($canonicalRecord);
+            $record = $this->timePhase($timings, 'canonical_record_parse', fn (): PostRecord => (new PostRecordParser())->parse($canonicalRecord));
             $identityId = (string) $prepared['author_identity_id'];
             if ($record->postId !== (string) $prepared['post_id']
                 || $record->createdAt !== (string) $prepared['created_at']
@@ -713,23 +736,38 @@ class LocalWriteService
 
             $recordPath = (string) $prepared['record_path'];
             $publicKeyPath = 'records/public-keys/openpgp-' . $fingerprintUpper . '.asc';
-            $this->writeFile($recordPath, $canonicalRecord);
-            $this->writeFile($recordPath . '.asc', $signature);
-            if (!is_file($this->repositoryRoot . '/' . $publicKeyPath)) {
-                $this->writeFile($publicKeyPath, $publicKey);
-            }
-            $this->writeFile($identityPath, $identityContents);
-            $commitResult = $this->commitCanonicalWrite(
+            $this->timePhase($timings, 'identity_write_files', function () use ($recordPath, $canonicalRecord, $signature, $publicKeyPath, $publicKey, $identityPath, $identityContents) {
+                $this->writeFile($recordPath, $canonicalRecord);
+                $this->writeFile($recordPath . '.asc', $signature);
+                if (!is_file($this->repositoryRoot . '/' . $publicKeyPath)) {
+                    $this->writeFile($publicKeyPath, $publicKey);
+                }
+                $this->writeFile($identityPath, $identityContents);
+
+                return null;
+            });
+            $commitResult = $this->timePhase($timings, 'identity_commit', fn (): array => $this->commitCanonicalWrite(
                 [$recordPath, $recordPath . '.asc', $publicKeyPath, $identityPath],
                 'Link signed identity ' . $identityPath,
+            ));
+            $timings = array_merge($timings, $commitResult['timings']);
+            $derivedTimings = $this->timePhase(
+                $timings,
+                'identity_derived_state',
+                fn (): array => $this->synchronizeIdentityDerivedState($identityPath, $commitResult['commit_sha']),
             );
-            $this->synchronizeIdentityDerivedState($identityPath, $commitResult['commit_sha']);
-            $this->invalidator()->invalidateIdentityLink(
-                'openpgp-' . $fingerprintLower,
-                (string) $prepared['thread_id'],
-                (string) $prepared['post_id'],
-            );
-            $this->deletePreparedPost($prepareToken);
+            $timings = array_merge($timings, $derivedTimings);
+            $this->timePhase($timings, 'artifact_invalidate', function () use ($fingerprintLower, $prepared) {
+                $this->invalidator()->invalidateIdentityLink(
+                    'openpgp-' . $fingerprintLower,
+                    (string) $prepared['thread_id'],
+                    (string) $prepared['post_id'],
+                );
+
+                return null;
+            });
+            $this->timePhase($timings, 'prepared_post_delete', fn () => $this->deletePreparedPost($prepareToken));
+            $timings['write_total'] = $this->elapsedMilliseconds($totalStartedAt);
 
             return [
                 'status' => 'ok',
@@ -740,8 +778,16 @@ class LocalWriteService
                 'bootstrap_thread_id' => (string) $prepared['thread_id'],
                 'signature_path' => $recordPath . '.asc',
                 'commit_sha' => $commitResult['commit_sha'],
+                'timings' => $timings,
             ];
-        });
+            });
+        } catch (RuntimeException $exception) {
+            throw new IdentityBootstrapTimingException(
+                $exception->getMessage(),
+                $this->timingsWithTotal($timings, $totalStartedAt),
+                $exception,
+            );
+        }
     }
 
     /**
@@ -970,6 +1016,197 @@ class LocalWriteService
                 'commit_sha' => $commitSha,
                 'timings' => $timings,
             ];
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function prepareInvitation(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $issuerIdentityId = $this->requireOpenPgpIdentityId((string) ($input['issuer_identity_id'] ?? ''), 'issuer_identity_id');
+            if (!$this->isApprovedIdentity($issuerIdentityId)) {
+                throw new RuntimeException('Only approved users can issue invitations.');
+            }
+            $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
+            $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
+            $action = trim((string) ($input['action'] ?? 'issue'));
+            if (!in_array($action, ['issue', 'revoke'], true)) {
+                throw new RuntimeException('Invitation action must be issue or revoke.');
+            }
+            $verificationHash = $this->requireInvitationHash((string) ($input['verification_hash'] ?? ''));
+            $expiresAt = $action === 'issue' ? $this->requireInvitationExpiry((string) ($input['expires_at'] ?? '')) : null;
+            $destination = $action === 'issue' ? $this->normalizeInvitationDestination((string) ($input['destination'] ?? '')) : null;
+
+            $thread = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($threadId));
+            $parent = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($parentId));
+            if ($thread->postId !== $threadId || ($parent->threadId ?? $parent->postId) !== $threadId || $parent->postId !== $parentId) {
+                throw new RuntimeException('Invitation issuer bootstrap thread is invalid.');
+            }
+
+            $postId = $this->generateRecordId('reply');
+            $invitationId = $action === 'issue'
+                ? 'invite-' . bin2hex(random_bytes(12))
+                : $this->requireInvitationId((string) ($input['invitation_id'] ?? ''));
+            if ($action === 'revoke') {
+                $entry = $this->invitationLedger()->find($invitationId);
+                if ($entry === null || $entry['issued']->post->authorIdentityId !== $issuerIdentityId) {
+                    throw new RuntimeException('Only the invitation issuer may revoke an invitation.');
+                }
+                if ($entry['revoked'] !== null || $entry['redeemed'] !== null) {
+                    throw new RuntimeException('Invitation is no longer revocable.');
+                }
+                if (!hash_equals($entry['issued']->verificationHash, $verificationHash)) {
+                    throw new RuntimeException('Invitation verification hash does not match issuance.');
+                }
+            }
+            $createdAt = $this->canonicalTimestampNow();
+            $body = "Invitation-ID: {$invitationId}\n"
+                . "Invitation-Action: {$action}\n"
+                . "Verification-Hash: {$verificationHash}\n"
+                . ($expiresAt !== null ? "Expires-At: {$expiresAt}\n" : '')
+                . ($destination !== null ? "Destination: {$destination}\n" : '')
+                . "\n";
+            $contents = "Post-ID: {$postId}\n"
+                . "Created-At: {$createdAt}\n"
+                . "Board-Tags: identity invitation internal\n"
+                . "Thread-ID: {$threadId}\n"
+                . "Parent-ID: {$parentId}\n"
+                . "Author-Identity-ID: {$issuerIdentityId}\n\n"
+                . $body;
+            (new InvitationRecordParser())->parse($contents);
+            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
+            $prepared = $this->storePreparedPost($recordPath, $contents, [
+                'kind' => 'invitation_' . $action,
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'parent_id' => $parentId,
+                'author_identity_id' => $issuerIdentityId,
+                'invitation_id' => $invitationId,
+                'verification_hash' => $verificationHash,
+                'invitation_action' => $action,
+                'expires_at_invitation' => $expiresAt ?? '',
+                'destination' => $destination ?? '',
+                'created_at' => $createdAt,
+            ]);
+
+            return array_merge($prepared, [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'invitation_id' => $invitationId,
+                'record_path' => $recordPath,
+                'canonical_record' => $contents,
+            ]);
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function finalizePreparedInvitation(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($prepareToken);
+            if (!in_array((string) ($prepared['kind'] ?? ''), ['invitation_issue', 'invitation_revoke', 'invitation_redeem'], true)) {
+                throw new RuntimeException('Prepared post is not an invitation.');
+            }
+            if (strtotime((string) ($prepared['expires_at'] ?? '')) < time()) {
+                throw new RuntimeException('Prepared post has expired.');
+            }
+            $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+            if ($canonicalRecord === '' || hash('sha256', $canonicalRecord) !== (string) ($prepared['canonical_sha256'] ?? '')) {
+                throw new RuntimeException('Prepared post canonical record mismatch.');
+            }
+            $recordPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $postId = $this->requirePreparedMatch($input, $prepared, 'post_id');
+            $authorIdentityId = $this->requireOpenPgpIdentityId($this->requirePreparedMatch($input, $prepared, 'author_identity_id'), 'author_identity_id');
+            if ((string) $prepared['invitation_action'] !== 'redeem' && !$this->isApprovedIdentity($authorIdentityId)) {
+                throw new RuntimeException('Only approved users can issue invitations.');
+            }
+            if ($this->postTargetExists($postId)) {
+                throw new RuntimeException('Prepared post target already exists.');
+            }
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($authorIdentityId);
+            $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
+            if (!$verification['ok']) {
+                throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+            }
+            $record = (new InvitationRecordParser())->parse($canonicalRecord);
+            if ($record->post->postId !== $postId || CanonicalPathResolver::datedPost($postId, $record->post->createdAt) !== $recordPath
+                || $record->post->authorIdentityId !== $authorIdentityId || $record->action !== (string) $prepared['invitation_action']
+                || $record->invitationId !== (string) $prepared['invitation_id'] || $record->verificationHash !== (string) $prepared['verification_hash']) {
+                throw new RuntimeException('Prepared invitation canonical record does not match metadata.');
+            }
+            if ($record->action === 'redeem') {
+                $entry = $this->invitationLedger()->find($record->invitationId);
+                if ($entry === null || $entry['revoked'] !== null || $entry['redeemed'] !== null
+                    || !hash_equals($entry['issued']->verificationHash, $record->verificationHash)
+                    || strtotime((string) $entry['issued']->expiresAt) <= time()) {
+                    throw new RuntimeException('Invitation is invalid, expired, revoked, or already used.');
+                }
+            }
+            $this->writeFile($recordPath, $canonicalRecord);
+            $this->writeFile($recordPath . '.asc', $signature);
+            $commitResult = $this->commitCanonicalWrite([$recordPath, $recordPath . '.asc'], ucfirst($record->action) . ' invitation ' . $record->invitationId . ' by ' . $authorIdentityId);
+            if ($record->action === 'redeem') {
+                // A redemption derives member approval from the issuer's existing
+                // approval, so it needs the approval-aware projection update.
+                $this->synchronizeApprovalDerivedState($record->post, $commitResult['commit_sha']);
+            } else {
+                $this->synchronizePostDerivedState($record->post, $commitResult['commit_sha']);
+            }
+            $this->deletePreparedPost($prepareToken);
+
+            return [
+                'status' => 'ok', 'post_id' => $postId, 'invitation_id' => $record->invitationId,
+                'verification_hash' => $record->verificationHash, 'commit_sha' => $commitResult['commit_sha'],
+            ];
+        });
+    }
+
+    /** @param array<string, mixed> $input @return array<string, mixed> */
+    public function prepareInvitationRedemption(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $recipientIdentityId = $this->requireOpenPgpIdentityId((string) ($input['recipient_identity_id'] ?? ''), 'recipient_identity_id');
+            if ($this->isApprovedIdentity($recipientIdentityId)) {
+                throw new RuntimeException('Approved identities cannot redeem invitations.');
+            }
+            $token = trim((string) ($input['invite_token'] ?? ''));
+            if (!InvitationToken::isValidBearer($token)) {
+                throw new RuntimeException('Invitation token is invalid.');
+            }
+            $entry = $this->invitationLedger()->findByVerificationHash('sha256:' . hash('sha256', $token));
+            if ($entry === null || $entry['revoked'] !== null || $entry['redeemed'] !== null || strtotime((string) $entry['issued']->expiresAt) <= time()) {
+                throw new RuntimeException('Invitation is invalid, expired, revoked, or already used.');
+            }
+            $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
+            $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
+            $postId = $this->generateRecordId('reply');
+            $createdAt = $this->canonicalTimestampNow();
+            $body = "Invitation-ID: {$entry['issued']->invitationId}\n"
+                . "Invitation-Action: redeem\n"
+                . "Verification-Hash: {$entry['issued']->verificationHash}\n\n";
+            $contents = "Post-ID: {$postId}\nCreated-At: {$createdAt}\nBoard-Tags: identity invitation internal\n"
+                . "Thread-ID: {$threadId}\nParent-ID: {$parentId}\nAuthor-Identity-ID: {$recipientIdentityId}\n\n{$body}";
+            (new InvitationRecordParser())->parse($contents);
+            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
+            $prepared = $this->storePreparedPost($recordPath, $contents, [
+                'kind' => 'invitation_redeem', 'post_id' => $postId, 'thread_id' => $threadId, 'parent_id' => $parentId,
+                'author_identity_id' => $recipientIdentityId, 'invitation_id' => $entry['issued']->invitationId,
+                'verification_hash' => $entry['issued']->verificationHash, 'invitation_action' => 'redeem',
+                'destination' => $entry['issued']->destination ?? '', 'created_at' => $createdAt,
+            ]);
+            return array_merge($prepared, ['status' => 'ok', 'post_id' => $postId, 'record_path' => $recordPath,
+                'canonical_record' => $contents, 'destination' => $entry['issued']->destination ?? '']);
         });
     }
 
@@ -1501,6 +1738,33 @@ class LocalWriteService
         return round((hrtime(true) - $startedAt) / 1000000, 1);
     }
 
+    /**
+     * @template T
+     * @param array<string, float|int> $timings
+     * @param callable(): T $callback
+     * @return T
+     */
+    private function timePhase(array &$timings, string $phase, callable $callback): mixed
+    {
+        $startedAt = hrtime(true);
+        try {
+            return $callback();
+        } finally {
+            $timings[$phase] = $this->elapsedMilliseconds($startedAt);
+        }
+    }
+
+    /**
+     * @param array<string, float|int> $timings
+     * @return array<string, float|int>
+     */
+    private function timingsWithTotal(array $timings, int $totalStartedAt): array
+    {
+        $timings['write_total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+        return $timings;
+    }
+
     private function writeFile(string $relativePath, string $contents): void
     {
         $path = $this->repositoryRoot . '/' . $relativePath;
@@ -2021,6 +2285,72 @@ class LocalWriteService
         $value = trim($value);
         if (!preg_match('/^[a-f0-9]{32}$/', $value)) {
             throw new RuntimeException("{$field} is required and must be a prepared post token.");
+        }
+
+        return $value;
+    }
+
+    private function requireInvitationHash(string $value): string
+    {
+        $value = strtolower(trim($value));
+        if (preg_match('/^sha256:[a-f0-9]{64}$/', $value) !== 1) {
+            throw new RuntimeException('verification_hash must be a lowercase sha256 hash.');
+        }
+
+        return $value;
+    }
+
+    private function requireInvitationId(string $value): string
+    {
+        $value = trim($value);
+        if (preg_match('/^invite-[a-z0-9]{16,64}$/', $value) !== 1) {
+            throw new RuntimeException('invitation_id must be a canonical invitation ID.');
+        }
+
+        return $value;
+    }
+
+    private function invitationLedger(): InvitationLedger
+    {
+        $records = [];
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($this->repositoryRoot . '/records/posts', \FilesystemIterator::SKIP_DOTS)
+        );
+        $parser = new InvitationRecordParser();
+        foreach ($iterator as $file) {
+            if (!$file->isFile() || !str_ends_with($file->getFilename(), '.txt')) {
+                continue;
+            }
+            $contents = file_get_contents($file->getPathname());
+            if ($contents === false || !str_contains($contents, 'Board-Tags: identity invitation internal')) {
+                continue;
+            }
+            $records[] = $parser->parse($contents);
+        }
+
+        usort($records, static fn ($left, $right): int => [$left->post->createdAt, $left->post->postId] <=> [$right->post->createdAt, $right->post->postId]);
+        return new InvitationLedger($records);
+    }
+
+    private function requireInvitationExpiry(string $value): string
+    {
+        $value = trim($value);
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $value) !== 1 || strtotime($value) <= time()) {
+            throw new RuntimeException('expires_at must be a future RFC 3339 UTC timestamp.');
+        }
+
+        return $value;
+    }
+
+    private function normalizeInvitationDestination(string $value): ?string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+        if (strlen($value) > 500 || !str_starts_with($value, '/') || str_starts_with($value, '//')
+            || str_contains($value, "\n") || str_contains($value, "\r") || str_contains($value, '#')) {
+            throw new RuntimeException('destination must be an internal absolute path.');
         }
 
         return $value;

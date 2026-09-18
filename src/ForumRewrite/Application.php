@@ -30,6 +30,7 @@ use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\Support\ThreadTitle;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
+use ForumRewrite\Write\IdentityBootstrapTimingException;
 use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
 use ForumRewrite\Llm\LlmExchangeRecorder;
 use ForumRewrite\Llm\SqliteLlmExchangeStore;
@@ -227,6 +228,26 @@ final class Application
 
         if ($path === '/api/create_prepared_approval') {
             $this->handleCreatePreparedApproval($method, $query);
+            return;
+        }
+
+        if ($path === '/api/prepare_invitation') {
+            $this->handlePrepareInvitation($method, $query);
+            return;
+        }
+
+        if ($path === '/api/create_prepared_invitation') {
+            $this->handleCreatePreparedInvitation($method, $query);
+            return;
+        }
+
+        if ($path === '/api/prepare_invitation_redemption') {
+            $this->handlePrepareInvitationRedemption($method, $query);
+            return;
+        }
+
+        if ($path === '/invites/' || $path === '/invites') {
+            $this->sendHtml($this->renderInvitationPage($query), 200);
             return;
         }
 
@@ -3658,6 +3679,8 @@ final class Application
             || $path === '/api/set_identity_hint' || $path === '/api/clear_identity'
             || $path === '/api/link_identity'
             || $path === '/api/prepare_identity' || $path === '/api/create_identity'
+            || $path === '/api/prepare_invitation_redemption'
+            || $path === '/api/create_prepared_invitation'
         ) {
             return true;
         }
@@ -3700,7 +3723,7 @@ final class Application
             '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/',
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
             '/compose/thread', '/compose/reply',
-            '/account/key', '/account/key/',
+            '/account/key', '/account/key/', '/invites', '/invites/',
             '/api', '/api/', '/api/version', '/api/list_index',
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username_claim_cta',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
@@ -3709,6 +3732,7 @@ final class Application
             '/api/prepare_reply', '/api/create_prepared_post', '/api/create_identity',
             '/api/analyze_post', '/api/generate_agent_reply', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag',
+            '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/set_feature_flag', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
         ], true)) {
@@ -3748,7 +3772,25 @@ final class Application
                 '/assets/openpgp_loader.js',
                 '/assets/browser_signing.js',
                 '/assets/private_site_auth.js',
+                '/assets/invite_redemption.js',
             ]
+        );
+    }
+
+    /** @param array<string, mixed> $query */
+    private function renderInvitationPage(array $query): string
+    {
+        $viewer = $this->authenticatedViewerProfile();
+        if ($viewer === null || ((int) ($viewer['is_approved'] ?? 0)) !== 1) {
+            return $this->renderMessagePage('Invitation required', 'Invitation required', 'Only authenticated approved members can generate invitations.', 'account');
+        }
+
+        return $this->renderPageTemplate(
+            'invites.php',
+            ['destination' => trim((string) ($query['destination'] ?? ''))],
+            'Generate invite',
+            'invite',
+            ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/invite_issuance.js'],
         );
     }
 
@@ -4768,18 +4810,33 @@ final class Application
     private function handlePrepareIdentity(string $method, array $query): void
     {
         $totalStartedAt = hrtime(true);
+        $timings = [];
         if ($method !== 'POST') {
             $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
             return;
         }
 
         try {
-            $result = $this->writer()->prepareIdentityBootstrap($this->requestData($query));
-            $result = $this->mergeResultTimings($result, [], $totalStartedAt);
+            $phaseStartedAt = hrtime(true);
+            $input = $this->requestData($query);
+            $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $result = $this->writer()->prepareIdentityBootstrap($input);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
+            $headers = $this->serverTimingHeaders($result);
             unset($result['timings']);
-            $this->sendJson($result, 200, $this->serverTimingHeaders($result));
+            $this->sendJson($result, 200, $headers);
+        } catch (IdentityBootstrapTimingException $exception) {
+            $this->sendJson(
+                ['status' => 'error', 'error' => $exception->getMessage()],
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal(array_merge($timings, $exception->timings()), $totalStartedAt)])
+            );
         } catch (RuntimeException $exception) {
-            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400);
+            $this->sendJson(
+                ['status' => 'error', 'error' => $exception->getMessage()],
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
         }
     }
 
@@ -4861,18 +4918,33 @@ final class Application
     private function handleCreateIdentity(string $method, array $query): void
     {
         $totalStartedAt = hrtime(true);
+        $timings = [];
         if ($method !== 'POST') {
             $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
             return;
         }
 
         try {
-            $result = $this->writer()->createIdentityBootstrap($this->requestData($query));
-            $result = $this->mergeResultTimings($result, [], $totalStartedAt);
+            $phaseStartedAt = hrtime(true);
+            $input = $this->requestData($query);
+            $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $result = $this->writer()->createIdentityBootstrap($input);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
+            $headers = $this->serverTimingHeaders($result);
             unset($result['timings']);
-            $this->sendJson($result, 200, $this->serverTimingHeaders($result));
+            $this->sendJson($result, 200, $headers);
+        } catch (IdentityBootstrapTimingException $exception) {
+            $this->sendJson(
+                ['status' => 'error', 'error' => $exception->getMessage()],
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal(array_merge($timings, $exception->timings()), $totalStartedAt)])
+            );
         } catch (RuntimeException $exception) {
-            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400);
+            $this->sendJson(
+                ['status' => 'error', 'error' => $exception->getMessage()],
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
         }
     }
 
@@ -5612,6 +5684,75 @@ final class Application
                 400,
                 $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
             );
+        }
+    }
+
+    /** @param array<string, mixed> $query */
+    private function handlePrepareInvitation(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+        try {
+            $viewer = $this->authenticatedViewerProfile();
+            if ($viewer === null || ((int) ($viewer['is_approved'] ?? 0)) !== 1) {
+                throw new RuntimeException('Only authenticated approved users can issue invitations.');
+            }
+            $input = $this->requestData($query);
+            $result = $this->writer()->prepareInvitation([
+                'issuer_identity_id' => (string) $viewer['identity_id'],
+                'thread_id' => (string) $viewer['bootstrap_thread_id'],
+                'parent_id' => (string) $viewer['bootstrap_post_id'],
+                'verification_hash' => (string) ($input['verification_hash'] ?? ''),
+                'expires_at' => (string) ($input['expires_at'] ?? ''),
+                'destination' => (string) ($input['destination'] ?? ''),
+                'action' => (string) ($input['action'] ?? 'issue'),
+                'invitation_id' => (string) ($input['invitation_id'] ?? ''),
+            ]);
+            $this->sendJson($result, 200, $this->noStoreHeaders());
+        } catch (RuntimeException $exception) {
+            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->noStoreHeaders());
+        }
+    }
+
+    /** @param array<string, mixed> $query */
+    private function handleCreatePreparedInvitation(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+        try {
+            $input = $this->requestData($query);
+            $this->sendJson($this->writer()->finalizePreparedInvitation($input), 200, $this->noStoreHeaders());
+        } catch (RuntimeException $exception) {
+            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->noStoreHeaders());
+        }
+    }
+
+    /** @param array<string, mixed> $query */
+    private function handlePrepareInvitationRedemption(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+        try {
+            $input = $this->requestData($query);
+            $identityId = strtolower(trim((string) ($input['identity_id'] ?? '')));
+            $profile = $this->fetchProfileByIdentityId($identityId);
+            if ($profile === null) {
+                throw new RuntimeException('Identity not found.');
+            }
+            $this->sendJson($this->writer()->prepareInvitationRedemption([
+                'recipient_identity_id' => $identityId,
+                'thread_id' => (string) $profile['bootstrap_thread_id'],
+                'parent_id' => (string) $profile['bootstrap_post_id'],
+                'invite_token' => (string) ($input['invite_token'] ?? ''),
+            ]), 200, $this->noStoreHeaders());
+        } catch (RuntimeException $exception) {
+            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->noStoreHeaders());
         }
     }
 

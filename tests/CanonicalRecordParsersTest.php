@@ -8,11 +8,14 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\ApprovalSeedRecordParser;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\InstancePublicRecordParser;
+use ForumRewrite\Canonical\InvitationRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PublicKeyRecordParser;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
+use ForumRewrite\Invitation\InvitationLedger;
+use ForumRewrite\Invitation\InvitationToken;
 use ForumRewrite\Write\LocalWriteService;
 
 require __DIR__ . '/../autoload.php';
@@ -260,6 +263,62 @@ final class CanonicalRecordParsersTest
         assertSame('', $record->body);
     }
 
+    public function testParsesIssuedInvitationRecord(): void
+    {
+        $record = (new InvitationRecordParser())->parse($this->invitationContents(
+            'issue',
+            'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+            '/threads/root-001'
+        ));
+
+        assertSame('invite-0123456789abcdef', $record->invitationId);
+        assertSame('issue', $record->action);
+        assertSame('sha256:' . str_repeat('a', 64), $record->verificationHash);
+        assertSame('2026-12-31T23:59:59Z', $record->expiresAt);
+        assertSame('/threads/root-001', $record->destination);
+    }
+
+    public function testRejectsExternalInvitationDestination(): void
+    {
+        assertThrows(
+            fn () => (new InvitationRecordParser())->parse($this->invitationContents(
+                'issue',
+                'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+                'https://example.test/elsewhere'
+            )),
+            'Invitation Destination must be an internal absolute path.'
+        );
+    }
+
+    public function testInvitationLedgerRejectsReuseAndForeignRevocation(): void
+    {
+        $parser = new InvitationRecordParser();
+        $issuer = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+        $recipient = 'openpgp:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        $issued = $parser->parse($this->invitationContents('issue', $issuer));
+        $redeemed = $parser->parse($this->invitationContents('redeem', $recipient));
+        $ledger = new InvitationLedger([$issued, $redeemed]);
+        assertTrue($ledger->find('invite-0123456789abcdef')['redeemed'] !== null);
+
+        try {
+            $ledger->apply($parser->parse($this->invitationContents('redeem', $recipient, null, 'reply-invite-redeem-2')));
+        } catch (RuntimeException $exception) {
+            assertSame('Invitation is no longer redeemable.', $exception->getMessage());
+            return;
+        }
+
+        throw new RuntimeException('Expected invitation reuse to fail.');
+    }
+
+    public function testInvitationBearerTokenAcceptsNewAndPreviousFormats(): void
+    {
+        assertTrue(InvitationToken::isValidBearer(str_repeat('a', 32)));
+        assertTrue(InvitationToken::isValidBearer('AbCdEfGhIjKlMnOpQrStUw'));
+        assertTrue(InvitationToken::isValidBearer(str_repeat('a', 64)));
+        assertFalse(InvitationToken::isValidBearer('AbCdEfGhIjKlMnOpQrStUx'));
+        assertFalse(InvitationToken::isValidBearer('not-an-invitation-token'));
+    }
+
     public function testRejectsPostReactionWithUnsupportedOperation(): void
     {
         $contents = "Record-ID: post-reaction-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nPost-ID: reply-001\nOperation: remove\nTags: flag\n\n";
@@ -488,6 +547,27 @@ final class CanonicalRecordParsersTest
             sys_get_temp_dir() . '/unused-builder-public',
             new CanonicalRecordRepository($repositoryRoot)
         );
+    }
+
+    private function invitationContents(string $action, string $authorIdentityId, ?string $destination = null, string $postId = 'reply-invite-001'): string
+    {
+        $body = "Invitation-ID: invite-0123456789abcdef\n"
+            . "Invitation-Action: {$action}\n"
+            . 'Verification-Hash: sha256:' . str_repeat('a', 64) . "\n";
+        if ($action === 'issue') {
+            $body .= "Expires-At: 2026-12-31T23:59:59Z\n";
+            if ($destination !== null) {
+                $body .= "Destination: {$destination}\n";
+            }
+        }
+
+        return "Post-ID: {$postId}\n"
+            . "Created-At: 2026-07-19T20:05:00Z\n"
+            . "Board-Tags: identity invitation internal\n"
+            . "Thread-ID: root-001\n"
+            . "Parent-ID: root-001\n"
+            . "Author-Identity-ID: {$authorIdentityId}\n\n"
+            . $body . "\n";
     }
 
     private function readFixture(string $relativePath): string

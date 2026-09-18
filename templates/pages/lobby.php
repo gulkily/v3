@@ -23,4 +23,10 @@ $hasMembersOnlyAccess = $viewerProfile !== null
 <?php endif; ?>
     <p class="meta" data-role="private-site-auth-status" hidden></p>
   </article>
+  <article class="card" data-invitation-redemption hidden>
+    <h2>Board invitation</h2>
+    <p>Redeem this invitation. If you do not yet have a browser key, you will be guided through creating one.</p>
+    <button type="button" data-action="redeem-invitation">Redeem invitation</button>
+    <p class="meta" data-role="invitation-redemption-feedback" hidden></p>
+  </article>
 </section>

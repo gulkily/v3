@@ -3484,6 +3484,12 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   color: var(--active-ink);
 }
 
+[data-action="copy-invitation-link"] {
+  flex: 0 0 auto;
+  width: auto;
+  align-self: flex-start;
+}
+
 .sqlite-tab-panel[hidden] {
   display: none;
 }

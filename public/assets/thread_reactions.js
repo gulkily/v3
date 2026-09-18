@@ -573,14 +573,22 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    if (typeof document.querySelectorAll === "function") {
-      document.querySelectorAll("[data-thread-reactions-root]").forEach((root) => {
-        bindThreadReactions(root);
-      });
+    const threadRoots = typeof document.querySelectorAll === "function"
+      ? Array.from(document.querySelectorAll("[data-thread-reactions-root]"))
+      : typeof document.querySelector === "function"
+        ? [document.querySelector("[data-thread-reactions-root]")].filter(Boolean)
+        : [];
+    threadRoots.forEach((root) => {
+      bindThreadReactions(root);
+    });
 
-      document.querySelectorAll(".post-card[data-post-id]").forEach((postRoot) => {
-        bindPostReactions(postRoot);
-      });
-    }
+    const postRoots = typeof document.querySelectorAll === "function"
+      ? Array.from(document.querySelectorAll(".post-card[data-post-id]"))
+      : typeof document.querySelector === "function"
+        ? [document.querySelector(".post-card[data-post-id]")].filter(Boolean)
+        : [];
+    postRoots.forEach((postRoot) => {
+      bindPostReactions(postRoot);
+    });
   });
 })();

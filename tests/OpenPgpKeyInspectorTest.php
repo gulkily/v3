@@ -51,6 +51,8 @@ final class OpenPgpKeyInspectorTest
         assertSame(true, $result['ok']);
         assertSame('15C2EF95BAEE78F4C635A43323B6AE7EC7AF9919', $result['fingerprint']);
         assertSame('ok', $result['status']);
+        $this->assertPositiveTiming($result, 'gpg_public_key_import');
+        $this->assertPositiveTiming($result, 'gpg_signature_verify');
     }
 
     public function testDetachedSignatureVerifierRejectsTamperedText(): void
@@ -66,6 +68,8 @@ final class OpenPgpKeyInspectorTest
 
         assertSame(false, $result['ok']);
         assertSame('signature_verification_failed', $result['status']);
+        $this->assertPositiveTiming($result, 'gpg_public_key_import');
+        $this->assertPositiveTiming($result, 'gpg_signature_verify');
     }
 
     public function testDetachedSignatureVerifierRejectsWrongExpectedFingerprint(): void
@@ -102,5 +106,14 @@ final class OpenPgpKeyInspectorTest
     private function readSignatureFixture(string $filename): string
     {
         return (string) file_get_contents(__DIR__ . '/fixtures/openpgp_signature/' . $filename);
+    }
+
+    /** @param array<string, mixed> $result */
+    private function assertPositiveTiming(array $result, string $name): void
+    {
+        $timing = $result['timings'][$name] ?? null;
+        if ((!is_int($timing) && !is_float($timing)) || $timing < 0) {
+            throw new RuntimeException('Expected non-negative timing for ' . $name . '.');
+        }
     }
 }
