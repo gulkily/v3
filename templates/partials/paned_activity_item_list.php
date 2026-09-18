@@ -1,6 +1,7 @@
 <?php
 /**
  * @var array<int, array<string, mixed>> $items
+ * @var array<int, array<string, mixed>> $commitItems
  * @var string $selectedView
  * @var string $selectedItemId
  * @var array<string, array{has_more: bool, next_cursor: array{sort_value: string, id: int}|null}> $viewPagination
@@ -8,6 +9,7 @@
  */
 $selectedView ??= 'all';
 $selectedItemId ??= '';
+$commitItems ??= [];
 $viewPagination ??= [];
 $sortHeaderLinks ??= [];
 $tabStopAssigned = false;
@@ -30,6 +32,23 @@ if ($isTabStop) {
 }
 ?>
 <?= $indent($partial('partials/paned_activity_item_row.php', [
+    'item' => $item,
+    'isSelected' => $isSelected,
+    'isTabStop' => $isTabStop,
+    'visible' => $visible,
+]), 2) ?>
+<?php endforeach; ?>
+<?php foreach ($commitItems as $item): ?>
+<?php
+$itemId = 'commit-' . (string) $item['sha'];
+$visible = $selectedView === 'commits';
+$isSelected = $selectedItemId !== '' && $itemId === $selectedItemId;
+$isTabStop = $selectedItemId !== '' ? $isSelected : ($visible && !$tabStopAssigned);
+if ($isTabStop) {
+    $tabStopAssigned = true;
+}
+?>
+<?= $indent($partial('partials/paned_activity_commit_row.php', [
     'item' => $item,
     'isSelected' => $isSelected,
     'isTabStop' => $isTabStop,

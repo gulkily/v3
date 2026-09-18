@@ -1132,16 +1132,47 @@ final class Application
             ];
         }
 
+        // Commits are a parallel, structurally different row set - not
+        // activity actions, so they're kept out of $itemsById/$items
+        // rather than forced into that shape. Only `date` is sortable for
+        // commits (resolveCommitSort() falls back to it for any other
+        // requested column), so a Kind/Label header click while browsing
+        // Commits has no effect on commit order - a deliberate Step 3 scope
+        // decision, not a bug.
+        ['column' => $commitSortColumn, 'direction' => $commitSortDirection] = $this->resolveCommitSort($requestedSort, $requestedDirection);
+        $commitResult = $this->fetchCommits($commitSortColumn, $commitSortDirection);
+        $commitItems = $commitResult['items'];
+        $lastCommit = $commitItems[count($commitItems) - 1] ?? null;
+        $viewPagination['commits'] = [
+            'has_more' => $commitResult['has_more'] && $lastCommit !== null,
+            'next_cursor' => $lastCommit !== null ? [
+                'sort_value' => $this->commitSortValueFromItem($lastCommit, $commitSortColumn),
+                'id' => (int) $lastCommit['id'],
+            ] : null,
+        ];
+        $viewCounts[] = [
+            'key' => 'commits',
+            'label' => 'Commits',
+            'count' => $this->countCommitsTotal(),
+            'loadedCount' => count($commitItems),
+        ];
+
         $selectedView = $this->normalizeActivityView($requestedView);
-        $selectedItemId = in_array($requestedSelected, $viewItemIds[$selectedView], true)
-            ? $requestedSelected
-            : (string) ($viewItemIds[$selectedView][0] ?? '');
+        // Commit selection is handled entirely client-side (Stage 4: fetched
+        // on demand when a commit row is clicked, not pre-selected here) -
+        // $viewItemIds has no 'commits' entry to look up against.
+        $selectedItemId = $selectedView === 'commits'
+            ? ''
+            : (in_array($requestedSelected, $viewItemIds[$selectedView], true)
+                ? $requestedSelected
+                : (string) ($viewItemIds[$selectedView][0] ?? ''));
         $sortHeaderLinks = $this->activitySortHeaderLinks($selectedView, $sortColumn, $sortDirection);
 
         return $this->renderer()->renderStandalonePage(
             'forte_activity.php',
             [
                 'items' => $items,
+                'commitItems' => $commitItems,
                 'viewCounts' => $viewCounts,
                 'selectedView' => $selectedView,
                 'selectedItemId' => $selectedItemId,
@@ -1172,10 +1203,6 @@ final class Application
     private function handleForteActivityPage(array $query): void
     {
         $view = $this->normalizeActivityView((string) ($query['view'] ?? ''));
-        ['column' => $sortColumn, 'direction' => $sortDirection] = $this->resolveActivitySort(
-            (string) ($query['sort'] ?? ''),
-            (string) ($query['dir'] ?? ''),
-        );
 
         $rawCursor = trim((string) ($query['cursor'] ?? ''));
         $cursor = null;
@@ -1201,6 +1228,50 @@ final class Application
                 'id' => $decodedCursor['id'],
             ];
         }
+
+        if ($view === 'commits') {
+            // Commits are a parallel row set with their own fetch/sort
+            // (Stage 2) and their own row partial (Stage 3) - and, unlike
+            // activity items, no eagerly-rendered detail article: Stage 4
+            // fetches a commit's full manifest on demand when it's
+            // selected, not for every loaded row up front.
+            ['column' => $commitSortColumn, 'direction' => $commitSortDirection] = $this->resolveCommitSort(
+                (string) ($query['sort'] ?? ''),
+                (string) ($query['dir'] ?? ''),
+            );
+            $commitResult = $this->fetchCommits($commitSortColumn, $commitSortDirection, $cursor);
+
+            $html = '';
+            foreach ($commitResult['items'] as $item) {
+                $html .= $this->renderer()->renderFragment('partials/paned_activity_commit_row.php', [
+                    'item' => $item,
+                    'isSelected' => false,
+                    'isTabStop' => false,
+                    'visible' => true,
+                ]);
+            }
+
+            $lastCommit = $commitResult['items'][count($commitResult['items']) - 1] ?? null;
+            $hasMore = $commitResult['has_more'] && $lastCommit !== null;
+            $nextCursor = $lastCommit !== null ? [
+                'sort_value' => $this->commitSortValueFromItem($lastCommit, $commitSortColumn),
+                'id' => (int) $lastCommit['id'],
+            ] : null;
+
+            $this->sendJson([
+                'status' => 'ok',
+                'html' => $html,
+                'detail_html' => '',
+                'has_more' => $hasMore,
+                'next_cursor' => $nextCursor,
+            ], 200);
+            return;
+        }
+
+        ['column' => $sortColumn, 'direction' => $sortDirection] = $this->resolveActivitySort(
+            (string) ($query['sort'] ?? ''),
+            (string) ($query['dir'] ?? ''),
+        );
 
         $result = $this->fetchActivity($view, $sortColumn, $sortDirection, $cursor);
 
@@ -4415,7 +4486,7 @@ final class Application
 
     private function normalizeActivityView(string $view): string
     {
-        return in_array($view, ['all', 'content', 'identity', 'bootstrap', 'approval'], true) ? $view : 'all';
+        return in_array($view, ['all', 'content', 'identity', 'bootstrap', 'approval', 'commits'], true) ? $view : 'all';
     }
 
     private function preview(string $body): string
