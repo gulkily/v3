@@ -65,6 +65,7 @@ final class ReadModelBuilder
             $this->measure('index_post_reactions', fn (): mixed => $this->indexPostReactions($pdo, $approvalState));
             $this->measure('index_instance', fn (): mixed => $this->indexInstance($pdo));
             $this->measure('index_activity', fn (): mixed => $this->indexActivity($pdo, $posts));
+            $this->measure('index_commits', fn (): mixed => $this->indexCommits($pdo));
             $this->measure('write_metadata', fn (): mixed => $this->writeMetadata($pdo));
             $pdo->commit();
         } catch (\Throwable $throwable) {
@@ -93,6 +94,7 @@ final class ReadModelBuilder
         $pdo->exec('DROP TABLE IF EXISTS username_routes');
         $pdo->exec('DROP TABLE IF EXISTS instance_public');
         $pdo->exec('DROP TABLE IF EXISTS activity');
+        $pdo->exec('DROP TABLE IF EXISTS commits');
     }
 
     private function createSchema(PDO $pdo): void
@@ -204,6 +206,19 @@ final class ReadModelBuilder
         $pdo->exec('CREATE INDEX activity_recent_idx ON activity (created_at DESC, post_id DESC, id DESC)');
         $pdo->exec('CREATE INDEX activity_post_id_idx ON activity (post_id)');
         $pdo->exec('CREATE INDEX activity_action_key_idx ON activity (action_key)');
+
+        $pdo->exec(
+            'CREATE TABLE commits (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sha TEXT NOT NULL UNIQUE,
+                author_name TEXT NOT NULL,
+                author_email TEXT NOT NULL,
+                committed_at TEXT NOT NULL,
+                subject TEXT NOT NULL,
+                file_count INTEGER NOT NULL
+            )'
+        );
+        $pdo->exec('CREATE INDEX commits_committed_at_idx ON commits (committed_at DESC, id DESC)');
     }
 
     /**
@@ -770,6 +785,69 @@ final class ReadModelBuilder
                 'source_path' => null,
                 'source_commit_sha' => null,
             ]);
+        }
+    }
+
+    /**
+     * Populates the `commits` table from a single `git log` invocation
+     * (not one call per commit - the per-commit `git diff-tree` cost this
+     * app already pays elsewhere is exactly what this table exists to
+     * avoid paying at request time). Uses `\x1f` (unit separator) to split
+     * fields, since it can't appear in a commit subject, and `--shortstat`
+     * for file counts, tolerating commits with no stat line (e.g. merges
+     * with no changes) by defaulting file_count to 0 for those.
+     */
+    private function indexCommits(PDO $pdo): void
+    {
+        if (!is_dir($this->repositoryRoot . '/.git')) {
+            return;
+        }
+
+        $delimiter = "\x1f";
+        $command = sprintf(
+            'git -C %s log --format=%s --date=format:%s --shortstat 2>/dev/null',
+            escapeshellarg($this->repositoryRoot),
+            escapeshellarg('%H' . $delimiter . '%an' . $delimiter . '%ae' . $delimiter . '%cd' . $delimiter . '%s'),
+            escapeshellarg('%Y-%m-%dT%H:%M:%SZ'),
+        );
+        $output = [];
+        $exitCode = 0;
+        exec($command, $output, $exitCode);
+        if ($exitCode !== 0) {
+            return;
+        }
+
+        $insert = $pdo->prepare(
+            'INSERT INTO commits (sha, author_name, author_email, committed_at, subject, file_count)
+             VALUES (:sha, :author_name, :author_email, :committed_at, :subject, :file_count)'
+        );
+
+        $pendingRow = null;
+        foreach ($output as $line) {
+            $fields = explode($delimiter, $line);
+            if (count($fields) === 5 && preg_match('/^[0-9a-f]{40}$/', $fields[0]) === 1) {
+                if ($pendingRow !== null) {
+                    $insert->execute($pendingRow);
+                }
+                [$sha, $authorName, $authorEmail, $committedAt, $subject] = $fields;
+                $pendingRow = [
+                    'sha' => $sha,
+                    'author_name' => $authorName,
+                    'author_email' => $authorEmail,
+                    'committed_at' => $committedAt,
+                    'subject' => $subject,
+                    'file_count' => 0,
+                ];
+                continue;
+            }
+
+            if ($pendingRow !== null && preg_match('/^\s*(\d+)\s+files?\s+changed/', $line, $statMatches) === 1) {
+                $pendingRow['file_count'] = (int) $statMatches[1];
+            }
+        }
+
+        if ($pendingRow !== null) {
+            $insert->execute($pendingRow);
         }
     }
 
