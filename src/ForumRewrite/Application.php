@@ -29,6 +29,7 @@ use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\Support\ThreadTitle;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
+use ForumRewrite\Write\IdentityBootstrapTimingException;
 use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
 use ForumRewrite\Llm\LlmExchangeRecorder;
 use ForumRewrite\Llm\SqliteLlmExchangeStore;
@@ -4479,18 +4480,33 @@ final class Application
     private function handlePrepareIdentity(string $method, array $query): void
     {
         $totalStartedAt = hrtime(true);
+        $timings = [];
         if ($method !== 'POST') {
             $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
             return;
         }
 
         try {
-            $result = $this->writer()->prepareIdentityBootstrap($this->requestData($query));
-            $result = $this->mergeResultTimings($result, [], $totalStartedAt);
+            $phaseStartedAt = hrtime(true);
+            $input = $this->requestData($query);
+            $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $result = $this->writer()->prepareIdentityBootstrap($input);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
+            $headers = $this->serverTimingHeaders($result);
             unset($result['timings']);
-            $this->sendJson($result, 200, $this->serverTimingHeaders($result));
+            $this->sendJson($result, 200, $headers);
+        } catch (IdentityBootstrapTimingException $exception) {
+            $this->sendJson(
+                ['status' => 'error', 'error' => $exception->getMessage()],
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal(array_merge($timings, $exception->timings()), $totalStartedAt)])
+            );
         } catch (RuntimeException $exception) {
-            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400);
+            $this->sendJson(
+                ['status' => 'error', 'error' => $exception->getMessage()],
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
         }
     }
 
@@ -4572,18 +4588,33 @@ final class Application
     private function handleCreateIdentity(string $method, array $query): void
     {
         $totalStartedAt = hrtime(true);
+        $timings = [];
         if ($method !== 'POST') {
             $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
             return;
         }
 
         try {
-            $result = $this->writer()->createIdentityBootstrap($this->requestData($query));
-            $result = $this->mergeResultTimings($result, [], $totalStartedAt);
+            $phaseStartedAt = hrtime(true);
+            $input = $this->requestData($query);
+            $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $result = $this->writer()->createIdentityBootstrap($input);
+            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
+            $headers = $this->serverTimingHeaders($result);
             unset($result['timings']);
-            $this->sendJson($result, 200, $this->serverTimingHeaders($result));
+            $this->sendJson($result, 200, $headers);
+        } catch (IdentityBootstrapTimingException $exception) {
+            $this->sendJson(
+                ['status' => 'error', 'error' => $exception->getMessage()],
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal(array_merge($timings, $exception->timings()), $totalStartedAt)])
+            );
         } catch (RuntimeException $exception) {
-            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400);
+            $this->sendJson(
+                ['status' => 'error', 'error' => $exception->getMessage()],
+                400,
+                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
+            );
         }
     }
 

@@ -7,7 +7,7 @@ namespace ForumRewrite\Security;
 final class OpenPgpSignatureVerifier
 {
     /**
-     * @return array{ok:bool,fingerprint:?string,status:string,details:string}
+     * @return array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>}
      */
     public function verifyDetached(
         string $armoredPublicKey,
@@ -15,17 +15,18 @@ final class OpenPgpSignatureVerifier
         string $armoredDetachedSignature,
         string $expectedFingerprint
     ): array {
+        $timings = [];
         $expectedFingerprint = strtoupper(trim($expectedFingerprint));
         if (!$this->looksLikeArmoredPublicKey($armoredPublicKey)) {
-            return $this->failure('invalid_public_key', null, 'Public key is not ASCII-armored OpenPGP.');
+            return $this->failure('invalid_public_key', null, 'Public key is not ASCII-armored OpenPGP.', $timings);
         }
 
         if (!$this->looksLikeArmoredDetachedSignature($armoredDetachedSignature)) {
-            return $this->failure('invalid_signature', null, 'Detached signature is not ASCII-armored OpenPGP.');
+            return $this->failure('invalid_signature', null, 'Detached signature is not ASCII-armored OpenPGP.', $timings);
         }
 
         if ($expectedFingerprint === '' || preg_match('/^[A-F0-9]+$/', $expectedFingerprint) !== 1) {
-            return $this->failure('invalid_expected_fingerprint', null, 'Expected fingerprint is invalid.');
+            return $this->failure('invalid_expected_fingerprint', null, 'Expected fingerprint is invalid.', $timings);
         }
 
         $tempDir = sys_get_temp_dir() . '/forum-rewrite-gpg-verify-' . bin2hex(random_bytes(6));
@@ -40,18 +41,20 @@ final class OpenPgpSignatureVerifier
             file_put_contents($signaturePath, $armoredDetachedSignature);
 
             $import = $this->runGpg($tempDir, ['--status-fd', '1', '--import', $keyPath]);
+            $timings['gpg_public_key_import'] = $import['duration_ms'];
             if ($import['exit_code'] !== 0 && !$this->hasSuccessfulImport($import['output'])) {
-                return $this->failure('public_key_import_failed', null, $this->compactOutput($import['output']));
+                return $this->failure('public_key_import_failed', null, $this->compactOutput($import['output']), $timings);
             }
 
             $verification = $this->runGpg($tempDir, ['--status-fd', '1', '--verify', $signaturePath, $textPath]);
+            $timings['gpg_signature_verify'] = $verification['duration_ms'];
             $fingerprint = $this->validSignatureFingerprint($verification['output']);
             if ($verification['exit_code'] !== 0 || $fingerprint === null) {
-                return $this->failure('signature_verification_failed', $fingerprint, $this->compactOutput($verification['output']));
+                return $this->failure('signature_verification_failed', $fingerprint, $this->compactOutput($verification['output']), $timings);
             }
 
             if ($fingerprint !== $expectedFingerprint) {
-                return $this->failure('signer_fingerprint_mismatch', $fingerprint, 'Signature was made by a different key.');
+                return $this->failure('signer_fingerprint_mismatch', $fingerprint, 'Signature was made by a different key.', $timings);
             }
 
             return [
@@ -59,6 +62,7 @@ final class OpenPgpSignatureVerifier
                 'fingerprint' => $fingerprint,
                 'status' => 'ok',
                 'details' => '',
+                'timings' => $timings,
             ];
         } finally {
             $this->cleanup($tempDir);
@@ -77,10 +81,11 @@ final class OpenPgpSignatureVerifier
 
     /**
      * @param list<string> $arguments
-     * @return array{exit_code:int,output:list<string>}
+     * @return array{exit_code:int,output:list<string>,duration_ms:float}
      */
     private function runGpg(string $homedir, array $arguments): array
     {
+        $startedAt = hrtime(true);
         $command = array_merge([
             'gpg',
             '--batch',
@@ -96,6 +101,7 @@ final class OpenPgpSignatureVerifier
         return [
             'exit_code' => $exitCode,
             'output' => array_map('strval', $output),
+            'duration_ms' => round((hrtime(true) - $startedAt) / 1000000, 1),
         ];
     }
 
@@ -146,15 +152,17 @@ final class OpenPgpSignatureVerifier
     }
 
     /**
-     * @return array{ok:bool,fingerprint:?string,status:string,details:string}
+     * @param array<string, float> $timings
+     * @return array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>}
      */
-    private function failure(string $status, ?string $fingerprint, string $details): array
+    private function failure(string $status, ?string $fingerprint, string $details, array $timings): array
     {
         return [
             'ok' => false,
             'fingerprint' => $fingerprint,
             'status' => $status,
             'details' => $details,
+            'timings' => $timings,
         ];
     }
 

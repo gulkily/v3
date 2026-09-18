@@ -609,49 +609,61 @@ class LocalWriteService
      */
     public function prepareIdentityBootstrap(array $input): array
     {
-        return $this->withTimedWriteLock(function () use ($input): array {
-            $this->assertWritableRepository();
-            $publicKey = $this->normalizeAsciiBody((string) ($input['public_key'] ?? ''), 'public_key');
-            $inspected = $this->keyInspector->inspect($publicKey);
-            $fingerprintUpper = $inspected['fingerprint'];
-            $fingerprintLower = strtolower($fingerprintUpper);
-            $identityId = 'openpgp:' . $fingerprintLower;
-            $identityPath = 'records/identity/identity-openpgp-' . $fingerprintLower . '.txt';
-            if (is_file($this->repositoryRoot . '/' . $identityPath)) {
-                throw new RuntimeException('Identity already exists for this fingerprint.');
-            }
+        $timings = [];
+        $totalStartedAt = hrtime(true);
+        try {
+            return $this->withTimedWriteLock(function () use ($input, &$timings, $totalStartedAt): array {
+                $this->assertWritableRepository();
+                $publicKey = $this->normalizeAsciiBody((string) ($input['public_key'] ?? ''), 'public_key');
+                $inspected = $this->timePhase($timings, 'gpg_key_inspect', fn (): array => $this->keyInspector->inspect($publicKey));
+                $fingerprintUpper = $inspected['fingerprint'];
+                $fingerprintLower = strtolower($fingerprintUpper);
+                $identityId = 'openpgp:' . $fingerprintLower;
+                $identityPath = 'records/identity/identity-openpgp-' . $fingerprintLower . '.txt';
+                if (is_file($this->repositoryRoot . '/' . $identityPath)) {
+                    throw new RuntimeException('Identity already exists for this fingerprint.');
+                }
 
-            $postId = $this->generateRecordId('bootstrap');
-            $createdAt = $this->canonicalTimestampNow();
-            $contents = $this->buildThreadPostRecord(
-                $postId,
-                $createdAt,
-                self::HIDDEN_BOOTSTRAP_BOARD_TAGS,
-                'account bootstrap',
-                "Automatic account bootstrap anchor.\n",
-                $identityId,
+                $postId = $this->generateRecordId('bootstrap');
+                $createdAt = $this->canonicalTimestampNow();
+                $contents = $this->buildThreadPostRecord(
+                    $postId,
+                    $createdAt,
+                    self::HIDDEN_BOOTSTRAP_BOARD_TAGS,
+                    'account bootstrap',
+                    "Automatic account bootstrap anchor.\n",
+                    $identityId,
+                );
+                (new PostRecordParser())->parse($contents);
+                $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
+                $prepared = $this->timePhase($timings, 'prepared_post_store', fn (): array => $this->storePreparedPost($recordPath, $contents, [
+                    'kind' => 'identity-bootstrap',
+                    'post_id' => $postId,
+                    'thread_id' => $postId,
+                    'author_identity_id' => $identityId,
+                    'created_at' => $createdAt,
+                    'public_key' => $publicKey,
+                    'fingerprint' => $fingerprintUpper,
+                    'username' => $inspected['username'],
+                ]));
+                $timings['write_total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+                return array_merge($prepared, [
+                    'status' => 'ok',
+                    'post_id' => $postId,
+                    'thread_id' => $postId,
+                    'record_path' => $recordPath,
+                    'canonical_record' => $contents,
+                    'timings' => $timings,
+                ]);
+            });
+        } catch (RuntimeException $exception) {
+            throw new IdentityBootstrapTimingException(
+                $exception->getMessage(),
+                $this->timingsWithTotal($timings, $totalStartedAt),
+                $exception,
             );
-            (new PostRecordParser())->parse($contents);
-            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
-            $prepared = $this->storePreparedPost($recordPath, $contents, [
-                'kind' => 'identity-bootstrap',
-                'post_id' => $postId,
-                'thread_id' => $postId,
-                'author_identity_id' => $identityId,
-                'created_at' => $createdAt,
-                'public_key' => $publicKey,
-                'fingerprint' => $fingerprintUpper,
-                'username' => $inspected['username'],
-            ]);
-
-            return array_merge($prepared, [
-                'status' => 'ok',
-                'post_id' => $postId,
-                'thread_id' => $postId,
-                'record_path' => $recordPath,
-                'canonical_record' => $contents,
-            ]);
-        });
+        }
     }
 
     /**
@@ -660,7 +672,10 @@ class LocalWriteService
      */
     public function createIdentityBootstrap(array $input): array
     {
-        return $this->withTimedWriteLock(function () use ($input): array {
+        $timings = [];
+        $totalStartedAt = hrtime(true);
+        try {
+            return $this->withTimedWriteLock(function () use ($input, &$timings, $totalStartedAt): array {
             $this->assertWritableRepository();
             $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
             $prepared = $this->loadPreparedPost($prepareToken);
@@ -676,17 +691,22 @@ class LocalWriteService
                 throw new RuntimeException('Prepared identity bootstrap canonical record mismatch.');
             }
             $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
-            $verification = $this->signatureVerifier->verifyDetached(
-                (string) $prepared['public_key'],
-                $canonicalRecord,
-                $signature,
-                (string) $prepared['fingerprint'],
+            $verification = $this->timePhase(
+                $timings,
+                'identity_signature_verify',
+                fn (): array => $this->signatureVerifier->verifyDetached(
+                    (string) $prepared['public_key'],
+                    $canonicalRecord,
+                    $signature,
+                    (string) $prepared['fingerprint'],
+                ),
             );
+            $timings = array_merge($timings, $verification['timings']);
             if (!$verification['ok']) {
                 throw new RuntimeException('Identity bootstrap signature verification failed: ' . $verification['status']);
             }
 
-            $record = (new PostRecordParser())->parse($canonicalRecord);
+            $record = $this->timePhase($timings, 'canonical_record_parse', fn (): PostRecord => (new PostRecordParser())->parse($canonicalRecord));
             $identityId = (string) $prepared['author_identity_id'];
             if ($record->postId !== (string) $prepared['post_id']
                 || $record->createdAt !== (string) $prepared['created_at']
@@ -716,23 +736,38 @@ class LocalWriteService
 
             $recordPath = (string) $prepared['record_path'];
             $publicKeyPath = 'records/public-keys/openpgp-' . $fingerprintUpper . '.asc';
-            $this->writeFile($recordPath, $canonicalRecord);
-            $this->writeFile($recordPath . '.asc', $signature);
-            if (!is_file($this->repositoryRoot . '/' . $publicKeyPath)) {
-                $this->writeFile($publicKeyPath, $publicKey);
-            }
-            $this->writeFile($identityPath, $identityContents);
-            $commitResult = $this->commitCanonicalWrite(
+            $this->timePhase($timings, 'identity_write_files', function () use ($recordPath, $canonicalRecord, $signature, $publicKeyPath, $publicKey, $identityPath, $identityContents) {
+                $this->writeFile($recordPath, $canonicalRecord);
+                $this->writeFile($recordPath . '.asc', $signature);
+                if (!is_file($this->repositoryRoot . '/' . $publicKeyPath)) {
+                    $this->writeFile($publicKeyPath, $publicKey);
+                }
+                $this->writeFile($identityPath, $identityContents);
+
+                return null;
+            });
+            $commitResult = $this->timePhase($timings, 'identity_commit', fn (): array => $this->commitCanonicalWrite(
                 [$recordPath, $recordPath . '.asc', $publicKeyPath, $identityPath],
                 'Link signed identity ' . $identityPath,
+            ));
+            $timings = array_merge($timings, $commitResult['timings']);
+            $derivedTimings = $this->timePhase(
+                $timings,
+                'identity_derived_state',
+                fn (): array => $this->synchronizeIdentityDerivedState($identityPath, $commitResult['commit_sha']),
             );
-            $this->synchronizeIdentityDerivedState($identityPath, $commitResult['commit_sha']);
-            $this->invalidator()->invalidateIdentityLink(
-                'openpgp-' . $fingerprintLower,
-                (string) $prepared['thread_id'],
-                (string) $prepared['post_id'],
-            );
-            $this->deletePreparedPost($prepareToken);
+            $timings = array_merge($timings, $derivedTimings);
+            $this->timePhase($timings, 'artifact_invalidate', function () use ($fingerprintLower, $prepared) {
+                $this->invalidator()->invalidateIdentityLink(
+                    'openpgp-' . $fingerprintLower,
+                    (string) $prepared['thread_id'],
+                    (string) $prepared['post_id'],
+                );
+
+                return null;
+            });
+            $this->timePhase($timings, 'prepared_post_delete', fn () => $this->deletePreparedPost($prepareToken));
+            $timings['write_total'] = $this->elapsedMilliseconds($totalStartedAt);
 
             return [
                 'status' => 'ok',
@@ -743,8 +778,16 @@ class LocalWriteService
                 'bootstrap_thread_id' => (string) $prepared['thread_id'],
                 'signature_path' => $recordPath . '.asc',
                 'commit_sha' => $commitResult['commit_sha'],
+                'timings' => $timings,
             ];
-        });
+            });
+        } catch (RuntimeException $exception) {
+            throw new IdentityBootstrapTimingException(
+                $exception->getMessage(),
+                $this->timingsWithTotal($timings, $totalStartedAt),
+                $exception,
+            );
+        }
     }
 
     /**
@@ -1687,6 +1730,33 @@ class LocalWriteService
     private function elapsedMilliseconds(int $startedAt): float
     {
         return round((hrtime(true) - $startedAt) / 1000000, 1);
+    }
+
+    /**
+     * @template T
+     * @param array<string, float|int> $timings
+     * @param callable(): T $callback
+     * @return T
+     */
+    private function timePhase(array &$timings, string $phase, callable $callback): mixed
+    {
+        $startedAt = hrtime(true);
+        try {
+            return $callback();
+        } finally {
+            $timings[$phase] = $this->elapsedMilliseconds($startedAt);
+        }
+    }
+
+    /**
+     * @param array<string, float|int> $timings
+     * @return array<string, float|int>
+     */
+    private function timingsWithTotal(array $timings, int $totalStartedAt): array
+    {
+        $timings['write_total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+        return $timings;
     }
 
     private function writeFile(string $relativePath, string $contents): void
