@@ -503,6 +503,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/forte_commit_detail') {
+            $this->handleForteCommitDetail($query);
+            return;
+        }
+
         if ($path === '/api/get_username_claim_cta') {
             $this->sendText("Generate a browser keypair, choose a username, and bootstrap your identity.\n", 200);
             return;
@@ -1168,16 +1173,47 @@ final class Application
             ];
         }
 
+        // Commits are a parallel, structurally different row set - not
+        // activity actions, so they're kept out of $itemsById/$items
+        // rather than forced into that shape. Only `date` is sortable for
+        // commits (resolveCommitSort() falls back to it for any other
+        // requested column), so a Kind/Label header click while browsing
+        // Commits has no effect on commit order - a deliberate Step 3 scope
+        // decision, not a bug.
+        ['column' => $commitSortColumn, 'direction' => $commitSortDirection] = $this->resolveCommitSort($requestedSort, $requestedDirection);
+        $commitResult = $this->fetchCommits($commitSortColumn, $commitSortDirection);
+        $commitItems = $commitResult['items'];
+        $lastCommit = $commitItems[count($commitItems) - 1] ?? null;
+        $viewPagination['commits'] = [
+            'has_more' => $commitResult['has_more'] && $lastCommit !== null,
+            'next_cursor' => $lastCommit !== null ? [
+                'sort_value' => $this->commitSortValueFromItem($lastCommit, $commitSortColumn),
+                'id' => (int) $lastCommit['id'],
+            ] : null,
+        ];
+        $viewCounts[] = [
+            'key' => 'commits',
+            'label' => 'Commits',
+            'count' => $this->countCommitsTotal(),
+            'loadedCount' => count($commitItems),
+        ];
+
         $selectedView = $this->normalizeActivityView($requestedView);
-        $selectedItemId = in_array($requestedSelected, $viewItemIds[$selectedView], true)
-            ? $requestedSelected
-            : (string) ($viewItemIds[$selectedView][0] ?? '');
+        // Commit selection is handled entirely client-side (Stage 4: fetched
+        // on demand when a commit row is clicked, not pre-selected here) -
+        // $viewItemIds has no 'commits' entry to look up against.
+        $selectedItemId = $selectedView === 'commits'
+            ? ''
+            : (in_array($requestedSelected, $viewItemIds[$selectedView], true)
+                ? $requestedSelected
+                : (string) ($viewItemIds[$selectedView][0] ?? ''));
         $sortHeaderLinks = $this->activitySortHeaderLinks($selectedView, $sortColumn, $sortDirection);
 
         return $this->renderer()->renderStandalonePage(
             'forte_activity.php',
             [
                 'items' => $items,
+                'commitItems' => $commitItems,
                 'viewCounts' => $viewCounts,
                 'selectedView' => $selectedView,
                 'selectedItemId' => $selectedItemId,
@@ -1208,10 +1244,6 @@ final class Application
     private function handleForteActivityPage(array $query): void
     {
         $view = $this->normalizeActivityView((string) ($query['view'] ?? ''));
-        ['column' => $sortColumn, 'direction' => $sortDirection] = $this->resolveActivitySort(
-            (string) ($query['sort'] ?? ''),
-            (string) ($query['dir'] ?? ''),
-        );
 
         $rawCursor = trim((string) ($query['cursor'] ?? ''));
         $cursor = null;
@@ -1238,11 +1270,54 @@ final class Application
             ];
         }
 
+        if ($view === 'commits') {
+            // Commits are a parallel row set with their own fetch/sort
+            // (Stage 2) and their own row partial (Stage 3) - and, unlike
+            // activity items, no eagerly-rendered detail article: Stage 4
+            // fetches a commit's full manifest on demand when it's
+            // selected, not for every loaded row up front.
+            ['column' => $commitSortColumn, 'direction' => $commitSortDirection] = $this->resolveCommitSort(
+                (string) ($query['sort'] ?? ''),
+                (string) ($query['dir'] ?? ''),
+            );
+            $commitResult = $this->fetchCommits($commitSortColumn, $commitSortDirection, $cursor);
+
+            $html = '';
+            foreach ($commitResult['items'] as $item) {
+                $html .= $this->renderer()->renderFragment('partials/paned_activity_commit_row.php', [
+                    'item' => $item,
+                    'isSelected' => false,
+                    'isTabStop' => false,
+                    'visible' => true,
+                ]);
+            }
+
+            $lastCommit = $commitResult['items'][count($commitResult['items']) - 1] ?? null;
+            $hasMore = $commitResult['has_more'] && $lastCommit !== null;
+            $nextCursor = $lastCommit !== null ? [
+                'sort_value' => $this->commitSortValueFromItem($lastCommit, $commitSortColumn),
+                'id' => (int) $lastCommit['id'],
+            ] : null;
+
+            $this->sendJson([
+                'status' => 'ok',
+                'html' => $html,
+                'detail_html' => '',
+                'has_more' => $hasMore,
+                'next_cursor' => $nextCursor,
+            ], 200);
+            return;
+        }
+
+        ['column' => $sortColumn, 'direction' => $sortDirection] = $this->resolveActivitySort(
+            (string) ($query['sort'] ?? ''),
+            (string) ($query['dir'] ?? ''),
+        );
+
         $result = $this->fetchActivity($view, $sortColumn, $sortDirection, $cursor);
 
         $html = '';
         $detailHtml = '';
-        $commitManifestsBySha = [];
         foreach ($result['items'] as $item) {
             $item['forte_link'] = $this->activityItemBoardLink($item);
             foreach (['all', 'content', 'identity', 'bootstrap', 'approval'] as $flagView) {
@@ -1265,23 +1340,6 @@ final class Application
                 'item' => $item,
                 'isSelected' => false,
             ]);
-
-            // Same dedup-by-commit-sha the full page render does (see
-            // paned_activity_detail_pane.php) - the client-side merge also
-            // skips a sha it already has, so a redundant block emitted here
-            // for a commit an earlier page already rendered is harmless.
-            $files = $item['source_commit_files'] ?? [];
-            $sha = (string) ($item['source_commit_sha'] ?? '');
-            if ($files !== [] && $sha !== '' && !isset($commitManifestsBySha[$sha])) {
-                $commitManifestsBySha[$sha] = true;
-                $detailHtml .= '<div data-paned-activity-commit-manifest="' . htmlspecialchars($sha, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '" hidden>'
-                    . $this->renderer()->renderFragment('partials/activity_commit_manifest.php', [
-                        'files' => $files,
-                        'commit_sha' => $sha,
-                        'commit_href' => $item['source_commit_href'] ?? '',
-                    ])
-                    . '</div>';
-            }
         }
 
         $lastItem = $result['items'][count($result['items']) - 1] ?? null;
@@ -1298,6 +1356,39 @@ final class Application
             'has_more' => $hasMore,
             'next_cursor' => $nextCursor,
         ], 200);
+    }
+
+    /**
+     * A commit's full file manifest is fetched on demand, not pre-rendered
+     * for every loaded row the way activity items' detail articles are -
+     * some commits touch thousands of files, and only one is ever viewed at
+     * a time, so eagerly rendering all of them (as Stage 3's row list does)
+     * would recreate the exact page-bloat problem the shared-manifest-block
+     * mechanism was built to work around.
+     *
+     * @param array<string, mixed> $query
+     */
+    private function handleForteCommitDetail(array $query): void
+    {
+        $sha = (string) ($query['sha'] ?? '');
+        if (preg_match('/^[0-9a-f]{40}$/', $sha) !== 1) {
+            $this->sendJson(['status' => 'error', 'error' => 'invalid sha'], 400);
+            return;
+        }
+
+        $files = $this->activityCommitManifest($sha);
+        if ($files === null) {
+            $this->sendJson(['status' => 'error', 'error' => 'commit not found'], 404);
+            return;
+        }
+
+        $html = $this->renderer()->renderFragment('partials/activity_commit_manifest.php', [
+            'files' => $files,
+            'commit_sha' => $sha,
+            'commit_href' => $this->sourceCommitHref($sha) ?? '',
+        ]);
+
+        $this->sendJson(['status' => 'ok', 'html' => $html], 200);
     }
 
     /**
@@ -4077,7 +4168,7 @@ final class Application
             $sourcePath = $post['source_path'] !== null ? (string) $post['source_path'] : '';
             $sourceCommitSha = $post['source_commit_sha'] !== null ? (string) $post['source_commit_sha'] : '';
             $signature = $this->sourceSignatureLink($sourcePath);
-            return [
+            $item = [
                 'created_at' => $post['created_at'],
                 'kind' => $post['kind'],
                 'record_family' => $post['record_family'],
@@ -4105,6 +4196,9 @@ final class Application
                 'author_username_token' => $post['author_username_token'],
                 'author_is_approved' => (int) $post['author_is_approved'],
             ];
+            $item['relevant_files'] = $this->activityItemRelevantFiles($item);
+
+            return $item;
         }, $rows);
 
         $items = array_values(array_filter($items, function (array $item) use ($view): bool {
@@ -4248,6 +4342,115 @@ final class Application
             'kind' => (string) $item['kind'],
             'label' => (string) $item['label'],
             default => (string) $item['created_at'],
+        };
+    }
+
+    /**
+     * Mirrors `fetchActivity()`'s keyset-cursor pagination shape, over the
+     * `commits` table instead of `activity` - a commit has no "view" to
+     * filter by, so this is simpler than `fetchActivity()` (no WHERE
+     * fragment beyond the cursor itself).
+     *
+     * @param array{sort_value: string, id: int}|null $afterCursor
+     * @return array{items: array<int, array<string, mixed>>, has_more: bool}
+     */
+    private function fetchCommits(string $sortColumn, string $sortDirection, ?array $afterCursor = null): array
+    {
+        ['column' => $sortColumn, 'direction' => $sortDirection] = $this->resolveCommitSort($sortColumn, $sortDirection);
+        $sortColumnSql = $this->commitSortSql($sortColumn);
+        $sortDirectionSql = $sortDirection === 'desc' ? 'DESC' : 'ASC';
+
+        $cursorWhere = '';
+        $parameters = [];
+        if ($afterCursor !== null) {
+            $comparisonOperator = $sortDirection === 'desc' ? '<' : '>';
+            $cursorWhere = 'WHERE (
+                ' . $sortColumnSql . ' ' . $comparisonOperator . ' :cursor_sort_value
+                OR (' . $sortColumnSql . ' = :cursor_sort_value AND commits.id ' . $comparisonOperator . ' :cursor_id)
+            )';
+            $parameters['cursor_sort_value'] = $afterCursor['sort_value'];
+            $parameters['cursor_id'] = $afterCursor['id'];
+        }
+
+        $stmt = $this->pdo()->prepare(
+            'SELECT commits.sha, commits.author_name, commits.author_email, commits.committed_at,
+                    commits.subject, commits.file_count, commits.id
+             FROM commits
+             ' . $cursorWhere . '
+             ORDER BY ' . $sortColumnSql . ' ' . $sortDirectionSql . ', commits.id ' . $sortDirectionSql . '
+             LIMIT :limit'
+        );
+        foreach ($parameters as $parameter => $value) {
+            $stmt->bindValue($parameter, $value);
+        }
+        // Reuses the same page size as fetchActivity(): fetch one extra row
+        // to detect whether a next page exists, then trim it back off.
+        $stmt->bindValue('limit', self::ACTIVITY_ITEM_LIMIT + 1, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        $hasMore = count($rows) > self::ACTIVITY_ITEM_LIMIT;
+        if ($hasMore) {
+            $rows = array_slice($rows, 0, self::ACTIVITY_ITEM_LIMIT);
+        }
+
+        $items = array_map(static fn (array $row): array => [
+            'sha' => (string) $row['sha'],
+            'author_name' => (string) $row['author_name'],
+            'author_email' => (string) $row['author_email'],
+            'committed_at' => (string) $row['committed_at'],
+            'subject' => (string) $row['subject'],
+            'file_count' => (int) $row['file_count'],
+            'id' => (int) $row['id'],
+        ], $rows);
+
+        return ['items' => $items, 'has_more' => $hasMore];
+    }
+
+    /**
+     * Full commit count for the Commits view's left-pane folder count -
+     * mirrors `countActivityViewTotal()`'s purpose, but every commit
+     * counts (no per-view filter to apply).
+     */
+    private function countCommitsTotal(): int
+    {
+        return (int) $this->pdo()->query('SELECT COUNT(*) FROM commits')->fetchColumn();
+    }
+
+    /**
+     * Mirrors `resolveActivitySort()`'s shape for the Commits view. Only
+     * `date` is sortable for now - kept as its own small resolver (not
+     * folded into `resolveActivitySort()`) since the two views' valid
+     * column sets are unrelated.
+     *
+     * @return array{column: string, direction: string}
+     */
+    private function resolveCommitSort(string $requestedColumn, string $requestedDirection): array
+    {
+        $validColumns = ['date'];
+        $column = in_array($requestedColumn, $validColumns, true) ? $requestedColumn : 'date';
+        $direction = in_array($requestedDirection, ['asc', 'desc'], true) ? $requestedDirection : 'desc';
+
+        return ['column' => $column, 'direction' => $direction];
+    }
+
+    private function commitSortSql(string $column): string
+    {
+        return match ($column) {
+            default => 'commits.committed_at',
+        };
+    }
+
+    /**
+     * Mirrors `activitySortValueFromItem()`, for building a commit's
+     * keyset cursor from the last item on a page.
+     *
+     * @param array<string, mixed> $item
+     */
+    private function commitSortValueFromItem(array $item, string $column): string
+    {
+        return match ($column) {
+            default => (string) $item['committed_at'],
         };
     }
 
@@ -4410,7 +4613,7 @@ final class Application
 
     private function normalizeActivityView(string $view): string
     {
-        return in_array($view, ['all', 'content', 'identity', 'bootstrap', 'approval'], true) ? $view : 'all';
+        return in_array($view, ['all', 'content', 'identity', 'bootstrap', 'approval', 'commits'], true) ? $view : 'all';
     }
 
     private function preview(string $body): string
@@ -6904,6 +7107,140 @@ final class Application
         $this->activityCommitManifestCache[$commitSha] = $manifest;
 
         return $manifest;
+    }
+
+    /**
+     * Narrows a commit's full file manifest down to the files one action's
+     * detail view should show: its own record, and that record's detached
+     * signature (if any) - never the rest of the commit, which can run to
+     * thousands of files for actions that happen to share a large
+     * historical commit (e.g. the original archive import). identity_
+     * bootstrap is the one compound action that also establishes a separate
+     * identity record in the same commit.
+     *
+     * The signer's public key only gets its own row when this action's own
+     * commit actually introduced it (e.g. a fresh identity_bootstrap, which
+     * adds the key alongside the record and signature it authenticates) -
+     * genuinely one of the files this action added, not just referenced.
+     * When the key instead already existed from some earlier, unrelated
+     * commit (the common case: a key is normally established once and
+     * reused for everything it later signs), it isn't a file this action
+     * added, and it's already named and linked on the signature's own entry
+     * ("Public key:"), so a standalone row for it would just repeat the
+     * same file a second time without saying anything new.
+     *
+     * The signature itself is resolved independent of whether it's actually
+     * part of *this* item's own commit - it can occasionally live in a
+     * different commit than the record it signs. Only the item's own record
+     * - and, for identity_bootstrap, its paired identity record - is
+     * guaranteed to be part of the item's own commit (that's precisely the
+     * commit source_commit_sha names); everything else falls back to a
+     * standalone entry built the same way activityCommitManifest() would
+     * build it, just not sourced from that one commit's diff.
+     *
+     * @param array<string, mixed> $item
+     * @return list<array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}>
+     */
+    private function activityItemRelevantFiles(array $item): array
+    {
+        $sourcePath = (string) ($item['source_path'] ?? '');
+        if ($sourcePath === '') {
+            return [];
+        }
+
+        $byPath = [];
+        foreach (($item['source_commit_files'] ?? []) as $file) {
+            $byPath[$file['path']] = $file;
+        }
+
+        $files = [];
+
+        $files[] = $byPath[$sourcePath] ?? $this->standaloneRelevantFile(
+            $sourcePath,
+            (string) ($item['source_path_href'] ?? ''),
+            $this->sourceCommitFileRole($sourcePath),
+        );
+
+        if ((string) ($item['record_family'] ?? '') === 'identity_bootstrap') {
+            $identityId = $this->signatureSignerIdentityId($sourcePath);
+            $fingerprint = $identityId !== null ? $this->openPgpFingerprintFromIdentityId($identityId) : null;
+            if ($fingerprint !== null) {
+                $identityRecordPath = CanonicalPathResolver::identity(strtolower($fingerprint));
+                $identityRecordHref = $this->currentSourcePathExists($identityRecordPath)
+                    ? '/source/current/' . $this->encodeSourcePathForUrl($identityRecordPath)
+                    : '';
+                $files[] = $byPath[$identityRecordPath] ?? $this->standaloneRelevantFile(
+                    $identityRecordPath,
+                    $identityRecordHref,
+                    'identity record',
+                );
+            }
+        }
+
+        $signaturePath = (string) ($item['source_signature_path'] ?? '');
+        if ($signaturePath !== '') {
+            $signatureEntry = $byPath[$signaturePath] ?? $this->standaloneSignatureRelevantFile(
+                $signaturePath,
+                (string) ($item['source_signature_href'] ?? ''),
+            );
+            $files[] = $signatureEntry;
+
+            // The public key only gets its own row when this action's own
+            // commit actually added/touched it - e.g. a fresh
+            // identity_bootstrap, which introduces the key alongside the
+            // record and signature it authenticates. When the key instead
+            // already existed from some earlier, unrelated commit (the
+            // common case for an ordinary signed post - a key is normally
+            // established once and reused for everything it later signs),
+            // it isn't really a file *this* action added, and it's already
+            // named and linked on the signature entry itself ("Public
+            // key:"), so a standalone row for it would just repeat the same
+            // file a second time without saying anything new.
+            $publicKeyPath = $signatureEntry['signature_public_key_path'];
+            if ($publicKeyPath !== '' && isset($byPath[$publicKeyPath])) {
+                $files[] = $byPath[$publicKeyPath];
+            }
+        }
+
+        return $files;
+    }
+
+    /**
+     * @return array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}
+     */
+    private function standaloneRelevantFile(string $path, string $href, string $role): array
+    {
+        return [
+            'status' => 'current',
+            'path' => $path,
+            'previous_path' => '',
+            'role' => $role,
+            'href' => $href,
+            'signature_signer_identity' => '',
+            'signature_public_key_path' => '',
+            'signature_public_key_href' => '',
+            'signature_key_status' => '',
+        ];
+    }
+
+    /**
+     * @return array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}
+     */
+    private function standaloneSignatureRelevantFile(string $signaturePath, string $href): array
+    {
+        $signature = $this->activityCommitSignatureMetadata($signaturePath);
+
+        return [
+            'status' => 'current',
+            'path' => $signaturePath,
+            'previous_path' => '',
+            'role' => 'detached signature',
+            'href' => $href,
+            'signature_signer_identity' => $signature['signer_identity'],
+            'signature_public_key_path' => $signature['public_key_path'],
+            'signature_public_key_href' => $signature['public_key_href'],
+            'signature_key_status' => $signature['status'],
+        ];
     }
 
     private function sourceCommitFileRole(string $path): string

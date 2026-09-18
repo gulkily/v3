@@ -6,16 +6,15 @@
 $itemId = (string) $item['id'];
 $forteLink = $item['forte_link'] ?? ['href' => '', 'label' => ''];
 $commitSha = (string) ($item['source_commit_sha'] ?? '');
-// The commit manifest itself is rendered once per unique commit sha (see
-// paned_activity_detail_pane.php), not inline here: most items reuse a
-// handful of shared bootstrap/seed commits, and duplicating a
-// thousands-of-files manifest into every item that touched one made the
-// page tens of megabytes. JS moves the matching shared block into view
-// here (data-paned-activity-commit-sha is how it finds it) when this
-// article is selected.
-$hasCommitManifest = ($item['source_commit_files'] ?? []) !== [] && $commitSha !== '';
+// Only this item's own relevant files (its record, an identity_bootstrap's
+// paired identity record, its signature, and the signer's public key) are
+// shown here - never the rest of the commit, which can run to thousands of
+// files for items that happen to share a large historical commit. See
+// Application::activityItemRelevantFiles().
+$relevantFiles = $item['relevant_files'] ?? [];
+$hasRelevantFiles = $relevantFiles !== [];
 ?>
-<article class="paned-content-post" data-paned-activity-content-item-id="<?= $e($itemId) ?>"<?= $hasCommitManifest ? ' data-paned-activity-commit-sha="' . $e($commitSha) . '"' : '' ?><?= $isSelected ? '' : ' hidden' ?>>
+<article class="paned-content-post" data-paned-activity-content-item-id="<?= $e($itemId) ?>"<?= $isSelected ? '' : ' hidden' ?>>
   <div class="paned-content-head">
     <div class="paned-content-subject"><?= $e((string) $item['kind']) ?></div>
     <div class="paned-content-meta">
@@ -31,7 +30,14 @@ $hasCommitManifest = ($item['source_commit_files'] ?? []) !== [] && $commitSha !
 <?php if ((string) ($item['author_label'] ?? '') === 'reply-agent'): ?>
       <p class="meta">Author: reply-agent <span class="agent-label">automated reply agent</span></p>
 <?php endif; ?>
-<?php if (!$hasCommitManifest): ?>
+<?php if ($hasRelevantFiles): ?>
+<?= $indent($partial('partials/activity_commit_manifest.php', [
+        'files' => $relevantFiles,
+        'commit_sha' => $commitSha,
+        'commit_href' => $item['source_commit_href'] ?? '',
+        'heading' => 'Relevant files',
+      ]), 3) ?>
+<?php else: ?>
 <?= $indent($partial('partials/source_metadata.php', [
         'source_path' => $item['source_path'] ?? '',
         'source_commit_sha' => $item['source_commit_sha'] ?? '',

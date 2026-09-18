@@ -6,7 +6,7 @@
   var rows = [];
   var placeholder;
   var contentItems = [];
-  var commitManifestBlocks = [];
+  var commitDetailCache = Object.create(null);
   var statusCount;
   var loadMoreGroup;
   var loadMoreButtons = [];
@@ -54,6 +54,10 @@
     contentItems.forEach(function (article) {
       article.hidden = true;
     });
+    var existingCommitArticle = contentPane ? contentPane.querySelector("[data-paned-activity-commit-detail]") : null;
+    if (existingCommitArticle) {
+      existingCommitArticle.hidden = true;
+    }
     rows.forEach(function (row) {
       row.classList.remove("paned-list-row--selected");
       row.setAttribute("aria-selected", "false");
@@ -68,37 +72,134 @@
     }
   }
 
-  // Each commit's file manifest is rendered once (not once per item that
-  // happens to share it - some bootstrap/seed commits touch thousands of
-  // files and are referenced by most items, so duplicating that per item
-  // made the page tens of megabytes). Selecting an item moves its
-  // matching shared block into view inside that item's own article.
-  function showCommitManifestFor(article) {
-    var sha = article.getAttribute("data-paned-activity-commit-sha") || "";
-    commitManifestBlocks.forEach(function (block) {
-      if (sha !== "" && block.getAttribute("data-paned-activity-commit-manifest") === sha) {
-        block.hidden = false;
-        var body = article.querySelector(".body");
-        if (body) {
-          body.appendChild(block);
+  // A commit row's detail isn't one of contentItems' pre-rendered articles
+  // (unlike activity items, a commit's full manifest is fetched on demand -
+  // see showCommitDetail) - it's a one-off article created/reused here and
+  // kept out of the contentItems array entirely.
+  function commitDetailArticle() {
+    return contentPane ? contentPane.querySelector("[data-paned-activity-commit-detail]") : null;
+  }
+
+  function commitRowSubjectAndDate(sha) {
+    var row = rows.filter(function (candidate) {
+      return candidate.getAttribute("data-paned-activity-commit-sha") === sha;
+    })[0];
+    if (!row) {
+      return { subject: "", date: "" };
+    }
+    var subjectEl = row.querySelector(".paned-list-subject");
+    var dateEl = row.querySelector(".paned-list-date");
+    return {
+      subject: subjectEl ? subjectEl.textContent : "",
+      date: dateEl ? dateEl.textContent : "",
+    };
+  }
+
+  function renderCommitDetailArticle(sha, bodyHtml) {
+    var article = commitDetailArticle();
+    if (!article) {
+      article = document.createElement("article");
+      article.className = "paned-content-post";
+      contentPane.appendChild(article);
+    }
+    article.setAttribute("data-paned-activity-commit-detail", sha);
+    article.hidden = false;
+
+    // The head (subject/date) comes straight from the already-rendered row,
+    // so it appears immediately - only the file manifest itself needs a
+    // fetch, since that's the part too expensive to pre-render per row.
+    var rowInfo = commitRowSubjectAndDate(sha);
+    var head = document.createElement("div");
+    head.className = "paned-content-head";
+    var subjectDiv = document.createElement("div");
+    subjectDiv.className = "paned-content-subject";
+    subjectDiv.textContent = rowInfo.subject || sha.slice(0, 12);
+    head.appendChild(subjectDiv);
+    if (rowInfo.date) {
+      var metaDiv = document.createElement("div");
+      metaDiv.className = "paned-content-meta";
+      var dateSpan = document.createElement("span");
+      dateSpan.textContent = rowInfo.date;
+      metaDiv.appendChild(dateSpan);
+      head.appendChild(metaDiv);
+    }
+
+    var card = document.createElement("div");
+    card.className = "post-card paned-post-card";
+    var body = document.createElement("div");
+    body.className = "body";
+    body.innerHTML = bodyHtml;
+    card.appendChild(body);
+
+    article.innerHTML = "";
+    article.appendChild(head);
+    article.appendChild(card);
+  }
+
+  function showCommitDetail(sha) {
+    if (!contentPane) {
+      return;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(commitDetailCache, sha)) {
+      renderCommitDetailArticle(sha, commitDetailCache[sha]);
+      return;
+    }
+
+    renderCommitDetailArticle(sha, '<p class="meta">Loading…</p>');
+
+    fetch("/api/forte_commit_detail?sha=" + encodeURIComponent(sha))
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error("commit detail fetch failed");
         }
-      } else {
-        block.hidden = true;
-      }
-    });
+        return response.json();
+      })
+      .then(function (data) {
+        if (data.status !== "ok") {
+          throw new Error("commit detail fetch failed");
+        }
+        commitDetailCache[sha] = data.html;
+        // A slower, now-stale response for a commit the user has since
+        // navigated away from must not clobber whatever is shown now.
+        var article = commitDetailArticle();
+        if (article && article.getAttribute("data-paned-activity-commit-detail") === sha) {
+          var body = article.querySelector(".body");
+          if (body) {
+            body.innerHTML = data.html;
+          }
+        }
+      })
+      .catch(function () {
+        var article = commitDetailArticle();
+        if (article && article.getAttribute("data-paned-activity-commit-detail") === sha) {
+          var body = article.querySelector(".body");
+          if (body) {
+            body.innerHTML = '<p class="meta">Failed to load commit details.</p>';
+          }
+        }
+      });
   }
 
   function selectItem(itemId) {
     if (placeholder) {
       placeholder.hidden = true;
     }
+
+    var isCommit = itemId.indexOf("commit-") === 0;
+
     contentItems.forEach(function (article) {
-      var isSelected = article.getAttribute("data-paned-activity-content-item-id") === itemId;
+      var isSelected = !isCommit && article.getAttribute("data-paned-activity-content-item-id") === itemId;
       article.hidden = !isSelected;
-      if (isSelected) {
-        showCommitManifestFor(article);
-      }
     });
+
+    var existingCommitArticle = commitDetailArticle();
+    if (isCommit) {
+      showCommitDetail(itemId.slice("commit-".length));
+    } else if (existingCommitArticle) {
+      existingCommitArticle.hidden = true;
+    }
+
     rows.forEach(function (row) {
       var isSelected = row.getAttribute("data-paned-activity-id") === itemId;
       row.classList.toggle("paned-list-row--selected", isSelected);
@@ -115,6 +216,55 @@
     });
   }
 
+  // The sort header hrefs are baked in by the server at render time for
+  // whatever view was selected then. Switching views is otherwise purely
+  // client-side (selectFilter() just toggles which already-loaded rows are
+  // visible, with no round trip) - without this, a sort click after a
+  // client-side filter switch would navigate using the stale href from the
+  // last server render and silently land back on that older view.
+  function updateSortHeaderHrefs(view) {
+    if (!sortHead) {
+      return;
+    }
+
+    var buttons = Array.prototype.slice.call(sortHead.querySelectorAll("[data-paned-sort-href]"));
+    buttons.forEach(function (button) {
+      var href = button.getAttribute("data-paned-sort-href");
+      if (!href) {
+        return;
+      }
+
+      var url = new URL(href, location.origin);
+      if (view === "all") {
+        url.searchParams.delete("view");
+      } else {
+        url.searchParams.set("view", view);
+      }
+      button.setAttribute("data-paned-sort-href", url.pathname + url.search);
+    });
+  }
+
+  // Same staleness problem as updateSortHeaderHrefs() above: the Commits
+  // view's first two columns are shas/subjects, not kind/label activity
+  // records, so the server renders "Hash"/"Subject" instead of "Kind"/
+  // "Label" there - but switching views is otherwise purely client-side,
+  // so a filter click into or out of Commits needs to relabel them itself.
+  function updateSortHeaderLabels(view) {
+    if (!sortHead) {
+      return;
+    }
+
+    var kindButton = sortHead.querySelector('[data-paned-sort-column="kind"]');
+    var labelButton = sortHead.querySelector('[data-paned-sort-column="label"]');
+    var isCommits = view === "commits";
+    if (kindButton) {
+      kindButton.textContent = isCommits ? "Hash" : "Kind";
+    }
+    if (labelButton) {
+      labelButton.textContent = isCommits ? "Subject" : "Label";
+    }
+  }
+
   function selectFilter(view) {
     filterItems.forEach(function (item) {
       var isSelected = item.getAttribute("data-paned-activity-view") === view;
@@ -122,6 +272,9 @@
       item.setAttribute("aria-selected", isSelected ? "true" : "false");
       item.setAttribute("tabindex", isSelected ? "0" : "-1");
     });
+
+    updateSortHeaderHrefs(view);
+    updateSortHeaderLabels(view);
 
     var selectedRowNowHidden = false;
     var visibleCount = 0;
@@ -189,12 +342,24 @@
     })[0];
 
     if (!selectedRow) {
-      var fallback = firstVisibleRow();
-      if (fallback) {
-        selectItem(fallback.getAttribute("data-paned-activity-id"));
-      } else {
-        resetContentPane();
+      // Auto-picking the first row is a reasonable "just show me
+      // something" default under date order (the newest/oldest item),
+      // but under kind/label sort the alphabetically-first item is just
+      // as likely to be some huge bootstrap/seed record as anything else
+      // - dropping the user straight into e.g. a thousand-file commit
+      // manifest they never asked to see reads as broken, not helpful,
+      // so skip auto-selection for those sorts and leave the placeholder
+      // showing until they actually pick something.
+      var sortColumn = currentSortFromUrl();
+      var nonDateSortActive = sortColumn !== "" && sortColumn !== "date";
+      if (!nonDateSortActive) {
+        var fallback = firstVisibleRow();
+        if (fallback) {
+          selectItem(fallback.getAttribute("data-paned-activity-id"));
+          return;
+        }
       }
+      resetContentPane();
       return;
     }
 
@@ -235,17 +400,6 @@
     template.innerHTML = html;
     var incomingNodes = Array.prototype.slice.call(template.content.children);
     incomingNodes.forEach(function (node) {
-      // A shared commit-manifest block (dedup by sha) or a per-item
-      // article (dedup by item id) - a batch can contain both, and the
-      // sha a later batch repeats must not be appended twice either.
-      var manifestSha = node.getAttribute("data-paned-activity-commit-manifest");
-      if (manifestSha !== null) {
-        if (!contentPane.querySelector('[data-paned-activity-commit-manifest="' + manifestSha + '"]')) {
-          contentPane.appendChild(node);
-        }
-        return;
-      }
-
       var id = node.getAttribute("data-paned-activity-content-item-id");
       if (!contentPane.querySelector('[data-paned-activity-content-item-id="' + id + '"]')) {
         contentPane.appendChild(node);
@@ -341,7 +495,6 @@
     rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
     placeholder = contentPane.querySelector("[data-paned-activity-content-placeholder]");
     contentItems = Array.prototype.slice.call(contentPane.querySelectorAll("[data-paned-activity-content-item-id]"));
-    commitManifestBlocks = Array.prototype.slice.call(contentPane.querySelectorAll("[data-paned-activity-commit-manifest]"));
     statusCount = document.querySelector("[data-paned-activity-status-count]");
     loadMoreGroup = document.querySelector("[data-paned-activity-load-more-group]");
     loadMoreButtons = loadMoreGroup
@@ -459,9 +612,6 @@
             if (contentPane) {
               contentItems = Array.prototype.slice.call(
                 contentPane.querySelectorAll("[data-paned-activity-content-item-id]")
-              );
-              commitManifestBlocks = Array.prototype.slice.call(
-                contentPane.querySelectorAll("[data-paned-activity-commit-manifest]")
               );
             }
 
