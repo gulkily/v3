@@ -35,8 +35,10 @@ class IncrementalReadModelUpdater
         $pdo->beginTransaction();
 
         try {
-            $this->measure($timings, 'ensure_bootstrap_post', fn (): mixed => $this->ensureBootstrapPost($pdo, $record));
             $profile = $this->measure($timings, 'insert_profile', fn (): array => $this->insertProfile($pdo, $record));
+            // A freshly created bootstrap post is authored by this identity, so
+            // its author profile must exist before the post can be materialized.
+            $this->measure($timings, 'ensure_bootstrap_post', fn (): mixed => $this->ensureBootstrapPost($pdo, $record));
             $this->measure($timings, 'ensure_username_route', fn (): mixed => $this->ensureUsernameRoute($pdo, $profile));
             $this->measure($timings, 'link_posts', fn (): mixed => $this->linkIdentityPosts($pdo, $profile));
             $this->measure($timings, 'link_activity', fn (): mixed => $this->linkIdentityActivity($pdo, $profile));

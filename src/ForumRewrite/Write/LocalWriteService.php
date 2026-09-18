@@ -1155,7 +1155,13 @@ class LocalWriteService
             $this->writeFile($recordPath, $canonicalRecord);
             $this->writeFile($recordPath . '.asc', $signature);
             $commitResult = $this->commitCanonicalWrite([$recordPath, $recordPath . '.asc'], ucfirst($record->action) . ' invitation ' . $record->invitationId . ' by ' . $authorIdentityId);
-            $this->synchronizePostDerivedState($record->post, $commitResult['commit_sha']);
+            if ($record->action === 'redeem') {
+                // A redemption derives member approval from the issuer's existing
+                // approval, so it needs the approval-aware projection update.
+                $this->synchronizeApprovalDerivedState($record->post, $commitResult['commit_sha']);
+            } else {
+                $this->synchronizePostDerivedState($record->post, $commitResult['commit_sha']);
+            }
             $this->deletePreparedPost($prepareToken);
 
             return [
