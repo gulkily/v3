@@ -2543,6 +2543,7 @@ final class LocalAppSmokeTest
         assertStringContains('<p class="eyebrow">chouse</p>', $chouseBoard);
         assertStringContains('data-default-theme="auto"', $zenmemesBoard);
         assertStringContains('data-default-theme="chouse"', $chouseBoard);
+        assertStringContains("if (allowed.indexOf(theme) === -1) {\n        theme = document.documentElement.getAttribute('data-default-theme');", $chouseBoard);
         assertStringContains('Hackable by design', $chouseAbout);
         assertStringContains('easy to build tools, experiments, and new ways of participating', $chouseAbout);
     }

@@ -6,13 +6,20 @@
   <title><?= $e($title) ?></title>
   <script>
     (function () {
+      var allowed = <?= json_encode($explicitThemeNames, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+      var theme = null;
+
       try {
-        var theme = localStorage.getItem('zenmemes-theme');
-        var allowed = <?= json_encode($explicitThemeNames, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
-        if (allowed.indexOf(theme) !== -1) {
-          document.documentElement.setAttribute('data-theme', theme);
-        }
+        theme = localStorage.getItem('zenmemes-theme');
       } catch (error) {
+      }
+
+      if (allowed.indexOf(theme) === -1) {
+        theme = document.documentElement.getAttribute('data-default-theme');
+      }
+
+      if (allowed.indexOf(theme) !== -1) {
+        document.documentElement.setAttribute('data-theme', theme);
       }
 
       try {
