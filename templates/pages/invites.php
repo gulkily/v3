@@ -1,7 +1,7 @@
 <section class="stack" data-invitation-page>
   <article class="card">
     <h1>Generate invite</h1>
-    <p>Create a one-time invitation for a new disposable browser-key identity.</p>
+    <p>Create a one-time invitation for a new auto-approved identity.</p>
   </article>
   <article class="card">
     <form data-invitation-issue-form>
