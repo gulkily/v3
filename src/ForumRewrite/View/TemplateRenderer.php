@@ -130,7 +130,7 @@ final class TemplateRenderer
         if ($viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
             && (($viewerProfile['_authenticated_identity'] ?? true) === true)) {
-            $items[] = ['href' => '/invites/', 'label' => 'Invite', 'section' => 'account', 'invite_action' => true];
+            $items[] = ['href' => '/invites/', 'label' => 'Invite', 'section' => 'invite', 'invite_action' => true];
         }
 
         return $items;

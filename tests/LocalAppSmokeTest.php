@@ -79,6 +79,20 @@ final class LocalAppSmokeTest
         }
     }
 
+    public function testInviteNavigationHighlightsOnlyInvite(): void
+    {
+        $renderer = new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__) . '/templates');
+        $html = $renderer->renderLayout(
+            'Invite',
+            '<main></main>',
+            'invite',
+            viewerProfile: ['is_approved' => 1, '_authenticated_identity' => true],
+        );
+
+        assertStringContains('class="nav-link" href="/account/key/">Account</a>', $html);
+        assertStringContains('class="nav-link is-active" href="/invites/" data-invite-navigation>Invite</a>', $html);
+    }
+
     public function testClearingIdentityRevokesApprovedPrivateSession(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');

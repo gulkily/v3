@@ -3698,7 +3698,7 @@ final class Application
             'invites.php',
             ['destination' => trim((string) ($query['destination'] ?? ''))],
             'Generate invite',
-            'account',
+            'invite',
             ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/invite_issuance.js'],
         );
     }
