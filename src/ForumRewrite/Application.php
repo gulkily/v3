@@ -6907,24 +6907,27 @@ final class Application
 
     /**
      * Narrows a commit's full file manifest down to the files one action's
-     * detail view should show: its own record, that record's detached
-     * signature (if any), and the signer's public key (if any) - never the
-     * rest of the commit, which can run to thousands of files for actions
-     * that happen to share a large historical commit (e.g. the original
-     * archive import). identity_bootstrap is the one compound action that
-     * also establishes a separate identity record in the same commit.
+     * detail view should show: its own record, and that record's detached
+     * signature (if any) - never the rest of the commit, which can run to
+     * thousands of files for actions that happen to share a large
+     * historical commit (e.g. the original archive import). The signer's
+     * public key isn't a separate entry here: it's already named and linked
+     * on the signature entry itself (a signature and "its" key never
+     * disagree, since both come from the same signing-key lookup), so
+     * listing it again as its own row would just repeat the same file.
+     * identity_bootstrap is the one compound action that also establishes a
+     * separate identity record in the same commit.
      *
-     * The signature and public key are resolved independent of whether
-     * they're actually part of *this* item's own commit - a signing key is
-     * normally established once and reused across every later post it
-     * signs, so it (and sometimes even the signature itself) typically
-     * lives in a different, earlier commit than the record it signs. Only
-     * the item's own record - and, for identity_bootstrap, its paired
-     * identity record - is guaranteed to be part of the item's own commit
-     * (that's precisely the commit source_commit_sha names); everything
-     * else falls back to a standalone entry built the same way
-     * activityCommitManifest() would build it, just not sourced from that
-     * one commit's diff.
+     * The signature is resolved independent of whether it's actually part
+     * of *this* item's own commit - a signing key is normally established
+     * once and reused across every later post it signs, and even the
+     * signature itself can occasionally live in a different commit than the
+     * record it signs. Only the item's own record - and, for
+     * identity_bootstrap, its paired identity record - is guaranteed to be
+     * part of the item's own commit (that's precisely the commit
+     * source_commit_sha names); everything else falls back to a standalone
+     * entry built the same way activityCommitManifest() would build it,
+     * just not sourced from that one commit's diff.
      *
      * @param array<string, mixed> $item
      * @return list<array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}>
@@ -6967,20 +6970,17 @@ final class Application
 
         $signaturePath = (string) ($item['source_signature_path'] ?? '');
         if ($signaturePath !== '') {
-            $signatureEntry = $byPath[$signaturePath] ?? $this->standaloneSignatureRelevantFile(
+            // The public key is deliberately not also listed as its own
+            // entry here: it's already named and linked on this signature
+            // entry itself (signature_public_key_path/href, rendered as the
+            // "Public key:" line) - the two would never actually disagree,
+            // since both are resolved from the exact same signing key
+            // lookup, so a separate row for it would just repeat the same
+            // file a second time.
+            $files[] = $byPath[$signaturePath] ?? $this->standaloneSignatureRelevantFile(
                 $signaturePath,
                 (string) ($item['source_signature_href'] ?? ''),
             );
-            $files[] = $signatureEntry;
-
-            $publicKeyPath = $signatureEntry['signature_public_key_path'];
-            if ($publicKeyPath !== '') {
-                $files[] = $byPath[$publicKeyPath] ?? $this->standaloneRelevantFile(
-                    $publicKeyPath,
-                    $signatureEntry['signature_public_key_href'],
-                    'public key',
-                );
-            }
         }
 
         return $files;
