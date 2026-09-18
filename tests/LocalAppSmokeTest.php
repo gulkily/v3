@@ -224,9 +224,15 @@ final class LocalAppSmokeTest
             assertStringContains('class="nav-link" href="/lobby/"', $account);
             assertStringContains('class="nav-link is-active" href="/account/key/"', $account);
             assertStringNotContains('href="/">Board</a>', $account);
-            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/threads/root-001'));
+            $threadResume = $this->render($application, '/threads/root-001');
+            assertStringContains('<h1>Reconnecting</h1>', $threadResume);
+            assertStringContains('data-auth-return-to="/threads/root-001"', $threadResume);
+            $boardResume = $this->render($application, '/?view=recent');
+            assertStringContains('data-auth-return-to="/?view=recent"', $boardResume);
+            $profileResume = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954?tab=activity');
+            assertStringContains('data-auth-return-to="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954?tab=activity"', $profileResume);
             assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'));
-            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/backup/'));
+            assertStringContains('<h1>Reconnecting</h1>', $this->render($application, '/backup/'));
             assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/?format=rss'));
             assertStringContains('Identity not found.', $this->renderMethod($application, 'POST', '/api/prepare_invitation_redemption'));
             assertStringContains('The requested route does not exist in the local test slice.', $this->render($application, '/asdf'));

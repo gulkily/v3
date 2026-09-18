@@ -27,6 +27,7 @@ use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\PrivateConfig;
+use ForumRewrite\Support\ResumeTarget;
 use ForumRewrite\Support\ThreadTitle;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
@@ -111,6 +112,14 @@ final class Application
         if ($this->approvedMembersOnlyEnabled() && !$this->membersOnlyRequestAllowed($method, $path)) {
             if (!$this->isApplicationRoute($path)) {
                 $this->notFound();
+                return;
+            }
+
+            if ($this->shouldRenderAuthenticationResume($method, $path, $query)) {
+                $this->sendHtml(
+                    $this->renderAuthenticationResumePage(ResumeTarget::fromRequestUri($requestUri)),
+                    401,
+                );
                 return;
             }
 
@@ -3663,9 +3672,40 @@ final class Application
         $hasApprovedMemberAccess = $viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
 
-        return $method === 'GET' && in_array($path, ['/', '/threads', '/threads/'], true)
+        return $this->lobbyViewerProfile() !== null
+            && $method === 'GET' && in_array($path, ['/', '/threads', '/threads/'], true)
             && $query === []
             && !$hasApprovedMemberAccess;
+    }
+
+    /** @param array<string, mixed> $query */
+    private function shouldRenderAuthenticationResume(string $method, string $path, array $query): bool
+    {
+        if ($method !== 'GET'
+            || $this->lobbyViewerProfile() !== null
+            || str_starts_with($path, '/api')
+            || str_starts_with($path, '/downloads/')
+            || (($query['format'] ?? null) === 'rss')
+        ) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function renderAuthenticationResumePage(string $returnTo): string
+    {
+        return $this->renderPageTemplate(
+            'authentication_resume.php',
+            ['returnTo' => $returnTo],
+            'Reconnecting',
+            'account',
+            [
+                '/assets/openpgp_loader.js',
+                '/assets/browser_signing.js',
+                '/assets/private_site_auth.js',
+            ],
+        );
     }
 
     private function renderLobby(): string
