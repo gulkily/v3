@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite;
 
+use ForumRewrite\Activity\SqliteActivityCommitManifestCache;
 use ForumRewrite\Analysis\PostAnalysisService;
 use ForumRewrite\Analysis\PostAnalyzerFactory;
 use ForumRewrite\Analysis\RelatedContentSearchService;
@@ -58,6 +59,8 @@ final class Application
     private array $sourceCommitFileManifestCache = [];
     /** @var array<string, list<array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}>|null> */
     private array $activityCommitManifestCache = [];
+    private ?SqliteActivityCommitManifestCache $activityCommitManifestCacheStore = null;
+    private bool $activityCommitManifestCacheStoreInitialized = false;
 
     public function __construct(
         private readonly string $projectRoot,
@@ -537,6 +540,8 @@ final class Application
             $this->sendHtml($this->renderForteActivity(
                 (string) ($query['view'] ?? ''),
                 (string) ($query['selected'] ?? ''),
+                (string) ($query['sort'] ?? ''),
+                (string) ($query['dir'] ?? ''),
             ), 200);
             return;
         }
@@ -1065,8 +1070,12 @@ final class Application
      * out its most recent items, so only a real per-view fetch reproduces
      * classic's exact per-view item set and counts.
      */
-    private function renderForteActivity(string $requestedView = '', string $requestedSelected = ''): string
-    {
+    private function renderForteActivity(
+        string $requestedView = '',
+        string $requestedSelected = '',
+        string $requestedSort = '',
+        string $requestedDirection = '',
+    ): string {
         $viewLabels = [
             'all' => 'All Activity',
             'content' => 'Visible Content',
@@ -1075,12 +1084,14 @@ final class Application
             'approval' => 'Approvals',
         ];
 
+        ['column' => $sortColumn, 'direction' => $sortDirection] = $this->resolveActivitySort($requestedSort, $requestedDirection);
+
         $itemsById = [];
         $viewItemIds = [];
         $viewPagination = [];
         foreach (array_keys($viewLabels) as $viewKey) {
             $viewItemIds[$viewKey] = [];
-            $viewResult = $this->fetchActivity($viewKey);
+            $viewResult = $this->fetchActivity($viewKey, $sortColumn, $sortDirection);
             foreach ($viewResult['items'] as $item) {
                 $itemId = (string) $item['id'];
                 $viewItemIds[$viewKey][] = $itemId;
@@ -1097,8 +1108,7 @@ final class Application
             $viewPagination[$viewKey] = [
                 'has_more' => $viewResult['has_more'] && $lastItem !== null,
                 'next_cursor' => $lastItem !== null ? [
-                    'created_at' => (string) $lastItem['created_at'],
-                    'post_id' => $lastItem['post_id'] !== null ? (string) $lastItem['post_id'] : null,
+                    'sort_value' => $this->activitySortValueFromItem($lastItem, $sortColumn),
                     'id' => (int) $lastItem['id'],
                 ] : null,
             ];
@@ -1114,18 +1124,19 @@ final class Application
             }
         }
 
+        // Matches each fetchActivity() call's own DB-level order (same sort
+        // column, same id tiebreaker), so the merged cross-view pool's
+        // display order agrees with any single view's own fetch order.
         $items = array_values($itemsById);
-        usort($items, static function (array $a, array $b): int {
-            $result = strcmp((string) $b['created_at'], (string) $a['created_at']);
-            if ($result !== 0) {
-                return $result;
-            }
-            $result = strcmp((string) $b['post_id'], (string) $a['post_id']);
+        usort($items, function (array $a, array $b) use ($sortColumn, $sortDirection): int {
+            $aValue = $this->activitySortValueFromItem($a, $sortColumn);
+            $bValue = $this->activitySortValueFromItem($b, $sortColumn);
+            $result = $sortDirection === 'desc' ? strcmp($bValue, $aValue) : strcmp($aValue, $bValue);
             if ($result !== 0) {
                 return $result;
             }
 
-            return $b['id'] <=> $a['id'];
+            return $sortDirection === 'desc' ? ($b['id'] <=> $a['id']) : ($a['id'] <=> $b['id']);
         });
 
         $viewCounts = [];
@@ -1146,6 +1157,7 @@ final class Application
         $selectedItemId = in_array($requestedSelected, $viewItemIds[$selectedView], true)
             ? $requestedSelected
             : (string) ($viewItemIds[$selectedView][0] ?? '');
+        $sortHeaderLinks = $this->activitySortHeaderLinks($selectedView, $sortColumn, $sortDirection);
 
         return $this->renderer()->renderStandalonePage(
             'forte_activity.php',
@@ -1155,6 +1167,7 @@ final class Application
                 'selectedView' => $selectedView,
                 'selectedItemId' => $selectedItemId,
                 'viewPagination' => $viewPagination,
+                'sortHeaderLinks' => $sortHeaderLinks,
             ],
             'Activity - Forte',
             'paned-reader-body',
@@ -1180,6 +1193,10 @@ final class Application
     private function handleForteActivityPage(array $query): void
     {
         $view = $this->normalizeActivityView((string) ($query['view'] ?? ''));
+        ['column' => $sortColumn, 'direction' => $sortDirection] = $this->resolveActivitySort(
+            (string) ($query['sort'] ?? ''),
+            (string) ($query['dir'] ?? ''),
+        );
 
         $rawCursor = trim((string) ($query['cursor'] ?? ''));
         $cursor = null;
@@ -1192,27 +1209,25 @@ final class Application
 
             if (
                 !is_array($decodedCursor)
-                || !isset($decodedCursor['created_at'], $decodedCursor['id'])
-                || !is_string($decodedCursor['created_at'])
+                || !isset($decodedCursor['sort_value'], $decodedCursor['id'])
+                || !is_string($decodedCursor['sort_value'])
                 || !is_int($decodedCursor['id'])
-                || !array_key_exists('post_id', $decodedCursor)
-                || !($decodedCursor['post_id'] === null || is_string($decodedCursor['post_id']))
             ) {
                 $this->sendJson(['status' => 'error', 'error' => 'invalid cursor'], 400);
                 return;
             }
 
             $cursor = [
-                'created_at' => $decodedCursor['created_at'],
-                'post_id' => $decodedCursor['post_id'],
+                'sort_value' => $decodedCursor['sort_value'],
                 'id' => $decodedCursor['id'],
             ];
         }
 
-        $result = $this->fetchActivity($view, $cursor);
+        $result = $this->fetchActivity($view, $sortColumn, $sortDirection, $cursor);
 
         $html = '';
         $detailHtml = '';
+        $commitManifestsBySha = [];
         foreach ($result['items'] as $item) {
             $item['forte_link'] = $this->activityItemBoardLink($item);
             foreach (['all', 'content', 'identity', 'bootstrap', 'approval'] as $flagView) {
@@ -1235,13 +1250,29 @@ final class Application
                 'item' => $item,
                 'isSelected' => false,
             ]);
+
+            // Same dedup-by-commit-sha the full page render does (see
+            // paned_activity_detail_pane.php) - the client-side merge also
+            // skips a sha it already has, so a redundant block emitted here
+            // for a commit an earlier page already rendered is harmless.
+            $files = $item['source_commit_files'] ?? [];
+            $sha = (string) ($item['source_commit_sha'] ?? '');
+            if ($files !== [] && $sha !== '' && !isset($commitManifestsBySha[$sha])) {
+                $commitManifestsBySha[$sha] = true;
+                $detailHtml .= '<div data-paned-activity-commit-manifest="' . htmlspecialchars($sha, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '" hidden>'
+                    . $this->renderer()->renderFragment('partials/activity_commit_manifest.php', [
+                        'files' => $files,
+                        'commit_sha' => $sha,
+                        'commit_href' => $item['source_commit_href'] ?? '',
+                    ])
+                    . '</div>';
+            }
         }
 
         $lastItem = $result['items'][count($result['items']) - 1] ?? null;
         $hasMore = $result['has_more'] && $lastItem !== null;
         $nextCursor = $lastItem !== null ? [
-            'created_at' => (string) $lastItem['created_at'],
-            'post_id' => $lastItem['post_id'] !== null ? (string) $lastItem['post_id'] : null,
+            'sort_value' => $this->activitySortValueFromItem($lastItem, $sortColumn),
             'id' => (int) $lastItem['id'],
         ] : null;
 
@@ -1745,7 +1776,7 @@ final class Application
         return [
             'generated_at' => $metadata['rebuilt_at'] ?? '',
             'repository_head' => $metadata['repository_head'] ?? ReadModelMetadata::repositoryHead($this->repositoryRoot),
-            'items' => array_slice($this->fetchActivity('content')['items'], 0, self::BACKUP_PREVIEW_LIMIT),
+            'items' => array_slice($this->fetchActivity('content', 'date', 'desc')['items'], 0, self::BACKUP_PREVIEW_LIMIT),
         ];
     }
 
@@ -1801,7 +1832,7 @@ final class Application
                         'is_active' => false,
                     ],
                 ],
-                'items' => $this->fetchActivity($view)['items'],
+                'items' => $this->fetchActivity($view, 'date', 'desc')['items'],
             ],
             'Activity',
             'activity',
@@ -2324,7 +2355,7 @@ final class Application
     {
         $view = $this->normalizeActivityView($view);
         $items = [];
-        foreach ($this->fetchActivity($view)['items'] as $item) {
+        foreach ($this->fetchActivity($view, 'date', 'desc')['items'] as $item) {
             $link = match ($item['kind']) {
                 'thread_label_add' => '/threads/' . $item['thread_id'],
                 'site_feature_flag' => '/tools/feature-flags/',
@@ -3923,28 +3954,31 @@ final class Application
     }
 
     /**
-     * @param array{created_at: string, post_id: ?string, id: int}|null $afterCursor
+     * @param array{sort_value: string, id: int}|null $afterCursor
      *        Keyset cursor identifying the last item of the previous page,
      *        matching the ORDER BY below. Pass null for the first page.
      * @return array{items: array<int, array<string, mixed>>, has_more: bool}
      */
-    private function fetchActivity(string $view, ?array $afterCursor = null): array
+    private function fetchActivity(string $view, string $sortColumn, string $sortDirection, ?array $afterCursor = null): array
     {
         $view = $this->normalizeActivityView($view);
+        ['column' => $sortColumn, 'direction' => $sortDirection] = $this->resolveActivitySort($sortColumn, $sortDirection);
+        $sortColumnSql = $this->activitySortSql($sortColumn);
+        $sortDirectionSql = $sortDirection === 'desc' ? 'DESC' : 'ASC';
         [$viewWhere, $viewParameters] = $this->activityViewSql($view);
 
         $cursorWhere = '';
         if ($afterCursor !== null) {
-            // COALESCE(post_id, -1) mirrors SQLite's own NULL-sorts-lowest
-            // rule for `ORDER BY post_id DESC` (NULLs last), since no real
-            // post_id is ever <= -1.
+            // `id` is the sole tiebreaker (rather than also comparing
+            // post_id, as the old date-only cursor did): id is already
+            // unique, so it alone guarantees a stable, gapless order
+            // regardless of which column is being sorted on.
+            $comparisonOperator = $sortDirection === 'desc' ? '<' : '>';
             $cursorWhere = 'AND (
-                activity.created_at < :cursor_created_at
-                OR (activity.created_at = :cursor_created_at AND COALESCE(activity.post_id, -1) < COALESCE(:cursor_post_id, -1))
-                OR (activity.created_at = :cursor_created_at AND COALESCE(activity.post_id, -1) = COALESCE(:cursor_post_id, -1) AND activity.id < :cursor_id)
+                ' . $sortColumnSql . ' ' . $comparisonOperator . ' :cursor_sort_value
+                OR (' . $sortColumnSql . ' = :cursor_sort_value AND activity.id ' . $comparisonOperator . ' :cursor_id)
             )';
-            $viewParameters['cursor_created_at'] = $afterCursor['created_at'];
-            $viewParameters['cursor_post_id'] = $afterCursor['post_id'];
+            $viewParameters['cursor_sort_value'] = $afterCursor['sort_value'];
             $viewParameters['cursor_id'] = $afterCursor['id'];
         }
 
@@ -3960,7 +3994,7 @@ final class Application
              WHERE 1 = 1
              ' . $viewWhere . '
              ' . $cursorWhere . '
-             ORDER BY activity.created_at DESC, activity.post_id DESC, activity.id DESC
+             ORDER BY ' . $sortColumnSql . ' ' . $sortDirectionSql . ', activity.id ' . $sortDirectionSql . '
              LIMIT :limit'
         );
         foreach ($viewParameters as $parameter => $value) {
@@ -4099,6 +4133,99 @@ final class Application
             ],
             default => ['', []],
         };
+    }
+
+    /**
+     * Resolves requested ?sort=/?dir= values for the Activity list against
+     * its three sortable columns, falling back to 'date' when the column is
+     * missing or unrecognized (today's default order). An unrecognized
+     * direction falls back to a per-column default: descending for date,
+     * ascending for the text columns - mirroring `resolveForteBoardSort()`'s
+     * pattern, though Activity always resolves to a real column (never an
+     * empty-string sentinel) since its cursor needs one to key off.
+     *
+     * @return array{column: string, direction: string}
+     */
+    private function resolveActivitySort(string $requestedColumn, string $requestedDirection): array
+    {
+        $validColumns = ['date', 'kind', 'label'];
+        $column = in_array($requestedColumn, $validColumns, true) ? $requestedColumn : 'date';
+
+        $defaultDirection = $column === 'date' ? 'desc' : 'asc';
+        $direction = in_array($requestedDirection, ['asc', 'desc'], true) ? $requestedDirection : $defaultDirection;
+
+        return ['column' => $column, 'direction' => $direction];
+    }
+
+    /**
+     * Maps a column key already validated by `resolveActivitySort()` to its
+     * SQL expression. Not parameterized/bound (like `activityViewSql()`'s
+     * fragments) since it only ever returns one of these fixed literals.
+     */
+    private function activitySortSql(string $column): string
+    {
+        return match ($column) {
+            'kind' => 'activity.kind',
+            'label' => 'activity.label',
+            default => 'activity.created_at',
+        };
+    }
+
+    /**
+     * Reads the value of whichever column is currently the active sort key
+     * out of an already-built `fetchActivity()` item, for constructing that
+     * item's keyset cursor (`{sort_value, id}`). Keeps the column-to-field
+     * mapping in one place alongside `activitySortSql()`'s column-to-SQL
+     * mapping, rather than duplicating a match() at each call site.
+     *
+     * @param array<string, mixed> $item
+     */
+    private function activitySortValueFromItem(array $item, string $column): string
+    {
+        return match ($column) {
+            'kind' => (string) $item['kind'],
+            'label' => (string) $item['label'],
+            default => (string) $item['created_at'],
+        };
+    }
+
+    /**
+     * Computes each sortable column header's `aria-sort` state and its
+     * click target URL: the active column points at the *toggled*
+     * direction, every other column points at its own default direction
+     * (from `resolveActivitySort()`, so this never drifts out of sync with
+     * the backend's own validation) - mirroring Board's `resolveForteBoardSort`
+     * default-direction table, but resolved into links since Activity's
+     * click behavior is a real navigation, not a client-side re-sort.
+     *
+     * @return array<string, array{ariaSort: string, href: string}>
+     */
+    private function activitySortHeaderLinks(string $view, string $activeColumn, string $activeDirection): array
+    {
+        $links = [];
+        foreach (['kind', 'label', 'date'] as $column) {
+            if ($column === $activeColumn) {
+                $ariaSort = $activeDirection === 'desc' ? 'descending' : 'ascending';
+                $targetDirection = $activeDirection === 'desc' ? 'asc' : 'desc';
+            } else {
+                $ariaSort = 'none';
+                $targetDirection = $this->resolveActivitySort($column, '')['direction'];
+            }
+
+            $params = [];
+            if ($view !== 'all') {
+                $params['view'] = $view;
+            }
+            $params['sort'] = $column;
+            $params['dir'] = $targetDirection;
+
+            $links[$column] = [
+                'ariaSort' => $ariaSort,
+                'href' => '/forte/activity/?' . http_build_query($params),
+            ];
+        }
+
+        return $links;
     }
 
     private function sourcePathHref(string $sourcePath, string $sourceCommitSha): ?string
@@ -5578,6 +5705,30 @@ final class Application
         return $this->llmExchangeRecorder;
     }
 
+    /**
+     * Lazily opens the persistent commit-manifest cache alongside the main
+     * read-model database. Returns null (never throws) on any failure to
+     * open/create it, since this is purely a performance optimization -
+     * activityCommitManifest() must still work correctly, just slower,
+     * when this is unavailable.
+     */
+    private function activityCommitManifestCacheStore(): ?SqliteActivityCommitManifestCache
+    {
+        if ($this->activityCommitManifestCacheStoreInitialized) {
+            return $this->activityCommitManifestCacheStore;
+        }
+
+        $this->activityCommitManifestCacheStoreInitialized = true;
+        $path = dirname($this->databasePath) . '/activity_commit_manifest_cache.sqlite3';
+        try {
+            $this->activityCommitManifestCacheStore = new SqliteActivityCommitManifestCache(new PDO('sqlite:' . $path));
+        } catch (\Throwable) {
+            $this->activityCommitManifestCacheStore = null;
+        }
+
+        return $this->activityCommitManifestCacheStore;
+    }
+
     private function llmExchangeStore(): ?SqliteLlmExchangeStore
     {
         if ($this->llmExchangeStoreInitialized) {
@@ -6640,27 +6791,52 @@ final class Application
             return $this->activityCommitManifestCache[$commitSha];
         }
 
-        $files = $this->sourceCommitFiles($commitSha);
-        if ($files === null) {
-            $this->activityCommitManifestCache[$commitSha] = null;
-            return null;
+        // The expensive part - a `git diff-tree` exec plus a signature/
+        // OpenPGP lookup per file - is cached persistently by commit sha
+        // (see SqliteActivityCommitManifestCache), since a commit's file
+        // list and each file's role/signer never change. Only the
+        // request-specific hrefs below are always recomputed - they're
+        // cheap string formatting, not worth persisting.
+        $rawFiles = $this->activityCommitManifestCacheStore()?->get($commitSha);
+        if ($rawFiles === null) {
+            $files = $this->sourceCommitFiles($commitSha);
+            if ($files === null) {
+                $this->activityCommitManifestCache[$commitSha] = null;
+                return null;
+            }
+
+            $rawFiles = array_map(function (array $file): array {
+                $signature = $this->activityCommitSignatureMetadata($file['path']);
+
+                return [
+                    'status' => $file['status'],
+                    'path' => $file['path'],
+                    'previous_path' => $file['previous_path'],
+                    'role' => $this->sourceCommitFileRole($file['path']),
+                    'signature_signer_identity' => $signature['signer_identity'],
+                    'signature_public_key_path' => $signature['public_key_path'],
+                    'signature_key_status' => $signature['status'],
+                ];
+            }, $files);
+
+            $this->activityCommitManifestCacheStore()?->put($commitSha, $rawFiles);
         }
 
         $manifest = array_map(function (array $file) use ($commitSha): array {
-            $signature = $this->activityCommitSignatureMetadata($file['path']);
-
             return [
                 'status' => $file['status'],
                 'path' => $file['path'],
                 'previous_path' => $file['previous_path'],
-                'role' => $this->sourceCommitFileRole($file['path']),
+                'role' => $file['role'],
                 'href' => $this->sourceCommitFileHref($file['path'], $file['status'], $commitSha),
-                'signature_signer_identity' => $signature['signer_identity'],
-                'signature_public_key_path' => $signature['public_key_path'],
-                'signature_public_key_href' => $signature['public_key_href'],
-                'signature_key_status' => $signature['status'],
+                'signature_signer_identity' => $file['signature_signer_identity'],
+                'signature_public_key_path' => $file['signature_public_key_path'],
+                'signature_public_key_href' => $file['signature_public_key_path'] !== ''
+                    ? '/source/current/' . $this->encodeSourcePathForUrl($file['signature_public_key_path'])
+                    : '',
+                'signature_key_status' => $file['signature_key_status'],
             ];
-        }, $files);
+        }, $rawFiles);
 
         $this->activityCommitManifestCache[$commitSha] = $manifest;
 

@@ -3,18 +3,20 @@
  * @var array<int, array<string, mixed>> $items
  * @var string $selectedView
  * @var string $selectedItemId
- * @var array<string, array{has_more: bool, next_cursor: array{created_at: string, post_id: ?string, id: int}|null}> $viewPagination
+ * @var array<string, array{has_more: bool, next_cursor: array{sort_value: string, id: int}|null}> $viewPagination
+ * @var array<string, array{ariaSort: string, href: string}> $sortHeaderLinks
  */
 $selectedView ??= 'all';
 $selectedItemId ??= '';
 $viewPagination ??= [];
+$sortHeaderLinks ??= [];
 $tabStopAssigned = false;
 ?>
 <div class="paned-list-pane">
-  <div class="paned-list-head">
-    <span class="paned-list-from-head">Kind</span>
-    <span class="paned-list-subject-head">Label</span>
-    <span class="paned-list-date-head">Date</span>
+  <div class="paned-list-head" data-paned-sort-head>
+    <span class="paned-list-from-head" aria-sort="<?= $e($sortHeaderLinks['kind']['ariaSort'] ?? 'none') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="kind" data-paned-sort-href="<?= $e($sortHeaderLinks['kind']['href'] ?? '') ?>">Kind</button></span>
+    <span class="paned-list-subject-head" aria-sort="<?= $e($sortHeaderLinks['label']['ariaSort'] ?? 'none') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="label" data-paned-sort-href="<?= $e($sortHeaderLinks['label']['href'] ?? '') ?>">Label</button></span>
+    <span class="paned-list-date-head" aria-sort="<?= $e($sortHeaderLinks['date']['ariaSort'] ?? 'none') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="date" data-paned-sort-href="<?= $e($sortHeaderLinks['date']['href'] ?? '') ?>">Date</button></span>
   </div>
   <div class="paned-list-body" data-paned-activity-list-body role="listbox" aria-label="Activity items">
 <?php foreach ($items as $item): ?>
