@@ -60,10 +60,45 @@
     }
   }
 
-  function approvedDestination() {
+  function safeRelativeDestination(value) {
+    value = String(value || "").trim();
+    if (!/^\/(?![\\/\\\\])/.test(value) || /[\u0000-\u001F\u007F\\\\]/.test(value)) {
+      return "";
+    }
+
+    return value;
+  }
+
+  function configuredReturnDestination() {
+    var node = document.querySelector("[data-private-site-auth-state]");
+    return safeRelativeDestination(node && node.dataset ? node.dataset.authReturnTo : "");
+  }
+
+  function approvedDestination(options) {
+    var explicitDestination = safeRelativeDestination(options && options.returnTo);
+    if (explicitDestination) {
+      return explicitDestination;
+    }
+
+    var configuredDestination = configuredReturnDestination();
+    if (configuredDestination) {
+      return configuredDestination;
+    }
+
     var value = "";
     try { value = sessionStorage.getItem("forum_invite_destination") || ""; sessionStorage.removeItem("forum_invite_destination"); } catch (error) {}
-    return /^\/(?!\/)/.test(value) && value.indexOf("#") === -1 ? value : "/";
+    return safeRelativeDestination(value) || "/";
+  }
+
+  function navigateAfterApproval(options) {
+    var destination = approvedDestination(options);
+    if ((configuredReturnDestination() !== "" || (options && options.replaceHistory === true))
+      && window.location && typeof window.location.replace === "function") {
+      window.location.replace(destination);
+      return;
+    }
+
+    window.location.assign(destination);
   }
 
   function isExpiredChallengeError(error) {
@@ -71,7 +106,7 @@
       && error.message === "Authentication challenge is missing or expired.";
   }
 
-  async function authenticateOnce() {
+  async function authenticateOnce(options) {
     var publicKey = stored("forum_pki_public_key");
     var privateKey = stored("forum_pki_private_key");
     var fingerprint = storedFingerprint();
@@ -79,12 +114,18 @@
     var browserIdentity = window.__forumBrowserIdentity;
 
     if (!publicKey || !privateKey || !/^[a-f0-9]{40}$/.test(fingerprint)) {
+      if (configuredReturnDestination() !== "") {
+        setStatus("This browser key is unavailable. Check your browser key to continue.", "error");
+      }
       return { status: "not-configured" };
     }
 
     var identityId = "openpgp:" + fingerprint;
     if (authenticatedIdentityId() === identityId) {
       setStatus("", "ok");
+      if (configuredReturnDestination() !== "") {
+        navigateAfterApproval(options);
+      }
       return { status: "authenticated", identityId: identityId };
     }
 
@@ -149,30 +190,35 @@
 
     if (/^approved=1$/m.test(authenticationResult)) {
       setStatus("Identity verified. Entering the site...", "ok");
-      window.location.assign(approvedDestination());
+      navigateAfterApproval(options);
       return { status: "approved", identityId: identityId };
     }
 
     setStatus("Identity verified. Approval is still pending.", "ok");
+    var returnTo = configuredReturnDestination();
+    if (returnTo !== "") {
+      window.location.replace("/lobby/?return_to=" + encodeURIComponent(returnTo));
+      return { status: "pending", identityId: identityId };
+    }
     // Re-render once so the server can expose the session-bound pending
     // identity. The rendered identity marker prevents a reload loop.
     window.location.reload();
     return { status: "pending", identityId: identityId };
   }
 
-  function authenticate() {
+  function authenticate(options) {
     if (authenticationInFlight) {
       return authenticationInFlight;
     }
 
-    authenticationInFlight = authenticateOnce()
+    authenticationInFlight = authenticateOnce(options)
       .catch(function (error) {
         if (!isExpiredChallengeError(error)) {
           throw error;
         }
 
         setStatus("Authentication challenge expired. Retrying...", "info");
-        return authenticateOnce();
+        return authenticateOnce(options);
       })
       .catch(function (error) {
         reportFailure(error);

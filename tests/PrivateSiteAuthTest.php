@@ -157,6 +157,72 @@ NODE;
         assertSame(0, $result['fetchCount']);
     }
 
+    public function testApprovedIdentityReplacesResumePageWithConfiguredDestination(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const fingerprint = '0123456789abcdef0123456789abcdef01234567';
+let assignedUrl = '';
+let replacedUrl = '';
+
+global.window = {
+  localStorage: {
+    getItem(key) {
+      return {
+        forum_pki_public_key: 'public-key',
+        forum_pki_private_key: 'private-key',
+        forum_pki_fingerprint: fingerprint
+      }[key] || '';
+    }
+  },
+  __forumOpenPgpLoader: { ready: Promise.resolve({}) },
+  __forumBrowserIdentity: { async ensureReadyIdentity() {} },
+  openpgp: {
+    async readKey() { return { getFingerprint() { return fingerprint; } }; },
+    async readPrivateKey() { return { getFingerprint() { return fingerprint; } }; },
+    async createMessage({ text }) { return { text }; },
+    async sign() { return 'detached-signature'; }
+  },
+  location: {
+    assign(url) { assignedUrl = url; },
+    replace(url) { replacedUrl = url; },
+    reload() { throw new Error('approved viewer must not reload'); }
+  }
+};
+global.document = {
+  addEventListener(){},
+  querySelector(selector) {
+    if (selector === '[data-private-site-auth-state]') {
+      return { dataset: { authenticatedIdentityId: '', authReturnTo: '/threads/root-001?view=full' } };
+    }
+    return { hidden: true, textContent: '', dataset: {} };
+  }
+};
+global.fetch = async function(url) {
+  if (String(url) === '/api/auth_challenge') {
+    return { ok: true, async text() { return 'challenge=abcdef012345\n'; } };
+  }
+  return { ok: true, async text() { return 'status=ok\napproved=1\n'; } };
+};
+
+vm.runInThisContext(source);
+window.PrivateSiteAuth.authenticate()
+  .then((result) => process.stdout.write(JSON.stringify({ result, assignedUrl, replacedUrl })))
+  .catch((error) => {
+    process.stderr.write(error.stack || String(error));
+    process.exit(1);
+  });
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('approved', $result['result']['status']);
+        assertSame('', $result['assignedUrl']);
+        assertSame('/threads/root-001?view=full', $result['replacedUrl']);
+    }
+
     public function testAuthenticationFailureIsVisible(): void
     {
         $script = <<<'NODE'
