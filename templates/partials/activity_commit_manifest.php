@@ -5,6 +5,7 @@
 $files ??= [];
 $commitSha = (string) ($commit_sha ?? '');
 $commitHref = (string) ($commit_href ?? '');
+$heading = (string) ($heading ?? 'Commit files');
 ?>
 <?php if ($files !== []): ?>
 <section class="activity-commit-manifest">
@@ -17,7 +18,7 @@ $commitHref = (string) ($commit_href ?? '');
 <?php endif; ?>
   </p>
 <?php endif; ?>
-  <h3>Commit files (<?= $e((string) count($files)) ?>)</h3>
+  <h3><?= $e($heading) ?> (<?= $e((string) count($files)) ?>)</h3>
   <ul>
 <?php foreach ($files as $file): ?>
     <li>

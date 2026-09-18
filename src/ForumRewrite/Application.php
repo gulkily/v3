@@ -4082,7 +4082,7 @@ final class Application
             $sourcePath = $post['source_path'] !== null ? (string) $post['source_path'] : '';
             $sourceCommitSha = $post['source_commit_sha'] !== null ? (string) $post['source_commit_sha'] : '';
             $signature = $this->sourceSignatureLink($sourcePath);
-            return [
+            $item = [
                 'created_at' => $post['created_at'],
                 'kind' => $post['kind'],
                 'record_family' => $post['record_family'],
@@ -4110,6 +4110,9 @@ final class Application
                 'author_username_token' => $post['author_username_token'],
                 'author_is_approved' => (int) $post['author_is_approved'],
             ];
+            $item['relevant_files'] = $this->activityItemRelevantFiles($item);
+
+            return $item;
         }, $rows);
 
         $items = array_values(array_filter($items, function (array $item) use ($view): bool {
@@ -6918,6 +6921,125 @@ final class Application
         $this->activityCommitManifestCache[$commitSha] = $manifest;
 
         return $manifest;
+    }
+
+    /**
+     * Narrows a commit's full file manifest down to the files one action's
+     * detail view should show: its own record, that record's detached
+     * signature (if any), and the signer's public key (if any) - never the
+     * rest of the commit, which can run to thousands of files for actions
+     * that happen to share a large historical commit (e.g. the original
+     * archive import). identity_bootstrap is the one compound action that
+     * also establishes a separate identity record in the same commit.
+     *
+     * The signature and public key are resolved independent of whether
+     * they're actually part of *this* item's own commit - a signing key is
+     * normally established once and reused across every later post it
+     * signs, so it (and sometimes even the signature itself) typically
+     * lives in a different, earlier commit than the record it signs. Only
+     * the item's own record - and, for identity_bootstrap, its paired
+     * identity record - is guaranteed to be part of the item's own commit
+     * (that's precisely the commit source_commit_sha names); everything
+     * else falls back to a standalone entry built the same way
+     * activityCommitManifest() would build it, just not sourced from that
+     * one commit's diff.
+     *
+     * @param array<string, mixed> $item
+     * @return list<array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}>
+     */
+    private function activityItemRelevantFiles(array $item): array
+    {
+        $sourcePath = (string) ($item['source_path'] ?? '');
+        if ($sourcePath === '') {
+            return [];
+        }
+
+        $byPath = [];
+        foreach (($item['source_commit_files'] ?? []) as $file) {
+            $byPath[$file['path']] = $file;
+        }
+
+        $files = [];
+
+        $files[] = $byPath[$sourcePath] ?? $this->standaloneRelevantFile(
+            $sourcePath,
+            (string) ($item['source_path_href'] ?? ''),
+            $this->sourceCommitFileRole($sourcePath),
+        );
+
+        if ((string) ($item['record_family'] ?? '') === 'identity_bootstrap') {
+            $identityId = $this->signatureSignerIdentityId($sourcePath);
+            $fingerprint = $identityId !== null ? $this->openPgpFingerprintFromIdentityId($identityId) : null;
+            if ($fingerprint !== null) {
+                $identityRecordPath = CanonicalPathResolver::identity(strtolower($fingerprint));
+                $identityRecordHref = $this->currentSourcePathExists($identityRecordPath)
+                    ? '/source/current/' . $this->encodeSourcePathForUrl($identityRecordPath)
+                    : '';
+                $files[] = $byPath[$identityRecordPath] ?? $this->standaloneRelevantFile(
+                    $identityRecordPath,
+                    $identityRecordHref,
+                    'identity record',
+                );
+            }
+        }
+
+        $signaturePath = (string) ($item['source_signature_path'] ?? '');
+        if ($signaturePath !== '') {
+            $signatureEntry = $byPath[$signaturePath] ?? $this->standaloneSignatureRelevantFile(
+                $signaturePath,
+                (string) ($item['source_signature_href'] ?? ''),
+            );
+            $files[] = $signatureEntry;
+
+            $publicKeyPath = $signatureEntry['signature_public_key_path'];
+            if ($publicKeyPath !== '') {
+                $files[] = $byPath[$publicKeyPath] ?? $this->standaloneRelevantFile(
+                    $publicKeyPath,
+                    $signatureEntry['signature_public_key_href'],
+                    'public key',
+                );
+            }
+        }
+
+        return $files;
+    }
+
+    /**
+     * @return array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}
+     */
+    private function standaloneRelevantFile(string $path, string $href, string $role): array
+    {
+        return [
+            'status' => 'current',
+            'path' => $path,
+            'previous_path' => '',
+            'role' => $role,
+            'href' => $href,
+            'signature_signer_identity' => '',
+            'signature_public_key_path' => '',
+            'signature_public_key_href' => '',
+            'signature_key_status' => '',
+        ];
+    }
+
+    /**
+     * @return array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}
+     */
+    private function standaloneSignatureRelevantFile(string $signaturePath, string $href): array
+    {
+        $signature = $this->activityCommitSignatureMetadata($signaturePath);
+
+        return [
+            'status' => 'current',
+            'path' => $signaturePath,
+            'previous_path' => '',
+            'role' => 'detached signature',
+            'href' => $href,
+            'signature_signer_identity' => $signature['signer_identity'],
+            'signature_public_key_path' => $signature['public_key_path'],
+            'signature_public_key_href' => $signature['public_key_href'],
+            'signature_key_status' => $signature['status'],
+        ];
     }
 
     private function sourceCommitFileRole(string $path): string
