@@ -216,6 +216,55 @@
     });
   }
 
+  // The sort header hrefs are baked in by the server at render time for
+  // whatever view was selected then. Switching views is otherwise purely
+  // client-side (selectFilter() just toggles which already-loaded rows are
+  // visible, with no round trip) - without this, a sort click after a
+  // client-side filter switch would navigate using the stale href from the
+  // last server render and silently land back on that older view.
+  function updateSortHeaderHrefs(view) {
+    if (!sortHead) {
+      return;
+    }
+
+    var buttons = Array.prototype.slice.call(sortHead.querySelectorAll("[data-paned-sort-href]"));
+    buttons.forEach(function (button) {
+      var href = button.getAttribute("data-paned-sort-href");
+      if (!href) {
+        return;
+      }
+
+      var url = new URL(href, location.origin);
+      if (view === "all") {
+        url.searchParams.delete("view");
+      } else {
+        url.searchParams.set("view", view);
+      }
+      button.setAttribute("data-paned-sort-href", url.pathname + url.search);
+    });
+  }
+
+  // Same staleness problem as updateSortHeaderHrefs() above: the Commits
+  // view's first two columns are shas/subjects, not kind/label activity
+  // records, so the server renders "Hash"/"Subject" instead of "Kind"/
+  // "Label" there - but switching views is otherwise purely client-side,
+  // so a filter click into or out of Commits needs to relabel them itself.
+  function updateSortHeaderLabels(view) {
+    if (!sortHead) {
+      return;
+    }
+
+    var kindButton = sortHead.querySelector('[data-paned-sort-column="kind"]');
+    var labelButton = sortHead.querySelector('[data-paned-sort-column="label"]');
+    var isCommits = view === "commits";
+    if (kindButton) {
+      kindButton.textContent = isCommits ? "Hash" : "Kind";
+    }
+    if (labelButton) {
+      labelButton.textContent = isCommits ? "Subject" : "Label";
+    }
+  }
+
   function selectFilter(view) {
     filterItems.forEach(function (item) {
       var isSelected = item.getAttribute("data-paned-activity-view") === view;
@@ -223,6 +272,9 @@
       item.setAttribute("aria-selected", isSelected ? "true" : "false");
       item.setAttribute("tabindex", isSelected ? "0" : "-1");
     });
+
+    updateSortHeaderHrefs(view);
+    updateSortHeaderLabels(view);
 
     var selectedRowNowHidden = false;
     var visibleCount = 0;

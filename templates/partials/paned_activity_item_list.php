@@ -13,11 +13,18 @@ $commitItems ??= [];
 $viewPagination ??= [];
 $sortHeaderLinks ??= [];
 $tabStopAssigned = false;
+// The Commits view's rows are shas/subjects, not kind/label activity
+// records - the first two columns are relabeled to match what's actually
+// shown there. Kind/Label still sort no differently while browsing Commits
+// (resolveCommitSort() only recognizes date - a deliberate Step 3 scope
+// decision), this only fixes the displayed column names.
+$kindHeaderLabel = $selectedView === 'commits' ? 'Hash' : 'Kind';
+$labelHeaderLabel = $selectedView === 'commits' ? 'Subject' : 'Label';
 ?>
 <div class="paned-list-pane">
   <div class="paned-list-head" data-paned-sort-head>
-    <span class="paned-list-from-head" aria-sort="<?= $e($sortHeaderLinks['kind']['ariaSort'] ?? 'none') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="kind" data-paned-sort-href="<?= $e($sortHeaderLinks['kind']['href'] ?? '') ?>">Kind</button></span>
-    <span class="paned-list-subject-head" aria-sort="<?= $e($sortHeaderLinks['label']['ariaSort'] ?? 'none') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="label" data-paned-sort-href="<?= $e($sortHeaderLinks['label']['href'] ?? '') ?>">Label</button></span>
+    <span class="paned-list-from-head" aria-sort="<?= $e($sortHeaderLinks['kind']['ariaSort'] ?? 'none') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="kind" data-paned-sort-href="<?= $e($sortHeaderLinks['kind']['href'] ?? '') ?>"><?= $e($kindHeaderLabel) ?></button></span>
+    <span class="paned-list-subject-head" aria-sort="<?= $e($sortHeaderLinks['label']['ariaSort'] ?? 'none') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="label" data-paned-sort-href="<?= $e($sortHeaderLinks['label']['href'] ?? '') ?>"><?= $e($labelHeaderLabel) ?></button></span>
     <span class="paned-list-date-head" aria-sort="<?= $e($sortHeaderLinks['date']['ariaSort'] ?? 'none') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="date" data-paned-sort-href="<?= $e($sortHeaderLinks['date']['href'] ?? '') ?>">Date</button></span>
   </div>
   <div class="paned-list-body" data-paned-activity-list-body role="listbox" aria-label="Activity items">
