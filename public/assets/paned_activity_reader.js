@@ -6,7 +6,6 @@
   var rows = [];
   var placeholder;
   var contentItems = [];
-  var commitManifestBlocks = [];
   var commitDetailCache = Object.create(null);
   var statusCount;
   var loadMoreGroup;
@@ -71,26 +70,6 @@
     if (placeholder) {
       placeholder.hidden = false;
     }
-  }
-
-  // Each commit's file manifest is rendered once (not once per item that
-  // happens to share it - some bootstrap/seed commits touch thousands of
-  // files and are referenced by most items, so duplicating that per item
-  // made the page tens of megabytes). Selecting an item moves its
-  // matching shared block into view inside that item's own article.
-  function showCommitManifestFor(article) {
-    var sha = article.getAttribute("data-paned-activity-commit-sha") || "";
-    commitManifestBlocks.forEach(function (block) {
-      if (sha !== "" && block.getAttribute("data-paned-activity-commit-manifest") === sha) {
-        block.hidden = false;
-        var body = article.querySelector(".body");
-        if (body) {
-          body.appendChild(block);
-        }
-      } else {
-        block.hidden = true;
-      }
-    });
   }
 
   // A commit row's detail isn't one of contentItems' pre-rendered articles
@@ -212,9 +191,6 @@
     contentItems.forEach(function (article) {
       var isSelected = !isCommit && article.getAttribute("data-paned-activity-content-item-id") === itemId;
       article.hidden = !isSelected;
-      if (isSelected) {
-        showCommitManifestFor(article);
-      }
     });
 
     var existingCommitArticle = commitDetailArticle();
@@ -372,17 +348,6 @@
     template.innerHTML = html;
     var incomingNodes = Array.prototype.slice.call(template.content.children);
     incomingNodes.forEach(function (node) {
-      // A shared commit-manifest block (dedup by sha) or a per-item
-      // article (dedup by item id) - a batch can contain both, and the
-      // sha a later batch repeats must not be appended twice either.
-      var manifestSha = node.getAttribute("data-paned-activity-commit-manifest");
-      if (manifestSha !== null) {
-        if (!contentPane.querySelector('[data-paned-activity-commit-manifest="' + manifestSha + '"]')) {
-          contentPane.appendChild(node);
-        }
-        return;
-      }
-
       var id = node.getAttribute("data-paned-activity-content-item-id");
       if (!contentPane.querySelector('[data-paned-activity-content-item-id="' + id + '"]')) {
         contentPane.appendChild(node);
@@ -478,7 +443,6 @@
     rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
     placeholder = contentPane.querySelector("[data-paned-activity-content-placeholder]");
     contentItems = Array.prototype.slice.call(contentPane.querySelectorAll("[data-paned-activity-content-item-id]"));
-    commitManifestBlocks = Array.prototype.slice.call(contentPane.querySelectorAll("[data-paned-activity-commit-manifest]"));
     statusCount = document.querySelector("[data-paned-activity-status-count]");
     loadMoreGroup = document.querySelector("[data-paned-activity-load-more-group]");
     loadMoreButtons = loadMoreGroup
@@ -596,9 +560,6 @@
             if (contentPane) {
               contentItems = Array.prototype.slice.call(
                 contentPane.querySelectorAll("[data-paned-activity-content-item-id]")
-              );
-              commitManifestBlocks = Array.prototype.slice.call(
-                contentPane.querySelectorAll("[data-paned-activity-commit-manifest]")
               );
             }
 

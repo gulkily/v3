@@ -74,3 +74,18 @@
   - Regression: `GET /api/forte_activity_page?view=all` (Load More) - 100 articles, 1046 `activity-commit-manifest` sections total (~10 per item, i.e. no accidental duplication), 200 OK, no PHP warnings/fatals in the response body. Default `/forte/activity/` page load - clean, no errors.
 - Notes:
   - `paned_activity_reader.js` was **not** touched in this stage - deliberately left as-is (see Changes above); Stage 6 is where `showCommitManifestFor()`/`commitManifestBlocks` and the PHP-side shared-block emission (`$commitManifestsBySha` in `paned_activity_detail_pane.php`/`handleForteActivityPage()`) get removed together, once this stage has proven the narrow relevant-files list is a complete replacement.
+
+## Stage 6 - Remove the shared-manifest-block machinery
+- Changes:
+  - `paned_activity_reader.js`: removed `showCommitManifestFor()` and its call site in `selectItem()`, the `commitManifestBlocks` tracking array and its three assignments (`init()` and both places the AJAX append path refreshed it), and the shared-block dedup branch inside `mergeAppendedDetailArticles()` (a node's `data-paned-activity-commit-manifest` attribute never appears in server output any more, so that branch was already unreachable - removed rather than left as dead code). `data-paned-activity-commit-sha` on *commit rows* (Stage 3/4's own, distinct attribute, used by `commitRowSubjectAndDate()`) is unrelated and untouched.
+  - `paned_activity_detail_pane.php`: removed the `$commitManifestsBySha` dedup-and-collect loop and the trailing `foreach` that rendered each unique commit's full manifest as a `hidden` block after the items loop - Stage 5 already made every item self-sufficient (`relevant_files` rendered inline), so nothing referenced these blocks any more.
+  - `Application::handleForteActivityPage()` (the Load More/AJAX append path): removed the equivalent `$commitManifestsBySha` dedup loop that appended the same kind of hidden block onto `$detailHtml` per page.
+- Verification:
+  - `php -l` / `node --check` on all changed files - no syntax errors.
+  - `GET /forte/activity/` (full page): 200, **0** occurrences of `data-paned-activity-commit-manifest` (down from Stage 3-5's non-zero count - the shared blocks are gone entirely, not just unused).
+  - `GET /forte/activity/?selected=226` (the 4-file identity_bootstrap case from Stage 5): still renders exactly 4 `<li>` entries under "Relevant files (4)" - selection/rendering is unaffected by removing the now-dead machinery around it.
+  - `GET /api/forte_activity_page?view=all` (Load More): 200, 100 articles, **0** `data-paned-activity-commit-manifest` occurrences in the returned `detail_html`.
+  - `GET /forte/activity/?view=commits`: 200, 100 commit rows still present - the Commits view (Stage 3) and `GET /api/forte_commit_detail` (Stage 4) are both untouched by this stage's removals, confirmed still working (large-commit manifest still returns correctly, 750KB/1955 files, matching Stage 4's own numbers exactly).
+  - No PHP warnings/fatals/deprecation notices in any of the above responses.
+- Notes:
+  - This closes out the Step 3 plan's full 6-stage scope. Every action's detail view now shows only its own relevant files (Stage 5) and the Commits view lets a reader browse and inspect actual git commits on demand (Stages 1-4), with no leftover shared-block machinery from the interim design.

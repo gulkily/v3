@@ -1282,7 +1282,6 @@ final class Application
 
         $html = '';
         $detailHtml = '';
-        $commitManifestsBySha = [];
         foreach ($result['items'] as $item) {
             $item['forte_link'] = $this->activityItemBoardLink($item);
             foreach (['all', 'content', 'identity', 'bootstrap', 'approval'] as $flagView) {
@@ -1305,23 +1304,6 @@ final class Application
                 'item' => $item,
                 'isSelected' => false,
             ]);
-
-            // Same dedup-by-commit-sha the full page render does (see
-            // paned_activity_detail_pane.php) - the client-side merge also
-            // skips a sha it already has, so a redundant block emitted here
-            // for a commit an earlier page already rendered is harmless.
-            $files = $item['source_commit_files'] ?? [];
-            $sha = (string) ($item['source_commit_sha'] ?? '');
-            if ($files !== [] && $sha !== '' && !isset($commitManifestsBySha[$sha])) {
-                $commitManifestsBySha[$sha] = true;
-                $detailHtml .= '<div data-paned-activity-commit-manifest="' . htmlspecialchars($sha, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '" hidden>'
-                    . $this->renderer()->renderFragment('partials/activity_commit_manifest.php', [
-                        'files' => $files,
-                        'commit_sha' => $sha,
-                        'commit_href' => $item['source_commit_href'] ?? '',
-                    ])
-                    . '</div>';
-            }
         }
 
         $lastItem = $result['items'][count($result['items']) - 1] ?? null;
