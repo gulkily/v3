@@ -2280,16 +2280,25 @@
   }
 
   async function ensureComposeIdentity(root, statusNode, timing) {
-    await ensureReadyIdentity(root, statusNode, {
+    await ensureActionIdentity(root, statusNode, {
       promptForUsername: promptForComposeUsername,
-      verifyPublishedIdentity: false,
       timing: timing,
+    });
+  }
+
+  async function ensureActionIdentity(root, statusNode, options) {
+    const config = options || {};
+    await ensureReadyIdentity(root, statusNode, {
+      promptForUsername: config.promptForUsername,
+      verifyPublishedIdentity: config.verifyPublishedIdentity === true,
+      timing: config.timing || null,
     });
   }
 
   if (typeof window !== "undefined") {
     window.__forumBrowserIdentity = {
       currentAuthorIdentityId: currentAuthorIdentityId,
+      ensureActionIdentity: ensureActionIdentity,
       ensureReadyIdentity: ensureReadyIdentity,
       hasBrowserKeypair: hasBrowserKeypair,
       identityPreparationState: identityPreparationState,
@@ -3181,6 +3190,7 @@
 
   window.ForumBrowserSigning = window.ForumBrowserSigning || {};
   window.ForumBrowserSigning.init = initBrowserSigning;
+  window.ForumBrowserSigning.ensureActionIdentity = ensureActionIdentity;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
   window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;
 
