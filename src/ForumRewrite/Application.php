@@ -508,6 +508,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/get_forte_content_summary') {
+            $this->handleForteContentSummary($query);
+            return;
+        }
+
         if ($path === '/api/get_username_claim_cta') {
             $this->sendText("Generate a browser keypair, choose a username, and bootstrap your identity.\n", 200);
             return;
@@ -1389,6 +1394,64 @@ final class Application
         ]);
 
         $this->sendJson(['status' => 'ok', 'html' => $html], 200);
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handleForteContentSummary(array $query): void
+    {
+        $summary = $this->forteContentSummary((string) ($query['post_id'] ?? ''));
+        if ($summary === null) {
+            $this->sendJson(['status' => 'error', 'error' => 'not found'], 404);
+            return;
+        }
+
+        $this->sendJson(array_merge(['status' => 'ok'], $summary), 200);
+    }
+
+    /**
+     * A board-visibility-independent summary of one post, for the content-
+     * summary preview dialog: resolved straight from `posts` via the same
+     * `fetchPost()` every other post lookup uses, unlike the Forte board's
+     * own thread listing (`fetchThreads()`), which excludes identity/
+     * bootstrap/approval-only threads entirely. `is_hidden` (moderation)
+     * still applies - this is for previewing real, un-moderated content
+     * that just isn't board-listed, not bypassing moderation.
+     *
+     * @return array{post_id:string,thread_id:string,is_reply:bool,title:string,author_label:string,created_at:string,body_preview:string,reply_count:int}|null
+     */
+    private function forteContentSummary(string $postId): ?array
+    {
+        $post = $this->fetchPost($postId);
+        if ($post === null) {
+            return null;
+        }
+
+        // posts.thread_id is self-referential for a root post (equals its
+        // own post_id), never null - parent_id is the real root/reply
+        // discriminator (null only for a root).
+        $isReply = trim((string) ($post['parent_id'] ?? '')) !== '';
+        $threadId = (string) $post['thread_id'];
+
+        $stmt = $this->pdo()->prepare('SELECT reply_count FROM threads WHERE root_post_id = :root_post_id');
+        $stmt->execute(['root_post_id' => $threadId]);
+        $replyCount = $stmt->fetchColumn();
+
+        return [
+            'post_id' => (string) $post['post_id'],
+            'thread_id' => $threadId,
+            'is_reply' => $isReply,
+            'title' => ThreadTitle::displayTitle(
+                (string) ($post['subject'] ?? ''),
+                (string) ($post['body'] ?? ''),
+                (string) $post['post_id'],
+            ),
+            'author_label' => (string) ($post['author_label'] ?? ''),
+            'created_at' => (string) ($post['created_at'] ?? ''),
+            'body_preview' => (string) ($post['body'] ?? ''),
+            'reply_count' => $replyCount !== false ? (int) $replyCount : 0,
+        ];
     }
 
     /**
