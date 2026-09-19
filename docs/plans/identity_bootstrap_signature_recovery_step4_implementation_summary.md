@@ -44,3 +44,15 @@
   - `php tests/run.php IdentityBootstrapDiagnosticsTest::testDiagnosticKeepsOnlySafeVerificationMetadata` — passed.
 - Notes:
   - Client-visible API errors remain unchanged; the diagnostic is emitted only through the server error log.
+
+## Stage 5 - Regression verification
+
+- Changes:
+  - No production code or schema changes were needed in this stage; the focused recovery, protected-action, verifier, and diagnostic coverage from Stages 1–4 provides the regression suite.
+- Verification:
+  - `node --check public/assets/browser_signing.js public/assets/thread_reactions.js public/assets/invite_issuance.js public/assets/invite_redemption.js` — passed.
+  - `php tests/run.php BrowserSigningNormalizationTest PrivateSiteAuthTest OpenPgpKeyInspectorTest IdentityBootstrapDiagnosticsTest` — passed.
+  - `php tests/run.php WriteApiSmokeTest::testLinkIdentityUsesPublicKeyUserIdForUsernameAndInvalidatesProfileArtifact WriteApiSmokeTest::testLinkIdentityAutoCreatesHiddenBootstrapPostWhenNoBootstrapPostIdIsProvided WriteApiSmokeTest::testCreatePreparedPostVerifiesDetachedSignatureAndCommitsSignatureFile WriteApiSmokeTest::testCreatePreparedPostRejectsInvalidDetachedSignatureWithoutWritingFiles WriteApiSmokeTest::testLinkIdentityUsesIncrementalReadModelUpdateWhenDatabaseIsWarm WriteApiSmokeTest::testLinkIdentityWithNewBootstrapUsesIncrementalReadModelUpdateWhenDatabaseIsWarm WriteApiSmokeTest::testApprovedLikeTagAddsScoreAndDoesNotDoubleCountForSameIdentity WriteApiSmokeTest::testFinalizePreparedApprovalVerifiesSignatureBeforeCreatingApproval` — passed.
+  - A full `php tests/run.php` attempt identified existing failures outside this feature in `LocalAppSmokeTest` activity rendering and `LazyComposeSigningTest`; the relevant recovery tests above remained green.
+- Notes:
+  - A browser session with a newly created OpenPGP key and a protected write still needs production-like manual confirmation before deployment; this workspace has no authenticated browser session to perform it.
