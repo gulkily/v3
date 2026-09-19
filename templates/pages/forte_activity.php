@@ -41,4 +41,5 @@ foreach ($viewCounts as $viewCount) {
   <div class="paned-statusbar">
     <span data-paned-activity-status-count><?= $selectedViewLoadedCount ?> item<?= $selectedViewLoadedCount === 1 ? '' : 's' ?></span>
   </div>
+<?= $indent($partial('partials/paned_content_summary_dialog.php'), 1) ?>
 </div>

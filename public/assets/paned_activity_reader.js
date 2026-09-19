@@ -639,6 +639,96 @@
     restoreSelectionFromUrl(true);
   }
 
+  // Mirrors showProfileSummary() in paned_board_reader.js - same dialog
+  // pattern (native <dialog>, API-fetched content, loading/error states,
+  // a "full page" link), just for a linked post/thread instead of a
+  // profile. The dialog markup lives outside .paned-board-layout, so it
+  // survives softNavigateToSort()'s wholesale swap and only needs wiring
+  // once, not from inside init().
+  function showContentSummary(postId, fullHref) {
+    var dialog = document.querySelector("[data-paned-content-summary-dialog]");
+    if (!dialog) {
+      return;
+    }
+
+    var title = dialog.querySelector('[data-role="content-summary-title"]');
+    var loading = dialog.querySelector('[data-role="content-summary-loading"]');
+    var content = dialog.querySelector('[data-role="content-summary-content"]');
+    var errorNode = dialog.querySelector('[data-role="content-summary-error"]');
+    var kindNode = dialog.querySelector('[data-role="content-summary-kind"]');
+    var authorNode = dialog.querySelector('[data-role="content-summary-author"]');
+    var dateNode = dialog.querySelector('[data-role="content-summary-date"]');
+    var repliesNode = dialog.querySelector('[data-role="content-summary-replies"]');
+    var textNode = dialog.querySelector('[data-role="content-summary-text"]');
+    var fullLink = dialog.querySelector('[data-role="content-summary-full-link"]');
+
+    if (title) {
+      title.textContent = "Loading…";
+    }
+    if (loading) {
+      loading.hidden = false;
+    }
+    if (content) {
+      content.hidden = true;
+    }
+    if (errorNode) {
+      errorNode.hidden = true;
+    }
+    if (fullLink) {
+      fullLink.href = fullHref;
+    }
+
+    dialog.showModal();
+
+    fetch("/api/get_forte_content_summary?post_id=" + encodeURIComponent(postId))
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error("content summary fetch failed");
+        }
+        return response.json();
+      })
+      .then(function (data) {
+        if (data.status !== "ok") {
+          throw new Error("content summary fetch failed");
+        }
+        if (loading) {
+          loading.hidden = true;
+        }
+        if (title) {
+          title.textContent = data.title || "Post";
+        }
+        if (kindNode) {
+          kindNode.textContent = data.is_reply ? "Reply" : "Thread";
+        }
+        if (authorNode) {
+          authorNode.textContent = data.author_label || "guest";
+        }
+        if (dateNode) {
+          var parsedDate = data.created_at ? new Date(data.created_at) : null;
+          dateNode.textContent = parsedDate && !isNaN(parsedDate.getTime())
+            ? parsedDate.toLocaleString()
+            : (data.created_at || "");
+        }
+        if (repliesNode) {
+          repliesNode.textContent = data.reply_count;
+        }
+        if (textNode) {
+          textNode.textContent = data.body_preview || "";
+        }
+        if (content) {
+          content.hidden = false;
+        }
+      })
+      .catch(function () {
+        if (loading) {
+          loading.hidden = true;
+        }
+        if (errorNode) {
+          errorNode.hidden = false;
+        }
+      });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     init();
 
@@ -666,5 +756,33 @@
         restoreSelectionFromUrl(true);
       }
     });
+
+    document.addEventListener("click", function (event) {
+      if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+        return;
+      }
+
+      var link = event.target.closest ? event.target.closest("[data-forte-content-link]") : null;
+      if (!link) {
+        return;
+      }
+
+      var postId = link.getAttribute("data-post-id") || "";
+      var dialog = document.querySelector("[data-paned-content-summary-dialog]");
+      if (postId === "" || !dialog || typeof dialog.showModal !== "function") {
+        return;
+      }
+
+      event.preventDefault();
+      showContentSummary(postId, link.getAttribute("href") || "#");
+    });
+
+    var contentSummaryClose = document.querySelector("[data-paned-content-summary-close]");
+    var contentSummaryDialog = document.querySelector("[data-paned-content-summary-dialog]");
+    if (contentSummaryClose && contentSummaryDialog) {
+      contentSummaryClose.addEventListener("click", function () {
+        contentSummaryDialog.close();
+      });
+    }
   });
 })();

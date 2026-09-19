@@ -5,6 +5,11 @@
  */
 $itemId = (string) $item['id'];
 $forteLink = $item['forte_link'] ?? ['href' => '', 'label' => ''];
+// forte_link's label is the target post id for every real content link -
+// the one exception is site_feature_flag, whose link isn't a post at all
+// (it points at the site feature-flags tool), so it's excluded from the
+// content-summary dialog's click-interception.
+$isContentLink = (string) ($item['kind'] ?? '') !== 'site_feature_flag';
 $commitSha = (string) ($item['source_commit_sha'] ?? '');
 // Only this item's own relevant files (its record, an identity_bootstrap's
 // paired identity record, its signature, and the signer's public key) are
@@ -25,7 +30,7 @@ $hasRelevantFiles = $relevantFiles !== [];
     <div class="body">
       <p><?= $e((string) ($item['label'] ?? '')) ?></p>
 <?php if ((string) ($forteLink['href'] ?? '') !== ''): ?>
-      <p><a href="<?= $e($forteLink['href']) ?>"><?= $e($forteLink['label']) ?></a></p>
+      <p><a href="<?= $e($forteLink['href']) ?>"<?= $isContentLink ? ' data-forte-content-link data-post-id="' . $e($forteLink['label']) . '"' : '' ?>><?= $e($forteLink['label']) ?></a></p>
 <?php endif; ?>
 <?php if ((string) ($item['author_label'] ?? '') === 'reply-agent'): ?>
       <p class="meta">Author: reply-agent <span class="agent-label">automated reply agent</span></p>
