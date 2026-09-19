@@ -27,3 +27,14 @@
   - Regression: normal row selection/keyboard nav on the Activity page unaffected; classic `/activity/` and the Forte board (`/forte/`) unaffected.
 - Notes:
   - No `activityItemBoardLink()`/href changes in this stage - purely additive dialog/JS/template-attribute work, as scoped.
+
+## Stage 3 - Every content link routes through the new preview
+- Changes:
+  - `activityItemBoardLink()`: dropped the `isBoardVisible` check and the classic `/posts/`/`/threads/` fallback branch entirely - any item with a resolvable thread/post id now always returns the `/forte?selected=<threadId>&created_post_id=<postId>#post-<postId>` form. `site_feature_flag`'s distinct destination is unchanged; an item missing a resolvable id still returns `['href' => '', 'label' => '']` (no link rendered at all, same as before).
+- Verification:
+  - `php -l` - no syntax errors.
+  - Item 226 (hidden `identity_bootstrap`, `view=bootstrap`): link href is now the `/forte?selected=...` form (previously classic); clicking it opens the summary dialog correctly, and the dialog's "View full thread" link now also uses the new form (still won't resolve as a real board destination until Stages 4-5 - expected).
+  - Item 1337 (`thread_label_add`, root `root-001`): link correctly resolves to the thread's root id; dialog opens with the root thread's own summary ("Hello world"), no error.
+  - Regression: all 5 activity views (`all`/`content`/`identity`/`bootstrap`/`approval`) load correctly; classic `/posts/root-001`, classic `/activity/`, and RSS all still 200/unaffected (their own routes and rendering are untouched - only the Activity page's own link generation changed).
+- Notes:
+  - Between this stage and Stage 5, a hidden thread's "View full thread" link is a real, well-formed URL that doesn't yet land on working content - an expected, temporary gap called out in the Step 3 plan, closed by Stages 4-5.

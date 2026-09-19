@@ -1472,26 +1472,20 @@ final class Application
 
         $threadId = (string) ($item['thread_id'] ?? '');
         $postId = $item['kind'] === 'thread_label_add' ? $threadId : (string) ($item['post_id'] ?? '');
-
-        // Identity/bootstrap/approval-only items are excluded from the
-        // public board (same predicate the "content" view itself uses), so
-        // their underlying post has no row there for a Forte permalink to
-        // land on - that would be a silent dead end. Only board-visible
-        // items get the Forte permalink; everything else keeps classic's
-        // own /posts//threads/ destination, which is real either way.
-        $isBoardVisible = !$this->isHiddenBootstrapBoardTagsJson((string) ($item['board_tags_json'] ?? ''));
-        if ($isBoardVisible && $threadId !== '' && $postId !== '') {
-            return [
-                'href' => '/forte?selected=' . $threadId . '&created_post_id=' . $postId . '#post-' . $postId,
-                'label' => $postId,
-            ];
+        if ($threadId === '' || $postId === '') {
+            return ['href' => '', 'label' => ''];
         }
 
-        if ($item['kind'] === 'thread_label_add') {
-            return $threadId === '' ? ['href' => '', 'label' => ''] : ['href' => '/threads/' . $threadId, 'label' => $threadId];
-        }
-
-        return $postId === '' ? ['href' => '', 'label' => ''] : ['href' => '/posts/' . $postId, 'label' => $postId];
+        // Every resolvable item links into Forte itself, regardless of
+        // board visibility - identity/bootstrap/approval-only threads are
+        // excluded from the board's own listing but still resolve when
+        // linked directly (fetchThreadById(), kept out of the list/tag
+        // groups/counts), so there's no more need for classic's own
+        // /posts//threads/ destination as a fallback here.
+        return [
+            'href' => '/forte?selected=' . $threadId . '&created_post_id=' . $postId . '#post-' . $postId,
+            'label' => $postId,
+        ];
     }
 
     /**
