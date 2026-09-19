@@ -64,3 +64,14 @@
   - Regression: a normal, board-visible thread (`root-001`) still gets its list row highlighted and scrolled into view on direct selection; a nonexistent id and no-selection-at-all both still show the placeholder exactly as before; clicking an ordinary row still selects it.
 - Notes:
   - This closes the gap Stage 4 explicitly left open - the feature's end-to-end flow (Activity link -> in-place preview -> full thread, for board-visible and hidden content alike) is now fully working. Stage 6 is the final regression/integration pass across the whole feature.
+
+## Stage 6 - End-to-end regression pass
+- Changes: none - verification-only stage, as scoped.
+- Verification (all via a real browser, Playwright):
+  - All 5 non-commit activity views (`content`/`identity`/`bootstrap`/`approval`, plus `all` covered throughout earlier stages) - one representative item per view, clicking its content link opens the dialog with correct data, and "View full thread" lands on a correctly-selected, visible thread in the board. Covered both a root-post item and a reply item (approval view item 234: a reply into thread `bootstrap-20260915111820-50f698ae`) - the reply case confirms the thread's root is selected *and* the specific reply is highlighted via `created_post_id`, not just "some content is visible."
+  - Commits view (Stage 3-era work, untouched by this feature): 100 commit rows still render, clicking one still opens its on-demand manifest correctly - confirms this feature's changes to the shared activity-item article template didn't regress the separate commit-row/detail code path.
+  - Forte board's own profile-summary dialog (the pattern this feature's dialog was modeled on) still opens correctly from an author link inside a selected thread - confirms the new dialog didn't interfere with the existing one (distinct `data-role`/dialog-selector attributes throughout).
+  - Classic `/posts/<id>`, `/threads/<id>`, `/activity/`, and RSS (`/activity/?format=rss`) - all still 200, all untouched by this feature (only Forte's own link-generation and board-selection logic changed).
+  - Zero browser console errors across every scenario above.
+- Notes:
+  - No issues surfaced requiring code changes - the feature works end-to-end as specified in Step 2, across board-visible and hidden content, roots and replies, with no regressions to the Commits view, the profile-summary dialog, or the classic interface.
