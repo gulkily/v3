@@ -134,13 +134,22 @@
         return row.getAttribute("data-paned-thread-id") === selected && !row.hidden;
       })[0];
 
-      if (!selectedRow) {
+      // A thread excluded from the board's own listing (identity/
+      // bootstrap/approval-only) has no row here at all, even though the
+      // server still rendered its content article when linked to directly
+      // (see fetchThreadById()) - fall back to that article before giving
+      // up; it just has no row to highlight or scroll into view.
+      var selectedPost = selectedRow || selected === "" ? null : contentPosts.filter(function (post) {
+        return post.getAttribute("data-paned-board-content-post-id") === selected;
+      })[0];
+
+      if (!selectedRow && !selectedPost) {
         resetContentPane();
         return;
       }
 
       selectThread(selected);
-      if (scrollRowIntoView) {
+      if (selectedRow && scrollRowIntoView) {
         selectedRow.scrollIntoView({ block: "nearest" });
       }
       if (createdPostId !== "") {

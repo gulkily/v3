@@ -53,3 +53,14 @@
   - Confirmed (expected, not yet fixed): visiting the dialog's "View full thread" link for a hidden thread in a real browser doesn't yet show it - the client-side `restoreSelectionFromUrl()` still requires a matching *visible row* before it will select anything, which this stage doesn't touch. This is precisely Stage 5's job.
 - Notes:
   - `replyEnabled` (toolbar prop, `selectedThreadId !== ''`) becomes true for a hidden thread too once Stage 5 lets the client actually select it - left as-is deliberately: a reader replying to a bootstrap/hidden thread is an existing, valid capability this feature doesn't need to restrict, not a new one it's introducing.
+
+## Stage 5 - Client-side selection for a thread with no list row
+- Changes:
+  - `restoreSelectionFromUrl()` in `paned_board_reader.js`: when `?selected=` matches no visible row, it now also checks for a matching content-pane article (`data-paned-board-content-post-id`) before giving up - only falling back to the "no thread selected" placeholder if neither exists. `selectThread()` itself needed no changes; its row-matching loop was already tolerant of zero matches. Row scroll-into-view is skipped when there's no row (nothing to scroll to); the reply-highlight/scroll behavior for `created_post_id` is unchanged and shared by both paths.
+- Verification:
+  - `node --check` - no syntax errors; unit-checked the new condition's operator precedence in isolation (no row + a selection -> falls through to the content-post check; a row present -> short-circuits to `null` immediately; no selection at all -> `null`) - matches intent in all three cases.
+  - Browser (Playwright), direct URL: `/forte?selected=<hidden thread>&created_post_id=<reply>#post-<reply>` - the hidden thread's content article is visible, the placeholder is hidden, no console errors.
+  - Browser, full end-to-end: Activity item (hidden `identity_bootstrap`, item 226) -> content-summary dialog -> "View full thread" -> lands on the Forte board with that exact thread now visible and selected. No console errors anywhere in the flow.
+  - Regression: a normal, board-visible thread (`root-001`) still gets its list row highlighted and scrolled into view on direct selection; a nonexistent id and no-selection-at-all both still show the placeholder exactly as before; clicking an ordinary row still selects it.
+- Notes:
+  - This closes the gap Stage 4 explicitly left open - the feature's end-to-end flow (Activity link -> in-place preview -> full thread, for board-visible and hidden content alike) is now fully working. Stage 6 is the final regression/integration pass across the whole feature.
