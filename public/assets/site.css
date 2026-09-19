@@ -2753,6 +2753,19 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   text-transform: uppercase;
 }
 
+.invitation-destination-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+}
+
+.invitation-destination-toggle input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
 .account-key-username {
   margin: 0;
   font-family: var(--ui-font);

@@ -4,8 +4,12 @@
   </article>
   <article class="card">
     <form data-invitation-issue-form>
+      <label class="invitation-destination-toggle">
+        <input name="include_destination" type="checkbox" data-action="toggle-invitation-destination">
+        Include destination URL
+      </label>
       <label class="account-key-label" for="invite-destination">Destination (optional)</label>
-      <input id="invite-destination" name="destination" type="text" value="<?= $e($destination) ?>" placeholder="/threads/example">
+      <input id="invite-destination" name="destination" type="text" value="<?= $e($destination) ?>" placeholder="/threads/example" disabled>
       <button type="submit">Generate invite link</button>
     </form>
     <p class="meta" data-role="invitation-feedback" hidden></p>

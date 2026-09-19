@@ -56,7 +56,14 @@
     const feedback = root.querySelector("[data-role=invitation-feedback]");
     const result = root.querySelector("[data-role=invitation-result]");
     const link = root.querySelector("[data-role=invitation-link]");
+    const includeDestination = form.elements.include_destination;
+    const destination = form.elements.destination;
     const copyButton = root.querySelector("[data-action=copy-invitation-link]");
+    const syncDestination = function () {
+      destination.disabled = !includeDestination.checked;
+    };
+    includeDestination.addEventListener("change", syncDestination);
+    syncDestination();
     const selectInvitationLink = function () {
       link.select();
     };
@@ -78,7 +85,7 @@
           action: "issue",
           verification_hash: await verificationHash(token),
           expires_at: new Date(Date.now() + 7 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
-          destination: String(form.elements.destination.value || ""),
+          destination: includeDestination.checked ? String(destination.value || "") : "",
         });
         if (!prepared || prepared.status !== "ok") throw new Error(prepared && prepared.error || "Unable to prepare invitation.");
         if (!window.ForumBrowserSigning || !window.ForumBrowserSigning.signCanonicalRecord) throw new Error("Browser signing is unavailable.");
