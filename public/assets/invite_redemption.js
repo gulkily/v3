@@ -6,11 +6,12 @@
   }
   async function ensureRedemptionIdentity(root, status) {
     const identity = window.__forumBrowserIdentity;
-    if (!identity || typeof identity.ensureReadyIdentity !== "function") {
+    const readiness = identity && (identity.ensureActionIdentity || identity.ensureReadyIdentity);
+    if (typeof readiness !== "function") {
       throw new Error("Identity setup is unavailable. Reload the page and try again.");
     }
     feedback(status, "Preparing your browser identity…", "ok");
-    await identity.ensureReadyIdentity(root, status, { verifyPublishedIdentity: false });
+    await readiness.call(identity, root, status, { verifyPublishedIdentity: false });
     const fingerprint = String(localStorage.getItem("forum_pki_fingerprint") || "")
       .replace(/^openpgp:/, "")
       .toLowerCase();

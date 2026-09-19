@@ -49,6 +49,16 @@
     throw new Error("The invite link is selected. Copy it with your browser's copy command.");
   }
 
+  async function ensureInvitationIdentity(root, feedback) {
+    const signing = window.ForumBrowserSigning || null;
+    if (!signing || typeof signing.ensureActionIdentity !== "function" || typeof signing.signCanonicalRecord !== "function") {
+      throw new Error("Browser signing is unavailable.");
+    }
+
+    await signing.ensureActionIdentity(root, feedback);
+    return signing;
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     const root = document.querySelector("[data-invitation-page]");
     const form = root && root.querySelector("[data-invitation-issue-form]");
@@ -80,6 +90,7 @@
     form.addEventListener("submit", async function (event) {
       event.preventDefault();
       try {
+        const signing = await ensureInvitationIdentity(root, feedback);
         const token = randomToken();
         const prepared = await post("/api/prepare_invitation", {
           action: "issue",
@@ -88,8 +99,7 @@
           destination: includeDestination.checked ? String(destination.value || "") : "",
         });
         if (!prepared || prepared.status !== "ok") throw new Error(prepared && prepared.error || "Unable to prepare invitation.");
-        if (!window.ForumBrowserSigning || !window.ForumBrowserSigning.signCanonicalRecord) throw new Error("Browser signing is unavailable.");
-        const signature = await window.ForumBrowserSigning.signCanonicalRecord(prepared.canonical_record);
+        const signature = await signing.signCanonicalRecord(prepared.canonical_record);
         const finalized = await post("/api/create_prepared_invitation", {
           prepare_token: prepared.prepare_token, post_id: prepared.post_id, record_path: prepared.record_path,
           author_identity_id: (prepared.canonical_record.match(/^Author-Identity-ID: (.+)$/m) || ["", ""])[1],
@@ -108,12 +118,13 @@
     if (revokeForm) revokeForm.addEventListener("submit", async function (event) {
       event.preventDefault();
       try {
+        const signing = await ensureInvitationIdentity(root, feedback);
         const prepared = await post("/api/prepare_invitation", {
           action: "revoke", invitation_id: String(revokeForm.elements.invitation_id.value || ""),
           verification_hash: String(revokeForm.elements.verification_hash.value || ""),
         });
         if (!prepared || prepared.status !== "ok") throw new Error(prepared && prepared.error || "Unable to prepare revocation.");
-        const signature = await window.ForumBrowserSigning.signCanonicalRecord(prepared.canonical_record);
+        const signature = await signing.signCanonicalRecord(prepared.canonical_record);
         const finalized = await post("/api/create_prepared_invitation", {
           prepare_token: prepared.prepare_token, post_id: prepared.post_id, record_path: prepared.record_path,
           author_identity_id: (prepared.canonical_record.match(/^Author-Identity-ID: (.+)$/m) || ["", ""])[1],

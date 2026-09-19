@@ -372,7 +372,10 @@
 
   async function ensureReactionIdentity(root, feedbackNode, timing) {
     let helper = window.__forumBrowserIdentity;
-    const notReady = !helper || typeof helper.ensureReadyIdentity !== "function";
+    const readiness = function () {
+      return helper && (helper.ensureActionIdentity || helper.ensureReadyIdentity);
+    };
+    const notReady = typeof readiness() !== "function";
     if (notReady && window.ForumLazyComposeSigning && typeof window.ForumLazyComposeSigning.load === "function") {
       setFeedback(feedbackNode, "Loading identity tools...", "ok");
       try {
@@ -383,13 +386,13 @@
       helper = window.__forumBrowserIdentity;
     }
 
-    if (!helper || typeof helper.ensureReadyIdentity !== "function") {
+    if (typeof readiness() !== "function") {
       throw new Error("Identity setup is unavailable. Reload the page and try again.");
     }
 
     markActionTiming(timing, "forum_identity_start");
     setFeedback(feedbackNode, "Preparing identity...", "ok");
-    await helper.ensureReadyIdentity(root, feedbackNode, {
+    await readiness().call(helper, root, feedbackNode, {
       verifyPublishedIdentity: false,
       timing: timing,
     });

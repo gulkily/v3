@@ -154,7 +154,8 @@ const state = {
   store: {
     forum_pki_fingerprint: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     forum_pki_public_key: 'public',
-    forum_pki_private_key: 'private'
+    forum_pki_private_key: 'private',
+    forum_pki_published_fingerprint: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
   },
   fetches: []
 };
@@ -206,11 +207,12 @@ NODE;
         $result = $this->runScript($script);
 
         assertSame(true, $result['result']['ok']);
-        assertSame('/api/prepare_approval', $result['fetches'][0]['url']);
-        assertStringContains('profile_slug=openpgp-target', $result['fetches'][0]['body']);
-        assertSame('/api/create_prepared_approval', $result['fetches'][1]['url']);
-        assertStringContains('author_identity_id=openpgp%3Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', $result['fetches'][1]['body']);
-        assertStringContains('detached_signature=approval-signature', $result['fetches'][1]['body']);
+        assertStringContains('/api/set_identity_hint?', $result['fetches'][0]['url']);
+        assertSame('/api/prepare_approval', $result['fetches'][1]['url']);
+        assertStringContains('profile_slug=openpgp-target', $result['fetches'][1]['body']);
+        assertSame('/api/create_prepared_approval', $result['fetches'][2]['url']);
+        assertStringContains('author_identity_id=openpgp%3Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', $result['fetches'][2]['body']);
+        assertStringContains('detached_signature=approval-signature', $result['fetches'][2]['body']);
     }
 
     public function testNormalizeComposeAsciiTransliteratesApprovedLatinDiacritics(): void
@@ -5595,7 +5597,7 @@ global.window = {
     }
   },
   __forumBrowserIdentity: {
-    async ensureReadyIdentity(receivedRoot, receivedFeedback) {
+    async ensureActionIdentity(receivedRoot, receivedFeedback) {
       events.push(receivedRoot === root ? 'ensure-root' : 'ensure-wrong-root');
       events.push(receivedFeedback === feedbackNode ? 'ensure-feedback' : 'ensure-wrong-feedback');
       events.push(arguments[2] && arguments[2].verifyPublishedIdentity === false ? 'ensure-fast' : 'ensure-verified');
@@ -6209,7 +6211,7 @@ global.Element = HTMLButtonElement;
 global.HTMLButtonElement = HTMLButtonElement;
 global.window = {
   __forumBrowserIdentity: {
-    async ensureReadyIdentity(receivedRoot, receivedFeedback) {
+    async ensureActionIdentity(receivedRoot, receivedFeedback) {
       events.push(receivedRoot === root ? 'ensure-root' : 'ensure-wrong-root');
       events.push(receivedFeedback === feedbackNode ? 'ensure-feedback' : 'ensure-wrong-feedback');
       events.push(arguments[2] && arguments[2].verifyPublishedIdentity === false ? 'ensure-fast' : 'ensure-verified');

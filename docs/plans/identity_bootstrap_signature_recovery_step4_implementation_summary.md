@@ -22,3 +22,14 @@
   - `php tests/run.php BrowserSigningNormalizationTest::testActionIdentityReadinessUsesTheSharedRecoveryPath BrowserSigningNormalizationTest::testReadyIdentityRetriesBootstrapSignatureVerificationFailure BrowserSigningNormalizationTest::testReadyIdentityStopsAfterSecondBootstrapSignatureVerificationFailure` — passed.
 - Notes:
   - The default preserves the established lightweight action-readiness behavior; callers can explicitly request full publication verification when needed.
+
+## Stage 3 - Protected-action continuation
+
+- Changes:
+  - Routed approvals, reactions, invitation issuance, and invitation redemption through the shared readiness gate.
+  - Kept compose on that gate and retained each action's existing once-only submission controls.
+- Verification:
+  - `node --check public/assets/browser_signing.js public/assets/thread_reactions.js public/assets/invite_issuance.js public/assets/invite_redemption.js` — passed.
+  - `php tests/run.php BrowserSigningNormalizationTest::testApprovalSigningPreparesSignsAndFinalizesCanonicalApproval BrowserSigningNormalizationTest::testSignedThreadSubmitPreparesSignsAndFinalizes BrowserSigningNormalizationTest::testThreadReactionBootstrapsIdentityBeforeApplyingLike BrowserSigningNormalizationTest::testPostReactionLikeUsesLikeFeedbackCopy` — passed.
+- Notes:
+  - Direct signing actions now wait for readiness before preparing their action, so recovery completes before any protected write is attempted.

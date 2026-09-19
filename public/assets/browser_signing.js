@@ -1109,6 +1109,7 @@
   }
 
   async function submitSignedApproval(profileSlug) {
+    await ensureActionIdentity(null, null);
     const authorIdentityId = currentAuthorIdentityId();
     if (!authorIdentityId) {
       return {
