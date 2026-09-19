@@ -703,6 +703,7 @@ class LocalWriteService
             );
             $timings = array_merge($timings, $verification['timings']);
             if (!$verification['ok']) {
+                $this->logIdentityBootstrapVerificationFailure($verification, (string) $prepared['fingerprint']);
                 throw new RuntimeException('Identity bootstrap signature verification failed: ' . $verification['status']);
             }
 
@@ -2368,6 +2369,35 @@ class LocalWriteService
         }
 
         return $value . "\n";
+    }
+
+    /**
+     * @param array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>} $verification
+     */
+    private function logIdentityBootstrapVerificationFailure(array $verification, string $expectedFingerprint): void
+    {
+        error_log('[forum] ' . self::identityBootstrapVerificationDiagnostic($verification, $expectedFingerprint));
+    }
+
+    /**
+     * Builds an operator diagnostic without retaining any key, signature, or raw GnuPG output.
+     *
+     * @param array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>} $verification
+     */
+    private static function identityBootstrapVerificationDiagnostic(array $verification, string $expectedFingerprint): string
+    {
+        $gpgStatusCodes = [];
+        if (preg_match_all('/\[GNUPG:\]\s+([A-Z_]+)/', (string) $verification['details'], $matches) > 0) {
+            $gpgStatusCodes = array_values(array_unique($matches[1]));
+        }
+
+        return (string) json_encode([
+            'event' => 'identity_bootstrap_signature_verification_failed',
+            'status' => (string) $verification['status'],
+            'expected_fingerprint' => strtoupper(trim($expectedFingerprint)),
+            'reported_fingerprint' => strtoupper(trim((string) ($verification['fingerprint'] ?? ''))),
+            'gpg_status_codes' => $gpgStatusCodes,
+        ], JSON_UNESCAPED_SLASHES);
     }
 
     private function normalizeAuthoredBody(string $value, string $field): string

@@ -33,3 +33,14 @@
   - `php tests/run.php BrowserSigningNormalizationTest::testApprovalSigningPreparesSignsAndFinalizesCanonicalApproval BrowserSigningNormalizationTest::testSignedThreadSubmitPreparesSignsAndFinalizes BrowserSigningNormalizationTest::testThreadReactionBootstrapsIdentityBeforeApplyingLike BrowserSigningNormalizationTest::testPostReactionLikeUsesLikeFeedbackCopy` — passed.
 - Notes:
   - Direct signing actions now wait for readiness before preparing their action, so recovery completes before any protected write is attempted.
+
+## Stage 4 - Safe verification diagnostics
+
+- Changes:
+  - Added an operator log entry when identity-bootstrap signature verification fails.
+  - The diagnostic records only the failure status, expected and reported public fingerprints, and parsed GnuPG status-code names.
+  - It deliberately excludes armored keys, detached signatures, user IDs, and raw GnuPG output.
+- Verification:
+  - `php tests/run.php IdentityBootstrapDiagnosticsTest::testDiagnosticKeepsOnlySafeVerificationMetadata` — passed.
+- Notes:
+  - Client-visible API errors remain unchanged; the diagnostic is emitted only through the server error log.
