@@ -1,12 +1,14 @@
 <?php
 /**
  * @var array<int, array<string, mixed>> $threads
+ * @var array<int, array<string, mixed>> $contentThreads
  * @var array<int, array{tag: string, count: int, threads: array}> $tagGroups
  * @var string $selectedTag
  * @var string $selectedThreadId
  */
 $selectedTag ??= '';
 $selectedThreadId ??= '';
+$contentThreads ??= $threads;
 $visibleThreadCount = count($threads);
 if ($selectedTag !== '') {
     foreach ($tagGroups as $group) {
@@ -30,7 +32,7 @@ if ($selectedTag !== '') {
 <?= $indent($partial('partials/paned_folder_tree.php', ['tagGroups' => $tagGroups, 'totalThreadCount' => count($threads), 'selectedTag' => $selectedTag]), 2) ?>
     <div class="paned-board-main paned-panes-stack">
 <?= $indent($partial('partials/paned_board_thread_list.php', ['threads' => $threads, 'selectedTag' => $selectedTag, 'sortColumn' => $sortColumn, 'sortDir' => $sortDir]), 3) ?>
-<?= $indent($partial('partials/paned_board_content_pane.php', ['threads' => $threads]), 3) ?>
+<?= $indent($partial('partials/paned_board_content_pane.php', ['threads' => $contentThreads]), 3) ?>
     </div>
   </div>
   <div class="paned-statusbar">

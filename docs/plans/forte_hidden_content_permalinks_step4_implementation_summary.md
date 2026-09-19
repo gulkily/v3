@@ -38,3 +38,18 @@
   - Regression: all 5 activity views (`all`/`content`/`identity`/`bootstrap`/`approval`) load correctly; classic `/posts/root-001`, classic `/activity/`, and RSS all still 200/unaffected (their own routes and rendering are untouched - only the Activity page's own link generation changed).
 - Notes:
   - Between this stage and Stage 5, a hidden thread's "View full thread" link is a real, well-formed URL that doesn't yet land on working content - an expected, temporary gap called out in the Step 3 plan, closed by Stages 4-5.
+
+## Stage 4 - Resolve a hidden thread on demand for the board
+- Changes:
+  - New `fetchThreadById(string $threadId): ?array` - the exact query `fetchThreads()` runs, minus its `isHiddenBootstrapBoardTagsJson` exclusion, for one thread by id; reuses the existing `hydrateThreadRow()` single-row hydrator so its shape matches every other thread row exactly.
+  - `renderForteBoard()`: when `resolveForteBoardSelection()` can't find the requested selection in the board's own (filtered) `$threads`, it now tries `fetchThreadById()` directly; a hit sets `$selectedThreadId` and produces `$contentThreads` (`$threads` plus this one extra thread) - `$threads` itself, `$tagGroups`, and all counts stay untouched. Reply-tree building, `$allPostIds`, `$highlightedPostId`, and the viewer-like/flag lookups now iterate `$contentThreads` instead of `$threads`, so a hidden thread's replies/reactions render correctly too - `fetchAllThreadReplyPosts()` already covers every thread regardless of board-tag visibility (it only filters moderation's `is_hidden`), so no new reply-fetching was needed.
+  - `forte_board.php` passes the new `$contentThreads` (not `$threads`) to `paned_board_content_pane.php` specifically - `paned_board_thread_list.php` and the folder tree/status bar keep receiving the original, unaffected `$threads`.
+- Verification:
+  - `php -l` - no syntax errors.
+  - `GET /forte?selected=<hidden identity_bootstrap root>`: 200, its content article renders and is unhidden (selected), no matching row exists in the list, and `data-paned-board-total-count` is unchanged (530, same as a plain `/forte/` load).
+  - `GET /forte?selected=<hidden thread with a real reply>&created_post_id=<that reply>`: 200, the reply tree renders inside the hidden thread's article (no PHP warnings/fatals in the response).
+  - `GET /forte?selected=<nonexistent id>`: 200, falls back to the "no thread selected" placeholder exactly as before this stage (regression-safe for an unresolvable id).
+  - Regression: `GET /forte?selected=<a normal, board-visible thread>` still gets both a list row and a content article, exactly as before.
+  - Confirmed (expected, not yet fixed): visiting the dialog's "View full thread" link for a hidden thread in a real browser doesn't yet show it - the client-side `restoreSelectionFromUrl()` still requires a matching *visible row* before it will select anything, which this stage doesn't touch. This is precisely Stage 5's job.
+- Notes:
+  - `replyEnabled` (toolbar prop, `selectedThreadId !== ''`) becomes true for a hidden thread too once Stage 5 lets the client actually select it - left as-is deliberately: a reader replying to a bootstrap/hidden thread is an existing, valid capability this feature doesn't need to restrict, not a new one it's introducing.

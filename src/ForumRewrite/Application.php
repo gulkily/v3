@@ -953,11 +953,25 @@ final class Application
         $sort = $this->resolveForteBoardSort($requestedSortColumn, $requestedSortDir);
         $threads = $this->applyForteBoardSort($threads, $sort['column'], $sort['dir']);
 
+        // A thread excluded from the board's own listing (identity/
+        // bootstrap/approval-only) still resolves when linked to directly -
+        // fetched on its own here, kept out of $threads/$tagGroups/counts
+        // entirely, and folded only into $contentThreads below so just the
+        // content pane (never the row list or folder tree) can render it.
+        $extraThread = null;
+        if ($selectedThreadId === '' && $requestedSelected !== '') {
+            $extraThread = $this->fetchThreadById($requestedSelected);
+            if ($extraThread !== null) {
+                $selectedThreadId = $requestedSelected;
+            }
+        }
+        $contentThreads = $extraThread !== null ? array_merge($threads, [$extraThread]) : $threads;
+
         $replyPostsByThreadId = $this->fetchAllThreadReplyPosts();
         $replyTreesByThreadId = [];
         $allPostIds = [];
         $highlightedPostId = '';
-        foreach ($threads as $thread) {
+        foreach ($contentThreads as $thread) {
             $threadId = (string) $thread['root_post_id'];
             $replyTreesByThreadId[$threadId] = $this->buildReplyTree($replyPostsByThreadId[$threadId] ?? []);
             $allPostIds[] = $threadId;
@@ -973,7 +987,7 @@ final class Application
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
         $viewerIdentityId = $viewerProfile !== null ? (string) $viewerProfile['identity_id'] : '';
         $viewerLikedThreadIds = $viewerProfile !== null
-            ? $this->viewerThreadTagsForThreads(array_column($threads, 'root_post_id'), 'like', $viewerIdentityId)
+            ? $this->viewerThreadTagsForThreads(array_column($contentThreads, 'root_post_id'), 'like', $viewerIdentityId)
             : [];
         $viewerFlaggedPostIds = $viewerProfile !== null
             ? $this->viewerPostTagsForPosts($allPostIds, 'flag', $viewerIdentityId)
@@ -983,6 +997,7 @@ final class Application
             'forte_board.php',
             [
                 'threads' => $threads,
+                'contentThreads' => $contentThreads,
                 'tagGroups' => $tagGroups,
                 'selectedTag' => $selectedTag,
                 'selectedThreadId' => $selectedThreadId,
@@ -2623,6 +2638,34 @@ final class Application
         ));
 
         return $this->hydrateThreadRows($rows);
+    }
+
+    /**
+     * One thread's own row, in the exact shape `fetchThreads()` produces -
+     * unlike `fetchThreads()`, this doesn't exclude identity/bootstrap/
+     * approval-only threads, since it's for resolving a single thread a
+     * caller already knows the id of (a direct permalink), not for
+     * populating the board's own listing.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function fetchThreadById(string $threadId): ?array
+    {
+        $stmt = $this->pdo()->prepare(
+            'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
+                    threads.reply_count, threads.score_total, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
+                    posts.body AS root_post_body,
+                    posts.post_score_total AS root_post_score_total,
+                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
+             FROM threads
+             JOIN posts ON posts.post_id = threads.root_post_id
+             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
+             WHERE threads.root_post_id = :root_post_id'
+        );
+        $stmt->execute(['root_post_id' => $threadId]);
+        $thread = $stmt->fetch();
+
+        return $thread === false ? null : $this->hydrateThreadRow($thread);
     }
 
     /**
