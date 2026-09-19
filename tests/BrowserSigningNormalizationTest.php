@@ -1597,6 +1597,171 @@ NODE;
         assertSame('Publishing your public key in the background...', $result['status']);
     }
 
+    public function testReadyIdentityRetriesBootstrapSignatureVerificationFailure(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const fingerprint = '0168FF20EB09C3EA6193BD3C92A73AA7D20A0954';
+const state = {
+  localStore: {
+    forum_pki_public_key: 'public-key',
+    forum_pki_private_key: 'private-key',
+    forum_pki_fingerprint: fingerprint
+  },
+  prepareCalls: 0,
+  createCalls: 0
+};
+
+global.localStorage = {
+  getItem(key) { return state.localStore[key] || ''; },
+  setItem(key, value) { state.localStore[key] = String(value); },
+  removeItem(key) { delete state.localStore[key]; }
+};
+global.window = {
+  localStorage: global.localStorage,
+  openpgp: {
+    async readKey() { return { getFingerprint() { return fingerprint; } }; },
+    async readPrivateKey() { return { getFingerprint() { return fingerprint; } }; },
+    async createMessage(input) { return input; },
+    async sign() { return 'detached-signature'; }
+  }
+};
+global.openpgp = global.window.openpgp;
+global.document = {
+  documentElement: { dataset: { approvedMembersOnly: '1' } },
+  addEventListener(){},
+  querySelector(){ return null; },
+  querySelectorAll(){ return []; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url) {
+  if (String(url) === '/api/prepare_identity') {
+    state.prepareCalls += 1;
+    return { ok: true, async text() {
+      return JSON.stringify({
+        status: 'ok',
+        prepare_token: 'token-' + state.prepareCalls,
+        canonical_record: 'Post-ID: bootstrap-' + state.prepareCalls + '\\n'
+      });
+    }};
+  }
+  if (String(url) === '/api/create_identity') {
+    state.createCalls += 1;
+    return { ok: state.createCalls === 2, async text() {
+      return state.createCalls === 1
+        ? JSON.stringify({ status: 'error', error: 'Identity bootstrap signature verification failed: signature_verification_failed' })
+        : JSON.stringify({ status: 'ok' });
+    }};
+  }
+  if (String(url).indexOf('/api/set_identity_hint?') === 0) {
+    return { ok: true, async text() { return 'ok'; } };
+  }
+  throw new Error('Unexpected fetch: ' + url);
+};
+
+vm.runInThisContext(source);
+window.__forumBrowserIdentity.ensureReadyIdentity(null, null, { verifyPublishedIdentity: true })
+  .then(() => process.stdout.write(JSON.stringify({
+    prepareCalls: state.prepareCalls,
+    createCalls: state.createCalls,
+    publishedFingerprint: state.localStore.forum_pki_published_fingerprint || ''
+  })))
+  .catch((error) => { process.stderr.write(error.stack || String(error)); process.exit(1); });
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(2, $result['prepareCalls']);
+        assertSame(2, $result['createCalls']);
+        assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $result['publishedFingerprint']);
+    }
+
+    public function testReadyIdentityStopsAfterSecondBootstrapSignatureVerificationFailure(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const fingerprint = '0168FF20EB09C3EA6193BD3C92A73AA7D20A0954';
+const state = {
+  localStore: {
+    forum_pki_public_key: 'public-key',
+    forum_pki_private_key: 'private-key',
+    forum_pki_fingerprint: fingerprint
+  },
+  prepareCalls: 0,
+  createCalls: 0
+};
+
+global.localStorage = {
+  getItem(key) { return state.localStore[key] || ''; },
+  setItem(key, value) { state.localStore[key] = String(value); },
+  removeItem(key) { delete state.localStore[key]; }
+};
+global.window = {
+  localStorage: global.localStorage,
+  openpgp: {
+    async readKey() { return { getFingerprint() { return fingerprint; } }; },
+    async readPrivateKey() { return { getFingerprint() { return fingerprint; } }; },
+    async createMessage(input) { return input; },
+    async sign() { return 'detached-signature'; }
+  }
+};
+global.openpgp = global.window.openpgp;
+global.document = {
+  documentElement: { dataset: { approvedMembersOnly: '1' } },
+  addEventListener(){},
+  querySelector(){ return null; },
+  querySelectorAll(){ return []; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url) {
+  if (String(url) === '/api/prepare_identity') {
+    state.prepareCalls += 1;
+    return { ok: true, async text() {
+      return JSON.stringify({
+        status: 'ok',
+        prepare_token: 'token-' + state.prepareCalls,
+        canonical_record: 'Post-ID: bootstrap-' + state.prepareCalls + '\\n'
+      });
+    }};
+  }
+  if (String(url) === '/api/create_identity') {
+    state.createCalls += 1;
+    return { ok: false, async text() {
+      return JSON.stringify({ status: 'error', error: 'Identity bootstrap signature verification failed: signature_verification_failed' });
+    }};
+  }
+  throw new Error('Unexpected fetch: ' + url);
+};
+
+vm.runInThisContext(source);
+window.__forumBrowserIdentity.ensureReadyIdentity(null, null, { verifyPublishedIdentity: true })
+  .then(() => { throw new Error('expected identity setup to fail'); })
+  .catch((error) => process.stdout.write(JSON.stringify({
+    prepareCalls: state.prepareCalls,
+    createCalls: state.createCalls,
+    publishedFingerprint: state.localStore.forum_pki_published_fingerprint || '',
+    message: error.message,
+    technicalDetails: error.technicalDetails || ''
+  })));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(2, $result['prepareCalls']);
+        assertSame(2, $result['createCalls']);
+        assertSame('', $result['publishedFingerprint']);
+        assertSame('Could not prepare your browser identity automatically. Open /account/key/ to finish manually.', $result['message']);
+        assertSame('Identity bootstrap signature verification failed: signature_verification_failed', $result['technicalDetails']);
+    }
+
     public function testSubmittedComposePageClearsDraftWithoutImmediatelySavingBlankReplacement(): void
     {
         $script = <<<'NODE'

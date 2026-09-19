@@ -1599,7 +1599,13 @@
   function isRetryableIdentityBootstrapFailure(technicalDetails) {
     const message = String(technicalDetails || "").trim();
     return message.indexOf("Unable to inspect OpenPGP public key.") === 0
-      || message === "OpenPGP public key is missing a fingerprint or user ID.";
+      || message === "OpenPGP public key is missing a fingerprint or user ID."
+      || message === "Identity bootstrap signature verification failed: signature_verification_failed";
+  }
+
+  function identityBootstrapFailureError(rawMessage) {
+    const failure = classifyIdentityBootstrapFailure(rawMessage);
+    return buildFriendlyError(failure.friendlyMessage, failure.technicalDetails);
   }
 
   function openPgpUnavailableError(technicalDetails) {
@@ -2128,7 +2134,7 @@
         renderSavedState(root);
         return;
       }
-      throw new Error(rawError);
+      throw identityBootstrapFailureError(rawError);
     }
 
     const detachedSignature = await signCanonicalRecord(String(prepared.canonical_record || ""));
@@ -2152,7 +2158,9 @@
       finalized = null;
     }
     if (!finalized || finalized.status !== "ok") {
-      throw new Error(finalized && finalized.error ? String(finalized.error) : "Unable to finalize browser identity.");
+      throw identityBootstrapFailureError(
+        finalized && finalized.error ? String(finalized.error) : "Unable to finalize browser identity."
+      );
     }
 
     if (fingerprint) {
