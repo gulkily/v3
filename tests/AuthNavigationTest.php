@@ -95,4 +95,35 @@ NODE);
         assertSame(0, $result['authenticationCalls']);
         assertSame(['/about/'], $result['assigned']);
     }
+
+    public function testInviteNavigationIsLeftToItsDedicatedHandler(): void
+    {
+        $result = $this->runScript(<<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+let clickListener = null;
+let fetchCount = 0;
+const link = {
+  href: 'https://forum.test/invites/', target: '',
+  hasAttribute(name) { return name === 'data-invite-navigation'; }
+};
+const event = {
+  defaultPrevented: false, button: 0, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false,
+  target: { closest() { return link; } },
+  preventDefault() { this.defaultPrevented = true; }
+};
+global.window = {
+  location: { href: 'https://forum.test/', origin: 'https://forum.test', pathname: '/', search: '', assign() {} }
+};
+global.document = { addEventListener(type, listener) { if (type === 'click') clickListener = listener; } };
+global.fetch = async function() { fetchCount += 1; return { ok: true }; };
+vm.runInThisContext(source);
+clickListener(event);
+setTimeout(() => process.stdout.write(JSON.stringify({ prevented: event.defaultPrevented, fetchCount })), 0);
+NODE);
+
+        assertSame(false, $result['prevented']);
+        assertSame(0, $result['fetchCount']);
+    }
 }
