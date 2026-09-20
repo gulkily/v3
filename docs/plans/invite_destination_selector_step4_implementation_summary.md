@@ -33,3 +33,14 @@
   - Attempted `./v3 test`; the full suite reported unrelated existing failures in activity/signature and lazy-compose tests before exceeding the 60-second check window.
 - Notes:
   - Destination history remains browser-local and is intentionally absent from invitation API payloads beyond the selected destination.
+
+## Stage 4 - Separate unfiltered destination chooser
+- Changes:
+  - Replaced the native filtered datalist with an unfiltered “Choose destination” disclosure menu.
+  - Kept the typed destination field blank and moved the clicked-through page to a selectable source-location option.
+  - Reused the chooser for curated and browser-local recent destinations; choosing an option fills and refocuses the text field.
+- Verification:
+  - `node --check public/assets/invite_issuance.js`
+  - `./v3 test InvitationIssuanceTest`
+- Notes:
+  - This member-requested refinement avoids browser-specific datalist filtering while retaining free-form entry.

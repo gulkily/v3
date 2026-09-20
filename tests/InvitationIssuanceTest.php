@@ -34,7 +34,7 @@ const checkbox = {
   addEventListener(type, listener) { listeners[type] = listener; },
   setAttribute(name, value) { this.attributes[name] = value; }
 };
-const destination = { disabled: false, value: '', addEventListener() {} };
+const destination = { disabled: false, value: '', dataset: {}, addEventListener() {}, focus() {} };
 const destinationFields = { hidden: false };
 const link = { addEventListener() {}, select() {} };
 const form = {
@@ -71,17 +71,18 @@ NODE);
         assertSame(['hidden' => true, 'disabled' => true, 'expanded' => 'false'], $result['unchecked']);
     }
 
-    public function testInviteTemplateProvidesAnEditableDropdownHost(): void
+    public function testInviteTemplateProvidesAnUnfilteredDestinationMenu(): void
     {
         $template = file_get_contents(__DIR__ . '/../templates/pages/invites.php');
 
         assertStringContains('data-role="invitation-destination-fields" hidden', $template);
-        assertStringContains('list="invite-destination-suggestions"', $template);
-        assertStringContains('<datalist id="invite-destination-suggestions"', $template);
-        assertStringContains('<option value="/" label="Board">', $template);
-        assertStringContains('<option value="/activity/" label="Activity">', $template);
-        assertStringContains('<option value="/users/" label="Users">', $template);
-        assertStringContains('<option value="/tools/" label="Tools">', $template);
+        assertStringContains('value="" data-source-destination=', $template);
+        assertStringContains('data-role="invitation-destination-menu"', $template);
+        assertStringContains('data-role="invitation-destination-options"', $template);
+        assertStringContains('data-destination-value="/">Board', $template);
+        assertStringContains('data-destination-value="/activity/">Activity', $template);
+        assertStringContains('data-destination-value="/users/">Users', $template);
+        assertStringContains('data-destination-value="/tools/">Tools', $template);
     }
 
     public function testDestinationSuggestionsIncludeCuratedAndValidSourceLocations(): void
@@ -94,12 +95,15 @@ function suggestionsFor(value) {
   let ready = null;
   const listeners = {};
   const checkbox = { checked: false, addEventListener(type, listener) { listeners[type] = listener; }, setAttribute() {} };
-  const destination = { disabled: false, value, addEventListener() {} };
+  const destination = { disabled: false, value: '', dataset: { sourceDestination: value }, addEventListener() {}, focus() { this.focused = true; } };
   const destinationFields = { hidden: false };
-  const suggestions = {
+  const menu = { open: false };
+  const optionListeners = {};
+  const options = {
     values: ['/', '/activity/', '/users/', '/tools/'],
-    querySelectorAll() { return this.values.map((item) => ({ value: item })); },
-    appendChild(option) { this.values.push(option.value); }
+    querySelectorAll() { return this.values.map((item) => ({ dataset: { destinationValue: item } })); },
+    appendChild(option) { this.values.push(option.dataset.destinationValue); },
+    addEventListener(type, listener) { optionListeners[type] = listener; }
   };
   const link = { addEventListener() {}, select() {} };
   const form = {
@@ -107,7 +111,8 @@ function suggestionsFor(value) {
     addEventListener() {},
     querySelector(selector) {
       if (selector === '[data-role=invitation-destination-fields]') return destinationFields;
-      if (selector === '[data-role=invitation-destination-suggestions]') return suggestions;
+      if (selector === '[data-role=invitation-destination-menu]') return menu;
+      if (selector === '[data-role=invitation-destination-options]') return options;
       return null;
     }
   };
@@ -121,18 +126,23 @@ function suggestionsFor(value) {
   const document = {
     addEventListener(type, listener) { if (type === 'DOMContentLoaded') ready = listener; },
     querySelector(selector) { return selector === '[data-invitation-page]' ? root : null; },
-    createElement() { return { value: '' }; }
+    createElement() { return { dataset: {} }; }
   };
   vm.runInNewContext(source, { window: { location: { origin: 'https://forum.test' } }, document, console });
   ready();
-  return suggestions.values;
+  menu.open = true;
+  optionListeners.click({ target: { closest() { return { dataset: { destinationValue: '/users/' } }; } } });
+  return { values: options.values, selected: destination.value, menuOpen: menu.open, focused: destination.focused === true };
 }
 process.stdout.write(JSON.stringify({ valid: suggestionsFor('/threads/root-001'), external: suggestionsFor('https://example.test/'), fragment: suggestionsFor('/threads/root-001#reply-1') }));
 NODE);
 
-        assertSame(['/', '/activity/', '/users/', '/tools/', '/threads/root-001'], $result['valid']);
-        assertSame(['/', '/activity/', '/users/', '/tools/'], $result['external']);
-        assertSame(['/', '/activity/', '/users/', '/tools/'], $result['fragment']);
+        assertSame(['/', '/activity/', '/users/', '/tools/', '/threads/root-001'], $result['valid']['values']);
+        assertSame(['/', '/activity/', '/users/', '/tools/'], $result['external']['values']);
+        assertSame(['/', '/activity/', '/users/', '/tools/'], $result['fragment']['values']);
+        assertSame('/users/', $result['valid']['selected']);
+        assertSame(false, $result['valid']['menuOpen']);
+        assertSame(true, $result['valid']['focused']);
     }
 
     public function testOnlySuccessfulInvitationsRememberValidLocalDestinations(): void
@@ -150,9 +160,10 @@ async function issue(finalStatus, storageUnavailable) {
     setItem(key, value) { if (storageUnavailable) throw new Error('unavailable'); this.writes += 1; this.value = value; }
   };
   const checkbox = { checked: true, addEventListener(type, listener) { listeners[type] = listener; }, setAttribute() {} };
-  const destination = { disabled: false, value: '/threads/new', addEventListener() {} };
+  const destination = { disabled: false, value: '/threads/new', dataset: {}, addEventListener() {}, focus() {} };
   const destinationFields = { hidden: false };
-  const suggestions = { querySelectorAll() { return []; }, appendChild() {} };
+  const menu = { open: false };
+  const options = { querySelectorAll() { return []; }, appendChild() {}, addEventListener() {} };
   const feedback = { hidden: true, textContent: '', dataset: {} };
   const result = { hidden: true };
   const link = { value: '', addEventListener() {}, select() {} };
@@ -161,7 +172,8 @@ async function issue(finalStatus, storageUnavailable) {
     addEventListener(type, listener) { listeners[type] = listener; },
     querySelector(selector) {
       if (selector === '[data-role=invitation-destination-fields]') return destinationFields;
-      if (selector === '[data-role=invitation-destination-suggestions]') return suggestions;
+      if (selector === '[data-role=invitation-destination-menu]') return menu;
+      if (selector === '[data-role=invitation-destination-options]') return options;
       return null;
     }
   };
@@ -177,7 +189,7 @@ async function issue(finalStatus, storageUnavailable) {
   const document = {
     addEventListener(type, listener) { if (type === 'DOMContentLoaded') ready = listener; },
     querySelector(selector) { return selector === '[data-invitation-page]' ? root : null; },
-    createElement() { return { value: '' }; }
+    createElement() { return { dataset: {} }; }
   };
   const context = {
     window: {

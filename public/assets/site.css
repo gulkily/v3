@@ -2766,6 +2766,26 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   padding: 0;
 }
 
+.invitation-destination-menu {
+  margin-top: 0.6rem;
+}
+
+.invitation-destination-menu > summary {
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-family: var(--ui-font);
+  font-size: 0.82rem;
+}
+
+.invitation-destination-options {
+  margin-top: 0.45rem;
+}
+
+.invitation-destination-options > button {
+  width: auto;
+  margin-top: 0;
+}
+
 .account-key-username {
   margin: 0;
   font-family: var(--ui-font);

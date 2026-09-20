@@ -71,15 +71,17 @@
     return destination;
   }
 
-  function addDestinationSuggestion(list, value) {
+  function addDestinationOption(list, value) {
     const destination = validInvitationDestination(value);
     if (!list || destination === "") return;
-    const options = list.querySelectorAll("option");
+    const options = list.querySelectorAll("[data-destination-value]");
     for (let index = 0; index < options.length; index += 1) {
-      if (options[index].value === destination) return;
+      if (options[index].dataset.destinationValue === destination) return;
     }
-    const option = document.createElement("option");
-    option.value = destination;
+    const option = document.createElement("button");
+    option.type = "button";
+    option.dataset.destinationValue = destination;
+    option.textContent = destination;
     list.appendChild(option);
   }
 
@@ -121,20 +123,29 @@
     const includeDestination = form.elements.include_destination;
     const destination = form.elements.destination;
     const destinationFields = form.querySelector("[data-role=invitation-destination-fields]");
-    const destinationSuggestions = form.querySelector("[data-role=invitation-destination-suggestions]");
+    const destinationMenu = form.querySelector("[data-role=invitation-destination-menu]");
+    const destinationOptions = form.querySelector("[data-role=invitation-destination-options]");
     const copyButton = root.querySelector("[data-action=copy-invitation-link]");
-    addDestinationSuggestion(destinationSuggestions, destination.value);
+    addDestinationOption(destinationOptions, destination.dataset.sourceDestination);
     recentInvitationDestinations().forEach(function (recentDestination) {
-      addDestinationSuggestion(destinationSuggestions, recentDestination);
+      addDestinationOption(destinationOptions, recentDestination);
     });
     const syncDestination = function () {
       const isIncluded = includeDestination.checked;
       destination.disabled = !isIncluded;
       if (destinationFields) destinationFields.hidden = !isIncluded;
+      if (!isIncluded && destinationMenu) destinationMenu.open = false;
       includeDestination.setAttribute("aria-expanded", String(isIncluded));
     };
     includeDestination.addEventListener("change", syncDestination);
     syncDestination();
+    if (destinationOptions) destinationOptions.addEventListener("click", function (event) {
+      const option = event.target && event.target.closest ? event.target.closest("[data-destination-value]") : null;
+      if (!option) return;
+      destination.value = option.dataset.destinationValue;
+      if (destinationMenu) destinationMenu.open = false;
+      destination.focus();
+    });
     const selectInvitationLink = function () {
       link.select();
     };
@@ -169,7 +180,7 @@
         });
         if (!finalized || finalized.status !== "ok") throw new Error(finalized && finalized.error || "Unable to create invitation.");
         rememberInvitationDestination(selectedDestination);
-        addDestinationSuggestion(destinationSuggestions, selectedDestination);
+        addDestinationOption(destinationOptions, selectedDestination);
         link.value = window.location.origin + "/lobby/#invite=" + token;
         result.hidden = false;
         setFeedback(feedback, "Invitation created.", "ok");
