@@ -2768,24 +2768,27 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 
 .invitation-destination-input {
   position: relative;
+  margin-top: 0.35rem;
 }
 
 .invitation-destination-input > input {
+  margin-top: 0;
   padding-right: 10.25rem;
 }
 
 .invitation-destination-menu {
   position: absolute;
-  top: 0.35rem;
-  right: 0.35rem;
+  inset: 0.35rem 0.35rem 0.35rem auto;
   z-index: 1;
   margin: 0;
 }
 
 .invitation-destination-menu > summary {
   box-sizing: border-box;
-  min-height: 2.95rem;
-  padding: 0.65rem 0.7rem;
+  display: flex;
+  height: 100%;
+  align-items: center;
+  padding: 0 0.7rem;
   border: 1px solid var(--line);
   background: var(--button-alt-bg);
   color: var(--ink-soft);

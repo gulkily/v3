@@ -54,3 +54,13 @@
   - `./v3 test InvitationIssuanceTest`
 - Notes:
   - The existing disclosure control retains native keyboard activation while presenting as an input-adjacent button.
+
+## Stage 6 - Equal chooser button inset
+- Changes:
+  - Moved the field's external top spacing to its wrapper.
+  - Applied an equal 0.35rem top, right, and bottom inset to the inline chooser button.
+- Verification:
+  - `node --check public/assets/invite_issuance.js`
+  - `./v3 test InvitationIssuanceTest`
+- Notes:
+  - The button fills its inset area vertically while retaining room for the destination text.

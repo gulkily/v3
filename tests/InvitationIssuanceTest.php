@@ -86,6 +86,15 @@ NODE);
         assertStringContains('data-destination-value="/tools/">Tools', $template);
     }
 
+    public function testInlineDestinationChooserUsesEqualInputInsets(): void
+    {
+        $styles = file_get_contents(__DIR__ . '/../public/assets/site.css');
+
+        assertStringContains('inset: 0.35rem 0.35rem 0.35rem auto;', $styles);
+        assertStringContains('.invitation-destination-input > input {', $styles);
+        assertStringContains('height: 100%;', $styles);
+    }
+
     public function testDestinationSuggestionsIncludeCuratedAndValidSourceLocations(): void
     {
         $result = $this->runScript(<<<'NODE'
