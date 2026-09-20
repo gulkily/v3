@@ -5,11 +5,14 @@
   <article class="card">
     <form data-invitation-issue-form>
       <label class="invitation-destination-toggle">
-        <input name="include_destination" type="checkbox" data-action="toggle-invitation-destination">
+        <input name="include_destination" type="checkbox" data-action="toggle-invitation-destination" aria-controls="invite-destination-fields" aria-expanded="false">
         Include destination URL
       </label>
-      <label class="account-key-label" for="invite-destination">Destination (optional)</label>
-      <input id="invite-destination" name="destination" type="text" value="<?= $e($destination) ?>" placeholder="/threads/example" disabled>
+      <div id="invite-destination-fields" data-role="invitation-destination-fields" hidden>
+        <label class="account-key-label" for="invite-destination">Destination (optional)</label>
+        <input id="invite-destination" name="destination" type="text" value="<?= $e($destination) ?>" placeholder="/threads/example" list="invite-destination-suggestions" autocomplete="off" disabled>
+        <datalist id="invite-destination-suggestions" data-role="invitation-destination-suggestions"></datalist>
+      </div>
       <button type="submit">Generate invite link</button>
     </form>
     <p class="meta" data-role="invitation-feedback" hidden></p>

@@ -68,9 +68,13 @@
     const link = root.querySelector("[data-role=invitation-link]");
     const includeDestination = form.elements.include_destination;
     const destination = form.elements.destination;
+    const destinationFields = form.querySelector("[data-role=invitation-destination-fields]");
     const copyButton = root.querySelector("[data-action=copy-invitation-link]");
     const syncDestination = function () {
-      destination.disabled = !includeDestination.checked;
+      const isIncluded = includeDestination.checked;
+      destination.disabled = !isIncluded;
+      if (destinationFields) destinationFields.hidden = !isIncluded;
+      includeDestination.setAttribute("aria-expanded", String(isIncluded));
     };
     includeDestination.addEventListener("change", syncDestination);
     syncDestination();
