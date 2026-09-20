@@ -1,6 +1,9 @@
 (function () {
   "use strict";
 
+  const recentDestinationsStorageKey = "forum_recent_invitation_destinations";
+  const maximumRecentDestinations = 8;
+
   function setFeedback(node, message, kind) {
     node.hidden = false;
     node.textContent = message;
@@ -80,6 +83,34 @@
     list.appendChild(option);
   }
 
+  function recentInvitationDestinations() {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(recentDestinationsStorageKey) || "[]");
+      if (!Array.isArray(stored)) return [];
+      const destinations = [];
+      stored.forEach(function (value) {
+        const destination = validInvitationDestination(value);
+        if (destination !== "" && destinations.indexOf(destination) === -1) destinations.push(destination);
+      });
+      return destinations.slice(0, maximumRecentDestinations);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function rememberInvitationDestination(value) {
+    const destination = validInvitationDestination(value);
+    if (destination === "") return;
+    const destinations = [destination].concat(recentInvitationDestinations().filter(function (item) {
+      return item !== destination;
+    })).slice(0, maximumRecentDestinations);
+    try {
+      window.localStorage.setItem(recentDestinationsStorageKey, JSON.stringify(destinations));
+    } catch (error) {
+      // Storage can be unavailable in private browsing contexts.
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     const root = document.querySelector("[data-invitation-page]");
     const form = root && root.querySelector("[data-invitation-issue-form]");
@@ -93,6 +124,9 @@
     const destinationSuggestions = form.querySelector("[data-role=invitation-destination-suggestions]");
     const copyButton = root.querySelector("[data-action=copy-invitation-link]");
     addDestinationSuggestion(destinationSuggestions, destination.value);
+    recentInvitationDestinations().forEach(function (recentDestination) {
+      addDestinationSuggestion(destinationSuggestions, recentDestination);
+    });
     const syncDestination = function () {
       const isIncluded = includeDestination.checked;
       destination.disabled = !isIncluded;
@@ -119,11 +153,12 @@
       try {
         const signing = await ensureInvitationIdentity(root, feedback);
         const token = randomToken();
+        const selectedDestination = includeDestination.checked ? String(destination.value || "") : "";
         const prepared = await post("/api/prepare_invitation", {
           action: "issue",
           verification_hash: await verificationHash(token),
           expires_at: new Date(Date.now() + 7 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
-          destination: includeDestination.checked ? String(destination.value || "") : "",
+          destination: selectedDestination,
         });
         if (!prepared || prepared.status !== "ok") throw new Error(prepared && prepared.error || "Unable to prepare invitation.");
         const signature = await signing.signCanonicalRecord(prepared.canonical_record);
@@ -133,6 +168,8 @@
           canonical_record: prepared.canonical_record, detached_signature: signature,
         });
         if (!finalized || finalized.status !== "ok") throw new Error(finalized && finalized.error || "Unable to create invitation.");
+        rememberInvitationDestination(selectedDestination);
+        addDestinationSuggestion(destinationSuggestions, selectedDestination);
         link.value = window.location.origin + "/lobby/#invite=" + token;
         result.hidden = false;
         setFeedback(feedback, "Invitation created.", "ok");

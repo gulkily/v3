@@ -134,6 +134,87 @@ NODE);
         assertSame(['/', '/activity/', '/users/', '/tools/'], $result['external']);
         assertSame(['/', '/activity/', '/users/', '/tools/'], $result['fragment']);
     }
+
+    public function testOnlySuccessfulInvitationsRememberValidLocalDestinations(): void
+    {
+        $result = $this->runScript(<<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+async function issue(finalStatus, storageUnavailable) {
+  let ready = null;
+  const listeners = {};
+  const storage = {
+    value: JSON.stringify(['/activity/', '/activity/', 'https://example.test/']), writes: 0,
+    getItem() { if (storageUnavailable) throw new Error('unavailable'); return this.value; },
+    setItem(key, value) { if (storageUnavailable) throw new Error('unavailable'); this.writes += 1; this.value = value; }
+  };
+  const checkbox = { checked: true, addEventListener(type, listener) { listeners[type] = listener; }, setAttribute() {} };
+  const destination = { disabled: false, value: '/threads/new', addEventListener() {} };
+  const destinationFields = { hidden: false };
+  const suggestions = { querySelectorAll() { return []; }, appendChild() {} };
+  const feedback = { hidden: true, textContent: '', dataset: {} };
+  const result = { hidden: true };
+  const link = { value: '', addEventListener() {}, select() {} };
+  const form = {
+    elements: { include_destination: checkbox, destination },
+    addEventListener(type, listener) { listeners[type] = listener; },
+    querySelector(selector) {
+      if (selector === '[data-role=invitation-destination-fields]') return destinationFields;
+      if (selector === '[data-role=invitation-destination-suggestions]') return suggestions;
+      return null;
+    }
+  };
+  const root = {
+    querySelector(selector) {
+      if (selector === '[data-invitation-issue-form]') return form;
+      if (selector === '[data-role=invitation-feedback]') return feedback;
+      if (selector === '[data-role=invitation-result]') return result;
+      if (selector === '[data-role=invitation-link]') return link;
+      return null;
+    }
+  };
+  const document = {
+    addEventListener(type, listener) { if (type === 'DOMContentLoaded') ready = listener; },
+    querySelector(selector) { return selector === '[data-invitation-page]' ? root : null; },
+    createElement() { return { value: '' }; }
+  };
+  const context = {
+    window: {
+      location: { origin: 'https://forum.test' }, localStorage: storage,
+      ForumBrowserSigning: { async ensureActionIdentity() {}, async signCanonicalRecord() { return 'signature'; } }
+    },
+    document,
+    crypto: { getRandomValues(bytes) { bytes.fill(1); }, subtle: { async digest() { return new Uint8Array(32).buffer; } } },
+    TextEncoder,
+    URLSearchParams,
+    fetch: async function() {
+      return { json: async function() {
+        return finalStatus === 'prepare-error'
+          ? { status: 'error', error: 'unable' }
+          : { status: finalStatus, canonical_record: 'Author-Identity-ID: openpgp:test', prepare_token: 'token', post_id: 'post', record_path: 'path' };
+      } };
+    },
+    console
+  };
+  vm.runInNewContext(source, context);
+  ready();
+  await listeners.submit({ preventDefault() {} });
+  return { stored: storage.value, writes: storage.writes, resultHidden: result.hidden };
+}
+(async function() {
+  process.stdout.write(JSON.stringify({ success: await issue('ok', false), failed: await issue('error', false), unavailable: await issue('ok', true) }));
+}()).catch((error) => { console.error(error); process.exit(1); });
+NODE);
+
+        assertSame('["/threads/new","/activity/"]', $result['success']['stored']);
+        assertSame(1, $result['success']['writes']);
+        assertSame(false, $result['success']['resultHidden']);
+        assertSame(0, $result['failed']['writes']);
+        assertSame(true, $result['failed']['resultHidden']);
+        assertSame(0, $result['unavailable']['writes']);
+        assertSame(false, $result['unavailable']['resultHidden']);
+    }
 }
 
 if (!function_exists('assertSame')) {
