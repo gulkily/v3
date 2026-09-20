@@ -3822,6 +3822,10 @@ final class Application
 
     private function isApplicationRoute(string $path): bool
     {
+        if ($this->isForteApplicationRoute($path)) {
+            return true;
+        }
+
         if (in_array($path, [
             '', '/',
             '/threads', '/threads/',
@@ -3858,6 +3862,14 @@ final class Application
             '#^/(?:tools/llm-exchanges/\d+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-z0-9]+(?:-[a-z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+)/?$#',
             $path,
         ) === 1;
+    }
+
+    private function isForteApplicationRoute(string $path): bool
+    {
+        return $path === '/forte'
+            || str_starts_with($path, '/forte/')
+            || str_starts_with($path, '/api/forte_')
+            || str_starts_with($path, '/api/get_forte_');
     }
 
     /**
