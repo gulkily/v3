@@ -419,6 +419,6 @@ Before launch, verify:
 
 ## Related Docs
 
-- [operator_recovery.md](/home/wsl/v3/docs/runbooks/operator_recovery.md)
-- [apache_vhost.conf](/home/wsl/v3/docs/examples/apache_vhost.conf)
-- [env.production.example](/home/wsl/v3/docs/examples/env.production.example)
+- [operator_recovery.md](operator_recovery.md)
+- [apache_vhost.conf](../examples/apache_vhost.conf)
+- [env.production.example](../examples/env.production.example)

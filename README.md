@@ -6,11 +6,13 @@ Minimal local test slice for the rewrite spec.
 
 Production-facing deployment and operations docs now live here:
 
-- [Production Deploy Runbook](/home/wsl/v3/docs/runbooks/production_deploy.md)
-- [Operator Recovery Runbook](/home/wsl/v3/docs/runbooks/operator_recovery.md)
-- [Apache Vhost Example](/home/wsl/v3/docs/examples/apache_vhost.conf)
-- [Production Env Example](/home/wsl/v3/docs/examples/env.production.example)
-- [Production Deployment Checklist](/home/wsl/v3/docs/plans/php_production_deployment_checklist_v1.md)
+- [Production Deploy Runbook](docs/runbooks/production_deploy.md)
+- [Operator Recovery Runbook](docs/runbooks/operator_recovery.md)
+- [Apache Vhost Example](docs/examples/apache_vhost.conf)
+- [Production Env Example](docs/examples/env.production.example)
+- [Production Deployment Checklist](docs/plans/php_production_deployment_checklist_v1.md)
+
+See the [`v3` CLI Reference](docs/reference/v3_cli.md) for every `./v3` subcommand, including ones not covered below (`rebuild`, `build-static`, `import-repository`, `thread-attributes`, `delete-record`, `unicode-risk-backfill`, `archive-thread`, `agent-reply status`/`test-local`, `codex-handoff run`/`test-local`).
 
 ## Local Run
 
@@ -111,7 +113,7 @@ Validate the configured agent reply LLM provider/API key with one live structure
 ./v3 agent-reply test
 ```
 
-For this checkout, the default local file is `/home/wsl/forum-private/secrets.php`. To update only the Dedalus API key without putting it in shell history:
+The default local file resolves to `../forum-private/secrets.php` relative to this checkout. To update only the Dedalus API key without putting it in shell history:
 
 ```bash
 printf '%s\n' "$DEDALUS_API_KEY" | ./v3 private-config --api-key-stdin
@@ -151,7 +153,7 @@ Open these routes:
 - `http://127.0.0.1:8000/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954`
 - `http://127.0.0.1:8000/llms.txt`
 
-The default server uses [state/local_repository](/home/wsl/v3/state/local_repository) when `FORUM_REPOSITORY_ROOT` is unset. Override it with `FORUM_REPOSITORY_ROOT=/path/to/repo` if needed.
+The default server uses [state/local_repository](state/local_repository) when `FORUM_REPOSITORY_ROOT` is unset. Override it with `FORUM_REPOSITORY_ROOT=/path/to/repo` if needed.
 
 Compose routes now use submit-time browser identity bootstrap for brand-new users:
 
@@ -166,8 +168,8 @@ If you want to initialize that writable repo explicitly ahead of time:
 
 ```bash
 php scripts/init_local_repository.php
-FORUM_REPOSITORY_ROOT=/home/wsl/v3/state/local_repository php scripts/rebuild_read_model.php
-FORUM_REPOSITORY_ROOT=/home/wsl/v3/state/local_repository ./v3 start
+FORUM_REPOSITORY_ROOT=state/local_repository php scripts/rebuild_read_model.php
+FORUM_REPOSITORY_ROOT=state/local_repository ./v3 start
 ```
 
 Static HTML artifacts for anonymous queryless route hits default to `state/static_html`. Override that location with `FORUM_STATIC_HTML_ROOT=/path/to/static_html` if you want to test direct artifact serving.
