@@ -1,11 +1,26 @@
 <section class="stack" data-invitation-page>
   <article class="card">
     <h1>Generate invite</h1>
-  </article>
-  <article class="card">
     <form data-invitation-issue-form>
-      <label class="account-key-label" for="invite-destination">Destination (optional)</label>
-      <input id="invite-destination" name="destination" type="text" value="<?= $e($destination) ?>" placeholder="/threads/example">
+      <label class="invitation-destination-toggle">
+        <input name="include_destination" type="checkbox" data-action="toggle-invitation-destination" aria-controls="invite-destination-fields" aria-expanded="false">
+        Include destination URL
+      </label>
+      <div id="invite-destination-fields" data-role="invitation-destination-fields" hidden>
+        <label class="account-key-label" for="invite-destination">Destination (optional)</label>
+        <div class="invitation-destination-input">
+          <input id="invite-destination" name="destination" type="text" value="" data-source-destination="<?= $e($destination) ?>" placeholder="/threads/example" autocomplete="off" disabled>
+          <details class="invitation-destination-menu" data-role="invitation-destination-menu">
+            <summary>Choose destination</summary>
+            <div class="button-row button-row-natural invitation-destination-options" data-role="invitation-destination-options">
+              <button type="button" data-destination-value="/">Board</button>
+              <button type="button" data-destination-value="/activity/">Activity</button>
+              <button type="button" data-destination-value="/users/">Users</button>
+              <button type="button" data-destination-value="/tools/">Tools</button>
+            </div>
+          </details>
+        </div>
+      </div>
       <button type="submit">Generate invite link</button>
     </form>
     <p class="meta" data-role="invitation-feedback" hidden></p>

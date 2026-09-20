@@ -2122,6 +2122,7 @@ pre {
 :root[data-theme="word97"] .nav-link[href="/users/"]::before,
 :root[data-theme="word97"] .nav-link[href="/tools/"]::before,
 :root[data-theme="word97"] .nav-link[href="/account/key/"]::before,
+:root[data-theme="word97"] .nav-link[href="/invites/"]::before,
 :root[data-theme="word97"] .nav-link[href="/compose/thread"]::before {
   content: "";
   display: inline-block;
@@ -2150,6 +2151,10 @@ pre {
 
 :root[data-theme="word97"] .nav-link[href="/account/key/"]::before {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect x='2' y='5' width='5' height='2' fill='%23c8a000'/><rect x='2' y='9' width='5' height='2' fill='%23c8a000'/><rect x='2' y='7' width='2' height='2' fill='%23c8a000'/><rect x='5' y='7' width='2' height='2' fill='%23c8a000'/><rect x='7' y='7' width='7' height='2' fill='%23c8a000'/><rect x='11' y='9' width='1' height='2' fill='%23c8a000'/><rect x='13' y='9' width='1' height='3' fill='%23c8a000'/></svg>");
+}
+
+:root[data-theme="word97"] .nav-link[href="/invites/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect x='4' y='2' width='4' height='4' fill='%23000080'/><rect x='3' y='6' width='6' height='2' fill='%23000080'/><rect x='2' y='8' width='8' height='5' fill='%23000080'/><rect x='10' y='9' width='5' height='5' fill='%23000000'/><rect x='11' y='10' width='3' height='3' fill='%23ffffff'/><rect x='12' y='10' width='1' height='3' fill='%23008000'/><rect x='11' y='11' width='3' height='1' fill='%23008000'/></svg>");
 }
 
 :root[data-theme="word97"] .nav-link[href="/compose/thread"]::before {
@@ -2751,6 +2756,74 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   font-size: 0.8rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.invitation-destination-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+}
+
+.invitation-destination-toggle input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.invitation-destination-input {
+  position: relative;
+  margin-top: 0.35rem;
+}
+
+.invitation-destination-input > input {
+  margin-top: 0;
+  padding-right: 10.25rem;
+}
+
+.invitation-destination-menu {
+  position: absolute;
+  inset: 0.35rem 0.35rem 0.35rem auto;
+  z-index: 1;
+  margin: 0;
+}
+
+.invitation-destination-menu > summary {
+  box-sizing: border-box;
+  display: flex;
+  height: 100%;
+  align-items: center;
+  padding: 0 0.7rem;
+  border: 1px solid var(--line);
+  background: var(--button-alt-bg);
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-family: var(--ui-font);
+  font-size: 0.82rem;
+  line-height: normal;
+  list-style: none;
+}
+
+.invitation-destination-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.invitation-destination-options {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 2;
+  min-width: 13rem;
+  margin-top: 0.45rem;
+  padding: 0.45rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: 0 0.35rem 0.9rem color-mix(in srgb, var(--ink) 22%, transparent 78%);
+}
+
+.invitation-destination-options > button {
+  width: auto;
+  margin-top: 0;
 }
 
 .account-key-username {

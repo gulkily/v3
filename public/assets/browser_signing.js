@@ -1109,6 +1109,7 @@
   }
 
   async function submitSignedApproval(profileSlug) {
+    await ensureActionIdentity(null, null);
     const authorIdentityId = currentAuthorIdentityId();
     if (!authorIdentityId) {
       return {
@@ -1599,7 +1600,13 @@
   function isRetryableIdentityBootstrapFailure(technicalDetails) {
     const message = String(technicalDetails || "").trim();
     return message.indexOf("Unable to inspect OpenPGP public key.") === 0
-      || message === "OpenPGP public key is missing a fingerprint or user ID.";
+      || message === "OpenPGP public key is missing a fingerprint or user ID."
+      || message === "Identity bootstrap signature verification failed: signature_verification_failed";
+  }
+
+  function identityBootstrapFailureError(rawMessage) {
+    const failure = classifyIdentityBootstrapFailure(rawMessage);
+    return buildFriendlyError(failure.friendlyMessage, failure.technicalDetails);
   }
 
   function openPgpUnavailableError(technicalDetails) {
@@ -2128,7 +2135,7 @@
         renderSavedState(root);
         return;
       }
-      throw new Error(rawError);
+      throw identityBootstrapFailureError(rawError);
     }
 
     const detachedSignature = await signCanonicalRecord(String(prepared.canonical_record || ""));
@@ -2152,7 +2159,9 @@
       finalized = null;
     }
     if (!finalized || finalized.status !== "ok") {
-      throw new Error(finalized && finalized.error ? String(finalized.error) : "Unable to finalize browser identity.");
+      throw identityBootstrapFailureError(
+        finalized && finalized.error ? String(finalized.error) : "Unable to finalize browser identity."
+      );
     }
 
     if (fingerprint) {
@@ -2272,16 +2281,25 @@
   }
 
   async function ensureComposeIdentity(root, statusNode, timing) {
-    await ensureReadyIdentity(root, statusNode, {
+    await ensureActionIdentity(root, statusNode, {
       promptForUsername: promptForComposeUsername,
-      verifyPublishedIdentity: false,
       timing: timing,
+    });
+  }
+
+  async function ensureActionIdentity(root, statusNode, options) {
+    const config = options || {};
+    await ensureReadyIdentity(root, statusNode, {
+      promptForUsername: config.promptForUsername,
+      verifyPublishedIdentity: config.verifyPublishedIdentity === true,
+      timing: config.timing || null,
     });
   }
 
   if (typeof window !== "undefined") {
     window.__forumBrowserIdentity = {
       currentAuthorIdentityId: currentAuthorIdentityId,
+      ensureActionIdentity: ensureActionIdentity,
       ensureReadyIdentity: ensureReadyIdentity,
       hasBrowserKeypair: hasBrowserKeypair,
       identityPreparationState: identityPreparationState,
@@ -3173,6 +3191,7 @@
 
   window.ForumBrowserSigning = window.ForumBrowserSigning || {};
   window.ForumBrowserSigning.init = initBrowserSigning;
+  window.ForumBrowserSigning.ensureActionIdentity = ensureActionIdentity;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
   window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;
 

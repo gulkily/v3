@@ -1,6 +1,9 @@
 (function () {
   "use strict";
 
+  const recentDestinationsStorageKey = "forum_recent_invitation_destinations";
+  const maximumRecentDestinations = 8;
+
   function setFeedback(node, message, kind) {
     node.hidden = false;
     node.textContent = message;
@@ -49,6 +52,67 @@
     throw new Error("The invite link is selected. Copy it with your browser's copy command.");
   }
 
+  async function ensureInvitationIdentity(root, feedback) {
+    const signing = window.ForumBrowserSigning || null;
+    if (!signing || typeof signing.ensureActionIdentity !== "function" || typeof signing.signCanonicalRecord !== "function") {
+      throw new Error("Browser signing is unavailable.");
+    }
+
+    await signing.ensureActionIdentity(root, feedback);
+    return signing;
+  }
+
+  function validInvitationDestination(value) {
+    const destination = String(value || "").trim();
+    if (destination === "" || destination.length > 500 || !/^\/(?!\/)/.test(destination)
+      || /[\r\n#]/.test(destination)) {
+      return "";
+    }
+    return destination;
+  }
+
+  function addDestinationOption(list, value) {
+    const destination = validInvitationDestination(value);
+    if (!list || destination === "") return;
+    const options = list.querySelectorAll("[data-destination-value]");
+    for (let index = 0; index < options.length; index += 1) {
+      if (options[index].dataset.destinationValue === destination) return;
+    }
+    const option = document.createElement("button");
+    option.type = "button";
+    option.dataset.destinationValue = destination;
+    option.textContent = destination;
+    list.appendChild(option);
+  }
+
+  function recentInvitationDestinations() {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(recentDestinationsStorageKey) || "[]");
+      if (!Array.isArray(stored)) return [];
+      const destinations = [];
+      stored.forEach(function (value) {
+        const destination = validInvitationDestination(value);
+        if (destination !== "" && destinations.indexOf(destination) === -1) destinations.push(destination);
+      });
+      return destinations.slice(0, maximumRecentDestinations);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function rememberInvitationDestination(value) {
+    const destination = validInvitationDestination(value);
+    if (destination === "") return;
+    const destinations = [destination].concat(recentInvitationDestinations().filter(function (item) {
+      return item !== destination;
+    })).slice(0, maximumRecentDestinations);
+    try {
+      window.localStorage.setItem(recentDestinationsStorageKey, JSON.stringify(destinations));
+    } catch (error) {
+      // Storage can be unavailable in private browsing contexts.
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     const root = document.querySelector("[data-invitation-page]");
     const form = root && root.querySelector("[data-invitation-issue-form]");
@@ -56,7 +120,32 @@
     const feedback = root.querySelector("[data-role=invitation-feedback]");
     const result = root.querySelector("[data-role=invitation-result]");
     const link = root.querySelector("[data-role=invitation-link]");
+    const includeDestination = form.elements.include_destination;
+    const destination = form.elements.destination;
+    const destinationFields = form.querySelector("[data-role=invitation-destination-fields]");
+    const destinationMenu = form.querySelector("[data-role=invitation-destination-menu]");
+    const destinationOptions = form.querySelector("[data-role=invitation-destination-options]");
     const copyButton = root.querySelector("[data-action=copy-invitation-link]");
+    addDestinationOption(destinationOptions, destination.dataset.sourceDestination);
+    recentInvitationDestinations().forEach(function (recentDestination) {
+      addDestinationOption(destinationOptions, recentDestination);
+    });
+    const syncDestination = function () {
+      const isIncluded = includeDestination.checked;
+      destination.disabled = !isIncluded;
+      if (destinationFields) destinationFields.hidden = !isIncluded;
+      if (!isIncluded && destinationMenu) destinationMenu.open = false;
+      includeDestination.setAttribute("aria-expanded", String(isIncluded));
+    };
+    includeDestination.addEventListener("change", syncDestination);
+    syncDestination();
+    if (destinationOptions) destinationOptions.addEventListener("click", function (event) {
+      const option = event.target && event.target.closest ? event.target.closest("[data-destination-value]") : null;
+      if (!option) return;
+      destination.value = option.dataset.destinationValue;
+      if (destinationMenu) destinationMenu.open = false;
+      destination.focus();
+    });
     const selectInvitationLink = function () {
       link.select();
     };
@@ -73,22 +162,25 @@
     form.addEventListener("submit", async function (event) {
       event.preventDefault();
       try {
+        const signing = await ensureInvitationIdentity(root, feedback);
         const token = randomToken();
+        const selectedDestination = includeDestination.checked ? String(destination.value || "") : "";
         const prepared = await post("/api/prepare_invitation", {
           action: "issue",
           verification_hash: await verificationHash(token),
           expires_at: new Date(Date.now() + 7 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
-          destination: String(form.elements.destination.value || ""),
+          destination: selectedDestination,
         });
         if (!prepared || prepared.status !== "ok") throw new Error(prepared && prepared.error || "Unable to prepare invitation.");
-        if (!window.ForumBrowserSigning || !window.ForumBrowserSigning.signCanonicalRecord) throw new Error("Browser signing is unavailable.");
-        const signature = await window.ForumBrowserSigning.signCanonicalRecord(prepared.canonical_record);
+        const signature = await signing.signCanonicalRecord(prepared.canonical_record);
         const finalized = await post("/api/create_prepared_invitation", {
           prepare_token: prepared.prepare_token, post_id: prepared.post_id, record_path: prepared.record_path,
           author_identity_id: (prepared.canonical_record.match(/^Author-Identity-ID: (.+)$/m) || ["", ""])[1],
           canonical_record: prepared.canonical_record, detached_signature: signature,
         });
         if (!finalized || finalized.status !== "ok") throw new Error(finalized && finalized.error || "Unable to create invitation.");
+        rememberInvitationDestination(selectedDestination);
+        addDestinationOption(destinationOptions, selectedDestination);
         link.value = window.location.origin + "/lobby/#invite=" + token;
         result.hidden = false;
         setFeedback(feedback, "Invitation created.", "ok");
@@ -101,12 +193,13 @@
     if (revokeForm) revokeForm.addEventListener("submit", async function (event) {
       event.preventDefault();
       try {
+        const signing = await ensureInvitationIdentity(root, feedback);
         const prepared = await post("/api/prepare_invitation", {
           action: "revoke", invitation_id: String(revokeForm.elements.invitation_id.value || ""),
           verification_hash: String(revokeForm.elements.verification_hash.value || ""),
         });
         if (!prepared || prepared.status !== "ok") throw new Error(prepared && prepared.error || "Unable to prepare revocation.");
-        const signature = await window.ForumBrowserSigning.signCanonicalRecord(prepared.canonical_record);
+        const signature = await signing.signCanonicalRecord(prepared.canonical_record);
         const finalized = await post("/api/create_prepared_invitation", {
           prepare_token: prepared.prepare_token, post_id: prepared.post_id, record_path: prepared.record_path,
           author_identity_id: (prepared.canonical_record.match(/^Author-Identity-ID: (.+)$/m) || ["", ""])[1],

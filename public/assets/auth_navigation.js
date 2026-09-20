@@ -15,7 +15,8 @@
   }
 
   function destinationForLink(link) {
-    if (!link || link.target && link.target !== "_self" || link.hasAttribute("download")) {
+    if (!link || link.target && link.target !== "_self" || link.hasAttribute("download")
+      || link.hasAttribute("data-invite-navigation")) {
       return "";
     }
 
