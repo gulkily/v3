@@ -84,6 +84,7 @@ NODE);
         assertStringContains('data-destination-value="/activity/">Activity', $template);
         assertStringContains('data-destination-value="/users/">Users', $template);
         assertStringContains('data-destination-value="/tools/">Tools', $template);
+        assertSame(2, substr_count($template, '<article class="card">'));
     }
 
     public function testInlineDestinationChooserUsesEqualInputInsets(): void

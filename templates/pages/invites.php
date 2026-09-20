@@ -1,8 +1,6 @@
 <section class="stack" data-invitation-page>
   <article class="card">
     <h1>Generate invite</h1>
-  </article>
-  <article class="card">
     <form data-invitation-issue-form>
       <label class="invitation-destination-toggle">
         <input name="include_destination" type="checkbox" data-action="toggle-invitation-destination" aria-controls="invite-destination-fields" aria-expanded="false">

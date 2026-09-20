@@ -64,3 +64,12 @@
   - `./v3 test InvitationIssuanceTest`
 - Notes:
   - The button fills its inset area vertically while retaining room for the destination text.
+
+## Stage 7 - Unified invite generator module
+- Changes:
+  - Merged the Generate invite heading and issuance form into one card.
+  - Kept the revoke control as its separate card.
+- Verification:
+  - `./v3 test InvitationIssuanceTest`
+- Notes:
+  - This removes the adjacent-dialog split in the Word 97 theme.
