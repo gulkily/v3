@@ -81,3 +81,11 @@
   - `./v3 test InvitationIssuanceTest`
 - Notes:
   - Other themes and navigation links remain unchanged.
+
+## Stage 9 - Clarify the Invite navigation icon
+- Changes:
+  - Replaced the ambiguous envelope with a Word 97–style person silhouette and green plus badge.
+- Verification:
+  - `./v3 test InvitationIssuanceTest`
+- Notes:
+  - The icon now communicates inviting or adding a member rather than mail.

@@ -96,12 +96,13 @@ NODE);
         assertStringContains('height: 100%;', $styles);
     }
 
-    public function testWord97InviteNavigationUsesAnEnvelopeIcon(): void
+    public function testWord97InviteNavigationUsesAPersonAndPlusIcon(): void
     {
         $styles = file_get_contents(__DIR__ . '/../public/assets/site.css');
 
         assertStringContains(':root[data-theme="word97"] .nav-link[href="/invites/"]::before', $styles);
-        assertStringContains("M2 4 L8 9 L14 4", $styles);
+        assertStringContains("width='4' height='4' fill='%23000080'", $styles);
+        assertStringContains("fill='%23008000'", $styles);
     }
 
     public function testDestinationSuggestionsIncludeCuratedAndValidSourceLocations(): void
