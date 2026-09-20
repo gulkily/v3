@@ -75,3 +75,12 @@
   - Zero browser console errors across every scenario above.
 - Notes:
   - No issues surfaced requiring code changes - the feature works end-to-end as specified in Step 2, across board-visible and hidden content, roots and replies, with no regressions to the Commits view, the profile-summary dialog, or the classic interface.
+
+## Post-completion fixes (after "Approved Step 4" was requested)
+- **Close on backdrop click; message-box styling.** User feedback: the content-summary dialog should close when clicking outside it, and should read as a plain message box (gray header, white body, "View full thread" in a gray footer) rather than the app's own blue-titlebar window chrome.
+  - `paned_content_summary_dialog.php`: dropped the shared `.paned-new-thread-dialog` class (used by the app's other dialogs, which should keep their current look); restructured into three explicit zones - `.paned-content-summary-header`, `.paned-content-summary-body`, `.paned-content-summary-footer` (the "View full thread" link moved out of the content area into this new persistent footer, so it's available even during loading).
+  - `forte.css`: new dedicated rules for the three zones (gray header/footer via `--paned-chrome-dark`, white body via `--paned-content-bg`) scoped entirely to `.paned-content-summary-dialog` - the profile-summary and new-thread dialogs are untouched.
+  - `paned_activity_reader.js`: added a click listener on the dialog element itself, closing it when `event.target === dialog` (the standard way to detect a native `<dialog>`'s backdrop click, since the dialog's own box is sized to its content).
+- Verification:
+  - Browser (Playwright): header/body/footer computed background colors match the design (gray/white/gray); clicking inside the body leaves the dialog open; clicking the backdrop closes it; the existing close button still works.
+  - Regression: the board's profile-summary dialog still opens with its original blue titlebar, unaffected.

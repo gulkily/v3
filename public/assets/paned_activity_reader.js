@@ -784,5 +784,16 @@
         contentSummaryDialog.close();
       });
     }
+    if (contentSummaryDialog) {
+      // A click that lands on the <dialog> element itself (not one of its
+      // children) is a click on the backdrop area, since the dialog's own
+      // box is sized to its content - the standard way to detect a
+      // click-outside on a native <dialog>.
+      contentSummaryDialog.addEventListener("click", function (event) {
+        if (event.target === contentSummaryDialog) {
+          contentSummaryDialog.close();
+        }
+      });
+    }
   });
 })();
