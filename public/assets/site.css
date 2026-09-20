@@ -2766,19 +2766,51 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   padding: 0;
 }
 
+.invitation-destination-input {
+  position: relative;
+}
+
+.invitation-destination-input > input {
+  padding-right: 10.25rem;
+}
+
 .invitation-destination-menu {
-  margin-top: 0.6rem;
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 1;
+  margin: 0;
 }
 
 .invitation-destination-menu > summary {
+  box-sizing: border-box;
+  min-height: 2.95rem;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid var(--line);
+  background: var(--button-alt-bg);
   color: var(--ink-soft);
   cursor: pointer;
   font-family: var(--ui-font);
   font-size: 0.82rem;
+  line-height: normal;
+  list-style: none;
+}
+
+.invitation-destination-menu > summary::-webkit-details-marker {
+  display: none;
 }
 
 .invitation-destination-options {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 2;
+  min-width: 13rem;
   margin-top: 0.45rem;
+  padding: 0.45rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: 0 0.35rem 0.9rem color-mix(in srgb, var(--ink) 22%, transparent 78%);
 }
 
 .invitation-destination-options > button {

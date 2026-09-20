@@ -44,3 +44,13 @@
   - `./v3 test InvitationIssuanceTest`
 - Notes:
   - This member-requested refinement avoids browser-specific datalist filtering while retaining free-form entry.
+
+## Stage 5 - Inline destination chooser button
+- Changes:
+  - Positioned the “Choose destination” disclosure button in the right side of the destination text field.
+  - Positioned the unfiltered option menu beneath the inline button and preserved the compact option-button layout.
+- Verification:
+  - `node --check public/assets/invite_issuance.js`
+  - `./v3 test InvitationIssuanceTest`
+- Notes:
+  - The existing disclosure control retains native keyboard activation while presenting as an input-adjacent button.

@@ -76,6 +76,7 @@ NODE);
         $template = file_get_contents(__DIR__ . '/../templates/pages/invites.php');
 
         assertStringContains('data-role="invitation-destination-fields" hidden', $template);
+        assertStringContains('class="invitation-destination-input"', $template);
         assertStringContains('value="" data-source-destination=', $template);
         assertStringContains('data-role="invitation-destination-menu"', $template);
         assertStringContains('data-role="invitation-destination-options"', $template);

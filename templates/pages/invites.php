@@ -10,16 +10,18 @@
       </label>
       <div id="invite-destination-fields" data-role="invitation-destination-fields" hidden>
         <label class="account-key-label" for="invite-destination">Destination (optional)</label>
-        <input id="invite-destination" name="destination" type="text" value="" data-source-destination="<?= $e($destination) ?>" placeholder="/threads/example" autocomplete="off" disabled>
-        <details class="invitation-destination-menu" data-role="invitation-destination-menu">
-          <summary>Choose destination</summary>
-          <div class="button-row button-row-natural invitation-destination-options" data-role="invitation-destination-options">
-            <button type="button" data-destination-value="/">Board</button>
-            <button type="button" data-destination-value="/activity/">Activity</button>
-            <button type="button" data-destination-value="/users/">Users</button>
-            <button type="button" data-destination-value="/tools/">Tools</button>
-          </div>
-        </details>
+        <div class="invitation-destination-input">
+          <input id="invite-destination" name="destination" type="text" value="" data-source-destination="<?= $e($destination) ?>" placeholder="/threads/example" autocomplete="off" disabled>
+          <details class="invitation-destination-menu" data-role="invitation-destination-menu">
+            <summary>Choose destination</summary>
+            <div class="button-row button-row-natural invitation-destination-options" data-role="invitation-destination-options">
+              <button type="button" data-destination-value="/">Board</button>
+              <button type="button" data-destination-value="/activity/">Activity</button>
+              <button type="button" data-destination-value="/users/">Users</button>
+              <button type="button" data-destination-value="/tools/">Tools</button>
+            </div>
+          </details>
+        </div>
       </div>
       <button type="submit">Generate invite link</button>
     </form>
