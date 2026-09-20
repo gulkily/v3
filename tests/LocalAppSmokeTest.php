@@ -282,6 +282,68 @@ final class LocalAppSmokeTest
         }
     }
 
+    public function testPrivateForteRoutesRecoverExpiredSessionsInsteadOfReturningFalseNotFound(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        $previousSession = $_SESSION ?? null;
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-forte-resume-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $sessionId = 'private-forte-resume-' . bin2hex(random_bytes(8));
+
+        try {
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
+            foreach ([
+                '/forte?selected=root-001',
+                '/forte/users/?page=2',
+                '/forte/activity/?view=content',
+                '/forte/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+                '/forte/user/forum-user',
+            ] as $path) {
+                $resume = $this->render($application, $path);
+                assertStringContains('<h1>Reconnecting</h1>', $resume);
+                assertStringContains('data-auth-return-to="' . $path . '"', $resume);
+                assertStringNotContains('The requested route does not exist in the local test slice.', $resume);
+            }
+
+            foreach ([
+                '/api/forte_activity_page?view=all',
+                '/api/forte_commit_detail?sha=abc123',
+                '/api/get_forte_content_summary?post_id=root-001',
+            ] as $path) {
+                $response = $this->render($application, $path);
+                assertStringContains('Approval required', $response);
+                assertStringNotContains('The requested route does not exist in the local test slice.', $response);
+            }
+
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            session_id($sessionId);
+            session_start();
+            $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+            session_write_close();
+
+            assertStringContains('Forte', $this->render($application, '/forte/users/'));
+            assertStringContains('The requested route does not exist in the local test slice.', $this->render($application, '/forte/not-a-route'));
+        } finally {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            session_id('');
+            if ($previousSession === null) {
+                unset($_SESSION);
+            } else {
+                $_SESSION = $previousSession;
+            }
+            @unlink($databasePath);
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
     public function testPendingPrivateSessionNavigationOnlyShowsLobbyOwnProfileAndAccount(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
