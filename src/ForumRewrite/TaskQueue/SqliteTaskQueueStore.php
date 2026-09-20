@@ -144,6 +144,32 @@ final class SqliteTaskQueueStore
     }
 
     /**
+     * @return array{queued:int,running:int,completed:int,failed:int}
+     */
+    public function counts(): array
+    {
+        $counts = [
+            'queued' => 0,
+            'running' => 0,
+            'completed' => 0,
+            'failed' => 0,
+        ];
+        $rows = $this->pdo->query(
+            'SELECT status, COUNT(*) AS task_count
+             FROM internal_tasks
+             GROUP BY status'
+        )->fetchAll();
+        foreach ($rows as $row) {
+            $status = (string) $row['status'];
+            if (array_key_exists($status, $counts)) {
+                $counts[$status] = (int) $row['task_count'];
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function markCompleted(int $id): array

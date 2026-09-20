@@ -54,6 +54,15 @@ Action:
 4. rebuild artifacts if production uses sibling `public/*.html`
 5. re-check `/api/read_model_status`
 
+When the internal task queue is configured, an operator can request the same rebuild for cron processing instead of running it inline:
+
+```bash
+./v3 task-queue enqueue-rebuild
+./v3 task-queue status
+```
+
+The configured cron worker runs the queue. A failed task remains visible in the status output; investigate the logged failure and use the manual rebuild command when immediate recovery is required.
+
 ### 2. Lock Contention
 
 Symptoms:
@@ -137,4 +146,6 @@ git -C "$FORUM_REPOSITORY_ROOT" rev-parse HEAD
 git -C "$FORUM_REPOSITORY_ROOT" status --short
 php scripts/rebuild_read_model.php "$FORUM_REPOSITORY_ROOT" "$FORUM_DATABASE_PATH"
 php scripts/build_static_artifacts.php "$FORUM_REPOSITORY_ROOT" "$FORUM_DATABASE_PATH" "$FORUM_PUBLIC_ARTIFACT_ROOT"
+./v3 task-queue status
+./v3 task-queue enqueue-rebuild
 ```

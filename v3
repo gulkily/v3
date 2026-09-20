@@ -24,6 +24,10 @@ Usage:
   ./v3 agent-reply test-local
   ./v3 codex-handoff run [--limit=1] [--dry-run] [--database-path=/path/post_index.sqlite3] [--codex-bin=/path/codex]
   ./v3 codex-handoff test-local
+  ./v3 task-queue enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
+  ./v3 task-queue run [--limit=1] [--dry-run] [--quiet]
+  ./v3 task-queue status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
+  ./v3 task-queue cron [--log=/var/log/forum-task-queue.log]
   ./v3 approve <identity_id> [seed_reason] [repository_root] [database_path]
   ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
@@ -157,6 +161,10 @@ case "${COMMAND}" in
         exit 1
         ;;
     esac
+    ;;
+  task-queue)
+    shift
+    php "${ROOT}/scripts/task_queue.php" "$@"
     ;;
   approval)
     shift

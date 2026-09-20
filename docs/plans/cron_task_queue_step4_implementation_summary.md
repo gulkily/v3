@@ -24,3 +24,18 @@
   - `php tests/run.php TaskQueueStoreTest TaskQueueWorkerTest` — 8 tests passed.
 - Notes:
   - A disposable live-rebuild smoke command was not run because its temporary-directory cleanup was blocked by the execution environment; the focused tests cover successful dispatch, retry/failure bounds, and refusal of unknown tasks.
+
+## Stage 3 - Cron and operator commands
+- Changes:
+  - Added private queue-path configuration, the `./v3 task-queue` command family, and a cron-reference command.
+  - Added enqueue, bounded worker-run, dry-run, and status operations using a non-overlapping queue-worker lock.
+  - Documented the private queue path, cron worker, and queue-assisted recovery in production and operator runbooks.
+- Verification:
+  - `php -l src/ForumRewrite/TaskQueue/TaskQueueDatabaseConfig.php`
+  - `php -l scripts/task_queue.php`
+  - `php -l tests/TaskQueueCommandTest.php`
+  - `bash -n v3`
+  - `php tests/run.php TaskQueueStoreTest TaskQueueWorkerTest TaskQueueCommandTest` — 12 tests passed.
+  - `./v3 task-queue cron --log=/tmp/forum-task-queue-smoke.log` — printed the expected once-per-minute bounded worker entry; it did not modify crontab.
+- Notes:
+  - The queue database path may be overridden with `FORUM_TASK_QUEUE_DATABASE_PATH`; its default remains private runtime state.
