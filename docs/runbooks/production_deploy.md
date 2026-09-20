@@ -57,6 +57,7 @@ Optional runtime setting:
 - `LLM_CONVERSATION_RECORDING_ENABLED`: controls private exact-prompt/response capture. The default is enabled.
 - `LLM_CONVERSATION_UI_ENABLED`: controls approved-user/operator web visibility of captured exchanges. The default is enabled.
 - `LLM_EXCHANGE_DATABASE_PATH`: optional private SQLite path; defaults to `<application-root>/state/private/llm_exchanges.sqlite3`.
+- `FORUM_TASK_QUEUE_DATABASE_PATH`: optional private SQLite path for queued internal maintenance; defaults to `<application-root>/state/private/internal_tasks.sqlite3`.
 
 ## Writable Paths
 
@@ -67,6 +68,7 @@ The web user must be able to write:
 - the lock file directory next to `FORUM_DATABASE_PATH`
 - `state/private/agent-reply/` under the application root if agent reply fulfillment is enabled
 - the parent directory of `LLM_EXCHANGE_DATABASE_PATH` if LLM conversation recording is enabled
+- the parent directory of `FORUM_TASK_QUEUE_DATABASE_PATH` when the internal task queue is enabled
 - sibling static artifacts in `public/` if production uses `public/*.html`
 
 If sibling `public/*.html` artifacts are used and writes are enabled, the application must be able to invalidate affected artifacts after successful writes.
@@ -90,6 +92,8 @@ FORUM_PUBLIC_ARTIFACT_ROOT=/srv/forum-rewrite/app/public
 `FORUM_STATIC_HTML_ROOT` remains available for separate static roots, but the primary production model for this repo is sibling artifacts in `public/`.
 
 LLM exchange records are private runtime data. Keep `LLM_EXCHANGE_DATABASE_PATH` outside `public/`, the canonical repository, and the published read-model database; restrict the file to the deployment/web users. The exchange UI is available only to approved viewers and can be disabled independently with `LLM_CONVERSATION_UI_ENABLED=false`.
+
+Internal task-queue records are also private runtime data. Keep `FORUM_TASK_QUEUE_DATABASE_PATH` outside `public/`, the canonical repository, and the published read-model database. The queue is deliberately separate from the rebuildable read model so a rebuild task retains its state and final outcome.
 
 ## Site Profile
 
@@ -208,6 +212,25 @@ php scripts/run_agent_reply_requests.php --post-id=<post-id>
 ./v3 agent-reply status --limit=25
 ./v3 agent-reply cron run --limit=10
 ./v3 agent-reply cron run --dry-run
+```
+
+## Internal Task Queue
+
+The internal task queue handles allowlisted maintenance work outside visitor requests. Its first task type is read-model rebuild/recovery; it does not run user-supplied commands and is separate from the agent-reply and Codex-handoff queues.
+
+Install the cron worker with the current-path reference:
+
+```bash
+./v3 task-queue cron
+```
+
+The default schedule processes one task per minute and exits successfully when another queue worker is active. Useful operator commands are:
+
+```bash
+./v3 task-queue enqueue-rebuild
+./v3 task-queue status
+./v3 task-queue run --dry-run
+./v3 task-queue run --limit=1
 ```
 
 ## Site Feature Flags
