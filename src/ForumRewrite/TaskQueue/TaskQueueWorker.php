@@ -24,7 +24,7 @@ final class TaskQueueWorker
     /**
      * @return array{recovered:int,claimed:int,completed:int,retried:int,failed:int}
      */
-    public function run(int $limit = 1): array
+    public function run(int $limit = 1, ?callable $report = null): array
     {
         $summary = [
             'recovered' => $this->store->recoverAbandonedRunning(),
@@ -33,10 +33,19 @@ final class TaskQueueWorker
             'retried' => 0,
             'failed' => 0,
         ];
+        if ($report !== null && $summary['recovered'] > 0) {
+            $report('recovered', ['count' => $summary['recovered']]);
+        }
 
         foreach ($this->store->claimNext($limit) as $task) {
             $summary['claimed']++;
+            if ($report !== null) {
+                $report('started', $task);
+            }
             $result = $this->runClaimed($task);
+            if ($report !== null) {
+                $report('finished', $result);
+            }
             if ($result['status'] === 'completed') {
                 $summary['completed']++;
             } elseif ($result['status'] === 'queued') {

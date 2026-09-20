@@ -27,6 +27,21 @@ final class TaskQueueWorkerTest
         assertSame('completed', $stored['status']);
     }
 
+    public function testWorkerReportsTaskLifecycle(): void
+    {
+        $store = $this->store();
+        $store->enqueue(SqliteTaskQueueStore::REBUILD_READ_MODEL, 'read-model');
+        $events = [];
+        $worker = new TaskQueueWorker($store, static function (): void {
+        });
+
+        $worker->run(1, static function (string $event, array $task) use (&$events): void {
+            $events[] = [$event, $task['status'] ?? null];
+        });
+
+        assertSame([['started', 'running'], ['finished', 'completed']], $events);
+    }
+
     public function testWorkerRetriesThenFailsBoundedRebuildFailure(): void
     {
         $store = $this->store();

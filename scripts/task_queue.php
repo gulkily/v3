@@ -58,6 +58,12 @@ try {
                 $task['max_attempts'],
                 $task['failure_code'] ?? 'none',
             ));
+            fwrite(STDOUT, sprintf(
+                "  requested=%s claimed=%s completed=%s\n",
+                $task['requested_at'],
+                $task['claimed_at'] ?? 'none',
+                $task['completed_at'] ?? 'none',
+            ));
         }
         exit(0);
     }
@@ -68,14 +74,58 @@ try {
         if (($options['dry-run'] ?? false) === true) {
             $counts = $store->counts();
             emitTaskQueue($quiet, "Task queue dry run\n");
+            emitTaskQueue($quiet, "Queue database: {$queuePath}\n");
             emitTaskQueue($quiet, "Queued tasks: {$counts['queued']}\n");
             emitTaskQueue($quiet, "Limit: {$limit}\n");
             exit(0);
         }
 
-        $run = static function () use ($store, $repositoryRoot, $databasePath, $limit, $quiet): void {
+        $run = static function () use ($store, $repositoryRoot, $databasePath, $queuePath, $limit, $quiet): void {
+            $startedAt = microtime(true);
+            $before = $store->counts();
+            emitTaskQueue($quiet, "Task queue worker starting\n");
+            emitTaskQueue($quiet, "Queue database: {$queuePath}\n");
+            emitTaskQueue($quiet, "Repository: {$repositoryRoot}\n");
+            emitTaskQueue($quiet, "Read model: {$databasePath}\n");
+            emitTaskQueue($quiet, "Limit: {$limit}\n");
+            emitTaskQueue($quiet, sprintf(
+                "Queue before: queued=%d running=%d completed=%d failed=%d\n",
+                $before['queued'],
+                $before['running'],
+                $before['completed'],
+                $before['failed'],
+            ));
             $worker = new TaskQueueWorker($store, new ReadModelRebuildTaskHandler($repositoryRoot, $databasePath));
-            $summary = $worker->run($limit);
+            $taskStartedAt = [];
+            $summary = $worker->run($limit, static function (string $event, array $task) use ($quiet, &$taskStartedAt): void {
+                if ($event === 'recovered') {
+                    emitTaskQueue($quiet, 'Recovered abandoned tasks: ' . $task['count'] . "\n");
+                    return;
+                }
+
+                $taskId = (int) ($task['id'] ?? 0);
+                if ($event === 'started') {
+                    $taskStartedAt[$taskId] = microtime(true);
+                    emitTaskQueue($quiet, sprintf(
+                        "Starting task id=%d type=%s attempt=%d/%d\n",
+                        $taskId,
+                        $task['type'],
+                        $task['attempts'],
+                        $task['max_attempts'],
+                    ));
+                    return;
+                }
+
+                $elapsed = isset($taskStartedAt[$taskId]) ? microtime(true) - $taskStartedAt[$taskId] : 0.0;
+                emitTaskQueue($quiet, sprintf(
+                    "Finished task id=%d status=%s elapsed=%.3fs failure=%s\n",
+                    $taskId,
+                    $task['status'],
+                    $elapsed,
+                    $task['failure_code'] ?? 'none',
+                ));
+            });
+            $after = $store->counts();
             emitTaskQueue($quiet, sprintf(
                 "Task queue run complete: recovered=%d claimed=%d completed=%d retried=%d failed=%d\n",
                 $summary['recovered'],
@@ -84,6 +134,14 @@ try {
                 $summary['retried'],
                 $summary['failed'],
             ));
+            emitTaskQueue($quiet, sprintf(
+                "Queue after: queued=%d running=%d completed=%d failed=%d\n",
+                $after['queued'],
+                $after['running'],
+                $after['completed'],
+                $after['failed'],
+            ));
+            emitTaskQueue($quiet, sprintf("Elapsed: %.3fs\n", microtime(true) - $startedAt));
         };
 
         try {

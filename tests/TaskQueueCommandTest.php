@@ -31,6 +31,7 @@ final class TaskQueueCommandTest
     public function testTaskQueueCommandsEnqueueInspectAndDryRun(): void
     {
         $queuePath = sys_get_temp_dir() . '/forum-task-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $progressQueuePath = sys_get_temp_dir() . '/forum-task-queue-progress-' . bin2hex(random_bytes(6)) . '.sqlite3';
         try {
             [$firstCode, $firstOutput, $firstError] = $this->runCommand(
                 dirname(__DIR__),
@@ -48,8 +49,19 @@ final class TaskQueueCommandTest
                 dirname(__DIR__),
                 './v3 task-queue run --dry-run --queue-database-path=' . escapeshellarg($queuePath)
             );
+            $progressPdo = new PDO('sqlite:' . $progressQueuePath);
+            new \ForumRewrite\TaskQueue\SqliteTaskQueueStore($progressPdo);
+            $progressPdo->exec(
+                "INSERT INTO internal_tasks (type, deduplication_key, status, attempts, max_attempts, requested_at)
+                 VALUES ('unknown', 'progress-task', 'queued', 0, 1, '2026-01-01T00:00:00+00:00')"
+            );
+            [$runCode, $runOutput, $runError] = $this->runCommand(
+                dirname(__DIR__),
+                './v3 task-queue run --queue-database-path=' . escapeshellarg($progressQueuePath)
+            );
         } finally {
             @unlink($queuePath);
+            @unlink($progressQueuePath);
         }
 
         assertSame(0, $firstCode);
@@ -65,6 +77,13 @@ final class TaskQueueCommandTest
         assertStringContains('Task queue dry run', $dryRunOutput);
         assertStringContains('Queued tasks: 1', $dryRunOutput);
         assertSame('', $dryRunError);
+        assertSame(0, $runCode);
+        assertStringContains('Task queue worker starting', $runOutput);
+        assertStringContains('Starting task id=', $runOutput);
+        assertStringContains('Finished task id=', $runOutput);
+        assertStringContains('Queue after:', $runOutput);
+        assertStringContains('Elapsed:', $runOutput);
+        assertSame('', $runError);
     }
 
     public function testTaskQueueCronReferenceUsesWorkerCommand(): void
