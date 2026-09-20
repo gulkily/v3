@@ -73,3 +73,11 @@
   - `./v3 test InvitationIssuanceTest`
 - Notes:
   - This removes the adjacent-dialog split in the Word 97 theme.
+
+## Stage 8 - Word 97 Invite navigation icon
+- Changes:
+  - Added a Word 97–scoped pixel-envelope icon to the existing Invite navigation link.
+- Verification:
+  - `./v3 test InvitationIssuanceTest`
+- Notes:
+  - Other themes and navigation links remain unchanged.

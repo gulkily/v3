@@ -96,6 +96,14 @@ NODE);
         assertStringContains('height: 100%;', $styles);
     }
 
+    public function testWord97InviteNavigationUsesAnEnvelopeIcon(): void
+    {
+        $styles = file_get_contents(__DIR__ . '/../public/assets/site.css');
+
+        assertStringContains(':root[data-theme="word97"] .nav-link[href="/invites/"]::before', $styles);
+        assertStringContains("M2 4 L8 9 L14 4", $styles);
+    }
+
     public function testDestinationSuggestionsIncludeCuratedAndValidSourceLocations(): void
     {
         $result = $this->runScript(<<<'NODE'
