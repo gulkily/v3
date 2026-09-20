@@ -652,24 +652,29 @@
     }
 
     var title = dialog.querySelector('[data-role="content-summary-title"]');
-    var loading = dialog.querySelector('[data-role="content-summary-loading"]');
-    var content = dialog.querySelector('[data-role="content-summary-content"]');
-    var errorNode = dialog.querySelector('[data-role="content-summary-error"]');
     var kindNode = dialog.querySelector('[data-role="content-summary-kind"]');
     var authorNode = dialog.querySelector('[data-role="content-summary-author"]');
     var dateNode = dialog.querySelector('[data-role="content-summary-date"]');
     var repliesNode = dialog.querySelector('[data-role="content-summary-replies"]');
+    var loading = dialog.querySelector('[data-role="content-summary-loading"]');
     var textNode = dialog.querySelector('[data-role="content-summary-text"]');
+    var errorNode = dialog.querySelector('[data-role="content-summary-error"]');
     var fullLink = dialog.querySelector('[data-role="content-summary-full-link"]');
 
     if (title) {
       title.textContent = "Loading…";
     }
+    [kindNode, authorNode, dateNode, repliesNode].forEach(function (node) {
+      if (node) {
+        node.textContent = "";
+      }
+    });
     if (loading) {
       loading.hidden = false;
     }
-    if (content) {
-      content.hidden = true;
+    if (textNode) {
+      textNode.hidden = true;
+      textNode.textContent = "";
     }
     if (errorNode) {
       errorNode.hidden = true;
@@ -701,7 +706,7 @@
           kindNode.textContent = data.is_reply ? "Reply" : "Thread";
         }
         if (authorNode) {
-          authorNode.textContent = data.author_label || "guest";
+          authorNode.textContent = "From: " + (data.author_label || "guest");
         }
         if (dateNode) {
           var parsedDate = data.created_at ? new Date(data.created_at) : null;
@@ -710,18 +715,19 @@
             : (data.created_at || "");
         }
         if (repliesNode) {
-          repliesNode.textContent = data.reply_count;
+          repliesNode.textContent = data.reply_count + (data.reply_count === 1 ? " reply" : " replies");
         }
         if (textNode) {
           textNode.textContent = data.body_preview || "";
-        }
-        if (content) {
-          content.hidden = false;
+          textNode.hidden = false;
         }
       })
       .catch(function () {
         if (loading) {
           loading.hidden = true;
+        }
+        if (title) {
+          title.textContent = "Post";
         }
         if (errorNode) {
           errorNode.hidden = false;
