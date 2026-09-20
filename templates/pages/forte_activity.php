@@ -7,9 +7,11 @@
  * @var string $selectedItemId
  * @var array<string, array{has_more: bool, next_cursor: array{sort_value: string, id: int}|null}> $viewPagination
  * @var array<string, array{ariaSort: string, href: string}> $sortHeaderLinks
+ * @var string $recoveryNotice
  */
 $selectedView ??= 'all';
 $selectedItemId ??= '';
+$recoveryNotice ??= '';
 // The status bar tracks how many of the selected view's items are actually
 // loaded/visible right now, not the view's full total (that's the left-pane
 // folder count) - it grows via JS as more pages are loaded.
@@ -31,6 +33,9 @@ foreach ($viewCounts as $viewCount) {
     'replyEnabled' => false,
     'prevNextEnabled' => true,
   ]), 1) ?>
+<?php if ($recoveryNotice !== ''): ?>
+  <div class="paned-statusbar" role="status"><?= $e($recoveryNotice) ?></div>
+<?php endif; ?>
   <div class="paned-board-layout">
 <?= $indent($partial('partials/paned_activity_filter_list.php', ['viewCounts' => $viewCounts, 'selectedView' => $selectedView]), 2) ?>
     <div class="paned-board-main paned-panes-stack">

@@ -39,3 +39,18 @@
   - `./v3 task-queue cron --log=/tmp/forum-task-queue-smoke.log` — printed the expected once-per-minute bounded worker entry; it did not modify crontab.
 - Notes:
   - The queue database path may be overridden with `FORUM_TASK_QUEUE_DATABASE_PATH`; its default remains private runtime state.
+
+## Stage 4 - Forte capability recovery
+- Changes:
+  - Added explicit Commits-capability inspection, independent of read-model metadata versioning.
+  - Forte Activity now keeps its five ordinary views available, omits unavailable Commit history, shows a safe update notice, and queues one deduplicated rebuild task.
+  - Commit pagination/detail APIs now return the stable `read_model_capability_unavailable` response instead of reaching SQLite errors.
+  - Extended read-model status with capability, rebuild-required, and private queue summary fields.
+- Verification:
+  - `php -l src/ForumRewrite/Application.php`
+  - `php -l src/ForumRewrite/ReadModel/ReadModelCapabilityInspector.php`
+  - `php -l tests/ForteActivityReadModelRecoveryTest.php`
+  - `php tests/run.php ForteActivityReadModelRecoveryTest TaskQueueStoreTest TaskQueueWorkerTest TaskQueueCommandTest` — 14 tests passed.
+  - `php tests/run.php ForteActivityReadModelRecoveryTest WriteApiSmokeTest` — new recovery coverage passed and the smoke suite ran through its queue/activity cases.
+- Notes:
+  - `WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh` still fails on an existing classic-Activity ordering mismatch between two same-second approval records after rebuild. This feature does not change that classic query or ordering path.

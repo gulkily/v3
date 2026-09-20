@@ -20,6 +20,7 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\ReadModel\ReadModelCapabilityInspector;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
@@ -35,6 +36,8 @@ use ForumRewrite\Write\IdentityBootstrapTimingException;
 use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
 use ForumRewrite\Llm\LlmExchangeRecorder;
 use ForumRewrite\Llm\SqliteLlmExchangeStore;
+use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
+use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
 use PDO;
@@ -63,6 +66,9 @@ final class Application
     private array $activityCommitManifestCache = [];
     private ?SqliteActivityCommitManifestCache $activityCommitManifestCacheStore = null;
     private bool $activityCommitManifestCacheStoreInitialized = false;
+    private ?bool $commitsCapabilityAvailable = null;
+    private ?SqliteTaskQueueStore $taskQueueStore = null;
+    private bool $taskQueueStoreInitialized = false;
 
     public function __construct(
         private readonly string $projectRoot,
@@ -715,12 +721,15 @@ final class Application
 
         $currentRepositoryHead = ReadModelMetadata::repositoryHead($this->repositoryRoot);
         $staleMarker = $this->staleMarker()->read();
+        $commitsAvailable = $this->commitsCapabilityAvailable();
         $status = (($metadata['repository_root'] ?? null) === $this->repositoryRoot)
             && (($metadata['schema_version'] ?? null) === ReadModelMetadata::SCHEMA_VERSION)
             && (($metadata['repository_head'] ?? null) === $currentRepositoryHead)
             && $staleMarker === null
+            && $commitsAvailable
             ? 'ready'
             : 'stale';
+        $taskQueue = $this->taskQueueStatus();
 
         return "status={$status}\n"
             . 'schema_version=' . ($metadata['schema_version'] ?? 'missing') . "\n"
@@ -732,7 +741,13 @@ final class Application
             . 'stale_marker=' . ($staleMarker === null ? 'absent' : 'present') . "\n"
             . 'stale_reason=' . ($staleMarker['reason'] ?? 'none') . "\n"
             . 'stale_commit_sha=' . ($staleMarker['commit_sha'] ?? 'none') . "\n"
-            . 'rebuild_reason=' . ($metadata['rebuild_reason'] ?? 'missing') . "\n";
+            . 'rebuild_reason=' . ($metadata['rebuild_reason'] ?? 'missing') . "\n"
+            . 'commits_capability=' . ($commitsAvailable ? 'available' : 'unavailable') . "\n"
+            . 'rebuild_required=' . ($status === 'ready' ? 'no' : 'yes') . "\n"
+            . 'task_queue_status=' . $taskQueue['status'] . "\n"
+            . 'task_queue_queued=' . $taskQueue['queued'] . "\n"
+            . 'task_queue_running=' . $taskQueue['running'] . "\n"
+            . 'task_queue_failed=' . $taskQueue['failed'] . "\n";
     }
 
     /**
@@ -1193,6 +1208,11 @@ final class Application
             ];
         }
 
+        $commitsAvailable = $this->commitsCapabilityAvailable();
+        if (!$commitsAvailable) {
+            $this->enqueueReadModelRecovery();
+        }
+
         // Commits are a parallel, structurally different row set - not
         // activity actions, so they're kept out of $itemsById/$items
         // rather than forced into that shape. Only `date` is sortable for
@@ -1200,25 +1220,31 @@ final class Application
         // requested column), so a Kind/Label header click while browsing
         // Commits has no effect on commit order - a deliberate Step 3 scope
         // decision, not a bug.
-        ['column' => $commitSortColumn, 'direction' => $commitSortDirection] = $this->resolveCommitSort($requestedSort, $requestedDirection);
-        $commitResult = $this->fetchCommits($commitSortColumn, $commitSortDirection);
-        $commitItems = $commitResult['items'];
-        $lastCommit = $commitItems[count($commitItems) - 1] ?? null;
-        $viewPagination['commits'] = [
-            'has_more' => $commitResult['has_more'] && $lastCommit !== null,
-            'next_cursor' => $lastCommit !== null ? [
-                'sort_value' => $this->commitSortValueFromItem($lastCommit, $commitSortColumn),
-                'id' => (int) $lastCommit['id'],
-            ] : null,
-        ];
-        $viewCounts[] = [
-            'key' => 'commits',
-            'label' => 'Commits',
-            'count' => $this->countCommitsTotal(),
-            'loadedCount' => count($commitItems),
-        ];
+        $commitItems = [];
+        if ($commitsAvailable) {
+            ['column' => $commitSortColumn, 'direction' => $commitSortDirection] = $this->resolveCommitSort($requestedSort, $requestedDirection);
+            $commitResult = $this->fetchCommits($commitSortColumn, $commitSortDirection);
+            $commitItems = $commitResult['items'];
+            $lastCommit = $commitItems[count($commitItems) - 1] ?? null;
+            $viewPagination['commits'] = [
+                'has_more' => $commitResult['has_more'] && $lastCommit !== null,
+                'next_cursor' => $lastCommit !== null ? [
+                    'sort_value' => $this->commitSortValueFromItem($lastCommit, $commitSortColumn),
+                    'id' => (int) $lastCommit['id'],
+                ] : null,
+            ];
+            $viewCounts[] = [
+                'key' => 'commits',
+                'label' => 'Commits',
+                'count' => $this->countCommitsTotal(),
+                'loadedCount' => count($commitItems),
+            ];
+        }
 
         $selectedView = $this->normalizeActivityView($requestedView);
+        if (!$commitsAvailable && $selectedView === 'commits') {
+            $selectedView = 'all';
+        }
         // Commit selection is handled entirely client-side (Stage 4: fetched
         // on demand when a commit row is clicked, not pre-selected here) -
         // $viewItemIds has no 'commits' entry to look up against.
@@ -1239,6 +1265,7 @@ final class Application
                 'selectedItemId' => $selectedItemId,
                 'viewPagination' => $viewPagination,
                 'sortHeaderLinks' => $sortHeaderLinks,
+                'recoveryNotice' => $commitsAvailable ? '' : 'Commit history is temporarily unavailable while site data updates.',
             ],
             'Activity - Forte',
             'paned-reader-body',
@@ -1291,6 +1318,12 @@ final class Application
         }
 
         if ($view === 'commits') {
+            if (!$this->commitsCapabilityAvailable()) {
+                $this->enqueueReadModelRecovery();
+                $this->sendReadModelCapabilityUnavailable();
+                return;
+            }
+
             // Commits are a parallel row set with their own fetch/sort
             // (Stage 2) and their own row partial (Stage 3) - and, unlike
             // activity items, no eagerly-rendered detail article: Stage 4
@@ -1390,6 +1423,12 @@ final class Application
      */
     private function handleForteCommitDetail(array $query): void
     {
+        if (!$this->commitsCapabilityAvailable()) {
+            $this->enqueueReadModelRecovery();
+            $this->sendReadModelCapabilityUnavailable();
+            return;
+        }
+
         $sha = (string) ($query['sha'] ?? '');
         if (preg_match('/^[0-9a-f]{40}$/', $sha) !== 1) {
             $this->sendJson(['status' => 'error', 'error' => 'invalid sha'], 400);
@@ -6891,6 +6930,82 @@ final class Application
     private function pdo(): PDO
     {
         return (new ReadModelConnection($this->databasePath))->open();
+    }
+
+    private function commitsCapabilityAvailable(): bool
+    {
+        if ($this->commitsCapabilityAvailable !== null) {
+            return $this->commitsCapabilityAvailable;
+        }
+
+        try {
+            return $this->commitsCapabilityAvailable = (new ReadModelCapabilityInspector())->commitsAvailable($this->pdo());
+        } catch (\Throwable) {
+            return $this->commitsCapabilityAvailable = false;
+        }
+    }
+
+    private function enqueueReadModelRecovery(): void
+    {
+        try {
+            $this->taskQueueStore()->enqueue(SqliteTaskQueueStore::REBUILD_READ_MODEL, 'read-model');
+        } catch (\Throwable) {
+            // Visitor recovery remains safe even if the private queue is not
+            // writable; status/cron tooling provides the operator diagnosis.
+        }
+    }
+
+    private function sendReadModelCapabilityUnavailable(): void
+    {
+        $this->sendJson([
+            'status' => 'error',
+            'error' => 'read_model_capability_unavailable',
+            'message' => 'Commit history is temporarily unavailable while site data updates.',
+        ], 503);
+    }
+
+    private function taskQueueStore(): SqliteTaskQueueStore
+    {
+        if ($this->taskQueueStoreInitialized) {
+            if ($this->taskQueueStore === null) {
+                throw new RuntimeException('Task queue is unavailable.');
+            }
+
+            return $this->taskQueueStore;
+        }
+
+        $this->taskQueueStoreInitialized = true;
+        $path = TaskQueueDatabaseConfig::path($this->projectRoot);
+        $directory = dirname($path);
+        if (!is_dir($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
+            throw new RuntimeException('Task queue directory is not writable.');
+        }
+
+        $this->taskQueueStore = new SqliteTaskQueueStore(new PDO('sqlite:' . $path));
+
+        return $this->taskQueueStore;
+    }
+
+    /**
+     * @return array{status:string,queued:int,running:int,completed:int,failed:int}
+     */
+    private function taskQueueStatus(): array
+    {
+        $path = TaskQueueDatabaseConfig::path($this->projectRoot);
+        if (!is_file($path)) {
+            return ['status' => 'not_initialized', 'queued' => 0, 'running' => 0, 'completed' => 0, 'failed' => 0];
+        }
+
+        try {
+            $store = $this->taskQueueStoreInitialized
+                ? $this->taskQueueStore()
+                : new SqliteTaskQueueStore(new PDO('sqlite:' . $path));
+            $counts = $store->counts();
+
+            return ['status' => 'available'] + $counts;
+        } catch (\Throwable) {
+            return ['status' => 'unavailable', 'queued' => 0, 'running' => 0, 'completed' => 0, 'failed' => 0];
+        }
     }
 
     private function executionLock(): ExecutionLock
