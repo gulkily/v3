@@ -40,6 +40,7 @@ $testFiles = [
     __DIR__ . '/SiteProfileRegistryTest.php',
     __DIR__ . '/ThemeRegistryTest.php',
     __DIR__ . '/TestRunnerBehaviorTest.php',
+    __DIR__ . '/TaskQueueStoreTest.php',
     __DIR__ . '/ThreadTitleTest.php',
     __DIR__ . '/SqliteQueryCatalogTest.php',
     __DIR__ . '/SqliteLlmExchangeStoreTest.php',
