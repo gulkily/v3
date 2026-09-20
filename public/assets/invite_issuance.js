@@ -59,6 +59,27 @@
     return signing;
   }
 
+  function validInvitationDestination(value) {
+    const destination = String(value || "").trim();
+    if (destination === "" || destination.length > 500 || !/^\/(?!\/)/.test(destination)
+      || /[\r\n#]/.test(destination)) {
+      return "";
+    }
+    return destination;
+  }
+
+  function addDestinationSuggestion(list, value) {
+    const destination = validInvitationDestination(value);
+    if (!list || destination === "") return;
+    const options = list.querySelectorAll("option");
+    for (let index = 0; index < options.length; index += 1) {
+      if (options[index].value === destination) return;
+    }
+    const option = document.createElement("option");
+    option.value = destination;
+    list.appendChild(option);
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     const root = document.querySelector("[data-invitation-page]");
     const form = root && root.querySelector("[data-invitation-issue-form]");
@@ -69,7 +90,9 @@
     const includeDestination = form.elements.include_destination;
     const destination = form.elements.destination;
     const destinationFields = form.querySelector("[data-role=invitation-destination-fields]");
+    const destinationSuggestions = form.querySelector("[data-role=invitation-destination-suggestions]");
     const copyButton = root.querySelector("[data-action=copy-invitation-link]");
+    addDestinationSuggestion(destinationSuggestions, destination.value);
     const syncDestination = function () {
       const isIncluded = includeDestination.checked;
       destination.disabled = !isIncluded;

@@ -78,6 +78,61 @@ NODE);
         assertStringContains('data-role="invitation-destination-fields" hidden', $template);
         assertStringContains('list="invite-destination-suggestions"', $template);
         assertStringContains('<datalist id="invite-destination-suggestions"', $template);
+        assertStringContains('<option value="/" label="Board">', $template);
+        assertStringContains('<option value="/activity/" label="Activity">', $template);
+        assertStringContains('<option value="/users/" label="Users">', $template);
+        assertStringContains('<option value="/tools/" label="Tools">', $template);
+    }
+
+    public function testDestinationSuggestionsIncludeCuratedAndValidSourceLocations(): void
+    {
+        $result = $this->runScript(<<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+function suggestionsFor(value) {
+  let ready = null;
+  const listeners = {};
+  const checkbox = { checked: false, addEventListener(type, listener) { listeners[type] = listener; }, setAttribute() {} };
+  const destination = { disabled: false, value, addEventListener() {} };
+  const destinationFields = { hidden: false };
+  const suggestions = {
+    values: ['/', '/activity/', '/users/', '/tools/'],
+    querySelectorAll() { return this.values.map((item) => ({ value: item })); },
+    appendChild(option) { this.values.push(option.value); }
+  };
+  const link = { addEventListener() {}, select() {} };
+  const form = {
+    elements: { include_destination: checkbox, destination },
+    addEventListener() {},
+    querySelector(selector) {
+      if (selector === '[data-role=invitation-destination-fields]') return destinationFields;
+      if (selector === '[data-role=invitation-destination-suggestions]') return suggestions;
+      return null;
+    }
+  };
+  const root = {
+    querySelector(selector) {
+      if (selector === '[data-invitation-issue-form]') return form;
+      if (selector === '[data-role=invitation-link]') return link;
+      return null;
+    }
+  };
+  const document = {
+    addEventListener(type, listener) { if (type === 'DOMContentLoaded') ready = listener; },
+    querySelector(selector) { return selector === '[data-invitation-page]' ? root : null; },
+    createElement() { return { value: '' }; }
+  };
+  vm.runInNewContext(source, { window: { location: { origin: 'https://forum.test' } }, document, console });
+  ready();
+  return suggestions.values;
+}
+process.stdout.write(JSON.stringify({ valid: suggestionsFor('/threads/root-001'), external: suggestionsFor('https://example.test/'), fragment: suggestionsFor('/threads/root-001#reply-1') }));
+NODE);
+
+        assertSame(['/', '/activity/', '/users/', '/tools/', '/threads/root-001'], $result['valid']);
+        assertSame(['/', '/activity/', '/users/', '/tools/'], $result['external']);
+        assertSame(['/', '/activity/', '/users/', '/tools/'], $result['fragment']);
     }
 }
 

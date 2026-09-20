@@ -11,7 +11,12 @@
       <div id="invite-destination-fields" data-role="invitation-destination-fields" hidden>
         <label class="account-key-label" for="invite-destination">Destination (optional)</label>
         <input id="invite-destination" name="destination" type="text" value="<?= $e($destination) ?>" placeholder="/threads/example" list="invite-destination-suggestions" autocomplete="off" disabled>
-        <datalist id="invite-destination-suggestions" data-role="invitation-destination-suggestions"></datalist>
+        <datalist id="invite-destination-suggestions" data-role="invitation-destination-suggestions">
+          <option value="/" label="Board"></option>
+          <option value="/activity/" label="Activity"></option>
+          <option value="/users/" label="Users"></option>
+          <option value="/tools/" label="Tools"></option>
+        </datalist>
       </div>
       <button type="submit">Generate invite link</button>
     </form>
