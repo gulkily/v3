@@ -12,11 +12,20 @@
     return { version: "v6", path: config.v6Path };
   }
 
+  function preloadScript(path) {
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "script";
+    link.href = path;
+    link.fetchPriority = "low";
+    document.head.appendChild(link);
+  }
+
   function loadScript(path) {
     return new Promise(function (resolve, reject) {
       const script = document.createElement("script");
       script.src = path;
-      script.async = false;
+      script.async = true;
       script.onload = function () {
         resolve();
       };
@@ -28,19 +37,28 @@
   }
 
   const bundle = selectedBundle();
-  const ready = loadScript(bundle.path).then(function () {
-    if (!window.openpgp) {
-      throw new Error("OpenPGP bundle loaded without exposing window.openpgp.");
+  let ready = null;
+
+  function load() {
+    if (ready === null) {
+      ready = loadScript(bundle.path).then(function () {
+        if (!window.openpgp) {
+          throw new Error("OpenPGP bundle loaded without exposing window.openpgp.");
+        }
+
+        return window.openpgp;
+      });
+      ready.catch(function () {});
     }
 
-    return window.openpgp;
-  });
+    return ready;
+  }
 
-  ready.catch(function () {});
+  preloadScript(bundle.path);
 
   window.__forumOpenPgpLoader = {
     selectedVersion: bundle.version,
     selectedPath: bundle.path,
-    ready: ready,
+    load: load,
   };
 })();

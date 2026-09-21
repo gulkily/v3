@@ -158,6 +158,10 @@ PHP;
             assertStringNotContains('href="/invites/" data-invite-navigation>Invite</a>', $board);
             assertStringContains('data-public-auth-resume="true"', $board);
             assertFingerprintedAsset($board, 'private_site_auth.js');
+            assertTrue(
+                strpos($board, '/assets/theme_toggle.') < strpos($board, '/assets/openpgp_loader.'),
+                'Theme controls must initialize before the OpenPGP loader.'
+            );
         } finally {
             if (session_status() === PHP_SESSION_ACTIVE) {
                 session_write_close();

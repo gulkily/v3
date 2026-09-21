@@ -48,13 +48,13 @@
   <link rel="preload" href="<?= $e($siteCssPath) ?>" as="style" fetchpriority="high">
   <link rel="stylesheet" href="<?= $e($siteCssPath) ?>" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="<?= $e($siteCssPath) ?>"></noscript>
+  <script src="<?= $e($themeToggleScriptPath) ?>" defer></script>
+  <script src="<?= $e($threadDensityToggleScriptPath) ?>" defer></script>
 <?php foreach ($scriptPaths as $scriptPath): ?>
   <script src="<?= $e($scriptPath) ?>" defer></script>
 <?php endforeach; ?>
   <script src="<?= $e($composeDraftClearScriptPath) ?>" defer></script>
   <script src="<?= $e($inviteNavigationScriptPath) ?>" defer></script>
-  <script src="<?= $e($themeToggleScriptPath) ?>" defer></script>
-  <script src="<?= $e($threadDensityToggleScriptPath) ?>" defer></script>
 <?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>
 <?php endif; ?>
