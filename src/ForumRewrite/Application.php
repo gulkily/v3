@@ -98,6 +98,8 @@ final class Application
             || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity'], true)
         ) {
             $this->startViewerSession();
+        } elseif ($this->shouldResumeViewerSession($method, $path, $query)) {
+            $this->resumeViewerSession();
         }
 
         if ($path === '/api/version') {
@@ -2591,7 +2593,7 @@ final class Application
 
     private function renderPage(string $title, string $content, string $activeSection, array $scriptPaths = []): string
     {
-        $viewerProfile = $this->approvedMembersOnlyEnabled() ? $this->authenticatedViewerProfile() : null;
+        $viewerProfile = $this->authenticatedViewerProfile();
 
         return $this->renderer()->renderLayout(
             $title,
@@ -2615,7 +2617,7 @@ final class Application
         string $activeSection,
         array $scriptPaths = [],
     ): string {
-        if ($this->approvedMembersOnlyEnabled() && !array_key_exists('viewerProfile', $pageData)) {
+        if (!array_key_exists('viewerProfile', $pageData)) {
             $pageData['viewerProfile'] = $this->authenticatedViewerProfile();
         }
 
@@ -4866,6 +4868,51 @@ final class Application
             'cookie_samesite' => 'Lax',
             'cookie_secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
             'use_strict_mode' => true,
+        ]);
+    }
+
+    /** @param array<string, mixed> $query */
+    private function shouldResumeViewerSession(string $method, string $path, array $query): bool
+    {
+        if ($method !== 'GET' || !$this->hasViewerSessionCookie() || !$this->isApplicationRoute($path)) {
+            return false;
+        }
+
+        if (str_starts_with($path, '/api/') || str_starts_with($path, '/downloads/')) {
+            return false;
+        }
+
+        return ($query['format'] ?? null) !== 'rss';
+    }
+
+    private function hasViewerSessionCookie(): bool
+    {
+        $value = $_COOKIE[session_name()] ?? null;
+
+        return is_string($value) && $value !== '';
+    }
+
+    private function resumeViewerSession(): void
+    {
+        $sessionName = session_name();
+        $requestedSessionId = (string) ($_COOKIE[$sessionName] ?? '');
+        $this->startViewerSession();
+
+        if (session_status() !== PHP_SESSION_ACTIVE || $requestedSessionId === session_id()) {
+            return;
+        }
+
+        session_abort();
+        session_id('');
+        unset($_COOKIE[$sessionName]);
+        $params = session_get_cookie_params();
+        setcookie($sessionName, '', [
+            'expires' => time() - 3600,
+            'path' => $params['path'] ?? '/',
+            'domain' => $params['domain'] ?? '',
+            'secure' => (bool) ($params['secure'] ?? false),
+            'httponly' => (bool) ($params['httponly'] ?? true),
+            'samesite' => $params['samesite'] ?? 'Lax',
         ]);
     }
 
