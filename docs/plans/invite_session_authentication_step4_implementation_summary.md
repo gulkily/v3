@@ -38,3 +38,13 @@
   - `./v3 test LocalAppSmokeTest::testApprovedPublicSessionIsResumedForBoardAndInvite LocalAppSmokeTest::testAnonymousPublicBoardDoesNotStartViewerSession PrivateSiteAuthTest`
 - Notes:
   - Final invitation publication remains protected by its existing browser detached-signature and server verification checks.
+
+## Stage 4 - Verify the public-session boundary
+- Changes:
+  - Documented public session restoration, anonymous browsing, non-replay of writes, and invitation authorization in the production runbook.
+- Verification:
+  - `./v3 test` completed with all invite-session, browser-authentication, and existing session coverage passing.
+  - The suite retains unrelated failures in invitation styling and activity/signature expectations, including an existing `fetchActivity()` call-signature mismatch; none are in files changed by this feature.
+  - `git diff --check` passes for the Stage 4 documentation files.
+- Notes:
+  - The feature has four stage-scoped commits following the planning-doc commit, as required by the FDP process.
