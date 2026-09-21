@@ -56,7 +56,7 @@
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>
 <?php endif; ?>
 </head>
-<body>
+<body<?= $publicAuthenticationResume ? ' data-private-site-auth-state data-public-auth-resume="true" data-authenticated-identity-id=""' : '' ?>>
 <?php if ($appVersionNotificationEnabled): ?>
   <div class="app-version-banner" data-role="app-version-banner" hidden>
     <div class="app-version-banner__inner">

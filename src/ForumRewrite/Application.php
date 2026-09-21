@@ -2594,6 +2594,7 @@ final class Application
     private function renderPage(string $title, string $content, string $activeSection, array $scriptPaths = []): string
     {
         $viewerProfile = $this->authenticatedViewerProfile();
+        $publicAuthenticationResume = !$this->approvedMembersOnlyEnabled() && $viewerProfile === null;
 
         return $this->renderer()->renderLayout(
             $title,
@@ -2603,6 +2604,7 @@ final class Application
             $this->routeSource,
             false,
             $viewerProfile,
+            $publicAuthenticationResume,
         );
     }
 
@@ -2620,6 +2622,8 @@ final class Application
         if (!array_key_exists('viewerProfile', $pageData)) {
             $pageData['viewerProfile'] = $this->authenticatedViewerProfile();
         }
+        $publicAuthenticationResume = !$this->approvedMembersOnlyEnabled()
+            && $pageData['viewerProfile'] === null;
 
         return $this->renderer()->renderPageTemplate(
             $pageTemplate,
@@ -2628,6 +2632,7 @@ final class Application
             $activeSection,
             $scriptPaths,
             $this->routeSource,
+            $publicAuthenticationResume,
         );
     }
 

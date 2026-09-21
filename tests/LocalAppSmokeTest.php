@@ -152,6 +152,8 @@ PHP;
 
             assertSame(PHP_SESSION_NONE, session_status());
             assertStringNotContains('href="/invites/" data-invite-navigation>Invite</a>', $board);
+            assertStringContains('data-public-auth-resume="true"', $board);
+            assertFingerprintedAsset($board, 'private_site_auth.js');
         } finally {
             if (session_status() === PHP_SESSION_ACTIVE) {
                 session_write_close();
