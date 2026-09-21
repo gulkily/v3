@@ -26,3 +26,15 @@
   - `./v3 test LocalAppSmokeTest::testApprovedPublicSessionIsResumedForBoardAndInvite LocalAppSmokeTest::testAnonymousPublicBoardDoesNotStartViewerSession PrivateSiteAuthTest`
 - Notes:
   - Existing Account and members-only resume behavior retains its prior authentication path; the public marker only changes automatic restoration after a missing session.
+
+## Stage 3 - Integrate Invite with restored authentication
+- Changes:
+  - Resumed an existing session for the intentional invitation-preparation request without automatically replaying any write.
+  - Marked identity-hint profile resolution as unauthenticated and marked session-derived profiles as authenticated, so Account and Lobby no longer mistake a hint for a completed sign-in.
+  - Extended the public-session smoke flow to prove that invitation preparation passes authentication before its normal validation/write checks.
+- Verification:
+  - `php -l src/ForumRewrite/Application.php`
+  - `php -l tests/LocalAppSmokeTest.php`
+  - `./v3 test LocalAppSmokeTest::testApprovedPublicSessionIsResumedForBoardAndInvite LocalAppSmokeTest::testAnonymousPublicBoardDoesNotStartViewerSession PrivateSiteAuthTest`
+- Notes:
+  - Final invitation publication remains protected by its existing browser detached-signature and server verification checks.

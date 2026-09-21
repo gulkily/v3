@@ -3766,6 +3766,7 @@ final class Application
         if ($authenticatedIdentityId !== '') {
             $authenticatedProfile = $this->fetchProfileByIdentityId($authenticatedIdentityId);
             if ($authenticatedProfile !== null) {
+                $authenticatedProfile['_authenticated_identity'] = true;
                 return $authenticatedProfile;
             }
         }
@@ -3779,14 +3780,26 @@ final class Application
         $stmt->execute(['username_token' => $hint]);
         $route = $stmt->fetch();
         if ($route !== false) {
-            return $this->fetchProfileByIdentityId((string) $route['identity_id']);
+            $profile = $this->fetchProfileByIdentityId((string) $route['identity_id']);
+            if ($profile !== null) {
+                $profile['_authenticated_identity'] = false;
+            }
+            return $profile;
         }
 
         if (str_starts_with($hint, 'openpgp:')) {
-            return $this->fetchProfileByIdentityId($hint);
+            $profile = $this->fetchProfileByIdentityId($hint);
+            if ($profile !== null) {
+                $profile['_authenticated_identity'] = false;
+            }
+            return $profile;
         }
 
-        return $this->fetchProfileBySlug($hint);
+        $profile = $this->fetchProfileBySlug($hint);
+        if ($profile !== null) {
+            $profile['_authenticated_identity'] = false;
+        }
+        return $profile;
     }
 
     private function approvedMembersOnlyEnabled(): bool
@@ -4879,7 +4892,15 @@ final class Application
     /** @param array<string, mixed> $query */
     private function shouldResumeViewerSession(string $method, string $path, array $query): bool
     {
-        if ($method !== 'GET' || !$this->hasViewerSessionCookie() || !$this->isApplicationRoute($path)) {
+        if (!$this->hasViewerSessionCookie()) {
+            return false;
+        }
+
+        if ($method === 'POST') {
+            return $path === '/api/prepare_invitation';
+        }
+
+        if ($method !== 'GET' || !$this->isApplicationRoute($path)) {
             return false;
         }
 

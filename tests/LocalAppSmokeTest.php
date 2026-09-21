@@ -113,10 +113,14 @@ try {
     ob_start();
     $application->handle('GET', '/api/auth_status');
     $authStatus = (string) ob_get_clean();
+    ob_start();
+    $application->handle('POST', '/api/prepare_invitation');
+    $invitationPreparation = (string) ob_get_clean();
 
     if (!str_contains($board, 'href="/invites/" data-invite-navigation>Invite</a>')
         || !str_contains($invites, '<h1>Generate invite</h1>')
-        || $authStatus !== "status=authenticated\n") {
+        || $authStatus !== "status=authenticated\n"
+        || str_contains($invitationPreparation, 'Only authenticated approved users can issue invitations.')) {
         throw new RuntimeException('Public session was not resumed for Board and Invite.');
     }
 } finally {
