@@ -44,7 +44,10 @@
   <meta name="app-version-endpoint" content="/api/version">
 <?php endif; ?>
   <link rel="icon" href="/favicon.ico" sizes="32x32">
-  <link rel="stylesheet" href="<?= $e($siteCssPath) ?>">
+  <style data-role="critical-css"><?= $criticalCss ?></style>
+  <link rel="preload" href="<?= $e($siteCssPath) ?>" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="<?= $e($siteCssPath) ?>" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="<?= $e($siteCssPath) ?>"></noscript>
 <?php foreach ($scriptPaths as $scriptPath): ?>
   <script src="<?= $e($scriptPath) ?>" defer></script>
 <?php endforeach; ?>

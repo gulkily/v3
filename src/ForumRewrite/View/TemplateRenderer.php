@@ -15,6 +15,8 @@ use RuntimeException;
 final class TemplateRenderer
 {
     private const THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES = ['board.php', 'tag.php'];
+    private const CRITICAL_CSS_END_MARKER = '/* critical-css-end */';
+    private ?string $criticalCss = null;
 
     public function __construct(
         private readonly string $templateRoot,
@@ -104,6 +106,7 @@ final class TemplateRenderer
             'appVersion' => $this->appVersion,
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
             'siteCssPath' => $this->assetPath('/assets/site.css'),
+            'criticalCss' => $this->criticalCss(),
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
             'threadDensityToggleScriptPath' => $this->assetPath('/assets/thread_density_toggle.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
@@ -116,6 +119,28 @@ final class TemplateRenderer
             'publicAuthenticationResume' => $publicAuthenticationResume,
             'navItems' => $this->navItems($viewerProfile),
         ]);
+    }
+
+    private function criticalCss(): string
+    {
+        if ($this->criticalCss !== null) {
+            return $this->criticalCss;
+        }
+
+        $stylesheetPath = dirname($this->templateRoot) . '/public/assets/site.css';
+        $stylesheet = file_get_contents($stylesheetPath);
+        if ($stylesheet === false) {
+            throw new RuntimeException('Unable to read critical stylesheet source.');
+        }
+
+        $endOffset = strpos($stylesheet, self::CRITICAL_CSS_END_MARKER);
+        if ($endOffset === false) {
+            throw new RuntimeException('Critical stylesheet marker is missing.');
+        }
+
+        $this->criticalCss = substr($stylesheet, 0, $endOffset);
+
+        return $this->criticalCss;
     }
 
     /**
