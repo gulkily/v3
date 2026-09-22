@@ -1903,13 +1903,11 @@ final class Application
             ],
             $title,
             'board',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
+            $this->identityScripts([
                 '/assets/inline_reply_form.js',
                 '/assets/thread_reactions.js',
                 '/assets/post_analysis.js',
-            ],
+            ]),
         );
     }
 
@@ -1975,12 +1973,10 @@ final class Application
             ],
             'Post ' . $post['post_id'],
             'board',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
+            $this->identityScripts([
                 '/assets/thread_reactions.js',
                 '/assets/post_analysis.js',
-            ],
+            ]),
         );
     }
 
@@ -2031,11 +2027,7 @@ final class Application
             ],
             $pageTitleLabel . ' - Profile',
             'profiles',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
-                '/assets/pending_approvals.js',
-            ],
+            $this->identityScripts(['/assets/pending_approvals.js']),
         );
     }
 
@@ -2301,11 +2293,7 @@ final class Application
             ],
             'Users Awaiting Approval',
             'profiles',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
-                '/assets/pending_approvals.js',
-            ],
+            $this->identityScripts(['/assets/pending_approvals.js']),
         );
     }
 
@@ -2567,10 +2555,7 @@ final class Application
             'body' => $body,
             'notice' => $notice,
             'error' => $error,
-        ], 'Compose Thread', 'compose', [
-            '/assets/openpgp_loader.js',
-            '/assets/browser_signing.js',
-        ]);
+        ], 'Compose Thread', 'compose', $this->identityScripts());
     }
 
     private function renderComposeReply(string $threadId, string $parentId): string
@@ -2600,10 +2585,7 @@ final class Application
             'error' => $error,
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
             'body' => $body,
-        ], 'Compose Reply', 'compose', [
-            '/assets/openpgp_loader.js',
-            '/assets/browser_signing.js',
-        ]);
+        ], 'Compose Reply', 'compose', $this->identityScripts());
     }
 
     private function renderAccountKey(): string
@@ -2620,11 +2602,7 @@ final class Application
             'viewerProfile' => $viewerProfile,
             'notice' => $notice,
             'error' => $error,
-        ], 'Account Key', 'account', [
-            '/assets/openpgp_loader.js',
-            '/assets/browser_signing.js',
-            '/assets/private_site_auth.js',
-        ]);
+        ], 'Account Key', 'account', $this->identityScripts(['/assets/private_site_auth.js']));
     }
 
     private function renderApiIndex(): string
@@ -2770,6 +2748,21 @@ final class Application
             $this->routeSource,
             $publicAuthenticationResume,
         );
+    }
+
+    /**
+     * Every page that needs browser-key signing loads these two scripts
+     * first; callers add whatever page-specific scripts come after them.
+     *
+     * @param string[] $extra
+     * @return string[]
+     */
+    private function identityScripts(array $extra = []): array
+    {
+        return array_merge([
+            '/assets/openpgp_loader.js',
+            '/assets/browser_signing.js',
+        ], $extra);
     }
 
     private function renderer(): TemplateRenderer
@@ -4104,11 +4097,7 @@ final class Application
             ['returnTo' => $returnTo],
             'Reconnecting',
             'account',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
-                '/assets/private_site_auth.js',
-            ],
+            $this->identityScripts(['/assets/private_site_auth.js']),
         );
     }
 
@@ -4137,12 +4126,7 @@ final class Application
             ],
             'Lobby',
             'lobby',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
-                '/assets/private_site_auth.js',
-                '/assets/invite_redemption.js',
-            ]
+            $this->identityScripts(['/assets/private_site_auth.js', '/assets/invite_redemption.js'])
         );
     }
 
@@ -4159,7 +4143,7 @@ final class Application
             ['destination' => trim((string) ($query['destination'] ?? ''))],
             'Generate invite',
             'invite',
-            ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/invite_issuance.js'],
+            $this->identityScripts(['/assets/invite_issuance.js']),
         );
     }
 
