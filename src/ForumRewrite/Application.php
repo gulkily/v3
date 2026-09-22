@@ -1118,7 +1118,7 @@ final class Application
             ],
             'Users - Forte',
             'paned-reader-body',
-            [],
+            ['/assets/paned_users_reader.js'],
             ['/assets/forte.css'],
         );
     }

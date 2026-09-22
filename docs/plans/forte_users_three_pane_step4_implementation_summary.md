@@ -49,3 +49,20 @@
   - `curl /forte/` and `curl /forte/activity/` → both still 200 (Board/Activity unaffected).
 - Notes:
   - The detail pane placeholder is unconditional (never server-side "hidden"), even when `?selected=` is present — there is no server-rendered populated state (per the Step 3 decision), so Stage 5's JS must additionally sync the detail pane from the URL on page load, not just on row click.
+
+## Stage 5 - Client-side controller
+- Changes:
+  - Added `public/assets/paned_users_reader.js`, mirroring the URL-state pattern in `paned_board_reader.js`/`paned_activity_reader.js`: letter click toggles row `hidden` + updates `?letter=` via `history.pushState`; row click updates `.paned-list-row--selected`, updates `?selected=`, and fetches `/api/forte_user_detail?username_token=` (with a client-side cache keyed by token) to inject the returned HTML fragment into the detail pane, with a "Loading…" placeholder and a "Failed to load" fallback, same shape as Activity's commit-detail fetch/inject. `popstate` and initial page load both re-sync filter + selection from the URL.
+  - Registered `/assets/paned_users_reader.js` as the scripts argument in `renderForteUserDirectory()`'s `renderStandalonePage()` call.
+- Verification:
+  - `node --check` on the new JS file: no syntax errors.
+  - Confirmed via `curl` that the dev server serves the fingerprinted asset (`/assets/paned_users_reader.<hash>.js`) at 200.
+  - Playwright-driven browser session against the local dev server (`http://127.0.0.1:8099/forte/users/`):
+    - Clicking the "I" filter narrows the list to 3 visible rows and updates the URL to `?letter=I`.
+    - Clicking the `ilyag` row updates the URL to `?letter=I&selected=ilyag`, hides the placeholder, and shows the fetched detail pane (`.paned-content-subject` reads "ilyag").
+    - Browser back navigation restores the prior filter/selection state from the URL (verified across two `goBack()` steps).
+    - A fresh deep-link load of `/forte/users/?letter=I&selected=ilyag` reproduces the same filtered/selected state without any click.
+    - No console or page errors during the session.
+  - Re-checked `/forte/` and `/forte/activity/` in the same browser for console/page errors: none (Board/Activity unaffected).
+- Notes:
+  - No keyboard arrow-key navigation on the filter list (Board's folder tree has this) — out of scope per Step 2's requirements, which only call for filter/select, not full keyboard parity.
