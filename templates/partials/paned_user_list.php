@@ -27,6 +27,8 @@ $tabStopAssigned = false;
     <span class="paned-list-subject-head" aria-sort="<?= $ariaSort('username') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="username">Username</button></span>
     <span class="paned-list-from-head" aria-sort="<?= $ariaSort('threads') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="threads">Threads</button></span>
     <span class="paned-list-date-head" aria-sort="<?= $ariaSort('posts') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="posts">Posts</button></span>
+    <span class="paned-list-active-head" aria-sort="<?= $ariaSort('active') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="active">Active</button></span>
+    <span class="paned-list-joined-head" aria-sort="<?= $ariaSort('joined') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="joined">Joined</button></span>
   </div>
   <div class="paned-list-body" data-paned-users-list-body role="listbox" aria-label="Users">
 <?php foreach ($users as $user): ?>

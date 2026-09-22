@@ -14,7 +14,7 @@
     var statusCount = document.querySelector("[data-paned-users-status-count]");
     var totalUserCount = statusCount ? parseInt(statusCount.getAttribute("data-paned-users-total-count"), 10) : rows.length;
     var detailCache = {};
-    var sortDefaultDir = { username: "asc", threads: "desc", posts: "desc" };
+    var sortDefaultDir = { username: "asc", threads: "desc", posts: "desc", active: "desc", joined: "desc" };
     var sortHead = document.querySelector("[data-paned-sort-head]");
     var sortButtons = sortHead ? Array.prototype.slice.call(sortHead.querySelectorAll("[data-paned-sort-column]")) : [];
 

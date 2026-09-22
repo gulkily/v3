@@ -238,5 +238,27 @@ Per the Step 2/Step 3 addenda, replacing the alphabetical filter with semantic c
 - Notes:
   - This closure is now available to any future template, not just Users — reusable as asked, without retrofitting Board/Activity's existing (working) date displays, which wasn't requested.
 
+## Stage 20 - Add Active/Joined columns to the listing pane
+- Proposed to the user first (per their ask): "Active" (last activity, already computed for the "Recently Active" filter category, just not displayed) and "Profiles" (merged-identity count, lower priority). User chose Active + a one-word rename of "Member since" → **Joined**, applied consistently to both the new column and the existing detail-pane header label.
+- Changes:
+  - Renamed `fetchUserDirectoryLastActivityByToken()` → `fetchUserDirectoryActivityBoundsByToken()`, now returning both `earliest`/`latest` per token in one query (`MIN`/`MAX(posts.created_at)`) instead of just the latest — same join/filter as before, no new query cost for adding "Joined".
+  - `renderForteUserDirectory()` merges `active_at`/`joined_at` onto each `$users` row right after fetching (pending rows get `''` for both — see below), and `buildUserDirectoryCategoryFlags()` was simplified to read `active_at` straight off each row instead of taking a second lookup parameter.
+  - Extended `resolveUserDirectorySort()`/`userDirectorySortValue()` with `active`/`joined` columns (default `desc`, matching the other non-username columns); ISO 8601 timestamps sort correctly as plain strings, no changes needed to the sort-application logic itself.
+  - `paned_user_row.php`: added `data-paned-sort-active`/`data-paned-sort-joined` attributes and two new `<span>` cells rendered via the `$relativeTimestamp` closure from Stage 19.
+  - `paned_user_pending_row.php`: added the same attributes/cells but left blank — pending users don't have a per-token activity-bounds query (a secondary population; adding one just for two optional columns wasn't worth the extra query), so their Active/Joined cells render empty rather than guessing.
+  - `paned_user_list.php`: two new sortable header cells ("Active", "Joined"), matching the existing head-button/aria-sort pattern.
+  - `paned_users_reader.js`: added `active: "desc", joined: "desc"` to `sortDefaultDir` — the existing string-comparison branch in `sortValueFor()` already handles date-string columns correctly, no other JS changes needed.
+  - `paned_user_detail_pane.php`: renamed the header's "Member since" label to "Joined" for consistency with the new column.
+  - `forte.css`: new Users-scoped column-width rules for `.paned-list-active`/`.paned-list-joined` (8rem, matching the existing pattern for Threads/Posts's 5rem scoped override).
+  - **Follow-up fix found during verification**: 5 columns (Username + 4 narrow ones) don't fit a 400px viewport — flexbox was squeezing the flexible Username column down to 16px (single-letter truncation) instead of overflowing, because it has `min-width: 0`. Fixed by giving the list pane its own contained horizontal scroll (`overflow-x: auto` + a `min-width: 34rem` floor on the head/row flex containers, scoped to `[data-paned-users-list-pane]` only) rather than letting the page scroll or the username column collapse — Username now holds a readable ~8rem minimum and the pane scrolls internally past that. Zero effect at desktop widths (the floor never binds there) and zero effect on Board/Activity (scoped selector, page-level horizontal scroll unchanged at 400×400 = 400).
+- Verification:
+  - `php -l`/`node --check` on all changed files: no syntax errors.
+  - `curl /forte/users/`: header row shows "Active"/"Joined" sort buttons; `ilyag`'s row carries `data-paned-sort-active="2026-09-20T01:28:47Z"` and `data-paned-sort-joined="2026-04-13T12:50:31Z"`, rendered as `<time>` elements with relative text + tooltip, matching Stage 19's format exactly.
+  - `curl /forte/users/?view=not-approved`: a pending row (`onthebus`) has empty `data-paned-sort-active=""`/`data-paned-sort-joined=""` and empty cells — confirmed intentional, not a bug.
+  - Playwright: clicking "Active" sorts descending with `ilyag` (most recent) on top and updates `?sort=active&dir=desc`; clicking "Joined" sorts similarly; switching to "Not Approved" shows blank Active cells for pending rows. Zero console errors.
+  - Narrow-width regression found and fixed: before the CSS fix, the Username cell rendered at 16px (unreadable); after, 128px with full "ilyag" text visible, while `document.body.scrollWidth` stayed exactly `400` (page-level horizontal scroll never triggered) both before and after. Desktop's list pane confirmed to have zero horizontal overflow (`scrollWidth === clientWidth`) after the fix — the 34rem floor doesn't bind there.
+  - `curl /forte/` and `/forte/activity/` still 200 — no regression.
+- Notes: none
+
 ## Outstanding
-All 19 stages (6 original + 7 semantic-category addendum + 1 margin fix + 1 sortable-columns addition + 1 post-title fix + 1 redundant-attribution fix + 1 active/member-since addition + 1 reusable relative-date format) implemented, verified, and committed. Feature complete per the Step 2 addendum's revised requirements, plus sortable columns matching Board/Activity's convention.
+All 20 stages (6 original + 7 semantic-category addendum + 1 margin fix + 1 sortable-columns addition + 1 post-title fix + 1 redundant-attribution fix + 1 active/member-since addition + 1 reusable relative-date format + 1 listing-column addition) implemented, verified, and committed. Feature complete per the Step 2 addendum's revised requirements, plus sortable columns matching Board/Activity's convention.

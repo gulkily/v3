@@ -1113,8 +1113,26 @@ final class Application
         string $requestedSortDir = '',
     ): string {
         $users = $this->fetchApprovedUserDirectoryUsers();
-        $flagsByToken = $this->buildUserDirectoryCategoryFlags($users, $this->fetchUserDirectoryLastActivityByToken());
+        $activityBoundsByToken = $this->fetchUserDirectoryActivityBoundsByToken();
+        foreach ($users as &$user) {
+            $bounds = $activityBoundsByToken[$user['username_token']] ?? ['earliest' => '', 'latest' => ''];
+            $user['active_at'] = $bounds['latest'];
+            $user['joined_at'] = $bounds['earliest'];
+        }
+        unset($user);
+
+        $flagsByToken = $this->buildUserDirectoryCategoryFlags($users);
         $pendingUsers = $this->fetchNeverApprovedPendingUserDirectoryUsers();
+        // Pending users have no per-token activity-bounds query (a separate,
+        // secondary population - see fetchNeverApprovedPendingUserDirectoryUsers()'s
+        // own doc comment) - the Active/Joined columns render blank for
+        // these rows rather than adding a second bounds query for them.
+        foreach ($pendingUsers as &$pendingUser) {
+            $pendingUser['active_at'] = '';
+            $pendingUser['joined_at'] = '';
+        }
+        unset($pendingUser);
+
         $categoryCounts = $this->buildUserDirectoryCategoryCounts(count($users), $flagsByToken, count($pendingUsers));
 
         $sort = $this->resolveUserDirectorySort($requestedSortColumn, $requestedSortDir);
@@ -4265,30 +4283,36 @@ final class Application
     }
 
     /**
-     * Most recent authored, non-hidden post per approved `username_token`,
-     * rolled up across every identity that shares the token (mirrors
-     * `fetchApprovedUserDirectoryUsers()`'s own `SUM(...) GROUP BY
-     * username_token` rollup) - the "Recently Active" filter category's
-     * data source. No per-user timestamp is precomputed anywhere else.
+     * Earliest/latest authored, non-hidden post per approved
+     * `username_token`, rolled up across every identity that shares the
+     * token (mirrors `fetchApprovedUserDirectoryUsers()`'s own `SUM(...)
+     * GROUP BY username_token` rollup) - backs the "Recently Active" filter
+     * category and the Users pane's "Active"/"Joined" columns. No per-user
+     * timestamp is precomputed anywhere else.
      *
-     * @return array<string, string> username_token => most recent post's created_at (ISO 8601 UTC)
+     * @return array<string, array{earliest: string, latest: string}> username_token => bounds (ISO 8601 UTC)
      */
-    private function fetchUserDirectoryLastActivityByToken(): array
+    private function fetchUserDirectoryActivityBoundsByToken(): array
     {
         $stmt = $this->pdo()->query(
-            'SELECT profiles.username_token, MAX(posts.created_at) AS last_activity_at
+            'SELECT profiles.username_token,
+                    MIN(posts.created_at) AS earliest_activity_at,
+                    MAX(posts.created_at) AS latest_activity_at
              FROM posts
              JOIN profiles ON profiles.identity_id = posts.author_identity_id
              WHERE profiles.is_approved = 1 AND posts.is_hidden = 0
              GROUP BY profiles.username_token'
         );
 
-        $lastActivityByToken = [];
+        $boundsByToken = [];
         foreach ($stmt->fetchAll() as $row) {
-            $lastActivityByToken[(string) $row['username_token']] = (string) $row['last_activity_at'];
+            $boundsByToken[(string) $row['username_token']] = [
+                'earliest' => (string) $row['earliest_activity_at'],
+                'latest' => (string) $row['latest_activity_at'],
+            ];
         }
 
-        return $lastActivityByToken;
+        return $boundsByToken;
     }
 
     /**
@@ -4300,12 +4324,13 @@ final class Application
      * at 0. A user can carry multiple flags at once (e.g. no threads yet
      * but active this week), so these are independent membership flags,
      * not a mutually-exclusive partition like the old letter buckets.
+     * Reads `active_at` straight off each `$users` row (the caller already
+     * merges the activity bounds in) rather than taking a second lookup.
      *
      * @param array<int, array<string, mixed>> $users
-     * @param array<string, string> $lastActivityByToken
      * @return array<string, array{new: bool, established: bool, no_threads: bool, recently_active: bool}>
      */
-    private function buildUserDirectoryCategoryFlags(array $users, array $lastActivityByToken): array
+    private function buildUserDirectoryCategoryFlags(array $users): array
     {
         $recentActivityThreshold = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))
             ->modify('-7 days')
@@ -4317,13 +4342,13 @@ final class Application
             $threadCount = (int) $user['thread_count'];
             $replyCount = ((int) $user['post_count']) - $threadCount;
             $established = $threadCount >= 1 && $replyCount >= 1;
-            $lastActivity = $lastActivityByToken[$token] ?? '';
+            $activeAt = (string) ($user['active_at'] ?? '');
 
             $flagsByToken[$token] = [
                 'new' => !$established,
                 'established' => $established,
                 'no_threads' => $threadCount === 0,
-                'recently_active' => $lastActivity !== '' && $lastActivity >= $recentActivityThreshold,
+                'recently_active' => $activeAt !== '' && $activeAt >= $recentActivityThreshold,
             ];
         }
 
@@ -4412,7 +4437,7 @@ final class Application
      */
     private function resolveUserDirectorySort(string $requestedColumn, string $requestedDir): array
     {
-        $validColumns = ['username', 'threads', 'posts'];
+        $validColumns = ['username', 'threads', 'posts', 'active', 'joined'];
         if (!in_array($requestedColumn, $validColumns, true)) {
             return ['column' => '', 'dir' => ''];
         }
@@ -4447,6 +4472,8 @@ final class Application
             'username' => mb_strtolower((string) ($user['username'] ?? '')),
             'threads' => (int) ($user['thread_count'] ?? 0),
             'posts' => (int) ($user['post_count'] ?? 0),
+            'active' => (string) ($user['active_at'] ?? ''),
+            'joined' => (string) ($user['joined_at'] ?? ''),
             default => '',
         };
     }

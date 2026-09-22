@@ -19,7 +19,7 @@
       <span>Active <?= $relativeTimestamp($activeAt) ?></span>
 <?php endif; ?>
 <?php if ($memberSince !== ''): ?>
-      <span>Member since <?= $relativeTimestamp($memberSince) ?></span>
+      <span>Joined <?= $relativeTimestamp($memberSince) ?></span>
 <?php endif; ?>
     </div>
   </div>

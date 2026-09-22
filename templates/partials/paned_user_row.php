@@ -19,6 +19,8 @@ $token = (string) $user['username_token'];
   data-paned-sort-username="<?= $e(mb_strtolower($user['username'])) ?>"
   data-paned-sort-threads="<?= (int) $user['thread_count'] ?>"
   data-paned-sort-posts="<?= (int) $user['post_count'] ?>"
+  data-paned-sort-active="<?= $e((string) ($user['active_at'] ?? '')) ?>"
+  data-paned-sort-joined="<?= $e((string) ($user['joined_at'] ?? '')) ?>"
   role="option"
   aria-selected="<?= $isSelected ? 'true' : 'false' ?>"
   tabindex="<?= $isTabStop ? '0' : '-1' ?>"
@@ -27,4 +29,6 @@ $token = (string) $user['username_token'];
   <span class="paned-list-subject"><?= $e($user['username']) ?></span>
   <span class="paned-list-from"><?= (int) $user['thread_count'] ?></span>
   <span class="paned-list-date"><?= (int) $user['post_count'] ?></span>
+  <span class="paned-list-active"><?= $relativeTimestamp((string) ($user['active_at'] ?? '')) ?></span>
+  <span class="paned-list-joined"><?= $relativeTimestamp((string) ($user['joined_at'] ?? '')) ?></span>
 </div>

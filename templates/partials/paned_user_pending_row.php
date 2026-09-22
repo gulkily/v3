@@ -14,6 +14,8 @@ $token = (string) $pendingUser['username_token'];
   data-paned-sort-username="<?= $e(mb_strtolower($pendingUser['username'])) ?>"
   data-paned-sort-threads="<?= (int) $pendingUser['thread_count'] ?>"
   data-paned-sort-posts="<?= (int) $pendingUser['post_count'] ?>"
+  data-paned-sort-active=""
+  data-paned-sort-joined=""
   role="option"
   aria-selected="<?= $isSelected ? 'true' : 'false' ?>"
   tabindex="<?= $isTabStop ? '0' : '-1' ?>"
@@ -22,4 +24,6 @@ $token = (string) $pendingUser['username_token'];
   <span class="paned-list-subject"><?= $e($pendingUser['username']) ?></span>
   <span class="paned-list-from"><?= (int) $pendingUser['thread_count'] ?></span>
   <span class="paned-list-date"><?= (int) $pendingUser['post_count'] ?></span>
+  <span class="paned-list-active"></span>
+  <span class="paned-list-joined"></span>
 </div>
