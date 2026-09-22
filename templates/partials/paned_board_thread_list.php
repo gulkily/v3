@@ -41,7 +41,7 @@ $authorText = static function (array $thread): string {
 };
 $tabStopAssigned = false;
 ?>
-<div class="paned-list-pane">
+<div class="paned-list-pane" data-paned-board-list-pane>
   <div class="paned-list-head" data-paned-sort-head>
     <span class="paned-list-subject-head" aria-sort="<?= $ariaSort('subject') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="subject">Subject</button></span>
     <span class="paned-list-from-head" aria-sort="<?= $ariaSort('from') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="from">From</button></span>
