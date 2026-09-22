@@ -13,7 +13,7 @@
       <span>Pending approval</span>
     </div>
   </div>
-  <div class="paned-user-detail-section">
+  <div class="body">
     <p class="meta">This username has not been approved yet.</p>
     <p>
       <?= (int) $pendingProfileCount ?> pending profile<?= $pendingProfileCount === 1 ? '' : 's' ?>,

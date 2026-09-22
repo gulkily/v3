@@ -164,5 +164,15 @@ Per the Step 2/Step 3 addenda, replacing the alphabetical filter with semantic c
   - Screenshots confirm: "New" category (1280x800) shows the right 27 rows with correct counts in the filter pane and correct status-bar text; 400px-wide "All Users" view stacks/scrolls cleanly with no horizontal overflow.
 - Notes: none
 
+## Stage 14 - Fix detail-pane margins
+- Changes:
+  - `templates/partials/paned_user_detail_pane.php` and `templates/partials/paned_user_pending_detail_pane.php` (Stages 1/10) wrapped their content in a custom `paned-user-detail-section` class that has no padding rule anywhere in `forte.css` — text sat flush against the pane edge. Board/Activity's content panes instead rely on the shared `.body` class (`padding: 0.75rem`, `public/assets/forte.css:389-395`) for this. Replaced `paned-user-detail-section` with `.body` in both partials (merged into a single wrapping `.body` div per partial, matching Board's one-`.body`-per-post convention) instead of adding a new padding rule for a bespoke class.
+- Verification:
+  - `php -l` on both files: no syntax errors.
+  - Computed style check in a real browser: `.body`'s `padding-left` on a rendered detail pane is `12px` (matches Board/Activity).
+  - Screenshots of both an approved user's detail (`ilyag`) and a pending user's detail (`onthebus`) show text properly inset from the pane edge, matching the placeholder's existing spacing.
+  - `curl /forte/` and `/forte/activity/` still 200 — no regression (neither uses this class).
+- Notes: none
+
 ## Outstanding
-All 13 stages (6 original + 7 semantic-category addendum) implemented, verified, and committed. Feature complete per the Step 2 addendum's revised requirements.
+All 14 stages (6 original + 7 semantic-category addendum + 1 margin fix) implemented, verified, and committed. Feature complete per the Step 2 addendum's revised requirements.
