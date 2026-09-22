@@ -246,8 +246,15 @@ PHP;
             assertStringContains("status=ok\n", $response);
             assertSame("status=unauthenticated\n", $authStatusAfterClear);
             assertSame('guest', $_COOKIE['identity_hint'] ?? null);
-            assertStringContains('Entering lobby.', $boardAfterClear);
-            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $aboutAfterClear);
+            // A cleared-but-not-reauthenticated session hasn't been confirmed
+            // either way (no authenticated_identity_id this session), so
+            // protected GET pages give the browser key a chance to silently
+            // resume before assuming the viewer needs to register - the same
+            // treatment any other stale/unconfirmed session gets.
+            assertStringContains('<h1>Reconnecting</h1>', $boardAfterClear);
+            assertStringContains('data-auth-return-to="/"', $boardAfterClear);
+            assertStringContains('<h1>Reconnecting</h1>', $aboutAfterClear);
+            assertStringContains('data-auth-return-to="/about/"', $aboutAfterClear);
             assertStringContains('This is your profile.', $ownProfileAfterClear);
             assertStringContains('Your identity is recognized in the lobby, but member access is cleared.', $lobbyAfterClear);
             assertStringContains(

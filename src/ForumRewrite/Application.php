@@ -4085,25 +4085,42 @@ final class Application
     }
 
     /**
+     * Only redirects straight to the Lobby when this session has already
+     * confirmed the viewer's identity (authenticated_identity_id is set)
+     * and confirmed they're not an approved member - a fact we actually
+     * know. A session that only carries the weaker lobby_identity_id signal
+     * (currently only set by handleClearIdentity()'s downgrade-not-forget
+     * behavior) hasn't been freshly verified either way, so it falls
+     * through to shouldRenderAuthenticationResume() instead, which gives
+     * the browser's saved key a chance to silently re-authenticate before
+     * assuming the viewer needs to register. Without this distinction, an
+     * approved member whose session was downgraded to lobby-only got
+     * bounced to a hard "you need to be registered and approved" redirect
+     * even when their browser key could resolve it immediately - which is
+     * exactly what already happens silently when they click a nav link
+     * instead, since auth_navigation.js's in-page guard performs this same
+     * resume attempt before every same-origin navigation. (A fully empty
+     * session - no signal at all - already fell through to the resume flow
+     * correctly before this change; only the lobby_identity_id-only case
+     * was affected.)
+     *
      * @param array<string, mixed> $query
      */
     private function membersOnlyLobbyRedirect(string $method, string $path, array $query): bool
     {
         $viewerProfile = $this->authenticatedViewerProfile();
-        $hasApprovedMemberAccess = $viewerProfile !== null
-            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
 
-        return $this->lobbyViewerProfile() !== null
+        return $viewerProfile !== null
+            && ((int) ($viewerProfile['is_approved'] ?? 0)) !== 1
             && $method === 'GET' && in_array($path, ['/', '/threads', '/threads/'], true)
-            && $query === []
-            && !$hasApprovedMemberAccess;
+            && $query === [];
     }
 
     /** @param array<string, mixed> $query */
     private function shouldRenderAuthenticationResume(string $method, string $path, array $query): bool
     {
         if ($method !== 'GET'
-            || $this->lobbyViewerProfile() !== null
+            || $this->authenticatedViewerProfile() !== null
             || str_starts_with($path, '/api')
             || str_starts_with($path, '/downloads/')
             || (($query['format'] ?? null) === 'rss')
