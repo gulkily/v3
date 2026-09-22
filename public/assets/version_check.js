@@ -93,7 +93,14 @@
 
     var currentUrl = new URL(window.location.href, window.location.origin);
     if (currentUrl.searchParams.get('__v') === pendingVersion) {
-      showBanner(pendingVersion);
+      // We already reloaded specifically to pick up pendingVersion. The
+      // server's live version can keep moving between the poll that set
+      // pendingVersion and this reload landing, so currentVersion may never
+      // equal that exact target. Treat the reload as satisfied rather than
+      // re-showing the banner forever, and re-poll immediately so a
+      // genuinely stale response (e.g. a cached page) is caught right away.
+      persistPendingVersion('');
+      checkForNewVersion(true);
       return false;
     }
 

@@ -269,6 +269,82 @@ NODE;
         assertSame(true, count($result['fetchCalls']) >= 1);
     }
 
+    public function testStaleTargetVersionOnReloadClearsPendingInsteadOfReshowingBanner(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = { store: { forum_pending_app_version: 'target-version' }, replaceCalls: [], fetchCalls: [] };
+
+const banner = {
+  hidden: true,
+  querySelector(selector) {
+    if (selector === '[data-action="reload-for-new-version"]') {
+      return { addEventListener() {} };
+    }
+    return null;
+  }
+};
+
+global.window = {
+  location: {
+    href: 'https://example.test/compose/thread?__v=target-version',
+    origin: 'https://example.test',
+    assign() {},
+    replace(url) { state.replaceCalls.push(String(url)); }
+  },
+  sessionStorage: {
+    getItem(key) { return Object.prototype.hasOwnProperty.call(state.store, key) ? state.store[key] : null; },
+    setItem(key, value) { state.store[key] = String(value); },
+    removeItem(key) { delete state.store[key]; }
+  },
+  fetch(url) {
+    state.fetchCalls.push(String(url));
+    return Promise.resolve({ ok: true, text() { return Promise.resolve('even-newer-version'); } });
+  },
+  setTimeout() { return 1; },
+  setInterval() { return 1; },
+  addEventListener() {}
+};
+
+global.document = {
+  visibilityState: 'visible',
+  querySelector(selector) {
+    if (selector === 'meta[name="app-version"]') {
+      return { getAttribute(name) { return name === 'content' ? 'even-newer-version' : ''; } };
+    }
+    if (selector === 'meta[name="app-version-endpoint"]') {
+      return { getAttribute(name) { return name === 'content' ? '/api/version' : ''; } };
+    }
+    if (selector === '[data-role="app-version-banner"]') {
+      return banner;
+    }
+    return null;
+  },
+  addEventListener() {}
+};
+
+vm.runInThisContext(source);
+
+new Promise((resolve) => setImmediate(resolve)).then(() => {
+  process.stdout.write(JSON.stringify({
+    replaceCalls: state.replaceCalls,
+    fetchCalls: state.fetchCalls,
+    pendingVersion: state.store.forum_pending_app_version || '',
+    bannerHidden: banner.hidden
+  }));
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame([], $result['replaceCalls']);
+        assertSame('', $result['pendingVersion']);
+        assertSame(true, $result['bannerHidden']);
+        assertSame(true, count($result['fetchCalls']) >= 1);
+    }
+
     public function testVersionChecksBackOffUntilSteadyDelay(): void
     {
         $script = <<<'NODE'
