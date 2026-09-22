@@ -189,5 +189,15 @@ Per the Step 2/Step 3 addenda, replacing the alphabetical filter with semantic c
   - `curl /forte/` and `/forte/activity/` still 200 — no regression.
 - Notes: none
 
+## Stage 16 - Fix post titles in detail pane
+- Changes:
+  - `templates/partials/paned_user_detail_pane.php`'s Posts section linked each entry with `$e($post['post_id'])` as the visible text (the raw record id, e.g. `reply-20260915111841-4f1e3273`) instead of a readable title — inherited from the pre-existing `forte_username.php` full-profile page this was modeled on in Stage 1, which has the same issue. The Threads section right above it already used `$threadTitle($thread)` correctly. Replaced the Posts link text with `$e($threadTitle($post))` — `ThreadTitle::displayTitle()` (the closure's implementation) is generic over subject/body/fallback-id and needs no post-specific variant; `fetchVisibleAuthoredPosts()` already selects `subject` and `body` on every row.
+- Verification:
+  - `php -l`: no syntax errors.
+  - `curl /api/forte_user_detail?username_token=ilyag`: Posts section now shows readable excerpts ("thanks", "asdfads", "A tour of Oodi", ...) instead of raw ids for every entry, including a genuine reply (`created_post_id=reply-20260915111841-4f1e3273` now shows "thanks", not the reply id).
+  - `curl /forte/` and `/forte/activity/` still 200 — no regression (this partial is Users-only).
+- Notes:
+  - The same raw-id issue exists in the pre-existing `templates/pages/forte_username.php` (the full `/forte/user/{token}` profile page) — out of scope here since it predates this feature and wasn't touched by it, but worth a follow-up if the user wants it fixed there too.
+
 ## Outstanding
-All 15 stages (6 original + 7 semantic-category addendum + 1 margin fix + 1 sortable-columns addition) implemented, verified, and committed. Feature complete per the Step 2 addendum's revised requirements, plus sortable columns matching Board/Activity's convention.
+All 16 stages (6 original + 7 semantic-category addendum + 1 margin fix + 1 sortable-columns addition + 1 post-title fix) implemented, verified, and committed. Feature complete per the Step 2 addendum's revised requirements, plus sortable columns matching Board/Activity's convention.

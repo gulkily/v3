@@ -29,7 +29,7 @@
     <p class="meta">No visible posts.</p>
 <?php else: ?>
 <?php foreach ($approvedPosts as $post): ?>
-    <p><a href="/forte?selected=<?= $e($post['thread_id']) ?>&amp;created_post_id=<?= $e($post['post_id']) ?>#post-<?= $e($post['post_id']) ?>"><?= $e($post['post_id']) ?></a> <span class="meta"><?= $forteContentMeta($post, 'created_at', '') ?></span></p>
+    <p><a href="/forte?selected=<?= $e($post['thread_id']) ?>&amp;created_post_id=<?= $e($post['post_id']) ?>#post-<?= $e($post['post_id']) ?>"><?= $e($threadTitle($post)) ?></a> <span class="meta"><?= $forteContentMeta($post, 'created_at', '') ?></span></p>
 <?php endforeach; ?>
 <?php endif; ?>
     <p class="paned-standalone-back"><a href="/forte/user/<?= $e($usernameToken) ?>">View full profile</a></p>
