@@ -18,7 +18,7 @@ The Forte Users page is a flat list of names, unlike Board and Activity's filter
 ## Shared Component Inventory
 - **Toolbar** — `paned_toolbar.php`: existing, reused unchanged (`activeView: 'users'`).
 - **Layout chrome** — `paned-window` / `paned-board-layout` / `paned-panes-stack` CSS classes in `forte.css`: existing, reused; no new layout system introduced.
-- **Detail data source** — `/api/get_profile` endpoint (already used by Board's profile dialog): reused for the new detail pane instead of forking a new payload shape.
+- **Detail data source** — `/api/forte_user_detail` (new, added in Step 4 Stage 1): a fragment endpoint mirroring the existing `/api/forte_commit_detail` pattern (`renderFragment` + `{status, html}`), not `/api/get_profile` — that endpoint is keyed by a single `profile_slug` and returns plain text, which doesn't fit the `username_token`-aggregated directory.
 - **Filter/listing partials** — no existing partial fits; `paned_folder_tree.php` (tags) and `paned_activity_filter_list.php` (fixed activity views) are shaped for their own domains. New partials are needed: `paned_users_filter_list.php`, `paned_user_list.php`, `paned_user_detail_pane.php`, following the same markup/URL-state conventions as Board/Activity.
 - **JS controller** — no existing controller covers Users; new `paned_users_reader.js` needed, mirroring the URL-state pattern in `paned_board_reader.js` / `paned_activity_reader.js`.
 
@@ -35,3 +35,20 @@ The Forte Users page is a flat list of names, unlike Board and Activity's filter
 - Applying a filter narrows the listing without a full page reload.
 - Board and Activity are unchanged and unaffected.
 - No database schema changes.
+
+## Addendum: Semantic Filter Categories (post-Step-4 revision)
+Step 4 Stage 2 originally shipped an alphabetical A-Z filter (the only schema-free option identified in Step 1, since no role/status field existed). After shipping, the user requested semantic categories instead. This addendum supersedes the alphabetical filter.
+
+**Revised filter categories** (membership flags, not a mutually-exclusive partition — mirrors Activity's `data-paned-activity-view-*` pattern, since a user can match more than one at once):
+- **All Users** — approved users, baseline (unchanged from today)
+- **New** — NOT (`thread_count >= 1` AND `post_count - thread_count >= 1`)
+- **Established** — `thread_count >= 1` AND `post_count - thread_count >= 1` (at least one thread started and one reply made; `post_count` includes replies, `thread_count` counts only root posts)
+- **No Threads** — `thread_count = 0` (its own category, kept separate from "New" even though every "No Threads" user is also "New")
+- **Recently Active** — any authored post/thread within the last 7 days
+- **Not Approved** — fully separate/disjoint bucket; unapproved users appear *only* here, never counted in "All Users" or any of the above
+
+**New data needed:**
+- A per-`username_token` last-activity timestamp (`MAX(posts.created_at)` across all identities sharing that token) — no existing query computes this; new but schema-free.
+- Pending/unapproved profiles, via the existing `fetchPendingUserDirectoryProfiles()` method (already powers the classic `/users/pending/` page) — new to this directory's data source, but not a new query.
+
+**Core requirement change:** the filter pane is no longer alphabetical; the listing/filter-pane/JS-controller stages (originally Step 4 Stages 2/4/5) are being reworked rather than extended. Detail pane behavior for a "Not Approved" row still needs defining — pending profiles don't have the same visible-threads/posts data an approved user does.

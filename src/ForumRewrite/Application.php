@@ -4214,6 +4214,72 @@ final class Application
     }
 
     /**
+     * Most recent authored, non-hidden post per approved `username_token`,
+     * rolled up across every identity that shares the token (mirrors
+     * `fetchApprovedUserDirectoryUsers()`'s own `SUM(...) GROUP BY
+     * username_token` rollup) - the "Recently Active" filter category's
+     * data source. No per-user timestamp is precomputed anywhere else.
+     *
+     * @return array<string, string> username_token => most recent post's created_at (ISO 8601 UTC)
+     */
+    private function fetchUserDirectoryLastActivityByToken(): array
+    {
+        $stmt = $this->pdo()->query(
+            'SELECT profiles.username_token, MAX(posts.created_at) AS last_activity_at
+             FROM posts
+             JOIN profiles ON profiles.identity_id = posts.author_identity_id
+             WHERE profiles.is_approved = 1 AND posts.is_hidden = 0
+             GROUP BY profiles.username_token'
+        );
+
+        $lastActivityByToken = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $lastActivityByToken[(string) $row['username_token']] = (string) $row['last_activity_at'];
+        }
+
+        return $lastActivityByToken;
+    }
+
+    /**
+     * Per-user semantic filter flags for the Users pane's category filter
+     * (replaces the alphabetical grouping): "established" needs at least
+     * one thread AND at least one reply, since `post_count` already
+     * includes every reply plus every thread's root post - a thread with no
+     * replies from anyone else still leaves `post_count - thread_count`
+     * at 0. A user can carry multiple flags at once (e.g. no threads yet
+     * but active this week), so these are independent membership flags,
+     * not a mutually-exclusive partition like the old letter buckets.
+     *
+     * @param array<int, array<string, mixed>> $users
+     * @param array<string, string> $lastActivityByToken
+     * @return array<string, array{new: bool, established: bool, no_threads: bool, recently_active: bool}>
+     */
+    private function buildUserDirectoryCategoryFlags(array $users, array $lastActivityByToken): array
+    {
+        $recentActivityThreshold = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))
+            ->modify('-7 days')
+            ->format('Y-m-d\TH:i:s\Z');
+
+        $flagsByToken = [];
+        foreach ($users as $user) {
+            $token = (string) $user['username_token'];
+            $threadCount = (int) $user['thread_count'];
+            $replyCount = ((int) $user['post_count']) - $threadCount;
+            $established = $threadCount >= 1 && $replyCount >= 1;
+            $lastActivity = $lastActivityByToken[$token] ?? '';
+
+            $flagsByToken[$token] = [
+                'new' => !$established,
+                'established' => $established,
+                'no_threads' => $threadCount === 0,
+                'recently_active' => $lastActivity !== '' && $lastActivity >= $recentActivityThreshold,
+            ];
+        }
+
+        return $flagsByToken;
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     private function fetchPendingUserDirectoryProfiles(): array

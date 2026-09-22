@@ -78,5 +78,16 @@
   - Playwright screenshot of `/forte/users/?letter=I&selected=ilyag`: filter, listing, and detail panes all render together correctly with real data.
 - Notes: none
 
-## Outstanding
-All 6 planned stages are implemented, verified, and committed. Feature complete per Step 2's success criteria.
+## Addendum: Semantic Filter Categories (post-Step-4 revision)
+Per the Step 2/Step 3 addenda, replacing the alphabetical filter with semantic categories. New Stages 7-13 below.
+
+## Stage 7 - Category data layer
+- Changes:
+  - Added `fetchUserDirectoryLastActivityByToken(): array` to `src/ForumRewrite/Application.php` — `MAX(posts.created_at)` joined through `profiles.identity_id`, grouped up to `username_token`, filtered to approved profiles and non-hidden posts.
+  - Added `buildUserDirectoryCategoryFlags(array $users, array $lastActivityByToken): array` — per user, computes `new`/`established` (established = `thread_count >= 1` AND `post_count - thread_count >= 1`), `no_threads` (`thread_count === 0`), `recently_active` (last activity within 7 days, computed via a UTC `DateTimeImmutable` threshold to match the `Z`-suffixed ISO 8601 timestamps stored in `posts.created_at`).
+  - `buildUserDirectoryLetterGroups()` (Stage 2) is left in place, unused by anything new — removal is Stage 13's cleanup.
+- Verification:
+  - `php -l`: no syntax errors.
+  - Reflection-based script against the real 39-user dataset: 27 "new" + 12 "established" = 39 (exhaustive, no overlap — confirmed zero rows where `new === established`); zero rows found `no_threads && established` (would be invalid).
+  - Hand-checked three known users: `ilyag` (396 threads, 607 posts → 211 replies, last activity 2 days ago) → established + recently_active; `guest` (36/47 → 11 replies, 14 days ago) → established, not recently_active; `test-user` (25/44 → 19 replies, 23 days ago) → established, not recently_active. All matched expectations by hand.
+- Notes: none
