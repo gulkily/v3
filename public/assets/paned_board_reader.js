@@ -404,6 +404,7 @@
       var steppedThreadId = visible[nextIndex].getAttribute("data-paned-thread-id");
       selectThread(steppedThreadId);
       syncSelectionUrlForStepping(steppedThreadId);
+      visible[nextIndex].scrollIntoView({ block: "nearest" });
     }
 
     var sortDefaultDir = { subject: "asc", from: "asc", date: "desc", replies: "desc", score: "desc" };
