@@ -199,5 +199,16 @@ Per the Step 2/Step 3 addenda, replacing the alphabetical filter with semantic c
 - Notes:
   - The same raw-id issue exists in the pre-existing `templates/pages/forte_username.php` (the full `/forte/user/{token}` profile page) — out of scope here since it predates this feature and wasn't touched by it, but worth a follow-up if the user wants it fixed there too.
 
+## Stage 17 - Drop redundant "by username" in detail pane
+- Changes:
+  - `templates/partials/paned_user_detail_pane.php`'s Threads and Posts entries used `$forteContentMeta($record, $field, '')`, which always renders `by {author}`. Since every entry on this pane is already known to be authored by the selected user (that's the page's whole subject), the author attribution was pure noise. Swapped both to `$timestamp($record[$field] ?? '')` — the plain date-rendering closure, no author — keeping the date, dropping "by {username}".
+  - `paned_user_pending_detail_pane.php` never had author text to begin with (pending profiles have no per-item author display), so nothing to change there.
+- Verification:
+  - `php -l`: no syntax errors.
+  - `curl /api/forte_user_detail?username_token=ilyag`: every Threads and Posts entry now renders as `<title> <time>...</time>` with no "by ilyag" text anywhere in either section.
+  - Screenshot confirms: clean title + date per row, no redundant attribution.
+  - `curl /forte/` and `/forte/activity/` still 200 — no regression (this partial is Users-only; `$forteContentMeta` itself is untouched and still used elsewhere).
+- Notes: none
+
 ## Outstanding
-All 16 stages (6 original + 7 semantic-category addendum + 1 margin fix + 1 sortable-columns addition + 1 post-title fix) implemented, verified, and committed. Feature complete per the Step 2 addendum's revised requirements, plus sortable columns matching Board/Activity's convention.
+All 17 stages (6 original + 7 semantic-category addendum + 1 margin fix + 1 sortable-columns addition + 1 post-title fix + 1 redundant-attribution fix) implemented, verified, and committed. Feature complete per the Step 2 addendum's revised requirements, plus sortable columns matching Board/Activity's convention.
