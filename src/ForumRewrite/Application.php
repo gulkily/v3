@@ -4325,6 +4325,37 @@ final class Application
         return $stmt->fetchAll();
     }
 
+    /**
+     * Pending profiles for the Forte Users pane's "Not Approved" category,
+     * rolled up by `username_token` like `fetchApprovedUserDirectoryUsers()`
+     * - but excluding any token that already has an approved profile.
+     * Real data has both: a `username_token` can carry several duplicate
+     * pending submissions (seen locally: "guest" x10), and an already-
+     * approved user can independently accumulate further pending profiles
+     * under their own name (seen locally: "ilyag"). Without the exclusion,
+     * an approved, already-listed user would also turn up under Not
+     * Approved as if they were a second, different pending user - the
+     * opposite of "not visible anywhere else".
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchNeverApprovedPendingUserDirectoryUsers(): array
+    {
+        $stmt = $this->pdo()->query(
+            'SELECT username_token, MIN(username) AS username,
+                    COUNT(*) AS pending_profile_count,
+                    SUM(thread_count) AS thread_count,
+                    SUM(post_count) AS post_count
+             FROM profiles
+             WHERE is_approved = 0
+               AND username_token NOT IN (SELECT username_token FROM profiles WHERE is_approved = 1)
+             GROUP BY username_token
+             ORDER BY SUM(thread_count) DESC, SUM(post_count) DESC, username_token ASC'
+        );
+
+        return $stmt->fetchAll();
+    }
+
     private function viewerHasThreadTag(string $threadId, string $tag, string $identityId): bool
     {
         $repository = new CanonicalRecordRepository($this->repositoryRoot);

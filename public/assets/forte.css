@@ -271,6 +271,13 @@ body.paned-reader-body {
   color: var(--paned-select-text);
 }
 
+/* Not-approved rows in the Forte Users pane: a pending profile, not a
+   fully-established member - muted/italic to read as provisional. */
+.paned-list-row--pending .paned-list-subject {
+  color: var(--paned-ink-soft);
+  font-style: italic;
+}
+
 .paned-list-toggle {
   width: 1.4rem;
   flex-shrink: 0;

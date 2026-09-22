@@ -82,7 +82,7 @@ Supersedes the alphabetical filter (Stages 2/4/5 above) per the Step 2 addendum.
 - Dependencies: Stage 7
 - Expected changes:
   - Rewrite `templates/partials/paned_users_filter_list.php` from per-letter entries to fixed category entries (All Users, New, Established, No Threads, Recently Active, Not Approved), modeled on `paned_activity_filter_list.php`'s fixed-view structure rather than `paned_folder_tree.php`'s per-tag structure.
-  - Counts per category come from Stage 7's flags (approved categories) plus `count(fetchPendingUserDirectoryProfiles())` for Not Approved.
+  - Counts per category come from Stage 7's flags (approved categories) plus `count(fetchNeverApprovedPendingUserDirectoryUsers())` for Not Approved (Stage 9 correction: rolled up and excludes tokens that have ever been approved, not the raw `fetchPendingUserDirectoryProfiles()`).
 - Verification approach: render the partial via `renderFragment()` with real counts; confirm each category count against a manual tally from the Stage 7 script's output.
 - Risks or open questions: none
 - Canonical components/API contracts touched: `paned_activity_filter_list.php`'s fixed-category markup/CSS conventions, reused not forked.
@@ -92,7 +92,7 @@ Supersedes the alphabetical filter (Stages 2/4/5 above) per the Step 2 addendum.
 - Dependencies: Stage 7
 - Expected changes:
   - Rewrite `templates/partials/paned_user_list.php`: drop `data-paned-user-row-letter`; add `data-paned-user-view-new`, `-established`, `-no-threads`, `-recently-active` flags (mirroring Activity's `data-paned-activity-view-*` convention), each `"1"`/absent per Stage 7's flags. A row can carry multiple flags at once.
-  - Append pending rows from `fetchPendingUserDirectoryProfiles()` after the approved rows, each carrying `data-paned-user-view-not-approved="1"` and no other flags, visually distinguished (e.g. a muted/pending style) and hidden unless the Not Approved category is selected.
+  - Append pending rows from `fetchNeverApprovedPendingUserDirectoryUsers()` (Stage 9 correction, see summary) after the approved rows, each carrying `data-paned-user-category-not-approved="1"` and no other flags, visually distinguished (e.g. a muted/pending style) and hidden unless the Not Approved category is selected.
   - "All Users" continues to mean approved users only; pending rows are never visible under "All Users".
 - Verification approach: render with real data; confirm approved-row flag combinations against Stage 7's script output, and confirm pending rows appear only when Not Approved is selected.
 - Risks or open questions: none
@@ -102,7 +102,7 @@ Supersedes the alphabetical filter (Stages 2/4/5 above) per the Step 2 addendum.
 - Goal: Give a Not Approved row a meaningful detail-pane view (pending profiles have no visible threads/posts the way approved users do).
 - Dependencies: Stage 9
 - Expected changes:
-  - Extend `handleForteUserDetail()`: when no approved profile matches the token, fall back to `fetchPendingUserDirectoryProfiles()` (or a token-scoped variant); if a pending profile matches, render a new partial `paned_user_pending_detail_pane.php` (profile_slug, fallback_label/username, thread_count/post_count so far, link to the profile page) instead of 404. Still 404 when neither approved nor pending matches.
+  - Extend `handleForteUserDetail()`: when no approved profile matches the token, fall back to `fetchNeverApprovedPendingUserDirectoryUsers()` (Stage 9 correction); if a pending profile matches, render a new partial `paned_user_pending_detail_pane.php` (username, pending profile count, thread/post counts so far) instead of 404. Still 404 when neither approved nor pending matches.
   - Read-only: no approve action embedded here (that stays on the existing `/users/pending/` admin page) — keeps this endpoint from taking on moderation-action scope.
 - Verification approach: `curl /api/forte_user_detail?username_token=<known pending token>` → 200 with pending-shaped HTML; confirm an approved token still returns the Stage 1 fragment unchanged.
 - Risks or open questions: none
