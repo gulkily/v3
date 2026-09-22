@@ -114,6 +114,7 @@ final class Application
         $this->ensureReadModel();
 
         if ($this->approvedMembersOnlyEnabled() && $this->membersOnlyLobbyRedirect($method, $path, $query)) {
+            $this->logLobbyGateDiagnostics('lobby_redirect', $method, $path);
             $this->sendRedirect('/lobby/', 'Entering lobby.', statusCode: 303, activeSection: 'account');
             return;
         }
@@ -125,6 +126,7 @@ final class Application
             }
 
             if ($this->shouldRenderAuthenticationResume($method, $path, $query)) {
+                $this->logLobbyGateDiagnostics('resume', $method, $path);
                 $this->sendHtml(
                     $this->renderAuthenticationResumePage(ResumeTarget::fromRequestUri($requestUri)),
                     401,
@@ -132,6 +134,7 @@ final class Application
                 return;
             }
 
+            $this->logLobbyGateDiagnostics('lobby_required_403', $method, $path);
             $this->sendHtml(
                 $this->renderLobbyAccessRequiredPage(),
                 403
@@ -4129,6 +4132,53 @@ final class Application
         }
 
         return true;
+    }
+
+    /**
+     * Temporary diagnostic instrumentation for tracking down what session
+     * state real visitors actually land in when the Lobby gate doesn't
+     * treat them as a confirmed approved member. Appends one JSON line per
+     * gate decision to state/logs/lobby_gate.log (gitignored, self-capping
+     * so it can't grow unbounded). Safe to remove once the open question
+     * in docs/plans/ (why a real visitor's session ends up here without an
+     * explicit /api/clear_identity call) is resolved.
+     */
+    private function logLobbyGateDiagnostics(string $decision, string $method, string $path): void
+    {
+        $logPath = $this->projectRoot . '/state/logs/lobby_gate.log';
+        $logDir = dirname($logPath);
+        if (!is_dir($logDir) && !@mkdir($logDir, 0777, true) && !is_dir($logDir)) {
+            return;
+        }
+
+        if (is_file($logPath) && (int) @filesize($logPath) > 2 * 1024 * 1024) {
+            $tail = @file($logPath, FILE_IGNORE_NEW_LINES);
+            if ($tail !== false) {
+                @file_put_contents($logPath, implode("\n", array_slice($tail, -500)) . "\n", LOCK_EX);
+            }
+        }
+
+        $authenticatedIdentityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
+        $lobbyIdentityId = strtolower(trim((string) ($_SESSION['lobby_identity_id'] ?? '')));
+        $identityHint = strtolower(trim((string) ($_COOKIE['identity_hint'] ?? '')));
+        $viewerProfile = $authenticatedIdentityId !== '' ? $this->fetchProfileByIdentityId($authenticatedIdentityId) : null;
+
+        $line = [
+            'time' => gmdate('Y-m-d\TH:i:s\Z'),
+            'decision' => $decision,
+            'method' => $method,
+            'path' => $path,
+            'session_cookie_present' => $this->hasViewerSessionCookie(),
+            'has_authenticated_identity_id' => $authenticatedIdentityId !== '',
+            'authenticated_identity_suffix' => $authenticatedIdentityId === '' ? null : substr($authenticatedIdentityId, -8),
+            'authenticated_identity_is_approved' => $viewerProfile === null ? null : ((int) ($viewerProfile['is_approved'] ?? 0)) === 1,
+            'has_lobby_identity_id' => $lobbyIdentityId !== '',
+            'lobby_identity_suffix' => $lobbyIdentityId === '' ? null : substr($lobbyIdentityId, -8),
+            'identity_hint' => $identityHint === '' ? null : $identityHint,
+            'user_agent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 160),
+        ];
+
+        @file_put_contents($logPath, json_encode($line, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND | LOCK_EX);
     }
 
     private function renderAuthenticationResumePage(string $returnTo): string
