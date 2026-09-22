@@ -128,3 +128,15 @@ Per the Step 2/Step 3 addenda, replacing the alphabetical filter with semantic c
   - `curl /api/forte_user_detail?username_token=ilyag` (approved) → still 200 with the original approved-detail fragment, unchanged.
   - `curl /api/forte_user_detail?username_token=totally-unknown-xyz` → still 404.
 - Notes: none
+
+## Stage 11 - Page/route wiring rework
+- Changes:
+  - Added `normalizeUserDirectoryCategory(string $category): string`, mirroring `normalizeActivityView()`'s whitelist-or-fallback-to-'all' pattern.
+  - Rewrote `renderForteUserDirectory()`: drops `requestedLetter`, computes `flagsByToken`, `pendingUsers`, and `categoryCounts` up front (all rows/counts render server-side, category switching is purely client-side, same as Activity), normalizes `requestedView` via the new method.
+  - Updated the `/forte/users/` route's query param from `letter` to `view`.
+  - Rewrote `templates/pages/forte_users.php`: passes `flagsByToken`/`pendingUsers`/`categoryCounts`/`selectedCategory` instead of `letterGroups`/`selectedLetter`; status bar now reads "N users" for All, "N pending users" for Not Approved (no "of N" framing — pending users aren't a subset of the approved total), and "Showing N of M users (Label)" for the rest.
+- Verification:
+  - `php -l` on both changed files: no syntax errors.
+  - `curl /forte/users/` → "39 users". `?view=established` → "Showing 12 of 39 users (Established)", filter pane's "Established" entry carries `paned-folder-item--selected`. `?view=not-approved` → "36 pending users". `?view=bogus` → falls back to "39 users" (normalization confirmed). `?view=not-approved&selected=onthebus` → the pending row carries both `paned-list-row--pending` and `paned-list-row--selected`.
+  - `curl /forte/` and `/forte/activity/` → both still 200 (no regression). The old `?letter=I` param is now harmlessly ignored (200, falls back to `all`).
+- Notes: none

@@ -1,19 +1,19 @@
 <?php
 /**
  * @var array<int, array<string, mixed>> $users
- * @var array<int, array{letter: string, count: int}> $letterGroups
- * @var string $selectedLetter
+ * @var array<string, array{new: bool, established: bool, no_threads: bool, recently_active: bool}> $flagsByToken
+ * @var array<int, array<string, mixed>> $pendingUsers
+ * @var array<int, array{key: string, label: string, count: int}> $categoryCounts
+ * @var string $selectedCategory
  * @var string $selectedUserToken
  */
-$selectedLetter ??= '';
+$selectedCategory ??= 'all';
 $selectedUserToken ??= '';
-$visibleUserCount = count($users);
-if ($selectedLetter !== '') {
-    foreach ($letterGroups as $group) {
-        if ($group['letter'] === $selectedLetter) {
-            $visibleUserCount = $group['count'];
-            break;
-        }
+$selectedCategoryInfo = ['key' => 'all', 'label' => 'All Users', 'count' => count($users)];
+foreach ($categoryCounts as $category) {
+    if ($category['key'] === $selectedCategory) {
+        $selectedCategoryInfo = $category;
+        break;
     }
 }
 ?>
@@ -27,9 +27,9 @@ if ($selectedLetter !== '') {
     'replyEnabled' => false,
   ]), 1) ?>
   <div class="paned-board-layout">
-<?= $indent($partial('partials/paned_users_filter_list.php', ['letterGroups' => $letterGroups, 'totalUserCount' => count($users), 'selectedLetter' => $selectedLetter]), 2) ?>
+<?= $indent($partial('partials/paned_users_filter_list.php', ['categoryCounts' => $categoryCounts, 'selectedCategory' => $selectedCategory]), 2) ?>
     <div class="paned-board-main paned-panes-stack">
-<?= $indent($partial('partials/paned_user_list.php', ['users' => $users, 'selectedLetter' => $selectedLetter, 'selectedUserToken' => $selectedUserToken]), 3) ?>
+<?= $indent($partial('partials/paned_user_list.php', ['users' => $users, 'flagsByToken' => $flagsByToken, 'pendingUsers' => $pendingUsers, 'selectedCategory' => $selectedCategory, 'selectedUserToken' => $selectedUserToken]), 3) ?>
       <div class="paned-content-pane" data-paned-user-detail-pane>
         <article class="paned-content-post" data-paned-user-detail-placeholder>
           <div class="paned-content-head">
@@ -41,6 +41,6 @@ if ($selectedLetter !== '') {
     </div>
   </div>
   <div class="paned-statusbar">
-    <span data-paned-users-status-count data-paned-users-total-count="<?= count($users) ?>"><?php if ($selectedLetter === ''): ?><?= count($users) ?> user<?= count($users) === 1 ? '' : 's' ?><?php else: ?>Showing <?= $visibleUserCount ?> of <?= count($users) ?> users (<?= $e($selectedLetter) ?>)<?php endif; ?></span>
+    <span data-paned-users-status-count data-paned-users-total-count="<?= count($users) ?>"><?php if ($selectedCategory === 'all'): ?><?= count($users) ?> user<?= count($users) === 1 ? '' : 's' ?><?php elseif ($selectedCategory === 'not-approved'): ?><?= (int) $selectedCategoryInfo['count'] ?> pending user<?= $selectedCategoryInfo['count'] === 1 ? '' : 's' ?><?php else: ?>Showing <?= (int) $selectedCategoryInfo['count'] ?> of <?= count($users) ?> users (<?= $e($selectedCategoryInfo['label']) ?>)<?php endif; ?></span>
   </div>
 </div>

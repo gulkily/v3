@@ -569,7 +569,7 @@ final class Application
 
         if ($path === '/forte/users/' || $path === '/forte/users') {
             $this->sendHtml($this->renderForteUserDirectory(
-                (string) ($query['letter'] ?? ''),
+                (string) ($query['view'] ?? ''),
                 (string) ($query['selected'] ?? ''),
             ), 200);
             return;
@@ -1104,16 +1104,20 @@ final class Application
         );
     }
 
-    private function renderForteUserDirectory(string $requestedLetter = '', string $requestedSelected = ''): string
+    private function renderForteUserDirectory(string $requestedView = '', string $requestedSelected = ''): string
     {
         $users = $this->fetchApprovedUserDirectoryUsers();
+        $flagsByToken = $this->buildUserDirectoryCategoryFlags($users, $this->fetchUserDirectoryLastActivityByToken());
+        $pendingUsers = $this->fetchNeverApprovedPendingUserDirectoryUsers();
 
         return $this->renderer()->renderStandalonePage(
             'forte_users.php',
             [
                 'users' => $users,
-                'letterGroups' => $this->buildUserDirectoryLetterGroups($users),
-                'selectedLetter' => strtoupper(trim($requestedLetter)),
+                'flagsByToken' => $flagsByToken,
+                'pendingUsers' => $pendingUsers,
+                'categoryCounts' => $this->buildUserDirectoryCategoryCounts(count($users), $flagsByToken, count($pendingUsers)),
+                'selectedCategory' => $this->normalizeUserDirectoryCategory($requestedView),
                 'selectedUserToken' => strtolower(trim($requestedSelected)),
             ],
             'Users - Forte',
@@ -5007,6 +5011,13 @@ final class Application
     private function normalizeActivityView(string $view): string
     {
         return in_array($view, ['all', 'content', 'identity', 'bootstrap', 'approval', 'commits'], true) ? $view : 'all';
+    }
+
+    private function normalizeUserDirectoryCategory(string $category): string
+    {
+        return in_array($category, ['all', 'new', 'established', 'no-threads', 'recently-active', 'not-approved'], true)
+            ? $category
+            : 'all';
     }
 
     private function preview(string $body): string
