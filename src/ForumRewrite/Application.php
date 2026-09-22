@@ -519,6 +519,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/forte_user_detail') {
+            $this->handleForteUserDetail($query);
+            return;
+        }
+
         if ($path === '/api/get_username_claim_cta') {
             $this->sendText("Generate a browser keypair, choose a username, and bootstrap your identity.\n", 200);
             return;
@@ -1462,6 +1467,45 @@ final class Application
         }
 
         $this->sendJson(array_merge(['status' => 'ok'], $summary), 200);
+    }
+
+    /**
+     * Serves the Users pane's detail-pane fragment for one username_token,
+     * reusing the same aggregation `renderForteUsername()` already performs
+     * (approved profiles, visible thread/post counts and rows) rather than
+     * a new query, and returning it the same way `handleForteCommitDetail()`
+     * returns its manifest fragment: `{status, html}` for client-side
+     * injection into the pane.
+     *
+     * @param array<string, mixed> $query
+     */
+    private function handleForteUserDetail(array $query): void
+    {
+        $usernameToken = strtolower(trim((string) ($query['username_token'] ?? '')));
+        $profiles = $usernameToken === '' ? [] : $this->fetchProfilesByUsernameToken($usernameToken);
+        $approvedProfiles = array_values(array_filter(
+            $profiles,
+            static fn (array $profile): bool => ((int) $profile['is_approved']) === 1
+        ));
+        if ($approvedProfiles === []) {
+            $this->sendJson(['status' => 'error', 'error' => 'user not found'], 404);
+            return;
+        }
+
+        $approvedIdentityIds = array_values(array_map(
+            static fn (array $profile): string => (string) $profile['identity_id'],
+            $approvedProfiles
+        ));
+
+        $html = $this->renderer()->renderFragment('partials/paned_user_detail_pane.php', [
+            'usernameToken' => $usernameToken,
+            'approvedThreadCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, true),
+            'approvedPostCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, false),
+            'approvedThreads' => $this->fetchVisibleAuthoredThreads($approvedIdentityIds),
+            'approvedPosts' => $this->fetchVisibleAuthoredPosts($approvedIdentityIds),
+        ]);
+
+        $this->sendJson(['status' => 'ok', 'html' => $html], 200);
     }
 
     /**
