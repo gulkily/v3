@@ -271,6 +271,13 @@ body.paned-reader-body {
   color: var(--paned-select-text);
 }
 
+/* Not-approved rows in the Forte Users pane: a pending profile, not a
+   fully-established member - muted/italic to read as provisional. */
+.paned-list-row--pending .paned-list-subject {
+  color: var(--paned-ink-soft);
+  font-style: italic;
+}
+
 .paned-list-toggle {
   width: 1.4rem;
   flex-shrink: 0;
@@ -306,6 +313,57 @@ body.paned-reader-body {
 .paned-list-date {
   width: 13rem;
   flex-shrink: 0;
+}
+
+/* Forte Users pane reuses the thread list's From/Date columns for the
+   Threads/Posts counts, which are numeric and much narrower than a name
+   or a timestamp - scoped to this pane only, Board/Activity are untouched. */
+[data-paned-users-list-pane] .paned-list-from-head,
+[data-paned-users-list-pane] .paned-list-date-head,
+[data-paned-users-list-pane] .paned-list-from,
+[data-paned-users-list-pane] .paned-list-date {
+  width: 5rem;
+  text-align: right;
+}
+
+/* Active/Joined are new columns unique to the Forte Users pane (no Board/
+   Activity equivalent to reuse), rendered via the shared $relativeTimestamp
+   helper - "2 days ago" or a short date, both comfortably under 8rem. */
+[data-paned-users-list-pane] .paned-list-active,
+[data-paned-users-list-pane] .paned-list-joined {
+  padding: 0.15rem 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--paned-ink-soft);
+}
+
+[data-paned-users-list-pane] .paned-list-active-head,
+[data-paned-users-list-pane] .paned-list-joined-head,
+[data-paned-users-list-pane] .paned-list-active,
+[data-paned-users-list-pane] .paned-list-joined {
+  width: 8rem;
+  flex-shrink: 0;
+}
+
+[data-paned-users-list-pane] .paned-list-row--selected .paned-list-active,
+[data-paned-users-list-pane] .paned-list-row--selected .paned-list-joined {
+  color: var(--paned-select-text);
+}
+
+/* 5 columns (Username + 4 narrow ones) don't fit a phone-width viewport -
+   rather than let flexbox squeeze the flexible Username column down to an
+   unreadable sliver (its min-width:0 lets it shrink arbitrarily), give this
+   pane its own contained horizontal scrollbar once content can't fit. Head
+   and rows share one min-width so they stay column-aligned while scrolling
+   together (they're stacked in the same overflow-x:auto box, no JS needed
+   to keep them in sync). Scoped to Users only - Board/Activity untouched. */
+[data-paned-users-list-pane] {
+  overflow-x: auto;
+}
+
+[data-paned-users-list-pane] .paned-list-head,
+[data-paned-users-list-pane] .paned-list-row {
+  min-width: 34rem;
 }
 
 .paned-list-replies {

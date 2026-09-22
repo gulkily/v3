@@ -522,6 +522,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/forte_user_detail') {
+            $this->handleForteUserDetail($query);
+            return;
+        }
+
         if ($path === '/api/get_username_claim_cta') {
             $this->sendText("Generate a browser keypair, choose a username, and bootstrap your identity.\n", 200);
             return;
@@ -566,7 +571,12 @@ final class Application
         }
 
         if ($path === '/forte/users/' || $path === '/forte/users') {
-            $this->sendHtml($this->renderForteUserDirectory(), 200);
+            $this->sendHtml($this->renderForteUserDirectory(
+                (string) ($query['view'] ?? ''),
+                (string) ($query['selected'] ?? ''),
+                (string) ($query['sort'] ?? ''),
+                (string) ($query['dir'] ?? ''),
+            ), 200);
             return;
         }
 
@@ -1099,16 +1109,54 @@ final class Application
         );
     }
 
-    private function renderForteUserDirectory(): string
-    {
+    private function renderForteUserDirectory(
+        string $requestedView = '',
+        string $requestedSelected = '',
+        string $requestedSortColumn = '',
+        string $requestedSortDir = '',
+    ): string {
+        $users = $this->fetchApprovedUserDirectoryUsers();
+        $activityBoundsByToken = $this->fetchUserDirectoryActivityBoundsByToken();
+        foreach ($users as &$user) {
+            $bounds = $activityBoundsByToken[$user['username_token']] ?? ['earliest' => '', 'latest' => ''];
+            $user['active_at'] = $bounds['latest'];
+            $user['joined_at'] = $bounds['earliest'];
+        }
+        unset($user);
+
+        $flagsByToken = $this->buildUserDirectoryCategoryFlags($users);
+        $pendingUsers = $this->fetchNeverApprovedPendingUserDirectoryUsers();
+        // Pending users have no per-token activity-bounds query (a separate,
+        // secondary population - see fetchNeverApprovedPendingUserDirectoryUsers()'s
+        // own doc comment) - the Active/Joined columns render blank for
+        // these rows rather than adding a second bounds query for them.
+        foreach ($pendingUsers as &$pendingUser) {
+            $pendingUser['active_at'] = '';
+            $pendingUser['joined_at'] = '';
+        }
+        unset($pendingUser);
+
+        $categoryCounts = $this->buildUserDirectoryCategoryCounts(count($users), $flagsByToken, count($pendingUsers));
+
+        $sort = $this->resolveUserDirectorySort($requestedSortColumn, $requestedSortDir);
+        $users = $this->applyUserDirectorySort($users, $sort['column'], $sort['dir']);
+        $pendingUsers = $this->applyUserDirectorySort($pendingUsers, $sort['column'], $sort['dir']);
+
         return $this->renderer()->renderStandalonePage(
             'forte_users.php',
             [
-                'users' => $this->fetchApprovedUserDirectoryUsers(),
+                'users' => $users,
+                'flagsByToken' => $flagsByToken,
+                'pendingUsers' => $pendingUsers,
+                'categoryCounts' => $categoryCounts,
+                'selectedCategory' => $this->normalizeUserDirectoryCategory($requestedView),
+                'selectedUserToken' => strtolower(trim($requestedSelected)),
+                'sortColumn' => $sort['column'],
+                'sortDir' => $sort['dir'],
             ],
             'Users - Forte',
             'paned-reader-body',
-            [],
+            ['/assets/paned_users_reader.js'],
             ['/assets/forte.css'],
         );
     }
@@ -1465,6 +1513,111 @@ final class Application
         }
 
         $this->sendJson(array_merge(['status' => 'ok'], $summary), 200);
+    }
+
+    /**
+     * Serves the Users pane's detail-pane fragment for one username_token,
+     * reusing the same aggregation `renderForteUsername()` already performs
+     * (approved profiles, visible thread/post counts and rows) rather than
+     * a new query, and returning it the same way `handleForteCommitDetail()`
+     * returns its manifest fragment: `{status, html}` for client-side
+     * injection into the pane.
+     *
+     * @param array<string, mixed> $query
+     */
+    private function handleForteUserDetail(array $query): void
+    {
+        $usernameToken = strtolower(trim((string) ($query['username_token'] ?? '')));
+        $profiles = $usernameToken === '' ? [] : $this->fetchProfilesByUsernameToken($usernameToken);
+        $approvedProfiles = array_values(array_filter(
+            $profiles,
+            static fn (array $profile): bool => ((int) $profile['is_approved']) === 1
+        ));
+        if ($approvedProfiles === []) {
+            $this->handleForteUserDetailPending($usernameToken, $profiles);
+            return;
+        }
+
+        $approvedIdentityIds = array_values(array_map(
+            static fn (array $profile): string => (string) $profile['identity_id'],
+            $approvedProfiles
+        ));
+
+        $approvedThreads = $this->fetchVisibleAuthoredThreads($approvedIdentityIds);
+        $approvedPosts = $this->fetchVisibleAuthoredPosts($approvedIdentityIds);
+        $activityBounds = $this->userDirectoryActivityBounds($approvedThreads, $approvedPosts);
+
+        $html = $this->renderer()->renderFragment('partials/paned_user_detail_pane.php', [
+            'usernameToken' => $usernameToken,
+            'approvedThreadCount' => count($approvedThreads),
+            'approvedPostCount' => count($approvedPosts),
+            'approvedThreads' => $approvedThreads,
+            'approvedPosts' => $approvedPosts,
+            'activeAt' => $activityBounds['latest'],
+            'memberSince' => $activityBounds['earliest'],
+        ]);
+
+        $this->sendJson(['status' => 'ok', 'html' => $html], 200);
+    }
+
+    /**
+     * Earliest/latest timestamps across a user's visible threads/posts, for
+     * the detail pane's "Member since"/"Active" header line - approximated
+     * from their visible authored content (no join-date column exists) so
+     * it costs nothing beyond the thread/post lists the pane already
+     * fetches. ISO 8601 UTC timestamps sort correctly as plain strings, no
+     * DateTime parsing needed.
+     *
+     * @param array<int, array<string, mixed>> $threads
+     * @param array<int, array<string, mixed>> $posts
+     * @return array{earliest: string, latest: string}
+     */
+    private function userDirectoryActivityBounds(array $threads, array $posts): array
+    {
+        $timestamps = [];
+        foreach ($threads as $thread) {
+            $timestamps[] = (string) ($thread['root_post_created_at'] ?? '');
+        }
+        foreach ($posts as $post) {
+            $timestamps[] = (string) ($post['created_at'] ?? '');
+        }
+        $timestamps = array_values(array_filter($timestamps, static fn (string $timestamp): bool => $timestamp !== ''));
+
+        if ($timestamps === []) {
+            return ['earliest' => '', 'latest' => ''];
+        }
+
+        return ['earliest' => min($timestamps), 'latest' => max($timestamps)];
+    }
+
+    /**
+     * The Users pane detail-pane fallback for a token with no approved
+     * profile - either genuinely unknown, or a "never approved" pending
+     * user (see `fetchNeverApprovedPendingUserDirectoryUsers()`). Reuses
+     * `$profiles` already fetched by `handleForteUserDetail()` rather than
+     * a second query - a caller that already confirmed `$approvedProfiles`
+     * is empty need not re-derive that from scratch.
+     *
+     * @param array<int, array<string, mixed>> $profiles every profile (any approval status) for this token
+     */
+    private function handleForteUserDetailPending(string $usernameToken, array $profiles): void
+    {
+        if ($profiles === []) {
+            $this->sendJson(['status' => 'error', 'error' => 'user not found'], 404);
+            return;
+        }
+
+        $pendingThreadCount = array_sum(array_map(static fn (array $p): int => (int) $p['thread_count'], $profiles));
+        $pendingPostCount = array_sum(array_map(static fn (array $p): int => (int) $p['post_count'], $profiles));
+
+        $html = $this->renderer()->renderFragment('partials/paned_user_pending_detail_pane.php', [
+            'usernameToken' => $usernameToken,
+            'pendingProfileCount' => count($profiles),
+            'pendingThreadCount' => $pendingThreadCount,
+            'pendingPostCount' => $pendingPostCount,
+        ]);
+
+        $this->sendJson(['status' => 'ok', 'html' => $html], 200);
     }
 
     /**
@@ -4151,6 +4304,110 @@ final class Application
     }
 
     /**
+     * Earliest/latest authored, non-hidden post per approved
+     * `username_token`, rolled up across every identity that shares the
+     * token (mirrors `fetchApprovedUserDirectoryUsers()`'s own `SUM(...)
+     * GROUP BY username_token` rollup) - backs the "Recently Active" filter
+     * category and the Users pane's "Active"/"Joined" columns. No per-user
+     * timestamp is precomputed anywhere else.
+     *
+     * @return array<string, array{earliest: string, latest: string}> username_token => bounds (ISO 8601 UTC)
+     */
+    private function fetchUserDirectoryActivityBoundsByToken(): array
+    {
+        $stmt = $this->pdo()->query(
+            'SELECT profiles.username_token,
+                    MIN(posts.created_at) AS earliest_activity_at,
+                    MAX(posts.created_at) AS latest_activity_at
+             FROM posts
+             JOIN profiles ON profiles.identity_id = posts.author_identity_id
+             WHERE profiles.is_approved = 1 AND posts.is_hidden = 0
+             GROUP BY profiles.username_token'
+        );
+
+        $boundsByToken = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $boundsByToken[(string) $row['username_token']] = [
+                'earliest' => (string) $row['earliest_activity_at'],
+                'latest' => (string) $row['latest_activity_at'],
+            ];
+        }
+
+        return $boundsByToken;
+    }
+
+    /**
+     * Per-user semantic filter flags for the Users pane's category filter
+     * (replaces the alphabetical grouping): "established" needs at least
+     * one thread AND at least one reply, since `post_count` already
+     * includes every reply plus every thread's root post - a thread with no
+     * replies from anyone else still leaves `post_count - thread_count`
+     * at 0. A user can carry multiple flags at once (e.g. no threads yet
+     * but active this week), so these are independent membership flags,
+     * not a mutually-exclusive partition like the old letter buckets.
+     * Reads `active_at` straight off each `$users` row (the caller already
+     * merges the activity bounds in) rather than taking a second lookup.
+     *
+     * @param array<int, array<string, mixed>> $users
+     * @return array<string, array{new: bool, established: bool, no_threads: bool, recently_active: bool}>
+     */
+    private function buildUserDirectoryCategoryFlags(array $users): array
+    {
+        $recentActivityThreshold = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))
+            ->modify('-7 days')
+            ->format('Y-m-d\TH:i:s\Z');
+
+        $flagsByToken = [];
+        foreach ($users as $user) {
+            $token = (string) $user['username_token'];
+            $threadCount = (int) $user['thread_count'];
+            $replyCount = ((int) $user['post_count']) - $threadCount;
+            $established = $threadCount >= 1 && $replyCount >= 1;
+            $activeAt = (string) ($user['active_at'] ?? '');
+
+            $flagsByToken[$token] = [
+                'new' => !$established,
+                'established' => $established,
+                'no_threads' => $threadCount === 0,
+                'recently_active' => $activeAt !== '' && $activeAt >= $recentActivityThreshold,
+            ];
+        }
+
+        return $flagsByToken;
+    }
+
+    /**
+     * Fixed-category counts for the Users pane's filter list, mirroring
+     * `renderForteActivity()`'s `$viewCounts` shape. Category keys are
+     * hyphenated for the URL/DOM (`no-threads`, `recently-active`,
+     * `not-approved`) even though `buildUserDirectoryCategoryFlags()`'s
+     * internal flag keys use underscores - only two need translating.
+     *
+     * @param array<string, array{new: bool, established: bool, no_threads: bool, recently_active: bool}> $flagsByToken
+     * @return list<array{key: string, label: string, count: int}>
+     */
+    private function buildUserDirectoryCategoryCounts(int $totalApprovedCount, array $flagsByToken, int $pendingCount): array
+    {
+        $counts = ['new' => 0, 'established' => 0, 'no_threads' => 0, 'recently_active' => 0];
+        foreach ($flagsByToken as $flags) {
+            foreach ($flags as $key => $value) {
+                if ($value) {
+                    $counts[$key]++;
+                }
+            }
+        }
+
+        return [
+            ['key' => 'all', 'label' => 'All Users', 'count' => $totalApprovedCount],
+            ['key' => 'new', 'label' => 'New', 'count' => $counts['new']],
+            ['key' => 'established', 'label' => 'Established', 'count' => $counts['established']],
+            ['key' => 'no-threads', 'label' => 'No Threads', 'count' => $counts['no_threads']],
+            ['key' => 'recently-active', 'label' => 'Recently Active', 'count' => $counts['recently_active']],
+            ['key' => 'not-approved', 'label' => 'Not Approved', 'count' => $pendingCount],
+        ];
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     private function fetchPendingUserDirectoryProfiles(): array
@@ -4163,6 +4420,83 @@ final class Application
         );
 
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Pending profiles for the Forte Users pane's "Not Approved" category,
+     * rolled up by `username_token` like `fetchApprovedUserDirectoryUsers()`
+     * - but excluding any token that already has an approved profile.
+     * Real data has both: a `username_token` can carry several duplicate
+     * pending submissions (seen locally: "guest" x10), and an already-
+     * approved user can independently accumulate further pending profiles
+     * under their own name (seen locally: "ilyag"). Without the exclusion,
+     * an approved, already-listed user would also turn up under Not
+     * Approved as if they were a second, different pending user - the
+     * opposite of "not visible anywhere else".
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchNeverApprovedPendingUserDirectoryUsers(): array
+    {
+        $stmt = $this->pdo()->query(
+            'SELECT username_token, MIN(username) AS username,
+                    COUNT(*) AS pending_profile_count,
+                    SUM(thread_count) AS thread_count,
+                    SUM(post_count) AS post_count
+             FROM profiles
+             WHERE is_approved = 0
+               AND username_token NOT IN (SELECT username_token FROM profiles WHERE is_approved = 1)
+             GROUP BY username_token
+             ORDER BY SUM(thread_count) DESC, SUM(post_count) DESC, username_token ASC'
+        );
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * @return array{column: string, dir: string}
+     */
+    private function resolveUserDirectorySort(string $requestedColumn, string $requestedDir): array
+    {
+        $validColumns = ['username', 'threads', 'posts', 'active', 'joined'];
+        if (!in_array($requestedColumn, $validColumns, true)) {
+            return ['column' => '', 'dir' => ''];
+        }
+
+        $defaultDir = $requestedColumn === 'username' ? 'asc' : 'desc';
+        $dir = in_array($requestedDir, ['asc', 'desc'], true) ? $requestedDir : $defaultDir;
+
+        return ['column' => $requestedColumn, 'dir' => $dir];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $users
+     * @return array<int, array<string, mixed>>
+     */
+    private function applyUserDirectorySort(array $users, string $column, string $dir): array
+    {
+        if ($column === '') {
+            return $users;
+        }
+
+        $sorted = $users;
+        usort($sorted, function (array $left, array $right) use ($column): int {
+            return $this->userDirectorySortValue($left, $column) <=> $this->userDirectorySortValue($right, $column);
+        });
+
+        return $dir === 'desc' ? array_reverse($sorted) : $sorted;
+    }
+
+    private function userDirectorySortValue(array $user, string $column): string|int
+    {
+        return match ($column) {
+            'username' => mb_strtolower((string) ($user['username'] ?? '')),
+            'threads' => (int) ($user['thread_count'] ?? 0),
+            'posts' => (int) ($user['post_count'] ?? 0),
+            'active' => (string) ($user['active_at'] ?? ''),
+            'joined' => (string) ($user['joined_at'] ?? ''),
+            default => '',
+        };
     }
 
     private function viewerHasThreadTag(string $threadId, string $tag, string $identityId): bool
@@ -4786,6 +5120,13 @@ final class Application
     private function normalizeActivityView(string $view): string
     {
         return in_array($view, ['all', 'content', 'identity', 'bootstrap', 'approval', 'commits'], true) ? $view : 'all';
+    }
+
+    private function normalizeUserDirectoryCategory(string $category): string
+    {
+        return in_array($category, ['all', 'new', 'established', 'no-threads', 'recently-active', 'not-approved'], true)
+            ? $category
+            : 'all';
     }
 
     private function preview(string $body): string
