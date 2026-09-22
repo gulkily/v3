@@ -235,6 +235,22 @@ final class FrontController
      */
     private function firstExistingPath(array $paths): ?string
     {
+        $activeReleaseRoot = $this->activeStaticReleaseRoot();
+        if ($activeReleaseRoot !== null) {
+            foreach ($paths as $path) {
+                foreach ([$this->publicRoot, $this->staticHtmlRoot] as $knownRoot) {
+                    if (!str_starts_with($path, $knownRoot . '/')) {
+                        continue;
+                    }
+
+                    $candidate = $activeReleaseRoot . substr($path, strlen($knownRoot));
+                    if (is_file($candidate)) {
+                        return $candidate;
+                    }
+                }
+            }
+        }
+
         foreach ($paths as $path) {
             if (is_file($path)) {
                 return $path;
@@ -242,6 +258,13 @@ final class FrontController
         }
 
         return null;
+    }
+
+    private function activeStaticReleaseRoot(): ?string
+    {
+        $currentPath = $this->staticHtmlRoot . '/current';
+
+        return is_dir($currentPath) ? $currentPath : null;
     }
 
     /**
@@ -258,6 +281,10 @@ final class FrontController
         }
 
         if ($method !== 'GET' || $cookies !== []) {
+            return;
+        }
+
+        if ($this->activeStaticReleaseRoot() !== null) {
             return;
         }
 

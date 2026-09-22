@@ -30,6 +30,12 @@ final class StaticArtifactBuilder
         );
         $builder->rebuild();
 
+        $this->buildFromReadModel();
+    }
+
+    public function buildFromReadModel(): void
+    {
+
         if (!is_dir($this->artifactRoot)) {
             mkdir($this->artifactRoot, 0777, true);
         }

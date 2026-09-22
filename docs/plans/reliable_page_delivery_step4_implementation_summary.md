@@ -61,3 +61,19 @@
   - Promotion test confirms the candidate replaces the live file, removes the candidate path, and clears the stale marker.
 - Notes:
   - Existing requests retain a complete old SQLite inode during the rename; new requests open the complete promoted model.
+
+## Stage 6 - Atomic static release publication
+- Changes:
+  - Added a static release publisher that builds all artifacts in a candidate directory, validates their fingerprinted assets, and atomically activates a complete release through a `current` symlink.
+  - Changed the full static-build command to build an isolated read-model candidate and matching artifact release before promotion/activation; it no longer rebuilds the live SQLite file in place.
+  - The front controller prefers the active release over old sibling artifacts and does not mutate an active release on a cache miss.
+  - Updated archive maintenance to publish a new active release after its read-model refresh.
+- Verification:
+  - `php -l src/ForumRewrite/Host/StaticArtifactBuilder.php`
+  - `php -l src/ForumRewrite/Host/StaticArtifactReleasePublisher.php`
+  - `php -l src/ForumRewrite/Host/FrontController.php`
+  - `php -l scripts/build_static_artifacts.php`
+  - `./v3 test LocalAppSmokeTest::testStaticArtifactReleasePublisherActivatesCompleteReleaseForFrontController LocalAppSmokeTest::testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout ArchiveThreadCommandTest`
+  - `php scripts/build_static_artifacts.php tests/fixtures/parity_minimal_v1 <temporary-db> <temporary-static-root>` created an active release and `current/index.html`.
+- Notes:
+  - Existing releases are retained for recovery; automatic retention cleanup is deliberately deferred rather than risking deletion of an active release.

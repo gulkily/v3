@@ -7,9 +7,12 @@ require __DIR__ . '/../autoload.php';
 use ForumRewrite\Application;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
+use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\Host\FrontController;
 use ForumRewrite\Host\StaticArtifactBuilder;
+use ForumRewrite\Host\StaticArtifactReleasePublisher;
+use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 use ForumRewrite\Write\StaticArtifactInvalidator;
@@ -2492,6 +2495,42 @@ PHP;
         $tagsResponse = $this->renderFrontController($controller, 'GET', '/tags/', []);
         assertStringContains('class="nav-link is-active" href="/tags/"', $tagsResponse);
         assertStringContains('route-source: static-html', $tagsResponse);
+    }
+
+    public function testStaticArtifactReleasePublisherActivatesCompleteReleaseForFrontController(): void
+    {
+        @unlink($this->databasePath);
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-release-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        mkdir($staticHtmlRoot, 0777, true);
+        mkdir($publicRoot, 0777, true);
+
+        try {
+            (new ReadModelBuilder(
+                $this->repositoryRoot,
+                $this->databasePath,
+                new CanonicalRecordRepository($this->repositoryRoot),
+            ))->rebuild();
+            $publisher = new StaticArtifactReleasePublisher(dirname(__DIR__), $this->repositoryRoot, $staticHtmlRoot);
+            $releasePath = $publisher->build($this->databasePath);
+            $publisher->activate($releasePath);
+
+            $controller = new FrontController(
+                dirname(__DIR__),
+                $this->repositoryRoot,
+                $this->databasePath,
+                $staticHtmlRoot,
+                $publicRoot,
+            );
+            $response = $this->renderFrontController($controller, 'GET', '/', []);
+
+            assertTrue(is_link($staticHtmlRoot . '/current'));
+            assertTrue(is_file($staticHtmlRoot . '/current/index.html'));
+            assertStringContains('route-source: static-html', $response);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
     }
 
     public function testStaticArtifactHealthCheckDetectsMissingFingerprint(): void
