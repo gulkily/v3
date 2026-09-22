@@ -223,5 +223,20 @@ Per the Step 2/Step 3 addenda, replacing the alphabetical filter with semantic c
   - Screenshot confirms both new fields render cleanly in the header.
 - Notes: none
 
+## Stage 19 - Reusable relative-date format with tooltip
+- Changes:
+  - Added `formatRelativeTimestamp()` and `renderRelativeTimestampHtml()` to `src/ForumRewrite/View/TemplateRenderer.php`, plus a new `$relativeTimestamp` closure alongside the existing `$timestamp` one in `renderFile()` — available to every template globally (Board/Activity included), same mechanism as `$timestamp`/`$threadTitle`/etc. "just now" / "N minutes/hours/days ago" under a week old, falling back to a bare short date ("Sep 20, 2026") past that, since e.g. "19 days ago" reads worse than the date itself.
+  - Deliberately did **not** touch the existing (confusingly-named) `formatFriendlyTimestamp()` or `$timestamp`/`renderTimestampHtml()` — those already render the full "M j, Y at H:i UTC" form and are used across Board/Activity/Users today; changing their behavior would have been a much bigger, riskier change than asked for. The new closure is purely additive.
+  - The visible text is the short relative form; the native `title` attribute carries the full precise date (`formatFriendlyTimestamp()`'s existing output) as a tooltip — no JS needed, browsers render `title` hovers for free.
+  - Applied the new `$relativeTimestamp` closure within `templates/partials/paned_user_detail_pane.php`: the header's "Active"/"Member since" spans (Stage 18) and each Threads/Posts list entry's date, replacing their `$timestamp(...)` calls.
+- Verification:
+  - `php -l` on both changed files: no syntax errors.
+  - `curl /api/forte_user_detail?username_token=ilyag`: "Active 2 days ago" (`title="Sep 20, 2026 at 01:28 UTC"`), "Member since Apr 13, 2026" (past the 7-day threshold, correctly falls back to the absolute short date, `title` still carries the full precise timestamp), and every Threads/Posts row now shows a relative date with the same tooltip pattern.
+  - `curl /forte/`: confirmed Board's own `<time>` tags are byte-identical to before (still the full `M j, Y at H:i UTC` form, no `title` attribute) — the shared `TemplateRenderer` change is fully non-breaking.
+  - Playwright: read the rendered `<time>` element's visible text ("2 days ago") and its `title` attribute ("Sep 20, 2026 at 01:28 UTC") directly, confirming both pieces render correctly together; zero console errors.
+  - Screenshot confirms the full pane (header + Threads list) renders cleanly with relative dates throughout.
+- Notes:
+  - This closure is now available to any future template, not just Users — reusable as asked, without retrofitting Board/Activity's existing (working) date displays, which wasn't requested.
+
 ## Outstanding
-All 18 stages (6 original + 7 semantic-category addendum + 1 margin fix + 1 sortable-columns addition + 1 post-title fix + 1 redundant-attribution fix + 1 active/member-since addition) implemented, verified, and committed. Feature complete per the Step 2 addendum's revised requirements, plus sortable columns matching Board/Activity's convention.
+All 19 stages (6 original + 7 semantic-category addendum + 1 margin fix + 1 sortable-columns addition + 1 post-title fix + 1 redundant-attribution fix + 1 active/member-since addition + 1 reusable relative-date format) implemented, verified, and committed. Feature complete per the Step 2 addendum's revised requirements, plus sortable columns matching Board/Activity's convention.

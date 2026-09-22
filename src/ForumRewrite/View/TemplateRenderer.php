@@ -218,6 +218,7 @@ final class TemplateRenderer
         $br = static fn (mixed $value): string => nl2br(htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
         $friendlyTimestamp = fn (?string $timestamp): string => $this->formatFriendlyTimestamp($timestamp);
         $timestamp = fn (?string $timestamp): string => $this->renderTimestampHtml($timestamp, $e);
+        $relativeTimestamp = fn (?string $timestamp): string => $this->renderRelativeTimestampHtml($timestamp, $e);
         $author = fn (array $record): string => $this->renderAuthorHtml($record, $e);
         $forteAuthor = fn (array $record): string => $this->renderAuthorHtml($record, $e, true);
         $contentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e);
@@ -409,6 +410,68 @@ final class TemplateRenderer
         }
 
         return '<time datetime="' . $escape($value) . '">' . $escape($this->formatFriendlyTimestamp($value)) . '</time>';
+    }
+
+    /**
+     * A short, human-scale rendering of a timestamp ("3 hours ago", "5 days
+     * ago"), falling back to a bare date ("Sep 20, 2026") past a week old
+     * since "19 days ago" reads worse than the date itself. Distinct from
+     * `formatFriendlyTimestamp()` above (misleadingly named - it's actually
+     * the full "M j, Y at H:i UTC" form `renderTimestampHtml()`/`$timestamp`
+     * already use everywhere) so this stays additive and opt-in rather than
+     * changing what every existing `$timestamp` call site renders.
+     */
+    private function formatRelativeTimestamp(?string $timestamp): string
+    {
+        $value = trim((string) $timestamp);
+        if ($value === '') {
+            return '';
+        }
+
+        try {
+            $date = new \DateTimeImmutable($value);
+        } catch (\Exception) {
+            return $value;
+        }
+
+        $ageSeconds = max(0, time() - $date->getTimestamp());
+
+        if ($ageSeconds < 60) {
+            return 'just now';
+        }
+        if ($ageSeconds < 3600) {
+            $minutes = intdiv($ageSeconds, 60);
+            return $minutes . ' minute' . ($minutes === 1 ? '' : 's') . ' ago';
+        }
+        if ($ageSeconds < 86400) {
+            $hours = intdiv($ageSeconds, 3600);
+            return $hours . ' hour' . ($hours === 1 ? '' : 's') . ' ago';
+        }
+        if ($ageSeconds < 7 * 86400) {
+            $days = intdiv($ageSeconds, 86400);
+            return $days . ' day' . ($days === 1 ? '' : 's') . ' ago';
+        }
+
+        return $date->setTimezone(new \DateTimeZone('UTC'))->format('M j, Y');
+    }
+
+    /**
+     * Reusable "friendly date" rendering: the short relative text is what's
+     * visible, the precise `formatFriendlyTimestamp()` form lives in the
+     * native `title` attribute as a hover tooltip - no JS needed for that
+     * part, browsers do it for free on any element with `title`.
+     *
+     * @param callable(mixed): string $escape
+     */
+    private function renderRelativeTimestampHtml(?string $timestamp, callable $escape): string
+    {
+        $value = trim((string) $timestamp);
+        if ($value === '') {
+            return '';
+        }
+
+        return '<time datetime="' . $escape($value) . '" title="' . $escape($this->formatFriendlyTimestamp($value)) . '">'
+            . $escape($this->formatRelativeTimestamp($value)) . '</time>';
     }
 
     private function assetPath(string $path): string

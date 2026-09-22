@@ -16,10 +16,10 @@
       <span><?= (int) $approvedThreadCount ?> thread<?= $approvedThreadCount === 1 ? '' : 's' ?></span>
       <span><?= (int) $approvedPostCount ?> post<?= $approvedPostCount === 1 ? '' : 's' ?></span>
 <?php if ($activeAt !== ''): ?>
-      <span>Active <?= $timestamp($activeAt) ?></span>
+      <span>Active <?= $relativeTimestamp($activeAt) ?></span>
 <?php endif; ?>
 <?php if ($memberSince !== ''): ?>
-      <span>Member since <?= $timestamp($memberSince) ?></span>
+      <span>Member since <?= $relativeTimestamp($memberSince) ?></span>
 <?php endif; ?>
     </div>
   </div>
@@ -29,7 +29,7 @@
     <p class="meta">No visible threads.</p>
 <?php else: ?>
 <?php foreach ($approvedThreads as $thread): ?>
-    <p><a href="/forte?selected=<?= $e($thread['root_post_id']) ?>"><?= $e($threadTitle($thread)) ?></a> <span class="meta"><?= $timestamp((string) ($thread['root_post_created_at'] ?? '')) ?></span></p>
+    <p><a href="/forte?selected=<?= $e($thread['root_post_id']) ?>"><?= $e($threadTitle($thread)) ?></a> <span class="meta"><?= $relativeTimestamp((string) ($thread['root_post_created_at'] ?? '')) ?></span></p>
 <?php endforeach; ?>
 <?php endif; ?>
     <h3>Posts</h3>
@@ -37,7 +37,7 @@
     <p class="meta">No visible posts.</p>
 <?php else: ?>
 <?php foreach ($approvedPosts as $post): ?>
-    <p><a href="/forte?selected=<?= $e($post['thread_id']) ?>&amp;created_post_id=<?= $e($post['post_id']) ?>#post-<?= $e($post['post_id']) ?>"><?= $e($threadTitle($post)) ?></a> <span class="meta"><?= $timestamp((string) ($post['created_at'] ?? '')) ?></span></p>
+    <p><a href="/forte?selected=<?= $e($post['thread_id']) ?>&amp;created_post_id=<?= $e($post['post_id']) ?>#post-<?= $e($post['post_id']) ?>"><?= $e($threadTitle($post)) ?></a> <span class="meta"><?= $relativeTimestamp((string) ($post['created_at'] ?? '')) ?></span></p>
 <?php endforeach; ?>
 <?php endif; ?>
     <p class="paned-standalone-back"><a href="/forte/user/<?= $e($usernameToken) ?>">View full profile</a></p>
