@@ -25,6 +25,7 @@ use ForumRewrite\Http\RouteServices;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelCapabilityInspector;
 use ForumRewrite\ReadModel\ReadModelConnection;
+use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\Support\ExecutionLock;
@@ -3044,16 +3045,7 @@ final class Application
      */
     private function fetchProfileBySlug(string $slug): ?array
     {
-        $stmt = $this->pdo()->prepare(
-            'SELECT identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint, bootstrap_post_id,
-                    bootstrap_thread_id, public_key, is_approved, approved_by_identity_id, approved_by_profile_slug,
-                    approved_by_label, post_count, thread_count
-             FROM profiles WHERE profile_slug = :profile_slug'
-        );
-        $stmt->execute(['profile_slug' => $slug]);
-        $profile = $stmt->fetch();
-
-        return $profile === false ? null : $profile;
+        return ProfileRepository::bySlug($this->pdo(), $slug);
     }
 
     /**
@@ -3061,16 +3053,7 @@ final class Application
      */
     private function fetchProfileByIdentityId(string $identityId): ?array
     {
-        $stmt = $this->pdo()->prepare(
-            'SELECT identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint, bootstrap_post_id,
-                    bootstrap_thread_id, public_key, is_approved, approved_by_identity_id, approved_by_profile_slug,
-                    approved_by_label, post_count, thread_count
-             FROM profiles WHERE identity_id = :identity_id'
-        );
-        $stmt->execute(['identity_id' => $identityId]);
-        $profile = $stmt->fetch();
-
-        return $profile === false ? null : $profile;
+        return ProfileRepository::byIdentityId($this->pdo(), $identityId);
     }
 
     /**
@@ -3078,16 +3061,7 @@ final class Application
      */
     private function fetchProfilesByUsernameToken(string $usernameToken): array
     {
-        $stmt = $this->pdo()->prepare(
-            'SELECT identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint, bootstrap_post_id,
-                    bootstrap_thread_id, public_key, is_approved, approved_by_identity_id, approved_by_profile_slug,
-                    approved_by_label, post_count, thread_count
-             FROM profiles WHERE username_token = :username_token
-             ORDER BY is_approved DESC, profile_slug ASC'
-        );
-        $stmt->execute(['username_token' => $usernameToken]);
-
-        return $stmt->fetchAll();
+        return ProfileRepository::byUsernameToken($this->pdo(), $usernameToken);
     }
 
     /**
