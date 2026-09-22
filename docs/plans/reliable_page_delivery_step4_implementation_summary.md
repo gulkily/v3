@@ -66,7 +66,7 @@
 - Changes:
   - Added a static release publisher that builds all artifacts in a candidate directory, validates their fingerprinted assets, and atomically activates a complete release through a `current` symlink.
   - Changed the full static-build command to build an isolated read-model candidate and matching artifact release before promotion/activation; it no longer rebuilds the live SQLite file in place.
-  - The front controller prefers the active release over old sibling artifacts and does not mutate an active release on a cache miss.
+  - The front controller reads only the active release; it ignores old sibling `public/*.html` files and does not create artifacts during an HTTP request.
   - Updated archive maintenance to publish a new active release after its read-model refresh.
 - Verification:
   - `php -l src/ForumRewrite/Host/StaticArtifactBuilder.php`
@@ -77,3 +77,17 @@
   - `php scripts/build_static_artifacts.php tests/fixtures/parity_minimal_v1 <temporary-db> <temporary-static-root>` created an active release and `current/index.html`.
 - Notes:
   - Existing releases are retained for recovery; automatic retention cleanup is deliberately deferred rather than risking deletion of an active release.
+
+## Stage 7 - Deployment guardrails
+- Changes:
+  - A canonical write now withdraws the active static-release pointer instead of editing a release in place. Anonymous pages safely fall back to PHP until the next complete release is published.
+  - Agent-reply processing receives the same static release root, so an agent-created identity cannot leave a stale active release visible.
+  - Updated the production runbook, recovery runbook, CLI reference, environment example, Apache example, and README to use `FORUM_STATIC_HTML_ROOT` and the candidate-release deployment sequence.
+- Verification:
+  - `php -l src/ForumRewrite/Host/FrontController.php`
+  - `php -l src/ForumRewrite/Write/StaticArtifactInvalidator.php`
+  - `php -l src/ForumRewrite/Agent/AgentIdentityService.php`
+  - `php -l scripts/run_agent_reply_requests.php`
+  - `./v3 test LocalAppSmokeTest::testFrontControllerServesStaticArtifactForAnonymousEligibleRoute LocalAppSmokeTest::testFrontControllerRevalidatesStaticArtifactByEtag LocalAppSmokeTest::testFrontControllerServesStaticArtifactForBackupAlias LocalAppSmokeTest::testFrontControllerBypassesStaticArtifactWhenCookieIsPresent LocalAppSmokeTest::testStaticArtifactReleasePublisherActivatesCompleteReleaseForFrontController LocalAppSmokeTest::testFrontControllerFallsBackDynamicallyUntilAReleaseIsActivated LocalAppSmokeTest::testFeatureFlagWriteInvalidatesAlternateStaticActivityArtifact LocalAppSmokeTest::testUsersStaticArtifactsAreInvalidatedByDirectoryAffectingWrites`
+- Notes:
+  - First deployment of this version stays dynamic until `./v3 build-static` finishes. It never asks users to hard-refresh: HTML revalidation prevents a stale document from being paired with newly fingerprinted assets.

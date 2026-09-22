@@ -136,6 +136,14 @@ final class StaticArtifactInvalidator
     private function deletePaths(array $paths): void
     {
         foreach ($this->artifactRoots as $root) {
+            // A release is an all-or-nothing snapshot. Removing its pointer is
+            // safer than trying to edit files inside it after a canonical write.
+            // The next anonymous request uses PHP until a new release is built.
+            $activeReleasePointer = $root . '/current';
+            if (is_link($activeReleasePointer)) {
+                @unlink($activeReleasePointer);
+            }
+
             foreach ($paths as $path) {
                 $absolutePath = $root . $path;
                 if (is_file($absolutePath)) {

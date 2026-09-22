@@ -27,6 +27,7 @@ final class AgentIdentityService
         private readonly string $privateKeyDirectory,
         private readonly CanonicalRecordRepository $canonicalRepository,
         private readonly OpenPgpKeyInspector $keyInspector = new OpenPgpKeyInspector(),
+        private readonly ?string $staticHtmlRoot = null,
     ) {
     }
 
@@ -346,7 +347,9 @@ final class AgentIdentityService
 
     private function invalidator(): StaticArtifactInvalidator
     {
-        return new StaticArtifactInvalidator($this->artifactRoot);
+        return $this->staticHtmlRoot !== null && $this->staticHtmlRoot !== $this->artifactRoot
+            ? new StaticArtifactInvalidator($this->artifactRoot, $this->staticHtmlRoot)
+            : new StaticArtifactInvalidator($this->artifactRoot);
     }
 
     private function staleMarker(): ReadModelStaleMarker

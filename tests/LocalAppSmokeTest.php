@@ -2216,9 +2216,9 @@ PHP;
         @unlink($this->databasePath);
         $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
         $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
-        mkdir($staticHtmlRoot, 0777, true);
+        mkdir($staticHtmlRoot . '/current', 0777, true);
         mkdir($publicRoot, 0777, true);
-        file_put_contents($staticHtmlRoot . '/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Board</h1></body></html>');
+        file_put_contents($staticHtmlRoot . '/current/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Board</h1></body></html>');
 
         $controller = new FrontController(
             dirname(__DIR__),
@@ -2239,9 +2239,9 @@ PHP;
         $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
         $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
         $html = '<!doctype html><html><body><h1>Static Board</h1></body></html>';
-        mkdir($staticHtmlRoot, 0777, true);
+        mkdir($staticHtmlRoot . '/current', 0777, true);
         mkdir($publicRoot, 0777, true);
-        file_put_contents($staticHtmlRoot . '/index.html', $html);
+        file_put_contents($staticHtmlRoot . '/current/index.html', $html);
 
         $controller = new FrontController(
             dirname(__DIR__),
@@ -2305,10 +2305,9 @@ PHP;
         @unlink($this->databasePath);
         $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
         $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
-        mkdir($staticHtmlRoot, 0777, true);
+        mkdir($staticHtmlRoot . '/current/instance', 0777, true);
         mkdir($publicRoot, 0777, true);
-        mkdir($staticHtmlRoot . '/instance', 0777, true);
-        file_put_contents($staticHtmlRoot . '/instance/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Backup</h1></body></html>');
+        file_put_contents($staticHtmlRoot . '/current/instance/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Backup</h1></body></html>');
 
         $controller = new FrontController(
             dirname(__DIR__),
@@ -2328,8 +2327,8 @@ PHP;
     {
         @unlink($this->databasePath);
         $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
-        mkdir($staticHtmlRoot, 0777, true);
-        file_put_contents($staticHtmlRoot . '/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Board</h1></body></html>');
+        mkdir($staticHtmlRoot . '/current', 0777, true);
+        file_put_contents($staticHtmlRoot . '/current/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Board</h1></body></html>');
 
         $controller = new FrontController(
             dirname(__DIR__),
@@ -2464,37 +2463,6 @@ PHP;
             $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id = 'thread-zenmemes-rules'")->fetchColumn()
         );
 
-        $controller = new FrontController(
-            dirname(__DIR__),
-            $this->repositoryRoot,
-            $this->databasePath,
-            sys_get_temp_dir() . '/forum-rewrite-unused-static-' . bin2hex(random_bytes(6)),
-            $artifactRoot,
-        );
-
-        $response = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
-        assertStringContains('Hello world', $response);
-        assertStringContains('route-source: static-html', $response);
-
-        $threadsResponse = $this->renderFrontController($controller, 'GET', '/threads/', []);
-        assertSame((string) file_get_contents($artifactRoot . '/index.html'), $threadsResponse);
-        assertStringContains('route-source: static-html', $threadsResponse);
-
-        $threadsNoSlashResponse = $this->renderFrontController($controller, 'GET', '/threads', []);
-        assertSame((string) file_get_contents($artifactRoot . '/index.html'), $threadsNoSlashResponse);
-        assertStringContains('route-source: static-html', $threadsNoSlashResponse);
-
-        $usersResponse = $this->renderFrontController($controller, 'GET', '/users/', []);
-        assertStringContains('Users', $usersResponse);
-        assertStringContains('route-source: static-html', $usersResponse);
-
-        $usersNoSlashResponse = $this->renderFrontController($controller, 'GET', '/users', []);
-        assertSame($usersResponse, $usersNoSlashResponse);
-        assertStringContains('route-source: static-html', $usersNoSlashResponse);
-
-        $tagsResponse = $this->renderFrontController($controller, 'GET', '/tags/', []);
-        assertStringContains('class="nav-link is-active" href="/tags/"', $tagsResponse);
-        assertStringContains('route-source: static-html', $tagsResponse);
     }
 
     public function testStaticArtifactReleasePublisherActivatesCompleteReleaseForFrontController(): void
@@ -2504,6 +2472,7 @@ PHP;
         $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
         mkdir($staticHtmlRoot, 0777, true);
         mkdir($publicRoot, 0777, true);
+        file_put_contents($publicRoot . '/index.html', '<!doctype html><p>old public artifact</p>');
 
         try {
             (new ReadModelBuilder(
@@ -2527,6 +2496,7 @@ PHP;
             assertTrue(is_link($staticHtmlRoot . '/current'));
             assertTrue(is_file($staticHtmlRoot . '/current/index.html'));
             assertStringContains('route-source: static-html', $response);
+            assertStringNotContains('old public artifact', $response);
         } finally {
             $this->deleteTree($staticHtmlRoot);
             $this->deleteTree($publicRoot);
@@ -2557,13 +2527,15 @@ PHP;
         }
     }
 
-    public function testFrontControllerBuildsMissingArtifactAfterEligibleAnonymousFallback(): void
+    public function testFrontControllerFallsBackDynamicallyUntilAReleaseIsActivated(): void
     {
         @unlink($this->databasePath);
         $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
         $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
         mkdir($staticHtmlRoot, 0777, true);
         mkdir($publicRoot, 0777, true);
+        mkdir($publicRoot . '/threads', 0777, true);
+        file_put_contents($publicRoot . '/threads/root-001.html', '<!doctype html><p>old public artifact</p>');
 
         $controller = new FrontController(
             dirname(__DIR__),
@@ -2576,12 +2548,11 @@ PHP;
         $firstResponse = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
         assertStringContains('Hello world', $firstResponse);
         assertStringContains('route-source: php-fallback', $firstResponse);
-        assertTrue(is_file($publicRoot . '/threads/root-001.html'));
-        assertStringContains('route-source: static-html', (string) file_get_contents($publicRoot . '/threads/root-001.html'));
+        assertStringNotContains('old public artifact', $firstResponse);
 
         $secondResponse = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
         assertStringContains('Hello world', $secondResponse);
-        assertStringContains('route-source: static-html', $secondResponse);
+        assertStringContains('route-source: php-fallback', $secondResponse);
     }
 
     public function testFrontControllerDoesNotBuildArtifactForCookieBearingFallback(): void
@@ -2634,9 +2605,10 @@ PHP;
         $projectRoot = dirname(__DIR__);
         $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
         $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
-        mkdir($staticHtmlRoot . '/activity', 0777, true);
+        mkdir($staticHtmlRoot . '/releases/test-release/activity', 0777, true);
         mkdir($publicRoot, 0777, true);
-        file_put_contents($staticHtmlRoot . '/activity/index.html', '<!doctype html><title>stale activity</title><p>stale activity</p>');
+        file_put_contents($staticHtmlRoot . '/releases/test-release/activity/index.html', '<!doctype html><title>stale activity</title><p>stale activity</p>');
+        symlink('releases/test-release', $staticHtmlRoot . '/current');
 
         $controller = new FrontController(
             $projectRoot,
@@ -2660,7 +2632,7 @@ PHP;
         $activityResponse = $this->renderFrontController($controller, 'GET', '/activity/', []);
 
         assertStringContains('status=ok', $writeResponse);
-        assertFalse(is_file($staticHtmlRoot . '/activity/index.html'));
+        assertFalse(is_link($staticHtmlRoot . '/current'));
         assertStringContains('site_feature_flag', $activityResponse);
         assertStringContains('Set feature flag FORUM_APP_VERSION_NOTIFICATION=false', $activityResponse);
         assertStringNotContains('stale activity', $activityResponse);

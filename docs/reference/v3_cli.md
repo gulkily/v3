@@ -11,7 +11,7 @@ Most data-touching commands accept optional positional `repository_root` and
 `database_path` arguments. When omitted they fall back to, in order:
 
 1. the relevant `FORUM_*` environment variable (`FORUM_REPOSITORY_ROOT`,
-   `FORUM_DATABASE_PATH`, `FORUM_PUBLIC_ARTIFACT_ROOT`)
+   `FORUM_DATABASE_PATH`, `FORUM_STATIC_HTML_ROOT`)
 2. the default local repository/database bootstrapped under `state/`
 
 See [Local Run](../../README.md#local-run) in the README for the defaults
@@ -118,11 +118,13 @@ deterministic detection only.
 ./v3 build-static [repository_root] [database_path] [artifact_root]
 ```
 
-Builds Apache-friendly static HTML artifacts.
+Builds and atomically activates a complete static HTML release. It creates the
+candidate read model and HTML release before replacing either live pointer, so
+normal requests continue using the prior complete state while the command runs.
 
 - `repository_root` — canonical records checkout to render from
 - `database_path` — read-model SQLite file to render from
-- `artifact_root` — output directory for the built HTML; defaults to `public/` when not given via argument or `FORUM_PUBLIC_ARTIFACT_ROOT`
+- `artifact_root` — static release root; defaults to `state/static_html` when not given via argument or `FORUM_STATIC_HTML_ROOT`. The active release is `artifact_root/current`.
 
 ## Archive and remove a thread
 
