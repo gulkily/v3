@@ -12,3 +12,15 @@
   - `curl "http://127.0.0.1:8099/api/forte_user_detail?username_token=definitely-not-a-real-user"` → HTTP 404, `{"status":"error","error":"user not found"}`.
 - Notes:
   - Deviated slightly from the Step 3 wording ("placeholder + populated states" in one partial): kept this partial populated-content-only, since the placeholder is static markup with no data dependency and belongs in the page template built in Stage 4 — simpler than threading an "empty" branch through the fragment endpoint.
+
+## Stage 2 - Alphabetical filter pane
+- Changes:
+  - Added `buildUserDirectoryLetterGroups(array $users): array` to `src/ForumRewrite/Application.php`, bucketing the approved directory by the first (uppercased) character of `username_token`, with a `#` bucket for any non-letter lead character. Pure function over the existing `fetchApprovedUserDirectoryUsers()` result — no new SQL.
+  - Added `templates/partials/paned_users_filter_list.php`, modeled on `paned_folder_tree.php`: an "All Users" entry plus one entry per letter, reusing the `paned-folder-tree` / `paned-folder-item` / `paned-folder-count` CSS classes unchanged.
+  - Not yet wired into `renderForteUserDirectory()` or the page template — that happens in Stage 4.
+- Verification:
+  - `php -l` on both changed/added files: no syntax errors.
+  - Scratch script (via `ReflectionClass`, since the method isn't wired into a route yet) called `fetchApprovedUserDirectoryUsers()` then `buildUserDirectoryLetterGroups()` against the real local dataset: 39 total users, letter-group counts summed to 39.
+  - Same script rendered `paned_users_filter_list.php` via `renderFragment()` with the real groups and `selectedLetter = 'I'`; inspected output — "All Users" plus per-letter rows render with correct counts, and the "I" entry carries `paned-folder-item--selected` / `aria-selected="true"`.
+- Notes:
+  - No role/status field exists on `profiles`, so alphabetical grouping is the schema-free filter dimension per the Step 1 recommendation.
