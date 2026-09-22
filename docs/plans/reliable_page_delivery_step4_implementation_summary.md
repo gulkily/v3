@@ -37,3 +37,15 @@
   - `./v3 test LocalAppSmokeTest::testFrontControllerServesStaticArtifactForAnonymousEligibleRoute LocalAppSmokeTest::testFrontControllerRevalidatesStaticArtifactByEtag LocalAppSmokeTest::testFrontControllerBypassesStaticArtifactWhenCookieIsPresent LocalAppSmokeTest::testApplicationRendersCoreRoutes`
 - Notes:
   - A normal navigation performs a small validator request; unchanged static HTML returns no body, avoiding stale-page/new-script combinations without making assets uncached.
+
+## Stage 4 - Candidate read-model build
+- Changes:
+  - Added a read-model candidate builder that writes beside, but never opens for writing, the live database.
+  - Validates repository metadata and SQLite integrity before returning a candidate for later promotion.
+- Verification:
+  - `php -l src/ForumRewrite/ReadModel/ReadModelCandidateBuilder.php`
+  - `php -l tests/ReadModelCandidateBuilderTest.php`
+  - `./v3 test ReadModelCandidateBuilderTest ReadModelBuilderTimingTest`
+  - Candidate integration test confirms the live database hash is unchanged during candidate creation.
+- Notes:
+  - Candidate promotion remains a separate next stage; this stage intentionally does not change the active database.
