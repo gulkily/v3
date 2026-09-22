@@ -4216,38 +4216,6 @@ final class Application
     }
 
     /**
-     * Buckets the approved user directory by the first character of each
-     * user's `username_token`, for the Users pane's alphabetical filter
-     * list (the directory has no role/status field to filter by, so this
-     * stays schema-free like the rest of the directory query). Non-letter
-     * leading characters share a single `#` bucket.
-     *
-     * @param array<int, array<string, mixed>> $users
-     * @return list<array{letter: string, count: int}>
-     */
-    private function buildUserDirectoryLetterGroups(array $users): array
-    {
-        $counts = [];
-        foreach ($users as $user) {
-            $token = (string) ($user['username_token'] ?? '');
-            $letter = $token === '' ? '#' : strtoupper($token[0]);
-            if (!ctype_alpha($letter)) {
-                $letter = '#';
-            }
-            $counts[$letter] = ($counts[$letter] ?? 0) + 1;
-        }
-
-        ksort($counts);
-
-        $groups = [];
-        foreach ($counts as $letter => $count) {
-            $groups[] = ['letter' => $letter, 'count' => $count];
-        }
-
-        return $groups;
-    }
-
-    /**
      * Most recent authored, non-hidden post per approved `username_token`,
      * rolled up across every identity that shares the token (mirrors
      * `fetchApprovedUserDirectoryUsers()`'s own `SUM(...) GROUP BY

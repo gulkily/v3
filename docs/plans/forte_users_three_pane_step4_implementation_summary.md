@@ -152,3 +152,17 @@ Per the Step 2/Step 3 addenda, replacing the alphabetical filter with semantic c
   - Playwright browser session against the local dev server: clicking "Established" narrows to 12 rows with `?view=established` and matching status text; clicking "Not Approved" shows exactly the 36 pending rows (confirmed all visible rows carry the pending style) with `?view=not-approved`; clicking a pending row fetches and displays its "Pending approval" detail correctly; switching back to "All Users" hides all pending rows again (0 visible) and restores 39 visible approved rows; a deep-link to `?view=recently-active` reproduces the 1-row filtered state without any click; clicking "New" then browser-back restores the "All Users" URL and status text. Zero console/page errors throughout.
   - Screenshot of `?view=not-approved` with a pending row selected: filter pane, muted/italic pending rows, and the pending detail pane all render together correctly.
 - Notes: none
+
+## Stage 13 - Regression pass + cleanup
+- Changes:
+  - Removed `buildUserDirectoryLetterGroups()` from `Application.php` — confirmed zero remaining references to it, `data-paned-user-letter`, `data-paned-user-row-letter`, `letterGroups`, or `selectedLetter` anywhere in `src/`, `templates/`, or `paned_users_reader.js`.
+  - `forte.css` had no letter-specific rules to remove — the alphabetical filter only ever reused generic `paned-folder-item`/`paned-folder-count` classes. The `data-paned-users-list-pane` column-width scoping from Stage 6 is unrelated to letters and stays.
+- Verification:
+  - `php -l`: no syntax errors.
+  - Full curl sweep: `/forte/`, `/forte/activity/`, `/forte/users/`, and `/forte/users/?view=` for all 5 non-default categories (`new`, `established`, `no-threads`, `recently-active`, `not-approved`) — all 200.
+  - Playwright sweep (9 pages: Board, Activity, Users default + all 5 categories, Users at 400px width) — zero console errors, zero failed requests, zero page errors on every page.
+  - Screenshots confirm: "New" category (1280x800) shows the right 27 rows with correct counts in the filter pane and correct status-bar text; 400px-wide "All Users" view stacks/scrolls cleanly with no horizontal overflow.
+- Notes: none
+
+## Outstanding
+All 13 stages (6 original + 7 semantic-category addendum) implemented, verified, and committed. Feature complete per the Step 2 addendum's revised requirements.
