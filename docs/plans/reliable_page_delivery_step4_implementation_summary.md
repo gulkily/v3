@@ -23,3 +23,17 @@
   - Loader test confirms only a preload is emitted initially and the script is evaluated only when a caller requests it.
 - Notes:
   - A signing/authentication request still waits safely if it occurs before evaluation finishes; the network transfer already began during page load.
+
+## Stage 3 - Cache-compatible HTML delivery
+- Changes:
+  - Added a shared HTML ETag matcher for conditional requests.
+  - Public static artifacts now revalidate with an ETag and vary by cookie; configuration/busy responses remain uncacheable.
+  - Dynamic HTML is private, cookie-varying, and revalidated; fingerprinted assets retain immutable caching.
+- Verification:
+  - `php -l src/ForumRewrite/Host/HtmlResponseCache.php`
+  - `php -l src/ForumRewrite/Host/FrontController.php`
+  - `php -l src/ForumRewrite/Application.php`
+  - `php -l tests/LocalAppSmokeTest.php`
+  - `./v3 test LocalAppSmokeTest::testFrontControllerServesStaticArtifactForAnonymousEligibleRoute LocalAppSmokeTest::testFrontControllerRevalidatesStaticArtifactByEtag LocalAppSmokeTest::testFrontControllerBypassesStaticArtifactWhenCookieIsPresent LocalAppSmokeTest::testApplicationRendersCoreRoutes`
+- Notes:
+  - A normal navigation performs a small validator request; unchanged static HTML returns no body, avoiding stale-page/new-script combinations without making assets uncached.

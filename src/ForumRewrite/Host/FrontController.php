@@ -58,7 +58,7 @@ final class FrontController
                 throw new RuntimeException('Unable to read static HTML artifact: ' . $staticArtifact);
             }
 
-            $this->sendHtml($contents, 200);
+            $this->sendHtml($contents, 200, true);
             return;
         }
 
@@ -305,8 +305,21 @@ final class FrontController
             . '</article></section></main></div></body></html>';
     }
 
-    private function sendHtml(string $html, int $statusCode): void
+    private function sendHtml(string $html, int $statusCode, bool $publicArtifact = false): void
     {
+        if ($publicArtifact) {
+            $etag = HtmlResponseCache::etag($html);
+            header('Cache-Control: public, no-cache, must-revalidate, max-age=0');
+            header('Vary: Cookie');
+            header('ETag: ' . $etag);
+            if ($statusCode === 200 && HtmlResponseCache::requestMatches($etag)) {
+                http_response_code(304);
+                return;
+            }
+        } else {
+            header('Cache-Control: no-store');
+        }
+
         http_response_code($statusCode);
         header('Content-Type: text/html; charset=utf-8');
         echo $html;

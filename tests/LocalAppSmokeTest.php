@@ -2231,6 +2231,42 @@ PHP;
         assertStringContains('route-source: static-html', $response);
     }
 
+    public function testFrontControllerRevalidatesStaticArtifactByEtag(): void
+    {
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        $html = '<!doctype html><html><body><h1>Static Board</h1></body></html>';
+        mkdir($staticHtmlRoot, 0777, true);
+        mkdir($publicRoot, 0777, true);
+        file_put_contents($staticHtmlRoot . '/index.html', $html);
+
+        $controller = new FrontController(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $staticHtmlRoot,
+            $publicRoot,
+        );
+        $previousEtag = $_SERVER['HTTP_IF_NONE_MATCH'] ?? null;
+
+        try {
+            $_SERVER['HTTP_IF_NONE_MATCH'] = '"' . hash('sha256', $html) . '"';
+            http_response_code(200);
+            $response = $this->renderFrontController($controller, 'GET', '/', []);
+
+            assertSame('', $response);
+            assertSame(304, http_response_code());
+        } finally {
+            if ($previousEtag === null) {
+                unset($_SERVER['HTTP_IF_NONE_MATCH']);
+            } else {
+                $_SERVER['HTTP_IF_NONE_MATCH'] = $previousEtag;
+            }
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
     public function testFrontControllerRecoversStaleFingerprintedAssetRequests(): void
     {
         $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));

@@ -19,6 +19,7 @@ use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
+use ForumRewrite\Host\HtmlResponseCache;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelCapabilityInspector;
 use ForumRewrite\ReadModel\ReadModelConnection;
@@ -7120,6 +7121,21 @@ final class Application
 
     private function sendHtml(string $html, int $statusCode, array $headers = []): void
     {
+        $etag = HtmlResponseCache::etag($html);
+        $headers = array_merge([
+            'Cache-Control: private, no-cache, must-revalidate, max-age=0',
+            'Vary: Cookie',
+            'ETag: ' . $etag,
+        ], $headers);
+
+        if ($statusCode === 200 && HtmlResponseCache::requestMatches($etag)) {
+            http_response_code(304);
+            foreach ($headers as $headerValue) {
+                header($headerValue);
+            }
+            return;
+        }
+
         http_response_code($statusCode);
         header('Content-Type: text/html; charset=utf-8');
         foreach ($headers as $headerValue) {
