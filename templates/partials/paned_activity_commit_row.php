@@ -24,5 +24,5 @@ $rowId = 'commit-' . $sha;
 >
   <span class="paned-list-from"><?= $e(substr($sha, 0, 12)) ?></span>
   <span class="paned-list-subject"><?= $e((string) ($item['subject'] ?? '')) ?></span>
-  <span class="paned-list-date"><?= $timestamp((string) ($item['committed_at'] ?? '')) ?></span>
+  <span class="paned-list-date"><?= $relativeTimestamp((string) ($item['committed_at'] ?? '')) ?></span>
 </div>

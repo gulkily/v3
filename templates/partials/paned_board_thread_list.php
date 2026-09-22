@@ -74,7 +74,7 @@ if ($isTabStop) {
     >
       <span class="paned-list-subject"><?= $e($threadTitle($thread)) ?></span>
       <span class="paned-list-from"><?= $e($authorText($thread)) ?></span>
-      <span class="paned-list-date"><?= $timestamp((string) ($thread['root_post_created_at'] ?? '')) ?></span>
+      <span class="paned-list-date"><?= $relativeTimestamp((string) ($thread['root_post_created_at'] ?? '')) ?></span>
       <span class="paned-list-replies"><?= (int) $thread['reply_count'] ?></span>
     </div>
 <?php endforeach; ?>
