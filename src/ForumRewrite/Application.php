@@ -54,6 +54,7 @@ final class Application
     private const THREAD_CONTEXT_COMMENT_BODY_LIMIT = 3000;
     private const THREAD_CONTEXT_TOTAL_BODY_LIMIT = 18000;
     private const CODEX_HANDOFF_DEVELOPMENT_TAGS = ['feature', 'bug', 'task', 'dev', 'development', 'codex', 'implementation', 'fdp'];
+    private const LOBBY_GATE_LOG_ROTATE_LINES = 1000;
     private ?string $appVersion = null;
     private ?FeatureFlagEvaluator $featureFlags = null;
     private ?LlmExchangeRecorder $llmExchangeRecorder = null;
@@ -4138,10 +4139,12 @@ final class Application
      * Temporary diagnostic instrumentation for tracking down what session
      * state real visitors actually land in when the Lobby gate doesn't
      * treat them as a confirmed approved member. Appends one JSON line per
-     * gate decision to state/logs/lobby_gate.log (gitignored, self-capping
-     * so it can't grow unbounded). Safe to remove once the open question
-     * in docs/plans/ (why a real visitor's session ends up here without an
-     * explicit /api/clear_identity call) is resolved.
+     * gate decision to state/logs/lobby_gate.log (gitignored), rotating to
+     * lobby_gate.log.1 every LOBBY_GATE_LOG_ROTATE_LINES lines so it can't
+     * grow unbounded while still keeping one full prior generation instead
+     * of silently discarding old entries. Safe to remove once the open
+     * question in docs/plans/ (why a real visitor's session ends up here
+     * without an explicit /api/clear_identity call) is resolved.
      */
     private function logLobbyGateDiagnostics(string $decision, string $method, string $path): void
     {
@@ -4151,11 +4154,8 @@ final class Application
             return;
         }
 
-        if (is_file($logPath) && (int) @filesize($logPath) > 2 * 1024 * 1024) {
-            $tail = @file($logPath, FILE_IGNORE_NEW_LINES);
-            if ($tail !== false) {
-                @file_put_contents($logPath, implode("\n", array_slice($tail, -500)) . "\n", LOCK_EX);
-            }
+        if (is_file($logPath) && $this->countLines($logPath) >= self::LOBBY_GATE_LOG_ROTATE_LINES) {
+            @rename($logPath, $logPath . '.1');
         }
 
         $authenticatedIdentityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
@@ -4179,6 +4179,22 @@ final class Application
         ];
 
         @file_put_contents($logPath, json_encode($line, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND | LOCK_EX);
+    }
+
+    private function countLines(string $path): int
+    {
+        $handle = @fopen($path, 'r');
+        if ($handle === false) {
+            return 0;
+        }
+
+        $lines = 0;
+        while (!feof($handle)) {
+            $lines += substr_count((string) fread($handle, 1024 * 1024), "\n");
+        }
+        fclose($handle);
+
+        return $lines;
     }
 
     private function renderAuthenticationResumePage(string $returnTo): string
