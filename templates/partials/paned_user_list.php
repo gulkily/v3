@@ -13,7 +13,7 @@ $userLetter = static function (string $token): string {
 };
 $tabStopAssigned = false;
 ?>
-<div class="paned-list-pane">
+<div class="paned-list-pane" data-paned-users-list-pane>
   <div class="paned-list-head">
     <span class="paned-list-subject-head">Username</span>
     <span class="paned-list-from-head">Threads</span>

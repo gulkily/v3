@@ -66,3 +66,17 @@
   - Re-checked `/forte/` and `/forte/activity/` in the same browser for console/page errors: none (Board/Activity unaffected).
 - Notes:
   - No keyboard arrow-key navigation on the filter list (Board's folder tree has this) — out of scope per Step 2's requirements, which only call for filter/select, not full keyboard parity.
+
+## Stage 6 - Regression pass + minor CSS
+- Changes:
+  - Added `data-paned-users-list-pane` attribute to the root of `templates/partials/paned_user_list.php`.
+  - Added a scoped rule block in `public/assets/forte.css` (`[data-paned-users-list-pane] .paned-list-from-head, .paned-list-date-head, .paned-list-from, .paned-list-date`) narrowing the reused From/Date columns to 5rem and right-aligning them for the Threads/Posts counts — the thread list's 9rem/13rem widths (built for a name and a timestamp) were oversized for two short numbers. Scoped by the new data attribute, so Board/Activity's own `.paned-list-from`/`.paned-list-date` rules are untouched.
+- Verification:
+  - `php -l` on the changed template: no syntax errors.
+  - Playwright screenshots at 1280x800 (light and dark `colorScheme`) and 400px-wide viewport of `/forte/users/`: 3-pane chrome renders correctly, columns are proportioned, narrow width stacks/scrolls without horizontal overflow. (This skin doesn't respond to `prefers-color-scheme` — confirmed Board's own screenshot is equally theme-invariant, so this matches existing behavior, not a regression.)
+  - Playwright screenshots of `/forte/` and `/forte/activity/` at 1280x800: pixel-comparable to their pre-change appearance, confirming no regression.
+  - Playwright screenshot of `/forte/users/?letter=I&selected=ilyag`: filter, listing, and detail panes all render together correctly with real data.
+- Notes: none
+
+## Outstanding
+All 6 planned stages are implemented, verified, and committed. Feature complete per Step 2's success criteria.

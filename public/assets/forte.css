@@ -308,6 +308,17 @@ body.paned-reader-body {
   flex-shrink: 0;
 }
 
+/* Forte Users pane reuses the thread list's From/Date columns for the
+   Threads/Posts counts, which are numeric and much narrower than a name
+   or a timestamp - scoped to this pane only, Board/Activity are untouched. */
+[data-paned-users-list-pane] .paned-list-from-head,
+[data-paned-users-list-pane] .paned-list-date-head,
+[data-paned-users-list-pane] .paned-list-from,
+[data-paned-users-list-pane] .paned-list-date {
+  width: 5rem;
+  text-align: right;
+}
+
 .paned-list-replies {
   padding: 0.15rem 0.5rem;
   color: var(--paned-ink-soft);
