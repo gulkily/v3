@@ -136,3 +136,8 @@ Supersedes the alphabetical filter (Stages 2/4/5 above) per the Step 2 addendum.
 - Verification approach: full curl + Playwright sweep of `/forte`, `/forte/activity/`, `/forte/users/` (all categories) with screenshots, same as original Stage 6.
 - Risks or open questions: none
 - Canonical components/API contracts touched: none new.
+
+## Addendum: Fix + Sortable Columns (post-Step-13 follow-ups)
+Two small follow-up requests after Stage 13, each logged directly in the Step 4 summary rather than as full plan stages (unambiguous, single-file/well-precedented scope):
+- **Stage 14** — the detail-pane content used an unstyled custom class instead of the shared `.body` class, leaving text flush against the pane edge; fixed to reuse `.body` like Board/Activity.
+- **Stage 15** — sortable Username/Threads/Posts columns, mirroring `resolveForteBoardSort()`/`applyForteBoardSort()`/`paned_board_reader.js`'s sort mechanism exactly (server-side initial sort + client-side `data-paned-sort-*`-driven re-order, `?sort=&dir=` URL state).

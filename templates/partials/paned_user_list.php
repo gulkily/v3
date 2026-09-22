@@ -5,17 +5,28 @@
  * @var array<int, array<string, mixed>> $pendingUsers
  * @var string $selectedCategory
  * @var string $selectedUserToken
+ * @var string $sortColumn
+ * @var string $sortDir
  */
 $selectedCategory ??= 'all';
 $selectedUserToken ??= '';
 $pendingUsers ??= [];
+$sortColumn ??= '';
+$sortDir ??= '';
+$ariaSort = static function (string $column) use ($sortColumn, $sortDir): string {
+    if ($column !== $sortColumn) {
+        return 'none';
+    }
+
+    return $sortDir === 'desc' ? 'descending' : 'ascending';
+};
 $tabStopAssigned = false;
 ?>
 <div class="paned-list-pane" data-paned-users-list-pane>
-  <div class="paned-list-head">
-    <span class="paned-list-subject-head">Username</span>
-    <span class="paned-list-from-head">Threads</span>
-    <span class="paned-list-date-head">Posts</span>
+  <div class="paned-list-head" data-paned-sort-head>
+    <span class="paned-list-subject-head" aria-sort="<?= $ariaSort('username') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="username">Username</button></span>
+    <span class="paned-list-from-head" aria-sort="<?= $ariaSort('threads') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="threads">Threads</button></span>
+    <span class="paned-list-date-head" aria-sort="<?= $ariaSort('posts') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="posts">Posts</button></span>
   </div>
   <div class="paned-list-body" data-paned-users-list-body role="listbox" aria-label="Users">
 <?php foreach ($users as $user): ?>

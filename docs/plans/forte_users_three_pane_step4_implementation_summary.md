@@ -174,5 +174,20 @@ Per the Step 2/Step 3 addenda, replacing the alphabetical filter with semantic c
   - `curl /forte/` and `/forte/activity/` still 200 — no regression (neither uses this class).
 - Notes: none
 
+## Stage 15 - Sortable columns
+- Changes:
+  - Added `resolveUserDirectorySort()`, `applyUserDirectorySort()`, `userDirectorySortValue()` to `Application.php`, mirroring `resolveForteBoardSort()`/`applyForteBoardSort()`/`forteBoardSortValue()` exactly: valid columns `username`/`threads`/`posts`, default direction `asc` for username and `desc` for the two numeric columns, empty/invalid column means no sort (natural DB order).
+  - `renderForteUserDirectory()` now accepts `$requestedSortColumn`/`$requestedSortDir`, resolves them once, and applies the same sort to both `$users` and `$pendingUsers` so ordering is consistent regardless of which category is selected. Route dispatch passes `$query['sort']`/`$query['dir']`.
+  - `paned_user_row.php` / `paned_user_pending_row.php` gained `data-paned-sort-username` (lowercased), `data-paned-sort-threads`, `data-paned-sort-posts` attributes.
+  - `paned_user_list.php`'s header row is now a `data-paned-sort-head` with three `<button data-paned-sort-column="...">` cells and per-column `aria-sort`, exactly matching `paned_board_thread_list.php`'s head markup.
+  - `paned_users_reader.js`: added `currentSortState()`, `sortValueFor()`, `applySort()`, `restoreOriginalOrder()` (tracks `originalRowOrder` like `paned_board_reader.js`), and a `sortHead` click handler that toggles asc/desc and pushes `?sort=&dir=` into the URL. `urlForState()` now threads sort through alongside category/selection. The `popstate` handler re-applies sort (or restores original order when the URL has none) after restoring category/selection, matching Board's popstate structure.
+- Verification:
+  - `php -l`/`node --check` on all changed files: no syntax errors.
+  - `curl`: default load matches the natural `thread_count DESC` order (ilyag, guest, test-user); `?sort=username&dir=asc` starts at "ak"; `?sort=threads&dir=asc` starts at count 0; `?sort=posts` (no `dir`) renders `aria-sort="descending"` (numeric default); `?sort=bogus` still 200 (silently ignored, falls back to unsorted).
+  - Playwright browser session: clicking "Username" sorts ascending (starts "ak") and updates the URL; clicking again toggles descending (starts "zurcd"); clicking "Threads" defaults to descending with `ilyag` (396) on top; switching to "Not Approved" while a sort is active keeps the sort applied (top pending row is "onthebus", 8 threads — the same order as unfiltered); browser back restores the prior sort's URL and `aria-sort`; a deep link combining `?view=established&sort=posts&dir=asc&selected=guest` renders all four pieces of state correctly at once (filtered rows, ascending order, header indicator, and row selection). Zero console/page errors throughout.
+  - Screenshot of `?sort=threads&dir=desc`: the Threads column header shows the ▼ indicator, matching Board's own sorted-column styling exactly.
+  - `curl /forte/` and `/forte/activity/` still 200 — no regression.
+- Notes: none
+
 ## Outstanding
-All 14 stages (6 original + 7 semantic-category addendum + 1 margin fix) implemented, verified, and committed. Feature complete per the Step 2 addendum's revised requirements.
+All 15 stages (6 original + 7 semantic-category addendum + 1 margin fix + 1 sortable-columns addition) implemented, verified, and committed. Feature complete per the Step 2 addendum's revised requirements, plus sortable columns matching Board/Activity's convention.

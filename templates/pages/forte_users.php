@@ -6,9 +6,13 @@
  * @var array<int, array{key: string, label: string, count: int}> $categoryCounts
  * @var string $selectedCategory
  * @var string $selectedUserToken
+ * @var string $sortColumn
+ * @var string $sortDir
  */
 $selectedCategory ??= 'all';
 $selectedUserToken ??= '';
+$sortColumn ??= '';
+$sortDir ??= '';
 $selectedCategoryInfo = ['key' => 'all', 'label' => 'All Users', 'count' => count($users)];
 foreach ($categoryCounts as $category) {
     if ($category['key'] === $selectedCategory) {
@@ -29,7 +33,7 @@ foreach ($categoryCounts as $category) {
   <div class="paned-board-layout">
 <?= $indent($partial('partials/paned_users_filter_list.php', ['categoryCounts' => $categoryCounts, 'selectedCategory' => $selectedCategory]), 2) ?>
     <div class="paned-board-main paned-panes-stack">
-<?= $indent($partial('partials/paned_user_list.php', ['users' => $users, 'flagsByToken' => $flagsByToken, 'pendingUsers' => $pendingUsers, 'selectedCategory' => $selectedCategory, 'selectedUserToken' => $selectedUserToken]), 3) ?>
+<?= $indent($partial('partials/paned_user_list.php', ['users' => $users, 'flagsByToken' => $flagsByToken, 'pendingUsers' => $pendingUsers, 'selectedCategory' => $selectedCategory, 'selectedUserToken' => $selectedUserToken, 'sortColumn' => $sortColumn, 'sortDir' => $sortDir]), 3) ?>
       <div class="paned-content-pane" data-paned-user-detail-pane>
         <article class="paned-content-post" data-paned-user-detail-placeholder>
           <div class="paned-content-head">

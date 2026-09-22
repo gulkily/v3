@@ -9,10 +9,14 @@
 
     var filterItems = Array.prototype.slice.call(filterList.querySelectorAll("[data-paned-user-category]"));
     var rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
+    var originalRowOrder = rows.slice();
     var placeholder = detailPane.querySelector("[data-paned-user-detail-placeholder]");
     var statusCount = document.querySelector("[data-paned-users-status-count]");
     var totalUserCount = statusCount ? parseInt(statusCount.getAttribute("data-paned-users-total-count"), 10) : rows.length;
     var detailCache = {};
+    var sortDefaultDir = { username: "asc", threads: "desc", posts: "desc" };
+    var sortHead = document.querySelector("[data-paned-sort-head]");
+    var sortButtons = sortHead ? Array.prototype.slice.call(sortHead.querySelectorAll("[data-paned-sort-column]")) : [];
 
     function currentCategoryFromUrl() {
       return new URLSearchParams(location.search).get("view") || "all";
@@ -38,16 +42,33 @@
       return null;
     }
 
-    function urlForState(category, selectedToken) {
+    function urlForState(category, selectedToken, sortColumn, sortDir) {
       var params = new URLSearchParams();
       if (category !== "all") {
         params.set("view", category);
+      }
+      if (sortColumn !== "") {
+        params.set("sort", sortColumn);
+        params.set("dir", sortDir);
       }
       if (selectedToken !== "") {
         params.set("selected", selectedToken);
       }
       var qs = params.toString();
       return "/forte/users/" + (qs ? "?" + qs : "");
+    }
+
+    function currentSortState() {
+      for (var i = 0; i < sortButtons.length; i++) {
+        var ariaSort = sortButtons[i].parentElement.getAttribute("aria-sort");
+        if (ariaSort === "ascending" || ariaSort === "descending") {
+          return {
+            column: sortButtons[i].getAttribute("data-paned-sort-column"),
+            dir: ariaSort === "descending" ? "desc" : "asc",
+          };
+        }
+      }
+      return { column: "", dir: "" };
     }
 
     function pushStateIfChanged(url) {
@@ -185,7 +206,8 @@
 
     function applyFilterSelection(category) {
       selectFilter(category);
-      pushStateIfChanged(urlForState(category, currentSelectedToken()));
+      var sort = currentSortState();
+      pushStateIfChanged(urlForState(category, currentSelectedToken(), sort.column, sort.dir));
     }
 
     filterList.addEventListener("click", function (event) {
@@ -202,8 +224,69 @@
       }
       var token = row.getAttribute("data-paned-user-token");
       selectUser(token);
-      pushStateIfChanged(urlForState(currentCategoryFromUrl(), token));
+      var sort = currentSortState();
+      pushStateIfChanged(urlForState(currentCategoryFromUrl(), token, sort.column, sort.dir));
     });
+
+    function restoreOriginalOrder() {
+      rows = originalRowOrder.slice();
+      rows.forEach(function (row) {
+        listBody.appendChild(row);
+      });
+      sortButtons.forEach(function (button) {
+        button.parentElement.setAttribute("aria-sort", "none");
+      });
+    }
+
+    function sortValueFor(row, column) {
+      if (column === "threads" || column === "posts") {
+        return parseInt(row.getAttribute("data-paned-sort-" + column), 10) || 0;
+      }
+      return row.getAttribute("data-paned-sort-" + column) || "";
+    }
+
+    function applySort(column, dir) {
+      rows.sort(function (a, b) {
+        var va = sortValueFor(a, column);
+        var vb = sortValueFor(b, column);
+        if (va < vb) {
+          return -1;
+        }
+        if (va > vb) {
+          return 1;
+        }
+        return 0;
+      });
+      if (dir === "desc") {
+        rows.reverse();
+      }
+      rows.forEach(function (row) {
+        listBody.appendChild(row);
+      });
+
+      sortButtons.forEach(function (button) {
+        var isActive = button.getAttribute("data-paned-sort-column") === column;
+        button.parentElement.setAttribute("aria-sort", isActive ? (dir === "desc" ? "descending" : "ascending") : "none");
+      });
+    }
+
+    if (sortHead) {
+      sortHead.addEventListener("click", function (event) {
+        var button = event.target.closest ? event.target.closest("[data-paned-sort-column]") : null;
+        if (!button) {
+          return;
+        }
+
+        var column = button.getAttribute("data-paned-sort-column");
+        var current = currentSortState();
+        var dir = current.column === column
+          ? (current.dir === "desc" ? "asc" : "desc")
+          : (sortDefaultDir[column] || "asc");
+
+        applySort(column, dir);
+        pushStateIfChanged(urlForState(currentCategoryFromUrl(), currentSelectedToken(), column, dir));
+      });
+    }
 
     function restoreFromUrl() {
       selectFilter(currentCategoryFromUrl());
@@ -221,7 +304,22 @@
       selectUser(selected);
     }
 
-    window.addEventListener("popstate", restoreFromUrl);
+    window.addEventListener("popstate", function () {
+      restoreFromUrl();
+
+      var params = new URLSearchParams(location.search);
+      var sortColumn = params.get("sort") || "";
+      var sortDir = params.get("dir") || "";
+      if (sortColumn === "") {
+        restoreOriginalOrder();
+        return;
+      }
+
+      if (sortDir !== "asc" && sortDir !== "desc") {
+        sortDir = sortDefaultDir[sortColumn] || "asc";
+      }
+      applySort(sortColumn, sortDir);
+    });
 
     restoreFromUrl();
   });

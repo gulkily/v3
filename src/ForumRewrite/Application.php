@@ -571,6 +571,8 @@ final class Application
             $this->sendHtml($this->renderForteUserDirectory(
                 (string) ($query['view'] ?? ''),
                 (string) ($query['selected'] ?? ''),
+                (string) ($query['sort'] ?? ''),
+                (string) ($query['dir'] ?? ''),
             ), 200);
             return;
         }
@@ -1104,11 +1106,20 @@ final class Application
         );
     }
 
-    private function renderForteUserDirectory(string $requestedView = '', string $requestedSelected = ''): string
-    {
+    private function renderForteUserDirectory(
+        string $requestedView = '',
+        string $requestedSelected = '',
+        string $requestedSortColumn = '',
+        string $requestedSortDir = '',
+    ): string {
         $users = $this->fetchApprovedUserDirectoryUsers();
         $flagsByToken = $this->buildUserDirectoryCategoryFlags($users, $this->fetchUserDirectoryLastActivityByToken());
         $pendingUsers = $this->fetchNeverApprovedPendingUserDirectoryUsers();
+        $categoryCounts = $this->buildUserDirectoryCategoryCounts(count($users), $flagsByToken, count($pendingUsers));
+
+        $sort = $this->resolveUserDirectorySort($requestedSortColumn, $requestedSortDir);
+        $users = $this->applyUserDirectorySort($users, $sort['column'], $sort['dir']);
+        $pendingUsers = $this->applyUserDirectorySort($pendingUsers, $sort['column'], $sort['dir']);
 
         return $this->renderer()->renderStandalonePage(
             'forte_users.php',
@@ -1116,9 +1127,11 @@ final class Application
                 'users' => $users,
                 'flagsByToken' => $flagsByToken,
                 'pendingUsers' => $pendingUsers,
-                'categoryCounts' => $this->buildUserDirectoryCategoryCounts(count($users), $flagsByToken, count($pendingUsers)),
+                'categoryCounts' => $categoryCounts,
                 'selectedCategory' => $this->normalizeUserDirectoryCategory($requestedView),
                 'selectedUserToken' => strtolower(trim($requestedSelected)),
+                'sortColumn' => $sort['column'],
+                'sortDir' => $sort['dir'],
             ],
             'Users - Forte',
             'paned-reader-body',
@@ -4356,6 +4369,50 @@ final class Application
         );
 
         return $stmt->fetchAll();
+    }
+
+    /**
+     * @return array{column: string, dir: string}
+     */
+    private function resolveUserDirectorySort(string $requestedColumn, string $requestedDir): array
+    {
+        $validColumns = ['username', 'threads', 'posts'];
+        if (!in_array($requestedColumn, $validColumns, true)) {
+            return ['column' => '', 'dir' => ''];
+        }
+
+        $defaultDir = $requestedColumn === 'username' ? 'asc' : 'desc';
+        $dir = in_array($requestedDir, ['asc', 'desc'], true) ? $requestedDir : $defaultDir;
+
+        return ['column' => $requestedColumn, 'dir' => $dir];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $users
+     * @return array<int, array<string, mixed>>
+     */
+    private function applyUserDirectorySort(array $users, string $column, string $dir): array
+    {
+        if ($column === '') {
+            return $users;
+        }
+
+        $sorted = $users;
+        usort($sorted, function (array $left, array $right) use ($column): int {
+            return $this->userDirectorySortValue($left, $column) <=> $this->userDirectorySortValue($right, $column);
+        });
+
+        return $dir === 'desc' ? array_reverse($sorted) : $sorted;
+    }
+
+    private function userDirectorySortValue(array $user, string $column): string|int
+    {
+        return match ($column) {
+            'username' => mb_strtolower((string) ($user['username'] ?? '')),
+            'threads' => (int) ($user['thread_count'] ?? 0),
+            'posts' => (int) ($user['post_count'] ?? 0),
+            default => '',
+        };
     }
 
     private function viewerHasThreadTag(string $threadId, string $tag, string $identityId): bool
