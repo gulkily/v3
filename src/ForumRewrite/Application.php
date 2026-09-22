@@ -22,12 +22,14 @@ use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\Http\AboutPageController;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\RouteServices;
+use ForumRewrite\ReadModel\AuthoredContentRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelCapabilityInspector;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
+use ForumRewrite\ReadModel\ThreadRowSupport;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -47,12 +49,10 @@ use ForumRewrite\Security\OpenPgpSignatureVerifier;
 use ForumRewrite\Tools\ToolsPageSupport;
 use PDO;
 use RuntimeException;
-use PDOStatement;
 
 final class Application
 {
     private const PERSISTENT_VIEWER_SESSION_COOKIE_LIFETIME = 34560000;
-    private const HIDDEN_BOOTSTRAP_TAG = 'identity';
     private const ANALYSIS_SCHEMA_VERSION = 5;
     private const ACTIVITY_ITEM_LIMIT = 100;
     private const THREAD_CONTEXT_COMMENT_BODY_LIMIT = 3000;
@@ -3264,33 +3264,7 @@ final class Application
      */
     private function fetchVisibleAuthoredThreads(array $identityIds): array
     {
-        if ($identityIds === []) {
-            return [];
-        }
-
-        $stmt = $this->prepareIdentityListQuery(
-            'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
-                    threads.reply_count, threads.last_post_id, threads.score_total, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
-                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
-             FROM threads
-             JOIN posts ON posts.post_id = threads.root_post_id
-             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
-             WHERE threads.root_post_id IN (
-                 SELECT post_id FROM posts
-                 WHERE post_id = thread_id AND author_identity_id IN (%s)
-             )
-             ORDER BY last_activity_at DESC, root_post_id ASC',
-            $identityIds
-        );
-        $stmt->execute($identityIds);
-        $rows = $stmt->fetchAll();
-
-        $rows = array_values(array_filter(
-            $rows,
-            fn (array $thread): bool => !$this->isHiddenBootstrapBoardTagsJson((string) $thread['board_tags_json'])
-        ));
-
-        return $this->hydrateThreadRows($rows);
+        return AuthoredContentRepository::visibleThreads($this->pdo(), $identityIds);
     }
 
     /**
@@ -3299,28 +3273,7 @@ final class Application
      */
     private function fetchVisibleAuthoredPosts(array $identityIds): array
     {
-        if ($identityIds === []) {
-            return [];
-        }
-
-        $stmt = $this->prepareIdentityListQuery(
-            'SELECT posts.post_id, posts.created_at, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_label,
-                    posts.author_profile_slug, profiles.username_token AS author_username_token,
-                    COALESCE(profiles.is_approved, 0) AS author_is_approved, posts.board_tags_json
-             FROM posts
-             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
-             WHERE author_identity_id IN (%s)
-               AND posts.is_hidden = 0
-             ORDER BY created_at DESC, sequence_number DESC, post_id DESC',
-            $identityIds
-        );
-        $stmt->execute($identityIds);
-        $rows = $stmt->fetchAll();
-
-        return array_values(array_filter(
-            $rows,
-            fn (array $post): bool => !$this->isHiddenBootstrapBoardTagsJson((string) $post['board_tags_json'])
-        ));
+        return AuthoredContentRepository::visiblePosts($this->pdo(), $identityIds);
     }
 
     /**
@@ -3337,7 +3290,7 @@ final class Application
      */
     private function hydrateThreadRows(array $rows): array
     {
-        return array_map(fn (array $thread): array => $this->hydrateThreadRow($thread), $rows);
+        return ThreadRowSupport::hydrateThreadRows($rows);
     }
 
     /**
@@ -3346,12 +3299,7 @@ final class Application
      */
     private function hydrateThreadRow(array $thread): array
     {
-        $thread['score_total'] = (int) ($thread['score_total'] ?? 0);
-        $thread['root_post_score_total'] = (int) ($thread['root_post_score_total'] ?? 0);
-        $thread['board_tags'] = $this->decodeStringList((string) ($thread['board_tags_json'] ?? '[]'));
-        $thread['thread_labels'] = $this->decodeStringList((string) ($thread['thread_labels_json'] ?? '[]'));
-
-        return $thread;
+        return ThreadRowSupport::hydrateThreadRow($thread);
     }
 
     private function normalizeBoardView(string $view): string
@@ -3606,29 +3554,7 @@ final class Application
      */
     private function decodeStringList(string $json): array
     {
-        $decoded = json_decode($json, true);
-        if (!is_array($decoded)) {
-            return [];
-        }
-
-        $values = [];
-        foreach ($decoded as $value) {
-            if (is_string($value)) {
-                $values[] = $value;
-            }
-        }
-
-        return $values;
-    }
-
-    /**
-     * @param list<string> $identityIds
-     */
-    private function prepareIdentityListQuery(string $sql, array $identityIds): PDOStatement
-    {
-        $placeholders = implode(', ', array_fill(0, count($identityIds), '?'));
-
-        return $this->pdo()->prepare(sprintf($sql, $placeholders));
+        return ThreadRowSupport::decodeStringList($json);
     }
 
     private function repositoryShortCommit(): string
@@ -4575,7 +4501,7 @@ final class Application
      */
     private function activityViewSql(string $view): array
     {
-        $quotedHiddenTag = '%"' . self::HIDDEN_BOOTSTRAP_TAG . '"%';
+        $quotedHiddenTag = '%"' . ThreadRowSupport::HIDDEN_BOOTSTRAP_TAG . '"%';
 
         return match ($view) {
             'identity' => ['AND activity.board_tags_json LIKE :identity_tag', ['identity_tag' => $quotedHiddenTag]],
@@ -4940,12 +4866,7 @@ final class Application
 
     private function isHiddenBootstrapBoardTagsJson(string $boardTagsJson): bool
     {
-        $boardTags = json_decode($boardTagsJson, true);
-        if (!is_array($boardTags)) {
-            return false;
-        }
-
-        return in_array(self::HIDDEN_BOOTSTRAP_TAG, $boardTags, true);
+        return ThreadRowSupport::isHiddenBootstrapBoardTagsJson($boardTagsJson);
     }
 
     /**
