@@ -6132,6 +6132,7 @@ final class Application
             $this->artifactRoot ?? ($this->projectRoot . '/public'),
             $this->projectRoot . '/state/private/agent-reply',
             new CanonicalRecordRepository($this->repositoryRoot),
+            staticHtmlRoot: $this->staticHtmlRoot,
         );
     }
 
