@@ -10,8 +10,11 @@ use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\Host\FrontController;
 use ForumRewrite\Host\StaticArtifactBuilder;
+use ForumRewrite\Http\InstancePageController;
+use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
+use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\StaticArtifactInvalidator;
 
 final class LocalAppSmokeTest
@@ -2168,15 +2171,27 @@ PHP;
 
     public function testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp(): void
     {
-        $application = new Application(
-            dirname(__DIR__),
+        // repositoryArchiveDownloadFilename() lives on InstancePageController
+        // now (Phase 2 route extraction), not Application - see
+        // docs/plans/codebase_cleanup_audit_findings_v1.md.
+        $routeServices = new RouteServices(
+            $this->databasePath,
+            new TemplateRenderer(dirname(__DIR__) . '/templates'),
+            'php-fallback',
+            false,
+            static fn (): ?array => null,
+        );
+        $controller = new InstancePageController(
+            $routeServices,
             $this->repositoryRoot,
             $this->databasePath,
+            dirname(__DIR__),
+            static fn (): array => ['items' => []],
         );
-        $method = new ReflectionMethod(Application::class, 'repositoryArchiveDownloadFilename');
+        $method = new ReflectionMethod(InstancePageController::class, 'repositoryArchiveDownloadFilename');
         $method->setAccessible(true);
 
-        $filename = $method->invoke($application, 'tar.gz');
+        $filename = $method->invoke($controller, 'tar.gz');
 
         assertStringMatches(
             '/^zenmemes-repository-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}Z-[a-f0-9]+\.tar\.gz$/',

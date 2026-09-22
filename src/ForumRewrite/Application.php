@@ -20,6 +20,7 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\Http\AboutPageController;
+use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelCapabilityInspector;
@@ -42,6 +43,7 @@ use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
+use ForumRewrite\Tools\ToolsPageSupport;
 use PDO;
 use RuntimeException;
 use PDOStatement;
@@ -52,7 +54,6 @@ final class Application
     private const HIDDEN_BOOTSTRAP_TAG = 'identity';
     private const ANALYSIS_SCHEMA_VERSION = 5;
     private const ACTIVITY_ITEM_LIMIT = 100;
-    private const BACKUP_PREVIEW_LIMIT = 5;
     private const THREAD_CONTEXT_COMMENT_BODY_LIMIT = 3000;
     private const THREAD_CONTEXT_TOTAL_BODY_LIMIT = 18000;
     private const CODEX_HANDOFF_DEVELOPMENT_TAGS = ['feature', 'bug', 'task', 'dev', 'development', 'codex', 'implementation', 'fdp'];
@@ -346,7 +347,7 @@ final class Application
         }
 
         if ($path === '/instance/' || $path === '/instance' || $path === '/backup/' || $path === '/backup' || $path === '/tools/backup/' || $path === '/tools/backup') {
-            $this->sendHtml($this->renderBackup(), 200);
+            $this->sendHtml($this->instancePageController()->renderBackup(), 200);
             return;
         }
 
@@ -366,22 +367,22 @@ final class Application
         }
 
         if ($path === '/downloads/repository.tar.gz') {
-            $this->handleRepositoryDownload($method, 'tar.gz');
+            $this->instancePageController()->downloadRepository($method, 'tar.gz');
             return;
         }
 
         if ($path === '/downloads/repository.zip') {
-            $this->handleRepositoryDownload($method, 'zip');
+            $this->instancePageController()->downloadRepository($method, 'zip');
             return;
         }
 
         if ($path === '/downloads/read_model.sqlite3') {
-            $this->handleReadModelDatabaseDownload($method);
+            $this->instancePageController()->downloadReadModelDatabase($method);
             return;
         }
 
         if ($path === '/downloads/sqlite_query_catalog.sql') {
-            $this->handleSqliteQueryCatalogDownload($method);
+            $this->instancePageController()->downloadSqliteQueryCatalog($method);
             return;
         }
 
@@ -2096,59 +2097,15 @@ final class Application
         );
     }
 
-    private function renderBackup(): string
+    private function instancePageController(): InstancePageController
     {
-        $backupSnapshot = $this->fetchBackupSnapshot();
-
-        return $this->renderPageTemplate(
-            'instance.php',
-            [
-                'siteName' => SiteConfig::siteName(),
-                'admins' => $this->fetchSeedApprovedUsers(),
-                'toolNavOptions' => $this->toolNavOptions('backup'),
-                'backupSnapshot' => $backupSnapshot,
-                'downloads' => [
-                    [
-                        'href' => '/downloads/repository.tar.gz',
-                        'label' => 'Content repository (.tar.gz)',
-                        'description' => 'Tarball of the full repository, including .git history.',
-                    ],
-                    [
-                        'href' => '/downloads/repository.zip',
-                        'label' => 'Content repository (.zip)',
-                        'description' => 'ZIP archive of the full repository, including .git history.',
-                    ],
-                    [
-                        'href' => '/downloads/read_model.sqlite3',
-                        'label' => 'SQLite index database',
-                        'description' => 'Current read-model database for local indexing and queries.',
-                    ],
-                ],
-            ],
-            'Backup',
-            'tools',
+        return new InstancePageController(
+            $this->routeServices(),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $this->projectRoot,
+            $this->fetchActivity(...),
         );
-    }
-
-    /**
-     * @return array{generated_at:string,repository_head:string,items:array<int,array<string,mixed>>}
-     */
-    private function fetchBackupSnapshot(): array
-    {
-        $metadata = [];
-        $pdo = $this->pdo();
-        if ($this->readModelTableExists($pdo, 'metadata')) {
-            $rows = $pdo->query('SELECT key, value FROM metadata')->fetchAll();
-            foreach ($rows as $row) {
-                $metadata[(string) $row['key']] = (string) $row['value'];
-            }
-        }
-
-        return [
-            'generated_at' => $metadata['rebuilt_at'] ?? '',
-            'repository_head' => $metadata['repository_head'] ?? ReadModelMetadata::repositoryHead($this->repositoryRoot),
-            'items' => array_slice($this->fetchActivity('content', 'date', 'desc')['items'], 0, self::BACKUP_PREVIEW_LIMIT),
-        ];
     }
 
     private function renderAbout(): string
@@ -2501,44 +2458,7 @@ final class Application
 
     private function toolNavOptions(?string $activeKey): array
     {
-        return [
-            [
-                'key' => 'bookmarklets',
-                'label' => 'Bookmarklets',
-                'href' => '/tools/bookmarklets/',
-                'is_active' => $activeKey === 'bookmarklets',
-            ],
-            [
-                'key' => 'backup',
-                'label' => 'Backup',
-                'href' => '/tools/backup/',
-                'is_active' => $activeKey === 'backup',
-            ],
-            [
-                'key' => 'sqlite',
-                'label' => 'SQLite Viewer',
-                'href' => '/tools/sqlite/',
-                'is_active' => $activeKey === 'sqlite',
-            ],
-            [
-                'key' => 'llm-exchanges',
-                'label' => 'LLM Exchanges',
-                'href' => '/tools/llm-exchanges/',
-                'is_active' => $activeKey === 'llm-exchanges',
-            ],
-            [
-                'key' => 'codebase',
-                'label' => 'System State',
-                'href' => '/tools/codebase/',
-                'is_active' => $activeKey === 'codebase',
-            ],
-            [
-                'key' => 'feature-flags',
-                'label' => 'Feature Flags',
-                'href' => '/tools/feature-flags/',
-                'is_active' => $activeKey === 'feature-flags',
-            ],
-        ];
+        return ToolsPageSupport::navOptions($activeKey);
     }
 
     private function renderComposeThreadPage(
@@ -3361,15 +3281,7 @@ final class Application
      */
     private function fetchSeedApprovedUsers(): array
     {
-        $stmt = $this->pdo()->query(
-            'SELECT username_token, MIN(username) AS username
-             FROM profiles
-             WHERE approved_by_label = \'root\'
-             GROUP BY username_token
-             ORDER BY username_token ASC'
-        );
-
-        return $stmt->fetchAll();
+        return ToolsPageSupport::fetchSeedApprovedUsers($this->pdo());
     }
 
     /**
@@ -3745,135 +3657,9 @@ final class Application
         return $this->pdo()->prepare(sprintf($sql, $placeholders));
     }
 
-    private function handleRepositoryDownload(string $method, string $format): void
-    {
-        if ($method !== 'GET') {
-            $this->sendHtml($this->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported for downloads.', 'none'), 405);
-            return;
-        }
-
-        $download = $this->buildRepositoryArchive($format);
-        $this->sendDownload(
-            $download['path'],
-            $download['contentType'],
-            $this->repositoryArchiveDownloadFilename($download['extension']),
-            true
-        );
-    }
-
-    private function repositoryArchiveDownloadFilename(string $extension): string
-    {
-        return SiteConfig::siteName()
-            . '-repository-'
-            . $this->downloadTimestamp()
-            . '-'
-            . $this->repositoryShortCommit()
-            . '.'
-            . $extension;
-    }
-
-    private function downloadTimestamp(): string
-    {
-        return gmdate('Y-m-d_H-i-s\Z');
-    }
-
-    /**
-     * @return array{path: string, contentType: string, extension: string}
-     */
-    private function buildRepositoryArchive(string $format): array
-    {
-        $archivePath = tempnam(sys_get_temp_dir(), 'forum-repo-');
-        if ($archivePath === false) {
-            throw new RuntimeException('Unable to create temporary archive path.');
-        }
-
-        @unlink($archivePath);
-
-        $parent = dirname($this->repositoryRoot);
-        $base = basename($this->repositoryRoot);
-
-        if ($format === 'tar.gz') {
-            $archiveTarget = $archivePath . '.tar.gz';
-            $command = sprintf(
-                'tar -czf %s -C %s %s 2>&1',
-                escapeshellarg($archiveTarget),
-                escapeshellarg($parent),
-                escapeshellarg($base)
-            );
-            $contentType = 'application/gzip';
-        } elseif ($format === 'zip') {
-            $archiveTarget = $archivePath . '.zip';
-            $command = sprintf(
-                'cd %s && zip -qr %s %s 2>&1',
-                escapeshellarg($parent),
-                escapeshellarg($archiveTarget),
-                escapeshellarg($base)
-            );
-            $contentType = 'application/zip';
-        } else {
-            throw new RuntimeException('Unsupported repository archive format.');
-        }
-
-        exec($command, $output, $exitCode);
-        if ($exitCode !== 0 || !is_file($archiveTarget)) {
-            @unlink($archiveTarget);
-            throw new RuntimeException('Unable to archive repository download.');
-        }
-
-        return [
-            'path' => $archiveTarget,
-            'contentType' => $contentType,
-            'extension' => $format,
-        ];
-    }
-
-    private function handleReadModelDatabaseDownload(string $method): void
-    {
-        if ($method !== 'GET') {
-            $this->sendHtml($this->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported for downloads.', 'none'), 405);
-            return;
-        }
-
-        if (!is_file($this->databasePath)) {
-            $this->sendHtml($this->renderMessagePage('Not Found', 'Not Found', 'Read-model database is not available yet.', 'instance'), 404);
-            return;
-        }
-
-        $this->sendDownload($this->databasePath, 'application/x-sqlite3', SiteConfig::siteName() . '-read-model.sqlite3');
-    }
-
-    private function handleSqliteQueryCatalogDownload(string $method): void
-    {
-        if ($method !== 'GET') {
-            $this->sendHtml($this->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported for downloads.', 'none'), 405);
-            return;
-        }
-
-        $path = $this->projectRoot . '/public/assets/sqlite_query_catalog.sql';
-        if (!is_file($path)) {
-            $this->sendHtml($this->renderMessagePage('Not Found', 'Not Found', 'SQLite query catalog is not available yet.', 'instance'), 404);
-            return;
-        }
-
-        $this->sendDownload($path, 'application/sql; charset=utf-8', SiteConfig::siteName() . '-sqlite-query-catalog.sql');
-    }
-
-    private function sendDownload(string $path, string $contentType, string $filename, bool $deleteAfterSend = false): void
-    {
-        $this->routeServices()->sendDownload($path, $contentType, $filename, $deleteAfterSend);
-    }
-
     private function repositoryShortCommit(): string
     {
-        $command = sprintf('git -C %s rev-parse --short HEAD 2>&1', escapeshellarg($this->repositoryRoot));
-        exec($command, $output, $exitCode);
-        if ($exitCode !== 0) {
-            return 'unknown';
-        }
-
-        $shortCommit = trim(implode("\n", $output));
-
-        return $shortCommit !== '' ? $shortCommit : 'unknown';
+        return ReadModelMetadata::repositoryShortCommit($this->repositoryRoot);
     }
 
     /**
