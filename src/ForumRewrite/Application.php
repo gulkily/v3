@@ -20,6 +20,7 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\Http\AboutPageController;
+use ForumRewrite\Http\RouteServices;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelCapabilityInspector;
 use ForumRewrite\ReadModel\ReadModelConnection;
@@ -58,6 +59,7 @@ final class Application
     private const LOBBY_GATE_LOG_ROTATE_LINES = 1000;
     private ?string $appVersion = null;
     private ?FeatureFlagEvaluator $featureFlags = null;
+    private ?RouteServices $routeServices = null;
     private ?LlmExchangeRecorder $llmExchangeRecorder = null;
     private bool $llmExchangeRecorderInitialized = false;
     private ?SqliteLlmExchangeStore $llmExchangeStore = null;
@@ -2731,21 +2733,31 @@ final class Application
         string $activeSection,
         array $scriptPaths = [],
     ): string {
-        if (!array_key_exists('viewerProfile', $pageData)) {
-            $pageData['viewerProfile'] = $this->authenticatedViewerProfile();
-        }
-        $publicAuthenticationResume = !$this->approvedMembersOnlyEnabled()
-            && $pageData['viewerProfile'] === null;
+        return $this->routeServices()->renderPageTemplate($pageTemplate, $pageData, $title, $activeSection, $scriptPaths);
+    }
 
-        return $this->renderer()->renderPageTemplate(
-            $pageTemplate,
-            $pageData,
-            $title,
-            $activeSection,
-            $scriptPaths,
-            $this->routeSource,
-            $publicAuthenticationResume,
-        );
+    /**
+     * The framework-level dependencies (DB access, response senders, page
+     * rendering) shared by every route handler, bundled so route-group
+     * controllers extracted out of this class can depend on this instead of
+     * on Application itself. See src/ForumRewrite/Http/RouteServices.php.
+     * Built once per request; Application's own send*()/render*()/pdo()
+     * methods now delegate here too, so there's one implementation, not two
+     * that can drift apart.
+     */
+    private function routeServices(): RouteServices
+    {
+        if ($this->routeServices === null) {
+            $this->routeServices = new RouteServices(
+                $this->databasePath,
+                $this->renderer(),
+                $this->routeSource,
+                $this->approvedMembersOnlyEnabled(),
+                $this->authenticatedViewerProfile(...),
+            );
+        }
+
+        return $this->routeServices;
     }
 
     /**
@@ -3848,23 +3860,7 @@ final class Application
 
     private function sendDownload(string $path, string $contentType, string $filename, bool $deleteAfterSend = false): void
     {
-        $size = filesize($path);
-        if ($size === false) {
-            if ($deleteAfterSend) {
-                @unlink($path);
-            }
-            throw new RuntimeException('Unable to determine download size.');
-        }
-
-        http_response_code(200);
-        header('Content-Type: ' . $contentType);
-        header('Content-Disposition: attachment; filename="' . str_replace('"', '', $filename) . '"');
-        header('Content-Length: ' . (string) $size);
-        readfile($path);
-
-        if ($deleteAfterSend) {
-            @unlink($path);
-        }
+        $this->routeServices()->sendDownload($path, $contentType, $filename, $deleteAfterSend);
     }
 
     private function repositoryShortCommit(): string
@@ -7270,7 +7266,7 @@ final class Application
 
     private function pdo(): PDO
     {
-        return (new ReadModelConnection($this->databasePath))->open();
+        return $this->routeServices()->pdo();
     }
 
     private function commitsCapabilityAvailable(): bool
@@ -7375,35 +7371,17 @@ final class Application
 
     private function notFound(): void
     {
-        $this->sendHtml(
-            $this->renderMessagePage(
-                'Not Found',
-                'Not Found',
-                'The requested route does not exist in the local test slice.',
-                'none'
-            ),
-            404
-        );
+        $this->routeServices()->notFound();
     }
 
     private function sendHtml(string $html, int $statusCode, array $headers = []): void
     {
-        http_response_code($statusCode);
-        header('Content-Type: text/html; charset=utf-8');
-        foreach ($headers as $headerValue) {
-            header($headerValue);
-        }
-        echo $html;
+        $this->routeServices()->sendHtml($html, $statusCode, $headers);
     }
 
     private function sendText(string $text, int $statusCode, array $headers = []): void
     {
-        http_response_code($statusCode);
-        header('Content-Type: text/plain; charset=utf-8');
-        foreach ($headers as $headerValue) {
-            header($headerValue);
-        }
-        echo $text;
+        $this->routeServices()->sendText($text, $statusCode, $headers);
     }
 
     private function normalizeSourceRoutePath(string $encodedRelativePath): ?string
@@ -7941,29 +7919,12 @@ final class Application
 
     private function sendXml(string $xml, int $statusCode): void
     {
-        http_response_code($statusCode);
-        header('Content-Type: application/rss+xml; charset=utf-8');
-        echo $xml;
+        $this->routeServices()->sendXml($xml, $statusCode);
     }
 
     private function sendRedirect(string $location, string $message, int $statusCode = 303, array $headers = [], string $activeSection = 'compose'): void
     {
-        http_response_code($statusCode);
-        header('Location: ' . $location);
-        header('Content-Type: text/html; charset=utf-8');
-        foreach ($headers as $headerValue) {
-            header($headerValue);
-        }
-
-        echo $this->renderPageTemplate(
-            'redirect.php',
-            [
-                'location' => $location,
-                'message' => $message,
-            ],
-            'Redirecting',
-            $activeSection
-        );
+        $this->routeServices()->sendRedirect($location, $message, $statusCode, $headers, $activeSection);
     }
 
     private function composeDraftStorageKey(string $kind, string $threadId = '', string $parentId = ''): string
@@ -8028,15 +7989,7 @@ final class Application
 
     private function renderMessagePage(string $title, string $heading, string $message, string $activeSection): string
     {
-        return $this->renderPageTemplate(
-            'message.php',
-            [
-                'heading' => $heading,
-                'message' => $message,
-            ],
-            $title,
-            $activeSection,
-        );
+        return $this->routeServices()->renderMessagePage($title, $heading, $message, $activeSection);
     }
 
     private function renderLobbyAccessRequiredPage(): string
