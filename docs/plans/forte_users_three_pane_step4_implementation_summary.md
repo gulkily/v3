@@ -210,5 +210,18 @@ Per the Step 2/Step 3 addenda, replacing the alphabetical filter with semantic c
   - `curl /forte/` and `/forte/activity/` still 200 — no regression (this partial is Users-only; `$forteContentMeta` itself is untouched and still used elsewhere).
 - Notes: none
 
+## Stage 18 - Add "Active"/"Member since" to detail-pane header
+- Changes:
+  - Added `userDirectoryActivityBounds(array $threads, array $posts): array` to `Application.php` — `min()`/`max()` over each item's timestamp (ISO 8601 UTC strings sort correctly as plain strings, no `DateTime` parsing needed), costing nothing beyond the thread/post lists the detail pane already fetches for its Threads/Posts sections.
+  - `handleForteUserDetail()`: fetches `$approvedThreads`/`$approvedPosts` once (was calling `countVisibleAuthoredRows()` separately, which internally re-fetched the same lists a second time — now `count()` on the arrays already in hand, removing a redundant query pair as a side effect), then passes `activeAt`/`memberSince` (latest/earliest) to the partial.
+  - `paned_user_detail_pane.php`: added "Active {date}" and "Member since {date}" spans to the header meta row, each rendered via the existing `$timestamp()` closure and omitted entirely (no dangling label) when there's no visible content to compute a date from.
+- Verification:
+  - `php -l` on both files: no syntax errors.
+  - `curl /api/forte_user_detail?username_token=ilyag`: header now reads "396 threads 607 posts Active Sep 20, 2026 at 01:28 UTC Member since Apr 13, 2026 at 12:50 UTC" — active date matches their most recent thread's own timestamp, member-since matches their earliest post found during Stage 7's verification.
+  - `curl /api/forte_user_detail?username_token=gojosatoru` (a genuine 0-thread/0-post user, found by querying for `thread_count = 0 AND post_count = 0`): header shows only "0 threads 0 posts" — both new spans correctly omitted, no dangling "Active"/"Member since" label.
+  - Pending-detail endpoint, `/forte/`, `/forte/activity/`, `/forte/users/` all still 200.
+  - Screenshot confirms both new fields render cleanly in the header.
+- Notes: none
+
 ## Outstanding
-All 17 stages (6 original + 7 semantic-category addendum + 1 margin fix + 1 sortable-columns addition + 1 post-title fix + 1 redundant-attribution fix) implemented, verified, and committed. Feature complete per the Step 2 addendum's revised requirements, plus sortable columns matching Board/Activity's convention.
+All 18 stages (6 original + 7 semantic-category addendum + 1 margin fix + 1 sortable-columns addition + 1 post-title fix + 1 redundant-attribution fix + 1 active/member-since addition) implemented, verified, and committed. Feature complete per the Step 2 addendum's revised requirements, plus sortable columns matching Board/Activity's convention.

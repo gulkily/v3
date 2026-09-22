@@ -5,6 +5,8 @@
  * @var int $approvedPostCount
  * @var array<int, array<string, mixed>> $approvedThreads
  * @var array<int, array<string, mixed>> $approvedPosts
+ * @var string $activeAt
+ * @var string $memberSince
  */
 ?>
 <article class="paned-content-post" data-paned-user-detail-token="<?= $e($usernameToken) ?>">
@@ -13,6 +15,12 @@
     <div class="paned-content-meta">
       <span><?= (int) $approvedThreadCount ?> thread<?= $approvedThreadCount === 1 ? '' : 's' ?></span>
       <span><?= (int) $approvedPostCount ?> post<?= $approvedPostCount === 1 ? '' : 's' ?></span>
+<?php if ($activeAt !== ''): ?>
+      <span>Active <?= $timestamp($activeAt) ?></span>
+<?php endif; ?>
+<?php if ($memberSince !== ''): ?>
+      <span>Member since <?= $timestamp($memberSince) ?></span>
+<?php endif; ?>
     </div>
   </div>
   <div class="body">

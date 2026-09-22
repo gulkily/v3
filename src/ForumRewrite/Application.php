@@ -1522,15 +1522,51 @@ final class Application
             $approvedProfiles
         ));
 
+        $approvedThreads = $this->fetchVisibleAuthoredThreads($approvedIdentityIds);
+        $approvedPosts = $this->fetchVisibleAuthoredPosts($approvedIdentityIds);
+        $activityBounds = $this->userDirectoryActivityBounds($approvedThreads, $approvedPosts);
+
         $html = $this->renderer()->renderFragment('partials/paned_user_detail_pane.php', [
             'usernameToken' => $usernameToken,
-            'approvedThreadCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, true),
-            'approvedPostCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, false),
-            'approvedThreads' => $this->fetchVisibleAuthoredThreads($approvedIdentityIds),
-            'approvedPosts' => $this->fetchVisibleAuthoredPosts($approvedIdentityIds),
+            'approvedThreadCount' => count($approvedThreads),
+            'approvedPostCount' => count($approvedPosts),
+            'approvedThreads' => $approvedThreads,
+            'approvedPosts' => $approvedPosts,
+            'activeAt' => $activityBounds['latest'],
+            'memberSince' => $activityBounds['earliest'],
         ]);
 
         $this->sendJson(['status' => 'ok', 'html' => $html], 200);
+    }
+
+    /**
+     * Earliest/latest timestamps across a user's visible threads/posts, for
+     * the detail pane's "Member since"/"Active" header line - approximated
+     * from their visible authored content (no join-date column exists) so
+     * it costs nothing beyond the thread/post lists the pane already
+     * fetches. ISO 8601 UTC timestamps sort correctly as plain strings, no
+     * DateTime parsing needed.
+     *
+     * @param array<int, array<string, mixed>> $threads
+     * @param array<int, array<string, mixed>> $posts
+     * @return array{earliest: string, latest: string}
+     */
+    private function userDirectoryActivityBounds(array $threads, array $posts): array
+    {
+        $timestamps = [];
+        foreach ($threads as $thread) {
+            $timestamps[] = (string) ($thread['root_post_created_at'] ?? '');
+        }
+        foreach ($posts as $post) {
+            $timestamps[] = (string) ($post['created_at'] ?? '');
+        }
+        $timestamps = array_values(array_filter($timestamps, static fn (string $timestamp): bool => $timestamp !== ''));
+
+        if ($timestamps === []) {
+            return ['earliest' => '', 'latest' => ''];
+        }
+
+        return ['earliest' => min($timestamps), 'latest' => max($timestamps)];
     }
 
     /**
