@@ -98,6 +98,8 @@ final class Application
             || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity'], true)
         ) {
             $this->startViewerSession();
+        } elseif ($this->shouldResumeViewerSession($method, $path, $query)) {
+            $this->resumeViewerSession();
         }
 
         if ($path === '/api/version') {
@@ -2744,7 +2746,8 @@ final class Application
 
     private function renderPage(string $title, string $content, string $activeSection, array $scriptPaths = []): string
     {
-        $viewerProfile = $this->approvedMembersOnlyEnabled() ? $this->authenticatedViewerProfile() : null;
+        $viewerProfile = $this->authenticatedViewerProfile();
+        $publicAuthenticationResume = !$this->approvedMembersOnlyEnabled() && $viewerProfile === null;
 
         return $this->renderer()->renderLayout(
             $title,
@@ -2754,6 +2757,7 @@ final class Application
             $this->routeSource,
             false,
             $viewerProfile,
+            $publicAuthenticationResume,
         );
     }
 
@@ -2768,9 +2772,11 @@ final class Application
         string $activeSection,
         array $scriptPaths = [],
     ): string {
-        if ($this->approvedMembersOnlyEnabled() && !array_key_exists('viewerProfile', $pageData)) {
+        if (!array_key_exists('viewerProfile', $pageData)) {
             $pageData['viewerProfile'] = $this->authenticatedViewerProfile();
         }
+        $publicAuthenticationResume = !$this->approvedMembersOnlyEnabled()
+            && $pageData['viewerProfile'] === null;
 
         return $this->renderer()->renderPageTemplate(
             $pageTemplate,
@@ -2779,6 +2785,7 @@ final class Application
             $activeSection,
             $scriptPaths,
             $this->routeSource,
+            $publicAuthenticationResume,
         );
     }
 
@@ -3912,6 +3919,7 @@ final class Application
         if ($authenticatedIdentityId !== '') {
             $authenticatedProfile = $this->fetchProfileByIdentityId($authenticatedIdentityId);
             if ($authenticatedProfile !== null) {
+                $authenticatedProfile['_authenticated_identity'] = true;
                 return $authenticatedProfile;
             }
         }
@@ -3925,14 +3933,26 @@ final class Application
         $stmt->execute(['username_token' => $hint]);
         $route = $stmt->fetch();
         if ($route !== false) {
-            return $this->fetchProfileByIdentityId((string) $route['identity_id']);
+            $profile = $this->fetchProfileByIdentityId((string) $route['identity_id']);
+            if ($profile !== null) {
+                $profile['_authenticated_identity'] = false;
+            }
+            return $profile;
         }
 
         if (str_starts_with($hint, 'openpgp:')) {
-            return $this->fetchProfileByIdentityId($hint);
+            $profile = $this->fetchProfileByIdentityId($hint);
+            if ($profile !== null) {
+                $profile['_authenticated_identity'] = false;
+            }
+            return $profile;
         }
 
-        return $this->fetchProfileBySlug($hint);
+        $profile = $this->fetchProfileBySlug($hint);
+        if ($profile !== null) {
+            $profile['_authenticated_identity'] = false;
+        }
+        return $profile;
     }
 
     private function approvedMembersOnlyEnabled(): bool
@@ -5207,6 +5227,59 @@ final class Application
             'cookie_samesite' => 'Lax',
             'cookie_secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
             'use_strict_mode' => true,
+        ]);
+    }
+
+    /** @param array<string, mixed> $query */
+    private function shouldResumeViewerSession(string $method, string $path, array $query): bool
+    {
+        if (!$this->hasViewerSessionCookie()) {
+            return false;
+        }
+
+        if ($method === 'POST') {
+            return $path === '/api/prepare_invitation';
+        }
+
+        if ($method !== 'GET' || !$this->isApplicationRoute($path)) {
+            return false;
+        }
+
+        if (str_starts_with($path, '/api/') || str_starts_with($path, '/downloads/')) {
+            return false;
+        }
+
+        return ($query['format'] ?? null) !== 'rss';
+    }
+
+    private function hasViewerSessionCookie(): bool
+    {
+        $value = $_COOKIE[session_name()] ?? null;
+
+        return is_string($value) && $value !== '';
+    }
+
+    private function resumeViewerSession(): void
+    {
+        $sessionName = session_name();
+        $requestedSessionId = (string) ($_COOKIE[$sessionName] ?? '');
+        $this->startViewerSession();
+
+        if (session_status() !== PHP_SESSION_ACTIVE || $requestedSessionId === session_id()) {
+            return;
+        }
+
+        session_abort();
+        session_id('');
+        unset($_COOKIE[$sessionName]);
+        $params = session_get_cookie_params();
+        setcookie($sessionName, '', [
+            'expires' => time() - 3600,
+            'path' => $params['path'] ?? '/',
+            'domain' => $params['domain'] ?? '',
+            'secure' => (bool) ($params['secure'] ?? false),
+            'httponly' => (bool) ($params['httponly'] ?? true),
+            'samesite' => $params['samesite'] ?? 'Lax',
         ]);
     }
 

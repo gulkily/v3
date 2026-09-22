@@ -34,6 +34,7 @@ final class TemplateRenderer
         string $activeSection,
         array $scriptPaths = [],
         string $routeSource = 'php-fallback',
+        bool $publicAuthenticationResume = false,
     ): string {
         $content = $this->renderFile('pages/' . $pageTemplate, $pageData);
         $showThreadDensityToggle = in_array($pageTemplate, self::THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES, true);
@@ -48,6 +49,7 @@ final class TemplateRenderer
             $routeSource,
             $showThreadDensityToggle,
             $viewerProfile,
+            $publicAuthenticationResume,
         );
     }
 
@@ -62,6 +64,7 @@ final class TemplateRenderer
         string $routeSource = 'php-fallback',
         bool $showThreadDensityToggle = false,
         ?array $viewerProfile = null,
+        bool $publicAuthenticationResume = false,
     ): string {
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)
             && $viewerProfile !== null
@@ -73,6 +76,14 @@ final class TemplateRenderer
                 '/assets/browser_signing.js',
                 '/assets/private_site_auth.js',
                 '/assets/auth_navigation.js',
+            ]);
+        }
+
+        if ($publicAuthenticationResume) {
+            $scriptPaths = array_merge($scriptPaths, [
+                '/assets/openpgp_loader.js',
+                '/assets/browser_signing.js',
+                '/assets/private_site_auth.js',
             ]);
         }
 
@@ -102,6 +113,7 @@ final class TemplateRenderer
             'explicitThemeNames' => ThemeRegistry::explicitNames(),
             'defaultTheme' => SiteProfileRegistry::active()['defaultTheme'],
             'approvedMembersOnlyEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
+            'publicAuthenticationResume' => $publicAuthenticationResume,
             'navItems' => $this->navItems($viewerProfile),
         ]);
     }

@@ -91,6 +91,15 @@ FORUM_PUBLIC_ARTIFACT_ROOT=/srv/forum-rewrite/app/public
 
 `FORUM_STATIC_HTML_ROOT` remains available for separate static roots, but the primary production model for this repo is sibling artifacts in `public/`.
 
+## Public Session Restoration
+
+Public pages remain readable without a viewer session. A browser that already
+has an authenticated session resumes it on ordinary HTML navigation. When that
+session is absent, a browser with a usable saved approved-member key can prove
+key possession and restore its session automatically; writes and API requests
+are never retried automatically. Invitation issuance continues to require the
+restored session plus its existing browser signature verification.
+
 LLM exchange records are private runtime data. Keep `LLM_EXCHANGE_DATABASE_PATH` outside `public/`, the canonical repository, and the published read-model database; restrict the file to the deployment/web users. The exchange UI is available only to approved viewers and can be disabled independently with `LLM_CONVERSATION_UI_ENABLED=false`.
 
 Internal task-queue records are also private runtime data. Keep `FORUM_TASK_QUEUE_DATABASE_PATH` outside `public/`, the canonical repository, and the published read-model database. The queue is deliberately separate from the rebuildable read model so a rebuild task retains its state and final outcome.

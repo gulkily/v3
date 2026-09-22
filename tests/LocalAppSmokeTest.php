@@ -82,6 +82,97 @@ final class LocalAppSmokeTest
         }
     }
 
+    public function testApprovedPublicSessionIsResumedForBoardAndInvite(): void
+    {
+        $script = <<<'PHP'
+require $argv[1] . '/autoload.php';
+
+use ForumRewrite\Application;
+
+$sessionId = 'public-approved-' . bin2hex(random_bytes(8));
+$databasePath = sys_get_temp_dir() . '/forum-rewrite-public-session-' . bin2hex(random_bytes(6)) . '.sqlite3';
+
+try {
+    session_id($sessionId);
+    session_start();
+    $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+    session_write_close();
+    session_id('');
+    $_COOKIE[session_name()] = $sessionId;
+    // The CLI test process does not populate the session module from $_COOKIE,
+    // so mirror the web SAPI's request initialization before handling the page.
+    session_id($sessionId);
+
+    $application = new Application($argv[1], $argv[2], $databasePath);
+    ob_start();
+    $application->handle('GET', '/');
+    $board = (string) ob_get_clean();
+    ob_start();
+    $application->handle('GET', '/invites/');
+    $invites = (string) ob_get_clean();
+    ob_start();
+    $application->handle('GET', '/api/auth_status');
+    $authStatus = (string) ob_get_clean();
+    ob_start();
+    $application->handle('POST', '/api/prepare_invitation');
+    $invitationPreparation = (string) ob_get_clean();
+
+    if (!str_contains($board, 'href="/invites/" data-invite-navigation>Invite</a>')
+        || !str_contains($invites, '<h1>Generate invite</h1>')
+        || $authStatus !== "status=authenticated\n"
+        || str_contains($invitationPreparation, 'Only authenticated approved users can issue invitations.')) {
+        throw new RuntimeException('Public session was not resumed for Board and Invite.');
+    }
+} finally {
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+    @unlink($databasePath);
+}
+PHP;
+        $command = sprintf(
+            'php -r %s %s %s',
+            escapeshellarg($script),
+            escapeshellarg(dirname(__DIR__)),
+            escapeshellarg($this->repositoryRoot),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+
+        assertSame(0, $exitCode, implode("\n", $output));
+    }
+
+    public function testAnonymousPublicBoardDoesNotStartViewerSession(): void
+    {
+        $previousCookie = $_COOKIE;
+        $previousSession = $_SESSION ?? null;
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-public-anonymous-' . bin2hex(random_bytes(6)) . '.sqlite3';
+
+        try {
+            $_COOKIE = [];
+            session_id('');
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
+
+            $board = $this->render($application, '/');
+
+            assertSame(PHP_SESSION_NONE, session_status());
+            assertStringNotContains('href="/invites/" data-invite-navigation>Invite</a>', $board);
+            assertStringContains('data-public-auth-resume="true"', $board);
+            assertFingerprintedAsset($board, 'private_site_auth.js');
+        } finally {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            session_id('');
+            $_COOKIE = $previousCookie;
+            if ($previousSession === null) {
+                unset($_SESSION);
+            } else {
+                $_SESSION = $previousSession;
+            }
+            @unlink($databasePath);
+        }
+    }
+
     public function testPrivateViewerSessionCookiePersistsAcrossBrowserRestart(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');

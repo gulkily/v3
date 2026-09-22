@@ -237,8 +237,19 @@
 
   window.PrivateSiteAuth = { authenticate: authenticate };
   document.addEventListener("DOMContentLoaded", function () {
-    if (document.querySelector("[data-private-site-auth-state]")) {
-      authenticate().catch(function () {});
+    var state = document.querySelector("[data-private-site-auth-state]");
+    if (!state) {
+      return;
     }
+
+    if (state.dataset && state.dataset.publicAuthResume === "true") {
+      authenticate({
+        returnTo: window.location.pathname + window.location.search,
+        replaceHistory: true
+      }).catch(function () {});
+      return;
+    }
+
+    authenticate().catch(function () {});
   });
 })();
