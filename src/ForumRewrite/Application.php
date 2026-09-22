@@ -21,6 +21,7 @@ use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\Http\AboutPageController;
 use ForumRewrite\Http\InstancePageController;
+use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\ReadModel\AuthoredContentRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
@@ -413,12 +414,12 @@ final class Application
         }
 
         if ($path === '/users/pending/' || $path === '/users/pending') {
-            $this->handlePendingUserDirectory($method);
+            $this->profilePageController()->pendingDirectory($method);
             return;
         }
 
         if ($path === '/users/' || $path === '/users') {
-            $this->sendHtml($this->renderUserDirectory(), 200);
+            $this->sendHtml($this->profilePageController()->directory(), 200);
             return;
         }
 
@@ -643,7 +644,7 @@ final class Application
         }
 
         if (preg_match('#^/profiles/([^/]+)/?$#', $path, $matches) === 1) {
-            $html = $this->renderProfile($matches[1], isset($query['self']), $query);
+            $html = $this->profilePageController()->profile($matches[1], isset($query['self']), $query);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -654,7 +655,7 @@ final class Application
         }
 
         if (preg_match('#^/user/([^/]+)/?$#', $path, $matches) === 1) {
-            $html = $this->renderUsername($matches[1]);
+            $html = $this->profilePageController()->username($matches[1]);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -1990,19 +1991,6 @@ final class Application
     }
 
     /**
-     * @param array<string, mixed> $query
-     */
-    private function renderProfile(string $slug, bool $self = false, array $query = []): ?string
-    {
-        $profile = $this->fetchProfileBySlug($slug);
-        if ($profile === null) {
-            return null;
-        }
-
-        return $this->renderProfilePage($profile, $self, $this->profileNoticeFromQuery($profile, $query));
-    }
-
-    /**
      * @param array<string, mixed> $profile
      */
     private function renderProfilePage(array $profile, bool $self = false, ?string $notice = null, ?string $error = null): string
@@ -2040,61 +2028,12 @@ final class Application
         );
     }
 
-    /**
-     * @param array<string, mixed> $profile
-     * @param array<string, mixed> $query
-     */
-    private function profileNoticeFromQuery(array $profile, array $query): ?string
+    private function profilePageController(): ProfilePageController
     {
-        if (($query['approval'] ?? null) !== 'success') {
-            return null;
-        }
-
-        $postId = (string) ($query['post_id'] ?? '');
-        $commitSha = (string) ($query['commit'] ?? '');
-        if (!preg_match('/^[A-Za-z0-9._-]+$/', $postId) || !preg_match('/^[a-f0-9]{40}$/', $commitSha)) {
-            return null;
-        }
-
-        return 'Approved user ' . $this->escape((string) $profile['username']) . '. '
-            . '<a href="/posts/' . $this->escape($postId) . '">Open approval post</a>. '
-            . 'Commit ' . $this->escape($commitSha);
-    }
-
-    private function renderUsername(string $username): ?string
-    {
-        $usernameToken = strtolower($username);
-        $profiles = $this->fetchProfilesByUsernameToken($usernameToken);
-        if ($profiles === []) {
-            return null;
-        }
-
-        $approvedProfiles = array_values(array_filter(
-            $profiles,
-            static fn (array $profile): bool => ((int) $profile['is_approved']) === 1
-        ));
-        $unapprovedProfiles = array_values(array_filter(
-            $profiles,
-            static fn (array $profile): bool => ((int) $profile['is_approved']) !== 1
-        ));
-        $approvedIdentityIds = array_values(array_map(
-            static fn (array $profile): string => (string) $profile['identity_id'],
-            $approvedProfiles
-        ));
-
-        return $this->renderPageTemplate(
-            'username.php',
-            [
-                'usernameToken' => $usernameToken,
-                'approvedProfiles' => $approvedProfiles,
-                'unapprovedProfiles' => $unapprovedProfiles,
-                'approvedThreadCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, true),
-                'approvedPostCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, false),
-                'approvedThreads' => $this->fetchVisibleAuthoredThreads($approvedIdentityIds),
-                'approvedPosts' => $this->fetchVisibleAuthoredPosts($approvedIdentityIds),
-            ],
-            'User ' . $usernameToken,
-            'profiles',
+        return new ProfilePageController(
+            $this->routeServices(),
+            $this->resolveViewerProfileFromIdentityHint(...),
+            $this->renderProfilePage(...),
         );
     }
 
@@ -2225,35 +2164,6 @@ final class Application
         return $this->renderComposeThreadPage($boardTags, $subject, $body);
     }
 
-    private function renderUserDirectory(): string
-    {
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-
-        return $this->renderPageTemplate(
-            'users.php',
-            [
-                'users' => $this->fetchApprovedUserDirectoryUsers(),
-                'showPendingLink' => $viewerProfile !== null
-                    && ((int) $viewerProfile['is_approved']) === 1
-                    && $this->hasPendingUserDirectoryProfiles(),
-            ],
-            'Users',
-            'profiles',
-        );
-    }
-
-    private function renderPendingUserDirectory(): string
-    {
-        return $this->renderPageTemplate(
-            'users_pending.php',
-            [
-                'profiles' => $this->fetchPendingUserDirectoryProfiles(),
-            ],
-            'Users Awaiting Approval',
-            'profiles',
-            $this->identityScripts(['/assets/pending_approvals.js']),
-        );
-    }
 
     private function renderTools(): string
     {
@@ -4014,18 +3924,7 @@ final class Application
      */
     private function fetchApprovedUserDirectoryUsers(): array
     {
-        $stmt = $this->pdo()->query(
-            'SELECT username_token, MIN(username) AS username,
-                    COUNT(*) AS approved_profile_count,
-                    SUM(thread_count) AS thread_count,
-                    SUM(post_count) AS post_count
-             FROM profiles
-             WHERE is_approved = 1
-             GROUP BY username_token
-             ORDER BY SUM(thread_count) DESC, SUM(post_count) DESC, username_token ASC'
-        );
-
-        return $stmt->fetchAll();
+        return ProfileRepository::approvedDirectoryUsers($this->pdo());
     }
 
     /**
@@ -4137,14 +4036,7 @@ final class Application
      */
     private function fetchPendingUserDirectoryProfiles(): array
     {
-        $stmt = $this->pdo()->query(
-            'SELECT profile_slug, username, username_token, fallback_label, post_count, thread_count, bootstrap_post_id, bootstrap_thread_id
-             FROM profiles
-             WHERE is_approved = 0
-             ORDER BY thread_count DESC, post_count DESC, username_token ASC, profile_slug ASC'
-        );
-
-        return $stmt->fetchAll();
+        return ProfileRepository::pendingDirectoryProfiles($this->pdo());
     }
 
     /**
@@ -4300,41 +4192,7 @@ final class Application
 
     private function hasPendingUserDirectoryProfiles(): bool
     {
-        $stmt = $this->pdo()->query('SELECT 1 FROM profiles WHERE is_approved = 0 LIMIT 1');
-
-        return $stmt->fetchColumn() !== false;
-    }
-
-    private function handlePendingUserDirectory(string $method): void
-    {
-        if ($method !== 'GET') {
-            $this->sendHtml(
-                $this->renderMessagePage(
-                    'Method Not Allowed',
-                    'Method Not Allowed',
-                    'Only GET is supported for the pending user directory.',
-                    'none'
-                ),
-                405
-            );
-            return;
-        }
-
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        if ($viewerProfile === null || ((int) $viewerProfile['is_approved']) !== 1) {
-            $this->sendHtml(
-                $this->renderMessagePage(
-                    'Forbidden',
-                    'Forbidden',
-                    'Only approved users can view the pending approval directory.',
-                    'profiles'
-                ),
-                403
-            );
-            return;
-        }
-
-        $this->sendHtml($this->renderPendingUserDirectory(), 200);
+        return ProfileRepository::hasPendingDirectoryProfiles($this->pdo());
     }
 
     /**
@@ -7656,11 +7514,6 @@ final class Application
             'httponly' => false,
             'samesite' => 'Lax',
         ]);
-    }
-
-    private function escape(string $value): string
-    {
-        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
     private function escapeXml(string $value): string

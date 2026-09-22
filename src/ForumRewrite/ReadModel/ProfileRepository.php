@@ -66,4 +66,48 @@ final class ProfileRepository
 
         return $stmt->fetchAll();
     }
+
+    /**
+     * Approved profiles rolled up by username_token, for the user directory
+     * (both the classic /users/ page and Forte's own).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function approvedDirectoryUsers(PDO $pdo): array
+    {
+        $stmt = $pdo->query(
+            'SELECT username_token, MIN(username) AS username,
+                    COUNT(*) AS approved_profile_count,
+                    SUM(thread_count) AS thread_count,
+                    SUM(post_count) AS post_count
+             FROM profiles
+             WHERE is_approved = 1
+             GROUP BY username_token
+             ORDER BY SUM(thread_count) DESC, SUM(post_count) DESC, username_token ASC'
+        );
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public static function pendingDirectoryProfiles(PDO $pdo): array
+    {
+        $stmt = $pdo->query(
+            'SELECT profile_slug, username, username_token, fallback_label, post_count, thread_count, bootstrap_post_id, bootstrap_thread_id
+             FROM profiles
+             WHERE is_approved = 0
+             ORDER BY thread_count DESC, post_count DESC, username_token ASC, profile_slug ASC'
+        );
+
+        return $stmt->fetchAll();
+    }
+
+    public static function hasPendingDirectoryProfiles(PDO $pdo): bool
+    {
+        $stmt = $pdo->query('SELECT 1 FROM profiles WHERE is_approved = 0 LIMIT 1');
+
+        return $stmt->fetchColumn() !== false;
+    }
 }
