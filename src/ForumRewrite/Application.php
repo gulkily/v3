@@ -19,6 +19,7 @@ use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
+use ForumRewrite\Http\AboutPageController;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelCapabilityInspector;
 use ForumRewrite\ReadModel\ReadModelConnection;
@@ -2146,14 +2147,7 @@ final class Application
 
     private function renderAbout(): string
     {
-        return $this->renderPageTemplate(
-            'about.php',
-            [
-                'siteName' => SiteConfig::siteName(),
-            ],
-            'About',
-            'about',
-        );
+        return (new AboutPageController($this->renderPageTemplate(...)))->render();
     }
 
     private function renderActivity(string $view): string
