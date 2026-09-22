@@ -140,3 +140,15 @@ Per the Step 2/Step 3 addenda, replacing the alphabetical filter with semantic c
   - `curl /forte/users/` → "39 users". `?view=established` → "Showing 12 of 39 users (Established)", filter pane's "Established" entry carries `paned-folder-item--selected`. `?view=not-approved` → "36 pending users". `?view=bogus` → falls back to "39 users" (normalization confirmed). `?view=not-approved&selected=onthebus` → the pending row carries both `paned-list-row--pending` and `paned-list-row--selected`.
   - `curl /forte/` and `/forte/activity/` → both still 200 (no regression). The old `?letter=I` param is now harmlessly ignored (200, falls back to `all`).
 - Notes: none
+
+## Stage 12 - Client-side controller rework
+- Changes:
+  - Rewrote `public/assets/paned_users_reader.js`: filter-item/row queries switched from `data-paned-user-letter` to `data-paned-user-category`; row visibility now checks `row.getAttribute("data-paned-user-category-" + category) === "1"` (mirroring `paned_activity_reader.js`'s `data-paned-activity-view-*` check exactly) instead of an equality comparison — this also means "All Users" excluding pending rows falls out of the same mechanism automatically (pending rows never carry a `-category-all` attribute), no special-casing needed.
+  - URL param renamed `letter` → `view`; `urlForState()` omits it entirely when the category is `all` (was: omit when letter was empty) so default-state URLs stay clean.
+  - Status-bar text logic ported from the PHP template's three-way split (All / Not Approved / other), pulling each category's display label from its own filter-item `<span>` text rather than a duplicated JS lookup table.
+  - Row-click detail-fetch logic (Stage 5) is untouched — pending rows flow through the exact same `selectUser()`/`showUserDetail()` path as approved rows, since Stage 10's endpoint already handles both.
+- Verification:
+  - `node --check`: no syntax errors.
+  - Playwright browser session against the local dev server: clicking "Established" narrows to 12 rows with `?view=established` and matching status text; clicking "Not Approved" shows exactly the 36 pending rows (confirmed all visible rows carry the pending style) with `?view=not-approved`; clicking a pending row fetches and displays its "Pending approval" detail correctly; switching back to "All Users" hides all pending rows again (0 visible) and restores 39 visible approved rows; a deep-link to `?view=recently-active` reproduces the 1-row filtered state without any click; clicking "New" then browser-back restores the "All Users" URL and status text. Zero console/page errors throughout.
+  - Screenshot of `?view=not-approved` with a pending row selected: filter pane, muted/italic pending rows, and the pending detail pane all render together correctly.
+- Notes: none

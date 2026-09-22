@@ -7,15 +7,15 @@
       return;
     }
 
-    var filterItems = Array.prototype.slice.call(filterList.querySelectorAll("[data-paned-user-letter]"));
+    var filterItems = Array.prototype.slice.call(filterList.querySelectorAll("[data-paned-user-category]"));
     var rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
     var placeholder = detailPane.querySelector("[data-paned-user-detail-placeholder]");
     var statusCount = document.querySelector("[data-paned-users-status-count]");
     var totalUserCount = statusCount ? parseInt(statusCount.getAttribute("data-paned-users-total-count"), 10) : rows.length;
     var detailCache = {};
 
-    function currentLetterFromUrl() {
-      return new URLSearchParams(location.search).get("letter") || "";
+    function currentCategoryFromUrl() {
+      return new URLSearchParams(location.search).get("view") || "all";
     }
 
     function currentSelectedFromUrl() {
@@ -38,10 +38,10 @@
       return null;
     }
 
-    function urlForState(letter, selectedToken) {
+    function urlForState(category, selectedToken) {
       var params = new URLSearchParams();
-      if (letter !== "") {
-        params.set("letter", letter);
+      if (category !== "all") {
+        params.set("view", category);
       }
       if (selectedToken !== "") {
         params.set("selected", selectedToken);
@@ -139,9 +139,17 @@
       showUserDetail(token);
     }
 
-    function selectFilter(letter) {
+    function categoryLabel(category) {
+      var item = filterItems.filter(function (filterItem) {
+        return filterItem.getAttribute("data-paned-user-category") === category;
+      })[0];
+      var labelNode = item ? item.querySelector("span") : null;
+      return labelNode ? labelNode.textContent : category;
+    }
+
+    function selectFilter(category) {
       filterItems.forEach(function (item) {
-        var isSelected = item.getAttribute("data-paned-user-letter") === letter;
+        var isSelected = item.getAttribute("data-paned-user-category") === category;
         item.classList.toggle("paned-folder-item--selected", isSelected);
         item.setAttribute("aria-selected", isSelected ? "true" : "false");
         item.setAttribute("tabindex", isSelected ? "0" : "-1");
@@ -150,7 +158,7 @@
       var selectedRowNowHidden = false;
       var visibleCount = 0;
       rows.forEach(function (row) {
-        var visible = letter === "" || row.getAttribute("data-paned-user-row-letter") === letter;
+        var visible = row.getAttribute("data-paned-user-category-" + category) === "1";
         row.hidden = !visible;
         if (visible) {
           visibleCount++;
@@ -165,21 +173,25 @@
       }
 
       if (statusCount) {
-        statusCount.textContent = letter === ""
-          ? totalUserCount + " user" + (totalUserCount === 1 ? "" : "s")
-          : "Showing " + visibleCount + " of " + totalUserCount + " users (" + letter + ")";
+        if (category === "all") {
+          statusCount.textContent = totalUserCount + " user" + (totalUserCount === 1 ? "" : "s");
+        } else if (category === "not-approved") {
+          statusCount.textContent = visibleCount + " pending user" + (visibleCount === 1 ? "" : "s");
+        } else {
+          statusCount.textContent = "Showing " + visibleCount + " of " + totalUserCount + " users (" + categoryLabel(category) + ")";
+        }
       }
     }
 
-    function applyFilterSelection(letter) {
-      selectFilter(letter);
-      pushStateIfChanged(urlForState(letter, currentSelectedToken()));
+    function applyFilterSelection(category) {
+      selectFilter(category);
+      pushStateIfChanged(urlForState(category, currentSelectedToken()));
     }
 
     filterList.addEventListener("click", function (event) {
-      var item = event.target.closest ? event.target.closest("[data-paned-user-letter]") : null;
+      var item = event.target.closest ? event.target.closest("[data-paned-user-category]") : null;
       if (item) {
-        applyFilterSelection(item.getAttribute("data-paned-user-letter"));
+        applyFilterSelection(item.getAttribute("data-paned-user-category"));
       }
     });
 
@@ -190,11 +202,11 @@
       }
       var token = row.getAttribute("data-paned-user-token");
       selectUser(token);
-      pushStateIfChanged(urlForState(currentLetterFromUrl(), token));
+      pushStateIfChanged(urlForState(currentCategoryFromUrl(), token));
     });
 
     function restoreFromUrl() {
-      selectFilter(currentLetterFromUrl());
+      selectFilter(currentCategoryFromUrl());
 
       var selected = currentSelectedFromUrl();
       var selectedRow = selected === "" ? null : rows.filter(function (row) {
