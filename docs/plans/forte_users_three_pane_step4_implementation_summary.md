@@ -114,3 +114,17 @@ Per the Step 2/Step 3 addenda, replacing the alphabetical filter with semantic c
   - Rendered the list partial for `selectedCategory` = `all`, `established`, `not-approved`: 75 total rows in markup every time (39 approved + 36 pending, both kinds always present); hidden-row counts matched hand-calculated expectations exactly for all three (`all`: 36 hidden = all pending; `established`: 63 hidden = 27 non-established approved + 36 pending; `not-approved`: 39 hidden = all approved).
 - Notes:
   - This changes Stage 10's data source: it should use `fetchNeverApprovedPendingUserDirectoryUsers()` for its pending-token fallback, not the raw `fetchPendingUserDirectoryProfiles()` the Step 3 plan named.
+
+## Stage 10 - Pending-user detail pane
+- Changes:
+  - Extended `handleForteUserDetail()`: when no approved profile matches the token, delegates to a new `handleForteUserDetailPending(string $usernameToken, array $profiles): void` instead of 404ing immediately.
+  - **Implementation simplification vs. the plan**: rather than calling `fetchNeverApprovedPendingUserDirectoryUsers()` a second time, `handleForteUserDetailPending()` reuses the `$profiles` array `handleForteUserDetail()` already fetched via `fetchProfilesByUsernameToken()` (every profile, any approval status, for this exact token) — one query instead of two, and the semantics line up exactly: this fallback is only reached when zero of those profiles are approved, matching `fetchNeverApprovedPendingUserDirectoryUsers()`'s own exclusion rule.
+  - `handleForteUserDetailPending()` aggregates thread/post counts across all pending profiles sharing the token (handles the "guest"/"guest2" duplicate-profile case from Stage 9) and 404s only when the token has no profiles at all.
+  - New partial `templates/partials/paned_user_pending_detail_pane.php`: username, pending profile count, aggregated thread/post counts, "not approved yet" messaging. Read-only — no approve action embedded (that stays on the existing `/users/pending/` admin page, keeping this endpoint out of moderation-action scope).
+- Verification:
+  - `php -l` on both changed/added files: no syntax errors.
+  - `curl /api/forte_user_detail?username_token=onthebus` (single pending profile) → 200, "1 pending profile, 8 threads, 10 posts submitted so far" (matches Stage 9's verified query output for that token exactly).
+  - `curl /api/forte_user_detail?username_token=guest2` (2 duplicate pending profiles) → 200, correctly aggregated to "2 pending profiles, 1 thread, 1 post" (matches Stage 9's `pending_profile_count: 2` finding).
+  - `curl /api/forte_user_detail?username_token=ilyag` (approved) → still 200 with the original approved-detail fragment, unchanged.
+  - `curl /api/forte_user_detail?username_token=totally-unknown-xyz` → still 404.
+- Notes: none

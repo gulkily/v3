@@ -1496,7 +1496,7 @@ final class Application
             static fn (array $profile): bool => ((int) $profile['is_approved']) === 1
         ));
         if ($approvedProfiles === []) {
-            $this->sendJson(['status' => 'error', 'error' => 'user not found'], 404);
+            $this->handleForteUserDetailPending($usernameToken, $profiles);
             return;
         }
 
@@ -1511,6 +1511,36 @@ final class Application
             'approvedPostCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, false),
             'approvedThreads' => $this->fetchVisibleAuthoredThreads($approvedIdentityIds),
             'approvedPosts' => $this->fetchVisibleAuthoredPosts($approvedIdentityIds),
+        ]);
+
+        $this->sendJson(['status' => 'ok', 'html' => $html], 200);
+    }
+
+    /**
+     * The Users pane detail-pane fallback for a token with no approved
+     * profile - either genuinely unknown, or a "never approved" pending
+     * user (see `fetchNeverApprovedPendingUserDirectoryUsers()`). Reuses
+     * `$profiles` already fetched by `handleForteUserDetail()` rather than
+     * a second query - a caller that already confirmed `$approvedProfiles`
+     * is empty need not re-derive that from scratch.
+     *
+     * @param array<int, array<string, mixed>> $profiles every profile (any approval status) for this token
+     */
+    private function handleForteUserDetailPending(string $usernameToken, array $profiles): void
+    {
+        if ($profiles === []) {
+            $this->sendJson(['status' => 'error', 'error' => 'user not found'], 404);
+            return;
+        }
+
+        $pendingThreadCount = array_sum(array_map(static fn (array $p): int => (int) $p['thread_count'], $profiles));
+        $pendingPostCount = array_sum(array_map(static fn (array $p): int => (int) $p['post_count'], $profiles));
+
+        $html = $this->renderer()->renderFragment('partials/paned_user_pending_detail_pane.php', [
+            'usernameToken' => $usernameToken,
+            'pendingProfileCount' => count($profiles),
+            'pendingThreadCount' => $pendingThreadCount,
+            'pendingPostCount' => $pendingPostCount,
         ]);
 
         $this->sendJson(['status' => 'ok', 'html' => $html], 200);
