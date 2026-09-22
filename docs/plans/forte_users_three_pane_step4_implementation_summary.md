@@ -33,3 +33,19 @@
   - `php -l`: no syntax errors.
   - Rendered the partial via `renderFragment()` with the real 39-user dataset, `selectedLetter = 'I'`, `selectedUserToken = 'ilyag'`: 3 rows visible / 36 rows carry `hidden` (matches Stage 2's letter-group count for "I"), exactly one row carries `paned-list-row--selected`, and the `ilyag` row is present with the expected `data-paned-user-token` attribute.
 - Notes: none
+
+## Stage 4 - Page template + route wiring
+- Changes:
+  - Rewrote `templates/pages/forte_users.php` from a flat `paned-standalone-body` list to the `paned-window` > `paned-menubar` > toolbar > `paned-board-layout` (filter pane + `paned-panes-stack` holding the list pane and a static "No user selected" detail-pane placeholder) structure `forte_board.php` already uses; added a status-bar line mirroring Board's ("Showing N of M users (LETTER)").
+  - Extended `renderForteUserDirectory(string $requestedLetter = '', string $requestedSelected = '')` to compute `letterGroups` via Stage 2's `buildUserDirectoryLetterGroups()` and pass `selectedLetter` / `selectedUserToken` (uppercased/lowercased respectively) to the template.
+  - Updated the `/forte/users/` route to pass `$query['letter']` / `$query['selected']` through, mirroring the `/forte/?` route's `tag`/`selected` handling.
+  - Scripts argument to `renderStandalonePage()` intentionally left as `[]` — `paned_users_reader.js` is registered in Stage 5 once it exists.
+- Verification:
+  - `php -l` on both changed files: no syntax errors.
+  - `curl /forte/users/` → 200, correct 3-pane HTML, status bar reads "39 users".
+  - `curl /forte/users/?letter=I` → the "I" filter entry carries `paned-folder-item--selected`, status bar reads "Showing 3 of 39 users (I)".
+  - `curl /forte/users/?selected=ilyag` → the `ilyag` row carries `paned-list-row--selected`.
+  - `curl /forte/users/?letter=i&selected=ilyag` → 200 (combined params, case-insensitive letter).
+  - `curl /forte/` and `curl /forte/activity/` → both still 200 (Board/Activity unaffected).
+- Notes:
+  - The detail pane placeholder is unconditional (never server-side "hidden"), even when `?selected=` is present — there is no server-rendered populated state (per the Step 3 decision), so Stage 5's JS must additionally sync the detail pane from the URL on page load, not just on row click.

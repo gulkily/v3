@@ -568,7 +568,10 @@ final class Application
         }
 
         if ($path === '/forte/users/' || $path === '/forte/users') {
-            $this->sendHtml($this->renderForteUserDirectory(), 200);
+            $this->sendHtml($this->renderForteUserDirectory(
+                (string) ($query['letter'] ?? ''),
+                (string) ($query['selected'] ?? ''),
+            ), 200);
             return;
         }
 
@@ -1101,12 +1104,17 @@ final class Application
         );
     }
 
-    private function renderForteUserDirectory(): string
+    private function renderForteUserDirectory(string $requestedLetter = '', string $requestedSelected = ''): string
     {
+        $users = $this->fetchApprovedUserDirectoryUsers();
+
         return $this->renderer()->renderStandalonePage(
             'forte_users.php',
             [
-                'users' => $this->fetchApprovedUserDirectoryUsers(),
+                'users' => $users,
+                'letterGroups' => $this->buildUserDirectoryLetterGroups($users),
+                'selectedLetter' => strtoupper(trim($requestedLetter)),
+                'selectedUserToken' => strtolower(trim($requestedSelected)),
             ],
             'Users - Forte',
             'paned-reader-body',
