@@ -12,3 +12,16 @@
 - Notes:
   - `$relativeTimestamp` is registered globally in `TemplateRenderer::renderFile()`, so no wiring was needed beyond the template edits.
   - No other `$timestamp` usage exists on Board/Activity partials, so nothing else needed to be left alone deliberately — there was nothing else to touch.
+
+## Stage 2 - Board Score column
+- Changes:
+  - `templates/partials/paned_board_thread_list.php`: added a "Score" head button (`data-paned-sort-column="score"`) after Replies, a `data-paned-sort-score` row attribute, and a `.paned-list-score` row span rendering `(int) $thread['score_total']`.
+  - `public/assets/paned_board_reader.js`: extended `sortValueFor()`'s numeric branch (previously special-cased for `replies` only) to also parse `score` as an integer; added `score: "desc"` to `sortDefaultDir`, matching the existing default-order-by-score direction in `Application.php`'s thread comparator.
+  - `public/assets/forte.css`: added `.paned-list-score-head`/`.paned-list-score` (5rem, right-aligned, same as `.paned-list-replies-head`/`.paned-list-replies`) and included `.paned-list-score` in the existing selected-row text-color rule.
+- Verification:
+  - `php -l` on the template — no syntax errors; `node --check` on `paned_board_reader.js` — no syntax errors.
+  - Started a throwaway local server on `127.0.0.1:8010` (stopped after verification) and curled `/forte`: head row now includes a Score column button, and each row renders a `.paned-list-score` span with the thread's `score_total` value (e.g. `1`, `0`).
+  - Assets are fingerprinted dynamically by content hash at request time (`AssetFingerprint::fingerprintedPath`), so editing `forte.css`/`paned_board_reader.js` directly takes effect immediately with no separate build step.
+- Notes:
+  - `score_total` can be negative per `TagScore`; rendering is a plain `(int)` cast with no special formatting, so negative values display correctly (e.g. `-2`) with no additional handling needed.
+  - The new fixed-width column adds 5rem to Board's fixed-column total (now ~32rem); no desktop-width layout regression observed. The narrow-viewport column-squeeze bug remains out of scope here, tracked under `forte_mobile_friendly_step1_solution_assessment.md`.

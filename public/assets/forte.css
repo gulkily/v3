@@ -209,6 +209,17 @@ body.paned-reader-body {
   justify-content: flex-end;
 }
 
+.paned-list-score-head,
+.paned-list-score {
+  width: 5rem;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.paned-list-score-head .paned-sort-button {
+  justify-content: flex-end;
+}
+
 .paned-list-head span:last-child {
   border-right: none;
 }
@@ -366,14 +377,16 @@ body.paned-reader-body {
   min-width: 34rem;
 }
 
-.paned-list-replies {
+.paned-list-replies,
+.paned-list-score {
   padding: 0.15rem 0.5rem;
   color: var(--paned-ink-soft);
 }
 
 .paned-list-row--selected .paned-list-from,
 .paned-list-row--selected .paned-list-date,
-.paned-list-row--selected .paned-list-replies {
+.paned-list-row--selected .paned-list-replies,
+.paned-list-row--selected .paned-list-score {
   color: var(--paned-select-text);
 }
 
