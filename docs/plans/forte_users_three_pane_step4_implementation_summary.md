@@ -24,3 +24,12 @@
   - Same script rendered `paned_users_filter_list.php` via `renderFragment()` with the real groups and `selectedLetter = 'I'`; inspected output — "All Users" plus per-letter rows render with correct counts, and the "I" entry carries `paned-folder-item--selected` / `aria-selected="true"`.
 - Notes:
   - No role/status field exists on `profiles`, so alphabetical grouping is the schema-free filter dimension per the Step 1 recommendation.
+
+## Stage 3 - Listing pane partial
+- Changes:
+  - Added `templates/partials/paned_user_list.php`, modeled on `paned_board_thread_list.php`: one `paned-list-row` per approved user with `data-paned-user-token` / `data-paned-user-row-letter` attributes, columns for username/thread-count/post-count, `hidden` on rows outside `$selectedLetter`, and `paned-list-row--selected` / `aria-selected` / `tabindex` selection state driven by `$selectedUserToken` (mirroring the thread list's selection convention). The row's letter is derived inline in the template from `username_token`, the same way Board's thread list derives its tags inline rather than requiring precomputed fields.
+  - Not yet wired into `renderForteUserDirectory()` or the page template — that happens in Stage 4.
+- Verification:
+  - `php -l`: no syntax errors.
+  - Rendered the partial via `renderFragment()` with the real 39-user dataset, `selectedLetter = 'I'`, `selectedUserToken = 'ilyag'`: 3 rows visible / 36 rows carry `hidden` (matches Stage 2's letter-group count for "I"), exactly one row carries `paned-list-row--selected`, and the `ilyag` row is present with the expected `data-paned-user-token` attribute.
+- Notes: none
