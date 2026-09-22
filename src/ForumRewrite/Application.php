@@ -19,6 +19,7 @@ use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
+use ForumRewrite\Http\AboutPageController;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelCapabilityInspector;
 use ForumRewrite\ReadModel\ReadModelConnection;
@@ -1907,13 +1908,11 @@ final class Application
             ],
             $title,
             'board',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
+            $this->identityScripts([
                 '/assets/inline_reply_form.js',
                 '/assets/thread_reactions.js',
                 '/assets/post_analysis.js',
-            ],
+            ]),
         );
     }
 
@@ -1979,12 +1978,10 @@ final class Application
             ],
             'Post ' . $post['post_id'],
             'board',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
+            $this->identityScripts([
                 '/assets/thread_reactions.js',
                 '/assets/post_analysis.js',
-            ],
+            ]),
         );
     }
 
@@ -2035,11 +2032,7 @@ final class Application
             ],
             $pageTitleLabel . ' - Profile',
             'profiles',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
-                '/assets/pending_approvals.js',
-            ],
+            $this->identityScripts(['/assets/pending_approvals.js']),
         );
     }
 
@@ -2158,14 +2151,7 @@ final class Application
 
     private function renderAbout(): string
     {
-        return $this->renderPageTemplate(
-            'about.php',
-            [
-                'siteName' => SiteConfig::siteName(),
-            ],
-            'About',
-            'about',
-        );
+        return (new AboutPageController($this->renderPageTemplate(...)))->render();
     }
 
     private function renderActivity(string $view): string
@@ -2305,11 +2291,7 @@ final class Application
             ],
             'Users Awaiting Approval',
             'profiles',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
-                '/assets/pending_approvals.js',
-            ],
+            $this->identityScripts(['/assets/pending_approvals.js']),
         );
     }
 
@@ -2571,10 +2553,7 @@ final class Application
             'body' => $body,
             'notice' => $notice,
             'error' => $error,
-        ], 'Compose Thread', 'compose', [
-            '/assets/openpgp_loader.js',
-            '/assets/browser_signing.js',
-        ]);
+        ], 'Compose Thread', 'compose', $this->identityScripts());
     }
 
     private function renderComposeReply(string $threadId, string $parentId): string
@@ -2604,10 +2583,7 @@ final class Application
             'error' => $error,
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
             'body' => $body,
-        ], 'Compose Reply', 'compose', [
-            '/assets/openpgp_loader.js',
-            '/assets/browser_signing.js',
-        ]);
+        ], 'Compose Reply', 'compose', $this->identityScripts());
     }
 
     private function renderAccountKey(): string
@@ -2624,11 +2600,7 @@ final class Application
             'viewerProfile' => $viewerProfile,
             'notice' => $notice,
             'error' => $error,
-        ], 'Account Key', 'account', [
-            '/assets/openpgp_loader.js',
-            '/assets/browser_signing.js',
-            '/assets/private_site_auth.js',
-        ]);
+        ], 'Account Key', 'account', $this->identityScripts(['/assets/private_site_auth.js']));
     }
 
     private function renderApiIndex(): string
@@ -2748,23 +2720,6 @@ final class Application
         return "Local test slice\nGET /api/\nGET /api/list_index\nGET /api/get_thread\nPOST /api/analyze_post\nGET /about/\nGET /compose/thread\nGET /compose/reply\nGET /account/key/\nGET /instance/\nGET /backup/\n";
     }
 
-    private function renderPage(string $title, string $content, string $activeSection, array $scriptPaths = []): string
-    {
-        $viewerProfile = $this->authenticatedViewerProfile();
-        $publicAuthenticationResume = !$this->approvedMembersOnlyEnabled() && $viewerProfile === null;
-
-        return $this->renderer()->renderLayout(
-            $title,
-            $content,
-            $activeSection,
-            $scriptPaths,
-            $this->routeSource,
-            false,
-            $viewerProfile,
-            $publicAuthenticationResume,
-        );
-    }
-
     /**
      * @param array<string, mixed> $pageData
      * @param string[] $scriptPaths
@@ -2791,6 +2746,21 @@ final class Application
             $this->routeSource,
             $publicAuthenticationResume,
         );
+    }
+
+    /**
+     * Every page that needs browser-key signing loads these two scripts
+     * first; callers add whatever page-specific scripts come after them.
+     *
+     * @param string[] $extra
+     * @return string[]
+     */
+    private function identityScripts(array $extra = []): array
+    {
+        return array_merge([
+            '/assets/openpgp_loader.js',
+            '/assets/browser_signing.js',
+        ], $extra);
     }
 
     private function renderer(): TemplateRenderer
@@ -4204,11 +4174,7 @@ final class Application
             ['returnTo' => $returnTo],
             'Reconnecting',
             'account',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
-                '/assets/private_site_auth.js',
-            ],
+            $this->identityScripts(['/assets/private_site_auth.js']),
         );
     }
 
@@ -4237,12 +4203,7 @@ final class Application
             ],
             'Lobby',
             'lobby',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
-                '/assets/private_site_auth.js',
-                '/assets/invite_redemption.js',
-            ]
+            $this->identityScripts(['/assets/private_site_auth.js', '/assets/invite_redemption.js'])
         );
     }
 
@@ -4259,7 +4220,7 @@ final class Application
             ['destination' => trim((string) ($query['destination'] ?? ''))],
             'Generate invite',
             'invite',
-            ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/invite_issuance.js'],
+            $this->identityScripts(['/assets/invite_issuance.js']),
         );
     }
 
@@ -5211,12 +5172,6 @@ final class Application
             : 'all';
     }
 
-    private function preview(string $body): string
-    {
-        $line = strtok($body, "\n");
-        return $line === false ? '' : $line;
-    }
-
     private function hasBoardTag(string $boardTagsJson, string $tag): bool
     {
         $boardTags = json_decode($boardTagsJson, true);
@@ -6072,36 +6027,6 @@ final class Application
     }
 
     /**
-     * @param array<string, mixed> $analysis
-     * @return array<string, mixed>
-     */
-    private function agentReplyGenerationFromAnalysis(array $analysis): array
-    {
-        $engagement = is_array($analysis['engagement'] ?? null) ? $analysis['engagement'] : [];
-        $respondability = is_array($analysis['respondability'] ?? null) ? $analysis['respondability'] : [];
-        $text = DedalusAgentReplyGenerator::normalizeGeneratedReplyText(
-            (string) ($engagement['suggested_response'] ?? ''),
-            $this->featureFlags()->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
-            $this->featureFlags()->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT),
-        );
-        if ($text === '') {
-            throw new RuntimeException('Completed analysis did not include a suggested_response.');
-        }
-
-        return [
-            'provider' => (string) ($analysis['provider'] ?? 'analysis'),
-            'provider_model' => (string) ($analysis['provider_model'] ?? 'analysis'),
-            'provider_request_id' => isset($analysis['provider_request_id']) ? (string) $analysis['provider_request_id'] : null,
-            'response_text' => $text,
-            'response_style' => (string) ($engagement['response_style'] ?? 'curious'),
-            'response_intent' => (string) ($respondability['best_response_mode'] ?? 'answer'),
-            'raw_response' => [
-                'source' => 'analysis_suggested_response',
-            ],
-        ];
-    }
-
-    /**
      * @param array<string, mixed> $query
      */
     private function handleApplyThreadTag(string $method, array $query): void
@@ -6756,20 +6681,6 @@ final class Application
     }
 
     /**
-     * @param array<string, mixed> $analysis
-     */
-    private function analysisHash(array $analysis): string
-    {
-        return hash('sha256', json_encode([
-            'status' => $analysis['status'] ?? null,
-            'moderation' => $analysis['moderation'] ?? [],
-            'engagement' => $analysis['engagement'] ?? [],
-            'quality' => $analysis['quality'] ?? [],
-            'respondability' => $analysis['respondability'] ?? [],
-        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
-    }
-
-    /**
      * @param array<string, mixed> $extra
      * @return array<string, mixed>
      */
@@ -6780,28 +6691,6 @@ final class Application
             'post_id' => $postId,
             'generation_status' => $generationStatus,
         ], $extra);
-    }
-
-    /**
-     * @param array<string, mixed> $row
-     * @return array<string, mixed>
-     */
-    private function generatedAgentReplyResponse(array $row, bool $cached): array
-    {
-        return [
-            'status' => 'ok',
-            'post_id' => (string) ($row['target_post_id'] ?? ''),
-            'generation_status' => 'generated',
-            'cached' => $cached,
-            'provider' => $row['provider'] ?? null,
-            'provider_model' => $row['provider_model'] ?? null,
-            'response_text' => $row['response_text'] ?? null,
-            'response_style' => $row['response_style'] ?? null,
-            'response_intent' => $row['response_intent'] ?? null,
-            'agent_post_id' => $row['agent_post_id'] ?? null,
-            'agent_post_url' => isset($row['agent_post_id']) ? '/posts/' . $row['agent_post_id'] : null,
-            'posted' => isset($row['agent_post_id']),
-        ];
     }
 
     /**
@@ -7340,51 +7229,6 @@ final class Application
             ),
             400
         );
-    }
-
-    /**
-     * @param array<string, float> $timings
-     * @return array{profile_slug:string,username:string,post_id:string,commit_sha:string,timings:array<string,float>}
-     */
-    private function approveUserBySlug(string $slug, array &$timings = []): array
-    {
-        $phaseStartedAt = hrtime(true);
-        $profile = $this->fetchProfileBySlug($slug);
-        $timings['target_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
-        if ($profile === null) {
-            throw new RuntimeException('Profile not found.');
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
-        if ($viewerProfile === null || ((int) $viewerProfile['is_approved']) !== 1) {
-            throw new RuntimeException('Only approved users can approve other users.');
-        }
-
-        if ((string) $viewerProfile['identity_id'] === (string) $profile['identity_id']) {
-            throw new RuntimeException('Self-approval is not allowed.');
-        }
-
-        if ((int) $profile['is_approved'] === 1) {
-            throw new RuntimeException('User is already approved.');
-        }
-
-        $result = $this->writer()->approveUser([
-            'approver_identity_id' => (string) $viewerProfile['identity_id'],
-            'target_identity_id' => (string) $profile['identity_id'],
-            'target_profile_slug' => (string) $profile['profile_slug'],
-            'thread_id' => (string) $profile['bootstrap_thread_id'],
-            'parent_id' => (string) $profile['bootstrap_post_id'],
-        ]);
-
-        return [
-            'profile_slug' => (string) $profile['profile_slug'],
-            'username' => (string) $profile['username'],
-            'post_id' => (string) $result['post_id'],
-            'commit_sha' => (string) $result['commit_sha'],
-            'timings' => is_array($result['timings'] ?? null) ? $result['timings'] : [],
-        ];
     }
 
     /**
