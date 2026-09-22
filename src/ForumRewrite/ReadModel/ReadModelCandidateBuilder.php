@@ -34,7 +34,7 @@ final class ReadModelCandidateBuilder
                 new CanonicalRecordRepository($this->repositoryRoot),
                 $this->rebuildReason,
             ))->rebuild();
-            $this->assertValid($candidatePath);
+            self::assertValid($this->repositoryRoot, $candidatePath);
 
             return $candidatePath;
         } catch (\Throwable $throwable) {
@@ -43,13 +43,13 @@ final class ReadModelCandidateBuilder
         }
     }
 
-    private function assertValid(string $candidatePath): void
+    public static function assertValid(string $repositoryRoot, string $candidatePath): void
     {
         $pdo = (new ReadModelConnection($candidatePath))->open();
         $metadata = $pdo->query('SELECT key, value FROM metadata')->fetchAll(PDO::FETCH_KEY_PAIR);
-        $expectedHead = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+        $expectedHead = ReadModelMetadata::repositoryHead($repositoryRoot);
         if (($metadata['schema_version'] ?? null) !== ReadModelMetadata::SCHEMA_VERSION
-            || ($metadata['repository_root'] ?? null) !== $this->repositoryRoot
+            || ($metadata['repository_root'] ?? null) !== $repositoryRoot
             || ($metadata['repository_head'] ?? null) !== $expectedHead) {
             throw new RuntimeException('Read-model candidate metadata does not match the current repository.');
         }

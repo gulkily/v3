@@ -49,3 +49,15 @@
   - Candidate integration test confirms the live database hash is unchanged during candidate creation.
 - Notes:
   - Candidate promotion remains a separate next stage; this stage intentionally does not change the active database.
+
+## Stage 5 - Atomic read-model promotion
+- Changes:
+  - Added promotion that revalidates a candidate under the existing shared write lock, then atomically replaces the live SQLite file and clears staleness.
+  - Refused promotion when a live SQLite sidecar is present, avoiding an unsafe replacement state.
+  - Updated the normal rebuild command to build outside the lock and promote only the finished candidate.
+- Verification:
+  - `php -l scripts/rebuild_read_model.php`
+  - `./v3 test LocalAppSmokeTest::testRebuildCommandCreatesDatabase ReadModelCandidateBuilderTest`
+  - Promotion test confirms the candidate replaces the live file, removes the candidate path, and clears the stale marker.
+- Notes:
+  - Existing requests retain a complete old SQLite inode during the rename; new requests open the complete promoted model.
