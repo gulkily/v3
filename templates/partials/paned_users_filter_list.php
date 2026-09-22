@@ -1,30 +1,20 @@
 <?php
 /**
- * @var array<int, array{letter: string, count: int}> $letterGroups
- * @var int $totalUserCount
- * @var string $selectedLetter
+ * @var array<int, array{key: string, label: string, count: int}> $categoryCounts
+ * @var string $selectedCategory
  */
-$selectedLetter ??= '';
+$selectedCategory ??= 'all';
 ?>
-<div class="paned-folder-tree" data-paned-users-filter-list role="listbox" aria-label="Users">
+<div class="paned-folder-tree" data-paned-users-filter-list role="listbox" aria-label="User categories">
+<?php foreach ($categoryCounts as $category): ?>
   <div
-    class="paned-folder-item<?= $selectedLetter === '' ? ' paned-folder-item--selected' : '' ?>"
-    data-paned-user-letter=""
+    class="paned-folder-item<?= $selectedCategory === $category['key'] ? ' paned-folder-item--selected' : '' ?>"
+    data-paned-user-category="<?= $e($category['key']) ?>"
     role="option"
-    aria-selected="<?= $selectedLetter === '' ? 'true' : 'false' ?>"
-    tabindex="<?= $selectedLetter === '' ? '0' : '-1' ?>"
+    aria-selected="<?= $selectedCategory === $category['key'] ? 'true' : 'false' ?>"
+    tabindex="<?= $selectedCategory === $category['key'] ? '0' : '-1' ?>"
   >
-    <span>All Users</span><span class="paned-folder-count"><?= (int) $totalUserCount ?></span>
-  </div>
-<?php foreach ($letterGroups as $group): ?>
-  <div
-    class="paned-folder-item<?= $selectedLetter === $group['letter'] ? ' paned-folder-item--selected' : '' ?>"
-    data-paned-user-letter="<?= $e($group['letter']) ?>"
-    role="option"
-    aria-selected="<?= $selectedLetter === $group['letter'] ? 'true' : 'false' ?>"
-    tabindex="<?= $selectedLetter === $group['letter'] ? '0' : '-1' ?>"
-  >
-    <span><?= $e($group['letter']) ?></span><span class="paned-folder-count"><?= (int) $group['count'] ?></span>
+    <span><?= $e($category['label']) ?></span><span class="paned-folder-count"><?= (int) $category['count'] ?></span>
   </div>
 <?php endforeach; ?>
 </div>

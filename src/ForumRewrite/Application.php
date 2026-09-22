@@ -4280,6 +4280,37 @@ final class Application
     }
 
     /**
+     * Fixed-category counts for the Users pane's filter list, mirroring
+     * `renderForteActivity()`'s `$viewCounts` shape. Category keys are
+     * hyphenated for the URL/DOM (`no-threads`, `recently-active`,
+     * `not-approved`) even though `buildUserDirectoryCategoryFlags()`'s
+     * internal flag keys use underscores - only two need translating.
+     *
+     * @param array<string, array{new: bool, established: bool, no_threads: bool, recently_active: bool}> $flagsByToken
+     * @return list<array{key: string, label: string, count: int}>
+     */
+    private function buildUserDirectoryCategoryCounts(int $totalApprovedCount, array $flagsByToken, int $pendingCount): array
+    {
+        $counts = ['new' => 0, 'established' => 0, 'no_threads' => 0, 'recently_active' => 0];
+        foreach ($flagsByToken as $flags) {
+            foreach ($flags as $key => $value) {
+                if ($value) {
+                    $counts[$key]++;
+                }
+            }
+        }
+
+        return [
+            ['key' => 'all', 'label' => 'All Users', 'count' => $totalApprovedCount],
+            ['key' => 'new', 'label' => 'New', 'count' => $counts['new']],
+            ['key' => 'established', 'label' => 'Established', 'count' => $counts['established']],
+            ['key' => 'no-threads', 'label' => 'No Threads', 'count' => $counts['no_threads']],
+            ['key' => 'recently-active', 'label' => 'Recently Active', 'count' => $counts['recently_active']],
+            ['key' => 'not-approved', 'label' => 'Not Approved', 'count' => $pendingCount],
+        ];
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     private function fetchPendingUserDirectoryProfiles(): array

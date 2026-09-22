@@ -91,3 +91,13 @@ Per the Step 2/Step 3 addenda, replacing the alphabetical filter with semantic c
   - Reflection-based script against the real 39-user dataset: 27 "new" + 12 "established" = 39 (exhaustive, no overlap — confirmed zero rows where `new === established`); zero rows found `no_threads && established` (would be invalid).
   - Hand-checked three known users: `ilyag` (396 threads, 607 posts → 211 replies, last activity 2 days ago) → established + recently_active; `guest` (36/47 → 11 replies, 14 days ago) → established, not recently_active; `test-user` (25/44 → 19 replies, 23 days ago) → established, not recently_active. All matched expectations by hand.
 - Notes: none
+
+## Stage 8 - Semantic filter pane
+- Changes:
+  - Added `buildUserDirectoryCategoryCounts(int $totalApprovedCount, array $flagsByToken, int $pendingCount): array` to `Application.php` — fixed-order category list (All Users, New, Established, No Threads, Recently Active, Not Approved) with counts, mirroring `renderForteActivity()`'s `$viewCounts` shape. Translates Stage 7's underscore flag keys (`no_threads`, `recently_active`) to hyphenated URL/DOM keys (`no-threads`, `recently-active`) — the only two that need it.
+  - Rewrote `templates/partials/paned_users_filter_list.php`: single `foreach` over `$categoryCounts` (was per-letter), `data-paned-user-category` replaces `data-paned-user-letter`, modeled on `paned_activity_filter_list.php`'s fixed-view structure.
+- Verification:
+  - `php -l` on both changed files: no syntax errors.
+  - Reflection script chained Stage 7's outputs through the new counts method: `{all:39, new:27, established:12, no-threads:10, recently-active:1, not-approved:53}` — approved counts match Stage 7's verified numbers exactly; Not Approved (53) matches `fetchPendingUserDirectoryProfiles()`'s own count directly.
+  - Rendered the partial via `renderFragment()` with `selectedCategory = 'established'`: the "Established" entry carries `paned-folder-item--selected`, `aria-selected="true"`, `tabindex="0"`; all others don't.
+- Notes: none
