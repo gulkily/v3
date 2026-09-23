@@ -280,6 +280,12 @@ final class RouteServices
         );
     }
 
+    /** @param array<string, mixed> $data */
+    public function renderFragment(string $partialPath, array $data): string
+    {
+        return $this->renderer->renderFragment($partialPath, $data);
+    }
+
     public function notFound(): void
     {
         $this->sendHtml(

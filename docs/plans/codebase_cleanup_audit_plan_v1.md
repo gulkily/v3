@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 4,886 lines (~41% smaller)** across 22
+  `Application.php`: **8,212 → 4,732 lines (~42% smaller)** across 23
   route-group extractions so far:
   - `/about` → `AboutPageController`
   - `/instance`, `/backup`, `/downloads/*` → `InstancePageController`
@@ -47,6 +47,8 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
     `/api/create_prepared_approval`, `/api/prepare_invitation`,
     `/api/create_prepared_invitation`, `/api/prepare_invitation_redemption`
     → `IdentityApprovalAndInvitationApiController`
+  - `/api/get_forte_content_summary`, `/api/forte_user_detail` →
+    `ForteContentAndUserDetailApiController`
 
   Shared query/support layer built up alongside the route extractions
   (`src/ForumRewrite/ReadModel/`, `src/ForumRewrite/Http/`, and
@@ -206,14 +208,36 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   comparison, unrelated to this slice's approval-endpoint changes. Not
   counted against the baseline.
 
-  Remaining route groups still fully on `Application`: `/forte/activity/`
-  and the `/api/forte_*`/`/api/get_forte_*` AJAX endpoints; `/activity`
-  (harder tier); the single-thread view (`/threads/{id}`, `/posts/{id}`,
-  harder tier); the agent-reply/post-analysis subsystem
-  (`/api/analyze_post`, `/api/generate_agent_reply`, `/api/codex_handoff*` -
-  harder tier, though one of its blockers - `sendJson()` - is now resolved,
-  see above); and `/api/version` (see above). All other `/api` write
-  endpoints are now extracted.
+  Checked the four `/api/forte_*`/`/api/get_forte_*` AJAX endpoints next.
+  Two split off cleanly into a new `ForteContentAndUserDetailApiController`:
+  `/api/get_forte_content_summary` (pure `fetchPost()` + a `reply_count`
+  query) and `/api/forte_user_detail` (profile/thread/post aggregation
+  mirroring `ForteProfileController::username()`, no harder-tier deps).
+  `fetchVisibleAuthoredThreads()`/`fetchVisibleAuthoredPosts()`/
+  `fetchProfilesByUsernameToken()` were one-line repository wrappers with
+  exactly one caller each, so the new controller calls
+  `AuthoredContentRepository`/`ProfileRepository` directly instead of
+  taking closures - same pattern as `AuthApiController`. Only `fetchPost()`
+  stayed a closure. Also added `renderFragment()` to `RouteServices` as a
+  passthrough (mirroring `renderPageTemplate()`/`renderStandalonePage()`
+  already there) since both handlers needed it.
+
+  The other two - `/api/forte_activity_page`, `/api/forte_commit_detail` -
+  stay on `Application`: both are directly coupled to `fetchActivity()`/
+  `activityCommitManifest()`, the same harder-tier activity/commit-manifest
+  subsystem already deferred for `/activity` itself. Confirms that group
+  splits along exactly the same "commit-manifest vs. everything else" line
+  as the rest of the activity subsystem, not along the `/api/forte_*` vs.
+  `/api/get_forte_*` naming.
+
+  Remaining route groups still fully on `Application`: `/forte/activity/`;
+  `/api/forte_activity_page`, `/api/forte_commit_detail` (harder tier, see
+  above); `/activity` (harder tier); the single-thread view
+  (`/threads/{id}`, `/posts/{id}`, harder tier); the agent-reply/
+  post-analysis subsystem (`/api/analyze_post`, `/api/generate_agent_reply`,
+  `/api/codex_handoff*` - harder tier, though one of its blockers -
+  `sendJson()` - is now resolved, see above); and `/api/version` (see
+  above). All other `/api` write endpoints are now extracted.
 
   Checked both `/forte/activity/` and the single-thread view
   (`/threads/{id}`) as candidate next slices: both are in the harder

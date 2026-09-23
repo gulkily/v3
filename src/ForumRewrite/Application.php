@@ -28,6 +28,7 @@ use ForumRewrite\Http\BoardViewOptions;
 use ForumRewrite\Http\CodebaseStateController;
 use ForumRewrite\Http\ComposeAndAccountKeyController;
 use ForumRewrite\Http\ForteBoardController;
+use ForumRewrite\Http\ForteContentAndUserDetailApiController;
 use ForumRewrite\Http\ForteProfileController;
 use ForumRewrite\Http\ForteUserDirectoryController;
 use ForumRewrite\Http\IdentityApprovalAndInvitationApiController;
@@ -521,12 +522,12 @@ final class Application
         }
 
         if ($path === '/api/get_forte_content_summary') {
-            $this->handleForteContentSummary($query);
+            $this->forteContentAndUserDetailApiController()->contentSummary($query);
             return;
         }
 
         if ($path === '/api/forte_user_detail') {
-            $this->handleForteUserDetail($query);
+            $this->forteContentAndUserDetailApiController()->userDetail($query);
             return;
         }
 
@@ -1107,169 +1108,6 @@ final class Application
         ]);
 
         $this->sendJson(['status' => 'ok', 'html' => $html], 200);
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleForteContentSummary(array $query): void
-    {
-        $summary = $this->forteContentSummary((string) ($query['post_id'] ?? ''));
-        if ($summary === null) {
-            $this->sendJson(['status' => 'error', 'error' => 'not found'], 404);
-            return;
-        }
-
-        $this->sendJson(array_merge(['status' => 'ok'], $summary), 200);
-    }
-
-    /**
-     * Serves the Users pane's detail-pane fragment for one username_token,
-     * reusing the same aggregation `ForteProfileController::username()` already performs
-     * (approved profiles, visible thread/post counts and rows) rather than
-     * a new query, and returning it the same way `handleForteCommitDetail()`
-     * returns its manifest fragment: `{status, html}` for client-side
-     * injection into the pane.
-     *
-     * @param array<string, mixed> $query
-     */
-    private function handleForteUserDetail(array $query): void
-    {
-        $usernameToken = strtolower(trim((string) ($query['username_token'] ?? '')));
-        $profiles = $usernameToken === '' ? [] : $this->fetchProfilesByUsernameToken($usernameToken);
-        $approvedProfiles = array_values(array_filter(
-            $profiles,
-            static fn (array $profile): bool => ((int) $profile['is_approved']) === 1
-        ));
-        if ($approvedProfiles === []) {
-            $this->handleForteUserDetailPending($usernameToken, $profiles);
-            return;
-        }
-
-        $approvedIdentityIds = array_values(array_map(
-            static fn (array $profile): string => (string) $profile['identity_id'],
-            $approvedProfiles
-        ));
-
-        $approvedThreads = $this->fetchVisibleAuthoredThreads($approvedIdentityIds);
-        $approvedPosts = $this->fetchVisibleAuthoredPosts($approvedIdentityIds);
-        $activityBounds = $this->userDirectoryActivityBounds($approvedThreads, $approvedPosts);
-
-        $html = $this->renderer()->renderFragment('partials/paned_user_detail_pane.php', [
-            'usernameToken' => $usernameToken,
-            'approvedThreadCount' => count($approvedThreads),
-            'approvedPostCount' => count($approvedPosts),
-            'approvedThreads' => $approvedThreads,
-            'approvedPosts' => $approvedPosts,
-            'activeAt' => $activityBounds['latest'],
-            'memberSince' => $activityBounds['earliest'],
-        ]);
-
-        $this->sendJson(['status' => 'ok', 'html' => $html], 200);
-    }
-
-    /**
-     * Earliest/latest timestamps across a user's visible threads/posts, for
-     * the detail pane's "Member since"/"Active" header line - approximated
-     * from their visible authored content (no join-date column exists) so
-     * it costs nothing beyond the thread/post lists the pane already
-     * fetches. ISO 8601 UTC timestamps sort correctly as plain strings, no
-     * DateTime parsing needed.
-     *
-     * @param array<int, array<string, mixed>> $threads
-     * @param array<int, array<string, mixed>> $posts
-     * @return array{earliest: string, latest: string}
-     */
-    private function userDirectoryActivityBounds(array $threads, array $posts): array
-    {
-        $timestamps = [];
-        foreach ($threads as $thread) {
-            $timestamps[] = (string) ($thread['root_post_created_at'] ?? '');
-        }
-        foreach ($posts as $post) {
-            $timestamps[] = (string) ($post['created_at'] ?? '');
-        }
-        $timestamps = array_values(array_filter($timestamps, static fn (string $timestamp): bool => $timestamp !== ''));
-
-        if ($timestamps === []) {
-            return ['earliest' => '', 'latest' => ''];
-        }
-
-        return ['earliest' => min($timestamps), 'latest' => max($timestamps)];
-    }
-
-    /**
-     * The Users pane detail-pane fallback for a token with no approved
-     * profile - either genuinely unknown, or a "never approved" pending
-     * user (see `ForteUserDirectoryController::fetchNeverApprovedPendingUsers()`). Reuses
-     * `$profiles` already fetched by `handleForteUserDetail()` rather than
-     * a second query - a caller that already confirmed `$approvedProfiles`
-     * is empty need not re-derive that from scratch.
-     *
-     * @param array<int, array<string, mixed>> $profiles every profile (any approval status) for this token
-     */
-    private function handleForteUserDetailPending(string $usernameToken, array $profiles): void
-    {
-        if ($profiles === []) {
-            $this->sendJson(['status' => 'error', 'error' => 'user not found'], 404);
-            return;
-        }
-
-        $pendingThreadCount = array_sum(array_map(static fn (array $p): int => (int) $p['thread_count'], $profiles));
-        $pendingPostCount = array_sum(array_map(static fn (array $p): int => (int) $p['post_count'], $profiles));
-
-        $html = $this->renderer()->renderFragment('partials/paned_user_pending_detail_pane.php', [
-            'usernameToken' => $usernameToken,
-            'pendingProfileCount' => count($profiles),
-            'pendingThreadCount' => $pendingThreadCount,
-            'pendingPostCount' => $pendingPostCount,
-        ]);
-
-        $this->sendJson(['status' => 'ok', 'html' => $html], 200);
-    }
-
-    /**
-     * A board-visibility-independent summary of one post, for the content-
-     * summary preview dialog: resolved straight from `posts` via the same
-     * `fetchPost()` every other post lookup uses, unlike the Forte board's
-     * own thread listing (`fetchThreads()`), which excludes identity/
-     * bootstrap/approval-only threads entirely. `is_hidden` (moderation)
-     * still applies - this is for previewing real, un-moderated content
-     * that just isn't board-listed, not bypassing moderation.
-     *
-     * @return array{post_id:string,thread_id:string,is_reply:bool,title:string,author_label:string,created_at:string,body_preview:string,reply_count:int}|null
-     */
-    private function forteContentSummary(string $postId): ?array
-    {
-        $post = $this->fetchPost($postId);
-        if ($post === null) {
-            return null;
-        }
-
-        // posts.thread_id is self-referential for a root post (equals its
-        // own post_id), never null - parent_id is the real root/reply
-        // discriminator (null only for a root).
-        $isReply = trim((string) ($post['parent_id'] ?? '')) !== '';
-        $threadId = (string) $post['thread_id'];
-
-        $stmt = $this->pdo()->prepare('SELECT reply_count FROM threads WHERE root_post_id = :root_post_id');
-        $stmt->execute(['root_post_id' => $threadId]);
-        $replyCount = $stmt->fetchColumn();
-
-        return [
-            'post_id' => (string) $post['post_id'],
-            'thread_id' => $threadId,
-            'is_reply' => $isReply,
-            'title' => ThreadTitle::displayTitle(
-                (string) ($post['subject'] ?? ''),
-                (string) ($post['body'] ?? ''),
-                (string) $post['post_id'],
-            ),
-            'author_label' => (string) ($post['author_label'] ?? ''),
-            'created_at' => (string) ($post['created_at'] ?? ''),
-            'body_preview' => (string) ($post['body'] ?? ''),
-            'reply_count' => $replyCount !== false ? (int) $replyCount : 0,
-        ];
     }
 
     /**
@@ -2586,6 +2424,14 @@ final class Application
             $this->authenticatedViewerProfile(...),
             $this->fetchProfileBySlug(...),
             $this->resolveViewerProfileFromIdentityHint(...),
+        );
+    }
+
+    private function forteContentAndUserDetailApiController(): ForteContentAndUserDetailApiController
+    {
+        return new ForteContentAndUserDetailApiController(
+            $this->routeServices(),
+            $this->fetchPost(...),
         );
     }
 
