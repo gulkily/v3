@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 2,313 lines (~72% smaller)** across 27
+  `Application.php`: **8,212 → 2,138 lines (~74% smaller)** across 28
   route-group extractions so far, plus the activity/commit-manifest and
   post-analysis/agent-reply/Codex-handoff data-layer extractions (see
   below):
@@ -56,6 +56,8 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   - `/activity`, `/activity.rss` → `ActivityPageController`
   - `/api/analyze_post`, `/api/generate_agent_reply`, `/api/codex_handoff`,
     `/api/codex_handoff_approval` → `PostWorkflowApiController`
+  - `/threads/{id}` (+ `?format=rss`), `/posts/{id}` →
+    `ThreadAndPostPageController`
 
   Shared query/support layer built up alongside the route extractions
   (`src/ForumRewrite/ReadModel/`, `src/ForumRewrite/Http/`, and
@@ -447,6 +449,45 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
 
   `Application.php`: 3,380 → 2,313 lines - the single biggest line-count
   drop of the entire phase.
+
+  Closed out Phase 2's route-group extractions with the single-thread
+  view (`renderThread()`/`renderPost()`/`renderThreadRss()`, for
+  `/threads/{id}`, `/threads/{id}?format=rss`, `/posts/{id}`) - the piece
+  that motivated *both* dedicated investigations above in the first
+  place. By the time this slice landed, its ~14 collaborators had already
+  collapsed to either thin `Application` delegating wrappers (to
+  `ActivityService`/`PostWorkflowService`) or already-established shared
+  closures (`fetchThread`, `fetchThreadPosts`, `fetchPost`,
+  `resolveViewerProfileFromIdentityHint`) - none of it was still "core,
+  unextracted logic" by this point, so the original "13+ collaborators,
+  harder tier" read no longer applied. The new
+  `ThreadAndPostPageController` builds its own `PostWorkflowService`
+  directly (the same three closures `PostWorkflowApiController` needs)
+  rather than taking six separate closures for methods that just forward
+  to it - six Application wrappers
+  (`viewerCanUseCodexHandoff`/`fetchPostAnalysesForPosts`/
+  `fetchAgentReplyGenerationsForPosts`/`fetchCodexHandoffsForPosts`/
+  `codexHandoffEligiblePostIds`/`agentReplyWorkByPostId`) that existed
+  solely for this cluster's benefit are now genuinely dead code, kept
+  only because they're referenced elsewhere (some by the
+  `PostWorkflowApiController` slice's own test-reflection finding,
+  `viewerCanUseCodexHandoff()`) or left as harmless thin delegates.
+  `viewerHasThreadTag()`/`viewerPostTagsForPosts()`/
+  `createdPostIdForThread()`/`renderThreadRss()`/`renderRssFeed()`/
+  `renderRssItem()` were single-caller-cluster and moved/inlined wholesale.
+  No mistakes this time - full suite, `WriteApiSmokeTest` (103/103),
+  `LocalAppSmokeTest` (88/93, 5 pre-existing), and
+  `BrowserSigningNormalizationTest` (62/62) all passed clean on the first
+  verification pass, unlike the prior slice.
+
+  `Application.php`: 2,313 → 2,138 lines (8,212 baseline → **~74%
+  smaller**). This closes out every route-group extraction identified at
+  the start of Phase 2 except `/api/version` (deliberately left alone,
+  see above) - Phase 2's route-decomposition work is essentially done;
+  what would remain is opportunistic further shrinking of whatever's left
+  in `Application.php` (mostly `handle()`'s dispatch table itself, session
+  bootstrap, and the handful of thin `RouteServices`/service-accessor
+  delegates), not new route groups to extract.
 - **Phase 3 (test suite readability):** not started.
 - **Phase 4 (docs hygiene):** not started.
 

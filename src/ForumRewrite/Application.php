@@ -28,10 +28,10 @@ use ForumRewrite\Http\LobbyController;
 use ForumRewrite\Http\PostWorkflowApiController;
 use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
-use ForumRewrite\Http\RssFeed;
 use ForumRewrite\Http\SourceFileController;
 use ForumRewrite\Http\TagApiController;
 use ForumRewrite\Http\TagsPageController;
+use ForumRewrite\Http\ThreadAndPostPageController;
 use ForumRewrite\Http\ToolsPageController;
 use ForumRewrite\Http\WritePostAndIdentityApiController;
 use ForumRewrite\ReadModel\AuthoredContentRepository;
@@ -43,7 +43,6 @@ use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\ReadModel\ThreadRowSupport;
-use ForumRewrite\ReadModel\ViewerTagLookup;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -522,7 +521,7 @@ final class Application
 
         if (preg_match('#^/threads/([^/]+)/?$#', $path, $matches) === 1) {
             if (($query['format'] ?? null) === 'rss') {
-                $xml = $this->renderThreadRss($matches[1]);
+                $xml = $this->threadAndPostPageController()->threadRss($matches[1]);
                 if ($xml === null) {
                     $this->notFound();
                     return;
@@ -532,7 +531,7 @@ final class Application
                 return;
             }
 
-            $html = $this->renderThread($matches[1], (string) ($query['created_post_id'] ?? ''));
+            $html = $this->threadAndPostPageController()->thread($matches[1], (string) ($query['created_post_id'] ?? ''));
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -607,7 +606,7 @@ final class Application
         }
 
         if (preg_match('#^/posts/([^/]+)/?$#', $path, $matches) === 1) {
-            $html = $this->renderPost($matches[1]);
+            $html = $this->threadAndPostPageController()->post($matches[1]);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -749,68 +748,6 @@ final class Application
         return new ForteUserDirectoryController($this->routeServices());
     }
 
-    private function renderThread(string $threadId, string $createdPostId = ''): ?string
-    {
-        $threadRow = $this->fetchThread($threadId);
-        if ($threadRow === null) {
-            return null;
-        }
-
-        $title = $this->displayThreadTitle($threadRow);
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        $viewerHasLiked = $viewerProfile !== null
-            && $this->viewerHasThreadTag($threadId, 'like', (string) $viewerProfile['identity_id']);
-        $posts = $this->fetchThreadPosts($threadId);
-        $viewerPostFlags = $viewerProfile !== null
-            ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'flag', (string) $viewerProfile['identity_id'])
-            : [];
-        $viewerPostLikes = $viewerProfile !== null
-            ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'like', (string) $viewerProfile['identity_id'])
-            : [];
-        $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
-        $viewerCanUseCodexHandoff = $this->viewerCanUseCodexHandoff($viewerProfile);
-        $createdPostId = $this->createdPostIdForThread($threadId, $createdPostId);
-        $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
-        $agentRepliesByPostId = $this->fetchAgentReplyGenerationsForPosts($posts);
-        $llmExchangesByPostId = $this->viewerCanInspectLlmExchanges() ? $this->fetchLlmExchangesForPosts($posts) : [];
-        $codexHandoffsByPostId = $viewerCanUseCodexHandoff ? $this->fetchCodexHandoffsForPosts($posts) : [];
-        $codexHandoffEligiblePostIds = $viewerCanUseCodexHandoff ? $this->codexHandoffEligiblePostIds($posts, $threadRow) : [];
-
-        return $this->renderPageTemplate(
-            'thread.php',
-            [
-                'thread' => $threadRow,
-                'posts' => $posts,
-                'title' => $title,
-                'viewerProfile' => $viewerProfile,
-                'viewerHasLiked' => $viewerHasLiked,
-                'viewerPostFlags' => $viewerPostFlags,
-                'viewerPostLikes' => $viewerPostLikes,
-                'createdPostId' => $createdPostId,
-                'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
-                'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
-                'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
-                'agentRepliesByPostId' => $agentRepliesByPostId,
-                'llmExchangesByPostId' => $llmExchangesByPostId,
-                'codexHandoffsByPostId' => $codexHandoffsByPostId,
-                'codexHandoffEligiblePostIds' => $codexHandoffEligiblePostIds,
-                'agentReplyWorkByPostId' => $this->agentReplyWorkByPostId(
-                    $posts,
-                    $createdPostId,
-                    $postAnalysesForWork,
-                    $agentRepliesByPostId
-                ),
-            ],
-            $title,
-            'board',
-            $this->identityScripts([
-                '/assets/inline_reply_form.js',
-                '/assets/thread_reactions.js',
-                '/assets/post_analysis.js',
-            ]),
-        );
-    }
-
     /**
      * @param array<string, mixed> $thread
      */
@@ -820,63 +757,6 @@ final class Application
             (string) ($thread['subject'] ?? ''),
             (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
             (string) ($thread['root_post_id'] ?? $thread['thread_id'] ?? $thread['post_id'] ?? '')
-        );
-    }
-
-    private function renderPost(string $postId): ?string
-    {
-        $post = $this->fetchPost($postId, true);
-        if ($post === null) {
-            return null;
-        }
-
-        if (((int) ($post['is_hidden'] ?? 0)) === 1) {
-            return $this->renderMessagePage('Post Hidden', 'Post Hidden', 'This post has been hidden.', 'board');
-        }
-
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        $viewerPostFlags = $viewerProfile !== null
-            ? $this->viewerPostTagsForPosts([$post['post_id']], 'flag', (string) $viewerProfile['identity_id'])
-            : [];
-        $viewerPostLikes = $viewerProfile !== null
-            ? $this->viewerPostTagsForPosts([$post['post_id']], 'like', (string) $viewerProfile['identity_id'])
-            : [];
-        $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
-        $viewerCanUseCodexHandoff = $this->viewerCanUseCodexHandoff($viewerProfile);
-        $posts = [$post];
-        $postAnalysesForWork = $this->fetchPostAnalysesForPosts($posts);
-        $agentRepliesByPostId = $this->fetchAgentReplyGenerationsForPosts($posts);
-        $llmExchangesByPostId = $this->viewerCanInspectLlmExchanges() ? $this->fetchLlmExchangesForPosts($posts) : [];
-        $codexHandoffsByPostId = $viewerCanUseCodexHandoff ? $this->fetchCodexHandoffsForPosts($posts) : [];
-        $threadRow = $this->fetchThread((string) $post['thread_id']);
-        $codexHandoffEligiblePostIds = $viewerCanUseCodexHandoff ? $this->codexHandoffEligiblePostIds($posts, $threadRow) : [];
-
-        return $this->renderPageTemplate(
-            'post.php',
-            [
-                'post' => $post,
-                'viewerPostFlags' => $viewerPostFlags,
-                'viewerPostLikes' => $viewerPostLikes,
-                'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
-                'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
-                'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
-                'agentRepliesByPostId' => $agentRepliesByPostId,
-                'llmExchangesByPostId' => $llmExchangesByPostId,
-                'codexHandoffsByPostId' => $codexHandoffsByPostId,
-                'codexHandoffEligiblePostIds' => $codexHandoffEligiblePostIds,
-                'agentReplyWorkByPostId' => $this->agentReplyWorkByPostId(
-                    $posts,
-                    '',
-                    $postAnalysesForWork,
-                    $agentRepliesByPostId
-                ),
-            ],
-            'Post ' . $post['post_id'],
-            'board',
-            $this->identityScripts([
-                '/assets/thread_reactions.js',
-                '/assets/post_analysis.js',
-            ]),
         );
     }
 
@@ -969,6 +849,22 @@ final class Application
         );
     }
 
+    private function threadAndPostPageController(): ThreadAndPostPageController
+    {
+        return new ThreadAndPostPageController(
+            $this->routeServices(),
+            $this->repositoryRoot,
+            $this->fetchThread(...),
+            $this->fetchThreadPosts(...),
+            $this->fetchPost(...),
+            $this->displayThreadTitle(...),
+            $this->resolveViewerProfileFromIdentityHint(...),
+            $this->llmExchangeRecorder(...),
+            $this->viewerCanInspectLlmExchanges(...),
+            $this->fetchLlmExchangesForPosts(...),
+        );
+    }
+
     private function sourceFileController(): SourceFileController
     {
         return new SourceFileController(
@@ -1009,26 +905,6 @@ final class Application
         return $this->featureFlags()->isEnabled(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED)
             && $viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
-    }
-
-    private function renderThreadRss(string $threadId): ?string
-    {
-        $thread = $this->fetchThread($threadId);
-        if ($thread === null) {
-            return null;
-        }
-
-        $items = [];
-        foreach ($this->fetchThreadPosts($threadId) as $post) {
-            $items[] = $this->renderRssItem(
-                $post['post_id'],
-                '/posts/' . $post['post_id'],
-                trim($post['body']),
-                (string) $post['created_at']
-            );
-        }
-
-        return $this->renderRssFeed($this->displayThreadTitle($thread), '/threads/' . $threadId . '?format=rss', $items);
     }
 
     private function renderLlmsTxt(): string
@@ -1366,21 +1242,6 @@ final class Application
         $value = $stmt->fetchColumn();
 
         return $value === false ? '' : (string) $value;
-    }
-
-    private function createdPostIdForThread(string $threadId, string $createdPostId): string
-    {
-        $createdPostId = trim($createdPostId);
-        if ($createdPostId === '') {
-            return '';
-        }
-
-        $post = $this->fetchPost($createdPostId);
-        if ($post === null || (string) $post['thread_id'] !== $threadId) {
-            return '';
-        }
-
-        return $createdPostId;
     }
 
     /**
@@ -1877,32 +1738,6 @@ final class Application
         return $this->postWorkflowService()->codexHandoffEligiblePostIds($posts, $thread);
     }
 
-    private function viewerHasThreadTag(string $threadId, string $tag, string $identityId): bool
-    {
-        $repository = new CanonicalRecordRepository($this->repositoryRoot);
-        foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
-            $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path));
-            if ($record->threadId !== $threadId || $record->authorIdentityId !== $identityId) {
-                continue;
-            }
-
-            if (in_array($tag, $record->labels, true)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @param array<int, mixed> $postIds
-     * @return array<string, true>
-     */
-    private function viewerPostTagsForPosts(array $postIds, string $tag, string $identityId): array
-    {
-        return ViewerTagLookup::postTags($this->repositoryRoot, $postIds, $tag, $identityId);
-    }
-
     /**
      * @param array{sort_value: string, id: int}|null $afterCursor
      * @return array{items: array<int, array<string, mixed>>, has_more: bool}
@@ -1943,16 +1778,6 @@ final class Application
     private function encodeSourcePathForUrl(string $sourcePath): string
     {
         return implode('/', array_map('rawurlencode', explode('/', $sourcePath)));
-    }
-
-    private function renderRssFeed(string $title, string $link, array $items): string
-    {
-        return RssFeed::feed($title, $link, $items);
-    }
-
-    private function renderRssItem(string $title, string $link, string $description, ?string $publishedAt = null): string
-    {
-        return RssFeed::item($title, $link, $description, $publishedAt);
     }
 
     private function startViewerSession(): void
