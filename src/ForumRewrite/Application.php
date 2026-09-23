@@ -23,6 +23,7 @@ use ForumRewrite\Http\AboutPageController;
 use ForumRewrite\Http\BoardPageController;
 use ForumRewrite\Http\BoardViewOptions;
 use ForumRewrite\Http\CodebaseStateController;
+use ForumRewrite\Http\ForteBoardController;
 use ForumRewrite\Http\ForteProfileController;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\LlmExchangesController;
@@ -38,9 +39,9 @@ use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
-use ForumRewrite\ReadModel\TagGrouping;
 use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\ReadModel\ThreadRowSupport;
+use ForumRewrite\ReadModel\ViewerTagLookup;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -579,7 +580,7 @@ final class Application
         }
 
         if (preg_match('#^/forte/?$#', $path) === 1) {
-            $this->sendHtml($this->renderForteBoard(
+            $this->sendHtml($this->forteBoardController()->board(
                 (string) ($query['tag'] ?? ''),
                 (string) ($query['sort'] ?? ''),
                 (string) ($query['dir'] ?? ''),
@@ -806,75 +807,12 @@ final class Application
         return new BoardPageController($this->routeServices());
     }
 
-    private function renderForteBoard(string $requestedTag = '', string $requestedSortColumn = '', string $requestedSortDir = '', string $requestedSelected = '', string $requestedCreatedPostId = ''): string
+    private function forteBoardController(): ForteBoardController
     {
-        $threads = $this->fetchThreads();
-        $tagGroups = $this->groupThreadsByTag($threads);
-        $selection = $this->resolveForteBoardSelection($threads, $tagGroups, $requestedTag, $requestedSelected);
-        $selectedTag = $selection['tag'];
-        $selectedThreadId = $selection['selectedThreadId'];
-        $sort = $this->resolveForteBoardSort($requestedSortColumn, $requestedSortDir);
-        $threads = $this->applyForteBoardSort($threads, $sort['column'], $sort['dir']);
-
-        // A thread excluded from the board's own listing (identity/
-        // bootstrap/approval-only) still resolves when linked to directly -
-        // fetched on its own here, kept out of $threads/$tagGroups/counts
-        // entirely, and folded only into $contentThreads below so just the
-        // content pane (never the row list or folder tree) can render it.
-        $extraThread = null;
-        if ($selectedThreadId === '' && $requestedSelected !== '') {
-            $extraThread = $this->fetchThreadById($requestedSelected);
-            if ($extraThread !== null) {
-                $selectedThreadId = $requestedSelected;
-            }
-        }
-        $contentThreads = $extraThread !== null ? array_merge($threads, [$extraThread]) : $threads;
-
-        $replyPostsByThreadId = $this->fetchAllThreadReplyPosts();
-        $replyTreesByThreadId = [];
-        $allPostIds = [];
-        $highlightedPostId = '';
-        foreach ($contentThreads as $thread) {
-            $threadId = (string) $thread['root_post_id'];
-            $replyTreesByThreadId[$threadId] = $this->buildReplyTree($replyPostsByThreadId[$threadId] ?? []);
-            $allPostIds[] = $threadId;
-            foreach ($replyPostsByThreadId[$threadId] ?? [] as $replyPost) {
-                $postId = (string) $replyPost['post_id'];
-                $allPostIds[] = $postId;
-                if ($threadId === $selectedThreadId && $postId === $requestedCreatedPostId) {
-                    $highlightedPostId = $postId;
-                }
-            }
-        }
-
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        $viewerIdentityId = $viewerProfile !== null ? (string) $viewerProfile['identity_id'] : '';
-        $viewerLikedThreadIds = $viewerProfile !== null
-            ? $this->viewerThreadTagsForThreads(array_column($contentThreads, 'root_post_id'), 'like', $viewerIdentityId)
-            : [];
-        $viewerFlaggedPostIds = $viewerProfile !== null
-            ? $this->viewerPostTagsForPosts($allPostIds, 'flag', $viewerIdentityId)
-            : [];
-
-        return $this->renderer()->renderStandalonePage(
-            'forte_board.php',
-            [
-                'threads' => $threads,
-                'contentThreads' => $contentThreads,
-                'tagGroups' => $tagGroups,
-                'selectedTag' => $selectedTag,
-                'selectedThreadId' => $selectedThreadId,
-                'sortColumn' => $sort['column'],
-                'sortDir' => $sort['dir'],
-                'replyTreesByThreadId' => $replyTreesByThreadId,
-                'viewerLikedThreadIds' => $viewerLikedThreadIds,
-                'viewerFlaggedPostIds' => $viewerFlaggedPostIds,
-                'highlightedPostId' => $highlightedPostId,
-            ],
-            'Forte',
-            'paned-reader-body',
-            ['/assets/paned_board_reader.js', '/assets/lazy_compose_signing.js', '/assets/thread_reactions.js'],
-            ['/assets/forte.css'],
+        return new ForteBoardController(
+            $this->routeServices(),
+            $this->repositoryRoot,
+            $this->resolveViewerProfileFromIdentityHint(...),
         );
     }
 
@@ -1463,165 +1401,13 @@ final class Application
         // Every resolvable item links into Forte itself, regardless of
         // board visibility - identity/bootstrap/approval-only threads are
         // excluded from the board's own listing but still resolve when
-        // linked directly (fetchThreadById(), kept out of the list/tag
-        // groups/counts), so there's no more need for classic's own
-        // /posts//threads/ destination as a fallback here.
+        // linked directly (ThreadRepository::byId(), kept out of the
+        // list/tag groups/counts), so there's no more need for classic's
+        // own /posts//threads/ destination as a fallback here.
         return [
             'href' => '/forte?selected=' . $threadId . '&created_post_id=' . $postId . '#post-' . $postId,
             'label' => $postId,
         ];
-    }
-
-    /**
-     * Resolves a requested ?tag= value against real tag names, falling back
-     * to '' (All Threads) when missing or unrecognized.
-     *
-     * @param array<int, array{tag: string, count: int, threads: array}> $tagGroups
-     */
-    private function resolveForteBoardTag(string $requestedTag, array $tagGroups): string
-    {
-        if ($requestedTag === '') {
-            return '';
-        }
-
-        foreach ($tagGroups as $group) {
-            if ($group['tag'] === $requestedTag) {
-                return $requestedTag;
-            }
-        }
-
-        return '';
-    }
-
-    /**
-     * Resolves a requested ?tag=/?selected= pair for server-side rendering,
-     * so a reader following a link (permalink, reply redirect, or a plain
-     * bookmark) sees the right thread/tag in the very first response
-     * instead of a client-side JS correction after the fact.
-     *
-     * `selected` wins on conflict: if the requested thread doesn't carry the
-     * requested tag, the tag drops to '' (All Threads) rather than losing
-     * the selection - this can only happen via a hand-edited URL or a
-     * thread's tags changing after a link was shared, never from normal
-     * clicking (a click can only ever target an already-visible,
-     * correctly-tagged row).
-     *
-     * @param array<int, array<string, mixed>> $threads
-     * @param array<int, array{tag: string, count: int, threads: array}> $tagGroups
-     * @return array{tag: string, selectedThreadId: string}
-     */
-    private function resolveForteBoardSelection(array $threads, array $tagGroups, string $requestedTag, string $requestedSelected): array
-    {
-        $resolvedTag = $this->resolveForteBoardTag($requestedTag, $tagGroups);
-
-        $selectedThreadId = '';
-        foreach ($threads as $thread) {
-            if ((string) $thread['root_post_id'] === $requestedSelected) {
-                $selectedThreadId = $requestedSelected;
-                break;
-            }
-        }
-
-        if ($selectedThreadId === '') {
-            return ['tag' => $resolvedTag, 'selectedThreadId' => ''];
-        }
-
-        if ($resolvedTag !== '') {
-            $group = $this->findTagGroup($tagGroups, $resolvedTag);
-            $threadIdsInGroup = $group !== null ? array_column($group['threads'], 'root_post_id') : [];
-            if (!in_array($selectedThreadId, $threadIdsInGroup, true)) {
-                $resolvedTag = '';
-            }
-        }
-
-        return ['tag' => $resolvedTag, 'selectedThreadId' => $selectedThreadId];
-    }
-
-    /**
-     * Resolves requested ?sort=/?dir= values against the four sortable
-     * columns, falling back to '' (today's default newest-first order,
-     * unrelated to any single column) when the column is missing or
-     * unrecognized. An unrecognized direction falls back to a per-column
-     * default: ascending for text columns, descending for date/replies.
-     *
-     * @return array{column: string, dir: string}
-     */
-    private function resolveForteBoardSort(string $requestedColumn, string $requestedDir): array
-    {
-        $validColumns = ['subject', 'from', 'date', 'replies'];
-        if (!in_array($requestedColumn, $validColumns, true)) {
-            return ['column' => '', 'dir' => ''];
-        }
-
-        $defaultDir = in_array($requestedColumn, ['date', 'replies'], true) ? 'desc' : 'asc';
-        $dir = in_array($requestedDir, ['asc', 'desc'], true) ? $requestedDir : $defaultDir;
-
-        return ['column' => $requestedColumn, 'dir' => $dir];
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $threads
-     * @return array<int, array<string, mixed>>
-     */
-    private function applyForteBoardSort(array $threads, string $column, string $dir): array
-    {
-        if ($column === '') {
-            return $threads;
-        }
-
-        $sorted = $threads;
-        usort($sorted, function (array $left, array $right) use ($column): int {
-            return $this->forteBoardSortValue($left, $column) <=> $this->forteBoardSortValue($right, $column);
-        });
-
-        return $dir === 'desc' ? array_reverse($sorted) : $sorted;
-    }
-
-    private function forteBoardSortValue(array $thread, string $column): string|int
-    {
-        return match ($column) {
-            'subject' => mb_strtolower(ThreadTitle::displayTitle(
-                (string) ($thread['subject'] ?? ''),
-                (string) ($thread['body_preview'] ?? ''),
-                (string) $thread['root_post_id'],
-            )),
-            'from' => mb_strtolower(trim((string) ($thread['author_label'] ?? '')) ?: 'guest'),
-            'date' => (string) ($thread['root_post_created_at'] ?? ''),
-            'replies' => (int) ($thread['reply_count'] ?? 0),
-            default => '',
-        };
-    }
-
-    /**
-     * Nests a flat, sequence_number-ordered post list into a reply tree using
-     * each post's parent_id. A post whose parent_id is missing or not present
-     * in the fetched set (e.g. hidden/deleted) is treated as a root.
-     *
-     * @param array<int, array<string, mixed>> $posts
-     * @return array<int, array{post: array<string, mixed>, children: array}>
-     */
-    private function buildReplyTree(array $posts): array
-    {
-        $nodesByPostId = [];
-        foreach ($posts as $post) {
-            $nodesByPostId[(string) $post['post_id']] = [
-                'post' => $post,
-                'children' => [],
-            ];
-        }
-
-        $roots = [];
-        foreach ($nodesByPostId as $postId => &$node) {
-            $parentId = $node['post']['parent_id'] !== null ? (string) $node['post']['parent_id'] : null;
-            if ($parentId !== null && $parentId !== $postId && isset($nodesByPostId[$parentId])) {
-                $nodesByPostId[$parentId]['children'][] = &$node;
-            } else {
-                $roots[] = &$node;
-            }
-        }
-        unset($node);
-
-        return $roots;
     }
 
     private function renderThread(string $threadId, string $createdPostId = ''): ?string
@@ -2212,34 +1998,6 @@ final class Application
     }
 
     /**
-     * One thread's own row, in the exact shape `fetchThreads()` produces -
-     * unlike `fetchThreads()`, this doesn't exclude identity/bootstrap/
-     * approval-only threads, since it's for resolving a single thread a
-     * caller already knows the id of (a direct permalink), not for
-     * populating the board's own listing.
-     *
-     * @return array<string, mixed>|null
-     */
-    private function fetchThreadById(string $threadId): ?array
-    {
-        $stmt = $this->pdo()->prepare(
-            'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
-                    threads.reply_count, threads.score_total, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
-                    posts.body AS root_post_body,
-                    posts.post_score_total AS root_post_score_total,
-                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
-             FROM threads
-             JOIN posts ON posts.post_id = threads.root_post_id
-             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
-             WHERE threads.root_post_id = :root_post_id'
-        );
-        $stmt->execute(['root_post_id' => $threadId]);
-        $thread = $stmt->fetch();
-
-        return $thread === false ? null : $this->hydrateThreadRow($thread);
-    }
-
-    /**
      * @return array<string, mixed>|null
      */
     private function fetchThread(string $threadId): ?array
@@ -2283,36 +2041,6 @@ final class Application
         $stmt->execute(['thread_id' => $threadId]);
 
         return $stmt->fetchAll();
-    }
-
-    /**
-     * Bulk equivalent of fetchThreadPosts() across every thread at once (a
-     * single query grouped in PHP), used by the Forte board view so it can
-     * render every thread's reply tree without one query per thread.
-     *
-     * @return array<string, array<int, array<string, mixed>>> posts keyed by thread_id
-     */
-    private function fetchAllThreadReplyPosts(): array
-    {
-        $rows = $this->pdo()->query(
-            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_identity_id, posts.author_label,
-                    posts.created_at, posts.board_tags_json,
-                    posts.author_profile_slug, profiles.username_token AS author_username_token,
-                    COALESCE(profiles.is_approved, 0) AS author_is_approved,
-                    profiles.public_key AS author_public_key
-             FROM posts
-             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
-             WHERE posts.thread_id != posts.post_id
-               AND posts.is_hidden = 0
-             ORDER BY posts.thread_id ASC, posts.sequence_number ASC'
-        )->fetchAll();
-
-        $postsByThreadId = [];
-        foreach ($rows as $row) {
-            $postsByThreadId[(string) $row['thread_id']][] = $row;
-        }
-
-        return $postsByThreadId;
     }
 
     /**
@@ -2766,33 +2494,6 @@ final class Application
     private function activeBoardOptionLabel(array $options, string $activeKey): string
     {
         return BoardViewOptions::activeLabel($options, $activeKey);
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $threads
-     * @return array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>}>
-     */
-    private function groupThreadsByTag(array $threads): array
-    {
-        return TagGrouping::byTag($threads);
-    }
-
-    /**
-     * @param array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>}> $groups
-     * @return array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>,preview_threads:array<int, array<string, mixed>>,href:string,has_more:bool}>
-     */
-    private function limitTagGroupThreads(array $groups, int $limit): array
-    {
-        return TagGrouping::limitPreview($groups, $limit);
-    }
-
-    /**
-     * @param array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>}> $groups
-     * @return array{tag:string,count:int,threads:array<int, array<string, mixed>>}|null
-     */
-    private function findTagGroup(array $groups, string $tag): ?array
-    {
-        return TagGrouping::find($groups, $tag);
     }
 
     /**
@@ -3475,55 +3176,7 @@ final class Application
      */
     private function viewerPostTagsForPosts(array $postIds, string $tag, string $identityId): array
     {
-        $postLookup = array_fill_keys(array_map(static fn (mixed $value): string => (string) $value, $postIds), true);
-        if ($postLookup === []) {
-            return [];
-        }
-
-        $repository = new CanonicalRecordRepository($this->repositoryRoot);
-        $taggedPostIds = [];
-        foreach (glob($this->repositoryRoot . '/records/post-reactions/*.txt') ?: [] as $path) {
-            $record = $repository->loadPostReaction('records/post-reactions/' . basename($path));
-            if (!isset($postLookup[$record->postId]) || $record->authorIdentityId !== $identityId) {
-                continue;
-            }
-
-            if (in_array($tag, $record->tags, true)) {
-                $taggedPostIds[$record->postId] = true;
-            }
-        }
-
-        return $taggedPostIds;
-    }
-
-    /**
-     * Bulk sibling to viewerHasThreadTag(): one glob/scan of thread-label
-     * records covering many threads at once, instead of one scan per thread.
-     *
-     * @param array<int, mixed> $threadIds
-     * @return array<string, true>
-     */
-    private function viewerThreadTagsForThreads(array $threadIds, string $tag, string $identityId): array
-    {
-        $threadLookup = array_fill_keys(array_map(static fn (mixed $value): string => (string) $value, $threadIds), true);
-        if ($threadLookup === []) {
-            return [];
-        }
-
-        $repository = new CanonicalRecordRepository($this->repositoryRoot);
-        $taggedThreadIds = [];
-        foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
-            $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path));
-            if (!isset($threadLookup[$record->threadId]) || $record->authorIdentityId !== $identityId) {
-                continue;
-            }
-
-            if (in_array($tag, $record->labels, true)) {
-                $taggedThreadIds[$record->threadId] = true;
-            }
-        }
-
-        return $taggedThreadIds;
+        return ViewerTagLookup::postTags($this->repositoryRoot, $postIds, $tag, $identityId);
     }
 
     private function hasPendingUserDirectoryProfiles(): bool
@@ -3721,8 +3374,9 @@ final class Application
      * its three sortable columns, falling back to 'date' when the column is
      * missing or unrecognized (today's default order). An unrecognized
      * direction falls back to a per-column default: descending for date,
-     * ascending for the text columns - mirroring `resolveForteBoardSort()`'s
-     * pattern, though Activity always resolves to a real column (never an
+     * ascending for the text columns - mirroring
+     * `ForteBoardController::resolveSort()`'s pattern, though Activity
+     * always resolves to a real column (never an
      * empty-string sentinel) since its cursor needs one to key off.
      *
      * @return array{column: string, direction: string}
