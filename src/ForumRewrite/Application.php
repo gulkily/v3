@@ -30,6 +30,7 @@ use ForumRewrite\Http\ComposeAndAccountKeyController;
 use ForumRewrite\Http\ForteBoardController;
 use ForumRewrite\Http\ForteProfileController;
 use ForumRewrite\Http\ForteUserDirectoryController;
+use ForumRewrite\Http\IdentityApprovalAndInvitationApiController;
 use ForumRewrite\Http\IdentityHintController;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\LlmExchangesController;
@@ -271,32 +272,32 @@ final class Application
         }
 
         if ($path === '/api/approve_user') {
-            $this->handleApproveUserApi($method, $query);
+            $this->identityApprovalAndInvitationApiController()->approveUser($method);
             return;
         }
 
         if ($path === '/api/prepare_approval') {
-            $this->handlePrepareUserApproval($method, $query);
+            $this->identityApprovalAndInvitationApiController()->prepareApproval($method, $query);
             return;
         }
 
         if ($path === '/api/create_prepared_approval') {
-            $this->handleCreatePreparedApproval($method, $query);
+            $this->identityApprovalAndInvitationApiController()->createPreparedApproval($method, $query);
             return;
         }
 
         if ($path === '/api/prepare_invitation') {
-            $this->handlePrepareInvitation($method, $query);
+            $this->identityApprovalAndInvitationApiController()->prepareInvitation($method, $query);
             return;
         }
 
         if ($path === '/api/create_prepared_invitation') {
-            $this->handleCreatePreparedInvitation($method, $query);
+            $this->identityApprovalAndInvitationApiController()->createPreparedInvitation($method, $query);
             return;
         }
 
         if ($path === '/api/prepare_invitation_redemption') {
-            $this->handlePrepareInvitationRedemption($method, $query);
+            $this->identityApprovalAndInvitationApiController()->prepareInvitationRedemption($method, $query);
             return;
         }
 
@@ -2578,6 +2579,16 @@ final class Application
         return new WritePostAndIdentityApiController($this->routeServices());
     }
 
+    private function identityApprovalAndInvitationApiController(): IdentityApprovalAndInvitationApiController
+    {
+        return new IdentityApprovalAndInvitationApiController(
+            $this->routeServices(),
+            $this->authenticatedViewerProfile(...),
+            $this->fetchProfileBySlug(...),
+            $this->resolveViewerProfileFromIdentityHint(...),
+        );
+    }
+
     /**
      * @param array<string, mixed>|null $viewerProfile
      */
@@ -3698,155 +3709,6 @@ final class Application
 
     /**
      * @param array<string, mixed> $query
-     */
-    private function handleApproveUserApi(string $method, array $query): void
-    {
-        if ($method !== 'POST') {
-            $this->sendText("method not allowed\n", 405);
-            return;
-        }
-
-        $this->sendText("error=Approval requires a browser signature. Refresh this page and try again.\n", 400);
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handlePrepareUserApproval(string $method, array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        if ($method !== 'POST') {
-            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $profileSlug = trim((string) ($this->requestData($query)['profile_slug'] ?? ''));
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        if ($profileSlug === '') {
-            $this->sendJson(
-                ['status' => 'error', 'error' => 'Missing profile_slug.'],
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-            return;
-        }
-
-        try {
-            $result = $this->prepareUserApprovalBySlug($profileSlug, $timings);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            unset($result['timings']);
-            $this->sendJson($result, 200, $this->serverTimingHeaders($result));
-        } catch (RuntimeException $exception) {
-            $this->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleCreatePreparedApproval(string $method, array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        if ($method !== 'POST') {
-            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        try {
-            $result = $this->writer()->finalizePreparedApproval($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            unset($result['timings']);
-            $this->sendJson($result, 200, $this->serverTimingHeaders($result));
-        } catch (RuntimeException $exception) {
-            $this->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
-    }
-
-    /** @param array<string, mixed> $query */
-    private function handlePrepareInvitation(string $method, array $query): void
-    {
-        if ($method !== 'POST') {
-            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
-            return;
-        }
-        try {
-            $viewer = $this->authenticatedViewerProfile();
-            if ($viewer === null || ((int) ($viewer['is_approved'] ?? 0)) !== 1) {
-                throw new RuntimeException('Only authenticated approved users can issue invitations.');
-            }
-            $input = $this->requestData($query);
-            $result = $this->writer()->prepareInvitation([
-                'issuer_identity_id' => (string) $viewer['identity_id'],
-                'thread_id' => (string) $viewer['bootstrap_thread_id'],
-                'parent_id' => (string) $viewer['bootstrap_post_id'],
-                'verification_hash' => (string) ($input['verification_hash'] ?? ''),
-                'expires_at' => (string) ($input['expires_at'] ?? ''),
-                'destination' => (string) ($input['destination'] ?? ''),
-                'action' => (string) ($input['action'] ?? 'issue'),
-                'invitation_id' => (string) ($input['invitation_id'] ?? ''),
-            ]);
-            $this->sendJson($result, 200, $this->noStoreHeaders());
-        } catch (RuntimeException $exception) {
-            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->noStoreHeaders());
-        }
-    }
-
-    /** @param array<string, mixed> $query */
-    private function handleCreatePreparedInvitation(string $method, array $query): void
-    {
-        if ($method !== 'POST') {
-            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
-            return;
-        }
-        try {
-            $input = $this->requestData($query);
-            $this->sendJson($this->writer()->finalizePreparedInvitation($input), 200, $this->noStoreHeaders());
-        } catch (RuntimeException $exception) {
-            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->noStoreHeaders());
-        }
-    }
-
-    /** @param array<string, mixed> $query */
-    private function handlePrepareInvitationRedemption(string $method, array $query): void
-    {
-        if ($method !== 'POST') {
-            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
-            return;
-        }
-        try {
-            $input = $this->requestData($query);
-            $identityId = strtolower(trim((string) ($input['identity_id'] ?? '')));
-            $profile = $this->fetchProfileByIdentityId($identityId);
-            if ($profile === null) {
-                throw new RuntimeException('Identity not found.');
-            }
-            $this->sendJson($this->writer()->prepareInvitationRedemption([
-                'recipient_identity_id' => $identityId,
-                'thread_id' => (string) $profile['bootstrap_thread_id'],
-                'parent_id' => (string) $profile['bootstrap_post_id'],
-                'invite_token' => (string) ($input['invite_token'] ?? ''),
-            ]), 200, $this->noStoreHeaders());
-        } catch (RuntimeException $exception) {
-            $this->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->noStoreHeaders());
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
      * @return array<string, mixed>
      */
     private function requestData(array $query): array
@@ -4422,43 +4284,6 @@ final class Application
             ),
             400
         );
-    }
-
-    /**
-     * @param array<string, float> $timings
-     * @return array<string, mixed>
-     */
-    private function prepareUserApprovalBySlug(string $slug, array &$timings = []): array
-    {
-        $phaseStartedAt = hrtime(true);
-        $profile = $this->fetchProfileBySlug($slug);
-        $timings['target_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
-        if ($profile === null) {
-            throw new RuntimeException('Profile not found.');
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
-        if ($viewerProfile === null || ((int) $viewerProfile['is_approved']) !== 1) {
-            throw new RuntimeException('Only approved users can approve other users.');
-        }
-
-        if ((string) $viewerProfile['identity_id'] === (string) $profile['identity_id']) {
-            throw new RuntimeException('Self-approval is not allowed.');
-        }
-
-        if ((int) $profile['is_approved'] === 1) {
-            throw new RuntimeException('User is already approved.');
-        }
-
-        return $this->writer()->prepareApproval([
-            'approver_identity_id' => (string) $viewerProfile['identity_id'],
-            'target_identity_id' => (string) $profile['identity_id'],
-            'target_profile_slug' => (string) $profile['profile_slug'],
-            'thread_id' => (string) $profile['bootstrap_thread_id'],
-            'parent_id' => (string) $profile['bootstrap_post_id'],
-        ]);
     }
 
     private function pdo(): PDO

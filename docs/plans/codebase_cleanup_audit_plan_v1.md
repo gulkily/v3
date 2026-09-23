@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 5,061 lines (~38% smaller)** across 21
+  `Application.php`: **8,212 → 4,886 lines (~41% smaller)** across 22
   route-group extractions so far:
   - `/about` → `AboutPageController`
   - `/instance`, `/backup`, `/downloads/*` → `InstancePageController`
@@ -43,6 +43,10 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
     `/api/prepare_reply`, `/api/create_prepared_post`,
     `/api/prepare_identity`, `/api/create_identity` →
     `WritePostAndIdentityApiController`
+  - `/api/approve_user`, `/api/prepare_approval`,
+    `/api/create_prepared_approval`, `/api/prepare_invitation`,
+    `/api/create_prepared_invitation`, `/api/prepare_invitation_redemption`
+    → `IdentityApprovalAndInvitationApiController`
 
   Shared query/support layer built up alongside the route extractions
   (`src/ForumRewrite/ReadModel/`, `src/ForumRewrite/Http/`, and
@@ -178,18 +182,38 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   `sendJson()` one is now gone project-wide). This slice needed zero
   closures.
 
+  Finished off the identity/approval/invitation write group -
+  `/api/approve_user`, `/api/prepare_approval`,
+  `/api/create_prepared_approval`, `/api/prepare_invitation`,
+  `/api/create_prepared_invitation`, `/api/prepare_invitation_redemption`
+  - into `IdentityApprovalAndInvitationApiController`, same shape again
+  (everything already on `RouteServices`). `prepareUserApprovalBySlug()`
+  had exactly one caller so it moved wholesale rather than becoming a
+  closure; it needed `fetchProfileBySlug()` (4 other call sites) and
+  `resolveViewerProfileFromIdentityHint()` (14 other call sites) as
+  closures, plus `authenticatedViewerProfile()` (8 other call sites) for
+  `prepareInvitation()`. `prepareInvitationRedemption()`'s
+  `fetchProfileByIdentityId()` call became a direct
+  `ProfileRepository::byIdentityId(pdo())` call, same as the
+  `AuthApiController` slice. This closes out the entire "rest of `/api`"
+  group named below in earlier notes - every plain write/prepare/auth `/api`
+  endpoint identified at the start of this phase is now off `Application`.
+
+  While verifying this slice, `WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh`
+  failed in the full suite run. Isolated reruns (3x on the new code, 3x on
+  the pre-refactor commit) showed it fails ~1-in-3 either way - a
+  pre-existing flake in `/activity` incremental-vs-full-rebuild HTML
+  comparison, unrelated to this slice's approval-endpoint changes. Not
+  counted against the baseline.
+
   Remaining route groups still fully on `Application`: `/forte/activity/`
   and the `/api/forte_*`/`/api/get_forte_*` AJAX endpoints; `/activity`
   (harder tier); the single-thread view (`/threads/{id}`, `/posts/{id}`,
   harder tier); the agent-reply/post-analysis subsystem
   (`/api/analyze_post`, `/api/generate_agent_reply`, `/api/codex_handoff*` -
   harder tier, though one of its blockers - `sendJson()` - is now resolved,
-  see above); `/api/version` (see above); and the rest of `/api` (~9
-  identity/approval/invitation endpoints - `/api/approve_user`,
-  `/api/prepare_approval`/`/api/create_prepared_approval`,
-  `/api/prepare_invitation`/`/api/create_prepared_invitation`,
-  `/api/prepare_invitation_redemption` - some of which may turn out as
-  cheap as the ones above once individually checked).
+  see above); and `/api/version` (see above). All other `/api` write
+  endpoints are now extracted.
 
   Checked both `/forte/activity/` and the single-thread view
   (`/threads/{id}`) as candidate next slices: both are in the harder
