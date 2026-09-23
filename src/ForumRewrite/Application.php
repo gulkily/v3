@@ -23,6 +23,7 @@ use ForumRewrite\Http\AboutPageController;
 use ForumRewrite\Http\BoardPageController;
 use ForumRewrite\Http\BoardViewOptions;
 use ForumRewrite\Http\CodebaseStateController;
+use ForumRewrite\Http\ForteProfileController;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\LlmExchangesController;
 use ForumRewrite\Http\ProfilePageController;
@@ -609,7 +610,7 @@ final class Application
         }
 
         if (preg_match('#^/forte/profiles/([^/]+)/?$#', $path, $matches) === 1) {
-            $html = $this->renderForteProfile($matches[1]);
+            $html = $this->forteProfileController()->profile($matches[1]);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -620,7 +621,7 @@ final class Application
         }
 
         if (preg_match('#^/forte/user/([^/]+)/?$#', $path, $matches) === 1) {
-            $html = $this->renderForteUsername($matches[1]);
+            $html = $this->forteProfileController()->username($matches[1]);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -877,70 +878,9 @@ final class Application
         );
     }
 
-    private function renderForteProfile(string $slug): ?string
+    private function forteProfileController(): ForteProfileController
     {
-        $profile = $this->fetchProfileBySlug($slug);
-        if ($profile === null) {
-            return null;
-        }
-
-        $pageTitleLabel = trim((string) ($profile['username'] ?? ''));
-        if ($pageTitleLabel === '') {
-            $pageTitleLabel = trim((string) ($profile['fallback_label'] ?? ''));
-        }
-        if ($pageTitleLabel === '') {
-            $pageTitleLabel = (string) $profile['profile_slug'];
-        }
-
-        return $this->renderer()->renderStandalonePage(
-            'forte_profile.php',
-            [
-                'profile' => $profile,
-            ],
-            $pageTitleLabel . ' - Forte Profile',
-            'paned-reader-body',
-            [],
-            ['/assets/forte.css'],
-        );
-    }
-
-    private function renderForteUsername(string $username): ?string
-    {
-        $usernameToken = strtolower($username);
-        $profiles = $this->fetchProfilesByUsernameToken($usernameToken);
-        if ($profiles === []) {
-            return null;
-        }
-
-        $approvedProfiles = array_values(array_filter(
-            $profiles,
-            static fn (array $profile): bool => ((int) $profile['is_approved']) === 1
-        ));
-        $unapprovedProfiles = array_values(array_filter(
-            $profiles,
-            static fn (array $profile): bool => ((int) $profile['is_approved']) !== 1
-        ));
-        $approvedIdentityIds = array_values(array_map(
-            static fn (array $profile): string => (string) $profile['identity_id'],
-            $approvedProfiles
-        ));
-
-        return $this->renderer()->renderStandalonePage(
-            'forte_username.php',
-            [
-                'usernameToken' => $usernameToken,
-                'approvedProfiles' => $approvedProfiles,
-                'unapprovedProfiles' => $unapprovedProfiles,
-                'approvedThreadCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, true),
-                'approvedPostCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, false),
-                'approvedThreads' => $this->fetchVisibleAuthoredThreads($approvedIdentityIds),
-                'approvedPosts' => $this->fetchVisibleAuthoredPosts($approvedIdentityIds),
-            ],
-            'User ' . $usernameToken . ' - Forte',
-            'paned-reader-body',
-            [],
-            ['/assets/forte.css'],
-        );
+        return new ForteProfileController($this->routeServices());
     }
 
     private function renderForteUserDirectory(
@@ -1351,7 +1291,7 @@ final class Application
 
     /**
      * Serves the Users pane's detail-pane fragment for one username_token,
-     * reusing the same aggregation `renderForteUsername()` already performs
+     * reusing the same aggregation `ForteProfileController::username()` already performs
      * (approved profiles, visible thread/post counts and rows) rather than
      * a new query, and returning it the same way `handleForteCommitDetail()`
      * returns its manifest fragment: `{status, html}` for client-side
@@ -2774,14 +2714,6 @@ final class Application
     private function fetchVisibleAuthoredPosts(array $identityIds): array
     {
         return AuthoredContentRepository::visiblePosts($this->pdo(), $identityIds);
-    }
-
-    /**
-     * @param list<string> $identityIds
-     */
-    private function countVisibleAuthoredRows(array $identityIds, bool $threadsOnly): int
-    {
-        return count($threadsOnly ? $this->fetchVisibleAuthoredThreads($identityIds) : $this->fetchVisibleAuthoredPosts($identityIds));
     }
 
     /**

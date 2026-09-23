@@ -75,6 +75,22 @@ final class RouteServices
         );
     }
 
+    /**
+     * @param array<string, mixed> $pageData
+     * @param string[] $scriptPaths
+     * @param string[] $additionalCssPaths
+     */
+    public function renderStandalonePage(
+        string $pageTemplate,
+        array $pageData,
+        string $title,
+        string $bodyClass = '',
+        array $scriptPaths = [],
+        array $additionalCssPaths = [],
+    ): string {
+        return $this->renderer->renderStandalonePage($pageTemplate, $pageData, $title, $bodyClass, $scriptPaths, $additionalCssPaths);
+    }
+
     public function renderMessagePage(string $title, string $heading, string $message, string $activeSection): string
     {
         return $this->renderPageTemplate(
