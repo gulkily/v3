@@ -6,6 +6,8 @@ namespace ForumRewrite\View;
 
 final class ThemeRegistry
 {
+    public const THEME_HINT_COOKIE = 'theme-hint';
+
     /**
      * @return list<array{name: string, label: string, mode: string}>
      */
@@ -43,5 +45,23 @@ final class ThemeRegistry
         }
 
         return $names;
+    }
+
+    public static function isExplicitName(string $name): bool
+    {
+        return in_array($name, self::explicitNames(), true);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function stylesheetPaths(): array
+    {
+        $paths = [];
+        foreach (self::explicitNames() as $name) {
+            $paths[$name] = '/assets/theme-' . $name . '.css';
+        }
+
+        return $paths;
     }
 }

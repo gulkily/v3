@@ -40,6 +40,23 @@ final class ThemeRegistryTest
             ThemeRegistry::explicitNames()
         );
     }
+
+    public function testExplicitThemeAssetsAndHintCookieHaveCanonicalContracts(): void
+    {
+        $paths = ThemeRegistry::stylesheetPaths();
+
+        assertSame('theme-hint', ThemeRegistry::THEME_HINT_COOKIE);
+        assertSame(ThemeRegistry::explicitNames(), array_keys($paths));
+        assertSame(false, array_key_exists('auto', $paths));
+
+        foreach ($paths as $name => $path) {
+            assertSame(true, ThemeRegistry::isExplicitName($name));
+            assertSame('/assets/theme-' . $name . '.css', $path);
+        }
+
+        assertSame(false, ThemeRegistry::isExplicitName('auto'));
+        assertSame(false, ThemeRegistry::isExplicitName('unknown'));
+    }
 }
 
 if (!function_exists('assertSame')) {
