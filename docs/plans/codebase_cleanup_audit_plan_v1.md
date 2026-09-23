@@ -12,9 +12,10 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 3,380 lines (~59% smaller)** across 26
-  route-group extractions so far, plus the activity/commit-manifest
-  data-layer extraction (see below):
+  `Application.php`: **8,212 → 2,313 lines (~72% smaller)** across 27
+  route-group extractions so far, plus the activity/commit-manifest and
+  post-analysis/agent-reply/Codex-handoff data-layer extractions (see
+  below):
   - `/about` → `AboutPageController`
   - `/instance`, `/backup`, `/downloads/*` → `InstancePageController`
   - `/tags/*` → `TagsPageController`
@@ -53,6 +54,8 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   - `/api/forte_commit_detail`, `/forte/activity/`,
     `/api/forte_activity_page` → `ForteActivityController`
   - `/activity`, `/activity.rss` → `ActivityPageController`
+  - `/api/analyze_post`, `/api/generate_agent_reply`, `/api/codex_handoff`,
+    `/api/codex_handoff_approval` → `PostWorkflowApiController`
 
   Shared query/support layer built up alongside the route extractions
   (`src/ForumRewrite/ReadModel/`, `src/ForumRewrite/Http/`, and
@@ -372,6 +375,78 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   writeup. What remains deferred in Phase 2: the single-thread view
   (`/threads/{id}`, `/posts/{id}`), the agent-reply/post-analysis
   subsystem, and `/api/version` (intentionally left alone, see above).
+
+  Did the same dedicated dependency-graph investigation for the
+  agent-reply/post-analysis/Codex-handoff subsystem next (the same
+  treatment activity got). Found the identical shape: a large pure
+  data/orchestration layer plus a small config-touching core
+  (`postAnalysisService()`, `agentIdentityService()`,
+  `agentReplyFulfillmentService()`, `agentRepliesEnabled()`, etc.) whose
+  every real dependency - `pdo`, `projectRoot`, `repositoryRoot`,
+  `databasePath`, `artifactRoot`, `staticHtmlRoot`, `featureFlags()`,
+  `writer()` - was already on `RouteServices`. Extracted the whole
+  cluster (~35 methods) wholesale into a new `PostWorkflowService`
+  (`ForumRewrite\Agent` namespace, alongside `AgentIdentityService`/
+  `AgentReplyFulfillmentService` already there) plus a new
+  `PostWorkflowApiController` for the four route handlers
+  (`/api/analyze_post`, `/api/generate_agent_reply`, `/api/codex_handoff`,
+  `/api/codex_handoff_approval`). Applied the lazy-PDO lesson from the
+  `ActivityService` slice from the start this time (a `\Closure` factory,
+  memoized on first real use) rather than rediscovering the same bug.
+
+  `viewerCanUseCodexHandoff()`, `fetchPostAnalysesForPosts()`,
+  `fetchAgentReplyGenerationsForPosts()`, `fetchCodexHandoffsForPosts()`,
+  `codexHandoffEligiblePostIds()`, and `agentReplyWorkByPostId()` stayed
+  as thin delegating wrappers on `Application` - the single-thread view
+  (`renderThread()`/`renderPost()`, still deferred, a separate slice)
+  calls each of these directly. `llmExchangeRecorder()`/
+  `llmExchangeStore()`/`viewerCanInspectLlmExchanges()` were deliberately
+  **not** moved - both stayed on `Application` since `llmExchangeStore()`
+  already had an external consumer (`LlmExchangesController`'s closure)
+  beyond this cluster; `PostWorkflowApiController`/`PostWorkflowService`
+  take `llmExchangeRecorder` as a closure instead.
+
+  This was the largest and most error-prone slice of the whole phase
+  (a ~35-method, multi-namespace cluster spanning post-analysis, agent
+  identity, agent-reply fulfillment, and Codex handoff), and two real
+  mistakes surfaced during verification, both caught by the full test
+  suite rather than by upfront analysis:
+  1. Deleting the `findCodexHandoffFromInput()`-through-`postAnalysisResponse()`
+     block accidentally caught `llmExchangeRecorder()`/`llmExchangeStore()`
+     in the same sed range, despite the plan being to keep them on
+     `Application` - restored both verbatim once ~35 tests failed with
+     "Call to undefined method".
+  2. `fetchPostAnalysesForPosts()`/`fetchAgentReplyGenerationsForPosts()`/
+     `fetchCodexHandoffsForPosts()`/`agentReplyWorkByPostId()`/
+     `viewerCanUseCodexHandoff()`/`codexHandoffEligiblePostIds()` were
+     deleted-and-moved before being converted into the delegating wrappers
+     they needed to be (the single-thread view still calls them) - their
+     old bodies referenced methods that had just been deleted. Fixed by
+     converting each into a one-line wrapper calling the new service.
+  3. A public method, `Application::fulfillAgentReplyRequest()` - called
+     externally by `scripts/run_agent_reply_requests.php`, a CLI script,
+     not by any route or test - called `agentReplyFulfillmentService()`
+     directly. This was invisible to every `grep '$this->METHOD('`
+     call-count check used throughout this phase, since those only search
+     *within* `Application.php`; a CLI script calling a *public* method is
+     external and easy to miss. Caught by
+     `WriteApiSmokeTest::testAgentReplyRequestCommandProcessesQueuedRequestOnce`,
+     which actually shells out to the script. Fixed by adding a
+     `fulfillAgentReplyRequest()` passthrough on `PostWorkflowService` and
+     retargeting Application's public method to it. **Lesson for any
+     future slice with public methods:** grep `scripts/` (and any other
+     directory that constructs `Application` directly) for calls to
+     public methods, not just `tests/` for reflection into private ones -
+     the two are different blind spots.
+
+  All three were caught and fixed before committing - full suite (487),
+  `WriteApiSmokeTest` (103/103), `LocalAppSmokeTest` (88/93, 5 pre-existing
+  baseline failures), `BrowserSigningNormalizationTest` (62/62),
+  `ApplicationServerTimingTest` (3/3, confirms `noStoreTimingHeaders()`/
+  `mergeResultTimings()` reflection still works) all run clean.
+
+  `Application.php`: 3,380 → 2,313 lines - the single biggest line-count
+  drop of the entire phase.
 - **Phase 3 (test suite readability):** not started.
 - **Phase 4 (docs hygiene):** not started.
 

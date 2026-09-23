@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use ForumRewrite\Activity\ActivityService;
+use ForumRewrite\Agent\PostWorkflowService;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Host\HtmlResponseCache;
 use ForumRewrite\ReadModel\ReadModelConnection;
@@ -86,6 +87,38 @@ final class RouteServices
             new CanonicalRecordRepository($this->repositoryRoot),
             featureFlags: $this->featureFlags,
             additionalArtifactRoots: $this->additionalArtifactRoots(),
+        );
+    }
+
+    /**
+     * Not memoized (like writer()) - a fresh instance per call is fine,
+     * since each caller builds and uses it within a single route-handler
+     * invocation, and PostWorkflowService's own pdo() is separately lazy
+     * within that lifetime. fetchPost()/fetchThreadPosts()/
+     * llmExchangeRecorder() stay on Application (shared elsewhere - see
+     * PostWorkflowService's own docblock), so callers pass them in.
+     *
+     * @param \Closure(string): (array<string, mixed>|null) $fetchPost
+     * @param \Closure(string): array<int, array<string, mixed>> $fetchThreadPosts
+     * @param \Closure(): (\ForumRewrite\Llm\LlmExchangeRecorder|null) $llmExchangeRecorderFactory
+     */
+    public function postWorkflowService(
+        \Closure $fetchPost,
+        \Closure $fetchThreadPosts,
+        \Closure $llmExchangeRecorderFactory,
+    ): PostWorkflowService {
+        return new PostWorkflowService(
+            $this->pdo(...),
+            $this->projectRoot,
+            $this->repositoryRoot,
+            $this->databasePath,
+            $this->artifactRoot,
+            $this->staticHtmlRoot,
+            $this->featureFlags,
+            $this->writer(...),
+            $fetchPost,
+            $fetchThreadPosts,
+            $llmExchangeRecorderFactory,
         );
     }
 
