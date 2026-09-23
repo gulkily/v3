@@ -20,6 +20,7 @@ final class TemplateRenderer
         'about.php' => ['/assets/about.css'],
         'activity.php' => ['/assets/activity.css'],
         'bookmarklets.php' => ['/assets/tools.css'],
+        'invites.php' => ['/assets/invitations.css'],
         'tags.php' => ['/assets/tags.css'],
         'tools.php' => ['/assets/tools.css'],
     ];

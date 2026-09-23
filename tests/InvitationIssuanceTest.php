@@ -89,7 +89,7 @@ NODE);
 
     public function testInlineDestinationChooserUsesEqualInputInsets(): void
     {
-        $styles = file_get_contents(__DIR__ . '/../public/assets/site.css');
+        $styles = file_get_contents(__DIR__ . '/../public/assets/invitations.css');
 
         assertStringContains('inset: 0.35rem 0.35rem 0.35rem auto;', $styles);
         assertStringContains('.invitation-destination-input > input {', $styles);
