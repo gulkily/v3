@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 6,256 lines (~24% smaller)** across 11
+  `Application.php`: **8,212 → 6,109 lines (~26% smaller)** across 13
   route-group extractions so far:
   - `/about` → `AboutPageController`
   - `/instance`, `/backup`, `/downloads/*` → `InstancePageController`
@@ -25,13 +25,16 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   - `/forte/profiles/*`, `/forte/user/*` → `ForteProfileController`
   - `/forte` (board view) → `ForteBoardController`
   - `/forte/users/` → `ForteUserDirectoryController`
+  - `/lobby/`, `/invites/` → `LobbyController`
+  - `/source/current/*`, `/source/blob/*`, `/source/commits/*` → `SourceFileController`
 
   Shared query/support layer built up alongside the route extractions
-  (`src/ForumRewrite/ReadModel/` and `src/ForumRewrite/Http/`):
-  `RouteServices`, `ProfileRepository`, `ThreadRowSupport`,
-  `AuthoredContentRepository`, `ThreadRepository`, `TagGrouping`,
-  `BoardViewOptions`, `RssFeed`, `ToolsPageSupport`, `ViewerTagLookup`,
-  plus `readMetadata()`/`latestRepositoryCommit()`/`repositoryShortCommit()`
+  (`src/ForumRewrite/ReadModel/`, `src/ForumRewrite/Http/`, and
+  `src/ForumRewrite/Canonical/`): `RouteServices`, `ProfileRepository`,
+  `ThreadRowSupport`, `AuthoredContentRepository`, `ThreadRepository`,
+  `TagGrouping`, `BoardViewOptions`, `RssFeed`, `ToolsPageSupport`,
+  `ViewerTagLookup`, `SourcePathValidator`, plus
+  `readMetadata()`/`latestRepositoryCommit()`/`repositoryShortCommit()`
   consolidated onto `ReadModelMetadata`.
 
   A recurring side effect worth noting: several extractions revealed
@@ -40,11 +43,20 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   noticed until a later pass touched the same area) — each was removed on
   discovery rather than left as unreachable cruft.
 
+  Checked `/compose/thread`, `/compose/reply`, and `/account/key`'s GET
+  routes as candidates alongside `/lobby/`/`/invites/`: all three turned
+  out to already be one-line wrappers around a `render*Page()` method
+  also called by their own POST submit handler (a write flow) - extracting
+  a one-line wrapper into another one-line wrapper elsewhere doesn't earn
+  its complexity, so those three stay on Application by deliberate choice,
+  not oversight.
+
   Remaining route groups still fully on `Application`: `/forte/activity/`
   and the `/api/forte_*`/`/api/get_forte_*` AJAX endpoints; `/activity`;
-  the single-thread view (`/threads/{id}`, `/posts/{id}`); `/account`,
-  `/compose`, `/invites`, `/source`, `/lobby`; and `/api` (~50 routes,
-  deliberately last — most entangled with auth/session/write flows).
+  the single-thread view (`/threads/{id}`, `/posts/{id}`); `/compose`,
+  `/account/key` (GET+POST - see above), `/invites` (POST prepare/create
+  flows); and `/api` (~50 routes, deliberately last — most entangled
+  with auth/session/write flows).
 
   Checked both `/forte/activity/` and the single-thread view
   (`/threads/{id}`) as candidate next slices: both are in the harder
