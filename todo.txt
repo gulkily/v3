@@ -23,3 +23,21 @@ html pages should be marked up with the templates used to build them
 	also include pointers to where in the code the template was included
 
 clean up the failing tests
+
+offline support feature stub
+============================
+what should work
+	once i've been to zenmemes.com once, i should be able to get back to it even when offline
+		it should show older data, but i should be able to access all the features offline
+			browsing the thread listing
+			opening and reading the comments
+			voting/tagging
+			commenting/replying
+			all the data should be queued until next connection
+				user should know this is happening
+
+
+post presentation
+	if title == first line, don't show the first line in the body
+	put the byline below the post
+	put the labels below the post
