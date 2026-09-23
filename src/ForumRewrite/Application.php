@@ -20,6 +20,7 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\Http\AboutPageController;
+use ForumRewrite\Http\BoardViewOptions;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
@@ -30,6 +31,8 @@ use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
+use ForumRewrite\ReadModel\TagGrouping;
+use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\ReadModel\ThreadRowSupport;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
@@ -2636,24 +2639,7 @@ final class Application
      */
     private function fetchThreads(): array
     {
-        $rows = $this->pdo()->query(
-            'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
-                    threads.reply_count, threads.score_total, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
-                    posts.body AS root_post_body,
-                    posts.post_score_total AS root_post_score_total,
-                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
-             FROM threads
-             JOIN posts ON posts.post_id = threads.root_post_id
-             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
-             ORDER BY last_activity_at DESC, root_post_id DESC'
-        )->fetchAll();
-
-        $rows = array_values(array_filter(
-            $rows,
-            fn (array $thread): bool => !$this->isHiddenBootstrapBoardTagsJson((string) $thread['board_tags_json'])
-        ));
-
-        return $this->hydrateThreadRows($rows);
+        return ThreadRepository::fetchThreads($this->pdo());
     }
 
     /**
@@ -3214,12 +3200,12 @@ final class Application
 
     private function normalizeBoardView(string $view): string
     {
-        return in_array($view, ['all', 'liked'], true) ? $view : 'all';
+        return BoardViewOptions::normalizeView($view);
     }
 
     private function normalizeBoardSort(string $sort): string
     {
-        return in_array($sort, ['newest', 'oldest', 'top'], true) ? $sort : 'newest';
+        return BoardViewOptions::normalizeSort($sort);
     }
 
     /**
@@ -3227,20 +3213,7 @@ final class Application
      */
     private function boardViewOptions(string $activeView, string $activeSort): array
     {
-        return [
-            [
-                'key' => 'all',
-                'label' => 'All',
-                'href' => '/threads/?view=all&sort=' . rawurlencode($activeSort),
-                'is_active' => $activeView === 'all',
-            ],
-            [
-                'key' => 'liked',
-                'label' => 'Liked',
-                'href' => '/threads/?view=liked&sort=' . rawurlencode($activeSort),
-                'is_active' => $activeView === 'liked',
-            ],
-        ];
+        return BoardViewOptions::viewOptions($activeView, $activeSort);
     }
 
     /**
@@ -3248,26 +3221,7 @@ final class Application
      */
     private function boardSortOptions(string $activeView, string $activeSort): array
     {
-        return [
-            [
-                'key' => 'newest',
-                'label' => 'Newest',
-                'href' => '/threads/?view=' . rawurlencode($activeView) . '&sort=newest',
-                'is_active' => $activeSort === 'newest',
-            ],
-            [
-                'key' => 'oldest',
-                'label' => 'Oldest',
-                'href' => '/threads/?view=' . rawurlencode($activeView) . '&sort=oldest',
-                'is_active' => $activeSort === 'oldest',
-            ],
-            [
-                'key' => 'top',
-                'label' => 'Top',
-                'href' => '/threads/?view=' . rawurlencode($activeView) . '&sort=top',
-                'is_active' => $activeSort === 'top',
-            ],
-        ];
+        return BoardViewOptions::sortOptions($activeView, $activeSort);
     }
 
     /**
@@ -3275,13 +3229,7 @@ final class Application
      */
     private function activeBoardOptionLabel(array $options, string $activeKey): string
     {
-        foreach ($options as $option) {
-            if ($option['key'] === $activeKey) {
-                return $option['label'];
-            }
-        }
-
-        return $activeKey;
+        return BoardViewOptions::activeLabel($options, $activeKey);
     }
 
     /**
@@ -3380,49 +3328,7 @@ final class Application
      */
     private function groupThreadsByTag(array $threads): array
     {
-        $groups = [];
-
-        foreach ($threads as $thread) {
-            $tags = [];
-            foreach (['board_tags', 'thread_labels'] as $field) {
-                $values = $thread[$field] ?? [];
-                if (!is_array($values)) {
-                    continue;
-                }
-
-                foreach ($values as $value) {
-                    if (is_string($value) && $value !== '' && !in_array($value, $tags, true)) {
-                        $tags[] = $value;
-                    }
-                }
-            }
-
-            foreach ($tags as $tag) {
-                if (!is_string($tag) || $tag === '') {
-                    continue;
-                }
-
-                $groups[$tag] ??= [
-                    'tag' => $tag,
-                    'count' => 0,
-                    'threads' => [],
-                ];
-                if (!in_array($thread['root_post_id'], array_column($groups[$tag]['threads'], 'root_post_id'), true)) {
-                    $groups[$tag]['count']++;
-                    $groups[$tag]['threads'][] = $thread;
-                }
-            }
-        }
-
-        uasort($groups, static function (array $left, array $right): int {
-            if ($left['count'] !== $right['count']) {
-                return $right['count'] <=> $left['count'];
-            }
-
-            return $left['tag'] <=> $right['tag'];
-        });
-
-        return array_values($groups);
+        return TagGrouping::byTag($threads);
     }
 
     /**
@@ -3431,17 +3337,7 @@ final class Application
      */
     private function limitTagGroupThreads(array $groups, int $limit): array
     {
-        $limited = [];
-
-        foreach ($groups as $group) {
-            $threads = $group['threads'];
-            $group['preview_threads'] = array_slice($threads, 0, $limit);
-            $group['has_more'] = count($threads) > $limit;
-            $group['href'] = '/tags/' . $group['tag'];
-            $limited[] = $group;
-        }
-
-        return $limited;
+        return TagGrouping::limitPreview($groups, $limit);
     }
 
     /**
@@ -3450,13 +3346,7 @@ final class Application
      */
     private function findTagGroup(array $groups, string $tag): ?array
     {
-        foreach ($groups as $group) {
-            if ($group['tag'] === $tag) {
-                return $group;
-            }
-        }
-
-        return null;
+        return TagGrouping::find($groups, $tag);
     }
 
     /**
