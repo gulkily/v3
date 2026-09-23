@@ -15,16 +15,27 @@ once there were no more easy wins to do first.
   elsewhere in the class, so no existing call site — including the
   first-class-callable closure `InstancePageController` already held on
   `fetchActivity(...)` — needed to change.
-- **Step 2 (page-shell route extraction): in progress.**
-  `/api/forte_commit_detail`, `/forte/activity/`, and
-  `/api/forte_activity_page` → `ForteActivityController` done. Classic
-  `/activity`/`/activity.rss` (`renderActivity()`/`renderActivityRss()`)
-  is the last piece - see "What's left" below; **grep `tests/` for
-  reflection references to the exact method name before deleting it** -
+- **Step 2 (page-shell route extraction): done.** All four page-shell
+  route handlers extracted: `/api/forte_commit_detail`, `/forte/activity/`,
+  `/api/forte_activity_page` → `ForteActivityController`; classic
+  `/activity`/`/activity.rss` → `ActivityPageController`. The activity
+  subsystem extraction is now complete end to end (data layer + all
+  route handlers). **Lesson applied along the way: grep `tests/` for
+  reflection references to a method's exact name before deleting it** -
   `ForteActivityReadModelRecoveryTest` reflected directly into
   `renderForteActivity()`/`handleForteActivityPage()` and needed a real
-  fix (reflect into the new controller instead) when this step deleted
-  them.
+  fix (reflect into the new controller instead); a later sweep of the
+  remaining `Application` delegating wrappers also confirmed
+  `activityCommitManifest()` must stay (test-reflected) while 9 others
+  were genuinely dead and got removed.
+
+  `renderActivity()`'s predicted dependency list (below) turned out
+  stale on re-read - it never actually touched `fetchThread`,
+  `viewerCanInspectLlmExchanges`, `llmExchangeStore`, or
+  `sourceCommitDetails` (those belonged to unrelated nearby methods,
+  an artifact of the original investigation's proximity-based scan).
+  It was the cheapest of the four page-shell handlers, needing zero
+  closures - the opposite of the original prediction.
 
 ## Why this needed its own plan
 

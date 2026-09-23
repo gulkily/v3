@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 3,501 lines (~57% smaller)** across 25
+  `Application.php`: **8,212 → 3,380 lines (~59% smaller)** across 26
   route-group extractions so far, plus the activity/commit-manifest
   data-layer extraction (see below):
   - `/about` → `AboutPageController`
@@ -52,6 +52,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
     `ForteContentAndUserDetailApiController`
   - `/api/forte_commit_detail`, `/forte/activity/`,
     `/api/forte_activity_page` → `ForteActivityController`
+  - `/activity`, `/activity.rss` → `ActivityPageController`
 
   Shared query/support layer built up alongside the route extractions
   (`src/ForumRewrite/ReadModel/`, `src/ForumRewrite/Http/`, and
@@ -249,14 +250,13 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   `RouteServices::mergeResultTimings()` is a test-file change, out of
   scope for this pass (candidate for Phase 3).
 
-  Remaining route groups still fully on `Application`: `/forte/activity/`;
-  `/api/forte_activity_page`, `/api/forte_commit_detail` (harder tier, see
-  above); `/activity` (harder tier); the single-thread view
-  (`/threads/{id}`, `/posts/{id}`, harder tier); the agent-reply/
-  post-analysis subsystem (`/api/analyze_post`, `/api/generate_agent_reply`,
-  `/api/codex_handoff*` - harder tier, though one of its blockers -
-  `sendJson()` - is now resolved, see above); and `/api/version` (see
-  above). All other `/api` write endpoints are now extracted.
+  (Note: at this point in the phase, `/forte/activity/`,
+  `/api/forte_activity_page`, `/api/forte_commit_detail`, and `/activity`
+  were still deferred as harder tier - all four have since been
+  extracted, see further down. What's genuinely still deferred as of the
+  latest entry at the top of this section: the single-thread view
+  (`/threads/{id}`, `/posts/{id}`), the agent-reply/post-analysis
+  subsystem, and `/api/version`.)
 
   Checked both `/forte/activity/` and the single-thread view
   (`/threads/{id}`) as candidate next slices: both are in the harder
@@ -336,6 +336,42 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   production call sites - this is the first slice where a test reflected
   into a route-handler method directly rather than exercising it via the
   HTTP route.
+
+  Finished the activity subsystem with classic `/activity` +
+  `/activity.rss` (`renderActivity()`/`renderActivityRss()`) into a new
+  `ActivityPageController` - the last remaining piece. The earlier
+  dependency-graph investigation had predicted this would be the *most*
+  entangled of the four page-shell handlers (touching `fetchThread`,
+  `viewerCanInspectLlmExchanges`, `llmExchangeStore`,
+  `sourceCommitDetails`, etc.); re-reading the actual current code found
+  that prediction stale - it only ever needed
+  `normalizeActivityView()`/`fetchActivity()` (already on
+  `ActivityService`) and `renderPageTemplate()`/`sendXml()` (already on
+  `RouteServices`) plus the standalone `RssFeed` static class. Needed
+  zero closures - the cheapest of the four, not the most expensive.
+  (`sourceCommitDetails` turned out to belong to `SourceFileController`'s
+  constructor closure, not `renderActivity()` - an adjacent-code mixup in
+  the earlier investigation, not a real dependency.)
+
+  Applying the tests-first-grep lesson from the previous slice caught
+  nothing this time (`renderActivity`/`renderActivityRss` had no
+  reflection references), but the same pass, done systematically across
+  *all* the activity-cluster delegating wrappers left on `Application`
+  after all four page-shell handlers moved, found and removed 9 more
+  now-genuinely-dead wrappers (`normalizeActivityView`,
+  `countActivityViewTotal`, `resolveActivitySort`,
+  `activitySortValueFromItem`, `fetchCommits`, `countCommitsTotal`,
+  `resolveCommitSort`, `commitSortValueFromItem`, `sourceCommitFiles`) -
+  while confirming `activityCommitManifest()` must stay (a test reflects
+  into it directly) and `fetchActivity()` must stay (the
+  `InstancePageController` closure).
+
+  **This completes the entire activity/commit-manifest subsystem
+  extraction** (both the data layer and all four page-shell route
+  handlers) - see `activity_subsystem_extraction_plan_v1.md` for the full
+  writeup. What remains deferred in Phase 2: the single-thread view
+  (`/threads/{id}`, `/posts/{id}`), the agent-reply/post-analysis
+  subsystem, and `/api/version` (intentionally left alone, see above).
 - **Phase 3 (test suite readability):** not started.
 - **Phase 4 (docs hygiene):** not started.
 

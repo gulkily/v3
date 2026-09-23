@@ -20,6 +20,7 @@ use ForumRewrite\Canonical\SourcePathValidator;
 use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\Http\AboutPageController;
+use ForumRewrite\Http\ActivityPageController;
 use ForumRewrite\Http\ApiTextController;
 use ForumRewrite\Http\AuthApiController;
 use ForumRewrite\Http\BoardPageController;
@@ -406,11 +407,11 @@ final class Application
 
         if ($path === '/activity/' || $path === '/activity') {
             if (($query['format'] ?? null) === 'rss') {
-                $this->sendXml($this->renderActivityRss((string) ($query['view'] ?? 'all')), 200);
+                $this->sendXml($this->activityPageController()->rss((string) ($query['view'] ?? 'all')), 200);
                 return;
             }
 
-            $this->sendHtml($this->renderActivity((string) ($query['view'] ?? 'all')), 200);
+            $this->sendHtml($this->activityPageController()->board((string) ($query['view'] ?? 'all')), 200);
             return;
         }
 
@@ -957,51 +958,9 @@ final class Application
         return (new AboutPageController($this->renderPageTemplate(...)))->render();
     }
 
-    private function renderActivity(string $view): string
+    private function activityPageController(): ActivityPageController
     {
-        $view = $this->normalizeActivityView($view);
-
-        return $this->renderPageTemplate(
-            'activity.php',
-            [
-                'view' => $view,
-                'viewOptions' => [
-                    [
-                        'label' => 'All Activity',
-                        'href' => '/activity/?view=all',
-                        'is_active' => $view === 'all',
-                    ],
-                    [
-                        'label' => 'Visible Content',
-                        'href' => '/activity/?view=content',
-                        'is_active' => $view === 'content',
-                    ],
-                    [
-                        'label' => 'Identity',
-                        'href' => '/activity/?view=identity',
-                        'is_active' => $view === 'identity',
-                    ],
-                    [
-                        'label' => 'Bootstraps',
-                        'href' => '/activity/?view=bootstrap',
-                        'is_active' => $view === 'bootstrap',
-                    ],
-                    [
-                        'label' => 'Approvals',
-                        'href' => '/activity/?view=approval',
-                        'is_active' => $view === 'approval',
-                    ],
-                    [
-                        'label' => 'RSS',
-                        'href' => '/activity/?view=' . rawurlencode($view) . '&format=rss',
-                        'is_active' => false,
-                    ],
-                ],
-                'items' => $this->fetchActivity($view, 'date', 'desc')['items'],
-            ],
-            'Activity',
-            'activity',
-        );
+        return new ActivityPageController($this->routeServices());
     }
 
     private function sourceFileController(): SourceFileController
@@ -1064,22 +1023,6 @@ final class Application
         }
 
         return $this->renderRssFeed($this->displayThreadTitle($thread), '/threads/' . $threadId . '?format=rss', $items);
-    }
-
-    private function renderActivityRss(string $view): string
-    {
-        $view = $this->normalizeActivityView($view);
-        $items = [];
-        foreach ($this->fetchActivity($view, 'date', 'desc')['items'] as $item) {
-            $link = match ($item['kind']) {
-                'thread_label_add' => '/threads/' . $item['thread_id'],
-                'site_feature_flag' => '/tools/feature-flags/',
-                default => '/posts/' . $item['post_id'],
-            };
-            $items[] = $this->renderRssItem($item['label'], $link, $item['kind'], (string) $item['created_at']);
-        }
-
-        return $this->renderRssFeed('Activity ' . $view, '/activity/?view=' . rawurlencode($view) . '&format=rss', $items);
     }
 
     private function renderLlmsTxt(): string
@@ -2118,57 +2061,6 @@ final class Application
         return $this->routeServices()->activityService()->fetchActivity($view, $sortColumn, $sortDirection, $afterCursor);
     }
 
-    private function countActivityViewTotal(string $view): int
-    {
-        return $this->routeServices()->activityService()->countActivityViewTotal($view);
-    }
-
-    /**
-     * @return array{column: string, direction: string}
-     */
-    private function resolveActivitySort(string $requestedColumn, string $requestedDirection): array
-    {
-        return $this->routeServices()->activityService()->resolveActivitySort($requestedColumn, $requestedDirection);
-    }
-
-    /**
-     * @param array<string, mixed> $item
-     */
-    private function activitySortValueFromItem(array $item, string $column): string
-    {
-        return $this->routeServices()->activityService()->activitySortValueFromItem($item, $column);
-    }
-
-    /**
-     * @param array{sort_value: string, id: int}|null $afterCursor
-     * @return array{items: array<int, array<string, mixed>>, has_more: bool}
-     */
-    private function fetchCommits(string $sortColumn, string $sortDirection, ?array $afterCursor = null): array
-    {
-        return $this->routeServices()->activityService()->fetchCommits($sortColumn, $sortDirection, $afterCursor);
-    }
-
-    private function countCommitsTotal(): int
-    {
-        return $this->routeServices()->activityService()->countCommitsTotal();
-    }
-
-    /**
-     * @return array{column: string, direction: string}
-     */
-    private function resolveCommitSort(string $requestedColumn, string $requestedDirection): array
-    {
-        return $this->routeServices()->activityService()->resolveCommitSort($requestedColumn, $requestedDirection);
-    }
-
-    /**
-     * @param array<string, mixed> $item
-     */
-    private function commitSortValueFromItem(array $item, string $column): string
-    {
-        return $this->routeServices()->activityService()->commitSortValueFromItem($item, $column);
-    }
-
     private function sourcePathHref(string $sourcePath, string $sourceCommitSha): ?string
     {
         return $this->routeServices()->activityService()->sourcePathHref($sourcePath, $sourceCommitSha);
@@ -2210,11 +2102,6 @@ final class Application
     private function renderRssItem(string $title, string $link, string $description, ?string $publishedAt = null): string
     {
         return RssFeed::item($title, $link, $description, $publishedAt);
-    }
-
-    private function normalizeActivityView(string $view): string
-    {
-        return $this->routeServices()->activityService()->normalizeActivityView($view);
     }
 
     private function startViewerSession(): void
@@ -3434,14 +3321,6 @@ final class Application
         }
 
         return implode("\n", $lines) . "\n";
-    }
-
-    /**
-     * @return list<array{status:string,path:string,previous_path:string}>|null
-     */
-    private function sourceCommitFiles(string $commitSha): ?array
-    {
-        return $this->routeServices()->activityService()->sourceCommitFiles($commitSha);
     }
 
     /**
