@@ -28,6 +28,7 @@ use ForumRewrite\Http\ForteProfileController;
 use ForumRewrite\Http\ForteUserDirectoryController;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\LlmExchangesController;
+use ForumRewrite\Http\LobbyController;
 use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Http\RssFeed;
@@ -292,7 +293,7 @@ final class Application
         }
 
         if ($path === '/invites/' || $path === '/invites') {
-            $this->sendHtml($this->renderInvitationPage($query), 200);
+            $this->sendHtml($this->lobbyController()->invitation($query), 200);
             return;
         }
 
@@ -356,7 +357,7 @@ final class Application
         }
 
         if ($path === '/lobby/' || $path === '/lobby') {
-            $this->sendHtml($this->renderLobby(), 200);
+            $this->sendHtml($this->lobbyController()->lobby(), 200);
             return;
         }
 
@@ -2777,33 +2778,12 @@ final class Application
         );
     }
 
-    private function renderLobby(): string
+    private function lobbyController(): LobbyController
     {
-        return $this->renderPageTemplate(
-            'lobby.php',
-            [
-                'viewerProfile' => $this->lobbyViewerProfile(),
-            ],
-            'Lobby',
-            'lobby',
-            $this->identityScripts(['/assets/private_site_auth.js', '/assets/invite_redemption.js'])
-        );
-    }
-
-    /** @param array<string, mixed> $query */
-    private function renderInvitationPage(array $query): string
-    {
-        $viewer = $this->authenticatedViewerProfile();
-        if ($viewer === null || ((int) ($viewer['is_approved'] ?? 0)) !== 1) {
-            return $this->renderMessagePage('Invitation required', 'Invitation required', 'Only authenticated approved members can generate invitations.', 'account');
-        }
-
-        return $this->renderPageTemplate(
-            'invites.php',
-            ['destination' => trim((string) ($query['destination'] ?? ''))],
-            'Generate invite',
-            'invite',
-            $this->identityScripts(['/assets/invite_issuance.js']),
+        return new LobbyController(
+            $this->routeServices(),
+            $this->lobbyViewerProfile(...),
+            $this->authenticatedViewerProfile(...),
         );
     }
 
