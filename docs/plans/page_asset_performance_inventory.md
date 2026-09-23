@@ -5,7 +5,7 @@ This is the exhaustive source-level inventory for the current application. It ex
 ## CSS Ownership Candidates
 
 - [x] **About** — `.about-section` and its glyph rules now load from fingerprinted `about.css` only for `templates/pages/about.php`.
-- **Tools/bookmarklets** — `.tool-launcher-*` is used only by `tools.php` and `bookmarklets.php`; share a tools-family stylesheet.
+- [x] **Tools/bookmarklets** — `.tool-launcher-*` now loads from fingerprinted `tools.css` only on `tools.php` and `bookmarklets.php`, including its mobile rules.
 - **Tag directory** — `.tag-group*` and `.tag-thread-list` belong to `templates/pages/tags.php`.
 - **Activity manifests** — `.activity-commit-manifest*` belongs to the activity-manifest partial; load only routes that render it.
 - **Invitations** — `.invitation-destination-*` belongs to `templates/pages/invites.php`; pair it with that route's existing invitation scripts.

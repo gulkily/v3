@@ -18,6 +18,8 @@ final class TemplateRenderer
     /** @var array<string, list<string>> */
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
+        'bookmarklets.php' => ['/assets/tools.css'],
+        'tools.php' => ['/assets/tools.css'],
     ];
     private const CRITICAL_CSS_END_MARKER = '/* critical-css-end */';
     private ?string $criticalCss = null;
