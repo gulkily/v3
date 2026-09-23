@@ -22,12 +22,12 @@ final class TemplateRenderer
         'account_key.php' => ['/assets/identity.css'],
         'bookmarklets.php' => ['/assets/tools.css'],
         'invites.php' => ['/assets/invitations.css', '/assets/identity.css'],
-        'post.php' => ['/assets/identity.css'],
+        'post.php' => ['/assets/identity.css', '/assets/content-interactions.css'],
         'profile.php' => ['/assets/identity.css'],
         'board.php' => ['/assets/thread-list.css'],
         'tags.php' => ['/assets/tags.css'],
         'tag.php' => ['/assets/thread-list.css'],
-        'thread.php' => ['/assets/identity.css'],
+        'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css'],
         'tools.php' => ['/assets/tools.css'],
     ];
     private const CRITICAL_CSS_END_MARKER = '/* critical-css-end */';
