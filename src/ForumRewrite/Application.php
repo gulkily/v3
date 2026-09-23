@@ -23,6 +23,7 @@ use ForumRewrite\Http\AboutPageController;
 use ForumRewrite\Http\BoardPageController;
 use ForumRewrite\Http\BoardViewOptions;
 use ForumRewrite\Http\InstancePageController;
+use ForumRewrite\Http\LlmExchangesController;
 use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Http\RssFeed;
@@ -366,12 +367,12 @@ final class Application
         }
 
         if ($path === '/tools/llm-exchanges/' || $path === '/tools/llm-exchanges') {
-            $this->handleLlmExchangeList();
+            $this->llmExchangesController()->list();
             return;
         }
 
         if (preg_match('#^/tools/llm-exchanges/(\d+)/?$#', $path, $matches) === 1) {
-            $this->handleLlmExchangeDetail((int) $matches[1]);
+            $this->llmExchangesController()->detail((int) $matches[1]);
             return;
         }
 
@@ -2137,50 +2138,12 @@ final class Application
     }
 
 
-    private function handleLlmExchangeList(): void
+    private function llmExchangesController(): LlmExchangesController
     {
-        if (!$this->viewerCanInspectLlmExchanges()) {
-            $this->sendHtml($this->renderMessagePage('LLM Exchanges', 'LLM Exchanges', 'Only approved users can view LLM exchanges, and the exchange UI must be enabled.', 'tools'), 403);
-            return;
-        }
-
-        $this->sendHtml($this->renderLlmExchangeList(), 200);
-    }
-
-    private function handleLlmExchangeDetail(int $exchangeId): void
-    {
-        if (!$this->viewerCanInspectLlmExchanges()) {
-            $this->sendHtml($this->renderMessagePage('LLM Exchange', 'LLM Exchange', 'Only approved users can view LLM exchanges, and the exchange UI must be enabled.', 'tools'), 403);
-            return;
-        }
-
-        $exchange = $this->llmExchangeStore()?->find($exchangeId);
-        if ($exchange === null) {
-            $this->sendHtml($this->renderMessagePage('Not Found', 'Not Found', 'LLM exchange not found.', 'tools'), 404);
-            return;
-        }
-
-        $this->sendHtml($this->renderPageTemplate(
-            'llm_exchange.php',
-            [
-                'exchange' => $exchange,
-                'toolNavOptions' => $this->toolNavOptions('llm-exchanges'),
-            ],
-            'LLM Exchange ' . $exchangeId,
-            'tools'
-        ), 200);
-    }
-
-    private function renderLlmExchangeList(): string
-    {
-        return $this->renderPageTemplate(
-            'llm_exchanges.php',
-            [
-                'exchanges' => $this->llmExchangeStore()?->recent() ?? [],
-                'toolNavOptions' => $this->toolNavOptions('llm-exchanges'),
-            ],
-            'LLM Exchanges',
-            'tools'
+        return new LlmExchangesController(
+            $this->routeServices(),
+            $this->viewerCanInspectLlmExchanges(...),
+            $this->llmExchangeStore(...),
         );
     }
 
