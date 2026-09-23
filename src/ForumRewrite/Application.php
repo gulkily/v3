@@ -531,7 +531,7 @@ final class Application
         }
 
         if ($path === '/api/read_model_status') {
-            $this->sendText($this->renderReadModelStatus(), 200);
+            $this->sendText($this->codebaseStateController()->apiStatus(), 200);
             return;
         }
 
@@ -719,48 +719,6 @@ final class Application
         });
     }
 
-    private function renderReadModelStatus(): string
-    {
-        $metadata = [];
-        if (is_file($this->databasePath)) {
-            try {
-                $metadata = $this->readMetadata($this->pdo());
-            } catch (\Throwable) {
-                $metadata = [];
-            }
-        }
-
-        $currentRepositoryHead = ReadModelMetadata::repositoryHead($this->repositoryRoot);
-        $staleMarker = $this->staleMarker()->read();
-        $commitsAvailable = $this->commitsCapabilityAvailable();
-        $status = (($metadata['repository_root'] ?? null) === $this->repositoryRoot)
-            && (($metadata['schema_version'] ?? null) === ReadModelMetadata::SCHEMA_VERSION)
-            && (($metadata['repository_head'] ?? null) === $currentRepositoryHead)
-            && $staleMarker === null
-            && $commitsAvailable
-            ? 'ready'
-            : 'stale';
-        $taskQueue = $this->taskQueueStatus();
-
-        return "status={$status}\n"
-            . 'schema_version=' . ($metadata['schema_version'] ?? 'missing') . "\n"
-            . 'repository_root=' . ($metadata['repository_root'] ?? 'missing') . "\n"
-            . 'repository_head=' . ($metadata['repository_head'] ?? 'missing') . "\n"
-            . 'current_repository_head=' . $currentRepositoryHead . "\n"
-            . 'rebuilt_at=' . ($metadata['rebuilt_at'] ?? 'missing') . "\n"
-            . 'lock_status=' . ($this->executionLock()->isLocked() ? 'locked' : 'unlocked') . "\n"
-            . 'stale_marker=' . ($staleMarker === null ? 'absent' : 'present') . "\n"
-            . 'stale_reason=' . ($staleMarker['reason'] ?? 'none') . "\n"
-            . 'stale_commit_sha=' . ($staleMarker['commit_sha'] ?? 'none') . "\n"
-            . 'rebuild_reason=' . ($metadata['rebuild_reason'] ?? 'missing') . "\n"
-            . 'commits_capability=' . ($commitsAvailable ? 'available' : 'unavailable') . "\n"
-            . 'rebuild_required=' . ($status === 'ready' ? 'no' : 'yes') . "\n"
-            . 'task_queue_status=' . $taskQueue['status'] . "\n"
-            . 'task_queue_queued=' . $taskQueue['queued'] . "\n"
-            . 'task_queue_running=' . $taskQueue['running'] . "\n"
-            . 'task_queue_failed=' . $taskQueue['failed'] . "\n";
-    }
-
     /**
      * @return array<string, mixed>
      */
@@ -772,6 +730,8 @@ final class Application
             $this->databasePath,
             $this->executionLock(),
             $this->staleMarker(),
+            $this->commitsCapabilityAvailable(...),
+            $this->taskQueueStatus(...),
         );
     }
 

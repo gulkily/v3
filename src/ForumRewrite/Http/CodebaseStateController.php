@@ -26,15 +26,30 @@ use PDO;
  * ReadModelMetadata alongside its existing repositoryHead()/
  * repositoryShortCommit() - readModelTableExists()/readModelRowCounts()
  * had no callers left outside this page and moved here wholesale.
+ *
+ * apiStatus() (added for the /api/read_model_status slice - see
+ * docs/plans/codebase_cleanup_audit_plan_v1.md) is the plain-text twin of
+ * render(): same read-model/staleness/lock domain, so it lives here rather
+ * than with the unrelated /api text formatters in ApiTextController.
+ * commitsCapabilityAvailable() and taskQueueStatus() stay on Application
+ * (the former is memoized there and shared with other routes; the latter
+ * shares that memoization's task-queue-store instance) and are passed in
+ * as bound closures.
  */
 final class CodebaseStateController
 {
+    /**
+     * @param \Closure(): bool $commitsCapabilityAvailable
+     * @param \Closure(): array{status:string,queued:int,running:int,completed:int,failed:int} $taskQueueStatus
+     */
     public function __construct(
         private readonly RouteServices $routeServices,
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
         private readonly ExecutionLock $executionLock,
         private readonly ReadModelStaleMarker $staleMarker,
+        private readonly \Closure $commitsCapabilityAvailable,
+        private readonly \Closure $taskQueueStatus,
     ) {
     }
 
@@ -51,6 +66,48 @@ final class CodebaseStateController
             'System State',
             'tools',
         );
+    }
+
+    public function apiStatus(): string
+    {
+        $metadata = [];
+        if (is_file($this->databasePath)) {
+            try {
+                $metadata = ReadModelMetadata::readMetadata($this->routeServices->pdo());
+            } catch (\Throwable) {
+                $metadata = [];
+            }
+        }
+
+        $currentRepositoryHead = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+        $staleMarker = $this->staleMarker->read();
+        $commitsAvailable = ($this->commitsCapabilityAvailable)();
+        $status = (($metadata['repository_root'] ?? null) === $this->repositoryRoot)
+            && (($metadata['schema_version'] ?? null) === ReadModelMetadata::SCHEMA_VERSION)
+            && (($metadata['repository_head'] ?? null) === $currentRepositoryHead)
+            && $staleMarker === null
+            && $commitsAvailable
+            ? 'ready'
+            : 'stale';
+        $taskQueue = ($this->taskQueueStatus)();
+
+        return "status={$status}\n"
+            . 'schema_version=' . ($metadata['schema_version'] ?? 'missing') . "\n"
+            . 'repository_root=' . ($metadata['repository_root'] ?? 'missing') . "\n"
+            . 'repository_head=' . ($metadata['repository_head'] ?? 'missing') . "\n"
+            . 'current_repository_head=' . $currentRepositoryHead . "\n"
+            . 'rebuilt_at=' . ($metadata['rebuilt_at'] ?? 'missing') . "\n"
+            . 'lock_status=' . ($this->executionLock->isLocked() ? 'locked' : 'unlocked') . "\n"
+            . 'stale_marker=' . ($staleMarker === null ? 'absent' : 'present') . "\n"
+            . 'stale_reason=' . ($staleMarker['reason'] ?? 'none') . "\n"
+            . 'stale_commit_sha=' . ($staleMarker['commit_sha'] ?? 'none') . "\n"
+            . 'rebuild_reason=' . ($metadata['rebuild_reason'] ?? 'missing') . "\n"
+            . 'commits_capability=' . ($commitsAvailable ? 'available' : 'unavailable') . "\n"
+            . 'rebuild_required=' . ($status === 'ready' ? 'no' : 'yes') . "\n"
+            . 'task_queue_status=' . $taskQueue['status'] . "\n"
+            . 'task_queue_queued=' . $taskQueue['queued'] . "\n"
+            . 'task_queue_running=' . $taskQueue['running'] . "\n"
+            . 'task_queue_failed=' . $taskQueue['failed'] . "\n";
     }
 
     /**

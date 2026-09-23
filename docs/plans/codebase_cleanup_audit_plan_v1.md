@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 5,662 lines (~31% smaller)** across 15
+  `Application.php`: **8,212 → 5,622 lines (~32% smaller)** across 15
   route-group extractions so far:
   - `/about` → `AboutPageController`
   - `/instance`, `/backup`, `/downloads/*` → `InstancePageController`
@@ -20,7 +20,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   - `/`, `/threads/` (board, HTML + RSS) → `BoardPageController`
   - `/tools/`, `/tools/bookmarklets/`, `/tools/sqlite/`, `/tools/feature-flags/` → `ToolsPageController`
   - `/tools/llm-exchanges/*` → `LlmExchangesController`
-  - `/tools/codebase/` → `CodebaseStateController`
+  - `/tools/codebase/`, `/api/read_model_status` → `CodebaseStateController`
   - `/profiles/*`, `/user/*`, `/users/*` → `ProfilePageController`
   - `/forte/profiles/*`, `/forte/user/*` → `ForteProfileController`
   - `/forte` (board view) → `ForteBoardController`
@@ -66,23 +66,27 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   `/api` group first, since they're pure read-only formatters with no
   auth/session/write-flow coupling - the same "least-coupled subset first"
   approach used throughout this phase, applied within a route group instead
-  of just across them. `/api/version` (one line, dispatched specially
-  *before* `ensureReadModel()` for a reason - a version probe that must
-  answer even with a broken read model) and `/api/read_model_status`
-  (thematically read-model/codebase-state, not generic API text - a better
-  fit alongside `CodebaseStateController` in a future slice) were
-  deliberately left out of this one.
+  of just across them. `/api/version` was left out (one line, dispatched
+  specially *before* `ensureReadModel()` so a version probe still answers
+  with a broken read model - not worth touching). `/api/read_model_status`
+  was thematically read-model/codebase-state rather than generic API text,
+  so it landed as a second public method (`apiStatus()`) on the existing
+  `CodebaseStateController` instead of `ApiTextController` -
+  `commitsCapabilityAvailable()` (memoized, 4 other call sites) and
+  `taskQueueStatus()` (shares a memoized task-queue-store instance) stay on
+  Application and joined `ExecutionLock`/`ReadModelStaleMarker` as bound
+  closures on that controller's constructor.
 
   Remaining route groups still fully on `Application`: `/forte/activity/`
   and the `/api/forte_*`/`/api/get_forte_*` AJAX endpoints; `/activity`;
   the single-thread view (`/threads/{id}`, `/posts/{id}`); `/api/version`
-  and `/api/read_model_status` (see above); and the rest of `/api`
-  (auth/identity/write endpoints - most entangled with session/write flows,
-  deliberately last). Note: the `/invites` POST "prepare/create" flow
-  referenced in an earlier round of this plan turned out, on inspection, to
-  actually live at `/api/prepare_invitation` and
-  `/api/create_prepared_invitation` - it's part of the `/api` group, not a
-  separate route group, so it's deferred there rather than extracted early.
+  (see above); and the rest of `/api` (auth/identity/write endpoints - most
+  entangled with session/write flows, deliberately last). Note: the
+  `/invites` POST "prepare/create" flow referenced in an earlier round of
+  this plan turned out, on inspection, to actually live at
+  `/api/prepare_invitation` and `/api/create_prepared_invitation` - it's
+  part of the `/api` group, not a separate route group, so it's deferred
+  there rather than extracted early.
 
   Checked both `/forte/activity/` and the single-thread view
   (`/threads/{id}`) as candidate next slices: both are in the harder
