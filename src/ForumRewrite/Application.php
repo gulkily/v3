@@ -22,6 +22,7 @@ use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\Http\AboutPageController;
 use ForumRewrite\Http\ApiTextController;
+use ForumRewrite\Http\AuthApiController;
 use ForumRewrite\Http\BoardPageController;
 use ForumRewrite\Http\BoardViewOptions;
 use ForumRewrite\Http\CodebaseStateController;
@@ -179,17 +180,17 @@ final class Application
         }
 
         if ($path === '/api/auth_challenge') {
-            $this->handleAuthChallenge($method);
+            $this->authApiController()->authChallenge($method);
             return;
         }
 
         if ($path === '/api/authenticate_identity') {
-            $this->handleAuthenticateIdentity($method, $query);
+            $this->authApiController()->authenticateIdentity($method, $query);
             return;
         }
 
         if ($path === '/api/auth_status') {
-            $this->handleAuthenticationStatus($method);
+            $this->authApiController()->authenticationStatus($method);
             return;
         }
 
@@ -2520,22 +2521,6 @@ final class Application
         );
     }
 
-    private function handleAuthenticationStatus(string $method): void
-    {
-        if ($method !== 'GET') {
-            $this->sendText("method not allowed\n", 405, $this->noStoreHeaders());
-            return;
-        }
-
-        $viewerProfile = $this->authenticatedViewerProfile();
-        $isApproved = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
-        $this->sendText(
-            $isApproved ? "status=authenticated\n" : "status=unauthenticated\n",
-            $isApproved ? 200 : 401,
-            $this->noStoreHeaders(),
-        );
-    }
-
     private function lobbyController(): LobbyController
     {
         return new LobbyController(
@@ -2577,6 +2562,14 @@ final class Application
     private function identityHintController(): IdentityHintController
     {
         return new IdentityHintController($this->routeServices());
+    }
+
+    private function authApiController(): AuthApiController
+    {
+        return new AuthApiController(
+            $this->routeServices(),
+            $this->authenticatedViewerProfile(...),
+        );
     }
 
     /**
@@ -3283,83 +3276,6 @@ final class Application
             'httponly' => (bool) ($params['httponly'] ?? true),
             'samesite' => $params['samesite'] ?? 'Lax',
         ]);
-    }
-
-    private function handleAuthChallenge(string $method): void
-    {
-        if ($method !== 'GET') {
-            $this->sendText("method not allowed\n", 405);
-            return;
-        }
-
-        $now = time();
-        $challenges = is_array($_SESSION['forum_auth_challenges'] ?? null)
-            ? $_SESSION['forum_auth_challenges']
-            : [];
-        foreach ($challenges as $value => $expiresAt) {
-            if (!is_string($value) || (int) $expiresAt < $now) {
-                unset($challenges[$value]);
-            }
-        }
-
-        $challenge = bin2hex(random_bytes(32));
-        $challenges[$challenge] = $now + 300;
-        $_SESSION['forum_auth_challenges'] = $challenges;
-        session_write_close();
-        $this->sendText("challenge={$challenge}\n", 200, $this->noStoreHeaders());
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleAuthenticateIdentity(string $method, array $query): void
-    {
-        if ($method !== 'POST') {
-            $this->sendText("method not allowed\n", 405);
-            return;
-        }
-
-        $input = $this->requestData($query);
-        $challenge = trim((string) ($input['challenge'] ?? ''));
-        $signature = trim((string) ($input['detached_signature'] ?? ''));
-        $identityId = strtolower(trim((string) ($input['identity_id'] ?? '')));
-        $challenges = is_array($_SESSION['forum_auth_challenges'] ?? null)
-            ? $_SESSION['forum_auth_challenges']
-            : [];
-        $expiresAt = (int) ($challenges[$challenge] ?? 0);
-
-        if ($challenge === '' || $expiresAt < time()) {
-            $this->sendText("error=Authentication challenge is missing or expired.\n", 400, $this->noStoreHeaders());
-            return;
-        }
-
-        $profile = $this->fetchProfileByIdentityId($identityId);
-        if ($profile === null) {
-            $this->sendText("error=Identity not found.\n", 400, $this->noStoreHeaders());
-            return;
-        }
-
-        $fingerprint = strtoupper(trim((string) ($profile['signer_fingerprint'] ?? '')));
-        $verification = (new OpenPgpSignatureVerifier())->verifyDetached(
-            (string) ($profile['public_key'] ?? ''),
-            $challenge,
-            $signature,
-            $fingerprint,
-        );
-        if (!$verification['ok']) {
-            $this->sendText("error=Identity signature verification failed.\n", 403, $this->noStoreHeaders());
-            return;
-        }
-
-        session_regenerate_id(true);
-        $_SESSION['authenticated_identity_id'] = $identityId;
-        unset(
-            $_SESSION['lobby_identity_id'],
-            $_SESSION['forum_auth_challenges'],
-        );
-        session_write_close();
-        $approved = ((int) ($profile['is_approved'] ?? 0)) === 1 ? '1' : '0';
-        $this->sendText("status=ok\nidentity_id={$identityId}\napproved={$approved}\n", 200, $this->noStoreHeaders());
     }
 
     /**

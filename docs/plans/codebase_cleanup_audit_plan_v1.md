@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 5,360 lines (~35% smaller)** across 19
+  `Application.php`: **8,212 → 5,276 lines (~36% smaller)** across 20
   route-group extractions so far:
   - `/about` → `AboutPageController`
   - `/instance`, `/backup`, `/downloads/*` → `InstancePageController`
@@ -37,6 +37,8 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
     existing `ToolsPageController`
   - `/api/link_identity` → joined the existing `ComposeAndAccountKeyController`
   - `/api/set_identity_hint`, `/api/clear_identity` → `IdentityHintController`
+  - `/api/auth_challenge`, `/api/authenticate_identity`, `/api/auth_status`
+    → `AuthApiController`
 
   Shared query/support layer built up alongside the route extractions
   (`src/ForumRewrite/ReadModel/`, `src/ForumRewrite/Http/`, and
@@ -144,14 +146,24 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   joined `RouteServices` the same way the write-flow slice's timing helpers
   did, rather than becoming a closure.
 
+  Followed with the challenge/signature auth trio -
+  `/api/auth_challenge`, `/api/authenticate_identity`, `/api/auth_status` -
+  into a new `AuthApiController`. `fetchProfileByIdentityId()` turned out
+  to be a one-line wrapper around `ProfileRepository::byIdentityId(pdo())`,
+  so the controller calls that repository directly instead of taking a
+  closure for it; only `authenticatedViewerProfile()` (8 other call sites)
+  stayed a bound closure, and `OpenPgpSignatureVerifier` is instantiated
+  directly since it's already a standalone `Security`-namespace class with
+  no Application coupling.
+
   Remaining route groups still fully on `Application`: `/forte/activity/`
   and the `/api/forte_*`/`/api/get_forte_*` AJAX endpoints; `/activity`
   (harder tier); the single-thread view (`/threads/{id}`, `/posts/{id}`,
   harder tier); the agent-reply/post-analysis subsystem
   (`/api/analyze_post`, `/api/generate_agent_reply`, `/api/codex_handoff*` -
   harder tier, see above); `/api/version` (see above); and the rest of
-  `/api` (~19 auth/identity/write endpoints -
-  `/api/authenticate_identity`, `/api/create_identity`/`/api/prepare_identity`,
+  `/api` (~16 identity/write endpoints -
+  `/api/create_identity`/`/api/prepare_identity`,
   `/api/approve_user`, `/api/prepare_approval`/`/api/create_prepared_approval`,
   `/api/prepare_invitation`/`/api/create_prepared_invitation`,
   `/api/prepare_invitation_redemption`, and the direct
