@@ -32,3 +32,15 @@
   - Confirmed valid `word97` and invalid `auto` hints respectively render the fingerprinted Word 97 and fallback Light stylesheet paths.
 - Notes:
   - The hint is not trusted as user preference and `auto` is rejected server-side.
+
+## Stage 4 - Reconcile preference, Auto/System, and hint updates
+- Changes:
+  - The early resolver now writes the cookie only when its resolved concrete theme differs from the current hint.
+  - The theme script keeps the active stylesheet, resolved-theme attribute, and cookie hint synchronized after explicit selections and Auto/System scheme changes.
+  - Kept the stored `auto`/explicit preference separate from the concrete cookie value.
+- Verification:
+  - `php -l src/ForumRewrite/View/TemplateRenderer.php`
+  - `node -c public/assets/theme_toggle.js`
+  - `php tests/run.php LocalAppSmokeTest::testLayoutUsesOnlyAValidatedThemeHintForTheInitialStylesheet ThemeRegistryTest` — passed.
+- Notes:
+  - Cookie lifetime is one year, path is site-wide, and `Secure` is added on HTTPS.

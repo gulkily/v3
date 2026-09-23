@@ -126,6 +126,7 @@ final class TemplateRenderer
             'defaultTheme' => $defaultTheme,
             'themeStylesheetPaths' => $themeStylesheetPaths,
             'initialThemeStylesheetPath' => $themeStylesheetPaths[$initialTheme],
+            'themeHintCookieName' => ThemeRegistry::THEME_HINT_COOKIE,
             'approvedMembersOnlyEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
             'publicAuthenticationResume' => $publicAuthenticationResume,
             'navItems' => $this->navItems($viewerProfile),

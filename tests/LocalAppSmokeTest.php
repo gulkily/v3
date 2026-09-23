@@ -569,6 +569,8 @@ PHP;
             );
             assertStringContains('var themeStylesheetPaths = ', $hintedHtml);
             assertStringContains("document.getElementById('theme-stylesheet')", $hintedHtml);
+            assertStringContains('data-theme-hint-cookie="theme-hint"', $hintedHtml);
+            assertStringContains('window.forumUpdateThemeHint = updateThemeHint;', $hintedHtml);
 
             $_COOKIE = ['theme-hint' => 'auto'];
             $invalidHintHtml = $renderer->renderLayout('Theme', '<main></main>', 'board');

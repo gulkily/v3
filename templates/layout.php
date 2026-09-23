@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>">
+<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,7 +9,29 @@
     (function () {
       var allowed = <?= json_encode($explicitThemeNames, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
       var themeStylesheetPaths = <?= json_encode($themeStylesheetPaths, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+      var themeHintCookieName = <?= json_encode($themeHintCookieName, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
       var theme = null;
+
+      function cookieValue(name) {
+        var prefix = name + '=';
+        var entries = document.cookie ? document.cookie.split(';') : [];
+        for (var index = 0; index < entries.length; index++) {
+          var entry = entries[index].trim();
+          if (entry.indexOf(prefix) === 0) {
+            return decodeURIComponent(entry.slice(prefix.length));
+          }
+        }
+        return null;
+      }
+
+      function updateThemeHint(resolvedTheme) {
+        if (cookieValue(themeHintCookieName) === resolvedTheme) {
+          return;
+        }
+        document.cookie = themeHintCookieName + '=' + encodeURIComponent(resolvedTheme)
+          + '; Path=/; Max-Age=31536000; SameSite=Lax'
+          + (location.protocol === 'https:' ? '; Secure' : '');
+      }
 
       try {
         theme = localStorage.getItem('zenmemes-theme');
@@ -33,6 +55,9 @@
         themeStylesheet.setAttribute('data-theme-name', resolvedTheme);
       }
       document.documentElement.setAttribute('data-resolved-theme', resolvedTheme);
+      window.forumThemeStylesheetPaths = themeStylesheetPaths;
+      window.forumUpdateThemeHint = updateThemeHint;
+      updateThemeHint(resolvedTheme);
 
       try {
         var densityStorageKey = 'zenmemes-thread-density';

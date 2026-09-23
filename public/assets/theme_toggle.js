@@ -28,6 +28,8 @@
     var mediaQuery = window.matchMedia
       ? window.matchMedia("(prefers-color-scheme: dark)")
       : null;
+    var themeStylesheet = document.getElementById("theme-stylesheet");
+    var themeStylesheetPaths = window.forumThemeStylesheetPaths || {};
 
     function isExplicitTheme(theme) {
       return theme !== "auto" && themes.indexOf(theme) !== -1;
@@ -58,6 +60,21 @@
 
     function resolvedTheme(theme) {
       return isExplicitTheme(theme) ? theme : systemTheme();
+    }
+
+    function syncResolvedTheme(theme) {
+      var resolved = resolvedTheme(theme);
+      var stylesheetPath = themeStylesheetPaths[resolved];
+
+      if (themeStylesheet && stylesheetPath) {
+        themeStylesheet.setAttribute("href", stylesheetPath);
+        themeStylesheet.setAttribute("data-theme-name", resolved);
+      }
+
+      document.documentElement.setAttribute("data-resolved-theme", resolved);
+      if (typeof window.forumUpdateThemeHint === "function") {
+        window.forumUpdateThemeHint(resolved);
+      }
     }
 
     function nextTheme(currentTheme) {
@@ -115,12 +132,14 @@
     var currentTheme = readStoredTheme();
 
     applyTheme(currentTheme);
+    syncResolvedTheme(currentTheme);
     syncButton(currentTheme);
     syncOptions(currentTheme);
 
     function applySelection(theme) {
       currentTheme = theme;
       applyTheme(currentTheme);
+      syncResolvedTheme(currentTheme);
       syncButton(currentTheme);
       syncOptions(currentTheme);
 
@@ -182,6 +201,7 @@
     if (mediaQuery && typeof mediaQuery.addEventListener === "function") {
       mediaQuery.addEventListener("change", function () {
         if (currentTheme === "auto") {
+          syncResolvedTheme(currentTheme);
           syncButton(currentTheme);
         }
       });
