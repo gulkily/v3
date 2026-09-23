@@ -67,3 +67,11 @@
   - Full `php tests/run.php` run: theme-related coverage passed; unrelated failures remain in activity-manifest, adjacent-signature, and lazy-compose test paths.
 - Notes:
   - Static pages use the default hint-free initial link; pages carrying a theme hint already take the dynamic path and are corrected by the early resolver.
+
+## Final Verification
+- Changes:
+  - None; recorded final route-level verification.
+- Verification:
+  - Started `php -S 127.0.0.1:8099 -t public public/router.php`, requested `/`, and confirmed the fingerprinted Light theme link plus all 13 fingerprinted theme paths in the rendered manifest.
+- Notes:
+  - Stopped the temporary development server after the check.
