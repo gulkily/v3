@@ -9,7 +9,7 @@ This is the exhaustive source-level inventory for the current application. It ex
 - [x] **Tag directory** — `.tag-group*`, `.tag-thread-list`, and the tag-directory card now load from fingerprinted `tags.css` only for `templates/pages/tags.php`.
 - [x] **Activity manifests** — `.activity-commit-manifest*` now loads from fingerprinted `activity.css` on classic Activity and Forte Activity, including lazy-loaded manifest details.
 - [x] **Invitations** — `.invitation-destination-*` now loads from fingerprinted `invitations.css` only for `templates/pages/invites.php`, alongside its existing invitation scripts.
-- **Account/profile identity** — `.account-key-*` belongs to account-key and identity-detail/profile surfaces; use a shared identity stylesheet rather than duplicate rules.
+- [x] **Account/profile identity** — `.account-key-*` now loads from shared fingerprinted `identity.css` on account, profile, invitation, thread, and post identity-detail surfaces.
 - **Pending approvals** — `.pending-approvals-*` belongs to `users_pending.php` and its route-specific script.
 - **Compose controls** — `.compose-*`, inline-reply, and pending-composer styles can form a compose/content-interaction family, provided board and thread uses remain covered.
 - **Post/thread interactions** — `.post-card-actions`, `.thread-reaction-*`, and post-analysis styles are candidates for content routes only, not About/Tools/Account pages.
