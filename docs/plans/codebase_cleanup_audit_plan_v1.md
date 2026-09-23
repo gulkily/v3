@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 6,506 lines (~21% smaller)** across 10
+  `Application.php`: **8,212 → 6,256 lines (~24% smaller)** across 11
   route-group extractions so far:
   - `/about` → `AboutPageController`
   - `/instance`, `/backup`, `/downloads/*` → `InstancePageController`
@@ -24,6 +24,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   - `/profiles/*`, `/user/*`, `/users/*` → `ProfilePageController`
   - `/forte/profiles/*`, `/forte/user/*` → `ForteProfileController`
   - `/forte` (board view) → `ForteBoardController`
+  - `/forte/users/` → `ForteUserDirectoryController`
 
   Shared query/support layer built up alongside the route extractions
   (`src/ForumRewrite/ReadModel/` and `src/ForumRewrite/Http/`):
@@ -33,11 +34,17 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   plus `readMetadata()`/`latestRepositoryCommit()`/`repositoryShortCommit()`
   consolidated onto `ReadModelMetadata`.
 
-  Remaining route groups still fully on `Application`: `/forte/activity/`,
-  `/forte/users/` and their `/api/forte_*`/`/api/get_forte_*` AJAX endpoints;
-  `/activity`; the single-thread view (`/threads/{id}`, `/posts/{id}`);
-  `/account`, `/compose`, `/invites`, `/source`, `/lobby`; and `/api` (~50
-  routes, deliberately last — most entangled with auth/session/write flows).
+  A recurring side effect worth noting: several extractions revealed
+  Application methods that had gone fully dead in an *earlier* slice
+  (their last caller already extracted, but the now-unused wrapper wasn't
+  noticed until a later pass touched the same area) — each was removed on
+  discovery rather than left as unreachable cruft.
+
+  Remaining route groups still fully on `Application`: `/forte/activity/`
+  and the `/api/forte_*`/`/api/get_forte_*` AJAX endpoints; `/activity`;
+  the single-thread view (`/threads/{id}`, `/posts/{id}`); `/account`,
+  `/compose`, `/invites`, `/source`, `/lobby`; and `/api` (~50 routes,
+  deliberately last — most entangled with auth/session/write flows).
 - **Phase 3 (test suite readability):** not started.
 - **Phase 4 (docs hygiene):** not started.
 
