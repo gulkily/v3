@@ -60,7 +60,10 @@
 - Changes:
   - Added static-artifact coverage that requires every fingerprinted theme stylesheet to be referenced by the generated layout and present in its artifact assets.
   - Reused the existing asset copier and fingerprint reference health check; no release-pipeline change was needed.
+  - Updated the Word 97 invitation regression to read its extracted theme stylesheet.
 - Verification:
   - `php tests/run.php LocalAppSmokeTest::testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout LocalAppSmokeTest::testLayoutUsesOnlyAValidatedThemeHintForTheInitialStylesheet LocalAppSmokeTest::testThemeToggleWarmsAlternateThemeStylesheetsAtLowPriority ThemeRegistryTest` — passed.
+  - `php tests/run.php InvitationIssuanceTest` — passed after moving its Word 97 assertion to the extracted asset.
+  - Full `php tests/run.php` run: theme-related coverage passed; unrelated failures remain in activity-manifest, adjacent-signature, and lazy-compose test paths.
 - Notes:
   - Static pages use the default hint-free initial link; pages carrying a theme hint already take the dynamic path and are corrected by the early resolver.
