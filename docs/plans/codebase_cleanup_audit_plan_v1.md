@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 3,875 lines (~53% smaller)** across 24
+  `Application.php`: **8,212 → 3,501 lines (~57% smaller)** across 25
   route-group extractions so far, plus the activity/commit-manifest
   data-layer extraction (see below):
   - `/about` → `AboutPageController`
@@ -50,7 +50,8 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
     → `IdentityApprovalAndInvitationApiController`
   - `/api/get_forte_content_summary`, `/api/forte_user_detail` →
     `ForteContentAndUserDetailApiController`
-  - `/api/forte_commit_detail` → `ForteActivityController`
+  - `/api/forte_commit_detail`, `/forte/activity/`,
+    `/api/forte_activity_page` → `ForteActivityController`
 
   Shared query/support layer built up alongside the route extractions
   (`src/ForumRewrite/ReadModel/`, `src/ForumRewrite/Http/`, and
@@ -307,6 +308,34 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   calls into `RouteServices::activityService()` for the data itself.
   `/forte/activity/` and `/api/forte_activity_page` are next (they share
   this same closure list); classic `/activity` last.
+
+  Followed immediately with `/forte/activity/` and
+  `/api/forte_activity_page` together into the same
+  `ForteActivityController` (as `board()`/`paginationPage()`) - they
+  needed zero *new* closures beyond the three `handleForteCommitDetail`
+  already established, since everything else routes through
+  `RouteServices::activityService()` directly or moved wholesale as pure
+  page-specific helpers (`activityItemBoardLink()`,
+  `activitySortHeaderLinks()` - both single-page link builders, not data
+  -fetching, per the sub-plan's original assessment). This was the
+  biggest single-commit line reduction of the whole phase (3,875 → 3,501).
+
+  One test broke and needed a real fix (not deferred like
+  `mergeResultTimings()`):
+  `ForteActivityReadModelRecoveryTest::testForteActivityDegradesAndQueuesOneRebuildWhenCommitsAreMissing`
+  reflected directly into `Application::renderForteActivity()`/
+  `handleForteActivityPage()` by name. Unlike the `ActivityService` slice
+  (where moved methods kept many other internal callers, so delegating
+  wrappers were the right call), these two had *only* `handle()`'s
+  dispatch as a production caller - a genuine full route-handler move,
+  the same shape as the other 24 extractions - so the fix was updating
+  the test to reflect into the new controller instead of resurrecting
+  dead methods on `Application`. Lesson for the remaining slice
+  (`renderActivity`/`renderActivityRss`): grep `tests/` for reflection
+  references to a method's exact name before deleting it, not just
+  production call sites - this is the first slice where a test reflected
+  into a route-handler method directly rather than exercising it via the
+  HTTP route.
 - **Phase 3 (test suite readability):** not started.
 - **Phase 4 (docs hygiene):** not started.
 

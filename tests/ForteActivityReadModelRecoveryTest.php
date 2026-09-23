@@ -36,8 +36,9 @@ final class ForteActivityReadModelRecoveryTest
     {
         [$application, $databasePath, $queuePath, $previousQueuePath] = $this->applicationWithoutCommits();
         try {
-            $page = $this->invokePrivate($application, 'renderForteActivity', ['', '', '', ''])['return'];
-            $api = $this->invokePrivate($application, 'handleForteActivityPage', [['view' => 'commits']]);
+            $controller = $this->invokePrivate($application, 'forteActivityController', [])['return'];
+            $page = $this->invokePrivate($controller, 'board', ['', '', '', ''])['return'];
+            $api = $this->invokePrivate($controller, 'paginationPage', [['view' => 'commits']]);
             $taskStore = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
 
             assertStringContains('Commit history is temporarily unavailable while site data updates.', $page);

@@ -16,9 +16,15 @@ once there were no more easy wins to do first.
   first-class-callable closure `InstancePageController` already held on
   `fetchActivity(...)` — needed to change.
 - **Step 2 (page-shell route extraction): in progress.**
-  `/api/forte_commit_detail` → `ForteActivityController` done (the
-  smallest of the four, per the recommended order below). `/forte/activity/`
-  and `/api/forte_activity_page` next; classic `/activity` last.
+  `/api/forte_commit_detail`, `/forte/activity/`, and
+  `/api/forte_activity_page` → `ForteActivityController` done. Classic
+  `/activity`/`/activity.rss` (`renderActivity()`/`renderActivityRss()`)
+  is the last piece - see "What's left" below; **grep `tests/` for
+  reflection references to the exact method name before deleting it** -
+  `ForteActivityReadModelRecoveryTest` reflected directly into
+  `renderForteActivity()`/`handleForteActivityPage()` and needed a real
+  fix (reflect into the new controller instead) when this step deleted
+  them.
 
 ## Why this needed its own plan
 
@@ -94,10 +100,11 @@ implementation-detail helpers that had no other callers
 Left on `Application` unchanged: the validator wrappers
 (`isValidCanonicalSourcePath` etc. — pure `SourcePathValidator` delegates,
 shared with the single-thread view), `encodeSourcePathForUrl` (6 call sites
-beyond the cluster), `currentSourcePathExists` (shared with
-`withAuthorPublicKeyMetadata()`), and the page-specific link builders
-`activityItemBoardLink`/`activitySortHeaderLinks` (single-page, presentation
--only, not data-fetching).
+beyond the cluster), and `currentSourcePathExists` (shared with
+`withAuthorPublicKeyMetadata()`). `activityItemBoardLink`/
+`activitySortHeaderLinks` (single-page, presentation-only link builders,
+not data-fetching) moved wholesale into `ForteActivityController` in step
+2 instead, since both their callers ended up there.
 
 One bug found and fixed during verification: `RouteServices::activityService()`
 initially built `ActivityService` with an eagerly-opened `PDO` (`$this->pdo()`
@@ -110,30 +117,24 @@ connection anyway (it's git-exec plus a separate cache file). Fixed by making
 `ActivityService`'s own `pdo()` lazy too (a `\Closure` factory, memoized on
 first real use), matching `RouteServices::pdo()`'s own laziness exactly.
 
-## What's left (Step 2, not started)
+## What's left (Step 2, in progress)
 
-The page-shell route handlers stay on `Application` for now, now backed by
-the clean service instead of tangled internals:
+Three of the four page-shell route handlers are done
+(`ForteActivityController::commitDetail`/`board`/`paginationPage`). What
+remains on `Application`:
 
 - `renderActivity()` (classic `/activity` + implicitly `/activity.rss` via
   `renderActivityRss()`) — the most entangled: also touches `fetchThread`,
   `fetchThreadPosts`, `displayThreadTitle`, `viewerCanInspectLlmExchanges`,
   `llmExchangeStore`, `featureFlags`, `invalidateFeatureFlagsCache`,
   `sourceCommitDetails`, `resolveViewerProfileFromIdentityHint`.
-- `renderForteActivity()` (`/forte/activity/`) — comparatively clean, mostly
-  cluster-internal plus `commitsCapabilityAvailable`/`enqueueReadModelRecovery`
-  (already used as closures elsewhere).
-- `handleForteActivityPage()` (`/api/forte_activity_page`) — same shape as
-  `renderForteActivity`, its AJAX-pagination twin.
-- `handleForteCommitDetail()` (`/api/forte_commit_detail`) — small,
-  `activityCommitManifest`/`sourceCommitHref` plus the same
-  capability-gating closures.
 
-Recommended order when this is picked back up: `handleForteCommitDetail`
-first (smallest), then `renderForteActivity`/`handleForteActivityPage`
-together (they share the same closure list), leaving `renderActivity`
-(the classic page) for last since it's the one that actually needs the long
-closure list — by which point it may be the *only* remaining reason
-`viewerCanInspectLlmExchanges`/`llmExchangeStore`/etc. need to leave
-`Application` at all, worth rechecking before assuming closures are still
-the right call at that point.
+By the time this is picked back up, `renderActivity()` may be the *only*
+remaining reason `viewerCanInspectLlmExchanges`/`llmExchangeStore`/etc.
+need to leave `Application` at all — worth rechecking whether that's still
+true, and whether those specific methods are cheap enough to just move
+wholesale (single-caller by then) rather than staying closures, before
+extracting this last piece. **Grep `tests/` for reflection references to
+`renderActivity`/`renderActivityRss` by exact name before deleting them** -
+see the lesson above from this step's own `ForteActivityReadModelRecoveryTest`
+break.
