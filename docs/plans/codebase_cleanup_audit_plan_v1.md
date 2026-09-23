@@ -45,6 +45,18 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   the single-thread view (`/threads/{id}`, `/posts/{id}`); `/account`,
   `/compose`, `/invites`, `/source`, `/lobby`; and `/api` (~50 routes,
   deliberately last — most entangled with auth/session/write flows).
+
+  Checked both `/forte/activity/` and the single-thread view
+  (`/threads/{id}`) as candidate next slices: both are in the harder
+  tier, same shape as the `/activity` deferral - `renderForteActivity()`
+  shares `fetchActivity()`/`resolveActivitySort()`/commits machinery with
+  the un-extracted `/activity` route (5+ shared call sites), and
+  `renderThread()` touches 13+ collaborators spanning agent-reply,
+  Codex handoff, LLM-exchange, and post-analysis subsystems. Neither is
+  a clean single-slice extraction the way `/forte`'s board and users
+  views were - either needs a dedicated shared-service investigation
+  first (the same call made for `/activity` earlier), or accepting
+  significantly more bound closures per slice than prior extractions.
 - **Phase 3 (test suite readability):** not started.
 - **Phase 4 (docs hygiene):** not started.
 
