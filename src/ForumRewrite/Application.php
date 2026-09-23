@@ -1282,7 +1282,7 @@ final class Application
             'Activity - Forte',
             'paned-reader-body',
             ['/assets/paned_activity_reader.js'],
-            ['/assets/forte.css'],
+            ['/assets/forte.css', '/assets/activity.css'],
         );
     }
 

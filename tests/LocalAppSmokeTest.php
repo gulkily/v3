@@ -1085,6 +1085,7 @@ PHP;
         $composeReply = $this->render($application, '/compose/reply?thread_id=root-001&parent_id=root-001');
         $account = $this->render($application, '/account/key/');
         $activity = $this->render($application, '/activity/?view=content');
+        $forteActivity = $this->render($application, '/forte/activity/?view=content');
         $llms = $this->render($application, '/llms.txt');
 
         assertStringContains('Board', $board);
@@ -1334,6 +1335,9 @@ PHP;
         assertFingerprintedAsset($tags, 'tags.css');
         assertStringNotContains('/assets/tags.', $board);
         assertStringNotContains('/assets/tools.', $board);
+        assertFingerprintedAsset($activity, 'activity.css');
+        assertFingerprintedAsset($forteActivity, 'activity.css');
+        assertStringNotContains('/assets/activity.', $board);
         assertStringNotContains('data-role="thread-density-menu"', $board);
         assertStringNotContains('data-thread-density-option="comfortable"', $board);
         assertStringNotContains('data-thread-density-option="compact"', $board);
