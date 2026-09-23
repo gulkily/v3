@@ -263,7 +263,7 @@ final class Application
         }
 
         if ($path === '/api/link_identity') {
-            $this->handleLinkIdentity($method, $query);
+            $this->composeAndAccountKeyController()->linkIdentityApi($method, $query);
             return;
         }
 
@@ -4039,38 +4039,6 @@ final class Application
         }
 
         return $this->agentReplyFulfillmentService()->publishForPost($post);
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleLinkIdentity(string $method, array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        if ($method !== 'POST') {
-            $this->sendText("method not allowed\n", 405);
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        try {
-            $result = $this->writer()->linkIdentity($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $this->sendText(
-                "status=ok\nidentity_id={$result['identity_id']}\nprofile_slug={$result['profile_slug']}\nusername={$result['username']}\nbootstrap_post_id={$result['bootstrap_post_id']}\nbootstrap_thread_id={$result['bootstrap_thread_id']}\ncommit_sha={$result['commit_sha']}\n",
-                200,
-                $this->serverTimingHeaders($result)
-            );
-        } catch (RuntimeException $exception) {
-            $this->sendText(
-                "error=" . $exception->getMessage() . "\n",
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
     }
 
     /**

@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 5,447 lines (~34% smaller)** across 17
+  `Application.php`: **8,212 → 5,415 lines (~34% smaller)** across 18
   route-group extractions so far:
   - `/about` → `AboutPageController`
   - `/instance`, `/backup`, `/downloads/*` → `InstancePageController`
@@ -35,6 +35,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   - `/api/apply_thread_tag`, `/api/apply_post_tag` → `TagApiController`
   - `/api/set_feature_flag`, `/tools/feature-flags/` POST → joined the
     existing `ToolsPageController`
+  - `/api/link_identity` → joined the existing `ComposeAndAccountKeyController`
 
   Shared query/support layer built up alongside the route extractions
   (`src/ForumRewrite/ReadModel/`, `src/ForumRewrite/Http/`, and
@@ -113,20 +114,27 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   preserved exactly as-is rather than questioned, since changing it would
   be a behavior change outside this pass's scope.
 
+  Followed `/api/set_feature_flag` with `/api/link_identity`: it was even
+  cheaper - no viewer-profile lookup at all, so it needed zero closures,
+  just `RouteServices`. It's the plain-text API twin of
+  `ComposeAndAccountKeyController::submitAccountKey()`'s own
+  `writer()->linkIdentity()` call (same write operation, different response
+  shape), so it joined that controller rather than starting a new one -
+  the same "same write operation, different route" reasoning as
+  `/api/read_model_status` landing on `CodebaseStateController`.
+
   Remaining route groups still fully on `Application`: `/forte/activity/`
   and the `/api/forte_*`/`/api/get_forte_*` AJAX endpoints; `/activity`
   (harder tier, see above); the single-thread view (`/threads/{id}`,
   `/posts/{id}`); `/api/version` (see above); and the rest of `/api`
-  (~24 auth/identity/write endpoints - `/api/link_identity`,
-  `/api/set_identity_hint`, `/api/authenticate_identity`,
-  `/api/create_identity`/`/api/prepare_identity`, `/api/analyze_post`,
-  `/api/generate_agent_reply`, `/api/codex_handoff*`, `/api/approve_user`,
-  `/api/prepare_approval`/`/api/create_prepared_approval`,
+  (~23 auth/identity/write endpoints - `/api/set_identity_hint`,
+  `/api/authenticate_identity`, `/api/create_identity`/`/api/prepare_identity`,
+  `/api/analyze_post`, `/api/generate_agent_reply`, `/api/codex_handoff*`,
+  `/api/approve_user`, `/api/prepare_approval`/`/api/create_prepared_approval`,
   `/api/prepare_invitation`/`/api/create_prepared_invitation`,
   `/api/prepare_invitation_redemption`, and the direct
   create-thread/create-reply/create-prepared-post trio - some of which may
-  turn out as cheap as the tag pair and feature-flag pair above once
-  individually checked).
+  turn out as cheap as the ones above once individually checked).
 
   Checked both `/forte/activity/` and the single-thread view
   (`/threads/{id}`) as candidate next slices: both are in the harder

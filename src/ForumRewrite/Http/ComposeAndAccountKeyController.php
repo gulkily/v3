@@ -22,6 +22,13 @@ use RuntimeException;
  * fetchPost() and resolveViewerProfileFromIdentityHint() stay on Application
  * (12 and 16 call sites respectively at extraction time, spanning well
  * beyond this route group) and are passed in as bound closures.
+ *
+ * linkIdentityApi() (added later, alongside the /api/apply_thread_tag and
+ * /api/set_feature_flag slices - see
+ * docs/plans/codebase_cleanup_audit_plan_v1.md) is /api/link_identity, the
+ * plain-text API twin of submitAccountKey()'s writer()->linkIdentity()
+ * call - same write operation, different response shape, so it landed on
+ * this controller rather than a new one. Needed no new closures at all.
  */
 final class ComposeAndAccountKeyController
 {
@@ -182,6 +189,38 @@ final class ComposeAndAccountKeyController
             }
             $this->routeServices->sendHtml(
                 $this->renderAccountKeyPage(null, $exception->getMessage()),
+                400,
+                $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
+            );
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    public function linkIdentityApi(string $method, array $query): void
+    {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        if ($method !== 'POST') {
+            $this->routeServices->sendText("method not allowed\n", 405);
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $input = $this->routeServices->requestData($query);
+        $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
+        try {
+            $result = $this->routeServices->writer()->linkIdentity($input);
+            $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
+            $this->routeServices->sendText(
+                "status=ok\nidentity_id={$result['identity_id']}\nprofile_slug={$result['profile_slug']}\nusername={$result['username']}\nbootstrap_post_id={$result['bootstrap_post_id']}\nbootstrap_thread_id={$result['bootstrap_thread_id']}\ncommit_sha={$result['commit_sha']}\n",
+                200,
+                $this->routeServices->serverTimingHeaders($result)
+            );
+        } catch (RuntimeException $exception) {
+            $this->routeServices->sendText(
+                "error=" . $exception->getMessage() . "\n",
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
             );
