@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 3,903 lines (~52% smaller)** across 23
+  `Application.php`: **8,212 → 3,875 lines (~53% smaller)** across 24
   route-group extractions so far, plus the activity/commit-manifest
   data-layer extraction (see below):
   - `/about` → `AboutPageController`
@@ -50,6 +50,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
     → `IdentityApprovalAndInvitationApiController`
   - `/api/get_forte_content_summary`, `/api/forte_user_detail` →
     `ForteContentAndUserDetailApiController`
+  - `/api/forte_commit_detail` → `ForteActivityController`
 
   Shared query/support layer built up alongside the route extractions
   (`src/ForumRewrite/ReadModel/`, `src/ForumRewrite/Http/`, and
@@ -296,6 +297,16 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   (`renderActivity`/`renderActivityRss`/`renderForteActivity`/
   `handleForteActivityPage`/`handleForteCommitDetail`) are step 2, not yet
   done - see the sub-plan doc for the recommended order.
+
+  Started step 2 with `/api/forte_commit_detail` (the smallest of the
+  four page-shell handlers per the sub-plan's recommended order), into a
+  new `ForteActivityController`. Needed `commitsCapabilityAvailable()`
+  (4 other call sites), `enqueueReadModelRecovery()` (3), and
+  `sendReadModelCapabilityUnavailable()` (2) as closures - all three
+  already-established shared closures from earlier slices - plus direct
+  calls into `RouteServices::activityService()` for the data itself.
+  `/forte/activity/` and `/api/forte_activity_page` are next (they share
+  this same closure list); classic `/activity` last.
 - **Phase 3 (test suite readability):** not started.
 - **Phase 4 (docs hygiene):** not started.
 

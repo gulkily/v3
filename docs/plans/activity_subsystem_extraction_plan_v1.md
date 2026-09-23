@@ -15,8 +15,10 @@ once there were no more easy wins to do first.
   elsewhere in the class, so no existing call site — including the
   first-class-callable closure `InstancePageController` already held on
   `fetchActivity(...)` — needed to change.
-- **Step 2 (page-shell route extraction): not started.** See "What's left"
-  below.
+- **Step 2 (page-shell route extraction): in progress.**
+  `/api/forte_commit_detail` → `ForteActivityController` done (the
+  smallest of the four, per the recommended order below). `/forte/activity/`
+  and `/api/forte_activity_page` next; classic `/activity` last.
 
 ## Why this needed its own plan
 

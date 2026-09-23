@@ -26,6 +26,7 @@ use ForumRewrite\Http\BoardPageController;
 use ForumRewrite\Http\BoardViewOptions;
 use ForumRewrite\Http\CodebaseStateController;
 use ForumRewrite\Http\ComposeAndAccountKeyController;
+use ForumRewrite\Http\ForteActivityController;
 use ForumRewrite\Http\ForteBoardController;
 use ForumRewrite\Http\ForteContentAndUserDetailApiController;
 use ForumRewrite\Http\ForteProfileController;
@@ -509,7 +510,7 @@ final class Application
         }
 
         if ($path === '/api/forte_commit_detail') {
-            $this->handleForteCommitDetail($query);
+            $this->forteActivityController()->commitDetail($query);
             return;
         }
 
@@ -1061,45 +1062,6 @@ final class Application
             'has_more' => $hasMore,
             'next_cursor' => $nextCursor,
         ], 200);
-    }
-
-    /**
-     * A commit's full file manifest is fetched on demand, not pre-rendered
-     * for every loaded row the way activity items' detail articles are -
-     * some commits touch thousands of files, and only one is ever viewed at
-     * a time, so eagerly rendering all of them (as Stage 3's row list does)
-     * would recreate the exact page-bloat problem the shared-manifest-block
-     * mechanism was built to work around.
-     *
-     * @param array<string, mixed> $query
-     */
-    private function handleForteCommitDetail(array $query): void
-    {
-        if (!$this->commitsCapabilityAvailable()) {
-            $this->enqueueReadModelRecovery();
-            $this->sendReadModelCapabilityUnavailable();
-            return;
-        }
-
-        $sha = (string) ($query['sha'] ?? '');
-        if (preg_match('/^[0-9a-f]{40}$/', $sha) !== 1) {
-            $this->sendJson(['status' => 'error', 'error' => 'invalid sha'], 400);
-            return;
-        }
-
-        $files = $this->activityCommitManifest($sha);
-        if ($files === null) {
-            $this->sendJson(['status' => 'error', 'error' => 'commit not found'], 404);
-            return;
-        }
-
-        $html = $this->renderer()->renderFragment('partials/activity_commit_manifest.php', [
-            'files' => $files,
-            'commit_sha' => $sha,
-            'commit_href' => $this->sourceCommitHref($sha) ?? '',
-        ]);
-
-        $this->sendJson(['status' => 'ok', 'html' => $html], 200);
     }
 
     /**
@@ -2350,6 +2312,16 @@ final class Application
         return new ForteContentAndUserDetailApiController(
             $this->routeServices(),
             $this->fetchPost(...),
+        );
+    }
+
+    private function forteActivityController(): ForteActivityController
+    {
+        return new ForteActivityController(
+            $this->routeServices(),
+            $this->commitsCapabilityAvailable(...),
+            $this->enqueueReadModelRecovery(...),
+            $this->sendReadModelCapabilityUnavailable(...),
         );
     }
 
