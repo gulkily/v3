@@ -15,7 +15,7 @@ final class StaticArtifactReleasePublisher
     ) {
     }
 
-    public function build(string $databasePath): string
+    public function build(string $databasePath, ?\Closure $progressReporter = null): string
     {
         if (!is_dir($this->staticHtmlRoot) && !mkdir($this->staticHtmlRoot, 0777, true) && !is_dir($this->staticHtmlRoot)) {
             throw new RuntimeException('Unable to create static artifact root: ' . $this->staticHtmlRoot);
@@ -28,6 +28,7 @@ final class StaticArtifactReleasePublisher
                 $this->repositoryRoot,
                 $databasePath,
                 $candidatePath,
+                $progressReporter,
             ))->buildFromReadModel();
 
             $releaseDirectory = $this->staticHtmlRoot . '/releases';

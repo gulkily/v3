@@ -14,6 +14,7 @@ final class ReadModelCandidateBuilder
         private readonly string $repositoryRoot,
         private readonly string $liveDatabasePath,
         private readonly string $rebuildReason = 'manual',
+        private readonly ?\Closure $progressReporter = null,
     ) {
     }
 
@@ -33,6 +34,7 @@ final class ReadModelCandidateBuilder
                 $candidatePath,
                 new CanonicalRecordRepository($this->repositoryRoot),
                 $this->rebuildReason,
+                $this->progressReporter,
             ))->rebuild();
             self::assertValid($this->repositoryRoot, $candidatePath);
 

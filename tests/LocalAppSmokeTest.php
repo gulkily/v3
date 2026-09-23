@@ -43,6 +43,52 @@ final class LocalAppSmokeTest
         assertTrue(is_file($this->databasePath));
     }
 
+    public function testBuildStaticCommandReportsProgressAndArtifactSummary(): void
+    {
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-build-static-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-build-static-artifacts-' . bin2hex(random_bytes(6));
+        $command = sprintf(
+            'php %s %s %s %s 2>&1',
+            escapeshellarg(__DIR__ . '/../scripts/build_static_artifacts.php'),
+            escapeshellarg($this->repositoryRoot),
+            escapeshellarg($databasePath),
+            escapeshellarg($artifactRoot),
+        );
+
+        try {
+            exec($command, $output, $exitCode);
+            $text = implode("\n", $output);
+
+            assertSame(0, $exitCode, $text);
+            assertStringContains('Starting static HTML release build', $text);
+            assertStringContains("Repository: {$this->repositoryRoot}", $text);
+            assertStringContains("Database: {$databasePath}", $text);
+            assertStringContains("Static artifact root: {$artifactRoot}", $text);
+            assertStringContains('[1/4] Building and validating a read-model candidate...', $text);
+            assertStringContains('[1/4] Read model: index posts...', $text);
+            assertStringContains('[1/4] Read model: parsing post records (0/', $text);
+            assertStringContains('[1/4] Read-model candidate is ready.', $text);
+            assertStringContains('[2/4] Rendering static HTML and fingerprinted assets...', $text);
+            assertStringContains('[2/4] Fingerprinting and copying public assets...', $text);
+            assertStringContains('[2/4] Rendering shared pages (1/10): /.', $text);
+            assertStringContains('[2/4] Rendering thread pages (0/', $text);
+            assertStringContains('[2/4] Static release is ready:', $text);
+            assertStringContains('Static artifacts:', $text);
+            assertStringContains('[3/4] Promoting the read model...', $text);
+            assertStringContains('[3/4] Read model promoted.', $text);
+            assertStringContains('[4/4] Activating the static release...', $text);
+            assertStringContains('[4/4] Static release activated.', $text);
+            assertStringContains('Built and activated static HTML release', $text);
+            assertStringContains('Elapsed:', $text);
+            assertOrdered($text, '[1/4] Building', '[2/4] Rendering');
+            assertOrdered($text, '[2/4] Rendering', '[3/4] Promoting');
+            assertOrdered($text, '[3/4] Promoting', '[4/4] Activating');
+        } finally {
+            @unlink($databasePath);
+            $this->deleteTree($artifactRoot);
+        }
+    }
+
     public function testApprovedPrivateSessionCanViewOwnProfileAndBoard(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
