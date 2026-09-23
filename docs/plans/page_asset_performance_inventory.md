@@ -17,7 +17,7 @@ The user asked the agent to continue this inventory autonomously while the works
 - **Pending approvals** — `.pending-approvals-*` belongs to `users_pending.php` and its route-specific script.
 - **Compose controls** — `.compose-*`, inline-reply, and pending-composer styles can form a compose/content-interaction family, provided board and thread uses remain covered.
 - **Post/thread interactions** — `.post-card-actions`, `.thread-reaction-*`, and post-analysis styles are candidates for content routes only, not About/Tools/Account pages.
-- **Thread-list/density controls** — `.thread-density-*` and compact-list rules are needed by Board and Tag views, so share one list-family asset.
+- [x] **Thread-list/density controls** — `.thread-density-*` and compact-list rules now load from fingerprinted `thread-list.css` only on Board and Tag views.
 - **SQLite viewer** — `.sqlite-*` is exclusive to the SQLite tool and should leave the standard shared stylesheet with its existing route-specific JS/WASM runtime.
 - **Instance/backup, profile/user-directory, feature-flag, and LLM-exchange selector families** — inventory their exact template ownership before extraction; keep any cross-route utility rule in the base stylesheet.
 - **Already isolated** — Forte is in `forte.css`; explicit themes are in `theme-<name>.css`. Do not duplicate them into page stylesheets.

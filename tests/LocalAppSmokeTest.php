@@ -631,7 +631,7 @@ PHP;
 
     public function testCompactModeMenuStylesUseScopedDensitySelectors(): void
     {
-        $css = file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+        $css = file_get_contents(dirname(__DIR__) . '/public/assets/thread-list.css');
         $word97Css = file_get_contents(dirname(__DIR__) . '/public/assets/theme-word97.css');
         if ($css === false) {
             throw new RuntimeException('Unable to read site stylesheet.');
@@ -645,7 +645,8 @@ PHP;
         assertStringContains(':root[data-thread-density="compact"] .thread-list > * + *', $css);
         assertStringContains(':root[data-thread-density="compact"] article.card:has(> .board-controls-nav)', $css);
         assertStringContains(':root[data-thread-density="compact"] .compact-thread-compose', $css);
-        assertStringContains('.compact-thread-compose .inline-reply-summary', $css);
+        assertStringContains(':root[data-thread-density="compact"] .compact-thread-compose', $css);
+        assertStringContains('.inline-reply-summary {', $css);
         assertStringContains(':root[data-thread-density="compact"] .thread-list > .compact-thread-compose', $css);
         assertStringContains('margin-top: 0', $css);
         assertStringContains(':root[data-thread-density="compact"] .thread-list > .card', $css);
