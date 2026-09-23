@@ -20,7 +20,7 @@ This is the exhaustive source-level inventory for the current application. It ex
 
 ## Page and Render-Path Candidates
 
-- **Critical CSS** — `TemplateRenderer::criticalCss()` inlines one fixed prefix of `site.css` into every standard page. Measure its byte size, retain only true above-the-fold shared rules, and move route-only rules to cached page files.
+- **Critical CSS** — `TemplateRenderer::criticalCss()` currently inlines an 8,306-byte fixed prefix of `site.css` into every standard page. Retain only true above-the-fold shared rules after browser measurement; route-only rules now belong in cached page files.
 - **Shared layout markup** — measure repeated nav, theme-menu, status-bar, and inline configuration payload size. Keep accessibility/navigation requirements intact; remove or defer only route-irrelevant data.
 - **Board/thread/tag payloads** — measure card count, body-preview length, reaction/analysis markup, and manifest detail. Use pagination, progressive disclosure, or on-demand detail only where first-view content is not required.
 - **Static pages** — verify generated HTML does not embed per-request state unnecessarily and uses the same route asset contract as dynamic pages.
@@ -28,7 +28,7 @@ This is the exhaustive source-level inventory for the current application. It ex
 
 ## JavaScript and Runtime Candidates
 
-- **Layout-wide scripts** — `theme_toggle.js`, `thread_density_toggle.js`, `compose_draft_clear.js`, and `invite_navigation.js` are emitted by the standard layout. Keep only scripts needed on each route; scripts that merely no-op without matching markup should move to route-family lists.
+- **Layout-wide scripts** — audit completed for `compose_draft_clear.js` and `invite_navigation.js`: retain both globally. The former consumes a post-submit cookie on arbitrary landing routes; the latter preserves the current route when the global Invite nav link is clicked. Keep `theme_toggle.js` global; `thread_density_toggle.js` is already conditional.
 - **Route scripts** — preserve explicit `scriptPaths` contracts for reactions, inline replies, invitations, approvals, feature flags, bookmarklets, SQLite, and Forte; audit whether each is loaded only where its DOM exists.
 - **OpenPGP/browser signing** — large OpenPGP and browser-signing assets should stay strictly on authenticated or compose flows and load only after intent when existing lazy loaders permit.
 - **SQLite runtime** — `sql-wasm.wasm`, `sql-wasm.js`, `sqlite_viewer.js`, and the query catalog remain tool-only; avoid preloading them elsewhere.
