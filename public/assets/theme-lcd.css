@@ -1,0 +1,75 @@
+/* Theme: lcd */
+:root[data-theme="lcd"],
+.theme-menu__option[data-theme-option="lcd"] {
+  color-scheme: light;
+  --page-bg: #c5d1a4;
+  --body-background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(108, 125, 80, 0.08) 100%),
+    #c5d1a4;
+  --ink: #273220;
+  --ink-soft: #56634a;
+  --line: #6e7f59;
+  --panel: rgba(215, 225, 181, 0.92);
+  --input-bg: #dfe8bc;
+  --button-bg: #d4ddb0;
+  --button-alt-bg: #c9d5a1;
+  --feedback-ok-bg: #dce7b8;
+  --feedback-error-bg: #e4d3b1;
+  --status-error: #5f3d1c;
+  --status-ok: #284d28;
+  --status-warning: #745110;
+  --active-bg: #b6c38f;
+  --active-ink: #1f2919;
+  --active-line: #4f6040;
+  --active-ring: rgba(39, 50, 32, 0.16);
+  --body-font: "Verdana", "Geneva", sans-serif;
+  --ui-font: "Verdana", "Geneva", sans-serif;
+  --code-font: "Lucida Console", "Courier New", monospace;
+}
+
+.theme-swatch[data-theme="lcd"] {
+  background:
+    repeating-linear-gradient(
+      180deg,
+      #dce6b8 0 3px,
+      #ced9ac 3px 6px
+    );
+  border-color: #59684b;
+  box-shadow: inset 0 0 0 0.22rem #bcc99a;
+}
+
+:root[data-theme="lcd"] body {
+  letter-spacing: 0.01em;
+}
+
+:root[data-theme="lcd"] .shell {
+  width: min(100%, 820px);
+}
+
+:root[data-theme="lcd"] .site-header,
+:root[data-theme="lcd"] .card,
+:root[data-theme="lcd"] .feedback,
+:root[data-theme="lcd"] .nav-link,
+:root[data-theme="lcd"] [data-role="public-key-viewer"],
+:root[data-theme="lcd"] [data-role="private-key-viewer"],
+:root[data-theme="lcd"] input,
+:root[data-theme="lcd"] textarea,
+:root[data-theme="lcd"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(39, 50, 32, 0.08);
+}
+
+:root[data-theme="lcd"] .site-header {
+  padding: 0.6rem 0.7rem 1rem;
+  border: 1px solid rgba(39, 50, 32, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(197, 209, 164, 0.1) 100%);
+}
+
+:root[data-theme="lcd"] .eyebrow {
+  letter-spacing: 0.12em;
+}
+
+:root[data-theme="lcd"] a {
+  text-decoration-thickness: 1px;
+}

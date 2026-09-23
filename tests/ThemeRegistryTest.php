@@ -57,6 +57,26 @@ final class ThemeRegistryTest
         assertSame(false, ThemeRegistry::isExplicitName('auto'));
         assertSame(false, ThemeRegistry::isExplicitName('unknown'));
     }
+
+    public function testEveryExplicitThemeHasAnIsolatedStylesheet(): void
+    {
+        $publicRoot = dirname(__DIR__) . '/public';
+        $baseStyles = file_get_contents($publicRoot . '/assets/site.css');
+
+        assertSame(true, $baseStyles !== false);
+        assertSame(true, str_contains((string) $baseStyles, '/* critical-css-end */'));
+
+        foreach (ThemeRegistry::stylesheetPaths() as $name => $path) {
+            $styles = file_get_contents($publicRoot . $path);
+
+            assertSame(true, $styles !== false);
+            assertSame(true, str_contains((string) $styles, 'Theme: ' . $name));
+            assertSame(false, str_contains((string) $baseStyles, ':root[data-theme="' . $name . '"]'));
+            assertSame(false, str_contains((string) $baseStyles, 'html[data-theme="' . $name . '"]'));
+            assertSame(false, str_contains((string) $baseStyles, '.theme-swatch[data-theme="' . $name . '"]'));
+            assertSame(false, str_contains((string) $baseStyles, 'data-theme-option="' . $name . '"'));
+        }
+    }
 }
 
 if (!function_exists('assertSame')) {

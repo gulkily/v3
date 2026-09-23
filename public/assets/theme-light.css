@@ -1,0 +1,35 @@
+/* Theme: light */
+.theme-menu__option[data-theme-option="light"] {
+  color-scheme: light;
+  --page-bg: #ffffff;
+  --body-background: var(--page-bg);
+  --ink: #0b3ea8;
+  --ink-soft: #315fb9;
+  --line: #b7c9ef;
+  --panel: #f7faff;
+  --input-bg: #ffffff;
+  --button-bg: #f7faff;
+  --button-alt-bg: #eef5ff;
+  --feedback-ok-bg: #eef5ff;
+  --feedback-error-bg: #fff3f3;
+  --status-error: #8f1f1f;
+  --status-ok: #1f5e2e;
+  --status-warning: #9a6400;
+  --active-bg: #dce8ff;
+  --active-ink: #082f7f;
+  --active-line: #4d79d8;
+  --active-ring: rgba(11, 62, 168, 0.14);
+  --body-font: Georgia, "Times New Roman", serif;
+  --ui-font: "Trebuchet MS", "Segoe UI", sans-serif;
+  --code-font: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+.theme-swatch[data-theme="light"] {
+  background: #ffffff;
+  border-color: #b7c9ef;
+  box-shadow: inset 0 0 0 0.22rem #eef5ff;
+}
