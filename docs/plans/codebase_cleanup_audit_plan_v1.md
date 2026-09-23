@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 6,109 lines (~26% smaller)** across 13
+  `Application.php`: **8,212 → 5,740 lines (~30% smaller)** across 14
   route-group extractions so far:
   - `/about` → `AboutPageController`
   - `/instance`, `/backup`, `/downloads/*` → `InstancePageController`
@@ -27,6 +27,8 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   - `/forte/users/` → `ForteUserDirectoryController`
   - `/lobby/`, `/invites/` → `LobbyController`
   - `/source/current/*`, `/source/blob/*`, `/source/commits/*` → `SourceFileController`
+  - `/compose/thread`, `/compose/reply`, `/account/key` (GET+POST, the
+    "write flows" slice) → `ComposeAndAccountKeyController`
 
   Shared query/support layer built up alongside the route extractions
   (`src/ForumRewrite/ReadModel/`, `src/ForumRewrite/Http/`, and
@@ -37,26 +39,35 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   `readMetadata()`/`latestRepositoryCommit()`/`repositoryShortCommit()`
   consolidated onto `ReadModelMetadata`.
 
+  The write-flow slice needed `RouteServices` extended first: `writer()`,
+  `requestData()` (+ private `mergeRequestBodyData()`), `elapsedMilliseconds()`,
+  `mergeResultTimings()`, `timingsWithTotal()`, and `serverTimingHeaders()`
+  turned out to be shared 14-39 times each across the *entire* write-API
+  surface (not just compose), so they moved onto `RouteServices` as a
+  prerequisite step - the same "build the shared layer, then the slice gets
+  cheap" pattern used earlier for `ThreadRepository`/`TagGrouping`/
+  `BoardViewOptions` ahead of `TagsPageController`. With that in place, the
+  three previously-deferred GET routes (`/compose/thread`, `/compose/reply`,
+  `/account/key`) and their POST submit handlers came out together in one
+  slice, since the thing that made the GET halves not worth extracting alone
+  (sharing a render*Page() method with their POST sibling) stopped being a
+  problem once both sides had the same new home.
+
   A recurring side effect worth noting: several extractions revealed
   Application methods that had gone fully dead in an *earlier* slice
   (their last caller already extracted, but the now-unused wrapper wasn't
   noticed until a later pass touched the same area) — each was removed on
   discovery rather than left as unreachable cruft.
 
-  Checked `/compose/thread`, `/compose/reply`, and `/account/key`'s GET
-  routes as candidates alongside `/lobby/`/`/invites/`: all three turned
-  out to already be one-line wrappers around a `render*Page()` method
-  also called by their own POST submit handler (a write flow) - extracting
-  a one-line wrapper into another one-line wrapper elsewhere doesn't earn
-  its complexity, so those three stay on Application by deliberate choice,
-  not oversight.
-
   Remaining route groups still fully on `Application`: `/forte/activity/`
   and the `/api/forte_*`/`/api/get_forte_*` AJAX endpoints; `/activity`;
-  the single-thread view (`/threads/{id}`, `/posts/{id}`); `/compose`,
-  `/account/key` (GET+POST - see above), `/invites` (POST prepare/create
-  flows); and `/api` (~50 routes, deliberately last — most entangled
-  with auth/session/write flows).
+  the single-thread view (`/threads/{id}`, `/posts/{id}`); and `/api`
+  (~50 routes, deliberately last — most entangled with auth/session/write
+  flows). Note: the `/invites` POST "prepare/create" flow referenced in an
+  earlier round of this plan turned out, on inspection, to actually live at
+  `/api/prepare_invitation` and `/api/create_prepared_invitation` - it's part
+  of the `/api` group, not a separate route group, so it's deferred there
+  rather than extracted early.
 
   Checked both `/forte/activity/` and the single-thread view
   (`/threads/{id}`) as candidate next slices: both are in the harder

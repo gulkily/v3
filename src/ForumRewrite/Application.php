@@ -24,6 +24,7 @@ use ForumRewrite\Http\AboutPageController;
 use ForumRewrite\Http\BoardPageController;
 use ForumRewrite\Http\BoardViewOptions;
 use ForumRewrite\Http\CodebaseStateController;
+use ForumRewrite\Http\ComposeAndAccountKeyController;
 use ForumRewrite\Http\ForteBoardController;
 use ForumRewrite\Http\ForteProfileController;
 use ForumRewrite\Http\ForteUserDirectoryController;
@@ -300,17 +301,17 @@ final class Application
         }
 
         if ($path === '/compose/thread' && $method === 'POST') {
-            $this->handleComposeThreadSubmit($query);
+            $this->composeAndAccountKeyController()->submitComposeThread($query);
             return;
         }
 
         if ($path === '/compose/reply' && $method === 'POST') {
-            $this->handleComposeReplySubmit($query);
+            $this->composeAndAccountKeyController()->submitComposeReply($query);
             return;
         }
 
         if (($path === '/account/key/' || $path === '/account/key') && $method === 'POST') {
-            $this->handleAccountKeySubmit($query);
+            $this->composeAndAccountKeyController()->submitAccountKey($query);
             return;
         }
 
@@ -464,27 +465,17 @@ final class Application
         }
 
         if ($path === '/compose/thread') {
-            $this->sendHtml(
-                $this->renderComposeThread(
-                    (string) ($query['board_tags'] ?? 'general'),
-                    (string) ($query['subject'] ?? ''),
-                    (string) ($query['body'] ?? '')
-                ),
-                200
-            );
+            $this->sendHtml($this->composeAndAccountKeyController()->composeThread($query), 200);
             return;
         }
 
         if ($path === '/compose/reply') {
-            $this->sendHtml(
-                $this->renderComposeReply((string) ($query['thread_id'] ?? ''), (string) ($query['parent_id'] ?? '')),
-                200
-            );
+            $this->sendHtml($this->composeAndAccountKeyController()->composeReply($query), 200);
             return;
         }
 
         if ($path === '/account/key/' || $path === '/account/key') {
-            $this->sendHtml($this->renderAccountKey(), 200);
+            $this->sendHtml($this->composeAndAccountKeyController()->accountKey(), 200);
             return;
         }
 
@@ -1617,22 +1608,10 @@ final class Application
         );
     }
 
-    private function renderComposeThread(
-        string $boardTags = 'general',
-        string $subject = '',
-        string $body = '',
-    ): string
-    {
-        return $this->renderComposeThreadPage($boardTags, $subject, $body);
-    }
-
-
     private function toolsPageController(): ToolsPageController
     {
         return new ToolsPageController($this->routeServices(), $this->featureFlags());
     }
-
-
 
     private function llmExchangesController(): LlmExchangesController
     {
@@ -1650,70 +1629,6 @@ final class Application
         return $this->featureFlags()->isEnabled(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED)
             && $viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
-    }
-
-    private function renderComposeThreadPage(
-        string $boardTags = 'general',
-        string $subject = '',
-        string $body = '',
-        ?string $notice = null,
-        ?string $error = null
-    ): string
-    {
-        return $this->renderPageTemplate('compose_thread.php', [
-            'boardTags' => $boardTags !== '' ? $boardTags : 'general',
-            'subject' => $subject,
-            'body' => $body,
-            'notice' => $notice,
-            'error' => $error,
-        ], 'Compose Thread', 'compose', $this->identityScripts());
-    }
-
-    private function renderComposeReply(string $threadId, string $parentId): string
-    {
-        return $this->renderComposeReplyPage($threadId, $parentId);
-    }
-
-    private function renderComposeReplyPage(
-        string $threadId,
-        string $parentId,
-        ?string $notice = null,
-        ?string $error = null,
-        string $boardTags = 'general',
-        string $body = ''
-    ): string
-    {
-        $parentPost = $parentId !== '' ? $this->fetchPost($parentId) : null;
-        if (is_array($parentPost) && $threadId !== '' && (string) ($parentPost['thread_id'] ?? '') !== $threadId) {
-            $parentPost = null;
-        }
-
-        return $this->renderPageTemplate('compose_reply.php', [
-            'threadId' => $threadId,
-            'parentId' => $parentId,
-            'parentPost' => $parentPost,
-            'notice' => $notice,
-            'error' => $error,
-            'boardTags' => $boardTags !== '' ? $boardTags : 'general',
-            'body' => $body,
-        ], 'Compose Reply', 'compose', $this->identityScripts());
-    }
-
-    private function renderAccountKey(): string
-    {
-        return $this->renderAccountKeyPage();
-    }
-
-    private function renderAccountKeyPage(?string $notice = null, ?string $error = null): string
-    {
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-
-        return $this->renderPageTemplate('account_key.php', [
-            'identityHint' => $_COOKIE['identity_hint'] ?? '',
-            'viewerProfile' => $viewerProfile,
-            'notice' => $notice,
-            'error' => $error,
-        ], 'Account Key', 'account', $this->identityScripts(['/assets/private_site_auth.js']));
     }
 
     private function renderApiIndex(): string
@@ -1854,6 +1769,11 @@ final class Application
                 $this->routeSource,
                 $this->approvedMembersOnlyEnabled(),
                 $this->authenticatedViewerProfile(...),
+                $this->repositoryRoot,
+                $this->projectRoot,
+                $this->artifactRoot,
+                $this->staticHtmlRoot,
+                $this->featureFlags(),
             );
         }
 
@@ -2740,6 +2660,15 @@ final class Application
             $this->routeServices(),
             $this->lobbyViewerProfile(...),
             $this->authenticatedViewerProfile(...),
+        );
+    }
+
+    private function composeAndAccountKeyController(): ComposeAndAccountKeyController
+    {
+        return new ComposeAndAccountKeyController(
+            $this->routeServices(),
+            $this->fetchPost(...),
+            $this->resolveViewerProfileFromIdentityHint(...),
         );
     }
 
@@ -4593,78 +4522,12 @@ final class Application
      */
     private function requestData(array $query): array
     {
-        $data = $query;
-
-        foreach ($_POST as $key => $value) {
-            $data[$key] = $value;
-        }
-
-        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-        $rawBody = (string) file_get_contents('php://input');
-
-        return $this->mergeRequestBodyData($data, $contentType, $rawBody);
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    private function mergeRequestBodyData(array $data, string $contentType, string $rawBody): array
-    {
-        $normalizedContentType = strtolower(trim(explode(';', $contentType, 2)[0]));
-        if ($rawBody === '') {
-            return $data;
-        }
-
-        if ($normalizedContentType === 'application/json') {
-            $decoded = json_decode($rawBody, true);
-            if (is_array($decoded)) {
-                foreach ($decoded as $key => $value) {
-                    if (is_string($key)) {
-                        $data[$key] = $value;
-                    }
-                }
-            }
-
-            return $data;
-        }
-
-        if ($normalizedContentType === 'application/x-www-form-urlencoded') {
-            $decoded = [];
-            parse_str($rawBody, $decoded);
-            foreach ($decoded as $key => $value) {
-                if (is_string($key)) {
-                    $data[$key] = $value;
-                }
-            }
-        }
-
-        return $data;
+        return $this->routeServices()->requestData($query);
     }
 
     private function writer(): LocalWriteService
     {
-        return new LocalWriteService(
-            $this->repositoryRoot,
-            $this->databasePath,
-            $this->artifactRoot ?? ($this->projectRoot . '/public'),
-            new CanonicalRecordRepository($this->repositoryRoot),
-            featureFlags: $this->featureFlags(),
-            additionalArtifactRoots: $this->additionalArtifactRoots(),
-        );
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function additionalArtifactRoots(): array
-    {
-        $roots = [];
-        if ($this->staticHtmlRoot !== null && $this->staticHtmlRoot !== ($this->artifactRoot ?? ($this->projectRoot . '/public'))) {
-            $roots[] = $this->staticHtmlRoot;
-        }
-
-        return $roots;
+        return $this->routeServices()->writer();
     }
 
     private function agentIdentityService(): AgentIdentityService
@@ -5002,19 +4865,7 @@ final class Application
      */
     private function mergeResultTimings(array $result, array $timings, int $totalStartedAt): array
     {
-        $existing = isset($result['timings']) && is_array($result['timings'])
-            ? $result['timings']
-            : [];
-
-        if (isset($existing['total']) && (is_int($existing['total']) || is_float($existing['total']))) {
-            $existing['write_total'] = $existing['total'];
-            unset($existing['total']);
-        }
-
-        $result['timings'] = array_merge($timings, $existing);
-        $result['timings']['total'] = $this->elapsedMilliseconds($totalStartedAt);
-
-        return $result;
+        return $this->routeServices()->mergeResultTimings($result, $timings, $totalStartedAt);
     }
 
     /**
@@ -5023,9 +4874,7 @@ final class Application
      */
     private function timingsWithTotal(array $timings, int $totalStartedAt): array
     {
-        $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
-
-        return $timings;
+        return $this->routeServices()->timingsWithTotal($timings, $totalStartedAt);
     }
 
     /**
@@ -5055,7 +4904,7 @@ final class Application
 
     private function elapsedMilliseconds(int $startedAt): float
     {
-        return round((hrtime(true) - $startedAt) / 1000000, 1);
+        return $this->routeServices()->elapsedMilliseconds($startedAt);
     }
 
     /**
@@ -5225,183 +5074,6 @@ final class Application
         $response['unicode_risk'] = $analysis['unicode_risk'] ?? null;
 
         return $response;
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleComposeThreadSubmit(array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        try {
-            $result = $this->writer()->createThread($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $this->queueComposeDraftClear($this->composeDraftStorageKey('thread'));
-            $returnTo = $this->resolveComposeThreadReturnTo((string) ($input['return_to'] ?? ''), (string) $result['thread_id']);
-            $location = $returnTo
-                . (str_contains($returnTo, '?') ? '&' : '?') . 'created_post_id=' . rawurlencode($result['post_id'])
-                . '&__v=' . rawurlencode($result['commit_sha']);
-            $this->sendRedirect(
-                $location,
-                'Created thread ' . $result['thread_id'] . '. Commit ' . $result['commit_sha'] . '.',
-                303,
-                $this->serverTimingHeaders($result)
-            );
-        } catch (RuntimeException $exception) {
-            $this->sendHtml(
-                $this->renderComposeThreadPage(
-                    (string) ($input['board_tags'] ?? 'general'),
-                    (string) ($input['subject'] ?? ''),
-                    (string) ($input['body'] ?? ''),
-                    null,
-                    $exception->getMessage()
-                ),
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleComposeReplySubmit(array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        $threadId = (string) ($input['thread_id'] ?? '');
-        $parentId = (string) ($input['parent_id'] ?? '');
-
-        try {
-            $result = $this->writer()->createReply($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $this->queueComposeDraftClear($this->composeDraftStorageKey('reply', $threadId, $parentId));
-            $returnTo = $this->resolveComposeReplyReturnTo((string) ($input['return_to'] ?? ''), $result['thread_id']);
-            $location = $returnTo
-                . (str_contains($returnTo, '?') ? '&' : '?') . 'created_post_id=' . rawurlencode($result['post_id'])
-                . '&__v=' . rawurlencode($result['commit_sha'])
-                . '#post-' . rawurlencode($result['post_id']);
-            $this->sendRedirect(
-                $location,
-                'Created reply ' . $result['post_id'] . '. Commit ' . $result['commit_sha'] . '.',
-                303,
-                $this->serverTimingHeaders($result)
-            );
-        } catch (RuntimeException $exception) {
-            $this->sendHtml(
-                $this->renderComposeReplyPage(
-                    $threadId,
-                    $parentId,
-                    null,
-                    $exception->getMessage(),
-                    (string) ($input['board_tags'] ?? 'general'),
-                    (string) ($input['body'] ?? '')
-                ),
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
-    }
-
-    private function resolveComposeReplyReturnTo(string $requestedReturnTo, string $threadId): string
-    {
-        if (preg_match('#^/forte(?:\?(.*))?$#', $requestedReturnTo, $matches) === 1) {
-            return $this->buildForteBoardReturnTo($matches[1] ?? '');
-        }
-
-        return '/threads/' . $threadId;
-    }
-
-    /**
-     * Sibling to resolveComposeReplyReturnTo() for thread creation: there's
-     * no existing thread to whitelist a single-thread return path against
-     * (the thread doesn't exist until after this call), so this only
-     * recognizes the `/forte` board shape and always selects the
-     * newly-created thread there, overriding anything the client sent.
-     */
-    private function resolveComposeThreadReturnTo(string $requestedReturnTo, string $newThreadId): string
-    {
-        if (preg_match('#^/forte(?:\?(.*))?$#', $requestedReturnTo, $matches) === 1) {
-            return $this->buildForteBoardReturnTo($matches[1] ?? '', $newThreadId);
-        }
-
-        return '/threads/' . $newThreadId;
-    }
-
-    /**
-     * Rebuilds a `/forte` return URL from only a fixed, character-restricted
-     * allowlist of query params (`tag`, `selected`), discarding anything else
-     * so the client-supplied query string is never passed through verbatim.
-     * $overrideSelected, when given, wins over any `selected` present in
-     * $requestedQueryString (used by thread creation, where the client can't
-     * know the new thread's ID up front).
-     */
-    private function buildForteBoardReturnTo(string $requestedQueryString, ?string $overrideSelected = null): string
-    {
-        parse_str($requestedQueryString, $params);
-        $allowed = [];
-
-        $tag = (string) ($params['tag'] ?? '');
-        if ($tag !== '' && preg_match('/^[a-z0-9-]+$/', $tag) === 1) {
-            $allowed['tag'] = $tag;
-        }
-
-        $selected = $overrideSelected ?? (string) ($params['selected'] ?? '');
-        if ($selected !== '' && preg_match('/^[A-Za-z0-9._:-]+$/', $selected) === 1) {
-            $allowed['selected'] = $selected;
-        }
-
-        $queryString = http_build_query($allowed);
-
-        return '/forte' . ($queryString !== '' ? '?' . $queryString : '');
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleAccountKeySubmit(array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        try {
-            $result = $this->writer()->linkIdentity($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $location = '/profiles/' . $result['profile_slug'];
-            $this->sendRedirect(
-                $location,
-                'Linked identity ' . $result['identity_id'] . ' as ' . $result['username'] . '. Commit ' . $result['commit_sha'] . '.',
-                303,
-                $this->serverTimingHeaders($result)
-            );
-        } catch (RuntimeException $exception) {
-            if ($exception->getMessage() === 'Identity already exists for this fingerprint.') {
-                try {
-                    $key = (new OpenPgpKeyInspector())->inspect((string) ($input['public_key'] ?? ''));
-                    $this->sendRedirect(
-                        '/profiles/openpgp-' . strtolower($key['fingerprint']),
-                        'This identity is already linked. Showing its existing profile.',
-                    );
-                    return;
-                } catch (RuntimeException) {
-                    // Keep the normal form error when the submitted key cannot be inspected.
-                }
-            }
-            $this->sendHtml(
-                $this->renderAccountKeyPage(null, $exception->getMessage()),
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
     }
 
     /**
@@ -6037,54 +5709,13 @@ final class Application
         $this->routeServices()->sendRedirect($location, $message, $statusCode, $headers, $activeSection);
     }
 
-    private function composeDraftStorageKey(string $kind, string $threadId = '', string $parentId = ''): string
-    {
-        if ($kind === 'reply') {
-            return 'forum_compose_draft:reply:' . $threadId . ':' . $parentId;
-        }
-
-        return 'forum_compose_draft:' . $kind;
-    }
-
     /**
      * @param array<string, mixed> $result
      * @return list<string>
      */
     private function serverTimingHeaders(array $result): array
     {
-        if (!isset($result['timings']) || !is_array($result['timings'])) {
-            return [];
-        }
-
-        $metrics = [];
-        foreach ($result['timings'] as $name => $duration) {
-            if (!is_string($name) || !preg_match('/^[a-z_][a-z0-9_]*$/', $name)) {
-                continue;
-            }
-
-            if (!is_int($duration) && !is_float($duration)) {
-                continue;
-            }
-
-            $metrics[] = sprintf('%s;dur=%.1f', $name, (float) $duration);
-        }
-
-        if ($metrics === []) {
-            return [];
-        }
-
-        return ['Server-Timing: ' . implode(', ', $metrics)];
-    }
-
-    private function queueComposeDraftClear(string $storageKey): void
-    {
-        setcookie('forum_clear_compose_draft', $storageKey, [
-            'expires' => time() + 300,
-            'path' => '/',
-            'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== '' && $_SERVER['HTTPS'] !== 'off',
-            'httponly' => false,
-            'samesite' => 'Lax',
-        ]);
+        return $this->routeServices()->serverTimingHeaders($result);
     }
 
     private function renderMessagePage(string $title, string $heading, string $message, string $activeSection): string

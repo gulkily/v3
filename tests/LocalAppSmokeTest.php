@@ -12,6 +12,7 @@ use ForumRewrite\Host\FrontController;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\RouteServices;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 use ForumRewrite\View\TemplateRenderer;
@@ -2180,6 +2181,11 @@ PHP;
             'php-fallback',
             false,
             static fn (): ?array => null,
+            $this->repositoryRoot,
+            dirname(__DIR__),
+            null,
+            null,
+            FeatureFlagEvaluator::forApplication($this->repositoryRoot, dirname(__DIR__)),
         );
         $controller = new InstancePageController(
             $routeServices,
@@ -2219,12 +2225,25 @@ PHP;
 
     public function testRequestDataParsesRawFormEncodedBodyWhenPostIsEmpty(): void
     {
-        $application = new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath);
-        $method = new ReflectionMethod(Application::class, 'mergeRequestBodyData');
+        // mergeRequestBodyData() lives on RouteServices now (Phase 2 write-flow
+        // slice) - see docs/plans/codebase_cleanup_audit_findings_v1.md.
+        $routeServices = new RouteServices(
+            $this->databasePath,
+            new TemplateRenderer(dirname(__DIR__) . '/templates'),
+            'php-fallback',
+            false,
+            static fn (): ?array => null,
+            $this->repositoryRoot,
+            dirname(__DIR__),
+            null,
+            null,
+            FeatureFlagEvaluator::forApplication($this->repositoryRoot, dirname(__DIR__)),
+        );
+        $method = new ReflectionMethod(RouteServices::class, 'mergeRequestBodyData');
         $method->setAccessible(true);
 
         $result = $method->invoke(
-            $application,
+            $routeServices,
             ['thread_id' => 'query-thread'],
             'application/x-www-form-urlencoded; charset=UTF-8',
             'thread_id=body-thread&public_key=' . rawurlencode("-----BEGIN PGP PUBLIC KEY BLOCK-----\nfixture\n-----END PGP PUBLIC KEY BLOCK-----")
