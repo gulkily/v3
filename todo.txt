@@ -18,3 +18,8 @@ make another llm/agentic feature for fast scoring using lesser models
 	sending only short instructions and the text of the post
 		for replies, include some context
 	request only a 0-1 in response
+
+html pages should be marked up with the templates used to build them
+	also include pointers to where in the code the template was included
+
+clean up the failing tests
