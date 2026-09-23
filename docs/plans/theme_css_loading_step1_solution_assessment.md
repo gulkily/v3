@@ -4,20 +4,21 @@
 
 The 94 KB `site.css` ships every theme on every page; split theme rules into per-theme files, prioritize the visitor's resolved theme, and load the others in the background so switching remains immediate.
 
-## Option A: Client-resolved active stylesheet with background theme loading
+## Option A: Client-resolved active stylesheet with a cookie startup hint
 
-Keep shared and critical rules in `site.css`, move each explicit theme's variables, overrides, and menu-swatch rules into a fingerprinted `theme-<name>.css`, and have the existing head theme resolver request the resolved active file first.
+Keep shared and critical rules in `site.css`, move each explicit theme's variables, overrides, and menu-swatch rules into a fingerprinted `theme-<name>.css`, and use a cookie hint to front-load the last resolved theme before the client resolver confirms the active file.
 
-Implementation: expose a fingerprinted theme-file manifest to the inline resolver, append the active `<link rel="stylesheet" fetchpriority="high">` before first paint, then append the remaining scoped stylesheets after initial parsing at low priority.
+Implementation: retain `localStorage` as the preference authority, write a `theme-hint` cookie only when its concrete resolved theme changes (including `auto` system-scheme changes), render that hinted `<link rel="stylesheet" fetchpriority="high">`, let the inline resolver correct a mismatch before first paint, then append remaining scoped stylesheets after initial parsing at low priority.
 
 Pros:
 - Matches the existing `localStorage`/system-preference selection before CSS begins loading, including `auto`.
 - Delivers the smallest theme-specific initial payload and preserves instant switching once background requests complete.
-- Keeps theme selection client-side; no new server-side state or request variance.
+- Gives repeat visits a normal high-priority stylesheet link without replacing the client-side preference authority.
 
 Cons:
 - Requires careful source extraction so shared rules and the unscoped light fallback remain in the base stylesheet.
 - A very early switch can precede completion of a background theme request unless the UI accounts for that short window.
+- The cookie can be stale after an out-of-page system-theme change, and HTML caching must account for the hint; the inline resolver must correct either case.
 
 ## Option B: Server-selected active stylesheet backed by a theme cookie
 
@@ -49,6 +50,6 @@ Cons:
 
 ## Recommendation
 
-**Option A.** It directly uses the already-early client-side resolution, avoids a second persistence mechanism, and gives the active theme clear network priority while warming all scoped alternatives for instant later switches.
+**Option A.** Use the cookie only as a resolved-theme startup hint, with `localStorage` remaining authoritative for the user's `auto` or explicit preference. This gives repeat visits a normal high-priority active-theme link, corrects any stale hint in the existing early resolver, and warms all scoped alternatives for instant later switches.
 
 Reply **Approved Step 1** to proceed to the feature description.
