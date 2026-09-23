@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 4,732 lines (~42% smaller)** across 23
+  `Application.php`: **8,212 → 4,653 lines (~43% smaller)** across 23
   route-group extractions so far:
   - `/about` → `AboutPageController`
   - `/instance`, `/backup`, `/downloads/*` → `InstancePageController`
@@ -229,6 +229,22 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   splits along exactly the same "commit-manifest vs. everything else" line
   as the rest of the activity subsystem, not along the `/api/forte_*` vs.
   `/api/get_forte_*` naming.
+
+  With the easy `/api`/`/forte_*` route groups exhausted, swept
+  `Application.php` for methods orphaned by earlier extractions (the
+  "wrapper not noticed until a later pass" pattern already seen a few
+  times this phase) - found and removed 11 confirmed-dead private
+  methods, all thin wrappers around already-static repository/support
+  calls whose real (and only) callers had been extracted in prior slices:
+  `fetchProfilesByUsernameToken`, `fetchVisibleAuthoredThreads`,
+  `fetchVisibleAuthoredPosts`, `hydrateThreadRows`, `normalizeBoardView`,
+  `normalizeBoardSort`, `boardViewOptions`, `boardSortOptions`,
+  `activeBoardOptionLabel`, `repositoryShortCommit`,
+  `hasPendingUserDirectoryProfiles`. Left `mergeResultTimings()` alone
+  despite zero remaining production callers - `tests/ApplicationServerTimingTest.php`
+  reflects into it directly, and retargeting that test to
+  `RouteServices::mergeResultTimings()` is a test-file change, out of
+  scope for this pass (candidate for Phase 3).
 
   Remaining route groups still fully on `Application`: `/forte/activity/`;
   `/api/forte_activity_page`, `/api/forte_commit_detail` (harder tier, see

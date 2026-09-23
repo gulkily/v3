@@ -1787,14 +1787,6 @@ final class Application
     }
 
     /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function fetchProfilesByUsernameToken(string $usernameToken): array
-    {
-        return ProfileRepository::byUsernameToken($this->pdo(), $usernameToken);
-    }
-
-    /**
      * @param array<int, array<string, mixed>> $posts
      * @return array<string, array<string, mixed>>
      */
@@ -1981,33 +1973,6 @@ final class Application
     }
 
     /**
-     * @param list<string> $identityIds
-     * @return array<int, array<string, mixed>>
-     */
-    private function fetchVisibleAuthoredThreads(array $identityIds): array
-    {
-        return AuthoredContentRepository::visibleThreads($this->pdo(), $identityIds);
-    }
-
-    /**
-     * @param list<string> $identityIds
-     * @return array<int, array<string, mixed>>
-     */
-    private function fetchVisibleAuthoredPosts(array $identityIds): array
-    {
-        return AuthoredContentRepository::visiblePosts($this->pdo(), $identityIds);
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $rows
-     * @return array<int, array<string, mixed>>
-     */
-    private function hydrateThreadRows(array $rows): array
-    {
-        return ThreadRowSupport::hydrateThreadRows($rows);
-    }
-
-    /**
      * @param array<string, mixed> $thread
      * @return array<string, mixed>
      */
@@ -2016,51 +1981,12 @@ final class Application
         return ThreadRowSupport::hydrateThreadRow($thread);
     }
 
-    private function normalizeBoardView(string $view): string
-    {
-        return BoardViewOptions::normalizeView($view);
-    }
-
-    private function normalizeBoardSort(string $sort): string
-    {
-        return BoardViewOptions::normalizeSort($sort);
-    }
-
-    /**
-     * @return array<int, array{label:string,href:string,is_active:bool,key:string}>
-     */
-    private function boardViewOptions(string $activeView, string $activeSort): array
-    {
-        return BoardViewOptions::viewOptions($activeView, $activeSort);
-    }
-
-    /**
-     * @return array<int, array{label:string,href:string,is_active:bool,key:string}>
-     */
-    private function boardSortOptions(string $activeView, string $activeSort): array
-    {
-        return BoardViewOptions::sortOptions($activeView, $activeSort);
-    }
-
-    /**
-     * @param array<int, array{label:string,href:string,is_active:bool,key:string}> $options
-     */
-    private function activeBoardOptionLabel(array $options, string $activeKey): string
-    {
-        return BoardViewOptions::activeLabel($options, $activeKey);
-    }
-
     /**
      * @return list<string>
      */
     private function decodeStringList(string $json): array
     {
         return ThreadRowSupport::decodeStringList($json);
-    }
-
-    private function repositoryShortCommit(): string
-    {
-        return ReadModelMetadata::repositoryShortCommit($this->repositoryRoot);
     }
 
     /**
@@ -2552,11 +2478,6 @@ final class Application
     private function viewerPostTagsForPosts(array $postIds, string $tag, string $identityId): array
     {
         return ViewerTagLookup::postTags($this->repositoryRoot, $postIds, $tag, $identityId);
-    }
-
-    private function hasPendingUserDirectoryProfiles(): bool
-    {
-        return ProfileRepository::hasPendingDirectoryProfiles($this->pdo());
     }
 
     /**
