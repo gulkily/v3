@@ -17,16 +17,26 @@ use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\SourcePathValidator;
 use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\Http\AboutPageController;
+use ForumRewrite\Http\ApiTextController;
 use ForumRewrite\Http\BoardPageController;
 use ForumRewrite\Http\BoardViewOptions;
+use ForumRewrite\Http\CodebaseStateController;
+use ForumRewrite\Http\ComposeAndAccountKeyController;
+use ForumRewrite\Http\ForteBoardController;
+use ForumRewrite\Http\ForteProfileController;
+use ForumRewrite\Http\ForteUserDirectoryController;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\LlmExchangesController;
+use ForumRewrite\Http\LobbyController;
 use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Http\RssFeed;
+use ForumRewrite\Http\SourceFileController;
+use ForumRewrite\Http\TagApiController;
 use ForumRewrite\Http\TagsPageController;
 use ForumRewrite\Http\ToolsPageController;
 use ForumRewrite\ReadModel\AuthoredContentRepository;
@@ -36,9 +46,9 @@ use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
-use ForumRewrite\ReadModel\TagGrouping;
 use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\ReadModel\ThreadRowSupport;
+use ForumRewrite\ReadModel\ViewerTagLookup;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -238,17 +248,17 @@ final class Application
         }
 
         if ($path === '/api/apply_thread_tag') {
-            $this->handleApplyThreadTag($method, $query);
+            $this->tagApiController()->applyThreadTag($method, $query);
             return;
         }
 
         if ($path === '/api/apply_post_tag') {
-            $this->handleApplyPostTag($method, $query);
+            $this->tagApiController()->applyPostTag($method, $query);
             return;
         }
 
         if ($path === '/api/set_feature_flag') {
-            $this->handleSetFeatureFlagApi($method, $query);
+            $this->toolsPageController()->submitFeatureFlagApi($method, $query);
             return;
         }
 
@@ -288,22 +298,22 @@ final class Application
         }
 
         if ($path === '/invites/' || $path === '/invites') {
-            $this->sendHtml($this->renderInvitationPage($query), 200);
+            $this->sendHtml($this->lobbyController()->invitation($query), 200);
             return;
         }
 
         if ($path === '/compose/thread' && $method === 'POST') {
-            $this->handleComposeThreadSubmit($query);
+            $this->composeAndAccountKeyController()->submitComposeThread($query);
             return;
         }
 
         if ($path === '/compose/reply' && $method === 'POST') {
-            $this->handleComposeReplySubmit($query);
+            $this->composeAndAccountKeyController()->submitComposeReply($query);
             return;
         }
 
         if (($path === '/account/key/' || $path === '/account/key') && $method === 'POST') {
-            $this->handleAccountKeySubmit($query);
+            $this->composeAndAccountKeyController()->submitAccountKey($query);
             return;
         }
 
@@ -313,7 +323,7 @@ final class Application
         }
 
         if (($path === '/tools/feature-flags/' || $path === '/tools/feature-flags') && $method === 'POST') {
-            $this->handleSetFeatureFlagSubmit($query);
+            $this->toolsPageController()->submitFeatureFlagSubmit($query);
             return;
         }
 
@@ -352,7 +362,7 @@ final class Application
         }
 
         if ($path === '/lobby/' || $path === '/lobby') {
-            $this->sendHtml($this->renderLobby(), 200);
+            $this->sendHtml($this->lobbyController()->lobby(), 200);
             return;
         }
 
@@ -407,17 +417,17 @@ final class Application
         }
 
         if (preg_match('#^/source/current/(.+)$#', $path, $matches) === 1) {
-            $this->handleCurrentSourceFile($matches[1]);
+            $this->sourceFileController()->currentFile($matches[1]);
             return;
         }
 
         if (preg_match('#^/source/blob/([^/]+)/(.+)$#', $path, $matches) === 1) {
-            $this->handleSourceBlob($matches[1], $matches[2]);
+            $this->sourceFileController()->blob($matches[1], $matches[2]);
             return;
         }
 
         if (preg_match('#^/source/commits/([^/]+)$#', $path, $matches) === 1) {
-            $this->handleSourceCommit($matches[1]);
+            $this->sourceFileController()->commit($matches[1]);
             return;
         }
 
@@ -447,7 +457,7 @@ final class Application
         }
 
         if ($path === '/tools/codebase/' || $path === '/tools/codebase') {
-            $this->sendHtml($this->renderCodebaseState(), 200);
+            $this->sendHtml($this->codebaseStateController()->render(), 200);
             return;
         }
 
@@ -457,70 +467,42 @@ final class Application
         }
 
         if ($path === '/compose/thread') {
-            $this->sendHtml(
-                $this->renderComposeThread(
-                    (string) ($query['board_tags'] ?? 'general'),
-                    (string) ($query['subject'] ?? ''),
-                    (string) ($query['body'] ?? '')
-                ),
-                200
-            );
+            $this->sendHtml($this->composeAndAccountKeyController()->composeThread($query), 200);
             return;
         }
 
         if ($path === '/compose/reply') {
-            $this->sendHtml(
-                $this->renderComposeReply((string) ($query['thread_id'] ?? ''), (string) ($query['parent_id'] ?? '')),
-                200
-            );
+            $this->sendHtml($this->composeAndAccountKeyController()->composeReply($query), 200);
             return;
         }
 
         if ($path === '/account/key/' || $path === '/account/key') {
-            $this->sendHtml($this->renderAccountKey(), 200);
+            $this->sendHtml($this->composeAndAccountKeyController()->accountKey(), 200);
             return;
         }
 
         if ($path === '/api/' || $path === '/api') {
-            $this->sendText($this->renderApiIndex(), 200);
+            $this->apiTextController()->index();
             return;
         }
 
         if ($path === '/api/list_index') {
-            $this->sendText($this->renderApiListIndex(), 200);
+            $this->apiTextController()->listIndex();
             return;
         }
 
         if ($path === '/api/get_thread') {
-            $thread = $this->renderApiGetThread((string) ($query['thread_id'] ?? ''));
-            if ($thread === null) {
-                $this->sendText("thread not found\n", 404);
-                return;
-            }
-
-            $this->sendText($thread, 200);
+            $this->apiTextController()->getThread((string) ($query['thread_id'] ?? ''));
             return;
         }
 
         if ($path === '/api/get_post') {
-            $post = $this->renderApiGetPost((string) ($query['post_id'] ?? ''));
-            if ($post === null) {
-                $this->sendText("post not found\n", 404);
-                return;
-            }
-
-            $this->sendText($post, 200);
+            $this->apiTextController()->getPost((string) ($query['post_id'] ?? ''));
             return;
         }
 
         if ($path === '/api/get_profile') {
-            $profile = $this->renderApiGetProfile((string) ($query['profile_slug'] ?? ''));
-            if ($profile === null) {
-                $this->sendText("profile not found\n", 404);
-                return;
-            }
-
-            $this->sendText($profile, 200);
+            $this->apiTextController()->getProfile((string) ($query['profile_slug'] ?? ''));
             return;
         }
 
@@ -545,12 +527,12 @@ final class Application
         }
 
         if ($path === '/api/get_username_claim_cta') {
-            $this->sendText("Generate a browser keypair, choose a username, and bootstrap your identity.\n", 200);
+            $this->apiTextController()->usernameClaimCta();
             return;
         }
 
         if ($path === '/api/read_model_status') {
-            $this->sendText($this->renderReadModelStatus(), 200);
+            $this->sendText($this->codebaseStateController()->apiStatus(), 200);
             return;
         }
 
@@ -577,7 +559,7 @@ final class Application
         }
 
         if (preg_match('#^/forte/?$#', $path) === 1) {
-            $this->sendHtml($this->renderForteBoard(
+            $this->sendHtml($this->forteBoardController()->board(
                 (string) ($query['tag'] ?? ''),
                 (string) ($query['sort'] ?? ''),
                 (string) ($query['dir'] ?? ''),
@@ -588,7 +570,7 @@ final class Application
         }
 
         if ($path === '/forte/users/' || $path === '/forte/users') {
-            $this->sendHtml($this->renderForteUserDirectory(
+            $this->sendHtml($this->forteUserDirectoryController()->directory(
                 (string) ($query['view'] ?? ''),
                 (string) ($query['selected'] ?? ''),
                 (string) ($query['sort'] ?? ''),
@@ -608,7 +590,7 @@ final class Application
         }
 
         if (preg_match('#^/forte/profiles/([^/]+)/?$#', $path, $matches) === 1) {
-            $html = $this->renderForteProfile($matches[1]);
+            $html = $this->forteProfileController()->profile($matches[1]);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -619,7 +601,7 @@ final class Application
         }
 
         if (preg_match('#^/forte/user/([^/]+)/?$#', $path, $matches) === 1) {
-            $html = $this->renderForteUsername($matches[1]);
+            $html = $this->forteProfileController()->username($matches[1]);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -738,188 +720,20 @@ final class Application
         });
     }
 
-    private function renderReadModelStatus(): string
-    {
-        $metadata = [];
-        if (is_file($this->databasePath)) {
-            try {
-                $metadata = $this->readMetadata($this->pdo());
-            } catch (\Throwable) {
-                $metadata = [];
-            }
-        }
-
-        $currentRepositoryHead = ReadModelMetadata::repositoryHead($this->repositoryRoot);
-        $staleMarker = $this->staleMarker()->read();
-        $commitsAvailable = $this->commitsCapabilityAvailable();
-        $status = (($metadata['repository_root'] ?? null) === $this->repositoryRoot)
-            && (($metadata['schema_version'] ?? null) === ReadModelMetadata::SCHEMA_VERSION)
-            && (($metadata['repository_head'] ?? null) === $currentRepositoryHead)
-            && $staleMarker === null
-            && $commitsAvailable
-            ? 'ready'
-            : 'stale';
-        $taskQueue = $this->taskQueueStatus();
-
-        return "status={$status}\n"
-            . 'schema_version=' . ($metadata['schema_version'] ?? 'missing') . "\n"
-            . 'repository_root=' . ($metadata['repository_root'] ?? 'missing') . "\n"
-            . 'repository_head=' . ($metadata['repository_head'] ?? 'missing') . "\n"
-            . 'current_repository_head=' . $currentRepositoryHead . "\n"
-            . 'rebuilt_at=' . ($metadata['rebuilt_at'] ?? 'missing') . "\n"
-            . 'lock_status=' . ($this->executionLock()->isLocked() ? 'locked' : 'unlocked') . "\n"
-            . 'stale_marker=' . ($staleMarker === null ? 'absent' : 'present') . "\n"
-            . 'stale_reason=' . ($staleMarker['reason'] ?? 'none') . "\n"
-            . 'stale_commit_sha=' . ($staleMarker['commit_sha'] ?? 'none') . "\n"
-            . 'rebuild_reason=' . ($metadata['rebuild_reason'] ?? 'missing') . "\n"
-            . 'commits_capability=' . ($commitsAvailable ? 'available' : 'unavailable') . "\n"
-            . 'rebuild_required=' . ($status === 'ready' ? 'no' : 'yes') . "\n"
-            . 'task_queue_status=' . $taskQueue['status'] . "\n"
-            . 'task_queue_queued=' . $taskQueue['queued'] . "\n"
-            . 'task_queue_running=' . $taskQueue['running'] . "\n"
-            . 'task_queue_failed=' . $taskQueue['failed'] . "\n";
-    }
-
     /**
      * @return array<string, mixed>
      */
-    private function collectCodebaseState(): array
+    private function codebaseStateController(): CodebaseStateController
     {
-        $metadata = [];
-        $metadataReadable = false;
-        $rowCounts = [];
-        $databaseExists = is_file($this->databasePath);
-
-        if ($databaseExists) {
-            try {
-                $pdo = $this->pdo();
-                $metadata = $this->readMetadata($pdo);
-                $metadataReadable = true;
-                $rowCounts = $this->readModelRowCounts($pdo);
-            } catch (\Throwable) {
-                $metadata = [];
-                $rowCounts = [];
-            }
-        }
-
-        $currentRepositoryHead = ReadModelMetadata::repositoryHead($this->repositoryRoot);
-        $staleMarker = $this->staleMarker()->read();
-        $readModelReady = $metadataReadable
-            && (($metadata['repository_root'] ?? null) === $this->repositoryRoot)
-            && (($metadata['schema_version'] ?? null) === ReadModelMetadata::SCHEMA_VERSION)
-            && (($metadata['repository_head'] ?? null) === $currentRepositoryHead)
-            && $staleMarker === null;
-        $lockStatus = $this->executionLock()->isLocked() ? 'locked' : 'unlocked';
-
-        $overallStatus = $readModelReady ? 'ready' : 'stale';
-        if ($lockStatus === 'locked') {
-            $overallStatus = 'locked';
-        } elseif (!$databaseExists || !$metadataReadable) {
-            $overallStatus = 'configuration issue';
-        }
-
-        return [
-            'overall_status' => $overallStatus,
-            'app_version' => $this->appVersion(),
-            'repository' => [
-                'root_label' => basename($this->repositoryRoot),
-                'git_exists' => is_dir($this->repositoryRoot . '/.git') ? 'yes' : 'no',
-                'records_exists' => is_dir($this->repositoryRoot . '/records') ? 'yes' : 'no',
-                'head' => $currentRepositoryHead,
-                'short_head' => $this->repositoryShortCommit(),
-                'latest_commit' => $this->latestRepositoryCommit(),
-            ],
-            'read_model' => [
-                'database_label' => basename($this->databasePath),
-                'database_exists' => $databaseExists ? 'yes' : 'no',
-                'metadata_status' => $metadataReadable ? 'readable' : 'unreadable',
-                'schema_version' => $metadata['schema_version'] ?? 'missing',
-                'expected_schema_version' => ReadModelMetadata::SCHEMA_VERSION,
-                'repository_root' => $metadata['repository_root'] ?? 'missing',
-                'repository_head' => $metadata['repository_head'] ?? 'missing',
-                'current_repository_head' => $currentRepositoryHead,
-                'rebuilt_at' => $metadata['rebuilt_at'] ?? 'missing',
-                'rebuild_reason' => $metadata['rebuild_reason'] ?? 'missing',
-                'lock_status' => $lockStatus,
-                'stale_marker' => $staleMarker === null ? 'absent' : 'present',
-                'stale_reason' => $staleMarker['reason'] ?? 'none',
-                'stale_commit_sha' => $staleMarker['commit_sha'] ?? 'none',
-                'row_counts' => $rowCounts,
-            ],
-            'downloads' => [
-                ['href' => '/downloads/repository.tar.gz', 'label' => 'Content repository (.tar.gz)'],
-                ['href' => '/downloads/repository.zip', 'label' => 'Content repository (.zip)'],
-                ['href' => '/downloads/read_model.sqlite3', 'label' => 'SQLite index database'],
-            ],
-        ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function readModelRowCounts(PDO $pdo): array
-    {
-        $counts = [];
-        foreach ([
-            'posts' => 'Posts',
-            'threads' => 'Threads',
-            'profiles' => 'Profiles',
-            'username_routes' => 'Username routes',
-            'activity' => 'Activity rows',
-            'post_analyses' => 'Post analyses',
-            'post_unicode_risks' => 'Unicode risk rows',
-            'post_generated_responses' => 'Generated responses',
-        ] as $table => $label) {
-            if (!$this->readModelTableExists($pdo, $table)) {
-                $counts[$label] = 'missing';
-                continue;
-            }
-
-            $counts[$label] = (string) $pdo->query('SELECT COUNT(*) FROM ' . $table)->fetchColumn();
-        }
-
-        if ($this->readModelTableExists($pdo, 'profiles')) {
-            $counts['Approved profiles'] = (string) $pdo->query('SELECT COUNT(*) FROM profiles WHERE is_approved = 1')->fetchColumn();
-        }
-
-        return $counts;
-    }
-
-    private function readModelTableExists(PDO $pdo, string $table): bool
-    {
-        $stmt = $pdo->prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = :name");
-        $stmt->execute(['name' => $table]);
-
-        return $stmt->fetchColumn() !== false;
-    }
-
-    /**
-     * @return array{short:string,date:string,subject:string}|null
-     */
-    private function latestRepositoryCommit(): ?array
-    {
-        if (!is_dir($this->repositoryRoot . '/.git')) {
-            return null;
-        }
-
-        $command = sprintf('git -C %s log -1 --format=%%h%%x09%%cI%%x09%%s 2>&1', escapeshellarg($this->repositoryRoot));
-        $output = [];
-        $exitCode = 0;
-        exec($command, $output, $exitCode);
-        if ($exitCode !== 0 || $output === []) {
-            return null;
-        }
-
-        $parts = explode("\t", trim(implode("\n", $output)), 3);
-        if (count($parts) !== 3) {
-            return null;
-        }
-
-        return [
-            'short' => $parts[0],
-            'date' => $parts[1],
-            'subject' => $parts[2],
-        ];
+        return new CodebaseStateController(
+            $this->routeServices(),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $this->executionLock(),
+            $this->staleMarker(),
+            $this->commitsCapabilityAvailable(...),
+            $this->taskQueueStatus(...),
+        );
     }
 
     private function tagsPageController(): TagsPageController
@@ -932,194 +746,23 @@ final class Application
         return new BoardPageController($this->routeServices());
     }
 
-    private function renderForteBoard(string $requestedTag = '', string $requestedSortColumn = '', string $requestedSortDir = '', string $requestedSelected = '', string $requestedCreatedPostId = ''): string
+    private function forteBoardController(): ForteBoardController
     {
-        $threads = $this->fetchThreads();
-        $tagGroups = $this->groupThreadsByTag($threads);
-        $selection = $this->resolveForteBoardSelection($threads, $tagGroups, $requestedTag, $requestedSelected);
-        $selectedTag = $selection['tag'];
-        $selectedThreadId = $selection['selectedThreadId'];
-        $sort = $this->resolveForteBoardSort($requestedSortColumn, $requestedSortDir);
-        $threads = $this->applyForteBoardSort($threads, $sort['column'], $sort['dir']);
-
-        // A thread excluded from the board's own listing (identity/
-        // bootstrap/approval-only) still resolves when linked to directly -
-        // fetched on its own here, kept out of $threads/$tagGroups/counts
-        // entirely, and folded only into $contentThreads below so just the
-        // content pane (never the row list or folder tree) can render it.
-        $extraThread = null;
-        if ($selectedThreadId === '' && $requestedSelected !== '') {
-            $extraThread = $this->fetchThreadById($requestedSelected);
-            if ($extraThread !== null) {
-                $selectedThreadId = $requestedSelected;
-            }
-        }
-        $contentThreads = $extraThread !== null ? array_merge($threads, [$extraThread]) : $threads;
-
-        $replyPostsByThreadId = $this->fetchAllThreadReplyPosts();
-        $replyTreesByThreadId = [];
-        $allPostIds = [];
-        $highlightedPostId = '';
-        foreach ($contentThreads as $thread) {
-            $threadId = (string) $thread['root_post_id'];
-            $replyTreesByThreadId[$threadId] = $this->buildReplyTree($replyPostsByThreadId[$threadId] ?? []);
-            $allPostIds[] = $threadId;
-            foreach ($replyPostsByThreadId[$threadId] ?? [] as $replyPost) {
-                $postId = (string) $replyPost['post_id'];
-                $allPostIds[] = $postId;
-                if ($threadId === $selectedThreadId && $postId === $requestedCreatedPostId) {
-                    $highlightedPostId = $postId;
-                }
-            }
-        }
-
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        $viewerIdentityId = $viewerProfile !== null ? (string) $viewerProfile['identity_id'] : '';
-        $viewerLikedThreadIds = $viewerProfile !== null
-            ? $this->viewerThreadTagsForThreads(array_column($contentThreads, 'root_post_id'), 'like', $viewerIdentityId)
-            : [];
-        $viewerFlaggedPostIds = $viewerProfile !== null
-            ? $this->viewerPostTagsForPosts($allPostIds, 'flag', $viewerIdentityId)
-            : [];
-
-        return $this->renderer()->renderStandalonePage(
-            'forte_board.php',
-            [
-                'threads' => $threads,
-                'contentThreads' => $contentThreads,
-                'tagGroups' => $tagGroups,
-                'selectedTag' => $selectedTag,
-                'selectedThreadId' => $selectedThreadId,
-                'sortColumn' => $sort['column'],
-                'sortDir' => $sort['dir'],
-                'replyTreesByThreadId' => $replyTreesByThreadId,
-                'viewerLikedThreadIds' => $viewerLikedThreadIds,
-                'viewerFlaggedPostIds' => $viewerFlaggedPostIds,
-                'highlightedPostId' => $highlightedPostId,
-            ],
-            'Forte',
-            'paned-reader-body',
-            ['/assets/paned_board_reader.js', '/assets/lazy_compose_signing.js', '/assets/thread_reactions.js'],
-            ['/assets/forte.css'],
+        return new ForteBoardController(
+            $this->routeServices(),
+            $this->repositoryRoot,
+            $this->resolveViewerProfileFromIdentityHint(...),
         );
     }
 
-    private function renderForteProfile(string $slug): ?string
+    private function forteProfileController(): ForteProfileController
     {
-        $profile = $this->fetchProfileBySlug($slug);
-        if ($profile === null) {
-            return null;
-        }
-
-        $pageTitleLabel = trim((string) ($profile['username'] ?? ''));
-        if ($pageTitleLabel === '') {
-            $pageTitleLabel = trim((string) ($profile['fallback_label'] ?? ''));
-        }
-        if ($pageTitleLabel === '') {
-            $pageTitleLabel = (string) $profile['profile_slug'];
-        }
-
-        return $this->renderer()->renderStandalonePage(
-            'forte_profile.php',
-            [
-                'profile' => $profile,
-            ],
-            $pageTitleLabel . ' - Forte Profile',
-            'paned-reader-body',
-            [],
-            ['/assets/forte.css'],
-        );
+        return new ForteProfileController($this->routeServices());
     }
 
-    private function renderForteUsername(string $username): ?string
+    private function forteUserDirectoryController(): ForteUserDirectoryController
     {
-        $usernameToken = strtolower($username);
-        $profiles = $this->fetchProfilesByUsernameToken($usernameToken);
-        if ($profiles === []) {
-            return null;
-        }
-
-        $approvedProfiles = array_values(array_filter(
-            $profiles,
-            static fn (array $profile): bool => ((int) $profile['is_approved']) === 1
-        ));
-        $unapprovedProfiles = array_values(array_filter(
-            $profiles,
-            static fn (array $profile): bool => ((int) $profile['is_approved']) !== 1
-        ));
-        $approvedIdentityIds = array_values(array_map(
-            static fn (array $profile): string => (string) $profile['identity_id'],
-            $approvedProfiles
-        ));
-
-        return $this->renderer()->renderStandalonePage(
-            'forte_username.php',
-            [
-                'usernameToken' => $usernameToken,
-                'approvedProfiles' => $approvedProfiles,
-                'unapprovedProfiles' => $unapprovedProfiles,
-                'approvedThreadCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, true),
-                'approvedPostCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, false),
-                'approvedThreads' => $this->fetchVisibleAuthoredThreads($approvedIdentityIds),
-                'approvedPosts' => $this->fetchVisibleAuthoredPosts($approvedIdentityIds),
-            ],
-            'User ' . $usernameToken . ' - Forte',
-            'paned-reader-body',
-            [],
-            ['/assets/forte.css'],
-        );
-    }
-
-    private function renderForteUserDirectory(
-        string $requestedView = '',
-        string $requestedSelected = '',
-        string $requestedSortColumn = '',
-        string $requestedSortDir = '',
-    ): string {
-        $users = $this->fetchApprovedUserDirectoryUsers();
-        $activityBoundsByToken = $this->fetchUserDirectoryActivityBoundsByToken();
-        foreach ($users as &$user) {
-            $bounds = $activityBoundsByToken[$user['username_token']] ?? ['earliest' => '', 'latest' => ''];
-            $user['active_at'] = $bounds['latest'];
-            $user['joined_at'] = $bounds['earliest'];
-        }
-        unset($user);
-
-        $flagsByToken = $this->buildUserDirectoryCategoryFlags($users);
-        $pendingUsers = $this->fetchNeverApprovedPendingUserDirectoryUsers();
-        // Pending users have no per-token activity-bounds query (a separate,
-        // secondary population - see fetchNeverApprovedPendingUserDirectoryUsers()'s
-        // own doc comment) - the Active/Joined columns render blank for
-        // these rows rather than adding a second bounds query for them.
-        foreach ($pendingUsers as &$pendingUser) {
-            $pendingUser['active_at'] = '';
-            $pendingUser['joined_at'] = '';
-        }
-        unset($pendingUser);
-
-        $categoryCounts = $this->buildUserDirectoryCategoryCounts(count($users), $flagsByToken, count($pendingUsers));
-
-        $sort = $this->resolveUserDirectorySort($requestedSortColumn, $requestedSortDir);
-        $users = $this->applyUserDirectorySort($users, $sort['column'], $sort['dir']);
-        $pendingUsers = $this->applyUserDirectorySort($pendingUsers, $sort['column'], $sort['dir']);
-
-        return $this->renderer()->renderStandalonePage(
-            'forte_users.php',
-            [
-                'users' => $users,
-                'flagsByToken' => $flagsByToken,
-                'pendingUsers' => $pendingUsers,
-                'categoryCounts' => $categoryCounts,
-                'selectedCategory' => $this->normalizeUserDirectoryCategory($requestedView),
-                'selectedUserToken' => strtolower(trim($requestedSelected)),
-                'sortColumn' => $sort['column'],
-                'sortDir' => $sort['dir'],
-            ],
-            'Users - Forte',
-            'paned-reader-body',
-            ['/assets/paned_users_reader.js'],
-            ['/assets/forte.css'],
-        );
+        return new ForteUserDirectoryController($this->routeServices());
     }
 
     /**
@@ -1478,7 +1121,7 @@ final class Application
 
     /**
      * Serves the Users pane's detail-pane fragment for one username_token,
-     * reusing the same aggregation `renderForteUsername()` already performs
+     * reusing the same aggregation `ForteProfileController::username()` already performs
      * (approved profiles, visible thread/post counts and rows) rather than
      * a new query, and returning it the same way `handleForteCommitDetail()`
      * returns its manifest fragment: `{status, html}` for client-side
@@ -1554,7 +1197,7 @@ final class Application
     /**
      * The Users pane detail-pane fallback for a token with no approved
      * profile - either genuinely unknown, or a "never approved" pending
-     * user (see `fetchNeverApprovedPendingUserDirectoryUsers()`). Reuses
+     * user (see `ForteUserDirectoryController::fetchNeverApprovedPendingUsers()`). Reuses
      * `$profiles` already fetched by `handleForteUserDetail()` rather than
      * a second query - a caller that already confirmed `$approvedProfiles`
      * is empty need not re-derive that from scratch.
@@ -1650,165 +1293,13 @@ final class Application
         // Every resolvable item links into Forte itself, regardless of
         // board visibility - identity/bootstrap/approval-only threads are
         // excluded from the board's own listing but still resolve when
-        // linked directly (fetchThreadById(), kept out of the list/tag
-        // groups/counts), so there's no more need for classic's own
-        // /posts//threads/ destination as a fallback here.
+        // linked directly (ThreadRepository::byId(), kept out of the
+        // list/tag groups/counts), so there's no more need for classic's
+        // own /posts//threads/ destination as a fallback here.
         return [
             'href' => '/forte?selected=' . $threadId . '&created_post_id=' . $postId . '#post-' . $postId,
             'label' => $postId,
         ];
-    }
-
-    /**
-     * Resolves a requested ?tag= value against real tag names, falling back
-     * to '' (All Threads) when missing or unrecognized.
-     *
-     * @param array<int, array{tag: string, count: int, threads: array}> $tagGroups
-     */
-    private function resolveForteBoardTag(string $requestedTag, array $tagGroups): string
-    {
-        if ($requestedTag === '') {
-            return '';
-        }
-
-        foreach ($tagGroups as $group) {
-            if ($group['tag'] === $requestedTag) {
-                return $requestedTag;
-            }
-        }
-
-        return '';
-    }
-
-    /**
-     * Resolves a requested ?tag=/?selected= pair for server-side rendering,
-     * so a reader following a link (permalink, reply redirect, or a plain
-     * bookmark) sees the right thread/tag in the very first response
-     * instead of a client-side JS correction after the fact.
-     *
-     * `selected` wins on conflict: if the requested thread doesn't carry the
-     * requested tag, the tag drops to '' (All Threads) rather than losing
-     * the selection - this can only happen via a hand-edited URL or a
-     * thread's tags changing after a link was shared, never from normal
-     * clicking (a click can only ever target an already-visible,
-     * correctly-tagged row).
-     *
-     * @param array<int, array<string, mixed>> $threads
-     * @param array<int, array{tag: string, count: int, threads: array}> $tagGroups
-     * @return array{tag: string, selectedThreadId: string}
-     */
-    private function resolveForteBoardSelection(array $threads, array $tagGroups, string $requestedTag, string $requestedSelected): array
-    {
-        $resolvedTag = $this->resolveForteBoardTag($requestedTag, $tagGroups);
-
-        $selectedThreadId = '';
-        foreach ($threads as $thread) {
-            if ((string) $thread['root_post_id'] === $requestedSelected) {
-                $selectedThreadId = $requestedSelected;
-                break;
-            }
-        }
-
-        if ($selectedThreadId === '') {
-            return ['tag' => $resolvedTag, 'selectedThreadId' => ''];
-        }
-
-        if ($resolvedTag !== '') {
-            $group = $this->findTagGroup($tagGroups, $resolvedTag);
-            $threadIdsInGroup = $group !== null ? array_column($group['threads'], 'root_post_id') : [];
-            if (!in_array($selectedThreadId, $threadIdsInGroup, true)) {
-                $resolvedTag = '';
-            }
-        }
-
-        return ['tag' => $resolvedTag, 'selectedThreadId' => $selectedThreadId];
-    }
-
-    /**
-     * Resolves requested ?sort=/?dir= values against the four sortable
-     * columns, falling back to '' (today's default newest-first order,
-     * unrelated to any single column) when the column is missing or
-     * unrecognized. An unrecognized direction falls back to a per-column
-     * default: ascending for text columns, descending for date/replies.
-     *
-     * @return array{column: string, dir: string}
-     */
-    private function resolveForteBoardSort(string $requestedColumn, string $requestedDir): array
-    {
-        $validColumns = ['subject', 'from', 'date', 'replies'];
-        if (!in_array($requestedColumn, $validColumns, true)) {
-            return ['column' => '', 'dir' => ''];
-        }
-
-        $defaultDir = in_array($requestedColumn, ['date', 'replies'], true) ? 'desc' : 'asc';
-        $dir = in_array($requestedDir, ['asc', 'desc'], true) ? $requestedDir : $defaultDir;
-
-        return ['column' => $requestedColumn, 'dir' => $dir];
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $threads
-     * @return array<int, array<string, mixed>>
-     */
-    private function applyForteBoardSort(array $threads, string $column, string $dir): array
-    {
-        if ($column === '') {
-            return $threads;
-        }
-
-        $sorted = $threads;
-        usort($sorted, function (array $left, array $right) use ($column): int {
-            return $this->forteBoardSortValue($left, $column) <=> $this->forteBoardSortValue($right, $column);
-        });
-
-        return $dir === 'desc' ? array_reverse($sorted) : $sorted;
-    }
-
-    private function forteBoardSortValue(array $thread, string $column): string|int
-    {
-        return match ($column) {
-            'subject' => mb_strtolower(ThreadTitle::displayTitle(
-                (string) ($thread['subject'] ?? ''),
-                (string) ($thread['body_preview'] ?? ''),
-                (string) $thread['root_post_id'],
-            )),
-            'from' => mb_strtolower(trim((string) ($thread['author_label'] ?? '')) ?: 'guest'),
-            'date' => (string) ($thread['root_post_created_at'] ?? ''),
-            'replies' => (int) ($thread['reply_count'] ?? 0),
-            default => '',
-        };
-    }
-
-    /**
-     * Nests a flat, sequence_number-ordered post list into a reply tree using
-     * each post's parent_id. A post whose parent_id is missing or not present
-     * in the fetched set (e.g. hidden/deleted) is treated as a root.
-     *
-     * @param array<int, array<string, mixed>> $posts
-     * @return array<int, array{post: array<string, mixed>, children: array}>
-     */
-    private function buildReplyTree(array $posts): array
-    {
-        $nodesByPostId = [];
-        foreach ($posts as $post) {
-            $nodesByPostId[(string) $post['post_id']] = [
-                'post' => $post,
-                'children' => [],
-            ];
-        }
-
-        $roots = [];
-        foreach ($nodesByPostId as $postId => &$node) {
-            $parentId = $node['post']['parent_id'] !== null ? (string) $node['post']['parent_id'] : null;
-            if ($parentId !== null && $parentId !== $postId && isset($nodesByPostId[$parentId])) {
-                $nodesByPostId[$parentId]['children'][] = &$node;
-            } else {
-                $roots[] = &$node;
-            }
-        }
-        unset($node);
-
-        return $roots;
     }
 
     private function renderThread(string $threadId, string $createdPostId = ''): ?string
@@ -2052,91 +1543,29 @@ final class Application
         );
     }
 
-    private function handleCurrentSourceFile(string $encodedRelativePath): void
+    private function sourceFileController(): SourceFileController
     {
-        $relativePath = $this->normalizeSourceRoutePath($encodedRelativePath);
-        if ($relativePath === null || !$this->isValidCanonicalSourcePath($relativePath)) {
-            $this->sendText("Invalid source path\n", 400);
-            return;
-        }
-
-        $contents = $this->readCurrentSourceFile($relativePath);
-        if ($contents === null) {
-            $this->sendText("Source not found\n", 404);
-            return;
-        }
-
-        $this->sendText($contents, 200);
-    }
-
-    private function handleSourceBlob(string $commitSha, string $encodedRelativePath): void
-    {
-        if (!$this->isValidSourceCommitSha($commitSha)) {
-            $this->sendText("Invalid source commit\n", 400);
-            return;
-        }
-
-        $relativePath = $this->normalizeSourceRoutePath($encodedRelativePath);
-        if ($relativePath === null || !$this->isValidCanonicalSourcePath($relativePath)) {
-            $this->sendText("Invalid source path\n", 400);
-            return;
-        }
-
-        $contents = $this->readSourceBlob($commitSha, $relativePath);
-        if ($contents === null) {
-            $this->sendText("Source not found\n", 404);
-            return;
-        }
-
-        $this->sendText($contents, 200);
-    }
-
-    private function handleSourceCommit(string $commitSha): void
-    {
-        if (!$this->isValidSourceCommitSha($commitSha)) {
-            $this->sendText("Invalid source commit\n", 400);
-            return;
-        }
-
-        $details = $this->sourceCommitDetails($commitSha);
-        if ($details === null) {
-            $this->sendText("Commit not found\n", 404);
-            return;
-        }
-
-        $this->sendText($details, 200);
-    }
-
-    private function renderComposeThread(
-        string $boardTags = 'general',
-        string $subject = '',
-        string $body = '',
-    ): string
-    {
-        return $this->renderComposeThreadPage($boardTags, $subject, $body);
-    }
-
-
-    private function toolsPageController(): ToolsPageController
-    {
-        return new ToolsPageController($this->routeServices(), $this->featureFlags());
-    }
-
-    private function renderCodebaseState(): string
-    {
-        return $this->renderPageTemplate(
-            'codebase_state.php',
-            [
-                'state' => $this->collectCodebaseState(),
-                'toolNavOptions' => $this->toolNavOptions('codebase'),
-                'siteName' => SiteConfig::siteName(),
-                'admins' => $this->fetchSeedApprovedUsers(),
-            ],
-            'System State',
-            'tools',
+        return new SourceFileController(
+            $this->routeServices(),
+            $this->repositoryRoot,
+            $this->sourceCommitDetails(...),
         );
     }
 
+    private function toolsPageController(): ToolsPageController
+    {
+        return new ToolsPageController(
+            $this->routeServices(),
+            $this->featureFlags(),
+            $this->resolveViewerProfileFromIdentityHint(...),
+            $this->invalidateFeatureFlagsCache(...),
+        );
+    }
+
+    private function invalidateFeatureFlagsCache(): void
+    {
+        $this->featureFlags = null;
+    }
 
     private function llmExchangesController(): LlmExchangesController
     {
@@ -2154,140 +1583,6 @@ final class Application
         return $this->featureFlags()->isEnabled(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED)
             && $viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
-    }
-
-    private function toolNavOptions(?string $activeKey): array
-    {
-        return ToolsPageSupport::navOptions($activeKey);
-    }
-
-    private function renderComposeThreadPage(
-        string $boardTags = 'general',
-        string $subject = '',
-        string $body = '',
-        ?string $notice = null,
-        ?string $error = null
-    ): string
-    {
-        return $this->renderPageTemplate('compose_thread.php', [
-            'boardTags' => $boardTags !== '' ? $boardTags : 'general',
-            'subject' => $subject,
-            'body' => $body,
-            'notice' => $notice,
-            'error' => $error,
-        ], 'Compose Thread', 'compose', $this->identityScripts());
-    }
-
-    private function renderComposeReply(string $threadId, string $parentId): string
-    {
-        return $this->renderComposeReplyPage($threadId, $parentId);
-    }
-
-    private function renderComposeReplyPage(
-        string $threadId,
-        string $parentId,
-        ?string $notice = null,
-        ?string $error = null,
-        string $boardTags = 'general',
-        string $body = ''
-    ): string
-    {
-        $parentPost = $parentId !== '' ? $this->fetchPost($parentId) : null;
-        if (is_array($parentPost) && $threadId !== '' && (string) ($parentPost['thread_id'] ?? '') !== $threadId) {
-            $parentPost = null;
-        }
-
-        return $this->renderPageTemplate('compose_reply.php', [
-            'threadId' => $threadId,
-            'parentId' => $parentId,
-            'parentPost' => $parentPost,
-            'notice' => $notice,
-            'error' => $error,
-            'boardTags' => $boardTags !== '' ? $boardTags : 'general',
-            'body' => $body,
-        ], 'Compose Reply', 'compose', $this->identityScripts());
-    }
-
-    private function renderAccountKey(): string
-    {
-        return $this->renderAccountKeyPage();
-    }
-
-    private function renderAccountKeyPage(?string $notice = null, ?string $error = null): string
-    {
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-
-        return $this->renderPageTemplate('account_key.php', [
-            'identityHint' => $_COOKIE['identity_hint'] ?? '',
-            'viewerProfile' => $viewerProfile,
-            'notice' => $notice,
-            'error' => $error,
-        ], 'Account Key', 'account', $this->identityScripts(['/assets/private_site_auth.js']));
-    }
-
-    private function renderApiIndex(): string
-    {
-        return "GET /api/\nGET /api/version\nGET /api/auth_challenge\nGET /api/auth_status\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nPOST /api/set_identity_hint\nPOST /api/clear_identity\nPOST /api/authenticate_identity\nPOST /api/prepare_identity\nPOST /api/create_identity\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
-    }
-
-    private function renderApiListIndex(): string
-    {
-        $lines = [];
-        foreach ($this->fetchThreads() as $thread) {
-            $subject = $this->displayThreadTitle($thread);
-            $lines[] = $thread['root_post_id'] . "\t" . $subject . "\t" . $thread['reply_count'];
-        }
-
-        return implode("\n", $lines) . "\n";
-    }
-
-    private function renderApiGetThread(string $threadId): ?string
-    {
-        $thread = $this->fetchThread($threadId);
-        if ($thread === null) {
-            return null;
-        }
-
-        $lines = [
-            'Thread-ID: ' . $thread['root_post_id'],
-            'Created-At: ' . $thread['root_post_created_at'],
-            'Last-Activity-At: ' . $thread['last_activity_at'],
-            'Subject: ' . ($thread['subject'] ?: ''),
-            'Reply-Count: ' . $thread['reply_count'],
-            'Score-Total: ' . $thread['score_total'],
-            'Labels: ' . implode(' ', $thread['thread_labels']),
-            '',
-        ];
-
-        foreach ($this->fetchThreadPosts($threadId) as $post) {
-            $lines[] = '[' . $post['post_id'] . '] ' . trim(str_replace("\n", ' ', $post['body']));
-        }
-
-        return implode("\n", $lines) . "\n";
-    }
-
-    private function renderApiGetPost(string $postId): ?string
-    {
-        $post = $this->fetchPost($postId);
-        if ($post === null) {
-            return null;
-        }
-
-        return "Post-ID: {$post['post_id']}\nCreated-At: {$post['created_at']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\n\n{$post['body']}";
-    }
-
-    private function renderApiGetProfile(string $slug): ?string
-    {
-        $profile = $this->fetchProfileBySlug($slug);
-        if ($profile === null) {
-            return null;
-        }
-
-        $approved = ((int) $profile['is_approved']) === 1 ? 'yes' : 'no';
-
-        $approvedBy = ((int) $profile['is_approved']) === 1 ? (string) ($profile['approved_by_label'] ?? '') : '';
-
-        return "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nApproved-By: {$approvedBy}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n";
     }
 
     private function renderThreadRss(string $threadId): ?string
@@ -2363,6 +1658,11 @@ final class Application
                 $this->routeSource,
                 $this->approvedMembersOnlyEnabled(),
                 $this->authenticatedViewerProfile(...),
+                $this->repositoryRoot,
+                $this->projectRoot,
+                $this->artifactRoot,
+                $this->staticHtmlRoot,
+                $this->featureFlags(),
             );
         }
 
@@ -2410,42 +1710,6 @@ final class Application
     }
 
     /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function fetchThreads(): array
-    {
-        return ThreadRepository::fetchThreads($this->pdo());
-    }
-
-    /**
-     * One thread's own row, in the exact shape `fetchThreads()` produces -
-     * unlike `fetchThreads()`, this doesn't exclude identity/bootstrap/
-     * approval-only threads, since it's for resolving a single thread a
-     * caller already knows the id of (a direct permalink), not for
-     * populating the board's own listing.
-     *
-     * @return array<string, mixed>|null
-     */
-    private function fetchThreadById(string $threadId): ?array
-    {
-        $stmt = $this->pdo()->prepare(
-            'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
-                    threads.reply_count, threads.score_total, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
-                    posts.body AS root_post_body,
-                    posts.post_score_total AS root_post_score_total,
-                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
-             FROM threads
-             JOIN posts ON posts.post_id = threads.root_post_id
-             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
-             WHERE threads.root_post_id = :root_post_id'
-        );
-        $stmt->execute(['root_post_id' => $threadId]);
-        $thread = $stmt->fetch();
-
-        return $thread === false ? null : $this->hydrateThreadRow($thread);
-    }
-
-    /**
      * @return array<string, mixed>|null
      */
     private function fetchThread(string $threadId): ?array
@@ -2489,36 +1753,6 @@ final class Application
         $stmt->execute(['thread_id' => $threadId]);
 
         return $stmt->fetchAll();
-    }
-
-    /**
-     * Bulk equivalent of fetchThreadPosts() across every thread at once (a
-     * single query grouped in PHP), used by the Forte board view so it can
-     * render every thread's reply tree without one query per thread.
-     *
-     * @return array<string, array<int, array<string, mixed>>> posts keyed by thread_id
-     */
-    private function fetchAllThreadReplyPosts(): array
-    {
-        $rows = $this->pdo()->query(
-            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_identity_id, posts.author_label,
-                    posts.created_at, posts.board_tags_json,
-                    posts.author_profile_slug, profiles.username_token AS author_username_token,
-                    COALESCE(profiles.is_approved, 0) AS author_is_approved,
-                    profiles.public_key AS author_public_key
-             FROM posts
-             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
-             WHERE posts.thread_id != posts.post_id
-               AND posts.is_hidden = 0
-             ORDER BY posts.thread_id ASC, posts.sequence_number ASC'
-        )->fetchAll();
-
-        $postsByThreadId = [];
-        foreach ($rows as $row) {
-            $postsByThreadId[(string) $row['thread_id']][] = $row;
-        }
-
-        return $postsByThreadId;
     }
 
     /**
@@ -2905,14 +2139,6 @@ final class Application
     }
 
     /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function fetchSeedApprovedUsers(): array
-    {
-        return ToolsPageSupport::fetchSeedApprovedUsers($this->pdo());
-    }
-
-    /**
      * @param list<string> $identityIds
      * @return array<int, array<string, mixed>>
      */
@@ -2928,14 +2154,6 @@ final class Application
     private function fetchVisibleAuthoredPosts(array $identityIds): array
     {
         return AuthoredContentRepository::visiblePosts($this->pdo(), $identityIds);
-    }
-
-    /**
-     * @param list<string> $identityIds
-     */
-    private function countVisibleAuthoredRows(array $identityIds, bool $threadsOnly): int
-    {
-        return count($threadsOnly ? $this->fetchVisibleAuthoredThreads($identityIds) : $this->fetchVisibleAuthoredPosts($identityIds));
     }
 
     /**
@@ -2988,33 +2206,6 @@ final class Application
     private function activeBoardOptionLabel(array $options, string $activeKey): string
     {
         return BoardViewOptions::activeLabel($options, $activeKey);
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $threads
-     * @return array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>}>
-     */
-    private function groupThreadsByTag(array $threads): array
-    {
-        return TagGrouping::byTag($threads);
-    }
-
-    /**
-     * @param array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>}> $groups
-     * @return array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>,preview_threads:array<int, array<string, mixed>>,href:string,has_more:bool}>
-     */
-    private function limitTagGroupThreads(array $groups, int $limit): array
-    {
-        return TagGrouping::limitPreview($groups, $limit);
-    }
-
-    /**
-     * @param array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>}> $groups
-     * @return array{tag:string,count:int,threads:array<int, array<string, mixed>>}|null
-     */
-    private function findTagGroup(array $groups, string $tag): ?array
-    {
-        return TagGrouping::find($groups, $tag);
     }
 
     /**
@@ -3344,44 +2535,42 @@ final class Application
         );
     }
 
-    private function renderLobby(): string
+    private function lobbyController(): LobbyController
     {
-        return $this->renderPageTemplate(
-            'lobby.php',
-            [
-                'viewerProfile' => $this->lobbyViewerProfile(),
-            ],
-            'Lobby',
-            'lobby',
-            $this->identityScripts(['/assets/private_site_auth.js', '/assets/invite_redemption.js'])
+        return new LobbyController(
+            $this->routeServices(),
+            $this->lobbyViewerProfile(...),
+            $this->authenticatedViewerProfile(...),
         );
     }
 
-    /** @param array<string, mixed> $query */
-    private function renderInvitationPage(array $query): string
+    private function composeAndAccountKeyController(): ComposeAndAccountKeyController
     {
-        $viewer = $this->authenticatedViewerProfile();
-        if ($viewer === null || ((int) ($viewer['is_approved'] ?? 0)) !== 1) {
-            return $this->renderMessagePage('Invitation required', 'Invitation required', 'Only authenticated approved members can generate invitations.', 'account');
-        }
-
-        return $this->renderPageTemplate(
-            'invites.php',
-            ['destination' => trim((string) ($query['destination'] ?? ''))],
-            'Generate invite',
-            'invite',
-            $this->identityScripts(['/assets/invite_issuance.js']),
+        return new ComposeAndAccountKeyController(
+            $this->routeServices(),
+            $this->fetchPost(...),
+            $this->resolveViewerProfileFromIdentityHint(...),
         );
     }
 
-    /**
-     * @param array<string, mixed>|null $viewerProfile
-     */
-    private function viewerCanManageFeatureFlags(?array $viewerProfile): bool
+    private function apiTextController(): ApiTextController
     {
-        return $viewerProfile !== null
-            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
-            && (string) ($viewerProfile['approved_by_label'] ?? '') === 'root';
+        return new ApiTextController(
+            $this->routeServices(),
+            $this->fetchThread(...),
+            $this->fetchThreadPosts(...),
+            $this->fetchPost(...),
+            $this->fetchProfileBySlug(...),
+            $this->displayThreadTitle(...),
+        );
+    }
+
+    private function tagApiController(): TagApiController
+    {
+        return new TagApiController(
+            $this->routeServices(),
+            $this->resolveViewerProfileFromIdentityHint(...),
+        );
     }
 
     /**
@@ -3477,203 +2666,6 @@ final class Application
         return in_array($remoteAddress, ['127.0.0.1', '::1'], true);
     }
 
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function fetchApprovedUserDirectoryUsers(): array
-    {
-        return ProfileRepository::approvedDirectoryUsers($this->pdo());
-    }
-
-    /**
-     * Earliest/latest authored, non-hidden post per approved
-     * `username_token`, rolled up across every identity that shares the
-     * token (mirrors `fetchApprovedUserDirectoryUsers()`'s own `SUM(...)
-     * GROUP BY username_token` rollup) - backs the "Recently Active" filter
-     * category and the Users pane's "Active"/"Joined" columns. No per-user
-     * timestamp is precomputed anywhere else.
-     *
-     * @return array<string, array{earliest: string, latest: string}> username_token => bounds (ISO 8601 UTC)
-     */
-    private function fetchUserDirectoryActivityBoundsByToken(): array
-    {
-        $stmt = $this->pdo()->query(
-            'SELECT profiles.username_token,
-                    MIN(posts.created_at) AS earliest_activity_at,
-                    MAX(posts.created_at) AS latest_activity_at
-             FROM posts
-             JOIN profiles ON profiles.identity_id = posts.author_identity_id
-             WHERE profiles.is_approved = 1 AND posts.is_hidden = 0
-             GROUP BY profiles.username_token'
-        );
-
-        $boundsByToken = [];
-        foreach ($stmt->fetchAll() as $row) {
-            $boundsByToken[(string) $row['username_token']] = [
-                'earliest' => (string) $row['earliest_activity_at'],
-                'latest' => (string) $row['latest_activity_at'],
-            ];
-        }
-
-        return $boundsByToken;
-    }
-
-    /**
-     * Per-user semantic filter flags for the Users pane's category filter
-     * (replaces the alphabetical grouping): "established" needs at least
-     * one thread AND at least one reply, since `post_count` already
-     * includes every reply plus every thread's root post - a thread with no
-     * replies from anyone else still leaves `post_count - thread_count`
-     * at 0. A user can carry multiple flags at once (e.g. no threads yet
-     * but active this week), so these are independent membership flags,
-     * not a mutually-exclusive partition like the old letter buckets.
-     * Reads `active_at` straight off each `$users` row (the caller already
-     * merges the activity bounds in) rather than taking a second lookup.
-     *
-     * @param array<int, array<string, mixed>> $users
-     * @return array<string, array{new: bool, established: bool, no_threads: bool, recently_active: bool}>
-     */
-    private function buildUserDirectoryCategoryFlags(array $users): array
-    {
-        $recentActivityThreshold = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))
-            ->modify('-7 days')
-            ->format('Y-m-d\TH:i:s\Z');
-
-        $flagsByToken = [];
-        foreach ($users as $user) {
-            $token = (string) $user['username_token'];
-            $threadCount = (int) $user['thread_count'];
-            $replyCount = ((int) $user['post_count']) - $threadCount;
-            $established = $threadCount >= 1 && $replyCount >= 1;
-            $activeAt = (string) ($user['active_at'] ?? '');
-
-            $flagsByToken[$token] = [
-                'new' => !$established,
-                'established' => $established,
-                'no_threads' => $threadCount === 0,
-                'recently_active' => $activeAt !== '' && $activeAt >= $recentActivityThreshold,
-            ];
-        }
-
-        return $flagsByToken;
-    }
-
-    /**
-     * Fixed-category counts for the Users pane's filter list, mirroring
-     * `renderForteActivity()`'s `$viewCounts` shape. Category keys are
-     * hyphenated for the URL/DOM (`no-threads`, `recently-active`,
-     * `not-approved`) even though `buildUserDirectoryCategoryFlags()`'s
-     * internal flag keys use underscores - only two need translating.
-     *
-     * @param array<string, array{new: bool, established: bool, no_threads: bool, recently_active: bool}> $flagsByToken
-     * @return list<array{key: string, label: string, count: int}>
-     */
-    private function buildUserDirectoryCategoryCounts(int $totalApprovedCount, array $flagsByToken, int $pendingCount): array
-    {
-        $counts = ['new' => 0, 'established' => 0, 'no_threads' => 0, 'recently_active' => 0];
-        foreach ($flagsByToken as $flags) {
-            foreach ($flags as $key => $value) {
-                if ($value) {
-                    $counts[$key]++;
-                }
-            }
-        }
-
-        return [
-            ['key' => 'all', 'label' => 'All Users', 'count' => $totalApprovedCount],
-            ['key' => 'new', 'label' => 'New', 'count' => $counts['new']],
-            ['key' => 'established', 'label' => 'Established', 'count' => $counts['established']],
-            ['key' => 'no-threads', 'label' => 'No Threads', 'count' => $counts['no_threads']],
-            ['key' => 'recently-active', 'label' => 'Recently Active', 'count' => $counts['recently_active']],
-            ['key' => 'not-approved', 'label' => 'Not Approved', 'count' => $pendingCount],
-        ];
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function fetchPendingUserDirectoryProfiles(): array
-    {
-        return ProfileRepository::pendingDirectoryProfiles($this->pdo());
-    }
-
-    /**
-     * Pending profiles for the Forte Users pane's "Not Approved" category,
-     * rolled up by `username_token` like `fetchApprovedUserDirectoryUsers()`
-     * - but excluding any token that already has an approved profile.
-     * Real data has both: a `username_token` can carry several duplicate
-     * pending submissions (seen locally: "guest" x10), and an already-
-     * approved user can independently accumulate further pending profiles
-     * under their own name (seen locally: "ilyag"). Without the exclusion,
-     * an approved, already-listed user would also turn up under Not
-     * Approved as if they were a second, different pending user - the
-     * opposite of "not visible anywhere else".
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private function fetchNeverApprovedPendingUserDirectoryUsers(): array
-    {
-        $stmt = $this->pdo()->query(
-            'SELECT username_token, MIN(username) AS username,
-                    COUNT(*) AS pending_profile_count,
-                    SUM(thread_count) AS thread_count,
-                    SUM(post_count) AS post_count
-             FROM profiles
-             WHERE is_approved = 0
-               AND username_token NOT IN (SELECT username_token FROM profiles WHERE is_approved = 1)
-             GROUP BY username_token
-             ORDER BY SUM(thread_count) DESC, SUM(post_count) DESC, username_token ASC'
-        );
-
-        return $stmt->fetchAll();
-    }
-
-    /**
-     * @return array{column: string, dir: string}
-     */
-    private function resolveUserDirectorySort(string $requestedColumn, string $requestedDir): array
-    {
-        $validColumns = ['username', 'threads', 'posts', 'active', 'joined'];
-        if (!in_array($requestedColumn, $validColumns, true)) {
-            return ['column' => '', 'dir' => ''];
-        }
-
-        $defaultDir = $requestedColumn === 'username' ? 'asc' : 'desc';
-        $dir = in_array($requestedDir, ['asc', 'desc'], true) ? $requestedDir : $defaultDir;
-
-        return ['column' => $requestedColumn, 'dir' => $dir];
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $users
-     * @return array<int, array<string, mixed>>
-     */
-    private function applyUserDirectorySort(array $users, string $column, string $dir): array
-    {
-        if ($column === '') {
-            return $users;
-        }
-
-        $sorted = $users;
-        usort($sorted, function (array $left, array $right) use ($column): int {
-            return $this->userDirectorySortValue($left, $column) <=> $this->userDirectorySortValue($right, $column);
-        });
-
-        return $dir === 'desc' ? array_reverse($sorted) : $sorted;
-    }
-
-    private function userDirectorySortValue(array $user, string $column): string|int
-    {
-        return match ($column) {
-            'username' => mb_strtolower((string) ($user['username'] ?? '')),
-            'threads' => (int) ($user['thread_count'] ?? 0),
-            'posts' => (int) ($user['post_count'] ?? 0),
-            'active' => (string) ($user['active_at'] ?? ''),
-            'joined' => (string) ($user['joined_at'] ?? ''),
-            default => '',
-        };
-    }
-
     private function viewerHasThreadTag(string $threadId, string $tag, string $identityId): bool
     {
         $repository = new CanonicalRecordRepository($this->repositoryRoot);
@@ -3697,55 +2689,7 @@ final class Application
      */
     private function viewerPostTagsForPosts(array $postIds, string $tag, string $identityId): array
     {
-        $postLookup = array_fill_keys(array_map(static fn (mixed $value): string => (string) $value, $postIds), true);
-        if ($postLookup === []) {
-            return [];
-        }
-
-        $repository = new CanonicalRecordRepository($this->repositoryRoot);
-        $taggedPostIds = [];
-        foreach (glob($this->repositoryRoot . '/records/post-reactions/*.txt') ?: [] as $path) {
-            $record = $repository->loadPostReaction('records/post-reactions/' . basename($path));
-            if (!isset($postLookup[$record->postId]) || $record->authorIdentityId !== $identityId) {
-                continue;
-            }
-
-            if (in_array($tag, $record->tags, true)) {
-                $taggedPostIds[$record->postId] = true;
-            }
-        }
-
-        return $taggedPostIds;
-    }
-
-    /**
-     * Bulk sibling to viewerHasThreadTag(): one glob/scan of thread-label
-     * records covering many threads at once, instead of one scan per thread.
-     *
-     * @param array<int, mixed> $threadIds
-     * @return array<string, true>
-     */
-    private function viewerThreadTagsForThreads(array $threadIds, string $tag, string $identityId): array
-    {
-        $threadLookup = array_fill_keys(array_map(static fn (mixed $value): string => (string) $value, $threadIds), true);
-        if ($threadLookup === []) {
-            return [];
-        }
-
-        $repository = new CanonicalRecordRepository($this->repositoryRoot);
-        $taggedThreadIds = [];
-        foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
-            $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path));
-            if (!isset($threadLookup[$record->threadId]) || $record->authorIdentityId !== $identityId) {
-                continue;
-            }
-
-            if (in_array($tag, $record->labels, true)) {
-                $taggedThreadIds[$record->threadId] = true;
-            }
-        }
-
-        return $taggedThreadIds;
+        return ViewerTagLookup::postTags($this->repositoryRoot, $postIds, $tag, $identityId);
     }
 
     private function hasPendingUserDirectoryProfiles(): bool
@@ -3943,8 +2887,9 @@ final class Application
      * its three sortable columns, falling back to 'date' when the column is
      * missing or unrecognized (today's default order). An unrecognized
      * direction falls back to a per-column default: descending for date,
-     * ascending for the text columns - mirroring `resolveForteBoardSort()`'s
-     * pattern, though Activity always resolves to a real column (never an
+     * ascending for the text columns - mirroring
+     * `ForteBoardController::resolveSort()`'s pattern, though Activity
+     * always resolves to a real column (never an
      * empty-string sentinel) since its cursor needs one to key off.
      *
      * @return array{column: string, direction: string}
@@ -4245,13 +3190,6 @@ final class Application
     private function normalizeActivityView(string $view): string
     {
         return in_array($view, ['all', 'content', 'identity', 'bootstrap', 'approval', 'commits'], true) ? $view : 'all';
-    }
-
-    private function normalizeUserDirectoryCategory(string $category): string
-    {
-        return in_array($category, ['all', 'new', 'established', 'no-threads', 'recently-active', 'not-approved'], true)
-            ? $category
-            : 'all';
     }
 
     private function hasBoardTag(string $boardTagsJson, string $tag): bool
@@ -5106,191 +4044,6 @@ final class Application
     /**
      * @param array<string, mixed> $query
      */
-    private function handleApplyThreadTag(string $method, array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        if ($method !== 'POST') {
-            $this->sendText("method not allowed\n", 405);
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
-        if ($viewerProfile === null) {
-            $this->sendText(
-                "error=You must set an identity hint before applying a tag.\n",
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        $input['author_identity_id'] = (string) $viewerProfile['identity_id'];
-
-        try {
-            $result = $this->writer()->applyThreadTag($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $response = "status=ok\n"
-                . "thread_id={$result['thread_id']}\n"
-                . "tag={$result['tag']}\n"
-                . "score_total={$result['score_total']}\n"
-                . "viewer_identity_id={$result['author_identity_id']}\n"
-                . "viewer_is_approved={$result['viewer_is_approved']}\n"
-                . "wrote_record={$result['wrote_record']}\n";
-            if (isset($result['commit_sha'])) {
-                $response .= "commit_sha={$result['commit_sha']}\n";
-            }
-
-            $this->sendText($response, 200, $this->serverTimingHeaders($result));
-        } catch (RuntimeException $exception) {
-            $this->sendText(
-                "error=" . $exception->getMessage() . "\n",
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleApplyPostTag(string $method, array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        if ($method !== 'POST') {
-            $this->sendText("method not allowed\n", 405);
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
-        if ($viewerProfile === null) {
-            $this->sendText(
-                "error=You must set an identity hint before applying a tag.\n",
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        $input['author_identity_id'] = (string) $viewerProfile['identity_id'];
-
-        try {
-            $result = $this->writer()->applyPostTag($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $response = "status=ok\n"
-                . "post_id={$result['post_id']}\n"
-                . "thread_id={$result['thread_id']}\n"
-                . "tag={$result['tag']}\n"
-                . "post_score_total={$result['post_score_total']}\n"
-                . "approved_flag_count={$result['approved_flag_count']}\n"
-                . "is_hidden={$result['is_hidden']}\n"
-                . "viewer_identity_id={$result['author_identity_id']}\n"
-                . "viewer_is_approved={$result['viewer_is_approved']}\n"
-                . "wrote_record={$result['wrote_record']}\n";
-            if (isset($result['commit_sha'])) {
-                $response .= "commit_sha={$result['commit_sha']}\n";
-            }
-
-            $this->sendText($response, 200, $this->serverTimingHeaders($result));
-        } catch (RuntimeException $exception) {
-            $this->sendText(
-                "error=" . $exception->getMessage() . "\n",
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleSetFeatureFlagApi(string $method, array $query): void
-    {
-        if ($method !== 'POST') {
-            $this->sendText("method not allowed\n", 405);
-            return;
-        }
-
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        if (!$this->viewerCanManageFeatureFlags($viewerProfile)) {
-            $this->sendText("error=Feature flag changes require a root-approved identity.\n", 403);
-            return;
-        }
-
-        try {
-            $result = $this->writer()->setFeatureFlag($this->requestData($query));
-            $this->featureFlags = null;
-            $response = "status=ok\n"
-                . "key={$result['key']}\n"
-                . "site_value={$result['site_value']}\n"
-                . "effective_value={$result['effective_value']}\n"
-                . "source={$result['source']}\n"
-                . "wrote_record={$result['wrote_record']}\n";
-            if (isset($result['commit_sha'])) {
-                $response .= "commit_sha={$result['commit_sha']}\n";
-            }
-
-            $this->sendText($response, 200, $this->serverTimingHeaders($result));
-        } catch (RuntimeException $exception) {
-            $this->sendText("error=" . $exception->getMessage() . "\n", 400);
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleSetFeatureFlagSubmit(array $query): void
-    {
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        if (!$this->viewerCanManageFeatureFlags($viewerProfile)) {
-            $this->sendHtml(
-                $this->renderMessagePage(
-                    'Forbidden',
-                    'Forbidden',
-                    'Feature flag changes require a root-approved identity.',
-                    'tools'
-                ),
-                403
-            );
-            return;
-        }
-
-        try {
-            $result = $this->writer()->setFeatureFlag($this->requestData($query));
-            $this->featureFlags = null;
-            $message = 'Feature flag updated.';
-            if (isset($result['commit_sha'])) {
-                $message .= ' Commit: ' . $result['commit_sha'];
-            }
-
-            $this->sendRedirect('/tools/feature-flags/', $message, activeSection: 'tools');
-        } catch (RuntimeException $exception) {
-            $this->sendHtml(
-                $this->renderMessagePage(
-                    'Feature Flag Error',
-                    'Feature Flag Error',
-                    $exception->getMessage(),
-                    'tools'
-                ),
-                400
-            );
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
     private function handleLinkIdentity(string $method, array $query): void
     {
         $totalStartedAt = hrtime(true);
@@ -5475,78 +4228,12 @@ final class Application
      */
     private function requestData(array $query): array
     {
-        $data = $query;
-
-        foreach ($_POST as $key => $value) {
-            $data[$key] = $value;
-        }
-
-        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-        $rawBody = (string) file_get_contents('php://input');
-
-        return $this->mergeRequestBodyData($data, $contentType, $rawBody);
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    private function mergeRequestBodyData(array $data, string $contentType, string $rawBody): array
-    {
-        $normalizedContentType = strtolower(trim(explode(';', $contentType, 2)[0]));
-        if ($rawBody === '') {
-            return $data;
-        }
-
-        if ($normalizedContentType === 'application/json') {
-            $decoded = json_decode($rawBody, true);
-            if (is_array($decoded)) {
-                foreach ($decoded as $key => $value) {
-                    if (is_string($key)) {
-                        $data[$key] = $value;
-                    }
-                }
-            }
-
-            return $data;
-        }
-
-        if ($normalizedContentType === 'application/x-www-form-urlencoded') {
-            $decoded = [];
-            parse_str($rawBody, $decoded);
-            foreach ($decoded as $key => $value) {
-                if (is_string($key)) {
-                    $data[$key] = $value;
-                }
-            }
-        }
-
-        return $data;
+        return $this->routeServices()->requestData($query);
     }
 
     private function writer(): LocalWriteService
     {
-        return new LocalWriteService(
-            $this->repositoryRoot,
-            $this->databasePath,
-            $this->artifactRoot ?? ($this->projectRoot . '/public'),
-            new CanonicalRecordRepository($this->repositoryRoot),
-            featureFlags: $this->featureFlags(),
-            additionalArtifactRoots: $this->additionalArtifactRoots(),
-        );
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function additionalArtifactRoots(): array
-    {
-        $roots = [];
-        if ($this->staticHtmlRoot !== null && $this->staticHtmlRoot !== ($this->artifactRoot ?? ($this->projectRoot . '/public'))) {
-            $roots[] = $this->staticHtmlRoot;
-        }
-
-        return $roots;
+        return $this->routeServices()->writer();
     }
 
     private function agentIdentityService(): AgentIdentityService
@@ -5885,19 +4572,7 @@ final class Application
      */
     private function mergeResultTimings(array $result, array $timings, int $totalStartedAt): array
     {
-        $existing = isset($result['timings']) && is_array($result['timings'])
-            ? $result['timings']
-            : [];
-
-        if (isset($existing['total']) && (is_int($existing['total']) || is_float($existing['total']))) {
-            $existing['write_total'] = $existing['total'];
-            unset($existing['total']);
-        }
-
-        $result['timings'] = array_merge($timings, $existing);
-        $result['timings']['total'] = $this->elapsedMilliseconds($totalStartedAt);
-
-        return $result;
+        return $this->routeServices()->mergeResultTimings($result, $timings, $totalStartedAt);
     }
 
     /**
@@ -5906,9 +4581,7 @@ final class Application
      */
     private function timingsWithTotal(array $timings, int $totalStartedAt): array
     {
-        $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
-
-        return $timings;
+        return $this->routeServices()->timingsWithTotal($timings, $totalStartedAt);
     }
 
     /**
@@ -5938,7 +4611,7 @@ final class Application
 
     private function elapsedMilliseconds(int $startedAt): float
     {
-        return round((hrtime(true) - $startedAt) / 1000000, 1);
+        return $this->routeServices()->elapsedMilliseconds($startedAt);
     }
 
     /**
@@ -6113,183 +4786,6 @@ final class Application
     /**
      * @param array<string, mixed> $query
      */
-    private function handleComposeThreadSubmit(array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        try {
-            $result = $this->writer()->createThread($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $this->queueComposeDraftClear($this->composeDraftStorageKey('thread'));
-            $returnTo = $this->resolveComposeThreadReturnTo((string) ($input['return_to'] ?? ''), (string) $result['thread_id']);
-            $location = $returnTo
-                . (str_contains($returnTo, '?') ? '&' : '?') . 'created_post_id=' . rawurlencode($result['post_id'])
-                . '&__v=' . rawurlencode($result['commit_sha']);
-            $this->sendRedirect(
-                $location,
-                'Created thread ' . $result['thread_id'] . '. Commit ' . $result['commit_sha'] . '.',
-                303,
-                $this->serverTimingHeaders($result)
-            );
-        } catch (RuntimeException $exception) {
-            $this->sendHtml(
-                $this->renderComposeThreadPage(
-                    (string) ($input['board_tags'] ?? 'general'),
-                    (string) ($input['subject'] ?? ''),
-                    (string) ($input['body'] ?? ''),
-                    null,
-                    $exception->getMessage()
-                ),
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleComposeReplySubmit(array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        $threadId = (string) ($input['thread_id'] ?? '');
-        $parentId = (string) ($input['parent_id'] ?? '');
-
-        try {
-            $result = $this->writer()->createReply($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $this->queueComposeDraftClear($this->composeDraftStorageKey('reply', $threadId, $parentId));
-            $returnTo = $this->resolveComposeReplyReturnTo((string) ($input['return_to'] ?? ''), $result['thread_id']);
-            $location = $returnTo
-                . (str_contains($returnTo, '?') ? '&' : '?') . 'created_post_id=' . rawurlencode($result['post_id'])
-                . '&__v=' . rawurlencode($result['commit_sha'])
-                . '#post-' . rawurlencode($result['post_id']);
-            $this->sendRedirect(
-                $location,
-                'Created reply ' . $result['post_id'] . '. Commit ' . $result['commit_sha'] . '.',
-                303,
-                $this->serverTimingHeaders($result)
-            );
-        } catch (RuntimeException $exception) {
-            $this->sendHtml(
-                $this->renderComposeReplyPage(
-                    $threadId,
-                    $parentId,
-                    null,
-                    $exception->getMessage(),
-                    (string) ($input['board_tags'] ?? 'general'),
-                    (string) ($input['body'] ?? '')
-                ),
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
-    }
-
-    private function resolveComposeReplyReturnTo(string $requestedReturnTo, string $threadId): string
-    {
-        if (preg_match('#^/forte(?:\?(.*))?$#', $requestedReturnTo, $matches) === 1) {
-            return $this->buildForteBoardReturnTo($matches[1] ?? '');
-        }
-
-        return '/threads/' . $threadId;
-    }
-
-    /**
-     * Sibling to resolveComposeReplyReturnTo() for thread creation: there's
-     * no existing thread to whitelist a single-thread return path against
-     * (the thread doesn't exist until after this call), so this only
-     * recognizes the `/forte` board shape and always selects the
-     * newly-created thread there, overriding anything the client sent.
-     */
-    private function resolveComposeThreadReturnTo(string $requestedReturnTo, string $newThreadId): string
-    {
-        if (preg_match('#^/forte(?:\?(.*))?$#', $requestedReturnTo, $matches) === 1) {
-            return $this->buildForteBoardReturnTo($matches[1] ?? '', $newThreadId);
-        }
-
-        return '/threads/' . $newThreadId;
-    }
-
-    /**
-     * Rebuilds a `/forte` return URL from only a fixed, character-restricted
-     * allowlist of query params (`tag`, `selected`), discarding anything else
-     * so the client-supplied query string is never passed through verbatim.
-     * $overrideSelected, when given, wins over any `selected` present in
-     * $requestedQueryString (used by thread creation, where the client can't
-     * know the new thread's ID up front).
-     */
-    private function buildForteBoardReturnTo(string $requestedQueryString, ?string $overrideSelected = null): string
-    {
-        parse_str($requestedQueryString, $params);
-        $allowed = [];
-
-        $tag = (string) ($params['tag'] ?? '');
-        if ($tag !== '' && preg_match('/^[a-z0-9-]+$/', $tag) === 1) {
-            $allowed['tag'] = $tag;
-        }
-
-        $selected = $overrideSelected ?? (string) ($params['selected'] ?? '');
-        if ($selected !== '' && preg_match('/^[A-Za-z0-9._:-]+$/', $selected) === 1) {
-            $allowed['selected'] = $selected;
-        }
-
-        $queryString = http_build_query($allowed);
-
-        return '/forte' . ($queryString !== '' ? '?' . $queryString : '');
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleAccountKeySubmit(array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        try {
-            $result = $this->writer()->linkIdentity($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $location = '/profiles/' . $result['profile_slug'];
-            $this->sendRedirect(
-                $location,
-                'Linked identity ' . $result['identity_id'] . ' as ' . $result['username'] . '. Commit ' . $result['commit_sha'] . '.',
-                303,
-                $this->serverTimingHeaders($result)
-            );
-        } catch (RuntimeException $exception) {
-            if ($exception->getMessage() === 'Identity already exists for this fingerprint.') {
-                try {
-                    $key = (new OpenPgpKeyInspector())->inspect((string) ($input['public_key'] ?? ''));
-                    $this->sendRedirect(
-                        '/profiles/openpgp-' . strtolower($key['fingerprint']),
-                        'This identity is already linked. Showing its existing profile.',
-                    );
-                    return;
-                } catch (RuntimeException) {
-                    // Keep the normal form error when the submitted key cannot be inspected.
-                }
-            }
-            $this->sendHtml(
-                $this->renderAccountKeyPage(null, $exception->getMessage()),
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
     private function handleApproveUserSubmit(string $slug, array $query): void
     {
         $profile = $this->fetchProfileBySlug($slug);
@@ -6442,13 +4938,7 @@ final class Application
      */
     private function readMetadata(PDO $pdo): array
     {
-        $rows = $pdo->query('SELECT key, value FROM metadata')->fetchAll();
-        $metadata = [];
-        foreach ($rows as $row) {
-            $metadata[(string) $row['key']] = (string) $row['value'];
-        }
-
-        return $metadata;
+        return ReadModelMetadata::readMetadata($pdo);
     }
 
     private function notFound(): void
@@ -6466,112 +4956,29 @@ final class Application
         $this->routeServices()->sendText($text, $statusCode, $headers);
     }
 
-    private function normalizeSourceRoutePath(string $encodedRelativePath): ?string
-    {
-        $relativePath = rawurldecode($encodedRelativePath);
-        $relativePath = str_replace('\\', '/', $relativePath);
-        if ($relativePath === '' || str_starts_with($relativePath, '/')) {
-            return null;
-        }
-
-        foreach (explode('/', $relativePath) as $segment) {
-            if ($segment === '' || $segment === '.' || $segment === '..') {
-                return null;
-            }
-        }
-
-        return $relativePath;
-    }
-
     private function isValidCanonicalSourcePath(string $relativePath): bool
     {
-        return $this->isValidCanonicalRecordSourcePath($relativePath)
-            || $this->isValidCanonicalDetachedSignaturePath($relativePath);
+        return SourcePathValidator::isValidCanonicalPath($relativePath);
     }
 
     private function isValidCanonicalRecordSourcePath(string $relativePath): bool
     {
-        if (!str_starts_with($relativePath, 'records/')) {
-            return false;
-        }
-
-        return $relativePath === 'records/instance/public.txt'
-            || $relativePath === 'records/instance/feature-flags.txt'
-            || preg_match('#^records/posts/(?:\d{4}/\d{2}/\d{2}/)?[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
-            || preg_match('#^records/thread-labels/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
-            || preg_match('#^records/post-reactions/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
-            || preg_match('#^records/identity/identity-openpgp-[A-Fa-f0-9]{40}\.txt$#', $relativePath) === 1
-            || preg_match('#^records/approval-seeds/openpgp-[A-Fa-f0-9]{40}\.txt$#', $relativePath) === 1
-            || preg_match('#^records/public-keys/openpgp-[A-Fa-f0-9]{40}\.asc$#', $relativePath) === 1;
+        return SourcePathValidator::isValidCanonicalRecordPath($relativePath);
     }
 
     private function isValidCanonicalDetachedSignaturePath(string $relativePath): bool
     {
-        foreach (['.asc', '.sig'] as $suffix) {
-            if (str_ends_with($relativePath, $suffix)) {
-                return $this->isValidCanonicalRecordSourcePath(substr($relativePath, 0, -strlen($suffix)));
-            }
-        }
-
-        return false;
+        return SourcePathValidator::isValidCanonicalDetachedSignaturePath($relativePath);
     }
 
     private function isValidSourceCommitSha(string $commitSha): bool
     {
-        return preg_match('/^[A-Fa-f0-9]{40}$/', $commitSha) === 1;
-    }
-
-    private function readCurrentSourceFile(string $relativePath): ?string
-    {
-        if (!$this->currentSourcePathExists($relativePath)) {
-            return null;
-        }
-
-        $contents = file_get_contents($this->repositoryRoot . '/' . $relativePath);
-        return $contents === false ? null : $contents;
+        return SourcePathValidator::isValidCommitSha($commitSha);
     }
 
     private function currentSourcePathExists(string $relativePath): bool
     {
-        $repositoryRoot = realpath($this->repositoryRoot);
-        if ($repositoryRoot === false) {
-            return false;
-        }
-
-        $path = $this->repositoryRoot . '/' . $relativePath;
-        $realPath = realpath($path);
-        if ($realPath === false || !is_file($realPath)) {
-            return false;
-        }
-
-        $rootPrefix = rtrim($repositoryRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-        if (!str_starts_with($realPath, $rootPrefix)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    private function readSourceBlob(string $commitSha, string $relativePath): ?string
-    {
-        if (!is_dir($this->repositoryRoot . '/.git')) {
-            return null;
-        }
-
-        $object = $commitSha . ':' . $relativePath;
-        $command = sprintf(
-            'git -C %s show --no-ext-diff %s 2>/dev/null',
-            escapeshellarg($this->repositoryRoot),
-            escapeshellarg($object)
-        );
-        $output = [];
-        $exitCode = 0;
-        exec($command, $output, $exitCode);
-        if ($exitCode !== 0) {
-            return null;
-        }
-
-        return implode("\n", $output) . "\n";
+        return SourcePathValidator::currentPathExists($this->repositoryRoot, $relativePath);
     }
 
     private function sourceCommitDetails(string $commitSha): ?string
@@ -7009,54 +5416,13 @@ final class Application
         $this->routeServices()->sendRedirect($location, $message, $statusCode, $headers, $activeSection);
     }
 
-    private function composeDraftStorageKey(string $kind, string $threadId = '', string $parentId = ''): string
-    {
-        if ($kind === 'reply') {
-            return 'forum_compose_draft:reply:' . $threadId . ':' . $parentId;
-        }
-
-        return 'forum_compose_draft:' . $kind;
-    }
-
     /**
      * @param array<string, mixed> $result
      * @return list<string>
      */
     private function serverTimingHeaders(array $result): array
     {
-        if (!isset($result['timings']) || !is_array($result['timings'])) {
-            return [];
-        }
-
-        $metrics = [];
-        foreach ($result['timings'] as $name => $duration) {
-            if (!is_string($name) || !preg_match('/^[a-z_][a-z0-9_]*$/', $name)) {
-                continue;
-            }
-
-            if (!is_int($duration) && !is_float($duration)) {
-                continue;
-            }
-
-            $metrics[] = sprintf('%s;dur=%.1f', $name, (float) $duration);
-        }
-
-        if ($metrics === []) {
-            return [];
-        }
-
-        return ['Server-Timing: ' . implode(', ', $metrics)];
-    }
-
-    private function queueComposeDraftClear(string $storageKey): void
-    {
-        setcookie('forum_clear_compose_draft', $storageKey, [
-            'expires' => time() + 300,
-            'path' => '/',
-            'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== '' && $_SERVER['HTTPS'] !== 'off',
-            'httponly' => false,
-            'samesite' => 'Lax',
-        ]);
+        return $this->routeServices()->serverTimingHeaders($result);
     }
 
     private function renderMessagePage(string $title, string $heading, string $message, string $activeSection): string
