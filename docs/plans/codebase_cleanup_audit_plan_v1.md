@@ -12,8 +12,9 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 4,653 lines (~43% smaller)** across 23
-  route-group extractions so far:
+  `Application.php`: **8,212 → 3,903 lines (~52% smaller)** across 23
+  route-group extractions so far, plus the activity/commit-manifest
+  data-layer extraction (see below):
   - `/about` → `AboutPageController`
   - `/instance`, `/backup`, `/downloads/*` → `InstancePageController`
   - `/tags/*` → `TagsPageController`
@@ -266,6 +267,35 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   views were - either needs a dedicated shared-service investigation
   first (the same call made for `/activity` earlier), or accepting
   significantly more bound closures per slice than prior extractions.
+
+  Did that dedicated shared-service investigation for the activity/
+  commit-manifest subsystem (the last big deferred piece) once the easy
+  `/api`/`/forte_*` route groups ran out - see
+  `activity_subsystem_extraction_plan_v1.md` for the full dependency-graph
+  writeup. Finding: the *data-fetching* layer (`fetchActivity()` and ~30
+  collaborators) is almost entirely pure, needing only
+  `(pdo, repositoryRoot, databasePath)` - already exactly what
+  `RouteServices` carries - unlike the page-shell route handlers
+  (`renderActivity()` etc.), which really do pull in unrelated subsystems.
+  Extracted the data layer wholesale into a new `ActivityService`
+  (`src/ForumRewrite/Activity/`), with `Application` keeping thin
+  delegating wrappers (same names/signatures) for every method still
+  called elsewhere in the class - including the `fetchActivity(...)`
+  closure `InstancePageController` already held, which needed zero
+  changes as a result. 17 now-fully-unused private helpers were deleted
+  outright rather than wrapped. One real bug found during verification:
+  `RouteServices::activityService()` initially opened its `PDO` eagerly
+  at construction, which broke a test that reflects directly into
+  `activityCommitManifest()` without going through `ensureReadModel()`
+  (that method never actually needs the main read-model connection - git
+  exec plus a separate cache file) - fixed by making `ActivityService`'s
+  own `pdo()` lazy too, matching `RouteServices::pdo()`'s own laziness.
+  Full test suite (487 total) and `BrowserSigningNormalizationTest` (62/62)
+  and `LocalAppSmokeTest` (88/93, 5 pre-existing baseline failures) run
+  clean. The page-shell route handlers themselves
+  (`renderActivity`/`renderActivityRss`/`renderForteActivity`/
+  `handleForteActivityPage`/`handleForteCommitDetail`) are step 2, not yet
+  done - see the sub-plan doc for the recommended order.
 - **Phase 3 (test suite readability):** not started.
 - **Phase 4 (docs hygiene):** not started.
 

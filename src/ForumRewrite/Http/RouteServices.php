@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\Activity\ActivityService;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Host\HtmlResponseCache;
 use ForumRewrite\ReadModel\ReadModelConnection;
@@ -40,6 +41,7 @@ final class RouteServices
 {
     private bool $viewerProfileResolved = false;
     private ?array $resolvedViewerProfile = null;
+    private ?ActivityService $activityService = null;
 
     /**
      * @param \Closure(): (array<string, mixed>|null) $viewerProfileResolver
@@ -61,6 +63,18 @@ final class RouteServices
     public function pdo(): PDO
     {
         return (new ReadModelConnection($this->databasePath))->open();
+    }
+
+    /**
+     * Memoized per request (unlike pdo()/writer()) since ActivityService
+     * owns request-scoped caches (activityCommitManifestCache,
+     * sourceCommitFileManifestCache) that must survive across the many
+     * calls one page render makes into it - see
+     * docs/plans/activity_subsystem_extraction_plan_v1.md.
+     */
+    public function activityService(): ActivityService
+    {
+        return $this->activityService ??= new ActivityService($this->pdo(...), $this->repositoryRoot, $this->databasePath);
     }
 
     public function writer(): LocalWriteService
