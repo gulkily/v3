@@ -20,10 +20,12 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\Http\AboutPageController;
+use ForumRewrite\Http\BoardPageController;
 use ForumRewrite\Http\BoardViewOptions;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
+use ForumRewrite\Http\RssFeed;
 use ForumRewrite\Http\TagsPageController;
 use ForumRewrite\ReadModel\AuthoredContentRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
@@ -328,12 +330,12 @@ final class Application
 
         if ($path === '/' || $path === '' || $path === '/threads/' || $path === '/threads') {
             if (($query['format'] ?? null) === 'rss') {
-                $this->sendXml($this->renderBoardRss(), 200);
+                $this->sendXml($this->boardPageController()->rss(), 200);
                 return;
             }
 
             $this->sendHtml(
-                $this->renderBoard(
+                $this->boardPageController()->board(
                     (string) ($query['view'] ?? 'liked'),
                     (string) ($query['sort'] ?? 'newest'),
                 ),
@@ -918,36 +920,14 @@ final class Application
         ];
     }
 
-    private function renderBoard(string $view, string $sort): string
-    {
-        $view = $this->normalizeBoardView($view);
-        $sort = $this->normalizeBoardSort($sort);
-        $viewOptions = $this->boardViewOptions($view, $sort);
-        $sortOptions = $this->boardSortOptions($view, $sort);
-
-        return $this->renderPageTemplate(
-            'board.php',
-            [
-                'threads' => $this->fetchBoardThreads($view, $sort),
-                'view' => $view,
-                'sort' => $sort,
-                'viewOptions' => $viewOptions,
-                'sortOptions' => $sortOptions,
-                'viewLabel' => $this->activeBoardOptionLabel($viewOptions, $view),
-                'sortLabel' => $this->activeBoardOptionLabel($sortOptions, $sort),
-            ],
-            'Board',
-            'board',
-            [
-                '/assets/inline_reply_form.js',
-                '/assets/lazy_compose_signing.js',
-            ],
-        );
-    }
-
     private function tagsPageController(): TagsPageController
     {
         return new TagsPageController($this->routeServices());
+    }
+
+    private function boardPageController(): BoardPageController
+    {
+        return new BoardPageController($this->routeServices());
     }
 
     private function renderForteBoard(string $requestedTag = '', string $requestedSortColumn = '', string $requestedSortDir = '', string $requestedSelected = '', string $requestedCreatedPostId = ''): string
@@ -2471,17 +2451,6 @@ final class Application
         return "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nApproved-By: {$approvedBy}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n";
     }
 
-    private function renderBoardRss(): string
-    {
-        $items = [];
-        foreach ($this->fetchThreads() as $thread) {
-            $title = $this->displayThreadTitle($thread);
-            $items[] = $this->renderRssItem($title, '/threads/' . $thread['root_post_id'], $thread['body_preview'], (string) $thread['last_activity_at']);
-        }
-
-        return $this->renderRssFeed('Board', '/?format=rss', $items);
-    }
-
     private function renderThreadRss(string $threadId): ?string
     {
         $thread = $this->fetchThread($threadId);
@@ -2635,23 +2604,6 @@ final class Application
         $thread = $stmt->fetch();
 
         return $thread === false ? null : $this->hydrateThreadRow($thread);
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function fetchBoardThreads(string $view, string $sort): array
-    {
-        $view = $this->normalizeBoardView($view);
-        $sort = $this->normalizeBoardSort($sort);
-        $threads = array_values(array_filter(
-            $this->fetchThreads(),
-            fn (array $thread): bool => $this->matchesBoardView($thread, $view)
-        ));
-
-        usort($threads, fn (array $left, array $right): int => $this->compareBoardThreads($left, $right, $sort));
-
-        return $threads;
     }
 
     /**
@@ -3197,96 +3149,6 @@ final class Application
     private function activeBoardOptionLabel(array $options, string $activeKey): string
     {
         return BoardViewOptions::activeLabel($options, $activeKey);
-    }
-
-    /**
-     * @param array<string, mixed> $thread
-     */
-    private function matchesBoardView(array $thread, string $view): bool
-    {
-        return match ($view) {
-            'all' => true,
-            'liked' => in_array('like', $thread['thread_labels'] ?? [], true)
-                && ((int) ($thread['root_post_score_total'] ?? 0)) >= 0,
-            default => true,
-        };
-    }
-
-    /**
-     * @param array<string, mixed> $left
-     * @param array<string, mixed> $right
-     */
-    private function compareBoardThreads(array $left, array $right, string $sort): int
-    {
-        $pinnedCompare = $this->compareBoardThreadPinnedStatus($left, $right);
-        if ($pinnedCompare !== 0) {
-            return $pinnedCompare;
-        }
-
-        return match ($sort) {
-            'oldest' => $this->compareBoardThreadOldest($left, $right),
-            'top' => $this->compareBoardThreadTop($left, $right),
-            default => $this->compareBoardThreadNewest($left, $right),
-        };
-    }
-
-    /**
-     * @param array<string, mixed> $left
-     * @param array<string, mixed> $right
-     */
-    private function compareBoardThreadPinnedStatus(array $left, array $right): int
-    {
-        return ((int) $this->isPinnedThread($right)) <=> ((int) $this->isPinnedThread($left));
-    }
-
-    /**
-     * @param array<string, mixed> $thread
-     */
-    private function isPinnedThread(array $thread): bool
-    {
-        return in_array('pinned', $thread['thread_labels'] ?? [], true);
-    }
-
-    /**
-     * @param array<string, mixed> $left
-     * @param array<string, mixed> $right
-     */
-    private function compareBoardThreadNewest(array $left, array $right): int
-    {
-        $createdCompare = strcmp((string) $right['root_post_created_at'], (string) $left['root_post_created_at']);
-        if ($createdCompare !== 0) {
-            return $createdCompare;
-        }
-
-        return strcmp((string) $right['root_post_id'], (string) $left['root_post_id']);
-    }
-
-    /**
-     * @param array<string, mixed> $left
-     * @param array<string, mixed> $right
-     */
-    private function compareBoardThreadOldest(array $left, array $right): int
-    {
-        $createdCompare = strcmp((string) $left['root_post_created_at'], (string) $right['root_post_created_at']);
-        if ($createdCompare !== 0) {
-            return $createdCompare;
-        }
-
-        return strcmp((string) $left['root_post_id'], (string) $right['root_post_id']);
-    }
-
-    /**
-     * @param array<string, mixed> $left
-     * @param array<string, mixed> $right
-     */
-    private function compareBoardThreadTop(array $left, array $right): int
-    {
-        $scoreCompare = ((int) $right['score_total']) <=> ((int) $left['score_total']);
-        if ($scoreCompare !== 0) {
-            return $scoreCompare;
-        }
-
-        return $this->compareBoardThreadNewest($left, $right);
     }
 
     /**
@@ -4533,28 +4395,12 @@ final class Application
 
     private function renderRssFeed(string $title, string $link, array $items): string
     {
-        return '<?xml version="1.0" encoding="UTF-8"?>'
-            . '<rss version="2.0"><channel><title>' . $this->escapeXml($title) . '</title>'
-            . '<link>' . $this->escapeXml('http://localhost' . $link) . '</link>'
-            . '<description>' . $this->escapeXml($title . ' feed') . '</description>'
-            . implode('', $items)
-            . '</channel></rss>';
+        return RssFeed::feed($title, $link, $items);
     }
 
     private function renderRssItem(string $title, string $link, string $description, ?string $publishedAt = null): string
     {
-        $item = '<item><title>' . $this->escapeXml($title) . '</title>'
-            . '<link>' . $this->escapeXml('http://localhost' . $link) . '</link>'
-            . '<description>' . $this->escapeXml($description) . '</description>';
-
-        if ($publishedAt !== null && $publishedAt !== '') {
-            $timestamp = strtotime($publishedAt);
-            if ($timestamp !== false) {
-                $item .= '<pubDate>' . $this->escapeXml(gmdate(DATE_RSS, $timestamp)) . '</pubDate>';
-            }
-        }
-
-        return $item . '</item>';
+        return RssFeed::item($title, $link, $description, $publishedAt);
     }
 
     private function normalizeActivityView(string $view): string
@@ -7371,11 +7217,6 @@ final class Application
             'httponly' => false,
             'samesite' => 'Lax',
         ]);
-    }
-
-    private function escapeXml(string $value): string
-    {
-        return htmlspecialchars($value, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
     private function renderMessagePage(string $title, string $heading, string $message, string $activeSection): string
