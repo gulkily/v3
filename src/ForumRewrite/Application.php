@@ -258,7 +258,7 @@ final class Application
         }
 
         if ($path === '/api/set_feature_flag') {
-            $this->handleSetFeatureFlagApi($method, $query);
+            $this->toolsPageController()->submitFeatureFlagApi($method, $query);
             return;
         }
 
@@ -323,7 +323,7 @@ final class Application
         }
 
         if (($path === '/tools/feature-flags/' || $path === '/tools/feature-flags') && $method === 'POST') {
-            $this->handleSetFeatureFlagSubmit($query);
+            $this->toolsPageController()->submitFeatureFlagSubmit($query);
             return;
         }
 
@@ -1554,7 +1554,17 @@ final class Application
 
     private function toolsPageController(): ToolsPageController
     {
-        return new ToolsPageController($this->routeServices(), $this->featureFlags());
+        return new ToolsPageController(
+            $this->routeServices(),
+            $this->featureFlags(),
+            $this->resolveViewerProfileFromIdentityHint(...),
+            $this->invalidateFeatureFlagsCache(...),
+        );
+    }
+
+    private function invalidateFeatureFlagsCache(): void
+    {
+        $this->featureFlags = null;
     }
 
     private function llmExchangesController(): LlmExchangesController
@@ -2561,16 +2571,6 @@ final class Application
             $this->routeServices(),
             $this->resolveViewerProfileFromIdentityHint(...),
         );
-    }
-
-    /**
-     * @param array<string, mixed>|null $viewerProfile
-     */
-    private function viewerCanManageFeatureFlags(?array $viewerProfile): bool
-    {
-        return $viewerProfile !== null
-            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
-            && (string) ($viewerProfile['approved_by_label'] ?? '') === 'root';
     }
 
     /**
@@ -4039,82 +4039,6 @@ final class Application
         }
 
         return $this->agentReplyFulfillmentService()->publishForPost($post);
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleSetFeatureFlagApi(string $method, array $query): void
-    {
-        if ($method !== 'POST') {
-            $this->sendText("method not allowed\n", 405);
-            return;
-        }
-
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        if (!$this->viewerCanManageFeatureFlags($viewerProfile)) {
-            $this->sendText("error=Feature flag changes require a root-approved identity.\n", 403);
-            return;
-        }
-
-        try {
-            $result = $this->writer()->setFeatureFlag($this->requestData($query));
-            $this->featureFlags = null;
-            $response = "status=ok\n"
-                . "key={$result['key']}\n"
-                . "site_value={$result['site_value']}\n"
-                . "effective_value={$result['effective_value']}\n"
-                . "source={$result['source']}\n"
-                . "wrote_record={$result['wrote_record']}\n";
-            if (isset($result['commit_sha'])) {
-                $response .= "commit_sha={$result['commit_sha']}\n";
-            }
-
-            $this->sendText($response, 200, $this->serverTimingHeaders($result));
-        } catch (RuntimeException $exception) {
-            $this->sendText("error=" . $exception->getMessage() . "\n", 400);
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleSetFeatureFlagSubmit(array $query): void
-    {
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        if (!$this->viewerCanManageFeatureFlags($viewerProfile)) {
-            $this->sendHtml(
-                $this->renderMessagePage(
-                    'Forbidden',
-                    'Forbidden',
-                    'Feature flag changes require a root-approved identity.',
-                    'tools'
-                ),
-                403
-            );
-            return;
-        }
-
-        try {
-            $result = $this->writer()->setFeatureFlag($this->requestData($query));
-            $this->featureFlags = null;
-            $message = 'Feature flag updated.';
-            if (isset($result['commit_sha'])) {
-                $message .= ' Commit: ' . $result['commit_sha'];
-            }
-
-            $this->sendRedirect('/tools/feature-flags/', $message, activeSection: 'tools');
-        } catch (RuntimeException $exception) {
-            $this->sendHtml(
-                $this->renderMessagePage(
-                    'Feature Flag Error',
-                    'Feature Flag Error',
-                    $exception->getMessage(),
-                    'tools'
-                ),
-                400
-            );
-        }
     }
 
     /**

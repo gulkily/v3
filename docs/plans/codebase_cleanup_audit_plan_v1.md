@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 5,522 lines (~33% smaller)** across 16
+  `Application.php`: **8,212 → 5,447 lines (~34% smaller)** across 17
   route-group extractions so far:
   - `/about` → `AboutPageController`
   - `/instance`, `/backup`, `/downloads/*` → `InstancePageController`
@@ -33,6 +33,8 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
     `/api/get_profile`, `/api/get_username_claim_cta` (the plain-text `/api`
     endpoints) → `ApiTextController`
   - `/api/apply_thread_tag`, `/api/apply_post_tag` → `TagApiController`
+  - `/api/set_feature_flag`, `/tools/feature-flags/` POST → joined the
+    existing `ToolsPageController`
 
   Shared query/support layer built up alongside the route extractions
   (`src/ForumRewrite/ReadModel/`, `src/ForumRewrite/Http/`, and
@@ -100,19 +102,31 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   worth rechecking other `/api` write endpoints for the same shape before
   assuming the whole group is uniformly hard.
 
+  Followed up with `/api/set_feature_flag` (its predicted-cheap next
+  candidate) plus its GET-page sibling's POST twin, `/tools/feature-flags/`
+  form submit - both are the write side of a page `ToolsPageController`
+  already owns, and `viewerCanManageFeatureFlags()` had exactly these two
+  callers, so it moved wholesale rather than becoming a closure. The one
+  wrinkle: both handlers reset Application's own memoized
+  `$this->featureFlags` cache after a successful write
+  (`invalidateFeatureFlagsCache()`, a new one-line bound closure) -
+  preserved exactly as-is rather than questioned, since changing it would
+  be a behavior change outside this pass's scope.
+
   Remaining route groups still fully on `Application`: `/forte/activity/`
   and the `/api/forte_*`/`/api/get_forte_*` AJAX endpoints; `/activity`
   (harder tier, see above); the single-thread view (`/threads/{id}`,
   `/posts/{id}`); `/api/version` (see above); and the rest of `/api`
-  (~25 auth/identity/write endpoints - `/api/set_feature_flag`,
-  `/api/link_identity`, `/api/set_identity_hint`, `/api/authenticate_identity`,
+  (~24 auth/identity/write endpoints - `/api/link_identity`,
+  `/api/set_identity_hint`, `/api/authenticate_identity`,
   `/api/create_identity`/`/api/prepare_identity`, `/api/analyze_post`,
   `/api/generate_agent_reply`, `/api/codex_handoff*`, `/api/approve_user`,
   `/api/prepare_approval`/`/api/create_prepared_approval`,
   `/api/prepare_invitation`/`/api/create_prepared_invitation`,
   `/api/prepare_invitation_redemption`, and the direct
   create-thread/create-reply/create-prepared-post trio - some of which may
-  turn out as cheap as the tag pair above once individually checked).
+  turn out as cheap as the tag pair and feature-flag pair above once
+  individually checked).
 
   Checked both `/forte/activity/` and the single-thread view
   (`/threads/{id}`) as candidate next slices: both are in the harder
