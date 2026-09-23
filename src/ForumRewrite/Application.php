@@ -17,6 +17,7 @@ use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\SourcePathValidator;
 use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\Http\AboutPageController;
@@ -32,6 +33,7 @@ use ForumRewrite\Http\LobbyController;
 use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Http\RssFeed;
+use ForumRewrite\Http\SourceFileController;
 use ForumRewrite\Http\TagsPageController;
 use ForumRewrite\Http\ToolsPageController;
 use ForumRewrite\ReadModel\AuthoredContentRepository;
@@ -412,17 +414,17 @@ final class Application
         }
 
         if (preg_match('#^/source/current/(.+)$#', $path, $matches) === 1) {
-            $this->handleCurrentSourceFile($matches[1]);
+            $this->sourceFileController()->currentFile($matches[1]);
             return;
         }
 
         if (preg_match('#^/source/blob/([^/]+)/(.+)$#', $path, $matches) === 1) {
-            $this->handleSourceBlob($matches[1], $matches[2]);
+            $this->sourceFileController()->blob($matches[1], $matches[2]);
             return;
         }
 
         if (preg_match('#^/source/commits/([^/]+)$#', $path, $matches) === 1) {
-            $this->handleSourceCommit($matches[1]);
+            $this->sourceFileController()->commit($matches[1]);
             return;
         }
 
@@ -1606,59 +1608,13 @@ final class Application
         );
     }
 
-    private function handleCurrentSourceFile(string $encodedRelativePath): void
+    private function sourceFileController(): SourceFileController
     {
-        $relativePath = $this->normalizeSourceRoutePath($encodedRelativePath);
-        if ($relativePath === null || !$this->isValidCanonicalSourcePath($relativePath)) {
-            $this->sendText("Invalid source path\n", 400);
-            return;
-        }
-
-        $contents = $this->readCurrentSourceFile($relativePath);
-        if ($contents === null) {
-            $this->sendText("Source not found\n", 404);
-            return;
-        }
-
-        $this->sendText($contents, 200);
-    }
-
-    private function handleSourceBlob(string $commitSha, string $encodedRelativePath): void
-    {
-        if (!$this->isValidSourceCommitSha($commitSha)) {
-            $this->sendText("Invalid source commit\n", 400);
-            return;
-        }
-
-        $relativePath = $this->normalizeSourceRoutePath($encodedRelativePath);
-        if ($relativePath === null || !$this->isValidCanonicalSourcePath($relativePath)) {
-            $this->sendText("Invalid source path\n", 400);
-            return;
-        }
-
-        $contents = $this->readSourceBlob($commitSha, $relativePath);
-        if ($contents === null) {
-            $this->sendText("Source not found\n", 404);
-            return;
-        }
-
-        $this->sendText($contents, 200);
-    }
-
-    private function handleSourceCommit(string $commitSha): void
-    {
-        if (!$this->isValidSourceCommitSha($commitSha)) {
-            $this->sendText("Invalid source commit\n", 400);
-            return;
-        }
-
-        $details = $this->sourceCommitDetails($commitSha);
-        if ($details === null) {
-            $this->sendText("Commit not found\n", 404);
-            return;
-        }
-
-        $this->sendText($details, 200);
+        return new SourceFileController(
+            $this->routeServices(),
+            $this->repositoryRoot,
+            $this->sourceCommitDetails(...),
+        );
     }
 
     private function renderComposeThread(
@@ -5621,112 +5577,29 @@ final class Application
         $this->routeServices()->sendText($text, $statusCode, $headers);
     }
 
-    private function normalizeSourceRoutePath(string $encodedRelativePath): ?string
-    {
-        $relativePath = rawurldecode($encodedRelativePath);
-        $relativePath = str_replace('\\', '/', $relativePath);
-        if ($relativePath === '' || str_starts_with($relativePath, '/')) {
-            return null;
-        }
-
-        foreach (explode('/', $relativePath) as $segment) {
-            if ($segment === '' || $segment === '.' || $segment === '..') {
-                return null;
-            }
-        }
-
-        return $relativePath;
-    }
-
     private function isValidCanonicalSourcePath(string $relativePath): bool
     {
-        return $this->isValidCanonicalRecordSourcePath($relativePath)
-            || $this->isValidCanonicalDetachedSignaturePath($relativePath);
+        return SourcePathValidator::isValidCanonicalPath($relativePath);
     }
 
     private function isValidCanonicalRecordSourcePath(string $relativePath): bool
     {
-        if (!str_starts_with($relativePath, 'records/')) {
-            return false;
-        }
-
-        return $relativePath === 'records/instance/public.txt'
-            || $relativePath === 'records/instance/feature-flags.txt'
-            || preg_match('#^records/posts/(?:\d{4}/\d{2}/\d{2}/)?[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
-            || preg_match('#^records/thread-labels/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
-            || preg_match('#^records/post-reactions/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
-            || preg_match('#^records/identity/identity-openpgp-[A-Fa-f0-9]{40}\.txt$#', $relativePath) === 1
-            || preg_match('#^records/approval-seeds/openpgp-[A-Fa-f0-9]{40}\.txt$#', $relativePath) === 1
-            || preg_match('#^records/public-keys/openpgp-[A-Fa-f0-9]{40}\.asc$#', $relativePath) === 1;
+        return SourcePathValidator::isValidCanonicalRecordPath($relativePath);
     }
 
     private function isValidCanonicalDetachedSignaturePath(string $relativePath): bool
     {
-        foreach (['.asc', '.sig'] as $suffix) {
-            if (str_ends_with($relativePath, $suffix)) {
-                return $this->isValidCanonicalRecordSourcePath(substr($relativePath, 0, -strlen($suffix)));
-            }
-        }
-
-        return false;
+        return SourcePathValidator::isValidCanonicalDetachedSignaturePath($relativePath);
     }
 
     private function isValidSourceCommitSha(string $commitSha): bool
     {
-        return preg_match('/^[A-Fa-f0-9]{40}$/', $commitSha) === 1;
-    }
-
-    private function readCurrentSourceFile(string $relativePath): ?string
-    {
-        if (!$this->currentSourcePathExists($relativePath)) {
-            return null;
-        }
-
-        $contents = file_get_contents($this->repositoryRoot . '/' . $relativePath);
-        return $contents === false ? null : $contents;
+        return SourcePathValidator::isValidCommitSha($commitSha);
     }
 
     private function currentSourcePathExists(string $relativePath): bool
     {
-        $repositoryRoot = realpath($this->repositoryRoot);
-        if ($repositoryRoot === false) {
-            return false;
-        }
-
-        $path = $this->repositoryRoot . '/' . $relativePath;
-        $realPath = realpath($path);
-        if ($realPath === false || !is_file($realPath)) {
-            return false;
-        }
-
-        $rootPrefix = rtrim($repositoryRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-        if (!str_starts_with($realPath, $rootPrefix)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    private function readSourceBlob(string $commitSha, string $relativePath): ?string
-    {
-        if (!is_dir($this->repositoryRoot . '/.git')) {
-            return null;
-        }
-
-        $object = $commitSha . ':' . $relativePath;
-        $command = sprintf(
-            'git -C %s show --no-ext-diff %s 2>/dev/null',
-            escapeshellarg($this->repositoryRoot),
-            escapeshellarg($object)
-        );
-        $output = [];
-        $exitCode = 0;
-        exec($command, $output, $exitCode);
-        if ($exitCode !== 0) {
-            return null;
-        }
-
-        return implode("\n", $output) . "\n";
+        return SourcePathValidator::currentPathExists($this->repositoryRoot, $relativePath);
     }
 
     private function sourceCommitDetails(string $commitSha): ?string
