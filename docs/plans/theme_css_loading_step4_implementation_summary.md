@@ -44,3 +44,14 @@
   - `php tests/run.php LocalAppSmokeTest::testLayoutUsesOnlyAValidatedThemeHintForTheInitialStylesheet ThemeRegistryTest` — passed.
 - Notes:
   - Cookie lifetime is one year, path is site-wide, and `Secure` is added on HTTPS.
+
+## Stage 5 - Warm alternate themes and preserve responsive switching
+- Changes:
+  - Added idle-time, low-priority loading for every non-active resolved theme stylesheet.
+  - Added stylesheet readiness tracking; a selection promotes an unfinished asset and waits without switching to incomplete styling.
+  - Preserved immediate application for already warm/cached themes and kept Auto/System changes synchronized while their asset warms.
+- Verification:
+  - `node -c public/assets/theme_toggle.js`
+  - `php tests/run.php LocalAppSmokeTest::testThemeToggleWarmsAlternateThemeStylesheetsAtLowPriority LocalAppSmokeTest::testLayoutUsesOnlyAValidatedThemeHintForTheInitialStylesheet ThemeRegistryTest` — passed.
+- Notes:
+  - A failed stylesheet request releases the loading state so controls cannot become permanently stuck.

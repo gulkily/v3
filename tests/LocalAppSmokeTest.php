@@ -586,6 +586,17 @@ PHP;
         }
     }
 
+    public function testThemeToggleWarmsAlternateThemeStylesheetsAtLowPriority(): void
+    {
+        $script = file_get_contents(dirname(__DIR__) . '/public/assets/theme_toggle.js');
+
+        assertSame(true, $script !== false);
+        assertStringContains('function warmAlternateThemes()', (string) $script);
+        assertStringContains('window.requestIdleCallback(warmAlternateThemes, { timeout: 1000 });', (string) $script);
+        assertStringContains('link.setAttribute("fetchpriority", highPriority ? "high" : "low");', (string) $script);
+        assertStringContains('data-theme-loading', (string) $script);
+    }
+
     public function testAssetFingerprintDistinguishesCurrentAndStaleAssetPaths(): void
     {
         $publicRoot = sys_get_temp_dir() . '/forum-rewrite-fingerprint-' . bin2hex(random_bytes(6));

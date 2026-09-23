@@ -30,6 +30,8 @@
       : null;
     var themeStylesheet = document.getElementById("theme-stylesheet");
     var themeStylesheetPaths = window.forumThemeStylesheetPaths || {};
+    var themeLoadStates = {};
+    var pendingTheme = null;
 
     function isExplicitTheme(theme) {
       return theme !== "auto" && themes.indexOf(theme) !== -1;
@@ -66,8 +68,7 @@
       var resolved = resolvedTheme(theme);
       var stylesheetPath = themeStylesheetPaths[resolved];
 
-      if (themeStylesheet && stylesheetPath) {
-        themeStylesheet.setAttribute("href", stylesheetPath);
+      if (themeStylesheet && themeStylesheet.getAttribute("href") === stylesheetPath) {
         themeStylesheet.setAttribute("data-theme-name", resolved);
       }
 
@@ -75,6 +76,64 @@
       if (typeof window.forumUpdateThemeHint === "function") {
         window.forumUpdateThemeHint(resolved);
       }
+    }
+
+    function ensureThemeStylesheet(theme, highPriority) {
+      var path = themeStylesheetPaths[theme];
+      if (!path) {
+        return { ready: true, promise: Promise.resolve() };
+      }
+      if (themeLoadStates[theme]) {
+        if (highPriority) {
+          themeLoadStates[theme].link.setAttribute("fetchpriority", "high");
+        }
+        return themeLoadStates[theme];
+      }
+
+      var link = themeStylesheet && themeStylesheet.getAttribute("href") === path
+        ? themeStylesheet
+        : document.createElement("link");
+      if (link !== themeStylesheet) {
+        link.setAttribute("rel", "stylesheet");
+        link.setAttribute("href", path);
+        link.setAttribute("data-theme-name", theme);
+        document.head.appendChild(link);
+      }
+      link.setAttribute("fetchpriority", highPriority ? "high" : "low");
+
+      var state = { link: link, ready: Boolean(link.sheet), promise: null };
+      state.promise = state.ready
+        ? Promise.resolve()
+        : new Promise(function (resolve) {
+            link.addEventListener("load", function () {
+              state.ready = true;
+              resolve();
+            }, { once: true });
+            link.addEventListener("error", function () {
+              state.ready = true;
+              resolve();
+            }, { once: true });
+          });
+      themeLoadStates[theme] = state;
+      return state;
+    }
+
+    function warmAlternateThemes() {
+      var activeTheme = resolvedTheme(currentTheme);
+      themes.forEach(function (theme) {
+        var resolved = resolvedTheme(theme);
+        if (resolved !== activeTheme) {
+          ensureThemeStylesheet(resolved, false);
+        }
+      });
+    }
+
+    function scheduleThemeWarmup() {
+      if (typeof window.requestIdleCallback === "function") {
+        window.requestIdleCallback(warmAlternateThemes, { timeout: 1000 });
+        return;
+      }
+      window.setTimeout(warmAlternateThemes, 0);
     }
 
     function nextTheme(currentTheme) {
@@ -133,10 +192,31 @@
 
     applyTheme(currentTheme);
     syncResolvedTheme(currentTheme);
+    ensureThemeStylesheet(resolvedTheme(currentTheme), true);
     syncButton(currentTheme);
     syncOptions(currentTheme);
+    scheduleThemeWarmup();
 
     function applySelection(theme) {
+      pendingTheme = theme;
+      var state = ensureThemeStylesheet(resolvedTheme(theme), true);
+      if (!state.ready) {
+        document.documentElement.setAttribute("data-theme-loading", "true");
+        state.promise.then(function () {
+          if (pendingTheme !== theme) {
+            return;
+          }
+          document.documentElement.removeAttribute("data-theme-loading");
+          commitSelection(theme);
+        });
+        return;
+      }
+
+      commitSelection(theme);
+    }
+
+    function commitSelection(theme) {
+      document.documentElement.removeAttribute("data-theme-loading");
       currentTheme = theme;
       applyTheme(currentTheme);
       syncResolvedTheme(currentTheme);
@@ -201,6 +281,7 @@
     if (mediaQuery && typeof mediaQuery.addEventListener === "function") {
       mediaQuery.addEventListener("change", function () {
         if (currentTheme === "auto") {
+          ensureThemeStylesheet(resolvedTheme(currentTheme), false);
           syncResolvedTheme(currentTheme);
           syncButton(currentTheme);
         }
