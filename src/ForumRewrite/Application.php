@@ -24,6 +24,7 @@ use ForumRewrite\Http\BoardViewOptions;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
+use ForumRewrite\Http\TagsPageController;
 use ForumRewrite\ReadModel\AuthoredContentRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelCapabilityInspector;
@@ -427,7 +428,7 @@ final class Application
         }
 
         if ($path === '/tags/' || $path === '/tags') {
-            $this->sendHtml($this->renderTagsIndex(), 200);
+            $this->sendHtml($this->tagsPageController()->index(), 200);
             return;
         }
 
@@ -625,7 +626,7 @@ final class Application
         }
 
         if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)/?$#', $path, $matches) === 1) {
-            $html = $this->renderTagPage($matches[1]);
+            $html = $this->tagsPageController()->tag($matches[1]);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -944,43 +945,9 @@ final class Application
         );
     }
 
-    private function renderTagsIndex(): string
+    private function tagsPageController(): TagsPageController
     {
-        $view = $this->normalizeBoardView('all');
-        $sort = $this->normalizeBoardSort('newest');
-        $viewOptions = $this->boardViewOptions($view, $sort);
-        $sortOptions = $this->boardSortOptions($view, $sort);
-        $threads = $this->fetchThreads();
-
-        return $this->renderPageTemplate(
-            'tags.php',
-            [
-                'tagGroups' => $this->limitTagGroupThreads($this->groupThreadsByTag($threads), 5),
-                'viewOptions' => $viewOptions,
-                'sortOptions' => $sortOptions,
-            ],
-            'Tags',
-            'board',
-        );
-    }
-
-    private function renderTagPage(string $tag): ?string
-    {
-        $threads = $this->fetchThreads();
-        $group = $this->findTagGroup($this->groupThreadsByTag($threads), $tag);
-        if ($group === null) {
-            return null;
-        }
-        $title = '#' . $tag . ' - Tag';
-
-        return $this->renderPageTemplate(
-            'tag.php',
-            [
-                'group' => $group,
-            ],
-            $title,
-            'board',
-        );
+        return new TagsPageController($this->routeServices());
     }
 
     private function renderForteBoard(string $requestedTag = '', string $requestedSortColumn = '', string $requestedSortDir = '', string $requestedSelected = '', string $requestedCreatedPostId = ''): string
