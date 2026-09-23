@@ -41,6 +41,7 @@ use ForumRewrite\Http\SourceFileController;
 use ForumRewrite\Http\TagApiController;
 use ForumRewrite\Http\TagsPageController;
 use ForumRewrite\Http\ToolsPageController;
+use ForumRewrite\Http\WritePostAndIdentityApiController;
 use ForumRewrite\ReadModel\AuthoredContentRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelCapabilityInspector;
@@ -195,37 +196,37 @@ final class Application
         }
 
         if ($path === '/api/create_thread') {
-            $this->handleCreateThread($method, $query);
+            $this->writePostAndIdentityApiController()->createThread($method, $query);
             return;
         }
 
         if ($path === '/api/prepare_thread') {
-            $this->handlePrepareThread($method, $query);
+            $this->writePostAndIdentityApiController()->prepareThread($method, $query);
             return;
         }
 
         if ($path === '/api/prepare_identity') {
-            $this->handlePrepareIdentity($method, $query);
+            $this->writePostAndIdentityApiController()->prepareIdentity($method, $query);
             return;
         }
 
         if ($path === '/api/create_reply') {
-            $this->handleCreateReply($method, $query);
+            $this->writePostAndIdentityApiController()->createReply($method, $query);
             return;
         }
 
         if ($path === '/api/prepare_reply') {
-            $this->handlePrepareReply($method, $query);
+            $this->writePostAndIdentityApiController()->prepareReply($method, $query);
             return;
         }
 
         if ($path === '/api/create_prepared_post') {
-            $this->handleCreatePreparedPost($method, $query);
+            $this->writePostAndIdentityApiController()->createPreparedPost($method, $query);
             return;
         }
 
         if ($path === '/api/create_identity') {
-            $this->handleCreateIdentity($method, $query);
+            $this->writePostAndIdentityApiController()->createIdentity($method, $query);
             return;
         }
 
@@ -2572,6 +2573,11 @@ final class Application
         );
     }
 
+    private function writePostAndIdentityApiController(): WritePostAndIdentityApiController
+    {
+        return new WritePostAndIdentityApiController($this->routeServices());
+    }
+
     /**
      * @param array<string, mixed>|null $viewerProfile
      */
@@ -3276,222 +3282,6 @@ final class Application
             'httponly' => (bool) ($params['httponly'] ?? true),
             'samesite' => $params['samesite'] ?? 'Lax',
         ]);
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleCreateThread(string $method, array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        if ($method !== 'POST') {
-            $this->sendText("method not allowed\n", 405);
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        try {
-            $result = $this->writer()->createThread($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $this->sendText(
-                "status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\ncommit_sha={$result['commit_sha']}\n",
-                200,
-                $this->serverTimingHeaders($result)
-            );
-        } catch (RuntimeException $exception) {
-            $this->sendText(
-                "error=" . $exception->getMessage() . "\n",
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleCreateReply(string $method, array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        if ($method !== 'POST') {
-            $this->sendText("method not allowed\n", 405);
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        try {
-            $result = $this->writer()->createReply($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $this->sendText(
-                "status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\ncommit_sha={$result['commit_sha']}\n",
-                200,
-                $this->serverTimingHeaders($result)
-            );
-        } catch (RuntimeException $exception) {
-            $this->sendText(
-                "error=" . $exception->getMessage() . "\n",
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handlePrepareThread(string $method, array $query): void
-    {
-        $this->handlePreparePost($method, $query, 'thread');
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handlePrepareIdentity(string $method, array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        if ($method !== 'POST') {
-            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
-            return;
-        }
-
-        try {
-            $phaseStartedAt = hrtime(true);
-            $input = $this->requestData($query);
-            $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-            $result = $this->writer()->prepareIdentityBootstrap($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $headers = $this->serverTimingHeaders($result);
-            unset($result['timings']);
-            $this->sendJson($result, 200, $headers);
-        } catch (IdentityBootstrapTimingException $exception) {
-            $this->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal(array_merge($timings, $exception->timings()), $totalStartedAt)])
-            );
-        } catch (RuntimeException $exception) {
-            $this->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handlePrepareReply(string $method, array $query): void
-    {
-        $this->handlePreparePost($method, $query, 'reply');
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handlePreparePost(string $method, array $query, string $kind): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        if ($method !== 'POST') {
-            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-
-        try {
-            $result = $kind === 'reply'
-                ? $this->writer()->prepareReply($input)
-                : $this->writer()->prepareThread($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $headers = $this->serverTimingHeaders($result);
-            unset($result['timings']);
-            $this->sendJson($result, 200, $headers);
-        } catch (RuntimeException $exception) {
-            $this->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleCreatePreparedPost(string $method, array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        if ($method !== 'POST') {
-            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-
-        try {
-            $result = $this->writer()->createPreparedPost($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $headers = $this->serverTimingHeaders($result);
-            unset($result['timings']);
-            $this->sendJson($result, 200, $headers);
-        } catch (RuntimeException $exception) {
-            $this->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleCreateIdentity(string $method, array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        if ($method !== 'POST') {
-            $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
-            return;
-        }
-
-        try {
-            $phaseStartedAt = hrtime(true);
-            $input = $this->requestData($query);
-            $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-            $result = $this->writer()->createIdentityBootstrap($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $headers = $this->serverTimingHeaders($result);
-            unset($result['timings']);
-            $this->sendJson($result, 200, $headers);
-        } catch (IdentityBootstrapTimingException $exception) {
-            $this->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal(array_merge($timings, $exception->timings()), $totalStartedAt)])
-            );
-        } catch (RuntimeException $exception) {
-            $this->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
     }
 
     /**
@@ -5227,12 +5017,7 @@ final class Application
      */
     private function sendJson(array $payload, int $statusCode, array $headers = []): void
     {
-        http_response_code($statusCode);
-        header('Content-Type: application/json; charset=utf-8');
-        foreach ($headers as $headerValue) {
-            header($headerValue);
-        }
-        echo json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) . "\n";
+        $this->routeServices()->sendJson($payload, $statusCode, $headers);
     }
 
     private function sendXml(string $xml, int $statusCode): void

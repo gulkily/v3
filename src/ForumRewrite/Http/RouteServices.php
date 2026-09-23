@@ -330,6 +330,18 @@ final class RouteServices
         echo $text;
     }
 
+    /** @param array<string, mixed> $payload
+     * @param string[] $headers */
+    public function sendJson(array $payload, int $statusCode, array $headers = []): void
+    {
+        http_response_code($statusCode);
+        header('Content-Type: application/json; charset=utf-8');
+        foreach ($headers as $headerValue) {
+            header($headerValue);
+        }
+        echo json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) . "\n";
+    }
+
     public function sendXml(string $xml, int $statusCode): void
     {
         http_response_code($statusCode);
