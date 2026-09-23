@@ -1331,6 +1331,8 @@ PHP;
         assertStringNotContains('data-role="thread-density-toggle"', $tools);
         assertFingerprintedAsset($tools, 'tools.css');
         assertFingerprintedAsset($bookmarklets, 'tools.css');
+        assertFingerprintedAsset($tags, 'tags.css');
+        assertStringNotContains('/assets/tags.', $board);
         assertStringNotContains('/assets/tools.', $board);
         assertStringNotContains('data-role="thread-density-menu"', $board);
         assertStringNotContains('data-thread-density-option="comfortable"', $board);

@@ -19,6 +19,7 @@ final class TemplateRenderer
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
         'bookmarklets.php' => ['/assets/tools.css'],
+        'tags.php' => ['/assets/tags.css'],
         'tools.php' => ['/assets/tools.css'],
     ];
     private const CRITICAL_CSS_END_MARKER = '/* critical-css-end */';
