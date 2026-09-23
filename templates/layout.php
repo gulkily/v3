@@ -85,6 +85,9 @@
   <link rel="preload" href="<?= $e($siteCssPath) ?>" as="style" fetchpriority="high">
   <link rel="stylesheet" href="<?= $e($siteCssPath) ?>" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="<?= $e($siteCssPath) ?>"></noscript>
+<?php foreach ($pageStylesheetPaths as $pageStylesheetPath): ?>
+  <link rel="stylesheet" href="<?= $e($pageStylesheetPath) ?>">
+<?php endforeach; ?>
   <script src="<?= $e($themeToggleScriptPath) ?>" defer></script>
 <?php if ($showThreadDensityToggle): ?>
   <script src="<?= $e($threadDensityToggleScriptPath) ?>" defer></script>

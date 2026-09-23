@@ -73,7 +73,7 @@ final class LocalAppSmokeTest
             assertStringContains('[1/4] Read model: parsing post records (0/', $text);
             assertStringContains('[1/4] Read-model candidate is ready.', $text);
             assertStringContains('[2/4] Rendering static HTML and fingerprinted assets...', $text);
-            assertStringContains('[2/4] Fingerprinting and copying public assets...', $text);
+            assertStringContains('[2/4] Fingerprinting and copying assets referenced by rendered pages...', $text);
             assertStringContains('[2/4] Rendering shared pages (1/10): /.', $text);
             assertStringContains('[2/4] Rendering thread pages (0/', $text);
             assertStringContains('[2/4] Static release is ready:', $text);
@@ -631,7 +631,7 @@ PHP;
 
     public function testCompactModeMenuStylesUseScopedDensitySelectors(): void
     {
-        $css = file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+        $css = file_get_contents(dirname(__DIR__) . '/public/assets/thread-list.css');
         $word97Css = file_get_contents(dirname(__DIR__) . '/public/assets/theme-word97.css');
         if ($css === false) {
             throw new RuntimeException('Unable to read site stylesheet.');
@@ -645,7 +645,8 @@ PHP;
         assertStringContains(':root[data-thread-density="compact"] .thread-list > * + *', $css);
         assertStringContains(':root[data-thread-density="compact"] article.card:has(> .board-controls-nav)', $css);
         assertStringContains(':root[data-thread-density="compact"] .compact-thread-compose', $css);
-        assertStringContains('.compact-thread-compose .inline-reply-summary', $css);
+        assertStringContains(':root[data-thread-density="compact"] .compact-thread-compose', $css);
+        assertStringContains('.inline-reply-summary {', $css);
         assertStringContains(':root[data-thread-density="compact"] .thread-list > .compact-thread-compose', $css);
         assertStringContains('margin-top: 0', $css);
         assertStringContains(':root[data-thread-density="compact"] .thread-list > .card', $css);
@@ -1086,6 +1087,7 @@ PHP;
         $composeReply = $this->render($application, '/compose/reply?thread_id=root-001&parent_id=root-001');
         $account = $this->render($application, '/account/key/');
         $activity = $this->render($application, '/activity/?view=content');
+        $forteActivity = $this->render($application, '/forte/activity/?view=content');
         $llms = $this->render($application, '/llms.txt');
 
         assertStringContains('Board', $board);
@@ -1313,6 +1315,8 @@ PHP;
         assertStringContains('data-action="theme-cycle"', $board);
         assertStringContains('<style data-role="critical-css">', $board);
         assertFingerprintedAsset($board, 'theme-light.css');
+        assertStringNotContains('/assets/about.', $board);
+        assertFingerprintedAsset($about, 'about.css');
         assertStringContains('class="card"', $board);
         assertStringContains('<link rel="preload" href="/assets/site.', $board);
         assertStringContains('as="style" fetchpriority="high">', $board);
@@ -1328,6 +1332,22 @@ PHP;
         assertStringNotContains('data-role="thread-density-toggle"', $about);
         assertStringNotContains('data-role="thread-density-toggle"', $tags);
         assertStringNotContains('data-role="thread-density-toggle"', $tools);
+        assertFingerprintedAsset($tools, 'tools.css');
+        assertFingerprintedAsset($bookmarklets, 'tools.css');
+        assertFingerprintedAsset($tags, 'tags.css');
+        assertStringNotContains('/assets/tags.', $board);
+        assertStringNotContains('/assets/tools.', $board);
+        assertFingerprintedAsset($activity, 'activity.css');
+        assertFingerprintedAsset($forteActivity, 'activity.css');
+        assertFingerprintedAsset($account, 'identity.css');
+        assertFingerprintedAsset($profile, 'identity.css');
+        assertFingerprintedAsset($thread, 'identity.css');
+        assertFingerprintedAsset($post, 'identity.css');
+        assertFingerprintedAsset($thread, 'content-interactions.css');
+        assertFingerprintedAsset($post, 'content-interactions.css');
+        assertStringNotContains('/assets/identity.', $board);
+        assertStringNotContains('/assets/content-interactions.', $board);
+        assertStringNotContains('/assets/activity.', $board);
         assertStringNotContains('data-role="thread-density-menu"', $board);
         assertStringNotContains('data-thread-density-option="comfortable"', $board);
         assertStringNotContains('data-thread-density-option="compact"', $board);

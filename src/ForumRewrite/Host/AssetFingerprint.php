@@ -86,6 +86,27 @@ final class AssetFingerprint
     public static function copyFingerprintedAssets(string $sourcePublicRoot, string $targetPublicRoot): void
     {
         $sourceAssetRoot = $sourcePublicRoot . '/assets';
+        $entries = is_dir($sourceAssetRoot) ? scandir($sourceAssetRoot) : false;
+        if ($entries === false) {
+            return;
+        }
+
+        self::copyAssets($sourcePublicRoot, $targetPublicRoot, array_map(
+            static fn (string $entry): string => '/assets/' . $entry,
+            array_values(array_filter($entries, static fn (string $entry): bool => $entry !== '.' && $entry !== '..')),
+        ));
+    }
+
+    /** @param list<string> $assetPaths */
+    public static function copyReferencedFingerprintedAssets(string $sourcePublicRoot, string $targetPublicRoot, array $assetPaths): void
+    {
+        self::copyAssets($sourcePublicRoot, $targetPublicRoot, $assetPaths);
+    }
+
+    /** @param list<string> $assetPaths */
+    private static function copyAssets(string $sourcePublicRoot, string $targetPublicRoot, array $assetPaths): void
+    {
+        $sourceAssetRoot = $sourcePublicRoot . '/assets';
         if (!is_dir($sourceAssetRoot)) {
             return;
         }
@@ -95,15 +116,11 @@ final class AssetFingerprint
             return;
         }
 
-        $entries = scandir($sourceAssetRoot);
-        if ($entries === false) {
-            return;
-        }
-
-        foreach ($entries as $entry) {
-            if ($entry === '.' || $entry === '..') {
+        foreach (array_unique($assetPaths) as $assetPath) {
+            if (!str_starts_with($assetPath, '/assets/') || str_contains(substr($assetPath, 8), '/')) {
                 continue;
             }
+            $entry = substr($assetPath, strlen('/assets/'));
             if (self::isFingerprintedAssetFilename($entry)) {
                 continue;
             }

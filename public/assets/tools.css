@@ -1,0 +1,45 @@
+.tool-launcher-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.tool-launcher-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tool-launcher-button {
+  flex: 0 0 11rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  background: var(--button-bg);
+  font-family: var(--ui-font);
+  text-decoration: none;
+}
+
+.tool-launcher-description {
+  margin: 0;
+}
+
+.tool-launcher-description .meta {
+  display: block;
+}
+
+@media (max-width: 560px) {
+  .tool-launcher-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+  }
+
+  .tool-launcher-button {
+    flex: 1 1 auto;
+  }
+}

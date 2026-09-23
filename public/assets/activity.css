@@ -1,0 +1,34 @@
+.activity-commit-manifest {
+  margin-top: 0.8rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent 28%);
+}
+
+.activity-commit-manifest h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.activity-commit-manifest ul {
+  margin: 0.45rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.activity-commit-manifest li + li {
+  margin-top: 0.4rem;
+}
+
+.activity-commit-manifest__path {
+  display: block;
+}
+
+.activity-commit-manifest__signature-divider {
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent 28%);
+  margin: 0.45rem 0;
+}
+
+.activity-commit-manifest__signer,
+.activity-commit-manifest__key {
+  display: block;
+}
