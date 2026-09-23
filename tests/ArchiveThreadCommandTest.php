@@ -19,9 +19,9 @@ final class ArchiveThreadCommandTest
             escapeshellarg($databasePath),
             escapeshellarg($artifactRoot),
         ));
-        assertTrue(is_file($artifactRoot . '/threads/root-001.html'));
-        assertTrue(is_file($artifactRoot . '/posts/root-001.html'));
-        assertTrue(is_file($artifactRoot . '/posts/reply-001.html'));
+        assertTrue(is_file($artifactRoot . '/current/threads/root-001.html'));
+        assertTrue(is_file($artifactRoot . '/current/posts/root-001.html'));
+        assertTrue(is_file($artifactRoot . '/current/posts/reply-001.html'));
 
         [$exitCode, $output] = $this->runCommandAllowFailure(sprintf(
             'php %s %s %s %s %s %s',
@@ -38,7 +38,7 @@ final class ArchiveThreadCommandTest
         assertStringContains('Files archived: 5', $output);
         assertStringContains('Supporting public keys archived: 1', $output);
         assertStringContains('Files removed: 4', $output);
-        assertStringContains('Read model and static artifacts refreshed.', $output);
+        assertStringContains('Read model and static artifact release refreshed.', $output);
         assertTrue(is_file($archivePath));
 
         $manifest = $this->readArchiveManifest($archivePath);
@@ -64,9 +64,9 @@ final class ArchiveThreadCommandTest
         assertFalse(is_file($repositoryRoot . '/records/post-reactions/post-reaction-archive-test.txt'));
         assertTrue(is_file($repositoryRoot . '/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc'));
 
-        assertFalse(is_file($artifactRoot . '/threads/root-001.html'));
-        assertFalse(is_file($artifactRoot . '/posts/root-001.html'));
-        assertFalse(is_file($artifactRoot . '/posts/reply-001.html'));
+        assertFalse(is_file($artifactRoot . '/current/threads/root-001.html'));
+        assertFalse(is_file($artifactRoot . '/current/posts/root-001.html'));
+        assertFalse(is_file($artifactRoot . '/current/posts/reply-001.html'));
 
         $pdo = new PDO('sqlite:' . $databasePath);
         assertSame(0, (int) $pdo->query("SELECT COUNT(*) FROM threads WHERE root_post_id = 'root-001'")->fetchColumn());

@@ -33,6 +33,7 @@ final class ReadModelBuilder
         private readonly string $databasePath,
         private readonly CanonicalRecordRepository $canonicalRepository,
         private readonly string $rebuildReason = 'manual',
+        private readonly ?\Closure $progressReporter = null,
     ) {
     }
 
@@ -237,6 +238,7 @@ final class ReadModelBuilder
 
         $paths = $this->findRelativePaths('records/posts');
         $parsedPosts = [];
+        $this->reportBatchStart('Read model: parsing post records', count($paths));
 
         foreach ($paths as $index => $relativePath) {
             $record = $this->canonicalRepository->loadPost($relativePath);
@@ -255,6 +257,7 @@ final class ReadModelBuilder
                 'source_commit_sha' => $this->sourceCommitShaForPath($relativePath),
                 'source_order' => $index + 1,
             ];
+            $this->reportBatchProgress('Read model: parsing post records', $index + 1, count($paths));
         }
 
         usort($parsedPosts, static function (array $left, array $right): int {
@@ -273,6 +276,7 @@ final class ReadModelBuilder
 
         $posts = [];
         $threadSummaries = [];
+        $this->reportBatchStart('Read model: writing post records', count($parsedPosts));
         foreach ($parsedPosts as $index => $post) {
             $post['sequence_number'] = $index + 1;
             unset($post['source_order']);
@@ -314,6 +318,7 @@ final class ReadModelBuilder
             }
             $summary['last_post_id'] = $post['post_id'];
             unset($summary);
+            $this->reportBatchProgress('Read model: writing post records', $index + 1, count($parsedPosts));
         }
 
         foreach ($threadSummaries as $summary) {
@@ -332,12 +337,15 @@ final class ReadModelBuilder
         $knownRootThreads = array_fill_keys(array_map(static fn (mixed $value): string => (string) $value, $rootThreadIds), true);
         $records = [];
 
-        foreach ($this->findRelativePaths('records/thread-labels') as $relativePath) {
+        $paths = $this->findRelativePaths('records/thread-labels');
+        $this->reportBatchStart('Read model: parsing thread-label records', count($paths));
+        foreach ($paths as $index => $relativePath) {
             try {
                 $records[] = $this->canonicalRepository->loadThreadLabel($relativePath);
             } catch (CanonicalRecordParseException) {
                 $this->invalidThreadLabelRecordCount++;
             }
+            $this->reportBatchProgress('Read model: parsing thread-label records', $index + 1, count($paths));
         }
 
         usort($records, static function (ThreadLabelRecord $left, ThreadLabelRecord $right): int {
@@ -427,12 +435,16 @@ final class ReadModelBuilder
         }
 
         $records = [];
-        foreach ($this->findRelativePaths('records/post-reactions') as $relativePath) {
+        $paths = $this->findRelativePaths('records/post-reactions');
+        $this->reportBatchStart('Read model: parsing post-reaction records', count($paths));
+        foreach ($paths as $index => $relativePath) {
             try {
                 $records[] = $this->canonicalRepository->loadPostReaction($relativePath);
             } catch (CanonicalRecordParseException) {
+                $this->reportBatchProgress('Read model: parsing post-reaction records', $index + 1, count($paths));
                 continue;
             }
+            $this->reportBatchProgress('Read model: parsing post-reaction records', $index + 1, count($paths));
         }
 
         usort($records, static function (PostReactionRecord $left, PostReactionRecord $right): int {
@@ -536,9 +548,11 @@ final class ReadModelBuilder
             'INSERT INTO username_routes (username_token, identity_id) VALUES (:username_token, :identity_id)'
         );
 
+        $paths = $this->findRelativePaths('records/identity');
         $profiles = [];
         $claimedUsernameTokens = [];
-        foreach ($this->findRelativePaths('records/identity') as $relativePath) {
+        $this->reportBatchStart('Read model: parsing identity records', count($paths));
+        foreach ($paths as $index => $relativePath) {
             $identity = $this->canonicalRepository->loadIdentity($relativePath);
             $publicKeyPath = 'records/public-keys/openpgp-' . $identity->signerFingerprint . '.asc';
             if (!is_file($this->repositoryRoot . '/' . $publicKeyPath)) {
@@ -578,6 +592,7 @@ final class ReadModelBuilder
                 'bootstrap_post_id' => $identity->bootstrapByPost,
                 'bootstrap_thread_id' => $identity->bootstrapByThread,
             ];
+            $this->reportBatchProgress('Read model: parsing identity records', $index + 1, count($paths));
         }
 
         return $profiles;
@@ -1301,10 +1316,35 @@ final class ReadModelBuilder
     private function measure(string $name, callable $callback): mixed
     {
         $startedAt = hrtime(true);
+        $this->reportProgress('Read model: ' . str_replace('_', ' ', $name) . '...');
         try {
             return $callback();
         } finally {
             $this->timings[$name] = round((hrtime(true) - $startedAt) / 1000000, 1);
+            $this->reportProgress(sprintf(
+                'Read model: %s complete (%.1f ms).',
+                str_replace('_', ' ', $name),
+                $this->timings[$name],
+            ));
+        }
+    }
+
+    private function reportProgress(string $message): void
+    {
+        if ($this->progressReporter !== null) {
+            ($this->progressReporter)($message);
+        }
+    }
+
+    private function reportBatchStart(string $label, int $total): void
+    {
+        $this->reportProgress("{$label} (0/{$total}).");
+    }
+
+    private function reportBatchProgress(string $label, int $completed, int $total): void
+    {
+        if ($completed === $total || $completed % 100 === 0) {
+            $this->reportProgress("{$label} ({$completed}/{$total}).");
         }
     }
 }

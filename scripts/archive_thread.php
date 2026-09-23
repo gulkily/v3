@@ -6,7 +6,7 @@ require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
-use ForumRewrite\Host\StaticArtifactBuilder;
+use ForumRewrite\Host\StaticArtifactReleasePublisher;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 
@@ -25,7 +25,7 @@ if (preg_match('/^[A-Za-z0-9._:-]+$/', $threadId) !== 1) {
 
 $repositoryRoot = normalizePath($argv[2] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
 $databasePath = normalizePath($argv[3] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
-$artifactRoot = normalizePath($argv[4] ?? (getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public')));
+$artifactRoot = normalizePath($argv[4] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: ($projectRoot . '/state/static_html')));
 $archivePath = normalizePath($argv[5] ?? defaultArchivePath($projectRoot, $threadId));
 
 try {
@@ -40,8 +40,6 @@ try {
             removeArchivedComponents($repositoryRoot, $componentPaths);
             $archiveCommit = commitArchiveRemoval($repositoryRoot, $threadId, $componentPaths);
             $removedArtifactPaths = removeStaleStaticArtifacts($artifactRoot, $threadId, $componentPaths);
-            (new StaticArtifactBuilder($projectRoot, $repositoryRoot, $databasePath, $artifactRoot))->build();
-
             return [
                 'component_paths' => $componentPaths,
                 'archive_paths' => $archivePaths,
@@ -51,6 +49,9 @@ try {
             ];
         }
     );
+
+    $publisher = new StaticArtifactReleasePublisher($projectRoot, $repositoryRoot, $artifactRoot);
+    $publisher->activate($publisher->build($databasePath));
 
     fwrite(STDOUT, "Archived thread and removed live canonical records.\n");
     fwrite(STDOUT, "Thread: {$threadId}\n");
@@ -65,7 +66,7 @@ try {
     if ($result['archive_commit'] !== null) {
         fwrite(STDOUT, "Removal commit: {$result['archive_commit']}\n");
     }
-    fwrite(STDOUT, "Read model and static artifacts refreshed.\n");
+    fwrite(STDOUT, "Read model and static artifact release refreshed.\n");
 } catch (Throwable $throwable) {
     fwrite(STDERR, $throwable->getMessage() . "\n");
     exit(1);

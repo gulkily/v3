@@ -24,7 +24,7 @@ Rebuild the SQLite read model:
 php scripts/rebuild_read_model.php
 ```
 
-Build Apache-friendly static HTML artifacts into `public/`:
+Build and activate an Apache-friendly static HTML release under `state/static_html/`:
 
 ```bash
 php scripts/build_static_artifacts.php
@@ -172,12 +172,10 @@ FORUM_REPOSITORY_ROOT=state/local_repository php scripts/rebuild_read_model.php
 FORUM_REPOSITORY_ROOT=state/local_repository ./v3 start
 ```
 
-Static HTML artifacts for anonymous queryless route hits default to `state/static_html`. Override that location with `FORUM_STATIC_HTML_ROOT=/path/to/static_html` if you want to test direct artifact serving.
-
-The current PHP front controller supports both layouts:
-
-- Apache/public sibling artifacts such as `public/threads/root-001.html`
-- the older separate `FORUM_STATIC_HTML_ROOT` fallback path for local testing or deployments that keep generated artifacts outside `public/`
+Static HTML for anonymous queryless route hits defaults to `state/static_html`.
+Each build creates a complete release and atomically selects it through
+`state/static_html/current`; old `public/*.html` files are ignored. Override
+the root with `FORUM_STATIC_HTML_ROOT=/path/to/static_html`.
 
 Set the local identity-hint cookie:
 

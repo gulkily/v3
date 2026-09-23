@@ -7,9 +7,12 @@ require __DIR__ . '/../autoload.php';
 use ForumRewrite\Application;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
+use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\Host\FrontController;
 use ForumRewrite\Host\StaticArtifactBuilder;
+use ForumRewrite\Host\StaticArtifactReleasePublisher;
+use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
@@ -42,6 +45,52 @@ final class LocalAppSmokeTest
 
         assertSame(0, $exitCode);
         assertTrue(is_file($this->databasePath));
+    }
+
+    public function testBuildStaticCommandReportsProgressAndArtifactSummary(): void
+    {
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-build-static-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-build-static-artifacts-' . bin2hex(random_bytes(6));
+        $command = sprintf(
+            'php %s %s %s %s 2>&1',
+            escapeshellarg(__DIR__ . '/../scripts/build_static_artifacts.php'),
+            escapeshellarg($this->repositoryRoot),
+            escapeshellarg($databasePath),
+            escapeshellarg($artifactRoot),
+        );
+
+        try {
+            exec($command, $output, $exitCode);
+            $text = implode("\n", $output);
+
+            assertSame(0, $exitCode, $text);
+            assertStringContains('Starting static HTML release build', $text);
+            assertStringContains("Repository: {$this->repositoryRoot}", $text);
+            assertStringContains("Database: {$databasePath}", $text);
+            assertStringContains("Static artifact root: {$artifactRoot}", $text);
+            assertStringContains('[1/4] Building and validating a read-model candidate...', $text);
+            assertStringContains('[1/4] Read model: index posts...', $text);
+            assertStringContains('[1/4] Read model: parsing post records (0/', $text);
+            assertStringContains('[1/4] Read-model candidate is ready.', $text);
+            assertStringContains('[2/4] Rendering static HTML and fingerprinted assets...', $text);
+            assertStringContains('[2/4] Fingerprinting and copying public assets...', $text);
+            assertStringContains('[2/4] Rendering shared pages (1/10): /.', $text);
+            assertStringContains('[2/4] Rendering thread pages (0/', $text);
+            assertStringContains('[2/4] Static release is ready:', $text);
+            assertStringContains('Static artifacts:', $text);
+            assertStringContains('[3/4] Promoting the read model...', $text);
+            assertStringContains('[3/4] Read model promoted.', $text);
+            assertStringContains('[4/4] Activating the static release...', $text);
+            assertStringContains('[4/4] Static release activated.', $text);
+            assertStringContains('Built and activated static HTML release', $text);
+            assertStringContains('Elapsed:', $text);
+            assertOrdered($text, '[1/4] Building', '[2/4] Rendering');
+            assertOrdered($text, '[2/4] Rendering', '[3/4] Promoting');
+            assertOrdered($text, '[3/4] Promoting', '[4/4] Activating');
+        } finally {
+            @unlink($databasePath);
+            $this->deleteTree($artifactRoot);
+        }
     }
 
     public function testApprovedPrivateSessionCanViewOwnProfileAndBoard(): void
@@ -162,6 +211,10 @@ PHP;
             assertStringNotContains('href="/invites/" data-invite-navigation>Invite</a>', $board);
             assertStringContains('data-public-auth-resume="true"', $board);
             assertFingerprintedAsset($board, 'private_site_auth.js');
+            assertTrue(
+                strpos($board, '/assets/theme_toggle.') < strpos($board, '/assets/openpgp_loader.'),
+                'Theme controls must initialize before the OpenPGP loader.'
+            );
         } finally {
             if (session_status() === PHP_SESSION_ACTIVE) {
                 session_write_close();
@@ -509,6 +562,52 @@ PHP;
         assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/site.000000000000.css'));
     }
 
+    public function testLayoutUsesOnlyAValidatedThemeHintForTheInitialStylesheet(): void
+    {
+        $previousCookie = $_COOKIE;
+        $renderer = new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__) . '/templates');
+        $publicRoot = dirname(__DIR__) . '/public';
+
+        try {
+            $_COOKIE = ['theme-hint' => 'word97'];
+            $hintedHtml = $renderer->renderLayout('Theme', '<main></main>', 'board');
+
+            assertStringContains(
+                'id="theme-stylesheet" rel="stylesheet" href="'
+                . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-word97.css')
+                . '" fetchpriority="high"',
+                $hintedHtml
+            );
+            assertStringContains('var themeStylesheetPaths = ', $hintedHtml);
+            assertStringContains("document.getElementById('theme-stylesheet')", $hintedHtml);
+            assertStringContains('data-theme-hint-cookie="theme-hint"', $hintedHtml);
+            assertStringContains('window.forumUpdateThemeHint = updateThemeHint;', $hintedHtml);
+
+            $_COOKIE = ['theme-hint' => 'auto'];
+            $invalidHintHtml = $renderer->renderLayout('Theme', '<main></main>', 'board');
+
+            assertStringContains(
+                'id="theme-stylesheet" rel="stylesheet" href="'
+                . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-light.css')
+                . '" fetchpriority="high"',
+                $invalidHintHtml
+            );
+        } finally {
+            $_COOKIE = $previousCookie;
+        }
+    }
+
+    public function testThemeToggleWarmsAlternateThemeStylesheetsAtLowPriority(): void
+    {
+        $script = file_get_contents(dirname(__DIR__) . '/public/assets/theme_toggle.js');
+
+        assertSame(true, $script !== false);
+        assertStringContains('function warmAlternateThemes()', (string) $script);
+        assertStringContains('window.requestIdleCallback(warmAlternateThemes, { timeout: 1000 });', (string) $script);
+        assertStringContains('link.setAttribute("fetchpriority", highPriority ? "high" : "low");', (string) $script);
+        assertStringContains('data-theme-loading', (string) $script);
+    }
+
     public function testAssetFingerprintDistinguishesCurrentAndStaleAssetPaths(): void
     {
         $publicRoot = sys_get_temp_dir() . '/forum-rewrite-fingerprint-' . bin2hex(random_bytes(6));
@@ -533,8 +632,12 @@ PHP;
     public function testCompactModeMenuStylesUseScopedDensitySelectors(): void
     {
         $css = file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+        $word97Css = file_get_contents(dirname(__DIR__) . '/public/assets/theme-word97.css');
         if ($css === false) {
             throw new RuntimeException('Unable to read site stylesheet.');
+        }
+        if ($word97Css === false) {
+            throw new RuntimeException('Unable to read Word 97 stylesheet.');
         }
 
         assertStringContains(':root[data-thread-density="compact"] .thread-card__preview', $css);
@@ -548,7 +651,7 @@ PHP;
         assertStringContains(':root[data-thread-density="compact"] .thread-list > .card', $css);
         assertStringContains('border-left: 0', $css);
         assertStringContains('border-right: 0', $css);
-        assertStringContains(':root[data-theme="word97"][data-thread-density="compact"]', $css);
+        assertStringContains(':root[data-theme="word97"][data-thread-density="compact"]', $word97Css);
     }
 
     public function testAssetFingerprintCopySkipsAlreadyFingerprintedSourceFiles(): void
@@ -1208,6 +1311,12 @@ PHP;
         assertStringContains('data-heat="', $thread);
         assertStringContains('data-heat="', $tagPage);
         assertStringContains('data-action="theme-cycle"', $board);
+        assertStringContains('<style data-role="critical-css">', $board);
+        assertFingerprintedAsset($board, 'theme-light.css');
+        assertStringContains('class="card"', $board);
+        assertStringContains('<link rel="preload" href="/assets/site.', $board);
+        assertStringContains('as="style" fetchpriority="high">', $board);
+        assertStringContains('media="print" onload="this.media=\'all\'"', $board);
         assertFingerprintedAsset($board, 'site.css');
         assertFingerprintedAsset($board, 'theme_toggle.js');
         assertFingerprintedAsset($board, 'compose_draft_clear.js');
@@ -2279,9 +2388,9 @@ PHP;
         @unlink($this->databasePath);
         $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
         $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
-        mkdir($staticHtmlRoot, 0777, true);
+        mkdir($staticHtmlRoot . '/current', 0777, true);
         mkdir($publicRoot, 0777, true);
-        file_put_contents($staticHtmlRoot . '/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Board</h1></body></html>');
+        file_put_contents($staticHtmlRoot . '/current/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Board</h1></body></html>');
 
         $controller = new FrontController(
             dirname(__DIR__),
@@ -2295,6 +2404,42 @@ PHP;
 
         assertStringContains('Static Board', $response);
         assertStringContains('route-source: static-html', $response);
+    }
+
+    public function testFrontControllerRevalidatesStaticArtifactByEtag(): void
+    {
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        $html = '<!doctype html><html><body><h1>Static Board</h1></body></html>';
+        mkdir($staticHtmlRoot . '/current', 0777, true);
+        mkdir($publicRoot, 0777, true);
+        file_put_contents($staticHtmlRoot . '/current/index.html', $html);
+
+        $controller = new FrontController(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $staticHtmlRoot,
+            $publicRoot,
+        );
+        $previousEtag = $_SERVER['HTTP_IF_NONE_MATCH'] ?? null;
+
+        try {
+            $_SERVER['HTTP_IF_NONE_MATCH'] = '"' . hash('sha256', $html) . '"';
+            http_response_code(200);
+            $response = $this->renderFrontController($controller, 'GET', '/', []);
+
+            assertSame('', $response);
+            assertSame(304, http_response_code());
+        } finally {
+            if ($previousEtag === null) {
+                unset($_SERVER['HTTP_IF_NONE_MATCH']);
+            } else {
+                $_SERVER['HTTP_IF_NONE_MATCH'] = $previousEtag;
+            }
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
     }
 
     public function testFrontControllerRecoversStaleFingerprintedAssetRequests(): void
@@ -2332,10 +2477,9 @@ PHP;
         @unlink($this->databasePath);
         $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
         $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
-        mkdir($staticHtmlRoot, 0777, true);
+        mkdir($staticHtmlRoot . '/current/instance', 0777, true);
         mkdir($publicRoot, 0777, true);
-        mkdir($staticHtmlRoot . '/instance', 0777, true);
-        file_put_contents($staticHtmlRoot . '/instance/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Backup</h1></body></html>');
+        file_put_contents($staticHtmlRoot . '/current/instance/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Backup</h1></body></html>');
 
         $controller = new FrontController(
             dirname(__DIR__),
@@ -2355,8 +2499,8 @@ PHP;
     {
         @unlink($this->databasePath);
         $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
-        mkdir($staticHtmlRoot, 0777, true);
-        file_put_contents($staticHtmlRoot . '/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Board</h1></body></html>');
+        mkdir($staticHtmlRoot . '/current', 0777, true);
+        file_put_contents($staticHtmlRoot . '/current/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Board</h1></body></html>');
 
         $controller = new FrontController(
             dirname(__DIR__),
@@ -2463,6 +2607,11 @@ PHP;
         foreach (array_unique($assetMatches[0]) as $assetPath) {
             assertTrue(is_file($artifactRoot . $assetPath));
         }
+        foreach (\ForumRewrite\View\ThemeRegistry::stylesheetPaths() as $path) {
+            $fingerprintedPath = AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', $path);
+            assertStringContains($fingerprintedPath, $indexArtifact);
+            assertTrue(is_file($artifactRoot . $fingerprintedPath));
+        }
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/index.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/index.html'));
@@ -2491,37 +2640,44 @@ PHP;
             $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id = 'thread-zenmemes-rules'")->fetchColumn()
         );
 
-        $controller = new FrontController(
-            dirname(__DIR__),
-            $this->repositoryRoot,
-            $this->databasePath,
-            sys_get_temp_dir() . '/forum-rewrite-unused-static-' . bin2hex(random_bytes(6)),
-            $artifactRoot,
-        );
+    }
 
-        $response = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
-        assertStringContains('Hello world', $response);
-        assertStringContains('route-source: static-html', $response);
+    public function testStaticArtifactReleasePublisherActivatesCompleteReleaseForFrontController(): void
+    {
+        @unlink($this->databasePath);
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-release-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        mkdir($staticHtmlRoot, 0777, true);
+        mkdir($publicRoot, 0777, true);
+        file_put_contents($publicRoot . '/index.html', '<!doctype html><p>old public artifact</p>');
 
-        $threadsResponse = $this->renderFrontController($controller, 'GET', '/threads/', []);
-        assertSame((string) file_get_contents($artifactRoot . '/index.html'), $threadsResponse);
-        assertStringContains('route-source: static-html', $threadsResponse);
+        try {
+            (new ReadModelBuilder(
+                $this->repositoryRoot,
+                $this->databasePath,
+                new CanonicalRecordRepository($this->repositoryRoot),
+            ))->rebuild();
+            $publisher = new StaticArtifactReleasePublisher(dirname(__DIR__), $this->repositoryRoot, $staticHtmlRoot);
+            $releasePath = $publisher->build($this->databasePath);
+            $publisher->activate($releasePath);
 
-        $threadsNoSlashResponse = $this->renderFrontController($controller, 'GET', '/threads', []);
-        assertSame((string) file_get_contents($artifactRoot . '/index.html'), $threadsNoSlashResponse);
-        assertStringContains('route-source: static-html', $threadsNoSlashResponse);
+            $controller = new FrontController(
+                dirname(__DIR__),
+                $this->repositoryRoot,
+                $this->databasePath,
+                $staticHtmlRoot,
+                $publicRoot,
+            );
+            $response = $this->renderFrontController($controller, 'GET', '/', []);
 
-        $usersResponse = $this->renderFrontController($controller, 'GET', '/users/', []);
-        assertStringContains('Users', $usersResponse);
-        assertStringContains('route-source: static-html', $usersResponse);
-
-        $usersNoSlashResponse = $this->renderFrontController($controller, 'GET', '/users', []);
-        assertSame($usersResponse, $usersNoSlashResponse);
-        assertStringContains('route-source: static-html', $usersNoSlashResponse);
-
-        $tagsResponse = $this->renderFrontController($controller, 'GET', '/tags/', []);
-        assertStringContains('class="nav-link is-active" href="/tags/"', $tagsResponse);
-        assertStringContains('route-source: static-html', $tagsResponse);
+            assertTrue(is_link($staticHtmlRoot . '/current'));
+            assertTrue(is_file($staticHtmlRoot . '/current/index.html'));
+            assertStringContains('route-source: static-html', $response);
+            assertStringNotContains('old public artifact', $response);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
     }
 
     public function testStaticArtifactHealthCheckDetectsMissingFingerprint(): void
@@ -2548,13 +2704,15 @@ PHP;
         }
     }
 
-    public function testFrontControllerBuildsMissingArtifactAfterEligibleAnonymousFallback(): void
+    public function testFrontControllerFallsBackDynamicallyUntilAReleaseIsActivated(): void
     {
         @unlink($this->databasePath);
         $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
         $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
         mkdir($staticHtmlRoot, 0777, true);
         mkdir($publicRoot, 0777, true);
+        mkdir($publicRoot . '/threads', 0777, true);
+        file_put_contents($publicRoot . '/threads/root-001.html', '<!doctype html><p>old public artifact</p>');
 
         $controller = new FrontController(
             dirname(__DIR__),
@@ -2567,12 +2725,11 @@ PHP;
         $firstResponse = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
         assertStringContains('Hello world', $firstResponse);
         assertStringContains('route-source: php-fallback', $firstResponse);
-        assertTrue(is_file($publicRoot . '/threads/root-001.html'));
-        assertStringContains('route-source: static-html', (string) file_get_contents($publicRoot . '/threads/root-001.html'));
+        assertStringNotContains('old public artifact', $firstResponse);
 
         $secondResponse = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
         assertStringContains('Hello world', $secondResponse);
-        assertStringContains('route-source: static-html', $secondResponse);
+        assertStringContains('route-source: php-fallback', $secondResponse);
     }
 
     public function testFrontControllerDoesNotBuildArtifactForCookieBearingFallback(): void
@@ -2625,9 +2782,10 @@ PHP;
         $projectRoot = dirname(__DIR__);
         $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
         $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
-        mkdir($staticHtmlRoot . '/activity', 0777, true);
+        mkdir($staticHtmlRoot . '/releases/test-release/activity', 0777, true);
         mkdir($publicRoot, 0777, true);
-        file_put_contents($staticHtmlRoot . '/activity/index.html', '<!doctype html><title>stale activity</title><p>stale activity</p>');
+        file_put_contents($staticHtmlRoot . '/releases/test-release/activity/index.html', '<!doctype html><title>stale activity</title><p>stale activity</p>');
+        symlink('releases/test-release', $staticHtmlRoot . '/current');
 
         $controller = new FrontController(
             $projectRoot,
@@ -2651,7 +2809,7 @@ PHP;
         $activityResponse = $this->renderFrontController($controller, 'GET', '/activity/', []);
 
         assertStringContains('status=ok', $writeResponse);
-        assertFalse(is_file($staticHtmlRoot . '/activity/index.html'));
+        assertFalse(is_link($staticHtmlRoot . '/current'));
         assertStringContains('site_feature_flag', $activityResponse);
         assertStringContains('Set feature flag FORUM_APP_VERSION_NOTIFICATION=false', $activityResponse);
         assertStringNotContains('stale activity', $activityResponse);

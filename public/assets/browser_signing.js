@@ -1623,7 +1623,15 @@
 
   async function ensureOpenPgpApi(requiredMethods) {
     const loader = window.__forumOpenPgpLoader || null;
-    if (loader && loader.ready && typeof loader.ready.then === "function") {
+    if (loader && typeof loader.load === "function") {
+      try {
+        await loader.load();
+      } catch (error) {
+        const loaderPath = loader.selectedPath ? ` (${loader.selectedPath})` : "";
+        const message = error instanceof Error ? error.message : String(error || "unknown error");
+        throw openPgpUnavailableError(`OpenPGP loader failed${loaderPath}: ${message}`);
+      }
+    } else if (loader && loader.ready && typeof loader.ready.then === "function") {
       try {
         await loader.ready;
       } catch (error) {
@@ -1911,7 +1919,9 @@
       markActionTiming(timing, "forum_identity_prewarm_start");
       try {
         const loader = window.__forumOpenPgpLoader || null;
-        if (loader && loader.ready && typeof loader.ready.then === "function") {
+        if (loader && typeof loader.load === "function") {
+          await loader.load();
+        } else if (loader && loader.ready && typeof loader.ready.then === "function") {
           await loader.ready;
         }
         markActionTiming(timing, "forum_openpgp_ready");

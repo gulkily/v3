@@ -9,7 +9,7 @@ The intended production shape is:
 - Apache serves `public/` as the `DocumentRoot`
 - PHP handles dynamic requests through `public/index.php`
 - Apache directly serves only existing `/assets/*` files and `favicon.ico`
-- the PHP front controller serves eligible sibling `*.html` artifacts on public instances
+- the PHP front controller serves eligible pages from an atomically selected static release
 - the canonical writable repository lives outside `public/`
 - derived state under `state/` is writable by the web user
 
@@ -38,6 +38,9 @@ One workable layout:
   state/
     cache/
     private/
+    static_html/
+      releases/
+      current -> releases/release-...   active complete HTML release
     forum-rewrite.lock
     read_model_stale.json
 ```
@@ -48,6 +51,7 @@ Recommended mapping:
 - Apache `DocumentRoot`: `/srv/forum-rewrite/app/public`
 - writable repository root: `/srv/forum-rewrite/repository`
 - read-model database: `/srv/forum-rewrite/state/cache/post_index.sqlite3`
+- static release root: `/srv/forum-rewrite/state/static_html`
 
 Optional runtime setting:
 
@@ -66,12 +70,13 @@ The web user must be able to write:
 - the canonical repository checkout at `FORUM_REPOSITORY_ROOT`
 - the parent directory of `FORUM_DATABASE_PATH`
 - the lock file directory next to `FORUM_DATABASE_PATH`
+- `FORUM_STATIC_HTML_ROOT` and its `releases/` directory
 - `state/private/agent-reply/` under the application root if agent reply fulfillment is enabled
 - the parent directory of `LLM_EXCHANGE_DATABASE_PATH` if LLM conversation recording is enabled
 - the parent directory of `FORUM_TASK_QUEUE_DATABASE_PATH` when the internal task queue is enabled
-- sibling static artifacts in `public/` if production uses `public/*.html`
-
-If sibling `public/*.html` artifacts are used and writes are enabled, the application must be able to invalidate affected artifacts after successful writes.
+Static HTML is derived state. A write removes the `current` release pointer, so
+subsequent public requests use PHP until a fresh complete release is published.
+Old release directories are retained and are never edited in place.
 
 ## Environment Variables
 
@@ -79,17 +84,53 @@ Use these in production:
 
 - `FORUM_REPOSITORY_ROOT`
 - `FORUM_DATABASE_PATH`
-- `FORUM_PUBLIC_ARTIFACT_ROOT`
+- `FORUM_STATIC_HTML_ROOT`
 
 Suggested values:
 
 ```text
 FORUM_REPOSITORY_ROOT=/srv/forum-rewrite/repository
 FORUM_DATABASE_PATH=/srv/forum-rewrite/state/cache/post_index.sqlite3
-FORUM_PUBLIC_ARTIFACT_ROOT=/srv/forum-rewrite/app/public
+FORUM_STATIC_HTML_ROOT=/srv/forum-rewrite/state/static_html
 ```
 
-`FORUM_STATIC_HTML_ROOT` remains available for separate static roots, but the primary production model for this repo is sibling artifacts in `public/`.
+`FORUM_STATIC_HTML_ROOT` defaults to `<application-root>/state/static_html`.
+It is not under `public/`; Apache continues to route content requests through
+PHP, which selects only the `current` release.
+
+## Safe Deployment Procedure
+
+1. Deploy the application code first. Do not copy generated HTML into `public/`.
+   This version deliberately ignores old sibling `public/*.html` files, so the
+   application remains available through its dynamic path before the first new
+   release is ready.
+2. From the deployed application directory, build and publish the complete
+   snapshot:
+
+   ```bash
+   time ./v3 build-static
+   ```
+
+   The command builds a candidate SQLite model and candidate HTML directory
+   outside the live request path, then replaces the database and `current`
+   release pointer only after validation. It may take time proportional to the
+   repository, but it must not hold the live read-model write lock while it
+   walks Git history or renders pages.
+3. Smoke-test both an anonymous window and an existing signed-in browser:
+   `/`, a thread, `/account/key/`, and `/invites/`. A normal reload must be
+   sufficient; HTML revalidates with an ETag, while fingerprinted assets are
+   immutable and versioned.
+4. Confirm the active release rather than editing it:
+
+   ```bash
+   readlink "$FORUM_STATIC_HTML_ROOT/current"
+   ```
+
+If the publish command fails, the previous `current` release remains active.
+If a content write occurs during or after a publish, its static pointer is
+withdrawn and PHP serves current content until the next successful publish.
+Do not run the old static-build script from a pre-release checkout: upgrade the
+code before invoking `./v3 build-static`.
 
 ## Public Session Restoration
 
@@ -114,7 +155,7 @@ Set it alongside the three path variables above, per vhost:
 FORUM_SITE_ID=zenmemes
 ```
 
-It only selects branding — it does not select content or database paths. Those remain on `FORUM_REPOSITORY_ROOT`, `FORUM_DATABASE_PATH`, and `FORUM_PUBLIC_ARTIFACT_ROOT`, set independently per vhost. A vhost with a mismatched `FORUM_SITE_ID` and content paths is a misconfiguration, not a supported mode; the two must be kept paired by whoever edits the vhost config.
+It only selects branding — it does not select content or database paths. Those remain on `FORUM_REPOSITORY_ROOT`, `FORUM_DATABASE_PATH`, and `FORUM_STATIC_HTML_ROOT`, set independently per vhost. A vhost with a mismatched `FORUM_SITE_ID` and content paths is a misconfiguration, not a supported mode; the two must be kept paired by whoever edits the vhost config.
 
 Precedence and rollback match the other `FORUM_*` variables in this runbook: environment variable wins, code default (`zenmemes`) applies when absent, and rollback is deleting the `SetEnv` line.
 

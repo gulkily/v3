@@ -58,7 +58,7 @@ final class FrontController
                 throw new RuntimeException('Unable to read static HTML artifact: ' . $staticArtifact);
             }
 
-            $this->sendHtml($contents, 200);
+            $this->sendHtml($contents, 200, true);
             return;
         }
 
@@ -71,9 +71,6 @@ final class FrontController
                 $this->staticHtmlRoot,
             );
             $application->handle($method, $requestUri);
-            if (!$approvedMembersOnly) {
-                $this->buildStaticArtifactOnEligibleMiss($method, $requestUri, $cookies, $staticArtifact);
-            }
         } catch (Throwable $throwable) {
             if (str_starts_with($throwable->getMessage(), 'Timed out waiting for execution lock: ')) {
                 $this->sendHtml($this->renderBusyError(), 503);
@@ -235,49 +232,32 @@ final class FrontController
      */
     private function firstExistingPath(array $paths): ?string
     {
+        $activeReleaseRoot = $this->activeStaticReleaseRoot();
+        if ($activeReleaseRoot === null) {
+            return null;
+        }
+
         foreach ($paths as $path) {
-            if (is_file($path)) {
-                return $path;
+            foreach ([$this->publicRoot, $this->staticHtmlRoot] as $knownRoot) {
+                if (!str_starts_with($path, $knownRoot . '/')) {
+                    continue;
+                }
+
+                $candidate = $activeReleaseRoot . substr($path, strlen($knownRoot));
+                if (is_file($candidate)) {
+                    return $candidate;
+                }
             }
         }
 
         return null;
     }
 
-    /**
-     * @param array<string, string> $cookies
-     */
-    private function buildStaticArtifactOnEligibleMiss(
-        string $method,
-        string $requestUri,
-        array $cookies,
-        ?string $staticArtifact,
-    ): void {
-        if ($staticArtifact !== null) {
-            return;
-        }
+    private function activeStaticReleaseRoot(): ?string
+    {
+        $currentPath = $this->staticHtmlRoot . '/current';
 
-        if ($method !== 'GET' || $cookies !== []) {
-            return;
-        }
-
-        $query = (string) (parse_url($requestUri, PHP_URL_QUERY) ?? '');
-        if ($query !== '') {
-            return;
-        }
-
-        $builder = new StaticArtifactBuilder(
-            $this->projectRoot,
-            $this->repositoryRoot,
-            $this->databasePath,
-            $this->publicRoot,
-        );
-
-        try {
-            $builder->buildSingleRoute($requestUri);
-        } catch (Throwable) {
-            // Best-effort generation should not affect the current response.
-        }
+        return is_dir($currentPath) ? $currentPath : null;
     }
 
     private function renderConfigurationError(string $details): string
@@ -305,8 +285,21 @@ final class FrontController
             . '</article></section></main></div></body></html>';
     }
 
-    private function sendHtml(string $html, int $statusCode): void
+    private function sendHtml(string $html, int $statusCode, bool $publicArtifact = false): void
     {
+        if ($publicArtifact) {
+            $etag = HtmlResponseCache::etag($html);
+            header('Cache-Control: public, no-cache, must-revalidate, max-age=0');
+            header('Vary: Cookie');
+            header('ETag: ' . $etag);
+            if ($statusCode === 200 && HtmlResponseCache::requestMatches($etag)) {
+                http_response_code(304);
+                return;
+            }
+        } else {
+            header('Cache-Control: no-store');
+        }
+
         http_response_code($statusCode);
         header('Content-Type: text/html; charset=utf-8');
         echo $html;

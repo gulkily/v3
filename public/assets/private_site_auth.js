@@ -138,7 +138,11 @@
     }
 
     setStatus("Verifying this browser identity...", "info");
-    await loader.ready;
+    if (typeof loader.load === "function") {
+      await loader.load();
+    } else {
+      await loader.ready;
+    }
     if (browserIdentity && typeof browserIdentity.ensureReadyIdentity === "function") {
       await browserIdentity.ensureReadyIdentity(null, null, { verifyPublishedIdentity: true });
       publicKey = stored("forum_pki_public_key");

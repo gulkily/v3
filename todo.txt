@@ -13,7 +13,7 @@ create an option/setting/feature flag to bypass the popup and go straight to the
 have it already presented in mini-thread view in the activity
 
 scoring
-=======
+-------
 make another llm/agentic feature for fast scoring using lesser models
 	sending only short instructions and the text of the post
 		for replies, include some context

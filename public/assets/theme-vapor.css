@@ -1,0 +1,75 @@
+/* Theme: vapor */
+:root[data-theme="vapor"],
+.theme-menu__option[data-theme-option="vapor"] {
+  color-scheme: dark;
+  --page-bg: #120021;
+  --body-background:
+    radial-gradient(circle at top, rgba(50, 246, 255, 0.2), transparent 38%),
+    linear-gradient(180deg, #2b0b59 0%, #120021 38%, #090314 100%);
+  --ink: #7afcff;
+  --ink-soft: #ff9de2;
+  --line: #ff71ce;
+  --panel: rgba(33, 9, 63, 0.78);
+  --input-bg: rgba(19, 4, 38, 0.9);
+  --button-bg: rgba(255, 113, 206, 0.16);
+  --button-alt-bg: rgba(122, 252, 255, 0.16);
+  --feedback-ok-bg: rgba(122, 252, 255, 0.12);
+  --feedback-error-bg: rgba(255, 113, 206, 0.12);
+  --status-error: #ffb3de;
+  --status-ok: #9bffeb;
+  --status-warning: #ffd67a;
+  --active-bg: rgba(122, 252, 255, 0.22);
+  --active-ink: #d8ffff;
+  --active-line: #7afcff;
+  --active-ring: rgba(122, 252, 255, 0.18);
+  --body-font: "Trebuchet MS", "Century Gothic", "Segoe UI", sans-serif;
+  --ui-font: "Trebuchet MS", "Century Gothic", "Segoe UI", sans-serif;
+  --code-font: "Courier New", monospace;
+}
+
+.theme-swatch[data-theme="vapor"] {
+  background:
+    radial-gradient(circle at 30% 30%, #7afcff 0 25%, transparent 26%),
+    linear-gradient(135deg, #ff71ce 0%, #7a5cff 45%, #01cdfe 100%);
+  border-color: #ff71ce;
+  box-shadow: inset 0 0 0 0.18rem rgba(9, 3, 20, 0.9);
+}
+
+.theme-menu__option[data-theme-option="vapor"] {
+  text-shadow: 0 0 8px rgba(122, 252, 255, 0.6);
+}
+
+:root[data-theme="vapor"] .site-header {
+  position: relative;
+}
+
+:root[data-theme="vapor"] .site-header::after {
+  content: "";
+  display: block;
+  margin-top: 0.7rem;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #7afcff 22%, #ff71ce 78%, transparent 100%);
+}
+
+:root[data-theme="vapor"] .card,
+:root[data-theme="vapor"] .feedback,
+:root[data-theme="vapor"] .nav-link,
+:root[data-theme="vapor"] [data-role="public-key-viewer"],
+:root[data-theme="vapor"] [data-role="private-key-viewer"],
+:root[data-theme="vapor"] input,
+:root[data-theme="vapor"] textarea,
+:root[data-theme="vapor"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  border-color: color-mix(in srgb, var(--line) 78%, #7afcff 22%);
+  box-shadow:
+    0 0 0 1px rgba(122, 252, 255, 0.08),
+    0 0 18px rgba(255, 113, 206, 0.12);
+}
+
+:root[data-theme="vapor"] .eyebrow {
+  color: #fff3a3;
+  letter-spacing: 0.18em;
+}
+
+:root[data-theme="vapor"] a {
+  text-shadow: 0 0 10px rgba(122, 252, 255, 0.24);
+}

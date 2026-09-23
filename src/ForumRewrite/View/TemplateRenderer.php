@@ -15,6 +15,8 @@ use RuntimeException;
 final class TemplateRenderer
 {
     private const THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES = ['board.php', 'tag.php'];
+    private const CRITICAL_CSS_END_MARKER = '/* critical-css-end */';
+    private ?string $criticalCss = null;
 
     public function __construct(
         private readonly string $templateRoot,
@@ -94,6 +96,15 @@ final class TemplateRenderer
             $assetScriptPaths[] = $this->assetPath($scriptPath);
         }
 
+        $themeStylesheetPaths = [];
+        foreach (ThemeRegistry::stylesheetPaths() as $name => $path) {
+            $themeStylesheetPaths[$name] = $this->assetPath($path);
+        }
+        $defaultTheme = SiteProfileRegistry::active()['defaultTheme'];
+        $themeHint = $this->themeHint();
+        $initialTheme = $themeHint
+            ?? (ThemeRegistry::isExplicitName($defaultTheme) ? $defaultTheme : 'light');
+
         return $this->renderFile('layout.php', [
             'title' => $title,
             'content' => $content,
@@ -105,6 +116,7 @@ final class TemplateRenderer
             'appVersion' => $this->appVersion,
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
             'siteCssPath' => $this->assetPath('/assets/site.css'),
+            'criticalCss' => $this->criticalCss(),
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
             'threadDensityToggleScriptPath' => $this->assetPath('/assets/thread_density_toggle.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
@@ -112,11 +124,43 @@ final class TemplateRenderer
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
             'themes' => ThemeRegistry::all(),
             'explicitThemeNames' => ThemeRegistry::explicitNames(),
-            'defaultTheme' => SiteProfileRegistry::active()['defaultTheme'],
+            'defaultTheme' => $defaultTheme,
+            'themeStylesheetPaths' => $themeStylesheetPaths,
+            'initialThemeStylesheetPath' => $themeStylesheetPaths[$initialTheme],
+            'themeHintCookieName' => ThemeRegistry::THEME_HINT_COOKIE,
             'approvedMembersOnlyEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
             'publicAuthenticationResume' => $publicAuthenticationResume,
             'navItems' => $this->navItems($viewerProfile),
         ]);
+    }
+
+    private function criticalCss(): string
+    {
+        if ($this->criticalCss !== null) {
+            return $this->criticalCss;
+        }
+
+        $stylesheetPath = dirname($this->templateRoot) . '/public/assets/site.css';
+        $stylesheet = file_get_contents($stylesheetPath);
+        if ($stylesheet === false) {
+            throw new RuntimeException('Unable to read critical stylesheet source.');
+        }
+
+        $endOffset = strpos($stylesheet, self::CRITICAL_CSS_END_MARKER);
+        if ($endOffset === false) {
+            throw new RuntimeException('Critical stylesheet marker is missing.');
+        }
+
+        $this->criticalCss = substr($stylesheet, 0, $endOffset);
+
+        return $this->criticalCss;
+    }
+
+    private function themeHint(): ?string
+    {
+        $hint = (string) ($_COOKIE[ThemeRegistry::THEME_HINT_COOKIE] ?? '');
+
+        return ThemeRegistry::isExplicitName($hint) ? $hint : null;
     }
 
     /**

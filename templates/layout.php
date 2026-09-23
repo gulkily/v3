@@ -1,13 +1,37 @@
 <!doctype html>
-<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>">
+<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= $e($title) ?></title>
+  <link id="theme-stylesheet" rel="stylesheet" href="<?= $e($initialThemeStylesheetPath) ?>" fetchpriority="high">
   <script>
     (function () {
       var allowed = <?= json_encode($explicitThemeNames, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+      var themeStylesheetPaths = <?= json_encode($themeStylesheetPaths, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) ?>;
+      var themeHintCookieName = <?= json_encode($themeHintCookieName, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
       var theme = null;
+
+      function cookieValue(name) {
+        var prefix = name + '=';
+        var entries = document.cookie ? document.cookie.split(';') : [];
+        for (var index = 0; index < entries.length; index++) {
+          var entry = entries[index].trim();
+          if (entry.indexOf(prefix) === 0) {
+            return decodeURIComponent(entry.slice(prefix.length));
+          }
+        }
+        return null;
+      }
+
+      function updateThemeHint(resolvedTheme) {
+        if (cookieValue(themeHintCookieName) === resolvedTheme) {
+          return;
+        }
+        document.cookie = themeHintCookieName + '=' + encodeURIComponent(resolvedTheme)
+          + '; Path=/; Max-Age=31536000; SameSite=Lax'
+          + (location.protocol === 'https:' ? '; Secure' : '');
+      }
 
       try {
         theme = localStorage.getItem('zenmemes-theme');
@@ -21,6 +45,19 @@
       if (allowed.indexOf(theme) !== -1) {
         document.documentElement.setAttribute('data-theme', theme);
       }
+
+      var resolvedTheme = allowed.indexOf(theme) !== -1
+        ? theme
+        : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      var themeStylesheet = document.getElementById('theme-stylesheet');
+      if (themeStylesheet && themeStylesheetPaths[resolvedTheme]) {
+        themeStylesheet.setAttribute('href', themeStylesheetPaths[resolvedTheme]);
+        themeStylesheet.setAttribute('data-theme-name', resolvedTheme);
+      }
+      document.documentElement.setAttribute('data-resolved-theme', resolvedTheme);
+      window.forumThemeStylesheetPaths = themeStylesheetPaths;
+      window.forumUpdateThemeHint = updateThemeHint;
+      updateThemeHint(resolvedTheme);
 
       try {
         var densityStorageKey = 'zenmemes-thread-density';
@@ -44,16 +81,19 @@
   <meta name="app-version-endpoint" content="/api/version">
 <?php endif; ?>
   <link rel="icon" href="/favicon.ico" sizes="32x32">
-  <link rel="stylesheet" href="<?= $e($siteCssPath) ?>">
+  <style data-role="critical-css"><?= $criticalCss ?></style>
+  <link rel="preload" href="<?= $e($siteCssPath) ?>" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="<?= $e($siteCssPath) ?>" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="<?= $e($siteCssPath) ?>"></noscript>
+  <script src="<?= $e($themeToggleScriptPath) ?>" defer></script>
+<?php if ($showThreadDensityToggle): ?>
+  <script src="<?= $e($threadDensityToggleScriptPath) ?>" defer></script>
+<?php endif; ?>
 <?php foreach ($scriptPaths as $scriptPath): ?>
   <script src="<?= $e($scriptPath) ?>" defer></script>
 <?php endforeach; ?>
   <script src="<?= $e($composeDraftClearScriptPath) ?>" defer></script>
   <script src="<?= $e($inviteNavigationScriptPath) ?>" defer></script>
-  <script src="<?= $e($themeToggleScriptPath) ?>" defer></script>
-<?php if ($showThreadDensityToggle): ?>
-  <script src="<?= $e($threadDensityToggleScriptPath) ?>" defer></script>
-<?php endif; ?>
 <?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>
 <?php endif; ?>

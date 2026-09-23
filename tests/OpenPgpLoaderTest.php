@@ -7,44 +7,51 @@ final class OpenPgpLoaderTest
     /**
      * @return array<string, mixed>
      */
-    private function runLoader(bool $secureContext): array
+    private function runLoader(bool $secureContext, bool $startLoad = false): array
     {
         $script = <<<'NODE'
 const fs = require('fs');
 const vm = require('vm');
 
-const appendedScripts = [];
+const appendedNodes = [];
 global.window = { isSecureContext: process.argv[2] === '1' };
 global.document = {
   createElement(tagName) {
     return {
       tagName,
       async: true,
+      rel: '',
+      as: '',
+      href: '',
       src: '',
       onload: null,
       onerror: null
     };
   },
   head: {
-    appendChild(script) {
-      appendedScripts.push({ src: script.src, async: script.async });
+    appendChild(node) {
+      appendedNodes.push({ tagName: node.tagName, rel: node.rel, as: node.as, href: node.href, src: node.src, async: node.async });
     }
   }
 };
 
 vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+if (process.argv[3] === '1') {
+  window.__forumOpenPgpLoader.load();
+}
 process.stdout.write(JSON.stringify({
   selectedVersion: window.__forumOpenPgpLoader.selectedVersion,
   selectedPath: window.__forumOpenPgpLoader.selectedPath,
-  appendedScripts
+  appendedNodes
 }));
 NODE;
 
         $command = sprintf(
-            'node -e %s %s %s',
+            'node -e %s %s %s %s',
             escapeshellarg($script),
             escapeshellarg(__DIR__ . '/../public/assets/openpgp_loader.js'),
             escapeshellarg($secureContext ? '1' : '0'),
+            escapeshellarg($startLoad ? '1' : '0'),
         );
 
         $output = [];
@@ -63,7 +70,14 @@ NODE;
 
         assertSame('v6', $result['selectedVersion']);
         assertSame('/assets/openpgp.min.js', $result['selectedPath']);
-        assertSame([['src' => '/assets/openpgp.min.js', 'async' => false]], $result['appendedScripts']);
+        assertSame([[
+            'tagName' => 'link',
+            'rel' => 'preload',
+            'as' => 'script',
+            'href' => '/assets/openpgp.min.js',
+            'src' => '',
+            'async' => true,
+        ]], $result['appendedNodes']);
     }
 
     public function testInsecureContextSelectsOpenPgpV5FallbackBundle(): void
@@ -72,7 +86,24 @@ NODE;
 
         assertSame('v5', $result['selectedVersion']);
         assertSame('/assets/openpgp.v5.11.3.min.js', $result['selectedPath']);
-        assertSame([['src' => '/assets/openpgp.v5.11.3.min.js', 'async' => false]], $result['appendedScripts']);
+        assertSame([[
+            'tagName' => 'link',
+            'rel' => 'preload',
+            'as' => 'script',
+            'href' => '/assets/openpgp.v5.11.3.min.js',
+            'src' => '',
+            'async' => true,
+        ]], $result['appendedNodes']);
+    }
+
+    public function testEvaluationStartsOnlyWhenACallerRequestsIt(): void
+    {
+        $result = $this->runLoader(true, true);
+
+        assertSame('link', $result['appendedNodes'][0]['tagName']);
+        assertSame('script', $result['appendedNodes'][1]['tagName']);
+        assertSame('/assets/openpgp.min.js', $result['appendedNodes'][1]['src']);
+        assertSame(true, $result['appendedNodes'][1]['async']);
     }
 }
 

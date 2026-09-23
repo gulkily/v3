@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Host\HtmlResponseCache;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\View\TemplateRenderer;
@@ -283,6 +284,21 @@ final class RouteServices
     /** @param string[] $headers */
     public function sendHtml(string $html, int $statusCode, array $headers = []): void
     {
+        $etag = HtmlResponseCache::etag($html);
+        $headers = array_merge([
+            'Cache-Control: private, no-cache, must-revalidate, max-age=0',
+            'Vary: Cookie',
+            'ETag: ' . $etag,
+        ], $headers);
+
+        if ($statusCode === 200 && HtmlResponseCache::requestMatches($etag)) {
+            http_response_code(304);
+            foreach ($headers as $headerValue) {
+                header($headerValue);
+            }
+            return;
+        }
+
         http_response_code($statusCode);
         header('Content-Type: text/html; charset=utf-8');
         foreach ($headers as $headerValue) {

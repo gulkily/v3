@@ -1,0 +1,76 @@
+/* Theme: chicago */
+:root[data-theme="chicago"],
+.theme-menu__option[data-theme-option="chicago"] {
+  color-scheme: light;
+  --page-bg: #008080;
+  --body-background: linear-gradient(180deg, #008080 0%, #0a6d6d 100%);
+  --ink: #111111;
+  --ink-soft: #333333;
+  --line: #7b7b7b;
+  --panel: #c0c0c0;
+  --input-bg: #ffffff;
+  --button-bg: #c0c0c0;
+  --button-alt-bg: #d4d0c8;
+  --feedback-ok-bg: #d9f0f0;
+  --feedback-error-bg: #f8dcdc;
+  --status-error: #7a0000;
+  --status-ok: #0d5f31;
+  --status-warning: #8a5f00;
+  --body-font: "MS Sans Serif", Tahoma, "Geneva", sans-serif;
+  --ui-font: "MS Sans Serif", Tahoma, "Geneva", sans-serif;
+  --code-font: "Courier New", monospace;
+}
+
+.theme-swatch[data-theme="chicago"] {
+  background:
+    linear-gradient(180deg, #ffffff 0 8%, #c0c0c0 8% 100%);
+  border-color: #4f4f4f;
+  box-shadow:
+    inset -1px -1px 0 0 #7b7b7b,
+    inset 1px 1px 0 0 #ffffff;
+}
+
+.theme-menu__option[data-theme-option="chicago"] {
+  background: #c0c0c0;
+  box-shadow: inset -1px -1px 0 #7b7b7b, inset 1px 1px 0 #ffffff;
+}
+
+:root[data-theme="chicago"] .shell {
+  width: min(100%, 860px);
+}
+
+:root[data-theme="chicago"] .site-header,
+:root[data-theme="chicago"] .card,
+:root[data-theme="chicago"] .feedback,
+:root[data-theme="chicago"] .nav-link,
+:root[data-theme="chicago"] input,
+:root[data-theme="chicago"] textarea,
+:root[data-theme="chicago"] button:not(.theme-menu__option),
+:root[data-theme="chicago"] [data-role="public-key-viewer"],
+:root[data-theme="chicago"] [data-role="private-key-viewer"] {
+  border-color: #7b7b7b;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #7b7b7b;
+}
+
+:root[data-theme="chicago"] .site-header {
+  padding: 0.45rem 0.6rem 0.75rem;
+  background: #c0c0c0;
+}
+
+:root[data-theme="chicago"] .eyebrow {
+  display: inline-block;
+  margin-bottom: 0.7rem;
+  padding: 0.12rem 0.35rem;
+  color: #ffffff;
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  letter-spacing: 0.04em;
+}
+
+:root[data-theme="chicago"] button:not(.theme-menu__option):active,
+:root[data-theme="chicago"] .nav-link.is-active {
+  box-shadow:
+    inset -1px -1px 0 0 #ffffff,
+    inset 1px 1px 0 0 #7b7b7b;
+}

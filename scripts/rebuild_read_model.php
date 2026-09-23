@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/autoload.php';
 
-use ForumRewrite\Canonical\CanonicalRecordRepository;
-use ForumRewrite\ReadModel\ReadModelBuilder;
-use ForumRewrite\Support\ExecutionLock;
+use ForumRewrite\ReadModel\ReadModelCandidateBuilder;
+use ForumRewrite\ReadModel\ReadModelCandidatePromoter;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 $projectRoot = dirname(__DIR__);
@@ -20,16 +19,15 @@ $sourceCounts = [
     'approval_seeds' => count(glob($repositoryRoot . '/records/approval-seeds/*.txt') ?: []),
 ];
 
-(new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(
-    static function () use ($repositoryRoot, $databasePath): void {
-        $builder = new ReadModelBuilder(
-            $repositoryRoot,
-            $databasePath,
-            new CanonicalRecordRepository($repositoryRoot),
-        );
-        $builder->rebuild();
+$candidatePath = null;
+try {
+    $candidatePath = (new ReadModelCandidateBuilder($repositoryRoot, $databasePath, 'manual'))->build();
+    (new ReadModelCandidatePromoter($repositoryRoot, $databasePath))->promote($candidatePath);
+} finally {
+    if ($candidatePath !== null && is_file($candidatePath)) {
+        @unlink($candidatePath);
     }
-);
+}
 
 $pdo = new PDO('sqlite:' . $databasePath);
 $readModelCounts = [

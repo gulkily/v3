@@ -14,6 +14,7 @@ $options = parseOptions(array_slice($argv, 1));
 $repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
 $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
 $artifactRoot = getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public');
+$staticHtmlRoot = getenv('FORUM_STATIC_HTML_ROOT') ?: ($projectRoot . '/state/static_html');
 $limit = max(1, (int) ($options['limit'] ?? 10));
 $postId = isset($options['post-id']) ? trim((string) $options['post-id']) : '';
 $dryRun = ($options['dry-run'] ?? false) === true;
@@ -37,7 +38,7 @@ try {
         exit(0);
     }
 
-    $application = new Application($projectRoot, $repositoryRoot, $databasePath, $artifactRoot);
+    $application = new Application($projectRoot, $repositoryRoot, $databasePath, $artifactRoot, $staticHtmlRoot);
     $summary = [
         'claimed' => 0,
         'generated' => 0,

@@ -36,6 +36,7 @@ $testFiles = [
     __DIR__ . '/RelatedContentSearchServiceTest.php',
     __DIR__ . '/RepositoryArchiveImportCommandTest.php',
     __DIR__ . '/ReadModelBuilderTimingTest.php',
+    __DIR__ . '/ReadModelCandidateBuilderTest.php',
     __DIR__ . '/ReadModelThreadLabelsTest.php',
     __DIR__ . '/ResumeTargetTest.php',
     __DIR__ . '/SiteProfileRegistryTest.php',

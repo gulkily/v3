@@ -18,6 +18,7 @@ final class StaticArtifactBuilder
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
         private readonly string $artifactRoot,
+        private readonly ?\Closure $progressReporter = null,
     ) {
     }
 
@@ -30,37 +31,58 @@ final class StaticArtifactBuilder
         );
         $builder->rebuild();
 
+        $this->buildFromReadModel();
+    }
+
+    public function buildFromReadModel(): void
+    {
+
         if (!is_dir($this->artifactRoot)) {
             mkdir($this->artifactRoot, 0777, true);
         }
 
+        $this->reportProgress('Fingerprinting and copying public assets...');
         AssetFingerprint::copyFingerprintedAssets($this->projectRoot . '/public', $this->artifactRoot);
+        $this->reportProgress('Fingerprinting and copying public assets complete.');
 
         $application = $this->application();
 
+        $this->reportProgress('Rendering shared pages (0/10).');
+        $this->reportProgress('Rendering shared pages (1/10): /.');
         $this->writeRouteArtifact($application, '/', $this->artifactRoot . '/index.html');
+        $this->reportProgress('Rendering shared pages (2/10): /threads/.');
         $this->writeRouteArtifacts($application, '/threads/', [
             $this->artifactRoot . '/threads.html',
             $this->artifactRoot . '/threads/index.html',
         ]);
+        $this->reportProgress('Rendering shared pages (3/10): /about/.');
         $this->writeRouteArtifacts($application, '/about/', [
             $this->artifactRoot . '/about.html',
             $this->artifactRoot . '/about/index.html',
         ]);
+        $this->reportProgress('Rendering shared pages (4/10): /instance/.');
         $this->writeRouteArtifact($application, '/instance/', $this->artifactRoot . '/instance.html');
+        $this->reportProgress('Rendering shared pages (5/10): /activity/.');
         $this->writeRouteArtifact($application, '/activity/', $this->artifactRoot . '/activity.html');
+        $this->reportProgress('Rendering shared pages (6/10): /users/.');
         $this->writeRouteArtifact($application, '/users/', $this->artifactRoot . '/users.html');
+        $this->reportProgress('Rendering shared pages (7/10): /tools/.');
         $this->writeRouteArtifacts($application, '/tools/', [
             $this->artifactRoot . '/tools.html',
             $this->artifactRoot . '/tools/index.html',
         ]);
+        $this->reportProgress('Rendering shared pages (8/10): /tools/bookmarklets/.');
         $this->writeRouteArtifact($application, '/tools/bookmarklets/', $this->artifactRoot . '/tools/bookmarklets.html');
+        $this->reportProgress('Rendering shared pages (9/10): /tools/feature-flags/.');
         $this->writeRouteArtifact($application, '/tools/feature-flags/', $this->artifactRoot . '/tools/feature-flags.html');
+        $this->reportProgress('Rendering shared pages (10/10): /tags/.');
         $this->writeRouteArtifacts($application, '/tags/', [
             $this->artifactRoot . '/tags.html',
             $this->artifactRoot . '/tags/index.html',
         ]);
-        foreach ($this->fetchVisibleTagRoutes() as $route) {
+        $this->reportProgress('Rendering shared pages complete (10/10).');
+
+        $this->renderRouteBatch('tag pages', $this->fetchVisibleTagRoutes(), function (string $route) use ($application): void {
             $artifactPaths = $this->artifactPathsForRoute($route);
             $artifactPath = $artifactPaths[0] ?? null;
             if ($artifactPath === null) {
@@ -68,19 +90,16 @@ final class StaticArtifactBuilder
             }
 
             $this->writeRouteArtifact($application, $route, $artifactPath);
-        }
-
-        foreach ($this->fetchVisibleThreadIds() as $threadId) {
+        });
+        $this->renderRouteBatch('thread pages', $this->fetchVisibleThreadIds(), function (string $threadId) use ($application): void {
             $this->writeRouteArtifact($application, '/threads/' . $threadId, $this->artifactRoot . '/threads/' . $threadId . '.html');
-        }
-
-        foreach ($this->fetchVisiblePostIds() as $postId) {
+        });
+        $this->renderRouteBatch('post pages', $this->fetchVisiblePostIds(), function (string $postId) use ($application): void {
             $this->writeRouteArtifact($application, '/posts/' . $postId, $this->artifactRoot . '/posts/' . $postId . '.html');
-        }
-
-        foreach ($this->fetchIds('SELECT profile_slug FROM profiles ORDER BY profile_slug') as $profileSlug) {
+        });
+        $this->renderRouteBatch('profile pages', $this->fetchIds('SELECT profile_slug FROM profiles ORDER BY profile_slug'), function (string $profileSlug) use ($application): void {
             $this->writeRouteArtifact($application, '/profiles/' . $profileSlug, $this->artifactRoot . '/profiles/' . $profileSlug . '.html');
-        }
+        });
     }
 
     public function buildSingleRoute(string $route): bool
@@ -201,6 +220,31 @@ final class StaticArtifactBuilder
         if (!rename($temporaryPath, $path)) {
             @unlink($temporaryPath);
             throw new RuntimeException('Unable to move artifact into place: ' . $path);
+        }
+    }
+
+    /**
+     * @param list<string> $items
+     * @param callable(string):void $renderer
+     */
+    private function renderRouteBatch(string $description, array $items, callable $renderer): void
+    {
+        $total = count($items);
+        $this->reportProgress("Rendering {$description} (0/{$total}).");
+
+        foreach ($items as $index => $item) {
+            $renderer($item);
+            $completed = $index + 1;
+            if ($completed === $total || $completed % 25 === 0) {
+                $this->reportProgress("Rendering {$description} ({$completed}/{$total}).");
+            }
+        }
+    }
+
+    private function reportProgress(string $message): void
+    {
+        if ($this->progressReporter !== null) {
+            ($this->progressReporter)($message);
         }
     }
 

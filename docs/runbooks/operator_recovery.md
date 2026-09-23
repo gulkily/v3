@@ -30,10 +30,10 @@ The deterministic recovery command is:
 php scripts/rebuild_read_model.php "$FORUM_REPOSITORY_ROOT" "$FORUM_DATABASE_PATH"
 ```
 
-If production uses sibling artifacts:
+If production serves static releases:
 
 ```bash
-php scripts/build_static_artifacts.php "$FORUM_REPOSITORY_ROOT" "$FORUM_DATABASE_PATH" "$FORUM_PUBLIC_ARTIFACT_ROOT"
+php scripts/build_static_artifacts.php "$FORUM_REPOSITORY_ROOT" "$FORUM_DATABASE_PATH" "$FORUM_STATIC_HTML_ROOT"
 ```
 
 ## Common Cases
@@ -51,7 +51,7 @@ Action:
 1. inspect `/api/read_model_status`
 2. note `stale_reason` and `stale_commit_sha`
 3. run a manual rebuild
-4. rebuild artifacts if production uses sibling `public/*.html`
+4. publish a fresh static release if production uses static HTML
 5. re-check `/api/read_model_status`
 
 When the internal task queue is configured, an operator can request the same rebuild for cron processing instead of running it inline:
@@ -125,7 +125,7 @@ Derived and rebuildable:
 - SQLite read-model database
 - lock file
 - stale marker
-- sibling `public/*.html` artifacts
+- static HTML release directories under `FORUM_STATIC_HTML_ROOT`
 
 ## Safe Recovery Principle
 
@@ -145,7 +145,7 @@ Avoid:
 git -C "$FORUM_REPOSITORY_ROOT" rev-parse HEAD
 git -C "$FORUM_REPOSITORY_ROOT" status --short
 php scripts/rebuild_read_model.php "$FORUM_REPOSITORY_ROOT" "$FORUM_DATABASE_PATH"
-php scripts/build_static_artifacts.php "$FORUM_REPOSITORY_ROOT" "$FORUM_DATABASE_PATH" "$FORUM_PUBLIC_ARTIFACT_ROOT"
+php scripts/build_static_artifacts.php "$FORUM_REPOSITORY_ROOT" "$FORUM_DATABASE_PATH" "$FORUM_STATIC_HTML_ROOT"
 ./v3 task-queue status
 ./v3 task-queue enqueue-rebuild
 ```
