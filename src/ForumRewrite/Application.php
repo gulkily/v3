@@ -21,6 +21,7 @@ use ForumRewrite\Canonical\SourcePathValidator;
 use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\Http\AboutPageController;
+use ForumRewrite\Http\ApiTextController;
 use ForumRewrite\Http\BoardPageController;
 use ForumRewrite\Http\BoardViewOptions;
 use ForumRewrite\Http\CodebaseStateController;
@@ -480,45 +481,27 @@ final class Application
         }
 
         if ($path === '/api/' || $path === '/api') {
-            $this->sendText($this->renderApiIndex(), 200);
+            $this->apiTextController()->index();
             return;
         }
 
         if ($path === '/api/list_index') {
-            $this->sendText($this->renderApiListIndex(), 200);
+            $this->apiTextController()->listIndex();
             return;
         }
 
         if ($path === '/api/get_thread') {
-            $thread = $this->renderApiGetThread((string) ($query['thread_id'] ?? ''));
-            if ($thread === null) {
-                $this->sendText("thread not found\n", 404);
-                return;
-            }
-
-            $this->sendText($thread, 200);
+            $this->apiTextController()->getThread((string) ($query['thread_id'] ?? ''));
             return;
         }
 
         if ($path === '/api/get_post') {
-            $post = $this->renderApiGetPost((string) ($query['post_id'] ?? ''));
-            if ($post === null) {
-                $this->sendText("post not found\n", 404);
-                return;
-            }
-
-            $this->sendText($post, 200);
+            $this->apiTextController()->getPost((string) ($query['post_id'] ?? ''));
             return;
         }
 
         if ($path === '/api/get_profile') {
-            $profile = $this->renderApiGetProfile((string) ($query['profile_slug'] ?? ''));
-            if ($profile === null) {
-                $this->sendText("profile not found\n", 404);
-                return;
-            }
-
-            $this->sendText($profile, 200);
+            $this->apiTextController()->getProfile((string) ($query['profile_slug'] ?? ''));
             return;
         }
 
@@ -543,7 +526,7 @@ final class Application
         }
 
         if ($path === '/api/get_username_claim_cta') {
-            $this->sendText("Generate a browser keypair, choose a username, and bootstrap your identity.\n", 200);
+            $this->apiTextController()->usernameClaimCta();
             return;
         }
 
@@ -1631,71 +1614,6 @@ final class Application
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
     }
 
-    private function renderApiIndex(): string
-    {
-        return "GET /api/\nGET /api/version\nGET /api/auth_challenge\nGET /api/auth_status\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nPOST /api/set_identity_hint\nPOST /api/clear_identity\nPOST /api/authenticate_identity\nPOST /api/prepare_identity\nPOST /api/create_identity\nPOST /api/analyze_post\nPOST /api/generate_agent_reply\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n";
-    }
-
-    private function renderApiListIndex(): string
-    {
-        $lines = [];
-        foreach ($this->fetchThreads() as $thread) {
-            $subject = $this->displayThreadTitle($thread);
-            $lines[] = $thread['root_post_id'] . "\t" . $subject . "\t" . $thread['reply_count'];
-        }
-
-        return implode("\n", $lines) . "\n";
-    }
-
-    private function renderApiGetThread(string $threadId): ?string
-    {
-        $thread = $this->fetchThread($threadId);
-        if ($thread === null) {
-            return null;
-        }
-
-        $lines = [
-            'Thread-ID: ' . $thread['root_post_id'],
-            'Created-At: ' . $thread['root_post_created_at'],
-            'Last-Activity-At: ' . $thread['last_activity_at'],
-            'Subject: ' . ($thread['subject'] ?: ''),
-            'Reply-Count: ' . $thread['reply_count'],
-            'Score-Total: ' . $thread['score_total'],
-            'Labels: ' . implode(' ', $thread['thread_labels']),
-            '',
-        ];
-
-        foreach ($this->fetchThreadPosts($threadId) as $post) {
-            $lines[] = '[' . $post['post_id'] . '] ' . trim(str_replace("\n", ' ', $post['body']));
-        }
-
-        return implode("\n", $lines) . "\n";
-    }
-
-    private function renderApiGetPost(string $postId): ?string
-    {
-        $post = $this->fetchPost($postId);
-        if ($post === null) {
-            return null;
-        }
-
-        return "Post-ID: {$post['post_id']}\nCreated-At: {$post['created_at']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\n\n{$post['body']}";
-    }
-
-    private function renderApiGetProfile(string $slug): ?string
-    {
-        $profile = $this->fetchProfileBySlug($slug);
-        if ($profile === null) {
-            return null;
-        }
-
-        $approved = ((int) $profile['is_approved']) === 1 ? 'yes' : 'no';
-
-        $approvedBy = ((int) $profile['is_approved']) === 1 ? (string) ($profile['approved_by_label'] ?? '') : '';
-
-        return "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nApproved-By: {$approvedBy}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n";
-    }
-
     private function renderThreadRss(string $threadId): ?string
     {
         $thread = $this->fetchThread($threadId);
@@ -1818,14 +1736,6 @@ final class Application
         $this->appVersion = ReadModelMetadata::repositoryHead($this->repositoryRoot);
 
         return $this->appVersion;
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function fetchThreads(): array
-    {
-        return ThreadRepository::fetchThreads($this->pdo());
     }
 
     /**
@@ -2669,6 +2579,18 @@ final class Application
             $this->routeServices(),
             $this->fetchPost(...),
             $this->resolveViewerProfileFromIdentityHint(...),
+        );
+    }
+
+    private function apiTextController(): ApiTextController
+    {
+        return new ApiTextController(
+            $this->routeServices(),
+            $this->fetchThread(...),
+            $this->fetchThreadPosts(...),
+            $this->fetchPost(...),
+            $this->fetchProfileBySlug(...),
+            $this->displayThreadTitle(...),
         );
     }
 
