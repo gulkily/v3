@@ -551,6 +551,39 @@ PHP;
         assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/site.000000000000.css'));
     }
 
+    public function testLayoutUsesOnlyAValidatedThemeHintForTheInitialStylesheet(): void
+    {
+        $previousCookie = $_COOKIE;
+        $renderer = new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__) . '/templates');
+        $publicRoot = dirname(__DIR__) . '/public';
+
+        try {
+            $_COOKIE = ['theme-hint' => 'word97'];
+            $hintedHtml = $renderer->renderLayout('Theme', '<main></main>', 'board');
+
+            assertStringContains(
+                'id="theme-stylesheet" rel="stylesheet" href="'
+                . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-word97.css')
+                . '" fetchpriority="high"',
+                $hintedHtml
+            );
+            assertStringContains('var themeStylesheetPaths = ', $hintedHtml);
+            assertStringContains("document.getElementById('theme-stylesheet')", $hintedHtml);
+
+            $_COOKIE = ['theme-hint' => 'auto'];
+            $invalidHintHtml = $renderer->renderLayout('Theme', '<main></main>', 'board');
+
+            assertStringContains(
+                'id="theme-stylesheet" rel="stylesheet" href="'
+                . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-light.css')
+                . '" fetchpriority="high"',
+                $invalidHintHtml
+            );
+        } finally {
+            $_COOKIE = $previousCookie;
+        }
+    }
+
     public function testAssetFingerprintDistinguishesCurrentAndStaleAssetPaths(): void
     {
         $publicRoot = sys_get_temp_dir() . '/forum-rewrite-fingerprint-' . bin2hex(random_bytes(6));
@@ -575,8 +608,12 @@ PHP;
     public function testCompactModeMenuStylesUseScopedDensitySelectors(): void
     {
         $css = file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+        $word97Css = file_get_contents(dirname(__DIR__) . '/public/assets/theme-word97.css');
         if ($css === false) {
             throw new RuntimeException('Unable to read site stylesheet.');
+        }
+        if ($word97Css === false) {
+            throw new RuntimeException('Unable to read Word 97 stylesheet.');
         }
 
         assertStringContains(':root[data-thread-density="compact"] .thread-card__preview', $css);
@@ -590,7 +627,7 @@ PHP;
         assertStringContains(':root[data-thread-density="compact"] .thread-list > .card', $css);
         assertStringContains('border-left: 0', $css);
         assertStringContains('border-right: 0', $css);
-        assertStringContains(':root[data-theme="word97"][data-thread-density="compact"]', $css);
+        assertStringContains(':root[data-theme="word97"][data-thread-density="compact"]', $word97Css);
     }
 
     public function testAssetFingerprintCopySkipsAlreadyFingerprintedSourceFiles(): void
@@ -1250,7 +1287,7 @@ PHP;
         assertStringContains('data-heat="', $tagPage);
         assertStringContains('data-action="theme-cycle"', $board);
         assertStringContains('<style data-role="critical-css">', $board);
-        assertStringContains(':root[data-theme="dark"]', $board);
+        assertFingerprintedAsset($board, 'theme-light.css');
         assertStringContains('class="card"', $board);
         assertStringContains('<link rel="preload" href="/assets/site.', $board);
         assertStringContains('as="style" fetchpriority="high">', $board);

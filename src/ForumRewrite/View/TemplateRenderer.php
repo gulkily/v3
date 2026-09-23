@@ -95,6 +95,15 @@ final class TemplateRenderer
             $assetScriptPaths[] = $this->assetPath($scriptPath);
         }
 
+        $themeStylesheetPaths = [];
+        foreach (ThemeRegistry::stylesheetPaths() as $name => $path) {
+            $themeStylesheetPaths[$name] = $this->assetPath($path);
+        }
+        $defaultTheme = SiteProfileRegistry::active()['defaultTheme'];
+        $themeHint = $this->themeHint();
+        $initialTheme = $themeHint
+            ?? (ThemeRegistry::isExplicitName($defaultTheme) ? $defaultTheme : 'light');
+
         return $this->renderFile('layout.php', [
             'title' => $title,
             'content' => $content,
@@ -114,7 +123,9 @@ final class TemplateRenderer
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
             'themes' => ThemeRegistry::all(),
             'explicitThemeNames' => ThemeRegistry::explicitNames(),
-            'defaultTheme' => SiteProfileRegistry::active()['defaultTheme'],
+            'defaultTheme' => $defaultTheme,
+            'themeStylesheetPaths' => $themeStylesheetPaths,
+            'initialThemeStylesheetPath' => $themeStylesheetPaths[$initialTheme],
             'approvedMembersOnlyEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
             'publicAuthenticationResume' => $publicAuthenticationResume,
             'navItems' => $this->navItems($viewerProfile),
@@ -141,6 +152,13 @@ final class TemplateRenderer
         $this->criticalCss = substr($stylesheet, 0, $endOffset);
 
         return $this->criticalCss;
+    }
+
+    private function themeHint(): ?string
+    {
+        $hint = (string) ($_COOKIE[ThemeRegistry::THEME_HINT_COOKIE] ?? '');
+
+        return ThemeRegistry::isExplicitName($hint) ? $hint : null;
     }
 
     /**

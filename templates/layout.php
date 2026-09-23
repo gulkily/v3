@@ -4,9 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= $e($title) ?></title>
+  <link id="theme-stylesheet" rel="stylesheet" href="<?= $e($initialThemeStylesheetPath) ?>" fetchpriority="high">
   <script>
     (function () {
       var allowed = <?= json_encode($explicitThemeNames, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+      var themeStylesheetPaths = <?= json_encode($themeStylesheetPaths, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
       var theme = null;
 
       try {
@@ -21,6 +23,16 @@
       if (allowed.indexOf(theme) !== -1) {
         document.documentElement.setAttribute('data-theme', theme);
       }
+
+      var resolvedTheme = allowed.indexOf(theme) !== -1
+        ? theme
+        : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      var themeStylesheet = document.getElementById('theme-stylesheet');
+      if (themeStylesheet && themeStylesheetPaths[resolvedTheme]) {
+        themeStylesheet.setAttribute('href', themeStylesheetPaths[resolvedTheme]);
+        themeStylesheet.setAttribute('data-theme-name', resolvedTheme);
+      }
+      document.documentElement.setAttribute('data-resolved-theme', resolvedTheme);
 
       try {
         var densityStorageKey = 'zenmemes-thread-density';

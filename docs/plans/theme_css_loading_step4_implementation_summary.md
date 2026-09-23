@@ -21,3 +21,14 @@
   - Confirmed all 13 stylesheet assets are non-empty and no direct explicit-theme, swatch, or theme-option selector remains in `site.css`.
 - Notes:
   - The unscoped light variables remain in `site.css` as the deliberate no-JavaScript/default fallback.
+
+## Stage 3 - Render the prioritized stylesheet link
+- Changes:
+  - Added a validated `theme-hint` lookup to the shared renderer and a fingerprinted stylesheet manifest for every explicit theme.
+  - Rendered one high-priority theme stylesheet link before the head resolver; a valid hint (or explicit site default) supplies its initial path.
+  - Extended the early resolver to replace a stale or missing hinted path with the client-resolved explicit or Auto/System theme before first paint.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testLayoutUsesOnlyAValidatedThemeHintForTheInitialStylesheet LocalAppSmokeTest::testCompactModeMenuStylesUseScopedDensitySelectors LocalAppSmokeTest::testApplicationRendersCoreRoutes ThemeRegistryTest` — passed.
+  - Confirmed valid `word97` and invalid `auto` hints respectively render the fingerprinted Word 97 and fallback Light stylesheet paths.
+- Notes:
+  - The hint is not trusted as user preference and `auto` is rejected server-side.
