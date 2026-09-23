@@ -55,3 +55,12 @@
   - `php tests/run.php LocalAppSmokeTest::testThemeToggleWarmsAlternateThemeStylesheetsAtLowPriority LocalAppSmokeTest::testLayoutUsesOnlyAValidatedThemeHintForTheInitialStylesheet ThemeRegistryTest` — passed.
 - Notes:
   - A failed stylesheet request releases the loading state so controls cannot become permanently stuck.
+
+## Stage 6 - Cover static artifacts and regressions
+- Changes:
+  - Added static-artifact coverage that requires every fingerprinted theme stylesheet to be referenced by the generated layout and present in its artifact assets.
+  - Reused the existing asset copier and fingerprint reference health check; no release-pipeline change was needed.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout LocalAppSmokeTest::testLayoutUsesOnlyAValidatedThemeHintForTheInitialStylesheet LocalAppSmokeTest::testThemeToggleWarmsAlternateThemeStylesheetsAtLowPriority ThemeRegistryTest` — passed.
+- Notes:
+  - Static pages use the default hint-free initial link; pages carrying a theme hint already take the dynamic path and are corrected by the early resolver.

@@ -2531,6 +2531,11 @@ PHP;
         foreach (array_unique($assetMatches[0]) as $assetPath) {
             assertTrue(is_file($artifactRoot . $assetPath));
         }
+        foreach (\ForumRewrite\View\ThemeRegistry::stylesheetPaths() as $path) {
+            $fingerprintedPath = AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', $path);
+            assertStringContains($fingerprintedPath, $indexArtifact);
+            assertTrue(is_file($artifactRoot . $fingerprintedPath));
+        }
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/index.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads.html'));
         assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/index.html'));
