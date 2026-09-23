@@ -1262,24 +1262,6 @@ final class Application
 
     /**
      * @param array<int, array<string, mixed>> $posts
-     * @return array<string, array<string, mixed>>
-     */
-    private function fetchPostAnalysesForPosts(array $posts): array
-    {
-        return $this->postWorkflowService()->fetchPostAnalysesForPosts($posts);
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $posts
-     * @return array<string, array<string, mixed>>
-     */
-    private function fetchAgentReplyGenerationsForPosts(array $posts): array
-    {
-        return $this->postWorkflowService()->fetchAgentReplyGenerationsForPosts($posts);
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $posts
      * @return array<string, list<array<string, mixed>>>
      */
     private function fetchLlmExchangesForPosts(array $posts): array
@@ -1303,30 +1285,6 @@ final class Application
         }
 
         return $exchanges;
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $posts
-     * @return array<string, array<string, mixed>>
-     */
-    private function fetchCodexHandoffsForPosts(array $posts): array
-    {
-        return $this->postWorkflowService()->fetchCodexHandoffsForPosts($posts);
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $posts
-     * @param array<string, array<string, mixed>> $analysesByPostId
-     * @param array<string, array<string, mixed>> $agentRepliesByPostId
-     * @return array<string, string>
-     */
-    private function agentReplyWorkByPostId(
-        array $posts,
-        string $createdPostId,
-        array $analysesByPostId,
-        array $agentRepliesByPostId
-    ): array {
-        return $this->postWorkflowService()->agentReplyWorkByPostId($posts, $createdPostId, $analysesByPostId, $agentRepliesByPostId);
     }
 
     /**
@@ -1729,16 +1687,6 @@ final class Application
     }
 
     /**
-     * @param array<int, array<string, mixed>> $posts
-     * @param array<string, mixed>|null $thread
-     * @return array<string, bool>
-     */
-    private function codexHandoffEligiblePostIds(array $posts, ?array $thread = null): array
-    {
-        return $this->postWorkflowService()->codexHandoffEligiblePostIds($posts, $thread);
-    }
-
-    /**
      * @param array{sort_value: string, id: int}|null $afterCursor
      * @return array{items: array<int, array<string, mixed>>, has_more: bool}
      */
@@ -2013,26 +1961,6 @@ final class Application
     private function sendText(string $text, int $statusCode, array $headers = []): void
     {
         $this->routeServices()->sendText($text, $statusCode, $headers);
-    }
-
-    private function isValidCanonicalSourcePath(string $relativePath): bool
-    {
-        return SourcePathValidator::isValidCanonicalPath($relativePath);
-    }
-
-    private function isValidCanonicalRecordSourcePath(string $relativePath): bool
-    {
-        return SourcePathValidator::isValidCanonicalRecordPath($relativePath);
-    }
-
-    private function isValidCanonicalDetachedSignaturePath(string $relativePath): bool
-    {
-        return SourcePathValidator::isValidCanonicalDetachedSignaturePath($relativePath);
-    }
-
-    private function isValidSourceCommitSha(string $commitSha): bool
-    {
-        return SourcePathValidator::isValidCommitSha($commitSha);
     }
 
     private function currentSourcePathExists(string $relativePath): bool

@@ -12,8 +12,8 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 2,138 lines (~74% smaller)** across 28
-  route-group extractions so far, plus the activity/commit-manifest and
+  `Application.php`: **8,212 → 2,066 lines (~75% smaller)** across 28
+  route-group extractions, plus the activity/commit-manifest and
   post-analysis/agent-reply/Codex-handoff data-layer extractions (see
   below):
   - `/about` → `AboutPageController`
@@ -488,6 +488,29 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   in `Application.php` (mostly `handle()`'s dispatch table itself, session
   bootstrap, and the handful of thin `RouteServices`/service-accessor
   delegates), not new route groups to extract.
+
+  Ran one final dead-code sweep across the whole file now that every
+  extraction has landed (the same method used earlier in the phase:
+  `grep -c '$this->NAME('` per `private function`, cross-checked against
+  `tests/` reflection references and, for any `public` candidate,
+  `scripts/`). Found and removed 9 more orphaned methods, all thin
+  delegates whose callers had moved in the last two or three slices:
+  `fetchPostAnalysesForPosts`, `fetchAgentReplyGenerationsForPosts`,
+  `fetchCodexHandoffsForPosts`, `agentReplyWorkByPostId`,
+  `codexHandoffEligiblePostIds` (orphaned by the
+  `ThreadAndPostPageController` slice, which calls `PostWorkflowService`
+  directly instead of through these); `isValidCanonicalSourcePath`,
+  `isValidCanonicalRecordSourcePath`,
+  `isValidCanonicalDetachedSignaturePath`, `isValidSourceCommitSha`
+  (orphaned once their last callers moved into `ActivityService`/
+  `ThreadAndPostPageController` and started calling
+  `SourcePathValidator::` statically). `viewerCanUseCodexHandoff`,
+  `noStoreTimingHeaders`, `mergeResultTimings`, and
+  `activityCommitManifest` were re-confirmed as needing to stay (all
+  still test-reflected) despite also having zero production callers now.
+
+  `Application.php`: 2,138 → 2,066 lines. Full suite (487 passing, same
+  6 known baseline failures) clean.
 - **Phase 3 (test suite readability):** not started.
 - **Phase 4 (docs hygiene):** not started.
 
