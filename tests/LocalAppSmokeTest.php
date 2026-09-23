@@ -73,7 +73,7 @@ final class LocalAppSmokeTest
             assertStringContains('[1/4] Read model: parsing post records (0/', $text);
             assertStringContains('[1/4] Read-model candidate is ready.', $text);
             assertStringContains('[2/4] Rendering static HTML and fingerprinted assets...', $text);
-            assertStringContains('[2/4] Fingerprinting and copying public assets...', $text);
+            assertStringContains('[2/4] Fingerprinting and copying assets referenced by rendered pages...', $text);
             assertStringContains('[2/4] Rendering shared pages (1/10): /.', $text);
             assertStringContains('[2/4] Rendering thread pages (0/', $text);
             assertStringContains('[2/4] Static release is ready:', $text);

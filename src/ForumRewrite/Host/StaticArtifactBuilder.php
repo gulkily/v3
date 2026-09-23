@@ -41,12 +41,9 @@ final class StaticArtifactBuilder
             mkdir($this->artifactRoot, 0777, true);
         }
 
-        $this->reportProgress('Fingerprinting and copying public assets...');
-        AssetFingerprint::copyFingerprintedAssets($this->projectRoot . '/public', $this->artifactRoot);
-        $this->reportProgress('Fingerprinting and copying public assets complete.');
-
         $application = $this->application();
 
+        $this->reportProgress('Fingerprinting and copying assets referenced by rendered pages...');
         $this->reportProgress('Rendering shared pages (0/10).');
         $this->reportProgress('Rendering shared pages (1/10): /.');
         $this->writeRouteArtifact($application, '/', $this->artifactRoot . '/index.html');
@@ -100,6 +97,7 @@ final class StaticArtifactBuilder
         $this->renderRouteBatch('profile pages', $this->fetchIds('SELECT profile_slug FROM profiles ORDER BY profile_slug'), function (string $profileSlug) use ($application): void {
             $this->writeRouteArtifact($application, '/profiles/' . $profileSlug, $this->artifactRoot . '/profiles/' . $profileSlug . '.html');
         });
+        $this->reportProgress('Fingerprinting and copying referenced assets complete.');
     }
 
     public function buildSingleRoute(string $route): bool
@@ -114,7 +112,6 @@ final class StaticArtifactBuilder
             return false;
         }
 
-        AssetFingerprint::copyFingerprintedAssets($this->projectRoot . '/public', $this->artifactRoot);
         return $this->writeRouteArtifactsWithLock($this->application(), $normalizedRoute, $artifactPaths);
     }
 
@@ -168,6 +165,7 @@ final class StaticArtifactBuilder
         ob_start();
         $application->handle('GET', $route);
         $contents = (string) ob_get_clean();
+        $this->copyReferencedAssets($contents);
         $this->assertFingerprintReferencesAvailable($contents);
         $temporaryPath = tempnam($directory, 'artifact-');
         if ($temporaryPath === false) {
@@ -201,6 +199,7 @@ final class StaticArtifactBuilder
 
     private function writeContentsArtifact(string $path, string $contents): void
     {
+        $this->copyReferencedAssets($contents);
         $this->assertFingerprintReferencesAvailable($contents);
         $directory = dirname($path);
         if (!is_dir($directory)) {
@@ -259,6 +258,24 @@ final class StaticArtifactBuilder
                 throw new RuntimeException('Static artifact references missing asset: ' . $assetPath);
             }
         }
+    }
+
+    private function copyReferencedAssets(string $contents): void
+    {
+        if (preg_match_all('#/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+#', $contents, $matches) === false) {
+            return;
+        }
+
+        $sourcePaths = [];
+        foreach (array_unique($matches[0]) as $fingerprintedPath) {
+            $sourcePath = AssetFingerprint::sourcePathForFingerprint($this->projectRoot . '/public', $fingerprintedPath);
+            if ($sourcePath === null) {
+                continue;
+            }
+            $sourcePaths[] = substr($sourcePath, strlen($this->projectRoot . '/public'));
+        }
+
+        AssetFingerprint::copyReferencedFingerprintedAssets($this->projectRoot . '/public', $this->artifactRoot, $sourcePaths);
     }
 
     /**

@@ -40,7 +40,7 @@ This is the exhaustive source-level inventory for the current application. It ex
 - **Fingerprint caching** — retain fingerprinted immutable asset URLs; add or verify long-lived cache headers and compression at the web-server/CDN layer without changing source readability.
 - **Compression** — enable Brotli or gzip for CSS, JavaScript, HTML, JSON, and SVG responses; this is transfer compression, not minification.
 - **Source maps** — the tracked `openpgp.min.js.map` is about 1.8 MB. Keep it available for development/debugging but exclude it from production/static artifacts unless production debugging explicitly requires it.
-- **Static artifact copying** — `AssetFingerprint::copyFingerprintedAssets()` currently copies every source asset. Copy only assets referenced by the release manifest, or explicitly exclude development-only maps and stale/generated files.
+- [x] **Static artifact copying** — static rendering now copies only fingerprinted assets referenced by each rendered artifact; development-only maps and stale/generated assets are not swept into releases.
 - **Stale fingerprint chains** — audit public asset directories and release outputs for recursively fingerprinted leftovers; serve only canonical source or current fingerprinted release assets.
 - **Preload priority** — preload only render-critical base/active theme assets. Avoid preloading route scripts, alternate themes, or tools runtimes that compete with first render.
 - **Connection and cache policy** — measure cache hit rate, conditional requests, HTTP/2 or HTTP/3 multiplexing, and third-party absence before adding resource hints.
