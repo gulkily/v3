@@ -27,6 +27,7 @@ use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Http\RssFeed;
 use ForumRewrite\Http\TagsPageController;
+use ForumRewrite\Http\ToolsPageController;
 use ForumRewrite\ReadModel\AuthoredContentRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelCapabilityInspector;
@@ -360,7 +361,7 @@ final class Application
         }
 
         if ($path === '/tools/sqlite/' || $path === '/tools/sqlite') {
-            $this->sendHtml($this->renderSqliteViewer(), 200);
+            $this->sendHtml($this->toolsPageController()->sqliteViewer(), 200);
             return;
         }
 
@@ -435,12 +436,12 @@ final class Application
         }
 
         if ($path === '/tools/' || $path === '/tools') {
-            $this->sendHtml($this->renderTools(), 200);
+            $this->sendHtml($this->toolsPageController()->index(), 200);
             return;
         }
 
         if ($path === '/tools/bookmarklets/' || $path === '/tools/bookmarklets') {
-            $this->sendHtml($this->renderBookmarklets(), 200);
+            $this->sendHtml($this->toolsPageController()->bookmarklets(), 200);
             return;
         }
 
@@ -450,7 +451,7 @@ final class Application
         }
 
         if ($path === '/tools/feature-flags/' || $path === '/tools/feature-flags') {
-            $this->sendHtml($this->renderFeatureFlags(), 200);
+            $this->sendHtml($this->toolsPageController()->featureFlags(), 200);
             return;
         }
 
@@ -2115,63 +2116,9 @@ final class Application
     }
 
 
-    private function renderTools(): string
+    private function toolsPageController(): ToolsPageController
     {
-        return $this->renderPageTemplate(
-            'tools.php',
-            [
-                'toolPages' => [
-                    [
-                        'label' => 'Activity',
-                        'href' => '/activity/',
-                        'description' => 'Recent forum activity across content, approvals, and identity events.',
-                    ],
-                    [
-                        'label' => 'Forte',
-                        'href' => '/forte',
-                        'description' => 'Classic three-pane newsreader view of the whole board - folders, thread list, and preview.',
-                    ],
-                    [
-                        'label' => 'Bookmarklets',
-                        'href' => '/tools/bookmarklets/',
-                        'description' => 'Bookmarklet links for clipping URLs and selections straight into Compose Thread.',
-                    ],
-                    [
-                        'label' => 'Backup',
-                        'href' => '/tools/backup/',
-                        'description' => 'Portable downloads of the repository and current read-model database.',
-                    ],
-                    [
-                        'label' => 'SQLite Viewer',
-                        'href' => '/tools/sqlite/',
-                        'description' => 'Inspect the published SQLite read model in your browser.',
-                    ],
-                    [
-                        'label' => 'LLM Exchanges',
-                        'href' => '/tools/llm-exchanges/',
-                        'description' => 'Review private LLM prompts and responses chronologically.',
-                    ],
-                    [
-                        'label' => 'System State',
-                        'href' => '/tools/codebase/',
-                        'description' => 'Current application version, repository head, and read-model health.',
-                    ],
-                    [
-                        'label' => 'Feature Flags',
-                        'href' => '/tools/feature-flags/',
-                        'description' => 'Registered site feature flags, defaults, effective values, and override sources.',
-                    ],
-                    [
-                        'label' => 'Account',
-                        'href' => '/account/key/',
-                        'description' => 'Browser key setup, identity linking, and technical account details.',
-                    ],
-                ],
-                'toolNavOptions' => $this->toolNavOptions(null),
-            ],
-            'Tools',
-            'tools',
-        );
+        return new ToolsPageController($this->routeServices(), $this->featureFlags());
     }
 
     private function renderCodebaseState(): string
@@ -2189,32 +2136,6 @@ final class Application
         );
     }
 
-    private function renderFeatureFlags(): string
-    {
-        return $this->renderPageTemplate(
-            'feature_flags.php',
-            [
-                'flags' => $this->featureFlags()->all(),
-                'toolNavOptions' => $this->toolNavOptions('feature-flags'),
-            ],
-            'Feature Flags',
-            'tools',
-            ['/assets/feature_flags.js'],
-        );
-    }
-
-    private function renderSqliteViewer(): string
-    {
-        return $this->renderPageTemplate(
-            'sqlite_viewer.php',
-            [
-                'toolNavOptions' => $this->toolNavOptions('sqlite'),
-            ],
-            'SQLite Viewer',
-            'tools',
-            ['/assets/sql-wasm.js', '/assets/sqlite_viewer.js'],
-        );
-    }
 
     private function handleLlmExchangeList(): void
     {
@@ -2270,51 +2191,6 @@ final class Application
         return $this->featureFlags()->isEnabled(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED)
             && $viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
-    }
-
-    private function renderBookmarklets(): string
-    {
-        return $this->renderPageTemplate(
-            'bookmarklets.php',
-            [
-                'bookmarklets' => [
-                    [
-                        'label' => '+URL',
-                        'mode' => 'same-window',
-                        'description' => 'Open Compose Thread in this tab with the current page URL in the body.',
-                        'bookmarklet_kind' => 'url',
-                    ],
-                    [
-                        'label' => 'Clip',
-                        'mode' => 'same-window',
-                        'description' => 'Open Compose Thread in this tab with selected text plus source title and URL.',
-                        'bookmarklet_kind' => 'clip',
-                    ],
-                    [
-                        'label' => 'Rip',
-                        'mode' => 'same-window',
-                        'description' => 'Open Compose Thread in this tab with only the selected text.',
-                        'bookmarklet_kind' => 'selection',
-                    ],
-                    [
-                        'label' => 'Clip',
-                        'mode' => 'new-window',
-                        'description' => 'Open Compose Thread in a new window with selected text plus source title and URL.',
-                        'bookmarklet_kind' => 'clip',
-                    ],
-                    [
-                        'label' => 'Rip',
-                        'mode' => 'new-window',
-                        'description' => 'Open Compose Thread in a new window with only the selected text.',
-                        'bookmarklet_kind' => 'selection',
-                    ],
-                ],
-                'toolNavOptions' => $this->toolNavOptions('bookmarklets'),
-            ],
-            'Bookmarklets',
-            'tools',
-            ['/assets/tools_bookmarklets.js'],
-        );
     }
 
     private function toolNavOptions(?string $activeKey): array
