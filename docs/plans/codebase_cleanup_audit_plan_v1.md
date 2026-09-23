@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 5,622 lines (~32% smaller)** across 15
+  `Application.php`: **8,212 → 5,522 lines (~33% smaller)** across 16
   route-group extractions so far:
   - `/about` → `AboutPageController`
   - `/instance`, `/backup`, `/downloads/*` → `InstancePageController`
@@ -32,6 +32,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   - `/api/`, `/api/list_index`, `/api/get_thread`, `/api/get_post`,
     `/api/get_profile`, `/api/get_username_claim_cta` (the plain-text `/api`
     endpoints) → `ApiTextController`
+  - `/api/apply_thread_tag`, `/api/apply_post_tag` → `TagApiController`
 
   Shared query/support layer built up alongside the route extractions
   (`src/ForumRewrite/ReadModel/`, `src/ForumRewrite/Http/`, and
@@ -77,16 +78,41 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   Application and joined `ExecutionLock`/`ReadModelStaleMarker` as bound
   closures on that controller's constructor.
 
+  Checked `/activity` as a candidate next slice via a fresh look at
+  `fetchActivity()`'s full body: it's still genuinely entangled -
+  `sourceSignatureLink()`, `sourcePathHref()`, `sourceCommitHref()`,
+  `activityCommitManifest()`, `sourceSignatureStatus()`,
+  `isHiddenBootstrapBoardTagsJson()`, `hasBoardTag()`, and
+  `activityItemRelevantFiles()` all get called per-item on top of
+  `resolveActivitySort()`/`normalizeActivityView()`, and `fetchActivity()`
+  itself is shared with `/forte/activity` and an AJAX pagination endpoint
+  (5+ call sites). Confirms the earlier "harder tier" finding still holds -
+  this needs a dedicated shared-service investigation of its own before
+  extraction, not a quick recheck.
+
+  Pulled `/api/apply_thread_tag` and `/api/apply_post_tag` out of the
+  `/api` group's auth/write bulk instead - unlike most of that group, both
+  needed nothing beyond what `RouteServices` already had from the
+  write-flow slice (`writer()`, `requestData()`, the timing helpers,
+  `sendText()`) plus one closure for the viewer-identity lookup, so they
+  were cheap once that infrastructure existed. Confirms the write-flow
+  slice's `RouteServices` extension is paying off beyond compose/account -
+  worth rechecking other `/api` write endpoints for the same shape before
+  assuming the whole group is uniformly hard.
+
   Remaining route groups still fully on `Application`: `/forte/activity/`
-  and the `/api/forte_*`/`/api/get_forte_*` AJAX endpoints; `/activity`;
-  the single-thread view (`/threads/{id}`, `/posts/{id}`); `/api/version`
-  (see above); and the rest of `/api` (auth/identity/write endpoints - most
-  entangled with session/write flows, deliberately last). Note: the
-  `/invites` POST "prepare/create" flow referenced in an earlier round of
-  this plan turned out, on inspection, to actually live at
-  `/api/prepare_invitation` and `/api/create_prepared_invitation` - it's
-  part of the `/api` group, not a separate route group, so it's deferred
-  there rather than extracted early.
+  and the `/api/forte_*`/`/api/get_forte_*` AJAX endpoints; `/activity`
+  (harder tier, see above); the single-thread view (`/threads/{id}`,
+  `/posts/{id}`); `/api/version` (see above); and the rest of `/api`
+  (~25 auth/identity/write endpoints - `/api/set_feature_flag`,
+  `/api/link_identity`, `/api/set_identity_hint`, `/api/authenticate_identity`,
+  `/api/create_identity`/`/api/prepare_identity`, `/api/analyze_post`,
+  `/api/generate_agent_reply`, `/api/codex_handoff*`, `/api/approve_user`,
+  `/api/prepare_approval`/`/api/create_prepared_approval`,
+  `/api/prepare_invitation`/`/api/create_prepared_invitation`,
+  `/api/prepare_invitation_redemption`, and the direct
+  create-thread/create-reply/create-prepared-post trio - some of which may
+  turn out as cheap as the tag pair above once individually checked).
 
   Checked both `/forte/activity/` and the single-thread view
   (`/threads/{id}`) as candidate next slices: both are in the harder

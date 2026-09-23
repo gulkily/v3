@@ -36,6 +36,7 @@ use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Http\RssFeed;
 use ForumRewrite\Http\SourceFileController;
+use ForumRewrite\Http\TagApiController;
 use ForumRewrite\Http\TagsPageController;
 use ForumRewrite\Http\ToolsPageController;
 use ForumRewrite\ReadModel\AuthoredContentRepository;
@@ -247,12 +248,12 @@ final class Application
         }
 
         if ($path === '/api/apply_thread_tag') {
-            $this->handleApplyThreadTag($method, $query);
+            $this->tagApiController()->applyThreadTag($method, $query);
             return;
         }
 
         if ($path === '/api/apply_post_tag') {
-            $this->handleApplyPostTag($method, $query);
+            $this->tagApiController()->applyPostTag($method, $query);
             return;
         }
 
@@ -2554,6 +2555,14 @@ final class Application
         );
     }
 
+    private function tagApiController(): TagApiController
+    {
+        return new TagApiController(
+            $this->routeServices(),
+            $this->resolveViewerProfileFromIdentityHint(...),
+        );
+    }
+
     /**
      * @param array<string, mixed>|null $viewerProfile
      */
@@ -4030,115 +4039,6 @@ final class Application
         }
 
         return $this->agentReplyFulfillmentService()->publishForPost($post);
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleApplyThreadTag(string $method, array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        if ($method !== 'POST') {
-            $this->sendText("method not allowed\n", 405);
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
-        if ($viewerProfile === null) {
-            $this->sendText(
-                "error=You must set an identity hint before applying a tag.\n",
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        $input['author_identity_id'] = (string) $viewerProfile['identity_id'];
-
-        try {
-            $result = $this->writer()->applyThreadTag($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $response = "status=ok\n"
-                . "thread_id={$result['thread_id']}\n"
-                . "tag={$result['tag']}\n"
-                . "score_total={$result['score_total']}\n"
-                . "viewer_identity_id={$result['author_identity_id']}\n"
-                . "viewer_is_approved={$result['viewer_is_approved']}\n"
-                . "wrote_record={$result['wrote_record']}\n";
-            if (isset($result['commit_sha'])) {
-                $response .= "commit_sha={$result['commit_sha']}\n";
-            }
-
-            $this->sendText($response, 200, $this->serverTimingHeaders($result));
-        } catch (RuntimeException $exception) {
-            $this->sendText(
-                "error=" . $exception->getMessage() . "\n",
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleApplyPostTag(string $method, array $query): void
-    {
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        if ($method !== 'POST') {
-            $this->sendText("method not allowed\n", 405);
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
-        if ($viewerProfile === null) {
-            $this->sendText(
-                "error=You must set an identity hint before applying a tag.\n",
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $input = $this->requestData($query);
-        $timings['request_data'] = $this->elapsedMilliseconds($phaseStartedAt);
-        $input['author_identity_id'] = (string) $viewerProfile['identity_id'];
-
-        try {
-            $result = $this->writer()->applyPostTag($input);
-            $result = $this->mergeResultTimings($result, $timings, $totalStartedAt);
-            $response = "status=ok\n"
-                . "post_id={$result['post_id']}\n"
-                . "thread_id={$result['thread_id']}\n"
-                . "tag={$result['tag']}\n"
-                . "post_score_total={$result['post_score_total']}\n"
-                . "approved_flag_count={$result['approved_flag_count']}\n"
-                . "is_hidden={$result['is_hidden']}\n"
-                . "viewer_identity_id={$result['author_identity_id']}\n"
-                . "viewer_is_approved={$result['viewer_is_approved']}\n"
-                . "wrote_record={$result['wrote_record']}\n";
-            if (isset($result['commit_sha'])) {
-                $response .= "commit_sha={$result['commit_sha']}\n";
-            }
-
-            $this->sendText($response, 200, $this->serverTimingHeaders($result));
-        } catch (RuntimeException $exception) {
-            $this->sendText(
-                "error=" . $exception->getMessage() . "\n",
-                400,
-                $this->serverTimingHeaders(['timings' => $this->timingsWithTotal($timings, $totalStartedAt)])
-            );
-        }
     }
 
     /**
