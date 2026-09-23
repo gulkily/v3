@@ -4,3 +4,17 @@ codebase readability
 \$toolNavOptions should be searchable to its origin point (calling function)
 
 "functionName " should be searchable to its definition (and no other place)
+
+
+forte
+=====
+the thread info popup should be formatted like a message (gray header, white body)
+create an option/setting/feature flag to bypass the popup and go straight to the thread
+have it already presented in mini-thread view in the activity
+
+scoring
+-------
+make another llm/agentic feature for fast scoring using lesser models
+	sending only short instructions and the text of the post
+		for replies, include some context
+	request only a 0-1 in response

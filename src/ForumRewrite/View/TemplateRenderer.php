@@ -39,7 +39,8 @@ final class TemplateRenderer
         bool $publicAuthenticationResume = false,
     ): string {
         $content = $this->renderFile('pages/' . $pageTemplate, $pageData);
-        $showThreadDensityToggle = in_array($pageTemplate, self::THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES, true);
+        $showThreadDensityToggle = in_array($pageTemplate, self::THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES, true)
+            && $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED);
 
         $viewerProfile = is_array($pageData['viewerProfile'] ?? null) ? $pageData['viewerProfile'] : null;
 

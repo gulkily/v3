@@ -9,6 +9,7 @@ final class FeatureFlagRegistry
     public const UNICODE_AUTHORED_TEXT = 'FORUM_UNICODE_AUTHORED_TEXT';
     public const EMOJI_AUTHORED_TEXT = 'FORUM_EMOJI_AUTHORED_TEXT';
     public const APP_VERSION_NOTIFICATION = 'FORUM_APP_VERSION_NOTIFICATION';
+    public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
     public const DEDALUS_AGENT_REPLIES_ENABLED = 'DEDALUS_AGENT_REPLIES_ENABLED';
     public const DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED = 'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED';
     public const LLM_CONVERSATION_RECORDING_ENABLED = 'LLM_CONVERSATION_RECORDING_ENABLED';
@@ -52,6 +53,14 @@ final class FeatureFlagRegistry
                 'Show browser-side app version polling and the reload notification banner.',
                 true,
                 self::APP_VERSION_NOTIFICATION,
+                siteMutable: true,
+            ),
+            new FeatureFlagDefinition(
+                self::THREAD_DENSITY_TOGGLE_ENABLED,
+                'Thread density toggle',
+                'Show the Comfortable/Compact thread density menu in the board/tag header. Off by default: the menu has known bugs and crowds the header on mobile.',
+                false,
+                self::THREAD_DENSITY_TOGGLE_ENABLED,
                 siteMutable: true,
             ),
             new FeatureFlagDefinition(

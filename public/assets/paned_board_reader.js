@@ -404,9 +404,10 @@
       var steppedThreadId = visible[nextIndex].getAttribute("data-paned-thread-id");
       selectThread(steppedThreadId);
       syncSelectionUrlForStepping(steppedThreadId);
+      visible[nextIndex].scrollIntoView({ block: "nearest" });
     }
 
-    var sortDefaultDir = { subject: "asc", from: "asc", date: "desc", replies: "desc" };
+    var sortDefaultDir = { subject: "asc", from: "asc", date: "desc", replies: "desc", score: "desc" };
     var sortHead = document.querySelector("[data-paned-sort-head]");
     var sortButtons = sortHead ? Array.prototype.slice.call(sortHead.querySelectorAll("[data-paned-sort-column]")) : [];
 
@@ -424,8 +425,8 @@
     }
 
     function sortValueFor(row, column) {
-      if (column === "replies") {
-        return parseInt(row.getAttribute("data-paned-sort-replies"), 10) || 0;
+      if (column === "replies" || column === "score") {
+        return parseInt(row.getAttribute("data-paned-sort-" + column), 10) || 0;
       }
       return row.getAttribute("data-paned-sort-" + column) || "";
     }

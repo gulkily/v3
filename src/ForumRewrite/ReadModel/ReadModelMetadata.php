@@ -20,4 +20,18 @@ final class ReadModelMetadata
 
         return $exitCode === 0 ? trim(implode("\n", $output)) : 'git-error';
     }
+
+    public static function repositoryShortCommit(string $repositoryRoot): string
+    {
+        $output = [];
+        $exitCode = 0;
+        exec('git -C ' . escapeshellarg($repositoryRoot) . ' rev-parse --short HEAD 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            return 'unknown';
+        }
+
+        $shortCommit = trim(implode("\n", $output));
+
+        return $shortCommit !== '' ? $shortCommit : 'unknown';
+    }
 }

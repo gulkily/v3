@@ -13,8 +13,11 @@ use ForumRewrite\Host\FrontController;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\Host\StaticArtifactReleasePublisher;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\Http\InstancePageController;
+use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
+use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\StaticArtifactInvalidator;
 
 final class LocalAppSmokeTest
@@ -299,8 +302,15 @@ PHP;
             assertStringContains("status=ok\n", $response);
             assertSame("status=unauthenticated\n", $authStatusAfterClear);
             assertSame('guest', $_COOKIE['identity_hint'] ?? null);
-            assertStringContains('Entering lobby.', $boardAfterClear);
-            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $aboutAfterClear);
+            // A cleared-but-not-reauthenticated session hasn't been confirmed
+            // either way (no authenticated_identity_id this session), so
+            // protected GET pages give the browser key a chance to silently
+            // resume before assuming the viewer needs to register - the same
+            // treatment any other stale/unconfirmed session gets.
+            assertStringContains('<h1>Reconnecting</h1>', $boardAfterClear);
+            assertStringContains('data-auth-return-to="/"', $boardAfterClear);
+            assertStringContains('<h1>Reconnecting</h1>', $aboutAfterClear);
+            assertStringContains('data-auth-return-to="/about/"', $aboutAfterClear);
             assertStringContains('This is your profile.', $ownProfileAfterClear);
             assertStringContains('Your identity is recognized in the lobby, but member access is cleared.', $lobbyAfterClear);
             assertStringContains(
@@ -1245,6 +1255,7 @@ PHP;
         assertStringContains('FORUM_UNICODE_AUTHORED_TEXT', $featureFlags);
         assertStringContains('FORUM_EMOJI_AUTHORED_TEXT', $featureFlags);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $featureFlags);
+        assertStringContains('FORUM_THREAD_DENSITY_TOGGLE_ENABLED', $featureFlags);
         assertStringContains('DEDALUS_AGENT_REPLIES_ENABLED', $featureFlags);
         assertStringContains('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $featureFlags);
         assertStringContains('data-role="feature-flag-source">default</code>', $featureFlags);
@@ -1309,17 +1320,17 @@ PHP;
         assertFingerprintedAsset($board, 'theme_toggle.js');
         assertFingerprintedAsset($board, 'compose_draft_clear.js');
         assertFingerprintedAsset($board, 'version_check.js');
-        assertFingerprintedAsset($board, 'thread_density_toggle.js');
-        assertStringContains('data-role="thread-density-toggle"', $board);
-        assertStringContains('data-role="thread-density-toggle"', $tagPage);
+        assertStringNotContains('/assets/thread_density_toggle.', $board);
+        assertStringNotContains('data-role="thread-density-toggle"', $board);
+        assertStringNotContains('data-role="thread-density-toggle"', $tagPage);
         assertStringNotContains('data-role="thread-density-toggle"', $thread);
         assertStringNotContains('data-role="thread-density-toggle"', $about);
         assertStringNotContains('data-role="thread-density-toggle"', $tags);
         assertStringNotContains('data-role="thread-density-toggle"', $tools);
-        assertStringContains('data-role="thread-density-menu"', $board);
-        assertStringContains('data-thread-density-option="comfortable"', $board);
-        assertStringContains('data-thread-density-option="compact"', $board);
-        assertStringContains('thread-density-menu-popover', $board);
+        assertStringNotContains('data-role="thread-density-menu"', $board);
+        assertStringNotContains('data-thread-density-option="comfortable"', $board);
+        assertStringNotContains('data-thread-density-option="compact"', $board);
+        assertStringNotContains('thread-density-menu-popover', $board);
         assertStringContains('class="card thread-card"', $boardAllThreads);
         assertStringContains('class="card thread-card"', $tagPage);
         assertStringContains('data-role="app-version-banner"', $board);
@@ -1475,6 +1486,40 @@ PHP;
                 putenv('FORUM_APP_VERSION_NOTIFICATION');
             } else {
                 putenv('FORUM_APP_VERSION_NOTIFICATION=' . $previousFlag);
+            }
+        }
+    }
+
+    public function testThreadDensityToggleIsHiddenByDefaultAndShownWhenFlagEnabled(): void
+    {
+        $previousFlag = getenv('FORUM_THREAD_DENSITY_TOGGLE_ENABLED');
+        putenv('FORUM_THREAD_DENSITY_TOGGLE_ENABLED=true');
+
+        try {
+            @unlink($this->databasePath);
+            $application = new Application(
+                dirname(__DIR__),
+                $this->repositoryRoot,
+                $this->databasePath,
+            );
+
+            $board = $this->render($application, '/');
+            $tagPage = $this->render($application, '/tags/bug');
+            $thread = $this->render($application, '/threads/root-001');
+
+            assertFingerprintedAsset($board, 'thread_density_toggle.js');
+            assertStringContains('data-role="thread-density-toggle"', $board);
+            assertStringContains('data-role="thread-density-toggle"', $tagPage);
+            assertStringNotContains('data-role="thread-density-toggle"', $thread);
+            assertStringContains('data-role="thread-density-menu"', $board);
+            assertStringContains('data-thread-density-option="comfortable"', $board);
+            assertStringContains('data-thread-density-option="compact"', $board);
+            assertStringContains('thread-density-menu-popover', $board);
+        } finally {
+            if ($previousFlag === false) {
+                putenv('FORUM_THREAD_DENSITY_TOGGLE_ENABLED');
+            } else {
+                putenv('FORUM_THREAD_DENSITY_TOGGLE_ENABLED=' . $previousFlag);
             }
         }
     }
@@ -2235,15 +2280,27 @@ PHP;
 
     public function testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp(): void
     {
-        $application = new Application(
-            dirname(__DIR__),
+        // repositoryArchiveDownloadFilename() lives on InstancePageController
+        // now (Phase 2 route extraction), not Application - see
+        // docs/plans/codebase_cleanup_audit_findings_v1.md.
+        $routeServices = new RouteServices(
+            $this->databasePath,
+            new TemplateRenderer(dirname(__DIR__) . '/templates'),
+            'php-fallback',
+            false,
+            static fn (): ?array => null,
+        );
+        $controller = new InstancePageController(
+            $routeServices,
             $this->repositoryRoot,
             $this->databasePath,
+            dirname(__DIR__),
+            static fn (): array => ['items' => []],
         );
-        $method = new ReflectionMethod(Application::class, 'repositoryArchiveDownloadFilename');
+        $method = new ReflectionMethod(InstancePageController::class, 'repositoryArchiveDownloadFilename');
         $method->setAccessible(true);
 
-        $filename = $method->invoke($application, 'tar.gz');
+        $filename = $method->invoke($controller, 'tar.gz');
 
         assertStringMatches(
             '/^zenmemes-repository-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}Z-[a-f0-9]+\.tar\.gz$/',

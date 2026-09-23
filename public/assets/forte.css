@@ -209,6 +209,17 @@ body.paned-reader-body {
   justify-content: flex-end;
 }
 
+.paned-list-score-head,
+.paned-list-score {
+  width: 5rem;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.paned-list-score-head .paned-sort-button {
+  justify-content: flex-end;
+}
+
 .paned-list-head span:last-child {
   border-right: none;
 }
@@ -366,14 +377,37 @@ body.paned-reader-body {
   min-width: 34rem;
 }
 
-.paned-list-replies {
+/* Board's From/Date columns were fixed-rem widths sized for the old
+   full-format date text; now that dates render as a short relative string
+   ("2 days ago"), those widths are often wider than the content needs,
+   wasting space that Subject could use. A per-row content-sized column was
+   tried first (see git history) but .paned-list-head and each
+   .paned-list-row are separate flex containers, so genuine content-sizing
+   broke column alignment across rows, and switching to a CSS table to fix
+   that broke the pane's flex-basis height instead (the list pane stopped
+   respecting its ~40% share and pushed the content pane off-screen). This
+   is the safer fallback: re-tuned fixed widths, scoped to Board only via
+   [data-paned-board-list-pane] so Users/Activity are untouched. */
+[data-paned-board-list-pane] .paned-list-from-head,
+[data-paned-board-list-pane] .paned-list-from {
+  width: 7rem;
+}
+
+[data-paned-board-list-pane] .paned-list-date-head,
+[data-paned-board-list-pane] .paned-list-date {
+  width: 8rem;
+}
+
+.paned-list-replies,
+.paned-list-score {
   padding: 0.15rem 0.5rem;
   color: var(--paned-ink-soft);
 }
 
 .paned-list-row--selected .paned-list-from,
 .paned-list-row--selected .paned-list-date,
-.paned-list-row--selected .paned-list-replies {
+.paned-list-row--selected .paned-list-replies,
+.paned-list-row--selected .paned-list-score {
   color: var(--paned-select-text);
 }
 

@@ -19,12 +19,26 @@ use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
-use ForumRewrite\Host\HtmlResponseCache;
+use ForumRewrite\Http\AboutPageController;
+use ForumRewrite\Http\BoardPageController;
+use ForumRewrite\Http\BoardViewOptions;
+use ForumRewrite\Http\InstancePageController;
+use ForumRewrite\Http\LlmExchangesController;
+use ForumRewrite\Http\ProfilePageController;
+use ForumRewrite\Http\RouteServices;
+use ForumRewrite\Http\RssFeed;
+use ForumRewrite\Http\TagsPageController;
+use ForumRewrite\Http\ToolsPageController;
+use ForumRewrite\ReadModel\AuthoredContentRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelCapabilityInspector;
 use ForumRewrite\ReadModel\ReadModelConnection;
+use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
+use ForumRewrite\ReadModel\TagGrouping;
+use ForumRewrite\ReadModel\ThreadRepository;
+use ForumRewrite\ReadModel\ThreadRowSupport;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -41,22 +55,22 @@ use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
+use ForumRewrite\Tools\ToolsPageSupport;
 use PDO;
 use RuntimeException;
-use PDOStatement;
 
 final class Application
 {
     private const PERSISTENT_VIEWER_SESSION_COOKIE_LIFETIME = 34560000;
-    private const HIDDEN_BOOTSTRAP_TAG = 'identity';
     private const ANALYSIS_SCHEMA_VERSION = 5;
     private const ACTIVITY_ITEM_LIMIT = 100;
-    private const BACKUP_PREVIEW_LIMIT = 5;
     private const THREAD_CONTEXT_COMMENT_BODY_LIMIT = 3000;
     private const THREAD_CONTEXT_TOTAL_BODY_LIMIT = 18000;
     private const CODEX_HANDOFF_DEVELOPMENT_TAGS = ['feature', 'bug', 'task', 'dev', 'development', 'codex', 'implementation', 'fdp'];
+    private const LOBBY_GATE_LOG_ROTATE_LINES = 1000;
     private ?string $appVersion = null;
     private ?FeatureFlagEvaluator $featureFlags = null;
+    private ?RouteServices $routeServices = null;
     private ?LlmExchangeRecorder $llmExchangeRecorder = null;
     private bool $llmExchangeRecorderInitialized = false;
     private ?SqliteLlmExchangeStore $llmExchangeStore = null;
@@ -115,6 +129,7 @@ final class Application
         $this->ensureReadModel();
 
         if ($this->approvedMembersOnlyEnabled() && $this->membersOnlyLobbyRedirect($method, $path, $query)) {
+            $this->logLobbyGateDiagnostics('lobby_redirect', $method, $path);
             $this->sendRedirect('/lobby/', 'Entering lobby.', statusCode: 303, activeSection: 'account');
             return;
         }
@@ -126,6 +141,7 @@ final class Application
             }
 
             if ($this->shouldRenderAuthenticationResume($method, $path, $query)) {
+                $this->logLobbyGateDiagnostics('resume', $method, $path);
                 $this->sendHtml(
                     $this->renderAuthenticationResumePage(ResumeTarget::fromRequestUri($requestUri)),
                     401,
@@ -133,6 +149,7 @@ final class Application
                 return;
             }
 
+            $this->logLobbyGateDiagnostics('lobby_required_403', $method, $path);
             $this->sendHtml(
                 $this->renderLobbyAccessRequiredPage(),
                 403
@@ -315,12 +332,12 @@ final class Application
 
         if ($path === '/' || $path === '' || $path === '/threads/' || $path === '/threads') {
             if (($query['format'] ?? null) === 'rss') {
-                $this->sendXml($this->renderBoardRss(), 200);
+                $this->sendXml($this->boardPageController()->rss(), 200);
                 return;
             }
 
             $this->sendHtml(
-                $this->renderBoard(
+                $this->boardPageController()->board(
                     (string) ($query['view'] ?? 'liked'),
                     (string) ($query['sort'] ?? 'newest'),
                 ),
@@ -340,42 +357,42 @@ final class Application
         }
 
         if ($path === '/instance/' || $path === '/instance' || $path === '/backup/' || $path === '/backup' || $path === '/tools/backup/' || $path === '/tools/backup') {
-            $this->sendHtml($this->renderBackup(), 200);
+            $this->sendHtml($this->instancePageController()->renderBackup(), 200);
             return;
         }
 
         if ($path === '/tools/sqlite/' || $path === '/tools/sqlite') {
-            $this->sendHtml($this->renderSqliteViewer(), 200);
+            $this->sendHtml($this->toolsPageController()->sqliteViewer(), 200);
             return;
         }
 
         if ($path === '/tools/llm-exchanges/' || $path === '/tools/llm-exchanges') {
-            $this->handleLlmExchangeList();
+            $this->llmExchangesController()->list();
             return;
         }
 
         if (preg_match('#^/tools/llm-exchanges/(\d+)/?$#', $path, $matches) === 1) {
-            $this->handleLlmExchangeDetail((int) $matches[1]);
+            $this->llmExchangesController()->detail((int) $matches[1]);
             return;
         }
 
         if ($path === '/downloads/repository.tar.gz') {
-            $this->handleRepositoryDownload($method, 'tar.gz');
+            $this->instancePageController()->downloadRepository($method, 'tar.gz');
             return;
         }
 
         if ($path === '/downloads/repository.zip') {
-            $this->handleRepositoryDownload($method, 'zip');
+            $this->instancePageController()->downloadRepository($method, 'zip');
             return;
         }
 
         if ($path === '/downloads/read_model.sqlite3') {
-            $this->handleReadModelDatabaseDownload($method);
+            $this->instancePageController()->downloadReadModelDatabase($method);
             return;
         }
 
         if ($path === '/downloads/sqlite_query_catalog.sql') {
-            $this->handleSqliteQueryCatalogDownload($method);
+            $this->instancePageController()->downloadSqliteQueryCatalog($method);
             return;
         }
 
@@ -405,27 +422,27 @@ final class Application
         }
 
         if ($path === '/users/pending/' || $path === '/users/pending') {
-            $this->handlePendingUserDirectory($method);
+            $this->profilePageController()->pendingDirectory($method);
             return;
         }
 
         if ($path === '/users/' || $path === '/users') {
-            $this->sendHtml($this->renderUserDirectory(), 200);
+            $this->sendHtml($this->profilePageController()->directory(), 200);
             return;
         }
 
         if ($path === '/tags/' || $path === '/tags') {
-            $this->sendHtml($this->renderTagsIndex(), 200);
+            $this->sendHtml($this->tagsPageController()->index(), 200);
             return;
         }
 
         if ($path === '/tools/' || $path === '/tools') {
-            $this->sendHtml($this->renderTools(), 200);
+            $this->sendHtml($this->toolsPageController()->index(), 200);
             return;
         }
 
         if ($path === '/tools/bookmarklets/' || $path === '/tools/bookmarklets') {
-            $this->sendHtml($this->renderBookmarklets(), 200);
+            $this->sendHtml($this->toolsPageController()->bookmarklets(), 200);
             return;
         }
 
@@ -435,7 +452,7 @@ final class Application
         }
 
         if ($path === '/tools/feature-flags/' || $path === '/tools/feature-flags') {
-            $this->sendHtml($this->renderFeatureFlags(), 200);
+            $this->sendHtml($this->toolsPageController()->featureFlags(), 200);
             return;
         }
 
@@ -613,7 +630,7 @@ final class Application
         }
 
         if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)/?$#', $path, $matches) === 1) {
-            $html = $this->renderTagPage($matches[1]);
+            $html = $this->tagsPageController()->tag($matches[1]);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -635,7 +652,7 @@ final class Application
         }
 
         if (preg_match('#^/profiles/([^/]+)/?$#', $path, $matches) === 1) {
-            $html = $this->renderProfile($matches[1], isset($query['self']), $query);
+            $html = $this->profilePageController()->profile($matches[1], isset($query['self']), $query);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -646,7 +663,7 @@ final class Application
         }
 
         if (preg_match('#^/user/([^/]+)/?$#', $path, $matches) === 1) {
-            $html = $this->renderUsername($matches[1]);
+            $html = $this->profilePageController()->username($matches[1]);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -905,70 +922,14 @@ final class Application
         ];
     }
 
-    private function renderBoard(string $view, string $sort): string
+    private function tagsPageController(): TagsPageController
     {
-        $view = $this->normalizeBoardView($view);
-        $sort = $this->normalizeBoardSort($sort);
-        $viewOptions = $this->boardViewOptions($view, $sort);
-        $sortOptions = $this->boardSortOptions($view, $sort);
-
-        return $this->renderPageTemplate(
-            'board.php',
-            [
-                'threads' => $this->fetchBoardThreads($view, $sort),
-                'view' => $view,
-                'sort' => $sort,
-                'viewOptions' => $viewOptions,
-                'sortOptions' => $sortOptions,
-                'viewLabel' => $this->activeBoardOptionLabel($viewOptions, $view),
-                'sortLabel' => $this->activeBoardOptionLabel($sortOptions, $sort),
-            ],
-            'Board',
-            'board',
-            [
-                '/assets/inline_reply_form.js',
-                '/assets/lazy_compose_signing.js',
-            ],
-        );
+        return new TagsPageController($this->routeServices());
     }
 
-    private function renderTagsIndex(): string
+    private function boardPageController(): BoardPageController
     {
-        $view = $this->normalizeBoardView('all');
-        $sort = $this->normalizeBoardSort('newest');
-        $viewOptions = $this->boardViewOptions($view, $sort);
-        $sortOptions = $this->boardSortOptions($view, $sort);
-        $threads = $this->fetchThreads();
-
-        return $this->renderPageTemplate(
-            'tags.php',
-            [
-                'tagGroups' => $this->limitTagGroupThreads($this->groupThreadsByTag($threads), 5),
-                'viewOptions' => $viewOptions,
-                'sortOptions' => $sortOptions,
-            ],
-            'Tags',
-            'board',
-        );
-    }
-
-    private function renderTagPage(string $tag): ?string
-    {
-        $threads = $this->fetchThreads();
-        $group = $this->findTagGroup($this->groupThreadsByTag($threads), $tag);
-        if ($group === null) {
-            return null;
-        }
-        $title = '#' . $tag . ' - Tag';
-
-        return $this->renderPageTemplate(
-            'tag.php',
-            [
-                'group' => $group,
-            ],
-            $title,
-            'board',
-        );
+        return new BoardPageController($this->routeServices());
     }
 
     private function renderForteBoard(string $requestedTag = '', string $requestedSortColumn = '', string $requestedSortDir = '', string $requestedSelected = '', string $requestedCreatedPostId = ''): string
@@ -1904,13 +1865,11 @@ final class Application
             ],
             $title,
             'board',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
+            $this->identityScripts([
                 '/assets/inline_reply_form.js',
                 '/assets/thread_reactions.js',
                 '/assets/post_analysis.js',
-            ],
+            ]),
         );
     }
 
@@ -1976,26 +1935,11 @@ final class Application
             ],
             'Post ' . $post['post_id'],
             'board',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
+            $this->identityScripts([
                 '/assets/thread_reactions.js',
                 '/assets/post_analysis.js',
-            ],
+            ]),
         );
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function renderProfile(string $slug, bool $self = false, array $query = []): ?string
-    {
-        $profile = $this->fetchProfileBySlug($slug);
-        if ($profile === null) {
-            return null;
-        }
-
-        return $this->renderProfilePage($profile, $self, $this->profileNoticeFromQuery($profile, $query));
     }
 
     /**
@@ -2032,137 +1976,33 @@ final class Application
             ],
             $pageTitleLabel . ' - Profile',
             'profiles',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
-                '/assets/pending_approvals.js',
-            ],
+            $this->identityScripts(['/assets/pending_approvals.js']),
         );
     }
 
-    /**
-     * @param array<string, mixed> $profile
-     * @param array<string, mixed> $query
-     */
-    private function profileNoticeFromQuery(array $profile, array $query): ?string
+    private function profilePageController(): ProfilePageController
     {
-        if (($query['approval'] ?? null) !== 'success') {
-            return null;
-        }
-
-        $postId = (string) ($query['post_id'] ?? '');
-        $commitSha = (string) ($query['commit'] ?? '');
-        if (!preg_match('/^[A-Za-z0-9._-]+$/', $postId) || !preg_match('/^[a-f0-9]{40}$/', $commitSha)) {
-            return null;
-        }
-
-        return 'Approved user ' . $this->escape((string) $profile['username']) . '. '
-            . '<a href="/posts/' . $this->escape($postId) . '">Open approval post</a>. '
-            . 'Commit ' . $this->escape($commitSha);
-    }
-
-    private function renderUsername(string $username): ?string
-    {
-        $usernameToken = strtolower($username);
-        $profiles = $this->fetchProfilesByUsernameToken($usernameToken);
-        if ($profiles === []) {
-            return null;
-        }
-
-        $approvedProfiles = array_values(array_filter(
-            $profiles,
-            static fn (array $profile): bool => ((int) $profile['is_approved']) === 1
-        ));
-        $unapprovedProfiles = array_values(array_filter(
-            $profiles,
-            static fn (array $profile): bool => ((int) $profile['is_approved']) !== 1
-        ));
-        $approvedIdentityIds = array_values(array_map(
-            static fn (array $profile): string => (string) $profile['identity_id'],
-            $approvedProfiles
-        ));
-
-        return $this->renderPageTemplate(
-            'username.php',
-            [
-                'usernameToken' => $usernameToken,
-                'approvedProfiles' => $approvedProfiles,
-                'unapprovedProfiles' => $unapprovedProfiles,
-                'approvedThreadCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, true),
-                'approvedPostCount' => $this->countVisibleAuthoredRows($approvedIdentityIds, false),
-                'approvedThreads' => $this->fetchVisibleAuthoredThreads($approvedIdentityIds),
-                'approvedPosts' => $this->fetchVisibleAuthoredPosts($approvedIdentityIds),
-            ],
-            'User ' . $usernameToken,
-            'profiles',
+        return new ProfilePageController(
+            $this->routeServices(),
+            $this->resolveViewerProfileFromIdentityHint(...),
+            $this->renderProfilePage(...),
         );
     }
 
-    private function renderBackup(): string
+    private function instancePageController(): InstancePageController
     {
-        $backupSnapshot = $this->fetchBackupSnapshot();
-
-        return $this->renderPageTemplate(
-            'instance.php',
-            [
-                'siteName' => SiteConfig::siteName(),
-                'admins' => $this->fetchSeedApprovedUsers(),
-                'toolNavOptions' => $this->toolNavOptions('backup'),
-                'backupSnapshot' => $backupSnapshot,
-                'downloads' => [
-                    [
-                        'href' => '/downloads/repository.tar.gz',
-                        'label' => 'Content repository (.tar.gz)',
-                        'description' => 'Tarball of the full repository, including .git history.',
-                    ],
-                    [
-                        'href' => '/downloads/repository.zip',
-                        'label' => 'Content repository (.zip)',
-                        'description' => 'ZIP archive of the full repository, including .git history.',
-                    ],
-                    [
-                        'href' => '/downloads/read_model.sqlite3',
-                        'label' => 'SQLite index database',
-                        'description' => 'Current read-model database for local indexing and queries.',
-                    ],
-                ],
-            ],
-            'Backup',
-            'tools',
+        return new InstancePageController(
+            $this->routeServices(),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $this->projectRoot,
+            $this->fetchActivity(...),
         );
-    }
-
-    /**
-     * @return array{generated_at:string,repository_head:string,items:array<int,array<string,mixed>>}
-     */
-    private function fetchBackupSnapshot(): array
-    {
-        $metadata = [];
-        $pdo = $this->pdo();
-        if ($this->readModelTableExists($pdo, 'metadata')) {
-            $rows = $pdo->query('SELECT key, value FROM metadata')->fetchAll();
-            foreach ($rows as $row) {
-                $metadata[(string) $row['key']] = (string) $row['value'];
-            }
-        }
-
-        return [
-            'generated_at' => $metadata['rebuilt_at'] ?? '',
-            'repository_head' => $metadata['repository_head'] ?? ReadModelMetadata::repositoryHead($this->repositoryRoot),
-            'items' => array_slice($this->fetchActivity('content', 'date', 'desc')['items'], 0, self::BACKUP_PREVIEW_LIMIT),
-        ];
     }
 
     private function renderAbout(): string
     {
-        return $this->renderPageTemplate(
-            'about.php',
-            [
-                'siteName' => SiteConfig::siteName(),
-            ],
-            'About',
-            'about',
-        );
+        return (new AboutPageController($this->renderPageTemplate(...)))->render();
     }
 
     private function renderActivity(string $view): string
@@ -2276,97 +2116,10 @@ final class Application
         return $this->renderComposeThreadPage($boardTags, $subject, $body);
     }
 
-    private function renderUserDirectory(): string
-    {
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
 
-        return $this->renderPageTemplate(
-            'users.php',
-            [
-                'users' => $this->fetchApprovedUserDirectoryUsers(),
-                'showPendingLink' => $viewerProfile !== null
-                    && ((int) $viewerProfile['is_approved']) === 1
-                    && $this->hasPendingUserDirectoryProfiles(),
-            ],
-            'Users',
-            'profiles',
-        );
-    }
-
-    private function renderPendingUserDirectory(): string
+    private function toolsPageController(): ToolsPageController
     {
-        return $this->renderPageTemplate(
-            'users_pending.php',
-            [
-                'profiles' => $this->fetchPendingUserDirectoryProfiles(),
-            ],
-            'Users Awaiting Approval',
-            'profiles',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
-                '/assets/pending_approvals.js',
-            ],
-        );
-    }
-
-    private function renderTools(): string
-    {
-        return $this->renderPageTemplate(
-            'tools.php',
-            [
-                'toolPages' => [
-                    [
-                        'label' => 'Activity',
-                        'href' => '/activity/',
-                        'description' => 'Recent forum activity across content, approvals, and identity events.',
-                    ],
-                    [
-                        'label' => 'Forte',
-                        'href' => '/forte',
-                        'description' => 'Classic three-pane newsreader view of the whole board - folders, thread list, and preview.',
-                    ],
-                    [
-                        'label' => 'Bookmarklets',
-                        'href' => '/tools/bookmarklets/',
-                        'description' => 'Bookmarklet links for clipping URLs and selections straight into Compose Thread.',
-                    ],
-                    [
-                        'label' => 'Backup',
-                        'href' => '/tools/backup/',
-                        'description' => 'Portable downloads of the repository and current read-model database.',
-                    ],
-                    [
-                        'label' => 'SQLite Viewer',
-                        'href' => '/tools/sqlite/',
-                        'description' => 'Inspect the published SQLite read model in your browser.',
-                    ],
-                    [
-                        'label' => 'LLM Exchanges',
-                        'href' => '/tools/llm-exchanges/',
-                        'description' => 'Review private LLM prompts and responses chronologically.',
-                    ],
-                    [
-                        'label' => 'System State',
-                        'href' => '/tools/codebase/',
-                        'description' => 'Current application version, repository head, and read-model health.',
-                    ],
-                    [
-                        'label' => 'Feature Flags',
-                        'href' => '/tools/feature-flags/',
-                        'description' => 'Registered site feature flags, defaults, effective values, and override sources.',
-                    ],
-                    [
-                        'label' => 'Account',
-                        'href' => '/account/key/',
-                        'description' => 'Browser key setup, identity linking, and technical account details.',
-                    ],
-                ],
-                'toolNavOptions' => $this->toolNavOptions(null),
-            ],
-            'Tools',
-            'tools',
-        );
+        return new ToolsPageController($this->routeServices(), $this->featureFlags());
     }
 
     private function renderCodebaseState(): string
@@ -2384,77 +2137,13 @@ final class Application
         );
     }
 
-    private function renderFeatureFlags(): string
+
+    private function llmExchangesController(): LlmExchangesController
     {
-        return $this->renderPageTemplate(
-            'feature_flags.php',
-            [
-                'flags' => $this->featureFlags()->all(),
-                'toolNavOptions' => $this->toolNavOptions('feature-flags'),
-            ],
-            'Feature Flags',
-            'tools',
-            ['/assets/feature_flags.js'],
-        );
-    }
-
-    private function renderSqliteViewer(): string
-    {
-        return $this->renderPageTemplate(
-            'sqlite_viewer.php',
-            [
-                'toolNavOptions' => $this->toolNavOptions('sqlite'),
-            ],
-            'SQLite Viewer',
-            'tools',
-            ['/assets/sql-wasm.js', '/assets/sqlite_viewer.js'],
-        );
-    }
-
-    private function handleLlmExchangeList(): void
-    {
-        if (!$this->viewerCanInspectLlmExchanges()) {
-            $this->sendHtml($this->renderMessagePage('LLM Exchanges', 'LLM Exchanges', 'Only approved users can view LLM exchanges, and the exchange UI must be enabled.', 'tools'), 403);
-            return;
-        }
-
-        $this->sendHtml($this->renderLlmExchangeList(), 200);
-    }
-
-    private function handleLlmExchangeDetail(int $exchangeId): void
-    {
-        if (!$this->viewerCanInspectLlmExchanges()) {
-            $this->sendHtml($this->renderMessagePage('LLM Exchange', 'LLM Exchange', 'Only approved users can view LLM exchanges, and the exchange UI must be enabled.', 'tools'), 403);
-            return;
-        }
-
-        $exchange = $this->llmExchangeStore()?->find($exchangeId);
-        if ($exchange === null) {
-            $this->sendHtml($this->renderMessagePage('Not Found', 'Not Found', 'LLM exchange not found.', 'tools'), 404);
-            return;
-        }
-
-        $this->sendHtml($this->renderPageTemplate(
-            'llm_exchange.php',
-            [
-                'exchange' => $exchange,
-                'toolNavOptions' => $this->toolNavOptions('llm-exchanges'),
-            ],
-            'LLM Exchange ' . $exchangeId,
-            'tools'
-        ), 200);
-    }
-
-    private function renderLlmExchangeList(): string
-    {
-        return $this->renderPageTemplate(
-            'llm_exchanges.php',
-            [
-                'exchanges' => $this->llmExchangeStore()?->recent() ?? [],
-                'toolNavOptions' => $this->toolNavOptions('llm-exchanges'),
-            ],
-            'LLM Exchanges',
-            'tools'
+        return new LlmExchangesController(
+            $this->routeServices(),
+            $this->viewerCanInspectLlmExchanges(...),
+            $this->llmExchangeStore(...),
         );
     }
 
@@ -2467,91 +2156,9 @@ final class Application
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
     }
 
-    private function renderBookmarklets(): string
-    {
-        return $this->renderPageTemplate(
-            'bookmarklets.php',
-            [
-                'bookmarklets' => [
-                    [
-                        'label' => '+URL',
-                        'mode' => 'same-window',
-                        'description' => 'Open Compose Thread in this tab with the current page URL in the body.',
-                        'bookmarklet_kind' => 'url',
-                    ],
-                    [
-                        'label' => 'Clip',
-                        'mode' => 'same-window',
-                        'description' => 'Open Compose Thread in this tab with selected text plus source title and URL.',
-                        'bookmarklet_kind' => 'clip',
-                    ],
-                    [
-                        'label' => 'Rip',
-                        'mode' => 'same-window',
-                        'description' => 'Open Compose Thread in this tab with only the selected text.',
-                        'bookmarklet_kind' => 'selection',
-                    ],
-                    [
-                        'label' => 'Clip',
-                        'mode' => 'new-window',
-                        'description' => 'Open Compose Thread in a new window with selected text plus source title and URL.',
-                        'bookmarklet_kind' => 'clip',
-                    ],
-                    [
-                        'label' => 'Rip',
-                        'mode' => 'new-window',
-                        'description' => 'Open Compose Thread in a new window with only the selected text.',
-                        'bookmarklet_kind' => 'selection',
-                    ],
-                ],
-                'toolNavOptions' => $this->toolNavOptions('bookmarklets'),
-            ],
-            'Bookmarklets',
-            'tools',
-            ['/assets/tools_bookmarklets.js'],
-        );
-    }
-
     private function toolNavOptions(?string $activeKey): array
     {
-        return [
-            [
-                'key' => 'bookmarklets',
-                'label' => 'Bookmarklets',
-                'href' => '/tools/bookmarklets/',
-                'is_active' => $activeKey === 'bookmarklets',
-            ],
-            [
-                'key' => 'backup',
-                'label' => 'Backup',
-                'href' => '/tools/backup/',
-                'is_active' => $activeKey === 'backup',
-            ],
-            [
-                'key' => 'sqlite',
-                'label' => 'SQLite Viewer',
-                'href' => '/tools/sqlite/',
-                'is_active' => $activeKey === 'sqlite',
-            ],
-            [
-                'key' => 'llm-exchanges',
-                'label' => 'LLM Exchanges',
-                'href' => '/tools/llm-exchanges/',
-                'is_active' => $activeKey === 'llm-exchanges',
-            ],
-            [
-                'key' => 'codebase',
-                'label' => 'System State',
-                'href' => '/tools/codebase/',
-                'is_active' => $activeKey === 'codebase',
-            ],
-            [
-                'key' => 'feature-flags',
-                'label' => 'Feature Flags',
-                'href' => '/tools/feature-flags/',
-                'is_active' => $activeKey === 'feature-flags',
-            ],
-        ];
+        return ToolsPageSupport::navOptions($activeKey);
     }
 
     private function renderComposeThreadPage(
@@ -2568,10 +2175,7 @@ final class Application
             'body' => $body,
             'notice' => $notice,
             'error' => $error,
-        ], 'Compose Thread', 'compose', [
-            '/assets/openpgp_loader.js',
-            '/assets/browser_signing.js',
-        ]);
+        ], 'Compose Thread', 'compose', $this->identityScripts());
     }
 
     private function renderComposeReply(string $threadId, string $parentId): string
@@ -2601,10 +2205,7 @@ final class Application
             'error' => $error,
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
             'body' => $body,
-        ], 'Compose Reply', 'compose', [
-            '/assets/openpgp_loader.js',
-            '/assets/browser_signing.js',
-        ]);
+        ], 'Compose Reply', 'compose', $this->identityScripts());
     }
 
     private function renderAccountKey(): string
@@ -2621,11 +2222,7 @@ final class Application
             'viewerProfile' => $viewerProfile,
             'notice' => $notice,
             'error' => $error,
-        ], 'Account Key', 'account', [
-            '/assets/openpgp_loader.js',
-            '/assets/browser_signing.js',
-            '/assets/private_site_auth.js',
-        ]);
+        ], 'Account Key', 'account', $this->identityScripts(['/assets/private_site_auth.js']));
     }
 
     private function renderApiIndex(): string
@@ -2693,17 +2290,6 @@ final class Application
         return "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nApproved-By: {$approvedBy}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n";
     }
 
-    private function renderBoardRss(): string
-    {
-        $items = [];
-        foreach ($this->fetchThreads() as $thread) {
-            $title = $this->displayThreadTitle($thread);
-            $items[] = $this->renderRssItem($title, '/threads/' . $thread['root_post_id'], $thread['body_preview'], (string) $thread['last_activity_at']);
-        }
-
-        return $this->renderRssFeed('Board', '/?format=rss', $items);
-    }
-
     private function renderThreadRss(string $threadId): ?string
     {
         $thread = $this->fetchThread($threadId);
@@ -2745,23 +2331,6 @@ final class Application
         return "Local test slice\nGET /api/\nGET /api/list_index\nGET /api/get_thread\nPOST /api/analyze_post\nGET /about/\nGET /compose/thread\nGET /compose/reply\nGET /account/key/\nGET /instance/\nGET /backup/\n";
     }
 
-    private function renderPage(string $title, string $content, string $activeSection, array $scriptPaths = []): string
-    {
-        $viewerProfile = $this->authenticatedViewerProfile();
-        $publicAuthenticationResume = !$this->approvedMembersOnlyEnabled() && $viewerProfile === null;
-
-        return $this->renderer()->renderLayout(
-            $title,
-            $content,
-            $activeSection,
-            $scriptPaths,
-            $this->routeSource,
-            false,
-            $viewerProfile,
-            $publicAuthenticationResume,
-        );
-    }
-
     /**
      * @param array<string, mixed> $pageData
      * @param string[] $scriptPaths
@@ -2773,21 +2342,46 @@ final class Application
         string $activeSection,
         array $scriptPaths = [],
     ): string {
-        if (!array_key_exists('viewerProfile', $pageData)) {
-            $pageData['viewerProfile'] = $this->authenticatedViewerProfile();
-        }
-        $publicAuthenticationResume = !$this->approvedMembersOnlyEnabled()
-            && $pageData['viewerProfile'] === null;
+        return $this->routeServices()->renderPageTemplate($pageTemplate, $pageData, $title, $activeSection, $scriptPaths);
+    }
 
-        return $this->renderer()->renderPageTemplate(
-            $pageTemplate,
-            $pageData,
-            $title,
-            $activeSection,
-            $scriptPaths,
-            $this->routeSource,
-            $publicAuthenticationResume,
-        );
+    /**
+     * The framework-level dependencies (DB access, response senders, page
+     * rendering) shared by every route handler, bundled so route-group
+     * controllers extracted out of this class can depend on this instead of
+     * on Application itself. See src/ForumRewrite/Http/RouteServices.php.
+     * Built once per request; Application's own send*()/render*()/pdo()
+     * methods now delegate here too, so there's one implementation, not two
+     * that can drift apart.
+     */
+    private function routeServices(): RouteServices
+    {
+        if ($this->routeServices === null) {
+            $this->routeServices = new RouteServices(
+                $this->databasePath,
+                $this->renderer(),
+                $this->routeSource,
+                $this->approvedMembersOnlyEnabled(),
+                $this->authenticatedViewerProfile(...),
+            );
+        }
+
+        return $this->routeServices;
+    }
+
+    /**
+     * Every page that needs browser-key signing loads these two scripts
+     * first; callers add whatever page-specific scripts come after them.
+     *
+     * @param string[] $extra
+     * @return string[]
+     */
+    private function identityScripts(array $extra = []): array
+    {
+        return array_merge([
+            '/assets/openpgp_loader.js',
+            '/assets/browser_signing.js',
+        ], $extra);
     }
 
     private function renderer(): TemplateRenderer
@@ -2820,24 +2414,7 @@ final class Application
      */
     private function fetchThreads(): array
     {
-        $rows = $this->pdo()->query(
-            'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
-                    threads.reply_count, threads.score_total, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
-                    posts.body AS root_post_body,
-                    posts.post_score_total AS root_post_score_total,
-                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
-             FROM threads
-             JOIN posts ON posts.post_id = threads.root_post_id
-             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
-             ORDER BY last_activity_at DESC, root_post_id DESC'
-        )->fetchAll();
-
-        $rows = array_values(array_filter(
-            $rows,
-            fn (array $thread): bool => !$this->isHiddenBootstrapBoardTagsJson((string) $thread['board_tags_json'])
-        ));
-
-        return $this->hydrateThreadRows($rows);
+        return ThreadRepository::fetchThreads($this->pdo());
     }
 
     /**
@@ -2866,23 +2443,6 @@ final class Application
         $thread = $stmt->fetch();
 
         return $thread === false ? null : $this->hydrateThreadRow($thread);
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function fetchBoardThreads(string $view, string $sort): array
-    {
-        $view = $this->normalizeBoardView($view);
-        $sort = $this->normalizeBoardSort($sort);
-        $threads = array_values(array_filter(
-            $this->fetchThreads(),
-            fn (array $thread): bool => $this->matchesBoardView($thread, $view)
-        ));
-
-        usort($threads, fn (array $left, array $right): int => $this->compareBoardThreads($left, $right, $sort));
-
-        return $threads;
     }
 
     /**
@@ -3139,16 +2699,7 @@ final class Application
      */
     private function fetchProfileBySlug(string $slug): ?array
     {
-        $stmt = $this->pdo()->prepare(
-            'SELECT identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint, bootstrap_post_id,
-                    bootstrap_thread_id, public_key, is_approved, approved_by_identity_id, approved_by_profile_slug,
-                    approved_by_label, post_count, thread_count
-             FROM profiles WHERE profile_slug = :profile_slug'
-        );
-        $stmt->execute(['profile_slug' => $slug]);
-        $profile = $stmt->fetch();
-
-        return $profile === false ? null : $profile;
+        return ProfileRepository::bySlug($this->pdo(), $slug);
     }
 
     /**
@@ -3156,16 +2707,7 @@ final class Application
      */
     private function fetchProfileByIdentityId(string $identityId): ?array
     {
-        $stmt = $this->pdo()->prepare(
-            'SELECT identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint, bootstrap_post_id,
-                    bootstrap_thread_id, public_key, is_approved, approved_by_identity_id, approved_by_profile_slug,
-                    approved_by_label, post_count, thread_count
-             FROM profiles WHERE identity_id = :identity_id'
-        );
-        $stmt->execute(['identity_id' => $identityId]);
-        $profile = $stmt->fetch();
-
-        return $profile === false ? null : $profile;
+        return ProfileRepository::byIdentityId($this->pdo(), $identityId);
     }
 
     /**
@@ -3173,16 +2715,7 @@ final class Application
      */
     private function fetchProfilesByUsernameToken(string $usernameToken): array
     {
-        $stmt = $this->pdo()->prepare(
-            'SELECT identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint, bootstrap_post_id,
-                    bootstrap_thread_id, public_key, is_approved, approved_by_identity_id, approved_by_profile_slug,
-                    approved_by_label, post_count, thread_count
-             FROM profiles WHERE username_token = :username_token
-             ORDER BY is_approved DESC, profile_slug ASC'
-        );
-        $stmt->execute(['username_token' => $usernameToken]);
-
-        return $stmt->fetchAll();
+        return ProfileRepository::byUsernameToken($this->pdo(), $usernameToken);
     }
 
     /**
@@ -3376,15 +2909,7 @@ final class Application
      */
     private function fetchSeedApprovedUsers(): array
     {
-        $stmt = $this->pdo()->query(
-            'SELECT username_token, MIN(username) AS username
-             FROM profiles
-             WHERE approved_by_label = \'root\'
-             GROUP BY username_token
-             ORDER BY username_token ASC'
-        );
-
-        return $stmt->fetchAll();
+        return ToolsPageSupport::fetchSeedApprovedUsers($this->pdo());
     }
 
     /**
@@ -3393,33 +2918,7 @@ final class Application
      */
     private function fetchVisibleAuthoredThreads(array $identityIds): array
     {
-        if ($identityIds === []) {
-            return [];
-        }
-
-        $stmt = $this->prepareIdentityListQuery(
-            'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
-                    threads.reply_count, threads.last_post_id, threads.score_total, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
-                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
-             FROM threads
-             JOIN posts ON posts.post_id = threads.root_post_id
-             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
-             WHERE threads.root_post_id IN (
-                 SELECT post_id FROM posts
-                 WHERE post_id = thread_id AND author_identity_id IN (%s)
-             )
-             ORDER BY last_activity_at DESC, root_post_id ASC',
-            $identityIds
-        );
-        $stmt->execute($identityIds);
-        $rows = $stmt->fetchAll();
-
-        $rows = array_values(array_filter(
-            $rows,
-            fn (array $thread): bool => !$this->isHiddenBootstrapBoardTagsJson((string) $thread['board_tags_json'])
-        ));
-
-        return $this->hydrateThreadRows($rows);
+        return AuthoredContentRepository::visibleThreads($this->pdo(), $identityIds);
     }
 
     /**
@@ -3428,28 +2927,7 @@ final class Application
      */
     private function fetchVisibleAuthoredPosts(array $identityIds): array
     {
-        if ($identityIds === []) {
-            return [];
-        }
-
-        $stmt = $this->prepareIdentityListQuery(
-            'SELECT posts.post_id, posts.created_at, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_label,
-                    posts.author_profile_slug, profiles.username_token AS author_username_token,
-                    COALESCE(profiles.is_approved, 0) AS author_is_approved, posts.board_tags_json
-             FROM posts
-             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
-             WHERE author_identity_id IN (%s)
-               AND posts.is_hidden = 0
-             ORDER BY created_at DESC, sequence_number DESC, post_id DESC',
-            $identityIds
-        );
-        $stmt->execute($identityIds);
-        $rows = $stmt->fetchAll();
-
-        return array_values(array_filter(
-            $rows,
-            fn (array $post): bool => !$this->isHiddenBootstrapBoardTagsJson((string) $post['board_tags_json'])
-        ));
+        return AuthoredContentRepository::visiblePosts($this->pdo(), $identityIds);
     }
 
     /**
@@ -3466,7 +2944,7 @@ final class Application
      */
     private function hydrateThreadRows(array $rows): array
     {
-        return array_map(fn (array $thread): array => $this->hydrateThreadRow($thread), $rows);
+        return ThreadRowSupport::hydrateThreadRows($rows);
     }
 
     /**
@@ -3475,22 +2953,17 @@ final class Application
      */
     private function hydrateThreadRow(array $thread): array
     {
-        $thread['score_total'] = (int) ($thread['score_total'] ?? 0);
-        $thread['root_post_score_total'] = (int) ($thread['root_post_score_total'] ?? 0);
-        $thread['board_tags'] = $this->decodeStringList((string) ($thread['board_tags_json'] ?? '[]'));
-        $thread['thread_labels'] = $this->decodeStringList((string) ($thread['thread_labels_json'] ?? '[]'));
-
-        return $thread;
+        return ThreadRowSupport::hydrateThreadRow($thread);
     }
 
     private function normalizeBoardView(string $view): string
     {
-        return in_array($view, ['all', 'liked'], true) ? $view : 'all';
+        return BoardViewOptions::normalizeView($view);
     }
 
     private function normalizeBoardSort(string $sort): string
     {
-        return in_array($sort, ['newest', 'oldest', 'top'], true) ? $sort : 'newest';
+        return BoardViewOptions::normalizeSort($sort);
     }
 
     /**
@@ -3498,20 +2971,7 @@ final class Application
      */
     private function boardViewOptions(string $activeView, string $activeSort): array
     {
-        return [
-            [
-                'key' => 'all',
-                'label' => 'All',
-                'href' => '/threads/?view=all&sort=' . rawurlencode($activeSort),
-                'is_active' => $activeView === 'all',
-            ],
-            [
-                'key' => 'liked',
-                'label' => 'Liked',
-                'href' => '/threads/?view=liked&sort=' . rawurlencode($activeSort),
-                'is_active' => $activeView === 'liked',
-            ],
-        ];
+        return BoardViewOptions::viewOptions($activeView, $activeSort);
     }
 
     /**
@@ -3519,26 +2979,7 @@ final class Application
      */
     private function boardSortOptions(string $activeView, string $activeSort): array
     {
-        return [
-            [
-                'key' => 'newest',
-                'label' => 'Newest',
-                'href' => '/threads/?view=' . rawurlencode($activeView) . '&sort=newest',
-                'is_active' => $activeSort === 'newest',
-            ],
-            [
-                'key' => 'oldest',
-                'label' => 'Oldest',
-                'href' => '/threads/?view=' . rawurlencode($activeView) . '&sort=oldest',
-                'is_active' => $activeSort === 'oldest',
-            ],
-            [
-                'key' => 'top',
-                'label' => 'Top',
-                'href' => '/threads/?view=' . rawurlencode($activeView) . '&sort=top',
-                'is_active' => $activeSort === 'top',
-            ],
-        ];
+        return BoardViewOptions::sortOptions($activeView, $activeSort);
     }
 
     /**
@@ -3546,103 +2987,7 @@ final class Application
      */
     private function activeBoardOptionLabel(array $options, string $activeKey): string
     {
-        foreach ($options as $option) {
-            if ($option['key'] === $activeKey) {
-                return $option['label'];
-            }
-        }
-
-        return $activeKey;
-    }
-
-    /**
-     * @param array<string, mixed> $thread
-     */
-    private function matchesBoardView(array $thread, string $view): bool
-    {
-        return match ($view) {
-            'all' => true,
-            'liked' => in_array('like', $thread['thread_labels'] ?? [], true)
-                && ((int) ($thread['root_post_score_total'] ?? 0)) >= 0,
-            default => true,
-        };
-    }
-
-    /**
-     * @param array<string, mixed> $left
-     * @param array<string, mixed> $right
-     */
-    private function compareBoardThreads(array $left, array $right, string $sort): int
-    {
-        $pinnedCompare = $this->compareBoardThreadPinnedStatus($left, $right);
-        if ($pinnedCompare !== 0) {
-            return $pinnedCompare;
-        }
-
-        return match ($sort) {
-            'oldest' => $this->compareBoardThreadOldest($left, $right),
-            'top' => $this->compareBoardThreadTop($left, $right),
-            default => $this->compareBoardThreadNewest($left, $right),
-        };
-    }
-
-    /**
-     * @param array<string, mixed> $left
-     * @param array<string, mixed> $right
-     */
-    private function compareBoardThreadPinnedStatus(array $left, array $right): int
-    {
-        return ((int) $this->isPinnedThread($right)) <=> ((int) $this->isPinnedThread($left));
-    }
-
-    /**
-     * @param array<string, mixed> $thread
-     */
-    private function isPinnedThread(array $thread): bool
-    {
-        return in_array('pinned', $thread['thread_labels'] ?? [], true);
-    }
-
-    /**
-     * @param array<string, mixed> $left
-     * @param array<string, mixed> $right
-     */
-    private function compareBoardThreadNewest(array $left, array $right): int
-    {
-        $createdCompare = strcmp((string) $right['root_post_created_at'], (string) $left['root_post_created_at']);
-        if ($createdCompare !== 0) {
-            return $createdCompare;
-        }
-
-        return strcmp((string) $right['root_post_id'], (string) $left['root_post_id']);
-    }
-
-    /**
-     * @param array<string, mixed> $left
-     * @param array<string, mixed> $right
-     */
-    private function compareBoardThreadOldest(array $left, array $right): int
-    {
-        $createdCompare = strcmp((string) $left['root_post_created_at'], (string) $right['root_post_created_at']);
-        if ($createdCompare !== 0) {
-            return $createdCompare;
-        }
-
-        return strcmp((string) $left['root_post_id'], (string) $right['root_post_id']);
-    }
-
-    /**
-     * @param array<string, mixed> $left
-     * @param array<string, mixed> $right
-     */
-    private function compareBoardThreadTop(array $left, array $right): int
-    {
-        $scoreCompare = ((int) $right['score_total']) <=> ((int) $left['score_total']);
-        if ($scoreCompare !== 0) {
-            return $scoreCompare;
-        }
-
-        return $this->compareBoardThreadNewest($left, $right);
+        return BoardViewOptions::activeLabel($options, $activeKey);
     }
 
     /**
@@ -3651,49 +2996,7 @@ final class Application
      */
     private function groupThreadsByTag(array $threads): array
     {
-        $groups = [];
-
-        foreach ($threads as $thread) {
-            $tags = [];
-            foreach (['board_tags', 'thread_labels'] as $field) {
-                $values = $thread[$field] ?? [];
-                if (!is_array($values)) {
-                    continue;
-                }
-
-                foreach ($values as $value) {
-                    if (is_string($value) && $value !== '' && !in_array($value, $tags, true)) {
-                        $tags[] = $value;
-                    }
-                }
-            }
-
-            foreach ($tags as $tag) {
-                if (!is_string($tag) || $tag === '') {
-                    continue;
-                }
-
-                $groups[$tag] ??= [
-                    'tag' => $tag,
-                    'count' => 0,
-                    'threads' => [],
-                ];
-                if (!in_array($thread['root_post_id'], array_column($groups[$tag]['threads'], 'root_post_id'), true)) {
-                    $groups[$tag]['count']++;
-                    $groups[$tag]['threads'][] = $thread;
-                }
-            }
-        }
-
-        uasort($groups, static function (array $left, array $right): int {
-            if ($left['count'] !== $right['count']) {
-                return $right['count'] <=> $left['count'];
-            }
-
-            return $left['tag'] <=> $right['tag'];
-        });
-
-        return array_values($groups);
+        return TagGrouping::byTag($threads);
     }
 
     /**
@@ -3702,17 +3005,7 @@ final class Application
      */
     private function limitTagGroupThreads(array $groups, int $limit): array
     {
-        $limited = [];
-
-        foreach ($groups as $group) {
-            $threads = $group['threads'];
-            $group['preview_threads'] = array_slice($threads, 0, $limit);
-            $group['has_more'] = count($threads) > $limit;
-            $group['href'] = '/tags/' . $group['tag'];
-            $limited[] = $group;
-        }
-
-        return $limited;
+        return TagGrouping::limitPreview($groups, $limit);
     }
 
     /**
@@ -3721,13 +3014,7 @@ final class Application
      */
     private function findTagGroup(array $groups, string $tag): ?array
     {
-        foreach ($groups as $group) {
-            if ($group['tag'] === $tag) {
-                return $group;
-            }
-        }
-
-        return null;
+        return TagGrouping::find($groups, $tag);
     }
 
     /**
@@ -3735,176 +3022,12 @@ final class Application
      */
     private function decodeStringList(string $json): array
     {
-        $decoded = json_decode($json, true);
-        if (!is_array($decoded)) {
-            return [];
-        }
-
-        $values = [];
-        foreach ($decoded as $value) {
-            if (is_string($value)) {
-                $values[] = $value;
-            }
-        }
-
-        return $values;
-    }
-
-    /**
-     * @param list<string> $identityIds
-     */
-    private function prepareIdentityListQuery(string $sql, array $identityIds): PDOStatement
-    {
-        $placeholders = implode(', ', array_fill(0, count($identityIds), '?'));
-
-        return $this->pdo()->prepare(sprintf($sql, $placeholders));
-    }
-
-    private function handleRepositoryDownload(string $method, string $format): void
-    {
-        if ($method !== 'GET') {
-            $this->sendHtml($this->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported for downloads.', 'none'), 405);
-            return;
-        }
-
-        $download = $this->buildRepositoryArchive($format);
-        $this->sendDownload(
-            $download['path'],
-            $download['contentType'],
-            $this->repositoryArchiveDownloadFilename($download['extension']),
-            true
-        );
-    }
-
-    private function repositoryArchiveDownloadFilename(string $extension): string
-    {
-        return SiteConfig::siteName()
-            . '-repository-'
-            . $this->downloadTimestamp()
-            . '-'
-            . $this->repositoryShortCommit()
-            . '.'
-            . $extension;
-    }
-
-    private function downloadTimestamp(): string
-    {
-        return gmdate('Y-m-d_H-i-s\Z');
-    }
-
-    /**
-     * @return array{path: string, contentType: string, extension: string}
-     */
-    private function buildRepositoryArchive(string $format): array
-    {
-        $archivePath = tempnam(sys_get_temp_dir(), 'forum-repo-');
-        if ($archivePath === false) {
-            throw new RuntimeException('Unable to create temporary archive path.');
-        }
-
-        @unlink($archivePath);
-
-        $parent = dirname($this->repositoryRoot);
-        $base = basename($this->repositoryRoot);
-
-        if ($format === 'tar.gz') {
-            $archiveTarget = $archivePath . '.tar.gz';
-            $command = sprintf(
-                'tar -czf %s -C %s %s 2>&1',
-                escapeshellarg($archiveTarget),
-                escapeshellarg($parent),
-                escapeshellarg($base)
-            );
-            $contentType = 'application/gzip';
-        } elseif ($format === 'zip') {
-            $archiveTarget = $archivePath . '.zip';
-            $command = sprintf(
-                'cd %s && zip -qr %s %s 2>&1',
-                escapeshellarg($parent),
-                escapeshellarg($archiveTarget),
-                escapeshellarg($base)
-            );
-            $contentType = 'application/zip';
-        } else {
-            throw new RuntimeException('Unsupported repository archive format.');
-        }
-
-        exec($command, $output, $exitCode);
-        if ($exitCode !== 0 || !is_file($archiveTarget)) {
-            @unlink($archiveTarget);
-            throw new RuntimeException('Unable to archive repository download.');
-        }
-
-        return [
-            'path' => $archiveTarget,
-            'contentType' => $contentType,
-            'extension' => $format,
-        ];
-    }
-
-    private function handleReadModelDatabaseDownload(string $method): void
-    {
-        if ($method !== 'GET') {
-            $this->sendHtml($this->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported for downloads.', 'none'), 405);
-            return;
-        }
-
-        if (!is_file($this->databasePath)) {
-            $this->sendHtml($this->renderMessagePage('Not Found', 'Not Found', 'Read-model database is not available yet.', 'instance'), 404);
-            return;
-        }
-
-        $this->sendDownload($this->databasePath, 'application/x-sqlite3', SiteConfig::siteName() . '-read-model.sqlite3');
-    }
-
-    private function handleSqliteQueryCatalogDownload(string $method): void
-    {
-        if ($method !== 'GET') {
-            $this->sendHtml($this->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported for downloads.', 'none'), 405);
-            return;
-        }
-
-        $path = $this->projectRoot . '/public/assets/sqlite_query_catalog.sql';
-        if (!is_file($path)) {
-            $this->sendHtml($this->renderMessagePage('Not Found', 'Not Found', 'SQLite query catalog is not available yet.', 'instance'), 404);
-            return;
-        }
-
-        $this->sendDownload($path, 'application/sql; charset=utf-8', SiteConfig::siteName() . '-sqlite-query-catalog.sql');
-    }
-
-    private function sendDownload(string $path, string $contentType, string $filename, bool $deleteAfterSend = false): void
-    {
-        $size = filesize($path);
-        if ($size === false) {
-            if ($deleteAfterSend) {
-                @unlink($path);
-            }
-            throw new RuntimeException('Unable to determine download size.');
-        }
-
-        http_response_code(200);
-        header('Content-Type: ' . $contentType);
-        header('Content-Disposition: attachment; filename="' . str_replace('"', '', $filename) . '"');
-        header('Content-Length: ' . (string) $size);
-        readfile($path);
-
-        if ($deleteAfterSend) {
-            @unlink($path);
-        }
+        return ThreadRowSupport::decodeStringList($json);
     }
 
     private function repositoryShortCommit(): string
     {
-        $command = sprintf('git -C %s rev-parse --short HEAD 2>&1', escapeshellarg($this->repositoryRoot));
-        exec($command, $output, $exitCode);
-        if ($exitCode !== 0) {
-            return 'unknown';
-        }
-
-        $shortCommit = trim(implode("\n", $output));
-
-        return $shortCommit !== '' ? $shortCommit : 'unknown';
+        return ReadModelMetadata::repositoryShortCommit($this->repositoryRoot);
     }
 
     /**
@@ -4086,25 +3209,42 @@ final class Application
     }
 
     /**
+     * Only redirects straight to the Lobby when this session has already
+     * confirmed the viewer's identity (authenticated_identity_id is set)
+     * and confirmed they're not an approved member - a fact we actually
+     * know. A session that only carries the weaker lobby_identity_id signal
+     * (currently only set by handleClearIdentity()'s downgrade-not-forget
+     * behavior) hasn't been freshly verified either way, so it falls
+     * through to shouldRenderAuthenticationResume() instead, which gives
+     * the browser's saved key a chance to silently re-authenticate before
+     * assuming the viewer needs to register. Without this distinction, an
+     * approved member whose session was downgraded to lobby-only got
+     * bounced to a hard "you need to be registered and approved" redirect
+     * even when their browser key could resolve it immediately - which is
+     * exactly what already happens silently when they click a nav link
+     * instead, since auth_navigation.js's in-page guard performs this same
+     * resume attempt before every same-origin navigation. (A fully empty
+     * session - no signal at all - already fell through to the resume flow
+     * correctly before this change; only the lobby_identity_id-only case
+     * was affected.)
+     *
      * @param array<string, mixed> $query
      */
     private function membersOnlyLobbyRedirect(string $method, string $path, array $query): bool
     {
         $viewerProfile = $this->authenticatedViewerProfile();
-        $hasApprovedMemberAccess = $viewerProfile !== null
-            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
 
-        return $this->lobbyViewerProfile() !== null
+        return $viewerProfile !== null
+            && ((int) ($viewerProfile['is_approved'] ?? 0)) !== 1
             && $method === 'GET' && in_array($path, ['/', '/threads', '/threads/'], true)
-            && $query === []
-            && !$hasApprovedMemberAccess;
+            && $query === [];
     }
 
     /** @param array<string, mixed> $query */
     private function shouldRenderAuthenticationResume(string $method, string $path, array $query): bool
     {
         if ($method !== 'GET'
-            || $this->lobbyViewerProfile() !== null
+            || $this->authenticatedViewerProfile() !== null
             || str_starts_with($path, '/api')
             || str_starts_with($path, '/downloads/')
             || (($query['format'] ?? null) === 'rss')
@@ -4115,6 +3255,68 @@ final class Application
         return true;
     }
 
+    /**
+     * Temporary diagnostic instrumentation for tracking down what session
+     * state real visitors actually land in when the Lobby gate doesn't
+     * treat them as a confirmed approved member. Appends one JSON line per
+     * gate decision to state/logs/lobby_gate.log (gitignored), rotating to
+     * lobby_gate.log.1 every LOBBY_GATE_LOG_ROTATE_LINES lines so it can't
+     * grow unbounded while still keeping one full prior generation instead
+     * of silently discarding old entries. Safe to remove once the open
+     * question in docs/plans/ (why a real visitor's session ends up here
+     * without an explicit /api/clear_identity call) is resolved.
+     */
+    private function logLobbyGateDiagnostics(string $decision, string $method, string $path): void
+    {
+        $logPath = $this->projectRoot . '/state/logs/lobby_gate.log';
+        $logDir = dirname($logPath);
+        if (!is_dir($logDir) && !@mkdir($logDir, 0777, true) && !is_dir($logDir)) {
+            return;
+        }
+
+        if (is_file($logPath) && $this->countLines($logPath) >= self::LOBBY_GATE_LOG_ROTATE_LINES) {
+            @rename($logPath, $logPath . '.1');
+        }
+
+        $authenticatedIdentityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
+        $lobbyIdentityId = strtolower(trim((string) ($_SESSION['lobby_identity_id'] ?? '')));
+        $identityHint = strtolower(trim((string) ($_COOKIE['identity_hint'] ?? '')));
+        $viewerProfile = $authenticatedIdentityId !== '' ? $this->fetchProfileByIdentityId($authenticatedIdentityId) : null;
+
+        $line = [
+            'time' => gmdate('Y-m-d\TH:i:s\Z'),
+            'decision' => $decision,
+            'method' => $method,
+            'path' => $path,
+            'session_cookie_present' => $this->hasViewerSessionCookie(),
+            'has_authenticated_identity_id' => $authenticatedIdentityId !== '',
+            'authenticated_identity_suffix' => $authenticatedIdentityId === '' ? null : substr($authenticatedIdentityId, -8),
+            'authenticated_identity_is_approved' => $viewerProfile === null ? null : ((int) ($viewerProfile['is_approved'] ?? 0)) === 1,
+            'has_lobby_identity_id' => $lobbyIdentityId !== '',
+            'lobby_identity_suffix' => $lobbyIdentityId === '' ? null : substr($lobbyIdentityId, -8),
+            'identity_hint' => $identityHint === '' ? null : $identityHint,
+            'user_agent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 160),
+        ];
+
+        @file_put_contents($logPath, json_encode($line, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND | LOCK_EX);
+    }
+
+    private function countLines(string $path): int
+    {
+        $handle = @fopen($path, 'r');
+        if ($handle === false) {
+            return 0;
+        }
+
+        $lines = 0;
+        while (!feof($handle)) {
+            $lines += substr_count((string) fread($handle, 1024 * 1024), "\n");
+        }
+        fclose($handle);
+
+        return $lines;
+    }
+
     private function renderAuthenticationResumePage(string $returnTo): string
     {
         return $this->renderPageTemplate(
@@ -4122,11 +3324,7 @@ final class Application
             ['returnTo' => $returnTo],
             'Reconnecting',
             'account',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
-                '/assets/private_site_auth.js',
-            ],
+            $this->identityScripts(['/assets/private_site_auth.js']),
         );
     }
 
@@ -4155,12 +3353,7 @@ final class Application
             ],
             'Lobby',
             'lobby',
-            [
-                '/assets/openpgp_loader.js',
-                '/assets/browser_signing.js',
-                '/assets/private_site_auth.js',
-                '/assets/invite_redemption.js',
-            ]
+            $this->identityScripts(['/assets/private_site_auth.js', '/assets/invite_redemption.js'])
         );
     }
 
@@ -4177,7 +3370,7 @@ final class Application
             ['destination' => trim((string) ($query['destination'] ?? ''))],
             'Generate invite',
             'invite',
-            ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/invite_issuance.js'],
+            $this->identityScripts(['/assets/invite_issuance.js']),
         );
     }
 
@@ -4289,18 +3482,7 @@ final class Application
      */
     private function fetchApprovedUserDirectoryUsers(): array
     {
-        $stmt = $this->pdo()->query(
-            'SELECT username_token, MIN(username) AS username,
-                    COUNT(*) AS approved_profile_count,
-                    SUM(thread_count) AS thread_count,
-                    SUM(post_count) AS post_count
-             FROM profiles
-             WHERE is_approved = 1
-             GROUP BY username_token
-             ORDER BY SUM(thread_count) DESC, SUM(post_count) DESC, username_token ASC'
-        );
-
-        return $stmt->fetchAll();
+        return ProfileRepository::approvedDirectoryUsers($this->pdo());
     }
 
     /**
@@ -4412,14 +3594,7 @@ final class Application
      */
     private function fetchPendingUserDirectoryProfiles(): array
     {
-        $stmt = $this->pdo()->query(
-            'SELECT profile_slug, username, username_token, fallback_label, post_count, thread_count, bootstrap_post_id, bootstrap_thread_id
-             FROM profiles
-             WHERE is_approved = 0
-             ORDER BY thread_count DESC, post_count DESC, username_token ASC, profile_slug ASC'
-        );
-
-        return $stmt->fetchAll();
+        return ProfileRepository::pendingDirectoryProfiles($this->pdo());
     }
 
     /**
@@ -4575,41 +3750,7 @@ final class Application
 
     private function hasPendingUserDirectoryProfiles(): bool
     {
-        $stmt = $this->pdo()->query('SELECT 1 FROM profiles WHERE is_approved = 0 LIMIT 1');
-
-        return $stmt->fetchColumn() !== false;
-    }
-
-    private function handlePendingUserDirectory(string $method): void
-    {
-        if ($method !== 'GET') {
-            $this->sendHtml(
-                $this->renderMessagePage(
-                    'Method Not Allowed',
-                    'Method Not Allowed',
-                    'Only GET is supported for the pending user directory.',
-                    'none'
-                ),
-                405
-            );
-            return;
-        }
-
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        if ($viewerProfile === null || ((int) $viewerProfile['is_approved']) !== 1) {
-            $this->sendHtml(
-                $this->renderMessagePage(
-                    'Forbidden',
-                    'Forbidden',
-                    'Only approved users can view the pending approval directory.',
-                    'profiles'
-                ),
-                403
-            );
-            return;
-        }
-
-        $this->sendHtml($this->renderPendingUserDirectory(), 200);
+        return ProfileRepository::hasPendingDirectoryProfiles($this->pdo());
     }
 
     /**
@@ -4776,7 +3917,7 @@ final class Application
      */
     private function activityViewSql(string $view): array
     {
-        $quotedHiddenTag = '%"' . self::HIDDEN_BOOTSTRAP_TAG . '"%';
+        $quotedHiddenTag = '%"' . ThreadRowSupport::HIDDEN_BOOTSTRAP_TAG . '"%';
 
         return match ($view) {
             'identity' => ['AND activity.board_tags_json LIKE :identity_tag', ['identity_tag' => $quotedHiddenTag]],
@@ -5093,28 +4234,12 @@ final class Application
 
     private function renderRssFeed(string $title, string $link, array $items): string
     {
-        return '<?xml version="1.0" encoding="UTF-8"?>'
-            . '<rss version="2.0"><channel><title>' . $this->escapeXml($title) . '</title>'
-            . '<link>' . $this->escapeXml('http://localhost' . $link) . '</link>'
-            . '<description>' . $this->escapeXml($title . ' feed') . '</description>'
-            . implode('', $items)
-            . '</channel></rss>';
+        return RssFeed::feed($title, $link, $items);
     }
 
     private function renderRssItem(string $title, string $link, string $description, ?string $publishedAt = null): string
     {
-        $item = '<item><title>' . $this->escapeXml($title) . '</title>'
-            . '<link>' . $this->escapeXml('http://localhost' . $link) . '</link>'
-            . '<description>' . $this->escapeXml($description) . '</description>';
-
-        if ($publishedAt !== null && $publishedAt !== '') {
-            $timestamp = strtotime($publishedAt);
-            if ($timestamp !== false) {
-                $item .= '<pubDate>' . $this->escapeXml(gmdate(DATE_RSS, $timestamp)) . '</pubDate>';
-            }
-        }
-
-        return $item . '</item>';
+        return RssFeed::item($title, $link, $description, $publishedAt);
     }
 
     private function normalizeActivityView(string $view): string
@@ -5129,12 +4254,6 @@ final class Application
             : 'all';
     }
 
-    private function preview(string $body): string
-    {
-        $line = strtok($body, "\n");
-        return $line === false ? '' : $line;
-    }
-
     private function hasBoardTag(string $boardTagsJson, string $tag): bool
     {
         $boardTags = json_decode($boardTagsJson, true);
@@ -5147,12 +4266,7 @@ final class Application
 
     private function isHiddenBootstrapBoardTagsJson(string $boardTagsJson): bool
     {
-        $boardTags = json_decode($boardTagsJson, true);
-        if (!is_array($boardTags)) {
-            return false;
-        }
-
-        return in_array(self::HIDDEN_BOOTSTRAP_TAG, $boardTags, true);
+        return ThreadRowSupport::isHiddenBootstrapBoardTagsJson($boardTagsJson);
     }
 
     /**
@@ -5990,36 +5104,6 @@ final class Application
     }
 
     /**
-     * @param array<string, mixed> $analysis
-     * @return array<string, mixed>
-     */
-    private function agentReplyGenerationFromAnalysis(array $analysis): array
-    {
-        $engagement = is_array($analysis['engagement'] ?? null) ? $analysis['engagement'] : [];
-        $respondability = is_array($analysis['respondability'] ?? null) ? $analysis['respondability'] : [];
-        $text = DedalusAgentReplyGenerator::normalizeGeneratedReplyText(
-            (string) ($engagement['suggested_response'] ?? ''),
-            $this->featureFlags()->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
-            $this->featureFlags()->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT),
-        );
-        if ($text === '') {
-            throw new RuntimeException('Completed analysis did not include a suggested_response.');
-        }
-
-        return [
-            'provider' => (string) ($analysis['provider'] ?? 'analysis'),
-            'provider_model' => (string) ($analysis['provider_model'] ?? 'analysis'),
-            'provider_request_id' => isset($analysis['provider_request_id']) ? (string) $analysis['provider_request_id'] : null,
-            'response_text' => $text,
-            'response_style' => (string) ($engagement['response_style'] ?? 'curious'),
-            'response_intent' => (string) ($respondability['best_response_mode'] ?? 'answer'),
-            'raw_response' => [
-                'source' => 'analysis_suggested_response',
-            ],
-        ];
-    }
-
-    /**
      * @param array<string, mixed> $query
      */
     private function handleApplyThreadTag(string $method, array $query): void
@@ -6675,20 +5759,6 @@ final class Application
     }
 
     /**
-     * @param array<string, mixed> $analysis
-     */
-    private function analysisHash(array $analysis): string
-    {
-        return hash('sha256', json_encode([
-            'status' => $analysis['status'] ?? null,
-            'moderation' => $analysis['moderation'] ?? [],
-            'engagement' => $analysis['engagement'] ?? [],
-            'quality' => $analysis['quality'] ?? [],
-            'respondability' => $analysis['respondability'] ?? [],
-        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
-    }
-
-    /**
      * @param array<string, mixed> $extra
      * @return array<string, mixed>
      */
@@ -6699,28 +5769,6 @@ final class Application
             'post_id' => $postId,
             'generation_status' => $generationStatus,
         ], $extra);
-    }
-
-    /**
-     * @param array<string, mixed> $row
-     * @return array<string, mixed>
-     */
-    private function generatedAgentReplyResponse(array $row, bool $cached): array
-    {
-        return [
-            'status' => 'ok',
-            'post_id' => (string) ($row['target_post_id'] ?? ''),
-            'generation_status' => 'generated',
-            'cached' => $cached,
-            'provider' => $row['provider'] ?? null,
-            'provider_model' => $row['provider_model'] ?? null,
-            'response_text' => $row['response_text'] ?? null,
-            'response_style' => $row['response_style'] ?? null,
-            'response_intent' => $row['response_intent'] ?? null,
-            'agent_post_id' => $row['agent_post_id'] ?? null,
-            'agent_post_url' => isset($row['agent_post_id']) ? '/posts/' . $row['agent_post_id'] : null,
-            'posted' => isset($row['agent_post_id']),
-        ];
     }
 
     /**
@@ -7263,51 +6311,6 @@ final class Application
 
     /**
      * @param array<string, float> $timings
-     * @return array{profile_slug:string,username:string,post_id:string,commit_sha:string,timings:array<string,float>}
-     */
-    private function approveUserBySlug(string $slug, array &$timings = []): array
-    {
-        $phaseStartedAt = hrtime(true);
-        $profile = $this->fetchProfileBySlug($slug);
-        $timings['target_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
-        if ($profile === null) {
-            throw new RuntimeException('Profile not found.');
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
-        $timings['viewer_profile'] = $this->elapsedMilliseconds($phaseStartedAt);
-        if ($viewerProfile === null || ((int) $viewerProfile['is_approved']) !== 1) {
-            throw new RuntimeException('Only approved users can approve other users.');
-        }
-
-        if ((string) $viewerProfile['identity_id'] === (string) $profile['identity_id']) {
-            throw new RuntimeException('Self-approval is not allowed.');
-        }
-
-        if ((int) $profile['is_approved'] === 1) {
-            throw new RuntimeException('User is already approved.');
-        }
-
-        $result = $this->writer()->approveUser([
-            'approver_identity_id' => (string) $viewerProfile['identity_id'],
-            'target_identity_id' => (string) $profile['identity_id'],
-            'target_profile_slug' => (string) $profile['profile_slug'],
-            'thread_id' => (string) $profile['bootstrap_thread_id'],
-            'parent_id' => (string) $profile['bootstrap_post_id'],
-        ]);
-
-        return [
-            'profile_slug' => (string) $profile['profile_slug'],
-            'username' => (string) $profile['username'],
-            'post_id' => (string) $result['post_id'],
-            'commit_sha' => (string) $result['commit_sha'],
-            'timings' => is_array($result['timings'] ?? null) ? $result['timings'] : [],
-        ];
-    }
-
-    /**
-     * @param array<string, float> $timings
      * @return array<string, mixed>
      */
     private function prepareUserApprovalBySlug(string $slug, array &$timings = []): array
@@ -7345,7 +6348,7 @@ final class Application
 
     private function pdo(): PDO
     {
-        return (new ReadModelConnection($this->databasePath))->open();
+        return $this->routeServices()->pdo();
     }
 
     private function commitsCapabilityAvailable(): bool
@@ -7450,50 +6453,17 @@ final class Application
 
     private function notFound(): void
     {
-        $this->sendHtml(
-            $this->renderMessagePage(
-                'Not Found',
-                'Not Found',
-                'The requested route does not exist in the local test slice.',
-                'none'
-            ),
-            404
-        );
+        $this->routeServices()->notFound();
     }
 
     private function sendHtml(string $html, int $statusCode, array $headers = []): void
     {
-        $etag = HtmlResponseCache::etag($html);
-        $headers = array_merge([
-            'Cache-Control: private, no-cache, must-revalidate, max-age=0',
-            'Vary: Cookie',
-            'ETag: ' . $etag,
-        ], $headers);
-
-        if ($statusCode === 200 && HtmlResponseCache::requestMatches($etag)) {
-            http_response_code(304);
-            foreach ($headers as $headerValue) {
-                header($headerValue);
-            }
-            return;
-        }
-
-        http_response_code($statusCode);
-        header('Content-Type: text/html; charset=utf-8');
-        foreach ($headers as $headerValue) {
-            header($headerValue);
-        }
-        echo $html;
+        $this->routeServices()->sendHtml($html, $statusCode, $headers);
     }
 
     private function sendText(string $text, int $statusCode, array $headers = []): void
     {
-        http_response_code($statusCode);
-        header('Content-Type: text/plain; charset=utf-8');
-        foreach ($headers as $headerValue) {
-            header($headerValue);
-        }
-        echo $text;
+        $this->routeServices()->sendText($text, $statusCode, $headers);
     }
 
     private function normalizeSourceRoutePath(string $encodedRelativePath): ?string
@@ -8031,29 +7001,12 @@ final class Application
 
     private function sendXml(string $xml, int $statusCode): void
     {
-        http_response_code($statusCode);
-        header('Content-Type: application/rss+xml; charset=utf-8');
-        echo $xml;
+        $this->routeServices()->sendXml($xml, $statusCode);
     }
 
     private function sendRedirect(string $location, string $message, int $statusCode = 303, array $headers = [], string $activeSection = 'compose'): void
     {
-        http_response_code($statusCode);
-        header('Location: ' . $location);
-        header('Content-Type: text/html; charset=utf-8');
-        foreach ($headers as $headerValue) {
-            header($headerValue);
-        }
-
-        echo $this->renderPageTemplate(
-            'redirect.php',
-            [
-                'location' => $location,
-                'message' => $message,
-            ],
-            'Redirecting',
-            $activeSection
-        );
+        $this->routeServices()->sendRedirect($location, $message, $statusCode, $headers, $activeSection);
     }
 
     private function composeDraftStorageKey(string $kind, string $threadId = '', string $parentId = ''): string
@@ -8106,27 +7059,9 @@ final class Application
         ]);
     }
 
-    private function escape(string $value): string
-    {
-        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-    }
-
-    private function escapeXml(string $value): string
-    {
-        return htmlspecialchars($value, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-    }
-
     private function renderMessagePage(string $title, string $heading, string $message, string $activeSection): string
     {
-        return $this->renderPageTemplate(
-            'message.php',
-            [
-                'heading' => $heading,
-                'message' => $message,
-            ],
-            $title,
-            $activeSection,
-        );
+        return $this->routeServices()->renderMessagePage($title, $heading, $message, $activeSection);
     }
 
     private function renderLobbyAccessRequiredPage(): string
