@@ -15,6 +15,10 @@ use RuntimeException;
 final class TemplateRenderer
 {
     private const THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES = ['board.php', 'tag.php'];
+    /** @var array<string, list<string>> */
+    private const PAGE_STYLESHEET_PATHS = [
+        'about.php' => ['/assets/about.css'],
+    ];
     private const CRITICAL_CSS_END_MARKER = '/* critical-css-end */';
     private ?string $criticalCss = null;
 
@@ -41,6 +45,10 @@ final class TemplateRenderer
         $content = $this->renderFile('pages/' . $pageTemplate, $pageData);
         $showThreadDensityToggle = in_array($pageTemplate, self::THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES, true)
             && $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED);
+        $pageStylesheetPaths = [];
+        foreach (self::PAGE_STYLESHEET_PATHS[$pageTemplate] ?? [] as $stylesheetPath) {
+            $pageStylesheetPaths[] = $this->assetPath($stylesheetPath);
+        }
 
         $viewerProfile = is_array($pageData['viewerProfile'] ?? null) ? $pageData['viewerProfile'] : null;
 
@@ -53,6 +61,7 @@ final class TemplateRenderer
             $showThreadDensityToggle,
             $viewerProfile,
             $publicAuthenticationResume,
+            $pageStylesheetPaths,
         );
     }
 
@@ -68,6 +77,7 @@ final class TemplateRenderer
         bool $showThreadDensityToggle = false,
         ?array $viewerProfile = null,
         bool $publicAuthenticationResume = false,
+        array $pageStylesheetPaths = [],
     ): string {
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)
             && $viewerProfile !== null
@@ -116,6 +126,7 @@ final class TemplateRenderer
             'appVersion' => $this->appVersion,
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
             'siteCssPath' => $this->assetPath('/assets/site.css'),
+            'pageStylesheetPaths' => $pageStylesheetPaths,
             'criticalCss' => $this->criticalCss(),
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
             'threadDensityToggleScriptPath' => $this->assetPath('/assets/thread_density_toggle.js'),

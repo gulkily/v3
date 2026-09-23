@@ -1312,6 +1312,8 @@ PHP;
         assertStringContains('data-action="theme-cycle"', $board);
         assertStringContains('<style data-role="critical-css">', $board);
         assertFingerprintedAsset($board, 'theme-light.css');
+        assertStringNotContains('/assets/about.', $board);
+        assertFingerprintedAsset($about, 'about.css');
         assertStringContains('class="card"', $board);
         assertStringContains('<link rel="preload" href="/assets/site.', $board);
         assertStringContains('as="style" fetchpriority="high">', $board);
