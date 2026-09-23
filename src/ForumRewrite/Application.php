@@ -29,6 +29,7 @@ use ForumRewrite\Http\ComposeAndAccountKeyController;
 use ForumRewrite\Http\ForteBoardController;
 use ForumRewrite\Http\ForteProfileController;
 use ForumRewrite\Http\ForteUserDirectoryController;
+use ForumRewrite\Http\IdentityHintController;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\LlmExchangesController;
 use ForumRewrite\Http\LobbyController;
@@ -168,12 +169,12 @@ final class Application
         }
 
         if ($path === '/api/set_identity_hint') {
-            $this->handleSetIdentityHint($method, $query);
+            $this->identityHintController()->setIdentityHint($method, $query);
             return;
         }
 
         if ($path === '/api/clear_identity') {
-            $this->handleClearIdentity($method);
+            $this->identityHintController()->clearIdentity($method);
             return;
         }
 
@@ -2573,6 +2574,11 @@ final class Application
         );
     }
 
+    private function identityHintController(): IdentityHintController
+    {
+        return new IdentityHintController($this->routeServices());
+    }
+
     /**
      * @param array<string, mixed>|null $viewerProfile
      */
@@ -3205,63 +3211,6 @@ final class Application
     private function isHiddenBootstrapBoardTagsJson(string $boardTagsJson): bool
     {
         return ThreadRowSupport::isHiddenBootstrapBoardTagsJson($boardTagsJson);
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    private function handleSetIdentityHint(string $method, array $query): void
-    {
-        if (!in_array($method, ['GET', 'POST'], true)) {
-            $this->sendText("method not allowed\n", 405);
-            return;
-        }
-
-        $hint = strtolower(trim((string) ($query['identity_hint'] ?? $query['value'] ?? '')));
-        if ($hint === '') {
-            $hint = 'guest';
-        }
-
-        setcookie('identity_hint', $hint, [
-            'expires' => time() + 86400 * 30,
-            'path' => '/',
-            'httponly' => false,
-            'samesite' => 'Lax',
-        ]);
-
-        $_COOKIE['identity_hint'] = $hint;
-        $this->sendText("identity_hint={$hint}\n", 200);
-    }
-
-    private function handleClearIdentity(string $method): void
-    {
-        if ($method !== 'POST') {
-            $this->sendText("method not allowed\n", 405, $this->noStoreHeaders());
-            return;
-        }
-
-        $authenticatedIdentityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
-        if ($authenticatedIdentityId !== '') {
-            $_SESSION['lobby_identity_id'] = $authenticatedIdentityId;
-        }
-
-        unset(
-            $_SESSION['authenticated_identity_id'],
-            $_SESSION['forum_auth_challenges'],
-        );
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            session_write_close();
-        }
-
-        setcookie('identity_hint', 'guest', [
-            'expires' => time() + 86400 * 30,
-            'path' => '/',
-            'httponly' => false,
-            'samesite' => 'Lax',
-        ]);
-        $_COOKIE['identity_hint'] = 'guest';
-
-        $this->sendText("status=ok\nidentity_hint=guest\n", 200, $this->noStoreHeaders());
     }
 
     private function startViewerSession(): void
@@ -4517,11 +4466,7 @@ final class Application
      */
     private function noStoreHeaders(): array
     {
-        return [
-            'Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
-            'Pragma: no-cache',
-            'Expires: 0',
-        ];
+        return $this->routeServices()->noStoreHeaders();
     }
 
     /**

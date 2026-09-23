@@ -162,6 +162,18 @@ final class RouteServices
     }
 
     /**
+     * @return list<string>
+     */
+    public function noStoreHeaders(): array
+    {
+        return [
+            'Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma: no-cache',
+            'Expires: 0',
+        ];
+    }
+
+    /**
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */

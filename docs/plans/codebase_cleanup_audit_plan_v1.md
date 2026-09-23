@@ -12,7 +12,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   across 4 commits (dead `renderFragment()`, `CanonicalRecordFamily`, 6 dead
   `Application` methods, collapsed script-array duplication).
 - **Phase 2 (`Application.php` decomposition):** in progress.
-  `Application.php`: **8,212 → 5,415 lines (~34% smaller)** across 18
+  `Application.php`: **8,212 → 5,360 lines (~35% smaller)** across 19
   route-group extractions so far:
   - `/about` → `AboutPageController`
   - `/instance`, `/backup`, `/downloads/*` → `InstancePageController`
@@ -36,6 +36,7 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   - `/api/set_feature_flag`, `/tools/feature-flags/` POST → joined the
     existing `ToolsPageController`
   - `/api/link_identity` → joined the existing `ComposeAndAccountKeyController`
+  - `/api/set_identity_hint`, `/api/clear_identity` → `IdentityHintController`
 
   Shared query/support layer built up alongside the route extractions
   (`src/ForumRewrite/ReadModel/`, `src/ForumRewrite/Http/`, and
@@ -123,13 +124,34 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   the same "same write operation, different route" reasoning as
   `/api/read_model_status` landing on `CodebaseStateController`.
 
+  Checked `/api/analyze_post` next (explicitly requested) and found it's
+  actually harder tier, not easy: it touches 11 Application methods never
+  extracted anywhere (`postAnalysisContext()`, `postAnalysisService()`,
+  `postAnalysisResponse()`, `agentRepliesEnabled()`,
+  `agentReplyGateFailure()`, `agentReplyStatusResponse()` - 10 other call
+  sites, `agentReplyResultForPost()`, `agentReplySummaryForAnalysisResponse()`,
+  `noStoreHeaders()`/`noStoreTimingHeaders()`, `timingMetricsFrom()`) plus
+  `sendJson()` (69 call sites). Same shape as the `/activity`/single-thread
+  harder tier, just the agent-reply/post-analysis subsystem instead of the
+  commit-manifest one - deferred rather than force through with 9-10
+  closures, most of which would be for genuinely core, heavily-shared
+  Application infrastructure, not route-specific logic.
+
+  Did `/api/set_identity_hint` and `/api/clear_identity` instead: pure
+  cookie/session bookkeeping, no PDO, no `writer()`, no viewer-profile
+  lookup at all - the cheapest slice yet, needing only
+  `sendText()`/`noStoreHeaders()`. `noStoreHeaders()` (16 other call sites)
+  joined `RouteServices` the same way the write-flow slice's timing helpers
+  did, rather than becoming a closure.
+
   Remaining route groups still fully on `Application`: `/forte/activity/`
   and the `/api/forte_*`/`/api/get_forte_*` AJAX endpoints; `/activity`
-  (harder tier, see above); the single-thread view (`/threads/{id}`,
-  `/posts/{id}`); `/api/version` (see above); and the rest of `/api`
-  (~23 auth/identity/write endpoints - `/api/set_identity_hint`,
+  (harder tier); the single-thread view (`/threads/{id}`, `/posts/{id}`,
+  harder tier); the agent-reply/post-analysis subsystem
+  (`/api/analyze_post`, `/api/generate_agent_reply`, `/api/codex_handoff*` -
+  harder tier, see above); `/api/version` (see above); and the rest of
+  `/api` (~19 auth/identity/write endpoints -
   `/api/authenticate_identity`, `/api/create_identity`/`/api/prepare_identity`,
-  `/api/analyze_post`, `/api/generate_agent_reply`, `/api/codex_handoff*`,
   `/api/approve_user`, `/api/prepare_approval`/`/api/create_prepared_approval`,
   `/api/prepare_invitation`/`/api/create_prepared_invitation`,
   `/api/prepare_invitation_redemption`, and the direct
