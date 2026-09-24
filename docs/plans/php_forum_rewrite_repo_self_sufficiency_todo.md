@@ -2,6 +2,12 @@
 
 This file captures what `v3` still needs before it is self-sufficient and no longer depends on `~/v2` as the authoritative source for core contracts.
 
+**Mostly historical.** The self-sufficiency work described below is done;
+this doc is kept for that record. The one still-live, unresolved item is
+the licensing follow-up at the bottom (no `LICENSE`, `CONTENT_LICENSE.md`,
+or `DATA_POLICY.md` exists yet) — see "Follow-Up: Licensing For Downloaded
+Archives".
+
 ## Current State
 
 Status update on 2026-04-08:
@@ -17,7 +23,10 @@ Status update on 2026-04-08:
 - `v3` still does not contain an executable parity test runner, but the retained contracts and fixture inventory now live locally.
 - The active project scope now excludes:
   - merge features
-  - moderation
+  - moderation (superseded — a native `is_hidden`/`approved_flag`
+    moderation system has since been built; this exclusion referred to
+    not migrating `v2`'s moderation features, not to moderation staying
+    unbuilt)
   - profile updates
   - task-planning/task-status features
   - thread-title updates
@@ -63,7 +72,9 @@ Do not bring over `v2` content for:
 
 - task pages or task write flows
 - merge features
-- moderation features
+- moderation features (this meant `v2`'s moderation implementation
+  specifically — `v3` has since built its own native `is_hidden`/
+  `approved_flag` moderation, unrelated to `v2`'s)
 - profile update features
 - thread-title update features
 
@@ -71,20 +82,20 @@ Do not bring over `v2` content for:
 
 Implementation should treat these local documents as the authority set:
 
-1. [php_forum_rewrite_spec_v1.md](/home/wsl/v3/docs/specs/php_forum_rewrite_spec_v1.md)
-2. [canonical_post_record_v1.md](/home/wsl/v3/docs/specs/canonical_post_record_v1.md)
-3. [identity_bootstrap_record_v1.md](/home/wsl/v3/docs/specs/identity_bootstrap_record_v1.md)
-4. [profile_read_contract_v1.md](/home/wsl/v3/docs/specs/profile_read_contract_v1.md)
-5. [public_key_storage_v1.md](/home/wsl/v3/docs/specs/public_key_storage_v1.md)
-6. [php_forum_rewrite_trimmed_parity_suite_v1.md](/home/wsl/v3/docs/plans/php_forum_rewrite_trimmed_parity_suite_v1.md)
+1. `docs/specs/php_forum_rewrite_spec_v1.md`
+2. `docs/specs/canonical_post_record_v1.md`
+3. `docs/specs/identity_bootstrap_record_v1.md`
+4. `docs/specs/profile_read_contract_v1.md`
+5. `docs/specs/public_key_storage_v1.md`
+6. `docs/plans/php_forum_rewrite_trimmed_parity_suite_v1.md`
 7. `tests/fixtures/parity_minimal_v1/`
 
 ## Relevant `v3` Docs
 
-- [php_forum_rewrite_spec_v1.md](/home/wsl/v3/docs/specs/php_forum_rewrite_spec_v1.md)
-- [profile_read_contract_v1.md](/home/wsl/v3/docs/specs/profile_read_contract_v1.md)
-- [php_forum_rewrite_answered_questions.md](/home/wsl/v3/docs/plans/php_forum_rewrite_answered_questions.md)
-- [php_forum_rewrite_fdp_loop_recommendation.md](/home/wsl/v3/docs/plans/php_forum_rewrite_fdp_loop_recommendation.md)
+- `docs/specs/php_forum_rewrite_spec_v1.md`
+- `docs/specs/profile_read_contract_v1.md`
+- `docs/plans/php_forum_rewrite_answered_questions.md`
+- `docs/plans/php_forum_rewrite_fdp_loop_recommendation.md`
 
 ## Follow-Up: Licensing For Downloaded Archives
 

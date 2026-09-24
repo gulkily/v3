@@ -92,7 +92,7 @@ that follow-up work.
       Consider adding a "historical snapshot, not current" banner rather
       than updating the route list (cheaper, and honest about what the
       doc actually is). Added the banner as recommended.
-- [ ] **`docs/plans/php_forum_rewrite_repo_self_sufficiency_todo.md`** —
+- [x] **`docs/plans/php_forum_rewrite_repo_self_sufficiency_todo.md`** —
       every link uses the absolute path `/home/wsl/v3/docs/...`, wrong
       for this checkout (`/home/wsl/agent/v3-claude/...`) — every link in
       "Ready For Implementation"/"Relevant Docs" is broken. Also claims
@@ -101,7 +101,13 @@ that follow-up work.
       buried at lines 89-106: no `LICENSE`, `CONTENT_LICENSE.md`, or
       `DATA_POLICY.md` exists (confirmed) — worth surfacing this
       separately since no one would think to look for it in this stale
-      doc.
+      doc. Fixed all 9 links (converted to plain repo-relative backtick
+      paths, matching this codebase's doc convention, and verified each
+      target still exists); annotated both "moderation" scope-exclusion
+      mentions as referring to not migrating v2's moderation specifically,
+      since v3 has since built its own native moderation; added a
+      top-of-file banner pointing at the still-live Licensing follow-up
+      section so it's not missed in an otherwise-historical doc.
 - [ ] **`docs/fdp/README.md`** + `FEATURE_DEVELOPMENT_PROCESS.md` —
       describes moving a feature's planning artifacts into
       `docs/plans/{feature_name}/` once 4+ accumulate, and maintaining a
