@@ -15,7 +15,7 @@ that follow-up work.
 
 ## Outdated / actively wrong
 
-- [ ] **`docs/runbooks/theme_development_guide.md`** — tells contributors
+- [x] **`docs/runbooks/theme_development_guide.md`** — tells contributors
       to add new themes as scoped blocks inside `public/assets/site.css`.
       No longer true: themes now live in individual `theme-<name>.css`
       files (13 of them: `theme-word97.css`, `theme-dark.css`,

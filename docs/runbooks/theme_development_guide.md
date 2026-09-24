@@ -2,33 +2,41 @@
 
 How to add a new theme or improve an existing one, based on what we learned
 building the Word 97 theme (`b21b525..cb45bd7`, July 2026). Word 97 is the
-most heavily customized theme in the codebase — read its scoped section in
-`public/assets/site.css` as the worked example for everything below.
+most heavily customized theme in the codebase — read
+`public/assets/theme-word97.css` as the worked example for everything below.
 
 ## Architecture: where a theme lives
 
-A theme is one registry entry plus CSS. No JS or template changes are needed
-for a basic theme.
+A theme is one registry entry plus one CSS file. No JS or template changes
+are needed for a basic theme. (This changed from the original single-`site.css`
+layout described in earlier revisions of this guide — themes were later split
+into their own per-theme stylesheets, loaded on demand instead of shipping
+every theme's CSS on every page.)
 
 1. **`src/ForumRewrite/View/ThemeRegistry.php`** — single source of truth.
    Add `['name' => 'x', 'label' => 'X', 'mode' => 'light'|'dark']`. Order
-   here is menu order and cycle order. The registry feeds the popover
-   markup, the cycle button, and the anti-FOUC allow-list in
-   `templates/layout.php` — you never edit those directly.
-2. **`public/assets/site.css`** — three blocks, in this order:
-   - **Variable block** at the top with the other themes:
+   here is menu order and cycle order. `ThemeRegistry::stylesheetPaths()`
+   derives each theme's stylesheet path from its `name` automatically
+   (`/assets/theme-<name>.css`) - you don't wire that path anywhere else.
+   The registry feeds the popover markup, the cycle button, the anti-FOUC
+   allow-list, and `templates/layout.php`'s `themeStylesheetPaths` JS map
+   (which swaps the `<link id="theme-stylesheet">` `href` on theme change) -
+   you never edit those directly.
+2. **`public/assets/theme-<name>.css`** — one new file, containing (in this
+   order, all in the same file - copy an existing theme file like
+   `theme-word97.css` as the template):
+   - **Variable block** at the top:
      `:root[data-theme="x"], .theme-menu__option[data-theme-option="x"]`
      setting `color-scheme` and the custom properties (`--page-bg`,
-     `--ink`, `--panel`, `--button-bg`, fonts, etc.). Copy a similar theme's
-     block as the checklist of properties.
-   - **Swatch rule** with the other `.theme-swatch[data-theme=...]` rules:
-     the little circle/square that represents the theme in the header and
-     menu. Make it unmistakable at 1rem.
-   - **Menu-row garnish** (optional) with the other
-     `.theme-menu__option[data-theme-option=...]` rules: how the theme's
-     row looks in the popover.
-   - **Scoped section** at the bottom: `:root[data-theme="x"] .selector`
-     overrides for chrome the variables can't express.
+     `--ink`, `--panel`, `--button-bg`, fonts, etc.). Copy an existing
+     theme file's block as the checklist of properties.
+   - **Swatch rule**: `.theme-swatch[data-theme="x"]` - the little
+     circle/square that represents the theme in the header and menu. Make
+     it unmistakable at 1rem.
+   - **Menu-row garnish** (optional): `.theme-menu__option[data-theme-option="x"]`
+     - how the theme's row looks in the popover.
+   - **Scoped section**: `:root[data-theme="x"] .selector` overrides for
+     chrome the variables can't express.
 3. **`tests/LocalAppSmokeTest.php`** — two assertions to update: the
    `var allowed = [...]` allow-list string and (if you copy the pattern)
    a `data-theme-option="x"` presence check.
