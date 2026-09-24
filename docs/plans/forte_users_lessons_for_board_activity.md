@@ -1,6 +1,6 @@
 # Lessons from Building Forte Users → Carry Back to Board/Activity
 
-Findings from implementing the Users three-pane view (`docs/plans/forte_users_three_pane_step4_implementation_summary.md`) that are relevant to Board and Activity too. Each item below was actually checked against Board/Activity's current code/rendering, not assumed — see "Verified" notes.
+Findings from implementing the Users three-pane view (`docs/plans/archive/forte_users_three_pane_step4_implementation_summary.md`) that are relevant to Board and Activity too. Each item below was actually checked against Board/Activity's current code/rendering, not assumed — see "Verified" notes.
 
 ## ✅ Confirmed applicable — worth doing
 
