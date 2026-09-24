@@ -320,3 +320,49 @@ is resolved.
 - `repository_root` — canonical records checkout to write the approval to
 - `database_path` — SQLite file to rebuild after approving
 - `artifact_root` — static HTML output directory to rebuild after approving
+
+## Standalone scripts (not wired into `./v3`)
+
+These live in `scripts/` but have no `./v3` dispatcher entry — invoke them
+directly with `php scripts/<script>.php`.
+
+### Audit post signatures
+
+```
+php scripts/audit_post_signatures.php [repository_root]
+```
+
+Scans canonical post records and reports counts for `signed_valid`,
+`missing_signature`, `invalid_signature`, `unknown_author_key`, and
+`anonymous_unsigned`.
+
+- `repository_root` — canonical records checkout to audit; defaults to `FORUM_REPOSITORY_ROOT` or the bootstrapped local repository
+
+### Build the SQLite query catalog
+
+```
+php scripts/build_sqlite_query_catalog.php [source_directory] [browser_asset_path] [local_pack_path]
+```
+
+Regenerates the SQLite viewer's preset query catalog from `queries/sqlite/`:
+rewrites the generated block inside the browser viewer asset
+(`public/assets/sqlite_viewer.js`) and writes a local `.sql` query pack.
+Run this after adding or editing a query under `queries/sqlite/`.
+
+- `source_directory` — query source directory; defaults to `queries/sqlite`
+- `browser_asset_path` — viewer JS asset to rewrite the generated block in; defaults to `public/assets/sqlite_viewer.js`
+- `local_pack_path` — output path for the local `.sql` query pack; defaults to `public/assets/sqlite_query_catalog.sql`
+
+### Check static artifacts for missing fingerprinted assets
+
+```
+php scripts/check_static_artifacts.php [artifact_root]
+```
+
+Scans every `.html` file under `artifact_root` for fingerprinted asset
+references (`/assets/name.<12-hex>.ext`) and fails (exit 1, listing each
+missing reference) if any referenced asset file doesn't exist. Useful after
+a static build or asset-fingerprint change to catch broken references
+before they ship.
+
+- `artifact_root` — directory to scan; defaults to `FORUM_PUBLIC_ARTIFACT_ROOT` or `public/`

@@ -155,14 +155,15 @@ that follow-up work.
       first-class subcommand, not a standalone script. Added a "Manage
       the background task queue" section documenting all 4 subcommands
       and their options, matching the existing doc's per-command style.
-- [ ] **3 standalone operator scripts undocumented anywhere** (not in
+- [x] **3 standalone operator scripts undocumented anywhere** (not in
       `README.md` or `docs/reference/v3_cli.md`):
       `scripts/audit_post_signatures.php` (186 lines — audits OpenPGP
       signatures on canonical post records),
       `scripts/build_sqlite_query_catalog.php` (65 lines — builds the
       SQLite query catalog for the SQLite viewer feature),
       `scripts/check_static_artifacts.php` (38 lines — validates static
-      HTML artifacts for missing content).
+      HTML artifacts for missing content). Added a "Standalone scripts
+      (not wired into `./v3`)" section to `v3_cli.md` covering all 3.
 - [ ] **No SQLite read-model schema reference.** The master spec
       describes the read model only in the abstract (design principles);
       no living doc of actual current table/column structure exists. The
