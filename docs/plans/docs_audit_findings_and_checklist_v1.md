@@ -164,11 +164,19 @@ that follow-up work.
       `scripts/check_static_artifacts.php` (38 lines — validates static
       HTML artifacts for missing content). Added a "Standalone scripts
       (not wired into `./v3`)" section to `v3_cli.md` covering all 3.
-- [ ] **No SQLite read-model schema reference.** The master spec
+- [x] **No SQLite read-model schema reference.** The master spec
       describes the read model only in the abstract (design principles);
       no living doc of actual current table/column structure exists. The
       closest thing is `docs/plans/php_incremental_read_model_write_slices_v1.md`,
-      a feature-history doc, not a maintained schema reference.
+      a feature-history doc, not a maintained schema reference. Created
+      `docs/specs/read_model_schema_v1.md`, covering the 8 core
+      `ReadModelBuilder`-owned tables, the 5 agent/workflow tables that
+      share the same database file (`post_analyses`,
+      `post_unicode_risks`, `post_generated_responses`,
+      `codex_handoffs`/`codex_handoff_events`), and a pointer section for
+      the 3 adjacent-but-separate SQLite databases (activity commit-manifest
+      cache, LLM exchange log, task queue) so the doc doesn't imply those
+      live in the same file.
 - [ ] **No spec for the CSS-splitting / asset-fingerprinting scheme**
       (`AssetFingerprint.php`, the per-page CSS split). `docs/specs/` is
       otherwise a thorough, durable record-format/contract layer with a
