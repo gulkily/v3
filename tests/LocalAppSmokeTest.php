@@ -1345,6 +1345,7 @@ PHP;
         assertFingerprintedAsset($account, 'account.css');
         assertFingerprintedAsset($profile, 'identity.css');
         assertStringNotContains('/assets/account.', $profile);
+        assertStringNotContains('/assets/pending_approvals.', $profile);
         assertFingerprintedAsset($thread, 'identity.css');
         assertFingerprintedAsset($post, 'identity.css');
         assertFingerprintedAsset($thread, 'content-interactions.css');

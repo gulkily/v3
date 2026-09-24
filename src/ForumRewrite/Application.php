@@ -794,7 +794,7 @@ final class Application
             ],
             $pageTitleLabel . ' - Profile',
             'profiles',
-            $this->identityScripts(['/assets/pending_approvals.js']),
+            $canApprove ? $this->identityScripts(['/assets/pending_approvals.js']) : [],
         );
     }
 
