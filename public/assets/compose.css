@@ -43,3 +43,78 @@
   display: block;
   margin-bottom: 1rem;
 }
+
+.compose-normalization-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: -0.1rem 0 0;
+}
+.compose-normalization-inline[hidden] {
+  display: none;
+}
+.compose-normalization-inline-action {
+  width: auto;
+  margin-top: 0;
+  padding: 0.35rem 0.55rem;
+  white-space: nowrap;
+}
+.compose-form-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+.compose-form-actions > button[type="submit"] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.compose-clear-button {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+.reply-context-card h2 {
+  margin-top: 0;
+}
+.reply-context-body {
+  max-height: 18rem;
+  overflow: auto;
+  padding-left: 0.85rem;
+  border-left: 3px solid var(--line);
+}
+.compact-thread-compose {
+  padding: 0;
+}
+.compact-thread-compose label {
+  font-size: 0.92rem;
+}
+.compact-thread-compose input,
+.compact-thread-compose textarea {
+  margin-top: 0.25rem;
+}
+.compact-thread-compose textarea {
+  min-height: 5.5rem;
+  resize: vertical;
+}
+.compact-thread-compose-prompt {
+  min-height: 4.75rem;
+}
+.compact-thread-compose-form {
+  gap: 0.65rem;
+}
+.compact-thread-compose-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  align-items: center;
+}
+.compact-thread-compose-actions > button {
+  margin-top: 0;
+}
+@media (min-width: 640px) {
+  .compact-thread-compose-actions {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+}
