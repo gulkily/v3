@@ -31,7 +31,7 @@ that follow-up work.
       structure (variable block, swatch rule, menu-row garnish) is still
       accurate *within* each theme file — only the file-location
       instructions are stale.
-- [ ] **`docs/plans/forte_roadmap.md:37`** — claims
+- [x] **`docs/plans/forte_roadmap.md:37`** — claims
       `TemplateRenderer::renderFragment()` is dead code left in
       pending cleanup. It has 16 live call sites (`RouteServices.php`,
       `ForteContentAndUserDetailApiController.php`,
