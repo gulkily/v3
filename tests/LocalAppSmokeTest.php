@@ -2131,8 +2131,9 @@ PHP;
 
         $viewer = $this->render($application, '/tools/sqlite/');
         $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite_viewer.js');
-        $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+        $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite.css');
 
+        assertStringMatches('#/assets/sqlite\\.[a-f0-9]{12}\\.css#', $viewer);
         assertStringContains('data-role="sqlite-explorer"', $viewer);
         assertStringContains('data-role="sqlite-table-select"', $viewer);
         assertStringContains('data-role="sqlite-table-details"', $viewer);
@@ -2272,7 +2273,7 @@ PHP;
 
         $viewer = $this->render($application, '/tools/sqlite/');
         $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite_viewer.js');
-        $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+        $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite.css');
 
         assertStringContains('sqlite-result-scroll', $viewer);
         assertStringContains('maxPreviewRows = 25', $script);

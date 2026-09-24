@@ -18,7 +18,7 @@ The user asked the agent to continue this inventory autonomously while the works
 - [x] **Compose controls** — inline-reply, standalone compose, normalization, compact board composer, and reply-context rules now share fingerprinted `compose.css` on Board, Thread, Compose Thread, and Compose Reply routes.
 - [x] **Post/thread interactions** — `.post-card-actions`, `.thread-reaction-*`, and handoff/analysis styles now load from fingerprinted `content-interactions.css` on post and thread routes only.
 - [x] **Thread-list/density controls** — `.thread-density-*` and compact-list rules now load from fingerprinted `thread-list.css` only on Board and Tag views.
-- **SQLite viewer** — `.sqlite-*` is exclusive to the SQLite tool and should leave the standard shared stylesheet with its existing route-specific JS/WASM runtime.
+- [x] **SQLite viewer** — 3,588 bytes of `.sqlite-*` and SQLite data-role rules now load from fingerprinted `sqlite.css` only on the SQLite tool; `site.css` is 3,588 bytes smaller for every standard route. The SQLite route retains the existing tool-only JS/WASM runtime and its no-JavaScript download links.
 - **Instance/backup, profile/user-directory, feature-flag, and LLM-exchange selector families** — inventory their exact template ownership before extraction; keep any cross-route utility rule in the base stylesheet.
 - **Already isolated** — Forte is in `forte.css`; explicit themes are in `theme-<name>.css`. Do not duplicate them into page stylesheets.
 
