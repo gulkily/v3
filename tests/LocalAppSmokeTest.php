@@ -616,9 +616,12 @@ PHP;
 
         try {
             $currentPath = AssetFingerprint::fingerprintedPath($publicRoot, '/assets/example.css');
+            $recursivePath = substr($currentPath, 0, -4) . '.000000000000.css';
             assertSame($publicRoot . '/assets/example.css', AssetFingerprint::sourcePathForFingerprint($publicRoot, $currentPath));
             assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/example.000000000000.css'));
+            assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, $recursivePath));
             assertSame($currentPath, AssetFingerprint::replacementPathForFingerprint($publicRoot, '/assets/example.000000000000.css'));
+            assertSame($currentPath, AssetFingerprint::replacementPathForFingerprint($publicRoot, $recursivePath));
             assertSame(null, AssetFingerprint::replacementPathForFingerprint($publicRoot, $currentPath));
             assertSame(null, AssetFingerprint::replacementPathForFingerprint($publicRoot, '/assets/missing.000000000000.css'));
             assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/missing.000000000000.css'));

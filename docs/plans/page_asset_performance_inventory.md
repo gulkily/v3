@@ -42,11 +42,11 @@ The user asked the agent to continue this inventory autonomously while the works
 
 ## Asset Delivery and Artifact Candidates
 
-- **Fingerprint caching** — retain fingerprinted immutable asset URLs; add or verify long-lived cache headers and compression at the web-server/CDN layer without changing source readability.
-- **Compression** — enable Brotli or gzip for CSS, JavaScript, HTML, JSON, and SVG responses; this is transfer compression, not minification.
+- [x] **Fingerprint caching investigation** — `FrontController` serves validated fingerprints with `Cache-Control: public, max-age=31536000, immutable`; static HTML revalidates by ETag. Apache may directly serve physical `/assets` files, so transfer-header and CDN policy remain host configuration rather than duplicated in readable source.
+- [x] **Compression investigation** — no repository-owned Apache/CDN compression configuration exists. Brotli or gzip for CSS, JavaScript, HTML, JSON, and SVG remains an operator/vhost task, because enabling a module-specific filter without the target host’s enabled-module and proxy validation would be unsafe. This is transfer compression, not minification.
 - **Source maps** — the tracked `openpgp.min.js.map` is about 1.8 MB. Keep it available for development/debugging but exclude it from production/static artifacts unless production debugging explicitly requires it.
 - [x] **Static artifact copying** — static rendering now copies only fingerprinted assets referenced by each rendered artifact; development-only maps and stale/generated assets are not swept into releases.
-- **Stale fingerprint chains** — audit public asset directories and release outputs for recursively fingerprinted leftovers; serve only canonical source or current fingerprinted release assets.
+- [x] **Stale fingerprint chains** — removed 491 ignored recursive fingerprint artifacts (66,239,690 bytes), reducing `public/assets` from 69 MB to 4.0 MB. `AssetFingerprint` now recognizes only a single hash as current and redirects both ordinary and recursive stale URLs to the canonical current fingerprint; static releases continue to copy only referenced current assets.
 - **Preload priority** — preload only render-critical base/active theme assets. Avoid preloading route scripts, alternate themes, or tools runtimes that compete with first render.
 - **Connection and cache policy** — measure cache hit rate, conditional requests, HTTP/2 or HTTP/3 multiplexing, and third-party absence before adding resource hints.
 
