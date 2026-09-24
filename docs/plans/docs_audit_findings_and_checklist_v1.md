@@ -108,7 +108,7 @@ that follow-up work.
       since v3 has since built its own native moderation; added a
       top-of-file banner pointing at the still-live Licensing follow-up
       section so it's not missed in an otherwise-historical doc.
-- [ ] **`docs/fdp/README.md`** + `FEATURE_DEVELOPMENT_PROCESS.md` —
+- [x] **`docs/fdp/README.md`** + `FEATURE_DEVELOPMENT_PROCESS.md` —
       describes moving a feature's planning artifacts into
       `docs/plans/{feature_name}/` once 4+ accumulate, and maintaining a
       `docs/plans/README.md` index. Neither has ever happened —
@@ -116,7 +116,17 @@ that follow-up work.
       exist. (The feature-branch-per-Step-4 convention described
       alongside this *is* actually followed, confirmed via real branches
       like `feature/chouse-theme` — so this is a partial mismatch, not a
-      wholesale ignore.)
+      wholesale ignore.) Investigated further: `docs/fdp/` is vendored
+      upstream content, merged in via `git subtree` from an external FDP
+      template repo (see `8a49695`, and `docs/fdp/README.md`'s own
+      "Reusing across projects" section). Editing it directly is the
+      wrong fix — local edits would just be upstream drift, lost on the
+      next subtree sync. The described convention is also explicitly
+      conditional ("when a feature accumulates four or more..."), and no
+      single feature in this project has hit that threshold — `docs/plans/`
+      staying flat is the convention *not triggering*, not the convention
+      being ignored. No project doc is actually wrong here. Closing with
+      no edit.
 
 ## Gaps
 
