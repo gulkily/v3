@@ -38,13 +38,22 @@ that follow-up work.
       `ForteActivityController.php`), including from this session's own
       Phase 2 extraction. One-line fix; otherwise this is the
       best-maintained doc in `docs/plans/`.
-- [ ] **`docs/theme-menu-representative-options-spec.md`** — header says
+- [x] **`docs/theme-menu-representative-options-spec.md`** — header says
       "Status: in progress on branch `theme-menu-representative-options`"
       but all 4 progress checklist items are `[x]` and that branch no
       longer exists. Verified the described sticker-garnish CSS
       (`border: 2px solid #0a0a0a; box-shadow: 2px 2px 0 #0a0a0a;`)
       shipped in `site.css` and fingerprinted build artifacts. Just needs
-      the status line flipped to "shipped"/done.
+      the status line flipped to "shipped"/done. Turned out broader than
+      expected: the doc's "Files" section and "Key insight" section also
+      claim `public/assets/site.css` is the only/sole file involved, which
+      is stale now that per-theme CSS files exist
+      (`docs/runbooks/theme_development_guide.md`). Fixed by flipping the
+      status line to "shipped" and adding a note there pointing at the
+      runbook for the current file layout, rather than rewriting the whole
+      mechanism section — the doc is a spec for a completed, shipped
+      slice, so it's left describing the CSS structure as originally
+      built (still accurate) with a pointer to where it lives now.
 - [ ] **`docs/specs/agent_reply_one_step_analyze_publish_contract_v1.md`**
       — repeatedly cites `Application::handleAnalyzePost()`,
       `Application::handleGenerateAgentReply()`,

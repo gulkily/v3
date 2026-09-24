@@ -1,6 +1,13 @@
 # Theme-Representative Options in the Theme Menu — Spec
 
-Status: in progress on branch `theme-menu-representative-options`.
+Status: **shipped** (branch `theme-menu-representative-options` merged; all
+4 progress items below complete, including the Playwright verification
+sweep). The mechanism below is described as originally built, against a
+single shared `public/assets/site.css` — the per-theme variable/garnish
+blocks this spec adds were later split out into individual
+`public/assets/theme-<name>.css` files (see
+`docs/runbooks/theme_development_guide.md`), so the "Files" section's file
+path is no longer current, though the CSS rules themselves are unchanged.
 
 ## Progress
 
