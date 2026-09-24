@@ -2406,42 +2406,28 @@ PHP;
     public function testFrontControllerServesStaticArtifactForAnonymousEligibleRoute(): void
     {
         @unlink($this->databasePath);
-        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
-        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
         mkdir($staticHtmlRoot . '/current', 0777, true);
-        mkdir($publicRoot, 0777, true);
         file_put_contents($staticHtmlRoot . '/current/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Board</h1></body></html>');
 
-        $controller = new FrontController(
-            dirname(__DIR__),
-            $this->repositoryRoot,
-            $this->databasePath,
-            $staticHtmlRoot,
-            $publicRoot,
-        );
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/', []);
 
-        $response = $this->renderFrontController($controller, 'GET', '/', []);
-
-        assertStringContains('Static Board', $response);
-        assertStringContains('route-source: static-html', $response);
+            assertStringContains('Static Board', $response);
+            assertStringContains('route-source: static-html', $response);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
     }
 
     public function testFrontControllerRevalidatesStaticArtifactByEtag(): void
     {
-        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
-        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
         $html = '<!doctype html><html><body><h1>Static Board</h1></body></html>';
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
         mkdir($staticHtmlRoot . '/current', 0777, true);
-        mkdir($publicRoot, 0777, true);
         file_put_contents($staticHtmlRoot . '/current/index.html', $html);
 
-        $controller = new FrontController(
-            dirname(__DIR__),
-            $this->repositoryRoot,
-            $this->databasePath,
-            $staticHtmlRoot,
-            $publicRoot,
-        );
         $previousEtag = $_SERVER['HTTP_IF_NONE_MATCH'] ?? null;
 
         try {
@@ -2464,19 +2450,9 @@ PHP;
 
     public function testFrontControllerRecoversStaleFingerprintedAssetRequests(): void
     {
-        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
-        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
         mkdir($publicRoot . '/assets', 0777, true);
-        mkdir($staticHtmlRoot, 0777, true);
         file_put_contents($publicRoot . '/assets/example.css', 'body { color: red; }');
-
-        $controller = new FrontController(
-            dirname(__DIR__),
-            $this->repositoryRoot,
-            $this->databasePath,
-            $staticHtmlRoot,
-            $publicRoot,
-        );
 
         try {
             http_response_code(200);
@@ -2485,54 +2461,45 @@ PHP;
             assertSame('', $response);
             assertSame(302, http_response_code());
         } finally {
-            @unlink($publicRoot . '/assets/example.css');
-            @rmdir($publicRoot . '/assets');
-            @rmdir($publicRoot);
-            @rmdir($staticHtmlRoot);
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
         }
     }
 
     public function testFrontControllerServesStaticArtifactForBackupAlias(): void
     {
         @unlink($this->databasePath);
-        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
-        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
         mkdir($staticHtmlRoot . '/current/instance', 0777, true);
-        mkdir($publicRoot, 0777, true);
         file_put_contents($staticHtmlRoot . '/current/instance/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Backup</h1></body></html>');
 
-        $controller = new FrontController(
-            dirname(__DIR__),
-            $this->repositoryRoot,
-            $this->databasePath,
-            $staticHtmlRoot,
-            $publicRoot,
-        );
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/backup/', []);
 
-        $response = $this->renderFrontController($controller, 'GET', '/backup/', []);
-
-        assertStringContains('Static Backup', $response);
-        assertStringContains('route-source: static-html', $response);
+            assertStringContains('Static Backup', $response);
+            assertStringContains('route-source: static-html', $response);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
     }
 
     public function testFrontControllerBypassesStaticArtifactWhenCookieIsPresent(): void
     {
         @unlink($this->databasePath);
-        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController(withPublicRoot: false);
         mkdir($staticHtmlRoot . '/current', 0777, true);
         file_put_contents($staticHtmlRoot . '/current/index.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Board</h1></body></html>');
 
-        $controller = new FrontController(
-            dirname(__DIR__),
-            $this->repositoryRoot,
-            $this->databasePath,
-            $staticHtmlRoot,
-        );
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/', ['identity_hint' => 'guest']);
 
-        $response = $this->renderFrontController($controller, 'GET', '/', ['identity_hint' => 'guest']);
-
-        assertStringContains('Board', $response);
-        assertStringContains('route-source: php-fallback', $response);
+            assertStringContains('Board', $response);
+            assertStringContains('route-source: php-fallback', $response);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
     }
 
     public function testFrontControllerShowsConfigurationErrorForMissingRepository(): void
@@ -2727,73 +2694,55 @@ PHP;
     public function testFrontControllerFallsBackDynamicallyUntilAReleaseIsActivated(): void
     {
         @unlink($this->databasePath);
-        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
-        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
-        mkdir($staticHtmlRoot, 0777, true);
-        mkdir($publicRoot, 0777, true);
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
         mkdir($publicRoot . '/threads', 0777, true);
         file_put_contents($publicRoot . '/threads/root-001.html', '<!doctype html><p>old public artifact</p>');
 
-        $controller = new FrontController(
-            dirname(__DIR__),
-            $this->repositoryRoot,
-            $this->databasePath,
-            $staticHtmlRoot,
-            $publicRoot,
-        );
+        try {
+            $firstResponse = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
+            assertStringContains('Hello world', $firstResponse);
+            assertStringContains('route-source: php-fallback', $firstResponse);
+            assertStringNotContains('old public artifact', $firstResponse);
 
-        $firstResponse = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
-        assertStringContains('Hello world', $firstResponse);
-        assertStringContains('route-source: php-fallback', $firstResponse);
-        assertStringNotContains('old public artifact', $firstResponse);
-
-        $secondResponse = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
-        assertStringContains('Hello world', $secondResponse);
-        assertStringContains('route-source: php-fallback', $secondResponse);
+            $secondResponse = $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
+            assertStringContains('Hello world', $secondResponse);
+            assertStringContains('route-source: php-fallback', $secondResponse);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
     }
 
     public function testFrontControllerDoesNotBuildArtifactForCookieBearingFallback(): void
     {
         @unlink($this->databasePath);
-        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
-        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
-        mkdir($staticHtmlRoot, 0777, true);
-        mkdir($publicRoot, 0777, true);
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
 
-        $controller = new FrontController(
-            dirname(__DIR__),
-            $this->repositoryRoot,
-            $this->databasePath,
-            $staticHtmlRoot,
-            $publicRoot,
-        );
-
-        $response = $this->renderFrontController($controller, 'GET', '/threads/root-001', ['identity_hint' => 'guest']);
-        assertStringContains('Hello world', $response);
-        assertStringContains('route-source: php-fallback', $response);
-        assertFalse(is_file($publicRoot . '/threads/root-001.html'));
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/threads/root-001', ['identity_hint' => 'guest']);
+            assertStringContains('Hello world', $response);
+            assertStringContains('route-source: php-fallback', $response);
+            assertFalse(is_file($publicRoot . '/threads/root-001.html'));
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
     }
 
     public function testFrontControllerDoesNotBuildArtifactForQueryFallback(): void
     {
         @unlink($this->databasePath);
-        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
-        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
-        mkdir($staticHtmlRoot, 0777, true);
-        mkdir($publicRoot, 0777, true);
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
 
-        $controller = new FrontController(
-            dirname(__DIR__),
-            $this->repositoryRoot,
-            $this->databasePath,
-            $staticHtmlRoot,
-            $publicRoot,
-        );
-
-        $response = $this->renderFrontController($controller, 'GET', '/activity/?view=all', []);
-        assertStringContains('Activity', $response);
-        assertStringContains('route-source: php-fallback', $response);
-        assertFalse(is_file($publicRoot . '/activity.html'));
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/activity/?view=all', []);
+            assertStringContains('Activity', $response);
+            assertStringContains('route-source: php-fallback', $response);
+            assertFalse(is_file($publicRoot . '/activity.html'));
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
     }
 
     public function testFeatureFlagWriteInvalidatesAlternateStaticActivityArtifact(): void
@@ -3115,6 +3064,35 @@ PHP;
         ob_start();
         $controller->handle($method, $path, $cookies);
         return (string) ob_get_clean();
+    }
+
+    /**
+     * Creates a bare staticHtmlRoot/publicRoot temp-directory pair and a
+     * FrontController wired to them - the setup shared by every
+     * testFrontController* test, which then adds its own fixture files
+     * (an index.html, an asset, a stale public artifact) into the
+     * returned paths before exercising the controller. Callers are
+     * responsible for cleaning up both paths (e.g. via deleteTree() in a
+     * finally block) once done.
+     *
+     * @return array{controller: FrontController, staticHtmlRoot: string, publicRoot: string}
+     */
+    private function buildFrontController(bool $withPublicRoot = true): array
+    {
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        mkdir($staticHtmlRoot, 0777, true);
+        mkdir($publicRoot, 0777, true);
+
+        $controller = new FrontController(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $staticHtmlRoot,
+            $withPublicRoot ? $publicRoot : null,
+        );
+
+        return ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot];
     }
 
     private function copyDirectory(string $source, string $destination): void
