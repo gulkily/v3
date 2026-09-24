@@ -396,64 +396,6 @@ pre {
   margin: 0.5rem 0 0;
 }
 
-.inline-reply-composer {
-  padding: 0;
-}
-
-.inline-reply-details {
-  display: block;
-}
-
-.inline-reply-summary {
-  padding: 0.8rem 0.9rem;
-  cursor: pointer;
-}
-
-.inline-reply-summary::marker {
-  content: "";
-}
-
-.inline-reply-summary::-webkit-details-marker {
-  display: none;
-}
-
-.inline-reply-prompt {
-  min-height: 4.75rem;
-  margin: 0;
-  resize: none;
-  cursor: text;
-}
-
-.inline-reply-summary[hidden],
-.inline-reply-details[open] .inline-reply-summary {
-  display: none;
-}
-
-.inline-reply-expanded {
-  padding: 1rem 0.9rem;
-}
-
-.inline-reply-expanded [data-compose-form] > :first-child {
-  margin-top: 0;
-}
-
-.inline-reply-expanded [data-compose-form] textarea {
-  display: block;
-}
-
-.inline-reply-expanded h2 {
-  margin-top: 0;
-}
-
-.inline-reply-identity-status {
-  display: none;
-}
-
-.inline-reply-identity-status[data-kind]:not([data-kind=""]) {
-  display: block;
-  margin-bottom: 1rem;
-}
-
 :root:not([data-theme="chicago"]) .nav-link.is-active {
   color: var(--active-ink);
   background: var(--active-bg);

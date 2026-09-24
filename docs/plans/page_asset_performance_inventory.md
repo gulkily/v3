@@ -15,7 +15,7 @@ The user asked the agent to continue this inventory autonomously while the works
 - [x] **Invitations** — `.invitation-destination-*` now loads from fingerprinted `invitations.css` only for `templates/pages/invites.php`, alongside its existing invitation scripts.
 - [x] **Account/profile identity** — `.account-key-*` now loads from shared fingerprinted `identity.css` on account, profile, invitation, thread, and post identity-detail surfaces.
 - **Pending approvals** — `.pending-approvals-*` belongs to `users_pending.php` and its route-specific script.
-- **Compose controls** — `.compose-*`, inline-reply, and pending-composer styles can form a compose/content-interaction family, provided board and thread uses remain covered.
+- **Compose controls** — the inline-reply shell now loads from fingerprinted `compose.css` on Board and Thread. Extract standalone compose, normalization, pending-composer, and reply-context rules in a follow-up slice after preserving their form-route coverage.
 - [x] **Post/thread interactions** — `.post-card-actions`, `.thread-reaction-*`, and handoff/analysis styles now load from fingerprinted `content-interactions.css` on post and thread routes only.
 - [x] **Thread-list/density controls** — `.thread-density-*` and compact-list rules now load from fingerprinted `thread-list.css` only on Board and Tag views.
 - **SQLite viewer** — `.sqlite-*` is exclusive to the SQLite tool and should leave the standard shared stylesheet with its existing route-specific JS/WASM runtime.
