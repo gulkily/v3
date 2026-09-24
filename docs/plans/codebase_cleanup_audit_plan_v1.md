@@ -577,7 +577,37 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
   Each change verified against `tests/run.php` (487 passing, same 6
   known baseline failures) plus the specific affected suite in full,
   before committing.
-- **Phase 4 (docs hygiene):** not started.
+- **Phase 4 (docs hygiene):** done. `docs/plans/` had 353 files, 269
+  following the 4-step FDP naming convention across 74 distinct cycles.
+  Moved the 67 fully-completed cycles (262 files - 63 with all 4 steps,
+  plus 4 with `step4_implementation_summary` present but missing an
+  earlier step, e.g. `chouse_theme`/`activity_manifest_readability`
+  starting at step2 with no separate assessment doc) into
+  `docs/plans/archive/` via `git mv`, preserving rename history. The 7
+  cycles with no `step4` at all (`forte_mobile_friendly`,
+  `site_text_search`, `chouse_production_readiness`,
+  `browser_private_key_restore`, `codebase_page_source_details`,
+  `thread_compact_view`, `user_specific_archives`) stay at the top
+  level, genuinely incomplete. The ~84 non-FDP-pattern files (standalone
+  plans, roadmaps, this audit's own docs) are untouched either way -
+  presented as an explicit proposal and confirmed before executing, per
+  the plan's own call for this to be "a separate, explicit decision."
+  Checked the whole repo for stale path references to the 262 moved
+  files first: found two plain-text mentions (not functional links),
+  left the one inside the moving cycle alone (both files move together;
+  editing archived content is out of scope), fixed the one in an active,
+  staying-in-place doc (`forte_users_lessons_for_board_activity.md`).
+  Also checked `todo.txt`/`README.md`/`BLESSING.md`/`sfenc.md` per the
+  plan's scope - `README.md` was already current (every doc link it
+  makes still resolves) and nothing else turned up factually stale, so
+  left as-is. `tests/run.php`: 487 passing, same 6 known pre-existing
+  failures as baseline (docs-only change).
+
+  This closes out every phase in this plan (Phase 0 inventory, Phase 1
+  dead-code removal, Phase 2 `Application.php` decomposition, Phase 3
+  test-suite readability, Phase 4 docs hygiene). See
+  `codebase_cleanup_audit_findings_v1.md` for the Phase 0 findings this
+  whole effort was scoped from.
 
 Every extraction commit is verified against `tests/run.php` (baseline: ~475
 pass / 7-8 known pre-existing failures, unrelated to this work) plus direct
