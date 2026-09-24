@@ -38,7 +38,7 @@ The user asked the agent to continue this inventory autonomously while the works
 - **OpenPGP/browser signing** — large OpenPGP and browser-signing assets should stay strictly on authenticated or compose flows and load only after intent when existing lazy loaders permit.
 - **SQLite runtime** — `sql-wasm.wasm`, `sql-wasm.js`, `sqlite_viewer.js`, and the query catalog remain tool-only; avoid preloading them elsewhere.
 - **Heavy reader scripts** — Forte paned-reader assets remain Forte-only; defer non-visible panes/details until interaction where behavior permits.
-- **Inline head code** — measure the theme and density resolver payload separately; retain only paint-critical logic and move noncritical synchronization to deferred scripts.
+- [x] **Inline head code: density resolver** — the layout’s inline resolver measured 2,836 source bytes. The density branch is now emitted only when the enabled density control is rendered on Board/Tag, preserving its pre-paint compact-mode behavior while removing 592 bytes from other rendered pages. The theme resolver remains inline because it selects the active theme before first paint.
 
 ## Asset Delivery and Artifact Candidates
 

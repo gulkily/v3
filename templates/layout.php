@@ -59,6 +59,7 @@
       window.forumUpdateThemeHint = updateThemeHint;
       updateThemeHint(resolvedTheme);
 
+<?php if ($showThreadDensityToggle): ?>
       try {
         var densityStorageKey = 'zenmemes-thread-density';
         var densityParam = new URLSearchParams(location.search).get('density');
@@ -74,6 +75,7 @@
         }
       } catch (error) {
       }
+<?php endif; ?>
     })();
   </script>
 <?php if ($appVersionNotificationEnabled): ?>
