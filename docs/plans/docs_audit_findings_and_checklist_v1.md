@@ -68,7 +68,7 @@ that follow-up work.
       `src/ForumRewrite/Agent/PostWorkflowService.php`. Described
       *behavior* still holds — only the class/method map is stale. Fixed
       all six references to point at their new home classes.
-- [ ] **`docs/specs/php_forum_rewrite_spec_v1.md`** (the master spec) —
+- [x] **`docs/specs/php_forum_rewrite_spec_v1.md`** (the master spec) —
       two issues: (a) §11.1 lists activity views as `all`, `content`,
       `code`; actual code (`ActivityService.php:308`) supports `all`,
       `content`, `identity`, `bootstrap`, `approval`, `commits` — no
@@ -80,7 +80,11 @@ that follow-up work.
       current but is really a pre-implementation baseline the product has
       outgrown; nothing marks it superseded. Also has no mention of
       `Application.php`, namespaces, or the post-refactor Http controller
-      split (see the architecture-map gap below).
+      split (see the architecture-map gap below). Fixed (a) by correcting
+      the view list; fixed (b) by annotating the reactions/tags bullet as
+      superseded with a pointer to the shipped spec and implementation.
+      Left the architecture-map gap alone — that's tracked as its own
+      item below and needs a bigger follow-up, not a spot fix here.
 - [ ] **`docs/plans/php_forum_rewrite_answered_questions.md`** — lists
       ~12 "current routes," two of which (`/api/pow_requirement`,
       `/api/call_llm`) don't exist anywhere in the codebase anymore.
