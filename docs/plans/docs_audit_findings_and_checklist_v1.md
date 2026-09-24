@@ -85,13 +85,13 @@ that follow-up work.
       superseded with a pointer to the shipped spec and implementation.
       Left the architecture-map gap alone — that's tracked as its own
       item below and needs a bigger follow-up, not a spot fix here.
-- [ ] **`docs/plans/php_forum_rewrite_answered_questions.md`** — lists
+- [x] **`docs/plans/php_forum_rewrite_answered_questions.md`** — lists
       ~12 "current routes," two of which (`/api/pow_requirement`,
       `/api/call_llm`) don't exist anywhere in the codebase anymore.
       Reads as a live reference; is actually a project-origin snapshot.
       Consider adding a "historical snapshot, not current" banner rather
       than updating the route list (cheaper, and honest about what the
-      doc actually is).
+      doc actually is). Added the banner as recommended.
 - [ ] **`docs/plans/php_forum_rewrite_repo_self_sufficiency_todo.md`** —
       every link uses the absolute path `/home/wsl/v3/docs/...`, wrong
       for this checkout (`/home/wsl/agent/v3-claude/...`) — every link in
