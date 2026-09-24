@@ -9,20 +9,7 @@ final class BrowserSigningNormalizationTest
      */
     private function runScript(string $script): array
     {
-        $command = sprintf(
-            'node -e %s %s',
-            escapeshellarg($script),
-            escapeshellarg(__DIR__ . '/../public/assets/browser_signing.js'),
-        );
-
-        $output = [];
-        $exitCode = 0;
-        exec($command . ' 2>&1', $output, $exitCode);
-        if ($exitCode !== 0) {
-            throw new RuntimeException('Node helper execution failed: ' . implode("\n", $output));
-        }
-
-        return json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+        return $this->runNodeScript($script, __DIR__ . '/../public/assets/browser_signing.js');
     }
 
     /**
@@ -121,10 +108,18 @@ NODE;
      */
     private function runThreadReactionScript(string $script): array
     {
+        return $this->runNodeScript($script, __DIR__ . '/../public/assets/thread_reactions.js');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function runNodeScript(string $script, string $assetPath): array
+    {
         $command = sprintf(
             'node -e %s %s',
             escapeshellarg($script),
-            escapeshellarg(__DIR__ . '/../public/assets/thread_reactions.js'),
+            escapeshellarg($assetPath),
         );
 
         $output = [];
