@@ -31,6 +31,7 @@ final class TemplateRenderer
         'tag.php' => ['/assets/thread-list.css'],
         'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/compose.css'],
         'tools.php' => ['/assets/tools.css'],
+        'users_pending.php' => ['/assets/pending-approvals.css'],
     ];
     private const CRITICAL_CSS_END_MARKER = '/* critical-css-end */';
     private ?string $criticalCss = null;

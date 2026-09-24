@@ -14,7 +14,7 @@ The user asked the agent to continue this inventory autonomously while the works
 - [x] **Activity manifests** — `.activity-commit-manifest*` now loads from fingerprinted `activity.css` on classic Activity and Forte Activity, including lazy-loaded manifest details.
 - [x] **Invitations** — `.invitation-destination-*` now loads from fingerprinted `invitations.css` only for `templates/pages/invites.php`, alongside its existing invitation scripts.
 - [x] **Account/profile identity** — `.account-key-*` now loads from shared fingerprinted `identity.css` on account, profile, invitation, thread, and post identity-detail surfaces.
-- **Pending approvals** — `.pending-approvals-*` belongs to `users_pending.php` and its route-specific script.
+- [x] **Pending approvals** — the responsive approvals table and `.pending-approvals-*` now load from fingerprinted `pending-approvals.css` only for `users_pending.php`, alongside its route-specific script.
 - [x] **Compose controls** — inline-reply, standalone compose, normalization, compact board composer, and reply-context rules now share fingerprinted `compose.css` on Board, Thread, Compose Thread, and Compose Reply routes.
 - [x] **Post/thread interactions** — `.post-card-actions`, `.thread-reaction-*`, and handoff/analysis styles now load from fingerprinted `content-interactions.css` on post and thread routes only.
 - [x] **Thread-list/density controls** — `.thread-density-*` and compact-list rules now load from fingerprinted `thread-list.css` only on Board and Tag views.
