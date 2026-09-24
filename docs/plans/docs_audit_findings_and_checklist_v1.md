@@ -54,7 +54,7 @@ that follow-up work.
       mechanism section — the doc is a spec for a completed, shipped
       slice, so it's left describing the CSS structure as originally
       built (still accurate) with a pointer to where it lives now.
-- [ ] **`docs/specs/agent_reply_one_step_analyze_publish_contract_v1.md`**
+- [x] **`docs/specs/agent_reply_one_step_analyze_publish_contract_v1.md`**
       — repeatedly cites `Application::handleAnalyzePost()`,
       `Application::handleGenerateAgentReply()`,
       `Application::agentReplyResultForPost()`,
@@ -66,7 +66,8 @@ that follow-up work.
       `PostWorkflowApiController::analyzePost()`/`generateAgentReply()`;
       the other four now live on
       `src/ForumRewrite/Agent/PostWorkflowService.php`. Described
-      *behavior* still holds — only the class/method map is stale.
+      *behavior* still holds — only the class/method map is stale. Fixed
+      all six references to point at their new home classes.
 - [ ] **`docs/specs/php_forum_rewrite_spec_v1.md`** (the master spec) —
       two issues: (a) §11.1 lists activity views as `all`, `content`,
       `code`; actual code (`ActivityService.php:308`) supports `all`,

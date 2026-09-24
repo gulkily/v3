@@ -85,12 +85,15 @@ Automatic browser work must not retry generated-response rows in `pending`,
 
 ## Shared Posting Helper Contract
 
-`Application::handleGenerateAgentReply()` and `Application::handleAnalyzePost()`
-must share one reply-posting helper:
+`PostWorkflowApiController::generateAgentReply()` and
+`PostWorkflowApiController::analyzePost()` must share one reply-posting
+helper:
 
 ```php
-private function agentReplyResultForPost(array $post): array
+public function agentReplyResultForPost(array $post): array
 ```
+
+(on `src/ForumRewrite/Agent/PostWorkflowService.php`)
 
 The helper is an application helper, not an HTTP responder.
 
@@ -145,7 +148,7 @@ and failure codes. Successful analyze responses must not omit these keys.
 
 ## Analyze Posting Contract
 
-`Application::handleAnalyzePost()` must:
+`PostWorkflowApiController::analyzePost()` must:
 
 - run post analysis exactly as it does today
 - compute `agent_reply_generation_allowed` from configuration, analysis
@@ -165,8 +168,10 @@ The analyze endpoint must not call the posting helper for known skipped cases.
 Add an allowlisted mapper:
 
 ```php
-private function agentReplySummaryForAnalysisResponse(array $replyResult): array
+public function agentReplySummaryForAnalysisResponse(array $replyResult): array
 ```
+
+(on `src/ForumRewrite/Agent/PostWorkflowService.php`)
 
 The mapper translates a full reply helper result into compact analyze response
 fields:
@@ -267,7 +272,7 @@ The existing idempotency guard around created post IDs must remain in place.
 
 ## Rendering Work Contract
 
-`Application::agentReplyWorkForPost()` and the surrounding
+`PostWorkflowService::agentReplyWorkForPost()` and the surrounding
 `agentReplyWorkByPostId()` configuration gate must follow this contract:
 
 - disabled `DEDALUS_AGENT_REPLIES_ENABLED`: render no automatic work
