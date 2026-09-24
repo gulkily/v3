@@ -52,6 +52,37 @@ read-model table counts (posts, threads, profiles, activity).
 - `repository_root` — canonical records checkout to rebuild from
 - `database_path` — SQLite file to write the read model to
 
+## Manage the background task queue
+
+```
+./v3 task-queue enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
+./v3 task-queue run [--limit=1] [--dry-run] [--quiet] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+./v3 task-queue status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
+./v3 task-queue cron [--log=/var/log/forum-task-queue.log]
+```
+
+A small SQLite-backed job queue (`scripts/task_queue.php`), currently used to
+serialize read-model rebuild requests so concurrent triggers coalesce into one
+job instead of racing. `docs/runbooks/production_deploy.md` and
+`docs/runbooks/operator_recovery.md` reference this command and depend on it
+being installed via cron.
+
+- `enqueue-rebuild` — enqueues a `read-model` rebuild task (a no-op if one is
+  already queued/running); `--queue-database-path=...` overrides the default
+  queue database location
+- `run` — claims and runs up to `--limit` queued tasks (default 1), recovering
+  any abandoned in-progress tasks first; guarded by an exclusive file lock so
+  concurrent invocations don't double-run. `--dry-run` reports the queued
+  count without running anything; `--quiet` suppresses progress output;
+  `--repository-root=...`/`--database-path=...` override the read model to
+  rebuild against
+- `status` — prints queued/running/completed/failed counts plus the
+  `--limit` (default 25) most recent tasks with attempt counts and failure
+  codes
+- `cron` — prints a ready-to-install crontab line running `task_queue.php run
+  --quiet --limit=1` once a minute; `--log=...` sets the log file path baked
+  into the printed line
+
 ## Import a repository archive
 
 ```

@@ -144,7 +144,7 @@ that follow-up work.
       and it doesn't exist. **Worth its own follow-up conversation** (new
       writing, not a correction) rather than folding into this checklist's
       other items.
-- [ ] **`./v3 task-queue` (4 subcommands: `enqueue-rebuild`, `run`,
+- [x] **`./v3 task-queue` (4 subcommands: `enqueue-rebuild`, `run`,
       `status`, `cron`) is completely undocumented** in
       `docs/reference/v3_cli.md`, despite being a real, wired-in operator
       command (`v3:164-167`, `scripts/task_queue.php`) that
@@ -152,7 +152,9 @@ that follow-up work.
       `docs/runbooks/operator_recovery.md` already reference and depend
       on. Found independently by two separate audit passes — high
       confidence. Most significant of the CLI gaps since it's a
-      first-class subcommand, not a standalone script.
+      first-class subcommand, not a standalone script. Added a "Manage
+      the background task queue" section documenting all 4 subcommands
+      and their options, matching the existing doc's per-command style.
 - [ ] **3 standalone operator scripts undocumented anywhere** (not in
       `README.md` or `docs/reference/v3_cli.md`):
       `scripts/audit_post_signatures.php` (186 lines — audits OpenPGP
