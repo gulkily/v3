@@ -19,7 +19,7 @@ final class TemplateRenderer
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
         'activity.php' => ['/assets/activity.css'],
-        'account_key.php' => ['/assets/identity.css'],
+        'account_key.php' => ['/assets/identity.css', '/assets/account.css'],
         'bookmarklets.php' => ['/assets/tools.css'],
         'invites.php' => ['/assets/invitations.css', '/assets/identity.css'],
         'post.php' => ['/assets/identity.css', '/assets/content-interactions.css'],

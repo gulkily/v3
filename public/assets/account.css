@@ -1,0 +1,17 @@
+[data-role="public-key-field"] {
+  min-height: 18rem;
+  resize: vertical;
+  font-family: var(--code-font);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  background:
+    linear-gradient(to bottom, color-mix(in srgb, var(--panel) 55%, var(--input-bg) 45%), var(--input-bg));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line) 55%, transparent 45%);
+}
+
+[data-role="public-key-field"]:focus {
+  outline: 2px solid color-mix(in srgb, var(--ink) 35%, transparent 65%);
+  outline-offset: 1px;
+  border-color: color-mix(in srgb, var(--ink) 45%, var(--line) 55%);
+}

@@ -24,7 +24,8 @@ The user asked the agent to continue this inventory autonomously while the works
 
 ## Page and Render-Path Candidates
 
-- **Critical CSS** — `TemplateRenderer::criticalCss()` currently inlines an 8,306-byte fixed prefix of `site.css` into every standard page. Retain only true above-the-fold shared rules after browser measurement; route-only rules now belong in cached page files.
+- [x] **Critical CSS: account-key reduction** — browser-rendered Board HTML measured a 6,337-byte fixed inline prefix. The 593-byte public-key textarea/focus block is account-only, so it now loads from fingerprinted `account.css` on `account_key.php`; every standard page’s inline critical CSS is 5,744 bytes.
+- **Critical CSS: shared-header trim** — pending browser paint measurement; retain the global shell, navigation, theme menu, and card rules until a reduced prefix is visually equivalent across representative routes.
 - **Shared layout markup** — measure repeated nav, theme-menu, status-bar, and inline configuration payload size. Keep accessibility/navigation requirements intact; remove or defer only route-irrelevant data.
 - **Board/thread/tag payloads** — measure card count, body-preview length, reaction/analysis markup, and manifest detail. Use pagination, progressive disclosure, or on-demand detail only where first-view content is not required.
 - **Static pages** — verify generated HTML does not embed per-request state unnecessarily and uses the same route asset contract as dynamic pages.
