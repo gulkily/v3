@@ -240,12 +240,14 @@ that follow-up work.
       `thread_archive_v3_command_slices_v1.md`, and
       `zenmemes_rules_pinned_post_options.md`. Archived all 6 via
       `git mv` into `docs/plans/archive/`.
-- [ ] `docs/sigtbd_fault_tolerant_governance_*` (5 files, an academic
+- [x] `docs/sigtbd_fault_tolerant_governance_*` (5 files, an academic
       paper + slides + PDF by the same author) — parked directly
       alongside operational docs/specs with no separator. Not wrong, just
       possibly disorienting to someone browsing `docs/` expecting only
       technical material. Consider a `docs/research/` subdirectory if it
-      bothers you; purely cosmetic.
+      bothers you; purely cosmetic. Found 6 files, not 5 (the .pdf plus 5
+      `.md` variants). Moved all 6 into a new `docs/research/` via
+      `git mv`; no inbound references anywhere else in the repo.
 - [ ] `docs/plans/page_asset_performance_inventory.md` contains an
       embedded "Autonomous Continuation" instruction block — a stored
       agent-prompt fragment, not project documentation. Worth a glance to
