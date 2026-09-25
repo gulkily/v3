@@ -228,11 +228,18 @@ that follow-up work.
 
 ## Lower-priority / worth a quick look
 
-- [ ] Flip 3 fully-completed-but-not-archived `docs/plans/` files to
+- [x] Flip 3 fully-completed-but-not-archived `docs/plans/` files to
       `docs/plans/archive/` manually (they didn't match the strict
       4-step naming the Phase 4 sweep used): `codebase_state_feature_plan_v1.md`
       (all 4 slices marked Completed), `php_template_extraction_plan_v1.md`
-      (Status: completed), and one more flagged in the same pass.
+      (Status: completed), and one more flagged in the same pass. A fresh
+      sweep for the same pattern (`Status: completed`/`Implemented`, no
+      remaining unchecked boxes, no external references) turned up 4 more
+      beyond the 2 named here: `activity_source_links_slices_v1.md`,
+      `post_detached_signature_day1_recovery_plan_v1.md`,
+      `thread_archive_v3_command_slices_v1.md`, and
+      `zenmemes_rules_pinned_post_options.md`. Archived all 6 via
+      `git mv` into `docs/plans/archive/`.
 - [ ] `docs/sigtbd_fault_tolerant_governance_*` (5 files, an academic
       paper + slides + PDF by the same author) — parked directly
       alongside operational docs/specs with no separator. Not wrong, just
