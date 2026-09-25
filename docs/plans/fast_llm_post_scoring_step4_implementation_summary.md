@@ -30,3 +30,13 @@
   - `php -r 'require "autoload.php"; ... FastPostScorer ...'` — requested `FastPostScore` with 16 tokens and returned a single `0.6` LLM probability.
 - Notes:
   - The configured prompt file is the scoring rubric; operators must make its probability definition explicit before enabling the feature.
+
+## Stage 4 - Deterministic companion
+- Changes:
+  - Added deterministic evaluation for empty-post exclusion and an explicit `heuristic` result source.
+  - Left all non-empty posts to the configured rubric and model rather than fabricating a generic heuristic probability.
+- Verification:
+  - `php tests/run.php DeterministicFastScoreEvaluatorTest FastScoreContextFactoryTest FastPostScorerTest` — passed.
+  - `php -r 'require "autoload.php"; ... DeterministicFastScoreEvaluator ...'` — emitted an excluded, null-probability result with `empty_post` signal.
+- Notes:
+  - Additional heuristic probabilities require rubric-specific evaluation before they can be added safely.

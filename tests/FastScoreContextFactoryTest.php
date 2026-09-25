@@ -60,5 +60,6 @@ final class FastScoreContextFactoryTest
             'source' => 'none',
             'signals' => ['fast_scoring_disabled'],
         ], FastScoreResult::notScored('disabled', ['fast_scoring_disabled']));
+        assertSame('heuristic', FastScoreResult::excluded(['empty_post'])['source']);
     }
 }

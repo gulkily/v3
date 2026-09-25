@@ -28,6 +28,15 @@ final class FastScoreResult
      * @param list<string> $signals
      * @return array{status:string, probability:?float, source:string, signals:list<string>}
      */
+    public static function excluded(array $signals): array
+    {
+        return self::result('excluded', null, 'heuristic', $signals);
+    }
+
+    /**
+     * @param list<string> $signals
+     * @return array{status:string, probability:?float, source:string, signals:list<string>}
+     */
     private static function result(string $status, ?float $probability, string $source, array $signals): array
     {
         return [
