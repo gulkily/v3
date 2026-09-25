@@ -205,6 +205,38 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testFastScoreEndpointRequiresAnApprovedViewerAndReturnsWorkflowResult(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $previousEnabled = getenv('FAST_SCORING_ENABLED');
+        $previousProvider = getenv('FAST_SCORING_LLM_PROVIDER');
+        putenv('FAST_SCORING_ENABLED=true');
+        putenv('FAST_SCORING_LLM_PROVIDER=stub');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $created = $this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Score&body=Question');
+            $postId = $this->extractValue($created, 'post_id');
+
+            $_COOKIE = [];
+            $anonymous = json_decode($this->renderMethod($application, 'POST', '/api/score_post?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $approved = json_decode($this->renderMethod($application, 'POST', '/api/score_post?post_id=' . rawurlencode($postId)), true);
+            $missing = json_decode($this->renderMethod($application, 'POST', '/api/score_post?post_id=missing'), true);
+
+            assertSame('forbidden', $anonymous['error']);
+            assertSame($postId, $approved['post_id']);
+            assertSame('config_missing', $approved['status']);
+            assertSame(null, $approved['probability']);
+            assertSame('none', $approved['source']);
+            assertSame('post not found', $missing['error']);
+        } finally {
+            $_COOKIE = [];
+            $previousEnabled === false ? putenv('FAST_SCORING_ENABLED') : putenv('FAST_SCORING_ENABLED=' . $previousEnabled);
+            $previousProvider === false ? putenv('FAST_SCORING_LLM_PROVIDER') : putenv('FAST_SCORING_LLM_PROVIDER=' . $previousProvider);
+        }
+    }
+
     public function testUnicodeRiskAnalysisFlagsMixedScriptIdentifierForApprovedViewersOnly(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

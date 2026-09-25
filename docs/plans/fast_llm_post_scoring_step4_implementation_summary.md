@@ -50,3 +50,13 @@
   - `php -r 'require "autoload.php"; ... FastScoreWorkflowService ...'` — returned a source-labeled `0.8` LLM result.
 - Notes:
   - The factory supports the existing OpenAI-compatible and Anthropic provider contracts and passes the existing LLM exchange recorder through to model requests.
+
+## Stage 6 - Approved-operator score API
+- Changes:
+  - Added approved-only `POST /api/score_post`, returning post ID, status, nullable probability, source, and signals.
+  - Registered the endpoint with session-resume and API discovery routes without adding browser automation or post-card markup.
+- Verification:
+  - `php tests/run.php WriteApiSmokeTest::testFastScoreEndpointRequiresAnApprovedViewerAndReturnsWorkflowResult` — passed.
+  - `php tests/run.php WriteApiSmokeTest FastScoreWorkflowServiceTest` — the new endpoint and workflow tests passed; one unrelated existing approval/activity consistency test failed during the full `WriteApiSmokeTest` class run.
+- Notes:
+  - The endpoint is intentionally an operator/workflow surface; it makes no reader-facing score or threshold decision.

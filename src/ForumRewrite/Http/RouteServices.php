@@ -9,7 +9,10 @@ use ForumRewrite\Agent\PostWorkflowService;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Host\HtmlResponseCache;
 use ForumRewrite\ReadModel\ReadModelConnection;
+use ForumRewrite\Scoring\FastScoreWorkflowFactory;
+use ForumRewrite\Scoring\FastScoreWorkflowService;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
 use PDO;
@@ -119,6 +122,22 @@ final class RouteServices
             $fetchPost,
             $fetchThreadPosts,
             $llmExchangeRecorderFactory,
+        );
+    }
+
+    /**
+     * @param \Closure(string): (array<string, mixed>|null) $fetchPost
+     * @param \Closure(): (\ForumRewrite\Llm\LlmExchangeRecorder|null) $llmExchangeRecorderFactory
+     */
+    public function fastScoreWorkflowService(
+        \Closure $fetchPost,
+        \Closure $llmExchangeRecorderFactory,
+    ): FastScoreWorkflowService {
+        return FastScoreWorkflowFactory::fromPrivateConfig(
+            PrivateConfig::load($this->projectRoot),
+            $this->projectRoot,
+            $fetchPost,
+            $llmExchangeRecorderFactory(),
         );
     }
 
