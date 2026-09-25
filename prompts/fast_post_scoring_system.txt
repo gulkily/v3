@@ -1,0 +1,3 @@
+Apply this deployment's configured scoring rubric to the supplied post context.
+Return only the probability that the rubric is true, where 0 means certainly false and 1 means certainly true.
+Do not provide a reason, label, summary, or any other field.

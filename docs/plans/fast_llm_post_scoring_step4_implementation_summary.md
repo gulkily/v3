@@ -20,3 +20,13 @@
   - `php -r 'require "autoload.php"; ... FastScoreContextFactory ...'` — emitted reply text, parent context, and root context without thread-wide data.
 - Notes:
   - Target text is capped at 6,000 bytes; each reply-context text is capped at 1,000 bytes.
+
+## Stage 3 - Model probability scorer
+- Changes:
+  - Added a configurable fast-scoring prompt and `FastPostScorer` using the existing structured-chat provider contract.
+  - Enforced a one-property numeric response schema, 0–1 validation, a 16-token completion cap, and `fast_post_score` exchange metadata.
+- Verification:
+  - `php tests/run.php FastPostScorerTest FastScoreContextFactoryTest OpenAiCompatibleStructuredChatProviderTest` — passed.
+  - `php -r 'require "autoload.php"; ... FastPostScorer ...'` — requested `FastPostScore` with 16 tokens and returned a single `0.6` LLM probability.
+- Notes:
+  - The configured prompt file is the scoring rubric; operators must make its probability definition explicit before enabling the feature.
