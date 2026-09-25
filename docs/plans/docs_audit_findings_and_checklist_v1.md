@@ -38,7 +38,7 @@ that follow-up work.
       `ForteActivityController.php`), including from this session's own
       Phase 2 extraction. One-line fix; otherwise this is the
       best-maintained doc in `docs/plans/`.
-- [x] **`docs/theme-menu-representative-options-spec.md`** — header says
+- [x] **`docs/specs/theme_menu_representative_options_spec_v1.md`** — header says
       "Status: in progress on branch `theme-menu-representative-options`"
       but all 4 progress checklist items are `[x]` and that branch no
       longer exists. Verified the described sticker-garnish CSS
