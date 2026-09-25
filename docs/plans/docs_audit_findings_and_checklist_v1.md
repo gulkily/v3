@@ -209,12 +209,22 @@ that follow-up work.
       Chouse.club hosting itself is still a user in-progress draft
       (`docs/plans/chouse_club_hosting_plan_v1.md`, untracked) — left
       untouched, not this checklist's concern until it lands.
-- [ ] **`docs/plans/session_reauthentication_reference.md`** — reads as
+- [x] **`docs/plans/session_reauthentication_reference.md`** — reads as
       an open design doc with unresolved "Session Strategy Options," but
       the described approach already shipped
       (`Application::shouldResumeViewerSession()`/`resumeViewerSession()`,
       wired into `handle()`). Never recorded that a decision was made or
-      what shipped.
+      what shipped. Investigated further: the functions named above are
+      real but are a separate, complementary mechanism, not the core
+      resume flow — the actual "Recommended Experience" (steps 1-4)
+      shipped as `Application::renderAuthenticationResumePage()` /
+      `ResumeTarget::fromRequestUri()` /
+      `templates/pages/authentication_resume.php` /
+      `public/assets/private_site_auth.js` (challenge-sign + `location.replace`),
+      and the "Configure PHP sessions explicitly" option was the chosen
+      persistence policy. Step 5 (navigation guard) wasn't found — likely
+      unbuilt, but the doc marks it optional. Added a status banner
+      recording exactly what shipped and correcting the citation.
 
 ## Lower-priority / worth a quick look
 
