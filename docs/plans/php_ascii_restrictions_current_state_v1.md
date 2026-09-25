@@ -2,6 +2,17 @@
 
 This document describes how the `v3` application currently handles ASCII restrictions in April 2026. It is intended as a factual brief for discussion with an advisor, not as a proposal for what the policy should become.
 
+**Since superseded in part**: a `FORUM_UNICODE_AUTHORED_TEXT` feature flag
+now exists (`FeatureFlagRegistry::UNICODE_AUTHORED_TEXT`, default off),
+which answers this doc's own "which record families should move to UTF-8
+first?" question — post `subject`/`body` — via
+`LocalWriteService::normalizeAuthoredLine()`/`UnicodeTextPolicy`. A
+companion `FORUM_EMOJI_AUTHORED_TEXT` flag layers emoji support on top when
+Unicode text is enabled. The rest of this brief (ASCII tokens, identifiers,
+usernames, canonical repository storage of everything else) is still
+accurate as of this writing; only the "does Unicode ever survive into
+canonical storage" answer has changed, and only when the flag is on.
+
 ## Executive Summary
 
 The current system is built around an ASCII-only canonical write contract:
@@ -25,15 +36,15 @@ The key architectural decision is that canonical repository artifacts are plain 
 
 This is stated directly in the current specs:
 
-- [docs/specs/canonical_post_record_v1.md](/home/wsl/v3/docs/specs/canonical_post_record_v1.md:1): one post file is one ASCII text record
-- [docs/specs/identity_bootstrap_record_v1.md](/home/wsl/v3/docs/specs/identity_bootstrap_record_v1.md:1): one identity bootstrap file is one ASCII text record
-- [docs/specs/public_key_storage_v1.md](/home/wsl/v3/docs/specs/public_key_storage_v1.md:1): one public-key file stores one ASCII-armored OpenPGP key
+- `docs/specs/canonical_post_record_v1.md`: one post file is one ASCII text record
+- `docs/specs/identity_bootstrap_record_v1.md`: one identity bootstrap file is one ASCII text record
+- `docs/specs/public_key_storage_v1.md`: one public-key file stores one ASCII-armored OpenPGP key
 
 So the current question is not whether the system stores Unicode canonically. It does not. The only question is how much normalization and recovery the application provides before backend enforcement rejects non-ASCII content.
 
 ## Where ASCII Is Enforced Today
 
-The main enforcement logic lives in [src/ForumRewrite/Write/LocalWriteService.php](/home/wsl/v3/src/ForumRewrite/Write/LocalWriteService.php:1).
+The main enforcement logic lives in `src/ForumRewrite/Write/LocalWriteService.php`.
 
 There are three different restriction levels in that file.
 
@@ -137,7 +148,7 @@ In `linkIdentity()`:
 - the stored identity ID uses lowercase ASCII hex
 - the username is normalized separately, not accepted raw
 
-The username normalization lives in [src/ForumRewrite/Security/OpenPgpKeyInspector.php](/home/wsl/v3/src/ForumRewrite/Security/OpenPgpKeyInspector.php:1):
+The username normalization lives in `src/ForumRewrite/Security/OpenPgpKeyInspector.php`:
 
 - lowercases the source user ID
 - converts runs of non `[a-z0-9._-]` characters to `-`
@@ -158,7 +169,7 @@ In addition, `requireOpenPgpIdentityId()` further narrows identity IDs:
 
 ## Browser Behavior Today
 
-The browser-side compose logic lives in [public/assets/browser_signing.js](/home/wsl/v3/public/assets/browser_signing.js:1).
+The browser-side compose logic lives in `public/assets/browser_signing.js`.
 
 It does not make the system Unicode-capable. It only provides a narrow compatibility layer ahead of backend enforcement.
 

@@ -1,5 +1,12 @@
 # PHP Forum Rewrite Answered Questions
 
+**Historical snapshot, not a current reference.** This document captures the
+project's answers to its own early planning questions, including a `v2`
+route inventory (e.g. `/api/pow_requirement`, `/api/call_llm`) that predates
+this codebase and no longer exists here. It's preserved for design context
+on *why* decisions were made, not as an up-to-date route list — for that,
+read the routing/controller code directly.
+
 This document collects the questions that have already been answered for the PHP rewrite. These answers reflect the current project direction, the active rewrite spec, the migrated canonical specs under `docs/specs/`, the reduced parity inventory in `v3`, and the retained fixture tree under `tests/fixtures/`. Historical references to `v2` are informational only and exist for design context, not as implementation authority.
 
 ## Current Product Contract

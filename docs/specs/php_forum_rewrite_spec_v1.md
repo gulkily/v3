@@ -16,6 +16,10 @@ This document defines a PHP-first rewrite of the forum application. It is intend
 - Do not preserve Python as a production dependency.
 - Do not redesign the forum into a SPA.
 - Do not add rich-text, voting, reactions, or database-owned canonical content.
+  (Superseded: a post/thread reaction and tag system has since shipped —
+  see `docs/specs/post_reaction_record_v1.md` and
+  `LocalWriteService::applyThreadTag()`/`applyPostTag()`. This document is
+  a pre-implementation V1 baseline, not a current constraint list.)
 - Do not require background workers or external queue infrastructure for V1.
 
 ## 3. Product Scope
@@ -238,7 +242,10 @@ Activity must support:
 
 - `all`
 - `content`
-- `code`
+- `identity`
+- `bootstrap`
+- `approval`
+- `commits`
 
 ### 11.2 Backing Model
 

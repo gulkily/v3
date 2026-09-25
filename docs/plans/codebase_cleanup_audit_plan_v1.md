@@ -511,8 +511,103 @@ each phase below produces a decision or a diff, not a rewrite of the architectur
 
   `Application.php`: 2,138 → 2,066 lines. Full suite (487 passing, same
   6 known baseline failures) clean.
-- **Phase 3 (test suite readability):** not started.
-- **Phase 4 (docs hygiene):** not started.
+- **Phase 3 (test suite readability):** in progress. Investigated all
+  three large test files (`BrowserSigningNormalizationTest.php` 6,876
+  lines, `WriteApiSmokeTest.php` 4,002 lines, `LocalAppSmokeTest.php`
+  3,316 lines) via a dedicated fork per file, per the plan's "genuine
+  breadth vs. repetition" test. Verdict across all three: **mostly
+  genuine breadth** - each test file already has reasonable shared-helper
+  infrastructure, and the large majority of individual tests check
+  meaningfully distinct scenarios, not near-duplicates. A handful of
+  real, safe extraction candidates were found and applied:
+  - `WriteApiSmokeTest.php`: three verbatim assertion/scaffolding blocks
+    (an "used incremental update" check, a "read-model stays healthy"
+    check, a "read-model marked stale with reason" check) extracted into
+    named helpers, 13 call sites total updated. One interleaved
+    occurrence deliberately left inline (mixed with test-specific
+    sub-assertions, not cleanly adjacent).
+  - `LocalAppSmokeTest.php`: all 10 `testFrontController*` tests'
+    shared staticHtmlRoot/publicRoot temp-directory + controller setup
+    extracted into `buildFrontController()`. While doing this, found 6
+    of 8 matching tests had **no cleanup at all** for their temp
+    directories (a real leak, not just a readability issue) - fixed all
+    8 uniformly with try/finally + `deleteTree()`.
+  - `BrowserSigningNormalizationTest.php`: two byte-identical Node-script
+    -runner helpers (differing only in which `.js` asset path they
+    exec'd) merged into one shared implementation behind both original
+    method names.
+
+  Two candidates were investigated closely and **deliberately left
+  alone** after the closer look contradicted the initial survey's
+  "high confidence" read - a good illustration of why this phase
+  requires reading the actual code, not just pattern-matching on test
+  names:
+  - `WriteApiSmokeTest.php`'s 7 near-identical-looking
+    localhost-request-simulation try/finally blocks (Codex-handoff
+    cluster) turned out to have real variation (different `HTTP_HOST`
+    values, one test omitting an `unset()` call) that a shared helper
+    would have to either parameterize away or silently normalize.
+  - `BrowserSigningNormalizationTest.php`'s 9-test, ~1,100-line
+    thread/post-reaction cluster (initially flagged HIGH confidence)
+    turned out, on direct diff and a programmatic all-pairs comparison
+    of its most "obviously shared" building block (a mock
+    `HTMLButtonElement` class), to have only 2 of 9 declarations
+    byte-identical - the rest carry real, independently-evolved
+    differences, and the surrounding fetch-mocking/assertion logic
+    differs by scenario (immediate resolution vs. deferred-promise
+    optimistic-UI testing). Forcing a shared builder here would mean
+    designing away genuine per-test specificity, not removing
+    repetition.
+  - A related, lower-confidence pending-shell/optimistic-navigation
+    cluster in the same file (~1,720 lines, 6 tests) was flagged by the
+    initial survey as needing a same-family diff before any decision;
+    not yet investigated further.
+
+  Not yet looked at: the rest of `BrowserSigningNormalizationTest.php`
+  (compose-submit UI + thread/reply transport, ~2,000 lines/15 tests -
+  survey pass only, not deeply inspected) and one structural (not
+  duplication) observation from the `LocalAppSmokeTest.php` survey:
+  `testApplicationRendersCoreRoutes` is 350 lines encoding ~250
+  assertions across ~25 unrelated routes in one test method - a
+  single-responsibility problem worth a name-and-structure discussion,
+  but splitting it is a rewrite (real risk of dropping an assertion
+  mid-split), not an extraction, so it wasn't attempted without a
+  separate decision to do so.
+
+  Each change verified against `tests/run.php` (487 passing, same 6
+  known baseline failures) plus the specific affected suite in full,
+  before committing.
+- **Phase 4 (docs hygiene):** done. `docs/plans/` had 353 files, 269
+  following the 4-step FDP naming convention across 74 distinct cycles.
+  Moved the 67 fully-completed cycles (262 files - 63 with all 4 steps,
+  plus 4 with `step4_implementation_summary` present but missing an
+  earlier step, e.g. `chouse_theme`/`activity_manifest_readability`
+  starting at step2 with no separate assessment doc) into
+  `docs/plans/archive/` via `git mv`, preserving rename history. The 7
+  cycles with no `step4` at all (`forte_mobile_friendly`,
+  `site_text_search`, `chouse_production_readiness`,
+  `browser_private_key_restore`, `codebase_page_source_details`,
+  `thread_compact_view`, `user_specific_archives`) stay at the top
+  level, genuinely incomplete. The ~84 non-FDP-pattern files (standalone
+  plans, roadmaps, this audit's own docs) are untouched either way -
+  presented as an explicit proposal and confirmed before executing, per
+  the plan's own call for this to be "a separate, explicit decision."
+  Checked the whole repo for stale path references to the 262 moved
+  files first: found two plain-text mentions (not functional links),
+  left the one inside the moving cycle alone (both files move together;
+  editing archived content is out of scope), fixed the one in an active,
+  staying-in-place doc (`forte_users_lessons_for_board_activity.md`).
+  Also checked `todo.txt`/`README.md`/`BLESSING.md`/`sfenc.md` per the
+  plan's scope - `README.md` was already current (every doc link it
+  makes still resolves) and nothing else turned up factually stale, so
+  left as-is. `tests/run.php`: 487 passing, same 6 known pre-existing
+  failures as baseline (docs-only change).
+
+  This closes out every phase in this plan (Phase 0 inventory, Phase 1
+  dead-code removal, Phase 2 `Application.php` decomposition, Phase 3
+  test-suite readability, Phase 4 docs hygiene). See
+  `codebase_cleanup_audit_findings_v1.md` for the Phase 0 findings this
+  whole effort was scoped from.
 
 Every extraction commit is verified against `tests/run.php` (baseline: ~475
 pass / 7-8 known pre-existing failures, unrelated to this work) plus direct

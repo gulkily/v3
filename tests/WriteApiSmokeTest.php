@@ -2049,10 +2049,8 @@ PHP);
         $threadPage = $this->renderMethod($application, 'GET', '/threads/' . $threadResult['thread_id']);
         $replyPage = $this->renderMethod($application, 'GET', '/posts/' . $replyResult['post_id']);
 
-        assertSame(true, isset($threadResult['timings']['read_model_incremental_update']));
-        assertSame(false, isset($threadResult['timings']['read_model_rebuild']));
-        assertSame(true, isset($replyResult['timings']['read_model_incremental_update']));
-        assertSame(false, isset($replyResult['timings']['read_model_rebuild']));
+        $this->assertUsedIncrementalUpdate($threadResult);
+        $this->assertUsedIncrementalUpdate($replyResult);
         assertStringContains('Incremental Thread', $threadPage);
         assertStringContains('Incremental reply', $replyPage);
         assertStringContains('Incremental reply', $threadPage);
@@ -2075,8 +2073,7 @@ PHP);
         $profilePage = $this->renderMethod($application, 'GET', '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
 
-        assertSame(true, isset($result['timings']['read_model_incremental_update']));
-        assertSame(false, isset($result['timings']['read_model_rebuild']));
+        $this->assertUsedIncrementalUpdate($result);
         assertStringContains('Visible username:</strong> forum-user', $profilePage);
         assertStringContains('forum-user', $threadPage);
     }
@@ -2094,8 +2091,7 @@ PHP);
             'public_key' => $this->readFixturePublicKey(),
         ]);
 
-        assertSame(true, isset($result['timings']['read_model_incremental_update']));
-        assertSame(false, isset($result['timings']['read_model_rebuild']));
+        $this->assertUsedIncrementalUpdate($result);
     }
 
     public function testCreateThreadWithHashtagsWritesThreadLabelRecordAndRendersLabels(): void
@@ -2354,8 +2350,7 @@ PHP);
 
         $threadApi = $this->renderMethod($application, 'GET', '/api/get_thread?thread_id=root-001');
 
-        assertSame(true, isset($result['timings']['read_model_incremental_update']));
-        assertSame(false, isset($result['timings']['read_model_rebuild']));
+        $this->assertUsedIncrementalUpdate($result);
         assertStringContains('Score-Total: 1', $threadApi);
     }
 
@@ -2376,8 +2371,7 @@ PHP);
         $row = $pdo->query("SELECT post_tags_json, post_score_total, approved_flag_count, is_hidden FROM posts WHERE post_id = 'reply-001'")->fetch();
         $activityRow = $pdo->query("SELECT kind, record_family, post_id, source_path FROM activity WHERE kind = 'post_reaction_add' AND post_id = 'reply-001' ORDER BY id DESC LIMIT 1")->fetch();
 
-        assertSame(true, isset($result['timings']['read_model_incremental_update']));
-        assertSame(false, isset($result['timings']['read_model_rebuild']));
+        $this->assertUsedIncrementalUpdate($result);
         assertSame('reply-001', $result['post_id']);
         assertSame('root-001', $result['thread_id']);
         assertSame('-100', $result['post_score_total']);
@@ -2642,12 +2636,10 @@ PHP);
         ]);
 
         $threadPage = $this->renderMethod($application, 'GET', '/threads/' . $result['thread_id']);
-        $staleMarkerPath = dirname($databasePath) . '/read_model_stale.json';
-
         assertSame(true, isset($result['timings']['read_model_incremental_fallback']));
         assertSame(true, isset($result['timings']['read_model_rebuild_fallback']));
         assertStringContains('Fallback Thread', $threadPage);
-        assertFalse(is_file($staleMarkerPath));
+        $this->assertReadModelHealthy($databasePath);
     }
 
     public function testLabeledWriteIncrementalLabelFailureFallsBackToFullRebuildAndKeepsReadModelHealthy(): void
@@ -2677,15 +2669,13 @@ PHP);
 
         $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
         $activity = $this->renderMethod($application, 'GET', '/activity/?view=content');
-        $staleMarkerPath = dirname($databasePath) . '/read_model_stale.json';
-
         assertSame(true, isset($result['timings']['read_model_incremental_fallback']));
         assertSame(true, isset($result['timings']['read_model_rebuild_fallback']));
         assertStringContains('Fallback labeled reply', $threadPage);
         assertStringContains('Labels: answered, bug, needs-review', $threadPage);
         assertStringContains('thread_label_add', $activity);
         assertStringContains('Labels added: answered', $activity);
-        assertFalse(is_file($staleMarkerPath));
+        $this->assertReadModelHealthy($databasePath);
     }
 
     public function testIdentityIncrementalFailureFallsBackToFullRebuildAndKeepsReadModelHealthy(): void
@@ -2714,12 +2704,10 @@ PHP);
         ]);
 
         $profilePage = $this->renderMethod($application, 'GET', '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
-        $staleMarkerPath = dirname($databasePath) . '/read_model_stale.json';
-
         assertSame(true, isset($result['timings']['read_model_incremental_fallback']));
         assertSame(true, isset($result['timings']['read_model_rebuild_fallback']));
         assertStringContains('Visible username:</strong> forum-user', $profilePage);
-        assertFalse(is_file($staleMarkerPath));
+        $this->assertReadModelHealthy($databasePath);
     }
 
     public function testIncrementalThreadAndReplyMatchFreshRebuildView(): void
@@ -2837,11 +2825,7 @@ PHP);
             assertStringContains('Derived state marked stale', $exception->getMessage());
         }
 
-        $staleMarkerPath = dirname($databasePath) . '/read_model_stale.json';
-        assertTrue(is_file($staleMarkerPath));
-        $staleMarker = json_decode((string) file_get_contents($staleMarkerPath), true, 512, JSON_THROW_ON_ERROR);
-        assertSame('write_refresh_failed', $staleMarker['reason'] ?? null);
-        assertTrue(strlen((string) ($staleMarker['commit_sha'] ?? '')) === 40);
+        $this->assertReadModelMarkedStale($databasePath);
         assertTrue(is_file($artifactRoot . '/index.html'));
     }
 
@@ -2880,11 +2864,7 @@ PHP);
             assertStringContains('Derived state marked stale', $exception->getMessage());
         }
 
-        $staleMarkerPath = dirname($databasePath) . '/read_model_stale.json';
-        assertTrue(is_file($staleMarkerPath));
-        $staleMarker = json_decode((string) file_get_contents($staleMarkerPath), true, 512, JSON_THROW_ON_ERROR);
-        assertSame('write_refresh_failed', $staleMarker['reason'] ?? null);
-        assertTrue(strlen((string) ($staleMarker['commit_sha'] ?? '')) === 40);
+        $this->assertReadModelMarkedStale($databasePath);
     }
 
     public function testLinkIdentityAllowsDuplicateUsernameTokensWithoutBreakingRebuild(): void
@@ -3379,12 +3359,10 @@ PHP);
 
         $result = $this->approveIdentity($service, $target);
         $profilePage = $this->renderMethod($application, 'GET', '/profiles/' . $target['profile_slug']);
-        $staleMarkerPath = dirname($databasePath) . '/read_model_stale.json';
-
         assertSame(true, isset($result['timings']['read_model_approval_incremental_fallback']));
         assertSame(true, isset($result['timings']['read_model_approval_rebuild_fallback']));
         assertStringContains('Approved:</strong> yes', $profilePage);
-        assertFalse(is_file($staleMarkerPath));
+        $this->assertReadModelHealthy($databasePath);
     }
 
     public function testApprovalWriteMarksDerivedStateStaleWhenIncrementalAndFallbackRefreshFail(): void
@@ -3418,11 +3396,7 @@ PHP);
             assertStringContains('Derived state marked stale', $exception->getMessage());
         }
 
-        $staleMarkerPath = dirname($databasePath) . '/read_model_stale.json';
-        assertTrue(is_file($staleMarkerPath));
-        $staleMarker = json_decode((string) file_get_contents($staleMarkerPath), true, 512, JSON_THROW_ON_ERROR);
-        assertSame('write_refresh_failed', $staleMarker['reason'] ?? null);
-        assertTrue(strlen((string) ($staleMarker['commit_sha'] ?? '')) === 40);
+        $this->assertReadModelMarkedStale($databasePath);
     }
 
     public function testTagsIndexShowsFiveNewestThreadsAndTagPageShowsAllThreads(): void
@@ -3472,6 +3446,29 @@ PHP);
         $this->initializeGitRepository($repositoryRoot);
 
         return [$repositoryRoot, $databasePath, $artifactRoot];
+    }
+
+    /**
+     * @param array<string, mixed> $result
+     */
+    private function assertUsedIncrementalUpdate(array $result): void
+    {
+        assertSame(true, isset($result['timings']['read_model_incremental_update']));
+        assertSame(false, isset($result['timings']['read_model_rebuild']));
+    }
+
+    private function assertReadModelHealthy(string $databasePath): void
+    {
+        assertFalse(is_file(dirname($databasePath) . '/read_model_stale.json'));
+    }
+
+    private function assertReadModelMarkedStale(string $databasePath, string $expectedReason = 'write_refresh_failed'): void
+    {
+        $staleMarkerPath = dirname($databasePath) . '/read_model_stale.json';
+        assertTrue(is_file($staleMarkerPath));
+        $staleMarker = json_decode((string) file_get_contents($staleMarkerPath), true, 512, JSON_THROW_ON_ERROR);
+        assertSame($expectedReason, $staleMarker['reason'] ?? null);
+        assertTrue(strlen((string) ($staleMarker['commit_sha'] ?? '')) === 40);
     }
 
     private function readFixturePublicKey(): string

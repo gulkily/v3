@@ -2,9 +2,14 @@
 
 This is the exhaustive source-level inventory for the current application. It excludes minification; validate byte and request impact with browser/network measurements before implementation.
 
-## Autonomous Continuation
+## Working This Inventory
 
-The user asked the agent to continue this inventory autonomously while the workstation is unattended. Continue in the order that provides the safest measured reduction in delivered or parsed assets; commit each verified change and update this document in the same commit. Preserve readable source, no-JavaScript behavior, theme behavior, static-artifact correctness, and unrelated working-tree files. Record any item deliberately retained or deferred with its reason before moving on.
+Work through remaining items in the order that provides the safest measured
+reduction in delivered or parsed assets; commit each verified change and
+update this document in the same commit. Preserve readable source,
+no-JavaScript behavior, theme behavior, static-artifact correctness, and
+unrelated working-tree files. Record any item deliberately retained or
+deferred with its reason before moving on.
 
 ## CSS Ownership Candidates
 

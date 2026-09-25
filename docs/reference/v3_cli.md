@@ -52,6 +52,37 @@ read-model table counts (posts, threads, profiles, activity).
 - `repository_root` — canonical records checkout to rebuild from
 - `database_path` — SQLite file to write the read model to
 
+## Manage the background task queue
+
+```
+./v3 task-queue enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
+./v3 task-queue run [--limit=1] [--dry-run] [--quiet] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+./v3 task-queue status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
+./v3 task-queue cron [--log=/var/log/forum-task-queue.log]
+```
+
+A small SQLite-backed job queue (`scripts/task_queue.php`), currently used to
+serialize read-model rebuild requests so concurrent triggers coalesce into one
+job instead of racing. `docs/runbooks/production_deploy.md` and
+`docs/runbooks/operator_recovery.md` reference this command and depend on it
+being installed via cron.
+
+- `enqueue-rebuild` — enqueues a `read-model` rebuild task (a no-op if one is
+  already queued/running); `--queue-database-path=...` overrides the default
+  queue database location
+- `run` — claims and runs up to `--limit` queued tasks (default 1), recovering
+  any abandoned in-progress tasks first; guarded by an exclusive file lock so
+  concurrent invocations don't double-run. `--dry-run` reports the queued
+  count without running anything; `--quiet` suppresses progress output;
+  `--repository-root=...`/`--database-path=...` override the read model to
+  rebuild against
+- `status` — prints queued/running/completed/failed counts plus the
+  `--limit` (default 25) most recent tasks with attempt counts and failure
+  codes
+- `cron` — prints a ready-to-install crontab line running `task_queue.php run
+  --quiet --limit=1` once a minute; `--log=...` sets the log file path baked
+  into the printed line
+
 ## Import a repository archive
 
 ```
@@ -289,3 +320,49 @@ is resolved.
 - `repository_root` — canonical records checkout to write the approval to
 - `database_path` — SQLite file to rebuild after approving
 - `artifact_root` — static HTML output directory to rebuild after approving
+
+## Standalone scripts (not wired into `./v3`)
+
+These live in `scripts/` but have no `./v3` dispatcher entry — invoke them
+directly with `php scripts/<script>.php`.
+
+### Audit post signatures
+
+```
+php scripts/audit_post_signatures.php [repository_root]
+```
+
+Scans canonical post records and reports counts for `signed_valid`,
+`missing_signature`, `invalid_signature`, `unknown_author_key`, and
+`anonymous_unsigned`.
+
+- `repository_root` — canonical records checkout to audit; defaults to `FORUM_REPOSITORY_ROOT` or the bootstrapped local repository
+
+### Build the SQLite query catalog
+
+```
+php scripts/build_sqlite_query_catalog.php [source_directory] [browser_asset_path] [local_pack_path]
+```
+
+Regenerates the SQLite viewer's preset query catalog from `queries/sqlite/`:
+rewrites the generated block inside the browser viewer asset
+(`public/assets/sqlite_viewer.js`) and writes a local `.sql` query pack.
+Run this after adding or editing a query under `queries/sqlite/`.
+
+- `source_directory` — query source directory; defaults to `queries/sqlite`
+- `browser_asset_path` — viewer JS asset to rewrite the generated block in; defaults to `public/assets/sqlite_viewer.js`
+- `local_pack_path` — output path for the local `.sql` query pack; defaults to `public/assets/sqlite_query_catalog.sql`
+
+### Check static artifacts for missing fingerprinted assets
+
+```
+php scripts/check_static_artifacts.php [artifact_root]
+```
+
+Scans every `.html` file under `artifact_root` for fingerprinted asset
+references (`/assets/name.<12-hex>.ext`) and fails (exit 1, listing each
+missing reference) if any referenced asset file doesn't exist. Useful after
+a static build or asset-fingerprint change to catch broken references
+before they ship.
+
+- `artifact_root` — directory to scan; defaults to `FORUM_PUBLIC_ARTIFACT_ROOT` or `public/`
