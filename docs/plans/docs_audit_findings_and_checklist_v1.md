@@ -177,10 +177,15 @@ that follow-up work.
       the 3 adjacent-but-separate SQLite databases (activity commit-manifest
       cache, LLM exchange log, task queue) so the doc doesn't imply those
       live in the same file.
-- [ ] **No spec for the CSS-splitting / asset-fingerprinting scheme**
+- [x] **No spec for the CSS-splitting / asset-fingerprinting scheme**
       (`AssetFingerprint.php`, the per-page CSS split). `docs/specs/` is
       otherwise a thorough, durable record-format/contract layer with a
-      blind spot for this newer infra.
+      blind spot for this newer infra. Created
+      `docs/specs/asset_fingerprinting_and_css_split_v1.md`, covering the
+      hash format, request-time serving and stale-fingerprint redirect in
+      `FrontController`, critical CSS extraction, the per-page stylesheet
+      map, a pointer to the already-documented per-theme split, and the
+      static-artifact build/verification path.
 - [ ] **`docs/runbooks/operator_recovery.md`** — the "Important fields"
       list for `/api/read_model_status` is missing `task_queue_status`,
       which the endpoint actually returns
