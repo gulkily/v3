@@ -269,10 +269,17 @@ that follow-up work.
       `/home/wsl/v3/...` absolute-path links while in the file (same bug
       class as the self-sufficiency-todo item above) — converted to
       repo-relative backtick paths, verified all 6 targets exist.
-- [ ] `docs/plans/tag_scoring_implementation_plan_v1.md` appears
+- [x] `docs/plans/tag_scoring_implementation_plan_v1.md` appears
       superseded by a later revision of the same feature in
       `tag_scoring_outline_v1.md` — two docs for one feature, worth a
-      "superseded by" pointer or a merge.
+      "superseded by" pointer or a merge. Turned out to be an
+      outline-then-plan pair (same day, 2026-05-12), not competing
+      revisions, and the feature they describe has fully shipped —
+      verified `TagScore::scoreValueForTag()` implements the exact
+      `like => +1, flag => -100` semantics both docs specify (and went
+      further, scoring posts as well as threads). Archived both into
+      `docs/plans/archive/` rather than cross-pointing two now-historical
+      docs, consistent with the fully-completed-plans item above.
 
 ## Reviewed, no action needed
 
