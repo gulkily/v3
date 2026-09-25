@@ -56,26 +56,32 @@ read-model table counts (posts, threads, profiles, activity).
 
 ```
 ./v3 task-queue enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
-./v3 task-queue run [--limit=1] [--dry-run] [--quiet] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+./v3 task-queue enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
+./v3 task-queue run [--limit=1] [--score-limit=25] [--dry-run] [--quiet] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue cron [--log=/var/log/forum-task-queue.log]
 ```
 
 A small SQLite-backed job queue (`scripts/task_queue.php`), currently used to
-serialize read-model rebuild requests so concurrent triggers coalesce into one
-job instead of racing. `docs/runbooks/production_deploy.md` and
+serialize read-model rebuild requests and fast-score sweeps so concurrent
+triggers coalesce into one job instead of racing. `docs/runbooks/production_deploy.md` and
 `docs/runbooks/operator_recovery.md` reference this command and depend on it
 being installed via cron.
 
 - `enqueue-rebuild` — enqueues a `read-model` rebuild task (a no-op if one is
   already queued/running); `--queue-database-path=...` overrides the default
   queue database location
+- `enqueue-fast-score` — enqueues the coalesced fast-post-score sweep (also a
+  no-op if one is already queued/running). It evaluates all nonempty posts over
+  successive bounded runs when fast scoring is enabled.
 - `run` — claims and runs up to `--limit` queued tasks (default 1), recovering
   any abandoned in-progress tasks first; guarded by an exclusive file lock so
   concurrent invocations don't double-run. `--dry-run` reports the queued
   count without running anything; `--quiet` suppresses progress output;
   `--repository-root=...`/`--database-path=...` override the read model to
-  rebuild against
+  rebuild against. `--score-limit=...` independently sets the maximum posts a
+  claimed fast-score sweep handles (default 25); `--limit=...` is only the
+  maximum queue tasks claimed.
 - `status` — prints queued/running/completed/failed counts plus the
   `--limit` (default 25) most recent tasks with attempt counts and failure
   codes

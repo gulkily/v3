@@ -6,10 +6,17 @@ require_once __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Llm\LlmProviderConfig;
 use ForumRewrite\Scoring\FastScoringConfig;
+use ForumRewrite\Scoring\FastScoreDatabaseConfig;
 use ForumRewrite\Scoring\FastScoringRubricRevision;
 
 final class FastScoringRubricRevisionTest
 {
+    public function testScoreDatabaseDefaultsToPrivateProjectStateAndHonorsAnOverride(): void
+    {
+        assertSame('/tmp/forum/state/private/fast_scores.sqlite3', FastScoreDatabaseConfig::path('/tmp/forum'));
+        assertSame('/private/scores.sqlite3', FastScoreDatabaseConfig::path('/tmp/forum', ['FAST_SCORING_DATABASE_PATH' => '/private/scores.sqlite3']));
+    }
+
     public function testRevisionChangesWhenPromptTextChanges(): void
     {
         $path = tempnam(sys_get_temp_dir(), 'fast-score-rubric-');

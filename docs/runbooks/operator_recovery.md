@@ -151,4 +151,6 @@ php scripts/rebuild_read_model.php "$FORUM_REPOSITORY_ROOT" "$FORUM_DATABASE_PAT
 php scripts/build_static_artifacts.php "$FORUM_REPOSITORY_ROOT" "$FORUM_DATABASE_PATH" "$FORUM_STATIC_HTML_ROOT"
 ./v3 task-queue status
 ./v3 task-queue enqueue-rebuild
+./v3 task-queue enqueue-fast-score
+./v3 task-queue run --limit=1 --score-limit=25
 ```

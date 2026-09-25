@@ -72,6 +72,7 @@ $defaults = [
     'FAST_SCORING_ENABLED' => false,
     'FAST_SCORING_LLM_MODEL' => 'openai/gpt-5-nano',
     'FAST_SCORING_PROMPT_PATH' => 'prompts/fast_post_scoring_system.txt',
+    'FAST_SCORING_DATABASE_PATH' => '',
     'DEDALUS_AGENT_REPLIES_ENABLED' => true,
     'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED' => false,
 ];
@@ -346,7 +347,8 @@ function renderPrivateConfigFile(array $config, array $defaults, array $existing
     }
     $contents .= renderConfigLine('FAST_SCORING_ENABLED', $config['FAST_SCORING_ENABLED'])
         . renderConfigLine('FAST_SCORING_LLM_MODEL', $config['FAST_SCORING_LLM_MODEL'])
-        . renderConfigLine('FAST_SCORING_PROMPT_PATH', $config['FAST_SCORING_PROMPT_PATH']);
+        . renderConfigLine('FAST_SCORING_PROMPT_PATH', $config['FAST_SCORING_PROMPT_PATH'])
+        . renderConfigLine('FAST_SCORING_DATABASE_PATH', $config['FAST_SCORING_DATABASE_PATH']);
 
     if ($includeComments) {
         $contents .= "\n    // Agent reply controls. These names remain Dedalus-prefixed for backward compatibility.\n";

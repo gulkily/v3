@@ -41,3 +41,13 @@
   - An isolated CLI smoke test enqueued and ran a one-post sweep, then confirmed its `disabled` result in the private fast-score database.
 - Notes:
   - `--limit` remains the number of queue tasks claimed; `--score-limit` is independently the number of posts attempted by a fast-score task.
+
+## Stage 5 - Regression coverage and operator handoff
+- Changes:
+  - Documented private score-state configuration, freshness semantics, queue commands, bounded continuation, and production writable-path requirements.
+  - Added regression coverage for prompt-derived rubric revisions, private score database path resolution, queue coalescing, continuation, and CLI command behavior.
+- Verification:
+  - Targeted scoring and task-queue tests passed.
+  - `php tests/run.php` ran with the new fast-score and queue coverage passing, but the full suite has two unrelated existing failures: `LocalAppSmokeTest::testPostAndActivityLinkAdjacentSignatureFiles` (missing `Signature:` output) and `LazyComposeSigningTest::testFirstComposeIntentLoadsSigningAssetsAndInitializesComposer` (browser fixture lacks `document.querySelectorAll`).
+- Notes:
+  - Scores remain private operational state. This feature adds no reader-facing display, rank, or threshold action.
