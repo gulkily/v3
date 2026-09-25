@@ -60,3 +60,13 @@
   - `php tests/run.php WriteApiSmokeTest FastScoreWorkflowServiceTest` — the new endpoint and workflow tests passed; one unrelated existing approval/activity consistency test failed during the full `WriteApiSmokeTest` class run.
 - Notes:
   - The endpoint is intentionally an operator/workflow surface; it makes no reader-facing score or threshold decision.
+
+## Stage 7 - Documentation and regression verification
+- Changes:
+  - Added the fast-post-scoring operator reference and linked it from the README.
+  - Documented configuration, rubric responsibility, API outcomes, source labels, and exchange auditing.
+- Verification:
+  - Focused scorer/config/API suite passed: `php tests/run.php FastScoringConfigTest FastScoreContextFactoryTest FastPostScorerTest DeterministicFastScoreEvaluatorTest FastScoreWorkflowServiceTest PrivateConfigCommandTest OpenAiCompatibleStructuredChatProviderTest WriteApiSmokeTest::testFastScoreEndpointRequiresAnApprovedViewerAndReturnsWorkflowResult`.
+  - Full suite: `php tests/run.php` fails on the independently reproducible existing `WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh`; fast-scoring coverage passed in that run.
+- Notes:
+  - No live provider request was sent because this workspace has no authorized fast-scoring credential or rubric. Exchange metadata and provider-recorder integration are covered by the focused unit contracts.
