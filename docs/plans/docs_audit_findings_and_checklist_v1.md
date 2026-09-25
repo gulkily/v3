@@ -248,10 +248,17 @@ that follow-up work.
       bothers you; purely cosmetic. Found 6 files, not 5 (the .pdf plus 5
       `.md` variants). Moved all 6 into a new `docs/research/` via
       `git mv`; no inbound references anywhere else in the repo.
-- [ ] `docs/plans/page_asset_performance_inventory.md` contains an
+- [x] `docs/plans/page_asset_performance_inventory.md` contains an
       embedded "Autonomous Continuation" instruction block — a stored
       agent-prompt fragment, not project documentation. Worth a glance to
-      confirm it's intentional/harmless where it sits.
+      confirm it's intentional/harmless where it sits. Harmless, but read
+      oddly ("the user asked the agent to continue... while the
+      workstation is unattended") for a doc with genuinely unfinished
+      work left (several unchecked CSS-ownership items) — someone picking
+      this back up needs the process guidance, just not the "who asked
+      whom" narration. Rewrote it as a plain "Working This Inventory"
+      section, keeping the actual guidance (ordering, commit discipline,
+      what to preserve) and dropping the meta-narration.
 - [ ] `docs/plans/php_ascii_restrictions_current_state_v1.md` — self-dated
       "April 2026" advisor brief; underlying fact has since changed (a
       `UNICODE_AUTHORED_TEXT` feature flag now exists). Low severity
