@@ -148,13 +148,76 @@ $historyStore = new TestRunHistoryStore($historyDbPath);
 $historyStore->ensureSchema();
 $testClassifications = $historyStore->recordResults($testResults, date('c'));
 
+printRunSummary($runCount, $failures, $testDurations, $testClassifications, STDOUT);
+
 if ($failures !== []) {
-    printSlowTestsOverThreshold($testDurations, null, null, false, STDOUT);
     exit(1);
 }
 
-fwrite(STDOUT, "All tests passed.\n");
-printSlowTestsOverThreshold($testDurations, null, null, false, STDOUT);
+/**
+ * @param list<string> $failures
+ * @param array<string, float> $testDurations
+ * @param array<string, array{classification: string, consecutiveFailCount: int, firstFailedAt: ?string}> $classifications
+ */
+function printRunSummary(
+    int $runCount,
+    array $failures,
+    array $testDurations,
+    array $classifications,
+    mixed $stream,
+): void {
+    $passedCount = $runCount - count($failures);
+
+    fwrite($stream, "\n");
+    fwrite($stream, sprintf("Summary: %d run, %d passed, %d failed\n", $runCount, $passedCount, count($failures)));
+
+    if ($failures !== []) {
+        fwrite($stream, "\nFailing tests:\n");
+        foreach ($failures as $failure) {
+            fwrite($stream, "  - {$failure}\n");
+        }
+    }
+
+    printSlowTestsOverThreshold($testDurations, null, null, false, $stream);
+
+    $newFailures = [];
+    $longStandingFailures = [];
+    $recovered = [];
+    foreach ($classifications as $testName => $info) {
+        match ($info['classification']) {
+            'new_failure' => $newFailures[] = $testName,
+            'long_standing_failure' => $longStandingFailures[] = sprintf(
+                '%s (failing %d runs, since %s)',
+                $testName,
+                $info['consecutiveFailCount'],
+                $info['firstFailedAt'] ?? 'unknown'
+            ),
+            'recovered' => $recovered[] = $testName,
+            default => null,
+        };
+    }
+
+    if ($newFailures !== []) {
+        fwrite($stream, "\nNew failures:\n");
+        foreach ($newFailures as $testName) {
+            fwrite($stream, "  - {$testName}\n");
+        }
+    }
+
+    if ($longStandingFailures !== []) {
+        fwrite($stream, "\nLong-standing failures:\n");
+        foreach ($longStandingFailures as $entry) {
+            fwrite($stream, "  - {$entry}\n");
+        }
+    }
+
+    if ($recovered !== []) {
+        fwrite($stream, "\nNewly recovered:\n");
+        foreach ($recovered as $testName) {
+            fwrite($stream, "  - {$testName}\n");
+        }
+    }
+}
 
 /**
  * @param list<string> $filters

@@ -20,3 +20,16 @@
 - Notes:
   - `state/` is already blanket-gitignored, so no new ignore rule needed (confirmed in Stage 4).
   - `$testClassifications` is computed but not yet printed — that's Stage 3.
+
+## Stage 3 - Build and print the summary block
+- Changes:
+  - `tests/run.php`: added `printRunSummary(int $runCount, array $failures, array $testDurations, array $classifications, mixed $stream): void`, printing counts, failing tests with error messages, slow tests (delegates to existing `printSlowTestsOverThreshold`), and history sections (new failures, long-standing failures with streak + first-failed date, newly recovered).
+  - Replaced the old "All tests passed." / early-exit failure block with a single `printRunSummary(...)` call before the `exit(1)` check; exit code logic unchanged (0 on all-pass, 1 on any failure).
+- Verification:
+  - `php tests/run.php TestRunHistoryStoreTest ThemeRegistryTest` (baseline, all pass): `Summary: 10 run, 10 passed, 0 failed`, exit code 0.
+  - Temporarily broke `ThemeRegistryTest::testThemeNamesAreUnique`, reran: `Summary: 9 passed, 1 failed`, listed under "New failures", exit code 1.
+  - Reran again unchanged: same test listed under "Long-standing failures" as "(failing 2 runs, since <timestamp>)".
+  - Reverted the break, reran: test listed under "Newly recovered"; confirmed `git diff tests/ThemeRegistryTest.php` is empty (clean revert).
+  - `php -l tests/run.php` — no syntax errors.
+- Notes:
+  - Deleted the local `state/test_run_history.sqlite` created during manual smoke testing (gitignored, not part of the commit).
