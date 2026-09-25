@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/Support/TestRunHistoryStore.php';
+
 $testFiles = [
     __DIR__ . '/AgentReplyCommandTest.php',
     __DIR__ . '/AgentIdentityServiceTest.php',
@@ -61,6 +63,7 @@ $failures = [];
 $filters = array_slice($argv, 1);
 $runCount = 0;
 $testDurations = [];
+$testResults = [];
 $currentTest = null;
 $currentTestStartedAt = null;
 $timingReportPrinted = false;
@@ -118,9 +121,11 @@ foreach ($declared as $class) {
         try {
             $testObject->{$method}();
             fwrite(STDOUT, "PASS {$testName}\n");
+            $testResults[$testName] = true;
         } catch (Throwable $throwable) {
             $failures[] = "{$testName} - {$throwable->getMessage()}";
             fwrite(STDERR, "FAIL {$testName} - {$throwable->getMessage()}\n");
+            $testResults[$testName] = false;
         } finally {
             $testDurations[$testName] = (hrtime(true) - $currentTestStartedAt) / 1_000_000_000;
             $currentTest = null;
@@ -133,6 +138,15 @@ if ($filters !== [] && $runCount === 0) {
     fwrite(STDERR, "No tests matched the supplied filters.\n");
     exit(1);
 }
+
+$historyDbPath = getenv('FORUM_TEST_HISTORY_DB_PATH');
+if ($historyDbPath === false || trim($historyDbPath) === '') {
+    $historyDbPath = __DIR__ . '/../state/test_run_history.sqlite';
+}
+
+$historyStore = new TestRunHistoryStore($historyDbPath);
+$historyStore->ensureSchema();
+$testClassifications = $historyStore->recordResults($testResults, date('c'));
 
 if ($failures !== []) {
     printSlowTestsOverThreshold($testDurations, null, null, false, STDOUT);
