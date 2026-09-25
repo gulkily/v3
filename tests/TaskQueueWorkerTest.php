@@ -83,6 +83,33 @@ final class TaskQueueWorkerTest
         assertSame('unsupported_task_type', $stored['failure_code']);
     }
 
+    public function testWorkerContinuesBoundedFastScoreSweepWithoutUsingFailureRetries(): void
+    {
+        $store = $this->store();
+        $task = $store->enqueue(SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'fast-score', 2);
+        $runs = 0;
+        $worker = new TaskQueueWorker(
+            $store,
+            static function (): void {
+            },
+            static function () use (&$runs): array {
+                $runs++;
+                return ['remaining' => $runs === 1, 'processed' => 1];
+            },
+        );
+
+        $first = $worker->run();
+        $second = $worker->run();
+        $stored = $store->findById($task['id']);
+
+        assertSame(1, $first['continued']);
+        assertSame(0, $first['retried']);
+        assertSame(1, $second['completed']);
+        assertSame(2, $runs);
+        assertSame('completed', $stored['status']);
+        assertSame(1, $stored['attempts']);
+    }
+
     private function store(): SqliteTaskQueueStore
     {
         return new SqliteTaskQueueStore(new PDO('sqlite::memory:'));

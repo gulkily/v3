@@ -19,3 +19,13 @@
   - `php tests/run.php FastScoreSweepServiceTest SqliteFastScoreStoreTest` — passed.
 - Notes:
   - The sweep intentionally has no reader-facing behavior; the next stage will make its bounded continuation available through the existing task queue.
+
+## Stage 3 - Coalesced queue execution
+- Changes:
+  - Added the `fast_score_sweep` internal task type, retaining the queue's outstanding-task deduplication.
+  - Extended the worker to dispatch the sweep and requeue a claimed task when its bounded run reports remaining posts.
+  - A normal continuation restores the claim attempt; worker-level failures retain the existing bounded retry behavior.
+- Verification:
+  - `php tests/run.php TaskQueueStoreTest TaskQueueWorkerTest` — passed.
+- Notes:
+  - Per-post provider errors are handled and persisted by the sweep, so they cannot fail or retry the entire queue task.
