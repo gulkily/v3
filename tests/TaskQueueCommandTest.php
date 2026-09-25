@@ -22,6 +22,7 @@ final class TaskQueueCommandTest
 
         assertSame(1, $exitCode);
         assertStringContains('./v3 task-queue enqueue-rebuild', $stdout);
+        assertStringContains('./v3 task-queue enqueue-fast-score', $stdout);
         assertStringContains('./v3 task-queue run', $stdout);
         assertStringContains('./v3 task-queue status', $stdout);
         assertStringContains('./v3 task-queue cron', $stdout);
@@ -98,6 +99,30 @@ final class TaskQueueCommandTest
         assertStringContains('php scripts/task_queue.php run --quiet --limit=1', $stdout);
         assertStringContains('/tmp/forum-task-queue-test.log', $stdout);
         assertSame('', $stderr);
+    }
+
+    public function testTaskQueueFastScoreEnqueueCoalesces(): void
+    {
+        $queuePath = sys_get_temp_dir() . '/forum-fast-score-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            [$firstCode, $firstOutput, $firstError] = $this->runCommand(
+                dirname(__DIR__),
+                './v3 task-queue enqueue-fast-score --queue-database-path=' . escapeshellarg($queuePath)
+            );
+            [$secondCode, $secondOutput, $secondError] = $this->runCommand(
+                dirname(__DIR__),
+                './v3 task-queue enqueue-fast-score --queue-database-path=' . escapeshellarg($queuePath)
+            );
+        } finally {
+            @unlink($queuePath);
+        }
+
+        assertSame(0, $firstCode);
+        assertStringContains('Task enqueued: id=', $firstOutput);
+        assertSame('', $firstError);
+        assertSame(0, $secondCode);
+        assertStringContains('Task already outstanding: id=', $secondOutput);
+        assertSame('', $secondError);
     }
 
     /**

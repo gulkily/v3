@@ -43,6 +43,7 @@ final class PrivateConfig
             'FAST_SCORING_LLM_TIMEOUT_SECONDS',
             'FAST_SCORING_LLM_EXTRA_HEADERS',
             'FAST_SCORING_PROMPT_PATH',
+            'FAST_SCORING_DATABASE_PATH',
             'DEDALUS_API_KEY',
             'DEDALUS_API_BASE_URL',
             'DEDALUS_MODEL',

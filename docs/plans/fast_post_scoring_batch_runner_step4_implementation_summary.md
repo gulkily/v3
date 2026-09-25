@@ -29,3 +29,15 @@
   - `php tests/run.php TaskQueueStoreTest TaskQueueWorkerTest` — passed.
 - Notes:
   - Per-post provider errors are handled and persisted by the sweep, so they cannot fail or retry the entire queue task.
+
+## Stage 4 - Task-queue CLI control
+- Changes:
+  - Added `./v3 task-queue enqueue-fast-score` and `--score-limit` for the maximum posts handled by each claimed sweep.
+  - Added a private fast-score database path, defaulting to `state/private/fast_scores.sqlite3`, so results survive read-model rebuilds.
+  - The rubric revision is a hash of the active prompt text; editing its probability meaning naturally schedules fresh scores.
+  - Worker output includes the scored, excluded, failed, and remaining counts for a sweep. Configured LLM exchange recording is also used by the CLI worker.
+- Verification:
+  - `php tests/run.php FastScoringRubricRevisionTest TaskQueueCommandTest TaskQueueStoreTest TaskQueueWorkerTest FastScoreSweepServiceTest` — passed.
+  - An isolated CLI smoke test enqueued and ran a one-post sweep, then confirmed its `disabled` result in the private fast-score database.
+- Notes:
+  - `--limit` remains the number of queue tasks claimed; `--score-limit` is independently the number of posts attempted by a fast-score task.
