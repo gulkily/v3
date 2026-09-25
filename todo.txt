@@ -41,3 +41,8 @@ post presentation
 	if title == first line, don't show the first line in the body
 	put the byline below the post
 	put the labels below the post
+
+
+convert user-facing versioning to more human-readable
+	use either sequential version numbers (for things like js modules)
+	or traditional M.m.r semantic versioning (for things like the app itself)
