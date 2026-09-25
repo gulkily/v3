@@ -11,6 +11,7 @@ $options = [
     'api_key_stdin' => false,
     'refresh_template' => false,
     'view' => false,
+    'edit' => false,
     'help' => false,
 ];
 
@@ -22,6 +23,11 @@ foreach (array_slice($argv, 1) as $arg) {
 
     if ($arg === 'view' || $arg === '--view') {
         $options['view'] = true;
+        continue;
+    }
+
+    if ($arg === 'edit' || $arg === '--edit') {
+        $options['edit'] = true;
         continue;
     }
 
@@ -59,6 +65,34 @@ $path = (string) $options['path'];
 if ($path === '') {
     fwrite(STDERR, "Secret config path cannot be empty.\n");
     exit(2);
+}
+
+if ($options['edit']) {
+    if ($options['view'] || $options['refresh_template'] || $options['force'] || $options['api_key_stdin']) {
+        fwrite(STDERR, "edit cannot be combined with another private-config action.\n");
+        exit(2);
+    }
+
+    if (!is_file($path)) {
+        fwrite(STDERR, "Private config does not exist: {$path}\n");
+        fwrite(STDERR, "Create it first with ./v3 private-config --force.\n");
+        exit(1);
+    }
+
+    $editor = trim((string) (getenv('VISUAL') ?: getenv('EDITOR') ?: 'vi'));
+    if ($editor === '') {
+        $editor = 'vi';
+    }
+
+    fwrite(STDOUT, "Opening private config with {$editor}: {$path}\n");
+    $exitCode = 0;
+    passthru(escapeshellcmd($editor) . ' ' . escapeshellarg($path), $exitCode);
+    if ($exitCode !== 0) {
+        fwrite(STDERR, "Editor exited with status {$exitCode}.\n");
+        exit($exitCode);
+    }
+
+    exit(0);
 }
 
 $defaults = [
@@ -403,14 +437,16 @@ function renderPrivateConfigFile(array $config, array $defaults, array $existing
 function printUpdateReminder(string $path): void
 {
     fwrite(STDOUT, "\nUpdate commands:\n");
+    fwrite(STDOUT, "  ./v3 private-config edit\n");
     fwrite(STDOUT, "  ./v3 private-config --force\n");
     fwrite(STDOUT, "  ./v3 private-config refresh-template\n");
     fwrite(STDOUT, "  printf '%s\\n' \"\$LLM_API_KEY\" | ./v3 private-config --api-key-stdin\n");
     fwrite(STDOUT, "  ./v3 private-config --path=" . escapeshellarg($path) . " --force\n");
     fwrite(STDOUT, "Supported LLM_PROVIDER values: dedalus, openai, openrouter, anthropic, stub, or an OpenAI-compatible gateway name.\n");
     fwrite(STDOUT, "OpenAI-compatible providers use LLM_API_BASE_URL + /v1/chat/completions; Anthropic uses LLM_API_BASE_URL + /v1/messages.\n");
+    fwrite(STDOUT, "private-config edit uses VISUAL, EDITOR, or vi to open {$path} without printing secrets.\n");
     fwrite(STDOUT, "Edit {$path} directly for provider options such as LLM_PROVIDER, LLM_MODEL, FAST_SCORING_LLM_MODEL, and LLM_EXTRA_HEADERS.\n");
-    fwrite(STDOUT, "Edit {$path} directly for booleans such as DEDALUS_AGENT_REPLIES_ENABLED and DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED.\n");
+    fwrite(STDOUT, "Edit {$path} directly for booleans such as FAST_SCORING_ENABLED, DEDALUS_AGENT_REPLIES_ENABLED, and DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED.\n");
 }
 
 function renderConfigLine(string $key, mixed $value): string
@@ -424,6 +460,7 @@ function printUsage(): void
 Usage:
   php scripts/write_private_config.php
   php scripts/write_private_config.php view
+  php scripts/write_private_config.php edit
   php scripts/write_private_config.php --view
   php scripts/write_private_config.php refresh-template
   php scripts/write_private_config.php --force
@@ -432,6 +469,7 @@ Usage:
 
 Creates or updates the private PHP config used by ForumRewrite\Support\PrivateConfig.
 Use view/--view to print a redacted summary and update reminders without creating or modifying the file.
+Use edit/--edit to open an existing config file with VISUAL, EDITOR, or vi.
 Use refresh-template to rewrite the file with current comments/examples while preserving values.
 The default local path is ../forum-private/secrets.php relative to this app checkout.
 LLM_PROVIDER supports dedalus, openai, openrouter, anthropic, stub, and OpenAI-compatible gateways.

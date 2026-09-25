@@ -182,7 +182,7 @@ and rebuilds affected artifacts.
 ## Manage the private LLM/Dedalus config
 
 ```
-./v3 private-config [view|refresh-template|--view|--force|--api-key-stdin] [--path=/private/path/secrets.php]
+./v3 private-config [view|edit|refresh-template|--view|--edit|--force|--api-key-stdin] [--path=/private/path/secrets.php]
 ```
 
 Creates or updates the private PHP config consumed by
@@ -193,6 +193,7 @@ gateways. Legacy `DEDALUS_*` settings are still read as fallbacks, but new
 writes use `LLM_*` names.
 
 - `view` / `--view` — print a redacted summary and update reminders without writing the file
+- `edit` / `--edit` — open an existing config in `$VISUAL`, `$EDITOR`, or `vi`; it does not print secrets or create a missing file
 - `refresh-template` — rewrite the file with current comments/examples while preserving existing values
 - `--force` — overwrite without the usual confirmation/skip behavior
 - `--api-key-stdin` — read the API key from stdin instead of an argument, so it never lands in shell history: `printf '%s\n' "$LLM_API_KEY" | ./v3 private-config --api-key-stdin`

@@ -96,6 +96,26 @@ final class PrivateConfigCommandTest
         }
     }
 
+    public function testPrivateConfigEditUsesConfiguredEditorWithoutPrintingConfigValues(): void
+    {
+        $secretsPath = sys_get_temp_dir() . '/forum-rewrite-private-config-' . bin2hex(random_bytes(6)) . '/secrets.php';
+        mkdir(dirname($secretsPath), 0700, true);
+        file_put_contents($secretsPath, "<?php\n\nreturn ['LLM_API_KEY' => 'secret-value'];\n");
+
+        try {
+            $output = $this->runCommand(
+                dirname(__DIR__),
+                'FORUM_SECRETS_PATH=' . escapeshellarg($secretsPath) . ' EDITOR=/bin/true ./v3 private-config edit'
+            );
+
+            assertStringContains('Opening private config with /bin/true: ' . $secretsPath, $output);
+            assertStringNotContains('secret-value', $output);
+        } finally {
+            @unlink($secretsPath);
+            @rmdir(dirname($secretsPath));
+        }
+    }
+
     private function runCommand(string $cwd, string $command): string
     {
         $descriptor = [

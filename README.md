@@ -160,6 +160,12 @@ View a redacted summary of the current private config and update reminders:
 ./v3 private-config view
 ```
 
+Open the private config with `$VISUAL`, `$EDITOR`, or `vi`:
+
+```bash
+./v3 private-config edit
+```
+
 Print a concise reference for installing the queued agent reply cron job:
 
 ```bash
