@@ -45,6 +45,7 @@ $testFiles = [
     __DIR__ . '/TaskQueueStoreTest.php',
     __DIR__ . '/TaskQueueCommandTest.php',
     __DIR__ . '/TaskQueueWorkerTest.php',
+    __DIR__ . '/TestRunHistoryStoreTest.php',
     __DIR__ . '/ThreadTitleTest.php',
     __DIR__ . '/SqliteQueryCatalogTest.php',
     __DIR__ . '/SqliteLlmExchangeStoreTest.php',
