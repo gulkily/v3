@@ -29,7 +29,7 @@ final class FastScoreContextFactory
         $isReply = $postId !== '' && $postId !== $threadId;
         $context = [
             'post_id' => $postId,
-            'content_hash' => $this->contentHash($post),
+            'content_hash' => $this->contentHashForPost($post),
             'post_kind' => $isReply ? 'reply' : 'thread',
             'post_text' => $this->limit($this->postText($post), self::TARGET_TEXT_LIMIT),
         ];
@@ -52,7 +52,7 @@ final class FastScoreContextFactory
     }
 
     /** @param array<string, mixed> $post */
-    private function contentHash(array $post): string
+    public function contentHashForPost(array $post): string
     {
         return hash('sha256', json_encode([
             'post_id' => (string) ($post['post_id'] ?? ''),
