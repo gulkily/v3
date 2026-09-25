@@ -259,11 +259,16 @@ that follow-up work.
       whom" narration. Rewrote it as a plain "Working This Inventory"
       section, keeping the actual guidance (ordering, commit discipline,
       what to preserve) and dropping the meta-narration.
-- [ ] `docs/plans/php_ascii_restrictions_current_state_v1.md` — self-dated
+- [x] `docs/plans/php_ascii_restrictions_current_state_v1.md` — self-dated
       "April 2026" advisor brief; underlying fact has since changed (a
       `UNICODE_AUTHORED_TEXT` feature flag now exists). Low severity
       since the doc is honest about its own shelf life, but worth a
-      pointer to what superseded it.
+      pointer to what superseded it. Added a "Since superseded in part"
+      note pointing at `FORUM_UNICODE_AUTHORED_TEXT`/`FORUM_EMOJI_AUTHORED_TEXT`
+      and where they're implemented. Also found and fixed 6 broken
+      `/home/wsl/v3/...` absolute-path links while in the file (same bug
+      class as the self-sufficiency-todo item above) — converted to
+      repo-relative backtick paths, verified all 6 targets exist.
 - [ ] `docs/plans/tag_scoring_implementation_plan_v1.md` appears
       superseded by a later revision of the same feature in
       `tag_scoring_outline_v1.md` — two docs for one feature, worth a
