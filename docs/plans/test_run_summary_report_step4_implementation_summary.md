@@ -45,3 +45,17 @@
   - `git status --short` after the full run — `state/test_run_history.sqlite` does not appear; covered by the existing blanket `state/` gitignore entry, no new ignore rule needed.
 - Notes:
   - No production code changes were needed; only the test-runner reporting file and its own behavior test.
+
+## Stage 5 - Fix: distinguish "never observed" from "just broke" on first run
+- Changes:
+  - Bug found in real usage: on the very first run against an empty/missing history DB (true for every fresh checkout, since `state/` is gitignored), every currently-failing test — including long-standing, pre-existing failures — was classified `new_failure`, which is misleading (looks like something the developer just broke).
+  - `tests/Support/TestRunHistoryStore.php`: `classify()` now only returns `new_failure` when the test's prior recorded status was `pass`. A failing test with no prior record at all now returns a new classification, `first_seen_failure`.
+  - `tests/run.php`: `printRunSummary` gains a `Failing with no prior history (can't tell if new or long-standing):` section for `first_seen_failure` entries, kept separate from `New failures:`.
+  - `tests/TestRunHistoryStoreTest.php`: renamed/updated the first-run test to expect `first_seen_failure`; added `testPreviouslyPassingTestThatNowFailsIsClassifiedAsNewFailure` covering the true "you just broke it" path (pass → fail).
+- Verification:
+  - `php tests/run.php TestRunHistoryStoreTest` — 5/5 pass.
+  - Full suite against a freshly deleted `state/test_run_history.sqlite`: `New failures:` section is empty; all 6 pre-existing failures appear under `Failing with no prior history`.
+  - Re-ran immediately after (same failures, DB now populated): all 6 correctly moved to `Long-standing failures:` with `(failing 2 runs, since <timestamp>)`.
+  - `php -l` clean on all three changed files.
+- Notes:
+  - This closes the gap the user caught by inspection: pre-existing failures should never be reported as "new" just because the local history file happens to be empty.

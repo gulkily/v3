@@ -6,15 +6,27 @@ require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 final class TestRunHistoryStoreTest
 {
-    public function testFirstFailureIsClassifiedAsNewFailure(): void
+    public function testFailureWithNoPriorRecordIsClassifiedAsFirstSeenFailure(): void
     {
         $store = $this->makeStore();
 
         $result = $store->recordResults(['ExampleTest::testFoo' => false], '2026-01-01T00:00:00+00:00');
 
-        assertSame('new_failure', $result['ExampleTest::testFoo']['classification']);
+        assertSame('first_seen_failure', $result['ExampleTest::testFoo']['classification']);
         assertSame(1, $result['ExampleTest::testFoo']['consecutiveFailCount']);
         assertSame('2026-01-01T00:00:00+00:00', $result['ExampleTest::testFoo']['firstFailedAt']);
+    }
+
+    public function testPreviouslyPassingTestThatNowFailsIsClassifiedAsNewFailure(): void
+    {
+        $store = $this->makeStore();
+
+        $store->recordResults(['ExampleTest::testFoo' => true], '2026-01-01T00:00:00+00:00');
+        $result = $store->recordResults(['ExampleTest::testFoo' => false], '2026-01-02T00:00:00+00:00');
+
+        assertSame('new_failure', $result['ExampleTest::testFoo']['classification']);
+        assertSame(1, $result['ExampleTest::testFoo']['consecutiveFailCount']);
+        assertSame('2026-01-02T00:00:00+00:00', $result['ExampleTest::testFoo']['firstFailedAt']);
     }
 
     public function testRepeatedFailureIsClassifiedAsLongStandingWithGrowingStreak(): void

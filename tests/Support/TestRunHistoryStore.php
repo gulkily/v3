@@ -94,7 +94,11 @@ final class TestRunHistoryStore
             return ['long_standing_failure', $consecutiveFailCount, $firstFailedAt, false];
         }
 
-        return ['new_failure', 1, $runAt, true];
+        if ($previousStatus === 'pass') {
+            return ['new_failure', 1, $runAt, true];
+        }
+
+        return ['first_seen_failure', 1, $runAt, true];
     }
 
     private function open(): PDO

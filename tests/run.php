@@ -183,6 +183,7 @@ function printRunSummary(
     $newFailures = [];
     $longStandingFailures = [];
     $recovered = [];
+    $firstSeenFailures = [];
     foreach ($classifications as $testName => $info) {
         match ($info['classification']) {
             'new_failure' => $newFailures[] = $testName,
@@ -193,6 +194,7 @@ function printRunSummary(
                 $info['firstFailedAt'] ?? 'unknown'
             ),
             'recovered' => $recovered[] = $testName,
+            'first_seen_failure' => $firstSeenFailures[] = $testName,
             default => null,
         };
     }
@@ -214,6 +216,13 @@ function printRunSummary(
     if ($recovered !== []) {
         fwrite($stream, "\nNewly recovered:\n");
         foreach ($recovered as $testName) {
+            fwrite($stream, "  - {$testName}\n");
+        }
+    }
+
+    if ($firstSeenFailures !== []) {
+        fwrite($stream, "\nFailing with no prior history (can't tell if new or long-standing):\n");
+        foreach ($firstSeenFailures as $testName) {
             fwrite($stream, "  - {$testName}\n");
         }
     }
