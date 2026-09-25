@@ -186,11 +186,14 @@ that follow-up work.
       `FrontController`, critical CSS extraction, the per-page stylesheet
       map, a pointer to the already-documented per-theme split, and the
       static-artifact build/verification path.
-- [ ] **`docs/runbooks/operator_recovery.md`** — the "Important fields"
+- [x] **`docs/runbooks/operator_recovery.md`** — the "Important fields"
       list for `/api/read_model_status` is missing `task_queue_status`,
       which the endpoint actually returns
       (`CodebaseStateController.php:107,173-176`), alongside every other
-      field that *is* documented.
+      field that *is* documented. Added it plus the 3 sibling
+      `task_queue_*` count fields the endpoint also returns
+      (`_queued`/`_running`/`_failed`), with a pointer to the new
+      `./v3 task-queue` CLI docs.
 - [ ] **`docs/plans/php_production_deployment_checklist_v1.md`** — the
       one doc `README.md` actually links to as "Production Deployment
       Checklist." "Last reviewed: 2026-04-10," over 5 months stale.

@@ -21,6 +21,9 @@ Important fields:
 - `stale_reason`
 - `stale_commit_sha`
 - `rebuild_reason`
+- `task_queue_status`, `task_queue_queued`, `task_queue_running`,
+  `task_queue_failed` — background task-queue counts (see the
+  `./v3 task-queue` section of `docs/reference/v3_cli.md`)
 
 ## Normal Recovery Command
 
