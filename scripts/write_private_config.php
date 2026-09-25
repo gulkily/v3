@@ -69,6 +69,9 @@ $defaults = [
     'LLM_TIMEOUT_SECONDS' => 60,
     'LLM_EXTRA_HEADERS' => [],
     'LLM_POST_ANALYSIS_PROMPT_PATH' => 'prompts/dedalus_post_analysis_system.txt',
+    'FAST_SCORING_ENABLED' => false,
+    'FAST_SCORING_LLM_MODEL' => 'openai/gpt-5-nano',
+    'FAST_SCORING_PROMPT_PATH' => 'prompts/fast_post_scoring_system.txt',
     'DEDALUS_AGENT_REPLIES_ENABLED' => true,
     'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED' => false,
 ];
@@ -338,6 +341,14 @@ function renderPrivateConfigFile(array $config, array $defaults, array $existing
     $contents .= renderConfigLine('LLM_POST_ANALYSIS_PROMPT_PATH', $config['LLM_POST_ANALYSIS_PROMPT_PATH']);
 
     if ($includeComments) {
+        $contents .= "\n    // Fast scoring is independent of full post analysis and disabled by default.\n"
+            . "    // Its LLM settings fall back to the corresponding LLM_* values when omitted.\n";
+    }
+    $contents .= renderConfigLine('FAST_SCORING_ENABLED', $config['FAST_SCORING_ENABLED'])
+        . renderConfigLine('FAST_SCORING_LLM_MODEL', $config['FAST_SCORING_LLM_MODEL'])
+        . renderConfigLine('FAST_SCORING_PROMPT_PATH', $config['FAST_SCORING_PROMPT_PATH']);
+
+    if ($includeComments) {
         $contents .= "\n    // Agent reply controls. These names remain Dedalus-prefixed for backward compatibility.\n";
     }
     $contents .= renderConfigLine('DEDALUS_AGENT_REPLIES_ENABLED', $config['DEDALUS_AGENT_REPLIES_ENABLED'])
@@ -396,7 +407,7 @@ function printUpdateReminder(string $path): void
     fwrite(STDOUT, "  ./v3 private-config --path=" . escapeshellarg($path) . " --force\n");
     fwrite(STDOUT, "Supported LLM_PROVIDER values: dedalus, openai, openrouter, anthropic, stub, or an OpenAI-compatible gateway name.\n");
     fwrite(STDOUT, "OpenAI-compatible providers use LLM_API_BASE_URL + /v1/chat/completions; Anthropic uses LLM_API_BASE_URL + /v1/messages.\n");
-    fwrite(STDOUT, "Edit {$path} directly for provider options such as LLM_PROVIDER, LLM_MODEL, and LLM_EXTRA_HEADERS.\n");
+    fwrite(STDOUT, "Edit {$path} directly for provider options such as LLM_PROVIDER, LLM_MODEL, FAST_SCORING_LLM_MODEL, and LLM_EXTRA_HEADERS.\n");
     fwrite(STDOUT, "Edit {$path} directly for booleans such as DEDALUS_AGENT_REPLIES_ENABLED and DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED.\n");
 }
 

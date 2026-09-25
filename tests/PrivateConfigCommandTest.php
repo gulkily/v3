@@ -49,7 +49,8 @@ final class PrivateConfigCommandTest
             assertStringContains("'HTTP-Referer' => '<set>'", $output);
             assertStringContains('Supported LLM_PROVIDER values: dedalus, openai, openrouter, anthropic, stub', $output);
             assertStringContains('OpenAI-compatible providers use LLM_API_BASE_URL + /v1/chat/completions', $output);
-            assertStringContains('LLM_PROVIDER, LLM_MODEL, and LLM_EXTRA_HEADERS', $output);
+            assertStringContains('LLM_PROVIDER, LLM_MODEL, FAST_SCORING_LLM_MODEL, and LLM_EXTRA_HEADERS', $output);
+            assertStringContains('FAST_SCORING_ENABLED = false (default)', $output);
             assertStringNotContains('prod-secret-value', $output);
             assertStringNotContains('https://example.test', $output);
         } finally {
