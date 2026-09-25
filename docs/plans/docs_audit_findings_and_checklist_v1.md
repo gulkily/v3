@@ -194,13 +194,21 @@ that follow-up work.
       `task_queue_*` count fields the endpoint also returns
       (`_queued`/`_running`/`_failed`), with a pointer to the new
       `./v3 task-queue` CLI docs.
-- [ ] **`docs/plans/php_production_deployment_checklist_v1.md`** — the
+- [x] **`docs/plans/php_production_deployment_checklist_v1.md`** — the
       one doc `README.md` actually links to as "Production Deployment
       Checklist." "Last reviewed: 2026-04-10," over 5 months stale.
       Chouse.club hosting, multi-site config, CSS splitting, and this
       session's `Application.php` decomposition have all landed since.
       Needs a re-review pass (confirm what's still accurate), not
-      necessarily a rewrite.
+      necessarily a rewrite. Re-reviewed: multi-site config and CSS
+      fingerprinting/splitting turned out to already be covered by
+      `production_deploy.md` and the new asset-fingerprinting spec, so no
+      checklist item needed reopening; the `Application.php` decomposition
+      has no deployment-contract surface. Bumped the review date and added
+      pointer bullets to "Current Findings" recording what was checked.
+      Chouse.club hosting itself is still a user in-progress draft
+      (`docs/plans/chouse_club_hosting_plan_v1.md`, untracked) — left
+      untouched, not this checklist's concern until it lands.
 - [ ] **`docs/plans/session_reauthentication_reference.md`** — reads as
       an open design doc with unresolved "Session Strategy Options," but
       the described approach already shipped
