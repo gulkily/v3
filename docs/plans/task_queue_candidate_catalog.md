@@ -6,6 +6,29 @@ This catalog identifies every operational or background-style workflow found in 
 
 The audit covers the commands exported by `./v3`, all PHP scripts in `scripts/`, existing scheduled workers, read-model and static-artifact maintenance, caches, and expiration/cleanup paths in `src/`. The existing `rebuild_read_model` task is the baseline and is not counted as an “other” task below.
 
+## Current conversion checklist (reviewed 2026-09-25)
+
+- [x] `rebuild_read_model` — already a coalesced task-queue task and the
+  recovery path for stale or incompatible read models.
+- [x] `fast_score_sweep` — already a coalesced, bounded task-queue task. Its
+  private score state makes post-content and rubric changes eligible again.
+- [ ] `build_static_artifacts` — the next general-queue candidate, but only
+  after release publication is made whole-set and atomic. See its safeguards
+  below; this is not safe to convert by simply wrapping the current script.
+- [ ] `backfill_unicode_risk_deterministic` — convert only when a Unicode-risk
+  schema or policy revision creates a real backlog. It needs resumable batches
+  and checkpoints first.
+- [ ] Persisted report-based audits — do not convert `audit_post_signatures`
+  or `check_static_artifacts` until they have a retained, operator-readable
+  result model and alerting contract.
+- [ ] Cache warming and artifact cleanup — defer until their invalidation,
+  reachability, retention, and rollback policies are designed.
+
+No other current workflow should be moved into the general task queue. Agent
+reply generation and approved Codex handoffs already have durable domain queues;
+destructive administration, secret/configuration changes, diagnostics, and CI
+commands require an immediate operator decision.
+
 ## Queue admission rules
 
 A task belongs in the general task queue only when all of these are true:
