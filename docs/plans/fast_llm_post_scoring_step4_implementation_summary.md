@@ -40,3 +40,13 @@
   - `php -r 'require "autoload.php"; ... DeterministicFastScoreEvaluator ...'` — emitted an excluded, null-probability result with `empty_post` signal.
 - Notes:
   - Additional heuristic probabilities require rubric-specific evaluation before they can be added safely.
+
+## Stage 5 - Internal scoring workflow
+- Changes:
+  - Added a workflow service and factory that compose configuration, compact context, deterministic exclusions, prompt loading, provider selection, and model scoring.
+  - Kept disabled, missing-provider, heuristic, and LLM outcomes distinct; the workflow does not invoke full analysis or agent-reply generation.
+- Verification:
+  - `php tests/run.php FastScoreWorkflowServiceTest FastPostScorerTest DeterministicFastScoreEvaluatorTest` — passed.
+  - `php -r 'require "autoload.php"; ... FastScoreWorkflowService ...'` — returned a source-labeled `0.8` LLM result.
+- Notes:
+  - The factory supports the existing OpenAI-compatible and Anthropic provider contracts and passes the existing LLM exchange recorder through to model requests.

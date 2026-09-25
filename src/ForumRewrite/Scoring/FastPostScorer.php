@@ -6,7 +6,7 @@ namespace ForumRewrite\Scoring;
 
 use ForumRewrite\Llm\StructuredChatProvider;
 
-final class FastPostScorer
+final class FastPostScorer implements FastScoreProvider
 {
     public function __construct(
         private readonly StructuredChatProvider $provider,
