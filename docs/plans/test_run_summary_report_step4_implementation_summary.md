@@ -59,3 +59,14 @@
   - `php -l` clean on all three changed files.
 - Notes:
   - This closes the gap the user caught by inspection: pre-existing failures should never be reported as "new" just because the local history file happens to be empty.
+
+## Stage 6 - Fix: multi-line failure messages breaking the summary format
+- Changes:
+  - Bug found in real usage: `LazyComposeSigningTest` (and, per the full-suite run, also `WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh`) throw exceptions whose message embeds a multi-line dump (a Node stack trace / a full HTML page respectively). `printRunSummary`'s "Failing tests:" section wrote each failure's raw string as-is, so those embedded newlines spilled out unindented, turning one bullet into 15+ or 1300+ lines and breaking the one-line-per-test scan format.
+  - `tests/run.php`: "Failing tests:" entries now show only the first line of the failure string, with a `(+N more lines, see FAIL output above)` suffix when the message had more lines. Full detail is unaffected — it's still printed in full via the existing `FAIL {testName} - {message}` line during the run itself.
+- Verification:
+  - `php tests/run.php LazyComposeSigningTest` — "Failing tests:" now shows one condensed line ending `(+14 more lines, see FAIL output above)`; the full trace still appears in the `FAIL ...` line above it.
+  - Full-suite run — confirmed all 6 (now up to 7, one is flaky) failing tests render as exactly one line each in "Failing tests:", including the previously-undiscovered 1332-line HTML dump from `WriteApiSmokeTest`.
+  - `php -l tests/run.php` — no syntax errors.
+- Notes:
+  - No change to the "Failing with no prior history" / "Long-standing failures" / "Newly recovered" sections — those already only ever print bare test names, not messages.

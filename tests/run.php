@@ -174,7 +174,13 @@ function printRunSummary(
     if ($failures !== []) {
         fwrite($stream, "\nFailing tests:\n");
         foreach ($failures as $failure) {
-            fwrite($stream, "  - {$failure}\n");
+            $lines = explode("\n", $failure);
+            $firstLine = $lines[0];
+            $extraLineCount = count($lines) - 1;
+            $suffix = $extraLineCount > 0
+                ? sprintf(' (+%d more line%s, see FAIL output above)', $extraLineCount, $extraLineCount === 1 ? '' : 's')
+                : '';
+            fwrite($stream, "  - {$firstLine}{$suffix}\n");
         }
     }
 
