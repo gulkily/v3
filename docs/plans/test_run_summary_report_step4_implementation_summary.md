@@ -33,3 +33,15 @@
   - `php -l tests/run.php` — no syntax errors.
 - Notes:
   - Deleted the local `state/test_run_history.sqlite` created during manual smoke testing (gitignored, not part of the commit).
+
+## Stage 4 - Filtered-run scoping and untracked-DB verification
+- Changes:
+  - `tests/TestRunnerBehaviorTest.php`: updated the two assertions that checked for the old `'All tests passed.'` string to instead check for the new `'Summary: 1 run, 1 passed, 0 failed'` line — this is the same output surface Stage 3 changed, so it's a same-surface fix, not new scope.
+- Verification:
+  - `php tests/run.php TestRunHistoryStoreTest::testFirstFailureIsClassifiedAsNewFailure` — summary correctly scoped to `1 run, 1 passed, 0 failed` (not the full suite count).
+  - `php tests/run.php TestRunnerBehaviorTest` — all 4 tests pass after the assertion update.
+  - Full-suite run (`php tests/run.php`, 497 tests): summary counts are internally consistent (`Summary: N failed` always matches the number of bullets under "Failing tests"/"New failures"). Found and fixed the `TestRunnerBehaviorTest` regression above via this run.
+  - Cross-checked the 6 other full-suite failures (`LocalAppSmokeTest` activity/signature tests, `LazyComposeSigningTest`) against `main` in a scratch worktree (`git worktree add`) — confirmed all 6 are pre-existing failures unrelated to this feature, not caused by these changes. (A 7th, `WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh`, appeared intermittently across runs — pre-existing flake, also unrelated.)
+  - `git status --short` after the full run — `state/test_run_history.sqlite` does not appear; covered by the existing blanket `state/` gitignore entry, no new ignore rule needed.
+- Notes:
+  - No production code changes were needed; only the test-runner reporting file and its own behavior test.
