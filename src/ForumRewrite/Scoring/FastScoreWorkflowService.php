@@ -31,7 +31,7 @@ final class FastScoreWorkflowService
         }
 
         if ($this->scorer === null) {
-            return FastScoreResult::notScored('config_missing', ['fast_scoring_provider_unavailable']);
+            return FastScoreResult::notScored('config_missing', ['fast_scoring_provider_unavailable'], 'config_missing');
         }
 
         return $this->scorer->score($context);

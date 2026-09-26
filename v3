@@ -17,6 +17,7 @@ Usage:
   ./v3 build-static [repository_root] [database_path] [artifact_root]
   ./v3 archive-thread <thread_id> [repository_root] [database_path] [artifact_root] [archive_path]
   ./v3 private-config [view|edit|refresh-template|--view|--edit|--force|--api-key-stdin] [--path=/private/path/secrets.php]
+  ./v3 fast-score status|retry|invalidate|smoke|prune [...options]
   ./v3 agent-reply cron [--log=/var/log/forum-agent-replies.log]
   ./v3 agent-reply cron run [--limit=10] [--dry-run] [--quiet] [--post-id=<id>]
   ./v3 agent-reply status [post_id] [--limit=25] [--database-path=/path/post_index.sqlite3]
@@ -88,6 +89,10 @@ case "${COMMAND}" in
   private-config)
     shift
     php "${ROOT}/scripts/write_private_config.php" "$@"
+    ;;
+  fast-score)
+    shift
+    php "${ROOT}/scripts/fast_score.php" "$@"
     ;;
   agent-reply)
     shift

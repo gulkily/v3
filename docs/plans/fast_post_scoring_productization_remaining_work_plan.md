@@ -89,18 +89,18 @@ the existing corpus.
 
 ### 2. Implement bounded retry and failure semantics
 
-- [ ] Treat `scored` and deterministic `excluded` outcomes as terminal.
-- [ ] Retry only `provider_error` and `invalid_response` automatically, on the
+- [x] Treat `scored` and deterministic `excluded` outcomes as terminal.
+- [x] Retry only `provider_error` and `invalid_response` automatically, on the
   defined five- and thirty-minute schedule, for at most three total attempts.
-- [ ] Record `config_missing` as actionable but do not retry it automatically;
+- [x] Record `config_missing` as actionable but do not retry it automatically;
   a deployment operator fixes configuration and explicitly retries the named
   record. Do not create work at all while fast scoring or automatic enqueueing
   is disabled.
-- [ ] Preserve a small, redacted failure code and safe message. Define an
+- [x] Preserve a small, redacted failure code and safe message. Define an
   allowlist of failure categories and redact provider exception text before it
   reaches score storage, task-queue output, or a diagnostic command. Never
   store credentials.
-- [ ] Add audited, narrow CLI retry and invalidate actions for an explicit
+- [x] Add audited, narrow CLI retry and invalidate actions for an explicit
   post/content/rubric record. They must not support a blanket historical
   backfill.
 
@@ -110,20 +110,20 @@ without SQLite edits; one failed post never fails the rest of a worker batch.
 
 ### 3. Make the private pipeline diagnosable
 
-- [ ] Add `./v3 fast-score status` (or an equivalently focused task-queue
+- [x] Add `./v3 fast-score status` (or an equivalently focused task-queue
   subcommand) for pending, terminal, retryable, and capped counts; recent safe
   failures; active rubric revision; and task-queue state, without raw SQLite
   queries.
-- [ ] Add a bounded live-provider smoke command for one explicit diagnostic
+- [x] Add a bounded live-provider smoke command for one explicit diagnostic
   request. It must show only safe provider/model/structured-output/exchange
   metadata and must never create a corpus sweep.
-- [ ] Make task-queue exchange recording use the same feature-flag evaluation
+- [x] Make task-queue exchange recording use the same feature-flag evaluation
   as the application, and document the private exchange path. When linking an
   exchange, match `post_id`, `content_hash`, and `call_type=fast_post_score`
   so stale or unrelated post exchanges are not presented as the score audit.
-- [ ] Document the worker schedule, worker concurrency, batch limit, retry
+- [x] Document the worker schedule, worker concurrency, batch limit, retry
   delays, and the resulting maximum requests per newly published post.
-- [ ] Add `./v3 fast-score prune`, suitable for scheduled operation, to remove
+- [x] Add `./v3 fast-score prune`, suitable for scheduled operation, to remove
   private work/score rows and associated LLM exchanges older than one year.
 
 Acceptance: an operator can identify a failed new-content score, fix its

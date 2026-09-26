@@ -37,15 +37,16 @@ final class FastPostScorer implements FastScoreProvider
                     ],
                 ],
             );
-        } catch (\Throwable) {
-            return FastScoreResult::notScored('provider_error', ['provider_error']);
+        } catch (\Throwable $error) {
+            $failure = FastScoreFailure::fromThrowable($error);
+            return FastScoreResult::notScored('provider_error', ['provider_error'], $failure['failure_code']);
         }
 
         $probability = $completion['decoded']['probability'] ?? null;
         if ((!is_int($probability) && !is_float($probability))
             || !is_finite((float) $probability)
             || $probability < 0 || $probability > 1) {
-            return FastScoreResult::notScored('invalid_response', ['invalid_probability']);
+            return FastScoreResult::notScored('invalid_response', ['invalid_probability'], 'invalid_response');
         }
 
         return FastScoreResult::scored((float) $probability, 'llm');

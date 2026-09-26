@@ -4,7 +4,9 @@ Fast post scoring provides one focused 0–1 probability without running full po
 
 ## Configuration
 
-Set `FAST_SCORING_ENABLED` to `true`. The scorer uses the normal `LLM_*` provider settings unless any `FAST_SCORING_LLM_*` override is present; at minimum, set `FAST_SCORING_LLM_MODEL` to a lower-cost model suitable for a short classification request.
+Set `FAST_SCORING_ENABLED` and `FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED` to
+`true`. The scorer uses the normal `LLM_*` provider settings unless a
+documented `FAST_SCORING_LLM_*` override is present.
 
 `FAST_SCORING_PROMPT_PATH` selects the rubric prompt. Its text must define exactly what probability 0 and 1 mean. The model receives the target post text; replies additionally receive bounded parent and root context. It returns only a numeric `probability` value.
 
@@ -16,7 +18,9 @@ scored again.
 
 ## Batch scoring
 
-Use the existing task queue to score the backlog without a request per post:
+Only newly published posts create private score work. The worker never scans or
+backfills the existing corpus. It processes that work through the existing task
+queue without making the publishing request wait for the provider:
 
 ```bash
 ./v3 task-queue enqueue-fast-score
@@ -24,18 +28,35 @@ Use the existing task queue to score the backlog without a request per post:
 ```
 
 The enqueue command is coalesced: it leaves one queued or running sweep rather
-than creating duplicates. A sweep processes up to `--score-limit` nonempty
-root posts or replies in stable order, then requeues itself if current posts
-remain. `--limit` is the number of queue tasks a worker claims, not the number
-of posts. Provider failures are stored on the affected private score record and
-do not stop the rest of a batch.
+than creating duplicates. A sweep processes up to `--score-limit` pending
+private work records. `--limit` is the number of queue tasks a worker claims,
+not the number of posts. Provider and invalid-response failures receive at
+most two delayed retries after the initial attempt; further retries require an
+explicit operator command.
+
+Install the existing task-queue cron reference with `./v3 task-queue cron`.
+It runs one locked worker task per minute by default; `--score-limit` defaults
+to 25 pending work records per sweep. The execution lock keeps concurrent cron
+invocations from running overlapping sweeps.
 
 ## API
 
-`POST /api/score_post?post_id=<id>` requires an approved viewer. Its response includes `post_id`, `status`, nullable `probability`, `source` (`llm`, `heuristic`, or `none`), and `signals`.
+`POST /api/score_post` is retired and returns `410`; it cannot bypass the
+private worker pipeline.
 
 - `scored` results have a probability in the inclusive 0–1 range.
 - `excluded` is a deterministic, heuristic-only outcome with no probability.
 - `disabled`, `config_missing`, `provider_error`, and `invalid_response` are explicit non-score outcomes.
 
-Model exchanges use the existing private LLM-exchanges audit surface. The endpoint does not publish a score on post cards or make a reader-facing threshold decision.
+## Operator commands
+
+`./v3 fast-score status` reports private work, score, and task-queue state.
+`retry` and `invalidate` require an explicit post ID, content hash, and rubric
+revision; they do not support historical backfill. `smoke --post-id=...` makes
+one deliberate provider request without creating a score row or corpus sweep.
+`prune` removes fast-score rows and `fast_post_score` exchange records older
+than one year by default.
+
+Model exchanges use the existing private LLM-exchanges audit surface. Scores
+are not published on post cards and do not make a reader-facing or automated
+moderation decision.

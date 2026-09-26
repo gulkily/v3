@@ -33,11 +33,12 @@ final class SqliteFastScoreStore implements FastScoreStore
             'probability' => isset($result['probability']) && is_numeric($result['probability']) ? (float) $result['probability'] : null,
             'source' => (string) ($result['source'] ?? 'none'),
             'signals_json' => json_encode(array_values(array_filter($result['signals'] ?? [], 'is_string')), JSON_THROW_ON_ERROR),
-            'failure_message' => isset($result['failure_message']) ? substr((string) $result['failure_message'], 0, 500) : null,
+            'failure_code' => isset($result['failure_code']) ? substr((string) $result['failure_code'], 0, 100) : null,
+            'failure_message' => FastScoreFailure::safeMessage(isset($result['failure_code']) ? (string) $result['failure_code'] : null, (string) ($result['status'] ?? 'unknown')),
             'created_at' => (string) ($existing['created_at'] ?? gmdate('c')),
             'updated_at' => gmdate('c'),
         ];
-        $stmt = $this->pdo->prepare('INSERT INTO post_fast_scores (post_id, content_hash, rubric_revision, status, probability, source, signals_json, failure_message, created_at, updated_at) VALUES (:post_id, :content_hash, :rubric_revision, :status, :probability, :source, :signals_json, :failure_message, :created_at, :updated_at) ON CONFLICT(post_id, content_hash, rubric_revision) DO UPDATE SET status = excluded.status, probability = excluded.probability, source = excluded.source, signals_json = excluded.signals_json, failure_message = excluded.failure_message, updated_at = excluded.updated_at');
+        $stmt = $this->pdo->prepare('INSERT INTO post_fast_scores (post_id, content_hash, rubric_revision, status, probability, source, signals_json, failure_code, failure_message, created_at, updated_at) VALUES (:post_id, :content_hash, :rubric_revision, :status, :probability, :source, :signals_json, :failure_code, :failure_message, :created_at, :updated_at) ON CONFLICT(post_id, content_hash, rubric_revision) DO UPDATE SET status = excluded.status, probability = excluded.probability, source = excluded.source, signals_json = excluded.signals_json, failure_code = excluded.failure_code, failure_message = excluded.failure_message, updated_at = excluded.updated_at');
         $stmt->execute($row);
         return $this->find($postId, $contentHash, $rubricRevision) ?? throw new \RuntimeException('Fast score was not saved.');
     }
@@ -157,16 +158,107 @@ final class SqliteFastScoreStore implements FastScoreStore
         return (int) $this->pdo->query("SELECT COUNT(*) FROM fast_score_work WHERE state IN ('pending', 'running')")->fetchColumn() > 0;
     }
 
+    /** @return array<string, int> */
+    public function workCounts(): array
+    {
+        $counts = [];
+        foreach ($this->pdo->query('SELECT state, COUNT(*) AS count FROM fast_score_work GROUP BY state')->fetchAll() as $row) {
+            $counts[(string) $row['state']] = (int) $row['count'];
+        }
+        return $counts;
+    }
+
+    /** @return array<string, int> */
+    public function scoreCounts(): array
+    {
+        $counts = [];
+        foreach ($this->pdo->query('SELECT status, COUNT(*) AS count FROM post_fast_scores GROUP BY status')->fetchAll() as $row) {
+            $counts[(string) $row['status']] = (int) $row['count'];
+        }
+        return $counts;
+    }
+
+    /** @return array<string, int> */
+    public function scoreCountsBySource(): array
+    {
+        $counts = [];
+        foreach ($this->pdo->query('SELECT source, COUNT(*) AS count FROM post_fast_scores GROUP BY source')->fetchAll() as $row) {
+            $counts[(string) $row['source']] = (int) $row['count'];
+        }
+        return $counts;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function lastFailure(): ?array
+    {
+        $row = $this->pdo->query("SELECT post_id, failure_code, failure_message, updated_at FROM post_fast_scores WHERE failure_code IS NOT NULL ORDER BY updated_at DESC, rowid DESC LIMIT 1")->fetch();
+        return $row === false ? null : $row;
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function recentWork(int $limit = 25): array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM fast_score_work ORDER BY updated_at DESC, rowid DESC LIMIT :limit');
+        $stmt->bindValue(':limit', max(1, min(200, $limit)), PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public function retryWork(string $postId, string $contentHash, string $rubricRevision): array
+    {
+        $stmt = $this->pdo->prepare('UPDATE fast_score_work SET state = :state, attempt_count = 0, last_attempted_at = NULL, next_eligible_at = :now, failure_category = NULL, updated_at = :now WHERE post_id = :post_id AND content_hash = :content_hash AND rubric_revision = :rubric_revision');
+        $stmt->execute(['state' => 'pending', 'now' => gmdate('c'), 'post_id' => $postId, 'content_hash' => $contentHash, 'rubric_revision' => $rubricRevision]);
+        $work = $this->requiredWork($postId, $contentHash, $rubricRevision);
+        $this->audit('retry', $work);
+        return $work;
+    }
+
+    public function invalidateWork(string $postId, string $contentHash, string $rubricRevision): array
+    {
+        $stmt = $this->pdo->prepare('UPDATE fast_score_work SET state = :state, next_eligible_at = NULL, updated_at = :now WHERE post_id = :post_id AND content_hash = :content_hash AND rubric_revision = :rubric_revision');
+        $stmt->execute(['state' => 'invalidated', 'now' => gmdate('c'), 'post_id' => $postId, 'content_hash' => $contentHash, 'rubric_revision' => $rubricRevision]);
+        $work = $this->requiredWork($postId, $contentHash, $rubricRevision);
+        $this->audit('invalidate', $work);
+        return $work;
+    }
+
+    public function pruneBefore(string $cutoff): int
+    {
+        $stmt = $this->pdo->prepare('DELETE FROM fast_score_work WHERE updated_at < :cutoff');
+        $stmt->execute(['cutoff' => $cutoff]);
+        $workDeleted = $stmt->rowCount();
+        $stmt = $this->pdo->prepare('DELETE FROM post_fast_scores WHERE updated_at < :cutoff');
+        $stmt->execute(['cutoff' => $cutoff]);
+        return $workDeleted + $stmt->rowCount();
+    }
+
     private function ensureSchema(): void
     {
         $this->pdo->exec('CREATE TABLE IF NOT EXISTS fast_score_schema_migrations (version TEXT PRIMARY KEY, applied_at TEXT NOT NULL)');
-        $this->pdo->exec('CREATE TABLE IF NOT EXISTS post_fast_scores (post_id TEXT NOT NULL, content_hash TEXT NOT NULL, rubric_revision TEXT NOT NULL, status TEXT NOT NULL, probability REAL NULL, source TEXT NOT NULL, signals_json TEXT NOT NULL, failure_message TEXT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (post_id, content_hash, rubric_revision))');
+        $this->pdo->exec('CREATE TABLE IF NOT EXISTS post_fast_scores (post_id TEXT NOT NULL, content_hash TEXT NOT NULL, rubric_revision TEXT NOT NULL, status TEXT NOT NULL, probability REAL NULL, source TEXT NOT NULL, signals_json TEXT NOT NULL, failure_code TEXT NULL, failure_message TEXT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (post_id, content_hash, rubric_revision))');
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS post_fast_scores_current_idx ON post_fast_scores (post_id, content_hash, rubric_revision, status)');
         if ((int) $this->pdo->query("SELECT COUNT(*) FROM fast_score_schema_migrations WHERE version = 'fast_score_work_v1'")->fetchColumn() === 0) {
             $this->pdo->exec('CREATE TABLE IF NOT EXISTS fast_score_work (post_id TEXT NOT NULL, content_hash TEXT NOT NULL, rubric_revision TEXT NOT NULL, state TEXT NOT NULL, attempt_count INTEGER NOT NULL DEFAULT 0, last_attempted_at TEXT NULL, next_eligible_at TEXT NULL, failure_category TEXT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (post_id, content_hash, rubric_revision))');
             $this->pdo->exec('CREATE INDEX IF NOT EXISTS fast_score_work_claimable_idx ON fast_score_work (state, next_eligible_at, created_at, post_id)');
             $insert = $this->pdo->prepare('INSERT INTO fast_score_schema_migrations (version, applied_at) VALUES (:version, :applied_at)');
             $insert->execute(['version' => 'fast_score_work_v1', 'applied_at' => gmdate('c')]);
+        }
+        if ((int) $this->pdo->query("SELECT COUNT(*) FROM fast_score_schema_migrations WHERE version = 'fast_score_failure_code_v1'")->fetchColumn() === 0) {
+            $columns = $this->pdo->query('PRAGMA table_info(post_fast_scores)')->fetchAll();
+            $hasFailureCode = false;
+            foreach ($columns as $column) {
+                $hasFailureCode = $hasFailureCode || (string) $column['name'] === 'failure_code';
+            }
+            if (!$hasFailureCode) {
+                $this->pdo->exec('ALTER TABLE post_fast_scores ADD COLUMN failure_code TEXT NULL');
+            }
+            $insert = $this->pdo->prepare('INSERT INTO fast_score_schema_migrations (version, applied_at) VALUES (:version, :applied_at)');
+            $insert->execute(['version' => 'fast_score_failure_code_v1', 'applied_at' => gmdate('c')]);
+        }
+        if ((int) $this->pdo->query("SELECT COUNT(*) FROM fast_score_schema_migrations WHERE version = 'fast_score_operator_actions_v1'")->fetchColumn() === 0) {
+            $this->pdo->exec('CREATE TABLE IF NOT EXISTS fast_score_operator_actions (id INTEGER PRIMARY KEY AUTOINCREMENT, occurred_at TEXT NOT NULL, action TEXT NOT NULL, post_id TEXT NOT NULL, content_hash TEXT NOT NULL, rubric_revision TEXT NOT NULL)');
+            $insert = $this->pdo->prepare('INSERT INTO fast_score_schema_migrations (version, applied_at) VALUES (:version, :applied_at)');
+            $insert->execute(['version' => 'fast_score_operator_actions_v1', 'applied_at' => gmdate('c')]);
         }
     }
 
@@ -183,10 +275,23 @@ final class SqliteFastScoreStore implements FastScoreStore
         return $row;
     }
 
+    /** @param array<string, mixed> $work */
+    private function audit(string $action, array $work): void
+    {
+        $stmt = $this->pdo->prepare('INSERT INTO fast_score_operator_actions (occurred_at, action, post_id, content_hash, rubric_revision) VALUES (:occurred_at, :action, :post_id, :content_hash, :rubric_revision)');
+        $stmt->execute([
+            'occurred_at' => gmdate('c'),
+            'action' => $action,
+            'post_id' => $work['post_id'],
+            'content_hash' => $work['content_hash'],
+            'rubric_revision' => $work['rubric_revision'],
+        ]);
+    }
+
     /** @param array<string, mixed> $row @return array<string, mixed> */
     private function hydrate(array $row): array
     {
         $signals = json_decode((string) $row['signals_json'], true);
-        return ['post_id' => (string) $row['post_id'], 'content_hash' => (string) $row['content_hash'], 'rubric_revision' => (string) $row['rubric_revision'], 'status' => (string) $row['status'], 'probability' => $row['probability'] === null ? null : (float) $row['probability'], 'source' => (string) $row['source'], 'signals' => is_array($signals) ? $signals : [], 'failure_message' => $row['failure_message'] === null ? null : (string) $row['failure_message'], 'created_at' => (string) $row['created_at'], 'updated_at' => (string) $row['updated_at']];
+        return ['post_id' => (string) $row['post_id'], 'content_hash' => (string) $row['content_hash'], 'rubric_revision' => (string) $row['rubric_revision'], 'status' => (string) $row['status'], 'probability' => $row['probability'] === null ? null : (float) $row['probability'], 'source' => (string) $row['source'], 'signals' => is_array($signals) ? $signals : [], 'failure_code' => $row['failure_code'] === null ? null : (string) $row['failure_code'], 'failure_message' => $row['failure_message'] === null ? null : (string) $row['failure_message'], 'created_at' => (string) $row['created_at'], 'updated_at' => (string) $row['updated_at']];
     }
 }

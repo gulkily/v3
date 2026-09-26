@@ -63,6 +63,7 @@ Optional runtime setting:
 - `LLM_EXCHANGE_DATABASE_PATH`: optional private SQLite path; defaults to `<application-root>/state/private/llm_exchanges.sqlite3`.
 - `FORUM_TASK_QUEUE_DATABASE_PATH`: optional private SQLite path for queued internal maintenance; defaults to `<application-root>/state/private/internal_tasks.sqlite3`.
 - `FAST_SCORING_DATABASE_PATH`: optional private SQLite score-state path; defaults to `<application-root>/state/private/fast_scores.sqlite3`.
+- `FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED`: when `true` alongside `FAST_SCORING_ENABLED`, creates private score work for newly published posts only; defaults to `false`.
 
 ## Writable Paths
 

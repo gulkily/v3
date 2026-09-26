@@ -14,6 +14,8 @@ use ForumRewrite\Scoring\FastScoringConfig;
 use ForumRewrite\Scoring\FastScoringRubricRevision;
 use ForumRewrite\Scoring\SqliteFastScoreStore;
 use ForumRewrite\Support\PrivateConfig;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\TaskQueue\ReadModelRebuildTaskHandler;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
@@ -146,7 +148,7 @@ try {
                         $privateConfig,
                         $projectRoot,
                         $fetchPost,
-                        taskQueueLlmExchangeRecorder($projectRoot, $privateConfig),
+                        taskQueueLlmExchangeRecorder($projectRoot, $repositoryRoot, $privateConfig),
                     );
                     $contextFactory = new FastScoreContextFactory($fetchPost);
                     $scoreStore = new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath));
@@ -298,9 +300,9 @@ TEXT);
 /**
  * @param array<string, mixed> $privateConfig
  */
-function taskQueueLlmExchangeRecorder(string $projectRoot, array $privateConfig): ?LlmExchangeRecorder
+function taskQueueLlmExchangeRecorder(string $projectRoot, string $repositoryRoot, array $privateConfig): ?LlmExchangeRecorder
 {
-    if (!taskQueueBoolean($privateConfig['LLM_CONVERSATION_RECORDING_ENABLED'] ?? false)) {
+    if (!FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)->isEnabled(FeatureFlagRegistry::LLM_CONVERSATION_RECORDING_ENABLED)) {
         return null;
     }
 
@@ -311,13 +313,4 @@ function taskQueueLlmExchangeRecorder(string $projectRoot, array $privateConfig)
     }
 
     return new LlmExchangeRecorder(new PDO('sqlite:' . $path));
-}
-
-function taskQueueBoolean(mixed $value): bool
-{
-    if (is_bool($value)) {
-        return $value;
-    }
-
-    return in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'on'], true);
 }

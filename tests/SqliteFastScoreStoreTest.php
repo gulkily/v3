@@ -36,4 +36,35 @@ final class SqliteFastScoreStoreTest
         assertSame('new-post', $claimed[0]['post_id']);
         assertSame(1, $claimed[0]['attempt_count']);
     }
+
+    public function testStoreUsesOnlySafeFailureMessages(): void
+    {
+        $store = new SqliteFastScoreStore(new PDO('sqlite::memory:'));
+        $saved = $store->save('post-1', 'content-a', 'rubric-a', [
+            'status' => 'provider_error',
+            'source' => 'none',
+            'signals' => ['provider_error'],
+            'failure_code' => 'provider_authentication_failed',
+            'failure_message' => 'Authorization: Bearer secret-value',
+        ]);
+
+        assertSame('provider_authentication_failed', $saved['failure_code']);
+        assertSame('Provider authentication failed.', $saved['failure_message']);
+        assertSame('provider_authentication_failed', $store->lastFailure()['failure_code']);
+    }
+
+    public function testOperatorRetryResetsOnlyTheNamedWorkItem(): void
+    {
+        $store = new SqliteFastScoreStore(new PDO('sqlite::memory:'));
+        $store->enqueueWork('post-1', 'content-a', 'rubric-a');
+        $work = $store->claimPendingWork(1)[0];
+        $store->completeWork($work, ['status' => 'config_missing', 'source' => 'none', 'signals' => []]);
+
+        $retried = $store->retryWork('post-1', 'content-a', 'rubric-a');
+        $invalidated = $store->invalidateWork('post-1', 'content-a', 'rubric-a');
+
+        assertSame('pending', $retried['state']);
+        assertSame(0, $retried['attempt_count']);
+        assertSame('invalidated', $invalidated['state']);
+    }
 }

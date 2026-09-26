@@ -19,9 +19,14 @@ final class FastScoreResult
      * @param list<string> $signals
      * @return array{status:string, probability:?float, source:string, signals:list<string>}
      */
-    public static function notScored(string $status, array $signals = []): array
+    public static function notScored(string $status, array $signals = [], ?string $failureCode = null): array
     {
-        return self::result($status, null, 'none', $signals);
+        $result = self::result($status, null, 'none', $signals);
+        if ($failureCode !== null) {
+            $result['failure_code'] = $failureCode;
+            $result['failure_message'] = FastScoreFailure::safeMessage($failureCode, $status);
+        }
+        return $result;
     }
 
     /**
