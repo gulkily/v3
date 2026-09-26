@@ -17,13 +17,27 @@ gratuitous profanity, especially when it is the substance of the post or is
 used to attack another participant; or deliberately low-effort, substance-free
 content such as repeated words, gibberish, or empty noise.
 
+Apply the following Hacker News-inspired conversation-quality norms. Raise the
+probability for content that is primarily a personal attack, name-calling,
+snark, sneering, or a shallow dismissal rather than a response to an argument;
+flamebait, bad-faith cross-examination, or an intentional weaker reading of
+another person's point; generic tangents or hostile meta-discussion about the
+community, voting, or alleged shilling, brigading, or astroturfing; solicitation
+of votes, comments, or submissions; or material whose primary purpose is
+promotion rather than contributing something substantively interesting. Raise
+the probability for threads that primarily try to start a political or
+ideological battle rather than invite substantive, curiosity-driven discussion.
+Treat content explicitly presented as generated or mechanically bulk-produced
+as low effort; do not infer AI authorship from writing style alone.
+
 Do not hold content merely because it is critical, political, unpopular,
 emotionally charged, or discusses a sensitive subject. Do not treat concise
-but meaningful content as low effort solely because it is short. Consider
-quotation, reporting, rebuttal, satire, and educational context. When context
-makes a potential violation ambiguous, prefer a middle probability rather than
-assuming a violation. This score requests human review; it is not a final
-moderation decision.
+but meaningful content as low effort solely because it is short. Thoughtful,
+specific criticism, a direct disagreement, and a substantive political topic
+are allowed. Consider quotation, reporting, rebuttal, satire, and educational
+context. When context makes a potential violation ambiguous, prefer a middle
+probability rather than assuming a violation. This score requests human review;
+it is not a final moderation decision.
 
 Return only a JSON object matching the requested schema. Do not provide a
 reason, label, summary, or any additional fields.

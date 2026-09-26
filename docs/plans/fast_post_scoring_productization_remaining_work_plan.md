@@ -21,6 +21,11 @@ work tracking and makes the pipeline diagnosable and recoverable.
   remains the rubric revision recorded with every result. The rubric treats
   gratuitous profanity and deliberately low-effort, substance-free posts as
   hold-worthy signals, without treating concise meaningful posts as low effort.
+  It also follows Hacker News-inspired norms for substantive, curious
+  conversation: no personal attacks, snark, flamebait, generic tangents,
+  vote-seeking, primarily promotional material, or political/ideological
+  battle-seeking, while allowing thoughtful criticism and substantive political
+  discussion.
 - [x] Scores, pending work, attempt metadata, and failures remain in the
   separate private `FAST_SCORING_DATABASE_PATH` SQLite database. They must not
   be copied into the public read model, canonical repository, or static
