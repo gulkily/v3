@@ -63,6 +63,13 @@ final class PostWorkflowApiController
      */
     public function scorePost(string $method, array $query): void
     {
+        $this->routeServices->sendJson([
+            'status' => 'error',
+            'error' => 'fast_score_synchronous_execution_retired',
+            'message' => 'Fast scores are created only by the private worker after new-content publication.',
+        ], 410, $this->routeServices->noStoreHeaders());
+        return;
+
         if ($method !== 'POST') {
             $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $this->routeServices->noStoreHeaders());
             return;

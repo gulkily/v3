@@ -24,6 +24,7 @@ final class FastScoringConfigTest
         assertSame('general-model', $config->provider->model);
         assertSame(19, $config->provider->timeoutSeconds);
         assertSame('prompts/fast_post_scoring_system.txt', $config->promptPath);
+        assertSame(false, $config->automaticEnqueue);
     }
 
     public function testFastScoringOverridesRemainIndependentOfFullAnalysis(): void
@@ -32,6 +33,7 @@ final class FastScoringConfigTest
             'LLM_PROVIDER' => 'dedalus',
             'LLM_MODEL' => 'full-analysis-model',
             'FAST_SCORING_ENABLED' => 'yes',
+            'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED' => 'true',
             'FAST_SCORING_LLM_PROVIDER' => 'openai',
             'FAST_SCORING_LLM_API_KEY' => 'fast-key',
             'FAST_SCORING_LLM_API_BASE_URL' => 'https://api.openai.com',
@@ -49,5 +51,6 @@ final class FastScoringConfigTest
         assertSame(7, $config->provider->timeoutSeconds);
         assertSame('Fast scoring', $config->provider->extraHeaders['X-Title']);
         assertSame('prompts/custom_fast_score.txt', $config->promptPath);
+        assertSame(true, $config->automaticEnqueue);
     }
 }

@@ -12,6 +12,7 @@ final class FastScoringConfig
         public readonly bool $enabled,
         public readonly LlmProviderConfig $provider,
         public readonly string $promptPath,
+        public readonly bool $automaticEnqueue = false,
     ) {
     }
 
@@ -34,6 +35,7 @@ final class FastScoringConfig
                 self::headers($config['FAST_SCORING_LLM_EXTRA_HEADERS'] ?? $fallback->extraHeaders),
             ),
             self::stringValue($config['FAST_SCORING_PROMPT_PATH'] ?? 'prompts/fast_post_scoring_system.txt'),
+            self::booleanValue($config['FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED'] ?? false),
         );
     }
 

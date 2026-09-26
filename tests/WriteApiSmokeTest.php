@@ -205,7 +205,7 @@ final class WriteApiSmokeTest
         }
     }
 
-    public function testFastScoreEndpointRequiresAnApprovedViewerAndReturnsWorkflowResult(): void
+    public function testFastScoreEndpointRetiresSynchronousProviderExecution(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousEnabled = getenv('FAST_SCORING_ENABLED');
@@ -224,12 +224,9 @@ final class WriteApiSmokeTest
             $approved = json_decode($this->renderMethod($application, 'POST', '/api/score_post?post_id=' . rawurlencode($postId)), true);
             $missing = json_decode($this->renderMethod($application, 'POST', '/api/score_post?post_id=missing'), true);
 
-            assertSame('forbidden', $anonymous['error']);
-            assertSame($postId, $approved['post_id']);
-            assertSame('config_missing', $approved['status']);
-            assertSame(null, $approved['probability']);
-            assertSame('none', $approved['source']);
-            assertSame('post not found', $missing['error']);
+            assertSame('fast_score_synchronous_execution_retired', $anonymous['error']);
+            assertSame('fast_score_synchronous_execution_retired', $approved['error']);
+            assertSame('fast_score_synchronous_execution_retired', $missing['error']);
         } finally {
             $_COOKIE = [];
             $previousEnabled === false ? putenv('FAST_SCORING_ENABLED') : putenv('FAST_SCORING_ENABLED=' . $previousEnabled);

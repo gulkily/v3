@@ -77,10 +77,10 @@ private historical audit data.
 - [x] Change `fast_score_sweep` to claim bounded pending work from that table.
   Retain queue coalescing, but eliminate the read-model scan for missing score
   rows.
-- [ ] Hook the successful normal post-publication/read-model path to create the
+- [x] Hook the successful normal post-publication/read-model path to create the
   work record and enqueue the coalesced sweep. Do not hook rebuilds, imports,
   or rubric changes.
-- [ ] Retire or change the synchronous `/api/score_post` behavior so it cannot
+- [x] Retire or change the synchronous `/api/score_post` behavior so it cannot
   bypass private work tracking or become a second production execution path.
 
 Acceptance: publishing one eligible new post creates one private pending-work

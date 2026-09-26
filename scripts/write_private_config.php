@@ -104,6 +104,7 @@ $defaults = [
     'LLM_EXTRA_HEADERS' => [],
     'LLM_POST_ANALYSIS_PROMPT_PATH' => 'prompts/dedalus_post_analysis_system.txt',
     'FAST_SCORING_ENABLED' => false,
+    'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED' => false,
     'FAST_SCORING_LLM_MODEL' => 'openai/gpt-5-nano',
     'FAST_SCORING_PROMPT_PATH' => 'prompts/fast_post_scoring_system.txt',
     'FAST_SCORING_DATABASE_PATH' => '',
@@ -380,6 +381,7 @@ function renderPrivateConfigFile(array $config, array $defaults, array $existing
             . "    // Its LLM settings fall back to the corresponding LLM_* values when omitted.\n";
     }
     $contents .= renderConfigLine('FAST_SCORING_ENABLED', $config['FAST_SCORING_ENABLED'])
+        . renderConfigLine('FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED', $config['FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED'])
         . renderConfigLine('FAST_SCORING_LLM_MODEL', $config['FAST_SCORING_LLM_MODEL'])
         . renderConfigLine('FAST_SCORING_PROMPT_PATH', $config['FAST_SCORING_PROMPT_PATH'])
         . renderConfigLine('FAST_SCORING_DATABASE_PATH', $config['FAST_SCORING_DATABASE_PATH']);

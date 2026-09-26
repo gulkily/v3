@@ -36,6 +36,7 @@ final class PrivateConfig
             'LLM_EXTRA_HEADERS',
             'LLM_POST_ANALYSIS_PROMPT_PATH',
             'FAST_SCORING_ENABLED',
+            'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED',
             'FAST_SCORING_LLM_PROVIDER',
             'FAST_SCORING_LLM_API_KEY',
             'FAST_SCORING_LLM_API_BASE_URL',

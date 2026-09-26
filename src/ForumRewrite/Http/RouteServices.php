@@ -11,8 +11,15 @@ use ForumRewrite\Host\HtmlResponseCache;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\Scoring\FastScoreWorkflowFactory;
 use ForumRewrite\Scoring\FastScoreWorkflowService;
+use ForumRewrite\Scoring\FastScoreContextFactory;
+use ForumRewrite\Scoring\FastScoreDatabaseConfig;
+use ForumRewrite\Scoring\FastScoringConfig;
+use ForumRewrite\Scoring\FastScoringRubricRevision;
+use ForumRewrite\Scoring\SqliteFastScoreStore;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\PrivateConfig;
+use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
+use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
 use PDO;
@@ -139,6 +146,45 @@ final class RouteServices
             $fetchPost,
             $llmExchangeRecorderFactory(),
         );
+    }
+
+    public function enqueueFastScoreForPublishedPost(string $postId): void
+    {
+        $privateConfig = PrivateConfig::load($this->projectRoot);
+        $config = FastScoringConfig::fromPrivateConfig($privateConfig);
+        if (!$config->enabled || !$config->automaticEnqueue) {
+            return;
+        }
+
+        $readPdo = $this->pdo();
+        $fetchPost = static function (string $id) use ($readPdo): ?array {
+            $stmt = $readPdo->prepare('SELECT post_id, thread_id, parent_id, subject, body FROM posts WHERE post_id = :post_id');
+            $stmt->execute(['post_id' => $id]);
+            $post = $stmt->fetch();
+            return $post === false ? null : $post;
+        };
+        $post = $fetchPost($postId);
+        if ($post === null) {
+            throw new RuntimeException('Published post is not available in the read model for fast-score enqueueing.');
+        }
+        $context = (new FastScoreContextFactory($fetchPost))->forPost($post);
+        $scorePath = FastScoreDatabaseConfig::path($this->projectRoot, $privateConfig);
+        $scoreDirectory = dirname($scorePath);
+        if (!is_dir($scoreDirectory) && !mkdir($scoreDirectory, 0777, true) && !is_dir($scoreDirectory)) {
+            throw new RuntimeException('Fast-score database directory is not writable.');
+        }
+        (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->enqueueWork(
+            $postId,
+            (string) $context['content_hash'],
+            FastScoringRubricRevision::fromConfig($config, $this->projectRoot),
+        );
+
+        $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+        $queueDirectory = dirname($queuePath);
+        if (!is_dir($queueDirectory) && !mkdir($queueDirectory, 0777, true) && !is_dir($queueDirectory)) {
+            throw new RuntimeException('Task queue directory is not writable.');
+        }
+        (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'fast-score-sweep');
     }
 
     /**
