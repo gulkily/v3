@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Scoring;
 
+use ForumRewrite\Analysis\ProviderRequestException;
 use ForumRewrite\Llm\StructuredChatProvider;
 
 final class FastPostScorer implements FastScoreProvider
@@ -29,7 +30,7 @@ final class FastPostScorer implements FastScoreProvider
                 ],
                 self::responseSchema(),
                 [
-                    'max_completion_tokens' => 16,
+                    'max_completion_tokens' => 128,
                     'exchange_context' => [
                         'call_type' => 'fast_post_score',
                         'post_id' => $context['post_id'] ?? null,
@@ -37,9 +38,11 @@ final class FastPostScorer implements FastScoreProvider
                     ],
                 ],
             );
-        } catch (\Throwable $error) {
+        } catch (ProviderRequestException $error) {
             $failure = FastScoreFailure::fromThrowable($error);
             return FastScoreResult::notScored('provider_error', ['provider_error'], $failure['failure_code']);
+        } catch (\Throwable) {
+            return FastScoreResult::notScored('invalid_response', ['invalid_response'], 'invalid_response');
         }
 
         $probability = $completion['decoded']['probability'] ?? null;

@@ -192,10 +192,9 @@ final class AnthropicStructuredChatProvider implements StructuredChatProvider
         $diagnostics['response']['status_code'] = $this->statusCode($http_response_header ?? []);
         $diagnostics['response']['headers'] = $http_response_header ?? [];
         $diagnostics['response']['body'] = $raw === false ? null : $raw;
-        $this->recordExchange($exchangeContext, $diagnostics, 'transport_error', $startedAt);
-
         if ($raw === false) {
             $error = error_get_last();
+            $this->recordExchange($exchangeContext, $diagnostics, 'transport_error', $startedAt);
             throw new ProviderRequestException(
                 'Anthropic provider request failed before receiving a response.',
                 $this->diagnosticsWithError($diagnostics, new RuntimeException(
@@ -206,6 +205,7 @@ final class AnthropicStructuredChatProvider implements StructuredChatProvider
 
         $decoded = json_decode($raw, true);
         if (!is_array($decoded)) {
+            $this->recordExchange($exchangeContext, $diagnostics, 'provider_error', $startedAt);
             throw new ProviderRequestException(
                 'Anthropic provider response was not valid JSON.',
                 $this->diagnosticsWithError($diagnostics, new RuntimeException('Provider response was not valid JSON.'))

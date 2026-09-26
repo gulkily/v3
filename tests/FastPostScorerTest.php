@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Llm\StructuredChatProvider;
+use ForumRewrite\Analysis\ProviderRequestException;
 use ForumRewrite\Scoring\FastPostScorer;
 
 final class FastPostScorerTest
@@ -22,7 +23,7 @@ final class FastPostScorerTest
         assertSame(0.75, $result['probability']);
         assertSame('llm', $result['source']);
         assertSame('FastPostScore', $provider->schemaName);
-        assertSame(16, $provider->options['max_completion_tokens']);
+        assertSame(128, $provider->options['max_completion_tokens']);
         assertSame('fast_post_score', $provider->options['exchange_context']['call_type']);
         assertSame(['probability'], $provider->schema['required']);
         assertSame(false, array_key_exists('reason', $provider->schema['properties']));
@@ -47,6 +48,14 @@ final class FastPostScorerTest
         assertSame(null, $result['probability']);
         assertSame('none', $result['source']);
     }
+
+    public function testScoreClassifiesMalformedStructuredCompletionAsInvalidResponse(): void
+    {
+        $result = (new FastPostScorer(new FastPostScorerFakeProvider([], false, true), 'Score only.'))->score([]);
+
+        assertSame('invalid_response', $result['status']);
+        assertSame('invalid_response', $result['failure_code']);
+    }
 }
 
 final class FastPostScorerFakeProvider implements StructuredChatProvider
@@ -60,14 +69,17 @@ final class FastPostScorerFakeProvider implements StructuredChatProvider
     public string $schemaName = '';
 
     /** @param array<string, mixed> $decoded */
-    public function __construct(private readonly array $decoded, private readonly bool $throws = false)
+    public function __construct(private readonly array $decoded, private readonly bool $throws = false, private readonly bool $malformed = false)
     {
     }
 
     public function completeStructuredChat(string $schemaName, array $messages, array $jsonSchema, array $options = []): array
     {
         if ($this->throws) {
-            throw new RuntimeException('Provider unavailable.');
+            throw new ProviderRequestException('Provider unavailable.', []);
+        }
+        if ($this->malformed) {
+            throw new RuntimeException('Structured completion did not contain JSON.');
         }
 
         $this->schemaName = $schemaName;
