@@ -30,7 +30,7 @@ final class FastPostScorer implements FastScoreProvider
                 ],
                 self::responseSchema(),
                 [
-                    'max_completion_tokens' => 128,
+                    'max_completion_tokens' => 1024,
                     'exchange_context' => [
                         'call_type' => 'fast_post_score',
                         'post_id' => $context['post_id'] ?? null,

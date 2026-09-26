@@ -23,7 +23,7 @@ final class FastPostScorerTest
         assertSame(0.75, $result['probability']);
         assertSame('llm', $result['source']);
         assertSame('FastPostScore', $provider->schemaName);
-        assertSame(128, $provider->options['max_completion_tokens']);
+        assertSame(1024, $provider->options['max_completion_tokens']);
         assertSame('fast_post_score', $provider->options['exchange_context']['call_type']);
         assertSame(['probability'], $provider->schema['required']);
         assertSame(false, array_key_exists('reason', $provider->schema['properties']));

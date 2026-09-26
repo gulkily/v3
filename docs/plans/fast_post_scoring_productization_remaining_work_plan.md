@@ -88,7 +88,7 @@ row and one coalesced worker wake-up; starting the feature creates no work for
 the existing corpus. A write-path smoke test verifies that the work and queue
 records remain private. The task-queue regression test covers feature-flag
 evaluation inside the fast-score worker closure. Provider responses have a
-128-token structured-output budget, and successful calls produce one completed
+1024-token structured-output budget, and successful calls produce one completed
 exchange audit record rather than a false transport-error companion.
 
 ### 2. Implement bounded retry and failure semantics
