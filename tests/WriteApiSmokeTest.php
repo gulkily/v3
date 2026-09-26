@@ -234,6 +234,41 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testNewPublishedPostEnqueuesOnlyPrivateFastScoreWork(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $scorePath = sys_get_temp_dir() . '/forum-fast-score-work-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $queuePath = sys_get_temp_dir() . '/forum-fast-score-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previous = [
+            'FAST_SCORING_ENABLED' => getenv('FAST_SCORING_ENABLED'),
+            'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED' => getenv('FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED'),
+            'FAST_SCORING_DATABASE_PATH' => getenv('FAST_SCORING_DATABASE_PATH'),
+            'FORUM_TASK_QUEUE_DATABASE_PATH' => getenv('FORUM_TASK_QUEUE_DATABASE_PATH'),
+        ];
+        putenv('FAST_SCORING_ENABLED=true');
+        putenv('FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED=true');
+        putenv('FAST_SCORING_DATABASE_PATH=' . $scorePath);
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $response = $this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Queued&body=New%20content');
+            $postId = $this->extractValue($response, 'post_id');
+            $work = (new PDO('sqlite:' . $scorePath))->query('SELECT post_id, state, attempt_count FROM fast_score_work')->fetch(PDO::FETCH_ASSOC);
+            $queue = (new PDO('sqlite:' . $queuePath))->query("SELECT type, status FROM internal_tasks WHERE type = 'fast_score_sweep'")->fetch(PDO::FETCH_ASSOC);
+
+            assertSame($postId, $work['post_id']);
+            assertSame('pending', $work['state']);
+            assertSame(0, (int) $work['attempt_count']);
+            assertSame('fast_score_sweep', $queue['type']);
+            assertSame('queued', $queue['status']);
+        } finally {
+            foreach ($previous as $name => $value) {
+                $value === false ? putenv($name) : putenv($name . '=' . $value);
+            }
+        }
+    }
+
     public function testUnicodeRiskAnalysisFlagsMixedScriptIdentifierForApprovedViewersOnly(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

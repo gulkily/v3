@@ -85,7 +85,8 @@ private historical audit data.
 
 Acceptance: publishing one eligible new post creates one private pending-work
 row and one coalesced worker wake-up; starting the feature creates no work for
-the existing corpus.
+the existing corpus. A write-path smoke test verifies that the work and queue
+records remain private.
 
 ### 2. Implement bounded retry and failure semantics
 
