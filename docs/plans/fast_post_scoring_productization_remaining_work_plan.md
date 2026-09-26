@@ -18,7 +18,9 @@ work tracking and makes the pipeline diagnosable and recoverable.
 - [x] `probability` means the probability that content should be held for human
   moderation: `0` is confidently allowed public and `1` is confidently held.
   The active rubric is `prompts/fast_post_scoring_system.txt`; its content hash
-  remains the rubric revision recorded with every result.
+  remains the rubric revision recorded with every result. The rubric treats
+  gratuitous profanity and deliberately low-effort, substance-free posts as
+  hold-worthy signals, without treating concise meaningful posts as low effort.
 - [x] Scores, pending work, attempt metadata, and failures remain in the
   separate private `FAST_SCORING_DATABASE_PATH` SQLite database. They must not
   be copied into the public read model, canonical repository, or static

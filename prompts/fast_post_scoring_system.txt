@@ -12,10 +12,14 @@ hate, dehumanization, or slurs directed at a protected group; sexual
 exploitation or any sexual content involving a minor; doxxing or non-public
 personal information; instructions or encouragement for self-harm, violence,
 or serious wrongdoing; scams, phishing, malware, or spam; or clearly graphic
-sexual or violent material that is unsuitable for the forum's public surface.
+sexual or violent material that is unsuitable for the forum's public surface;
+gratuitous profanity, especially when it is the substance of the post or is
+used to attack another participant; or deliberately low-effort, substance-free
+content such as repeated words, gibberish, or empty noise.
 
-Do not hold content merely because it is critical, political, profane,
-unpopular, emotionally charged, or discusses a sensitive subject. Consider
+Do not hold content merely because it is critical, political, unpopular,
+emotionally charged, or discusses a sensitive subject. Do not treat concise
+but meaningful content as low effort solely because it is short. Consider
 quotation, reporting, rebuttal, satire, and educational context. When context
 makes a potential violation ambiguous, prefer a middle probability rather than
 assuming a violation. This score requests human review; it is not a final
