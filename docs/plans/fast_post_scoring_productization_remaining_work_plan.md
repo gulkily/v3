@@ -29,10 +29,11 @@ work tracking and makes the pipeline diagnosable and recoverable.
   these safety, quality, context, and fractional-probability requirements.
 - [x] Scores, pending work, attempt metadata, and failures remain in the
   separate private `FAST_SCORING_DATABASE_PATH` SQLite database. They must not
-  be copied into the public read model, canonical repository, or static
-  artifacts.
-- [x] There is no fast-score frontend in this delivery. Readers do not see a
-  score, and approved users do not receive a post-page score panel.
+  be copied into the public read model or canonical repository.
+- [x] A scored result is visible as a fractional fast-moderation score on the
+  public `/posts/{id}` detail page to anyone who can access that page. It is
+  not added to thread, board, API, canonical-record, or read-model data;
+  rendered page artifacts may include the displayed value.
 - [x] Only content newly published through the normal post-publication flow
   after this feature is enabled is eligible. Do not backfill, scan, or enqueue
   the existing corpus. Rebuilds, imports, and rubric changes do not create

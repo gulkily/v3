@@ -22,6 +22,19 @@ final class SqliteFastScoreStore implements FastScoreStore
         return $row === false ? null : $this->hydrate($row);
     }
 
+    public function latestScoredForPostContent(string $postId, string $contentHash): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT * FROM post_fast_scores
+             WHERE post_id = :post_id AND content_hash = :content_hash AND status = 'scored'
+             ORDER BY updated_at DESC, rowid DESC
+             LIMIT 1"
+        );
+        $stmt->execute(['post_id' => $postId, 'content_hash' => $contentHash]);
+        $row = $stmt->fetch();
+        return $row === false ? null : $this->hydrate($row);
+    }
+
     public function save(string $postId, string $contentHash, string $rubricRevision, array $result): array
     {
         $existing = $this->find($postId, $contentHash, $rubricRevision);

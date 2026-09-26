@@ -79,4 +79,17 @@ final class SqliteFastScoreStoreTest
         assertSame(0.0, $recent[0]['probability']);
         assertSame('llm', $recent[0]['source']);
     }
+
+    public function testLatestScoredResultMatchesTheCurrentPostContent(): void
+    {
+        $store = new SqliteFastScoreStore(new PDO('sqlite::memory:'));
+        $store->save('post-1', 'old-content', 'rubric-a', ['status' => 'scored', 'probability' => 0.1, 'source' => 'llm', 'signals' => []]);
+        $store->save('post-1', 'current-content', 'rubric-a', ['status' => 'scored', 'probability' => 0.6, 'source' => 'llm', 'signals' => []]);
+        $store->save('post-1', 'current-content', 'rubric-b', ['status' => 'scored', 'probability' => 0.8, 'source' => 'llm', 'signals' => []]);
+
+        $current = $store->latestScoredForPostContent('post-1', 'current-content');
+
+        assertSame(0.8, $current['probability']);
+        assertSame(null, $store->latestScoredForPostContent('post-1', 'missing-content'));
+    }
 }

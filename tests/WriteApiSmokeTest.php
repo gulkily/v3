@@ -13,6 +13,8 @@ use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\Scoring\FastScoreContextFactory;
+use ForumRewrite\Scoring\SqliteFastScoreStore;
 use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
@@ -266,6 +268,41 @@ final class WriteApiSmokeTest
             foreach ($previous as $name => $value) {
                 $value === false ? putenv($name) : putenv($name . '=' . $value);
             }
+        }
+    }
+
+    public function testPostDetailPageShowsCurrentFastScoreToAllViewers(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $scorePath = sys_get_temp_dir() . '/forum-fast-score-detail-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previousScorePath = getenv('FAST_SCORING_DATABASE_PATH');
+        putenv('FAST_SCORING_DATABASE_PATH=' . $scorePath);
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $created = $this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Scored&body=Current%20content');
+            $postId = $this->extractValue($created, 'post_id');
+            $readPdo = new PDO('sqlite:' . $databasePath);
+            $post = $readPdo->query(
+                'SELECT post_id, thread_id, parent_id, subject, body FROM posts WHERE post_id = ' . $readPdo->quote($postId)
+            )->fetch(PDO::FETCH_ASSOC);
+            $context = (new FastScoreContextFactory(static fn (string $_): ?array => null))->forPost($post);
+            (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->save(
+                $postId,
+                (string) $context['content_hash'],
+                'rubric-test',
+                ['status' => 'scored', 'probability' => 0.42, 'source' => 'llm', 'signals' => []],
+            );
+
+            $_COOKIE = [];
+            $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+            $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+
+            assertStringContains('Fast moderation score: 0.42', $postPage);
+            assertStringNotContains('Fast moderation score:', $threadPage);
+        } finally {
+            $previousScorePath === false ? putenv('FAST_SCORING_DATABASE_PATH') : putenv('FAST_SCORING_DATABASE_PATH=' . $previousScorePath);
+            $_COOKIE = [];
         }
     }
 

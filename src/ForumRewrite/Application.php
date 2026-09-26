@@ -867,6 +867,7 @@ final class Application
             $this->llmExchangeRecorder(...),
             $this->viewerCanInspectLlmExchanges(...),
             $this->fetchLlmExchangesForPosts(...),
+            $this->routeServices()->latestFastScoreForPost(...),
         );
     }
 

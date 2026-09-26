@@ -187,6 +187,30 @@ final class RouteServices
         (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'fast-score-sweep');
     }
 
+    /** @param array<string, mixed> $post @return array<string, mixed>|null */
+    public function latestFastScoreForPost(array $post): ?array
+    {
+        $postId = trim((string) ($post['post_id'] ?? ''));
+        if ($postId === '') {
+            return null;
+        }
+
+        $scorePath = FastScoreDatabaseConfig::path($this->projectRoot, PrivateConfig::load($this->projectRoot));
+        if (!is_file($scorePath)) {
+            return null;
+        }
+
+        try {
+            $context = (new FastScoreContextFactory(static fn (string $_): ?array => null))->forPost($post);
+            return (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->latestScoredForPostContent(
+                $postId,
+                (string) $context['content_hash'],
+            );
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     /**
      * @param array<string, mixed> $query
      * @return array<string, mixed>

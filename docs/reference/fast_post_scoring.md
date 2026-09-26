@@ -57,6 +57,8 @@ one deliberate provider request without creating a score row or corpus sweep.
 `prune` removes fast-score rows and `fast_post_score` exchange records older
 than one year by default.
 
-Model exchanges use the existing private LLM-exchanges audit surface. Scores
-are not published on post cards and do not make a reader-facing or automated
-moderation decision.
+Model exchanges use the existing private LLM-exchanges audit surface. A scored
+result is shown as a fractional fast-moderation score on its public
+`/posts/{id}` detail page; the page reads it from the private score database
+while rendering. Scores are not added to thread cards, APIs, canonical records,
+or the read model, and do not make an automated moderation decision.
