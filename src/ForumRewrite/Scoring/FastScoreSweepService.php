@@ -13,7 +13,7 @@ final class FastScoreSweepService
         private readonly PDO $pdo,
         private readonly FastScoreContextFactory $contextFactory,
         private readonly FastScoreWorkflowService $workflow,
-        private readonly FastScoreStore $scoreStore,
+        private readonly SqliteFastScoreStore $scoreStore,
         private readonly string $rubricRevision,
     ) {
         $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
@@ -31,49 +31,38 @@ final class FastScoreSweepService
             throw new \InvalidArgumentException('Fast score sweep post limit must be at least 1.');
         }
 
-        $candidates = [];
-        foreach ($this->postsInStableOrder() as $post) {
-            $context = $this->contextFactory->forPost($post);
-            if ($this->scoreStore->find(
-                (string) $context['post_id'],
-                (string) $context['content_hash'],
-                $this->rubricRevision,
-            ) !== null) {
-                continue;
-            }
-
-            $candidates[] = [$post, $context];
-        }
-
         $summary = [
             'processed' => 0,
             'scored' => 0,
             'excluded' => 0,
             'failed' => 0,
-            'remaining' => count($candidates) > $postLimit,
+            'remaining' => false,
         ];
 
-        foreach (array_slice($candidates, 0, $postLimit) as [$post, $context]) {
+        foreach ($this->scoreStore->claimPendingWork($postLimit) as $work) {
             $summary['processed']++;
-
+            $post = $this->post((string) $work['post_id']);
             try {
-                $result = $this->workflow->scorePost($post);
+                if ($post === null) {
+                    $result = FastScoreResult::excluded(['post_unavailable']);
+                } else {
+                    $context = $this->contextFactory->forPost($post);
+                    $result = (string) $context['content_hash'] === (string) $work['content_hash']
+                        ? $this->workflow->scorePost($post)
+                        : FastScoreResult::excluded(['content_changed_before_score']);
+                }
             } catch (Throwable $error) {
                 $result = [
                     'status' => 'provider_error',
                     'probability' => null,
                     'source' => 'none',
                     'signals' => ['provider_exception'],
-                    'failure_message' => $error->getMessage(),
+                    'failure_message' => 'Unexpected scoring worker error.',
+                    'failure_code' => 'worker_error',
                 ];
             }
 
-            $this->scoreStore->save(
-                (string) $context['post_id'],
-                (string) $context['content_hash'],
-                $this->rubricRevision,
-                $result,
-            );
+            $this->scoreStore->completeWork($work, $result);
 
             if ($result['status'] === 'scored') {
                 $summary['scored']++;
@@ -84,21 +73,17 @@ final class FastScoreSweepService
             }
         }
 
+        $summary['remaining'] = $this->scoreStore->hasOutstandingWork();
+
         return $summary;
     }
 
-    /** @return list<array<string, mixed>> */
-    private function postsInStableOrder(): array
+    /** @return array<string, mixed>|null */
+    private function post(string $postId): ?array
     {
-        $statement = $this->pdo->query(
-            "SELECT post_id, thread_id, parent_id, subject, body\n"
-            . "FROM posts\n"
-            . "WHERE TRIM(COALESCE(subject, '') || COALESCE(body, '')) <> ''\n"
-            . 'ORDER BY sequence_number ASC, post_id ASC'
-        );
-
-        /** @var list<array<string, mixed>> $posts */
-        $posts = $statement->fetchAll();
-        return $posts;
+        $statement = $this->pdo->prepare('SELECT post_id, thread_id, parent_id, subject, body FROM posts WHERE post_id = :post_id');
+        $statement->execute(['post_id' => $postId]);
+        $post = $statement->fetch();
+        return $post === false ? null : $post;
     }
 }

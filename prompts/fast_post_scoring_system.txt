@@ -1,3 +1,25 @@
-Apply this deployment's configured scoring rubric to the supplied post context.
-Return only the probability that the rubric is true, where 0 means certainly false and 1 means certainly true.
-Do not provide a reason, label, summary, or any other field.
+Assess whether the supplied forum post or comment should be held for human
+moderation before it is publicly visible.
+
+Return `probability` as the probability that the content should be held:
+
+- `0` means the content should confidently be allowed to remain public.
+- `1` means the content should confidently be held for human moderation.
+
+Assign a higher probability when the content itself contains or credibly
+facilitates any of the following: credible threats or targeted harassment;
+hate, dehumanization, or slurs directed at a protected group; sexual
+exploitation or any sexual content involving a minor; doxxing or non-public
+personal information; instructions or encouragement for self-harm, violence,
+or serious wrongdoing; scams, phishing, malware, or spam; or clearly graphic
+sexual or violent material that is unsuitable for the forum's public surface.
+
+Do not hold content merely because it is critical, political, profane,
+unpopular, emotionally charged, or discusses a sensitive subject. Consider
+quotation, reporting, rebuttal, satire, and educational context. When context
+makes a potential violation ambiguous, prefer a middle probability rather than
+assuming a violation. This score requests human review; it is not a final
+moderation decision.
+
+Return only a JSON object matching the requested schema. Do not provide a
+reason, label, summary, or any additional fields.

@@ -23,6 +23,9 @@ final class FastScoreSweepServiceTest
         $this->insertPost($pdo, 'other', 'other', null, '', 'Other text', 3);
         $provider = new SweepFakeProvider();
         $service = $this->service($pdo, $provider, 'rubric-a');
+        $this->enqueue($pdo, 'root', 'rubric-a');
+        $this->enqueue($pdo, 'reply', 'rubric-a');
+        $this->enqueue($pdo, 'other', 'rubric-a');
 
         $first = $service->run(2);
         $second = $service->run(2);
@@ -40,12 +43,13 @@ final class FastScoreSweepServiceTest
         $pdo = $this->postsDatabase();
         $this->insertPost($pdo, 'post', 'post', null, '', 'Original', 1);
         $provider = new SweepFakeProvider();
+        $this->enqueue($pdo, 'post', 'rubric-a');
         $this->service($pdo, $provider, 'rubric-a')->run(10);
         $pdo->exec("UPDATE posts SET body = 'Edited' WHERE post_id = 'post'");
         $this->service($pdo, $provider, 'rubric-a')->run(10);
         $this->service($pdo, $provider, 'rubric-b')->run(10);
 
-        assertSame(['post', 'post', 'post'], $provider->postIds);
+        assertSame(['post'], $provider->postIds);
     }
 
     public function testRecordsIndividualProviderFailuresAndContinuesTheBatch(): void
@@ -55,10 +59,12 @@ final class FastScoreSweepServiceTest
         $this->insertPost($pdo, 'good', 'good', null, '', 'Good', 2);
         $provider = new SweepFakeProvider(['bad']);
         $service = $this->service($pdo, $provider, 'rubric-a');
+        $this->enqueue($pdo, 'bad', 'rubric-a');
+        $this->enqueue($pdo, 'good', 'rubric-a');
 
         $summary = $service->run(10);
 
-        assertSame(['processed' => 2, 'scored' => 1, 'excluded' => 0, 'failed' => 1, 'remaining' => false], $summary);
+        assertSame(['processed' => 2, 'scored' => 1, 'excluded' => 0, 'failed' => 1, 'remaining' => true], $summary);
         assertSame(['bad', 'good'], $provider->postIds);
     }
 
@@ -99,6 +105,20 @@ final class FastScoreSweepServiceTest
             'body' => $body,
             'sequence_number' => $sequenceNumber,
         ]);
+    }
+
+    private function enqueue(PDO $pdo, string $postId, string $rubricRevision): void
+    {
+        $fetchPost = static function (string $id) use ($pdo): ?array {
+            $statement = $pdo->prepare('SELECT post_id, thread_id, parent_id, subject, body FROM posts WHERE post_id = :post_id');
+            $statement->execute(['post_id' => $id]);
+            $post = $statement->fetch();
+            return $post === false ? null : $post;
+        };
+        $post = $fetchPost($postId);
+        assertTrue($post !== null);
+        $context = (new FastScoreContextFactory($fetchPost))->forPost($post);
+        (new SqliteFastScoreStore($pdo))->enqueueWork($postId, (string) $context['content_hash'], $rubricRevision);
     }
 }
 

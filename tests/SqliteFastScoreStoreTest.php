@@ -23,4 +23,17 @@ final class SqliteFastScoreStoreTest
         assertSame(null, $saved['probability']);
         assertSame(['empty_post'], $saved['signals']);
     }
+
+    public function testPrivateWorkIsClaimedWithoutCreatingHistoricalWork(): void
+    {
+        $store = new SqliteFastScoreStore(new PDO('sqlite::memory:'));
+        $store->save('historical', 'old-content', 'rubric-a', ['status' => 'scored', 'probability' => 0.2, 'source' => 'llm', 'signals' => []]);
+        $store->enqueueWork('new-post', 'new-content', 'rubric-a');
+
+        $claimed = $store->claimPendingWork(10);
+
+        assertSame(1, count($claimed));
+        assertSame('new-post', $claimed[0]['post_id']);
+        assertSame(1, $claimed[0]['attempt_count']);
+    }
 }
