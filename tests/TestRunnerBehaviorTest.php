@@ -14,7 +14,7 @@ final class TestRunnerBehaviorTest
         );
 
         assertSame(0, $exitCode);
-        assertStringContains('All tests passed.', $stdout);
+        assertStringContains('Summary: 1 run, 1 passed, 0 failed', $stdout);
         assertStringContains('Tests at or above 0.00 seconds:', $stdout);
         assertStringContains('AgentReplyCommandTest::testAgentReplyLiveTestHelpDescribesProviderCheck', $stdout);
         assertStringContains(' ms ', $stdout);
@@ -29,7 +29,7 @@ final class TestRunnerBehaviorTest
         );
 
         assertSame(0, $exitCode);
-        assertStringContains('All tests passed.', $stdout);
+        assertStringContains('Summary: 1 run, 1 passed, 0 failed', $stdout);
         assertStringNotContains('Tests at or above', $stdout);
         assertStringNotContains(' ms ', $stdout);
         assertSame('', $stderr);
