@@ -67,4 +67,16 @@ final class SqliteFastScoreStoreTest
         assertSame(0, $retried['attempt_count']);
         assertSame('invalidated', $invalidated['state']);
     }
+
+    public function testRecentWorkIncludesThePrivateScoreProbability(): void
+    {
+        $store = new SqliteFastScoreStore(new PDO('sqlite::memory:'));
+        $store->enqueueWork('post-1', 'content-a', 'rubric-a');
+        $store->save('post-1', 'content-a', 'rubric-a', ['status' => 'scored', 'probability' => 0.0, 'source' => 'llm', 'signals' => []]);
+
+        $recent = $store->recentWork();
+
+        assertSame(0.0, $recent[0]['probability']);
+        assertSame('llm', $recent[0]['source']);
+    }
 }

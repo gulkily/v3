@@ -46,7 +46,8 @@ try {
             fwrite(STDOUT, sprintf("Last failure: post=%s code=%s message=%s updated=%s\n", $lastFailure['post_id'], $lastFailure['failure_code'], $lastFailure['failure_message'], $lastFailure['updated_at']));
         }
         foreach ($store->recentWork((int) ($options['limit'] ?? 10)) as $work) {
-            fwrite(STDOUT, sprintf("Work post=%s state=%s attempts=%d failure=%s updated=%s\n", $work['post_id'], $work['state'], $work['attempt_count'], $work['failure_category'] ?? 'none', $work['updated_at']));
+            $probability = $work['probability'] === null ? 'none' : (string) $work['probability'];
+            fwrite(STDOUT, sprintf("Work post=%s state=%s probability=%s source=%s attempts=%d failure=%s content_hash=%s rubric_revision=%s updated=%s\n", $work['post_id'], $work['state'], $probability, $work['source'] ?? 'none', $work['attempt_count'], $work['failure_category'] ?? 'none', $work['content_hash'], $work['rubric_revision'], $work['updated_at']));
         }
         exit(0);
     }

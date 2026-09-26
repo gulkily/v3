@@ -198,7 +198,16 @@ final class SqliteFastScoreStore implements FastScoreStore
     /** @return list<array<string, mixed>> */
     public function recentWork(int $limit = 25): array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM fast_score_work ORDER BY updated_at DESC, rowid DESC LIMIT :limit');
+        $stmt = $this->pdo->prepare(
+            'SELECT work.*, score.status AS score_status, score.probability AS probability, score.source AS source
+             FROM fast_score_work AS work
+             LEFT JOIN post_fast_scores AS score
+               ON score.post_id = work.post_id
+              AND score.content_hash = work.content_hash
+              AND score.rubric_revision = work.rubric_revision
+             ORDER BY work.updated_at DESC, work.rowid DESC
+             LIMIT :limit'
+        );
         $stmt->bindValue(':limit', max(1, min(200, $limit)), PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll();

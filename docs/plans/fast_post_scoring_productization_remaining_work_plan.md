@@ -90,6 +90,8 @@ records remain private. The task-queue regression test covers feature-flag
 evaluation inside the fast-score worker closure. Provider responses have a
 1024-token structured-output budget, and successful calls produce one completed
 exchange audit record rather than a false transport-error companion.
+Operator status lines include the private probability, source, content hash,
+and rubric revision needed to inspect or retry a specific work item.
 
 ### 2. Implement bounded retry and failure semantics
 
