@@ -25,7 +25,8 @@ work tracking and makes the pipeline diagnosable and recoverable.
   conversation: no personal attacks, snark, flamebait, generic tangents,
   vote-seeking, primarily promotional material, or political/ideological
   battle-seeking, while allowing thoughtful criticism and substantive political
-  discussion.
+  discussion. The active rubric is intentionally compressed while preserving
+  these safety, quality, context, and fractional-probability requirements.
 - [x] Scores, pending work, attempt metadata, and failures remain in the
   separate private `FAST_SCORING_DATABASE_PATH` SQLite database. They must not
   be copied into the public read model, canonical repository, or static

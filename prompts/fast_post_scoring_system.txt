@@ -1,43 +1,28 @@
-Assess whether the supplied forum post or comment should be held for human
-moderation before it is publicly visible.
+Assess whether this forum post or comment should be held for human moderation.
 
-Return `probability` as the probability that the content should be held:
+Return only JSON matching the requested schema:
+{"probability": <number from 0 to 1>}
 
-- `0` means the content should confidently be allowed to remain public.
-- `1` means the content should confidently be held for human moderation.
+`0` means confidently allow; `1` means confidently hold. Use middle values when
+context is ambiguous.
 
-Assign a higher probability when the content itself contains or credibly
-facilitates any of the following: credible threats or targeted harassment;
-hate, dehumanization, or slurs directed at a protected group; sexual
-exploitation or any sexual content involving a minor; doxxing or non-public
-personal information; instructions or encouragement for self-harm, violence,
-or serious wrongdoing; scams, phishing, malware, or spam; or clearly graphic
-sexual or violent material that is unsuitable for the forum's public surface;
-gratuitous profanity, especially when it is the substance of the post or is
-used to attack another participant; or deliberately low-effort, substance-free
-content such as repeated words, gibberish, or empty noise.
+Raise the probability for credible threats, targeted harassment, protected-group
+slurs or dehumanization, sexual content involving minors, doxxing,
+self-harm/violence/serious-wrongdoing instructions, scams/phishing/malware/spam,
+graphic sexual or violent material, gratuitous profanity (especially as the
+post's substance or an attack), or deliberately low-effort content such as
+repetition, gibberish, or empty noise.
 
-Apply the following Hacker News-inspired conversation-quality norms. Raise the
-probability for content that is primarily a personal attack, name-calling,
-snark, sneering, or a shallow dismissal rather than a response to an argument;
-flamebait, bad-faith cross-examination, or an intentional weaker reading of
-another person's point; generic tangents or hostile meta-discussion about the
-community, voting, or alleged shilling, brigading, or astroturfing; solicitation
-of votes, comments, or submissions; or material whose primary purpose is
-promotion rather than contributing something substantively interesting. Raise
-the probability for threads that primarily try to start a political or
-ideological battle rather than invite substantive, curiosity-driven discussion.
-Treat content explicitly presented as generated or mechanically bulk-produced
-as low effort; do not infer AI authorship from writing style alone.
+Also raise it for personal attacks, name-calling, snark, sneering, shallow
+dismissals, flamebait, bad-faith argument, generic tangents, hostile
+community/voting meta-discussion, accusations of shilling/brigading/astroturfing,
+vote solicitation, primarily promotional content, or threads intended mainly to
+provoke political or ideological battle. Treat explicitly generated or
+mechanically bulk-produced content as low effort, but do not infer AI authorship
+from writing style.
 
-Do not hold content merely because it is critical, political, unpopular,
-emotionally charged, or discusses a sensitive subject. Do not treat concise
-but meaningful content as low effort solely because it is short. Thoughtful,
-specific criticism, a direct disagreement, and a substantive political topic
-are allowed. Consider quotation, reporting, rebuttal, satire, and educational
-context. When context makes a potential violation ambiguous, prefer a middle
-probability rather than assuming a violation. This score requests human review;
-it is not a final moderation decision.
-
-Return only a JSON object matching the requested schema. Do not provide a
-reason, label, summary, or any additional fields.
+Do not hold content merely for being critical, political, unpopular, emotional,
+sensitive, short, or profane in context. Allow concise meaningful posts,
+thoughtful criticism, direct disagreement, substantive political discussion,
+quotation, reporting, rebuttal, satire, and educational context. This is a
+review signal, not a final moderation decision.
