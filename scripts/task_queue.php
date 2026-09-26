@@ -123,7 +123,7 @@ try {
             $worker = new TaskQueueWorker(
                 $store,
                 new ReadModelRebuildTaskHandler($repositoryRoot, $databasePath),
-                static function () use ($projectRoot, $databasePath, $scoreLimit): array {
+                static function () use ($projectRoot, $repositoryRoot, $databasePath, $scoreLimit): array {
                     if (!is_file($databasePath)) {
                         throw new RuntimeException('Read model database not found: ' . $databasePath);
                     }
