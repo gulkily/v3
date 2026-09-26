@@ -40,7 +40,7 @@ work tracking and makes the pipeline diagnosable and recoverable.
   records for one year. Provide a dedicated `./v3 fast-score prune` command,
   suitable for scheduled operation, to remove records older than that period.
 - [x] Use the same configured LLM provider as the application's other LLM
-  calls. Reuse the shared provider-failure categorization, redaction, and
+  calls; only the model may be overridden for lower-cost scoring. Reuse the shared provider-failure categorization, redaction, and
   reporting conventions; the scoring-specific three-total-attempt cap remains
   the additional cost control for this workflow.
 

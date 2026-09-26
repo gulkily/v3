@@ -5,8 +5,8 @@ Fast post scoring provides one focused 0–1 probability without running full po
 ## Configuration
 
 Set `FAST_SCORING_ENABLED` and `FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED` to
-`true`. The scorer uses the normal `LLM_*` provider settings unless a
-documented `FAST_SCORING_LLM_*` override is present.
+`true`. The scorer always uses the normal `LLM_*` provider settings. It may use
+`FAST_SCORING_LLM_MODEL` to select a lower-cost model from that same provider.
 
 `FAST_SCORING_PROMPT_PATH` selects the rubric prompt. Its text must define exactly what probability 0 and 1 mean. The model receives the target post text; replies additionally receive bounded parent and root context. It returns only a numeric `probability` value.
 
