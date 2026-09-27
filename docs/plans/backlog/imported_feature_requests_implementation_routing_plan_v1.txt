@@ -1,0 +1,187 @@
+# Imported Feature Requests Implementation Routing Plan V1
+
+Date: 2026-08-26
+Branch reviewed: backlog/plans-2026-08-26
+
+## Reviewed Inputs
+
+- related_feature_requests.txt
+- todo.txt, with secret-looking material intentionally not copied here
+- docs/plans/imported_feature_requests_summary_v1.md
+- docs/plans/perceived_responsiveness_related_requests_plan_v1.md
+- docs/plans/production_instant_busy_page_simple_plan_v1.md
+- docs/plans/new_thread_board_stall_investigation_v1.md
+- docs/plans/production_slow_actions_slice5_optimistic_approval_pending_plan_v1.md
+- docs/plans/agent_reply_manual_trigger_and_cron_plan_v1.md
+- docs/plans/anonymous_reply_vouching_options_plan_v1.md
+- docs/plans/site_text_search_step1_solution_assessment.md
+- docs/plans/user_specific_archives_step1_solution_assessment.md
+- docs/plans/browser_private_key_restore_step1_solution_assessment.md
+- docs/fdp/FEATURE_DEVELOPMENT_PROCESS.md
+
+## Routing Rule
+
+Use one-shot implementation for work that is operational, diagnostic, already
+specified narrowly, or isolated to one small code path with clear verification.
+
+Use docs/fdp/FEATURE_DEVELOPMENT_PROCESS.md when the work changes product
+semantics, crosses multiple ownership boundaries, needs explicit user approval,
+adds new canonical/read-model contracts, or has open design questions.
+
+## P0: Do First
+
+1. Secret hygiene from todo.txt
+   - Route: one-shot operational cleanup.
+   - Why: imported notes indicate live-looking provider keys in todo.txt.
+   - Plan: remove secrets from tracked notes, rotate exposed keys outside this
+     repo, and keep only non-secret feature-request text.
+   - Verification: search tracked files for known key prefixes and confirm no
+     secret values remain. Do not paste secrets into docs, commits, or logs.
+
+2. Fail-fast production busy page
+   - Route: one-shot production config.
+   - Source: docs/plans/production_instant_busy_page_simple_plan_v1.md.
+   - Plan: set FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS=0 in production, reload the
+     runtime, hold the lock with flock, and verify a contending dynamic request
+     returns the existing HTTP 503 busy page immediately.
+   - Escalate to FDP only if this requires changing the global locking contract.
+
+3. CSS and recursive asset-fingerprint hygiene
+   - Route: one-shot code fix plus cleanup script/guidance.
+   - Why: no literal "no css loaded yet" string exists in current PHP templates,
+     but public/assets contains recursively fingerprinted files, and
+     AssetFingerprint::copyFingerprintedAssets() will fingerprint already
+     fingerprinted asset names.
+   - Plan: make copied asset discovery ignore already fingerprinted filenames,
+     clean duplicate generated assets after confirming source/generated
+     boundaries, and add smoke coverage that rendered CSS resolves and asset
+     filenames contain only one hash segment.
+   - Verification: php tests/run.php plus focused asset fingerprint tests.
+   - Escalate to FDP only if the fix expands into service-worker/PWA caching.
+
+4. Confirm automatic agent work is disabled where intended
+   - Route: one-shot production verification.
+   - Why: the imported stall investigation found a real boolean parsing bug; the
+     current code handles PHP booleans, but production must be on the fixed build.
+   - Plan: verify private config/environment values, confirm new post pages no
+     longer render automatic data-agent-reply-work when disabled, and use browser
+     Network timing to identify any remaining 5-15 second request.
+   - Escalate to FDP only if the remaining fix changes async agent-reply product
+     behavior beyond the already implemented request/worker path.
+
+## P1: One-Shot Feature Slices
+
+5. Optimistic pending-user approval
+   - Route: one-shot implementation.
+   - Source: docs/plans/production_slow_actions_slice5_optimistic_approval_pending_plan_v1.md.
+   - Plan: implement reversible optimistic removal in public/assets/pending_approvals.js,
+     suppress duplicate requests per profile slug, rollback on API failure, and
+     keep server approval semantics unchanged.
+   - Verification: node --check public/assets/pending_approvals.js and focused
+     JS/smoke tests proving before-fetch removal, success, failure rollback, last
+     row empty-state behavior, duplicate suppression, and retry.
+   - Reason not FDP: the imported plan already gives clear slices, has no schema
+     changes, and is limited to one browser behavior plus tests.
+
+6. Codebase searchability requests from todo.txt
+   - Route: one-shot code/readability cleanup.
+   - Plan: make $toolNavOptions traceable to its defining renderer/helper, and
+     make function definitions searchable without ambiguous matches where the
+     current formatting or generated artifacts obscure results.
+   - Verification: targeted rg checks for the requested search strings, plus PHP
+     lint/tests for touched files.
+   - Note: do this after asset cleanup so recursive generated files stop flooding
+     code searches.
+
+7. Post reply slow-path verification
+   - Route: one-shot diagnostic/deploy verification first.
+   - Why: docs/plans/production_slow_actions_slice3_optimistic_reply_submit_plan_v1.md
+     says inline signed reply optimism is already implemented.
+   - Plan: verify production includes that implementation, measure
+     click-to-pending-card separately from identity setup and server response,
+     and inspect Server-Timing on /api/create_reply.
+   - Escalate to FDP if the requested fix becomes optimistic anonymous replies,
+     standalone /compose/reply reconciliation, or no-navigation success handling.
+
+## P2: FDP Features
+
+8. Perceived responsiveness, menubar speed, and read-mostly PWA
+   - Route: FDP, complex workflow.
+   - Starting point: use docs/plans/perceived_responsiveness_related_requests_plan_v1.md
+     as Step 1 input, then create FDP-named artifacts:
+     docs/plans/perceived_responsiveness_pwa_step1_solution_assessment.md,
+     step2_feature_description.md, and step3_development_plan.md.
+   - Why FDP: combines timing, cache policy, static artifacts, service worker,
+     offline semantics, browser support, and privacy-sensitive route exclusions.
+   - First FDP scope: CSS/asset hygiene must already be handled; PWA V1 should be
+     read-mostly only, with online-only canonical writes and draft preservation.
+
+9. Anonymous reply vouching
+   - Route: FDP.
+   - Starting point: convert docs/plans/anonymous_reply_vouching_options_plan_v1.md
+     into anonymous_reply_vouching_step1_solution_assessment.md or treat it as
+     approved Step 1 only after user review.
+   - Why FDP: adds or extends canonical post-reaction semantics, read-model
+     derivation, authorization, UI labels, and trust-language policy.
+   - First FDP decision: whether V1 vouches apply only to anonymous replies or
+     also anonymous thread roots, and whether counts or voucher names are shown.
+
+10. Site text search
+    - Route: continue FDP from existing Step 1.
+    - Existing artifact: docs/plans/site_text_search_step1_solution_assessment.md.
+    - Next action: request "Approved Step 1" if the recommendation is accepted,
+      then write site_text_search_step2_feature_description.md.
+    - Why FDP: public search behavior, ranking expectations, result templates,
+      and future FTS compatibility need product acceptance before implementation.
+
+11. User-specific archives
+    - Route: continue FDP from existing Step 1.
+    - Existing artifact: docs/plans/user_specific_archives_step1_solution_assessment.md.
+    - Next action: request "Approved Step 1" if the request/cache boundary is
+      accepted, then write user_specific_archives_step2_feature_description.md.
+    - Why FDP: archive scope, throttling, cache freshness, storage cleanup, and
+      abuse resistance need explicit approval.
+
+12. Browser private key restore
+    - Route: continue FDP from existing Step 1.
+    - Existing artifact: docs/plans/browser_private_key_restore_step1_solution_assessment.md.
+    - Next action: request "Approved Step 1" if local-only raw private-key import
+      is accepted, then write browser_private_key_restore_step2_feature_description.md.
+    - Why FDP: touches key material UX and browser identity recovery, even though
+      the recommended implementation keeps private keys client-side.
+
+13. Agent reply manual controls and cron gap closure
+    - Route: one-shot gap audit, then FDP only for remaining product changes.
+    - Current code already has automatic-agent-reply config, approved-viewer
+      request recording, request buttons, and scripts/run_agent_reply_requests.php
+      from the agent_reply_request_button FDP sequence.
+    - Known gap versus imported plan: there is no separate
+      DEDALUS_AGENT_REPLIES_MANUAL_ENABLED helper in current code.
+    - Plan: audit current behavior against
+      docs/plans/agent_reply_manual_trigger_and_cron_plan_v1.md. If the only
+      remaining work is a narrow manual-enabled config flag and docs/tests, do it
+      one-shot. If manual operator roles, force-publish, retry/reset policy, or
+      broader UI placement changes are desired, restart through FDP Step 2/3.
+
+## Recommended Execution Order
+
+1. P0 secret hygiene.
+2. P0 fail-fast busy-page production config.
+3. P0 CSS/asset fingerprint one-shot.
+4. P0 agent automatic-disable production verification.
+5. P1 pending approval optimism.
+6. P1 searchability cleanup.
+7. P1 post-reply production timing verification.
+8. FDP perceived responsiveness/PWA.
+9. FDP site text search.
+10. FDP browser private key restore.
+11. FDP anonymous reply vouching.
+12. FDP user-specific archives.
+13. Agent reply manual-controls gap work after the audit decides one-shot versus FDP.
+
+## FDP Approval Reminder
+
+For any item routed to FDP, follow docs/fdp/FEATURE_DEVELOPMENT_PROCESS.md:
+read and reprint the current step instructions, create one planning artifact per
+step under docs/plans/, stop for "Approved Step N" before advancing, and do not
+start Step 4 implementation until Step 3 is explicitly approved.

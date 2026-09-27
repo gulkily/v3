@@ -25,7 +25,7 @@ final class PrivateSiteAuthTest
         return json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
     }
 
-    public function testApprovedIdentityCompletesChallengeAndRedirects(): void
+    public function testApprovedIdentityCompletesChallengeAndReloadsWhenNoDestinationIsRequested(): void
     {
         $script = <<<'NODE'
 const fs = require('fs');
@@ -35,6 +35,7 @@ const fingerprint = '0123456789abcdef0123456789abcdef01234567';
 const fetches = [];
 let ensureArguments = null;
 let assignedUrl = '';
+let reloadCount = 0;
 const status = { hidden: true, textContent: '', dataset: {} };
 const state = { dataset: { authenticatedIdentityId: '' } };
 const storage = {
@@ -57,7 +58,7 @@ global.window = {
   },
   location: {
     assign(url) { assignedUrl = url; },
-    reload() { throw new Error('approved viewer must not reload'); }
+    reload() { reloadCount += 1; }
   }
 };
 global.document = {
@@ -90,6 +91,7 @@ window.PrivateSiteAuth.authenticate()
       ensureRootWasNull: ensureArguments[0] === null,
       verifyPublishedIdentity: ensureArguments[2].verifyPublishedIdentity,
       assignedUrl,
+      reloadCount,
       status
     }));
   })
@@ -107,7 +109,8 @@ NODE;
         assertSame('/api/auth_challenge', $result['fetches'][0]['url']);
         assertSame('/api/authenticate_identity', $result['fetches'][1]['url']);
         assertStringContains('identity_id=openpgp%3A0123456789abcdef0123456789abcdef01234567', $result['fetches'][1]['body']);
-        assertSame('/', $result['assignedUrl']);
+        assertSame('', $result['assignedUrl']);
+        assertSame(1, $result['reloadCount']);
         assertSame('Identity verified. Entering the site...', $result['status']['textContent']);
     }
 
@@ -285,6 +288,7 @@ const fetches = [];
 let challengeCalls = 0;
 let authenticationCalls = 0;
 let assignedUrl = '';
+let reloadCount = 0;
 const status = { hidden: true, textContent: '', dataset: {} };
 
 global.window = {
@@ -306,7 +310,7 @@ global.window = {
   },
   location: {
     assign(url) { assignedUrl = url; },
-    reload() { throw new Error('approved viewer must not reload'); }
+    reload() { reloadCount += 1; }
   }
 };
 global.document = {
@@ -334,7 +338,7 @@ global.fetch = async function(url) {
 
 vm.runInThisContext(source);
 window.PrivateSiteAuth.authenticate()
-  .then((result) => process.stdout.write(JSON.stringify({ result, fetches, assignedUrl, status })))
+  .then((result) => process.stdout.write(JSON.stringify({ result, fetches, assignedUrl, reloadCount, status })))
   .catch((error) => {
     process.stderr.write(error.stack || String(error));
     process.exit(1);
@@ -350,6 +354,7 @@ NODE;
             '/api/auth_challenge',
             '/api/authenticate_identity',
         ], $result['fetches']);
-        assertSame('/', $result['assignedUrl']);
+        assertSame('', $result['assignedUrl']);
+        assertSame(1, $result['reloadCount']);
     }
 }
