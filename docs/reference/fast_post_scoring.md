@@ -1,6 +1,8 @@
-# Fast Post Scoring
+# Fastmod
 
-Fast post scoring provides one focused 0–1 probability without running full post analysis. It is disabled by default and is intended for approved operators or internal workflows.
+Fastmod provides one focused 0–1 moderation probability without running full
+post analysis. It is disabled by default and is intended for approved operators
+or internal workflows.
 
 ## Configuration
 
@@ -18,7 +20,7 @@ scored again.
 
 ## Batch scoring
 
-Only newly published posts create private score work. The worker never scans or
+Only newly published posts create private Fastmod work. The worker never scans or
 backfills the existing corpus. It processes that work through the existing task
 queue without making the publishing request wait for the provider:
 
@@ -54,7 +56,7 @@ private worker pipeline.
 `retry` and `invalidate` require an explicit post ID, content hash, and rubric
 revision; they do not support historical backfill. `smoke --post-id=...` makes
 one deliberate provider request without creating a score row or corpus sweep.
-`prune` removes fast-score rows and `fast_post_score` exchange records older
+`prune` removes Fastmod rows and `fast_post_score` exchange records older
 than one year by default.
 
 Model exchanges use the existing private LLM-exchanges audit surface. A scored
