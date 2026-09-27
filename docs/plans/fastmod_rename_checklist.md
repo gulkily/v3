@@ -10,7 +10,7 @@ storage tables.
 ## Public product copy
 
 - [x] Show `Fastmod` beside the fractional score on `/posts/{id}`.
-- [ ] Rename the README feature link and description to Fastmod.
+- [x] Rename the README feature link and description to Fastmod.
 - [ ] Rename the Fast Post Scoring reference document's title and prose to
   Fastmod, preserving literal command and configuration names.
 - [ ] Update the active productization plan and `todo.txt` to call the feature
