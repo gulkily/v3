@@ -76,7 +76,7 @@ The web user must be able to write:
 - `state/private/agent-reply/` under the application root if agent reply fulfillment is enabled
 - the parent directory of `LLM_EXCHANGE_DATABASE_PATH` if LLM conversation recording is enabled
 - the parent directory of `FORUM_TASK_QUEUE_DATABASE_PATH` when the internal task queue is enabled
-- the parent directory of `FAST_SCORING_DATABASE_PATH` when fast-score sweeps are enabled
+- the parent directory of `FAST_SCORING_DATABASE_PATH` when Fastmod sweeps are enabled
 Static HTML is derived state. A write removes the `current` release pointer, so
 subsequent public requests use PHP until a fresh complete release is published.
 Old release directories are retained and are never edited in place.

@@ -63,7 +63,7 @@ read-model table counts (posts, threads, profiles, activity).
 ```
 
 A small SQLite-backed job queue (`scripts/task_queue.php`), currently used to
-serialize read-model rebuild requests and fast-score sweeps so concurrent
+serialize read-model rebuild requests and Fastmod sweeps so concurrent
 triggers coalesce into one job instead of racing. `docs/runbooks/production_deploy.md` and
 `docs/runbooks/operator_recovery.md` reference this command and depend on it
 being installed via cron.
@@ -71,16 +71,16 @@ being installed via cron.
 - `enqueue-rebuild` — enqueues a `read-model` rebuild task (a no-op if one is
   already queued/running); `--queue-database-path=...` overrides the default
   queue database location
-- `enqueue-fast-score` — enqueues the coalesced fast-post-score sweep (also a
+- `enqueue-fast-score` — enqueues the coalesced Fastmod sweep (also a
   no-op if one is already queued/running). It evaluates all nonempty posts over
-  successive bounded runs when fast scoring is enabled.
+  successive bounded runs when Fastmod is enabled.
 - `run` — claims and runs up to `--limit` queued tasks (default 1), recovering
   any abandoned in-progress tasks first; guarded by an exclusive file lock so
   concurrent invocations don't double-run. `--dry-run` reports the queued
   count without running anything; `--quiet` suppresses progress output;
   `--repository-root=...`/`--database-path=...` override the read model to
   rebuild against. `--score-limit=...` independently sets the maximum posts a
-  claimed fast-score sweep handles (default 25); `--limit=...` is only the
+  claimed Fastmod sweep handles (default 25); `--limit=...` is only the
   maximum queue tasks claimed.
 - `status` — prints queued/running/completed/failed counts plus the
   `--limit` (default 25) most recent tasks with attempt counts and failure

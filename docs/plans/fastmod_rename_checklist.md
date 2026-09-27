@@ -23,7 +23,7 @@ storage tables.
 - [x] Change task-queue progress output from `Fast-score` to `Fastmod` in
   `scripts/task_queue.php`.
 - [x] Change the retired score API's explanatory message to refer to Fastmod.
-- [ ] Update Fastmod prose in the CLI reference and operator/deployment
+- [x] Update Fastmod prose in the CLI reference and operator/deployment
   runbooks, preserving literal command and configuration names.
 
 ## Verification
