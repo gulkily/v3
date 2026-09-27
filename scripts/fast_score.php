@@ -6,6 +6,7 @@ require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
 use ForumRewrite\Llm\LlmExchangeRecorder;
+use ForumRewrite\Scoring\FastmodBackfillRequestService;
 use ForumRewrite\Scoring\FastmodCostEstimator;
 use ForumRewrite\Scoring\FastmodHistoricalAuditService;
 use ForumRewrite\Scoring\FastScoreContextFactory;
@@ -74,6 +75,44 @@ try {
         throw new RuntimeException('Fastmod database directory is not writable.');
     }
     $store = new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath));
+    if ($command === 'backfill') {
+        if (($options['include-existing'] ?? false) !== true || ($options['confirm'] ?? false) !== true) {
+            throw new InvalidArgumentException('--include-existing and --confirm are required for historical backfill.');
+        }
+        $maxPosts = fastmodPositiveIntegerOption($options, 'max-posts');
+        $maxCostUsd = fastmodNonNegativeNumberOption($options, 'max-cost-usd');
+        $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+        if (!is_file($databasePath)) {
+            throw new InvalidArgumentException('Read-model database not found.');
+        }
+        $config = FastScoringConfig::fromPrivateConfig($privateConfig);
+        $rubricRevision = FastScoringRubricRevision::fromConfig($config, $projectRoot);
+        $audit = (new FastmodHistoricalAuditService(new PDO('sqlite:' . $databasePath), $store, $rubricRevision))->audit();
+        [$inputUsdPerMillion, $outputUsdPerMillion] = fastmodPricing($privateConfig, $config->provider->model, $options);
+        $estimate = (new FastmodCostEstimator(
+            fastmodAuditExchangeDatabase(LlmExchangeDatabaseConfig::path($projectRoot, $privateConfig)),
+            $config->provider->model,
+            $inputUsdPerMillion,
+            $outputUsdPerMillion,
+        ))->estimate($audit);
+        $batch = (new FastmodBackfillRequestService($store))->create(
+            $audit,
+            $rubricRevision,
+            $maxPosts,
+            $maxCostUsd,
+            $estimate['estimated_cost_usd'] / max(1, $estimate['candidate_count']),
+        );
+        fwrite(STDOUT, sprintf(
+            "Fastmod backfill batch created: id=%d requested=%d queued=%d max_posts=%d max_cost_usd=%.6f\n",
+            $batch['id'],
+            $batch['requested_count'],
+            $batch['queued_count'],
+            $batch['max_posts'],
+            $batch['max_cost_usd'],
+        ));
+        fwrite(STDOUT, "The batch is private and deliberately isolated from ordinary new-post sweeps until its bounded worker support is enabled.\n");
+        exit(0);
+    }
     if ($command === 'status') {
         $config = FastScoringConfig::fromPrivateConfig($privateConfig);
         $queuePath = TaskQueueDatabaseConfig::path($projectRoot, $options['queue-database-path'] ?? null);
@@ -209,7 +248,27 @@ function fastScoreRecorder(string $projectRoot, string $repositoryRoot, array $p
 
 function fastScoreUsage($stream): void
 {
-    fwrite($stream, "Usage:\n  php scripts/fast_score.php status [--limit=10] [--queue-database-path=/private/tasks.sqlite3]\n  php scripts/fast_score.php audit --include-existing [--database-path=/path/read-model.sqlite3] [--input-usd-per-million=N --output-usd-per-million=N]\n  php scripts/fast_score.php retry --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php invalidate --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php smoke --post-id=... [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php prune [--before=ISO-8601]\n");
+    fwrite($stream, "Usage:\n  php scripts/fast_score.php status [--limit=10] [--queue-database-path=/private/tasks.sqlite3]\n  php scripts/fast_score.php audit --include-existing [--database-path=/path/read-model.sqlite3] [--input-usd-per-million=N --output-usd-per-million=N]\n  php scripts/fast_score.php backfill --include-existing --confirm --max-posts=N --max-cost-usd=N [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php retry --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php invalidate --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php smoke --post-id=... [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php prune [--before=ISO-8601]\n");
+}
+
+/** @param array<string, string|bool> $options */
+function fastmodPositiveIntegerOption(array $options, string $name): int
+{
+    $value = $options[$name] ?? null;
+    if (!is_string($value) || !ctype_digit($value) || (int) $value < 1) {
+        throw new InvalidArgumentException('--' . $name . ' must be a positive integer.');
+    }
+    return (int) $value;
+}
+
+/** @param array<string, string|bool> $options */
+function fastmodNonNegativeNumberOption(array $options, string $name): float
+{
+    $value = $options[$name] ?? null;
+    if (!is_string($value) || !is_numeric($value) || (float) $value < 0) {
+        throw new InvalidArgumentException('--' . $name . ' must be a non-negative number.');
+    }
+    return (float) $value;
 }
 
 function fastmodAuditScoreStore(string $scorePath): SqliteFastScoreStore

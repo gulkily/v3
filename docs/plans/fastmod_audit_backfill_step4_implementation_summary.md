@@ -29,3 +29,14 @@
 - Notes:
   - The audit only opens existing private databases and uses in-memory empty
     stores when no score or exchange database exists.
+
+## Stage 4 - Bounded private backfill request
+
+- Changes:
+  - Added a migration-backed private backfill batch and work-provenance snapshot.
+  - Added a confirmed `fast-score backfill` request with post and estimated-cost bounds.
+  - Isolated backfill work from ordinary new-post sweeps pending bounded worker processing.
+- Verification:
+  - `php tests/run.php FastmodBackfillRequestServiceTest`
+- Notes:
+  - A request persists authorization only; Stage 5 enables provider processing.
