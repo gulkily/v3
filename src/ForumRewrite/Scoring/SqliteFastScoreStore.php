@@ -78,6 +78,15 @@ final class SqliteFastScoreStore implements FastScoreStore
         return $this->requiredWork($postId, $contentHash, $rubricRevision);
     }
 
+    /** @return array<string, mixed>|null */
+    public function findWork(string $postId, string $contentHash, string $rubricRevision): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM fast_score_work WHERE post_id = :post_id AND content_hash = :content_hash AND rubric_revision = :rubric_revision');
+        $stmt->execute(['post_id' => $postId, 'content_hash' => $contentHash, 'rubric_revision' => $rubricRevision]);
+        $work = $stmt->fetch();
+        return $work === false ? null : $work;
+    }
+
     /** @return list<array<string, mixed>> */
     public function claimPendingWork(int $limit): array
     {
