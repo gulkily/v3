@@ -1,8 +1,8 @@
-# Fast Post Scoring Productization - Remaining Work Plan
+# Fastmod Productization - Remaining Work Plan
 
 ## Purpose
 
-Fast scoring is a private moderation-review signal. It estimates whether a new
+Fastmod is a private moderation-review signal. It estimates whether a new
 post or comment warrants being held for human moderation. It runs
 asynchronously after publication, so it does not gate current public
 visibility; it is not a reader-facing reputation signal, a public ranking
@@ -49,7 +49,7 @@ work tracking and makes the pipeline diagnosable and recoverable.
 - [x] A score is advisory only. No threshold, automated hold, ranking,
   moderation action, publishing action, or agent behavior consumes it in this
   delivery.
-- [x] Keep private fast-score work/score rows and associated LLM exchange
+- [x] Keep private Fastmod work/score rows and associated LLM exchange
   records for one year. Provide a dedicated `./v3 fast-score prune` command,
   suitable for scheduled operation, to remove records older than that period.
 - [x] Use the same configured LLM provider as the application's other LLM
@@ -81,10 +81,10 @@ private historical audit data.
 
 ### 1. Replace historical sweep discovery with private work tracking
 
-- [x] Add a private pending-work table to the fast-score SQLite database. Store
+- [x] Add a private pending-work table to the Fastmod SQLite database. Store
   post ID, content hash, rubric revision, state, attempt count, last attempted
   time, next eligible time, failure category, and timestamps.
-- [x] Migrate existing fast-score databases safely. Do not rely on `CREATE
+- [x] Migrate existing Fastmod databases safely. Do not rely on `CREATE
   TABLE IF NOT EXISTS` to add columns, and do not turn pre-existing posts into
   pending work during migration.
 - [x] Change `fast_score_sweep` to claim bounded pending work from that table.
@@ -100,7 +100,7 @@ Acceptance: publishing one eligible new post creates one private pending-work
 row and one coalesced worker wake-up; starting the feature creates no work for
 the existing corpus. A write-path smoke test verifies that the work and queue
 records remain private. The task-queue regression test covers feature-flag
-evaluation inside the fast-score worker closure. Provider responses have a
+evaluation inside the Fastmod worker closure. Provider responses have a
 1024-token structured-output budget, and successful calls produce one completed
 exchange audit record rather than a false transport-error companion.
 Operator status lines include the private probability, source, content hash,
@@ -113,7 +113,7 @@ and rubric revision needed to inspect or retry a specific work item.
   defined five- and thirty-minute schedule, for at most three total attempts.
 - [x] Record `config_missing` as actionable but do not retry it automatically;
   a deployment operator fixes configuration and explicitly retries the named
-  record. Do not create work at all while fast scoring or automatic enqueueing
+  record. Do not create work at all while Fastmod or automatic enqueueing
   is disabled.
 - [x] Preserve a small, redacted failure code and safe message. Define an
   allowlist of failure categories and redact provider exception text before it

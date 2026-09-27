@@ -13,7 +13,7 @@ storage tables.
 - [x] Rename the README feature link and description to Fastmod.
 - [x] Rename the Fast Post Scoring reference document's title and prose to
   Fastmod, preserving literal command and configuration names.
-- [ ] Update the active productization plan and `todo.txt` to call the feature
+- [x] Update the active productization plan and `todo.txt` to call the feature
   Fastmod.
 
 ## Operator-facing copy
