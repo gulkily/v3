@@ -151,7 +151,7 @@ final class TaskQueueCommandTest
             $context = (new FastScoreContextFactory($fetchPost))->forPost($fetchPost('post-1'));
             (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->enqueueWork('post-1', (string) $context['content_hash'], 'rubric-a');
             (new \ForumRewrite\TaskQueue\SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(\ForumRewrite\TaskQueue\SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'fast-score-sweep');
-            [$code, $stdout, $stderr] = $this->runCommand(dirname(__DIR__), './v3 task-queue run --score-limit=3 --work-limit=7 --queue-database-path=' . escapeshellarg($queuePath) . ' --database-path=' . escapeshellarg($readPath) . ' --repository-root=' . escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1'));
+            [$code, $stdout, $stderr] = $this->runCommand(dirname(__DIR__), './v3 task-queue run --verbose --score-limit=3 --work-limit=7 --queue-database-path=' . escapeshellarg($queuePath) . ' --database-path=' . escapeshellarg($readPath) . ' --repository-root=' . escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1'));
         } finally {
             $previousSecrets === false ? putenv('FORUM_SECRETS_PATH') : putenv('FORUM_SECRETS_PATH=' . $previousSecrets);
             @unlink($queuePath);
@@ -163,6 +163,7 @@ final class TaskQueueCommandTest
         assertSame(0, $code);
         assertStringContains('Fastmod provider-call limit: 3', $stdout);
         assertStringContains('Fastmod examined-work limit: 7', $stdout);
+        assertStringContains('Fastmod progress: examined=1/7 post=post-1 status=disabled', $stdout);
         assertStringContains('Fastmod sweep: examined=1 processed=1 provider_calls=0', $stdout);
         assertSame('', $stderr);
     }

@@ -22,9 +22,10 @@ final class FastScoreSweepService
     /**
      * Handles bounded private work while independently limiting provider calls.
      *
+     * @param null|callable(string, array<string,mixed>):void $progress
      * @return array<string, int|bool|array<string,mixed>|null>
      */
-    public function run(int $providerCallLimit, int $workLimit = 250): array
+    public function run(int $providerCallLimit, int $workLimit = 250, ?callable $progress = null): array
     {
         if ($providerCallLimit < 1) {
             throw new \InvalidArgumentException('Fastmod provider-call limit must be at least 1.');
@@ -52,10 +53,11 @@ final class FastScoreSweepService
                 break;
             }
             $summary['examined']++;
+            $postId = (string) $work['post_id'];
             if (isset($work['backfill_batch_id'])) {
                 $backfillBatchId ??= (int) $work['backfill_batch_id'];
             }
-            $post = $this->post((string) $work['post_id']);
+            $post = $this->post($postId);
             try {
                 if ($post === null) {
                     $result = FastScoreResult::excluded(['post_unavailable']);
@@ -68,13 +70,27 @@ final class FastScoreSweepService
                         if ($result === null) {
                             if ($summary['provider_calls'] >= $providerCallLimit) {
                                 $this->scoreStore->releaseClaimedWork($work);
+                                $this->report($progress, 'deferred', $summary, $work, [
+                                    'reason' => 'provider_call_limit_reached',
+                                    'work_limit' => $workLimit,
+                                    'provider_call_limit' => $providerCallLimit,
+                                ]);
                                 break;
                             }
                             if (isset($work['backfill_batch_id']) && !$this->scoreStore->reserveBackfillProviderAttempt($work)) {
                                 $this->scoreStore->releaseClaimedWork($work);
+                                $this->report($progress, 'deferred', $summary, $work, [
+                                    'reason' => 'backfill_budget_exhausted',
+                                    'work_limit' => $workLimit,
+                                    'provider_call_limit' => $providerCallLimit,
+                                ]);
                                 break;
                             }
                             $summary['provider_calls']++;
+                            $this->report($progress, 'provider_started', $summary, $work, [
+                                'work_limit' => $workLimit,
+                                'provider_call_limit' => $providerCallLimit,
+                            ]);
                             $result = $this->workflow->scorePost($post);
                         }
                     }
@@ -106,6 +122,14 @@ final class FastScoreSweepService
             } elseif (str_ends_with((string) $result['status'], '_error')) {
                 $summary['failed']++;
             }
+            $this->report($progress, 'completed', $summary, $work, [
+                'work_limit' => $workLimit,
+                'provider_call_limit' => $providerCallLimit,
+                'status' => (string) $result['status'],
+                'probability' => $result['probability'],
+                'source' => (string) $result['source'],
+                'failure_code' => $result['failure_code'] ?? null,
+            ]);
         }
 
         $this->scoreStore->refreshBackfillBatchStates();
@@ -138,5 +162,25 @@ final class FastScoreSweepService
         $statement->execute(['post_id' => $postId]);
         $post = $statement->fetch();
         return $post === false ? null : $post;
+    }
+
+    /**
+     * @param null|callable(string, array<string,mixed>):void $progress
+     * @param array<string,mixed> $summary
+     * @param array<string,mixed> $work
+     * @param array<string,mixed> $details
+     */
+    private function report(?callable $progress, string $event, array $summary, array $work, array $details): void
+    {
+        if ($progress === null) {
+            return;
+        }
+
+        $progress($event, array_merge($details, [
+            'post_id' => (string) $work['post_id'],
+            'examined' => (int) $summary['examined'],
+            'provider_calls' => (int) $summary['provider_calls'],
+            'backfill_batch_id' => isset($work['backfill_batch_id']) ? (int) $work['backfill_batch_id'] : null,
+        ]));
     }
 }

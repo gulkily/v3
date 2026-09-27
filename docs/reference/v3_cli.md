@@ -57,7 +57,7 @@ read-model table counts (posts, threads, profiles, activity).
 ```
 ./v3 task-queue enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
-./v3 task-queue run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+./v3 task-queue run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue cron [--log=/var/log/forum-task-queue.log]
 ```
@@ -84,7 +84,9 @@ being installed via cron.
   invalid structured responses count because a request was made.
   `--work-limit=...` bounds all examined Fastmod work rows, including local
   heuristic exclusions (default 250). `--limit=...` is only the maximum queue
-  tasks claimed.
+  tasks claimed. `--verbose` reports each Fastmod result and provider request
+  as it happens. `--quiet` suppresses all worker progress output, including
+  verbose output when both options are supplied.
 - `status` — prints queued/running/completed/failed counts plus the
   `--limit` (default 25) most recent tasks with attempt counts and failure
   codes

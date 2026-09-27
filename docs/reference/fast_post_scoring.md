@@ -50,6 +50,9 @@ to 25 provider calls and `--work-limit` defaults to 250 examined work rows per
 sweep. The execution lock keeps concurrent cron invocations from running
 overlapping sweeps.
 
+Add `--verbose` to `task-queue run` to print each Fastmod result and provider
+request as it happens. `--quiet` suppresses that progress output.
+
 ## API
 
 `POST /api/score_post` is retired and returns `410`; it cannot bypass the

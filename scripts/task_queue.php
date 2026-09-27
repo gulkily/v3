@@ -96,6 +96,7 @@ try {
         $providerCallLimit = max(1, (int) ($options['score-limit'] ?? 25));
         $workLimit = max(1, (int) ($options['work-limit'] ?? 250));
         $quiet = ($options['quiet'] ?? false) === true;
+        $verbose = ($options['verbose'] ?? false) === true;
         if (($options['dry-run'] ?? false) === true) {
             $counts = $store->counts();
             emitTaskQueue($quiet, "Task queue dry run\n");
@@ -107,7 +108,7 @@ try {
             exit(0);
         }
 
-        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet): void {
+        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose): void {
             $startedAt = microtime(true);
             $before = $store->counts();
             emitTaskQueue($quiet, "Task queue worker starting\n");
@@ -127,7 +128,7 @@ try {
             $worker = new TaskQueueWorker(
                 $store,
                 new ReadModelRebuildTaskHandler($repositoryRoot, $databasePath),
-                static function () use ($projectRoot, $repositoryRoot, $databasePath, $providerCallLimit, $workLimit): array {
+                static function () use ($projectRoot, $repositoryRoot, $databasePath, $providerCallLimit, $workLimit, $quiet, $verbose): array {
                     if (!is_file($databasePath)) {
                         throw new RuntimeException('Read model database not found: ' . $databasePath);
                     }
@@ -163,7 +164,15 @@ try {
                         $workflow,
                         $scoreStore,
                         FastScoringRubricRevision::fromConfig($config, $projectRoot),
-                    ))->run($providerCallLimit, $workLimit);
+                    ))->run(
+                        $providerCallLimit,
+                        $workLimit,
+                        $verbose && !$quiet
+                            ? static function (string $event, array $progress): void {
+                                emitFastmodProgress(false, $event, $progress);
+                            }
+                            : null,
+                    );
                 },
             );
             $taskStartedAt = [];
@@ -291,7 +300,7 @@ function parseTaskQueueOptions(array $arguments): array
 {
     $options = [];
     foreach ($arguments as $argument) {
-        if (in_array($argument, ['--dry-run', '--quiet'], true)) {
+        if (in_array($argument, ['--dry-run', '--quiet', '--verbose'], true)) {
             $options[substr($argument, 2)] = true;
             continue;
         }
@@ -316,13 +325,65 @@ function emitTaskQueue(bool $quiet, string $message): void
     }
 }
 
+/** @param array<string,mixed> $progress */
+function emitFastmodProgress(bool $quiet, string $event, array $progress): void
+{
+    $postId = (string) ($progress['post_id'] ?? 'unknown');
+    $examined = (int) ($progress['examined'] ?? 0);
+    $workLimit = (int) ($progress['work_limit'] ?? 0);
+    $providerCalls = (int) ($progress['provider_calls'] ?? 0);
+    $providerCallLimit = (int) ($progress['provider_call_limit'] ?? 0);
+    $batch = isset($progress['backfill_batch_id']) ? ' backfill_batch=' . (int) $progress['backfill_batch_id'] : '';
+
+    if ($event === 'provider_started') {
+        emitTaskQueue($quiet, sprintf(
+            "  Fastmod progress: examined=%d/%d provider_call=%d/%d post=%s%s\n",
+            $examined,
+            $workLimit,
+            $providerCalls,
+            $providerCallLimit,
+            $postId,
+            $batch,
+        ));
+        return;
+    }
+
+    if ($event === 'deferred') {
+        emitTaskQueue($quiet, sprintf(
+            "  Fastmod progress: examined=%d/%d post=%s deferred=%s%s\n",
+            $examined,
+            $workLimit,
+            $postId,
+            (string) ($progress['reason'] ?? 'unknown'),
+            $batch,
+        ));
+        return;
+    }
+
+    $probability = $progress['probability'] === null ? 'none' : sprintf('%.6f', (float) $progress['probability']);
+    $failure = isset($progress['failure_code']) ? ' failure=' . (string) $progress['failure_code'] : '';
+    emitTaskQueue($quiet, sprintf(
+        "  Fastmod progress: examined=%d/%d post=%s status=%s probability=%s source=%s provider_calls=%d/%d%s%s\n",
+        $examined,
+        $workLimit,
+        $postId,
+        (string) ($progress['status'] ?? 'unknown'),
+        $probability,
+        (string) ($progress['source'] ?? 'none'),
+        $providerCalls,
+        $providerCallLimit,
+        $failure,
+        $batch,
+    ));
+}
+
 function printTaskQueueUsage($stream): void
 {
     fwrite($stream, <<<'TEXT'
 Usage:
   php scripts/task_queue.php enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
-  php scripts/task_queue.php run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+  php scripts/task_queue.php run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php cron [--log=/var/log/forum-task-queue.log]
 

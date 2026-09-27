@@ -166,6 +166,28 @@ final class FastScoreSweepServiceTest
         assertSame(true, $summary['remaining']);
     }
 
+    public function testReportsLiveProgressForProviderAndLocalWork(): void
+    {
+        $pdo = $this->postsDatabase();
+        $this->insertPost($pdo, 'empty', 'empty', null, '', '', 1);
+        $this->insertPost($pdo, 'scored', 'scored', null, '', 'Provider post', 2);
+        $provider = new SweepFakeProvider();
+        $service = $this->service($pdo, $provider, 'rubric-a');
+        $this->enqueue($pdo, 'empty', 'rubric-a');
+        $this->enqueue($pdo, 'scored', 'rubric-a');
+        $events = [];
+
+        $service->run(1, 10, static function (string $event, array $progress) use (&$events): void {
+            $events[] = [$event, $progress];
+        });
+
+        assertSame(['completed', 'provider_started', 'completed'], array_column($events, 0));
+        assertSame('empty', $events[0][1]['post_id']);
+        assertSame('excluded', $events[0][1]['status']);
+        assertSame('scored', $events[2][1]['status']);
+        assertSame(1, $events[2][1]['provider_calls']);
+    }
+
     private function service(PDO $pdo, SweepFakeProvider $provider, string $rubricRevision): FastScoreSweepService
     {
         $fetchPost = static function (string $postId) use ($pdo): ?array {
