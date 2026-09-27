@@ -143,11 +143,15 @@ try {
         fwrite(STDOUT, 'Fastmod status' . "\n");
         fwrite(STDOUT, 'Score database: ' . $scorePath . "\n");
         fwrite(STDOUT, 'Active rubric revision: ' . FastScoringRubricRevision::fromConfig($config, $projectRoot) . "\n");
-        fwrite(STDOUT, 'Work counts: ' . fastmodCountSummary($store->workCounts()) . "\n");
-        fwrite(STDOUT, 'Score counts: ' . fastmodCountSummary($store->scoreCounts()) . "\n");
-        fwrite(STDOUT, 'Score source counts: ' . fastmodCountSummary($store->scoreCountsBySource()) . "\n");
-        fwrite(STDOUT, 'Backfill batch counts: ' . fastmodCountSummary($store->backfillBatchCounts()) . "\n");
-        fwrite(STDOUT, 'Queue counts: ' . fastmodCountSummary($queueCounts) . "\n");
+        $actionable = $store->actionableWorkCountsByOrigin();
+        fwrite(STDOUT, "Outstanding work\n");
+        fwrite(STDOUT, '  Regular: ' . fastmodCountSummary($actionable['regular']) . "\n");
+        fwrite(STDOUT, '  Historical backfill: ' . fastmodCountSummary($actionable['backfill']) . "\n");
+        fwrite(STDOUT, "Retained outcomes\n");
+        fwrite(STDOUT, '  Result statuses: ' . fastmodCountSummary($store->scoreCounts()) . "\n");
+        fwrite(STDOUT, '  Result sources: ' . fastmodCountSummary($store->scoreCountsBySource()) . "\n");
+        fwrite(STDOUT, 'Backfill batches: ' . fastmodCountSummary($store->backfillBatchCounts()) . "\n");
+        fwrite(STDOUT, 'Task queue: ' . fastmodCountSummary($queueCounts) . "\n");
         $lastFailure = $store->lastFailure();
         if ($lastFailure !== null) {
             fwrite(STDOUT, sprintf("Last failure: post=%s code=%s message=%s updated=%s\n", $lastFailure['post_id'], $lastFailure['failure_code'], $lastFailure['failure_message'], $lastFailure['updated_at']));

@@ -5,7 +5,7 @@ work, whether an explicitly requested backfill is progressing, and what to run
 next. Preserve the current priority rule: regular Fastmod work runs before
 historical backfill work.
 
-- [ ] Replace overlapping work/score count lines with separate outstanding-work
+- [x] Replace overlapping work/score count lines with separate outstanding-work
   and retained-outcome summaries.
 - [ ] Show regular and backfill pending work separately, including each active
   batch's processed/remaining progress and reserved estimate versus cap.

@@ -37,6 +37,19 @@ final class SqliteFastScoreStoreTest
         assertSame(1, $claimed[0]['attempt_count']);
     }
 
+    public function testSeparatesActionableRegularAndHistoricalBackfillWork(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $store = new SqliteFastScoreStore($pdo);
+        $store->enqueueWork('regular', 'regular-hash', 'rubric-a');
+        $store->createBackfillBatch('rubric-a', 1, 1.0, 0.1, [['post_id' => 'historical', 'content_hash' => 'historical-hash']]);
+        $regular = $store->claimPendingWork(1)[0];
+        $store->completeWork($regular, ['status' => 'config_missing', 'source' => 'none', 'signals' => []]);
+
+        assertSame(['failed' => 1], $store->actionableWorkCountsByOrigin()['regular']);
+        assertSame(['pending' => 1], $store->actionableWorkCountsByOrigin()['backfill']);
+    }
+
     public function testStoreUsesOnlySafeFailureMessages(): void
     {
         $store = new SqliteFastScoreStore(new PDO('sqlite::memory:'));

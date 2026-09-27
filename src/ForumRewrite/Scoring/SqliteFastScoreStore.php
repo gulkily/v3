@@ -426,6 +426,29 @@ final class SqliteFastScoreStore implements FastScoreStore
         return $counts;
     }
 
+    /** @return array{regular:array<string,int>,backfill:array<string,int>} */
+    public function actionableWorkCountsByOrigin(): array
+    {
+        $counts = ['regular' => [], 'backfill' => []];
+        $rows = $this->pdo->query(
+            "SELECT work.state,
+                    CASE WHEN backfill_work.batch_id IS NULL THEN 'regular' ELSE 'backfill' END AS origin,
+                    COUNT(*) AS count
+             FROM fast_score_work AS work
+             LEFT JOIN fastmod_backfill_work AS backfill_work
+               ON backfill_work.post_id = work.post_id
+              AND backfill_work.content_hash = work.content_hash
+              AND backfill_work.rubric_revision = work.rubric_revision
+             WHERE work.state IN ('pending', 'running', 'failed')
+             GROUP BY origin, work.state"
+        )->fetchAll();
+        foreach ($rows as $row) {
+            $origin = (string) $row['origin'];
+            $counts[$origin][(string) $row['state']] = (int) $row['count'];
+        }
+        return $counts;
+    }
+
     /** @return array<string, int> */
     public function scoreCounts(): array
     {
