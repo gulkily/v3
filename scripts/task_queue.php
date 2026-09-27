@@ -93,7 +93,8 @@ try {
 
     if ($command === 'run') {
         $limit = max(1, (int) ($options['limit'] ?? 1));
-        $scoreLimit = max(1, (int) ($options['score-limit'] ?? 25));
+        $providerCallLimit = max(1, (int) ($options['score-limit'] ?? 25));
+        $workLimit = max(1, (int) ($options['work-limit'] ?? 250));
         $quiet = ($options['quiet'] ?? false) === true;
         if (($options['dry-run'] ?? false) === true) {
             $counts = $store->counts();
@@ -101,10 +102,12 @@ try {
             emitTaskQueue($quiet, "Queue database: {$queuePath}\n");
             emitTaskQueue($quiet, "Queued tasks: {$counts['queued']}\n");
             emitTaskQueue($quiet, "Limit: {$limit}\n");
+            emitTaskQueue($quiet, "Fastmod provider-call limit: {$providerCallLimit}\n");
+            emitTaskQueue($quiet, "Fastmod examined-work limit: {$workLimit}\n");
             exit(0);
         }
 
-        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $queuePath, $limit, $scoreLimit, $quiet): void {
+        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet): void {
             $startedAt = microtime(true);
             $before = $store->counts();
             emitTaskQueue($quiet, "Task queue worker starting\n");
@@ -112,7 +115,8 @@ try {
             emitTaskQueue($quiet, "Repository: {$repositoryRoot}\n");
             emitTaskQueue($quiet, "Read model: {$databasePath}\n");
             emitTaskQueue($quiet, "Limit: {$limit}\n");
-            emitTaskQueue($quiet, "Fastmod posts per worker run: {$scoreLimit}\n");
+            emitTaskQueue($quiet, "Fastmod provider-call limit: {$providerCallLimit}\n");
+            emitTaskQueue($quiet, "Fastmod examined-work limit: {$workLimit}\n");
             emitTaskQueue($quiet, sprintf(
                 "Queue before: queued=%d running=%d completed=%d failed=%d\n",
                 $before['queued'],
@@ -123,7 +127,7 @@ try {
             $worker = new TaskQueueWorker(
                 $store,
                 new ReadModelRebuildTaskHandler($repositoryRoot, $databasePath),
-                static function () use ($projectRoot, $repositoryRoot, $databasePath, $scoreLimit): array {
+                static function () use ($projectRoot, $repositoryRoot, $databasePath, $providerCallLimit, $workLimit): array {
                     if (!is_file($databasePath)) {
                         throw new RuntimeException('Read model database not found: ' . $databasePath);
                     }
@@ -159,7 +163,7 @@ try {
                         $workflow,
                         $scoreStore,
                         FastScoringRubricRevision::fromConfig($config, $projectRoot),
-                    ))->run($scoreLimit);
+                    ))->run($providerCallLimit, $workLimit);
                 },
             );
             $taskStartedAt = [];
@@ -192,8 +196,10 @@ try {
                 ));
                 if (isset($task['sweep']) && is_array($task['sweep'])) {
                     emitTaskQueue($quiet, sprintf(
-                        "  Fastmod sweep: processed=%d scored=%d excluded=%d failed=%d remaining=%s\n",
+                        "  Fastmod sweep: examined=%d processed=%d provider_calls=%d scored=%d excluded=%d failed=%d remaining=%s\n",
+                        (int) ($task['sweep']['examined'] ?? 0),
                         (int) ($task['sweep']['processed'] ?? 0),
+                        (int) ($task['sweep']['provider_calls'] ?? 0),
                         (int) ($task['sweep']['scored'] ?? 0),
                         (int) ($task['sweep']['excluded'] ?? 0),
                         (int) ($task['sweep']['failed'] ?? 0),
@@ -289,11 +295,11 @@ function parseTaskQueueOptions(array $arguments): array
             $options[substr($argument, 2)] = true;
             continue;
         }
-        foreach (['limit', 'score-limit', 'repository-root', 'database-path', 'queue-database-path', 'log'] as $key) {
+        foreach (['limit', 'score-limit', 'work-limit', 'repository-root', 'database-path', 'queue-database-path', 'log'] as $key) {
             $prefix = '--' . $key . '=';
             if (str_starts_with($argument, $prefix)) {
                 $value = substr($argument, strlen($prefix));
-                $options[$key] = in_array($key, ['limit', 'score-limit'], true) ? max(1, (int) $value) : $value;
+                $options[$key] = in_array($key, ['limit', 'score-limit', 'work-limit'], true) ? max(1, (int) $value) : $value;
                 continue 2;
             }
         }
@@ -316,7 +322,7 @@ function printTaskQueueUsage($stream): void
 Usage:
   php scripts/task_queue.php enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
-  php scripts/task_queue.php run [--limit=1] [--score-limit=25] [--dry-run] [--quiet] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+  php scripts/task_queue.php run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php cron [--log=/var/log/forum-task-queue.log]
 
