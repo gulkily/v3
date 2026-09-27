@@ -1675,6 +1675,12 @@ class LocalWriteService
     private function syncReadModelAfterFeatureFlagWrite(string $key, bool $value, string $recordPath, string $commitSha): void
     {
         if (!$this->canIncrementallyUpdateReadModel()) {
+            // A rebuild replays feature-flag activity from git history too (see
+            // ReadModelBuilder::featureFlagActivityEvents()), so it already covers
+            // this write - don't also insert the activity row below, or it would
+            // be duplicated.
+            $this->refreshDerivedStateAfterCommit($commitSha);
+
             return;
         }
 
