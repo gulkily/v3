@@ -85,8 +85,21 @@ if ($options['edit']) {
     }
 
     fwrite(STDOUT, "Opening private config with {$editor}: {$path}\n");
-    $exitCode = 0;
-    passthru(escapeshellcmd($editor) . ' ' . escapeshellarg($path), $exitCode);
+    $editorProcess = proc_open(
+        escapeshellcmd($editor) . ' ' . escapeshellarg($path),
+        [
+            0 => STDIN,
+            1 => STDOUT,
+            2 => STDERR,
+        ],
+        $editorPipes,
+    );
+    if (!is_resource($editorProcess)) {
+        fwrite(STDERR, "Unable to start editor: {$editor}\n");
+        exit(1);
+    }
+
+    $exitCode = proc_close($editorProcess);
     if ($exitCode !== 0) {
         fwrite(STDERR, "Editor exited with status {$exitCode}.\n");
         exit($exitCode);
