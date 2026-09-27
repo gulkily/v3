@@ -162,6 +162,43 @@ PHP);
         });
     }
 
+    public function testAutomaticAgentRepliesDependsOnAgentReplies(): void
+    {
+        $this->withEnvironment([], function (): void {
+            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n");
+            $projectRoot = $this->projectRootWithPrivateConfig(<<<'PHP'
+<?php
+
+return [
+    'DEDALUS_AGENT_REPLIES_ENABLED' => false,
+    'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED' => true,
+];
+PHP);
+            $automatic = FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)
+                ->evaluate(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED);
+
+            assertSame(false, $automatic->effectiveValue);
+            assertSame('dependency', $automatic->source);
+        });
+    }
+
+    public function testGroupKeyFallsBackToPrefixAndRegistryLabelsKnownGroups(): void
+    {
+        $registry = new FeatureFlagRegistry();
+
+        $unicode = $registry->get(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
+        $agentReplies = $registry->get(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED);
+        $conversationUi = $registry->get(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED);
+
+        assertSame('FORUM', $unicode->groupKey());
+        assertSame('DEDALUS', $agentReplies->groupKey());
+        assertSame('LLM', $conversationUi->groupKey());
+        assertSame('Forum', $registry->groupLabel($unicode->groupKey()));
+        assertSame('Dedalus agent', $registry->groupLabel($agentReplies->groupKey()));
+        assertSame('LLM exchanges', $registry->groupLabel($conversationUi->groupKey()));
+        assertSame('WIDGET', $registry->groupLabel('WIDGET'));
+    }
+
     public function testInvalidRepositoryRecordIsReportedAndFallsBackToDefault(): void
     {
         $this->withEnvironment([], function (): void {

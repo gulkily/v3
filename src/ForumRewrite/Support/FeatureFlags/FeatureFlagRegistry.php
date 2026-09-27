@@ -78,6 +78,7 @@ final class FeatureFlagRegistry
                 true,
                 self::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
                 'private',
+                requiresEnabledFlag: self::DEDALUS_AGENT_REPLIES_ENABLED,
             ),
             new FeatureFlagDefinition(
                 self::LLM_CONVERSATION_RECORDING_ENABLED,
@@ -107,5 +108,16 @@ final class FeatureFlagRegistry
         }
 
         return null;
+    }
+
+    private const GROUP_LABELS = [
+        'FORUM' => 'Forum',
+        'DEDALUS' => 'Dedalus agent',
+        'LLM' => 'LLM exchanges',
+    ];
+
+    public function groupLabel(string $groupKey): string
+    {
+        return self::GROUP_LABELS[$groupKey] ?? $groupKey;
     }
 }
