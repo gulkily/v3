@@ -18,11 +18,16 @@ read-model database. Stored results are current only for the matching post
 content hash and prompt-text (rubric) revision, so an edited post or rubric is
 scored again.
 
+For an audit or historical backfill using a model other than `gpt-5-nano` or
+`openai/gpt-5-nano`, set `FAST_SCORING_INPUT_USD_PER_MILLION` and
+`FAST_SCORING_OUTPUT_USD_PER_MILLION` to that model's current provider prices.
+They can also be supplied as matching command options for one invocation.
+
 ## Batch scoring
 
-Only newly published posts create private Fastmod work. The worker never scans or
-backfills the existing corpus. It processes that work through the existing task
-queue without making the publishing request wait for the provider:
+Only newly published posts create ordinary private Fastmod work. The worker never
+scans the existing corpus. It processes that work through the existing task queue
+without making the publishing request wait for the provider:
 
 ```bash
 ./v3 task-queue enqueue-fast-score
@@ -58,6 +63,31 @@ revision; they do not support historical backfill. `smoke --post-id=...` makes
 one deliberate provider request without creating a score row or corpus sweep.
 `prune` removes Fastmod rows and `fast_post_score` exchange records older
 than one year by default.
+
+### Historical audit and backfill
+
+Historical content is never included unless an operator explicitly requests it:
+
+```bash
+./v3 fast-score audit --include-existing
+./v3 fast-score backfill --include-existing --confirm --max-posts=100 --max-cost-usd=0.10
+./v3 task-queue run --limit=1 --score-limit=25
+```
+
+`audit` is read-only. It reports current-content/current-rubric state counts,
+the selected model, and a cost estimate using recorded usage for that model or
+a conservative fallback. It writes no score, work, task, or exchange rows.
+
+`backfill` snapshots only currently unrated candidates into a private batch.
+Both `--max-posts` and `--max-cost-usd` are required; the lower resulting
+limit wins. The worker reserves the batch's estimated cost before each provider
+attempt, including a retry, and stops a batch with `budget_exhausted` when the
+remaining reservation cannot cover another attempt. `fast-score status` shows
+recent batch IDs, state, and reserved estimate. Inspect exact provider payloads
+and token usage through the existing private LLM-exchange page.
+
+Historical backfill work is isolated from ordinary new-content sweeps. It is
+private, advisory, and retained/pruned with the same one-year Fastmod policy.
 
 Model exchanges use the existing private LLM-exchanges audit surface. A scored
 result is shown as a fractional fast-moderation score on its public

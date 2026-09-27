@@ -446,6 +446,30 @@ final class SqliteFastScoreStore implements FastScoreStore
         return $counts;
     }
 
+    /** @return array<string, int> */
+    public function backfillBatchCounts(): array
+    {
+        $counts = [];
+        foreach ($this->pdo->query('SELECT status, COUNT(*) AS count FROM fastmod_backfill_batches GROUP BY status')->fetchAll() as $row) {
+            $counts[(string) $row['status']] = (int) $row['count'];
+        }
+        return $counts;
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function recentBackfillBatches(int $limit = 10): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, status, requested_count, queued_count, max_posts, max_cost_usd, reserved_cost_usd, estimated_cost_per_post_usd, created_at, updated_at
+             FROM fastmod_backfill_batches
+             ORDER BY id DESC
+             LIMIT :limit'
+        );
+        $stmt->bindValue(':limit', max(1, min(200, $limit)), PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
     /** @return array<string, mixed>|null */
     public function lastFailure(): ?array
     {
@@ -491,12 +515,34 @@ final class SqliteFastScoreStore implements FastScoreStore
 
     public function pruneBefore(string $cutoff): int
     {
+        $stmt = $this->pdo->prepare(
+            'DELETE FROM fast_score_work
+             WHERE EXISTS (
+                 SELECT 1 FROM fastmod_backfill_work AS backfill_work
+                 INNER JOIN fastmod_backfill_batches AS batch ON batch.id = backfill_work.batch_id
+                 WHERE backfill_work.post_id = fast_score_work.post_id
+                   AND backfill_work.content_hash = fast_score_work.content_hash
+                   AND backfill_work.rubric_revision = fast_score_work.rubric_revision
+                   AND batch.updated_at < :cutoff
+             )'
+        );
+        $stmt->execute(['cutoff' => $cutoff]);
+        $backfillWorkDeleted = $stmt->rowCount();
+        $stmt = $this->pdo->prepare(
+            'DELETE FROM fastmod_backfill_work
+             WHERE batch_id IN (SELECT id FROM fastmod_backfill_batches WHERE updated_at < :cutoff)'
+        );
+        $stmt->execute(['cutoff' => $cutoff]);
+        $backfillProvenanceDeleted = $stmt->rowCount();
+        $stmt = $this->pdo->prepare('DELETE FROM fastmod_backfill_batches WHERE updated_at < :cutoff');
+        $stmt->execute(['cutoff' => $cutoff]);
+        $backfillBatchesDeleted = $stmt->rowCount();
         $stmt = $this->pdo->prepare('DELETE FROM fast_score_work WHERE updated_at < :cutoff');
         $stmt->execute(['cutoff' => $cutoff]);
         $workDeleted = $stmt->rowCount();
         $stmt = $this->pdo->prepare('DELETE FROM post_fast_scores WHERE updated_at < :cutoff');
         $stmt->execute(['cutoff' => $cutoff]);
-        return $workDeleted + $stmt->rowCount();
+        return $backfillWorkDeleted + $backfillProvenanceDeleted + $backfillBatchesDeleted + $workDeleted + $stmt->rowCount();
     }
 
     private function ensureSchema(): void

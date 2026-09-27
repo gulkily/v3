@@ -135,6 +135,7 @@ try {
         fwrite(STDOUT, 'Work counts: ' . json_encode($store->workCounts(), JSON_THROW_ON_ERROR) . "\n");
         fwrite(STDOUT, 'Score counts: ' . json_encode($store->scoreCounts(), JSON_THROW_ON_ERROR) . "\n");
         fwrite(STDOUT, 'Score source counts: ' . json_encode($store->scoreCountsBySource(), JSON_THROW_ON_ERROR) . "\n");
+        fwrite(STDOUT, 'Backfill batch counts: ' . json_encode($store->backfillBatchCounts(), JSON_THROW_ON_ERROR) . "\n");
         fwrite(STDOUT, 'Queue counts: ' . json_encode($queueCounts, JSON_THROW_ON_ERROR) . "\n");
         $lastFailure = $store->lastFailure();
         if ($lastFailure !== null) {
@@ -143,6 +144,19 @@ try {
         foreach ($store->recentWork((int) ($options['limit'] ?? 10)) as $work) {
             $probability = $work['probability'] === null ? 'none' : (string) $work['probability'];
             fwrite(STDOUT, sprintf("Work post=%s state=%s probability=%s source=%s attempts=%d failure=%s content_hash=%s rubric_revision=%s updated=%s\n", $work['post_id'], $work['state'], $probability, $work['source'] ?? 'none', $work['attempt_count'], $work['failure_category'] ?? 'none', $work['content_hash'], $work['rubric_revision'], $work['updated_at']));
+        }
+        foreach ($store->recentBackfillBatches((int) ($options['limit'] ?? 10)) as $batch) {
+            fwrite(STDOUT, sprintf(
+                "Backfill batch id=%d status=%s requested=%d queued=%d max_posts=%d max_cost_usd=%.6f reserved_cost_usd=%.6f updated=%s\n",
+                (int) $batch['id'],
+                $batch['status'],
+                (int) $batch['requested_count'],
+                (int) $batch['queued_count'],
+                (int) $batch['max_posts'],
+                (float) $batch['max_cost_usd'],
+                (float) $batch['reserved_cost_usd'],
+                $batch['updated_at'],
+            ));
         }
         exit(0);
     }

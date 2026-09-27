@@ -54,3 +54,16 @@
 - Notes:
   - Provider bills can vary from a preflight estimate; the private batch retains
     its reserved estimate and exposes underlying exchanges for exact inspection.
+
+## Stage 6 - Operator documentation and retention
+
+- Changes:
+  - Added private backfill-batch state and reserved-estimate output to
+    `fast-score status`.
+  - Extended the one-year prune path to remove expired backfill provenance and
+    work without making it eligible for an ordinary sweep.
+  - Documented pricing, audit/backfill commands, and a manual verification runbook.
+- Verification:
+  - `php tests/run.php SqliteFastScoreStoreTest FastmodAuditCommandTest`
+- Notes:
+  - No public UI, API, read-model, or automatic historical sweep was added.

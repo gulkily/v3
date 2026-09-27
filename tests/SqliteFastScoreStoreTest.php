@@ -92,4 +92,18 @@ final class SqliteFastScoreStoreTest
         assertSame(0.8, $current['probability']);
         assertSame(null, $store->latestScoredForPostContent('post-1', 'missing-content'));
     }
+
+    public function testPruneRemovesExpiredBackfillMetadataAndCannotReleaseHistoricalWork(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $store = new SqliteFastScoreStore($pdo);
+        $batch = $store->createBackfillBatch('rubric-a', 1, 1.0, 0.1, [['post_id' => 'post-1', 'content_hash' => 'hash-1']]);
+        $pdo->exec("UPDATE fastmod_backfill_batches SET created_at = '2020-01-01T00:00:00+00:00', updated_at = '2020-01-01T00:00:00+00:00' WHERE id = " . $batch['id']);
+
+        $store->pruneBefore('2021-01-01T00:00:00+00:00');
+
+        assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM fastmod_backfill_batches')->fetchColumn());
+        assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM fastmod_backfill_work')->fetchColumn());
+        assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM fast_score_work')->fetchColumn());
+    }
 }

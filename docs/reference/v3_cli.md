@@ -89,6 +89,25 @@ being installed via cron.
   --quiet --limit=1` once a minute; `--log=...` sets the log file path baked
   into the printed line
 
+## Audit or backfill Fastmod
+
+```
+./v3 fast-score status [--limit=10]
+./v3 fast-score audit --include-existing [--database-path=/path/read-model.sqlite3]
+./v3 fast-score backfill --include-existing --confirm --max-posts=N --max-cost-usd=N [--database-path=/path/read-model.sqlite3]
+./v3 fast-score retry --post-id=... --content-hash=... --rubric-revision=...
+./v3 fast-score invalidate --post-id=... --content-hash=... --rubric-revision=...
+./v3 fast-score smoke --post-id=... [--database-path=/path/read-model.sqlite3]
+./v3 fast-score prune [--before=ISO-8601]
+```
+
+`audit --include-existing` is a read-only historical count and configured-model
+cost estimate. `backfill` requires separate historical scope, confirmation,
+post-count, and spend bounds; it creates one private, bounded batch and queues
+the normal worker. `status` includes current private score/work counts and
+recent backfill-batch reservation state. See [Fastmod](fast_post_scoring.md)
+for pricing configuration, retention, and the controlled operator workflow.
+
 ## Import a repository archive
 
 ```
