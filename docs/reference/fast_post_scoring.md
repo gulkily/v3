@@ -31,20 +31,24 @@ without making the publishing request wait for the provider:
 
 ```bash
 ./v3 task-queue enqueue-fast-score
-./v3 task-queue run --limit=1 --score-limit=25
+./v3 task-queue run --limit=1 --score-limit=25 --work-limit=250
 ```
 
 The enqueue command is coalesced: it leaves one queued or running sweep rather
-than creating duplicates. A sweep processes up to `--score-limit` pending
-private work records. `--limit` is the number of queue tasks a worker claims,
-not the number of posts. Provider and invalid-response failures receive at
-most two delayed retries after the initial attempt; further retries require an
-explicit operator command.
+than creating duplicates. A sweep makes up to `--score-limit` provider calls
+(25 by default); a provider failure or invalid response consumes one call
+because the request was made. `--work-limit` separately bounds all examined
+private work rows (250 by default), including local heuristic exclusions that
+need no provider call. `--limit` is the number of queue tasks a worker claims,
+not a post or provider-call limit. Provider and invalid-response failures
+receive at most two delayed retries after the initial attempt; further retries
+require an explicit operator command.
 
 Install the existing task-queue cron reference with `./v3 task-queue cron`.
 It runs one locked worker task per minute by default; `--score-limit` defaults
-to 25 pending work records per sweep. The execution lock keeps concurrent cron
-invocations from running overlapping sweeps.
+to 25 provider calls and `--work-limit` defaults to 250 examined work rows per
+sweep. The execution lock keeps concurrent cron invocations from running
+overlapping sweeps.
 
 ## API
 
@@ -76,7 +80,7 @@ Historical content is never included unless an operator explicitly requests it:
 ```bash
 ./v3 fast-score audit --include-existing
 ./v3 fast-score backfill --include-existing --confirm --max-posts=100 --max-cost-usd=0.10
-./v3 task-queue run --limit=1 --score-limit=25
+./v3 task-queue run --limit=1 --score-limit=25 --work-limit=250
 ```
 
 `audit` is read-only. It reports current-content/current-rubric state counts,

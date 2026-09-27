@@ -10,9 +10,11 @@ normal Fastmod publication behavior is unchanged.
    pass both pricing options, then rerun the audit.
 3. Start small: `./v3 fast-score backfill --include-existing --confirm
    --max-posts=1 --max-cost-usd=0.01`.
-4. Run `./v3 task-queue run --limit=1 --score-limit=1`, then inspect
+4. Run `./v3 task-queue run --limit=1 --score-limit=1 --work-limit=250`, then inspect
    `./v3 fast-score status`. Confirm the recent batch has a private state and
    a reserved estimate no larger than its maximum cost.
+   `--score-limit` is the provider-call cap; `--work-limit` is a separate cap
+   for all examined rows, including no-cost local exclusions.
 5. Inspect the matching `fast_post_score` exchange privately. Confirm its
    post/content hash and provider model match the batch's target; do not copy
    its payload into public data.

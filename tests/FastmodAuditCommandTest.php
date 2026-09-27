@@ -117,7 +117,7 @@ final class FastmodAuditCommandTest
             assertSame('', $stderr);
             assertStringContains('Fastmod backfill batch created: id=1 requested=1 queued=1', $stdout);
             assertStringContains('estimated budget before every provider attempt', $stdout);
-            assertStringContains('Next: ./v3 task-queue run --limit=1 --score-limit=25', $stdout);
+            assertStringContains('Next: ./v3 task-queue run --limit=1 --score-limit=25 --work-limit=250', $stdout);
             assertStringContains('Monitor: ./v3 fast-score status', $stdout);
             assertSame(1, (int) (new PDO('sqlite:' . $scorePath))->query('SELECT COUNT(*) FROM fastmod_backfill_work')->fetchColumn());
             assertSame(1, (int) (new PDO('sqlite:' . $queuePath))->query("SELECT COUNT(*) FROM internal_tasks WHERE type = 'fast_score_sweep' AND status = 'queued'")->fetchColumn());
@@ -128,7 +128,7 @@ final class FastmodAuditCommandTest
             assertSame(0, $statusCode);
             assertSame('', $statusError);
             assertStringContains('Backfill batch 1: status=queued processed=0/1 remaining=1 reserved_estimate_usd=0.000000 cap_usd=0.010000', $statusOutput);
-            assertStringContains("Next action\n  Run: ./v3 task-queue run --limit=1 --score-limit=25", $statusOutput);
+            assertStringContains("Next action\n  Run: ./v3 task-queue run --limit=1 --score-limit=25 --work-limit=250", $statusOutput);
             assertStringContains('Historical backfill is ready for worker processing.', $statusOutput);
             assertStringNotContains("Recent work\n", $statusOutput);
             $workHash = (string) (new PDO('sqlite:' . $scorePath))->query('SELECT content_hash FROM fast_score_work LIMIT 1')->fetchColumn();

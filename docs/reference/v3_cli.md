@@ -57,7 +57,7 @@ read-model table counts (posts, threads, profiles, activity).
 ```
 ./v3 task-queue enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
-./v3 task-queue run [--limit=1] [--score-limit=25] [--dry-run] [--quiet] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+./v3 task-queue run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue cron [--log=/var/log/forum-task-queue.log]
 ```
@@ -79,9 +79,12 @@ being installed via cron.
   concurrent invocations don't double-run. `--dry-run` reports the queued
   count without running anything; `--quiet` suppresses progress output;
   `--repository-root=...`/`--database-path=...` override the read model to
-  rebuild against. `--score-limit=...` independently sets the maximum posts a
-  claimed Fastmod sweep handles (default 25); `--limit=...` is only the
-  maximum queue tasks claimed.
+  rebuild against. `--score-limit=...` independently sets the maximum provider
+  calls a claimed Fastmod sweep may make (default 25); provider failures and
+  invalid structured responses count because a request was made.
+  `--work-limit=...` bounds all examined Fastmod work rows, including local
+  heuristic exclusions (default 250). `--limit=...` is only the maximum queue
+  tasks claimed.
 - `status` — prints queued/running/completed/failed counts plus the
   `--limit` (default 25) most recent tasks with attempt counts and failure
   codes

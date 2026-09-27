@@ -9,4 +9,4 @@ Fastmod worker limit. Keep a separate 250-row local-work safety cap.
   provider request, not for local exclusions.
 - [x] Apply `--score-limit` as the 25-call default and add `--work-limit=250`
   as the examined-row cap; report both limits and outcomes.
-- [ ] Update tests and operator documentation for the two-limit contract.
+- [x] Update tests and operator documentation for the two-limit contract.

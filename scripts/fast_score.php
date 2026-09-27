@@ -132,7 +132,7 @@ try {
             $task['id'],
         ));
         fwrite(STDOUT, "The batch is private and the worker will reserve its estimated budget before every provider attempt.\n");
-        fwrite(STDOUT, "Next: ./v3 task-queue run --limit=1 --score-limit=25\n");
+        fwrite(STDOUT, "Next: ./v3 task-queue run --limit=1 --score-limit=25 --work-limit=250\n");
         fwrite(STDOUT, "Monitor: ./v3 fast-score status\n");
         exit(0);
     }
@@ -355,7 +355,7 @@ function fastmodNextAction(array $actionable, array $backfillBatches, ?SqliteTas
     fwrite(STDOUT, "Next action\n");
     if ($regularPending > 0 || $backfillPending > 0) {
         fwrite(STDOUT, '  ' . ($hasFastmodTask
-            ? 'Run: ./v3 task-queue run --limit=1 --score-limit=25'
+            ? 'Run: ./v3 task-queue run --limit=1 --score-limit=25 --work-limit=250'
             : 'Queue work: ./v3 task-queue enqueue-fast-score') . "\n");
     } else {
         fwrite(STDOUT, "  No pending Fastmod work.\n");
