@@ -298,8 +298,8 @@ final class WriteApiSmokeTest
             $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
 
-            assertStringContains('Fast moderation score: 0.42', $postPage);
-            assertStringNotContains('Fast moderation score:', $threadPage);
+            assertStringContains('Fastmod: 0.42', $postPage);
+            assertStringNotContains('Fastmod:', $threadPage);
         } finally {
             $previousScorePath === false ? putenv('FAST_SCORING_DATABASE_PATH') : putenv('FAST_SCORING_DATABASE_PATH=' . $previousScorePath);
             $_COOKIE = [];
