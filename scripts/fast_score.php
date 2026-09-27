@@ -139,7 +139,8 @@ try {
     if ($command === 'status') {
         $config = FastScoringConfig::fromPrivateConfig($privateConfig);
         $queuePath = TaskQueueDatabaseConfig::path($projectRoot, $options['queue-database-path'] ?? null);
-        $queueCounts = is_file($queuePath) ? (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->counts() : [];
+        $queueStore = is_file($queuePath) ? new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)) : null;
+        $queueCounts = $queueStore?->counts() ?? [];
         fwrite(STDOUT, 'Fastmod status' . "\n");
         fwrite(STDOUT, 'Score database: ' . $scorePath . "\n");
         fwrite(STDOUT, 'Active rubric revision: ' . FastScoringRubricRevision::fromConfig($config, $projectRoot) . "\n");
@@ -174,6 +175,7 @@ try {
                 $batch['updated_at'],
             ));
         }
+        fastmodNextAction($actionable, $store->backfillBatchCounts(), $queueStore);
         exit(0);
     }
 
@@ -322,6 +324,39 @@ function fastmodCountSummary(array $counts): string
 
     ksort($counts);
     return implode(', ', array_map(static fn (string $state, int $count): string => $state . '=' . $count, array_keys($counts), $counts));
+}
+
+/**
+ * @param array{regular:array<string,int>,backfill:array<string,int>} $actionable
+ * @param array<string,int> $backfillBatches
+ */
+function fastmodNextAction(array $actionable, array $backfillBatches, ?SqliteTaskQueueStore $queueStore): void
+{
+    $regularPending = (int) ($actionable['regular']['pending'] ?? 0) + (int) ($actionable['regular']['running'] ?? 0);
+    $backfillPending = (int) ($actionable['backfill']['pending'] ?? 0) + (int) ($actionable['backfill']['running'] ?? 0);
+    $hasFastmodTask = false;
+    if ($queueStore !== null) {
+        foreach ($queueStore->recent(200) as $task) {
+            if ($task['type'] === SqliteTaskQueueStore::FAST_SCORE_SWEEP && in_array($task['status'], ['queued', 'running'], true)) {
+                $hasFastmodTask = true;
+                break;
+            }
+        }
+    }
+
+    fwrite(STDOUT, "Next action\n");
+    if ($regularPending > 0 || $backfillPending > 0) {
+        fwrite(STDOUT, '  ' . ($hasFastmodTask
+            ? 'Run: ./v3 task-queue run --limit=1 --score-limit=25'
+            : 'Queue work: ./v3 task-queue enqueue-fast-score') . "\n");
+    } else {
+        fwrite(STDOUT, "  No pending Fastmod work.\n");
+    }
+    if ($backfillPending > 0 && $regularPending > 0) {
+        fwrite(STDOUT, "  Historical backfill is waiting behind {$regularPending} regular work item(s).\n");
+    } elseif ($backfillPending > 0 && ($backfillBatches['queued'] ?? 0) > 0) {
+        fwrite(STDOUT, "  Historical backfill is ready for worker processing.\n");
+    }
 }
 
 function fastmodAuditScoreStore(string $scorePath): SqliteFastScoreStore

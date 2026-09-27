@@ -128,6 +128,8 @@ final class FastmodAuditCommandTest
             assertSame(0, $statusCode);
             assertSame('', $statusError);
             assertStringContains('Backfill batch 1: status=queued processed=0/1 remaining=1 reserved_estimate_usd=0.000000 cap_usd=0.010000', $statusOutput);
+            assertStringContains("Next action\n  Run: ./v3 task-queue run --limit=1 --score-limit=25", $statusOutput);
+            assertStringContains('Historical backfill is ready for worker processing.', $statusOutput);
         } finally {
             @unlink($readPath);
             @unlink($scorePath);

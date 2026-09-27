@@ -9,7 +9,7 @@ historical backfill work.
   and retained-outcome summaries.
 - [x] Show regular and backfill pending work separately, including each active
   batch's processed/remaining progress and reserved estimate versus cap.
-- [ ] Print a contextual next action, including an explicit explanation when a
+- [x] Print a contextual next action, including an explicit explanation when a
   queued backfill is waiting behind regular work.
 - [ ] Hide repetitive per-post records by default; provide `--verbose` to show
   them with shortened hashes and existing failure details.
