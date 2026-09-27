@@ -112,7 +112,7 @@ try {
             emitTaskQueue($quiet, "Repository: {$repositoryRoot}\n");
             emitTaskQueue($quiet, "Read model: {$databasePath}\n");
             emitTaskQueue($quiet, "Limit: {$limit}\n");
-            emitTaskQueue($quiet, "Fastmod batch limit: {$scoreLimit}\n");
+            emitTaskQueue($quiet, "Fastmod posts per worker run: {$scoreLimit}\n");
             emitTaskQueue($quiet, sprintf(
                 "Queue before: queued=%d running=%d completed=%d failed=%d\n",
                 $before['queued'],
@@ -200,10 +200,30 @@ try {
                         ($task['sweep']['remaining'] ?? false) === true ? 'yes' : 'no',
                     ));
                     if ((int) ($task['sweep']['backfill_processed'] ?? 0) > 0) {
+                        $backfill = $task['sweep']['backfill'] ?? [];
                         emitTaskQueue($quiet, sprintf(
-                            "  Fastmod backfill: processed=%d (estimated budget reserved before each attempt)\n",
+                            "  Fastmod backfill batch id=%d: processed=%d progress=%d/%d remaining=%d status=%s\n",
+                            (int) ($backfill['id'] ?? 0),
                             (int) $task['sweep']['backfill_processed'],
+                            (int) ($backfill['processed_count'] ?? 0),
+                            (int) ($backfill['queued_count'] ?? 0),
+                            (int) ($backfill['remaining_count'] ?? 0),
+                            (string) ($backfill['status'] ?? 'unknown'),
                         ));
+                        emitTaskQueue($quiet, sprintf(
+                            "  Reserved estimate: usd=%.6f of cap=%.6f\n",
+                            (float) ($backfill['reserved_cost_usd'] ?? 0),
+                            (float) ($backfill['max_cost_usd'] ?? 0),
+                        ));
+                        if ((int) ($task['sweep']['backfill_excluded'] ?? 0) > 0) {
+                            emitTaskQueue($quiet, sprintf(
+                                "  Deterministic exclusions: %d; no provider call was made for those posts.\n",
+                                (int) $task['sweep']['backfill_excluded'],
+                            ));
+                        }
+                    }
+                    if (($task['continued'] ?? false) === true) {
+                        emitTaskQueue($quiet, "  Continuation queued for remaining Fastmod work; this is not a failure or retry.\n");
                     }
                 }
             });

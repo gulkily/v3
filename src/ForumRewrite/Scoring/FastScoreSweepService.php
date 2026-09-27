@@ -42,6 +42,8 @@ final class FastScoreSweepService
         $normalWork = $this->scoreStore->claimPendingWork($postLimit);
         $remainingLimit = $postLimit - count($normalWork);
         $backfillWork = $remainingLimit > 0 ? $this->scoreStore->claimPendingBackfillWork($remainingLimit) : [];
+        $backfillBatchId = $backfillWork === [] ? null : (int) $backfillWork[0]['backfill_batch_id'];
+        $backfillExcluded = 0;
         foreach (array_merge($normalWork, $backfillWork) as $work) {
             $summary['processed']++;
             $post = $this->post((string) $work['post_id']);
@@ -71,6 +73,9 @@ final class FastScoreSweepService
                 $summary['scored']++;
             } elseif ($result['status'] === 'excluded') {
                 $summary['excluded']++;
+                if (isset($work['backfill_batch_id'])) {
+                    $backfillExcluded++;
+                }
             } elseif (str_ends_with((string) $result['status'], '_error')) {
                 $summary['failed']++;
             }
@@ -80,6 +85,8 @@ final class FastScoreSweepService
         $summary['remaining'] = $this->scoreStore->hasOutstandingWork() || $this->scoreStore->hasOutstandingBackfillWork();
         if ($backfillWork !== []) {
             $summary['backfill_processed'] = count($backfillWork);
+            $summary['backfill_excluded'] = $backfillExcluded;
+            $summary['backfill'] = $this->scoreStore->backfillProgress($backfillBatchId);
         }
 
         return $summary;

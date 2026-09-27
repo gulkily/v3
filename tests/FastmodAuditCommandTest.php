@@ -46,8 +46,8 @@ final class FastmodAuditCommandTest
             assertSame('', $stderr);
             assertStringContains('Fastmod historical audit', $stdout);
             assertStringContains('Selected model: gpt-5-nano', $stdout);
-            assertStringContains('"total":1', $stdout);
-            assertStringContains('"unrated":1', $stdout);
+            assertStringContains('Total posts: 1', $stdout);
+            assertStringContains('Ready to backfill: 1', $stdout);
             assertStringContains('samples=1', $stdout);
             assertStringContains('assumption=observed_fastmod_usage', $stdout);
             assertStringContains('Audit is read-only: no score, work, task-queue, or exchange records were written.', $stdout);
@@ -68,7 +68,20 @@ final class FastmodAuditCommandTest
 
         assertSame(1, $exitCode);
         assertSame('', $stdout);
-        assertStringContains('error=--include-existing is required for historical audit.', $stderr);
+        assertStringContains('error=--include-existing is required for historical audit. Run: ./v3 fast-score audit --include-existing', $stderr);
+    }
+
+    public function testInvalidSpaceSeparatedOptionReportsGuidanceWithoutAStackTrace(): void
+    {
+        [$exitCode, $stdout, $stderr] = $this->runCommand(
+            dirname(__DIR__),
+            './v3 fast-score backfill --include-existing --confirm --max-posts 100',
+        );
+
+        assertSame(1, $exitCode);
+        assertSame('', $stdout);
+        assertStringContains('error=Unknown argument: 100. Use --name=value syntax, for example --max-posts=100.', $stderr);
+        assertStringNotContains('Stack trace:', $stderr);
     }
 
     public function testConfirmedBackfillCreatesABoundedBatchAndEnqueuesTheWorker(): void
@@ -93,7 +106,7 @@ final class FastmodAuditCommandTest
             );
             assertSame(1, $missingConfirmCode);
             assertSame('', $missingConfirmOutput);
-            assertStringContains('error=--include-existing and --confirm are required for historical backfill.', $missingConfirmError);
+            assertStringContains('error=--confirm is required for historical backfill. Run: ./v3 fast-score backfill --include-existing --confirm --max-posts=100 --max-cost-usd=0.10', $missingConfirmError);
             assertSame(false, is_file($scorePath));
             [$exitCode, $stdout, $stderr] = $this->runCommand(
                 dirname(__DIR__),
@@ -104,6 +117,8 @@ final class FastmodAuditCommandTest
             assertSame('', $stderr);
             assertStringContains('Fastmod backfill batch created: id=1 requested=1 queued=1', $stdout);
             assertStringContains('estimated budget before every provider attempt', $stdout);
+            assertStringContains('Next: ./v3 task-queue run --limit=1 --score-limit=25', $stdout);
+            assertStringContains('Monitor: ./v3 fast-score status', $stdout);
             assertSame(1, (int) (new PDO('sqlite:' . $scorePath))->query('SELECT COUNT(*) FROM fastmod_backfill_work')->fetchColumn());
             assertSame(1, (int) (new PDO('sqlite:' . $queuePath))->query("SELECT COUNT(*) FROM internal_tasks WHERE type = 'fast_score_sweep' AND status = 'queued'")->fetchColumn());
         } finally {

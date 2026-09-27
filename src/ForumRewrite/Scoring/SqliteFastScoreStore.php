@@ -470,6 +470,39 @@ final class SqliteFastScoreStore implements FastScoreStore
         return $stmt->fetchAll();
     }
 
+    /** @return array{id:int,status:string,processed_count:int,remaining_count:int,queued_count:int,reserved_cost_usd:float,max_cost_usd:float}|null */
+    public function backfillProgress(int $batchId): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT batch.id, batch.status, batch.queued_count, batch.reserved_cost_usd, batch.max_cost_usd,
+                    SUM(CASE WHEN work.state IN ('pending', 'running') THEN 1 ELSE 0 END) AS remaining_count
+             FROM fastmod_backfill_batches AS batch
+             LEFT JOIN fastmod_backfill_work AS backfill_work ON backfill_work.batch_id = batch.id
+             LEFT JOIN fast_score_work AS work
+               ON work.post_id = backfill_work.post_id
+              AND work.content_hash = backfill_work.content_hash
+              AND work.rubric_revision = backfill_work.rubric_revision
+             WHERE batch.id = :id
+             GROUP BY batch.id"
+        );
+        $stmt->execute(['id' => $batchId]);
+        $row = $stmt->fetch();
+        if ($row === false) {
+            return null;
+        }
+
+        $remaining = (int) ($row['remaining_count'] ?? 0);
+        return [
+            'id' => (int) $row['id'],
+            'status' => (string) $row['status'],
+            'processed_count' => max(0, (int) $row['queued_count'] - $remaining),
+            'remaining_count' => $remaining,
+            'queued_count' => (int) $row['queued_count'],
+            'reserved_cost_usd' => (float) $row['reserved_cost_usd'],
+            'max_cost_usd' => (float) $row['max_cost_usd'],
+        ];
+    }
+
     /** @return array<string, mixed>|null */
     public function lastFailure(): ?array
     {

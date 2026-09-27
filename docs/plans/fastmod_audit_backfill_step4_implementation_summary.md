@@ -67,3 +67,15 @@
   - `php tests/run.php SqliteFastScoreStoreTest FastmodAuditCommandTest`
 - Notes:
   - No public UI, API, read-model, or automatic historical sweep was added.
+
+## Follow-up - Operator output clarity
+
+- Changes:
+  - Replaced Fastmod count JSON with labeled operator-facing summaries and
+    added next/monitor commands after backfill creation.
+  - Made invalid option parsing return a safe guided error rather than a PHP
+    stack trace.
+  - Added batch progress, reserved-estimate/cap, deterministic-exclusion, and
+    continuation explanations to worker output.
+- Verification:
+  - `php tests/run.php FastmodAuditCommandTest FastScoreSweepServiceTest`

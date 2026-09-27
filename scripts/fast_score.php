@@ -23,14 +23,14 @@ use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 
 $projectRoot = dirname(__DIR__);
 $command = $argv[1] ?? '';
-$options = fastScoreOptions(array_slice($argv, 2));
-$privateConfig = PrivateConfig::load($projectRoot);
-$scorePath = FastScoreDatabaseConfig::path($projectRoot, $privateConfig);
 
 try {
+    $options = fastScoreOptions(array_slice($argv, 2));
+    $privateConfig = PrivateConfig::load($projectRoot);
+    $scorePath = FastScoreDatabaseConfig::path($projectRoot, $privateConfig);
     if ($command === 'audit') {
         if (($options['include-existing'] ?? false) !== true) {
-            throw new InvalidArgumentException('--include-existing is required for historical audit.');
+            throw new InvalidArgumentException('--include-existing is required for historical audit. Run: ./v3 fast-score audit --include-existing');
         }
         $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
         if (!is_file($databasePath)) {
@@ -54,7 +54,13 @@ try {
         fwrite(STDOUT, 'Read-model database: ' . $databasePath . "\n");
         fwrite(STDOUT, 'Score database: ' . $scorePath . "\n");
         fwrite(STDOUT, 'Selected model: ' . $config->provider->model . "\n");
-        fwrite(STDOUT, 'Candidate states: ' . json_encode($audit['counts'], JSON_THROW_ON_ERROR) . "\n");
+        fwrite(STDOUT, "Historical content\n");
+        fwrite(STDOUT, '  Total posts: ' . $audit['counts']['total'] . "\n");
+        fwrite(STDOUT, '  Ready to backfill: ' . $audit['counts']['unrated'] . "\n");
+        fwrite(STDOUT, '  Current-rubric scored: ' . $audit['counts']['scored'] . "\n");
+        fwrite(STDOUT, '  Current-rubric deterministic exclusions: ' . $audit['counts']['excluded'] . "\n");
+        fwrite(STDOUT, '  Pending work: ' . $audit['counts']['pending'] . "\n");
+        fwrite(STDOUT, '  Failed work awaiting operator action: ' . $audit['counts']['failed'] . "\n");
         fwrite(STDOUT, sprintf(
             "Cost estimate: candidates=%d samples=%d input_tokens_per_post=%.1f output_tokens_per_post=%.1f input_usd_per_million=%.4f output_usd_per_million=%.4f estimated_usd=%.6f assumption=%s\n",
             $estimate['candidate_count'],
@@ -71,8 +77,11 @@ try {
     }
 
     if ($command === 'backfill') {
-        if (($options['include-existing'] ?? false) !== true || ($options['confirm'] ?? false) !== true) {
-            throw new InvalidArgumentException('--include-existing and --confirm are required for historical backfill.');
+        if (($options['include-existing'] ?? false) !== true) {
+            throw new InvalidArgumentException('--include-existing is required for historical backfill. Run: ./v3 fast-score backfill --include-existing --confirm --max-posts=100 --max-cost-usd=0.10');
+        }
+        if (($options['confirm'] ?? false) !== true) {
+            throw new InvalidArgumentException('--confirm is required for historical backfill. Run: ./v3 fast-score backfill --include-existing --confirm --max-posts=100 --max-cost-usd=0.10');
         }
         fastmodPositiveIntegerOption($options, 'max-posts');
         fastmodNonNegativeNumberOption($options, 'max-cost-usd');
@@ -123,6 +132,8 @@ try {
             $task['id'],
         ));
         fwrite(STDOUT, "The batch is private and the worker will reserve its estimated budget before every provider attempt.\n");
+        fwrite(STDOUT, "Next: ./v3 task-queue run --limit=1 --score-limit=25\n");
+        fwrite(STDOUT, "Monitor: ./v3 fast-score status\n");
         exit(0);
     }
     if ($command === 'status') {
@@ -132,11 +143,11 @@ try {
         fwrite(STDOUT, 'Fastmod status' . "\n");
         fwrite(STDOUT, 'Score database: ' . $scorePath . "\n");
         fwrite(STDOUT, 'Active rubric revision: ' . FastScoringRubricRevision::fromConfig($config, $projectRoot) . "\n");
-        fwrite(STDOUT, 'Work counts: ' . json_encode($store->workCounts(), JSON_THROW_ON_ERROR) . "\n");
-        fwrite(STDOUT, 'Score counts: ' . json_encode($store->scoreCounts(), JSON_THROW_ON_ERROR) . "\n");
-        fwrite(STDOUT, 'Score source counts: ' . json_encode($store->scoreCountsBySource(), JSON_THROW_ON_ERROR) . "\n");
-        fwrite(STDOUT, 'Backfill batch counts: ' . json_encode($store->backfillBatchCounts(), JSON_THROW_ON_ERROR) . "\n");
-        fwrite(STDOUT, 'Queue counts: ' . json_encode($queueCounts, JSON_THROW_ON_ERROR) . "\n");
+        fwrite(STDOUT, 'Work counts: ' . fastmodCountSummary($store->workCounts()) . "\n");
+        fwrite(STDOUT, 'Score counts: ' . fastmodCountSummary($store->scoreCounts()) . "\n");
+        fwrite(STDOUT, 'Score source counts: ' . fastmodCountSummary($store->scoreCountsBySource()) . "\n");
+        fwrite(STDOUT, 'Backfill batch counts: ' . fastmodCountSummary($store->backfillBatchCounts()) . "\n");
+        fwrite(STDOUT, 'Queue counts: ' . fastmodCountSummary($queueCounts) . "\n");
         $lastFailure = $store->lastFailure();
         if ($lastFailure !== null) {
             fwrite(STDOUT, sprintf("Last failure: post=%s code=%s message=%s updated=%s\n", $lastFailure['post_id'], $lastFailure['failure_code'], $lastFailure['failure_message'], $lastFailure['updated_at']));
@@ -240,7 +251,7 @@ function fastScoreOptions(array $arguments): array
     $options = [];
     foreach ($arguments as $argument) {
         if (!str_starts_with($argument, '--')) {
-            throw new InvalidArgumentException('Unknown argument: ' . $argument);
+            throw new InvalidArgumentException('Unknown argument: ' . $argument . '. Use --name=value syntax, for example --max-posts=100.');
         }
         $parts = explode('=', substr($argument, 2), 2);
         $options[$parts[0]] = $parts[1] ?? true;
@@ -282,7 +293,7 @@ function fastmodPositiveIntegerOption(array $options, string $name): int
 {
     $value = $options[$name] ?? null;
     if (!is_string($value) || !ctype_digit($value) || (int) $value < 1) {
-        throw new InvalidArgumentException('--' . $name . ' must be a positive integer.');
+        throw new InvalidArgumentException('--' . $name . ' must be a positive integer. Run: ./v3 fast-score backfill --include-existing --confirm --max-posts=100 --max-cost-usd=0.10');
     }
     return (int) $value;
 }
@@ -292,9 +303,20 @@ function fastmodNonNegativeNumberOption(array $options, string $name): float
 {
     $value = $options[$name] ?? null;
     if (!is_string($value) || !is_numeric($value) || (float) $value < 0) {
-        throw new InvalidArgumentException('--' . $name . ' must be a non-negative number.');
+        throw new InvalidArgumentException('--' . $name . ' must be a non-negative number. Run: ./v3 fast-score backfill --include-existing --confirm --max-posts=100 --max-cost-usd=0.10');
     }
     return (float) $value;
+}
+
+/** @param array<string, int> $counts */
+function fastmodCountSummary(array $counts): string
+{
+    if ($counts === []) {
+        return 'none';
+    }
+
+    ksort($counts);
+    return implode(', ', array_map(static fn (string $state, int $count): string => $state . '=' . $count, array_keys($counts), $counts));
 }
 
 function fastmodAuditScoreStore(string $scorePath): SqliteFastScoreStore

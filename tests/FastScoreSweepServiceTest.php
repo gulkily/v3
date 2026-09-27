@@ -94,6 +94,12 @@ final class FastScoreSweepServiceTest
         assertSame(['post-1', 'post-2'], $provider->postIds);
         assertSame(true, $first['remaining']);
         assertSame(false, $second['remaining']);
+        assertSame(1, $first['backfill_processed']);
+        assertSame(0, $first['backfill_excluded']);
+        assertSame(1, $first['backfill']['id']);
+        assertSame(1, $first['backfill']['processed_count']);
+        assertSame(1, $first['backfill']['remaining_count']);
+        assertSame(0.01, $first['backfill']['reserved_cost_usd']);
         assertSame('completed', $pdo->query('SELECT status FROM fastmod_backfill_batches')->fetchColumn());
         assertSame(0.02, (float) $pdo->query('SELECT reserved_cost_usd FROM fastmod_backfill_batches')->fetchColumn());
     }
