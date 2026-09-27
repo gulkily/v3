@@ -28,7 +28,7 @@ final class FastScoreSweepService
     public function run(int $postLimit): array
     {
         if ($postLimit < 1) {
-            throw new \InvalidArgumentException('Fast score sweep post limit must be at least 1.');
+            throw new \InvalidArgumentException('Fastmod sweep post limit must be at least 1.');
         }
 
         $summary = [

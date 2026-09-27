@@ -30,12 +30,12 @@ final class FastScoreFailure
             'provider_authentication_failed' => 'Provider authentication failed.',
             'provider_request_failed' => 'Provider request failed.',
             'invalid_response' => 'Provider returned an invalid structured response.',
-            'config_missing' => 'Fast-score provider configuration is unavailable.',
+            'config_missing' => 'Fastmod provider configuration is unavailable.',
             'worker_error' => 'Unexpected scoring worker error.',
             default => match ($status) {
                 'provider_error' => 'Provider request failed.',
                 'invalid_response' => 'Provider returned an invalid structured response.',
-                'config_missing' => 'Fast-score provider configuration is unavailable.',
+                'config_missing' => 'Fastmod provider configuration is unavailable.',
                 default => null,
             },
         };

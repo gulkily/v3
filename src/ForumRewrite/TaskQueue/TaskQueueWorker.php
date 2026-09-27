@@ -100,7 +100,7 @@ final class TaskQueueWorker
     private function runFastScoreSweep(int $id): array
     {
         if ($this->runFastScoreSweep === null) {
-            return $this->store->markFailed($id, 'fast_score_sweep_unavailable', 'Fast score sweep is not configured for this worker.', false);
+            return $this->store->markFailed($id, 'fast_score_sweep_unavailable', 'Fastmod sweep is not configured for this worker.', false);
         }
 
         try {

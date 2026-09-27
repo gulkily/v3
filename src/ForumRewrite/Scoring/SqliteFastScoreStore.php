@@ -53,7 +53,7 @@ final class SqliteFastScoreStore implements FastScoreStore
         ];
         $stmt = $this->pdo->prepare('INSERT INTO post_fast_scores (post_id, content_hash, rubric_revision, status, probability, source, signals_json, failure_code, failure_message, created_at, updated_at) VALUES (:post_id, :content_hash, :rubric_revision, :status, :probability, :source, :signals_json, :failure_code, :failure_message, :created_at, :updated_at) ON CONFLICT(post_id, content_hash, rubric_revision) DO UPDATE SET status = excluded.status, probability = excluded.probability, source = excluded.source, signals_json = excluded.signals_json, failure_code = excluded.failure_code, failure_message = excluded.failure_message, updated_at = excluded.updated_at');
         $stmt->execute($row);
-        return $this->find($postId, $contentHash, $rubricRevision) ?? throw new \RuntimeException('Fast score was not saved.');
+        return $this->find($postId, $contentHash, $rubricRevision) ?? throw new \RuntimeException('Fastmod score was not saved.');
     }
 
     /** @return array<string, mixed> */
@@ -291,7 +291,7 @@ final class SqliteFastScoreStore implements FastScoreStore
         $stmt->execute(['post_id' => $postId, 'content_hash' => $contentHash, 'rubric_revision' => $rubricRevision]);
         $row = $stmt->fetch();
         if ($row === false) {
-            throw new \RuntimeException('Fast score work was not saved.');
+            throw new \RuntimeException('Fastmod work was not saved.');
         }
         $row['attempt_count'] = (int) $row['attempt_count'];
         return $row;

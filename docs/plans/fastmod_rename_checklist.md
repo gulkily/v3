@@ -28,6 +28,6 @@ storage tables.
 
 ## Verification
 
-- [ ] Search public-facing templates, documentation, scripts, and API messages
+- [x] Search public-facing templates, documentation, scripts, and API messages
   for obsolete product-copy references.
 - [ ] Run the relevant CLI, smoke, and documentation checks.

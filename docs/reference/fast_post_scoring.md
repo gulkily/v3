@@ -52,7 +52,7 @@ private worker pipeline.
 
 ## Operator commands
 
-`./v3 fast-score status` reports private work, score, and task-queue state.
+`./v3 fast-score status` reports private Fastmod work, scores, and task-queue state.
 `retry` and `invalidate` require an explicit post ID, content hash, and rubric
 revision; they do not support historical backfill. `smoke --post-id=...` makes
 one deliberate provider request without creating a score row or corpus sweep.

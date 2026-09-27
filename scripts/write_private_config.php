@@ -377,7 +377,7 @@ function renderPrivateConfigFile(array $config, array $defaults, array $existing
     $contents .= renderConfigLine('LLM_POST_ANALYSIS_PROMPT_PATH', $config['LLM_POST_ANALYSIS_PROMPT_PATH']);
 
     if ($includeComments) {
-        $contents .= "\n    // Fast scoring is independent of full post analysis and disabled by default.\n"
+        $contents .= "\n    // Fastmod is independent of full post analysis and disabled by default.\n"
             . "    // Its LLM settings fall back to the corresponding LLM_* values when omitted.\n";
     }
     $contents .= renderConfigLine('FAST_SCORING_ENABLED', $config['FAST_SCORING_ENABLED'])

@@ -183,7 +183,7 @@ final class WritePostAndIdentityApiController
         try {
             $this->routeServices->enqueueFastScoreForPublishedPost($postId);
         } catch (\Throwable) {
-            error_log('Fast-score enqueue failed after post publication.');
+            error_log('Fastmod enqueue failed after post publication.');
         }
     }
 

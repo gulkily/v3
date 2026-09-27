@@ -165,13 +165,13 @@ final class RouteServices
         };
         $post = $fetchPost($postId);
         if ($post === null) {
-            throw new RuntimeException('Published post is not available in the read model for fast-score enqueueing.');
+            throw new RuntimeException('Published post is not available in the read model for Fastmod enqueueing.');
         }
         $context = (new FastScoreContextFactory($fetchPost))->forPost($post);
         $scorePath = FastScoreDatabaseConfig::path($this->projectRoot, $privateConfig);
         $scoreDirectory = dirname($scorePath);
         if (!is_dir($scoreDirectory) && !mkdir($scoreDirectory, 0777, true) && !is_dir($scoreDirectory)) {
-            throw new RuntimeException('Fast-score database directory is not writable.');
+            throw new RuntimeException('Fastmod database directory is not writable.');
         }
         (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->enqueueWork(
             $postId,
