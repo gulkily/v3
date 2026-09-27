@@ -1985,6 +1985,8 @@ PHP;
         assertStringContains('data-bookmarklet-kind="tweet"', $bookmarklets);
         assertStringContains('window.getSelection().toString().trim()', $bookmarkletAsset);
         assertStringContains('tweetComposeUrl', $bookmarkletAsset);
+        $word97Css = (string) file_get_contents(__DIR__ . '/../public/assets/theme-word97.css');
+        assertStringContains(':root[data-theme="word97"] .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $word97Css);
         assertStringContains('value="Saved Title"', $prefilledCompose);
         assertStringContains('>Saved Body</textarea>', $prefilledCompose);
     }
