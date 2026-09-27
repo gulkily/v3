@@ -7,6 +7,20 @@ form is the shorthand used elsewhere in this repo's docs.
 Run `./v3` with no arguments to print the same command list from the script
 itself (useful if this document drifts from `v3`).
 
+## CLI error-handling contract
+
+When adding or changing a `./v3` command or worker command:
+
+- validate the command and its options before filesystem, database, network, or
+  other state-changing work begins;
+- accept only documented options and reject unknown commands or options with a
+  nonzero exit code;
+- write a concise error and the relevant usage text to stderr—never expose an
+  uncaught PHP exception or stack trace;
+- support `-h` and `--help` with exit code 0; and
+- add a regression test through the `./v3` dispatcher for unknown-option
+  handling.
+
 Most data-touching commands accept optional positional `repository_root` and
 `database_path` arguments. When omitted they fall back to, in order:
 
