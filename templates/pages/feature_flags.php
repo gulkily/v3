@@ -1,4 +1,6 @@
 <?php
+$siteError = $flags[0]->siteError ?? null;
+
 $flagGroups = [];
 foreach ($flags as $flag) {
     $flagGroups[$flag->definition->groupKey()][] = $flag;
@@ -31,6 +33,9 @@ foreach ($flags as $flag) {
   </article>
   <article class="card">
     <h1>Feature Flags</h1>
+<?php if ($siteError !== null): ?>
+    <div class="feedback feedback-error"><?= $e($siteError) ?></div>
+<?php endif; ?>
     <p class="feature-flags-summary meta">
       <strong><?= $totalCount ?></strong> flags &middot;
       <strong><?= $enabledCount ?></strong> enabled &middot;
@@ -51,7 +56,7 @@ foreach ($flags as $flag) {
   $parentDefinition = $definition->requiresEnabledFlag !== null ? $registry->get($definition->requiresEnabledFlag) : null;
   $rowClass = 'feature-flag-row' . ($flag->isBlockedByDependency() ? ' is-blocked' : '');
 ?>
-        <div class="<?= $e($rowClass) ?>" data-feature-flag-row data-flag-key="<?= $e($definition->key) ?>">
+        <div class="<?= $e($rowClass) ?>" data-feature-flag-row data-flag-key="<?= $e($definition->key) ?>" data-flag-default="<?= $definition->defaultValue ? 'true' : 'false' ?>">
           <div class="feature-flag-info">
             <div class="feature-flag-name">
               <?= $e($definition->label) ?>
@@ -86,7 +91,7 @@ foreach ($flags as $flag) {
           </div>
           <div class="feature-flag-control">
 <?php if ($flag->canChangeFromSite()): ?>
-            <form method="post" action="/tools/feature-flags/" class="inline-form" data-feature-flag-form>
+            <form method="post" action="/tools/feature-flags/" class="inline-form" data-feature-flag-form data-feature-flag-toggle>
               <input type="hidden" name="key" value="<?= $e($definition->key) ?>">
               <input type="hidden" name="value" value="<?= $flag->effectiveValue ? 'false' : 'true' ?>">
               <button

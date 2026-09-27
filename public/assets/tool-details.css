@@ -118,6 +118,10 @@
   vertical-align: middle;
 }
 
+.badge[hidden] {
+  display: none;
+}
+
 .badge-overridden {
   border-color: var(--status-warning);
   color: var(--status-warning);
