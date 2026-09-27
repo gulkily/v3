@@ -1987,6 +1987,9 @@ PHP;
         assertStringContains('tweetComposeUrl', $bookmarkletAsset);
         $word97Css = (string) file_get_contents(__DIR__ . '/../public/assets/theme-word97.css');
         assertStringContains(':root[data-theme="word97"] .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $word97Css);
+        assertStringContains(':root[data-theme="word97"] .tool-launcher-button[href="/forte"]::before', $word97Css);
+        assertStringContains(':root[data-theme="word97"] .tool-launcher-button[href="/tools/sqlite/"]::before', $word97Css);
+        assertStringContains(':root[data-theme="word97"] .tool-launcher-button[href="/tools/llm-exchanges/"]::before', $word97Css);
         assertStringContains('value="Saved Title"', $prefilledCompose);
         assertStringContains('>Saved Body</textarea>', $prefilledCompose);
     }
