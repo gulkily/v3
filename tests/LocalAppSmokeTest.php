@@ -1373,6 +1373,7 @@ PHP;
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $bookmarklets);
         assertFingerprintedAsset($bookmarklets, 'tools_bookmarklets.js');
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
+        assertStringContains('data-bookmarklet-kind="tweet"', $bookmarklets);
         assertStringNotContains('Thread ID:', $composeReply);
         assertStringNotContains('Parent ID:', $composeReply);
         assertFingerprintedAsset($composeReply, 'browser_signing.js');
@@ -1981,7 +1982,9 @@ PHP;
         assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $bookmarklets);
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
+        assertStringContains('data-bookmarklet-kind="tweet"', $bookmarklets);
         assertStringContains('window.getSelection().toString().trim()', $bookmarkletAsset);
+        assertStringContains('tweetComposeUrl', $bookmarkletAsset);
         assertStringContains('value="Saved Title"', $prefilledCompose);
         assertStringContains('>Saved Body</textarea>', $prefilledCompose);
     }

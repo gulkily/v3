@@ -139,6 +139,18 @@ final class ToolsPageController
                         'description' => 'Open Compose Thread in a new window with only the selected text.',
                         'bookmarklet_kind' => 'selection',
                     ],
+                    [
+                        'label' => 'Tweet',
+                        'mode' => 'same-window',
+                        'description' => 'On x.com, open Compose Thread in this tab with the tweet text, author, and link filled in.',
+                        'bookmarklet_kind' => 'tweet',
+                    ],
+                    [
+                        'label' => 'Tweet',
+                        'mode' => 'new-window',
+                        'description' => 'On x.com, open Compose Thread in a new window with the tweet text, author, and link filled in.',
+                        'bookmarklet_kind' => 'tweet',
+                    ],
                 ],
                 'toolNavOptions' => ToolsPageSupport::navOptions('bookmarklets'),
             ],
