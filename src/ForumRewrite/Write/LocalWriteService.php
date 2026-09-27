@@ -1260,7 +1260,7 @@ class LocalWriteService
             $commitSha = $commitResult['commit_sha'];
 
             $phaseStartedAt = hrtime(true);
-            $this->insertFeatureFlagActivity($key, $requestedValue, $recordPath, $commitSha);
+            $this->syncReadModelAfterFeatureFlagWrite($key, $requestedValue, $recordPath, $commitSha);
             $timings['activity_update'] = $this->elapsedMilliseconds($phaseStartedAt);
 
             $phaseStartedAt = hrtime(true);
@@ -1672,36 +1672,51 @@ class LocalWriteService
         return (new ReadModelConnection($this->databasePath))->open();
     }
 
-    private function insertFeatureFlagActivity(string $key, bool $value, string $recordPath, string $commitSha): void
+    private function syncReadModelAfterFeatureFlagWrite(string $key, bool $value, string $recordPath, string $commitSha): void
     {
         if (!$this->canIncrementallyUpdateReadModel()) {
             return;
         }
 
         $pdo = $this->readModelPdo();
-        $stmt = $pdo->prepare(
-            'INSERT INTO activity (
-                created_at, kind, record_family, action_key, post_id, thread_id, label, board_tags_json,
-                author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved,
-                source_path, source_commit_sha
-             ) VALUES (
-                :created_at, :kind, :record_family, :action_key, NULL, NULL, :label, :board_tags_json,
-                NULL, NULL, NULL, :author_label, :author_is_approved,
-                :source_path, :source_commit_sha
-             )'
-        );
-        $stmt->execute([
-            'created_at' => $this->canonicalTimestampNow(),
-            'kind' => 'site_feature_flag',
-            'record_family' => 'instance_feature_flags',
-            'action_key' => $recordPath . '@' . $commitSha,
-            'label' => 'Set feature flag ' . $key . '=' . ($value ? 'true' : 'false'),
-            'board_tags_json' => '["site"]',
-            'author_label' => 'site configuration',
-            'author_is_approved' => 1,
-            'source_path' => $recordPath,
-            'source_commit_sha' => $commitSha,
-        ]);
+        $pdo->beginTransaction();
+
+        try {
+            $stmt = $pdo->prepare(
+                'INSERT INTO activity (
+                    created_at, kind, record_family, action_key, post_id, thread_id, label, board_tags_json,
+                    author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved,
+                    source_path, source_commit_sha
+                 ) VALUES (
+                    :created_at, :kind, :record_family, :action_key, NULL, NULL, :label, :board_tags_json,
+                    NULL, NULL, NULL, :author_label, :author_is_approved,
+                    :source_path, :source_commit_sha
+                 )'
+            );
+            $stmt->execute([
+                'created_at' => $this->canonicalTimestampNow(),
+                'kind' => 'site_feature_flag',
+                'record_family' => 'instance_feature_flags',
+                'action_key' => $recordPath . '@' . $commitSha,
+                'label' => 'Set feature flag ' . $key . '=' . ($value ? 'true' : 'false'),
+                'board_tags_json' => '["site"]',
+                'author_label' => 'site configuration',
+                'author_is_approved' => 1,
+                'source_path' => $recordPath,
+                'source_commit_sha' => $commitSha,
+            ]);
+
+            $this->incrementalReadModelUpdater()->writeMetadata($pdo, $commitSha);
+            $pdo->commit();
+        } catch (\Throwable $throwable) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $throwable;
+        }
+
+        $this->staleMarker()->clear();
     }
 
     /**
