@@ -247,12 +247,24 @@
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='1' y='8' width='3' height='1' fill='%23008000'/><rect x='4' y='4' width='1' height='5' fill='%23008000'/><rect x='5' y='4' width='1' height='1' fill='%23008000'/><rect x='6' y='4' width='1' height='8' fill='%23008000'/><rect x='7' y='11' width='1' height='1' fill='%23008000'/><rect x='8' y='6' width='1' height='6' fill='%23008000'/><rect x='9' y='6' width='1' height='1' fill='%23008000'/><rect x='10' y='6' width='1' height='3' fill='%23008000'/><rect x='11' y='8' width='4' height='1' fill='%23008000'/></svg>");
 }
 
+:root[data-theme="word97"] .tool-launcher-button[href="/forte"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='1' y='2' width='14' height='11' fill='%23004080'/><rect x='2' y='4' width='12' height='8' fill='%23ffffff'/><rect x='6' y='4' width='1' height='8' fill='%23004080'/><rect x='10' y='4' width='1' height='8' fill='%23004080'/><rect x='3' y='6' width='2' height='1' fill='%23808080'/><rect x='3' y='9' width='2' height='1' fill='%23808080'/><rect x='12' y='6' width='2' height='1' fill='%23808080'/><rect x='12' y='9' width='2' height='1' fill='%23808080'/></svg>");
+}
+
 :root[data-theme="word97"] .tool-launcher-button[href="/tools/bookmarklets/"]::before {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='7' y='1' width='2' height='3' fill='%23c8a000'/><rect x='6' y='4' width='4' height='2' fill='%23c8a000'/><rect x='1' y='6' width='14' height='2' fill='%23c8a000'/><rect x='3' y='8' width='10' height='2' fill='%23c8a000'/><rect x='4' y='10' width='8' height='1' fill='%23c8a000'/><rect x='3' y='11' width='4' height='2' fill='%23c8a000'/><rect x='9' y='11' width='4' height='2' fill='%23c8a000'/><rect x='2' y='13' width='3' height='2' fill='%23c8a000'/><rect x='11' y='13' width='3' height='2' fill='%23c8a000'/></svg>");
 }
 
 :root[data-theme="word97"] .tool-launcher-button[href="/tools/backup/"]::before {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='1' y='1' width='14' height='14' fill='%23000080'/><rect x='2' y='2' width='12' height='12' fill='%23000080'/><rect x='4' y='1' width='8' height='6' fill='%23ffffff'/><rect x='9' y='2' width='2' height='4' fill='%23000080'/><rect x='3' y='9' width='10' height='6' fill='%23ffffff'/><rect x='4' y='10' width='8' height='1' fill='%23808080'/><rect x='4' y='12' width='8' height='1' fill='%23808080'/><rect x='14' y='1' width='1' height='1' fill='%23c0c0c0'/></svg>");
+}
+
+:root[data-theme="word97"] .tool-launcher-button[href="/tools/sqlite/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='5' y='2' width='6' height='1' fill='%23800080'/><rect x='3' y='3' width='10' height='1' fill='%23800080'/><rect x='3' y='4' width='10' height='8' fill='%23800080'/><rect x='3' y='12' width='10' height='1' fill='%23800080'/><rect x='5' y='13' width='6' height='1' fill='%23800080'/><rect x='3' y='6' width='10' height='1' fill='%23400040'/><rect x='3' y='9' width='10' height='1' fill='%23400040'/></svg>");
+}
+
+:root[data-theme="word97"] .tool-launcher-button[href="/tools/llm-exchanges/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='2' y='2' width='8' height='4' fill='%23ff8000'/><rect x='2' y='6' width='2' height='1' fill='%23ff8000'/><rect x='1' y='7' width='1' height='1' fill='%23ff8000'/><rect x='4' y='3' width='1' height='1' fill='%23ffffff'/><rect x='6' y='3' width='1' height='1' fill='%23ffffff'/><rect x='8' y='3' width='1' height='1' fill='%23ffffff'/><rect x='6' y='8' width='8' height='4' fill='%23404040'/><rect x='12' y='12' width='2' height='1' fill='%23404040'/><rect x='13' y='13' width='1' height='1' fill='%23404040'/><rect x='8' y='9' width='1' height='1' fill='%23ffffff'/><rect x='10' y='9' width='1' height='1' fill='%23ffffff'/><rect x='12' y='9' width='1' height='1' fill='%23ffffff'/></svg>");
 }
 
 :root[data-theme="word97"] .tool-launcher-button[href="/tools/codebase/"]::before {
@@ -277,6 +289,10 @@
 
 :root[data-theme="word97"] .tool-launcher-button[data-bookmarklet-kind="selection"]::before {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='1' width='10' height='11' fill='%23000000'/><rect x='4' y='2' width='8' height='10' fill='%23ffffff'/><rect x='5' y='4' width='6' height='1' fill='%23808080'/><rect x='5' y='6' width='6' height='1' fill='%23808080'/><rect x='5' y='8' width='4' height='1' fill='%23808080'/><rect x='4' y='12' width='2' height='2' fill='%23ffffff'/><rect x='7' y='12' width='2' height='1' fill='%23ffffff'/><rect x='10' y='12' width='2' height='2' fill='%23ffffff'/><rect x='5' y='14' width='1' height='1' fill='%23ffffff'/><rect x='8' y='13' width='1' height='1' fill='%23ffffff'/></svg>");
+}
+
+:root[data-theme="word97"] .tool-launcher-button[data-bookmarklet-kind="tweet"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='13' y='6' width='2' height='1' fill='%231da1f2'/><rect x='10' y='4' width='4' height='4' fill='%231da1f2'/><rect x='5' y='6' width='6' height='1' fill='%231da1f2'/><rect x='3' y='7' width='8' height='5' fill='%231da1f2'/><rect x='2' y='6' width='2' height='1' fill='%231da1f2'/><rect x='1' y='7' width='2' height='1' fill='%231da1f2'/><rect x='0' y='8' width='2' height='1' fill='%231da1f2'/><rect x='1' y='11' width='2' height='1' fill='%231da1f2'/><rect x='3' y='12' width='2' height='1' fill='%231da1f2'/><rect x='11' y='5' width='1' height='1' fill='%23ffffff'/></svg>");
 }
 
 :root[data-theme="word97"] a {
