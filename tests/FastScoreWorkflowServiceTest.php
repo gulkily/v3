@@ -42,6 +42,16 @@ final class FastScoreWorkflowServiceTest
         assertSame('Question?', $scorer->context['post_text']);
     }
 
+    public function testLocalPreflightIdentifiesOnlyOutcomesThatNeedNoProviderCall(): void
+    {
+        $scorer = new FastScoreWorkflowFakeProvider();
+        $service = $this->service(true, $scorer);
+
+        assertSame(null, $service->localResultForPost(['post_id' => 'post-1', 'thread_id' => 'post-1', 'body' => 'Question?']));
+        assertSame('heuristic', $service->localResultForPost(['post_id' => 'post-2', 'thread_id' => 'post-2', 'body' => ''])['source']);
+        assertSame(false, $scorer->called);
+    }
+
     public function testMissingProviderIsAnExplicitNonScoreOutcome(): void
     {
         $result = $this->service(true, null)->scorePost(['post_id' => 'post-1', 'thread_id' => 'post-1', 'body' => 'Question?']);

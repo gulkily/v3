@@ -81,6 +81,19 @@ final class SqliteFastScoreStoreTest
         assertSame('invalidated', $invalidated['state']);
     }
 
+    public function testReleaseClaimedWorkReturnsItToPendingWithoutConsumingAnAttempt(): void
+    {
+        $store = new SqliteFastScoreStore(new PDO('sqlite::memory:'));
+        $store->enqueueWork('post-1', 'content-a', 'rubric-a');
+        $claimed = $store->claimPendingWork(1)[0];
+
+        $released = $store->releaseClaimedWork($claimed);
+
+        assertSame('pending', $released['state']);
+        assertSame(0, $released['attempt_count']);
+        assertSame(null, $released['last_attempted_at']);
+    }
+
     public function testRecentWorkIncludesThePrivateScoreProbability(): void
     {
         $store = new SqliteFastScoreStore(new PDO('sqlite::memory:'));

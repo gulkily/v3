@@ -183,6 +183,29 @@ final class SqliteFastScoreStore implements FastScoreStore
         return $this->requiredWork($postId, $contentHash, $rubricRevision);
     }
 
+    /** @param array<string, mixed> $work */
+    public function releaseClaimedWork(array $work): array
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE fast_score_work
+             SET state = :pending, attempt_count = MAX(attempt_count - 1, 0),
+                 last_attempted_at = NULL, next_eligible_at = :next_eligible_at, updated_at = :updated_at
+             WHERE post_id = :post_id AND content_hash = :content_hash
+               AND rubric_revision = :rubric_revision AND state = :running'
+        );
+        $now = gmdate('c');
+        $stmt->execute([
+            'pending' => 'pending',
+            'next_eligible_at' => $now,
+            'updated_at' => $now,
+            'post_id' => $work['post_id'],
+            'content_hash' => $work['content_hash'],
+            'rubric_revision' => $work['rubric_revision'],
+            'running' => 'running',
+        ]);
+        return $this->requiredWork((string) $work['post_id'], (string) $work['content_hash'], (string) $work['rubric_revision']);
+    }
+
     public function hasOutstandingWork(): bool
     {
         return (int) $this->pdo->query(
