@@ -58,3 +58,15 @@
   - **Found and fixed a real spec deviation via screenshot**: my first mobile layout put the switch below the text (column stacking) instead of "top-right of the row, text flows full width below" as specified. Fixed with `position: absolute` placement; re-verified by screenshot.
   - Investigated an apparent 375px horizontal-overflow/clipping artifact seen when using `chromium`/`google-chrome --headless=new --screenshot=...` directly from the CLI; it reproduced identically on the untouched `/tools/` page, but turned out to be a limitation of that specific screenshot invocation, not a real site bug — Selenium's `set_window_size` against the same URL shows correct wrapping with no overflow. The nav item "Feature Flags" wrapping alone onto its own row at narrow widths is real and matches the Step 3 plan's Stage 5 "nav wrap fix" item, still pending.
   - Badge text ("overridden", "locked") is currently unstyled plain text next to the flag name, which can wrap awkwardly (e.g. "Automatic agent replies  locked" wraps to two lines at 375px) — expected, Stage 5 adds the pill-shaped `.badge` styling.
+
+## Stage 5 - CSS: badges, error banner, nav wrap fix
+- Changes:
+  - Added `.badge` (base pill shape) plus `.badge-overridden` (amber, `--status-warning`) and `.badge-locked` (neutral, `--line`/`--ink-soft`) to `public/assets/tool-details.css`, all token-based.
+  - Error banner needs no new CSS: `.feedback`/`.feedback-error` already exist in `site.css` (padding, border, `--feedback-error-bg` background) and are reused as-is when Stage 6 adds the actual banner markup to the template.
+  - Nav wrap fix: added `.board-controls-nav > *:last-child { margin-left: 0; }` to `tool-details.css`, overriding site.css's `margin-left: auto` on the last sub-nav item. Scoped deliberately to `tool-details.css` (only loaded by `feature_flags.php`, `codebase_state.php`, `llm_exchanges.php`) rather than editing the shared rule in `site.css` directly, because `board.php` also uses `.board-controls-nav` and relies on that same rule to right-align its sort options from its view options — a real, intentional use elsewhere that a global edit would have broken.
+- Verification:
+  - Re-screenshotted via the same Selenium+Chromium setup at 1150px and 375px, light and dark themes.
+  - Badges render legibly (text + color, not color alone) in both themes; "OVERRIDDEN" and "LOCKED" pills are clearly distinct from the on/off switch state.
+  - Nav fix confirmed: "Feature Flags" now wraps onto its own row left-aligned with the other sub-nav items, instead of being pushed to the right edge and looking detached (previous behavior, caused by site.css's `:last-child` right-alignment, verified in both light and dark screenshots).
+  - Did not re-check `board.php`'s own layout since `tool-details.css` isn't loaded there — the override can't reach it by construction (selector scoped by stylesheet, not by additional class), so there's nothing to regress.
+- Notes: none beyond what's captured above.

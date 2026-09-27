@@ -104,6 +104,46 @@
   background: var(--panel);
 }
 
+.badge {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid;
+  border-radius: 999px;
+  font-family: var(--ui-font);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.badge-overridden {
+  border-color: var(--status-warning);
+  color: var(--status-warning);
+  background: color-mix(in srgb, var(--status-warning) 14%, var(--input-bg) 86%);
+}
+
+.badge-locked {
+  border-color: var(--line);
+  color: var(--ink-soft);
+  background: var(--input-bg);
+}
+
+/*
+ * Tools sub-nav "wraps alone" fix: site.css right-aligns the last
+ * .board-controls-nav item (useful on the board page, where it
+ * separates sort options from view options). On the tools detail
+ * pages that load this stylesheet, the last item is just another
+ * page link, so the push-right made it wrap onto its own line
+ * looking detached. Cancel it here rather than in site.css, since
+ * board.php's right-alignment is intentional and doesn't load this
+ * file.
+ */
+.board-controls-nav > *:last-child {
+  margin-left: 0;
+}
+
 .feature-flag-row {
   display: flex;
   justify-content: space-between;
