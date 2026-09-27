@@ -227,6 +227,7 @@ final class WriteApiSmokeTest
             $missing = json_decode($this->renderMethod($application, 'POST', '/api/score_post?post_id=missing'), true);
 
             assertSame('fast_score_synchronous_execution_retired', $anonymous['error']);
+            assertSame('Fastmod scores are created only by the private worker after new-content publication.', $anonymous['message']);
             assertSame('fast_score_synchronous_execution_retired', $approved['error']);
             assertSame('fast_score_synchronous_execution_retired', $missing['error']);
         } finally {

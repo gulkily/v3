@@ -66,7 +66,7 @@ final class PostWorkflowApiController
         $this->routeServices->sendJson([
             'status' => 'error',
             'error' => 'fast_score_synchronous_execution_retired',
-            'message' => 'Fast scores are created only by the private worker after new-content publication.',
+            'message' => 'Fastmod scores are created only by the private worker after new-content publication.',
         ], 410, $this->routeServices->noStoreHeaders());
         return;
 
