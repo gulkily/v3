@@ -165,7 +165,7 @@ PHP);
     public function testAutomaticAgentRepliesDependsOnAgentReplies(): void
     {
         $this->withEnvironment([], function (): void {
-            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n");
+            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\n");
             $projectRoot = $this->projectRootWithPrivateConfig(<<<'PHP'
 <?php
 
@@ -179,6 +179,65 @@ PHP);
 
             assertSame(false, $automatic->effectiveValue);
             assertSame('dependency', $automatic->source);
+        });
+    }
+
+    public function testDependencyParentEnabledIsExposedEvenWhenChildIsAlreadyOff(): void
+    {
+        $this->withEnvironment([], function (): void {
+            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\nFORUM_EMOJI_AUTHORED_TEXT: false\nFORUM_UNICODE_AUTHORED_TEXT: false\n");
+            $emoji = FeatureFlagEvaluator::forRepository($repositoryRoot)->evaluate(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT);
+
+            assertSame(false, $emoji->effectiveValue);
+            assertSame('site', $emoji->source);
+            assertSame(false, $emoji->dependencyParentEnabled);
+            assertSame(true, $emoji->isBlockedByDependency());
+        });
+    }
+
+    public function testLockReasonBranchesBySource(): void
+    {
+        $this->withEnvironment([
+            FeatureFlagRegistry::APP_VERSION_NOTIFICATION => 'false',
+        ], function (): void {
+            $notification = (new FeatureFlagEvaluator())->evaluate(FeatureFlagRegistry::APP_VERSION_NOTIFICATION);
+            assertSame(true, $notification->isLocked());
+            assertSame('Set via environment variable; restart to change.', $notification->lockReason());
+        });
+
+        $this->withEnvironment([], function (): void {
+            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\n");
+            $projectRoot = $this->projectRootWithPrivateConfig(<<<'PHP'
+<?php
+
+return [
+    'DEDALUS_AGENT_REPLIES_ENABLED' => false,
+];
+PHP);
+            $agentReplies = FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)
+                ->evaluate(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED);
+            assertSame(true, $agentReplies->isLocked());
+            assertSame('Set via private config file; restart to change.', $agentReplies->lockReason());
+
+            $recording = FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)
+                ->evaluate(FeatureFlagRegistry::LLM_CONVERSATION_RECORDING_ENABLED);
+            assertSame(true, $recording->isLocked());
+            assertSame('Not configurable from the site.', $recording->lockReason());
+
+            $unicode = FeatureFlagEvaluator::forRepository($repositoryRoot)->evaluate(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
+            assertSame(false, $unicode->isLocked());
+            assertNullValue($unicode->lockReason());
+        });
+    }
+
+    public function testLockReasonIsNullOnSiteErrorSoTheBannerOwnsThatMessage(): void
+    {
+        $this->withEnvironment([], function (): void {
+            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\nFORUM_UNICODE_AUTHORED_TEXT: yes\n");
+            $unicode = FeatureFlagEvaluator::forRepository($repositoryRoot)->evaluate(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
+
+            assertSame(false, $unicode->isLocked());
+            assertNullValue($unicode->lockReason());
         });
     }
 

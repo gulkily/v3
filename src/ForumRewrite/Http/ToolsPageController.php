@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Tools\ToolsPageSupport;
 use RuntimeException;
 
@@ -179,6 +180,7 @@ final class ToolsPageController
             'feature_flags.php',
             [
                 'flags' => $this->featureFlags->all(),
+                'registry' => new FeatureFlagRegistry(),
                 'toolNavOptions' => ToolsPageSupport::navOptions('feature-flags'),
             ],
             'Feature Flags',

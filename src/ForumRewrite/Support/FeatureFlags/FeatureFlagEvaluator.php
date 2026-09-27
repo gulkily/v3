@@ -66,7 +66,9 @@ final class FeatureFlagEvaluator
     {
         $state = $this->evaluateWithoutDependencies($key);
         $requiresEnabledFlag = $state->definition->requiresEnabledFlag;
-        if ($requiresEnabledFlag !== null && $state->effectiveValue && !$this->isEnabled($requiresEnabledFlag)) {
+        $dependencyParentEnabled = $requiresEnabledFlag !== null ? $this->isEnabled($requiresEnabledFlag) : null;
+
+        if ($dependencyParentEnabled === false && $state->effectiveValue) {
             return new FeatureFlagState(
                 $state->definition,
                 false,
@@ -74,10 +76,19 @@ final class FeatureFlagEvaluator
                 $state->environmentValue,
                 $state->siteValue,
                 $state->siteError,
+                $dependencyParentEnabled,
             );
         }
 
-        return $state;
+        return new FeatureFlagState(
+            $state->definition,
+            $state->effectiveValue,
+            $state->source,
+            $state->environmentValue,
+            $state->siteValue,
+            $state->siteError,
+            $dependencyParentEnabled,
+        );
     }
 
     private function evaluateWithoutDependencies(string $key): FeatureFlagState
