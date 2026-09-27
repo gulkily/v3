@@ -9,15 +9,21 @@ use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\Support\ExecutionLock;
 
 $projectRoot = dirname(__DIR__);
-$options = parseCodexHandoffOptions(array_slice($argv, 1));
-$databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
-$runnerProjectRoot = (string) ($options['project-root'] ?? $projectRoot);
-$codexBin = (string) ($options['codex-bin'] ?? (getenv('FORUM_CODEX_EXECUTABLE') ?: 'codex'));
-$limit = max(1, (int) ($options['limit'] ?? 1));
-$dryRun = ($options['dry-run'] ?? false) === true;
-$quiet = ($options['quiet'] ?? false) === true;
 
 try {
+    $options = parseCodexHandoffOptions(array_slice($argv, 1));
+    if (($options['help'] ?? false) === true) {
+        fwrite(STDOUT, codexHandoffUsageText());
+        exit(0);
+    }
+
+    $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+    $runnerProjectRoot = (string) ($options['project-root'] ?? $projectRoot);
+    $codexBin = (string) ($options['codex-bin'] ?? (getenv('FORUM_CODEX_EXECUTABLE') ?: 'codex'));
+    $limit = max(1, (int) ($options['limit'] ?? 1));
+    $dryRun = ($options['dry-run'] ?? false) === true;
+    $quiet = ($options['quiet'] ?? false) === true;
+
     $pdo = new PDO('sqlite:' . $databasePath);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     $store = new CodexHandoffStore($pdo);
@@ -96,8 +102,8 @@ function parseCodexHandoffOptions(array $args): array
             continue;
         }
         if ($arg === '-h' || $arg === '--help') {
-            fwrite(STDOUT, codexHandoffUsageText());
-            exit(0);
+            $options['help'] = true;
+            continue;
         }
 
         foreach (['limit', 'database-path', 'project-root', 'codex-bin'] as $key) {

@@ -10,18 +10,24 @@ use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 $projectRoot = dirname(__DIR__);
-$options = parseOptions(array_slice($argv, 1));
-$repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
-$databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
-$artifactRoot = getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public');
-$staticHtmlRoot = getenv('FORUM_STATIC_HTML_ROOT') ?: ($projectRoot . '/state/static_html');
-$limit = max(1, (int) ($options['limit'] ?? 10));
-$postId = isset($options['post-id']) ? trim((string) $options['post-id']) : '';
-$dryRun = ($options['dry-run'] ?? false) === true;
-$quiet = ($options['quiet'] ?? false) === true;
-$startedAt = microtime(true);
 
 try {
+    $options = parseOptions(array_slice($argv, 1));
+    if (($options['help'] ?? false) === true) {
+        fwrite(STDOUT, usageText());
+        exit(0);
+    }
+
+    $repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
+    $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+    $artifactRoot = getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public');
+    $staticHtmlRoot = getenv('FORUM_STATIC_HTML_ROOT') ?: ($projectRoot . '/state/static_html');
+    $limit = max(1, (int) ($options['limit'] ?? 10));
+    $postId = isset($options['post-id']) ? trim((string) $options['post-id']) : '';
+    $dryRun = ($options['dry-run'] ?? false) === true;
+    $quiet = ($options['quiet'] ?? false) === true;
+    $startedAt = microtime(true);
+
     $pdo = new PDO('sqlite:' . $databasePath);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     $store = new SqliteAgentReplyGenerationStore($pdo);
@@ -178,6 +184,10 @@ function parseOptions(array $args): array
 {
     $options = [];
     foreach ($args as $arg) {
+        if ($arg === '-h' || $arg === '--help') {
+            $options['help'] = true;
+            continue;
+        }
         if ($arg === '--quiet') {
             $options['quiet'] = true;
             continue;

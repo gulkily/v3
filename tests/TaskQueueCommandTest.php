@@ -105,6 +105,22 @@ final class TaskQueueCommandTest
         assertSame('', $stderr);
     }
 
+    public function testTaskQueueUnknownOptionsShowUsageWithoutAPhpStackTrace(): void
+    {
+        foreach (['--test', '--unknown'] as $option) {
+            [$exitCode, $stdout, $stderr] = $this->runCommand(
+                dirname(__DIR__),
+                './v3 task-queue run ' . $option,
+            );
+
+            assertSame(1, $exitCode);
+            assertSame('', $stdout);
+            assertStringContains('Error: Unknown option: ' . $option, $stderr);
+            assertStringContains('php scripts/task_queue.php run', $stderr);
+            assertStringNotContains('Stack trace:', $stderr);
+        }
+    }
+
     public function testTaskQueueFastScoreEnqueueCoalesces(): void
     {
         $queuePath = sys_get_temp_dir() . '/forum-fast-score-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';

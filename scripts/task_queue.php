@@ -24,12 +24,26 @@ use ForumRewrite\TaskQueue\TaskQueueWorker;
 
 $projectRoot = dirname(__DIR__);
 $command = $argv[1] ?? '';
-$options = parseTaskQueueOptions(array_slice($argv, 2));
-$repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
-$databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
-$queuePath = TaskQueueDatabaseConfig::path($projectRoot, isset($options['queue-database-path']) ? (string) $options['queue-database-path'] : null);
+
+if (in_array($command, ['-h', '--help'], true)) {
+    printTaskQueueUsage(STDOUT);
+    exit(0);
+}
 
 try {
+    $options = parseTaskQueueOptions(array_slice($argv, 2));
+    if (($options['help'] ?? false) === true) {
+        printTaskQueueUsage(STDOUT);
+        exit(0);
+    }
+
+    if (!in_array($command, ['enqueue-rebuild', 'enqueue-fast-score', 'run', 'status', 'cron'], true)) {
+        throw new InvalidArgumentException('Unknown task-queue command: ' . ($command === '' ? '(none)' : $command));
+    }
+
+    $repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
+    $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+    $queuePath = TaskQueueDatabaseConfig::path($projectRoot, isset($options['queue-database-path']) ? (string) $options['queue-database-path'] : null);
     $queueDirectory = dirname($queuePath);
     if (!is_dir($queueDirectory) && !mkdir($queueDirectory, 0777, true) && !is_dir($queueDirectory)) {
         throw new RuntimeException('Task queue directory is not writable.');
@@ -288,7 +302,8 @@ try {
     printTaskQueueUsage(STDERR);
     exit(1);
 } catch (Throwable $exception) {
-    fwrite(STDERR, 'Error: ' . $exception->getMessage() . "\n");
+    fwrite(STDERR, 'Error: ' . $exception->getMessage() . "\n\n");
+    printTaskQueueUsage(STDERR);
     exit(1);
 }
 
@@ -300,6 +315,10 @@ function parseTaskQueueOptions(array $arguments): array
 {
     $options = [];
     foreach ($arguments as $argument) {
+        if ($argument === '-h' || $argument === '--help') {
+            $options['help'] = true;
+            continue;
+        }
         if (in_array($argument, ['--dry-run', '--quiet', '--verbose'], true)) {
             $options[substr($argument, 2)] = true;
             continue;

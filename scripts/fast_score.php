@@ -24,8 +24,17 @@ use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 $projectRoot = dirname(__DIR__);
 $command = $argv[1] ?? '';
 
+if (in_array($command, ['-h', '--help'], true)) {
+    fastScoreUsage(STDOUT);
+    exit(0);
+}
+
 try {
-    $options = fastScoreOptions(array_slice($argv, 2));
+    $options = fastScoreOptions($command, array_slice($argv, 2));
+    if (($options['help'] ?? false) === true) {
+        fastScoreUsage(STDOUT);
+        exit(0);
+    }
     $privateConfig = PrivateConfig::load($projectRoot);
     $scorePath = FastScoreDatabaseConfig::path($projectRoot, $privateConfig);
     if ($command === 'audit') {
@@ -251,20 +260,83 @@ try {
     fastScoreUsage(STDERR);
     exit(1);
 } catch (Throwable $error) {
-    fwrite(STDERR, 'error=' . $error->getMessage() . "\n");
+    fwrite(STDERR, 'error=' . $error->getMessage() . "\n\n");
+    fastScoreUsage(STDERR);
     exit(1);
 }
 
 /** @return array<string, string|bool> */
-function fastScoreOptions(array $arguments): array
+function fastScoreOptions(string $command, array $arguments): array
 {
+    $definitions = [
+        'status' => [
+            'limit' => true,
+            'verbose' => false,
+            'queue-database-path' => true,
+        ],
+        'audit' => [
+            'include-existing' => false,
+            'database-path' => true,
+            'input-usd-per-million' => true,
+            'output-usd-per-million' => true,
+        ],
+        'backfill' => [
+            'include-existing' => false,
+            'confirm' => false,
+            'max-posts' => true,
+            'max-cost-usd' => true,
+            'database-path' => true,
+            'queue-database-path' => true,
+            'input-usd-per-million' => true,
+            'output-usd-per-million' => true,
+        ],
+        'retry' => [
+            'post-id' => true,
+            'content-hash' => true,
+            'rubric-revision' => true,
+            'queue-database-path' => true,
+        ],
+        'invalidate' => [
+            'post-id' => true,
+            'content-hash' => true,
+            'rubric-revision' => true,
+        ],
+        'smoke' => [
+            'post-id' => true,
+            'database-path' => true,
+            'repository-root' => true,
+        ],
+        'prune' => [
+            'before' => true,
+        ],
+    ];
+
+    if (!array_key_exists($command, $definitions)) {
+        throw new InvalidArgumentException('Unknown fast-score command: ' . ($command === '' ? '(none)' : $command));
+    }
+
     $options = [];
     foreach ($arguments as $argument) {
+        if ($argument === '-h' || $argument === '--help') {
+            $options['help'] = true;
+            continue;
+        }
         if (!str_starts_with($argument, '--')) {
             throw new InvalidArgumentException('Unknown argument: ' . $argument . '. Use --name=value syntax, for example --max-posts=100.');
         }
         $parts = explode('=', substr($argument, 2), 2);
-        $options[$parts[0]] = $parts[1] ?? true;
+        $name = $parts[0];
+        if (!array_key_exists($name, $definitions[$command])) {
+            throw new InvalidArgumentException('Unknown option for fast-score ' . $command . ': --' . $name);
+        }
+
+        $requiresValue = $definitions[$command][$name];
+        $hasValue = array_key_exists(1, $parts);
+        if (!$requiresValue && $hasValue) {
+            throw new InvalidArgumentException('--' . $name . ' does not take a value.');
+        }
+
+        $options[$name] = $hasValue ? $parts[1] : true;
     }
     return $options;
 }

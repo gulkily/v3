@@ -84,6 +84,17 @@ final class FastmodAuditCommandTest
         assertStringNotContains('Stack trace:', $stderr);
     }
 
+    public function testUnknownFastScoreOptionIsRejectedBeforeRunningTheCommand(): void
+    {
+        [$exitCode, $stdout, $stderr] = $this->runCommand(dirname(__DIR__), './v3 fast-score status --unknown');
+
+        assertSame(1, $exitCode);
+        assertSame('', $stdout);
+        assertStringContains('error=Unknown option for fast-score status: --unknown', $stderr);
+        assertStringContains('php scripts/fast_score.php status', $stderr);
+        assertStringNotContains('Stack trace:', $stderr);
+    }
+
     public function testConfirmedBackfillCreatesABoundedBatchAndEnqueuesTheWorker(): void
     {
         $readPath = sys_get_temp_dir() . '/forum-fastmod-backfill-read-' . bin2hex(random_bytes(6)) . '.sqlite3';
