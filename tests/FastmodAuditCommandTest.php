@@ -121,6 +121,13 @@ final class FastmodAuditCommandTest
             assertStringContains('Monitor: ./v3 fast-score status', $stdout);
             assertSame(1, (int) (new PDO('sqlite:' . $scorePath))->query('SELECT COUNT(*) FROM fastmod_backfill_work')->fetchColumn());
             assertSame(1, (int) (new PDO('sqlite:' . $queuePath))->query("SELECT COUNT(*) FROM internal_tasks WHERE type = 'fast_score_sweep' AND status = 'queued'")->fetchColumn());
+            [$statusCode, $statusOutput, $statusError] = $this->runCommand(
+                dirname(__DIR__),
+                'FORUM_SECRETS_PATH=' . escapeshellarg($secretsPath) . ' ./v3 fast-score status --queue-database-path=' . escapeshellarg($queuePath),
+            );
+            assertSame(0, $statusCode);
+            assertSame('', $statusError);
+            assertStringContains('Backfill batch 1: status=queued processed=0/1 remaining=1 reserved_estimate_usd=0.000000 cap_usd=0.010000', $statusOutput);
         } finally {
             @unlink($readPath);
             @unlink($scorePath);

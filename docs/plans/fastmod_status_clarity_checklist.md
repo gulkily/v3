@@ -7,7 +7,7 @@ historical backfill work.
 
 - [x] Replace overlapping work/score count lines with separate outstanding-work
   and retained-outcome summaries.
-- [ ] Show regular and backfill pending work separately, including each active
+- [x] Show regular and backfill pending work separately, including each active
   batch's processed/remaining progress and reserved estimate versus cap.
 - [ ] Print a contextual next action, including an explicit explanation when a
   queued backfill is waiting behind regular work.

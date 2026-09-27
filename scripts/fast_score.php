@@ -161,15 +161,16 @@ try {
             fwrite(STDOUT, sprintf("Work post=%s state=%s probability=%s source=%s attempts=%d failure=%s content_hash=%s rubric_revision=%s updated=%s\n", $work['post_id'], $work['state'], $probability, $work['source'] ?? 'none', $work['attempt_count'], $work['failure_category'] ?? 'none', $work['content_hash'], $work['rubric_revision'], $work['updated_at']));
         }
         foreach ($store->recentBackfillBatches((int) ($options['limit'] ?? 10)) as $batch) {
+            $progress = $store->backfillProgress((int) $batch['id']);
             fwrite(STDOUT, sprintf(
-                "Backfill batch id=%d status=%s requested=%d queued=%d max_posts=%d max_cost_usd=%.6f reserved_cost_usd=%.6f updated=%s\n",
+                "Backfill batch %d: status=%s processed=%d/%d remaining=%d reserved_estimate_usd=%.6f cap_usd=%.6f updated=%s\n",
                 (int) $batch['id'],
                 $batch['status'],
-                (int) $batch['requested_count'],
-                (int) $batch['queued_count'],
-                (int) $batch['max_posts'],
-                (float) $batch['max_cost_usd'],
-                (float) $batch['reserved_cost_usd'],
+                (int) ($progress['processed_count'] ?? 0),
+                (int) ($progress['queued_count'] ?? $batch['queued_count']),
+                (int) ($progress['remaining_count'] ?? 0),
+                (float) ($progress['reserved_cost_usd'] ?? $batch['reserved_cost_usd']),
+                (float) ($progress['max_cost_usd'] ?? $batch['max_cost_usd']),
                 $batch['updated_at'],
             ));
         }
