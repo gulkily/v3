@@ -32,9 +32,9 @@ final class FastScoreSweepServiceTest
         $third = $service->run(2);
 
         assertSame(['root', 'reply', 'other'], $provider->postIds);
-        assertSame(['processed' => 2, 'scored' => 2, 'excluded' => 0, 'failed' => 0, 'remaining' => true], $first);
-        assertSame(['processed' => 1, 'scored' => 1, 'excluded' => 0, 'failed' => 0, 'remaining' => false], $second);
-        assertSame(['processed' => 0, 'scored' => 0, 'excluded' => 0, 'failed' => 0, 'remaining' => false], $third);
+        assertSame(['examined' => 3, 'processed' => 2, 'provider_calls' => 2, 'scored' => 2, 'excluded' => 0, 'failed' => 0, 'remaining' => true], $first);
+        assertSame(['examined' => 1, 'processed' => 1, 'provider_calls' => 1, 'scored' => 1, 'excluded' => 0, 'failed' => 0, 'remaining' => false], $second);
+        assertSame(['examined' => 0, 'processed' => 0, 'provider_calls' => 0, 'scored' => 0, 'excluded' => 0, 'failed' => 0, 'remaining' => false], $third);
         assertSame("Root\n\nRoot text", $provider->contexts['reply']['reply_context']['parent_text']);
     }
 
@@ -64,7 +64,7 @@ final class FastScoreSweepServiceTest
 
         $summary = $service->run(10);
 
-        assertSame(['processed' => 2, 'scored' => 1, 'excluded' => 0, 'failed' => 1, 'remaining' => true], $summary);
+        assertSame(['examined' => 2, 'processed' => 2, 'provider_calls' => 2, 'scored' => 1, 'excluded' => 0, 'failed' => 1, 'remaining' => true], $summary);
         assertSame(['bad', 'good'], $provider->postIds);
     }
 
@@ -102,6 +102,68 @@ final class FastScoreSweepServiceTest
         assertSame(0.01, $first['backfill']['reserved_cost_usd']);
         assertSame('completed', $pdo->query('SELECT status FROM fastmod_backfill_batches')->fetchColumn());
         assertSame(0.02, (float) $pdo->query('SELECT reserved_cost_usd FROM fastmod_backfill_batches')->fetchColumn());
+    }
+
+    public function testProviderCallLimitDoesNotCountLocalExclusions(): void
+    {
+        $pdo = $this->postsDatabase();
+        $this->insertPost($pdo, 'empty-1', 'empty-1', null, '', '', 1);
+        $this->insertPost($pdo, 'empty-2', 'empty-2', null, '', '', 2);
+        $this->insertPost($pdo, 'provider-1', 'provider-1', null, '', 'First provider post', 3);
+        $this->insertPost($pdo, 'provider-2', 'provider-2', null, '', 'Second provider post', 4);
+        $provider = new SweepFakeProvider();
+        $service = $this->service($pdo, $provider, 'rubric-a');
+        foreach (['empty-1', 'empty-2', 'provider-1', 'provider-2'] as $postId) {
+            $this->enqueue($pdo, $postId, 'rubric-a');
+        }
+
+        $summary = $service->run(1, 10);
+
+        assertSame(['provider-1'], $provider->postIds);
+        assertSame(4, $summary['examined']);
+        assertSame(3, $summary['processed']);
+        assertSame(1, $summary['provider_calls']);
+        assertSame(2, $summary['excluded']);
+        assertSame('pending', (new SqliteFastScoreStore($pdo))->findWork('provider-2', (new FastScoreContextFactory(static fn (string $_): ?array => null))->contentHashForPost(['post_id' => 'provider-2', 'thread_id' => 'provider-2', 'parent_id' => null, 'subject' => '', 'body' => 'Second provider post']), 'rubric-a')['state']);
+    }
+
+    public function testWorkLimitBoundsLocalExclusionsWithoutCallingTheProvider(): void
+    {
+        $pdo = $this->postsDatabase();
+        $this->insertPost($pdo, 'empty-1', 'empty-1', null, '', '', 1);
+        $this->insertPost($pdo, 'empty-2', 'empty-2', null, '', '', 2);
+        $this->insertPost($pdo, 'empty-3', 'empty-3', null, '', '', 3);
+        $provider = new SweepFakeProvider();
+        $service = $this->service($pdo, $provider, 'rubric-a');
+        foreach (['empty-1', 'empty-2', 'empty-3'] as $postId) {
+            $this->enqueue($pdo, $postId, 'rubric-a');
+        }
+
+        $summary = $service->run(10, 2);
+
+        assertSame([], $provider->postIds);
+        assertSame(2, $summary['examined']);
+        assertSame(2, $summary['processed']);
+        assertSame(0, $summary['provider_calls']);
+        assertSame(true, $summary['remaining']);
+    }
+
+    public function testProviderFailuresConsumeTheProviderCallLimit(): void
+    {
+        $pdo = $this->postsDatabase();
+        $this->insertPost($pdo, 'bad', 'bad', null, '', 'Bad', 1);
+        $this->insertPost($pdo, 'good', 'good', null, '', 'Good', 2);
+        $provider = new SweepFakeProvider(['bad']);
+        $service = $this->service($pdo, $provider, 'rubric-a');
+        $this->enqueue($pdo, 'bad', 'rubric-a');
+        $this->enqueue($pdo, 'good', 'rubric-a');
+
+        $summary = $service->run(1, 10);
+
+        assertSame(['bad'], $provider->postIds);
+        assertSame(1, $summary['provider_calls']);
+        assertSame(1, $summary['failed']);
+        assertSame(true, $summary['remaining']);
     }
 
     private function service(PDO $pdo, SweepFakeProvider $provider, string $rubricRevision): FastScoreSweepService

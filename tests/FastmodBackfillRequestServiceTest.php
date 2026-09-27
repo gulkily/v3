@@ -48,11 +48,27 @@ final class FastmodBackfillRequestServiceTest
         $store = new SqliteFastScoreStore($pdo);
         $batch = $store->createBackfillBatch('rubric-a', 1, 0.015, 0.01, [['post_id' => 'post-1', 'content_hash' => 'hash-1']]);
         $claimed = $store->claimPendingBackfillWork(1);
+        assertSame(true, $store->reserveBackfillProviderAttempt($claimed[0]));
         $store->completeWork($claimed[0], ['status' => 'provider_error', 'probability' => null, 'source' => 'none', 'signals' => ['provider_error']]);
         $store->retryWork('post-1', 'hash-1', 'rubric-a');
 
-        assertSame([], $store->claimPendingBackfillWork(1));
+        $retry = $store->claimPendingBackfillWork(1);
+        assertSame(1, count($retry));
+        assertSame(false, $store->reserveBackfillProviderAttempt($retry[0]));
+        $store->releaseClaimedWork($retry[0]);
         assertSame('budget_exhausted', $pdo->query('SELECT status FROM fastmod_backfill_batches WHERE id = ' . $batch['id'])->fetchColumn());
         assertSame(0.01, (float) $pdo->query('SELECT reserved_cost_usd FROM fastmod_backfill_batches WHERE id = ' . $batch['id'])->fetchColumn());
+    }
+
+    public function testClaimingBackfillWorkDoesNotReserveCostBeforeAProviderAttempt(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $store = new SqliteFastScoreStore($pdo);
+        $store->createBackfillBatch('rubric-a', 1, 1.0, 0.01, [['post_id' => 'post-1', 'content_hash' => 'hash-1']]);
+
+        $claimed = $store->claimPendingBackfillWork(1);
+
+        assertSame(1, count($claimed));
+        assertSame(0.0, (float) $pdo->query('SELECT reserved_cost_usd FROM fastmod_backfill_batches')->fetchColumn());
     }
 }

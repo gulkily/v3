@@ -20,41 +20,64 @@ final class FastScoreSweepService
     }
 
     /**
-     * Scores at most $postLimit posts whose current content and rubric revision
-     * do not already have a stored result.
+     * Handles bounded private work while independently limiting provider calls.
      *
-     * @return array{processed:int,scored:int,excluded:int,failed:int,remaining:bool}
+     * @return array<string, int|bool|array<string,mixed>|null>
      */
-    public function run(int $postLimit): array
+    public function run(int $providerCallLimit, int $workLimit = 250): array
     {
-        if ($postLimit < 1) {
-            throw new \InvalidArgumentException('Fastmod sweep post limit must be at least 1.');
+        if ($providerCallLimit < 1) {
+            throw new \InvalidArgumentException('Fastmod provider-call limit must be at least 1.');
+        }
+        if ($workLimit < 1) {
+            throw new \InvalidArgumentException('Fastmod work limit must be at least 1.');
         }
 
         $summary = [
+            'examined' => 0,
             'processed' => 0,
+            'provider_calls' => 0,
             'scored' => 0,
             'excluded' => 0,
             'failed' => 0,
             'remaining' => false,
         ];
 
-        $normalWork = $this->scoreStore->claimPendingWork($postLimit);
-        $remainingLimit = $postLimit - count($normalWork);
-        $backfillWork = $remainingLimit > 0 ? $this->scoreStore->claimPendingBackfillWork($remainingLimit) : [];
-        $backfillBatchId = $backfillWork === [] ? null : (int) $backfillWork[0]['backfill_batch_id'];
+        $backfillBatchId = null;
+        $backfillProcessed = 0;
         $backfillExcluded = 0;
-        foreach (array_merge($normalWork, $backfillWork) as $work) {
-            $summary['processed']++;
+        while ($summary['examined'] < $workLimit) {
+            $work = $this->claimNextWork();
+            if ($work === null) {
+                break;
+            }
+            $summary['examined']++;
+            if (isset($work['backfill_batch_id'])) {
+                $backfillBatchId ??= (int) $work['backfill_batch_id'];
+            }
             $post = $this->post((string) $work['post_id']);
             try {
                 if ($post === null) {
                     $result = FastScoreResult::excluded(['post_unavailable']);
                 } else {
                     $context = $this->contextFactory->forPost($post);
-                    $result = (string) $context['content_hash'] === (string) $work['content_hash']
-                        ? $this->workflow->scorePost($post)
-                        : FastScoreResult::excluded(['content_changed_before_score']);
+                    if ((string) $context['content_hash'] !== (string) $work['content_hash']) {
+                        $result = FastScoreResult::excluded(['content_changed_before_score']);
+                    } else {
+                        $result = $this->workflow->localResultForPost($post);
+                        if ($result === null) {
+                            if ($summary['provider_calls'] >= $providerCallLimit) {
+                                $this->scoreStore->releaseClaimedWork($work);
+                                break;
+                            }
+                            if (isset($work['backfill_batch_id']) && !$this->scoreStore->reserveBackfillProviderAttempt($work)) {
+                                $this->scoreStore->releaseClaimedWork($work);
+                                break;
+                            }
+                            $summary['provider_calls']++;
+                            $result = $this->workflow->scorePost($post);
+                        }
+                    }
                 }
             } catch (Throwable $error) {
                 $result = [
@@ -68,6 +91,10 @@ final class FastScoreSweepService
             }
 
             $this->scoreStore->completeWork($work, $result);
+            $summary['processed']++;
+            if (isset($work['backfill_batch_id'])) {
+                $backfillProcessed++;
+            }
 
             if ($result['status'] === 'scored') {
                 $summary['scored']++;
@@ -83,13 +110,25 @@ final class FastScoreSweepService
 
         $this->scoreStore->refreshBackfillBatchStates();
         $summary['remaining'] = $this->scoreStore->hasOutstandingWork() || $this->scoreStore->hasOutstandingBackfillWork();
-        if ($backfillWork !== []) {
-            $summary['backfill_processed'] = count($backfillWork);
+        if ($backfillBatchId !== null) {
+            $summary['backfill_processed'] = $backfillProcessed;
             $summary['backfill_excluded'] = $backfillExcluded;
             $summary['backfill'] = $this->scoreStore->backfillProgress($backfillBatchId);
         }
 
         return $summary;
+    }
+
+    /** @return array<string,mixed>|null */
+    private function claimNextWork(): ?array
+    {
+        $normal = $this->scoreStore->claimPendingWork(1);
+        if ($normal !== []) {
+            return $normal[0];
+        }
+
+        $backfill = $this->scoreStore->claimPendingBackfillWork(1);
+        return $backfill[0] ?? null;
     }
 
     /** @return array<string, mixed>|null */

@@ -311,11 +311,7 @@ final class SqliteFastScoreStore implements FastScoreStore
         ];
     }
 
-    /**
-     * Reserves estimated budget before each provider attempt, including retries.
-     *
-     * @return list<array<string, mixed>>
-     */
+    /** @return list<array<string, mixed>> */
     public function claimPendingBackfillWork(int $limit): array
     {
         $limit = max(1, $limit);
@@ -350,31 +346,17 @@ final class SqliteFastScoreStore implements FastScoreStore
             $select->bindValue(':now', $now);
             $select->bindValue(':limit', $limit, PDO::PARAM_INT);
             $select->execute();
-            $candidates = $select->fetchAll();
-            $estimate = (float) $batch['estimated_cost_per_post_usd'];
-            $remainingBudget = max(0.0, (float) $batch['max_cost_usd'] - (float) $batch['reserved_cost_usd']);
-            $allowed = $estimate === 0.0 ? count($candidates) : min(count($candidates), (int) floor(($remainingBudget + 0.0000000001) / $estimate));
-            if ($allowed < 1) {
-                $status = $candidates === [] ? 'completed' : 'budget_exhausted';
-                $this->pdo->prepare('UPDATE fastmod_backfill_batches SET status = :status, updated_at = :updated_at WHERE id = :id')
-                    ->execute(['status' => $status, 'updated_at' => $now, 'id' => (int) $batch['id']]);
-                $this->pdo->exec('COMMIT');
-                return [];
-            }
-
-            $selected = array_slice($candidates, 0, $allowed);
             $this->pdo->prepare(
                 'UPDATE fastmod_backfill_batches
-                 SET status = :status, reserved_cost_usd = reserved_cost_usd + :reserved_cost_usd, updated_at = :updated_at
+                 SET status = :status, updated_at = :updated_at
                  WHERE id = :id'
             )->execute([
                 'status' => 'running',
-                'reserved_cost_usd' => $estimate * count($selected),
                 'updated_at' => $now,
                 'id' => (int) $batch['id'],
             ]);
             $claimed = [];
-            foreach ($selected as $key) {
+            foreach ($select->fetchAll() as $key) {
                 $update = $this->pdo->prepare(
                     'UPDATE fast_score_work
                      SET state = :running, attempt_count = attempt_count + 1,
@@ -398,6 +380,59 @@ final class SqliteFastScoreStore implements FastScoreStore
             }
             $this->pdo->exec('COMMIT');
             return $claimed;
+        } catch (\Throwable $error) {
+            $this->pdo->exec('ROLLBACK');
+            throw $error;
+        }
+    }
+
+    /** @param array<string, mixed> $work */
+    public function reserveBackfillProviderAttempt(array $work): bool
+    {
+        $this->pdo->exec('BEGIN IMMEDIATE');
+        try {
+            $stmt = $this->pdo->prepare(
+                "SELECT batch.id, batch.max_cost_usd, batch.reserved_cost_usd, batch.estimated_cost_per_post_usd
+                 FROM fastmod_backfill_work AS backfill_work
+                 INNER JOIN fastmod_backfill_batches AS batch ON batch.id = backfill_work.batch_id
+                 WHERE backfill_work.post_id = :post_id
+                   AND backfill_work.content_hash = :content_hash
+                   AND backfill_work.rubric_revision = :rubric_revision
+                   AND batch.status IN ('queued', 'running')"
+            );
+            $stmt->execute([
+                'post_id' => $work['post_id'],
+                'content_hash' => $work['content_hash'],
+                'rubric_revision' => $work['rubric_revision'],
+            ]);
+            $batch = $stmt->fetch();
+            if ($batch === false) {
+                $this->pdo->exec('COMMIT');
+                return false;
+            }
+
+            $estimate = (float) $batch['estimated_cost_per_post_usd'];
+            $remaining = (float) $batch['max_cost_usd'] - (float) $batch['reserved_cost_usd'];
+            $now = gmdate('c');
+            if ($estimate > 0.0 && $remaining + 0.0000000001 < $estimate) {
+                $this->pdo->prepare('UPDATE fastmod_backfill_batches SET status = :status, updated_at = :updated_at WHERE id = :id')
+                    ->execute(['status' => 'budget_exhausted', 'updated_at' => $now, 'id' => (int) $batch['id']]);
+                $this->pdo->exec('COMMIT');
+                return false;
+            }
+
+            $this->pdo->prepare(
+                'UPDATE fastmod_backfill_batches
+                 SET status = :status, reserved_cost_usd = reserved_cost_usd + :estimate, updated_at = :updated_at
+                 WHERE id = :id'
+            )->execute([
+                'status' => 'running',
+                'estimate' => $estimate,
+                'updated_at' => $now,
+                'id' => (int) $batch['id'],
+            ]);
+            $this->pdo->exec('COMMIT');
+            return true;
         } catch (\Throwable $error) {
             $this->pdo->exec('ROLLBACK');
             throw $error;
