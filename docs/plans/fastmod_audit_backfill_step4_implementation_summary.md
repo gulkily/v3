@@ -17,3 +17,15 @@
   - `php tests/run.php FastmodCostEstimatorTest`
 - Notes:
   - Estimates are preflight guidance, not provider billing guarantees.
+
+## Stage 3 - Read-only operator audit
+
+- Changes:
+  - Added `./v3 fast-score audit --include-existing` with historical states,
+    configured model, usage-based estimate, and an explicit no-write result.
+  - Added explicit pricing overrides for non-default models.
+- Verification:
+  - `php tests/run.php FastmodAuditCommandTest`
+- Notes:
+  - The audit only opens existing private databases and uses in-memory empty
+    stores when no score or exchange database exists.

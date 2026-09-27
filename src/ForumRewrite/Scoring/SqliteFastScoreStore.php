@@ -8,10 +8,12 @@ use PDO;
 
 final class SqliteFastScoreStore implements FastScoreStore
 {
-    public function __construct(private readonly PDO $pdo)
+    public function __construct(private readonly PDO $pdo, bool $initializeSchema = true)
     {
         $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-        $this->ensureSchema();
+        if ($initializeSchema) {
+            $this->ensureSchema();
+        }
     }
 
     public function find(string $postId, string $contentHash, string $rubricRevision): ?array

@@ -6,6 +6,8 @@ require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
 use ForumRewrite\Llm\LlmExchangeRecorder;
+use ForumRewrite\Scoring\FastmodCostEstimator;
+use ForumRewrite\Scoring\FastmodHistoricalAuditService;
 use ForumRewrite\Scoring\FastScoreContextFactory;
 use ForumRewrite\Scoring\FastScoreDatabaseConfig;
 use ForumRewrite\Scoring\FastScoreWorkflowFactory;
@@ -25,6 +27,48 @@ $privateConfig = PrivateConfig::load($projectRoot);
 $scorePath = FastScoreDatabaseConfig::path($projectRoot, $privateConfig);
 
 try {
+    if ($command === 'audit') {
+        if (($options['include-existing'] ?? false) !== true) {
+            throw new InvalidArgumentException('--include-existing is required for historical audit.');
+        }
+        $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+        if (!is_file($databasePath)) {
+            throw new InvalidArgumentException('Read-model database not found.');
+        }
+        $config = FastScoringConfig::fromPrivateConfig($privateConfig);
+        $audit = (new FastmodHistoricalAuditService(
+            new PDO('sqlite:' . $databasePath),
+            fastmodAuditScoreStore($scorePath),
+            FastScoringRubricRevision::fromConfig($config, $projectRoot),
+        ))->audit();
+        [$inputUsdPerMillion, $outputUsdPerMillion] = fastmodPricing($privateConfig, $config->provider->model, $options);
+        $estimate = (new FastmodCostEstimator(
+            fastmodAuditExchangeDatabase(LlmExchangeDatabaseConfig::path($projectRoot, $privateConfig)),
+            $config->provider->model,
+            $inputUsdPerMillion,
+            $outputUsdPerMillion,
+        ))->estimate($audit);
+
+        fwrite(STDOUT, "Fastmod historical audit\n");
+        fwrite(STDOUT, 'Read-model database: ' . $databasePath . "\n");
+        fwrite(STDOUT, 'Score database: ' . $scorePath . "\n");
+        fwrite(STDOUT, 'Selected model: ' . $config->provider->model . "\n");
+        fwrite(STDOUT, 'Candidate states: ' . json_encode($audit['counts'], JSON_THROW_ON_ERROR) . "\n");
+        fwrite(STDOUT, sprintf(
+            "Cost estimate: candidates=%d samples=%d input_tokens_per_post=%.1f output_tokens_per_post=%.1f input_usd_per_million=%.4f output_usd_per_million=%.4f estimated_usd=%.6f assumption=%s\n",
+            $estimate['candidate_count'],
+            $estimate['sample_count'],
+            $estimate['input_tokens_per_post'],
+            $estimate['output_tokens_per_post'],
+            $inputUsdPerMillion,
+            $outputUsdPerMillion,
+            $estimate['estimated_cost_usd'],
+            $estimate['assumption'],
+        ));
+        fwrite(STDOUT, "Audit is read-only: no score, work, task-queue, or exchange records were written.\n");
+        exit(0);
+    }
+
     $scoreDirectory = dirname($scorePath);
     if (!is_dir($scoreDirectory) && !mkdir($scoreDirectory, 0777, true) && !is_dir($scoreDirectory)) {
         throw new RuntimeException('Fastmod database directory is not writable.');
@@ -165,5 +209,48 @@ function fastScoreRecorder(string $projectRoot, string $repositoryRoot, array $p
 
 function fastScoreUsage($stream): void
 {
-    fwrite($stream, "Usage:\n  php scripts/fast_score.php status [--limit=10] [--queue-database-path=/private/tasks.sqlite3]\n  php scripts/fast_score.php retry --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php invalidate --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php smoke --post-id=... [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php prune [--before=ISO-8601]\n");
+    fwrite($stream, "Usage:\n  php scripts/fast_score.php status [--limit=10] [--queue-database-path=/private/tasks.sqlite3]\n  php scripts/fast_score.php audit --include-existing [--database-path=/path/read-model.sqlite3] [--input-usd-per-million=N --output-usd-per-million=N]\n  php scripts/fast_score.php retry --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php invalidate --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php smoke --post-id=... [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php prune [--before=ISO-8601]\n");
+}
+
+function fastmodAuditScoreStore(string $scorePath): SqliteFastScoreStore
+{
+    if (!is_file($scorePath)) {
+        return new SqliteFastScoreStore(new PDO('sqlite::memory:'));
+    }
+
+    return new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath), false);
+}
+
+function fastmodAuditExchangeDatabase(string $exchangePath): PDO
+{
+    if (is_file($exchangePath)) {
+        return new PDO('sqlite:' . $exchangePath);
+    }
+
+    $pdo = new PDO('sqlite::memory:');
+    $pdo->exec('CREATE TABLE llm_exchanges (call_type TEXT, provider_model TEXT, status TEXT, response_json TEXT)');
+    return $pdo;
+}
+
+/**
+ * @param array<string, mixed> $privateConfig
+ * @param array<string, string|bool> $options
+ * @return array{float, float}
+ */
+function fastmodPricing(array $privateConfig, string $model, array $options): array
+{
+    $input = $options['input-usd-per-million'] ?? $privateConfig['FAST_SCORING_INPUT_USD_PER_MILLION'] ?? null;
+    $output = $options['output-usd-per-million'] ?? $privateConfig['FAST_SCORING_OUTPUT_USD_PER_MILLION'] ?? null;
+    if ($input !== null || $output !== null) {
+        if (!is_numeric($input) || !is_numeric($output) || (float) $input < 0 || (float) $output < 0) {
+            throw new InvalidArgumentException('Both non-negative --input-usd-per-million and --output-usd-per-million values are required.');
+        }
+        return [(float) $input, (float) $output];
+    }
+
+    if (in_array(strtolower($model), ['gpt-5-nano', 'openai/gpt-5-nano'], true)) {
+        return [0.05, 0.40];
+    }
+
+    throw new InvalidArgumentException('Configure FAST_SCORING_INPUT_USD_PER_MILLION and FAST_SCORING_OUTPUT_USD_PER_MILLION, or pass both pricing options.');
 }
