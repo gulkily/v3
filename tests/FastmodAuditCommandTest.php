@@ -130,6 +130,17 @@ final class FastmodAuditCommandTest
             assertStringContains('Backfill batch 1: status=queued processed=0/1 remaining=1 reserved_estimate_usd=0.000000 cap_usd=0.010000', $statusOutput);
             assertStringContains("Next action\n  Run: ./v3 task-queue run --limit=1 --score-limit=25", $statusOutput);
             assertStringContains('Historical backfill is ready for worker processing.', $statusOutput);
+            assertStringNotContains("Recent work\n", $statusOutput);
+            $workHash = (string) (new PDO('sqlite:' . $scorePath))->query('SELECT content_hash FROM fast_score_work LIMIT 1')->fetchColumn();
+            [$verboseCode, $verboseOutput, $verboseError] = $this->runCommand(
+                dirname(__DIR__),
+                'FORUM_SECRETS_PATH=' . escapeshellarg($secretsPath) . ' ./v3 fast-score status --verbose --queue-database-path=' . escapeshellarg($queuePath),
+            );
+            assertSame(0, $verboseCode);
+            assertSame('', $verboseError);
+            assertStringContains("Recent work\n", $verboseOutput);
+            assertStringContains(substr($workHash, 0, 12) . '…', $verboseOutput);
+            assertStringNotContains($workHash, $verboseOutput);
         } finally {
             @unlink($readPath);
             @unlink($scorePath);

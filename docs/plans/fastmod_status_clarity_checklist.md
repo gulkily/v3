@@ -11,6 +11,6 @@ historical backfill work.
   batch's processed/remaining progress and reserved estimate versus cap.
 - [x] Print a contextual next action, including an explicit explanation when a
   queued backfill is waiting behind regular work.
-- [ ] Hide repetitive per-post records by default; provide `--verbose` to show
+- [x] Hide repetitive per-post records by default; provide `--verbose` to show
   them with shortened hashes and existing failure details.
 - [ ] Update Fastmod reference documentation and focused command/store tests.

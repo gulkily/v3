@@ -157,9 +157,12 @@ try {
         if ($lastFailure !== null) {
             fwrite(STDOUT, sprintf("Last failure: post=%s code=%s message=%s updated=%s\n", $lastFailure['post_id'], $lastFailure['failure_code'], $lastFailure['failure_message'], $lastFailure['updated_at']));
         }
-        foreach ($store->recentWork((int) ($options['limit'] ?? 10)) as $work) {
-            $probability = $work['probability'] === null ? 'none' : (string) $work['probability'];
-            fwrite(STDOUT, sprintf("Work post=%s state=%s probability=%s source=%s attempts=%d failure=%s content_hash=%s rubric_revision=%s updated=%s\n", $work['post_id'], $work['state'], $probability, $work['source'] ?? 'none', $work['attempt_count'], $work['failure_category'] ?? 'none', $work['content_hash'], $work['rubric_revision'], $work['updated_at']));
+        if (($options['verbose'] ?? false) === true) {
+            fwrite(STDOUT, "Recent work\n");
+            foreach ($store->recentWork((int) ($options['limit'] ?? 10)) as $work) {
+                $probability = $work['probability'] === null ? 'none' : (string) $work['probability'];
+                fwrite(STDOUT, sprintf("  post=%s state=%s probability=%s source=%s attempts=%d failure=%s content_hash=%s rubric_revision=%s updated=%s\n", $work['post_id'], $work['state'], $probability, $work['source'] ?? 'none', $work['attempt_count'], $work['failure_category'] ?? 'none', fastmodShortHash((string) $work['content_hash']), fastmodShortHash((string) $work['rubric_revision']), $work['updated_at']));
+            }
         }
         foreach ($store->recentBackfillBatches((int) ($options['limit'] ?? 10)) as $batch) {
             $progress = $store->backfillProgress((int) $batch['id']);
@@ -292,7 +295,7 @@ function fastScoreRecorder(string $projectRoot, string $repositoryRoot, array $p
 
 function fastScoreUsage($stream): void
 {
-    fwrite($stream, "Usage:\n  php scripts/fast_score.php status [--limit=10] [--queue-database-path=/private/tasks.sqlite3]\n  php scripts/fast_score.php audit --include-existing [--database-path=/path/read-model.sqlite3] [--input-usd-per-million=N --output-usd-per-million=N]\n  php scripts/fast_score.php backfill --include-existing --confirm --max-posts=N --max-cost-usd=N [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php retry --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php invalidate --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php smoke --post-id=... [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php prune [--before=ISO-8601]\n");
+    fwrite($stream, "Usage:\n  php scripts/fast_score.php status [--limit=10] [--verbose] [--queue-database-path=/private/tasks.sqlite3]\n  php scripts/fast_score.php audit --include-existing [--database-path=/path/read-model.sqlite3] [--input-usd-per-million=N --output-usd-per-million=N]\n  php scripts/fast_score.php backfill --include-existing --confirm --max-posts=N --max-cost-usd=N [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php retry --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php invalidate --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php smoke --post-id=... [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php prune [--before=ISO-8601]\n");
 }
 
 /** @param array<string, string|bool> $options */
@@ -324,6 +327,11 @@ function fastmodCountSummary(array $counts): string
 
     ksort($counts);
     return implode(', ', array_map(static fn (string $state, int $count): string => $state . '=' . $count, array_keys($counts), $counts));
+}
+
+function fastmodShortHash(string $value): string
+{
+    return strlen($value) <= 12 ? $value : substr($value, 0, 12) . '…';
 }
 
 /**
