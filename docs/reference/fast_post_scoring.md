@@ -57,7 +57,12 @@ private worker pipeline.
 
 ## Operator commands
 
-`./v3 fast-score status` reports private Fastmod work, scores, and task-queue state.
+`./v3 fast-score status` is the operator overview. It separates regular
+new-content work from historical backfill work, shows retained outcomes and
+batch progress, reports reserved estimate against the batch cap, and gives the
+next queue action. Regular work intentionally runs before historical backfill.
+Use `./v3 fast-score status --verbose` for recent individual work rows; hashes
+are shortened there to keep the output scannable.
 `retry` and `invalidate` require an explicit post ID, content hash, and rubric
 revision; they do not support historical backfill. `smoke --post-id=...` makes
 one deliberate provider request without creating a score row or corpus sweep.

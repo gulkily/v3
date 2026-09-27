@@ -92,7 +92,7 @@ being installed via cron.
 ## Audit or backfill Fastmod
 
 ```
-./v3 fast-score status [--limit=10]
+./v3 fast-score status [--limit=10] [--verbose]
 ./v3 fast-score audit --include-existing [--database-path=/path/read-model.sqlite3]
 ./v3 fast-score backfill --include-existing --confirm --max-posts=N --max-cost-usd=N [--database-path=/path/read-model.sqlite3]
 ./v3 fast-score retry --post-id=... --content-hash=... --rubric-revision=...
@@ -104,9 +104,11 @@ being installed via cron.
 `audit --include-existing` is a read-only historical count and configured-model
 cost estimate. `backfill` requires separate historical scope, confirmation,
 post-count, and spend bounds; it creates one private, bounded batch and queues
-the normal worker. `status` includes current private score/work counts and
-recent backfill-batch reservation state. See [Fastmod](fast_post_scoring.md)
-for pricing configuration, retention, and the controlled operator workflow.
+the normal worker. `status` provides the next action, distinguishes regular
+work from historical backfill, and shows batch progress and reservation state.
+Use `--verbose` for recent individual work rows. See
+[Fastmod](fast_post_scoring.md) for pricing configuration, retention, and the
+controlled operator workflow.
 
 ## Import a repository archive
 

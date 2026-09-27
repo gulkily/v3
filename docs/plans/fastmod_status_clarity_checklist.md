@@ -13,4 +13,4 @@ historical backfill work.
   queued backfill is waiting behind regular work.
 - [x] Hide repetitive per-post records by default; provide `--verbose` to show
   them with shortened hashes and existing failure details.
-- [ ] Update Fastmod reference documentation and focused command/store tests.
+- [x] Update Fastmod reference documentation and focused command/store tests.
