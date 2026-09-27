@@ -30,4 +30,4 @@ storage tables.
 
 - [x] Search public-facing templates, documentation, scripts, and API messages
   for obsolete product-copy references.
-- [ ] Run the relevant CLI, smoke, and documentation checks.
+- [x] Run the relevant CLI, smoke, and documentation checks.
