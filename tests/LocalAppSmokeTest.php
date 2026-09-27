@@ -1266,9 +1266,9 @@ PHP;
         assertStringContains('FORUM_THREAD_DENSITY_TOGGLE_ENABLED', $featureFlags);
         assertStringContains('DEDALUS_AGENT_REPLIES_ENABLED', $featureFlags);
         assertStringContains('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $featureFlags);
-        assertStringContains('data-role="feature-flag-source">default</code>', $featureFlags);
-        assertStringContains('current value is default', $featureFlags);
-        assertStringContains('<code>yes</code>', $featureFlags);
+        assertStringContains('data-role="feature-flag-source">default</span>', $featureFlags);
+        assertStringContains('feature-flag-row', $featureFlags);
+        assertStringContains('role="switch"', $featureFlags);
         assertStringContains('About zenmemes', $about);
         assertStringContains('extraordinary people', $about);
         assertStringContains('Harvard St Commons', $about);
@@ -1575,8 +1575,8 @@ PHP;
         assertStringNotContains('meta name="app-version"', $board);
         assertStringNotContains('/assets/version_check.', $board);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $featureFlags);
-        assertStringContains('data-role="feature-flag-source">site</code>', $featureFlags);
-        assertStringContains('current value differs from default', $featureFlags);
+        assertStringContains('data-role="feature-flag-source">site</span>', $featureFlags);
+        assertStringContains('badge-overridden', $featureFlags);
     }
 
     public function testFeatureFlagsPageReportsInvalidSiteRecordWithoutBreakingSite(): void
@@ -1596,7 +1596,42 @@ PHP;
 
         assertStringContains('meta name="app-version"', $board);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $featureFlags);
-        assertStringContains('data-role="feature-flag-source">invalid-site-value</code>', $featureFlags);
+        assertStringContains('data-role="feature-flag-source">invalid-site-value</span>', $featureFlags);
+        assertStringContains('feedback feedback-error', $featureFlags);
+    }
+
+    public function testFeatureFlagsPageShowsLockedBadgeWithReasonForNonMutableFlags(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-flags-locked-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-flags-locked-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+        $featureFlags = $this->render($application, '/tools/feature-flags/');
+
+        assertStringContains('badge-locked', $featureFlags);
+        assertStringContains('title="Not configurable from the site."', $featureFlags);
+        assertStringContains('locked</span>', $featureFlags);
+    }
+
+    public function testFeatureFlagsPageDimsAndWarnsOnDependencyBlockedFlag(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-flags-dependency-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_EMOJI_AUTHORED_TEXT: true\nFORUM_UNICODE_AUTHORED_TEXT: false\n"
+        );
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-flags-dependency-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+        $featureFlags = $this->render($application, '/tools/feature-flags/');
+
+        assertStringContains('feature-flag-row is-blocked', $featureFlags);
+        assertStringContains('inactive', $featureFlags);
+        assertStringContains('requires Unicode authored text', $featureFlags);
     }
 
     public function testNegativeRootScoreIsFilteredOnlyFromLikedBoardListings(): void

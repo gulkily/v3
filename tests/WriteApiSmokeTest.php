@@ -2105,7 +2105,7 @@ PHP);
         assertStringContains('Feature flag changes require a root-approved identity.', $unauthorized);
         assertStringContains('Feature flag updated. Commit:', $redirect);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $updated);
-        assertStringContains('data-role="feature-flag-source">site</code>', $updated);
+        assertStringContains('data-role="feature-flag-source">site</span>', $updated);
     }
 
     public function testFeatureFlagFormSubmitAcceptsDisplayedEnabledDisabledValues(): void
