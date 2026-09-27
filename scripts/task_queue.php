@@ -112,7 +112,7 @@ try {
             emitTaskQueue($quiet, "Repository: {$repositoryRoot}\n");
             emitTaskQueue($quiet, "Read model: {$databasePath}\n");
             emitTaskQueue($quiet, "Limit: {$limit}\n");
-            emitTaskQueue($quiet, "Fast-score batch limit: {$scoreLimit}\n");
+            emitTaskQueue($quiet, "Fastmod batch limit: {$scoreLimit}\n");
             emitTaskQueue($quiet, sprintf(
                 "Queue before: queued=%d running=%d completed=%d failed=%d\n",
                 $before['queued'],
@@ -141,7 +141,7 @@ try {
                     $scorePath = FastScoreDatabaseConfig::path($projectRoot, $privateConfig);
                     $scoreDirectory = dirname($scorePath);
                     if (!is_dir($scoreDirectory) && !mkdir($scoreDirectory, 0777, true) && !is_dir($scoreDirectory)) {
-                        throw new RuntimeException('Fast-score database directory is not writable.');
+                        throw new RuntimeException('Fastmod database directory is not writable.');
                     }
 
                     $workflow = FastScoreWorkflowFactory::fromPrivateConfig(
@@ -192,7 +192,7 @@ try {
                 ));
                 if (isset($task['sweep']) && is_array($task['sweep'])) {
                     emitTaskQueue($quiet, sprintf(
-                        "  Fast-score sweep: processed=%d scored=%d excluded=%d failed=%d remaining=%s\n",
+                        "  Fastmod sweep: processed=%d scored=%d excluded=%d failed=%d remaining=%s\n",
                         (int) ($task['sweep']['processed'] ?? 0),
                         (int) ($task['sweep']['scored'] ?? 0),
                         (int) ($task['sweep']['excluded'] ?? 0),

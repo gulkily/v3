@@ -159,7 +159,7 @@ final class TaskQueueCommandTest
         }
 
         assertSame(0, $code);
-        assertStringContains('Fast-score sweep: processed=1', $stdout);
+        assertStringContains('Fastmod sweep: processed=1', $stdout);
         assertSame('', $stderr);
     }
 
