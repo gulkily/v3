@@ -70,15 +70,20 @@ try {
         exit(0);
     }
 
+    if ($command === 'backfill') {
+        if (($options['include-existing'] ?? false) !== true || ($options['confirm'] ?? false) !== true) {
+            throw new InvalidArgumentException('--include-existing and --confirm are required for historical backfill.');
+        }
+        fastmodPositiveIntegerOption($options, 'max-posts');
+        fastmodNonNegativeNumberOption($options, 'max-cost-usd');
+    }
+
     $scoreDirectory = dirname($scorePath);
     if (!is_dir($scoreDirectory) && !mkdir($scoreDirectory, 0777, true) && !is_dir($scoreDirectory)) {
         throw new RuntimeException('Fastmod database directory is not writable.');
     }
     $store = new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath));
     if ($command === 'backfill') {
-        if (($options['include-existing'] ?? false) !== true || ($options['confirm'] ?? false) !== true) {
-            throw new InvalidArgumentException('--include-existing and --confirm are required for historical backfill.');
-        }
         $maxPosts = fastmodPositiveIntegerOption($options, 'max-posts');
         $maxCostUsd = fastmodNonNegativeNumberOption($options, 'max-cost-usd');
         $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
@@ -102,15 +107,22 @@ try {
             $maxCostUsd,
             $estimate['estimated_cost_usd'] / max(1, $estimate['candidate_count']),
         );
+        $queuePath = TaskQueueDatabaseConfig::path($projectRoot, $options['queue-database-path'] ?? null);
+        $queueDirectory = dirname($queuePath);
+        if (!is_dir($queueDirectory) && !mkdir($queueDirectory, 0777, true) && !is_dir($queueDirectory)) {
+            throw new RuntimeException('Task queue directory is not writable.');
+        }
+        $task = (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'fast-score-sweep');
         fwrite(STDOUT, sprintf(
-            "Fastmod backfill batch created: id=%d requested=%d queued=%d max_posts=%d max_cost_usd=%.6f\n",
+            "Fastmod backfill batch created: id=%d requested=%d queued=%d max_posts=%d max_cost_usd=%.6f task_id=%d\n",
             $batch['id'],
             $batch['requested_count'],
             $batch['queued_count'],
             $batch['max_posts'],
             $batch['max_cost_usd'],
+            $task['id'],
         ));
-        fwrite(STDOUT, "The batch is private and deliberately isolated from ordinary new-post sweeps until its bounded worker support is enabled.\n");
+        fwrite(STDOUT, "The batch is private and the worker will reserve its estimated budget before every provider attempt.\n");
         exit(0);
     }
     if ($command === 'status') {

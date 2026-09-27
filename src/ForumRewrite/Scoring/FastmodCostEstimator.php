@@ -55,9 +55,10 @@ final class FastmodCostEstimator
         $samples = [];
         foreach ($stmt->fetchAll() as $row) {
             $response = json_decode((string) $row['response_json'], true);
-            $usage = is_array($response) ? ($response['decoded']['usage'] ?? null) : null;
-            $input = is_array($usage) ? ($usage['prompt_tokens'] ?? null) : null;
-            $output = is_array($usage) ? ($usage['completion_tokens'] ?? null) : null;
+            $decoded = is_array($response) ? ($response['decoded'] ?? $response['response']['decoded'] ?? null) : null;
+            $usage = is_array($decoded) ? ($decoded['usage'] ?? null) : null;
+            $input = is_array($usage) ? ($usage['prompt_tokens'] ?? $usage['input_tokens'] ?? null) : null;
+            $output = is_array($usage) ? ($usage['completion_tokens'] ?? $usage['output_tokens'] ?? null) : null;
             if (is_numeric($input) && is_numeric($output)) {
                 $samples[] = ['input' => (float) $input, 'output' => (float) $output];
             }

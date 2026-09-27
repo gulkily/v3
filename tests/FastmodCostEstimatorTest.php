@@ -44,6 +44,6 @@ final class FastmodCostEstimatorTest
     private function insert(PDO $pdo, string $model, int $input, int $output): void
     {
         $stmt = $pdo->prepare('INSERT INTO llm_exchanges (call_type, provider_model, status, response_json) VALUES ("fast_post_score", :model, "completed", :response)');
-        $stmt->execute(['model' => $model, 'response' => json_encode(['decoded' => ['usage' => ['prompt_tokens' => $input, 'completion_tokens' => $output]]])]);
+        $stmt->execute(['model' => $model, 'response' => json_encode(['response' => ['decoded' => ['usage' => ['prompt_tokens' => $input, 'completion_tokens' => $output]]]])]);
     }
 }

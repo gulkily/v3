@@ -68,6 +68,36 @@ final class FastScoreSweepServiceTest
         assertSame(['bad', 'good'], $provider->postIds);
     }
 
+    public function testProcessesAuthorizedBackfillWithinTheReservedCostBound(): void
+    {
+        $pdo = $this->postsDatabase();
+        $this->insertPost($pdo, 'post-1', 'post-1', null, '', 'First', 1);
+        $this->insertPost($pdo, 'post-2', 'post-2', null, '', 'Second', 2);
+        $provider = new SweepFakeProvider();
+        $store = new SqliteFastScoreStore($pdo);
+        $fetchPost = static function (string $id) use ($pdo): ?array {
+            $statement = $pdo->prepare('SELECT post_id, thread_id, parent_id, subject, body FROM posts WHERE post_id = :post_id');
+            $statement->execute(['post_id' => $id]);
+            $post = $statement->fetch();
+            return $post === false ? null : $post;
+        };
+        $contexts = new FastScoreContextFactory($fetchPost);
+        $store->createBackfillBatch('rubric-a', 2, 0.02, 0.01, [
+            ['post_id' => 'post-1', 'content_hash' => $contexts->contentHashForPost($fetchPost('post-1'))],
+            ['post_id' => 'post-2', 'content_hash' => $contexts->contentHashForPost($fetchPost('post-2'))],
+        ]);
+        $service = $this->service($pdo, $provider, 'rubric-a');
+
+        $first = $service->run(1);
+        $second = $service->run(1);
+
+        assertSame(['post-1', 'post-2'], $provider->postIds);
+        assertSame(true, $first['remaining']);
+        assertSame(false, $second['remaining']);
+        assertSame('completed', $pdo->query('SELECT status FROM fastmod_backfill_batches')->fetchColumn());
+        assertSame(0.02, (float) $pdo->query('SELECT reserved_cost_usd FROM fastmod_backfill_batches')->fetchColumn());
+    }
+
     private function service(PDO $pdo, SweepFakeProvider $provider, string $rubricRevision): FastScoreSweepService
     {
         $fetchPost = static function (string $postId) use ($pdo): ?array {

@@ -39,7 +39,10 @@ final class FastScoreSweepService
             'remaining' => false,
         ];
 
-        foreach ($this->scoreStore->claimPendingWork($postLimit) as $work) {
+        $normalWork = $this->scoreStore->claimPendingWork($postLimit);
+        $remainingLimit = $postLimit - count($normalWork);
+        $backfillWork = $remainingLimit > 0 ? $this->scoreStore->claimPendingBackfillWork($remainingLimit) : [];
+        foreach (array_merge($normalWork, $backfillWork) as $work) {
             $summary['processed']++;
             $post = $this->post((string) $work['post_id']);
             try {
@@ -73,7 +76,11 @@ final class FastScoreSweepService
             }
         }
 
-        $summary['remaining'] = $this->scoreStore->hasOutstandingWork();
+        $this->scoreStore->refreshBackfillBatchStates();
+        $summary['remaining'] = $this->scoreStore->hasOutstandingWork() || $this->scoreStore->hasOutstandingBackfillWork();
+        if ($backfillWork !== []) {
+            $summary['backfill_processed'] = count($backfillWork);
+        }
 
         return $summary;
     }

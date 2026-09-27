@@ -199,6 +199,12 @@ try {
                         (int) ($task['sweep']['failed'] ?? 0),
                         ($task['sweep']['remaining'] ?? false) === true ? 'yes' : 'no',
                     ));
+                    if ((int) ($task['sweep']['backfill_processed'] ?? 0) > 0) {
+                        emitTaskQueue($quiet, sprintf(
+                            "  Fastmod backfill: processed=%d (estimated budget reserved before each attempt)\n",
+                            (int) $task['sweep']['backfill_processed'],
+                        ));
+                    }
                 }
             });
             $after = $store->counts();

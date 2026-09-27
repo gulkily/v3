@@ -288,6 +288,134 @@ final class SqliteFastScoreStore implements FastScoreStore
         ];
     }
 
+    /**
+     * Reserves estimated budget before each provider attempt, including retries.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function claimPendingBackfillWork(int $limit): array
+    {
+        $limit = max(1, $limit);
+        $now = gmdate('c');
+        $this->pdo->exec('BEGIN IMMEDIATE');
+        try {
+            $batch = $this->pdo->query(
+                "SELECT * FROM fastmod_backfill_batches
+                 WHERE status IN ('queued', 'running')
+                 ORDER BY id ASC
+                 LIMIT 1"
+            )->fetch();
+            if ($batch === false) {
+                $this->pdo->exec('COMMIT');
+                return [];
+            }
+
+            $select = $this->pdo->prepare(
+                'SELECT work.post_id, work.content_hash, work.rubric_revision
+                 FROM fast_score_work AS work
+                 INNER JOIN fastmod_backfill_work AS backfill_work
+                   ON backfill_work.post_id = work.post_id
+                  AND backfill_work.content_hash = work.content_hash
+                  AND backfill_work.rubric_revision = work.rubric_revision
+                 WHERE backfill_work.batch_id = :batch_id
+                   AND work.state = :state AND work.next_eligible_at <= :now
+                 ORDER BY work.created_at ASC, work.rowid ASC
+                 LIMIT :limit'
+            );
+            $select->bindValue(':batch_id', (int) $batch['id'], PDO::PARAM_INT);
+            $select->bindValue(':state', 'pending');
+            $select->bindValue(':now', $now);
+            $select->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $select->execute();
+            $candidates = $select->fetchAll();
+            $estimate = (float) $batch['estimated_cost_per_post_usd'];
+            $remainingBudget = max(0.0, (float) $batch['max_cost_usd'] - (float) $batch['reserved_cost_usd']);
+            $allowed = $estimate === 0.0 ? count($candidates) : min(count($candidates), (int) floor(($remainingBudget + 0.0000000001) / $estimate));
+            if ($allowed < 1) {
+                $status = $candidates === [] ? 'completed' : 'budget_exhausted';
+                $this->pdo->prepare('UPDATE fastmod_backfill_batches SET status = :status, updated_at = :updated_at WHERE id = :id')
+                    ->execute(['status' => $status, 'updated_at' => $now, 'id' => (int) $batch['id']]);
+                $this->pdo->exec('COMMIT');
+                return [];
+            }
+
+            $selected = array_slice($candidates, 0, $allowed);
+            $this->pdo->prepare(
+                'UPDATE fastmod_backfill_batches
+                 SET status = :status, reserved_cost_usd = reserved_cost_usd + :reserved_cost_usd, updated_at = :updated_at
+                 WHERE id = :id'
+            )->execute([
+                'status' => 'running',
+                'reserved_cost_usd' => $estimate * count($selected),
+                'updated_at' => $now,
+                'id' => (int) $batch['id'],
+            ]);
+            $claimed = [];
+            foreach ($selected as $key) {
+                $update = $this->pdo->prepare(
+                    'UPDATE fast_score_work
+                     SET state = :running, attempt_count = attempt_count + 1,
+                         last_attempted_at = :now, updated_at = :now
+                     WHERE post_id = :post_id AND content_hash = :content_hash
+                       AND rubric_revision = :rubric_revision AND state = :pending'
+                );
+                $update->execute([
+                    'running' => 'running',
+                    'now' => $now,
+                    'post_id' => $key['post_id'],
+                    'content_hash' => $key['content_hash'],
+                    'rubric_revision' => $key['rubric_revision'],
+                    'pending' => 'pending',
+                ]);
+                if ($update->rowCount() === 1) {
+                    $work = $this->requiredWork((string) $key['post_id'], (string) $key['content_hash'], (string) $key['rubric_revision']);
+                    $work['backfill_batch_id'] = (int) $batch['id'];
+                    $claimed[] = $work;
+                }
+            }
+            $this->pdo->exec('COMMIT');
+            return $claimed;
+        } catch (\Throwable $error) {
+            $this->pdo->exec('ROLLBACK');
+            throw $error;
+        }
+    }
+
+    public function hasOutstandingBackfillWork(): bool
+    {
+        return (int) $this->pdo->query(
+            "SELECT COUNT(*)
+             FROM fast_score_work AS work
+             INNER JOIN fastmod_backfill_work AS backfill_work
+               ON backfill_work.post_id = work.post_id
+              AND backfill_work.content_hash = work.content_hash
+              AND backfill_work.rubric_revision = work.rubric_revision
+             INNER JOIN fastmod_backfill_batches AS batch ON batch.id = backfill_work.batch_id
+             WHERE work.state IN ('pending', 'running') AND batch.status IN ('queued', 'running')"
+        )->fetchColumn() > 0;
+    }
+
+    public function refreshBackfillBatchStates(): void
+    {
+        $now = gmdate('c');
+        $stmt = $this->pdo->prepare(
+            "UPDATE fastmod_backfill_batches AS batch
+             SET status = 'completed', updated_at = :updated_at
+             WHERE batch.status IN ('queued', 'running')
+               AND NOT EXISTS (
+                   SELECT 1
+                   FROM fastmod_backfill_work AS backfill_work
+                   INNER JOIN fast_score_work AS work
+                     ON work.post_id = backfill_work.post_id
+                    AND work.content_hash = backfill_work.content_hash
+                    AND work.rubric_revision = backfill_work.rubric_revision
+                   WHERE backfill_work.batch_id = batch.id
+                     AND work.state IN ('pending', 'running')
+               )"
+        );
+        $stmt->execute(['updated_at' => $now]);
+    }
+
     /** @return array<string, int> */
     public function workCounts(): array
     {
@@ -400,11 +528,23 @@ final class SqliteFastScoreStore implements FastScoreStore
             $insert->execute(['version' => 'fast_score_operator_actions_v1', 'applied_at' => gmdate('c')]);
         }
         if ((int) $this->pdo->query("SELECT COUNT(*) FROM fast_score_schema_migrations WHERE version = 'fastmod_backfill_batches_v1'")->fetchColumn() === 0) {
-            $this->pdo->exec('CREATE TABLE IF NOT EXISTS fastmod_backfill_batches (id INTEGER PRIMARY KEY AUTOINCREMENT, rubric_revision TEXT NOT NULL, max_posts INTEGER NOT NULL, max_cost_usd REAL NOT NULL, estimated_cost_per_post_usd REAL NOT NULL, requested_count INTEGER NOT NULL, queued_count INTEGER NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)');
+            $this->pdo->exec('CREATE TABLE IF NOT EXISTS fastmod_backfill_batches (id INTEGER PRIMARY KEY AUTOINCREMENT, rubric_revision TEXT NOT NULL, max_posts INTEGER NOT NULL, max_cost_usd REAL NOT NULL, estimated_cost_per_post_usd REAL NOT NULL, reserved_cost_usd REAL NOT NULL DEFAULT 0, requested_count INTEGER NOT NULL, queued_count INTEGER NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)');
             $this->pdo->exec('CREATE TABLE IF NOT EXISTS fastmod_backfill_work (batch_id INTEGER NOT NULL, post_id TEXT NOT NULL, content_hash TEXT NOT NULL, rubric_revision TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (batch_id, post_id, content_hash, rubric_revision), UNIQUE (post_id, content_hash, rubric_revision), FOREIGN KEY (batch_id) REFERENCES fastmod_backfill_batches(id))');
             $this->pdo->exec('CREATE INDEX IF NOT EXISTS fastmod_backfill_work_batch_idx ON fastmod_backfill_work (batch_id, post_id)');
             $insert = $this->pdo->prepare('INSERT INTO fast_score_schema_migrations (version, applied_at) VALUES (:version, :applied_at)');
             $insert->execute(['version' => 'fastmod_backfill_batches_v1', 'applied_at' => gmdate('c')]);
+        }
+        if ((int) $this->pdo->query("SELECT COUNT(*) FROM fast_score_schema_migrations WHERE version = 'fastmod_backfill_reservations_v1'")->fetchColumn() === 0) {
+            $columns = $this->pdo->query('PRAGMA table_info(fastmod_backfill_batches)')->fetchAll();
+            $hasReservedCost = false;
+            foreach ($columns as $column) {
+                $hasReservedCost = $hasReservedCost || (string) $column['name'] === 'reserved_cost_usd';
+            }
+            if (!$hasReservedCost) {
+                $this->pdo->exec('ALTER TABLE fastmod_backfill_batches ADD COLUMN reserved_cost_usd REAL NOT NULL DEFAULT 0');
+            }
+            $insert = $this->pdo->prepare('INSERT INTO fast_score_schema_migrations (version, applied_at) VALUES (:version, :applied_at)');
+            $insert->execute(['version' => 'fastmod_backfill_reservations_v1', 'applied_at' => gmdate('c')]);
         }
     }
 

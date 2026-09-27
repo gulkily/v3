@@ -71,6 +71,49 @@ final class FastmodAuditCommandTest
         assertStringContains('error=--include-existing is required for historical audit.', $stderr);
     }
 
+    public function testConfirmedBackfillCreatesABoundedBatchAndEnqueuesTheWorker(): void
+    {
+        $readPath = sys_get_temp_dir() . '/forum-fastmod-backfill-read-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $scorePath = sys_get_temp_dir() . '/forum-fastmod-backfill-score-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $queuePath = sys_get_temp_dir() . '/forum-fastmod-backfill-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $secretsPath = tempnam(sys_get_temp_dir(), 'forum-fastmod-backfill-secrets-');
+        try {
+            $read = new PDO('sqlite:' . $readPath);
+            $read->exec('CREATE TABLE posts (post_id TEXT PRIMARY KEY, thread_id TEXT NOT NULL, parent_id TEXT NULL, subject TEXT NULL, body TEXT NOT NULL)');
+            $read->exec("INSERT INTO posts VALUES ('post-1', 'post-1', NULL, 'Subject', 'Body')");
+            file_put_contents($secretsPath, "<?php return " . var_export([
+                'FAST_SCORING_DATABASE_PATH' => $scorePath,
+                'LLM_PROVIDER' => 'openai',
+                'LLM_MODEL' => 'gpt-5-nano',
+            ], true) . ';');
+
+            [$missingConfirmCode, $missingConfirmOutput, $missingConfirmError] = $this->runCommand(
+                dirname(__DIR__),
+                'FORUM_SECRETS_PATH=' . escapeshellarg($secretsPath) . ' ./v3 fast-score backfill --include-existing --max-posts=1 --max-cost-usd=0.01 --database-path=' . escapeshellarg($readPath),
+            );
+            assertSame(1, $missingConfirmCode);
+            assertSame('', $missingConfirmOutput);
+            assertStringContains('error=--include-existing and --confirm are required for historical backfill.', $missingConfirmError);
+            assertSame(false, is_file($scorePath));
+            [$exitCode, $stdout, $stderr] = $this->runCommand(
+                dirname(__DIR__),
+                'FORUM_SECRETS_PATH=' . escapeshellarg($secretsPath) . ' ./v3 fast-score backfill --include-existing --confirm --max-posts=1 --max-cost-usd=0.01 --database-path=' . escapeshellarg($readPath) . ' --queue-database-path=' . escapeshellarg($queuePath),
+            );
+
+            assertSame(0, $exitCode);
+            assertSame('', $stderr);
+            assertStringContains('Fastmod backfill batch created: id=1 requested=1 queued=1', $stdout);
+            assertStringContains('estimated budget before every provider attempt', $stdout);
+            assertSame(1, (int) (new PDO('sqlite:' . $scorePath))->query('SELECT COUNT(*) FROM fastmod_backfill_work')->fetchColumn());
+            assertSame(1, (int) (new PDO('sqlite:' . $queuePath))->query("SELECT COUNT(*) FROM internal_tasks WHERE type = 'fast_score_sweep' AND status = 'queued'")->fetchColumn());
+        } finally {
+            @unlink($readPath);
+            @unlink($scorePath);
+            @unlink($queuePath);
+            @unlink($secretsPath);
+        }
+    }
+
     /** @return array{0:int, 1:string, 2:string} */
     private function runCommand(string $cwd, string $command): array
     {

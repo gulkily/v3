@@ -39,4 +39,18 @@
 - Verification:
   - `php tests/run.php FastmodBackfillRequestServiceTest`
 - Notes:
-  - A request persists authorization only; Stage 5 enables provider processing.
+  - A request persists authorization; Stage 5 adds bounded provider processing.
+
+## Stage 5 - Bounded worker processing
+
+- Changes:
+  - Added worker claims that reserve a batch's estimated cost before every
+    provider attempt, including retries, and stop when the reserved budget is spent.
+  - Enqueued confirmed backfill batches through the existing Fastmod task type
+    while preserving normal new-post sweep isolation.
+  - Corrected exchange-usage parsing to use the recorded provider response.
+- Verification:
+  - `php tests/run.php FastScoreSweepServiceTest FastmodBackfillRequestServiceTest FastmodAuditCommandTest`
+- Notes:
+  - Provider bills can vary from a preflight estimate; the private batch retains
+    its reserved estimate and exposes underlying exchanges for exact inspection.

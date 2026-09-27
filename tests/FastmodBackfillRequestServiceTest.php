@@ -41,4 +41,18 @@ final class FastmodBackfillRequestServiceTest
             assertSame('The maximum cost does not cover one estimated Fastmod score.', $error->getMessage());
         }
     }
+
+    public function testRetryCannotExceedTheReservedBackfillBudget(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $store = new SqliteFastScoreStore($pdo);
+        $batch = $store->createBackfillBatch('rubric-a', 1, 0.015, 0.01, [['post_id' => 'post-1', 'content_hash' => 'hash-1']]);
+        $claimed = $store->claimPendingBackfillWork(1);
+        $store->completeWork($claimed[0], ['status' => 'provider_error', 'probability' => null, 'source' => 'none', 'signals' => ['provider_error']]);
+        $store->retryWork('post-1', 'hash-1', 'rubric-a');
+
+        assertSame([], $store->claimPendingBackfillWork(1));
+        assertSame('budget_exhausted', $pdo->query('SELECT status FROM fastmod_backfill_batches WHERE id = ' . $batch['id'])->fetchColumn());
+        assertSame(0.01, (float) $pdo->query('SELECT reserved_cost_usd FROM fastmod_backfill_batches WHERE id = ' . $batch['id'])->fetchColumn());
+    }
 }
