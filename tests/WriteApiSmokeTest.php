@@ -13,6 +13,8 @@ use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\ReadModel\ReadModelMetadata;
+use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\Scoring\FastScoreContextFactory;
 use ForumRewrite\Scoring\SqliteFastScoreStore;
 use ForumRewrite\Write\LocalWriteService;
@@ -2127,6 +2129,86 @@ PHP);
 
         assertStringContains('Feature flag updated. Commit:', $redirect);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION: false', (string) file_get_contents($repositoryRoot . '/records/instance/feature-flags.txt'));
+    }
+
+    public function testFeatureFlagWriteSyncsRepositoryHeadMetadataImmediately(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        try {
+            $this->renderMethod(
+                $application,
+                'POST',
+                '/tools/feature-flags/?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
+            );
+        } finally {
+            $_COOKIE = [];
+        }
+
+        $currentHead = ReadModelMetadata::repositoryHead($repositoryRoot);
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $metadata = [];
+        foreach ($pdo->query('SELECT key, value FROM metadata')->fetchAll() as $row) {
+            $metadata[$row['key']] = $row['value'];
+        }
+
+        assertSame($currentHead, $metadata['repository_head'] ?? null);
+        $this->assertReadModelHealthy($databasePath);
+
+        // The read model already matches HEAD, so the next request must not
+        // need to rebuild - confirm it stays in sync rather than requiring
+        // this second render to resync it.
+        $this->renderMethod($application, 'GET', '/about/');
+        $pdo2 = new PDO('sqlite:' . $databasePath);
+        $metadataAfter = [];
+        foreach ($pdo2->query('SELECT key, value FROM metadata')->fetchAll() as $row) {
+            $metadataAfter[$row['key']] = $row['value'];
+        }
+        assertSame($currentHead, $metadataAfter['repository_head'] ?? null);
+    }
+
+    public function testFeatureFlagWriteClearsPreexistingStaleMarkerAndAvoidsDuplicateActivity(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $staleMarker = new ReadModelStaleMarker($databasePath);
+        $staleMarker->mark([
+            'reason' => 'write_refresh_failed',
+            'note' => 'simulated failure from an unrelated write, for this test',
+        ]);
+        assertTrue($staleMarker->exists());
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        try {
+            $redirect = $this->renderMethod(
+                $application,
+                'POST',
+                '/tools/feature-flags/?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
+            );
+        } finally {
+            $_COOKIE = [];
+        }
+
+        assertStringContains('Feature flag updated. Commit:', $redirect);
+        $this->assertReadModelHealthy($databasePath);
+
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $activityCount = (int) $pdo->query(
+            "SELECT COUNT(*) AS c FROM activity WHERE kind = 'site_feature_flag'"
+        )->fetch()['c'];
+        assertSame(1, $activityCount);
+
+        $currentHead = ReadModelMetadata::repositoryHead($repositoryRoot);
+        $metadata = [];
+        foreach ($pdo->query('SELECT key, value FROM metadata')->fetchAll() as $row) {
+            $metadata[$row['key']] = $row['value'];
+        }
+        assertSame($currentHead, $metadata['repository_head'] ?? null);
     }
 
     public function testThreadAndReplyWritesUseIncrementalReadModelUpdateWhenDatabaseIsWarm(): void
