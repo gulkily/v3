@@ -15,6 +15,10 @@ work tracking and makes the pipeline diagnosable and recoverable.
 
 ## Decisions made
 
+- [x] The public product name is **Fastmod**. Preserve stable internal
+  identifiers such as `fast-score`, `FAST_SCORING_*`, and `fast_score_sweep`;
+  [the rename checklist](fastmod_rename_checklist.md) tracks remaining
+  user-facing copy changes.
 - [x] `probability` means the probability that content should be held for human
   moderation: `0` is confidently allowed public and `1` is confidently held.
   The active rubric is `prompts/fast_post_scoring_system.txt`; its content hash
