@@ -18,7 +18,7 @@ storage tables.
 
 ## Operator-facing copy
 
-- [ ] Change `Fast-score status` and prune output to `Fastmod` in
+- [x] Change `Fast-score status` and prune output to `Fastmod` in
   `scripts/fast_score.php`.
 - [ ] Change task-queue progress output from `Fast-score` to `Fastmod` in
   `scripts/task_queue.php`.

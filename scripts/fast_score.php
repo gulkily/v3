@@ -27,14 +27,14 @@ $scorePath = FastScoreDatabaseConfig::path($projectRoot, $privateConfig);
 try {
     $scoreDirectory = dirname($scorePath);
     if (!is_dir($scoreDirectory) && !mkdir($scoreDirectory, 0777, true) && !is_dir($scoreDirectory)) {
-        throw new RuntimeException('Fast-score database directory is not writable.');
+        throw new RuntimeException('Fastmod database directory is not writable.');
     }
     $store = new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath));
     if ($command === 'status') {
         $config = FastScoringConfig::fromPrivateConfig($privateConfig);
         $queuePath = TaskQueueDatabaseConfig::path($projectRoot, $options['queue-database-path'] ?? null);
         $queueCounts = is_file($queuePath) ? (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->counts() : [];
-        fwrite(STDOUT, 'Fast-score status' . "\n");
+        fwrite(STDOUT, 'Fastmod status' . "\n");
         fwrite(STDOUT, 'Score database: ' . $scorePath . "\n");
         fwrite(STDOUT, 'Active rubric revision: ' . FastScoringRubricRevision::fromConfig($config, $projectRoot) . "\n");
         fwrite(STDOUT, 'Work counts: ' . json_encode($store->workCounts(), JSON_THROW_ON_ERROR) . "\n");
@@ -83,7 +83,7 @@ try {
             $stmt->execute(['call_type' => 'fast_post_score', 'cutoff' => $cutoffValue]);
             $deleted += $stmt->rowCount();
         }
-        fwrite(STDOUT, "Pruned {$deleted} private fast-score records before {$cutoffValue}.\n");
+        fwrite(STDOUT, "Pruned {$deleted} private Fastmod records before {$cutoffValue}.\n");
         exit(0);
     }
 
