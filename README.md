@@ -37,6 +37,7 @@ that stays accurate even as implementation details move around:
 ### Reference
 
 - [`v3` CLI Reference](docs/reference/v3_cli.md) — every `./v3` subcommand, including ones not covered below (`rebuild`, `build-static`, `import-repository`, `thread-attributes`, `delete-record`, `unicode-risk-backfill`, `archive-thread`, `agent-reply status`/`test-local`, `codex-handoff run`/`test-local`, `task-queue`), plus the 3 standalone operator scripts not wired into `./v3`
+- [Fastmod](docs/reference/fast_post_scoring.md) — configuration and approved-operator workflow for focused 0–1 LLM moderation scores
 
 ### Examples (`docs/examples/`)
 
@@ -157,6 +158,12 @@ View a redacted summary of the current private config and update reminders:
 
 ```bash
 ./v3 private-config view
+```
+
+Open the private config with `$VISUAL`, `$EDITOR`, or `vi`:
+
+```bash
+./v3 private-config edit
 ```
 
 Print a concise reference for installing the queued agent reply cron job:

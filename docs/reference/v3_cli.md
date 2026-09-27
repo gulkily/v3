@@ -7,6 +7,20 @@ form is the shorthand used elsewhere in this repo's docs.
 Run `./v3` with no arguments to print the same command list from the script
 itself (useful if this document drifts from `v3`).
 
+## CLI error-handling contract
+
+When adding or changing a `./v3` command or worker command:
+
+- validate the command and its options before filesystem, database, network, or
+  other state-changing work begins;
+- accept only documented options and reject unknown commands or options with a
+  nonzero exit code;
+- write a concise error and the relevant usage text to stderr—never expose an
+  uncaught PHP exception or stack trace;
+- support `-h` and `--help` with exit code 0; and
+- add a regression test through the `./v3` dispatcher for unknown-option
+  handling.
+
 Most data-touching commands accept optional positional `repository_root` and
 `database_path` arguments. When omitted they fall back to, in order:
 
@@ -56,32 +70,64 @@ read-model table counts (posts, threads, profiles, activity).
 
 ```
 ./v3 task-queue enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
-./v3 task-queue run [--limit=1] [--dry-run] [--quiet] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+./v3 task-queue enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
+./v3 task-queue run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue cron [--log=/var/log/forum-task-queue.log]
 ```
 
 A small SQLite-backed job queue (`scripts/task_queue.php`), currently used to
-serialize read-model rebuild requests so concurrent triggers coalesce into one
-job instead of racing. `docs/runbooks/production_deploy.md` and
+serialize read-model rebuild requests and Fastmod sweeps so concurrent
+triggers coalesce into one job instead of racing. `docs/runbooks/production_deploy.md` and
 `docs/runbooks/operator_recovery.md` reference this command and depend on it
 being installed via cron.
 
 - `enqueue-rebuild` — enqueues a `read-model` rebuild task (a no-op if one is
   already queued/running); `--queue-database-path=...` overrides the default
   queue database location
+- `enqueue-fast-score` — enqueues the coalesced Fastmod sweep (also a
+  no-op if one is already queued/running). It evaluates all nonempty posts over
+  successive bounded runs when Fastmod is enabled.
 - `run` — claims and runs up to `--limit` queued tasks (default 1), recovering
   any abandoned in-progress tasks first; guarded by an exclusive file lock so
   concurrent invocations don't double-run. `--dry-run` reports the queued
   count without running anything; `--quiet` suppresses progress output;
   `--repository-root=...`/`--database-path=...` override the read model to
-  rebuild against
+  rebuild against. `--score-limit=...` independently sets the maximum provider
+  calls a claimed Fastmod sweep may make (default 25); provider failures and
+  invalid structured responses count because a request was made.
+  `--work-limit=...` bounds all examined Fastmod work rows, including local
+  heuristic exclusions (default 250). `--limit=...` is only the maximum queue
+  tasks claimed. `--verbose` reports each Fastmod result and provider request
+  as it happens. `--quiet` suppresses all worker progress output, including
+  verbose output when both options are supplied.
 - `status` — prints queued/running/completed/failed counts plus the
   `--limit` (default 25) most recent tasks with attempt counts and failure
   codes
 - `cron` — prints a ready-to-install crontab line running `task_queue.php run
   --quiet --limit=1` once a minute; `--log=...` sets the log file path baked
   into the printed line
+
+## Audit or backfill Fastmod
+
+```
+./v3 fast-score status [--limit=10] [--verbose]
+./v3 fast-score audit --include-existing [--database-path=/path/read-model.sqlite3]
+./v3 fast-score backfill --include-existing --confirm --max-posts=N --max-cost-usd=N [--database-path=/path/read-model.sqlite3]
+./v3 fast-score retry --post-id=... --content-hash=... --rubric-revision=...
+./v3 fast-score invalidate --post-id=... --content-hash=... --rubric-revision=...
+./v3 fast-score smoke --post-id=... [--database-path=/path/read-model.sqlite3]
+./v3 fast-score prune [--before=ISO-8601]
+```
+
+`audit --include-existing` is a read-only historical count and configured-model
+cost estimate. `backfill` requires separate historical scope, confirmation,
+post-count, and spend bounds; it creates one private, bounded batch and queues
+the normal worker. `status` provides the next action, distinguishes regular
+work from historical backfill, and shows batch progress and reservation state.
+Use `--verbose` for recent individual work rows. See
+[Fastmod](fast_post_scoring.md) for pricing configuration, retention, and the
+controlled operator workflow.
 
 ## Import a repository archive
 
@@ -176,7 +222,7 @@ and rebuilds affected artifacts.
 ## Manage the private LLM/Dedalus config
 
 ```
-./v3 private-config [view|refresh-template|--view|--force|--api-key-stdin] [--path=/private/path/secrets.php]
+./v3 private-config [view|edit|refresh-template|--view|--edit|--force|--api-key-stdin] [--path=/private/path/secrets.php]
 ```
 
 Creates or updates the private PHP config consumed by
@@ -187,6 +233,7 @@ gateways. Legacy `DEDALUS_*` settings are still read as fallbacks, but new
 writes use `LLM_*` names.
 
 - `view` / `--view` — print a redacted summary and update reminders without writing the file
+- `edit` / `--edit` — open an existing config in `$VISUAL`, `$EDITOR`, or `vi`; it does not print secrets or create a missing file
 - `refresh-template` — rewrite the file with current comments/examples while preserving existing values
 - `--force` — overwrite without the usual confirmation/skip behavior
 - `--api-key-stdin` — read the API key from stdin instead of an argument, so it never lands in shell history: `printf '%s\n' "$LLM_API_KEY" | ./v3 private-config --api-key-stdin`

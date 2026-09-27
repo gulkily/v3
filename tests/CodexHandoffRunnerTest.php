@@ -94,6 +94,17 @@ final class CodexHandoffRunnerTest
         assertStringContains('./v3 codex-handoff test-local', $subStderr);
     }
 
+    public function testCodexHandoffUnknownOptionShowsUsageWithoutAPhpStackTrace(): void
+    {
+        [$exitCode, $stdout, $stderr] = $this->runCommand(dirname(__DIR__), './v3 codex-handoff run --unknown');
+
+        assertSame(1, $exitCode);
+        assertSame('', $stdout);
+        assertStringContains('Error: Unknown option: --unknown', $stderr);
+        assertStringContains('Usage:', $stderr);
+        assertStringNotContains('Stack trace:', $stderr);
+    }
+
     /**
      * @return array<string, mixed>
      */

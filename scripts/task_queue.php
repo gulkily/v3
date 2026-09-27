@@ -4,6 +4,18 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/autoload.php';
 
+use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
+use ForumRewrite\Llm\LlmExchangeRecorder;
+use ForumRewrite\Scoring\FastScoreContextFactory;
+use ForumRewrite\Scoring\FastScoreDatabaseConfig;
+use ForumRewrite\Scoring\FastScoreSweepService;
+use ForumRewrite\Scoring\FastScoreWorkflowFactory;
+use ForumRewrite\Scoring\FastScoringConfig;
+use ForumRewrite\Scoring\FastScoringRubricRevision;
+use ForumRewrite\Scoring\SqliteFastScoreStore;
+use ForumRewrite\Support\PrivateConfig;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\TaskQueue\ReadModelRebuildTaskHandler;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
@@ -12,12 +24,26 @@ use ForumRewrite\TaskQueue\TaskQueueWorker;
 
 $projectRoot = dirname(__DIR__);
 $command = $argv[1] ?? '';
-$options = parseTaskQueueOptions(array_slice($argv, 2));
-$repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
-$databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
-$queuePath = TaskQueueDatabaseConfig::path($projectRoot, isset($options['queue-database-path']) ? (string) $options['queue-database-path'] : null);
+
+if (in_array($command, ['-h', '--help'], true)) {
+    printTaskQueueUsage(STDOUT);
+    exit(0);
+}
 
 try {
+    $options = parseTaskQueueOptions(array_slice($argv, 2));
+    if (($options['help'] ?? false) === true) {
+        printTaskQueueUsage(STDOUT);
+        exit(0);
+    }
+
+    if (!in_array($command, ['enqueue-rebuild', 'enqueue-fast-score', 'run', 'status', 'cron'], true)) {
+        throw new InvalidArgumentException('Unknown task-queue command: ' . ($command === '' ? '(none)' : $command));
+    }
+
+    $repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
+    $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+    $queuePath = TaskQueueDatabaseConfig::path($projectRoot, isset($options['queue-database-path']) ? (string) $options['queue-database-path'] : null);
     $queueDirectory = dirname($queuePath);
     if (!is_dir($queueDirectory) && !mkdir($queueDirectory, 0777, true) && !is_dir($queueDirectory)) {
         throw new RuntimeException('Task queue directory is not writable.');
@@ -28,6 +54,17 @@ try {
 
     if ($command === 'enqueue-rebuild') {
         $task = $store->enqueue(SqliteTaskQueueStore::REBUILD_READ_MODEL, 'read-model');
+        fwrite(STDOUT, sprintf(
+            "Task %s: id=%d status=%s\n",
+            $task['enqueued'] ? 'enqueued' : 'already outstanding',
+            $task['id'],
+            $task['status'],
+        ));
+        exit(0);
+    }
+
+    if ($command === 'enqueue-fast-score') {
+        $task = $store->enqueue(SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'fast-score-sweep');
         fwrite(STDOUT, sprintf(
             "Task %s: id=%d status=%s\n",
             $task['enqueued'] ? 'enqueued' : 'already outstanding',
@@ -70,17 +107,22 @@ try {
 
     if ($command === 'run') {
         $limit = max(1, (int) ($options['limit'] ?? 1));
+        $providerCallLimit = max(1, (int) ($options['score-limit'] ?? 25));
+        $workLimit = max(1, (int) ($options['work-limit'] ?? 250));
         $quiet = ($options['quiet'] ?? false) === true;
+        $verbose = ($options['verbose'] ?? false) === true;
         if (($options['dry-run'] ?? false) === true) {
             $counts = $store->counts();
             emitTaskQueue($quiet, "Task queue dry run\n");
             emitTaskQueue($quiet, "Queue database: {$queuePath}\n");
             emitTaskQueue($quiet, "Queued tasks: {$counts['queued']}\n");
             emitTaskQueue($quiet, "Limit: {$limit}\n");
+            emitTaskQueue($quiet, "Fastmod provider-call limit: {$providerCallLimit}\n");
+            emitTaskQueue($quiet, "Fastmod examined-work limit: {$workLimit}\n");
             exit(0);
         }
 
-        $run = static function () use ($store, $repositoryRoot, $databasePath, $queuePath, $limit, $quiet): void {
+        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose): void {
             $startedAt = microtime(true);
             $before = $store->counts();
             emitTaskQueue($quiet, "Task queue worker starting\n");
@@ -88,6 +130,8 @@ try {
             emitTaskQueue($quiet, "Repository: {$repositoryRoot}\n");
             emitTaskQueue($quiet, "Read model: {$databasePath}\n");
             emitTaskQueue($quiet, "Limit: {$limit}\n");
+            emitTaskQueue($quiet, "Fastmod provider-call limit: {$providerCallLimit}\n");
+            emitTaskQueue($quiet, "Fastmod examined-work limit: {$workLimit}\n");
             emitTaskQueue($quiet, sprintf(
                 "Queue before: queued=%d running=%d completed=%d failed=%d\n",
                 $before['queued'],
@@ -95,7 +139,56 @@ try {
                 $before['completed'],
                 $before['failed'],
             ));
-            $worker = new TaskQueueWorker($store, new ReadModelRebuildTaskHandler($repositoryRoot, $databasePath));
+            $worker = new TaskQueueWorker(
+                $store,
+                new ReadModelRebuildTaskHandler($repositoryRoot, $databasePath),
+                static function () use ($projectRoot, $repositoryRoot, $databasePath, $providerCallLimit, $workLimit, $quiet, $verbose): array {
+                    if (!is_file($databasePath)) {
+                        throw new RuntimeException('Read model database not found: ' . $databasePath);
+                    }
+
+                    $privateConfig = PrivateConfig::load($projectRoot);
+                    $readPdo = new PDO('sqlite:' . $databasePath);
+                    $readPdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+                    $fetchPost = static function (string $postId) use ($readPdo): ?array {
+                        $statement = $readPdo->prepare('SELECT post_id, thread_id, parent_id, subject, body FROM posts WHERE post_id = :post_id');
+                        $statement->execute(['post_id' => $postId]);
+                        $post = $statement->fetch();
+                        return $post === false ? null : $post;
+                    };
+                    $config = FastScoringConfig::fromPrivateConfig($privateConfig);
+                    $scorePath = FastScoreDatabaseConfig::path($projectRoot, $privateConfig);
+                    $scoreDirectory = dirname($scorePath);
+                    if (!is_dir($scoreDirectory) && !mkdir($scoreDirectory, 0777, true) && !is_dir($scoreDirectory)) {
+                        throw new RuntimeException('Fastmod database directory is not writable.');
+                    }
+
+                    $workflow = FastScoreWorkflowFactory::fromPrivateConfig(
+                        $privateConfig,
+                        $projectRoot,
+                        $fetchPost,
+                        taskQueueLlmExchangeRecorder($projectRoot, $repositoryRoot, $privateConfig),
+                    );
+                    $contextFactory = new FastScoreContextFactory($fetchPost);
+                    $scoreStore = new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath));
+
+                    return (new FastScoreSweepService(
+                        $readPdo,
+                        $contextFactory,
+                        $workflow,
+                        $scoreStore,
+                        FastScoringRubricRevision::fromConfig($config, $projectRoot),
+                    ))->run(
+                        $providerCallLimit,
+                        $workLimit,
+                        $verbose && !$quiet
+                            ? static function (string $event, array $progress): void {
+                                emitFastmodProgress(false, $event, $progress);
+                            }
+                            : null,
+                    );
+                },
+            );
             $taskStartedAt = [];
             $summary = $worker->run($limit, static function (string $event, array $task) use ($quiet, &$taskStartedAt): void {
                 if ($event === 'recovered') {
@@ -124,13 +217,52 @@ try {
                     $elapsed,
                     $task['failure_code'] ?? 'none',
                 ));
+                if (isset($task['sweep']) && is_array($task['sweep'])) {
+                    emitTaskQueue($quiet, sprintf(
+                        "  Fastmod sweep: examined=%d processed=%d provider_calls=%d scored=%d excluded=%d failed=%d remaining=%s\n",
+                        (int) ($task['sweep']['examined'] ?? 0),
+                        (int) ($task['sweep']['processed'] ?? 0),
+                        (int) ($task['sweep']['provider_calls'] ?? 0),
+                        (int) ($task['sweep']['scored'] ?? 0),
+                        (int) ($task['sweep']['excluded'] ?? 0),
+                        (int) ($task['sweep']['failed'] ?? 0),
+                        ($task['sweep']['remaining'] ?? false) === true ? 'yes' : 'no',
+                    ));
+                    if ((int) ($task['sweep']['backfill_processed'] ?? 0) > 0) {
+                        $backfill = $task['sweep']['backfill'] ?? [];
+                        emitTaskQueue($quiet, sprintf(
+                            "  Fastmod backfill batch id=%d: processed=%d progress=%d/%d remaining=%d status=%s\n",
+                            (int) ($backfill['id'] ?? 0),
+                            (int) $task['sweep']['backfill_processed'],
+                            (int) ($backfill['processed_count'] ?? 0),
+                            (int) ($backfill['queued_count'] ?? 0),
+                            (int) ($backfill['remaining_count'] ?? 0),
+                            (string) ($backfill['status'] ?? 'unknown'),
+                        ));
+                        emitTaskQueue($quiet, sprintf(
+                            "  Reserved estimate: usd=%.6f of cap=%.6f\n",
+                            (float) ($backfill['reserved_cost_usd'] ?? 0),
+                            (float) ($backfill['max_cost_usd'] ?? 0),
+                        ));
+                        if ((int) ($task['sweep']['backfill_excluded'] ?? 0) > 0) {
+                            emitTaskQueue($quiet, sprintf(
+                                "  Deterministic exclusions: %d; no provider call was made for those posts.\n",
+                                (int) $task['sweep']['backfill_excluded'],
+                            ));
+                        }
+                    }
+                    if (($task['continued'] ?? false) === true) {
+                        emitTaskQueue($quiet, "  Continuation queued for remaining Fastmod work; this is not a failure or retry.\n");
+                    }
+                }
             });
             $after = $store->counts();
             emitTaskQueue($quiet, sprintf(
-                "Task queue run complete: recovered=%d claimed=%d completed=%d retried=%d failed=%d\n",
+                "Task queue run complete: recovered=%d claimed=%d completed=%d continued=%d retried=%d failed=%d\n",
                 $summary['recovered'],
                 $summary['claimed'],
                 $summary['completed'],
+                $summary['continued'],
                 $summary['retried'],
                 $summary['failed'],
             ));
@@ -170,7 +302,8 @@ try {
     printTaskQueueUsage(STDERR);
     exit(1);
 } catch (Throwable $exception) {
-    fwrite(STDERR, 'Error: ' . $exception->getMessage() . "\n");
+    fwrite(STDERR, 'Error: ' . $exception->getMessage() . "\n\n");
+    printTaskQueueUsage(STDERR);
     exit(1);
 }
 
@@ -182,15 +315,19 @@ function parseTaskQueueOptions(array $arguments): array
 {
     $options = [];
     foreach ($arguments as $argument) {
-        if (in_array($argument, ['--dry-run', '--quiet'], true)) {
+        if ($argument === '-h' || $argument === '--help') {
+            $options['help'] = true;
+            continue;
+        }
+        if (in_array($argument, ['--dry-run', '--quiet', '--verbose'], true)) {
             $options[substr($argument, 2)] = true;
             continue;
         }
-        foreach (['limit', 'repository-root', 'database-path', 'queue-database-path', 'log'] as $key) {
+        foreach (['limit', 'score-limit', 'work-limit', 'repository-root', 'database-path', 'queue-database-path', 'log'] as $key) {
             $prefix = '--' . $key . '=';
             if (str_starts_with($argument, $prefix)) {
                 $value = substr($argument, strlen($prefix));
-                $options[$key] = $key === 'limit' ? max(1, (int) $value) : $value;
+                $options[$key] = in_array($key, ['limit', 'score-limit', 'work-limit'], true) ? max(1, (int) $value) : $value;
                 continue 2;
             }
         }
@@ -207,14 +344,85 @@ function emitTaskQueue(bool $quiet, string $message): void
     }
 }
 
+/** @param array<string,mixed> $progress */
+function emitFastmodProgress(bool $quiet, string $event, array $progress): void
+{
+    $postId = (string) ($progress['post_id'] ?? 'unknown');
+    $examined = (int) ($progress['examined'] ?? 0);
+    $workLimit = (int) ($progress['work_limit'] ?? 0);
+    $providerCalls = (int) ($progress['provider_calls'] ?? 0);
+    $providerCallLimit = (int) ($progress['provider_call_limit'] ?? 0);
+    $batch = isset($progress['backfill_batch_id']) ? ' backfill_batch=' . (int) $progress['backfill_batch_id'] : '';
+
+    if ($event === 'provider_started') {
+        emitTaskQueue($quiet, sprintf(
+            "  Fastmod progress: examined=%d/%d provider_call=%d/%d post=%s%s\n",
+            $examined,
+            $workLimit,
+            $providerCalls,
+            $providerCallLimit,
+            $postId,
+            $batch,
+        ));
+        return;
+    }
+
+    if ($event === 'deferred') {
+        emitTaskQueue($quiet, sprintf(
+            "  Fastmod progress: examined=%d/%d post=%s deferred=%s%s\n",
+            $examined,
+            $workLimit,
+            $postId,
+            (string) ($progress['reason'] ?? 'unknown'),
+            $batch,
+        ));
+        return;
+    }
+
+    $probability = $progress['probability'] === null ? 'none' : sprintf('%.6f', (float) $progress['probability']);
+    $failure = isset($progress['failure_code']) ? ' failure=' . (string) $progress['failure_code'] : '';
+    emitTaskQueue($quiet, sprintf(
+        "  Fastmod progress: examined=%d/%d post=%s status=%s probability=%s source=%s provider_calls=%d/%d%s%s\n",
+        $examined,
+        $workLimit,
+        $postId,
+        (string) ($progress['status'] ?? 'unknown'),
+        $probability,
+        (string) ($progress['source'] ?? 'none'),
+        $providerCalls,
+        $providerCallLimit,
+        $failure,
+        $batch,
+    ));
+}
+
 function printTaskQueueUsage($stream): void
 {
     fwrite($stream, <<<'TEXT'
 Usage:
   php scripts/task_queue.php enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
-  php scripts/task_queue.php run [--limit=1] [--dry-run] [--quiet] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+  php scripts/task_queue.php enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
+  php scripts/task_queue.php run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php cron [--log=/var/log/forum-task-queue.log]
 
 TEXT);
+}
+
+/**
+ * @param array<string, mixed> $privateConfig
+ */
+function taskQueueLlmExchangeRecorder(string $projectRoot, string $repositoryRoot, array $privateConfig): ?LlmExchangeRecorder
+{
+    if (!FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)->isEnabled(FeatureFlagRegistry::LLM_CONVERSATION_RECORDING_ENABLED)) {
+        return null;
+    }
+
+    $path = LlmExchangeDatabaseConfig::path($projectRoot, $privateConfig);
+    $directory = dirname($path);
+    if (!is_dir($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
+        throw new RuntimeException('LLM exchange database directory is not writable.');
+    }
+
+    return new LlmExchangeRecorder(new PDO('sqlite:' . $path));
 }

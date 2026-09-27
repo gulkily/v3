@@ -7,6 +7,9 @@ $authorPublicKeyHref = trim((string) ($post['author_public_key_href'] ?? ''));
     <h1>Post <?= $e($post['post_id']) ?></h1>
     <p class="meta">Thread <a href="/threads/<?= $e($post['thread_id']) ?>"><?= $e($post['thread_id']) ?></a></p>
     <p class="meta">Score: <?= (int) ($post['post_score_total'] ?? 0) ?></p>
+<?php if (is_array($fastScore ?? null) && ($fastScore['status'] ?? '') === 'scored' && isset($fastScore['probability'])): ?>
+    <p class="meta">Fastmod: <?= $e(number_format((float) $fastScore['probability'], 2)) ?></p>
+<?php endif; ?>
 <?= $indent($partial('partials/source_metadata.php', [
     'source_path' => $post['source_path'] ?? '',
     'source_commit_sha' => $post['source_commit_sha'] ?? '',

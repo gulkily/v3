@@ -37,6 +37,7 @@ final class ThreadAndPostPageController
      * @param \Closure(): (\ForumRewrite\Llm\LlmExchangeRecorder|null) $llmExchangeRecorderFactory
      * @param \Closure(): bool $viewerCanInspectLlmExchanges
      * @param \Closure(array<int, array<string, mixed>>): array<string, list<array<string, mixed>>> $fetchLlmExchangesForPosts
+     * @param \Closure(array<string, mixed>): (array<string, mixed>|null) $latestFastScoreForPost
      */
     public function __construct(
         private readonly RouteServices $routeServices,
@@ -49,6 +50,7 @@ final class ThreadAndPostPageController
         private readonly \Closure $llmExchangeRecorderFactory,
         private readonly \Closure $viewerCanInspectLlmExchanges,
         private readonly \Closure $fetchLlmExchangesForPosts,
+        private readonly \Closure $latestFastScoreForPost,
     ) {
     }
 
@@ -195,6 +197,7 @@ final class ThreadAndPostPageController
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
                 'llmExchangesByPostId' => $llmExchangesByPostId,
+                'fastScore' => ($this->latestFastScoreForPost)($post),
                 'codexHandoffsByPostId' => $codexHandoffsByPostId,
                 'codexHandoffEligiblePostIds' => $codexHandoffEligiblePostIds,
                 'agentReplyWorkByPostId' => $service->agentReplyWorkByPostId(

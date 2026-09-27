@@ -13,6 +13,8 @@ use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\Scoring\FastScoreContextFactory;
+use ForumRewrite\Scoring\SqliteFastScoreStore;
 use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
@@ -202,6 +204,106 @@ final class WriteApiSmokeTest
             assertSame('LLM API key is not configured.', $response['failure_message']);
         } finally {
             putenv('FORUM_SECRETS_PATH');
+        }
+    }
+
+    public function testFastScoreEndpointRetiresSynchronousProviderExecution(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $previousEnabled = getenv('FAST_SCORING_ENABLED');
+        $previousProvider = getenv('FAST_SCORING_LLM_PROVIDER');
+        putenv('FAST_SCORING_ENABLED=true');
+        putenv('FAST_SCORING_LLM_PROVIDER=stub');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $created = $this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Score&body=Question');
+            $postId = $this->extractValue($created, 'post_id');
+
+            $_COOKIE = [];
+            $anonymous = json_decode($this->renderMethod($application, 'POST', '/api/score_post?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $approved = json_decode($this->renderMethod($application, 'POST', '/api/score_post?post_id=' . rawurlencode($postId)), true);
+            $missing = json_decode($this->renderMethod($application, 'POST', '/api/score_post?post_id=missing'), true);
+
+            assertSame('fast_score_synchronous_execution_retired', $anonymous['error']);
+            assertSame('Fastmod scores are created only by the private worker after new-content publication.', $anonymous['message']);
+            assertSame('fast_score_synchronous_execution_retired', $approved['error']);
+            assertSame('fast_score_synchronous_execution_retired', $missing['error']);
+        } finally {
+            $_COOKIE = [];
+            $previousEnabled === false ? putenv('FAST_SCORING_ENABLED') : putenv('FAST_SCORING_ENABLED=' . $previousEnabled);
+            $previousProvider === false ? putenv('FAST_SCORING_LLM_PROVIDER') : putenv('FAST_SCORING_LLM_PROVIDER=' . $previousProvider);
+        }
+    }
+
+    public function testNewPublishedPostEnqueuesOnlyPrivateFastScoreWork(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $scorePath = sys_get_temp_dir() . '/forum-fast-score-work-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $queuePath = sys_get_temp_dir() . '/forum-fast-score-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previous = [
+            'FAST_SCORING_ENABLED' => getenv('FAST_SCORING_ENABLED'),
+            'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED' => getenv('FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED'),
+            'FAST_SCORING_DATABASE_PATH' => getenv('FAST_SCORING_DATABASE_PATH'),
+            'FORUM_TASK_QUEUE_DATABASE_PATH' => getenv('FORUM_TASK_QUEUE_DATABASE_PATH'),
+        ];
+        putenv('FAST_SCORING_ENABLED=true');
+        putenv('FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED=true');
+        putenv('FAST_SCORING_DATABASE_PATH=' . $scorePath);
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $response = $this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Queued&body=New%20content');
+            $postId = $this->extractValue($response, 'post_id');
+            $work = (new PDO('sqlite:' . $scorePath))->query('SELECT post_id, state, attempt_count FROM fast_score_work')->fetch(PDO::FETCH_ASSOC);
+            $queue = (new PDO('sqlite:' . $queuePath))->query("SELECT type, status FROM internal_tasks WHERE type = 'fast_score_sweep'")->fetch(PDO::FETCH_ASSOC);
+
+            assertSame($postId, $work['post_id']);
+            assertSame('pending', $work['state']);
+            assertSame(0, (int) $work['attempt_count']);
+            assertSame('fast_score_sweep', $queue['type']);
+            assertSame('queued', $queue['status']);
+        } finally {
+            foreach ($previous as $name => $value) {
+                $value === false ? putenv($name) : putenv($name . '=' . $value);
+            }
+        }
+    }
+
+    public function testPostDetailPageShowsCurrentFastScoreToAllViewers(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $scorePath = sys_get_temp_dir() . '/forum-fast-score-detail-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previousScorePath = getenv('FAST_SCORING_DATABASE_PATH');
+        putenv('FAST_SCORING_DATABASE_PATH=' . $scorePath);
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $created = $this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Scored&body=Current%20content');
+            $postId = $this->extractValue($created, 'post_id');
+            $readPdo = new PDO('sqlite:' . $databasePath);
+            $post = $readPdo->query(
+                'SELECT post_id, thread_id, parent_id, subject, body FROM posts WHERE post_id = ' . $readPdo->quote($postId)
+            )->fetch(PDO::FETCH_ASSOC);
+            $context = (new FastScoreContextFactory(static fn (string $_): ?array => null))->forPost($post);
+            (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->save(
+                $postId,
+                (string) $context['content_hash'],
+                'rubric-test',
+                ['status' => 'scored', 'probability' => 0.42, 'source' => 'llm', 'signals' => []],
+            );
+
+            $_COOKIE = [];
+            $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+            $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+
+            assertStringContains('Fastmod: 0.42', $postPage);
+            assertStringNotContains('Fastmod:', $threadPage);
+        } finally {
+            $previousScorePath === false ? putenv('FAST_SCORING_DATABASE_PATH') : putenv('FAST_SCORING_DATABASE_PATH=' . $previousScorePath);
+            $_COOKIE = [];
         }
     }
 

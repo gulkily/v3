@@ -10,6 +10,7 @@ use PDO;
 final class SqliteTaskQueueStore
 {
     public const REBUILD_READ_MODEL = 'rebuild_read_model';
+    public const FAST_SCORE_SWEEP = 'fast_score_sweep';
 
     public function __construct(
         private readonly PDO $pdo,
@@ -190,6 +191,31 @@ final class SqliteTaskQueueStore
     }
 
     /**
+     * Returns a claimed task to the queue without using one of its failure
+     * attempts. This is for a deliberately bounded task that has more normal
+     * work to continue, not a retry after an error.
+     *
+     * @return array<string, mixed>
+     */
+    public function requeueClaimed(int $id): array
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE internal_tasks
+             SET status = :status, attempts = MAX(attempts - 1, 0), requested_at = :requested_at,
+                 claimed_at = NULL, completed_at = NULL, failure_code = NULL, failure_message = NULL
+             WHERE id = :id AND status = :running'
+        );
+        $stmt->execute([
+            'status' => 'queued',
+            'requested_at' => gmdate('c'),
+            'id' => $id,
+            'running' => 'running',
+        ]);
+
+        return $this->requiredTask($id);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function markFailed(int $id, string $failureCode, string $failureMessage, bool $retryable): array
@@ -294,7 +320,7 @@ final class SqliteTaskQueueStore
 
     private function assertAllowedType(string $type): void
     {
-        if ($type !== self::REBUILD_READ_MODEL) {
+        if (!in_array($type, [self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP], true)) {
             throw new InvalidArgumentException('Unsupported internal task type: ' . $type);
         }
     }

@@ -14,10 +14,13 @@ have it already presented in mini-thread view in the activity
 
 scoring
 -------
-make another llm/agentic feature for fast scoring using lesser models
+make another llm/agentic feature for Fastmod using lesser models
 	sending only short instructions and the text of the post
 		for replies, include some context
 	request only a 0-1 probability in response
+	later, as a separate requirement: use validated Fastmod probabilities to
+	hold qualifying content for human moderation before it is public
+		requires a threshold, calibration, audit trail, override, and rollback
 
 html pages should be marked up with the templates used to build them
 	also include pointers to where in the code the template was included

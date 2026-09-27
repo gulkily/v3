@@ -19,6 +19,29 @@ final class TaskQueueStoreTest
         assertSame($first['id'], $second['id']);
     }
 
+    public function testEnqueueDeduplicatesOutstandingFastScoreSweep(): void
+    {
+        $store = $this->store();
+        $first = $store->enqueue(SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'fast-score');
+        $second = $store->enqueue(SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'fast-score');
+
+        assertSame(true, $first['enqueued']);
+        assertSame(false, $second['enqueued']);
+        assertSame($first['id'], $second['id']);
+    }
+
+    public function testRequeueClaimedDoesNotSpendAWorkerFailureAttempt(): void
+    {
+        $store = $this->store();
+        $store->enqueue(SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'fast-score');
+        $claimed = $store->claimNext()[0];
+
+        $requeued = $store->requeueClaimed($claimed['id']);
+
+        assertSame('queued', $requeued['status']);
+        assertSame(0, $requeued['attempts']);
+    }
+
     public function testClaimIsAtomicAndIncrementsAttemptCount(): void
     {
         $store = $this->store();
