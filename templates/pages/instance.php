@@ -1,7 +1,7 @@
 <section class="stack">
 <?php if (isset($toolNavOptions)): ?>
   <article class="card">
-    <div class="nav board-controls-nav">
+    <div class="nav">
 <?php foreach ($toolNavOptions as $option): ?>
 <?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
       <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>

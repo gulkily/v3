@@ -123,20 +123,6 @@
   background: var(--input-bg);
 }
 
-/*
- * Tools sub-nav "wraps alone" fix: site.css right-aligns the last
- * .board-controls-nav item (useful on the board page, where it
- * separates sort options from view options). On the tools detail
- * pages that load this stylesheet, the last item is just another
- * page link, so the push-right made it wrap onto its own line
- * looking detached. Cancel it here rather than in site.css, since
- * board.php's right-alignment is intentional and doesn't load this
- * file.
- */
-.board-controls-nav > *:last-child {
-  margin-left: 0;
-}
-
 .feature-flag-row {
   display: flex;
   justify-content: space-between;
