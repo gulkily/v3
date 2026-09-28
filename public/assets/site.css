@@ -332,6 +332,10 @@ pre {
   border-color: var(--active-line);
 }
 
+.thread-root-card h1 {
+  margin-bottom: 1rem;
+}
+
 .pending-reply-card {
   border-style: dashed;
 }
