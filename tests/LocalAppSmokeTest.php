@@ -1820,6 +1820,7 @@ PHP;
         assertStringContains('badge-locked', $featureFlags);
         assertStringContains('title="Not configurable from the site."', $featureFlags);
         assertStringContains('locked</span>', $featureFlags);
+        assertStringContains('<span class="feature-flag-lock-reason">Not configurable from the site.</span>', $featureFlags);
     }
 
     public function testFeatureFlagsPageDimsAndWarnsOnDependencyBlockedFlag(): void
