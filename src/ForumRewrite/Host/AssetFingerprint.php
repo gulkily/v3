@@ -37,22 +37,19 @@ final class AssetFingerprint
 
     public static function sourcePathForFingerprint(string $publicRoot, string $path): ?string
     {
-        if (!str_starts_with($path, '/assets/')) {
+        $components = self::fingerprintComponents($path);
+        if ($components === null || count($components['hashes']) !== 1) {
             return null;
         }
 
-        if (preg_match('#^(/assets/.+)\.([a-f0-9]{12})(\.[A-Za-z0-9]+)$#', $path, $matches) !== 1) {
-            return null;
-        }
-
-        $sourceRequestPath = $matches[1] . $matches[3];
+        $sourceRequestPath = $components['sourceRequestPath'];
         $sourcePath = $publicRoot . $sourceRequestPath;
         if (!is_file($sourcePath)) {
             return null;
         }
 
         $hash = self::assetHash($sourcePath);
-        if ($hash === null || !hash_equals($hash, $matches[2])) {
+        if ($hash === null || !hash_equals($hash, $components['hashes'][0])) {
             return null;
         }
 
@@ -61,15 +58,12 @@ final class AssetFingerprint
 
     public static function replacementPathForFingerprint(string $publicRoot, string $path): ?string
     {
-        if (!str_starts_with($path, '/assets/')) {
+        $components = self::fingerprintComponents($path);
+        if ($components === null) {
             return null;
         }
 
-        if (preg_match('#^(/assets/.+)\.([a-f0-9]{12})(\.[A-Za-z0-9]+)$#', $path, $matches) !== 1) {
-            return null;
-        }
-
-        $sourceRequestPath = $matches[1] . $matches[3];
+        $sourceRequestPath = $components['sourceRequestPath'];
         $sourcePath = $publicRoot . $sourceRequestPath;
         if (!is_file($sourcePath)) {
             return null;
@@ -81,6 +75,25 @@ final class AssetFingerprint
         }
 
         return $currentPath;
+    }
+
+    /**
+     * @return array{sourceRequestPath: string, hashes: list<string>}|null
+     */
+    private static function fingerprintComponents(string $path): ?array
+    {
+        if (!str_starts_with($path, '/assets/')) {
+            return null;
+        }
+
+        if (preg_match('#^(/assets/.+?)(\.[a-f0-9]{12}(?:\.[a-f0-9]{12})*)(\.[A-Za-z0-9]+)$#', $path, $matches) !== 1) {
+            return null;
+        }
+
+        return [
+            'sourceRequestPath' => $matches[1] . $matches[3],
+            'hashes' => explode('.', ltrim($matches[2], '.')),
+        ];
     }
 
     public static function copyFingerprintedAssets(string $sourcePublicRoot, string $targetPublicRoot): void

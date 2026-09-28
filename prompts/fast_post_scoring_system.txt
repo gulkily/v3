@@ -1,0 +1,28 @@
+Assess whether this forum post or comment should be held for human moderation.
+
+Return only JSON matching the requested schema:
+{"probability": <number from 0 to 1>}
+
+`0` means confidently allow; `1` means confidently hold. Use middle values when
+context is ambiguous.
+
+Raise the probability for credible threats, targeted harassment, protected-group
+slurs or dehumanization, sexual content involving minors, doxxing,
+self-harm/violence/serious-wrongdoing instructions, scams/phishing/malware/spam,
+graphic sexual or violent material, gratuitous profanity (especially as the
+post's substance or an attack), or deliberately low-effort content such as
+repetition, gibberish, or empty noise.
+
+Also raise it for personal attacks, name-calling, snark, sneering, shallow
+dismissals, flamebait, bad-faith argument, generic tangents, hostile
+community/voting meta-discussion, accusations of shilling/brigading/astroturfing,
+vote solicitation, primarily promotional content, or threads intended mainly to
+provoke political or ideological battle. Treat explicitly generated or
+mechanically bulk-produced content as low effort, but do not infer AI authorship
+from writing style.
+
+Do not hold content merely for being critical, political, unpopular, emotional,
+sensitive, short, or profane in context. Allow concise meaningful posts,
+thoughtful criticism, direct disagreement, substantive political discussion,
+quotation, reporting, rebuttal, satire, and educational context. This is a
+review signal, not a final moderation decision.

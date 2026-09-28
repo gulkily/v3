@@ -94,11 +94,11 @@ final class ExecutionLock
     public function isLocked(): bool
     {
         $directory = dirname($this->lockPath);
-        if (!is_dir($directory)) {
+        if (!is_dir($directory) || !is_file($this->lockPath)) {
             return false;
         }
 
-        $handle = fopen($this->lockPath, 'c+');
+        $handle = fopen($this->lockPath, 'r+');
         if ($handle === false) {
             return false;
         }

@@ -15,6 +15,12 @@ final class FeatureFlagDefinition
         public readonly string $category = 'site',
         public readonly bool $siteMutable = false,
         public readonly ?string $requiresEnabledFlag = null,
+        public readonly ?string $group = null,
     ) {
+    }
+
+    public function groupKey(): string
+    {
+        return $this->group ?? explode('_', $this->key, 2)[0];
     }
 }

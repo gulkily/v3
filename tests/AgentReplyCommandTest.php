@@ -68,6 +68,17 @@ final class AgentReplyCommandTest
         assertSame('', $stderr);
     }
 
+    public function testAgentReplyWorkerUnknownOptionShowsUsageWithoutAPhpStackTrace(): void
+    {
+        [$exitCode, $stdout, $stderr] = $this->runCommand(dirname(__DIR__), './v3 agent-reply cron run --unknown');
+
+        assertSame(1, $exitCode);
+        assertSame('', $stdout);
+        assertStringContains('Error: Unknown option: --unknown', $stderr);
+        assertStringContains('Usage: php scripts/run_agent_reply_requests.php', $stderr);
+        assertStringNotContains('Stack trace:', $stderr);
+    }
+
     public function testAgentReplyLiveTestRejectsStubProviderConfig(): void
     {
         $secretsPath = sys_get_temp_dir() . '/forum-rewrite-agent-reply-stub-' . bin2hex(random_bytes(6)) . '.php';

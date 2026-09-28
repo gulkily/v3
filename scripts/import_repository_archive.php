@@ -44,7 +44,13 @@ if (!is_dir($repositoryRoot . '/.git')) {
     exit(1);
 }
 
+fwrite(STDOUT, "Starting repository archive import.\n");
+fwrite(STDOUT, "Archive: {$archivePath}\n");
+fwrite(STDOUT, "Repository: {$repositoryRoot}\n");
+fwrite(STDOUT, $arguments['dry_run'] ? "Mode: dry run (no files will be written).\n" : "Mode: import records.\n");
+
 if (!$arguments['dry_run'] && !$arguments['no_commit']) {
+    fwrite(STDOUT, "Checking target repository for pending changes...\n");
     $status = runCommand(sprintf('git -C %s status --porcelain', escapeshellarg($repositoryRoot)));
     if ($status['exit_code'] !== 0) {
         fwrite(STDERR, trim($status['output']) . "\n");
@@ -64,10 +70,14 @@ $extractRoot = $workRoot . '/tmp-' . $runId;
 $conflictRoot = $workRoot . '/conflicts-' . $runId;
 
 try {
+    fwrite(STDOUT, "Preparing temporary import workspace...\n");
     ensureDirectory($workRoot);
     ensureDirectory($extractRoot);
+
+    fwrite(STDOUT, "Validating archive contents...\n");
     validateArchiveEntries($archivePath);
 
+    fwrite(STDOUT, "Extracting archive...\n");
     $extract = runCommand(sprintf(
         'tar -xzf %s -C %s',
         escapeshellarg($archivePath),
@@ -77,9 +87,16 @@ try {
         throw new RuntimeException("Unable to extract archive:\n" . $extract['output']);
     }
 
+    fwrite(STDOUT, "Locating canonical records in the archive...\n");
     $sourceRoot = locateSourceRepositoryRoot($extractRoot);
+    fwrite(STDOUT, "Indexing existing canonical records in the target repository...\n");
     $existingIndex = buildExistingRecordIndex($repositoryRoot);
     $sourceFiles = canonicalSourceFiles($sourceRoot);
+    $sourceFileCount = count($sourceFiles);
+    $progressInterval = max(1, min(100, (int) ceil($sourceFileCount / 20)));
+
+    fwrite(STDOUT, sprintf("Found %d files under records/ in the archive.\n", $sourceFileCount));
+    fwrite(STDOUT, sprintf("Indexed %d canonical identities in the target repository.\n", count($existingIndex)));
 
     $summary = [
         'seen' => 0,
@@ -93,11 +110,18 @@ try {
     $importedPaths = [];
     $conflictPaths = [];
 
+    if ($sourceFileCount === 0) {
+        fwrite(STDOUT, "No files under records/ were found to process.\n");
+    } else {
+        fwrite(STDOUT, sprintf("Processing canonical files: 0/%d (0%%)\n", $sourceFileCount));
+    }
+
     foreach ($sourceFiles as $relativePath) {
         $summary['seen']++;
 
         if (!isValidCanonicalSourcePath($relativePath)) {
             $summary['non_record_skipped']++;
+            reportImportProgress($summary['seen'], $sourceFileCount, $progressInterval);
             continue;
         }
 
@@ -105,12 +129,14 @@ try {
         $sourceContents = file_get_contents($sourcePath);
         if ($sourceContents === false) {
             $summary['invalid_skipped']++;
+            reportImportProgress($summary['seen'], $sourceFileCount, $progressInterval);
             continue;
         }
 
         $sourceKey = canonicalIdentityKey($sourceRoot, $relativePath);
         if ($sourceKey === null) {
             $summary['invalid_skipped']++;
+            reportImportProgress($summary['seen'], $sourceFileCount, $progressInterval);
             continue;
         }
 
@@ -118,6 +144,7 @@ try {
         if (is_file($targetPath)) {
             if (hash_equals(hash_file('sha256', $targetPath), hash('sha256', $sourceContents))) {
                 $summary['duplicate_paths']++;
+                reportImportProgress($summary['seen'], $sourceFileCount, $progressInterval);
                 continue;
             }
 
@@ -125,6 +152,7 @@ try {
             $conflictPaths[] = $arguments['dry_run']
                 ? $relativePath
                 : saveConflict($conflictRoot, $relativePath, $sourceContents, 'path');
+            reportImportProgress($summary['seen'], $sourceFileCount, $progressInterval);
             continue;
         }
 
@@ -141,6 +169,7 @@ try {
 
             if ($matchingDuplicate) {
                 $summary['duplicate_identities']++;
+                reportImportProgress($summary['seen'], $sourceFileCount, $progressInterval);
                 continue;
             }
 
@@ -148,6 +177,7 @@ try {
             $conflictPaths[] = $arguments['dry_run']
                 ? $relativePath
                 : saveConflict($conflictRoot, $relativePath, $sourceContents, 'identity');
+            reportImportProgress($summary['seen'], $sourceFileCount, $progressInterval);
             continue;
         }
 
@@ -156,6 +186,7 @@ try {
         $existingIndex[$sourceKey][] = $relativePath;
 
         if ($arguments['dry_run']) {
+            reportImportProgress($summary['seen'], $sourceFileCount, $progressInterval);
             continue;
         }
 
@@ -163,11 +194,25 @@ try {
         if (!copy($sourcePath, $targetPath)) {
             throw new RuntimeException('Unable to copy imported record: ' . $relativePath);
         }
+
+        reportImportProgress($summary['seen'], $sourceFileCount, $progressInterval);
     }
+
+    fwrite(STDOUT, sprintf(
+        "File processing complete: imported=%d duplicates=%d conflicts=%d skipped=%d.\n",
+        $summary['imported'],
+        $summary['duplicate_paths'] + $summary['duplicate_identities'],
+        $summary['conflicts'],
+        $summary['invalid_skipped'] + $summary['non_record_skipped'],
+    ));
 
     $commitSha = null;
     if (!$arguments['dry_run'] && $importedPaths !== []) {
+        fwrite(STDOUT, sprintf("Staging %d imported file(s)...\n", count($importedPaths)));
+        $staged = 0;
         foreach (array_chunk($importedPaths, 100) as $chunk) {
+            $staged += count($chunk);
+            fwrite(STDOUT, sprintf("Staging imported files: %d/%d\n", $staged, count($importedPaths)));
             $add = runCommand(sprintf(
                 'git -C %s add -- %s',
                 escapeshellarg($repositoryRoot),
@@ -179,6 +224,7 @@ try {
         }
 
         if (!$arguments['no_commit']) {
+            fwrite(STDOUT, "Creating import commit...\n");
             $commit = runCommand(sprintf(
                 'git -C %s commit -m %s',
                 escapeshellarg($repositoryRoot),
@@ -192,21 +238,32 @@ try {
             if ($revParse['exit_code'] === 0) {
                 $commitSha = trim($revParse['output']);
             }
+        } else {
+            fwrite(STDOUT, "Skipping commit because --no-commit was supplied.\n");
         }
 
+        fwrite(STDOUT, "Waiting for the exclusive rebuild lock...\n");
         (new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(
             static function () use ($projectRoot, $repositoryRoot, $databasePath, $artifactRoot): void {
+                fwrite(STDOUT, "Rebuilding read model...\n");
                 (new ReadModelBuilder(
                     $repositoryRoot,
                     $databasePath,
                     new CanonicalRecordRepository($repositoryRoot),
                 ))->rebuild();
+                fwrite(STDOUT, "Read model rebuild complete.\n");
 
                 if ($artifactRoot !== null) {
+                    fwrite(STDOUT, "Rebuilding static artifacts...\n");
                     (new StaticArtifactBuilder($projectRoot, $repositoryRoot, $databasePath, $artifactRoot))->build();
+                    fwrite(STDOUT, "Static artifact rebuild complete.\n");
                 }
             }
         );
+    } elseif ($arguments['dry_run']) {
+        fwrite(STDOUT, "Dry run complete; skipping staging, commit, and derived rebuilds.\n");
+    } else {
+        fwrite(STDOUT, "No new files were imported; skipping staging, commit, and derived rebuilds.\n");
     }
 
     fwrite(STDOUT, "Repository archive import complete.\n");
@@ -243,11 +300,27 @@ try {
         fwrite(STDOUT, "Conflict directory: {$conflictRoot}\n");
     }
 
+    fwrite(STDOUT, "Removing temporary extracted files...\n");
     deleteDirectory($extractRoot);
 } catch (Throwable $throwable) {
+    fwrite(STDOUT, "Import failed; removing temporary extracted files...\n");
     deleteDirectory($extractRoot);
     fwrite(STDERR, $throwable->getMessage() . "\n");
     exit(1);
+}
+
+function reportImportProgress(int $processed, int $total, int $interval): void
+{
+    if ($processed !== $total && $processed % $interval !== 0) {
+        return;
+    }
+
+    fwrite(STDOUT, sprintf(
+        "Processing canonical files: %d/%d (%d%%)\n",
+        $processed,
+        $total,
+        (int) floor(($processed / $total) * 100),
+    ));
 }
 
 /**

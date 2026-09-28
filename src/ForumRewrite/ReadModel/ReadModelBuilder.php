@@ -238,6 +238,18 @@ final class ReadModelBuilder
 
         $paths = $this->findRelativePaths('records/posts');
         $parsedPosts = [];
+        $this->reportProgress(sprintf(
+            'Read model: resolving legacy creation times for %d post records...',
+            count($paths),
+        ));
+        $this->canonicalRepository->preloadLegacyPostCreatedAts($paths);
+        $this->reportProgress('Read model: legacy creation time resolution complete.');
+        $this->reportProgress(sprintf(
+            'Read model: resolving source commits for %d post records...',
+            count($paths),
+        ));
+        $this->preloadSourceCommitShas($paths, 'records/posts');
+        $this->reportProgress('Read model: source commit resolution complete.');
         $this->reportBatchStart('Read model: parsing post records', count($paths));
 
         foreach ($paths as $index => $relativePath) {
@@ -1026,6 +1038,67 @@ final class ReadModelBuilder
             : null;
 
         return $this->sourceCommitShaByPath[$relativePath];
+    }
+
+    /**
+     * Resolves the latest commit for every requested path with one Git history
+     * walk. Calling `git log -1` once per post makes a large rebuild spend most
+     * of its time starting Git processes rather than parsing canonical records.
+     *
+     * @param list<string> $relativePaths
+     */
+    private function preloadSourceCommitShas(array $relativePaths, string $pathspec): void
+    {
+        if ($relativePaths === [] || !is_dir($this->repositoryRoot . '/.git')) {
+            return;
+        }
+
+        $unresolvedPaths = [];
+        foreach ($relativePaths as $relativePath) {
+            if (!array_key_exists($relativePath, $this->sourceCommitShaByPath)) {
+                $unresolvedPaths[$relativePath] = true;
+            }
+        }
+
+        if ($unresolvedPaths === []) {
+            return;
+        }
+
+        $command = sprintf(
+            'git -C %s log --format=%%H --name-only -- %s 2>/dev/null',
+            escapeshellarg($this->repositoryRoot),
+            escapeshellarg($pathspec),
+        );
+        $output = [];
+        $exitCode = 0;
+        exec($command, $output, $exitCode);
+
+        if ($exitCode !== 0) {
+            foreach (array_keys($unresolvedPaths) as $relativePath) {
+                $this->sourceCommitShaByPath[$relativePath] = null;
+            }
+
+            return;
+        }
+
+        $commitSha = null;
+        foreach ($output as $line) {
+            if (preg_match('/^[A-Fa-f0-9]{40}$/', $line) === 1) {
+                $commitSha = strtolower($line);
+                continue;
+            }
+
+            if ($commitSha === null || !isset($unresolvedPaths[$line])) {
+                continue;
+            }
+
+            $this->sourceCommitShaByPath[$line] = $commitSha;
+            unset($unresolvedPaths[$line]);
+        }
+
+        foreach (array_keys($unresolvedPaths) as $relativePath) {
+            $this->sourceCommitShaByPath[$relativePath] = null;
+        }
     }
 
     /**

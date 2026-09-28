@@ -46,20 +46,23 @@ if ($agentReplyPostedId !== '') {
 $viewerHasFlaggedPost = isset($viewerPostFlags[(string) $post['post_id']]);
 $postPermalinkLabel = 'Post ' . (string) $post['post_id'];
 $postAnchorId = 'post-' . (string) $post['post_id'];
+$postBody = (string) $post['body'];
+$postBodyFirstLineSegments = preg_split('/\r\n|\r|\n/', $postBody, 2);
+$postBodyFirstLine = trim($postBodyFirstLineSegments[0] ?? '');
+$postBodyDisplay = ($postBodyFirstLine !== '' && $postBodyFirstLine === trim($title))
+    ? preg_replace('/^(?:\r\n|\r|\n)+/', '', $postBodyFirstLineSegments[1] ?? '')
+    : $postBody;
 ?>
 <article id="<?= $e($postAnchorId) ?>" class="card post-card thread-root-card<?= $isAgentPost ? ' agent-authored-post' : '' ?>" data-heat="<?= $heat($thread['last_activity_at'] ?? ($post['created_at'] ?? null), (int) ($thread['reply_count'] ?? 0)) ?>" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>" data-post-id="<?= $e($post['post_id']) ?>"<?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?>>
   <h1><?= $e($title) ?></h1>
+  <div class="body"><?= $br($postBodyDisplay) ?></div>
   <p class="meta"><?= $contentMeta($post, 'created_at', '') ?></p>
 <?php if ($thread['thread_labels'] !== []): ?>
   <p class="meta">Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?></p>
 <?php endif; ?>
-<?php if ((int) $thread['reply_count'] > 0): ?>
-  <p class="meta"><?= (int) $thread['reply_count'] ?> <?= (int) $thread['reply_count'] === 1 ? 'reply' : 'replies' ?></p>
-<?php endif; ?>
 <?php if ($isAgentPost): ?>
   <p class="meta"><span class="agent-label">Agent-authored reply</span></p>
 <?php endif; ?>
-  <div class="body"><?= $br($post['body']) ?></div>
 <?= $indent($partial('partials/post_identity_details.php', ['post' => $post]), 1) ?>
 <?php
 $postAnalysis = ((bool) ($viewerCanSeePostAnalysis ?? false))

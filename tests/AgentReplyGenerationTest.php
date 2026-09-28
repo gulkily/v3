@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../autoload.php';
 
-use ForumRewrite\Agent\DedalusAgentReplyGenerator;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
-use ForumRewrite\Agent\StubAgentReplyGenerator;
 
 final class AgentReplyGenerationTest
 {
@@ -217,114 +215,6 @@ final class AgentReplyGenerationTest
         assertSame(true, $first['reserved']);
         assertSame('posting', $second['status']);
         assertSame(false, $second['reserved']);
-    }
-
-    public function testStubGeneratorReturnsDeterministicStructuredOutput(): void
-    {
-        $generator = new StubAgentReplyGenerator();
-        $first = $generator->generate($this->context());
-        $second = $generator->generate($this->context());
-
-        assertSame($first, $second);
-        assertSame('stub', $first['provider']);
-        assertSame('stub/agent-reply', $first['provider_model']);
-        assertSame('curious', $first['response_style']);
-        assertStringContains('tradeoffs', $first['response_text']);
-    }
-
-    public function testDedalusDecoderAcceptsExpectedResponseShape(): void
-    {
-        $decoded = DedalusAgentReplyGenerator::decodeCompletionPayload([
-            'choices' => [
-                [
-                    'message' => [
-                        'content' => json_encode([
-                            'response_text' => 'Here is a concise response.',
-                            'response_style' => 'clarifying',
-                            'response_intent' => 'ask_followup',
-                        ], JSON_THROW_ON_ERROR),
-                    ],
-                ],
-            ],
-        ]);
-
-        assertSame('Here is a concise response.', $decoded['response_text']);
-        assertSame('clarifying', $decoded['response_style']);
-        assertSame('ask_followup', $decoded['response_intent']);
-    }
-
-    public function testDedalusReplyGeneratorExtractsNestedDedalusErrorMessage(): void
-    {
-        $generator = new DedalusAgentReplyGenerator('test-key');
-        $method = new \ReflectionMethod(DedalusAgentReplyGenerator::class, 'errorMessageFromResponse');
-        $method->setAccessible(true);
-
-        $message = $method->invoke($generator, [
-            'detail' => [
-                'error' => [
-                    'message' => 'Service unavailable.',
-                    'request_id' => 'request-001',
-                ],
-            ],
-        ]);
-
-        assertSame('Service unavailable.', $message);
-    }
-
-    public function testGeneratedReplyTextIsNormalizedToAscii(): void
-    {
-        $text = DedalusAgentReplyGenerator::normalizeGeneratedReplyText(
-            "Smart \u{201C}quotes\u{201D}, dash \u{2014}, ellipsis\u{2026}, cafe\u{00E9}"
-        );
-
-        assertSame('Smart "quotes", dash -, ellipsis..., cafe', $text);
-    }
-
-    public function testGeneratedReplyTextCanPreserveVisibleUnicode(): void
-    {
-        $text = DedalusAgentReplyGenerator::normalizeGeneratedReplyText(
-            "Smart \u{201C}quotes\u{201D}: Хорошо",
-            true,
-        );
-
-        assertSame('Smart "quotes": Хорошо', $text);
-    }
-
-    public function testGeneratedReplyTextCanPreserveEmojiWhenEnabled(): void
-    {
-        $text = DedalusAgentReplyGenerator::normalizeGeneratedReplyText(
-            "Looks good 🙂",
-            true,
-            true,
-        );
-
-        assertSame('Looks good 🙂', $text);
-    }
-
-    public function testPromptTemplateLoadsFromFile(): void
-    {
-        $generator = new DedalusAgentReplyGenerator(
-            'test-key',
-            'https://dedalus.invalid',
-            'test-model',
-            1,
-            dirname(__DIR__) . '/prompts/dedalus_agent_reply_system.txt'
-        );
-        $prompt = $generator->systemPrompt();
-
-        assertStringContains('reply-agent', $prompt);
-        assertStringContains('curious', $prompt);
-        assertStringContains('ask_followup', $prompt);
-        assertStringNotContains('{{response_styles}}', $prompt);
-    }
-
-    public function testAgentReplyGeneratorDefaultsToLargerCompletionBudget(): void
-    {
-        $generator = new DedalusAgentReplyGenerator('test-key');
-        $property = new ReflectionProperty(DedalusAgentReplyGenerator::class, 'maxCompletionTokens');
-        $property->setAccessible(true);
-
-        assertSame(6000, $property->getValue($generator));
     }
 
     /**

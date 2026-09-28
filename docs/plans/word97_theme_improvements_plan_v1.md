@@ -55,7 +55,7 @@ before touching anything:
    `::-webkit-scrollbar-*` rules must use `html[data-theme="word97"]`.
    Regular rules keep `:root[data-theme="word97"]`.
 2. **Theme-menu rows are representative** (see
-   `docs/theme-menu-representative-options-spec.md`): each popover row
+   `docs/specs/theme_menu_representative_options_spec_v1.md`): each popover row
    renders in its own theme's colors. Ambient word97 rules must not leak
    into rows — keep the existing
    `:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option)`

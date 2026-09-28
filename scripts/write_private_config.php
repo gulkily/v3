@@ -11,6 +11,7 @@ $options = [
     'api_key_stdin' => false,
     'refresh_template' => false,
     'view' => false,
+    'edit' => false,
     'help' => false,
 ];
 
@@ -22,6 +23,11 @@ foreach (array_slice($argv, 1) as $arg) {
 
     if ($arg === 'view' || $arg === '--view') {
         $options['view'] = true;
+        continue;
+    }
+
+    if ($arg === 'edit' || $arg === '--edit') {
+        $options['edit'] = true;
         continue;
     }
 
@@ -61,14 +67,60 @@ if ($path === '') {
     exit(2);
 }
 
+if ($options['edit']) {
+    if ($options['view'] || $options['refresh_template'] || $options['force'] || $options['api_key_stdin']) {
+        fwrite(STDERR, "edit cannot be combined with another private-config action.\n");
+        exit(2);
+    }
+
+    if (!is_file($path)) {
+        fwrite(STDERR, "Private config does not exist: {$path}\n");
+        fwrite(STDERR, "Create it first with ./v3 private-config --force.\n");
+        exit(1);
+    }
+
+    $editor = trim((string) (getenv('VISUAL') ?: getenv('EDITOR') ?: 'vi'));
+    if ($editor === '') {
+        $editor = 'vi';
+    }
+
+    fwrite(STDOUT, "Opening private config with {$editor}: {$path}\n");
+    $editorProcess = proc_open(
+        escapeshellcmd($editor) . ' ' . escapeshellarg($path),
+        [
+            0 => STDIN,
+            1 => STDOUT,
+            2 => STDERR,
+        ],
+        $editorPipes,
+    );
+    if (!is_resource($editorProcess)) {
+        fwrite(STDERR, "Unable to start editor: {$editor}\n");
+        exit(1);
+    }
+
+    $exitCode = proc_close($editorProcess);
+    if ($exitCode !== 0) {
+        fwrite(STDERR, "Editor exited with status {$exitCode}.\n");
+        exit($exitCode);
+    }
+
+    exit(0);
+}
+
 $defaults = [
-    'LLM_PROVIDER' => 'dedalus',
+    'LLM_PROVIDER' => '',
     'LLM_API_KEY' => 'replace-with-real-key',
-    'LLM_API_BASE_URL' => 'https://api.dedaluslabs.ai',
-    'LLM_MODEL' => 'openai/gpt-5-nano',
+    'LLM_API_BASE_URL' => '',
+    'LLM_MODEL' => '',
     'LLM_TIMEOUT_SECONDS' => 60,
     'LLM_EXTRA_HEADERS' => [],
     'LLM_POST_ANALYSIS_PROMPT_PATH' => 'prompts/dedalus_post_analysis_system.txt',
+    'FAST_SCORING_ENABLED' => false,
+    'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED' => false,
+    'FAST_SCORING_LLM_MODEL' => 'openai/gpt-5-nano',
+    'FAST_SCORING_PROMPT_PATH' => 'prompts/fast_post_scoring_system.txt',
+    'FAST_SCORING_DATABASE_PATH' => '',
     'DEDALUS_AGENT_REPLIES_ENABLED' => true,
     'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED' => false,
 ];
@@ -131,6 +183,9 @@ $action = is_file($path) && $existing !== [] ? ($options['refresh_template'] ? '
 fwrite(STDOUT, "{$action} private config at {$path}\n");
 if (($config['LLM_API_KEY'] ?? '') === 'replace-with-real-key') {
     fwrite(STDOUT, "LLM_API_KEY is still a placeholder. Update it before enabling real analysis.\n");
+}
+if (trim((string) ($config['LLM_PROVIDER'] ?? '')) === '') {
+    fwrite(STDOUT, "LLM_PROVIDER is not set. Set it to anthropic, openai, openrouter, stub, or a custom OpenAI-compatible gateway name before enabling real analysis.\n");
 }
 printUpdateReminder($path);
 
@@ -302,7 +357,7 @@ function renderPrivateConfigFile(array $config, array $defaults, array $existing
     $contents .= "return [\n";
     if ($includeComments) {
         $contents .= "    // LLM provider used for post analysis and agent reply drafting.\n"
-            . "    // Supported values: dedalus, openai, openrouter, anthropic, stub, or a custom OpenAI-compatible gateway name.\n";
+            . "    // Required, no default. Supported values: openai, openrouter, anthropic, stub, or a custom OpenAI-compatible gateway name.\n";
     }
     $contents .= renderConfigLine('LLM_PROVIDER', $config['LLM_PROVIDER']);
 
@@ -336,6 +391,16 @@ function renderPrivateConfigFile(array $config, array $defaults, array $existing
         $contents .= "\n    // Prompt template path, relative to the application root unless absolute.\n";
     }
     $contents .= renderConfigLine('LLM_POST_ANALYSIS_PROMPT_PATH', $config['LLM_POST_ANALYSIS_PROMPT_PATH']);
+
+    if ($includeComments) {
+        $contents .= "\n    // Fastmod is independent of full post analysis and disabled by default.\n"
+            . "    // Its LLM settings fall back to the corresponding LLM_* values when omitted.\n";
+    }
+    $contents .= renderConfigLine('FAST_SCORING_ENABLED', $config['FAST_SCORING_ENABLED'])
+        . renderConfigLine('FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED', $config['FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED'])
+        . renderConfigLine('FAST_SCORING_LLM_MODEL', $config['FAST_SCORING_LLM_MODEL'])
+        . renderConfigLine('FAST_SCORING_PROMPT_PATH', $config['FAST_SCORING_PROMPT_PATH'])
+        . renderConfigLine('FAST_SCORING_DATABASE_PATH', $config['FAST_SCORING_DATABASE_PATH']);
 
     if ($includeComments) {
         $contents .= "\n    // Agent reply controls. These names remain Dedalus-prefixed for backward compatibility.\n";
@@ -390,14 +455,16 @@ function renderPrivateConfigFile(array $config, array $defaults, array $existing
 function printUpdateReminder(string $path): void
 {
     fwrite(STDOUT, "\nUpdate commands:\n");
+    fwrite(STDOUT, "  ./v3 private-config edit\n");
     fwrite(STDOUT, "  ./v3 private-config --force\n");
     fwrite(STDOUT, "  ./v3 private-config refresh-template\n");
     fwrite(STDOUT, "  printf '%s\\n' \"\$LLM_API_KEY\" | ./v3 private-config --api-key-stdin\n");
     fwrite(STDOUT, "  ./v3 private-config --path=" . escapeshellarg($path) . " --force\n");
-    fwrite(STDOUT, "Supported LLM_PROVIDER values: dedalus, openai, openrouter, anthropic, stub, or an OpenAI-compatible gateway name.\n");
+    fwrite(STDOUT, "LLM_PROVIDER is required (no default). Supported values: openai, openrouter, anthropic, stub, or an OpenAI-compatible gateway name.\n");
     fwrite(STDOUT, "OpenAI-compatible providers use LLM_API_BASE_URL + /v1/chat/completions; Anthropic uses LLM_API_BASE_URL + /v1/messages.\n");
-    fwrite(STDOUT, "Edit {$path} directly for provider options such as LLM_PROVIDER, LLM_MODEL, and LLM_EXTRA_HEADERS.\n");
-    fwrite(STDOUT, "Edit {$path} directly for booleans such as DEDALUS_AGENT_REPLIES_ENABLED and DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED.\n");
+    fwrite(STDOUT, "private-config edit uses VISUAL, EDITOR, or vi to open {$path} without printing secrets.\n");
+    fwrite(STDOUT, "Edit {$path} directly for provider options such as LLM_PROVIDER, LLM_MODEL, FAST_SCORING_LLM_MODEL, and LLM_EXTRA_HEADERS.\n");
+    fwrite(STDOUT, "Edit {$path} directly for booleans such as FAST_SCORING_ENABLED, DEDALUS_AGENT_REPLIES_ENABLED, and DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED.\n");
 }
 
 function renderConfigLine(string $key, mixed $value): string
@@ -411,6 +478,7 @@ function printUsage(): void
 Usage:
   php scripts/write_private_config.php
   php scripts/write_private_config.php view
+  php scripts/write_private_config.php edit
   php scripts/write_private_config.php --view
   php scripts/write_private_config.php refresh-template
   php scripts/write_private_config.php --force
@@ -419,9 +487,10 @@ Usage:
 
 Creates or updates the private PHP config used by ForumRewrite\Support\PrivateConfig.
 Use view/--view to print a redacted summary and update reminders without creating or modifying the file.
+Use edit/--edit to open an existing config file with VISUAL, EDITOR, or vi.
 Use refresh-template to rewrite the file with current comments/examples while preserving values.
 The default local path is ../forum-private/secrets.php relative to this app checkout.
-LLM_PROVIDER supports dedalus, openai, openrouter, anthropic, stub, and OpenAI-compatible gateways.
+LLM_PROVIDER is required (no default). Supported values: openai, openrouter, anthropic, stub, and OpenAI-compatible gateways.
 Legacy DEDALUS_* LLM settings are still read as fallbacks, but new writes use LLM_* names.
 
 TEXT);

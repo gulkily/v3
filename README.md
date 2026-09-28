@@ -2,17 +2,82 @@
 
 Minimal local test slice for the rewrite spec.
 
-## Production Docs
+## Documentation
 
-Production-facing deployment and operations docs now live here:
+An index of everything under `docs/` plus the project-level notes at the
+repo root.
 
-- [Production Deploy Runbook](docs/runbooks/production_deploy.md)
-- [Operator Recovery Runbook](docs/runbooks/operator_recovery.md)
+### Runbooks (`docs/runbooks/`)
+
+Operational how-tos for running and maintaining a deployment:
+
+- [Production Deploy Runbook](docs/runbooks/production_deploy.md) — first-time setup, directory layout, environment variables
+- [Operator Recovery Runbook](docs/runbooks/operator_recovery.md) — read-model status, stale-marker recovery, lock contention, write failures
+- [Theme Development Guide](docs/runbooks/theme_development_guide.md) — how to add or modify a theme
+
+### Specs (`docs/specs/`)
+
+Durable canonical-record formats and infrastructure contracts — the layer
+that stays accurate even as implementation details move around:
+
+- [Master Spec](docs/specs/php_forum_rewrite_spec_v1.md) — the original PHP-rewrite product/architecture spec (pre-implementation baseline; some sections are annotated as superseded)
+- [Canonical Post Record](docs/specs/canonical_post_record_v1.md)
+- [Identity Bootstrap Record](docs/specs/identity_bootstrap_record_v1.md)
+- [Public Key Storage](docs/specs/public_key_storage_v1.md)
+- [Profile Read Contract](docs/specs/profile_read_contract_v1.md)
+- [Thread Label Record](docs/specs/thread_label_record_v1.md)
+- [Post Reaction Record](docs/specs/post_reaction_record_v1.md)
+- [Site Feature Flags Record](docs/specs/site_feature_flags_record_v1.md)
+- [User Approval Seed Record](docs/specs/user_approval_seed_record_v1.md)
+- [Agent Reply One-Step Analyze/Publish Contract](docs/specs/agent_reply_one_step_analyze_publish_contract_v1.md)
+- [Asset Fingerprinting and CSS Splitting](docs/specs/asset_fingerprinting_and_css_split_v1.md)
+- [Read-Model SQLite Schema Reference](docs/specs/read_model_schema_v1.md)
+- [Theme-Menu Representative Options Spec](docs/specs/theme_menu_representative_options_spec_v1.md)
+
+### Reference
+
+- [`v3` CLI Reference](docs/reference/v3_cli.md) — every `./v3` subcommand, including ones not covered below (`rebuild`, `build-static`, `import-repository`, `thread-attributes`, `delete-record`, `unicode-risk-backfill`, `archive-thread`, `agent-reply status`/`test-local`, `codex-handoff run`/`test-local`, `task-queue`), plus the 3 standalone operator scripts not wired into `./v3`
+- [Fastmod](docs/reference/fast_post_scoring.md) — configuration and approved-operator workflow for focused 0–1 LLM moderation scores
+
+### Examples (`docs/examples/`)
+
 - [Apache Vhost Example](docs/examples/apache_vhost.conf)
 - [Production Env Example](docs/examples/env.production.example)
-- [Production Deployment Checklist](docs/plans/php_production_deployment_checklist_v1.md)
+- [Private Config Example](docs/examples/secrets.php.example) — template for the LLM private config `./v3 private-config` writes
 
-See the [`v3` CLI Reference](docs/reference/v3_cli.md) for every `./v3` subcommand, including ones not covered below (`rebuild`, `build-static`, `import-repository`, `thread-attributes`, `delete-record`, `unicode-risk-backfill`, `archive-thread`, `agent-reply status`/`test-local`, `codex-handoff run`/`test-local`).
+### Production
+
+- [Production Deployment Checklist](docs/plans/php_production_deployment_checklist_v1.md) — tracks remaining work between current state and a production launch; periodically re-reviewed rather than treated as done
+
+### Feature Development Process (`docs/fdp/`)
+
+- [FDP Overview](docs/fdp/README.md) — the 4-step (+ optional Step 1 assessment) workflow this project's feature work follows, vendored from an external template repo via `git subtree`
+
+### Planning Docs (`docs/plans/`)
+
+A flat, mostly-uncatalogued directory of in-flight and historical planning
+documents, one or more per feature (`{feature}_stepN_*.md` for FDP-tracked
+work, or a looser `{feature}_plan_v1.md`/`{feature}_slices_v1.md` shape for
+smaller efforts). Not indexed file-by-file here — there are well over a
+hundred — but two are worth knowing about:
+
+- [Codebase Cleanup Audit Plan](docs/plans/codebase_cleanup_audit_plan_v1.md) — the plan behind the `Application.php` decomposition into per-domain namespaces
+- [Documentation Audit Findings & Checklist](docs/plans/docs_audit_findings_and_checklist_v1.md) — the review that produced this Documentation section
+
+Fully completed feature cycles are moved into
+[`docs/plans/archive/`](docs/plans/archive/) once done.
+
+### Research (`docs/research/`)
+
+An academic paper (plus slides) on Byzantine fault-tolerant governance for
+internet message boards, unrelated to this codebase's implementation —
+[`docs/research/`](docs/research/) for the full set.
+
+### Project Notes (repo root)
+
+- [BLESSING.md](BLESSING.md)
+- [sfenc.md](sfenc.md) — Starfield Encoding Specification (SFENC), a self-contained text-encoding spec
+- [zenmemes_rules.txt](zenmemes_rules.txt) — the site's tone-setting posting rules (not currently rendered anywhere in-app)
 
 ## Local Run
 
@@ -83,7 +148,7 @@ git log -- records/instance/feature-flags.txt
 git show <commit>:records/instance/feature-flags.txt
 ```
 
-Create or update the local private config for Dedalus post analysis:
+Create or update the local private config for LLM post analysis:
 
 ```bash
 ./v3 private-config
@@ -93,6 +158,12 @@ View a redacted summary of the current private config and update reminders:
 
 ```bash
 ./v3 private-config view
+```
+
+Open the private config with `$VISUAL`, `$EDITOR`, or `vi`:
+
+```bash
+./v3 private-config edit
 ```
 
 Print a concise reference for installing the queued agent reply cron job:
@@ -113,13 +184,13 @@ Validate the configured agent reply LLM provider/API key with one live structure
 ./v3 agent-reply test
 ```
 
-The default local file resolves to `../forum-private/secrets.php` relative to this checkout. To update only the Dedalus API key without putting it in shell history:
+The default local file resolves to `../forum-private/secrets.php` relative to this checkout. To update only the LLM API key without putting it in shell history:
 
 ```bash
-printf '%s\n' "$DEDALUS_API_KEY" | ./v3 private-config --api-key-stdin
+printf '%s\n' "$LLM_API_KEY" | ./v3 private-config --api-key-stdin
 ```
 
-The default Dedalus post-analysis prompt is stored in `prompts/dedalus_post_analysis_system.txt`. Set `DEDALUS_POST_ANALYSIS_PROMPT_PATH` in the private config to use a different text file; relative paths are resolved from the project root.
+The default post-analysis prompt is stored in `prompts/dedalus_post_analysis_system.txt`. Set `LLM_POST_ANALYSIS_PROMPT_PATH` in the private config to use a different text file; relative paths are resolved from the project root.
 
 For Apache/shared-host deployment, `public/.htaccess` is now part of the intended runtime model:
 

@@ -1,5 +1,27 @@
 # Session Reauthentication Reference
 
+**Status: shipped.** This reads as an open design doc with unresolved
+"Session Strategy Options," but the design here was implemented and is live:
+
+- **Persistence policy**: the "Configure PHP sessions explicitly" option
+  below was the one chosen (not the app-owned opaque session or
+  stateless-token options) — a persistent, long-lived PHP session cookie
+  (`Application::startViewerSession()`, `PERSISTENT_VIEWER_SESSION_COOKIE_LIFETIME`),
+  no idle/absolute timeout, matching "Chosen persistence policy" above.
+- **Recommended Experience** (steps 1-4): shipped as
+  `Application::renderAuthenticationResumePage()` /
+  `ResumeTarget::fromRequestUri()` (validated same-origin `return_to`),
+  `templates/pages/authentication_resume.php`, and
+  `public/assets/private_site_auth.js` (silently signs `/api/auth_challenge`
+  via the saved browser key, calls `/api/authenticate_identity`, then
+  `location.replace()`s to the original target). Step 5 (an in-page
+  navigation guard) was not found in the current codebase — appears
+  unimplemented, but the doc marks it optional ("If needed").
+- `Application::shouldResumeViewerSession()`/`resumeViewerSession()` are a
+  separate, complementary mechanism (proactively starting/cleaning up the
+  PHP session on a wider set of GET routes even when approved-members-only
+  is off), not the resume-document flow above.
+
 ## Context
 
 Approved-members-only access currently depends on PHP's file-backed session. If its server-side record has expired or been cleaned up, a request is rejected before browser JavaScript can use the browser's saved OpenPGP key to restore authentication. Board and Threads requests redirect to Lobby; other protected HTML routes receive a non-recovering access-required page. Reloading after the Lobby script finishes works because the script has recreated the session.

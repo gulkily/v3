@@ -50,6 +50,54 @@ final class PostWorkflowApiController
         );
     }
 
+    private function fastScoreWorkflowService(): \ForumRewrite\Scoring\FastScoreWorkflowService
+    {
+        return $this->routeServices->fastScoreWorkflowService(
+            $this->fetchPost,
+            $this->llmExchangeRecorderFactory,
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    public function scorePost(string $method, array $query): void
+    {
+        $this->routeServices->sendJson([
+            'status' => 'error',
+            'error' => 'fast_score_synchronous_execution_retired',
+            'message' => 'Fastmod scores are created only by the private worker after new-content publication.',
+        ], 410, $this->routeServices->noStoreHeaders());
+        return;
+
+        if ($method !== 'POST') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $this->routeServices->noStoreHeaders());
+            return;
+        }
+
+        $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
+        if ($viewerProfile === null || (int) ($viewerProfile['is_approved'] ?? 0) !== 1) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'forbidden'], 403, $this->routeServices->noStoreHeaders());
+            return;
+        }
+
+        $input = $this->routeServices->requestData($query);
+        $postId = trim((string) ($input['post_id'] ?? ''));
+        if ($postId === '') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Missing post_id.'], 400, $this->routeServices->noStoreHeaders());
+            return;
+        }
+
+        $post = ($this->fetchPost)($postId);
+        if ($post === null) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'post not found'], 404, $this->routeServices->noStoreHeaders());
+            return;
+        }
+
+        $result = $this->fastScoreWorkflowService()->scorePost($post);
+        $this->routeServices->sendJson(array_merge(['post_id' => $postId], $result), 200, $this->routeServices->noStoreHeaders());
+    }
+
     /**
      * @param array<string, mixed> $query
      */

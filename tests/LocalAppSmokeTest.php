@@ -42,9 +42,98 @@ final class LocalAppSmokeTest
             escapeshellarg($this->databasePath),
         );
         exec($command, $output, $exitCode);
+        $text = implode("\n", $output);
 
         assertSame(0, $exitCode);
         assertTrue(is_file($this->databasePath));
+        assertStringContains('Starting read-model rebuild.', $text);
+        assertStringContains('[1/3] Scanning source record counts...', $text);
+        assertStringContains('[2/3] Building and validating a read-model candidate...', $text);
+        assertStringContains('[2/3] Read model: resolving legacy creation times for ', $text);
+        assertStringContains('[2/3] Read model: resolving source commits for ', $text);
+        assertStringContains('[2/3] Read model: parsing post records (0/', $text);
+        assertStringContains('[3/3] Waiting for the exclusive read-model lock...', $text);
+        assertStringContains('[3/3] Read model promoted.', $text);
+    }
+
+    public function testRebuildCommandExplainsSqliteSidecarPromotionFailure(): void
+    {
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-rebuild-sidecar-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            file_put_contents($databasePath . '-journal', 'test journal');
+
+            $command = sprintf(
+                'php %s %s %s 2>&1',
+                escapeshellarg(__DIR__ . '/../scripts/rebuild_read_model.php'),
+                escapeshellarg($this->repositoryRoot),
+                escapeshellarg($databasePath),
+            );
+            exec($command, $output, $exitCode);
+            $text = implode("\n", $output);
+
+            assertSame(1, $exitCode);
+            assertStringContains('Read-model rebuild failed while promoting the read-model candidate', $text);
+            assertStringContains('A SQLite sidecar prevents safe read-model promotion', $text);
+            assertStringContains('Do not delete the sidecar manually', $text);
+            assertStringNotContains('PHP Fatal error', $text);
+        } finally {
+            @unlink($databasePath);
+            @unlink($databasePath . '-journal');
+        }
+    }
+
+    public function testRebuildDiagnosisAndRecoveryArchiveSQLiteSidecarsBeforeRebuilding(): void
+    {
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-rebuild-recovery-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $recoveryDirectory = null;
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            file_put_contents($databasePath . '-journal', 'test journal');
+
+            $diagnoseCommand = sprintf(
+                '%s rebuild diagnose %s %s 2>&1',
+                escapeshellarg(__DIR__ . '/../v3'),
+                escapeshellarg($this->repositoryRoot),
+                escapeshellarg($databasePath),
+            );
+            exec($diagnoseCommand, $diagnoseOutput, $diagnoseExitCode);
+            $diagnoseText = implode("\n", $diagnoseOutput);
+
+            assertSame(0, $diagnoseExitCode);
+            assertStringContains('Read-model SQLite diagnosis', $diagnoseText);
+            assertStringContains('SQLite sidecars:', $diagnoseText);
+            assertStringContains('Next action: ./v3 rebuild recover --confirm', $diagnoseText);
+
+            $recoverCommand = sprintf(
+                '%s rebuild recover --confirm %s %s 2>&1',
+                escapeshellarg(__DIR__ . '/../v3'),
+                escapeshellarg($this->repositoryRoot),
+                escapeshellarg($databasePath),
+            );
+            exec($recoverCommand, $recoverOutput, $recoverExitCode);
+            $recoverText = implode("\n", $recoverOutput);
+            foreach (explode("\n", $recoverText) as $line) {
+                $prefix = 'Archived the live read-model database and sidecars: ';
+                if (str_starts_with($line, $prefix)) {
+                    $recoveryDirectory = substr($line, strlen($prefix));
+                    break;
+                }
+            }
+
+            assertSame(0, $recoverExitCode, $recoverText);
+            assertTrue($recoveryDirectory !== null && is_dir($recoveryDirectory));
+            assertTrue(is_file($recoveryDirectory . '/snapshot/' . basename($databasePath)));
+            assertTrue(is_file($recoveryDirectory . '/retired/' . basename($databasePath . '-journal')));
+            assertTrue(is_file($databasePath));
+            assertTrue(!is_file($databasePath . '-journal'));
+        } finally {
+            @unlink($databasePath);
+            @unlink($databasePath . '-journal');
+            if ($recoveryDirectory !== null) {
+                $this->deleteTree($recoveryDirectory);
+            }
+        }
     }
 
     public function testBuildStaticCommandReportsProgressAndArtifactSummary(): void
@@ -616,9 +705,12 @@ PHP;
 
         try {
             $currentPath = AssetFingerprint::fingerprintedPath($publicRoot, '/assets/example.css');
+            $recursivePath = substr($currentPath, 0, -4) . '.000000000000.css';
             assertSame($publicRoot . '/assets/example.css', AssetFingerprint::sourcePathForFingerprint($publicRoot, $currentPath));
             assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/example.000000000000.css'));
+            assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, $recursivePath));
             assertSame($currentPath, AssetFingerprint::replacementPathForFingerprint($publicRoot, '/assets/example.000000000000.css'));
+            assertSame($currentPath, AssetFingerprint::replacementPathForFingerprint($publicRoot, $recursivePath));
             assertSame(null, AssetFingerprint::replacementPathForFingerprint($publicRoot, $currentPath));
             assertSame(null, AssetFingerprint::replacementPathForFingerprint($publicRoot, '/assets/missing.000000000000.css'));
             assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/missing.000000000000.css'));
@@ -1251,20 +1343,22 @@ PHP;
         assertStringContains('flock -n state/cache/forum-rewrite.lock -c true', $codebase);
         assertStringContains('SELECT COUNT(*) FROM posts;', $codebase);
         assertStringContains('/downloads/repository.tar.gz', $codebase);
+        assertFingerprintedAsset($codebase, 'tool-details.css');
         assertStringContains('Feature Flags', $featureFlags);
         assertStringContains('board-controls-nav', $featureFlags);
         assertStringContains('class="nav-link is-active" href="/tools/feature-flags/"', $featureFlags);
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $featureFlags);
         assertFingerprintedAsset($featureFlags, 'feature_flags.js');
+        assertFingerprintedAsset($featureFlags, 'tool-details.css');
         assertStringContains('FORUM_UNICODE_AUTHORED_TEXT', $featureFlags);
         assertStringContains('FORUM_EMOJI_AUTHORED_TEXT', $featureFlags);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $featureFlags);
         assertStringContains('FORUM_THREAD_DENSITY_TOGGLE_ENABLED', $featureFlags);
         assertStringContains('DEDALUS_AGENT_REPLIES_ENABLED', $featureFlags);
         assertStringContains('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $featureFlags);
-        assertStringContains('data-role="feature-flag-source">default</code>', $featureFlags);
-        assertStringContains('current value is default', $featureFlags);
-        assertStringContains('<code>yes</code>', $featureFlags);
+        assertStringContains('data-role="feature-flag-source">default</span>', $featureFlags);
+        assertStringContains('feature-flag-row', $featureFlags);
+        assertStringContains('role="switch"', $featureFlags);
         assertStringContains('About zenmemes', $about);
         assertStringContains('extraordinary people', $about);
         assertStringContains('Harvard St Commons', $about);
@@ -1341,7 +1435,10 @@ PHP;
         assertFingerprintedAsset($activity, 'activity.css');
         assertFingerprintedAsset($forteActivity, 'activity.css');
         assertFingerprintedAsset($account, 'identity.css');
+        assertFingerprintedAsset($account, 'account.css');
         assertFingerprintedAsset($profile, 'identity.css');
+        assertStringNotContains('/assets/account.', $profile);
+        assertStringNotContains('/assets/pending_approvals.', $profile);
         assertFingerprintedAsset($thread, 'identity.css');
         assertFingerprintedAsset($post, 'identity.css');
         assertFingerprintedAsset($thread, 'content-interactions.css');
@@ -1366,6 +1463,7 @@ PHP;
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $bookmarklets);
         assertFingerprintedAsset($bookmarklets, 'tools_bookmarklets.js');
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
+        assertStringContains('data-bookmarklet-kind="tweet"', $bookmarklets);
         assertStringNotContains('Thread ID:', $composeReply);
         assertStringNotContains('Parent ID:', $composeReply);
         assertFingerprintedAsset($composeReply, 'browser_signing.js');
@@ -1456,6 +1554,124 @@ PHP;
         assertOrdered($post, 'Signature:', 'Public key:');
     }
 
+    public function testThreadRootCardOmitsDuplicateTitleLine(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-title-dedupe-repo-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+
+        file_put_contents(
+            $repositoryRoot . '/records/posts/title-match-001.txt',
+            "Post-ID: title-match-001\n"
+            . "Created-At: 2026-04-10T13:00:00Z\n"
+            . "Board-Tags: general\n"
+            . "Subject: Echoes at Dawn\n"
+            . "\n"
+            . "Echoes at Dawn\n"
+            . "Second poem line.\n"
+            . "Third poem line.\n"
+        );
+        file_put_contents(
+            $repositoryRoot . '/records/posts/title-empty-001.txt',
+            "Post-ID: title-empty-001\n"
+            . "Created-At: 2026-04-10T13:05:00Z\n"
+            . "Board-Tags: general\n"
+            . "Subject: Just the title\n"
+            . "\n"
+            . "Just the title\n"
+        );
+        file_put_contents(
+            $repositoryRoot . '/records/posts/no-subject-long-001.txt',
+            "Post-ID: no-subject-long-001\n"
+            . "Created-At: 2026-04-10T13:10:00Z\n"
+            . "Board-Tags: general\n"
+            . "\n"
+            . "This is a fairly long single-line post body that exceeds the eighty character excerpt limit used for titles when no subject is provided at all.\n"
+        );
+        file_put_contents(
+            $repositoryRoot . '/records/posts/title-match-blank-line-001.txt',
+            "Post-ID: title-match-blank-line-001\n"
+            . "Created-At: 2026-04-10T13:15:00Z\n"
+            . "Board-Tags: general\n"
+            . "Subject: On Accessibility\n"
+            . "\n"
+            . "On Accessibility\n"
+            . "\n"
+            . "First real line.\n"
+            . "Second real line.\n"
+        );
+
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-title-dedupe-db-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+        $titleMatch = $this->render($application, '/threads/title-match-001');
+        $titleEmpty = $this->render($application, '/threads/title-empty-001');
+        $noSubjectLong = $this->render($application, '/threads/no-subject-long-001');
+        $titleMatchBlankLine = $this->render($application, '/threads/title-match-blank-line-001');
+
+        assertStringContains('<h1>Echoes at Dawn</h1>', $titleMatch);
+        assertStringContains('<div class="body">Second poem line.', $titleMatch);
+        assertStringNotContains('<div class="body">Echoes at Dawn', $titleMatch);
+        assertStringContains('Third poem line.', $titleMatch);
+
+        assertStringContains('<h1>Just the title</h1>', $titleEmpty);
+        assertStringContains('<div class="body"></div>', $titleEmpty);
+
+        assertStringMatches('/<h1>[^<]*\.\.\.<\/h1>/', $noSubjectLong);
+        assertStringContains('This is a fairly long single-line post body that exceeds the eighty character excerpt limit used for titles when no subject is provided at all.', $noSubjectLong);
+
+        assertStringContains('<h1>On Accessibility</h1>', $titleMatchBlankLine);
+        assertStringContains('<div class="body">First real line.', $titleMatchBlankLine);
+        assertStringNotContains('<div class="body"><br', $titleMatchBlankLine);
+    }
+
+    public function testThreadCardOmitsDuplicatePreviewLine(): void
+    {
+        $renderer = new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__) . '/templates');
+
+        $matchingThread = [
+            'root_post_id' => 'card-preview-match-001',
+            'subject' => 'Just a Title',
+            'body_preview' => 'Just a Title',
+            'thread_labels' => [],
+            'reply_count' => 0,
+            'last_activity_at' => null,
+            'root_post_created_at' => null,
+        ];
+        $differingThread = [
+            'root_post_id' => 'card-preview-differ-001',
+            'subject' => 'Different Title',
+            'body_preview' => 'Actual preview text',
+            'thread_labels' => [],
+            'reply_count' => 0,
+            'last_activity_at' => null,
+            'root_post_created_at' => null,
+        ];
+        $longNoSubjectBody = 'This is another fairly long single-line post body that exceeds the eighty character excerpt limit for titles when no subject is provided.';
+        $noSubjectLongThread = [
+            'root_post_id' => 'card-preview-no-subject-long-001',
+            'subject' => '',
+            'body_preview' => $longNoSubjectBody,
+            'thread_labels' => [],
+            'reply_count' => 0,
+            'last_activity_at' => null,
+            'root_post_created_at' => null,
+        ];
+
+        $matchingCard = $renderer->renderFragment('partials/thread_card.php', ['thread' => $matchingThread]);
+        $differingCard = $renderer->renderFragment('partials/thread_card.php', ['thread' => $differingThread]);
+        $noSubjectLongCard = $renderer->renderFragment('partials/thread_card.php', ['thread' => $noSubjectLongThread]);
+
+        assertStringContains('<h2><a href="/threads/card-preview-match-001">Just a Title</a></h2>', $matchingCard);
+        assertStringNotContains('thread-card__preview', $matchingCard);
+
+        assertStringContains('<h2><a href="/threads/card-preview-differ-001">Different Title</a></h2>', $differingCard);
+        assertStringContains('<p class="thread-card__preview">Actual preview text</p>', $differingCard);
+
+        assertStringMatches('/<h2><a[^>]*>[^<]*\.\.\.<\/a><\/h2>/', $noSubjectLongCard);
+        assertStringContains('<p class="thread-card__preview">' . $longNoSubjectBody . '</p>', $noSubjectLongCard);
+    }
+
     public function testPostAndActivityLinkAdjacentSignatureFiles(): void
     {
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-signature-repo-' . bin2hex(random_bytes(6));
@@ -1533,6 +1749,9 @@ PHP;
             assertStringContains('data-role="thread-density-toggle"', $board);
             assertStringContains('data-role="thread-density-toggle"', $tagPage);
             assertStringNotContains('data-role="thread-density-toggle"', $thread);
+            assertStringContains("var densityStorageKey = 'zenmemes-thread-density';", $board);
+            assertStringContains("var densityStorageKey = 'zenmemes-thread-density';", $tagPage);
+            assertStringNotContains("var densityStorageKey = 'zenmemes-thread-density';", $thread);
             assertStringContains('data-role="thread-density-menu"', $board);
             assertStringContains('data-thread-density-option="comfortable"', $board);
             assertStringContains('data-thread-density-option="compact"', $board);
@@ -1564,8 +1783,8 @@ PHP;
         assertStringNotContains('meta name="app-version"', $board);
         assertStringNotContains('/assets/version_check.', $board);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $featureFlags);
-        assertStringContains('data-role="feature-flag-source">site</code>', $featureFlags);
-        assertStringContains('current value differs from default', $featureFlags);
+        assertStringContains('data-role="feature-flag-source">site</span>', $featureFlags);
+        assertStringContains('badge-overridden', $featureFlags);
     }
 
     public function testFeatureFlagsPageReportsInvalidSiteRecordWithoutBreakingSite(): void
@@ -1585,7 +1804,42 @@ PHP;
 
         assertStringContains('meta name="app-version"', $board);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $featureFlags);
-        assertStringContains('data-role="feature-flag-source">invalid-site-value</code>', $featureFlags);
+        assertStringContains('data-role="feature-flag-source">invalid-site-value</span>', $featureFlags);
+        assertStringContains('feedback feedback-error', $featureFlags);
+    }
+
+    public function testFeatureFlagsPageShowsLockedBadgeWithReasonForNonMutableFlags(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-flags-locked-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-flags-locked-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+        $featureFlags = $this->render($application, '/tools/feature-flags/');
+
+        assertStringContains('badge-locked', $featureFlags);
+        assertStringContains('title="Not configurable from the site."', $featureFlags);
+        assertStringContains('locked</span>', $featureFlags);
+    }
+
+    public function testFeatureFlagsPageDimsAndWarnsOnDependencyBlockedFlag(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-flags-dependency-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_EMOJI_AUTHORED_TEXT: true\nFORUM_UNICODE_AUTHORED_TEXT: false\n"
+        );
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-flags-dependency-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+        $featureFlags = $this->render($application, '/tools/feature-flags/');
+
+        assertStringContains('feature-flag-row is-blocked', $featureFlags);
+        assertStringContains('inactive', $featureFlags);
+        assertStringContains('requires Unicode authored text', $featureFlags);
     }
 
     public function testNegativeRootScoreIsFilteredOnlyFromLikedBoardListings(): void
@@ -1971,7 +2225,14 @@ PHP;
         assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $bookmarklets);
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
+        assertStringContains('data-bookmarklet-kind="tweet"', $bookmarklets);
         assertStringContains('window.getSelection().toString().trim()', $bookmarkletAsset);
+        assertStringContains('tweetComposeUrl', $bookmarkletAsset);
+        $word97Css = (string) file_get_contents(__DIR__ . '/../public/assets/theme-word97.css');
+        assertStringContains(':root[data-theme="word97"] .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $word97Css);
+        assertStringContains(':root[data-theme="word97"] .tool-launcher-button[href="/forte"]::before', $word97Css);
+        assertStringContains(':root[data-theme="word97"] .tool-launcher-button[href="/tools/sqlite/"]::before', $word97Css);
+        assertStringContains(':root[data-theme="word97"] .tool-launcher-button[href="/tools/llm-exchanges/"]::before', $word97Css);
         assertStringContains('value="Saved Title"', $prefilledCompose);
         assertStringContains('>Saved Body</textarea>', $prefilledCompose);
     }
@@ -2132,8 +2393,9 @@ PHP;
 
         $viewer = $this->render($application, '/tools/sqlite/');
         $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite_viewer.js');
-        $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+        $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite.css');
 
+        assertStringMatches('#/assets/sqlite\\.[a-f0-9]{12}\\.css#', $viewer);
         assertStringContains('data-role="sqlite-explorer"', $viewer);
         assertStringContains('data-role="sqlite-table-select"', $viewer);
         assertStringContains('data-role="sqlite-table-details"', $viewer);
@@ -2273,7 +2535,7 @@ PHP;
 
         $viewer = $this->render($application, '/tools/sqlite/');
         $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite_viewer.js');
-        $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+        $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/sqlite.css');
 
         assertStringContains('sqlite-result-scroll', $viewer);
         assertStringContains('maxPreviewRows = 25', $script);

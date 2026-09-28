@@ -1030,7 +1030,7 @@ class IncrementalReadModelUpdater
         }
     }
 
-    private function writeMetadata(PDO $pdo, string $commitSha): void
+    public function writeMetadata(PDO $pdo, string $commitSha): void
     {
         $stmt = $pdo->prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (:key, :value)');
         $metadata = [

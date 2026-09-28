@@ -10,7 +10,7 @@ It is intended to be updated as work completes.
 - Runtime/product slices: mostly complete
 - Repo-owned production docs/config: completed
 - External deployment validation: not started
-- Last reviewed: 2026-04-10
+- Last reviewed: 2026-09-24
 
 ## Current Findings
 
@@ -27,6 +27,14 @@ Already present in the repo:
 - static artifact generation into `public/`
 - browser identity/bootstrap flow
 - HTML template extraction into separate template files
+- multi-site config (`FORUM_SITE_ID`, `SiteProfileRegistry`) — documented in
+  `docs/runbooks/production_deploy.md`
+- content-hash asset fingerprinting and CSS splitting — documented in
+  `docs/specs/asset_fingerprinting_and_css_split_v1.md`
+- the `Application.php` decomposition into per-domain namespaces
+  (`codebase_cleanup_audit_plan_v1.md`) — an internal refactor with no
+  deployment-contract impact; nothing in this checklist needed updating
+  for it
 
 What remains is primarily deployment and operations work rather than core feature construction.
 
@@ -149,3 +157,13 @@ After that, move to a real Apache host and execute the production smoke checklis
 
 - 2026-04-10: created this consolidated production deployment checklist document
 - 2026-04-10: added production deploy runbook, operator recovery runbook, Apache vhost example, env example, and README links
+- 2026-09-24: re-reviewed (doc had gone 5+ months without a review pass).
+  Confirmed all repo-owned deliverables still exist and are current.
+  Multi-site config and asset fingerprinting/CSS splitting landed since
+  the last review and are already covered by `production_deploy.md` and
+  the new `asset_fingerprinting_and_css_split_v1.md` spec, so no
+  checklist items needed reopening. The `Application.php` decomposition
+  was an internal refactor with no deployment-contract surface. No real
+  Apache host validation or production smoke pass has happened yet — the
+  "External Work" and "Production Smoke Checklist" sections are
+  unchanged.

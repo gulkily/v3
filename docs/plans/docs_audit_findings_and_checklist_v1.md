@@ -38,7 +38,7 @@ that follow-up work.
       `ForteActivityController.php`), including from this session's own
       Phase 2 extraction. One-line fix; otherwise this is the
       best-maintained doc in `docs/plans/`.
-- [x] **`docs/theme-menu-representative-options-spec.md`** — header says
+- [x] **`docs/specs/theme_menu_representative_options_spec_v1.md`** — header says
       "Status: in progress on branch `theme-menu-representative-options`"
       but all 4 progress checklist items are `[x]` and that branch no
       longer exists. Verified the described sticker-garnish CSS
@@ -177,55 +177,109 @@ that follow-up work.
       the 3 adjacent-but-separate SQLite databases (activity commit-manifest
       cache, LLM exchange log, task queue) so the doc doesn't imply those
       live in the same file.
-- [ ] **No spec for the CSS-splitting / asset-fingerprinting scheme**
+- [x] **No spec for the CSS-splitting / asset-fingerprinting scheme**
       (`AssetFingerprint.php`, the per-page CSS split). `docs/specs/` is
       otherwise a thorough, durable record-format/contract layer with a
-      blind spot for this newer infra.
-- [ ] **`docs/runbooks/operator_recovery.md`** — the "Important fields"
+      blind spot for this newer infra. Created
+      `docs/specs/asset_fingerprinting_and_css_split_v1.md`, covering the
+      hash format, request-time serving and stale-fingerprint redirect in
+      `FrontController`, critical CSS extraction, the per-page stylesheet
+      map, a pointer to the already-documented per-theme split, and the
+      static-artifact build/verification path.
+- [x] **`docs/runbooks/operator_recovery.md`** — the "Important fields"
       list for `/api/read_model_status` is missing `task_queue_status`,
       which the endpoint actually returns
       (`CodebaseStateController.php:107,173-176`), alongside every other
-      field that *is* documented.
-- [ ] **`docs/plans/php_production_deployment_checklist_v1.md`** — the
+      field that *is* documented. Added it plus the 3 sibling
+      `task_queue_*` count fields the endpoint also returns
+      (`_queued`/`_running`/`_failed`), with a pointer to the new
+      `./v3 task-queue` CLI docs.
+- [x] **`docs/plans/php_production_deployment_checklist_v1.md`** — the
       one doc `README.md` actually links to as "Production Deployment
       Checklist." "Last reviewed: 2026-04-10," over 5 months stale.
       Chouse.club hosting, multi-site config, CSS splitting, and this
       session's `Application.php` decomposition have all landed since.
       Needs a re-review pass (confirm what's still accurate), not
-      necessarily a rewrite.
-- [ ] **`docs/plans/session_reauthentication_reference.md`** — reads as
+      necessarily a rewrite. Re-reviewed: multi-site config and CSS
+      fingerprinting/splitting turned out to already be covered by
+      `production_deploy.md` and the new asset-fingerprinting spec, so no
+      checklist item needed reopening; the `Application.php` decomposition
+      has no deployment-contract surface. Bumped the review date and added
+      pointer bullets to "Current Findings" recording what was checked.
+      Chouse.club hosting itself is still a user in-progress draft
+      (`docs/plans/chouse_club_hosting_plan_v1.md`, untracked) — left
+      untouched, not this checklist's concern until it lands.
+- [x] **`docs/plans/session_reauthentication_reference.md`** — reads as
       an open design doc with unresolved "Session Strategy Options," but
       the described approach already shipped
       (`Application::shouldResumeViewerSession()`/`resumeViewerSession()`,
       wired into `handle()`). Never recorded that a decision was made or
-      what shipped.
+      what shipped. Investigated further: the functions named above are
+      real but are a separate, complementary mechanism, not the core
+      resume flow — the actual "Recommended Experience" (steps 1-4)
+      shipped as `Application::renderAuthenticationResumePage()` /
+      `ResumeTarget::fromRequestUri()` /
+      `templates/pages/authentication_resume.php` /
+      `public/assets/private_site_auth.js` (challenge-sign + `location.replace`),
+      and the "Configure PHP sessions explicitly" option was the chosen
+      persistence policy. Step 5 (navigation guard) wasn't found — likely
+      unbuilt, but the doc marks it optional. Added a status banner
+      recording exactly what shipped and correcting the citation.
 
 ## Lower-priority / worth a quick look
 
-- [ ] Flip 3 fully-completed-but-not-archived `docs/plans/` files to
+- [x] Flip 3 fully-completed-but-not-archived `docs/plans/` files to
       `docs/plans/archive/` manually (they didn't match the strict
       4-step naming the Phase 4 sweep used): `codebase_state_feature_plan_v1.md`
       (all 4 slices marked Completed), `php_template_extraction_plan_v1.md`
-      (Status: completed), and one more flagged in the same pass.
-- [ ] `docs/sigtbd_fault_tolerant_governance_*` (5 files, an academic
+      (Status: completed), and one more flagged in the same pass. A fresh
+      sweep for the same pattern (`Status: completed`/`Implemented`, no
+      remaining unchecked boxes, no external references) turned up 4 more
+      beyond the 2 named here: `activity_source_links_slices_v1.md`,
+      `post_detached_signature_day1_recovery_plan_v1.md`,
+      `thread_archive_v3_command_slices_v1.md`, and
+      `zenmemes_rules_pinned_post_options.md`. Archived all 6 via
+      `git mv` into `docs/plans/archive/`.
+- [x] `docs/sigtbd_fault_tolerant_governance_*` (5 files, an academic
       paper + slides + PDF by the same author) — parked directly
       alongside operational docs/specs with no separator. Not wrong, just
       possibly disorienting to someone browsing `docs/` expecting only
       technical material. Consider a `docs/research/` subdirectory if it
-      bothers you; purely cosmetic.
-- [ ] `docs/plans/page_asset_performance_inventory.md` contains an
+      bothers you; purely cosmetic. Found 6 files, not 5 (the .pdf plus 5
+      `.md` variants). Moved all 6 into a new `docs/research/` via
+      `git mv`; no inbound references anywhere else in the repo.
+- [x] `docs/plans/page_asset_performance_inventory.md` contains an
       embedded "Autonomous Continuation" instruction block — a stored
       agent-prompt fragment, not project documentation. Worth a glance to
-      confirm it's intentional/harmless where it sits.
-- [ ] `docs/plans/php_ascii_restrictions_current_state_v1.md` — self-dated
+      confirm it's intentional/harmless where it sits. Harmless, but read
+      oddly ("the user asked the agent to continue... while the
+      workstation is unattended") for a doc with genuinely unfinished
+      work left (several unchecked CSS-ownership items) — someone picking
+      this back up needs the process guidance, just not the "who asked
+      whom" narration. Rewrote it as a plain "Working This Inventory"
+      section, keeping the actual guidance (ordering, commit discipline,
+      what to preserve) and dropping the meta-narration.
+- [x] `docs/plans/php_ascii_restrictions_current_state_v1.md` — self-dated
       "April 2026" advisor brief; underlying fact has since changed (a
       `UNICODE_AUTHORED_TEXT` feature flag now exists). Low severity
       since the doc is honest about its own shelf life, but worth a
-      pointer to what superseded it.
-- [ ] `docs/plans/tag_scoring_implementation_plan_v1.md` appears
+      pointer to what superseded it. Added a "Since superseded in part"
+      note pointing at `FORUM_UNICODE_AUTHORED_TEXT`/`FORUM_EMOJI_AUTHORED_TEXT`
+      and where they're implemented. Also found and fixed 6 broken
+      `/home/wsl/v3/...` absolute-path links while in the file (same bug
+      class as the self-sufficiency-todo item above) — converted to
+      repo-relative backtick paths, verified all 6 targets exist.
+- [x] `docs/plans/tag_scoring_implementation_plan_v1.md` appears
       superseded by a later revision of the same feature in
       `tag_scoring_outline_v1.md` — two docs for one feature, worth a
-      "superseded by" pointer or a merge.
+      "superseded by" pointer or a merge. Turned out to be an
+      outline-then-plan pair (same day, 2026-05-12), not competing
+      revisions, and the feature they describe has fully shipped —
+      verified `TagScore::scoreValueForTag()` implements the exact
+      `like => +1, flag => -100` semantics both docs specify (and went
+      further, scoring posts as well as threads). Archived both into
+      `docs/plans/archive/` rather than cross-pointing two now-historical
+      docs, consistent with the fully-completed-plans item above.
 
 ## Reviewed, no action needed
 

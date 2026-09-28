@@ -215,6 +215,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/score_post') {
+            $this->postWorkflowApiController()->scorePost($method, $query);
+            return;
+        }
+
         if ($path === '/api/generate_agent_reply') {
             $this->postWorkflowApiController()->generateAgentReply($method, $query);
             return;
@@ -712,10 +717,9 @@ final class Application
             $this->routeServices(),
             $this->repositoryRoot,
             $this->databasePath,
+            TaskQueueDatabaseConfig::path($this->projectRoot),
             $this->executionLock(),
             $this->staleMarker(),
-            $this->commitsCapabilityAvailable(...),
-            $this->taskQueueStatus(...),
         );
     }
 
@@ -794,7 +798,7 @@ final class Application
             ],
             $pageTitleLabel . ' - Profile',
             'profiles',
-            $this->identityScripts(['/assets/pending_approvals.js']),
+            $canApprove ? $this->identityScripts(['/assets/pending_approvals.js']) : [],
         );
     }
 
@@ -862,6 +866,7 @@ final class Application
             $this->llmExchangeRecorder(...),
             $this->viewerCanInspectLlmExchanges(...),
             $this->fetchLlmExchangesForPosts(...),
+            $this->routeServices()->latestFastScoreForPost(...),
         );
     }
 
@@ -909,7 +914,7 @@ final class Application
 
     private function renderLlmsTxt(): string
     {
-        return "Local test slice\nGET /api/\nGET /api/list_index\nGET /api/get_thread\nPOST /api/analyze_post\nGET /about/\nGET /compose/thread\nGET /compose/reply\nGET /account/key/\nGET /instance/\nGET /backup/\n";
+        return "Local test slice\nGET /api/\nGET /api/list_index\nGET /api/get_thread\nPOST /api/analyze_post\nPOST /api/score_post\nGET /about/\nGET /compose/thread\nGET /compose/reply\nGET /account/key/\nGET /instance/\nGET /backup/\n";
     }
 
     /**
@@ -1451,7 +1456,7 @@ final class Application
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread',
             '/api/prepare_thread', '/api/prepare_identity', '/api/create_reply',
             '/api/prepare_reply', '/api/create_prepared_post', '/api/create_identity',
-            '/api/analyze_post', '/api/generate_agent_reply', '/api/codex_handoff',
+            '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag',
             '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/set_feature_flag', '/api/link_identity', '/api/approve_user',
@@ -1906,28 +1911,6 @@ final class Application
         $this->taskQueueStore = new SqliteTaskQueueStore(new PDO('sqlite:' . $path));
 
         return $this->taskQueueStore;
-    }
-
-    /**
-     * @return array{status:string,queued:int,running:int,completed:int,failed:int}
-     */
-    private function taskQueueStatus(): array
-    {
-        $path = TaskQueueDatabaseConfig::path($this->projectRoot);
-        if (!is_file($path)) {
-            return ['status' => 'not_initialized', 'queued' => 0, 'running' => 0, 'completed' => 0, 'failed' => 0];
-        }
-
-        try {
-            $store = $this->taskQueueStoreInitialized
-                ? $this->taskQueueStore()
-                : new SqliteTaskQueueStore(new PDO('sqlite:' . $path));
-            $counts = $store->counts();
-
-            return ['status' => 'available'] + $counts;
-        } catch (\Throwable) {
-            return ['status' => 'unavailable', 'queued' => 0, 'running' => 0, 'completed' => 0, 'failed' => 0];
-        }
     }
 
     private function executionLock(): ExecutionLock

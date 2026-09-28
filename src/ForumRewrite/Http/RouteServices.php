@@ -9,7 +9,17 @@ use ForumRewrite\Agent\PostWorkflowService;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Host\HtmlResponseCache;
 use ForumRewrite\ReadModel\ReadModelConnection;
+use ForumRewrite\Scoring\FastScoreWorkflowFactory;
+use ForumRewrite\Scoring\FastScoreWorkflowService;
+use ForumRewrite\Scoring\FastScoreContextFactory;
+use ForumRewrite\Scoring\FastScoreDatabaseConfig;
+use ForumRewrite\Scoring\FastScoringConfig;
+use ForumRewrite\Scoring\FastScoringRubricRevision;
+use ForumRewrite\Scoring\SqliteFastScoreStore;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\PrivateConfig;
+use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
+use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
 use PDO;
@@ -120,6 +130,85 @@ final class RouteServices
             $fetchThreadPosts,
             $llmExchangeRecorderFactory,
         );
+    }
+
+    /**
+     * @param \Closure(string): (array<string, mixed>|null) $fetchPost
+     * @param \Closure(): (\ForumRewrite\Llm\LlmExchangeRecorder|null) $llmExchangeRecorderFactory
+     */
+    public function fastScoreWorkflowService(
+        \Closure $fetchPost,
+        \Closure $llmExchangeRecorderFactory,
+    ): FastScoreWorkflowService {
+        return FastScoreWorkflowFactory::fromPrivateConfig(
+            PrivateConfig::load($this->projectRoot),
+            $this->projectRoot,
+            $fetchPost,
+            $llmExchangeRecorderFactory(),
+        );
+    }
+
+    public function enqueueFastScoreForPublishedPost(string $postId): void
+    {
+        $privateConfig = PrivateConfig::load($this->projectRoot);
+        $config = FastScoringConfig::fromPrivateConfig($privateConfig);
+        if (!$config->enabled || !$config->automaticEnqueue) {
+            return;
+        }
+
+        $readPdo = $this->pdo();
+        $fetchPost = static function (string $id) use ($readPdo): ?array {
+            $stmt = $readPdo->prepare('SELECT post_id, thread_id, parent_id, subject, body FROM posts WHERE post_id = :post_id');
+            $stmt->execute(['post_id' => $id]);
+            $post = $stmt->fetch();
+            return $post === false ? null : $post;
+        };
+        $post = $fetchPost($postId);
+        if ($post === null) {
+            throw new RuntimeException('Published post is not available in the read model for Fastmod enqueueing.');
+        }
+        $context = (new FastScoreContextFactory($fetchPost))->forPost($post);
+        $scorePath = FastScoreDatabaseConfig::path($this->projectRoot, $privateConfig);
+        $scoreDirectory = dirname($scorePath);
+        if (!is_dir($scoreDirectory) && !mkdir($scoreDirectory, 0777, true) && !is_dir($scoreDirectory)) {
+            throw new RuntimeException('Fastmod database directory is not writable.');
+        }
+        (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->enqueueWork(
+            $postId,
+            (string) $context['content_hash'],
+            FastScoringRubricRevision::fromConfig($config, $this->projectRoot),
+        );
+
+        $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+        $queueDirectory = dirname($queuePath);
+        if (!is_dir($queueDirectory) && !mkdir($queueDirectory, 0777, true) && !is_dir($queueDirectory)) {
+            throw new RuntimeException('Task queue directory is not writable.');
+        }
+        (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'fast-score-sweep');
+    }
+
+    /** @param array<string, mixed> $post @return array<string, mixed>|null */
+    public function latestFastScoreForPost(array $post): ?array
+    {
+        $postId = trim((string) ($post['post_id'] ?? ''));
+        if ($postId === '') {
+            return null;
+        }
+
+        $scorePath = FastScoreDatabaseConfig::path($this->projectRoot, PrivateConfig::load($this->projectRoot));
+        if (!is_file($scorePath)) {
+            return null;
+        }
+
+        try {
+            $context = (new FastScoreContextFactory(static fn (string $_): ?array => null))->forPost($post);
+            return (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->latestScoredForPostContent(
+                $postId,
+                (string) $context['content_hash'],
+            );
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

@@ -6,6 +6,14 @@ codebase readability
 "functionName " should be searchable to its definition (and no other place)
 
 
+operator status
+===============
+
+Later: implement shared lifecycle status (Option B from the `v3 status`
+assessment) so operator reporting can identify manual and queued rebuilds
+precisely, including interrupted-work recovery.
+
+
 forte
 =====
 the thread info popup should be formatted like a message (gray header, white body)
@@ -14,10 +22,13 @@ have it already presented in mini-thread view in the activity
 
 scoring
 -------
-make another llm/agentic feature for fast scoring using lesser models
+make another llm/agentic feature for Fastmod using lesser models
 	sending only short instructions and the text of the post
 		for replies, include some context
-	request only a 0-1 in response
+	request only a 0-1 probability in response
+	later, as a separate requirement: use validated Fastmod probabilities to
+	hold qualifying content for human moderation before it is public
+		requires a threshold, calibration, audit trail, override, and rollback
 
 html pages should be marked up with the templates used to build them
 	also include pointers to where in the code the template was included
@@ -41,3 +52,14 @@ post presentation
 	if title == first line, don't show the first line in the body
 	put the byline below the post
 	put the labels below the post
+
+
+convert user-facing versioning to more human-readable
+	use either sequential version numbers (for things like js modules)
+	or traditional M.m.r semantic versioning (for things like the app itself)
+
+feature flags page
+===================
+add search/filter toolbar (search input + status chips: All/Enabled/Overridden/Locked)
+to /tools/feature-flags/ — deferred from the layout/badges/grouping redesign,
+see docs/plans/feature_flags_redesign_step2/3_*.md

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Tools\ToolsPageSupport;
 use RuntimeException;
 
@@ -139,6 +140,18 @@ final class ToolsPageController
                         'description' => 'Open Compose Thread in a new window with only the selected text.',
                         'bookmarklet_kind' => 'selection',
                     ],
+                    [
+                        'label' => 'Tweet',
+                        'mode' => 'same-window',
+                        'description' => 'On x.com, open Compose Thread in this tab with the tweet text, author, and link filled in.',
+                        'bookmarklet_kind' => 'tweet',
+                    ],
+                    [
+                        'label' => 'Tweet',
+                        'mode' => 'new-window',
+                        'description' => 'On x.com, open Compose Thread in a new window with the tweet text, author, and link filled in.',
+                        'bookmarklet_kind' => 'tweet',
+                    ],
                 ],
                 'toolNavOptions' => ToolsPageSupport::navOptions('bookmarklets'),
             ],
@@ -167,6 +180,7 @@ final class ToolsPageController
             'feature_flags.php',
             [
                 'flags' => $this->featureFlags->all(),
+                'registry' => new FeatureFlagRegistry(),
                 'toolNavOptions' => ToolsPageSupport::navOptions('feature-flags'),
             ],
             'Feature Flags',

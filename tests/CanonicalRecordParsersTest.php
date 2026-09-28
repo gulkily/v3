@@ -479,6 +479,29 @@ final class CanonicalRecordParsersTest
         assertSame('2026-04-10T12:00:00Z', $record->createdAt);
     }
 
+    public function testRepositoryPreloadsLegacyPostTimestampsFromGitHistory(): void
+    {
+        $tempRoot = $this->createTempFixtureRoot();
+        file_put_contents(
+            $tempRoot . '/records/posts/root-001.txt',
+            "Post-ID: root-001\nBoard-Tags: general meta\nSubject: Hello world\n\nFirst line preview.\nSecond line body.\n"
+        );
+
+        $this->runCommand($tempRoot, 'git init');
+        $this->runCommand($tempRoot, 'git config user.name "Forum Rewrite Tests"');
+        $this->runCommand($tempRoot, 'git config user.email "forum-rewrite-tests@example.invalid"');
+        $this->runCommand(
+            $tempRoot,
+            'git add records/posts/root-001.txt && GIT_AUTHOR_DATE=2026-04-10T12:00:00Z GIT_COMMITTER_DATE=2026-04-10T12:00:00Z git commit -m "Add legacy post"'
+        );
+
+        $repository = new CanonicalRecordRepository($tempRoot);
+        $repository->preloadLegacyPostCreatedAts(['records/posts/root-001.txt']);
+        $record = $repository->loadPost('records/posts/root-001.txt');
+
+        assertSame('2026-04-10T12:00:00Z', $record->createdAt);
+    }
+
     public function testRepositoryRejectsThreadLabelPathMismatch(): void
     {
         $tempRoot = $this->createTempFixtureRoot();

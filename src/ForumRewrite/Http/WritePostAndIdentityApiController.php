@@ -43,6 +43,7 @@ final class WritePostAndIdentityApiController
         $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
         try {
             $result = $this->routeServices->writer()->createThread($input);
+            $this->enqueueFastScore($result);
             $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
             $this->routeServices->sendText(
                 "status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\ncommit_sha={$result['commit_sha']}\n",
@@ -75,6 +76,7 @@ final class WritePostAndIdentityApiController
         $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
         try {
             $result = $this->routeServices->writer()->createReply($input);
+            $this->enqueueFastScore($result);
             $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
             $this->routeServices->sendText(
                 "status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\ncommit_sha={$result['commit_sha']}\n",
@@ -157,6 +159,7 @@ final class WritePostAndIdentityApiController
 
         try {
             $result = $this->routeServices->writer()->createPreparedPost($input);
+            $this->enqueueFastScore($result);
             $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
             $headers = $this->routeServices->serverTimingHeaders($result);
             unset($result['timings']);
@@ -167,6 +170,20 @@ final class WritePostAndIdentityApiController
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
             );
+        }
+    }
+
+    /** @param array<string, mixed> $result */
+    private function enqueueFastScore(array $result): void
+    {
+        $postId = trim((string) ($result['post_id'] ?? ''));
+        if ($postId === '') {
+            return;
+        }
+        try {
+            $this->routeServices->enqueueFastScoreForPublishedPost($postId);
+        } catch (\Throwable) {
+            error_log('Fastmod enqueue failed after post publication.');
         }
     }
 

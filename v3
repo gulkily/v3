@@ -9,14 +9,18 @@ if [[ -z "${COMMAND}" ]]; then
 Usage:
   ./v3 start [--listen-all|host:port]
   ./v3 test
+  ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 rebuild [repository_root] [database_path]
+  ./v3 rebuild diagnose [repository_root] [database_path]
+  ./v3 rebuild recover --confirm [repository_root] [database_path]
   ./v3 import-repository <archive.tar.gz> [repository_root] [database_path] [artifact_root] [--dry-run] [--no-commit]
   ./v3 thread-attributes <thread_id_or_record> [repository_root] [database_path]
   ./v3 delete-record <record_path_or_id> [repository_root] [database_path] [artifact_root]
   ./v3 unicode-risk-backfill [repository_root] [database_path] [--with-llm]
   ./v3 build-static [repository_root] [database_path] [artifact_root]
   ./v3 archive-thread <thread_id> [repository_root] [database_path] [artifact_root] [archive_path]
-  ./v3 private-config [view|refresh-template|--view|--force|--api-key-stdin] [--path=/private/path/secrets.php]
+  ./v3 private-config [view|edit|refresh-template|--view|--edit|--force|--api-key-stdin] [--path=/private/path/secrets.php]
+  ./v3 fast-score status|audit|retry|invalidate|smoke|prune [...options]
   ./v3 agent-reply cron [--log=/var/log/forum-agent-replies.log]
   ./v3 agent-reply cron run [--limit=10] [--dry-run] [--quiet] [--post-id=<id>]
   ./v3 agent-reply status [post_id] [--limit=25] [--database-path=/path/post_index.sqlite3]
@@ -25,7 +29,8 @@ Usage:
   ./v3 codex-handoff run [--limit=1] [--dry-run] [--database-path=/path/post_index.sqlite3] [--codex-bin=/path/codex]
   ./v3 codex-handoff test-local
   ./v3 task-queue enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
-  ./v3 task-queue run [--limit=1] [--dry-run] [--quiet]
+  ./v3 task-queue enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
+  ./v3 task-queue run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose]
   ./v3 task-queue status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 task-queue cron [--log=/var/log/forum-task-queue.log]
   ./v3 approve <identity_id> [seed_reason] [repository_root] [database_path]
@@ -56,9 +61,25 @@ case "${COMMAND}" in
     shift
     php "${ROOT}/tests/run.php" "$@"
     ;;
+  status)
+    shift
+    php "${ROOT}/scripts/status.php" "$@"
+    ;;
   rebuild)
     shift
-    php "${ROOT}/scripts/rebuild_read_model.php" "$@"
+    case "${1:-}" in
+      diagnose)
+        shift
+        php "${ROOT}/scripts/rebuild_read_model.php" --diagnose "$@"
+        ;;
+      recover)
+        shift
+        php "${ROOT}/scripts/rebuild_read_model.php" --recover-sidecars "$@"
+        ;;
+      *)
+        php "${ROOT}/scripts/rebuild_read_model.php" "$@"
+        ;;
+    esac
     ;;
   import-repository)
     shift
@@ -87,6 +108,10 @@ case "${COMMAND}" in
   private-config)
     shift
     php "${ROOT}/scripts/write_private_config.php" "$@"
+    ;;
+  fast-score)
+    shift
+    php "${ROOT}/scripts/fast_score.php" "$@"
     ;;
   agent-reply)
     shift

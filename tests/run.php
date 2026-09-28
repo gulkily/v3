@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/Support/TestRunHistoryStore.php';
+
 $testFiles = [
     __DIR__ . '/AgentReplyCommandTest.php',
     __DIR__ . '/AgentIdentityServiceTest.php',
@@ -18,6 +20,11 @@ $testFiles = [
     __DIR__ . '/DedalusPostAnalyzerTest.php',
     __DIR__ . '/FeatureFlagEvaluatorTest.php',
     __DIR__ . '/FeatureFlagsBehaviorTest.php',
+    __DIR__ . '/FastScoringConfigTest.php',
+    __DIR__ . '/FastScoreContextFactoryTest.php',
+    __DIR__ . '/FastPostScorerTest.php',
+    __DIR__ . '/DeterministicFastScoreEvaluatorTest.php',
+    __DIR__ . '/FastScoreWorkflowServiceTest.php',
     __DIR__ . '/ForteActivityReadModelRecoveryTest.php',
     __DIR__ . '/IdentityBootstrapDiagnosticsTest.php',
     __DIR__ . '/InvitationIssuanceTest.php',
@@ -29,6 +36,7 @@ $testFiles = [
     __DIR__ . '/OpenPgpLoaderTest.php',
     __DIR__ . '/OpenPgpKeyInspectorTest.php',
     __DIR__ . '/OpenAiCompatibleStructuredChatProviderTest.php',
+    __DIR__ . '/OperatorStatusCollectorTest.php',
     __DIR__ . '/PrivateConfigCommandTest.php',
     __DIR__ . '/PrivateSiteAuthTest.php',
     __DIR__ . '/PostSignatureAuditCommandTest.php',
@@ -45,9 +53,19 @@ $testFiles = [
     __DIR__ . '/TaskQueueStoreTest.php',
     __DIR__ . '/TaskQueueCommandTest.php',
     __DIR__ . '/TaskQueueWorkerTest.php',
+    __DIR__ . '/TestRunHistoryStoreTest.php',
     __DIR__ . '/ThreadTitleTest.php',
     __DIR__ . '/SqliteQueryCatalogTest.php',
     __DIR__ . '/SqliteLlmExchangeStoreTest.php',
+    __DIR__ . '/SqliteFastScoreStoreTest.php',
+    __DIR__ . '/StatusCommandTest.php',
+    __DIR__ . '/FastScoreSweepServiceTest.php',
+    __DIR__ . '/FastmodHistoricalAuditServiceTest.php',
+    __DIR__ . '/FastmodCostEstimatorTest.php',
+    __DIR__ . '/FastmodAuditCommandTest.php',
+    __DIR__ . '/FastmodBackfillRequestServiceTest.php',
+    __DIR__ . '/FastScoringRubricRevisionTest.php',
+    __DIR__ . '/GeneratedReplyTextNormalizerTest.php',
     __DIR__ . '/UnicodeRiskInspectorTest.php',
     __DIR__ . '/UnicodeRiskStoreTest.php',
     __DIR__ . '/UnicodeTextPolicyTest.php',
@@ -60,6 +78,7 @@ $failures = [];
 $filters = array_slice($argv, 1);
 $runCount = 0;
 $testDurations = [];
+$testResults = [];
 $currentTest = null;
 $currentTestStartedAt = null;
 $timingReportPrinted = false;
@@ -117,9 +136,11 @@ foreach ($declared as $class) {
         try {
             $testObject->{$method}();
             fwrite(STDOUT, "PASS {$testName}\n");
+            $testResults[$testName] = true;
         } catch (Throwable $throwable) {
             $failures[] = "{$testName} - {$throwable->getMessage()}";
             fwrite(STDERR, "FAIL {$testName} - {$throwable->getMessage()}\n");
+            $testResults[$testName] = false;
         } finally {
             $testDurations[$testName] = (hrtime(true) - $currentTestStartedAt) / 1_000_000_000;
             $currentTest = null;
@@ -133,13 +154,100 @@ if ($filters !== [] && $runCount === 0) {
     exit(1);
 }
 
+$historyDbPath = getenv('FORUM_TEST_HISTORY_DB_PATH');
+if ($historyDbPath === false || trim($historyDbPath) === '') {
+    $historyDbPath = __DIR__ . '/../state/test_run_history.sqlite';
+}
+
+$historyStore = new TestRunHistoryStore($historyDbPath);
+$historyStore->ensureSchema();
+$testClassifications = $historyStore->recordResults($testResults, date('c'));
+
+printRunSummary($runCount, $failures, $testDurations, $testClassifications, STDOUT);
+
 if ($failures !== []) {
-    printSlowTestsOverThreshold($testDurations, null, null, false, STDOUT);
     exit(1);
 }
 
-fwrite(STDOUT, "All tests passed.\n");
-printSlowTestsOverThreshold($testDurations, null, null, false, STDOUT);
+/**
+ * @param list<string> $failures
+ * @param array<string, float> $testDurations
+ * @param array<string, array{classification: string, consecutiveFailCount: int, firstFailedAt: ?string}> $classifications
+ */
+function printRunSummary(
+    int $runCount,
+    array $failures,
+    array $testDurations,
+    array $classifications,
+    mixed $stream,
+): void {
+    $passedCount = $runCount - count($failures);
+
+    fwrite($stream, "\n");
+    fwrite($stream, sprintf("Summary: %d run, %d passed, %d failed\n", $runCount, $passedCount, count($failures)));
+
+    if ($failures !== []) {
+        fwrite($stream, "\nFailing tests:\n");
+        foreach ($failures as $failure) {
+            $lines = explode("\n", $failure);
+            $firstLine = $lines[0];
+            $extraLineCount = count($lines) - 1;
+            $suffix = $extraLineCount > 0
+                ? sprintf(' (+%d more line%s, see FAIL output above)', $extraLineCount, $extraLineCount === 1 ? '' : 's')
+                : '';
+            fwrite($stream, "  - {$firstLine}{$suffix}\n");
+        }
+    }
+
+    printSlowTestsOverThreshold($testDurations, null, null, false, $stream);
+
+    $newFailures = [];
+    $longStandingFailures = [];
+    $recovered = [];
+    $firstSeenFailures = [];
+    foreach ($classifications as $testName => $info) {
+        match ($info['classification']) {
+            'new_failure' => $newFailures[] = $testName,
+            'long_standing_failure' => $longStandingFailures[] = sprintf(
+                '%s (failing %d runs, since %s)',
+                $testName,
+                $info['consecutiveFailCount'],
+                $info['firstFailedAt'] ?? 'unknown'
+            ),
+            'recovered' => $recovered[] = $testName,
+            'first_seen_failure' => $firstSeenFailures[] = $testName,
+            default => null,
+        };
+    }
+
+    if ($newFailures !== []) {
+        fwrite($stream, "\nNew failures:\n");
+        foreach ($newFailures as $testName) {
+            fwrite($stream, "  - {$testName}\n");
+        }
+    }
+
+    if ($longStandingFailures !== []) {
+        fwrite($stream, "\nLong-standing failures:\n");
+        foreach ($longStandingFailures as $entry) {
+            fwrite($stream, "  - {$entry}\n");
+        }
+    }
+
+    if ($recovered !== []) {
+        fwrite($stream, "\nNewly recovered:\n");
+        foreach ($recovered as $testName) {
+            fwrite($stream, "  - {$testName}\n");
+        }
+    }
+
+    if ($firstSeenFailures !== []) {
+        fwrite($stream, "\nFailing with no prior history (can't tell if new or long-standing):\n");
+        foreach ($firstSeenFailures as $testName) {
+            fwrite($stream, "  - {$testName}\n");
+        }
+    }
+}
 
 /**
  * @param list<string> $filters

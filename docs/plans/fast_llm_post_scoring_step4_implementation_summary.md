@@ -1,0 +1,72 @@
+# Fast LLM Post Scoring Step 4 Implementation Summary
+
+## Stage 1 - Independent fast-scoring configuration
+- Changes:
+  - Added `FastScoringConfig` with an explicit enable switch, independent fast-scoring provider overrides, prompt path, and safe fallback to the existing LLM settings.
+  - Added fast-scoring environment loading, private-config generation/view support, and documented defaults.
+  - Added configuration coverage without altering the full post-analysis configuration contract.
+- Verification:
+  - `php tests/run.php FastScoringConfigTest PrivateConfigCommandTest LlmProviderConfigTest` — passed.
+  - `php -r 'require "autoload.php"; ... FastScoringConfig::fromPrivateConfig(...) ...'` — returned `enabled=true`, `model=fast-smoke-model`, and the default prompt path.
+- Notes:
+  - Fast scoring defaults to disabled and uses the normal LLM settings only as fallbacks; later stages will consume this configuration.
+
+## Stage 2 - Compact score contract and context
+- Changes:
+  - Added a common result contract with status, nullable probability, source, and signals.
+  - Added compact context construction: root text alone, and reply text with bounded parent and root text only.
+- Verification:
+  - `php tests/run.php FastScoreContextFactoryTest FastScoringConfigTest` — passed.
+  - `php -r 'require "autoload.php"; ... FastScoreContextFactory ...'` — emitted reply text, parent context, and root context without thread-wide data.
+- Notes:
+  - Target text is capped at 6,000 bytes; each reply-context text is capped at 1,000 bytes.
+
+## Stage 3 - Model probability scorer
+- Changes:
+  - Added a configurable fast-scoring prompt and `FastPostScorer` using the existing structured-chat provider contract.
+  - Enforced a one-property numeric response schema, 0–1 validation, a 16-token completion cap, and `fast_post_score` exchange metadata.
+- Verification:
+  - `php tests/run.php FastPostScorerTest FastScoreContextFactoryTest OpenAiCompatibleStructuredChatProviderTest` — passed.
+  - `php -r 'require "autoload.php"; ... FastPostScorer ...'` — requested `FastPostScore` with 16 tokens and returned a single `0.6` LLM probability.
+- Notes:
+  - The configured prompt file is the scoring rubric; operators must make its probability definition explicit before enabling the feature.
+
+## Stage 4 - Deterministic companion
+- Changes:
+  - Added deterministic evaluation for empty-post exclusion and an explicit `heuristic` result source.
+  - Left all non-empty posts to the configured rubric and model rather than fabricating a generic heuristic probability.
+- Verification:
+  - `php tests/run.php DeterministicFastScoreEvaluatorTest FastScoreContextFactoryTest FastPostScorerTest` — passed.
+  - `php -r 'require "autoload.php"; ... DeterministicFastScoreEvaluator ...'` — emitted an excluded, null-probability result with `empty_post` signal.
+- Notes:
+  - Additional heuristic probabilities require rubric-specific evaluation before they can be added safely.
+
+## Stage 5 - Internal scoring workflow
+- Changes:
+  - Added a workflow service and factory that compose configuration, compact context, deterministic exclusions, prompt loading, provider selection, and model scoring.
+  - Kept disabled, missing-provider, heuristic, and LLM outcomes distinct; the workflow does not invoke full analysis or agent-reply generation.
+- Verification:
+  - `php tests/run.php FastScoreWorkflowServiceTest FastPostScorerTest DeterministicFastScoreEvaluatorTest` — passed.
+  - `php -r 'require "autoload.php"; ... FastScoreWorkflowService ...'` — returned a source-labeled `0.8` LLM result.
+- Notes:
+  - The factory supports the existing OpenAI-compatible and Anthropic provider contracts and passes the existing LLM exchange recorder through to model requests.
+
+## Stage 6 - Approved-operator score API
+- Changes:
+  - Added approved-only `POST /api/score_post`, returning post ID, status, nullable probability, source, and signals.
+  - Registered the endpoint with session-resume and API discovery routes without adding browser automation or post-card markup.
+- Verification:
+  - `php tests/run.php WriteApiSmokeTest::testFastScoreEndpointRequiresAnApprovedViewerAndReturnsWorkflowResult` — passed.
+  - `php tests/run.php WriteApiSmokeTest FastScoreWorkflowServiceTest` — the new endpoint and workflow tests passed; one unrelated existing approval/activity consistency test failed during the full `WriteApiSmokeTest` class run.
+- Notes:
+  - The endpoint is intentionally an operator/workflow surface; it makes no reader-facing score or threshold decision.
+
+## Stage 7 - Documentation and regression verification
+- Changes:
+  - Added the fast-post-scoring operator reference and linked it from the README.
+  - Documented configuration, rubric responsibility, API outcomes, source labels, and exchange auditing.
+- Verification:
+  - Focused scorer/config/API suite passed: `php tests/run.php FastScoringConfigTest FastScoreContextFactoryTest FastPostScorerTest DeterministicFastScoreEvaluatorTest FastScoreWorkflowServiceTest PrivateConfigCommandTest OpenAiCompatibleStructuredChatProviderTest WriteApiSmokeTest::testFastScoreEndpointRequiresAnApprovedViewerAndReturnsWorkflowResult`.
+  - Full suite: `php tests/run.php` fails on the independently reproducible existing `WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh`; fast-scoring coverage passed in that run.
+- Notes:
+  - No live provider request was sent because this workspace has no authorized fast-scoring credential or rubric. Exchange metadata and provider-recorder integration are covered by the focused unit contracts.

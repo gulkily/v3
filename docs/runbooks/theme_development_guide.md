@@ -48,7 +48,7 @@ script in `layout.php` applies it pre-paint against the allow-list.
 
 - **Never restyle the theme menu's rows from ambient rules.** Popover rows
   are *representative* — each renders in its own theme's colors (spec:
-  `docs/theme-menu-representative-options-spec.md`). Any scoped rule that
+  `docs/specs/theme_menu_representative_options_spec_v1.md`). Any scoped rule that
   targets bare `button` (or anything inside `.theme-menu`) must carry
   `:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option)`.
   Styling the popover *container* is fine.

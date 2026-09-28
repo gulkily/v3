@@ -6,6 +6,9 @@ namespace ForumRewrite\Canonical;
 
 final class CanonicalRecordRepository
 {
+    /** @var array<string,string> */
+    private array $legacyPostCreatedAtByPath = [];
+
     public function __construct(
         private readonly string $repositoryRoot,
         private readonly PostRecordParser $postParser = new PostRecordParser(),
@@ -45,6 +48,55 @@ final class CanonicalRecordRepository
         }
 
         return $record;
+    }
+
+    /**
+     * Preloads creation timestamps for legacy posts that lack `Created-At`.
+     * A rebuild can parse many such records, so one history walk avoids
+     * starting a separate `git log --follow` process for every legacy post.
+     * Paths whose history includes a rename are intentionally left to the
+     * existing per-path `--follow` fallback.
+     *
+     * @param list<string> $relativePaths
+     */
+    public function preloadLegacyPostCreatedAts(array $relativePaths): void
+    {
+        if ($relativePaths === [] || !is_dir($this->repositoryRoot . '/.git')) {
+            return;
+        }
+
+        $requestedPaths = array_fill_keys($relativePaths, true);
+        $command = sprintf(
+            'git -C %s log --find-renames --diff-filter=A --format=%s --name-status -- records/posts 2>/dev/null',
+            escapeshellarg($this->repositoryRoot),
+            escapeshellarg('%aI%x1f'),
+        );
+        $output = [];
+        $exitCode = 0;
+        exec($command, $output, $exitCode);
+        if ($exitCode !== 0) {
+            return;
+        }
+
+        $createdAt = null;
+        foreach ($output as $line) {
+            if (str_ends_with($line, "\x1f")) {
+                $createdAt = $this->normalizeLegacyPostCreatedAt(substr($line, 0, -1));
+                continue;
+            }
+
+            if ($createdAt === null || !str_starts_with($line, "A\t")) {
+                continue;
+            }
+
+            $relativePath = substr($line, 2);
+            if (!isset($requestedPaths[$relativePath])) {
+                continue;
+            }
+
+            // Git returns newest commits first; retain the oldest add event.
+            $this->legacyPostCreatedAtByPath[$relativePath] = $createdAt;
+        }
     }
 
     private function resolvePostPath(string $relativePath): string
@@ -190,6 +242,10 @@ final class CanonicalRecordRepository
 
     private function resolveLegacyPostCreatedAtFromGit(string $relativePath): ?string
     {
+        if (array_key_exists($relativePath, $this->legacyPostCreatedAtByPath)) {
+            return $this->legacyPostCreatedAtByPath[$relativePath];
+        }
+
         if (!is_dir($this->repositoryRoot . '/.git')) {
             return null;
         }
@@ -213,6 +269,11 @@ final class CanonicalRecordRepository
 
         $value = $lines[array_key_last($lines)];
 
+        return $this->normalizeLegacyPostCreatedAt($value);
+    }
+
+    private function normalizeLegacyPostCreatedAt(string $value): ?string
+    {
         try {
             $timestamp = new \DateTimeImmutable($value);
         } catch (\Exception) {

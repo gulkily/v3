@@ -19,16 +19,23 @@ final class TemplateRenderer
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
         'activity.php' => ['/assets/activity.css'],
-        'account_key.php' => ['/assets/identity.css'],
+        'account_key.php' => ['/assets/identity.css', '/assets/account.css'],
         'bookmarklets.php' => ['/assets/tools.css'],
         'invites.php' => ['/assets/invitations.css', '/assets/identity.css'],
         'post.php' => ['/assets/identity.css', '/assets/content-interactions.css'],
         'profile.php' => ['/assets/identity.css'],
-        'board.php' => ['/assets/thread-list.css'],
+        'board.php' => ['/assets/thread-list.css', '/assets/compose.css'],
+        'compose_reply.php' => ['/assets/compose.css'],
+        'compose_thread.php' => ['/assets/compose.css'],
+        'codebase_state.php' => ['/assets/tool-details.css'],
+        'feature_flags.php' => ['/assets/tool-details.css'],
+        'llm_exchanges.php' => ['/assets/tool-details.css'],
         'tags.php' => ['/assets/tags.css'],
         'tag.php' => ['/assets/thread-list.css'],
-        'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css'],
+        'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/compose.css'],
         'tools.php' => ['/assets/tools.css'],
+        'sqlite_viewer.php' => ['/assets/sqlite.css'],
+        'users_pending.php' => ['/assets/pending-approvals.css'],
     ];
     private const CRITICAL_CSS_END_MARKER = '/* critical-css-end */';
     private ?string $criticalCss = null;

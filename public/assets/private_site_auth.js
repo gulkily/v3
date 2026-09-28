@@ -91,11 +91,16 @@
 
     var value = "";
     try { value = sessionStorage.getItem("forum_invite_destination") || ""; sessionStorage.removeItem("forum_invite_destination"); } catch (error) {}
-    return safeRelativeDestination(value) || "/";
+    return safeRelativeDestination(value);
   }
 
   function navigateAfterApproval(options) {
     var destination = approvedDestination(options);
+    if (destination === "") {
+      window.location.reload();
+      return;
+    }
+
     if ((configuredReturnDestination() !== "" || (options && options.replaceHistory === true))
       && window.location && typeof window.location.replace === "function") {
       window.location.replace(destination);

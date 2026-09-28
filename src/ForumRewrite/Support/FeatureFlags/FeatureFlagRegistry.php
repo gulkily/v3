@@ -15,6 +15,8 @@ final class FeatureFlagRegistry
     public const LLM_CONVERSATION_RECORDING_ENABLED = 'LLM_CONVERSATION_RECORDING_ENABLED';
     public const LLM_CONVERSATION_UI_ENABLED = 'LLM_CONVERSATION_UI_ENABLED';
     public const APPROVED_MEMBERS_ONLY = 'FORUM_APPROVED_MEMBERS_ONLY';
+    public const FAST_SCORING_ENABLED = 'FAST_SCORING_ENABLED';
+    public const FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED = 'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED';
 
     /**
      * @return list<FeatureFlagDefinition>
@@ -78,6 +80,7 @@ final class FeatureFlagRegistry
                 true,
                 self::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
                 'private',
+                requiresEnabledFlag: self::DEDALUS_AGENT_REPLIES_ENABLED,
             ),
             new FeatureFlagDefinition(
                 self::LLM_CONVERSATION_RECORDING_ENABLED,
@@ -95,6 +98,25 @@ final class FeatureFlagRegistry
                 self::LLM_CONVERSATION_UI_ENABLED,
                 'private',
             ),
+            new FeatureFlagDefinition(
+                self::FAST_SCORING_ENABLED,
+                'Fast scoring',
+                'Allow published posts to be scored for moderation signal via the fast/cheap Fastmod scoring pipeline.',
+                false,
+                self::FAST_SCORING_ENABLED,
+                'private',
+                group: 'FASTMOD',
+            ),
+            new FeatureFlagDefinition(
+                self::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
+                'Automatic fast scoring',
+                'Automatically enqueue eligible published posts for fast scoring.',
+                false,
+                self::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
+                'private',
+                requiresEnabledFlag: self::FAST_SCORING_ENABLED,
+                group: 'FASTMOD',
+            ),
         ];
     }
 
@@ -107,5 +129,17 @@ final class FeatureFlagRegistry
         }
 
         return null;
+    }
+
+    private const GROUP_LABELS = [
+        'FORUM' => 'Forum',
+        'DEDALUS' => 'Agent replies',
+        'LLM' => 'LLM exchanges',
+        'FASTMOD' => 'Fastmod',
+    ];
+
+    public function groupLabel(string $groupKey): string
+    {
+        return self::GROUP_LABELS[$groupKey] ?? $groupKey;
     }
 }
