@@ -223,7 +223,6 @@ final class TemplateRenderer
 
         $items = [
             ['href' => '/', 'label' => 'Board', 'section' => 'board'],
-            ['href' => '/offline/', 'label' => 'Offline', 'section' => 'offline'],
             ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
             ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
             ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],

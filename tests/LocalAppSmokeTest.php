@@ -2377,7 +2377,7 @@ PHP;
         assertStringContains('data-role="offline-reader-status"', $reader);
         assertStringContains('/assets/sql-wasm.', $reader);
         assertStringContains('/assets/offline_reader.', $reader);
-        assertStringContains('href="/offline/"', $reader);
+        assertStringNotContains('class="nav-link is-active" href="/offline/"', $reader);
     }
 
     public function testPublicLayoutIncludesOfflineReaderPwaAssets(): void
@@ -2394,6 +2394,7 @@ PHP;
 
         assertStringContains('rel="manifest" href="/manifest.webmanifest"', $board);
         assertStringContains('/assets/pwa_registration.', $board);
+        assertStringNotContains('href="/offline/"', $board);
         assertStringContains('refresh-offline-reader', $serviceWorker);
         assertStringContains('url.pathname.startsWith("/assets/")', $serviceWorker);
         assertStringNotContains('/api/', $serviceWorker);
