@@ -30,6 +30,7 @@ final class TemplateRenderer
         'codebase_state.php' => ['/assets/tool-details.css'],
         'feature_flags.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
+        'offline_reader.php' => ['/assets/sqlite.css'],
         'tags.php' => ['/assets/tags.css'],
         'tag.php' => ['/assets/thread-list.css'],
         'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/compose.css'],
@@ -221,6 +222,7 @@ final class TemplateRenderer
 
         $items = [
             ['href' => '/', 'label' => 'Board', 'section' => 'board'],
+            ['href' => '/offline/', 'label' => 'Offline', 'section' => 'offline'],
             ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
             ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
             ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],

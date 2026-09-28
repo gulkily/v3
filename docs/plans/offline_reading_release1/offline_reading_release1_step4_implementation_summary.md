@@ -23,3 +23,14 @@
   - Full `LocalAppSmokeTest` ran with 95/100 passing; its five activity/signature failures predate this work and are recorded as long-standing by the test runner.
 - Notes:
   - The resource has a stable URL but always resolves against the active static release.
+
+## Stage 3 - Offline reader shell
+- Changes:
+  - Added the shared-layout `/offline/` reader shell and normal navigation entry.
+  - Added a local SQLite snapshot loader with generation/failure status and no query-editor surface.
+- Verification:
+  - PHP lint passed for the controller, application, renderer, and smoke test.
+  - `node --check public/assets/offline_reader.js` — passed.
+  - Direct `LocalAppSmokeTest::testOfflineReaderRouteUsesLocalSnapshotShell` — passed.
+- Notes:
+  - The reader loads `/offline/snapshot.sqlite3` without credentials and emits a readiness event for the next two presentation stages.

@@ -2362,6 +2362,24 @@ PHP;
         assertStringContains('href="/tools/sqlite/"', $this->render($application, '/tools/'));
     }
 
+    public function testOfflineReaderRouteUsesLocalSnapshotShell(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $reader = $this->render($application, '/offline/');
+
+        assertStringContains('data-offline-reader', $reader);
+        assertStringContains('data-snapshot-url="/offline/snapshot.sqlite3"', $reader);
+        assertStringContains('data-role="offline-reader-status"', $reader);
+        assertStringContains('/assets/sql-wasm.', $reader);
+        assertStringContains('/assets/offline_reader.', $reader);
+        assertStringContains('href="/offline/"', $reader);
+    }
+
     public function testSqliteViewerLoadsLocalRuntimeAssets(): void
     {
         $application = new Application(
