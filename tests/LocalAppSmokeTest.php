@@ -2375,6 +2375,8 @@ PHP;
         assertStringContains('data-offline-reader', $reader);
         assertStringContains('data-snapshot-url="/offline/snapshot.sqlite3"', $reader);
         assertStringContains('data-role="offline-reader-status"', $reader);
+        assertStringContains('data-role="offline-mode-bar"', $reader);
+        assertStringContains('offline mode', $reader);
         assertStringContains('/assets/sql-wasm.', $reader);
         assertStringContains('/assets/offline_reader.', $reader);
         assertStringNotContains('class="nav-link is-active" href="/offline/"', $reader);

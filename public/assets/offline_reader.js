@@ -113,7 +113,7 @@
     }
 
     var status = root.querySelector('[data-role="offline-reader-status"]');
-    var generation = root.querySelector('[data-role="offline-reader-generation"]');
+    var modeBar = root.querySelector('[data-role="offline-mode-bar"]');
     var content = root.querySelector('[data-role="offline-reader-content"]');
     var snapshotUrl = root.getAttribute("data-snapshot-url") || "/offline/snapshot.sqlite3";
 
@@ -122,11 +122,16 @@
         return;
       }
       status.textContent = message;
+      status.hidden = state !== "error";
       if (state) {
         status.dataset.state = state;
       } else {
         delete status.dataset.state;
       }
+    }
+
+    function showOfflineMode() {
+      if (modeBar) modeBar.hidden = false;
     }
 
     function metadataValue(database, key) {
@@ -180,11 +185,8 @@
     }
 
     function renderOfflineBoard(database) {
-      var title = root.querySelector("h1");
-      var description = root.querySelector("article.card > p");
       root.dataset.offlineNavigation = "board";
-      if (title) title.textContent = "Board";
-      if (description) description.textContent = "Showing recent public threads saved on this device.";
+      showOfflineMode();
       if (window.location.search) {
         setStatus("This board view requires a connection. The saved recent view is available at the normal Board URL.", "error");
         clearNode(content);
@@ -207,11 +209,8 @@
     }
 
     function renderOfflineThread(database, threadId) {
-      var title = root.querySelector("h1");
-      var description = root.querySelector("article.card > p");
       root.dataset.offlineNavigation = "thread";
-      if (title) title.textContent = "Thread";
-      if (description) description.textContent = "Showing public thread content saved on this device.";
+      showOfflineMode();
       setStatus("Showing saved thread content offline.", "ok");
       snapshotPresentation.renderThreadDetail({
         backLabel: "Back to Board",
@@ -251,10 +250,6 @@
         });
         var database = new SQL.Database(bytes);
         var generatedAt = metadataValue(database, "generated_at");
-        if (generation && generatedAt) {
-          generation.textContent = "Snapshot saved " + generatedAt + ".";
-          generation.hidden = false;
-        }
         setStatus("Offline snapshot is ready.", "ok");
         root.dispatchEvent(new CustomEvent("forum-offline-reader-ready", {
           detail: { database: database, generatedAt: generatedAt }
