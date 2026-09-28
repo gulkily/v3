@@ -6,6 +6,14 @@ codebase readability
 "functionName " should be searchable to its definition (and no other place)
 
 
+operator status
+===============
+
+Later: implement shared lifecycle status (Option B from the `v3 status`
+assessment) so operator reporting can identify manual and queued rebuilds
+precisely, including interrupted-work recovery.
+
+
 forte
 =====
 the thread info popup should be formatted like a message (gray header, white body)
