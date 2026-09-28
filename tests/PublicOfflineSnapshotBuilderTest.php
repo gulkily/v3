@@ -25,6 +25,7 @@ final class PublicOfflineSnapshotBuilderTest
             assertSame('thread-055', (string) $snapshot->query('SELECT root_post_id FROM threads ORDER BY last_activity_at DESC LIMIT 1')->fetchColumn());
             assertSame('1', (string) $snapshot->query("SELECT COUNT(*) FROM threads WHERE root_post_id = 'thread-001'")->fetchColumn());
             assertSame('0', (string) $snapshot->query("SELECT COUNT(*) FROM threads WHERE root_post_id = 'thread-005'")->fetchColumn());
+            assertSame('0', (string) $snapshot->query("SELECT COUNT(*) FROM posts WHERE post_id = 'reply-hidden'")->fetchColumn());
             assertSame('0', (string) $snapshot->query("SELECT COUNT(*) FROM threads WHERE root_post_id IN ('thread-hidden', 'thread-bootstrap')")->fetchColumn());
             assertSame('0', (string) $snapshot->query("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'post_analyses'")->fetchColumn());
             assertSame('1', (string) $snapshot->query("SELECT COUNT(*) FROM metadata WHERE key = 'snapshot_version' AND value = '2'")->fetchColumn());
@@ -62,6 +63,7 @@ final class PublicOfflineSnapshotBuilderTest
             $post->execute([$id, $timestamp, $id, null, 'Subject ' . $number, 'Root ' . $number, '["general"]', null, 'Author ' . $number, 'author-' . $number, $number * 2, 0]);
             $post->execute(['reply-' . $number, $timestamp, $id, $id, null, 'Reply ' . $number, '["general"]', null, 'Reply author ' . $number, 'reply-author-' . $number, $number * 2 + 1, 0]);
         }
+        $post->execute(['reply-hidden', '2026-03-01T00:00:00Z', 'thread-055', 'thread-055', null, 'Hidden reply', '["general"]', null, 'Hidden author', null, 9998, 1]);
         $thread->execute(['thread-hidden', '2027-01-01T00:00:00Z', '2027-01-01T00:00:00Z', 'Hidden', '', 0, 'thread-hidden', '["general"]', '[]', 0]);
         $post->execute(['thread-hidden', '2027-01-01T00:00:00Z', 'thread-hidden', null, 'Hidden', '', '["general"]', null, 'Hidden', null, 999, 1]);
         $thread->execute(['thread-bootstrap', '2027-01-02T00:00:00Z', '2027-01-02T00:00:00Z', 'Bootstrap', '', 0, 'thread-bootstrap', '["identity"]', '[]', 0]);

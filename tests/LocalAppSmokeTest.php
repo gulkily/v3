@@ -2403,7 +2403,7 @@ PHP;
         assertStringNotContains('href="/offline/"', $board);
         assertStringContains('refresh-offline-reader', $serviceWorker);
         assertStringContains('networkFirstNavigation', $serviceWorker);
-        assertStringContains('zenmemes-offline-reader-v4', $serviceWorker);
+        assertStringContains('zenmemes-offline-reader-v5', $serviceWorker);
         assertStringContains('url.pathname.startsWith("/assets/")', $serviceWorker);
         assertStringNotContains('/api/', $serviceWorker);
         assertStringContains('navigator.serviceWorker.register("/service_worker.js", { scope: "/" })', $registration);
@@ -2422,7 +2422,10 @@ PHP;
         assertStringContains('group: "sort"', $readerScript);
         assertStringContains('window.history.pushState', $readerScript);
         assertStringContains('card thread-card', $readerScript);
-        assertStringContains('card thread-root-card', $readerScript);
+        assertStringContains('card post-card thread-root-card', $readerScript);
+        assertStringContains('bodyExcerpt', $readerScript);
+        assertStringContains('heatLevel', $readerScript);
+        assertStringContains('dataset.heat', $readerScript);
     }
 
     public function testPrivateLayoutDoesNotRegisterOfflineReaderPwa(): void

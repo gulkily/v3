@@ -20,8 +20,34 @@
     threadTitle: function (subject, preview) {
       var title = String(subject || "").trim();
       if (title) return title;
-      var fallback = String(preview || "").replace(/\s+/g, " ").trim();
-      return fallback || "Untitled thread";
+      return snapshotPresentation.bodyExcerpt(preview, 80) || "Untitled thread";
+    },
+    bodyExcerpt: function (body, limit) {
+      var normalized = String(body || "").replace(/\s+/g, " ").trim();
+      if (!normalized) return "";
+      var characters = Array.from(normalized);
+      var maximum = Math.max(8, Number(limit) || 80);
+      if (characters.length <= maximum) return normalized;
+      var slice = characters.slice(0, maximum).join("");
+      var lastSpace = slice.lastIndexOf(" ");
+      if (lastSpace >= 24) slice = slice.slice(0, lastSpace);
+      return slice.replace(/[\s.,;:!?]+$/, "") + "...";
+    },
+    heatLevel: function (timestamp, replyCount) {
+      var then = Date.parse(String(timestamp || ""));
+      if (Number.isNaN(then)) return 1;
+      var ageSeconds = Math.max(0, (Date.now() - then) / 1000);
+      var buckets = [[8, 3600], [7, 6 * 3600], [6, 24 * 3600], [5, 3 * 86400], [4, 7 * 86400], [3, 30 * 86400], [2, 90 * 86400]];
+      var level = 1;
+      for (var index = 0; index < buckets.length; index += 1) {
+        if (ageSeconds <= buckets[index][1]) {
+          level = buckets[index][0];
+          break;
+        }
+      }
+      if (Number(replyCount) >= 10) level += 2;
+      else if (Number(replyCount) >= 3) level += 1;
+      return Math.min(8, level);
     },
     boardRows: function (database) {
       var result = database.exec(
@@ -110,6 +136,7 @@
       rows.forEach(function (thread) {
         var card = document.createElement("article");
         card.className = "card thread-card";
+        card.dataset.heat = String(snapshotPresentation.heatLevel(thread.lastActivityAt, thread.replyCount));
         var heading = document.createElement("h2");
         var link = document.createElement("a");
         link.href = snapshotPresentation.normalThreadUrl(thread.id);
@@ -157,6 +184,11 @@
       return true;
     },
     renderThreadDetail: function (options) {
+      var threadResult = options.database.exec(
+        "SELECT last_activity_at, reply_count FROM threads WHERE root_post_id = ?",
+        [options.threadId]
+      )[0];
+      var threadRow = threadResult && threadResult.values && threadResult.values[0] ? threadResult.values[0] : null;
       var result = options.database.exec(
         "SELECT post_id, parent_id, subject, body, author_label, created_at "
         + "FROM posts WHERE thread_id = ? ORDER BY sequence_number ASC, post_id ASC",
@@ -180,20 +212,33 @@
       }
       rows.forEach(function (row, index) {
         var post = document.createElement("article");
-        post.className = index === 0 ? "card thread-root-card" : "card post-card";
+        post.className = index === 0 ? "card post-card thread-root-card" : "card post-card";
         if (index === 0) {
           var heading = document.createElement("h1");
           heading.textContent = snapshotPresentation.threadTitle(row[2], row[3]);
           post.appendChild(heading);
+          post.dataset.heat = String(snapshotPresentation.heatLevel(
+            threadRow ? threadRow[0] : row[5],
+            threadRow ? threadRow[1] : 0
+          ));
+        } else {
+          post.dataset.heat = String(snapshotPresentation.heatLevel(row[5], 0));
         }
-        var meta = document.createElement("p");
-        meta.className = "meta";
-        meta.textContent = String(row[4] || "guest") + " · " + String(row[5] || "");
-        post.appendChild(meta);
         var body = document.createElement("div");
         body.className = "body";
-        body.textContent = String(row[3] || "");
+        var postBody = String(row[3] || "");
+        if (index === 0) {
+          var segments = postBody.split(/\r\n|\r|\n/, 2);
+          if (segments[0].trim() === snapshotPresentation.threadTitle(row[2], row[3])) {
+            postBody = String(segments[1] || "").replace(/^(?:\r\n|\r|\n)+/, "");
+          }
+        }
+        body.textContent = postBody;
         post.appendChild(body);
+        var meta = document.createElement("p");
+        meta.className = "meta";
+        meta.textContent = "by " + String(row[4] || "guest") + (row[5] ? " on " + String(row[5]) : "");
+        post.appendChild(meta);
         options.content.appendChild(post);
       });
       return true;
