@@ -31,3 +31,12 @@
   - Reflection-based smoke test with fixtures: a root-approved profile mixed with a normal linked approver, multiple root-approved profiles (confirmed collapsing to one `{"label":"root","slug":null}` entry), self-approval still excluded, and zero approved profiles — all matched expected output
 - Notes:
   - `username()`'s render array is unchanged at the call site (`approverUsernames` key name kept); only the internal element shape changed, which Stage 4 consumes
+
+## Stage 4 (amendment) - Link approvers with a profile
+- Changes:
+  - `templates/pages/username.php` — replaced the flat `implode(', ', $approverUsernames)` rendering with a loop over the `{label, slug}` pairs: renders `<a href="/profiles/{slug}">{label}</a>` when `slug` is present, else plain escaped `{label}`, joined with `, `; mirrors the existing link/plain-text conditional already used in `templates/pages/profile.php`
+- Verification:
+  - `php -l templates/pages/username.php` — no syntax errors
+  - Manual render check (extracted the block into a standalone include, same technique as Stage 2) covering: a linked entry mixed with an unlinked `root` entry, a single linked entry, the empty case (line correctly omitted), and special characters (`<`, `>`, `"`) in both label and slug (correctly HTML-escaped)
+- Notes:
+  - No new link convention introduced; matches `profile.php`'s existing pattern exactly

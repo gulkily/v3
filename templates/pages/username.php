@@ -13,7 +13,12 @@
     <p><strong>Combined threads:</strong> <?= (int) $approvedThreadCount ?></p>
     <p><strong>Combined posts:</strong> <?= (int) $approvedPostCount ?></p>
 <?php if ($approverUsernames !== []): ?>
-    <p><strong>Approved by:</strong> <?= $e(implode(', ', $approverUsernames)) ?></p>
+    <p><strong>Approved by:</strong>
+<?php foreach ($approverUsernames as $index => $approver): ?>
+<?php if ($index > 0): ?>, <?php endif; ?>
+<?php if ($approver['slug'] !== null): ?><a href="/profiles/<?= $e($approver['slug']) ?>"><?= $e($approver['label']) ?></a><?php else: ?><?= $e($approver['label']) ?><?php endif; ?>
+<?php endforeach; ?>
+    </p>
 <?php endif; ?>
   </article>
 
