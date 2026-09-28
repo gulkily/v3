@@ -54,9 +54,6 @@ $postAnchorId = 'post-' . (string) $post['post_id'];
 <?php if ($thread['thread_labels'] !== []): ?>
   <p class="meta">Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?></p>
 <?php endif; ?>
-<?php if ((int) $thread['reply_count'] > 0): ?>
-  <p class="meta"><?= (int) $thread['reply_count'] ?> <?= (int) $thread['reply_count'] === 1 ? 'reply' : 'replies' ?></p>
-<?php endif; ?>
 <?php if ($isAgentPost): ?>
   <p class="meta"><span class="agent-label">Agent-authored reply</span></p>
 <?php endif; ?>
