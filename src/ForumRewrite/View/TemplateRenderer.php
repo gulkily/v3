@@ -153,9 +153,6 @@ final class TemplateRenderer
             'inviteNavigationScriptPath' => $this->assetPath('/assets/invite_navigation.js'),
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
             'pwaRegistrationScriptPath' => $this->assetPath('/assets/pwa_registration.js'),
-            'pwaCleanupScriptPath' => $this->assetPath('/assets/pwa_cleanup.js'),
-            'offlinePrototypeEnabled' => !$this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)
-                && $activeSection === 'offline',
             'themes' => ThemeRegistry::all(),
             'explicitThemeNames' => ThemeRegistry::explicitNames(),
             'defaultTheme' => $defaultTheme,

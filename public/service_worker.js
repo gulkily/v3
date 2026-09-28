@@ -1,4 +1,4 @@
-const CACHE_NAME = "zenmemes-offline-reader-v2";
+const CACHE_NAME = "zenmemes-offline-reader-v3";
 const SNAPSHOT_URL = "/offline/snapshot.sqlite3";
 const OFFLINE_READER_URL = "/offline/";
 
@@ -52,19 +52,20 @@ function cacheableRequest(request) {
     || url.pathname.startsWith("/assets/");
 }
 
-async function networkFirstReader(request) {
-  const cache = await caches.open(CACHE_NAME);
+function supportsOfflineNavigation(url) {
+  return url.pathname === "/" || /^\/threads\/[^/]+\/?$/.test(url.pathname);
+}
+
+async function networkFirstNavigation(request) {
   try {
-    const response = await fetch(request);
-    if (response.ok) {
-      await cache.put(request, response.clone());
-      return response;
-    }
+    return await fetch(request);
   } catch (error) {
+    const url = new URL(request.url);
+    if (!supportsOfflineNavigation(url)) throw error;
+    const shell = await (await caches.open(CACHE_NAME)).match(OFFLINE_READER_URL);
+    if (shell) return shell;
+    throw error;
   }
-  const cached = await cache.match(request);
-  if (cached) return cached;
-  throw new Error("Offline reader is not available yet");
 }
 
 self.addEventListener("message", (event) => {
@@ -73,10 +74,10 @@ self.addEventListener("message", (event) => {
   }
 });
 self.addEventListener("fetch", (event) => {
-  if (!cacheableRequest(event.request)) return;
-  if (new URL(event.request.url).pathname === OFFLINE_READER_URL) {
-    event.respondWith(networkFirstReader(event.request));
+  if (event.request.mode === "navigate") {
+    event.respondWith(networkFirstNavigation(event.request));
     return;
   }
+  if (!cacheableRequest(event.request)) return;
   event.respondWith((async () => (await (await caches.open(CACHE_NAME)).match(event.request)) || fetch(event.request))());
 });

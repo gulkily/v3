@@ -83,7 +83,7 @@
   <meta name="app-version-endpoint" content="/api/version">
 <?php endif; ?>
   <link rel="icon" href="/favicon.ico" sizes="32x32">
-<?php if ($offlinePrototypeEnabled): ?>
+<?php if (!$approvedMembersOnlyEnabled): ?>
   <link rel="manifest" href="/manifest.webmanifest">
 <?php endif; ?>
   <style data-role="critical-css"><?= $criticalCss ?></style>
@@ -106,9 +106,6 @@
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>
 <?php endif; ?>
 <?php if (!$approvedMembersOnlyEnabled): ?>
-  <script src="<?= $e($pwaCleanupScriptPath) ?>" defer></script>
-<?php endif; ?>
-<?php if ($offlinePrototypeEnabled): ?>
   <script src="<?= $e($pwaRegistrationScriptPath) ?>" defer></script>
 <?php endif; ?>
 </head>

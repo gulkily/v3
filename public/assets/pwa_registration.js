@@ -12,7 +12,15 @@
   }
   if (!navigator.serviceWorker) return;
   window.addEventListener("load", function () {
-    navigator.serviceWorker.register("/offline/service_worker.js", { scope: "/offline/" })
+    navigator.serviceWorker.getRegistrations().then(function (registrations) {
+      return Promise.all(registrations.map(function (registration) {
+        return registration.scope === window.location.origin + "/offline/"
+          ? registration.unregister()
+          : false;
+      }));
+    }).then(function () {
+      return navigator.serviceWorker.register("/service_worker.js", { scope: "/" });
+    })
       .then(function () { return navigator.serviceWorker.ready; })
       .then(function (registration) {
         if (registration.active) registration.active.postMessage({ type: "refresh-offline-reader", urls: cacheUrls() });
