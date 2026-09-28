@@ -44,3 +44,13 @@
   - Chromium headless smoke test against a locally generated snapshot rendered `Offline snapshot is ready.`, the snapshot time, and saved thread controls.
 - Notes:
   - The list follows snapshot activity order and does not imply that older threads are unavailable online.
+
+## Stage 5 - Local thread reader
+- Changes:
+  - Added snapshot-only thread detail, ordered replies, hash-addressable selection, and back-to-list navigation.
+  - Added explicit online-only treatment for posting, voting, and tagging.
+- Verification:
+  - `node --check public/assets/offline_reader.js` — passed.
+  - Chromium headless smoke test loaded a selected snapshot thread, its content, the back control, and the online-only notice.
+- Notes:
+  - A thread absent from the snapshot returns to the saved-thread list with an explicit unavailable state.

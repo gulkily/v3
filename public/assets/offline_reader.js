@@ -68,9 +68,7 @@
         button.setAttribute("data-offline-thread-id", threadId);
         button.textContent = threadTitle(row[1], row[2]);
         button.addEventListener("click", function () {
-          root.dispatchEvent(new CustomEvent("forum-offline-reader-thread-selected", {
-            detail: { database: database, threadId: threadId }
-          }));
+          selectThread(database, threadId);
         });
         list.appendChild(button);
 
@@ -88,6 +86,70 @@
         return;
       }
       content.appendChild(list);
+    }
+
+    function threadIdFromHash() {
+      var match = String(window.location.hash || "").match(/^#thread=(.+)$/);
+      return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    function renderThreadDetail(database, threadId) {
+      if (!content) {
+        return;
+      }
+      var result = database.exec(
+        "SELECT post_id, parent_id, subject, body, author_label, created_at "
+        + "FROM posts WHERE thread_id = ? ORDER BY sequence_number ASC, post_id ASC",
+        [threadId]
+      )[0];
+      var rows = result && result.values ? result.values : [];
+      if (!rows.length) {
+        setStatus("That thread is not included in this offline snapshot.", "error");
+        renderThreadList(database);
+        return;
+      }
+
+      clearNode(content);
+      content.hidden = false;
+      var back = document.createElement("button");
+      back.type = "button";
+      back.className = "nav-link";
+      back.textContent = "Back to saved threads";
+      back.addEventListener("click", function () {
+        window.location.hash = "";
+        renderThreadList(database);
+      });
+      content.appendChild(back);
+
+      rows.forEach(function (row, index) {
+        var post = document.createElement("article");
+        post.className = "card";
+        if (index === 0) {
+          var heading = document.createElement("h2");
+          heading.textContent = threadTitle(row[2], row[3]);
+          post.appendChild(heading);
+        }
+        var meta = document.createElement("p");
+        meta.className = "meta";
+        meta.textContent = String(row[4] || "guest") + " · " + String(row[5] || "");
+        post.appendChild(meta);
+        var body = document.createElement("div");
+        body.className = "body";
+        body.textContent = String(row[3] || "");
+        post.appendChild(body);
+        content.appendChild(post);
+      });
+      var onlineOnly = document.createElement("p");
+      onlineOnly.className = "meta";
+      onlineOnly.textContent = "Reading from a saved snapshot. Posting, voting, and tagging require a connection.";
+      content.appendChild(onlineOnly);
+    }
+
+    function selectThread(database, threadId) {
+      if (window.location.hash !== "#thread=" + encodeURIComponent(threadId)) {
+        window.location.hash = "thread=" + encodeURIComponent(threadId);
+      }
+      renderThreadDetail(database, threadId);
     }
 
     async function loadSnapshot() {
@@ -122,7 +184,21 @@
     }
 
     root.addEventListener("forum-offline-reader-ready", function (event) {
-      renderThreadList(event.detail.database);
+      var database = event.detail.database;
+      var threadId = threadIdFromHash();
+      if (threadId) {
+        renderThreadDetail(database, threadId);
+      } else {
+        renderThreadList(database);
+      }
+      window.addEventListener("hashchange", function () {
+        var selectedThreadId = threadIdFromHash();
+        if (selectedThreadId) {
+          renderThreadDetail(database, selectedThreadId);
+        } else {
+          renderThreadList(database);
+        }
+      });
     });
 
     loadSnapshot();
