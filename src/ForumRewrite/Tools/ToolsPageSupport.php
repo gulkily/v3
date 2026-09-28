@@ -46,6 +46,13 @@ final class ToolsPageSupport
                 'standalone' => true,
             ],
             [
+                'key' => 'offline-reading',
+                'label' => 'Offline Reading',
+                'href' => '/offline/',
+                'description' => 'Check whether this browser is ready to read saved public content offline.',
+                'standalone' => true,
+            ],
+            [
                 'key' => 'bookmarklets',
                 'label' => 'Bookmarklets',
                 'href' => '/tools/bookmarklets/',
