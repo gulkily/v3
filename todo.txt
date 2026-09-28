@@ -22,10 +22,10 @@ have it already presented in mini-thread view in the activity
 
 scoring
 -------
-make another llm/agentic feature for Fastmod using lesser models
-	sending only short instructions and the text of the post
-		for replies, include some context
-	request only a 0-1 probability in response
+xmake another llm/agentic feature for Fastmod using lesser models
+x	sending only short instructions and the text of the post
+x		for replies, include some context
+x	request only a 0-1 probability in response
 	later, as a separate requirement: use validated Fastmod probabilities to
 	hold qualifying content for human moderation before it is public
 		requires a threshold, calibration, audit trail, override, and rollback
@@ -63,3 +63,10 @@ feature flags page
 add search/filter toolbar (search input + status chips: All/Enabled/Overridden/Locked)
 to /tools/feature-flags/ — deferred from the layout/badges/grouping redesign,
 see docs/plans/feature_flags_redesign_step2/3_*.md
+
+
+why are some feature flags locked?
+	how to change locked feature flags?
+		should this be explained on the page?
+
+should all docs be available from the site?
