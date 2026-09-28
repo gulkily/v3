@@ -1197,6 +1197,7 @@ PHP;
         assertStringContains('data-compose-root', $board);
         assertStringContains('data-inline-reply-details', $board);
         assertStringContains('class="inline-reply-prompt compact-thread-compose-prompt"', $board);
+        assertStringContains('method="post" action="/compose/thread" class="stack compact-thread-compose-form" data-compose-form data-compose-kind="thread"', $board);
         assertStringContains('data-compose-kind="thread"', $board);
         assertStringContains('data-unicode-authored-text="0"', $board);
         assertStringContains('data-emoji-authored-text="0"', $board);
