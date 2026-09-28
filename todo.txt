@@ -49,3 +49,9 @@ post presentation
 convert user-facing versioning to more human-readable
 	use either sequential version numbers (for things like js modules)
 	or traditional M.m.r semantic versioning (for things like the app itself)
+
+feature flags page
+===================
+add search/filter toolbar (search input + status chips: All/Enabled/Overridden/Locked)
+to /tools/feature-flags/ — deferred from the layout/badges/grouping redesign,
+see docs/plans/feature_flags_redesign_step2/3_*.md

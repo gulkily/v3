@@ -22,6 +22,8 @@ final class FeatureFlagEvaluatorTest
             $conversationRecording = $evaluator->evaluate(FeatureFlagRegistry::LLM_CONVERSATION_RECORDING_ENABLED);
             $conversationUi = $evaluator->evaluate(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED);
             $approvedMembersOnly = $evaluator->evaluate(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
+            $fastScoring = $evaluator->evaluate(FeatureFlagRegistry::FAST_SCORING_ENABLED);
+            $fastScoringAutomaticEnqueue = $evaluator->evaluate(FeatureFlagRegistry::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED);
 
             assertSame(false, $unicode->effectiveValue);
             assertSame('default', $unicode->source);
@@ -42,6 +44,10 @@ final class FeatureFlagEvaluatorTest
             assertSame('default', $conversationUi->source);
             assertSame(false, $approvedMembersOnly->effectiveValue);
             assertSame('default', $approvedMembersOnly->source);
+            assertSame(false, $fastScoring->effectiveValue);
+            assertSame('default', $fastScoring->source);
+            assertSame(false, $fastScoringAutomaticEnqueue->effectiveValue);
+            assertSame('default', $fastScoringAutomaticEnqueue->source);
         });
     }
 
@@ -93,6 +99,8 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
             FeatureFlagRegistry::LLM_CONVERSATION_RECORDING_ENABLED,
             FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED,
+            FeatureFlagRegistry::FAST_SCORING_ENABLED,
+            FeatureFlagRegistry::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
         ], $keys);
     }
 
@@ -182,6 +190,26 @@ PHP);
         });
     }
 
+    public function testAutomaticFastScoringDependsOnFastScoringEnabled(): void
+    {
+        $this->withEnvironment([], function (): void {
+            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\n");
+            $projectRoot = $this->projectRootWithPrivateConfig(<<<'PHP'
+<?php
+
+return [
+    'FAST_SCORING_ENABLED' => false,
+    'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED' => true,
+];
+PHP);
+            $automatic = FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)
+                ->evaluate(FeatureFlagRegistry::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED);
+
+            assertSame(false, $automatic->effectiveValue);
+            assertSame('dependency', $automatic->source);
+        });
+    }
+
     public function testDependencyParentEnabledIsExposedEvenWhenChildIsAlreadyOff(): void
     {
         $this->withEnvironment([], function (): void {
@@ -248,13 +276,19 @@ PHP);
         $unicode = $registry->get(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
         $agentReplies = $registry->get(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED);
         $conversationUi = $registry->get(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED);
+        $fastScoring = $registry->get(FeatureFlagRegistry::FAST_SCORING_ENABLED);
 
         assertSame('FORUM', $unicode->groupKey());
         assertSame('DEDALUS', $agentReplies->groupKey());
         assertSame('LLM', $conversationUi->groupKey());
+        // FAST_SCORING_ENABLED's key prefix alone would be "FAST" - this
+        // confirms the explicit `group` override on the definition, not the
+        // prefix fallback, is what's actually used.
+        assertSame('FASTMOD', $fastScoring->groupKey());
         assertSame('Forum', $registry->groupLabel($unicode->groupKey()));
         assertSame('Agent replies', $registry->groupLabel($agentReplies->groupKey()));
         assertSame('LLM exchanges', $registry->groupLabel($conversationUi->groupKey()));
+        assertSame('Fastmod', $registry->groupLabel($fastScoring->groupKey()));
         assertSame('WIDGET', $registry->groupLabel('WIDGET'));
     }
 
@@ -286,6 +320,8 @@ PHP);
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
             FeatureFlagRegistry::LLM_CONVERSATION_RECORDING_ENABLED,
             FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED,
+            FeatureFlagRegistry::FAST_SCORING_ENABLED,
+            FeatureFlagRegistry::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
         ];
         $previous = [];
         foreach ($keys as $key) {

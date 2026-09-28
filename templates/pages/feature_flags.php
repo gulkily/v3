@@ -5,22 +5,6 @@ $flagGroups = [];
 foreach ($flags as $flag) {
     $flagGroups[$flag->definition->groupKey()][] = $flag;
 }
-
-$totalCount = count($flags);
-$enabledCount = 0;
-$overriddenCount = 0;
-$lockedCount = 0;
-foreach ($flags as $flag) {
-    if ($flag->effectiveValue) {
-        $enabledCount++;
-    }
-    if (!$flag->isDefault()) {
-        $overriddenCount++;
-    }
-    if ($flag->isLocked()) {
-        $lockedCount++;
-    }
-}
 ?>
 <section class="stack">
   <article class="card">
@@ -33,22 +17,13 @@ foreach ($flags as $flag) {
   </article>
   <article class="card">
     <h1>Feature Flags</h1>
+    <p class="feature-flags-notice meta">These settings apply to the whole site for all users as soon as you change them.</p>
 <?php if ($siteError !== null): ?>
     <div class="feedback feedback-error"><?= $e($siteError) ?></div>
 <?php endif; ?>
-    <p class="feature-flags-summary meta">
-      <strong><?= $totalCount ?></strong> flags &middot;
-      <strong><?= $enabledCount ?></strong> enabled &middot;
-      <strong><?= $overriddenCount ?></strong> overridden &middot;
-      <strong><?= $lockedCount ?></strong> locked
-    </p>
 <?php foreach ($flagGroups as $groupKey => $groupFlags): ?>
-<?php $groupOnCount = count(array_filter($groupFlags, static fn ($flag) => $flag->effectiveValue)); ?>
     <section class="feature-flag-group">
-      <h2 class="feature-flag-group-heading">
-        <span><?= $e($registry->groupLabel($groupKey)) ?></span>
-        <span class="meta"><?= $groupOnCount ?> of <?= count($groupFlags) ?> on</span>
-      </h2>
+      <h2 class="feature-flag-group-heading"><?= $e($registry->groupLabel($groupKey)) ?></h2>
       <div class="feature-flag-list">
 <?php foreach ($groupFlags as $flag): ?>
 <?php
