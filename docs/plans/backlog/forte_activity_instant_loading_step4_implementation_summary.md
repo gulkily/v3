@@ -20,3 +20,12 @@
   - PHP lint passed for `ActivityService`, `ForteActivityController`, and `Application`.
 - Notes:
   - The existing list/detail templates still render hidden articles; Stage 3 removes that presentation work.
+
+## Stage 3 - Minimal first-paint markup
+- Changes:
+  - The Activity detail pane now renders only the selected item article instead of a hidden article for every initial row.
+- Verification:
+  - Local server smoke: `/forte/activity/` returned 20 rows and only three page articles (placeholder, selected detail, and existing dialog content), at 29,509 bytes.
+  - `php -l templates/partials/paned_activity_detail_pane.php` and `git diff --check` — passed.
+- Notes:
+  - Selected detail remains server-rendered; subsequent selections receive their detail in Stage 4.

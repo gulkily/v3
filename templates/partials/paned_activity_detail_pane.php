@@ -23,6 +23,9 @@ foreach ($items as $item) {
 <?php
 $itemId = (string) $item['id'];
 $isSelected = $selectedItemId !== '' && $itemId === $selectedItemId;
+if (!$isSelected) {
+    continue;
+}
 ?>
 <?= $indent($partial('partials/paned_activity_detail_article.php', [
     'item' => $item,
