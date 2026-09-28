@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feature Flags redesign</title>
+<style>
+:root{
+  --bg:#ffffff; --panel:#f5f8fd; --line:#c9d6ee; --line-soft:#e3eaf6;
+  --ink:#0f1f3d; --muted:#51607a; --blue:#1d3fa6; --blue-soft:#dde7fb;
+  --on:#1d7a4a; --on-soft:#e2f4ea; --warn:#8a5a00; --warn-soft:#fdf1d6;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0e1420; --panel:#141c2b; --line:#2a3852; --line-soft:#1f2a3e;
+  --ink:#e6ecf7; --muted:#9aa8c2; --blue:#8fb0ff; --blue-soft:#1f2d4d;
+  --on:#6fd39c; --on-soft:#15362a; --warn:#f0c46a; --warn-soft:#3a2e12;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:760px;margin:32px auto;padding:0 16px}
+h1{font-family:Georgia,serif;color:var(--blue);font-size:34px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 20px}
+.sub b{color:var(--ink);font-weight:600}
+
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:sticky;top:0;background:var(--bg);padding:10px 0;z-index:2;border-bottom:1px solid var(--line-soft)}
+.toolbar input{flex:1 1 240px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:6px 10px;border-radius:999px;font:inherit;font-size:13px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--blue-soft);border-color:var(--blue);color:var(--blue);font-weight:600}
+.chip .n{color:var(--muted);font-weight:400;margin-left:4px}
+
+.group{margin-top:22px}
+.group h2{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;padding:0 4px}
+.group h2 span{letter-spacing:0;text-transform:none;font-weight:400}
+.list{border:1px solid var(--line);border-radius:8px;background:var(--panel);overflow:hidden}
+
+.flag{display:grid;grid-template-columns:1fr auto;gap:4px 16px;padding:14px 16px;border-top:1px solid var(--line-soft)}
+.flag:first-child{border-top:0}
+.flag.dim .name,.flag.dim .desc{opacity:.6}
+.name{font-weight:600;color:var(--ink);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.desc{color:var(--muted);margin:2px 0 0;max-width:60ch}
+.meta{grid-column:1;display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);margin-top:4px}
+.key{font-family:var(--mono);font-size:12px;background:none;border:0;padding:0;color:var(--muted);cursor:copy;overflow-wrap:anywhere;text-align:left}
+.key:hover{color:var(--blue)}
+.badge{font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+.b-over{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+.b-lock{background:transparent;color:var(--muted);border-color:var(--line)}
+.dep{font-size:12px;color:var(--muted)}
+.dep.bad{color:var(--warn)}
+.dep a{color:var(--blue)}
+.reset{background:none;border:0;padding:0;color:var(--blue);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer}
+
+.ctl{grid-column:2;grid-row:1 / span 3;display:flex;flex-direction:column;align-items:flex-end;gap:4px;padding-top:2px}
+.state{font-size:12px;font-family:var(--mono);color:var(--muted)}
+.state.on{color:var(--on)}
+.switch{position:relative;width:44px;height:24px;border-radius:999px;border:1px solid var(--line);background:var(--line-soft);cursor:pointer;padding:0;transition:background .15s}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.switch[aria-checked=true]{background:var(--on);border-color:var(--on)}
+.switch[aria-checked=true]::after{transform:translateX(20px)}
+.switch:disabled{cursor:not-allowed;opacity:.55}
+.switch:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.empty{padding:24px;text-align:center;color:var(--muted)}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+@media (max-width:520px){ .ctl{grid-row:1} .desc{max-width:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Feature Flags</h1>
+  <p class="sub" id="summary"></p>
+
+  <div class="toolbar">
+    <input id="q" type="search" placeholder="Search name, key, or description…  ( / )" aria-label="Search flags">
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div id="groups"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const FLAGS=[
+ {key:"FORUM_APPROVED_MEMBERS_ONLY",name:"Approved members only",desc:"Restrict the site to approved members and provide a lobby for unapproved users.",def:false,val:false,mutable:true},
+ {key:"FORUM_UNICODE_AUTHORED_TEXT",name:"Unicode authored text",desc:"Allow visible UTF-8 prose in human-authored post subject and body fields.",def:false,val:false,mutable:true},
+ {key:"FORUM_EMOJI_AUTHORED_TEXT",name:"Emoji authored text",desc:"Allow emoji in human-authored post subject and body fields.",def:false,val:false,mutable:true,requires:"FORUM_UNICODE_AUTHORED_TEXT"},
+ {key:"FORUM_APP_VERSION_NOTIFICATION",name:"App version notification",desc:"Show browser-side app version polling and the reload notification banner.",def:true,val:true,mutable:true},
+ {key:"FORUM_THREAD_DENSITY_TOGGLE_ENABLED",name:"Thread density toggle",desc:"Show the Comfortable/Compact thread density menu in the board/tag header. Off by default: known bugs, crowds the header on mobile.",def:false,val:false,mutable:true},
+ {key:"DEDALUS_AGENT_REPLIES_ENABLED",name:"Agent replies",desc:"Allow post analysis to generate and publish suggested agent replies when reply gates pass.",def:true,val:true,mutable:false},
+ {key:"DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED",name:"Automatic agent replies",desc:"Allow eligible post pages to trigger agent reply work automatically.",def:true,val:true,mutable:false,requires:"DEDALUS_AGENT_REPLIES_ENABLED"},
+ {key:"LLM_CONVERSATION_RECORDING_ENABLED",name:"LLM conversation recording",desc:"Record exact LLM prompts and responses in the private exchange database.",def:true,val:true,mutable:false},
+ {key:"LLM_CONVERSATION_UI_ENABLED",name:"LLM conversation UI",desc:"Make recorded LLM prompts and responses available in the approved-user/operator web UI.",def:true,val:true,mutable:false,requires:"LLM_CONVERSATION_RECORDING_ENABLED"},
+];
+const GROUP_NAMES={FORUM:"Forum",DEDALUS:"Dedalus agent",LLM:"LLM exchanges"};
+const FILTERS=[["all","All",()=>true],["on","Enabled",f=>f.val],["over","Overridden",f=>f.val!==f.def],["lock","Locked",f=>!f.mutable]];
+let filter="all", q="";
+const byKey=Object.fromEntries(FLAGS.map(f=>[f.key,f]));
+const $=s=>document.querySelector(s);
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function render(){
+  const on=FLAGS.filter(f=>f.val).length, over=FLAGS.filter(f=>f.val!==f.def).length, lock=FLAGS.filter(f=>!f.mutable).length;
+  $("#summary").innerHTML=`<b>${FLAGS.length}</b> flags · <b>${on}</b> enabled · <b>${over}</b> overridden · <b>${lock}</b> locked by environment`;
+  $("#chips").innerHTML=FILTERS.map(([id,label,fn])=>`<button class="chip" data-f="${id}" aria-pressed="${filter===id}">${label}<span class="n">${FLAGS.filter(fn).length}</span></button>`).join("");
+  const fn=FILTERS.find(x=>x[0]===filter)[2], needle=q.toLowerCase();
+  const shown=FLAGS.filter(f=>fn(f)&&(!needle||(f.name+" "+f.key+" "+f.desc).toLowerCase().includes(needle)));
+  const groups={};
+  shown.forEach(f=>{const g=f.key.split("_")[0];(groups[g]=groups[g]||[]).push(f)});
+  const html=Object.entries(groups).map(([g,fs])=>`
+    <section class="group"><h2>${GROUP_NAMES[g]||g}<span>${fs.filter(f=>f.val).length} of ${fs.length} on</span></h2>
+    <div class="list">${fs.map(row).join("")}</div></section>`).join("");
+  $("#groups").innerHTML=html||`<div class="list empty" style="margin-top:22px">No flags match.</div>`;
+}
+function row(f){
+  const parent=f.requires&&byKey[f.requires];
+  const blocked=parent&&!parent.val;
+  const over=f.val!==f.def;
+  return `<div class="flag${blocked?" dim":""}">
+    <div><div class="name">${esc(f.name)}
+      ${over?`<span class="badge b-over" title="Default is ${f.def?"enabled":"disabled"}">overridden</span>`:""}
+      ${!f.mutable?`<span class="badge b-lock" title="Set via environment variable; restart to change">🔒 env</span>`:""}
+    </div>
+    <p class="desc">${esc(f.desc)}</p></div>
+    <div class="meta">
+      <button class="key" data-copy="${f.key}" title="Copy key">${f.key}</button>
+      ${parent?`<span class="dep${blocked?" bad":""}">${blocked?"⚠ inactive — ":""}requires <a href="#" data-jump="${parent.key}">${esc(parent.name)}</a></span>`:""}
+      ${over&&f.mutable?`<button class="reset" data-reset="${f.key}">reset to default</button>`:""}
+    </div>
+    <div class="ctl">
+      <button class="switch" role="switch" aria-checked="${f.val}" aria-label="${esc(f.name)}" data-toggle="${f.key}" ${f.mutable?"":"disabled"}></button>
+      <span class="state${f.val?" on":""}">${f.val?"enabled":"disabled"}</span>
+    </div>
+  </div>`;
+}
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),1600)}
+document.addEventListener("click",e=>{
+  const d=e.target.closest("[data-f],[data-toggle],[data-reset],[data-copy],[data-jump]"); if(!d)return;
+  if(d.dataset.f){filter=d.dataset.f;render()}
+  else if(d.dataset.toggle){const f=byKey[d.dataset.toggle];f.val=!f.val;render();toast(`${f.name} ${f.val?"enabled":"disabled"} · saved`)}
+  else if(d.dataset.reset){const f=byKey[d.dataset.reset];f.val=f.def;render();toast(`${f.name} reset to default`)}
+  else if(d.dataset.copy){navigator.clipboard?.writeText(d.dataset.copy).catch(()=>{});toast("Copied "+d.dataset.copy)}
+  else if(d.dataset.jump){e.preventDefault();q=byKey[d.dataset.jump].name;$("#q").value=q;filter="all";render()}
+});
+$("#q").addEventListener("input",e=>{q=e.target.value;render()});
+document.addEventListener("keydown",e=>{if(e.key==="/"&&document.activeElement!==$("#q")){e.preventDefault();$("#q").focus()}});
+render();
+</script>
+</body>
+</html>
