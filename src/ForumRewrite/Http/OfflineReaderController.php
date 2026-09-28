@@ -17,7 +17,7 @@ final class OfflineReaderController
             'offline_reader.php',
             [],
             'Offline Reading',
-            'offline',
+            'board',
             ['/assets/sql-wasm.js', '/assets/offline_reader.js'],
         );
     }
