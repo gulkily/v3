@@ -13,6 +13,7 @@ Operational how-tos for running and maintaining a deployment:
 
 - [Production Deploy Runbook](docs/runbooks/production_deploy.md) — first-time setup, directory layout, environment variables
 - [Operator Recovery Runbook](docs/runbooks/operator_recovery.md) — read-model status, stale-marker recovery, lock contention, write failures
+- [Offline Reading Runbook](docs/runbooks/offline_reading.md) — public snapshot limits, refresh, and browser-cache recovery
 - [Theme Development Guide](docs/runbooks/theme_development_guide.md) — how to add or modify a theme
 
 ### Specs (`docs/specs/`)

@@ -2401,6 +2401,32 @@ PHP;
         assertStringContains('/offline/snapshot.sqlite3', $registration);
     }
 
+    public function testPrivateLayoutDoesNotRegisterOfflineReaderPwa(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+
+        try {
+            $application = new Application(
+                dirname(__DIR__),
+                $this->repositoryRoot,
+                $this->databasePath,
+            );
+
+            $lobby = $this->render($application, '/lobby/');
+
+            assertStringNotContains('rel="manifest" href="/manifest.webmanifest"', $lobby);
+            assertStringNotContains('/assets/pwa_registration.', $lobby);
+            assertStringNotContains('href="/offline/"', $lobby);
+        } finally {
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
     public function testSqliteViewerLoadsLocalRuntimeAssets(): void
     {
         $application = new Application(

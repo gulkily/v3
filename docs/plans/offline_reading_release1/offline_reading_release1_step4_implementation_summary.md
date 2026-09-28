@@ -66,3 +66,14 @@
   - `php tests/run.php WebServerRoutingTest` — passed (2/2).
 - Notes:
   - The cache strategy does not intercept API, account, post, or other personalized routes. A local headless Chromium profile could not be persisted in this environment (Snap confinement), so a normal-browser offline restart check remains for Stage 7.
+
+## Stage 7 - Privacy regression coverage and handoff
+- Changes:
+  - Added a regression test proving approved-members-only layouts omit the manifest, service-worker registration, and Offline navigation entry.
+  - Added the Offline Reading Runbook and linked it from the documentation index, covering snapshot bounds, refresh behavior, privacy, and browser-cache recovery.
+- Verification:
+  - Focused suite: `php tests/run.php LocalAppSmokeTest WebServerRoutingTest PublicOfflineSnapshotBuilderTest` — 107 run, 102 passed; the five failures are the pre-existing long-standing activity/signature failures.
+  - Full suite: `php tests/run.php` — 588 run, 582 passed. All six failures are long-standing and unrelated: the same five activity/signature failures plus `LazyComposeSigningTest::testFirstComposeIntentLoadsSigningAssetsAndInitializesComposer`.
+  - PHP lint, both service-worker/registration `node --check` checks, and `git diff --check` passed.
+- Notes:
+  - The normal UI and local reader list/detail were manually rendered in Chromium earlier in this cycle. A fresh browser offline-restart check still needs release QA on a normal browser because this environment's Snap Chromium does not persist an explicit temporary profile.
