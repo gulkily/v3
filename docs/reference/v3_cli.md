@@ -78,11 +78,22 @@ Use `./v3 task-queue status` for individual task details and
 
 ```
 ./v3 rebuild [repository_root] [database_path]
+./v3 rebuild diagnose [repository_root] [database_path]
+./v3 rebuild recover --confirm [repository_root] [database_path]
 ```
 
 Rebuilds the SQLite read model from canonical records in the repository root.
-Prints source record counts (posts, identities, approval seeds) and resulting
-read-model table counts (posts, threads, profiles, activity).
+Reports source scanning, candidate construction and validation, lock wait, and
+promotion phases. During candidate construction, it emits read-model stages and
+bounded record-parsing progress checkpoints. It also prints source record
+counts (posts, identities, approval seeds) and resulting read-model table counts
+(posts, threads, profiles, activity).
+
+`diagnose` is read-only: it reports SQLite sidecars, the application rebuild
+lock, and Linux `/proc` file holders. If a stopped process left sidecars behind,
+`recover --confirm` snapshots and archives the database and all sidecars together
+under `state/cache/read-model-recovery-*`, then rebuilds a fresh derived model.
+It refuses recovery while the lock or an open file holder is detected.
 
 - `repository_root` — canonical records checkout to rebuild from
 - `database_path` — SQLite file to write the read model to
@@ -158,7 +169,9 @@ controlled operator workflow.
 
 Imports a `.tar.gz` repository archive into the target repository root,
 rebuilds the read model, and rebuilds static artifacts (when an artifact root
-is resolved).
+is resolved). The command reports each phase (validation, extraction, record
+indexing, staging, commit, and derived rebuilds) and emits bounded record-file
+progress checkpoints while it processes the archive.
 
 - `archive.tar.gz` — required path to the archive to import
 - `repository_root` — canonical records checkout to import into

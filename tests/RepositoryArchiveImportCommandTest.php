@@ -65,6 +65,13 @@ final class RepositoryArchiveImportCommandTest
             ));
 
             assertSame(0, $exitCode);
+            assertStringContains('Starting repository archive import.', $output);
+            assertStringContains('Validating archive contents...', $output);
+            assertStringContains('Extracting archive...', $output);
+            assertStringContains('Processing canonical files: 0/3 (0%)', $output);
+            assertStringContains('Processing canonical files: 3/3 (100%)', $output);
+            assertStringContains('Staging 1 imported file(s)...', $output);
+            assertStringContains('Rebuilding read model...', $output);
             assertStringContains('Imported: 1', $output);
             assertStringContains('Duplicate canonical identity skipped: 1', $output);
             assertStringContains('Conflicts saved for review: 1', $output);

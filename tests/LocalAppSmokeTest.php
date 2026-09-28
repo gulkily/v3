@@ -42,9 +42,98 @@ final class LocalAppSmokeTest
             escapeshellarg($this->databasePath),
         );
         exec($command, $output, $exitCode);
+        $text = implode("\n", $output);
 
         assertSame(0, $exitCode);
         assertTrue(is_file($this->databasePath));
+        assertStringContains('Starting read-model rebuild.', $text);
+        assertStringContains('[1/3] Scanning source record counts...', $text);
+        assertStringContains('[2/3] Building and validating a read-model candidate...', $text);
+        assertStringContains('[2/3] Read model: resolving legacy creation times for ', $text);
+        assertStringContains('[2/3] Read model: resolving source commits for ', $text);
+        assertStringContains('[2/3] Read model: parsing post records (0/', $text);
+        assertStringContains('[3/3] Waiting for the exclusive read-model lock...', $text);
+        assertStringContains('[3/3] Read model promoted.', $text);
+    }
+
+    public function testRebuildCommandExplainsSqliteSidecarPromotionFailure(): void
+    {
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-rebuild-sidecar-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            file_put_contents($databasePath . '-journal', 'test journal');
+
+            $command = sprintf(
+                'php %s %s %s 2>&1',
+                escapeshellarg(__DIR__ . '/../scripts/rebuild_read_model.php'),
+                escapeshellarg($this->repositoryRoot),
+                escapeshellarg($databasePath),
+            );
+            exec($command, $output, $exitCode);
+            $text = implode("\n", $output);
+
+            assertSame(1, $exitCode);
+            assertStringContains('Read-model rebuild failed while promoting the read-model candidate', $text);
+            assertStringContains('A SQLite sidecar prevents safe read-model promotion', $text);
+            assertStringContains('Do not delete the sidecar manually', $text);
+            assertStringNotContains('PHP Fatal error', $text);
+        } finally {
+            @unlink($databasePath);
+            @unlink($databasePath . '-journal');
+        }
+    }
+
+    public function testRebuildDiagnosisAndRecoveryArchiveSQLiteSidecarsBeforeRebuilding(): void
+    {
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-rebuild-recovery-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $recoveryDirectory = null;
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            file_put_contents($databasePath . '-journal', 'test journal');
+
+            $diagnoseCommand = sprintf(
+                '%s rebuild diagnose %s %s 2>&1',
+                escapeshellarg(__DIR__ . '/../v3'),
+                escapeshellarg($this->repositoryRoot),
+                escapeshellarg($databasePath),
+            );
+            exec($diagnoseCommand, $diagnoseOutput, $diagnoseExitCode);
+            $diagnoseText = implode("\n", $diagnoseOutput);
+
+            assertSame(0, $diagnoseExitCode);
+            assertStringContains('Read-model SQLite diagnosis', $diagnoseText);
+            assertStringContains('SQLite sidecars:', $diagnoseText);
+            assertStringContains('Next action: ./v3 rebuild recover --confirm', $diagnoseText);
+
+            $recoverCommand = sprintf(
+                '%s rebuild recover --confirm %s %s 2>&1',
+                escapeshellarg(__DIR__ . '/../v3'),
+                escapeshellarg($this->repositoryRoot),
+                escapeshellarg($databasePath),
+            );
+            exec($recoverCommand, $recoverOutput, $recoverExitCode);
+            $recoverText = implode("\n", $recoverOutput);
+            foreach (explode("\n", $recoverText) as $line) {
+                $prefix = 'Archived the live read-model database and sidecars: ';
+                if (str_starts_with($line, $prefix)) {
+                    $recoveryDirectory = substr($line, strlen($prefix));
+                    break;
+                }
+            }
+
+            assertSame(0, $recoverExitCode, $recoverText);
+            assertTrue($recoveryDirectory !== null && is_dir($recoveryDirectory));
+            assertTrue(is_file($recoveryDirectory . '/snapshot/' . basename($databasePath)));
+            assertTrue(is_file($recoveryDirectory . '/retired/' . basename($databasePath . '-journal')));
+            assertTrue(is_file($databasePath));
+            assertTrue(!is_file($databasePath . '-journal'));
+        } finally {
+            @unlink($databasePath);
+            @unlink($databasePath . '-journal');
+            if ($recoveryDirectory !== null) {
+                $this->deleteTree($recoveryDirectory);
+            }
+        }
     }
 
     public function testBuildStaticCommandReportsProgressAndArtifactSummary(): void

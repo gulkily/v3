@@ -6,36 +6,114 @@ require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\ReadModel\ReadModelCandidateBuilder;
 use ForumRewrite\ReadModel\ReadModelCandidatePromoter;
+use ForumRewrite\ReadModel\ReadModelRecovery;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 $projectRoot = dirname(__DIR__);
+$arguments = parseRebuildArguments(array_slice($argv, 1));
 $defaultRepositoryRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot);
-$repositoryRoot = $argv[1] ?? $defaultRepositoryRoot;
-$databasePath = $argv[2] ?? ($projectRoot . '/state/cache/post_index.sqlite3');
+$repositoryRoot = $arguments['repository_root'] ?? $defaultRepositoryRoot;
+$databasePath = $arguments['database_path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3'));
+
+if ($arguments['help']) {
+    fwrite(STDOUT, rebuildUsage());
+    exit(0);
+}
+
+if ($arguments['diagnose']) {
+    fwrite(STDOUT, ReadModelRecovery::renderDiagnosis($databasePath, ReadModelRecovery::inspect($databasePath)));
+    exit(0);
+}
+
+if ($arguments['recover']) {
+    if (!$arguments['confirm']) {
+        fwrite(STDERR, "Recovery archives the live database and all present SQLite sidecars before rebuilding. Re-run with --confirm after reviewing ./v3 rebuild diagnose.\n");
+        exit(1);
+    }
+
+    try {
+        $recoveryRoot = ReadModelRecovery::archiveForRebuild($databasePath);
+        fwrite(STDOUT, "Archived the live read-model database and sidecars: {$recoveryRoot}\n");
+        fwrite(STDOUT, "Rebuilding a fresh read model from canonical records...\n");
+    } catch (Throwable $throwable) {
+        fwrite(STDERR, "Read-model recovery could not start: " . $throwable->getMessage() . "\n");
+        exit(1);
+    }
+}
+
 $startedAt = microtime(true);
-$sourceCounts = [
-    'posts' => countPostRecords($repositoryRoot),
-    'identities' => count(glob($repositoryRoot . '/records/identity/*.txt') ?: []),
-    'approval_seeds' => count(glob($repositoryRoot . '/records/approval-seeds/*.txt') ?: []),
-];
+
+fwrite(STDOUT, "Starting read-model rebuild.\n");
+fwrite(STDOUT, "Repository: {$repositoryRoot}\n");
+fwrite(STDOUT, "Database: {$databasePath}\n");
 
 $candidatePath = null;
+$sourceCounts = null;
+$readModelCounts = null;
+$phase = 'scanning source record counts';
+$failure = null;
 try {
-    $candidatePath = (new ReadModelCandidateBuilder($repositoryRoot, $databasePath, 'manual'))->build();
-    (new ReadModelCandidatePromoter($repositoryRoot, $databasePath))->promote($candidatePath);
+    fwrite(STDOUT, "[1/3] Scanning source record counts...\n");
+    $sourceCounts = [
+        'posts' => countPostRecords($repositoryRoot),
+        'identities' => count(glob($repositoryRoot . '/records/identity/*.txt') ?: []),
+        'approval_seeds' => count(glob($repositoryRoot . '/records/approval-seeds/*.txt') ?: []),
+    ];
+    fwrite(STDOUT, sprintf(
+        "[1/3] Source scan complete: %d posts, %d identities, %d approval seeds.\n",
+        $sourceCounts['posts'],
+        $sourceCounts['identities'],
+        $sourceCounts['approval_seeds'],
+    ));
+
+    $phase = 'building and validating the read-model candidate';
+    fwrite(STDOUT, "[2/3] Building and validating a read-model candidate...\n");
+    $candidatePath = (new ReadModelCandidateBuilder(
+        $repositoryRoot,
+        $databasePath,
+        'manual',
+        static function (string $message): void {
+            fwrite(STDOUT, "[2/3] {$message}\n");
+        },
+    ))->build();
+    fwrite(STDOUT, "[2/3] Read-model candidate is ready.\n");
+
+    $phase = 'promoting the read-model candidate';
+    fwrite(STDOUT, "[3/3] Promoting the read-model candidate...\n");
+    (new ReadModelCandidatePromoter(
+        $repositoryRoot,
+        $databasePath,
+        static function (string $message): void {
+            fwrite(STDOUT, "[3/3] {$message}\n");
+        },
+    ))->promote($candidatePath);
+    fwrite(STDOUT, "[3/3] Read model promoted.\n");
+    $phase = 'reading rebuilt model counts';
+    $pdo = new PDO('sqlite:' . $databasePath);
+    $readModelCounts = [
+        'posts' => (int) $pdo->query('SELECT COUNT(*) FROM posts')->fetchColumn(),
+        'threads' => (int) $pdo->query('SELECT COUNT(*) FROM threads')->fetchColumn(),
+        'profiles' => (int) $pdo->query('SELECT COUNT(*) FROM profiles')->fetchColumn(),
+        'activity' => (int) $pdo->query('SELECT COUNT(*) FROM activity')->fetchColumn(),
+    ];
+} catch (Throwable $throwable) {
+    $failure = $throwable;
 } finally {
     if ($candidatePath !== null && is_file($candidatePath)) {
         @unlink($candidatePath);
     }
 }
 
-$pdo = new PDO('sqlite:' . $databasePath);
-$readModelCounts = [
-    'posts' => (int) $pdo->query('SELECT COUNT(*) FROM posts')->fetchColumn(),
-    'threads' => (int) $pdo->query('SELECT COUNT(*) FROM threads')->fetchColumn(),
-    'profiles' => (int) $pdo->query('SELECT COUNT(*) FROM profiles')->fetchColumn(),
-    'activity' => (int) $pdo->query('SELECT COUNT(*) FROM activity')->fetchColumn(),
-];
+if ($failure !== null) {
+    fwrite(STDERR, sprintf(
+        "Read-model rebuild failed while %s after %.3f seconds.\n",
+        $phase,
+        microtime(true) - $startedAt,
+    ));
+    fwrite(STDERR, $failure->getMessage() . "\n");
+    exit(1);
+}
+
 $elapsedSeconds = microtime(true) - $startedAt;
 
 fwrite(STDOUT, "Rebuilt read model at {$databasePath}\n");
@@ -62,4 +140,59 @@ function countPostRecords(string $repositoryRoot): int
     }
 
     return $count;
+}
+
+/**
+ * @param list<string> $argv
+ * @return array{repository_root:?string,database_path:?string,diagnose:bool,recover:bool,confirm:bool,help:bool}
+ */
+function parseRebuildArguments(array $argv): array
+{
+    $values = [];
+    $diagnose = false;
+    $recover = false;
+    $confirm = false;
+    $help = false;
+
+    foreach ($argv as $argument) {
+        if ($argument === '--diagnose') {
+            $diagnose = true;
+            continue;
+        }
+        if ($argument === '--recover-sidecars') {
+            $recover = true;
+            continue;
+        }
+        if ($argument === '--confirm') {
+            $confirm = true;
+            continue;
+        }
+        if ($argument === '-h' || $argument === '--help') {
+            $help = true;
+            continue;
+        }
+        $values[] = $argument;
+    }
+
+    if ($diagnose && $recover) {
+        fwrite(STDERR, "Use either --diagnose or --recover-sidecars, not both.\n");
+        exit(1);
+    }
+
+    return [
+        'repository_root' => $values[0] ?? null,
+        'database_path' => $values[1] ?? null,
+        'diagnose' => $diagnose,
+        'recover' => $recover,
+        'confirm' => $confirm,
+        'help' => $help,
+    ];
+}
+
+function rebuildUsage(): string
+{
+    return "Usage:\n"
+        . "  php scripts/rebuild_read_model.php [repository_root] [database_path]\n"
+        . "  php scripts/rebuild_read_model.php --diagnose [repository_root] [database_path]\n"
+        . "  php scripts/rebuild_read_model.php --recover-sidecars --confirm [repository_root] [database_path]\n";
 }

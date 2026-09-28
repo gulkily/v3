@@ -11,6 +11,8 @@ Usage:
   ./v3 test
   ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 rebuild [repository_root] [database_path]
+  ./v3 rebuild diagnose [repository_root] [database_path]
+  ./v3 rebuild recover --confirm [repository_root] [database_path]
   ./v3 import-repository <archive.tar.gz> [repository_root] [database_path] [artifact_root] [--dry-run] [--no-commit]
   ./v3 thread-attributes <thread_id_or_record> [repository_root] [database_path]
   ./v3 delete-record <record_path_or_id> [repository_root] [database_path] [artifact_root]
@@ -65,7 +67,19 @@ case "${COMMAND}" in
     ;;
   rebuild)
     shift
-    php "${ROOT}/scripts/rebuild_read_model.php" "$@"
+    case "${1:-}" in
+      diagnose)
+        shift
+        php "${ROOT}/scripts/rebuild_read_model.php" --diagnose "$@"
+        ;;
+      recover)
+        shift
+        php "${ROOT}/scripts/rebuild_read_model.php" --recover-sidecars "$@"
+        ;;
+      *)
+        php "${ROOT}/scripts/rebuild_read_model.php" "$@"
+        ;;
+    esac
     ;;
   import-repository)
     shift

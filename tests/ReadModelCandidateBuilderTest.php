@@ -62,6 +62,35 @@ final class ReadModelCandidateBuilderTest
             @rmdir($directory);
         }
     }
+
+    public function testPromotionExplainsHowToSafelyRecoverFromSqliteSidecars(): void
+    {
+        $repositoryRoot = __DIR__ . '/fixtures/parity_minimal_v1';
+        $directory = sys_get_temp_dir() . '/forum-rewrite-candidate-' . bin2hex(random_bytes(6));
+        $livePath = $directory . '/post_index.sqlite3';
+        mkdir($directory, 0777, true);
+
+        try {
+            (new ReadModelBuilder($repositoryRoot, $livePath, new CanonicalRecordRepository($repositoryRoot)))->rebuild();
+            $candidatePath = (new ReadModelCandidateBuilder($repositoryRoot, $livePath, 'candidate_test'))->build();
+            file_put_contents($livePath . '-journal', 'test journal');
+
+            try {
+                (new ReadModelCandidatePromoter($repositoryRoot, $livePath))->promote($candidatePath);
+                throw new RuntimeException('Expected SQLite sidecar promotion to fail.');
+            } catch (RuntimeException $exception) {
+                assertSame(true, str_contains($exception->getMessage(), 'A SQLite sidecar prevents safe read-model promotion'));
+                assertSame(true, str_contains($exception->getMessage(), 'Do not delete the sidecar manually'));
+            }
+        } finally {
+            @unlink($livePath);
+            @unlink($livePath . '-journal');
+            foreach (glob($directory . '/.*.candidate-*.sqlite3') ?: [] as $candidatePath) {
+                @unlink($candidatePath);
+            }
+            @rmdir($directory);
+        }
+    }
 }
 
 if (!function_exists('assertSame')) {
