@@ -43,3 +43,14 @@
   - Node DOM smoke verified a saved normal thread's title, posts, online-only notice, and a missing thread's reconnect message.
 - Notes:
   - URL fragments remain harmless presentation hints; the bounded snapshot, rather than a live post lookup, defines what content is available offline.
+
+## Stage 5 - Privacy, recovery, and release verification
+- Changes:
+  - Updated the Offline Reading Runbook for normal Board/thread fallback, network-first behavior, unsupported destinations, and recovery.
+  - Rebuilt and activated a static release containing the completed reader assets and public snapshot.
+- Verification:
+  - Full suite: `php tests/run.php` — 588 run, 582 passed. The six failures are long-standing and unrelated: five activity/signature tests and `LazyComposeSigningTest::testFirstComposeIntentLoadsSigningAssetsAndInitializesComposer`.
+  - Prior focused smoke includes the approved-members-only layout exclusion and public snapshot delivery checks; both passed.
+  - Static build completed: 2,264 HTML files, 36 asset files, and an activated bounded snapshot release.
+- Notes:
+  - This environment's Snap Chromium does not retain an isolated test profile between runs, so a normal-browser online-to-offline-to-online navigation check remains release QA. Its recovery steps are in the runbook.
