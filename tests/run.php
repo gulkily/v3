@@ -58,6 +58,7 @@ $testFiles = [
     __DIR__ . '/SqliteQueryCatalogTest.php',
     __DIR__ . '/SqliteLlmExchangeStoreTest.php',
     __DIR__ . '/SqliteFastScoreStoreTest.php',
+    __DIR__ . '/StatusCommandTest.php',
     __DIR__ . '/FastScoreSweepServiceTest.php',
     __DIR__ . '/FastmodHistoricalAuditServiceTest.php',
     __DIR__ . '/FastmodCostEstimatorTest.php',

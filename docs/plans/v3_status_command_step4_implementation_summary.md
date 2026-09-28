@@ -10,3 +10,16 @@
   - `./v3 test OperatorStatusCollectorTest TaskQueueStoreTest LocalAppSmokeTest::testApplicationRendersTextApisAndRss LocalAppSmokeTest::testReadModelStatusReportsLockedWhenExecutionLockIsHeld` — 12 passed.
 - Notes:
   - A held lock remains general protected activity; it is not reported as proof of a manual rebuild.
+
+## Stage 2 - `./v3 status` command
+
+- Changes:
+  - Added the read-only `./v3 status` dispatcher command with repository, read-model, queue, rebuild-task, and next-action output.
+  - Added explicit repository, read-model database, and queue database path overrides plus help and unknown-option handling.
+  - Added dispatcher-level tests for unavailable state, queued/running rebuilds, and the CLI error contract.
+- Verification:
+  - `php -l scripts/status.php`
+  - `./v3 test StatusCommandTest OperatorStatusCollectorTest TaskQueueCommandTest::testTaskQueueUnknownOptionsShowUsageWithoutAPhpStackTrace` — 8 passed.
+  - `./v3 status --help` printed usage; `./v3 status --unknown` printed a concise error and usage with exit code 1.
+- Notes:
+  - Degraded operational state is reported in normal command output; only invocation errors return a nonzero exit code.
