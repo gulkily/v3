@@ -1464,6 +1464,60 @@ PHP;
         assertOrdered($post, 'Signature:', 'Public key:');
     }
 
+    public function testThreadRootCardOmitsDuplicateTitleLine(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-title-dedupe-repo-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+
+        file_put_contents(
+            $repositoryRoot . '/records/posts/title-match-001.txt',
+            "Post-ID: title-match-001\n"
+            . "Created-At: 2026-04-10T13:00:00Z\n"
+            . "Board-Tags: general\n"
+            . "Subject: Echoes at Dawn\n"
+            . "\n"
+            . "Echoes at Dawn\n"
+            . "Second poem line.\n"
+            . "Third poem line.\n"
+        );
+        file_put_contents(
+            $repositoryRoot . '/records/posts/title-empty-001.txt',
+            "Post-ID: title-empty-001\n"
+            . "Created-At: 2026-04-10T13:05:00Z\n"
+            . "Board-Tags: general\n"
+            . "Subject: Just the title\n"
+            . "\n"
+            . "Just the title\n"
+        );
+        file_put_contents(
+            $repositoryRoot . '/records/posts/no-subject-long-001.txt',
+            "Post-ID: no-subject-long-001\n"
+            . "Created-At: 2026-04-10T13:10:00Z\n"
+            . "Board-Tags: general\n"
+            . "\n"
+            . "This is a fairly long single-line post body that exceeds the eighty character excerpt limit used for titles when no subject is provided at all.\n"
+        );
+
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-title-dedupe-db-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+        $titleMatch = $this->render($application, '/threads/title-match-001');
+        $titleEmpty = $this->render($application, '/threads/title-empty-001');
+        $noSubjectLong = $this->render($application, '/threads/no-subject-long-001');
+
+        assertStringContains('<h1>Echoes at Dawn</h1>', $titleMatch);
+        assertStringContains('<div class="body">Second poem line.', $titleMatch);
+        assertStringNotContains('<div class="body">Echoes at Dawn', $titleMatch);
+        assertStringContains('Third poem line.', $titleMatch);
+
+        assertStringContains('<h1>Just the title</h1>', $titleEmpty);
+        assertStringContains('<div class="body"></div>', $titleEmpty);
+
+        assertStringMatches('/<h1>[^<]*\.\.\.<\/h1>/', $noSubjectLong);
+        assertStringContains('This is a fairly long single-line post body that exceeds the eighty character excerpt limit used for titles when no subject is provided at all.', $noSubjectLong);
+    }
+
     public function testPostAndActivityLinkAdjacentSignatureFiles(): void
     {
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-signature-repo-' . bin2hex(random_bytes(6));
