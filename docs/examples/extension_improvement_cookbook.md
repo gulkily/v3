@@ -16,3 +16,25 @@ This cookbook helps developers turn the site’s existing facilities into safe, 
 
 The recipes treat model classifications as advisory. A feature that creates canonical content must make its review or publishing guard explicit, preserve source provenance where relevant, and retain an operator disable path.
 
+## Shared extension pattern
+
+Use this lifecycle for every recipe:
+
+1. Start with a narrow trigger, such as a new post, an explicit user request, or a scheduled sweep.
+2. Apply deterministic eligibility checks before requesting model work.
+3. Keep work and its current result durable and private when it may be retried or audited.
+4. Bound model work by scope, cost, and time; do not make ordinary publishing wait for it.
+5. Return a draft, reviewed outcome, or explicitly guarded canonical write.
+6. Preserve a way to inspect, limit, retry, or disable the workflow.
+
+## Choose the existing facility
+
+| Need | Start with |
+| --- | --- |
+| Analyze or draft a response for one post | [Agent reply analyze/publish contract](../specs/agent_reply_one_step_analyze_publish_contract_v1.md) |
+| Add an inexpensive advisory moderation signal | [Fastmod](../reference/fast_post_scoring.md) |
+| Run bounded deferred or batch work | [`v3` task-queue commands](../reference/v3_cli.md#manage-the-background-task-queue) |
+| Turn a community request into developer work | [`v3` Codex-handoff commands](../reference/v3_cli.md#run-approved-codex-handoff-requests) |
+| Configure, audit, or operate LLM-backed work | [production LLM and agent-work guidance](../runbooks/production_deploy.md#llm-provider-config) |
+
+Use a per-post workflow when one post supplies enough context. Use a queued workflow when provider work must not delay publishing or when it examines multiple posts. Use a handoff when the intended result is a developer decision or implementation task rather than a user-facing reply.
