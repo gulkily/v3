@@ -39,3 +39,13 @@
   - Stage 2's local API smoke confirmed the Activity-detail endpoint returns a rendered detail article.
 - Notes:
   - A direct user selection updates row state before issuing the detail request, preventing a stale response from replacing a newer selection.
+
+## Stage 5 - Automatic complete row preload
+- Changes:
+  - Added a post-paint, cursor-driven preload scheduler for every Activity and Commit filter.
+  - Rows are fetched through the lightweight response, merged/deduplicated by item ID, and the scheduler yields between pages and invalidates after a sort-pane swap.
+- Verification:
+  - `node --check public/assets/paned_activity_reader.js` and `git diff --check` — passed.
+  - Local API smoke verified `rows_only=1` responses for All, Content, Identity, Bootstraps, Approvals, and Commits; each returned `status: ok` with empty `detail_html`.
+- Notes:
+  - The Load more group is hidden while automatic preload owns cursor progression; API cursor behavior remains available and is exercised by the scheduler.

@@ -15,6 +15,7 @@
   var loadedSort = "";
   var loadedDirection = "";
   var sortNavigationInFlight = false;
+  var preloadToken = 0;
 
   function currentViewFromUrl() {
     var view = new URLSearchParams(location.search).get("view") || "all";
@@ -475,6 +476,61 @@
     });
   }
 
+  function preloadAllRows() {
+    var token = preloadToken;
+    var views = filterItems.map(function (item) {
+      return item.getAttribute("data-paned-activity-view");
+    });
+    var viewIndex = 0;
+    var cursor = "";
+    if (loadMoreGroup) {
+      loadMoreGroup.hidden = true;
+    }
+
+    function nextPage() {
+      if (token !== preloadToken || viewIndex >= views.length) {
+        return;
+      }
+      var view = views[viewIndex];
+      fetch(
+        "/api/forte_activity_page?rows_only=1&view=" + encodeURIComponent(view) +
+          "&sort=" + encodeURIComponent(currentSortFromUrl()) +
+          "&dir=" + encodeURIComponent(currentDirectionFromUrl()) +
+          "&cursor=" + encodeURIComponent(cursor)
+      )
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("activity preload failed");
+          }
+          return response.json();
+        })
+        .then(function (data) {
+          if (token !== preloadToken || data.status !== "ok") {
+            return;
+          }
+          mergeAppendedRows(data.html, view);
+          rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
+          selectFilter(currentViewFromUrl());
+          if (data.has_more && data.next_cursor) {
+            cursor = JSON.stringify(data.next_cursor);
+          } else {
+            viewIndex += 1;
+            cursor = "";
+          }
+          window.setTimeout(nextPage, 0);
+        })
+        .catch(function () {
+          if (token === preloadToken) {
+            viewIndex += 1;
+            cursor = "";
+            window.setTimeout(nextPage, 0);
+          }
+        });
+    }
+
+    window.setTimeout(nextPage, 0);
+  }
+
   function stepSelection(delta) {
     var visible = rows.filter(function (row) {
       return !row.hidden;
@@ -552,6 +608,7 @@
   // the popstate listener) are bound once, below, since they're never
   // replaced.
   function init() {
+    preloadToken += 1;
     filterTree = document.querySelector("[data-paned-activity-filter-tree]");
     listBody = document.querySelector("[data-paned-activity-list-body]");
     contentPane = document.querySelector("[data-paned-activity-content-pane]");
@@ -705,6 +762,7 @@
     loadedSort = currentSortFromUrl();
     loadedDirection = currentDirectionFromUrl();
     restoreSelectionFromUrl(true);
+    preloadAllRows();
   }
 
   // Mirrors showProfileSummary() in paned_board_reader.js - same dialog
