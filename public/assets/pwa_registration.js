@@ -1,7 +1,7 @@
 (function () {
   "use strict";
   function cacheUrls() {
-    var urls = ["/offline/", "/offline/snapshot.sqlite3", "/manifest.webmanifest", "/favicon.ico", "/assets/sql-wasm.wasm"];
+    var urls = ["/offline/reader/", "/offline/snapshot.sqlite3", "/manifest.webmanifest", "/favicon.ico", "/assets/sql-wasm.wasm"];
     document.querySelectorAll('link[href], script[src]').forEach(function (node) {
       var value = node.getAttribute(node.tagName === "LINK" ? "href" : "src");
       if (!value) return;

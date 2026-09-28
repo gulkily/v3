@@ -19,3 +19,14 @@
   - Headless Chromium against the local server rendered each check and correctly identified the intentionally unavailable local published snapshot without exposing a transport error.
 - Notes:
   - A successful device-ready result is intentionally independent of online published-snapshot reachability: saved content can still be read when a later release is unavailable.
+
+## Stage 3 - Cache health and reader shells separately
+- Changes:
+  - Moved the service worker to a new cache generation that refreshes and stores both `/offline/` health and `/offline/reader/` content shells.
+  - Kept Board and saved-thread offline fallback pointed only at the reader shell; added an offline navigation fallback for the health page itself.
+  - Updated registration refresh inputs to the reader shell while retaining `/offline/` as the PWA start destination.
+- Verification:
+  - `node --check` passed for the service worker and registration scripts.
+  - A Node service-worker fixture verified a refresh cache contains the health page, reader shell, snapshot, reader assets, and SQLite runtime asset.
+- Notes:
+  - Cache replacement remains all-or-nothing: the new cache is populated before activation removes an earlier reader cache.

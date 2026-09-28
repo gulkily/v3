@@ -1,6 +1,7 @@
-const CACHE_NAME = "zenmemes-offline-reader-v6";
+const CACHE_NAME = "zenmemes-offline-reader-v7";
 const SNAPSHOT_URL = "/offline/snapshot.sqlite3";
-const OFFLINE_READER_URL = "/offline/";
+const OFFLINE_HEALTH_URL = "/offline/";
+const OFFLINE_READER_URL = "/offline/reader/";
 
 self.addEventListener("install", (event) => event.waitUntil((async () => {
   await refreshOfflineReader([]);
@@ -27,18 +28,23 @@ async function refreshResources(urls) {
 async function refreshOfflineReader(extraUrls) {
   const shell = await fetch(new Request(OFFLINE_READER_URL, { credentials: "omit", cache: "no-store" }));
   if (!shell.ok) throw new Error("Unable to cache offline reader shell");
-  const html = await shell.clone().text();
-  const assetUrls = [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
-    .map((match) => new URL(match[1], self.location.origin))
-    .filter((url) => url.origin === self.location.origin)
-    .map((url) => url.pathname);
+  const health = await fetch(new Request(OFFLINE_HEALTH_URL, { credentials: "omit", cache: "no-store" }));
+  if (!health.ok) throw new Error("Unable to cache offline reading health page");
+  const assetUrls = await Promise.all([shell, health].map(async (response) => {
+    const html = await response.clone().text();
+    return [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
+      .map((match) => new URL(match[1], self.location.origin))
+      .filter((url) => url.origin === self.location.origin)
+      .map((url) => url.pathname);
+  }));
   await refreshResources([
+    OFFLINE_HEALTH_URL,
     OFFLINE_READER_URL,
     SNAPSHOT_URL,
     "/manifest.webmanifest",
     "/favicon.ico",
     "/assets/sql-wasm.wasm",
-    ...assetUrls,
+    ...assetUrls.flat(),
     ...extraUrls,
   ]);
 }
@@ -47,7 +53,7 @@ function cacheableRequest(request) {
   if (request.method !== "GET") return false;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || url.search) return false;
-  return url.pathname === OFFLINE_READER_URL || url.pathname === SNAPSHOT_URL
+  return url.pathname === OFFLINE_HEALTH_URL || url.pathname === OFFLINE_READER_URL || url.pathname === SNAPSHOT_URL
     || url.pathname === "/manifest.webmanifest" || url.pathname === "/favicon.ico"
     || url.pathname.startsWith("/assets/");
 }
@@ -61,8 +67,11 @@ async function networkFirstNavigation(request) {
     return await fetch(request);
   } catch (error) {
     const url = new URL(request.url);
-    if (!supportsOfflineNavigation(url)) throw error;
-    const shell = await (await caches.open(CACHE_NAME)).match(OFFLINE_READER_URL);
+    const fallbackUrl = (url.pathname === "/offline" || url.pathname === OFFLINE_HEALTH_URL)
+      ? OFFLINE_HEALTH_URL
+      : supportsOfflineNavigation(url) ? OFFLINE_READER_URL : null;
+    if (!fallbackUrl) throw error;
+    const shell = await (await caches.open(CACHE_NAME)).match(fallbackUrl);
     if (shell) return shell;
     throw error;
   }
