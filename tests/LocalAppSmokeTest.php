@@ -1587,6 +1587,18 @@ PHP;
             . "\n"
             . "This is a fairly long single-line post body that exceeds the eighty character excerpt limit used for titles when no subject is provided at all.\n"
         );
+        file_put_contents(
+            $repositoryRoot . '/records/posts/title-match-blank-line-001.txt',
+            "Post-ID: title-match-blank-line-001\n"
+            . "Created-At: 2026-04-10T13:15:00Z\n"
+            . "Board-Tags: general\n"
+            . "Subject: On Accessibility\n"
+            . "\n"
+            . "On Accessibility\n"
+            . "\n"
+            . "First real line.\n"
+            . "Second real line.\n"
+        );
 
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-title-dedupe-db-' . bin2hex(random_bytes(6)) . '.sqlite3';
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
@@ -1594,6 +1606,7 @@ PHP;
         $titleMatch = $this->render($application, '/threads/title-match-001');
         $titleEmpty = $this->render($application, '/threads/title-empty-001');
         $noSubjectLong = $this->render($application, '/threads/no-subject-long-001');
+        $titleMatchBlankLine = $this->render($application, '/threads/title-match-blank-line-001');
 
         assertStringContains('<h1>Echoes at Dawn</h1>', $titleMatch);
         assertStringContains('<div class="body">Second poem line.', $titleMatch);
@@ -1605,6 +1618,10 @@ PHP;
 
         assertStringMatches('/<h1>[^<]*\.\.\.<\/h1>/', $noSubjectLong);
         assertStringContains('This is a fairly long single-line post body that exceeds the eighty character excerpt limit used for titles when no subject is provided at all.', $noSubjectLong);
+
+        assertStringContains('<h1>On Accessibility</h1>', $titleMatchBlankLine);
+        assertStringContains('<div class="body">First real line.', $titleMatchBlankLine);
+        assertStringNotContains('<div class="body"><br', $titleMatchBlankLine);
     }
 
     public function testPostAndActivityLinkAdjacentSignatureFiles(): void
