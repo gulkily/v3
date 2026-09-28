@@ -26,6 +26,7 @@ under `docs/plans/`. Move completed feature cycles to `docs/plans/archive/`.
 - [Image Support Logistics](image_support_logistics_step1_solution_assessment.md)
 - [Love Button Reaction](love_button_reaction_step1_solution_assessment.md)
 - [New User Profile Creation Notice](new_user_profile_creation_notice_step1_solution_assessment.md)
+- [Offline Support Roadmap](offline_support_roadmap.md)
 - [Product Mention Links](product_mention_links_step1_solution_assessment.md)
 - [Undo Accidental Flag](undo_accidental_flag_step1_solution_assessment.md)
 

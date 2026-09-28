@@ -37,15 +37,11 @@ clean up the failing tests
 
 offline support feature stub
 ============================
-what should work
-	once i've been to zenmemes.com once, i should be able to get back to it even when offline
-		it should show older data, but i should be able to access all the features offline
-			browsing the thread listing
-			opening and reading the comments
-			voting/tagging
-			commenting/replying
-			all the data should be queued until next connection
-				user should know this is happening
+Tracked in `docs/plans/backlog/offline_support_roadmap.md`.
+	Completed: bounded public read-only Board/thread snapshot.
+	Next: snapshot lifecycle confidence and cache controls.
+	Later: broader read-only navigation, saved drafts, queued reactions, and
+	queued replies/threads with explicit sync, conflict, and security design.
 
 
 post presentation
