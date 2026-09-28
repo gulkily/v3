@@ -34,3 +34,13 @@
   - Direct `LocalAppSmokeTest::testOfflineReaderRouteUsesLocalSnapshotShell` — passed.
 - Notes:
   - The reader loads `/offline/snapshot.sqlite3` without credentials and emits a readiness event for the next two presentation stages.
+
+## Stage 4 - Local recent-thread list
+- Changes:
+  - Added local recent-thread querying, saved-thread metadata, cached timestamp, and empty state.
+  - Thread controls emit local selection events without requesting a server page.
+- Verification:
+  - `node --check public/assets/offline_reader.js` — passed.
+  - Chromium headless smoke test against a locally generated snapshot rendered `Offline snapshot is ready.`, the snapshot time, and saved thread controls.
+- Notes:
+  - The list follows snapshot activity order and does not imply that older threads are unavailable online.
