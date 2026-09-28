@@ -80,15 +80,20 @@
 
   async function publishedSnapshotStatus(online) {
     if (!online) return { checked: false, ready: false };
+    var controller = "AbortController" in window ? new AbortController() : null;
+    var timeout = controller ? window.setTimeout(function () { controller.abort(); }, 3000) : null;
     try {
       var response = await window.fetch(snapshotUrl, {
         method: "HEAD",
         credentials: "omit",
         cache: "no-store",
+        signal: controller ? controller.signal : undefined,
       });
       return { checked: true, ready: response.ok };
     } catch (error) {
       return { checked: true, ready: false };
+    } finally {
+      if (timeout !== null) window.clearTimeout(timeout);
     }
   }
 

@@ -41,3 +41,15 @@
   - The broader suite also surfaced the known lazy-compose browser-fixture failure; no offline-health assertion failed.
 - Notes:
   - Existing public snapshot and approved-members-only front-controller coverage continues to protect the public-data boundary.
+
+## Stage 5 - Document and exercise recovery
+- Changes:
+  - Updated the offline-reading runbook with the health checks, ready-state meaning, and revised cache-recovery steps.
+  - Added the completed feature to the plans index and bounded a reachable-but-unresponsive published-snapshot check to three seconds.
+- Verification:
+  - Built an isolated static release from copies of the local repository and read model; its snapshot returned HTTP 200.
+  - Headless Chromium reported every health check ready after cache preparation: worker, reader shell/assets, saved snapshot, and published snapshot.
+  - After stopping the isolated server, the same browser profile opened the normal Board from the reader shell and rendered the `offline mode` indicator.
+  - `node --check public/assets/offline_health.js` passed; an unavailable local snapshot rendered the intended recovery guidance.
+- Notes:
+  - The health page is cacheable offline. Its published-snapshot status is intentionally local-only when offline, and network probes now fail closed promptly when a browser still reports itself online during an outage.
