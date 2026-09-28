@@ -45,6 +45,9 @@ foreach ($flags as $flag) {
             <p class="feature-flag-description meta"><?= $e($definition->description) ?></p>
             <div class="feature-flag-meta meta">
               <code class="feature-flag-key"><?= $e($definition->key) ?></code>
+<?php if ($flag->isLocked()): ?>
+              <span class="feature-flag-lock-reason"><?= $e($flag->lockReason()) ?></span>
+<?php endif; ?>
 <?php if ($parentDefinition !== null): ?>
               <span class="feature-flag-dependency<?= $flag->isBlockedByDependency() ? ' is-blocked' : '' ?>">
 <?php if ($flag->isBlockedByDependency()): ?>
