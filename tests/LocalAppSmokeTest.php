@@ -2378,9 +2378,11 @@ PHP;
         assertStringContains('/assets/sql-wasm.', $reader);
         assertStringContains('/assets/offline_reader.', $reader);
         assertStringNotContains('class="nav-link is-active" href="/offline/"', $reader);
+        assertStringContains('rel="manifest" href="/manifest.webmanifest"', $reader);
+        assertStringContains('/assets/pwa_registration.', $reader);
     }
 
-    public function testPublicLayoutIncludesOfflineReaderPwaAssets(): void
+    public function testPublicLayoutRetiresTheRootScopedOfflinePrototypeWorker(): void
     {
         $application = new Application(
             dirname(__DIR__),
@@ -2389,17 +2391,21 @@ PHP;
         );
 
         $board = $this->render($application, '/');
-        $serviceWorker = (string) file_get_contents(dirname(__DIR__) . '/public/service_worker.js');
+        $serviceWorker = (string) file_get_contents(dirname(__DIR__) . '/public/offline/service_worker.js');
         $registration = (string) file_get_contents(dirname(__DIR__) . '/public/assets/pwa_registration.js');
+        $cleanup = (string) file_get_contents(dirname(__DIR__) . '/public/assets/pwa_cleanup.js');
 
-        assertStringContains('rel="manifest" href="/manifest.webmanifest"', $board);
-        assertStringContains('/assets/pwa_registration.', $board);
+        assertStringNotContains('rel="manifest" href="/manifest.webmanifest"', $board);
+        assertStringNotContains('/assets/pwa_registration.', $board);
+        assertStringContains('/assets/pwa_cleanup.', $board);
         assertStringNotContains('href="/offline/"', $board);
         assertStringContains('refresh-offline-reader', $serviceWorker);
+        assertStringContains('networkFirstReader', $serviceWorker);
         assertStringContains('url.pathname.startsWith("/assets/")', $serviceWorker);
         assertStringNotContains('/api/', $serviceWorker);
-        assertStringContains('navigator.serviceWorker.register("/service_worker.js")', $registration);
+        assertStringContains('navigator.serviceWorker.register("/offline/service_worker.js", { scope: "/offline/" })', $registration);
         assertStringContains('/offline/snapshot.sqlite3', $registration);
+        assertStringContains('registration.unregister()', $cleanup);
     }
 
     public function testPrivateLayoutDoesNotRegisterOfflineReaderPwa(): void
@@ -2418,6 +2424,7 @@ PHP;
 
             assertStringNotContains('rel="manifest" href="/manifest.webmanifest"', $lobby);
             assertStringNotContains('/assets/pwa_registration.', $lobby);
+            assertStringNotContains('/assets/pwa_cleanup.', $lobby);
             assertStringNotContains('href="/offline/"', $lobby);
         } finally {
             if ($previousFlag === false) {

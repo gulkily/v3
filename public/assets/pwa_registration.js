@@ -12,7 +12,7 @@
   }
   if (!navigator.serviceWorker) return;
   window.addEventListener("load", function () {
-    navigator.serviceWorker.register("/service_worker.js")
+    navigator.serviceWorker.register("/offline/service_worker.js", { scope: "/offline/" })
       .then(function () { return navigator.serviceWorker.ready; })
       .then(function (registration) {
         if (registration.active) registration.active.postMessage({ type: "refresh-offline-reader", urls: cacheUrls() });

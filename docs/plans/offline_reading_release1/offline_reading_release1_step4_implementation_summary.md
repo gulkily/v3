@@ -77,3 +77,10 @@
   - PHP lint, both service-worker/registration `node --check` checks, and `git diff --check` passed.
 - Notes:
   - The normal UI and local reader list/detail were manually rendered in Chromium earlier in this cycle. A fresh browser offline-restart check still needs release QA on a normal browser because this environment's Snap Chromium does not persist an explicit temporary profile.
+
+## Follow-up - Prototype cache isolation
+- Changes:
+  - Restricted service-worker registration and its manifest to the unlinked `/offline/` prototype, and moved its scope from `/` to `/offline/`.
+  - Added a public-page cleanup script that unregisters the prior root-scoped prototype worker, and made online `/offline/` navigation refresh its shell before falling back to cache.
+- Verification:
+  - Covered public, private, and offline-reader layout contracts in `LocalAppSmokeTest`; routing coverage verifies the scoped worker's static path.

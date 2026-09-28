@@ -2,6 +2,7 @@
   "name": "Zenmemes Offline Reading",
   "short_name": "Zenmemes",
   "start_url": "/offline/",
+  "scope": "/offline/",
   "display": "standalone",
   "background_color": "#f4f1e8",
   "theme_color": "#f4f1e8",

@@ -11,7 +11,7 @@ final class WebServerRoutingTest
         assertStringContains("str_starts_with(\$path, '/assets/')", $router);
         assertStringContains("'/favicon.ico'", $router);
         assertStringContains("'/manifest.webmanifest'", $router);
-        assertStringContains("'/service_worker.js'", $router);
+        assertStringContains("'/offline/service_worker.js'", $router);
         assertStringContains('if ($isPublicAsset && is_file($file))', $router);
         assertStringNotContains("if (\$path !== '/' && is_file(\$file))", $router);
     }
@@ -20,7 +20,7 @@ final class WebServerRoutingTest
     {
         $rewrite = (string) file_get_contents(__DIR__ . '/../public/.htaccess');
 
-        assertStringContains('RewriteCond %{REQUEST_URI} ^/(?:assets(?:/|$)|favicon\.ico|manifest\.webmanifest|service_worker\.js)$ [NC]', $rewrite);
+        assertStringContains('RewriteCond %{REQUEST_URI} ^/(?:assets(?:/|$)|favicon\.ico|manifest\.webmanifest|offline/service_worker\.js)$ [NC]', $rewrite);
         assertStringContains('RewriteRule ^ index.php [L]', $rewrite);
         assertStringNotContains('%{ENV:FORUM_APPROVED_MEMBERS_ONLY}', $rewrite);
         assertStringNotContains('%{DOCUMENT_ROOT}/index.html', $rewrite);

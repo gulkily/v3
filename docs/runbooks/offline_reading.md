@@ -5,8 +5,9 @@ intended for recently active public discussions, not a complete archive.
 
 ## What is saved
 
-When a visitor loads a public page while online, the browser may install the
-offline-reader cache. It contains the `/offline/` reader shell, its required
+When a visitor opens `/offline/` while online, the browser may install the
+offline-reader cache. The prototype is scoped to `/offline/`; it does not
+control normal site pages. It contains the reader shell, its required
 same-origin assets, and the public SQLite snapshot at
 `/offline/snapshot.sqlite3`.
 
@@ -20,11 +21,10 @@ The snapshot is read-only: posting, voting, and tagging require a connection.
 
 ## Refresh behavior
 
-An online page load asks the service worker to refresh the offline-reader
-shell and snapshot. It downloads the replacement resources before saving the
-new snapshot, so a failed refresh leaves the prior saved snapshot available.
-To obtain a new release, reconnect and reload any normal public page, then
-open `/offline/` again.
+An online visit to `/offline/` asks the service worker to refresh the
+offline-reader shell and snapshot. It downloads the replacement resources
+before saving the new snapshot, so a failed refresh leaves the prior saved
+snapshot available. To obtain a new release, reconnect and reload `/offline/`.
 
 ## Privacy boundary
 
