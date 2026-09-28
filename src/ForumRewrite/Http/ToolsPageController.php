@@ -50,53 +50,14 @@ final class ToolsPageController
         return $this->routeServices->renderPageTemplate(
             'tools.php',
             [
-                'toolPages' => [
-                    [
-                        'label' => 'Activity',
-                        'href' => '/activity/',
-                        'description' => 'Recent forum activity across content, approvals, and identity events.',
+                'toolPages' => array_map(
+                    static fn (array $tool): array => [
+                        'label' => $tool['label'],
+                        'href' => $tool['href'],
+                        'description' => $tool['description'],
                     ],
-                    [
-                        'label' => 'Forte',
-                        'href' => '/forte',
-                        'description' => 'Classic three-pane newsreader view of the whole board - folders, thread list, and preview.',
-                    ],
-                    [
-                        'label' => 'Bookmarklets',
-                        'href' => '/tools/bookmarklets/',
-                        'description' => 'Bookmarklet links for clipping URLs and selections straight into Compose Thread.',
-                    ],
-                    [
-                        'label' => 'Backup',
-                        'href' => '/tools/backup/',
-                        'description' => 'Portable downloads of the repository and current read-model database.',
-                    ],
-                    [
-                        'label' => 'SQLite Viewer',
-                        'href' => '/tools/sqlite/',
-                        'description' => 'Inspect the published SQLite read model in your browser.',
-                    ],
-                    [
-                        'label' => 'LLM Exchanges',
-                        'href' => '/tools/llm-exchanges/',
-                        'description' => 'Review private LLM prompts and responses chronologically.',
-                    ],
-                    [
-                        'label' => 'System State',
-                        'href' => '/tools/codebase/',
-                        'description' => 'Current application version, repository head, and read-model health.',
-                    ],
-                    [
-                        'label' => 'Feature Flags',
-                        'href' => '/tools/feature-flags/',
-                        'description' => 'Registered site feature flags, defaults, effective values, and override sources.',
-                    ],
-                    [
-                        'label' => 'Account',
-                        'href' => '/account/key/',
-                        'description' => 'Browser key setup, identity linking, and technical account details.',
-                    ],
-                ],
+                    ToolsPageSupport::registry(),
+                ),
                 'toolNavOptions' => ToolsPageSupport::navOptions(null),
             ],
             'Tools',

@@ -1,11 +1,6 @@
 <section class="stack">
   <article class="card">
-    <div class="nav">
-<?php foreach ($toolNavOptions as $option): ?>
-<?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
-      <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
-<?php endforeach; ?>
-    </div>
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
   <article class="card">
     <h1>LLM Exchanges</h1>
