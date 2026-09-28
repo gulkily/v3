@@ -1624,6 +1624,53 @@ PHP;
         assertStringNotContains('<div class="body"><br', $titleMatchBlankLine);
     }
 
+    public function testThreadCardOmitsDuplicatePreviewLine(): void
+    {
+        $renderer = new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__) . '/templates');
+
+        $matchingThread = [
+            'root_post_id' => 'card-preview-match-001',
+            'subject' => 'Just a Title',
+            'body_preview' => 'Just a Title',
+            'thread_labels' => [],
+            'reply_count' => 0,
+            'last_activity_at' => null,
+            'root_post_created_at' => null,
+        ];
+        $differingThread = [
+            'root_post_id' => 'card-preview-differ-001',
+            'subject' => 'Different Title',
+            'body_preview' => 'Actual preview text',
+            'thread_labels' => [],
+            'reply_count' => 0,
+            'last_activity_at' => null,
+            'root_post_created_at' => null,
+        ];
+        $longNoSubjectBody = 'This is another fairly long single-line post body that exceeds the eighty character excerpt limit for titles when no subject is provided.';
+        $noSubjectLongThread = [
+            'root_post_id' => 'card-preview-no-subject-long-001',
+            'subject' => '',
+            'body_preview' => $longNoSubjectBody,
+            'thread_labels' => [],
+            'reply_count' => 0,
+            'last_activity_at' => null,
+            'root_post_created_at' => null,
+        ];
+
+        $matchingCard = $renderer->renderFragment('partials/thread_card.php', ['thread' => $matchingThread]);
+        $differingCard = $renderer->renderFragment('partials/thread_card.php', ['thread' => $differingThread]);
+        $noSubjectLongCard = $renderer->renderFragment('partials/thread_card.php', ['thread' => $noSubjectLongThread]);
+
+        assertStringContains('<h2><a href="/threads/card-preview-match-001">Just a Title</a></h2>', $matchingCard);
+        assertStringNotContains('thread-card__preview', $matchingCard);
+
+        assertStringContains('<h2><a href="/threads/card-preview-differ-001">Different Title</a></h2>', $differingCard);
+        assertStringContains('<p class="thread-card__preview">Actual preview text</p>', $differingCard);
+
+        assertStringMatches('/<h2><a[^>]*>[^<]*\.\.\.<\/a><\/h2>/', $noSubjectLongCard);
+        assertStringContains('<p class="thread-card__preview">' . $longNoSubjectBody . '</p>', $noSubjectLongCard);
+    }
+
     public function testPostAndActivityLinkAdjacentSignatureFiles(): void
     {
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-signature-repo-' . bin2hex(random_bytes(6));
