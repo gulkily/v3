@@ -14,7 +14,7 @@ use RuntimeException;
  */
 final class PublicOfflineSnapshotBuilder
 {
-    public const SNAPSHOT_VERSION = '1';
+    public const SNAPSHOT_VERSION = '2';
 
     /**
      * @return array{generated_at:string,thread_count:int,post_count:int,size_bytes:int}
@@ -46,6 +46,7 @@ final class PublicOfflineSnapshotBuilder
         try {
             $this->createSchema($snapshot, $maxBytes);
             $generatedAt = gmdate('Y-m-d\TH:i:s\Z');
+            $snapshotThreads = $this->snapshotThreadRows($source, $threadLimit);
             $this->writeMetadata($snapshot, [
                 'snapshot_version' => self::SNAPSHOT_VERSION,
                 'generated_at' => $generatedAt,
@@ -55,10 +56,7 @@ final class PublicOfflineSnapshotBuilder
 
             $threadCount = 0;
             $postCount = 0;
-            foreach ($this->visibleThreadRows($source) as $thread) {
-                if ($threadCount >= $threadLimit) {
-                    break;
-                }
+            foreach ($snapshotThreads as $thread) {
 
                 $posts = $this->visiblePostsForThread($source, (string) $thread['root_post_id']);
                 if ($posts === [] || (string) $posts[0]['post_id'] !== (string) $thread['root_post_id']) {
@@ -77,6 +75,9 @@ final class PublicOfflineSnapshotBuilder
                         $snapshot->rollBack();
                     }
                     if ($this->isSizeLimitFailure($throwable)) {
+                        if ($this->isPinned($thread)) {
+                            throw new RuntimeException('Pinned public threads exceed the offline snapshot size limit.', 0, $throwable);
+                        }
                         break;
                     }
 
@@ -180,6 +181,40 @@ final class PublicOfflineSnapshotBuilder
             $rows,
             static fn (array $row): bool => !ThreadRowSupport::isHiddenBootstrapBoardTagsJson((string) $row['board_tags_json'])
         ));
+    }
+
+    /**
+     * Keeps every visible pinned thread, then fills the remaining reading set
+     * with the requested number of newest non-pinned threads. Pinned content
+     * is selected first so the size cap cannot discard it in favor of a newer
+     * ordinary thread.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function snapshotThreadRows(PDO $source, int $recentThreadLimit): array
+    {
+        $pinned = [];
+        $recent = [];
+        foreach ($this->visibleThreadRows($source) as $row) {
+            if ($this->isPinned($row)) {
+                $pinned[] = $row;
+                continue;
+            }
+
+            if (count($recent) < $recentThreadLimit) {
+                $recent[] = $row;
+            }
+        }
+
+        return [...$pinned, ...$recent];
+    }
+
+    /** @param array<string, mixed> $thread */
+    private function isPinned(array $thread): bool
+    {
+        $labels = json_decode((string) ($thread['thread_labels_json'] ?? '[]'), true);
+
+        return is_array($labels) && in_array('pinned', $labels, true);
     }
 
     /** @return list<array<string, mixed>> */

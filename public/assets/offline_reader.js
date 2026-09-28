@@ -23,40 +23,137 @@
       var fallback = String(preview || "").replace(/\s+/g, " ").trim();
       return fallback || "Untitled thread";
     },
-    renderThreadList: function (options) {
-      var result = options.database.exec(
-        "SELECT root_post_id, subject, body_preview, reply_count, last_activity_at, author_label "
-        + "FROM threads ORDER BY last_activity_at DESC, root_post_id DESC"
+    boardRows: function (database) {
+      var result = database.exec(
+        "SELECT root_post_id, subject, body_preview, reply_count, last_activity_at, author_label, "
+        + "root_post_created_at, thread_labels_json, score_total FROM threads"
       )[0];
+      return (result && result.values ? result.values : []).map(function (row) {
+        return {
+          id: String(row[0] || ""),
+          subject: String(row[1] || ""),
+          preview: String(row[2] || ""),
+          replyCount: Number(row[3] || 0),
+          lastActivityAt: String(row[4] || ""),
+          author: String(row[5] || "guest"),
+          createdAt: String(row[6] || ""),
+          labels: snapshotPresentation.threadLabels(row[7]),
+          score: Number(row[8] || 0)
+        };
+      });
+    },
+    threadLabels: function (value) {
+      try {
+        var labels = JSON.parse(String(value || "[]"));
+        return Array.isArray(labels) ? labels : [];
+      } catch (error) {
+        return [];
+      }
+    },
+    isPinned: function (thread) {
+      return thread.labels.indexOf("pinned") !== -1;
+    },
+    compareBoardThreads: function (left, right, sort) {
+      var pinned = Number(snapshotPresentation.isPinned(right)) - Number(snapshotPresentation.isPinned(left));
+      if (pinned) return pinned;
+      if (sort === "oldest") {
+        return left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id);
+      }
+      if (sort === "top") {
+        return (right.score - left.score) || right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id);
+      }
+      return right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id);
+    },
+    appendBoardControls: function (content, state, onChange) {
+      var controls = document.createElement("article");
+      controls.className = "card";
+      var nav = document.createElement("div");
+      nav.className = "nav board-controls-nav";
+      [
+        { key: "all", label: "All", group: "view" },
+        { key: "liked", label: "Liked", group: "view" },
+        { key: "newest", label: "Newest", group: "sort" },
+        { key: "oldest", label: "Oldest", group: "sort" },
+        { key: "top", label: "Top", group: "sort" }
+      ].forEach(function (option) {
+        var nextState = { view: state.view, sort: state.sort };
+        nextState[option.group] = option.key;
+        var link = document.createElement("a");
+        link.className = "nav-link" + (state[option.group] === option.key ? " is-active" : "");
+        link.href = "/?view=" + encodeURIComponent(nextState.view) + "&sort=" + encodeURIComponent(nextState.sort);
+        link.textContent = option.label;
+        link.addEventListener("click", function (event) {
+          event.preventDefault();
+          onChange(nextState);
+        });
+        nav.appendChild(link);
+      });
+      controls.appendChild(nav);
+      content.appendChild(controls);
+    },
+    renderThreadList: function (options) {
+      var rows = snapshotPresentation.boardRows(options.database);
+      var state = options.boardState || { view: "all", sort: "newest" };
+      if (state.view === "liked") {
+        rows = rows.filter(function (thread) {
+          return thread.labels.indexOf("like") !== -1 && thread.score >= 0;
+        });
+      }
+      rows.sort(function (left, right) {
+        return snapshotPresentation.compareBoardThreads(left, right, state.sort);
+      });
       clearSnapshotNode(options.content);
       options.content.hidden = false;
-      var heading = document.createElement("h2");
-      heading.textContent = options.heading || "Recent saved threads";
-      options.content.appendChild(heading);
-      var list = document.createElement("div");
-      list.className = "stack";
-      (result && result.values ? result.values : []).forEach(function (row) {
-        var threadId = String(row[0] || "");
-        var button = document.createElement("button");
-        button.type = "button";
-        button.className = "nav-link";
-        button.setAttribute("data-offline-thread-id", threadId);
-        button.textContent = snapshotPresentation.threadTitle(row[1], row[2]);
-        button.addEventListener("click", function () { options.onSelect(threadId); });
-        list.appendChild(button);
+      if (options.onBoardChange) {
+        snapshotPresentation.appendBoardControls(options.content, state, options.onBoardChange);
+      }
+      rows.forEach(function (thread) {
+        var card = document.createElement("article");
+        card.className = "card thread-card";
+        var heading = document.createElement("h2");
+        var link = document.createElement("a");
+        link.href = snapshotPresentation.normalThreadUrl(thread.id);
+        link.textContent = snapshotPresentation.threadTitle(thread.subject, thread.preview);
+        link.addEventListener("click", function (event) {
+          if (options.onSelect) {
+            event.preventDefault();
+            options.onSelect(thread.id);
+          }
+        });
+        heading.appendChild(link);
+        if (snapshotPresentation.isPinned(thread)) {
+          var marker = document.createElement("span");
+          marker.className = "pinned-thread-marker";
+          marker.textContent = "Pinned";
+          heading.appendChild(document.createTextNode(" "));
+          heading.appendChild(marker);
+        }
+        card.appendChild(heading);
         var meta = document.createElement("p");
         meta.className = "meta";
-        meta.textContent = String(row[5] || "guest") + " · " + Number(row[3] || 0) + " replies · " + String(row[4] || "");
-        list.appendChild(meta);
+        meta.textContent = "by " + thread.author + (thread.createdAt ? " on " + thread.createdAt : "");
+        card.appendChild(meta);
+        if (thread.preview.trim() !== snapshotPresentation.threadTitle(thread.subject, thread.preview).trim()) {
+          var preview = document.createElement("p");
+          preview.className = "thread-card__preview";
+          preview.textContent = thread.preview;
+          card.appendChild(preview);
+        }
+        if (thread.replyCount > 0) {
+          var replies = document.createElement("p");
+          replies.className = "meta";
+          replies.textContent = thread.replyCount + (thread.replyCount === 1 ? " reply" : " replies");
+          card.appendChild(replies);
+        }
+        options.content.appendChild(card);
       });
-      if (!list.firstChild) {
+      if (!rows.length) {
         var empty = document.createElement("p");
         empty.className = "meta";
         empty.textContent = options.emptyMessage || "No recent public threads were included in this snapshot.";
         options.content.appendChild(empty);
         return false;
       }
-      options.content.appendChild(list);
       return true;
     },
     renderThreadDetail: function (options) {
@@ -73,17 +170,19 @@
       }
       clearSnapshotNode(options.content);
       options.content.hidden = false;
-      var back = document.createElement("button");
-      back.type = "button";
-      back.className = "nav-link";
-      back.textContent = options.backLabel || "Back to saved threads";
-      back.addEventListener("click", options.onBack);
-      options.content.appendChild(back);
+      if (options.onBack) {
+        var back = document.createElement("button");
+        back.type = "button";
+        back.className = "nav-link";
+        back.textContent = options.backLabel || "Back to saved threads";
+        back.addEventListener("click", options.onBack);
+        options.content.appendChild(back);
+      }
       rows.forEach(function (row, index) {
         var post = document.createElement("article");
-        post.className = "card";
+        post.className = index === 0 ? "card thread-root-card" : "card post-card";
         if (index === 0) {
-          var heading = document.createElement("h2");
+          var heading = document.createElement("h1");
           heading.textContent = snapshotPresentation.threadTitle(row[2], row[3]);
           post.appendChild(heading);
         }
@@ -97,10 +196,6 @@
         post.appendChild(body);
         options.content.appendChild(post);
       });
-      var onlineOnly = document.createElement("p");
-      onlineOnly.className = "meta";
-      onlineOnly.textContent = "Reading from a saved snapshot. Posting, voting, and tagging require a connection.";
-      options.content.appendChild(onlineOnly);
       return true;
     }
   };
@@ -187,21 +282,26 @@
     function renderOfflineBoard(database) {
       root.dataset.offlineNavigation = "board";
       showOfflineMode();
-      if (window.location.search) {
-        setStatus("This board view requires a connection. The saved recent view is available at the normal Board URL.", "error");
-        clearNode(content);
-        content.hidden = false;
-        var unavailable = document.createElement("p");
-        unavailable.className = "meta";
-        unavailable.textContent = "Reconnect to use filters and other board views.";
-        content.appendChild(unavailable);
-        return;
-      }
       setStatus("Showing saved board content offline.", "ok");
+      var parameters = new URLSearchParams(window.location.search);
+      var boardState = {
+        view: parameters.get("view") === "liked" ? "liked" : "all",
+        sort: ["newest", "oldest", "top"].indexOf(parameters.get("sort")) !== -1
+          ? parameters.get("sort")
+          : "newest"
+      };
       snapshotPresentation.renderThreadList({
         content: content,
         database: database,
-        heading: "Recent threads",
+        boardState: boardState,
+        emptyMessage: boardState.view === "liked"
+          ? "No liked public threads were included in this snapshot."
+          : "No recent public threads were included in this snapshot.",
+        onBoardChange: function (nextState) {
+          var nextUrl = "/?view=" + encodeURIComponent(nextState.view) + "&sort=" + encodeURIComponent(nextState.sort);
+          window.history.pushState({}, "", nextUrl);
+          renderOfflineBoard(database);
+        },
         onSelect: function (threadId) {
           window.location.assign(snapshotPresentation.normalThreadUrl(threadId));
         }
@@ -213,12 +313,8 @@
       showOfflineMode();
       setStatus("Showing saved thread content offline.", "ok");
       snapshotPresentation.renderThreadDetail({
-        backLabel: "Back to Board",
         content: content,
         database: database,
-        onBack: function () {
-          window.location.assign("/");
-        },
         onMissing: function () {
           clearNode(content);
           content.hidden = false;
@@ -263,6 +359,9 @@
       var database = event.detail.database;
       if (window.location.pathname === "/") {
         renderOfflineBoard(database);
+        window.addEventListener("popstate", function () {
+          renderOfflineBoard(database);
+        });
         return;
       }
       var pathThreadId = snapshotPresentation.threadIdFromPathname(window.location.pathname);

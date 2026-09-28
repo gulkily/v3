@@ -2373,12 +2373,14 @@ PHP;
         $reader = $this->render($application, '/offline/');
 
         assertStringContains('data-offline-reader', $reader);
+        assertStringContains('class="stack thread-list" data-offline-reader', $reader);
         assertStringContains('data-snapshot-url="/offline/snapshot.sqlite3"', $reader);
         assertStringContains('data-role="offline-reader-status"', $reader);
         assertStringContains('data-role="offline-mode-bar"', $reader);
         assertStringContains('offline mode', $reader);
         assertStringContains('/assets/sql-wasm.', $reader);
         assertStringContains('/assets/offline_reader.', $reader);
+        assertStringContains('/assets/thread-list.', $reader);
         assertStringNotContains('class="nav-link is-active" href="/offline/"', $reader);
         assertStringContains('rel="manifest" href="/manifest.webmanifest"', $reader);
         assertStringContains('/assets/pwa_registration.', $reader);
@@ -2401,11 +2403,26 @@ PHP;
         assertStringNotContains('href="/offline/"', $board);
         assertStringContains('refresh-offline-reader', $serviceWorker);
         assertStringContains('networkFirstNavigation', $serviceWorker);
+        assertStringContains('zenmemes-offline-reader-v4', $serviceWorker);
         assertStringContains('url.pathname.startsWith("/assets/")', $serviceWorker);
         assertStringNotContains('/api/', $serviceWorker);
         assertStringContains('navigator.serviceWorker.register("/service_worker.js", { scope: "/" })', $registration);
         assertStringContains('registration.unregister()', $registration);
         assertStringContains('/offline/snapshot.sqlite3', $registration);
+    }
+
+    public function testOfflineReaderUsesBoardControlsAndPinnedSnapshotPresentation(): void
+    {
+        $readerScript = (string) file_get_contents(dirname(__DIR__) . '/public/assets/offline_reader.js');
+
+        assertStringContains('appendBoardControls', $readerScript);
+        assertStringContains('thread_labels_json', $readerScript);
+        assertStringContains('pinned-thread-marker', $readerScript);
+        assertStringContains('group: "view"', $readerScript);
+        assertStringContains('group: "sort"', $readerScript);
+        assertStringContains('window.history.pushState', $readerScript);
+        assertStringContains('card thread-card', $readerScript);
+        assertStringContains('card thread-root-card', $readerScript);
     }
 
     public function testPrivateLayoutDoesNotRegisterOfflineReaderPwa(): void

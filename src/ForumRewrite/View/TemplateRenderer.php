@@ -30,7 +30,7 @@ final class TemplateRenderer
         'codebase_state.php' => ['/assets/tool-details.css'],
         'feature_flags.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
-        'offline_reader.php' => ['/assets/sqlite.css'],
+        'offline_reader.php' => ['/assets/sqlite.css', '/assets/thread-list.css'],
         'tags.php' => ['/assets/tags.css'],
         'tag.php' => ['/assets/thread-list.css'],
         'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/compose.css'],
