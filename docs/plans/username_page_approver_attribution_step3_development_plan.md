@@ -23,3 +23,25 @@
 - Risks or open questions:
   - None beyond Stage 1's open questions (list carries over unchanged)
 - Canonical components/API contracts touched: `templates/pages/username.php` only (reuses existing `$e()` helper; no new component)
+
+## Stage 3 (amendment)
+- Goal: extend `aggregateApproverUsernames()` to (a) include seeded root approvals and (b) carry each entry's profile slug so the template can link it
+- Dependencies: Stage 1's helper and render wiring; no query/schema changes (`approved_by_profile_slug` already selected by `ProfileRepository::COLUMNS`)
+- Expected changes:
+  - Change the helper's exclusion rule: only skip an entry when `approved_by_label` is empty; no longer skip solely because `approved_by_identity_id` is null (root case) — self-exclusion still applies via `$ownIdentityIds` (root's null identity id can't match a real identity, so it's naturally unaffected)
+  - Change return shape from `array<int, string>` (flat usernames) to `array<int, array{label: string, slug: ?string}>`, de-duplicated by label (so multiple root-approved profiles collapse to one `root` entry with `slug === null`)
+  - Update the `username()` render array's `approverUsernames` key to the new shape (template updated in Stage 4)
+- Verification approach: reflection-based smoke test (as used in Stage 1) with fixtures covering: a root-approved profile mixed with a normal approver, multiple root-approved profiles (still one `root` entry), and the existing self-approval/zero-approver cases
+- Risks or open questions:
+  - None
+- Canonical components/API contracts touched: `ProfilePageController::aggregateApproverUsernames()` return shape (internal to controller/template, no external API)
+
+## Stage 4 (amendment)
+- Goal: render each approver as a link when a profile slug exists, plain text otherwise, reusing `profile.php`'s existing link/plain-text pattern
+- Dependencies: Stage 3 must supply the `{label, slug}` shape
+- Expected changes:
+  - `templates/pages/username.php`: replace the flat `implode(', ', $approverUsernames)` with a loop that renders `<a href="/profiles/{slug}">{label}</a>` when `slug` is present, else plain escaped `{label}`, joined with `, `
+- Verification approach: manual render check (as used in Stage 2) for a mix of linked and unlinked (`root`) entries, confirming correct HTML and escaping
+- Risks or open questions:
+  - None
+- Canonical components/API contracts touched: `templates/pages/username.php` only; link markup mirrors `templates/pages/profile.php`'s existing conditional (no new link convention introduced)

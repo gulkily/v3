@@ -13,18 +13,21 @@ On `/user/{username}`, there's no way to see who vouched for/approved this user'
 - Usernames are sourced only from the identity's **approved** profiles (unapproved profiles contribute nothing).
 - List is de-duplicated (an approver who approved multiple of this user's profiles appears once).
 - Self-approvals are excluded from the list.
+- **(Amended)** Seeded root approvals (`approved_by_label === 'root'`, `approved_by_identity_id === null`) are **included** in the list rather than skipped, shown as `root`; multiple root-approved profiles still collapse to a single `root` entry.
+- **(Amended)** Each entry in the list links to the approver's profile (`/profiles/{approved_by_profile_slug}`) when a profile slug exists, matching the existing single-profile "Approved by" link behavior; `root` has no profile slug, so it renders as plain (unlinked) text.
 - If no qualifying approvers exist (e.g., zero approved profiles), the line is omitted entirely.
 
 ## Shared Component Inventory
-- `templates/pages/profile.php` (and `templates/pages/forte_profile.php`) already render a single profile's `Approved by: <link>` using `approved_by_label` / `approved_by_profile_slug`. This feature reuses that same underlying data field (`approved_by_label`) as its source of truth, but aggregates across multiple profiles into one line rather than reusing the per-profile markup directly — no existing component already produces an aggregated, de-duplicated approver list, so this aggregation logic is new.
+- `templates/pages/profile.php` (and `templates/pages/forte_profile.php`) already render a single profile's `Approved by: <link-or-plain-text>` using `approved_by_label` / `approved_by_profile_slug` (linking only when a slug is present, else plain text — this is exactly the "root has no link" case). This feature reuses both that data source and that same link/plain-text conditional, rather than inventing a new link convention.
 - No new API endpoint needed; `ProfilePageController::username()` already loads the identity's profiles and can access their `approved_by_*` fields.
 
 ## Simple User Flow
 1. Visitor navigates to `/user/{username}`.
-2. Page loads and computes the distinct set of approvers across the identity's approved profiles, excluding self-approvals.
-3. If the set is non-empty, a new "Approved by" line renders directly below the existing summary stats.
+2. Page loads and computes the distinct set of approvers (label + optional profile slug) across the identity's approved profiles, excluding self-approvals but including root/seed approvals.
+3. If the set is non-empty, a new "Approved by" line renders directly below the existing summary stats, each entry linked when a slug exists.
 
 ## Success Criteria
-- Visiting `/user/{username}` for a user with one or more approved profiles shows a correct, de-duplicated, comma-separated list of approver usernames.
+- Visiting `/user/{username}` for a user with one or more approved profiles shows a correct, de-duplicated, comma-separated list of approver usernames, each linked to its profile where a slug exists.
+- A root/seed-approved profile contributes a single unlinked `root` entry to the list.
 - A user who self-approved a profile does not see themselves listed as their own approver.
 - A user with zero approved profiles shows no "Approved by" line (no empty/broken output).
