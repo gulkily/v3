@@ -6,7 +6,7 @@ $threadComposeSubjectPlaceholder = $isCompactThreadCompose ? 'Subject' : 'Thread
 $threadComposeBodyPlaceholder = $isCompactThreadCompose ? 'What do you want to discuss?' : 'Body';
 $threadComposeSubmitLabel = $isCompactThreadCompose ? 'Post' : 'Create thread';
 $threadComposeAnonymousLabel = $isCompactThreadCompose ? 'Post anonymously' : 'Create thread anonymously';
-$threadComposeAction = (string) ($action ?? '');
+$threadComposeAction = (string) ($action ?? '/compose/thread');
 ?>
 <form method="post"<?= $threadComposeAction !== '' ? ' action="' . $e($threadComposeAction) . '"' : '' ?> class="<?= $e($threadComposeFormClass) ?>" data-compose-form data-compose-kind="thread">
 <?php if ($isCompactThreadCompose): ?>
