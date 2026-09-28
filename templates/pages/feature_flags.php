@@ -8,12 +8,7 @@ foreach ($flags as $flag) {
 ?>
 <section class="stack">
   <article class="card">
-    <div class="nav board-controls-nav">
-<?php foreach ($toolNavOptions as $option): ?>
-<?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
-      <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
-<?php endforeach; ?>
-    </div>
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
   <article class="card">
     <h1>Feature Flags</h1>
@@ -30,6 +25,8 @@ foreach ($flags as $flag) {
   $definition = $flag->definition;
   $parentDefinition = $definition->requiresEnabledFlag !== null ? $registry->get($definition->requiresEnabledFlag) : null;
   $rowClass = 'feature-flag-row' . ($flag->isBlockedByDependency() ? ' is-blocked' : '');
+  $canEditFlag = $flag->canChangeFromSite() && $canManageFeatureFlags;
+  $isReadOnlyForViewer = $flag->canChangeFromSite() && !$canManageFeatureFlags;
 ?>
         <div class="<?= $e($rowClass) ?>" data-feature-flag-row data-flag-key="<?= $e($definition->key) ?>" data-flag-default="<?= $definition->defaultValue ? 'true' : 'false' ?>">
           <div class="feature-flag-info">
@@ -45,6 +42,9 @@ foreach ($flags as $flag) {
             <p class="feature-flag-description meta"><?= $e($definition->description) ?></p>
             <div class="feature-flag-meta meta">
               <code class="feature-flag-key"><?= $e($definition->key) ?></code>
+<?php if ($flag->isLocked()): ?>
+              <span class="feature-flag-info-icon" tabindex="0" title="<?= $e($flag->lockReason()) ?>" aria-label="<?= $e($flag->lockReason()) ?>">&#9432;</span>
+<?php endif; ?>
 <?php if ($parentDefinition !== null): ?>
               <span class="feature-flag-dependency<?= $flag->isBlockedByDependency() ? ' is-blocked' : '' ?>">
 <?php if ($flag->isBlockedByDependency()): ?>
@@ -54,7 +54,10 @@ foreach ($flags as $flag) {
 <?php endif; ?>
               </span>
 <?php endif; ?>
-<?php if (!$flag->isDefault() && $flag->canChangeFromSite()): ?>
+<?php if ($isReadOnlyForViewer): ?>
+              <span class="feature-flag-info-icon" tabindex="0" title="Read-only &mdash; requires a root-approved identity to change." aria-label="Read-only, requires a root-approved identity to change.">&#9432;</span>
+<?php endif; ?>
+<?php if (!$flag->isDefault() && $canEditFlag): ?>
               <form method="post" action="/tools/feature-flags/" class="inline-form feature-flag-reset-form" data-feature-flag-form>
                 <input type="hidden" name="key" value="<?= $e($definition->key) ?>">
                 <input type="hidden" name="value" value="<?= $definition->defaultValue ? 'true' : 'false' ?>">
@@ -65,7 +68,7 @@ foreach ($flags as $flag) {
             </div>
           </div>
           <div class="feature-flag-control">
-<?php if ($flag->canChangeFromSite()): ?>
+<?php if ($canEditFlag): ?>
             <form method="post" action="/tools/feature-flags/" class="inline-form" data-feature-flag-form data-feature-flag-toggle>
               <input type="hidden" name="key" value="<?= $e($definition->key) ?>">
               <input type="hidden" name="value" value="<?= $flag->effectiveValue ? 'false' : 'true' ?>">

@@ -83,6 +83,9 @@
   <meta name="app-version-endpoint" content="/api/version">
 <?php endif; ?>
   <link rel="icon" href="/favicon.ico" sizes="32x32">
+<?php if (!$approvedMembersOnlyEnabled): ?>
+  <link rel="manifest" href="/manifest.webmanifest">
+<?php endif; ?>
   <style data-role="critical-css"><?= $criticalCss ?></style>
   <link rel="preload" href="<?= $e($siteCssPath) ?>" as="style" fetchpriority="high">
   <link rel="stylesheet" href="<?= $e($siteCssPath) ?>" media="print" onload="this.media='all'">
@@ -101,6 +104,9 @@
   <script src="<?= $e($inviteNavigationScriptPath) ?>" defer></script>
 <?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>
+<?php endif; ?>
+<?php if (!$approvedMembersOnlyEnabled): ?>
+  <script src="<?= $e($pwaRegistrationScriptPath) ?>" defer></script>
 <?php endif; ?>
 </head>
 <body<?= $publicAuthenticationResume ? ' data-private-site-auth-state data-public-auth-resume="true" data-authenticated-identity-id=""' : '' ?>>

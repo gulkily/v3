@@ -7,6 +7,7 @@ require __DIR__ . '/../autoload.php';
 use ForumRewrite\Application;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
+use ForumRewrite\Activity\ActivityService;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\Host\FrontController;
@@ -1298,7 +1299,7 @@ PHP;
         assertStringContains('href="/activity/">See all recent activity</a>', $instance);
         assertStringContains('Repository snapshot:', $instance);
         assertStringContains('preview, not a complete archive listing', $instance);
-        assertStringContains('board-controls-nav', $toolsBackup);
+        assertStringContains('class="nav"', $toolsBackup);
         assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
         assertStringContains('/user/guest', $instance);
@@ -1316,7 +1317,7 @@ PHP;
         assertStringContains('/activity/', $tools);
         assertStringContains('Recent forum activity across content, approvals, and identity events.', $tools);
         assertStringContains('class="nav-link is-active" href="/tools/"', $tools);
-        assertStringContains('board-controls-nav', $tools);
+        assertStringContains('class="nav"', $tools);
         assertSame(1, substr_count($tools, 'href="/tools/">Tools</a>'));
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
@@ -1324,13 +1325,18 @@ PHP;
         assertStringContains('Current application version, repository head, and read-model health.', $tools);
         assertStringContains('/tools/feature-flags/', $tools);
         assertStringContains('Registered site feature flags, defaults, effective values, and override sources.', $tools);
-        assertStringContains('/account/key/', $tools);
+        assertStringContains('/forte', $tools);
+        assertStringContains('Classic three-pane newsreader view of the whole board - folders, thread list, and preview.', $tools);
+        assertStringNotContains('tool-launcher-button" href="/account/key/"', $tools);
+        assertStringContains('tools-nav-divider', $tools);
+        assertStringContains('class="nav-link nav-link-standalone" href="/activity/"', $tools);
+        assertStringContains('class="nav-link nav-link-standalone" href="/forte"', $tools);
         assertStringContains('System State', $codebase);
         assertStringContains('<strong>Name:</strong> zenmemes', $codebase);
         assertStringContains('<strong>Admin:</strong>', $codebase);
         assertStringContains('grep &#039;^Instance-Name:&#039; state/local_repository/records/instance/public.txt', $codebase);
         assertStringContains("SELECT username_token, MIN(username) AS username FROM profiles WHERE approved_by_label = &#039;root&#039; GROUP BY username_token ORDER BY username_token ASC;", $codebase);
-        assertStringContains('board-controls-nav', $codebase);
+        assertStringContains('class="nav"', $codebase);
         assertStringContains('class="nav-link is-active" href="/tools/codebase/"', $codebase);
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $codebase);
         assertStringContains('Repository head', $codebase);
@@ -1345,9 +1351,12 @@ PHP;
         assertStringContains('/downloads/repository.tar.gz', $codebase);
         assertFingerprintedAsset($codebase, 'tool-details.css');
         assertStringContains('Feature Flags', $featureFlags);
-        assertStringContains('board-controls-nav', $featureFlags);
+        assertStringContains('class="nav"', $featureFlags);
         assertStringContains('class="nav-link is-active" href="/tools/feature-flags/"', $featureFlags);
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $featureFlags);
+        assertStringContains('tools-nav-divider', $featureFlags);
+        assertStringContains('class="nav-link nav-link-standalone" href="/activity/"', $featureFlags);
+        assertStringContains('class="nav-link nav-link-standalone" href="/forte"', $featureFlags);
         assertFingerprintedAsset($featureFlags, 'feature_flags.js');
         assertFingerprintedAsset($featureFlags, 'tool-details.css');
         assertStringContains('FORUM_UNICODE_AUTHORED_TEXT', $featureFlags);
@@ -1458,7 +1467,7 @@ PHP;
         assertStringContains('data-role="compose-identity-status" hidden', $composeThread);
         assertStringContains('data-action="submit-anonymous-compose"', $composeThread);
         assertStringContains('Bookmarklets', $bookmarklets);
-        assertStringContains('board-controls-nav', $bookmarklets);
+        assertStringContains('class="nav"', $bookmarklets);
         assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $bookmarklets);
         assertFingerprintedAsset($bookmarklets, 'tools_bookmarklets.js');
@@ -1821,6 +1830,8 @@ PHP;
         assertStringContains('badge-locked', $featureFlags);
         assertStringContains('title="Not configurable from the site."', $featureFlags);
         assertStringContains('locked</span>', $featureFlags);
+        assertStringContains('feature-flag-info-icon', $featureFlags);
+        assertStringContains('title="Not configurable from the site." aria-label="Not configurable from the site."', $featureFlags);
     }
 
     public function testFeatureFlagsPageDimsAndWarnsOnDependencyBlockedFlag(): void
@@ -1996,10 +2007,13 @@ PHP;
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
 
         $classic = $this->render($application, '/activity/?view=content');
-        $forte = $this->render($application, '/forte/activity/?view=content');
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $activityId = (int) $pdo->query("SELECT id FROM activity WHERE source_path = 'records/posts/root-001.txt'")->fetchColumn();
+        $fortePayload = json_decode($this->render($application, '/api/forte_activity_detail?id=' . $activityId), true);
+        $forte = (string) $fortePayload['html'];
 
         assertStringContains('Commit files (', $classic);
-        assertStringContains('Commit files (', $forte);
+        assertStringContains('Relevant files (', $forte);
         assertStringContains('records/posts/root-001.txt', $classic);
         assertStringContains('records/posts/root-001.txt', $forte);
         assertStringContains('post record', $classic);
@@ -2024,7 +2038,10 @@ PHP;
 
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         $classic = $this->render($application, '/activity/?view=all');
-        $forte = $this->render($application, '/forte/activity/?view=all');
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $activityId = (int) $pdo->query('SELECT id FROM activity WHERE source_path = ' . $pdo->quote($labelPath))->fetchColumn();
+        $fortePayload = json_decode($this->render($application, '/api/forte_activity_detail?id=' . $activityId), true);
+        $forte = (string) $fortePayload['html'];
         $publicKeyPath = 'records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc';
 
         assertTrue(preg_match('/Signer:\s+openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954/', $classic) === 1);
@@ -2049,6 +2066,31 @@ PHP;
                 assertTrue($item['source_commit_files'] !== []);
             }
         }
+    }
+
+    public function testActivityRowsStayLightweightUntilDetailRequested(): void
+    {
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->render($application, '/activity/?view=all');
+        $service = new ActivityService(
+            static fn (): PDO => new PDO('sqlite:' . $databasePath),
+            $repositoryRoot,
+            $databasePath,
+        );
+
+        $rows = $service->fetchActivityRows('all', 'date', 'desc')['items'];
+        $items = $service->fetchActivity('all', 'date', 'desc')['items'];
+
+        assertSame(
+            array_column($items, 'id'),
+            array_map(static fn (array $row): int => (int) $row['id'], $rows),
+        );
+        assertFalse(array_key_exists('source_commit_files', $rows[0]));
+
+        $detail = $service->fetchActivityDetail((int) $rows[0]['id']);
+        assertSame((int) $rows[0]['id'], $detail['id']);
+        assertTrue(array_key_exists('source_commit_files', $detail));
     }
 
     public function testActivityFetchLimitsAfterApplyingViewFilter(): void
@@ -2221,7 +2263,7 @@ PHP;
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/tools/feature-flags/', $tools);
         assertFingerprintedAsset($bookmarklets, 'tools_bookmarklets.js');
-        assertStringContains('board-controls-nav', $bookmarklets);
+        assertStringContains('class="nav"', $bookmarklets);
         assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $bookmarklets);
         assertStringContains('data-bookmarklet-kind="clip"', $bookmarklets);
@@ -2361,6 +2403,99 @@ PHP;
         assertStringContains('queries run locally', $viewer);
         assertStringContains('class="nav-link is-active" href="/tools/sqlite/"', $viewer);
         assertStringContains('href="/tools/sqlite/"', $this->render($application, '/tools/'));
+    }
+
+    public function testOfflineReaderRouteUsesLocalSnapshotShell(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $reader = $this->render($application, '/offline/');
+
+        assertStringContains('data-offline-reader', $reader);
+        assertStringContains('class="stack thread-list" data-offline-reader', $reader);
+        assertStringContains('data-snapshot-url="/offline/snapshot.sqlite3"', $reader);
+        assertStringContains('data-role="offline-reader-status"', $reader);
+        assertStringContains('data-role="offline-mode-bar"', $reader);
+        assertStringContains('offline mode', $reader);
+        assertStringContains('/assets/sql-wasm.', $reader);
+        assertStringContains('/assets/offline_reader.', $reader);
+        assertStringContains('/assets/thread-list.', $reader);
+        assertStringContains('class="nav-link is-active" href="/"', $reader);
+        assertStringNotContains('class="nav-link is-active" href="/offline/"', $reader);
+        assertStringContains('rel="manifest" href="/manifest.webmanifest"', $reader);
+        assertStringContains('/assets/pwa_registration.', $reader);
+    }
+
+    public function testPublicLayoutRegistersTheNormalNavigationOfflineWorker(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $board = $this->render($application, '/');
+        $serviceWorker = (string) file_get_contents(dirname(__DIR__) . '/public/service_worker.js');
+        $registration = (string) file_get_contents(dirname(__DIR__) . '/public/assets/pwa_registration.js');
+
+        assertStringContains('rel="manifest" href="/manifest.webmanifest"', $board);
+        assertStringContains('/assets/pwa_registration.', $board);
+        assertStringNotContains('href="/offline/"', $board);
+        assertStringContains('refresh-offline-reader', $serviceWorker);
+        assertStringContains('networkFirstNavigation', $serviceWorker);
+        assertStringContains('zenmemes-offline-reader-v6', $serviceWorker);
+        assertStringContains('url.pathname.startsWith("/assets/")', $serviceWorker);
+        assertStringNotContains('/api/', $serviceWorker);
+        assertStringContains('navigator.serviceWorker.register("/service_worker.js", { scope: "/" })', $registration);
+        assertStringContains('registration.unregister()', $registration);
+        assertStringContains('/offline/snapshot.sqlite3', $registration);
+    }
+
+    public function testOfflineReaderUsesBoardControlsAndPinnedSnapshotPresentation(): void
+    {
+        $readerScript = (string) file_get_contents(dirname(__DIR__) . '/public/assets/offline_reader.js');
+
+        assertStringContains('appendBoardControls', $readerScript);
+        assertStringContains('thread_labels_json', $readerScript);
+        assertStringContains('pinned-thread-marker', $readerScript);
+        assertStringContains('group: "view"', $readerScript);
+        assertStringContains('group: "sort"', $readerScript);
+        assertStringContains('window.history.pushState', $readerScript);
+        assertStringContains('card thread-card', $readerScript);
+        assertStringContains('card post-card thread-root-card', $readerScript);
+        assertStringContains('bodyExcerpt', $readerScript);
+        assertStringContains('heatLevel', $readerScript);
+        assertStringContains('dataset.heat', $readerScript);
+    }
+
+    public function testPrivateLayoutDoesNotRegisterOfflineReaderPwa(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+
+        try {
+            $application = new Application(
+                dirname(__DIR__),
+                $this->repositoryRoot,
+                $this->databasePath,
+            );
+
+            $lobby = $this->render($application, '/lobby/');
+
+            assertStringNotContains('rel="manifest" href="/manifest.webmanifest"', $lobby);
+            assertStringNotContains('/assets/pwa_registration.', $lobby);
+            assertStringNotContains('href="/offline/"', $lobby);
+        } finally {
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
     }
 
     public function testSqliteViewerLoadsLocalRuntimeAssets(): void
@@ -2684,6 +2819,47 @@ PHP;
         }
     }
 
+    public function testFrontControllerServesPublicOfflineSnapshotFromActiveRelease(): void
+    {
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($staticHtmlRoot . '/current/offline', 0777, true);
+        file_put_contents($staticHtmlRoot . '/current/offline/snapshot.sqlite3', "SQLite format 3\000offline fixture");
+
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3', []);
+
+            assertStringContains('SQLite format 3', $response);
+            assertStringContains('offline fixture', $response);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
+    public function testFrontControllerDoesNotServeOfflineSnapshotWhenMembersOnlyIsEnabled(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($staticHtmlRoot . '/current/offline', 0777, true);
+        file_put_contents($staticHtmlRoot . '/current/offline/snapshot.sqlite3', "SQLite format 3\000offline fixture");
+
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3', []);
+
+            assertStringNotContains('SQLite format 3', $response);
+            assertStringContains('Reconnecting', $response);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
     public function testFrontControllerRevalidatesStaticArtifactByEtag(): void
     {
         $html = '<!doctype html><html><body><h1>Static Board</h1></body></html>';
@@ -2857,6 +3033,8 @@ PHP;
         foreach (array_unique($assetMatches[0]) as $assetPath) {
             assertTrue(is_file($artifactRoot . $assetPath));
         }
+        assertTrue(is_file($artifactRoot . '/offline/snapshot.sqlite3'));
+        assertStringContains('SQLite format 3', (string) file_get_contents($artifactRoot . '/offline/snapshot.sqlite3'));
         foreach (\ForumRewrite\View\ThemeRegistry::stylesheetPaths() as $path) {
             $fingerprintedPath = AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', $path);
             assertStringContains($fingerprintedPath, $indexArtifact);

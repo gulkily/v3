@@ -152,6 +152,18 @@ pre {
   white-space: nowrap;
 }
 
+.offline-mode-bar {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  font-family: var(--ui-font);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 0.3rem 0.55rem;
+  text-transform: uppercase;
+}
+
 .eyebrow {
   margin: 0 0 0.5rem;
   font-family: var(--ui-font);
@@ -178,6 +190,19 @@ pre {
 
 .nav-link.is-active {
   background: var(--panel);
+}
+
+.tools-nav-divider {
+  align-self: center;
+  width: 1px;
+  height: 1.4rem;
+  background: var(--line);
+  flex: 0 0 auto;
+}
+
+.nav-link-standalone-marker {
+  margin-left: 0.2rem;
+  opacity: 0.7;
 }
 
 .board-controls-nav > *:last-child {

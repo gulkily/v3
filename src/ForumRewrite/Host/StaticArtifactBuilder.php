@@ -6,6 +6,7 @@ namespace ForumRewrite\Host;
 
 use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Offline\PublicOfflineSnapshotBuilder;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use PDO;
@@ -97,6 +98,11 @@ final class StaticArtifactBuilder
         $this->renderRouteBatch('profile pages', $this->fetchIds('SELECT profile_slug FROM profiles ORDER BY profile_slug'), function (string $profileSlug) use ($application): void {
             $this->writeRouteArtifact($application, '/profiles/' . $profileSlug, $this->artifactRoot . '/profiles/' . $profileSlug . '.html');
         });
+        $this->reportProgress('Building public offline reading snapshot...');
+        (new PublicOfflineSnapshotBuilder())->build(
+            $this->databasePath,
+            $this->artifactRoot . '/offline/snapshot.sqlite3',
+        );
         $this->reportProgress('Fingerprinting and copying referenced assets complete.');
     }
 

@@ -22,10 +22,10 @@ have it already presented in mini-thread view in the activity
 
 scoring
 -------
-make another llm/agentic feature for Fastmod using lesser models
-	sending only short instructions and the text of the post
-		for replies, include some context
-	request only a 0-1 probability in response
+xmake another llm/agentic feature for Fastmod using lesser models
+x	sending only short instructions and the text of the post
+x		for replies, include some context
+x	request only a 0-1 probability in response
 	later, as a separate requirement: use validated Fastmod probabilities to
 	hold qualifying content for human moderation before it is public
 		requires a threshold, calibration, audit trail, override, and rollback
@@ -37,15 +37,11 @@ clean up the failing tests
 
 offline support feature stub
 ============================
-what should work
-	once i've been to zenmemes.com once, i should be able to get back to it even when offline
-		it should show older data, but i should be able to access all the features offline
-			browsing the thread listing
-			opening and reading the comments
-			voting/tagging
-			commenting/replying
-			all the data should be queued until next connection
-				user should know this is happening
+Tracked in `docs/plans/backlog/offline_support_roadmap.md`.
+	Completed: bounded public read-only Board/thread snapshot.
+	Next: snapshot lifecycle confidence and cache controls.
+	Later: broader read-only navigation, saved drafts, queued reactions, and
+	queued replies/threads with explicit sync, conflict, and security design.
 
 
 post presentation
@@ -63,3 +59,23 @@ feature flags page
 add search/filter toolbar (search input + status chips: All/Enabled/Overridden/Locked)
 to /tools/feature-flags/ — deferred from the layout/badges/grouping redesign,
 see docs/plans/feature_flags_redesign_step2/3_*.md
+
+
+why are some feature flags locked?
+	how to change locked feature flags?
+		should this be explained on the page?
+
+should all docs be available from the site?
+
+in forte, the board and users sections load instantly, while activity takes too long
+
+site is architected to make it easy for developers to extend and build their own features
+	but this is hard to see without examples
+		so we should have some examples of how to extend the site, and how to build new features
+			especially using llm/agentic features, and how to use the existing features to build new ones
+				example 1: for posts that have a high moderation score, an automatic nvc rewrite/reply
+				example 2: for posts with high-signal information, aggregate and summarize the information into a new post
+				example 3: for posts that propose a new feature, automatically create a new feature request post with the relevant information
+				example 4: for short-form bug reports, write out the steps to reproduce, expected, and actual
+
+merge agent reply queue into task queue

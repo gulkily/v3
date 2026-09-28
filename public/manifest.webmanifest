@@ -1,0 +1,10 @@
+{
+  "name": "Zenmemes Offline Reading",
+  "short_name": "Zenmemes",
+  "start_url": "/offline/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f1e8",
+  "theme_color": "#f4f1e8",
+  "icons": [{"src": "/favicon.ico", "sizes": "32x32", "type": "image/x-icon"}]
+}
