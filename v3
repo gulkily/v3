@@ -9,6 +9,7 @@ if [[ -z "${COMMAND}" ]]; then
 Usage:
   ./v3 start [--listen-all|host:port]
   ./v3 test
+  ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 rebuild [repository_root] [database_path]
   ./v3 import-repository <archive.tar.gz> [repository_root] [database_path] [artifact_root] [--dry-run] [--no-commit]
   ./v3 thread-attributes <thread_id_or_record> [repository_root] [database_path]
@@ -57,6 +58,10 @@ case "${COMMAND}" in
   test)
     shift
     php "${ROOT}/tests/run.php" "$@"
+    ;;
+  status)
+    shift
+    php "${ROOT}/scripts/status.php" "$@"
     ;;
   rebuild)
     shift
