@@ -12,6 +12,9 @@
     <p><strong>Approved profiles:</strong> <?= count($approvedProfiles) ?></p>
     <p><strong>Combined threads:</strong> <?= (int) $approvedThreadCount ?></p>
     <p><strong>Combined posts:</strong> <?= (int) $approvedPostCount ?></p>
+<?php if ($approverUsernames !== []): ?>
+    <p><strong>Approved by:</strong> <?= $e(implode(', ', $approverUsernames)) ?></p>
+<?php endif; ?>
   </article>
 
   <article class="card">
