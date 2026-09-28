@@ -2405,7 +2405,7 @@ PHP;
         assertStringContains('href="/tools/sqlite/"', $this->render($application, '/tools/'));
     }
 
-    public function testOfflineReaderRouteUsesLocalSnapshotShell(): void
+    public function testOfflineHealthRouteReportsDeviceReadiness(): void
     {
         $application = new Application(
             dirname(__DIR__),
@@ -2413,7 +2413,33 @@ PHP;
             $this->databasePath,
         );
 
-        $reader = $this->render($application, '/offline/');
+        $health = $this->render($application, '/offline/');
+        $tools = $this->render($application, '/tools/');
+        $healthScript = (string) file_get_contents(dirname(__DIR__) . '/public/assets/offline_health.js');
+
+        assertStringContains('data-offline-health', $health);
+        assertStringContains('data-reader-url="/offline/reader/"', $health);
+        assertStringContains('data-snapshot-url="/offline/snapshot.sqlite3"', $health);
+        assertStringContains('data-role="offline-health-summary"', $health);
+        assertStringContains('data-role="offline-health-checks"', $health);
+        assertStringContains('/assets/offline_health.', $health);
+        assertStringNotContains('data-offline-reader', $health);
+        assertStringContains('href="/offline/"', $tools);
+        assertStringContains('Offline Reading', $tools);
+        assertStringContains('method: "HEAD"', $healthScript);
+        assertStringContains('Not checked while offline', $healthScript);
+        assertStringContains('window.caches.match', $healthScript);
+    }
+
+    public function testOfflineReaderFallbackRouteUsesLocalSnapshotShell(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $reader = $this->render($application, '/offline/reader/');
 
         assertStringContains('data-offline-reader', $reader);
         assertStringContains('class="stack thread-list" data-offline-reader', $reader);
@@ -2447,11 +2473,14 @@ PHP;
         assertStringNotContains('href="/offline/"', $board);
         assertStringContains('refresh-offline-reader', $serviceWorker);
         assertStringContains('networkFirstNavigation', $serviceWorker);
-        assertStringContains('zenmemes-offline-reader-v6', $serviceWorker);
+        assertStringContains('zenmemes-offline-reader-v7', $serviceWorker);
+        assertStringContains('const OFFLINE_HEALTH_URL = "/offline/"', $serviceWorker);
+        assertStringContains('const OFFLINE_READER_URL = "/offline/reader/"', $serviceWorker);
         assertStringContains('url.pathname.startsWith("/assets/")', $serviceWorker);
         assertStringNotContains('/api/', $serviceWorker);
         assertStringContains('navigator.serviceWorker.register("/service_worker.js", { scope: "/" })', $registration);
         assertStringContains('registration.unregister()', $registration);
+        assertStringContains('/offline/reader/', $registration);
         assertStringContains('/offline/snapshot.sqlite3', $registration);
     }
 

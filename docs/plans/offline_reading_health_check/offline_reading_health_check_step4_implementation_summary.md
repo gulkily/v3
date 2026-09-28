@@ -30,3 +30,14 @@
   - A Node service-worker fixture verified a refresh cache contains the health page, reader shell, snapshot, reader assets, and SQLite runtime asset.
 - Notes:
   - Cache replacement remains all-or-nothing: the new cache is populated before activation removes an earlier reader cache.
+
+## Stage 4 - Protect offline health contracts
+- Changes:
+  - Replaced the former `/offline/` reader assertion with separate health-page and fallback-reader route coverage.
+  - Added checks for the Tools destination, health-check browser contract, v7 cache route constants, and registration input.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testOfflineHealthRouteReportsDeviceReadiness LocalAppSmokeTest::testOfflineReaderFallbackRouteUsesLocalSnapshotShell LocalAppSmokeTest::testPublicLayoutRegistersTheNormalNavigationOfflineWorker` — 3 run, 3 passed.
+  - `php tests/run.php LocalAppSmokeTest WebServerRoutingTest PublicOfflineSnapshotBuilderTest` — 110 run, 105 passed; the five failures are the existing activity/signature failures tracked by the runner.
+  - The broader suite also surfaced the known lazy-compose browser-fixture failure; no offline-health assertion failed.
+- Notes:
+  - Existing public snapshot and approved-members-only front-controller coverage continues to protect the public-data boundary.
