@@ -2104,7 +2104,7 @@ PHP);
         $_COOKIE = [];
 
         assertStringNotContains('data-feature-flag-toggle', $anonymousForm);
-        assertStringContains('feature-flag-permission-note', $anonymousForm);
+        assertStringContains('title="Read-only &mdash; requires a root-approved identity to change."', $anonymousForm);
         assertStringContains('method="post" action="/tools/feature-flags/"', $form);
         assertStringContains('data-feature-flag-form', $form);
         assertStringContains('Feature flag changes require a root-approved identity.', $unauthorized);

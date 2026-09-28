@@ -48,7 +48,7 @@ foreach ($flags as $flag) {
             <div class="feature-flag-meta meta">
               <code class="feature-flag-key"><?= $e($definition->key) ?></code>
 <?php if ($flag->isLocked()): ?>
-              <span class="feature-flag-lock-reason"><?= $e($flag->lockReason()) ?></span>
+              <span class="feature-flag-info-icon" tabindex="0" title="<?= $e($flag->lockReason()) ?>" aria-label="<?= $e($flag->lockReason()) ?>">&#9432;</span>
 <?php endif; ?>
 <?php if ($parentDefinition !== null): ?>
               <span class="feature-flag-dependency<?= $flag->isBlockedByDependency() ? ' is-blocked' : '' ?>">
@@ -60,7 +60,7 @@ foreach ($flags as $flag) {
               </span>
 <?php endif; ?>
 <?php if ($isReadOnlyForViewer): ?>
-              <span class="feature-flag-permission-note">Read-only &mdash; requires a root-approved identity to change.</span>
+              <span class="feature-flag-info-icon" tabindex="0" title="Read-only &mdash; requires a root-approved identity to change." aria-label="Read-only, requires a root-approved identity to change.">&#9432;</span>
 <?php endif; ?>
 <?php if (!$flag->isDefault() && $canEditFlag): ?>
               <form method="post" action="/tools/feature-flags/" class="inline-form feature-flag-reset-form" data-feature-flag-form>

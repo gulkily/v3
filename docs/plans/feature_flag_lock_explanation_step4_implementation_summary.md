@@ -46,3 +46,17 @@
 - Notes:
   - All three render states identified in Step 2/3 now have automated coverage: (1) locked flag → visible lock-reason text, (2) mutable + non-root viewer → disabled toggle + read-only note, (3) mutable + root-approved viewer → live toggle, unchanged from prior behavior.
   - This is the final planned stage; all 4 Step 3 stages are implemented and committed.
+
+## Stage 5 - Collapse explanatory text behind a hoverable info icon (post-review follow-up)
+- Changes:
+  - `templates/pages/feature_flags.php`: replaced the always-visible `.feature-flag-lock-reason` span (Stage 2) and `.feature-flag-permission-note` span (Stage 3) with a single reusable `.feature-flag-info-icon` element (`ⓘ`, `&#9432;`) carrying the same explanation via `title`/`aria-label`, keyboard-focusable (`tabindex="0"`).
+  - `public/assets/tool-details.css`: added `.feature-flag-info-icon` styling (soft ink color, `cursor: help`, darkens on hover/focus).
+  - `tests/LocalAppSmokeTest.php` (`testFeatureFlagsPageShowsLockedBadgeWithReasonForNonMutableFlags`): updated assertion from the removed `feature-flag-lock-reason` span to the new icon's `title`/`aria-label` attributes.
+  - `tests/WriteApiSmokeTest.php` (`testFeatureFlagFormSubmitRequiresRootApprovedIdentityAndRedirectsAfterCommit`): updated assertion from the removed `feature-flag-permission-note` class to the icon's `title` text.
+- Verification:
+  - User feedback after Step 4 handoff: "the extra text makes it look too busy... hide it behind a little info icon."
+  - `php -l` on all 4 changed files — no syntax errors.
+  - `./v3 test LocalAppSmokeTest WriteApiSmokeTest` — 202/207 passed, same 5 pre-existing failures, no regressions.
+  - Manual render check confirmed: old `feature-flag-lock-reason`/`feature-flag-permission-note` markup is fully gone; the new icon renders with correct `title`/`aria-label` text for both a locked flag (private-config reason) and a permission-blocked mutable flag.
+- Notes:
+  - Treated as a small follow-up within this Step 4 implementation rather than a new FDP cycle, since it only changes presentation of already-approved content (no new behavior, stories, or requirements).
