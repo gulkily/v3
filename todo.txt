@@ -66,3 +66,14 @@ why are some feature flags locked?
 		should this be explained on the page?
 
 should all docs be available from the site?
+
+in forte, the board and users sections load instantly, while activity takes too long
+
+site is architected to make it easy for developers to extend and build their own features
+	but this is hard to see without examples
+		so we should have some examples of how to extend the site, and how to build new features
+			especially using llm/agentic features, and how to use the existing features to build new ones
+				example 1: for posts that have a high moderation score, an automatic nvc rewrite/reply
+				example 2: for posts with high-signal information, aggregate and summarize the information into a new post
+				example 3: for posts that propose a new feature, automatically create a new feature request post with the relevant information
+				example 4: for short-form bug reports, write out the steps to reproduce, expected, and actual
