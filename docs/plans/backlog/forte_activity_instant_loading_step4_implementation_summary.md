@@ -49,3 +49,13 @@
   - Local API smoke verified `rows_only=1` responses for All, Content, Identity, Bootstraps, Approvals, and Commits; each returned `status: ok` with empty `detail_html`.
 - Notes:
   - The Load more group is hidden while automatic preload owns cursor progression; API cursor behavior remains available and is exercised by the scheduler.
+
+## Stage 6 - Performance and regression proof
+- Changes:
+  - Updated Forte Activity manifest coverage to request technical detail through the new on-selection API.
+- Verification:
+  - Local-server initial `/forte/activity/`: 200, 29,509 bytes, 20 rows, three articles, and 11.304 ms TTFB; Board, Users, classic Activity RSS, Backup, Content, and Commits routes all returned 200.
+  - Focused smoke suite passed: Activity lightweight rows, classic/Forte manifest detail, signature detail, and classic source-commit coverage (4/4).
+  - PHP lint passed for changed PHP/templates; `node --check public/assets/paned_activity_reader.js` and `git diff --check` passed.
+- Notes:
+  - The local warm-path measurement is well below the 500 ms target. The automatic preload remains intentionally asynchronous, so the initial response stays bounded as history grows.

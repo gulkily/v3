@@ -2007,10 +2007,13 @@ PHP;
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
 
         $classic = $this->render($application, '/activity/?view=content');
-        $forte = $this->render($application, '/forte/activity/?view=content');
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $activityId = (int) $pdo->query("SELECT id FROM activity WHERE source_path = 'records/posts/root-001.txt'")->fetchColumn();
+        $fortePayload = json_decode($this->render($application, '/api/forte_activity_detail?id=' . $activityId), true);
+        $forte = (string) $fortePayload['html'];
 
         assertStringContains('Commit files (', $classic);
-        assertStringContains('Commit files (', $forte);
+        assertStringContains('Relevant files (', $forte);
         assertStringContains('records/posts/root-001.txt', $classic);
         assertStringContains('records/posts/root-001.txt', $forte);
         assertStringContains('post record', $classic);
@@ -2035,7 +2038,10 @@ PHP;
 
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         $classic = $this->render($application, '/activity/?view=all');
-        $forte = $this->render($application, '/forte/activity/?view=all');
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $activityId = (int) $pdo->query('SELECT id FROM activity WHERE source_path = ' . $pdo->quote($labelPath))->fetchColumn();
+        $fortePayload = json_decode($this->render($application, '/api/forte_activity_detail?id=' . $activityId), true);
+        $forte = (string) $fortePayload['html'];
         $publicKeyPath = 'records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc';
 
         assertTrue(preg_match('/Signer:\s+openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954/', $classic) === 1);
