@@ -25,6 +25,7 @@ use ForumRewrite\Http\IdentityHintController;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\LlmExchangesController;
 use ForumRewrite\Http\LobbyController;
+use ForumRewrite\Http\OfflineReaderController;
 use ForumRewrite\Http\PostWorkflowApiController;
 use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
@@ -361,6 +362,11 @@ final class Application
 
         if ($path === '/tools/sqlite/' || $path === '/tools/sqlite') {
             $this->sendHtml($this->toolsPageController()->sqliteViewer(), 200);
+            return;
+        }
+
+        if ($path === '/offline/' || $path === '/offline') {
+            $this->sendHtml($this->offlineReaderController()->reader(), 200);
             return;
         }
 
@@ -887,6 +893,11 @@ final class Application
             $this->resolveViewerProfileFromIdentityHint(...),
             $this->invalidateFeatureFlagsCache(...),
         );
+    }
+
+    private function offlineReaderController(): OfflineReaderController
+    {
+        return new OfflineReaderController($this->routeServices());
     }
 
     private function invalidateFeatureFlagsCache(): void
@@ -1440,9 +1451,11 @@ final class Application
             '/lobby', '/lobby/',
             '/instance', '/instance/', '/backup', '/backup/', '/tools/backup', '/tools/backup/',
             '/tools/sqlite', '/tools/sqlite/',
+            '/offline', '/offline/',
             '/tools/llm-exchanges', '/tools/llm-exchanges/',
             '/downloads/repository.tar.gz', '/downloads/repository.zip',
             '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',
+            '/offline/snapshot.sqlite3',
             '/activity', '/activity/',
             '/users', '/users/', '/users/pending', '/users/pending/',
             '/tags', '/tags/',

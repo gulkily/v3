@@ -1,0 +1,56 @@
+# Offline Normal Navigation Step 4 Implementation Summary
+
+## Stage 1 - Safe normal-route offline boundary
+- Changes:
+  - Replaced the prototype-only worker with a versioned root-scoped worker that is network-first for every navigation.
+  - Limited offline document fallback to the normal board URL and normal thread URLs, and retained the bounded snapshot reader shell as the only fallback document.
+  - Restored public registration while retiring the prior `/offline/` scoped registration; grouped the four FDP artifacts in the plans index.
+- Verification:
+  - PHP lint and `node --check` passed for the changed renderer, tests, worker, and registration script.
+  - `php tests/run.php LocalAppSmokeTest WebServerRoutingTest` — 106 run, 101 passed; the five failures are the known long-standing activity/signature failures.
+  - Isolated Chromium smoke at `http://127.0.0.1:8770/` loaded the normal Board, manifest, registration script, and root worker without a reload during the five-second post-install window.
+- Notes:
+  - Normal documents are never cached as navigation responses; an offline shell is returned only after a network failure for an explicitly supported route.
+
+## Stage 2 - Shared snapshot presentation layer
+- Changes:
+  - Exposed reusable local snapshot metadata, URL, list, and thread-detail presentation helpers.
+  - Refactored the hidden reader to use those helpers while retaining its hash-addressed behavior.
+- Verification:
+  - `node --check public/assets/offline_reader.js` and a Node API-contract check passed.
+  - Fresh static release build completed and activated with a snapshot.
+  - Chromium smoke rendered ready/list, a saved thread with the online-only notice, and the missing-thread state.
+- Notes:
+  - The shared renderer accepts selection/back/missing callbacks so normal URLs can choose their own navigation behavior in the next stages.
+
+## Stage 3 - Offline normal board
+- Changes:
+  - Made the cached reader shell recognize an offline fallback at `/` as the normal Board.
+  - Rendered the bounded saved-thread list under Board labeling and directed selections to normal thread URLs.
+  - Added an explicit reconnect state for filtered/query board views rather than silently treating them as the saved recent view.
+- Verification:
+  - `node --check public/assets/offline_reader.js` passed.
+  - A Node DOM smoke loaded a fixture snapshot at `/` and verified Board labeling, saved-content status, and rendered list content.
+- Notes:
+  - Online Board requests remain network-first server documents; this branch runs only inside the shell returned after an offline navigation failure.
+
+## Stage 4 - Offline normal thread
+- Changes:
+  - Recognized `/threads/<id>` inside the cached fallback shell and rendered saved root/reply content through the shared renderer.
+  - Returned back navigation to the normal Board URL and added a precise missing-thread reconnect state.
+- Verification:
+  - `node --check public/assets/offline_reader.js` passed.
+  - Node DOM smoke verified a saved normal thread's title, posts, online-only notice, and a missing thread's reconnect message.
+- Notes:
+  - URL fragments remain harmless presentation hints; the bounded snapshot, rather than a live post lookup, defines what content is available offline.
+
+## Stage 5 - Privacy, recovery, and release verification
+- Changes:
+  - Updated the Offline Reading Runbook for normal Board/thread fallback, network-first behavior, unsupported destinations, and recovery.
+  - Rebuilt and activated a static release containing the completed reader assets and public snapshot.
+- Verification:
+  - Full suite: `php tests/run.php` — 588 run, 582 passed. The six failures are long-standing and unrelated: five activity/signature tests and `LazyComposeSigningTest::testFirstComposeIntentLoadsSigningAssetsAndInitializesComposer`.
+  - Prior focused smoke includes the approved-members-only layout exclusion and public snapshot delivery checks; both passed.
+  - Static build completed: 2,264 HTML files, 36 asset files, and an activated bounded snapshot release.
+- Notes:
+  - This environment's Snap Chromium does not retain an isolated test profile between runs, so a normal-browser online-to-offline-to-online navigation check remains release QA. Its recovery steps are in the runbook.

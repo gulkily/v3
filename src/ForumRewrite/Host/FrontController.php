@@ -51,6 +51,12 @@ final class FrontController
             return;
         }
 
+        $offlineSnapshot = $approvedMembersOnly ? null : $this->resolveOfflineSnapshotPath($method, $requestUri, $cookies);
+        if ($offlineSnapshot !== null) {
+            $this->sendOfflineSnapshot($offlineSnapshot, $method);
+            return;
+        }
+
         $staticArtifact = $approvedMembersOnly ? null : $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
         if ($staticArtifact !== null && is_file($staticArtifact)) {
             $contents = file_get_contents($staticArtifact);
@@ -228,6 +234,30 @@ final class FrontController
     }
 
     /**
+     * @param array<string, string> $cookies
+     */
+    private function resolveOfflineSnapshotPath(string $method, string $requestUri, array $cookies): ?string
+    {
+        if (($method !== 'GET' && $method !== 'HEAD') || $cookies !== []) {
+            return null;
+        }
+
+        if ((parse_url($requestUri, PHP_URL_PATH) ?: '/') !== '/offline/snapshot.sqlite3'
+            || (string) (parse_url($requestUri, PHP_URL_QUERY) ?? '') !== '') {
+            return null;
+        }
+
+        $releaseRoot = $this->activeStaticReleaseRoot();
+        if ($releaseRoot === null) {
+            return null;
+        }
+
+        $path = $releaseRoot . '/offline/snapshot.sqlite3';
+
+        return is_file($path) ? $path : null;
+    }
+
+    /**
      * @param list<string> $paths
      */
     private function firstExistingPath(array $paths): ?string
@@ -256,8 +286,10 @@ final class FrontController
     private function activeStaticReleaseRoot(): ?string
     {
         $currentPath = $this->staticHtmlRoot . '/current';
+        clearstatcache(true, $currentPath);
+        $releaseRoot = realpath($currentPath);
 
-        return is_dir($currentPath) ? $currentPath : null;
+        return $releaseRoot !== false && is_dir($releaseRoot) ? $releaseRoot : null;
     }
 
     private function renderConfigurationError(string $details): string
@@ -320,6 +352,24 @@ final class FrontController
 
         if ($method !== 'HEAD') {
             echo $contents;
+        }
+    }
+
+    private function sendOfflineSnapshot(string $path, string $method): void
+    {
+        $size = filesize($path);
+        if ($size === false) {
+            http_response_code(404);
+            return;
+        }
+
+        http_response_code(200);
+        header('Content-Type: application/x-sqlite3');
+        header('Cache-Control: public, no-cache, must-revalidate, max-age=0');
+        header('Content-Length: ' . (string) $size);
+
+        if ($method !== 'HEAD') {
+            readfile($path);
         }
     }
 

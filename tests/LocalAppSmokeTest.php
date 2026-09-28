@@ -1197,6 +1197,7 @@ PHP;
         assertStringContains('data-compose-root', $board);
         assertStringContains('data-inline-reply-details', $board);
         assertStringContains('class="inline-reply-prompt compact-thread-compose-prompt"', $board);
+        assertStringContains('method="post" action="/compose/thread" class="stack compact-thread-compose-form" data-compose-form data-compose-kind="thread"', $board);
         assertStringContains('data-compose-kind="thread"', $board);
         assertStringContains('data-unicode-authored-text="0"', $board);
         assertStringContains('data-emoji-authored-text="0"', $board);
@@ -2372,6 +2373,99 @@ PHP;
         assertStringContains('href="/tools/sqlite/"', $this->render($application, '/tools/'));
     }
 
+    public function testOfflineReaderRouteUsesLocalSnapshotShell(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $reader = $this->render($application, '/offline/');
+
+        assertStringContains('data-offline-reader', $reader);
+        assertStringContains('class="stack thread-list" data-offline-reader', $reader);
+        assertStringContains('data-snapshot-url="/offline/snapshot.sqlite3"', $reader);
+        assertStringContains('data-role="offline-reader-status"', $reader);
+        assertStringContains('data-role="offline-mode-bar"', $reader);
+        assertStringContains('offline mode', $reader);
+        assertStringContains('/assets/sql-wasm.', $reader);
+        assertStringContains('/assets/offline_reader.', $reader);
+        assertStringContains('/assets/thread-list.', $reader);
+        assertStringContains('class="nav-link is-active" href="/"', $reader);
+        assertStringNotContains('class="nav-link is-active" href="/offline/"', $reader);
+        assertStringContains('rel="manifest" href="/manifest.webmanifest"', $reader);
+        assertStringContains('/assets/pwa_registration.', $reader);
+    }
+
+    public function testPublicLayoutRegistersTheNormalNavigationOfflineWorker(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $board = $this->render($application, '/');
+        $serviceWorker = (string) file_get_contents(dirname(__DIR__) . '/public/service_worker.js');
+        $registration = (string) file_get_contents(dirname(__DIR__) . '/public/assets/pwa_registration.js');
+
+        assertStringContains('rel="manifest" href="/manifest.webmanifest"', $board);
+        assertStringContains('/assets/pwa_registration.', $board);
+        assertStringNotContains('href="/offline/"', $board);
+        assertStringContains('refresh-offline-reader', $serviceWorker);
+        assertStringContains('networkFirstNavigation', $serviceWorker);
+        assertStringContains('zenmemes-offline-reader-v6', $serviceWorker);
+        assertStringContains('url.pathname.startsWith("/assets/")', $serviceWorker);
+        assertStringNotContains('/api/', $serviceWorker);
+        assertStringContains('navigator.serviceWorker.register("/service_worker.js", { scope: "/" })', $registration);
+        assertStringContains('registration.unregister()', $registration);
+        assertStringContains('/offline/snapshot.sqlite3', $registration);
+    }
+
+    public function testOfflineReaderUsesBoardControlsAndPinnedSnapshotPresentation(): void
+    {
+        $readerScript = (string) file_get_contents(dirname(__DIR__) . '/public/assets/offline_reader.js');
+
+        assertStringContains('appendBoardControls', $readerScript);
+        assertStringContains('thread_labels_json', $readerScript);
+        assertStringContains('pinned-thread-marker', $readerScript);
+        assertStringContains('group: "view"', $readerScript);
+        assertStringContains('group: "sort"', $readerScript);
+        assertStringContains('window.history.pushState', $readerScript);
+        assertStringContains('card thread-card', $readerScript);
+        assertStringContains('card post-card thread-root-card', $readerScript);
+        assertStringContains('bodyExcerpt', $readerScript);
+        assertStringContains('heatLevel', $readerScript);
+        assertStringContains('dataset.heat', $readerScript);
+    }
+
+    public function testPrivateLayoutDoesNotRegisterOfflineReaderPwa(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+
+        try {
+            $application = new Application(
+                dirname(__DIR__),
+                $this->repositoryRoot,
+                $this->databasePath,
+            );
+
+            $lobby = $this->render($application, '/lobby/');
+
+            assertStringNotContains('rel="manifest" href="/manifest.webmanifest"', $lobby);
+            assertStringNotContains('/assets/pwa_registration.', $lobby);
+            assertStringNotContains('href="/offline/"', $lobby);
+        } finally {
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
     public function testSqliteViewerLoadsLocalRuntimeAssets(): void
     {
         $application = new Application(
@@ -2693,6 +2787,47 @@ PHP;
         }
     }
 
+    public function testFrontControllerServesPublicOfflineSnapshotFromActiveRelease(): void
+    {
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($staticHtmlRoot . '/current/offline', 0777, true);
+        file_put_contents($staticHtmlRoot . '/current/offline/snapshot.sqlite3', "SQLite format 3\000offline fixture");
+
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3', []);
+
+            assertStringContains('SQLite format 3', $response);
+            assertStringContains('offline fixture', $response);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
+    public function testFrontControllerDoesNotServeOfflineSnapshotWhenMembersOnlyIsEnabled(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($staticHtmlRoot . '/current/offline', 0777, true);
+        file_put_contents($staticHtmlRoot . '/current/offline/snapshot.sqlite3', "SQLite format 3\000offline fixture");
+
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3', []);
+
+            assertStringNotContains('SQLite format 3', $response);
+            assertStringContains('Reconnecting', $response);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
     public function testFrontControllerRevalidatesStaticArtifactByEtag(): void
     {
         $html = '<!doctype html><html><body><h1>Static Board</h1></body></html>';
@@ -2866,6 +3001,8 @@ PHP;
         foreach (array_unique($assetMatches[0]) as $assetPath) {
             assertTrue(is_file($artifactRoot . $assetPath));
         }
+        assertTrue(is_file($artifactRoot . '/offline/snapshot.sqlite3'));
+        assertStringContains('SQLite format 3', (string) file_get_contents($artifactRoot . '/offline/snapshot.sqlite3'));
         foreach (\ForumRewrite\View\ThemeRegistry::stylesheetPaths() as $path) {
             $fingerprintedPath = AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', $path);
             assertStringContains($fingerprintedPath, $indexArtifact);
