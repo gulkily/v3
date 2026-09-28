@@ -152,6 +152,7 @@ final class TemplateRenderer
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
             'inviteNavigationScriptPath' => $this->assetPath('/assets/invite_navigation.js'),
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
+            'pwaRegistrationScriptPath' => $this->assetPath('/assets/pwa_registration.js'),
             'themes' => ThemeRegistry::all(),
             'explicitThemeNames' => ThemeRegistry::explicitNames(),
             'defaultTheme' => $defaultTheme,

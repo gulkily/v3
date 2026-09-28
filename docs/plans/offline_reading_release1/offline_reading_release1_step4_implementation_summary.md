@@ -54,3 +54,15 @@
   - Chromium headless smoke test loaded a selected snapshot thread, its content, the back control, and the online-only notice.
 - Notes:
   - A thread absent from the snapshot returns to the saved-thread list with an explicit unavailable state.
+
+## Stage 6 - Offline cache and installation
+- Changes:
+  - Added a public-only web app manifest, service worker, and registration script.
+  - The service worker caches the offline reader shell, its same-origin assets, SQLite runtime, and snapshot; refreshes fetch all resources before replacing the saved snapshot.
+  - Kept the worker, manifest, and cache-registration path out of approved-members-only layouts and limited static-server bypasses to those public files.
+- Verification:
+  - `node --check public/service_worker.js` and `node --check public/assets/pwa_registration.js` — passed.
+  - `LocalAppSmokeTest::testPublicLayoutIncludesOfflineReaderPwaAssets` — passed.
+  - `php tests/run.php WebServerRoutingTest` — passed (2/2).
+- Notes:
+  - The cache strategy does not intercept API, account, post, or other personalized routes. A local headless Chromium profile could not be persisted in this environment (Snap confinement), so a normal-browser offline restart check remains for Stage 7.

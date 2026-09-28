@@ -2380,6 +2380,27 @@ PHP;
         assertStringContains('href="/offline/"', $reader);
     }
 
+    public function testPublicLayoutIncludesOfflineReaderPwaAssets(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $board = $this->render($application, '/');
+        $serviceWorker = (string) file_get_contents(dirname(__DIR__) . '/public/service_worker.js');
+        $registration = (string) file_get_contents(dirname(__DIR__) . '/public/assets/pwa_registration.js');
+
+        assertStringContains('rel="manifest" href="/manifest.webmanifest"', $board);
+        assertStringContains('/assets/pwa_registration.', $board);
+        assertStringContains('refresh-offline-reader', $serviceWorker);
+        assertStringContains('url.pathname.startsWith("/assets/")', $serviceWorker);
+        assertStringNotContains('/api/', $serviceWorker);
+        assertStringContains('navigator.serviceWorker.register("/service_worker.js")', $registration);
+        assertStringContains('/offline/snapshot.sqlite3', $registration);
+    }
+
     public function testSqliteViewerLoadsLocalRuntimeAssets(): void
     {
         $application = new Application(
