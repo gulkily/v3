@@ -29,6 +29,7 @@ final class OfflineReaderController
             [],
             'Offline Reading',
             'tools',
+            ['/assets/offline_health.js'],
         );
     }
 }
