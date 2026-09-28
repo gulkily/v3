@@ -1,6 +1,111 @@
 (function () {
   "use strict";
 
+  function clearSnapshotNode(node) {
+    while (node && node.firstChild) node.removeChild(node.firstChild);
+  }
+
+  var snapshotPresentation = {
+    metadataValue: function (database, key) {
+      var result = database.exec("SELECT value FROM metadata WHERE key = ?", [key])[0];
+      return result && result.values && result.values[0] ? String(result.values[0][0] || "") : "";
+    },
+    normalThreadUrl: function (threadId) {
+      return "/threads/" + encodeURIComponent(threadId);
+    },
+    threadIdFromPathname: function (pathname) {
+      var match = String(pathname || "").match(/^\/threads\/([^/]+)\/?$/);
+      return match ? decodeURIComponent(match[1]) : "";
+    },
+    threadTitle: function (subject, preview) {
+      var title = String(subject || "").trim();
+      if (title) return title;
+      var fallback = String(preview || "").replace(/\s+/g, " ").trim();
+      return fallback || "Untitled thread";
+    },
+    renderThreadList: function (options) {
+      var result = options.database.exec(
+        "SELECT root_post_id, subject, body_preview, reply_count, last_activity_at, author_label "
+        + "FROM threads ORDER BY last_activity_at DESC, root_post_id DESC"
+      )[0];
+      clearSnapshotNode(options.content);
+      options.content.hidden = false;
+      var heading = document.createElement("h2");
+      heading.textContent = options.heading || "Recent saved threads";
+      options.content.appendChild(heading);
+      var list = document.createElement("div");
+      list.className = "stack";
+      (result && result.values ? result.values : []).forEach(function (row) {
+        var threadId = String(row[0] || "");
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "nav-link";
+        button.setAttribute("data-offline-thread-id", threadId);
+        button.textContent = snapshotPresentation.threadTitle(row[1], row[2]);
+        button.addEventListener("click", function () { options.onSelect(threadId); });
+        list.appendChild(button);
+        var meta = document.createElement("p");
+        meta.className = "meta";
+        meta.textContent = String(row[5] || "guest") + " · " + Number(row[3] || 0) + " replies · " + String(row[4] || "");
+        list.appendChild(meta);
+      });
+      if (!list.firstChild) {
+        var empty = document.createElement("p");
+        empty.className = "meta";
+        empty.textContent = options.emptyMessage || "No recent public threads were included in this snapshot.";
+        options.content.appendChild(empty);
+        return false;
+      }
+      options.content.appendChild(list);
+      return true;
+    },
+    renderThreadDetail: function (options) {
+      var result = options.database.exec(
+        "SELECT post_id, parent_id, subject, body, author_label, created_at "
+        + "FROM posts WHERE thread_id = ? ORDER BY sequence_number ASC, post_id ASC",
+        [options.threadId]
+      )[0];
+      var rows = result && result.values ? result.values : [];
+      if (!rows.length) {
+        options.setStatus("That thread is not included in this offline snapshot.", "error");
+        if (options.onMissing) options.onMissing();
+        return false;
+      }
+      clearSnapshotNode(options.content);
+      options.content.hidden = false;
+      var back = document.createElement("button");
+      back.type = "button";
+      back.className = "nav-link";
+      back.textContent = options.backLabel || "Back to saved threads";
+      back.addEventListener("click", options.onBack);
+      options.content.appendChild(back);
+      rows.forEach(function (row, index) {
+        var post = document.createElement("article");
+        post.className = "card";
+        if (index === 0) {
+          var heading = document.createElement("h2");
+          heading.textContent = snapshotPresentation.threadTitle(row[2], row[3]);
+          post.appendChild(heading);
+        }
+        var meta = document.createElement("p");
+        meta.className = "meta";
+        meta.textContent = String(row[4] || "guest") + " · " + String(row[5] || "");
+        post.appendChild(meta);
+        var body = document.createElement("div");
+        body.className = "body";
+        body.textContent = String(row[3] || "");
+        post.appendChild(body);
+        options.content.appendChild(post);
+      });
+      var onlineOnly = document.createElement("p");
+      onlineOnly.className = "meta";
+      onlineOnly.textContent = "Reading from a saved snapshot. Posting, voting, and tagging require a connection.";
+      options.content.appendChild(onlineOnly);
+      return true;
+    }
+  };
+  window.forumOfflineSnapshot = snapshotPresentation;
+
   document.addEventListener("DOMContentLoaded", function () {
     var root = document.querySelector("[data-offline-reader]");
     if (!root) {
@@ -25,8 +130,7 @@
     }
 
     function metadataValue(database, key) {
-      var result = database.exec("SELECT value FROM metadata WHERE key = ?", [key])[0];
-      return result && result.values && result.values[0] ? String(result.values[0][0] || "") : "";
+      return snapshotPresentation.metadataValue(database, key);
     }
 
     function clearNode(node) {
@@ -36,56 +140,16 @@
     }
 
     function threadTitle(subject, preview) {
-      var title = String(subject || "").trim();
-      if (title) {
-        return title;
-      }
-      var fallback = String(preview || "").replace(/\s+/g, " ").trim();
-      return fallback || "Untitled thread";
+      return snapshotPresentation.threadTitle(subject, preview);
     }
 
     function renderThreadList(database) {
-      if (!content) {
-        return;
-      }
-      var result = database.exec(
-        "SELECT root_post_id, subject, body_preview, reply_count, last_activity_at, author_label "
-        + "FROM threads ORDER BY last_activity_at DESC, root_post_id DESC"
-      )[0];
-      clearNode(content);
-      content.hidden = false;
-
-      var heading = document.createElement("h2");
-      heading.textContent = "Recent saved threads";
-      content.appendChild(heading);
-      var list = document.createElement("div");
-      list.className = "stack";
-      (result && result.values ? result.values : []).forEach(function (row) {
-        var threadId = String(row[0] || "");
-        var button = document.createElement("button");
-        button.type = "button";
-        button.className = "nav-link";
-        button.setAttribute("data-offline-thread-id", threadId);
-        button.textContent = threadTitle(row[1], row[2]);
-        button.addEventListener("click", function () {
-          selectThread(database, threadId);
-        });
-        list.appendChild(button);
-
-        var meta = document.createElement("p");
-        meta.className = "meta";
-        var replyCount = Number(row[3] || 0);
-        meta.textContent = String(row[5] || "guest") + " · " + replyCount + " replies · " + String(row[4] || "");
-        list.appendChild(meta);
+      if (!content) return;
+      snapshotPresentation.renderThreadList({
+        content: content,
+        database: database,
+        onSelect: function (threadId) { selectThread(database, threadId); }
       });
-      if (!list.firstChild) {
-        var empty = document.createElement("p");
-        empty.className = "meta";
-        empty.textContent = "No recent public threads were included in this snapshot.";
-        content.appendChild(empty);
-        return;
-      }
-      content.appendChild(list);
     }
 
     function threadIdFromHash() {
@@ -94,55 +158,18 @@
     }
 
     function renderThreadDetail(database, threadId) {
-      if (!content) {
-        return;
-      }
-      var result = database.exec(
-        "SELECT post_id, parent_id, subject, body, author_label, created_at "
-        + "FROM posts WHERE thread_id = ? ORDER BY sequence_number ASC, post_id ASC",
-        [threadId]
-      )[0];
-      var rows = result && result.values ? result.values : [];
-      if (!rows.length) {
-        setStatus("That thread is not included in this offline snapshot.", "error");
-        renderThreadList(database);
-        return;
-      }
-
-      clearNode(content);
-      content.hidden = false;
-      var back = document.createElement("button");
-      back.type = "button";
-      back.className = "nav-link";
-      back.textContent = "Back to saved threads";
-      back.addEventListener("click", function () {
-        window.location.hash = "";
-        renderThreadList(database);
+      if (!content) return;
+      snapshotPresentation.renderThreadDetail({
+        content: content,
+        database: database,
+        onBack: function () {
+          window.location.hash = "";
+          renderThreadList(database);
+        },
+        onMissing: function () { renderThreadList(database); },
+        setStatus: setStatus,
+        threadId: threadId
       });
-      content.appendChild(back);
-
-      rows.forEach(function (row, index) {
-        var post = document.createElement("article");
-        post.className = "card";
-        if (index === 0) {
-          var heading = document.createElement("h2");
-          heading.textContent = threadTitle(row[2], row[3]);
-          post.appendChild(heading);
-        }
-        var meta = document.createElement("p");
-        meta.className = "meta";
-        meta.textContent = String(row[4] || "guest") + " · " + String(row[5] || "");
-        post.appendChild(meta);
-        var body = document.createElement("div");
-        body.className = "body";
-        body.textContent = String(row[3] || "");
-        post.appendChild(body);
-        content.appendChild(post);
-      });
-      var onlineOnly = document.createElement("p");
-      onlineOnly.className = "meta";
-      onlineOnly.textContent = "Reading from a saved snapshot. Posting, voting, and tagging require a connection.";
-      content.appendChild(onlineOnly);
     }
 
     function selectThread(database, threadId) {
