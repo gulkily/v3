@@ -30,6 +30,8 @@ foreach ($flags as $flag) {
   $definition = $flag->definition;
   $parentDefinition = $definition->requiresEnabledFlag !== null ? $registry->get($definition->requiresEnabledFlag) : null;
   $rowClass = 'feature-flag-row' . ($flag->isBlockedByDependency() ? ' is-blocked' : '');
+  $canEditFlag = $flag->canChangeFromSite() && $canManageFeatureFlags;
+  $isReadOnlyForViewer = $flag->canChangeFromSite() && !$canManageFeatureFlags;
 ?>
         <div class="<?= $e($rowClass) ?>" data-feature-flag-row data-flag-key="<?= $e($definition->key) ?>" data-flag-default="<?= $definition->defaultValue ? 'true' : 'false' ?>">
           <div class="feature-flag-info">
@@ -57,7 +59,10 @@ foreach ($flags as $flag) {
 <?php endif; ?>
               </span>
 <?php endif; ?>
-<?php if (!$flag->isDefault() && $flag->canChangeFromSite()): ?>
+<?php if ($isReadOnlyForViewer): ?>
+              <span class="feature-flag-permission-note">Read-only &mdash; requires a root-approved identity to change.</span>
+<?php endif; ?>
+<?php if (!$flag->isDefault() && $canEditFlag): ?>
               <form method="post" action="/tools/feature-flags/" class="inline-form feature-flag-reset-form" data-feature-flag-form>
                 <input type="hidden" name="key" value="<?= $e($definition->key) ?>">
                 <input type="hidden" name="value" value="<?= $definition->defaultValue ? 'true' : 'false' ?>">
@@ -68,7 +73,7 @@ foreach ($flags as $flag) {
             </div>
           </div>
           <div class="feature-flag-control">
-<?php if ($flag->canChangeFromSite()): ?>
+<?php if ($canEditFlag): ?>
             <form method="post" action="/tools/feature-flags/" class="inline-form" data-feature-flag-form data-feature-flag-toggle>
               <input type="hidden" name="key" value="<?= $e($definition->key) ?>">
               <input type="hidden" name="value" value="<?= $flag->effectiveValue ? 'false' : 'true' ?>">

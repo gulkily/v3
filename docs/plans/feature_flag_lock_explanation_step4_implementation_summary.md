@@ -21,3 +21,17 @@
   - Manual render check (scratch script booting `Application` against the `parity_minimal_v1` fixture, GET `/tools/feature-flags/`): confirmed all three lock reasons ("Set via environment variable...", "Set via private config file...", "Not configurable from the site.") now appear as visible text on their respective rows (e.g. `DEDALUS_AGENT_REPLIES_ENABLED`, `LLM_CONVERSATION_RECORDING_ENABLED`, `FAST_SCORING_ENABLED`).
 - Notes:
   - Kept the existing tooltip/badge markup untouched (still has `title="..."`) so the pre-existing `testFeatureFlagsPageShowsLockedBadgeWithReasonForNonMutableFlags` assertion on the `title` attribute still holds; the new span is additive.
+
+## Stage 3 - Read-only rendering for permission-blocked mutable flags
+- Changes:
+  - `templates/pages/feature_flags.php`: computed `$canEditFlag = $flag->canChangeFromSite() && $canManageFeatureFlags` and `$isReadOnlyForViewer = $flag->canChangeFromSite() && !$canManageFeatureFlags` per row.
+    - Control block now branches on `$canEditFlag` (live toggle) vs. disabled toggle, instead of only `canChangeFromSite()`.
+    - "Reset to default" form now guarded by `$canEditFlag` instead of `canChangeFromSite()`.
+    - Added a visible `<span class="feature-flag-permission-note">Read-only — requires a root-approved identity to change.</span>` when `$isReadOnlyForViewer` is true.
+  - `tests/WriteApiSmokeTest.php` (`testFeatureFlagFormSubmitRequiresRootApprovedIdentityAndRedirectsAfterCommit`): updated to fetch the page anonymously first and assert the new read-only state (no `data-feature-flag-toggle`, permission note present), then fetch again as the root-approved `guest` identity and assert the live form is present — this test previously fetched the form anonymously and asserted the live toggle was present, which was the exact bug being fixed.
+- Verification:
+  - `php -l` on both changed files — no syntax errors.
+  - Manual render check (scratch script, `Application::handle('GET', '/tools/feature-flags/')` against `parity_minimal_v1`): anonymous viewer sees 0 `data-feature-flag-toggle` forms and the read-only note on all 5 mutable flags; `identity_hint=guest` (root-approved in this fixture) sees all 5 live toggle forms and no read-only note — confirms root-approved viewers see unchanged behavior.
+  - `./v3 test LocalAppSmokeTest WriteApiSmokeTest` — 202/207 passed. Same 5 pre-existing failures as the Stage 1/2 baseline (activity manifest tests, failing since 2026-09-25).
+- Notes:
+  - Investigated one additional failure that appeared during iteration, `WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh`. Confirmed via `git stash` (reverting all Stage 3 changes back to the committed Stage 2 code) that this test still fails intermittently and passes on other runs with zero changes applied — it's a pre-existing flake in the suite, unrelated to this feature. Not fixed here (out of scope); flagged for awareness.

@@ -2087,13 +2087,14 @@ PHP);
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
 
-        $form = $this->renderMethod($application, 'GET', '/tools/feature-flags/');
+        $anonymousForm = $this->renderMethod($application, 'GET', '/tools/feature-flags/');
         $unauthorized = $this->renderMethod(
             $application,
             'POST',
             '/tools/feature-flags/?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
         );
         $_COOKIE = ['identity_hint' => 'guest'];
+        $form = $this->renderMethod($application, 'GET', '/tools/feature-flags/');
         $redirect = $this->renderMethod(
             $application,
             'POST',
@@ -2102,6 +2103,8 @@ PHP);
         $updated = $this->renderMethod($application, 'GET', '/tools/feature-flags/');
         $_COOKIE = [];
 
+        assertStringNotContains('data-feature-flag-toggle', $anonymousForm);
+        assertStringContains('feature-flag-permission-note', $anonymousForm);
         assertStringContains('method="post" action="/tools/feature-flags/"', $form);
         assertStringContains('data-feature-flag-form', $form);
         assertStringContains('Feature flag changes require a root-approved identity.', $unauthorized);
