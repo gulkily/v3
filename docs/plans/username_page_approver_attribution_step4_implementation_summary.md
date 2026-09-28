@@ -21,3 +21,13 @@
   - Extracted the stats block into a standalone include and rendered it directly with representative data: two approvers (`alice, bob`), zero approvers/self-approval-only case (line correctly omitted), and a value containing `<script>` (correctly HTML-escaped via `$e()`)
 - Notes:
   - No new UI component introduced; reuses the same `<p><strong>...</strong> ...</p>` pattern already used by the three adjacent summary lines
+
+## Stage 3 (amendment) - Include root approvals and carry profile slugs
+- Changes:
+  - `ProfilePageController::aggregateApproverUsernames()` no longer skips entries with `approved_by_identity_id === null` (the root/seed-approval case) — it now only skips entries with an empty `approved_by_label`; self-exclusion is now guarded with `$approverIdentityId !== null &&` before the `in_array` check, since a null identity can never match `$ownIdentityIds`
+  - Return shape changed from `array<int, string>` to `array<int, array{label: string, slug: ?string}>`, keyed internally by label for de-duplication (`array_values()` on return); `slug` is `null` when `approved_by_profile_slug` is null or empty
+- Verification:
+  - `php -l src/ForumRewrite/Http/ProfilePageController.php` — no syntax errors
+  - Reflection-based smoke test with fixtures: a root-approved profile mixed with a normal linked approver, multiple root-approved profiles (confirmed collapsing to one `{"label":"root","slug":null}` entry), self-approval still excluded, and zero approved profiles — all matched expected output
+- Notes:
+  - `username()`'s render array is unchanged at the call site (`approverUsernames` key name kept); only the internal element shape changed, which Stage 4 consumes

@@ -93,24 +93,28 @@ final class ProfilePageController
     /**
      * @param array<int, array<string, mixed>> $approvedProfiles
      * @param array<int, string> $ownIdentityIds
-     * @return array<int, string>
+     * @return array<int, array{label: string, slug: ?string}>
      */
     private static function aggregateApproverUsernames(array $approvedProfiles, array $ownIdentityIds): array
     {
-        $usernames = [];
+        $approvers = [];
         foreach ($approvedProfiles as $profile) {
             $approverIdentityId = $profile['approved_by_identity_id'] ?? null;
             $approverLabel = (string) ($profile['approved_by_label'] ?? '');
-            if ($approverIdentityId === null || $approverLabel === '') {
+            if ($approverLabel === '') {
                 continue;
             }
-            if (in_array((string) $approverIdentityId, $ownIdentityIds, true)) {
+            if ($approverIdentityId !== null && in_array((string) $approverIdentityId, $ownIdentityIds, true)) {
                 continue;
             }
-            $usernames[$approverLabel] = true;
+            $approverSlug = (string) ($profile['approved_by_profile_slug'] ?? '');
+            $approvers[$approverLabel] = [
+                'label' => $approverLabel,
+                'slug' => $approverSlug !== '' ? $approverSlug : null,
+            ];
         }
 
-        return array_keys($usernames);
+        return array_values($approvers);
     }
 
     public function directory(): string
