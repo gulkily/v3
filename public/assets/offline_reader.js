@@ -179,6 +179,33 @@
       renderThreadDetail(database, threadId);
     }
 
+    function renderOfflineBoard(database) {
+      var title = root.querySelector("h1");
+      var description = root.querySelector("article.card > p");
+      root.dataset.offlineNavigation = "board";
+      if (title) title.textContent = "Board";
+      if (description) description.textContent = "Showing recent public threads saved on this device.";
+      if (window.location.search) {
+        setStatus("This board view requires a connection. The saved recent view is available at the normal Board URL.", "error");
+        clearNode(content);
+        content.hidden = false;
+        var unavailable = document.createElement("p");
+        unavailable.className = "meta";
+        unavailable.textContent = "Reconnect to use filters and other board views.";
+        content.appendChild(unavailable);
+        return;
+      }
+      setStatus("Showing saved board content offline.", "ok");
+      snapshotPresentation.renderThreadList({
+        content: content,
+        database: database,
+        heading: "Recent threads",
+        onSelect: function (threadId) {
+          window.location.assign(snapshotPresentation.normalThreadUrl(threadId));
+        }
+      });
+    }
+
     async function loadSnapshot() {
       setStatus("Loading the local reading snapshot...", "loading");
       try {
@@ -212,6 +239,10 @@
 
     root.addEventListener("forum-offline-reader-ready", function (event) {
       var database = event.detail.database;
+      if (window.location.pathname === "/") {
+        renderOfflineBoard(database);
+        return;
+      }
       var threadId = threadIdFromHash();
       if (threadId) {
         renderThreadDetail(database, threadId);

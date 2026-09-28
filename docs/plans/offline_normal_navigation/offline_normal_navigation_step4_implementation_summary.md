@@ -22,3 +22,14 @@
   - Chromium smoke rendered ready/list, a saved thread with the online-only notice, and the missing-thread state.
 - Notes:
   - The shared renderer accepts selection/back/missing callbacks so normal URLs can choose their own navigation behavior in the next stages.
+
+## Stage 3 - Offline normal board
+- Changes:
+  - Made the cached reader shell recognize an offline fallback at `/` as the normal Board.
+  - Rendered the bounded saved-thread list under Board labeling and directed selections to normal thread URLs.
+  - Added an explicit reconnect state for filtered/query board views rather than silently treating them as the saved recent view.
+- Verification:
+  - `node --check public/assets/offline_reader.js` passed.
+  - A Node DOM smoke loaded a fixture snapshot at `/` and verified Board labeling, saved-content status, and rendered list content.
+- Notes:
+  - Online Board requests remain network-first server documents; this branch runs only inside the shell returned after an offline navigation failure.
