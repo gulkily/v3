@@ -29,3 +29,14 @@
   - Ran `git diff --check`.
 - Notes:
   - Neither recipe claims that the described extension is already automatic; each is a safe design pattern for future feature work.
+
+## Stage 4 - Cross-post and developer-workflow recipes
+- Changes:
+  - Added the reviewed high-signal synthesis recipe with bounded selection and required source provenance.
+  - Added the feature-proposal handoff recipe with review, duplicate awareness, and author-intent safeguards.
+  - Added the complete candidate inventory and marked duplicate concierge, decision log, and FAQ generation as recommended next recipes.
+- Verification:
+  - Reviewed recipe links, provenance/review requirements, and favorite labels locally.
+  - Ran `git diff --check`.
+- Notes:
+  - High-signal selection is documented as a future, explicitly defined rubric; the cookbook does not claim that it exists today.

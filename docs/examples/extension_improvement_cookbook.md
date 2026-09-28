@@ -58,3 +58,36 @@ Use a per-post workflow when one post supplies enough context. Use a queued work
 - **Guard:** Show the draft for review before posting; the author or operator decides whether it is relevant and accurate.
 - **Operations:** Keep the result tied to the current post content, avoid duplicate follow-ups, and retain the normal audit and disable controls.
 - **Reuse:** the [agent-reply contract](../specs/agent_reply_one_step_analyze_publish_contract_v1.md), [`v3` agent-reply diagnostics](../reference/v3_cli.md#show-agent-reply-diagnostics), and [LLM operations guidance](../runbooks/production_deploy.md#llm-provider-config).
+
+## Recipe: Aggregate high-signal information into a reviewed synthesis
+
+**Use when:** a community wants a periodic digest of independently useful posts rather than an immediate reply to one post.
+
+- **Trigger and eligibility:** Use a bounded queued sweep and a clearly defined high-signal rubric. Select only current results, exclude already-consumed sources, and gather related posts before drafting.
+- **Outcome:** Draft a new synthesis post that links every source, distinguishes common themes from disagreement, and states what remains uncertain.
+- **Guard:** Require human review before publishing. Do not imply consensus merely because several posts were selected, and do not publish a duplicate digest.
+- **Operations:** Limit each run by post count and cost; keep source selection and the draft auditable; allow the sweep to be paused or disabled.
+- **Reuse:** [`v3` task-queue commands](../reference/v3_cli.md#manage-the-background-task-queue), [Fastmod’s bounded-work model](../reference/fast_post_scoring.md#batch-scoring), and [LLM operations guidance](../runbooks/production_deploy.md#llm-provider-config).
+
+## Recipe: Turn a feature proposal into a reviewable development handoff
+
+**Use when:** a post proposes a product or technical change that deserves a structured feature request or development review.
+
+- **Trigger and eligibility:** Start from an explicit user request, an appropriate tag, or a conservative proposal classifier. Check for related existing requests before creating a new handoff.
+- **Outcome:** Draft a feature-request post or Codex handoff that preserves the source link, problem, intended benefit, constraints, unanswered questions, and possible duplicates.
+- **Guard:** Require a developer or moderator to approve the handoff or publication. The workflow must not silently create a roadmap commitment or change the original author’s words.
+- **Operations:** Keep the origin, review decision, and resulting work auditable; expose rejection and retry paths.
+- **Reuse:** [`v3` Codex-handoff commands](../reference/v3_cli.md#run-approved-codex-handoff-requests), the [Feature Development Process](../fdp/README.md), and [LLM operations guidance](../runbooks/production_deploy.md#llm-provider-config).
+
+## Recommended next recipes
+
+- **Duplicate/related-post concierge (recommended):** draft links to the closest earlier discussion and summarize the difference.
+- Claim/evidence extractor: identify factual claims and draft a neutral verification checklist.
+- **Decision log builder (recommended):** draft the decision, rationale, dissent, owner, and follow-ups from a converged thread.
+- **FAQ candidate generator (recommended):** identify recurring questions and draft an FAQ entry with source links.
+- Accessibility/plain-language companion: offer an author-approved clearer, shorter version of dense text.
+- Thread title/tag suggester: propose a concise title and normalized tags for author approval.
+- Onboarding responder: draft a welcoming first response with relevant guides and discussions.
+- Stale issue follow-up: draft a status check on unresolved bug or feature threads from visible activity.
+- Contradiction finder: draft a neutral note when new content may conflict with earlier decisions or documentation.
+- Release-note synthesizer: turn completed development discussions into a reviewed release-note draft.
