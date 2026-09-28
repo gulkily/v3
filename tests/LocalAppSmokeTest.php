@@ -7,6 +7,7 @@ require __DIR__ . '/../autoload.php';
 use ForumRewrite\Application;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
+use ForumRewrite\Activity\ActivityService;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\Host\FrontController;
@@ -2059,6 +2060,31 @@ PHP;
                 assertTrue($item['source_commit_files'] !== []);
             }
         }
+    }
+
+    public function testActivityRowsStayLightweightUntilDetailRequested(): void
+    {
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->render($application, '/activity/?view=all');
+        $service = new ActivityService(
+            static fn (): PDO => new PDO('sqlite:' . $databasePath),
+            $repositoryRoot,
+            $databasePath,
+        );
+
+        $rows = $service->fetchActivityRows('all', 'date', 'desc')['items'];
+        $items = $service->fetchActivity('all', 'date', 'desc')['items'];
+
+        assertSame(
+            array_column($items, 'id'),
+            array_map(static fn (array $row): int => (int) $row['id'], $rows),
+        );
+        assertFalse(array_key_exists('source_commit_files', $rows[0]));
+
+        $detail = $service->fetchActivityDetail((int) $rows[0]['id']);
+        assertSame((int) $rows[0]['id'], $detail['id']);
+        assertTrue(array_key_exists('source_commit_files', $detail));
     }
 
     public function testActivityFetchLimitsAfterApplyingViewFilter(): void

@@ -71,6 +71,27 @@ final class ActivityService
      */
     public function fetchActivity(string $view, string $sortColumn, string $sortDirection, ?array $afterCursor = null): array
     {
+        $result = $this->fetchActivityRows($view, $sortColumn, $sortDirection, $afterCursor);
+
+        return [
+            'items' => array_map(
+                fn (array $row): array => $this->enrichActivityItem($row),
+                $result['items'],
+            ),
+            'has_more' => $result['has_more'],
+        ];
+    }
+
+    /**
+     * Returns an Activity list page without source, signature, or commit
+     * manifest enrichment. Forte uses this for rows that are not selected;
+     * classic Activity continues to use fetchActivity() above.
+     *
+     * @param array{sort_value: string, id: int}|null $afterCursor
+     * @return array{items: array<int, array<string, mixed>>, has_more: bool}
+     */
+    public function fetchActivityRows(string $view, string $sortColumn, string $sortDirection, ?array $afterCursor = null): array
+    {
         $view = $this->normalizeActivityView($view);
         ['column' => $sortColumn, 'direction' => $sortDirection] = $this->resolveActivitySort($sortColumn, $sortDirection);
         $sortColumnSql = $this->activitySortSql($sortColumn);
@@ -121,44 +142,7 @@ final class ActivityService
             $rows = array_slice($rows, 0, self::ACTIVITY_ITEM_LIMIT);
         }
 
-        $items = array_map(function (array $post): array {
-            $sourcePath = $post['source_path'] !== null ? (string) $post['source_path'] : '';
-            $sourceCommitSha = $post['source_commit_sha'] !== null ? (string) $post['source_commit_sha'] : '';
-            $signature = $this->sourceSignatureLink($sourcePath);
-            $item = [
-                'created_at' => $post['created_at'],
-                'kind' => $post['kind'],
-                'record_family' => $post['record_family'],
-                'action_key' => $post['action_key'],
-                'post_id' => $post['post_id'],
-                'thread_id' => $post['thread_id'],
-                'label' => $post['label'],
-                'board_tags_json' => $post['board_tags_json'],
-                'source_path' => $sourcePath,
-                'source_commit_sha' => $sourceCommitSha,
-                'source_path_href' => $this->sourcePathHref($sourcePath, $sourceCommitSha),
-                'source_commit_href' => $this->sourceCommitHref($sourceCommitSha),
-                'source_commit_files' => $this->activityCommitManifest($sourceCommitSha) ?? [],
-                'source_signature_path' => $signature['path'],
-                'source_signature_href' => $signature['href'],
-                'source_signature_status' => $this->sourceSignatureStatus(
-                    $sourcePath,
-                    (string) ($post['author_identity_id'] ?? ''),
-                    $signature['path'],
-                    true
-                ),
-                'id' => (int) $post['id'],
-                'author_label' => $post['author_label'],
-                'author_profile_slug' => $post['author_profile_slug'],
-                'author_username_token' => $post['author_username_token'],
-                'author_is_approved' => (int) $post['author_is_approved'],
-            ];
-            $item['relevant_files'] = $this->activityItemRelevantFiles($item);
-
-            return $item;
-        }, $rows);
-
-        $items = array_values(array_filter($items, function (array $item) use ($view): bool {
+        $items = array_values(array_filter($rows, function (array $item) use ($view): bool {
             $boardTagsJson = (string) $item['board_tags_json'];
             $hidden = $this->isHiddenBootstrapBoardTagsJson($boardTagsJson);
 
@@ -173,6 +157,74 @@ final class ActivityService
         }));
 
         return ['items' => $items, 'has_more' => $hasMore];
+    }
+
+    /**
+     * Loads the full technical detail for one known Activity item. Unlike a
+     * list page, this is allowed to resolve its source/commit/signature data.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function fetchActivityDetail(int $id): ?array
+    {
+        $stmt = $this->pdo()->prepare(
+            'SELECT activity.created_at, activity.kind, activity.record_family, activity.action_key,
+                    activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
+                    activity.author_identity_id,
+                    activity.source_path, activity.source_commit_sha,
+                    activity.id, activity.author_label, activity.author_profile_slug,
+                    activity.author_username_token, activity.author_is_approved
+             FROM activity
+             LEFT JOIN posts ON posts.post_id = activity.post_id
+             WHERE activity.id = :id'
+        );
+        $stmt->bindValue('id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch();
+
+        return $row === false ? null : $this->enrichActivityItem($row);
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     * @return array<string, mixed>
+     */
+    private function enrichActivityItem(array $post): array
+    {
+        $sourcePath = $post['source_path'] !== null ? (string) $post['source_path'] : '';
+        $sourceCommitSha = $post['source_commit_sha'] !== null ? (string) $post['source_commit_sha'] : '';
+        $signature = $this->sourceSignatureLink($sourcePath);
+        $item = [
+            'created_at' => $post['created_at'],
+            'kind' => $post['kind'],
+            'record_family' => $post['record_family'],
+            'action_key' => $post['action_key'],
+            'post_id' => $post['post_id'],
+            'thread_id' => $post['thread_id'],
+            'label' => $post['label'],
+            'board_tags_json' => $post['board_tags_json'],
+            'source_path' => $sourcePath,
+            'source_commit_sha' => $sourceCommitSha,
+            'source_path_href' => $this->sourcePathHref($sourcePath, $sourceCommitSha),
+            'source_commit_href' => $this->sourceCommitHref($sourceCommitSha),
+            'source_commit_files' => $this->activityCommitManifest($sourceCommitSha) ?? [],
+            'source_signature_path' => $signature['path'],
+            'source_signature_href' => $signature['href'],
+            'source_signature_status' => $this->sourceSignatureStatus(
+                $sourcePath,
+                (string) ($post['author_identity_id'] ?? ''),
+                $signature['path'],
+                true
+            ),
+            'id' => (int) $post['id'],
+            'author_label' => $post['author_label'],
+            'author_profile_slug' => $post['author_profile_slug'],
+            'author_username_token' => $post['author_username_token'],
+            'author_is_approved' => (int) $post['author_is_approved'],
+        ];
+        $item['relevant_files'] = $this->activityItemRelevantFiles($item);
+
+        return $item;
     }
 
     /**
