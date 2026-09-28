@@ -7,6 +7,7 @@ require __DIR__ . '/../autoload.php';
 use ForumRewrite\Application;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
+use ForumRewrite\Activity\ActivityService;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\Host\FrontController;
@@ -2006,10 +2007,13 @@ PHP;
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
 
         $classic = $this->render($application, '/activity/?view=content');
-        $forte = $this->render($application, '/forte/activity/?view=content');
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $activityId = (int) $pdo->query("SELECT id FROM activity WHERE source_path = 'records/posts/root-001.txt'")->fetchColumn();
+        $fortePayload = json_decode($this->render($application, '/api/forte_activity_detail?id=' . $activityId), true);
+        $forte = (string) $fortePayload['html'];
 
         assertStringContains('Commit files (', $classic);
-        assertStringContains('Commit files (', $forte);
+        assertStringContains('Relevant files (', $forte);
         assertStringContains('records/posts/root-001.txt', $classic);
         assertStringContains('records/posts/root-001.txt', $forte);
         assertStringContains('post record', $classic);
@@ -2034,7 +2038,10 @@ PHP;
 
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         $classic = $this->render($application, '/activity/?view=all');
-        $forte = $this->render($application, '/forte/activity/?view=all');
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $activityId = (int) $pdo->query('SELECT id FROM activity WHERE source_path = ' . $pdo->quote($labelPath))->fetchColumn();
+        $fortePayload = json_decode($this->render($application, '/api/forte_activity_detail?id=' . $activityId), true);
+        $forte = (string) $fortePayload['html'];
         $publicKeyPath = 'records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc';
 
         assertTrue(preg_match('/Signer:\s+openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954/', $classic) === 1);
@@ -2059,6 +2066,31 @@ PHP;
                 assertTrue($item['source_commit_files'] !== []);
             }
         }
+    }
+
+    public function testActivityRowsStayLightweightUntilDetailRequested(): void
+    {
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->render($application, '/activity/?view=all');
+        $service = new ActivityService(
+            static fn (): PDO => new PDO('sqlite:' . $databasePath),
+            $repositoryRoot,
+            $databasePath,
+        );
+
+        $rows = $service->fetchActivityRows('all', 'date', 'desc')['items'];
+        $items = $service->fetchActivity('all', 'date', 'desc')['items'];
+
+        assertSame(
+            array_column($items, 'id'),
+            array_map(static fn (array $row): int => (int) $row['id'], $rows),
+        );
+        assertFalse(array_key_exists('source_commit_files', $rows[0]));
+
+        $detail = $service->fetchActivityDetail((int) $rows[0]['id']);
+        assertSame((int) $rows[0]['id'], $detail['id']);
+        assertTrue(array_key_exists('source_commit_files', $detail));
     }
 
     public function testActivityFetchLimitsAfterApplyingViewFilter(): void

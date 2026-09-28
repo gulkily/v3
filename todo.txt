@@ -77,3 +77,5 @@ site is architected to make it easy for developers to extend and build their own
 				example 2: for posts with high-signal information, aggregate and summarize the information into a new post
 				example 3: for posts that propose a new feature, automatically create a new feature request post with the relevant information
 				example 4: for short-form bug reports, write out the steps to reproduce, expected, and actual
+
+merge agent reply queue into task queue

@@ -6,6 +6,7 @@
   var rows = [];
   var placeholder;
   var contentItems = [];
+  var activityDetailCache = Object.create(null);
   var commitDetailCache = Object.create(null);
   var statusCount;
   var loadMoreGroup;
@@ -14,6 +15,7 @@
   var loadedSort = "";
   var loadedDirection = "";
   var sortNavigationInFlight = false;
+  var preloadToken = 0;
 
   function currentViewFromUrl() {
     var view = new URLSearchParams(location.search).get("view") || "all";
@@ -181,6 +183,69 @@
       });
   }
 
+  function activityDetailArticle(id) {
+    return contentPane ? contentPane.querySelector('[data-paned-activity-content-item-id="' + id + '"]') : null;
+  }
+
+  function insertActivityDetail(id, html) {
+    var template = document.createElement("template");
+    template.innerHTML = html;
+    var article = template.content.firstElementChild;
+    if (!article || !contentPane) {
+      return;
+    }
+    var existing = activityDetailArticle(id);
+    if (existing) {
+      existing.replaceWith(article);
+    } else {
+      contentPane.appendChild(article);
+    }
+    contentItems = Array.prototype.slice.call(contentPane.querySelectorAll("[data-paned-activity-content-item-id]"));
+  }
+
+  function showActivityDetail(id) {
+    var existing = activityDetailArticle(id);
+    if (existing && !existing.getAttribute("data-paned-activity-detail-loading")) {
+      existing.hidden = false;
+      return;
+    }
+    if (Object.prototype.hasOwnProperty.call(activityDetailCache, id)) {
+      insertActivityDetail(id, activityDetailCache[id]);
+      return;
+    }
+    if (!existing && contentPane) {
+      existing = document.createElement("article");
+      existing.className = "paned-content-post";
+      existing.setAttribute("data-paned-activity-content-item-id", id);
+      existing.setAttribute("data-paned-activity-detail-loading", "1");
+      existing.innerHTML = '<div class="body"><p class="meta">Loading…</p></div>';
+      contentPane.appendChild(existing);
+    }
+    fetch("/api/forte_activity_detail?id=" + encodeURIComponent(id))
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error("activity detail fetch failed");
+        }
+        return response.json();
+      })
+      .then(function (data) {
+        if (data.status !== "ok") {
+          throw new Error("activity detail fetch failed");
+        }
+        activityDetailCache[id] = data.html;
+        if (currentSelectedItemId() === id) {
+          insertActivityDetail(id, data.html);
+        }
+      })
+      .catch(function () {
+        var loading = activityDetailArticle(id);
+        if (loading && currentSelectedItemId() === id) {
+          loading.removeAttribute("data-paned-activity-detail-loading");
+          loading.querySelector(".body").innerHTML = '<p class="meta">Failed to load activity details.</p>';
+        }
+      });
+  }
+
   function selectItem(itemId) {
     if (placeholder) {
       placeholder.hidden = true;
@@ -206,6 +271,10 @@
       row.setAttribute("aria-selected", isSelected ? "true" : "false");
       row.setAttribute("tabindex", isSelected ? "0" : "-1");
     });
+
+    if (!isCommit) {
+      showActivityDetail(itemId);
+    }
   }
 
   function updateLoadMoreButtonVisibility(view) {
@@ -407,6 +476,61 @@
     });
   }
 
+  function preloadAllRows() {
+    var token = preloadToken;
+    var views = filterItems.map(function (item) {
+      return item.getAttribute("data-paned-activity-view");
+    });
+    var viewIndex = 0;
+    var cursor = "";
+    if (loadMoreGroup) {
+      loadMoreGroup.hidden = true;
+    }
+
+    function nextPage() {
+      if (token !== preloadToken || viewIndex >= views.length) {
+        return;
+      }
+      var view = views[viewIndex];
+      fetch(
+        "/api/forte_activity_page?rows_only=1&view=" + encodeURIComponent(view) +
+          "&sort=" + encodeURIComponent(currentSortFromUrl()) +
+          "&dir=" + encodeURIComponent(currentDirectionFromUrl()) +
+          "&cursor=" + encodeURIComponent(cursor)
+      )
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("activity preload failed");
+          }
+          return response.json();
+        })
+        .then(function (data) {
+          if (token !== preloadToken || data.status !== "ok") {
+            return;
+          }
+          mergeAppendedRows(data.html, view);
+          rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
+          selectFilter(currentViewFromUrl());
+          if (data.has_more && data.next_cursor) {
+            cursor = JSON.stringify(data.next_cursor);
+          } else {
+            viewIndex += 1;
+            cursor = "";
+          }
+          window.setTimeout(nextPage, 0);
+        })
+        .catch(function () {
+          if (token === preloadToken) {
+            viewIndex += 1;
+            cursor = "";
+            window.setTimeout(nextPage, 0);
+          }
+        });
+    }
+
+    window.setTimeout(nextPage, 0);
+  }
+
   function stepSelection(delta) {
     var visible = rows.filter(function (row) {
       return !row.hidden;
@@ -484,6 +608,7 @@
   // the popstate listener) are bound once, below, since they're never
   // replaced.
   function init() {
+    preloadToken += 1;
     filterTree = document.querySelector("[data-paned-activity-filter-tree]");
     listBody = document.querySelector("[data-paned-activity-list-body]");
     contentPane = document.querySelector("[data-paned-activity-content-pane]");
@@ -637,6 +762,7 @@
     loadedSort = currentSortFromUrl();
     loadedDirection = currentDirectionFromUrl();
     restoreSelectionFromUrl(true);
+    preloadAllRows();
   }
 
   // Mirrors showProfileSummary() in paned_board_reader.js - same dialog
