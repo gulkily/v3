@@ -2683,6 +2683,47 @@ PHP;
         }
     }
 
+    public function testFrontControllerServesPublicOfflineSnapshotFromActiveRelease(): void
+    {
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($staticHtmlRoot . '/current/offline', 0777, true);
+        file_put_contents($staticHtmlRoot . '/current/offline/snapshot.sqlite3', "SQLite format 3\000offline fixture");
+
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3', []);
+
+            assertStringContains('SQLite format 3', $response);
+            assertStringContains('offline fixture', $response);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
+    public function testFrontControllerDoesNotServeOfflineSnapshotWhenMembersOnlyIsEnabled(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($staticHtmlRoot . '/current/offline', 0777, true);
+        file_put_contents($staticHtmlRoot . '/current/offline/snapshot.sqlite3', "SQLite format 3\000offline fixture");
+
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3', []);
+
+            assertStringNotContains('SQLite format 3', $response);
+            assertStringContains('Reconnecting', $response);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
     public function testFrontControllerRevalidatesStaticArtifactByEtag(): void
     {
         $html = '<!doctype html><html><body><h1>Static Board</h1></body></html>';
@@ -2856,6 +2897,8 @@ PHP;
         foreach (array_unique($assetMatches[0]) as $assetPath) {
             assertTrue(is_file($artifactRoot . $assetPath));
         }
+        assertTrue(is_file($artifactRoot . '/offline/snapshot.sqlite3'));
+        assertStringContains('SQLite format 3', (string) file_get_contents($artifactRoot . '/offline/snapshot.sqlite3'));
         foreach (\ForumRewrite\View\ThemeRegistry::stylesheetPaths() as $path) {
             $fingerprintedPath = AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', $path);
             assertStringContains($fingerprintedPath, $indexArtifact);

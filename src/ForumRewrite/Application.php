@@ -1443,6 +1443,7 @@ final class Application
             '/tools/llm-exchanges', '/tools/llm-exchanges/',
             '/downloads/repository.tar.gz', '/downloads/repository.zip',
             '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',
+            '/offline/snapshot.sqlite3',
             '/activity', '/activity/',
             '/users', '/users/', '/users/pending', '/users/pending/',
             '/tags', '/tags/',

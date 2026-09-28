@@ -11,3 +11,15 @@
   - `php tests/run.php PublicOfflineSnapshotBuilderTest` — passed (1/1).
 - Notes:
   - Snapshot storage is capped at 10 MiB; over-cap content stops at complete-thread boundaries and records the actual cached count.
+
+## Stage 2 - Snapshot release delivery
+- Changes:
+  - Added the public snapshot to each static release and exposed it at `/offline/snapshot.sqlite3`.
+  - Kept the resource behind the existing approved-members gate when private mode is enabled.
+- Verification:
+  - PHP lint passed for the changed host, builder, application, and smoke-test files.
+  - Direct front-controller checks passed for public delivery and private-mode non-delivery.
+  - `php tests/run.php PublicOfflineSnapshotBuilderTest` — passed (1/1).
+  - Full `LocalAppSmokeTest` ran with 95/100 passing; its five activity/signature failures predate this work and are recorded as long-standing by the test runner.
+- Notes:
+  - The resource has a stable URL but always resolves against the active static release.
