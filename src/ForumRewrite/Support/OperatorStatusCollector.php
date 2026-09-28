@@ -59,7 +59,9 @@ final class OperatorStatusCollector
                 && $staleMarker === null
                 ? 'ready'
                 : 'stale');
-        $status = $freshnessStatus === 'ready' && $commitsAvailable ? 'ready' : $freshnessStatus;
+        $status = $freshnessStatus === 'ready' && $commitsAvailable
+            ? 'ready'
+            : ($freshnessStatus === 'ready' ? 'stale' : $freshnessStatus);
 
         return [
             'read_model' => [

@@ -53,6 +53,21 @@ final class OperatorStatusCollectorTest
         }
     }
 
+    public function testCollectMarksMissingCommitCapabilityAsStale(): void
+    {
+        [$databasePath, $queuePath, $lockPath] = $this->paths();
+        try {
+            (new \PDO('sqlite:' . $databasePath))->exec('DROP TABLE commits');
+            $status = $this->collector($databasePath, $queuePath, $lockPath)->collect();
+
+            assertSame('stale', $status['read_model']['status']);
+            assertSame('ready', $status['read_model']['freshness_status']);
+            assertSame('unavailable', $status['read_model']['commits_capability']);
+        } finally {
+            $this->clean($databasePath, $queuePath, $lockPath);
+        }
+    }
+
     public function testCollectReportsQueuedRunningAndFailedRebuildTasks(): void
     {
         [$databasePath, $queuePath, $lockPath] = $this->paths();

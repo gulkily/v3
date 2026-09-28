@@ -7,23 +7,27 @@ This runbook describes how to inspect and recover the PHP forum rewrite in produ
 Use:
 
 ```text
+./v3 status
+
+# Remote or web-only deployments:
 GET /api/read_model_status
 ```
 
-Important fields:
+`./v3 status` is read-only and summarizes the read model, shared lock, task
+queue, and current queued-worker read-model rebuild. Use its printed next
+action first, then open the detailed command it identifies.
 
-- `status=ready|stale`
-- `repository_head`
-- `current_repository_head`
-- `rebuilt_at`
-- `lock_status`
-- `stale_marker`
-- `stale_reason`
-- `stale_commit_sha`
-- `rebuild_reason`
-- `task_queue_status`, `task_queue_queued`, `task_queue_running`,
-  `task_queue_failed` — background task-queue counts (see the
-  `./v3 task-queue` section of `docs/reference/v3_cli.md`)
+Important status values:
+
+- Read model: `ready`, `stale`, or `unavailable`
+- Read-model rebuild task: `queued`, `running`, `failed`, or `absent`
+- Shared lock: `locked` or `unlocked`. A lock means general protected
+  activity, not proof that a manual rebuild is running.
+- Task queue: availability and queued/running/failed counts. Use
+  `./v3 task-queue status` for task IDs, attempts, and failure codes.
+
+The API retains the same underlying data in key/value form, including
+`rebuild_task_status`, `task_queue_status`, and task-queue counts.
 
 ## Normal Recovery Command
 
@@ -45,13 +49,13 @@ php scripts/build_static_artifacts.php "$FORUM_REPOSITORY_ROOT" "$FORUM_DATABASE
 
 Symptoms:
 
-- `/api/read_model_status` reports `status=stale`
+- `./v3 status` reports `Read model: stale` or `Read model: unavailable`
 - `stale_marker=present`
 - read routes may show recovery/configuration failures
 
 Action:
 
-1. inspect `/api/read_model_status`
+1. run `./v3 status`
 2. note `stale_reason` and `stale_commit_sha`
 3. run a manual rebuild
 4. publish a fresh static release if production uses static HTML
@@ -70,13 +74,14 @@ The configured cron worker runs the queue. A failed task remains visible in the 
 
 Symptoms:
 
-- `lock_status=locked`
+- `./v3 status` reports `Shared lock: locked`
 - rebuilds or writes appear blocked
 
 Action:
 
 1. wait briefly and retry the status endpoint
-2. check whether another write or rebuild is in progress
+2. check whether another write or queued-worker rebuild is in progress; a
+   lock alone does not identify which operation owns it
 3. if the lock remains stuck after the PHP process is gone, inspect the host/process state
 4. only remove stale lock files after confirming no active process is still using them
 
@@ -110,7 +115,7 @@ Symptoms:
 Action:
 
 1. do not attempt to rewrite the canonical content again
-2. inspect `/api/read_model_status`
+2. run `./v3 status`
 3. run the manual rebuild command
 4. rebuild artifacts if needed
 5. confirm the stale marker clears
@@ -153,4 +158,5 @@ php scripts/build_static_artifacts.php "$FORUM_REPOSITORY_ROOT" "$FORUM_DATABASE
 ./v3 task-queue enqueue-rebuild
 ./v3 task-queue enqueue-fast-score
 ./v3 task-queue run --limit=1 --score-limit=25
+./v3 status
 ```

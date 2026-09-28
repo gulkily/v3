@@ -53,6 +53,27 @@ app smoke tests.
 
 - any arguments — passed straight through to the test runner, e.g. a specific test class name
 
+## Inspect operator status
+
+```
+./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+```
+
+Read-only, concise status for the repository, read model, shared execution
+lock, and background queue. It reports a read-model rebuild task as `queued`,
+`running`, `failed`, or `absent`, then prints the relevant next action.
+
+- `--repository-root=...` — canonical repository to compare with read-model metadata
+- `--database-path=...` — read-model SQLite database to inspect
+- `--queue-database-path=...` — task-queue SQLite database to inspect
+
+The command remains useful when optional runtime files are missing or
+unreadable: it reports the affected state without creating a queue, lock, or
+read-model database. A `Shared lock: locked` result only means protected
+activity is in progress; it does not prove a manual rebuild is running.
+Use `./v3 task-queue status` for individual task details and
+`./v3 fast-score status` for Fastmod work details.
+
 ## Rebuild the SQLite read model
 
 ```

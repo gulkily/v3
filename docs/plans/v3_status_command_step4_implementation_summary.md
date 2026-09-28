@@ -23,3 +23,15 @@
   - `./v3 status --help` printed usage; `./v3 status --unknown` printed a concise error and usage with exit code 1.
 - Notes:
   - Degraded operational state is reported in normal command output; only invocation errors return a nonzero exit code.
+
+## Stage 3 - Documentation and regression coverage
+
+- Changes:
+  - Added `./v3 status` reference documentation and updated the operator recovery runbook to make it the primary local status surface.
+  - Documented the distinction between a queued-worker rebuild state and a general shared lock.
+  - Added regression coverage for a missing commits capability, preserving the existing stale-status API semantics.
+- Verification:
+  - `./v3 test OperatorStatusCollectorTest StatusCommandTest LocalAppSmokeTest::testApplicationRendersTextApisAndRss LocalAppSmokeTest::testReadModelStatusReportsLockedWhenExecutionLockIsHeld` — 10 passed.
+  - `./v3 test` — 569 passed; 6 long-standing failures reported by test history in unrelated activity/compose coverage.
+- Notes:
+  - The command intentionally cannot identify a manual rebuild solely from the lock; the deferred lifecycle-status work remains tracked in `todo.txt`.
