@@ -68,6 +68,10 @@ final class ProfilePageController
             static fn (array $profile): string => (string) $profile['identity_id'],
             $approvedProfiles
         ));
+        $ownIdentityIds = array_values(array_map(
+            static fn (array $profile): string => (string) $profile['identity_id'],
+            $profiles
+        ));
 
         return $this->routeServices->renderPageTemplate(
             'username.php',
@@ -75,6 +79,7 @@ final class ProfilePageController
                 'usernameToken' => $usernameToken,
                 'approvedProfiles' => $approvedProfiles,
                 'unapprovedProfiles' => $unapprovedProfiles,
+                'approverUsernames' => self::aggregateApproverUsernames($approvedProfiles, $ownIdentityIds),
                 'approvedThreadCount' => AuthoredContentRepository::countVisible($pdo, $approvedIdentityIds, true),
                 'approvedPostCount' => AuthoredContentRepository::countVisible($pdo, $approvedIdentityIds, false),
                 'approvedThreads' => AuthoredContentRepository::visibleThreads($pdo, $approvedIdentityIds),
@@ -83,6 +88,29 @@ final class ProfilePageController
             'User ' . $usernameToken,
             'profiles',
         );
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $approvedProfiles
+     * @param array<int, string> $ownIdentityIds
+     * @return array<int, string>
+     */
+    private static function aggregateApproverUsernames(array $approvedProfiles, array $ownIdentityIds): array
+    {
+        $usernames = [];
+        foreach ($approvedProfiles as $profile) {
+            $approverIdentityId = $profile['approved_by_identity_id'] ?? null;
+            $approverLabel = (string) ($profile['approved_by_label'] ?? '');
+            if ($approverIdentityId === null || $approverLabel === '') {
+                continue;
+            }
+            if (in_array((string) $approverIdentityId, $ownIdentityIds, true)) {
+                continue;
+            }
+            $usernames[$approverLabel] = true;
+        }
+
+        return array_keys($usernames);
     }
 
     public function directory(): string
