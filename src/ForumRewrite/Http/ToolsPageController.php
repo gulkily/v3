@@ -176,12 +176,15 @@ final class ToolsPageController
 
     public function featureFlags(): string
     {
+        $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
+
         return $this->routeServices->renderPageTemplate(
             'feature_flags.php',
             [
                 'flags' => $this->featureFlags->all(),
                 'registry' => new FeatureFlagRegistry(),
                 'toolNavOptions' => ToolsPageSupport::navOptions('feature-flags'),
+                'canManageFeatureFlags' => $this->viewerCanManageFeatureFlags($viewerProfile),
             ],
             'Feature Flags',
             'tools',
