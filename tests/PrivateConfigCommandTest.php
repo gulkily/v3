@@ -43,11 +43,11 @@ final class PrivateConfigCommandTest
                 'FORUM_SECRETS_PATH=' . escapeshellarg($secretsPath) . ' ./v3 private-config view'
             );
 
-            assertStringContains("LLM_PROVIDER = 'dedalus' (default)", $output);
+            assertStringContains("LLM_PROVIDER = '' (default)", $output);
             assertStringContains('LLM_API_KEY = <set> (legacy DEDALUS_API_KEY)', $output);
             assertStringContains("LLM_MODEL = 'openai/gpt-5-nano' (legacy DEDALUS_MODEL)", $output);
             assertStringContains("'HTTP-Referer' => '<set>'", $output);
-            assertStringContains('Supported LLM_PROVIDER values: dedalus, openai, openrouter, anthropic, stub', $output);
+            assertStringContains('LLM_PROVIDER is required (no default). Supported values: openai, openrouter, anthropic, stub', $output);
             assertStringContains('OpenAI-compatible providers use LLM_API_BASE_URL + /v1/chat/completions', $output);
             assertStringContains('LLM_PROVIDER, LLM_MODEL, FAST_SCORING_LLM_MODEL, and LLM_EXTRA_HEADERS', $output);
             assertStringContains('FAST_SCORING_ENABLED = false (default)', $output);
@@ -80,7 +80,7 @@ final class PrivateConfigCommandTest
 
             assertStringContains('Refreshed private config at ' . $secretsPath, $output);
             assertStringNotContains('prod-secret-value', $output);
-            assertSame('dedalus', $config['LLM_PROVIDER']);
+            assertSame('', $config['LLM_PROVIDER']);
             assertSame('prod-secret-value', $config['LLM_API_KEY']);
             assertSame('openai/gpt-5-nano', $config['LLM_MODEL']);
             assertSame('https://example.test', $config['LLM_EXTRA_HEADERS']['HTTP-Referer']);

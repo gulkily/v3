@@ -112,7 +112,7 @@ final class FeatureFlagRegistry
 
     private const GROUP_LABELS = [
         'FORUM' => 'Forum',
-        'DEDALUS' => 'Dedalus agent',
+        'DEDALUS' => 'Agent replies',
         'LLM' => 'LLM exchanges',
     ];
 

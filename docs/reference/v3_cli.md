@@ -219,7 +219,7 @@ and rebuilds affected artifacts.
 - `artifact_root` — static HTML output directory to rebuild after archiving
 - `archive_path` — output path for the `.tar.gz`; defaults to a generated path under the project's archive directory
 
-## Manage the private LLM/Dedalus config
+## Manage the private LLM config
 
 ```
 ./v3 private-config [view|edit|refresh-template|--view|--edit|--force|--api-key-stdin] [--path=/private/path/secrets.php]
@@ -227,10 +227,10 @@ and rebuilds affected artifacts.
 
 Creates or updates the private PHP config consumed by
 `ForumRewrite\Support\PrivateConfig` (LLM provider, API key, and related
-settings for Dedalus/agent-reply features). `LLM_PROVIDER` supports
-`dedalus`, `openai`, `openrouter`, `anthropic`, `stub`, and OpenAI-compatible
-gateways. Legacy `DEDALUS_*` settings are still read as fallbacks, but new
-writes use `LLM_*` names.
+settings for agent-reply features). `LLM_PROVIDER` is required (no default);
+supported values are `openai`, `openrouter`, `anthropic`, `stub`, and
+OpenAI-compatible gateways. Legacy `DEDALUS_*` settings are still read as
+fallbacks, but new writes use `LLM_*` names.
 
 - `view` / `--view` — print a redacted summary and update reminders without writing the file
 - `edit` / `--edit` — open an existing config in `$VISUAL`, `$EDITOR`, or `vi`; it does not print secrets or create a missing file

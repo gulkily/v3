@@ -9,6 +9,7 @@ use ForumRewrite\Analysis\PostAnalysisStore;
 use ForumRewrite\Analysis\PostAnalysisService;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\GeneratedReplyTextNormalizer;
 use ForumRewrite\Write\LocalWriteService;
 use RuntimeException;
 
@@ -231,7 +232,7 @@ final class AgentReplyFulfillmentService
     {
         $engagement = is_array($analysis['engagement'] ?? null) ? $analysis['engagement'] : [];
         $respondability = is_array($analysis['respondability'] ?? null) ? $analysis['respondability'] : [];
-        $text = DedalusAgentReplyGenerator::normalizeGeneratedReplyText(
+        $text = GeneratedReplyTextNormalizer::normalize(
             (string) ($engagement['suggested_response'] ?? ''),
             $this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
             $this->featureFlags->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT),

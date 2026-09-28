@@ -30,19 +30,39 @@ final class PostAnalyzerFactoryTest
         assertSame(null, $analyzer);
     }
 
-    public function testFactoryBuildsLegacyDedalusOpenAiCompatibleProvider(): void
+    public function testFactoryThrowsWhenProviderIsNotConfigured(): void
+    {
+        $threw = false;
+        try {
+            PostAnalyzerFactory::fromPrivateConfig([
+                'DEDALUS_API_KEY' => 'dedalus-key',
+                'DEDALUS_MODEL' => 'openai/gpt-5-nano',
+            ], dirname(__DIR__));
+        } catch (RuntimeException $exception) {
+            $threw = true;
+            assertSame(
+                'LLM_PROVIDER must be set in the private config (e.g. "anthropic", "openai", "openrouter", or a custom OpenAI-compatible gateway name). There is no default provider.',
+                $exception->getMessage()
+            );
+        }
+
+        assertSame(true, $threw);
+    }
+
+    public function testFactoryUsesLegacyDedalusKeysForValuesWhenProviderIsSet(): void
     {
         $analyzer = PostAnalyzerFactory::fromPrivateConfig([
+            'LLM_PROVIDER' => 'openai',
             'DEDALUS_API_KEY' => 'dedalus-key',
-            'DEDALUS_MODEL' => 'openai/gpt-5-nano',
+            'DEDALUS_MODEL' => 'gpt-5-nano',
         ], dirname(__DIR__));
         $provider = $this->providerFromAnalyzer($analyzer);
 
         assertSame(DedalusPostAnalyzer::class, $analyzer::class);
         assertSame(OpenAiCompatibleStructuredChatProvider::class, $provider::class);
-        assertSame('dedalus', $this->privateProperty($provider, 'providerName'));
-        assertSame('https://api.dedaluslabs.ai', $this->privateProperty($provider, 'baseUrl'));
-        assertSame('openai/gpt-5-nano', $this->privateProperty($provider, 'model'));
+        assertSame('openai', $this->privateProperty($provider, 'providerName'));
+        assertSame('https://api.openai.com', $this->privateProperty($provider, 'baseUrl'));
+        assertSame('gpt-5-nano', $this->privateProperty($provider, 'model'));
     }
 
     public function testFactoryBuildsOpenRouterCompatibleProviderWithExtraHeaders(): void

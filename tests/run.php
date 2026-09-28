@@ -63,6 +63,7 @@ $testFiles = [
     __DIR__ . '/FastmodAuditCommandTest.php',
     __DIR__ . '/FastmodBackfillRequestServiceTest.php',
     __DIR__ . '/FastScoringRubricRevisionTest.php',
+    __DIR__ . '/GeneratedReplyTextNormalizerTest.php',
     __DIR__ . '/UnicodeRiskInspectorTest.php',
     __DIR__ . '/UnicodeRiskStoreTest.php',
     __DIR__ . '/UnicodeTextPolicyTest.php',

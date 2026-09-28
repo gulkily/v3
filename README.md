@@ -43,7 +43,7 @@ that stays accurate even as implementation details move around:
 
 - [Apache Vhost Example](docs/examples/apache_vhost.conf)
 - [Production Env Example](docs/examples/env.production.example)
-- [Private Config Example](docs/examples/secrets.php.example) — template for the LLM/Dedalus private config `./v3 private-config` writes
+- [Private Config Example](docs/examples/secrets.php.example) — template for the LLM private config `./v3 private-config` writes
 
 ### Production
 
@@ -148,7 +148,7 @@ git log -- records/instance/feature-flags.txt
 git show <commit>:records/instance/feature-flags.txt
 ```
 
-Create or update the local private config for Dedalus post analysis:
+Create or update the local private config for LLM post analysis:
 
 ```bash
 ./v3 private-config
@@ -184,13 +184,13 @@ Validate the configured agent reply LLM provider/API key with one live structure
 ./v3 agent-reply test
 ```
 
-The default local file resolves to `../forum-private/secrets.php` relative to this checkout. To update only the Dedalus API key without putting it in shell history:
+The default local file resolves to `../forum-private/secrets.php` relative to this checkout. To update only the LLM API key without putting it in shell history:
 
 ```bash
-printf '%s\n' "$DEDALUS_API_KEY" | ./v3 private-config --api-key-stdin
+printf '%s\n' "$LLM_API_KEY" | ./v3 private-config --api-key-stdin
 ```
 
-The default Dedalus post-analysis prompt is stored in `prompts/dedalus_post_analysis_system.txt`. Set `DEDALUS_POST_ANALYSIS_PROMPT_PATH` in the private config to use a different text file; relative paths are resolved from the project root.
+The default post-analysis prompt is stored in `prompts/dedalus_post_analysis_system.txt`. Set `LLM_POST_ANALYSIS_PROMPT_PATH` in the private config to use a different text file; relative paths are resolved from the project root.
 
 For Apache/shared-host deployment, `public/.htaccess` is now part of the intended runtime model:
 

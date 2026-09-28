@@ -253,7 +253,7 @@ PHP);
         assertSame('DEDALUS', $agentReplies->groupKey());
         assertSame('LLM', $conversationUi->groupKey());
         assertSame('Forum', $registry->groupLabel($unicode->groupKey()));
-        assertSame('Dedalus agent', $registry->groupLabel($agentReplies->groupKey()));
+        assertSame('Agent replies', $registry->groupLabel($agentReplies->groupKey()));
         assertSame('LLM exchanges', $registry->groupLabel($conversationUi->groupKey()));
         assertSame('WIDGET', $registry->groupLabel('WIDGET'));
     }

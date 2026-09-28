@@ -32,22 +32,72 @@ final class LlmProviderConfigTest
         assertSame('Forum', $config->extraHeaders['X-Title']);
     }
 
-    public function testLegacyDedalusConfigFallsBackToDedalusProvider(): void
+    public function testMissingProviderThrowsRequiringExplicitConfiguration(): void
+    {
+        $threw = false;
+        try {
+            LlmProviderConfig::fromPrivateConfig([
+                'DEDALUS_API_KEY' => 'dedalus-key',
+                'DEDALUS_API_BASE_URL' => 'https://api.dedaluslabs.ai',
+                'DEDALUS_MODEL' => 'openai/gpt-5-nano',
+            ]);
+        } catch (RuntimeException $exception) {
+            $threw = true;
+            assertSame(
+                'LLM_PROVIDER must be set in the private config (e.g. "anthropic", "openai", "openrouter", or a custom OpenAI-compatible gateway name). There is no default provider.',
+                $exception->getMessage()
+            );
+        }
+
+        assertSame(true, $threw);
+    }
+
+    public function testPlaceholderApiKeyWithoutProviderDoesNotThrow(): void
     {
         $config = LlmProviderConfig::fromPrivateConfig([
+            'LLM_PROVIDER' => '',
+            'LLM_API_KEY' => 'replace-with-real-key',
+        ]);
+
+        assertSame('', $config->provider);
+        assertSame('replace-with-real-key', $config->apiKey);
+        assertSame('', $config->baseUrl);
+        assertSame('', $config->model);
+    }
+
+    public function testLegacyDedalusKeysStillPopulateValuesWhenProviderIsSet(): void
+    {
+        $config = LlmProviderConfig::fromPrivateConfig([
+            'LLM_PROVIDER' => 'openai',
             'DEDALUS_API_KEY' => 'dedalus-key',
-            'DEDALUS_API_BASE_URL' => 'https://api.dedaluslabs.ai',
-            'DEDALUS_MODEL' => 'openai/gpt-5-nano',
-            'DEDALUS_TIMEOUT_SECONDS' => 60,
+            'DEDALUS_API_BASE_URL' => 'https://legacy-gateway.example',
+            'DEDALUS_MODEL' => 'gpt-5-nano',
+            'DEDALUS_TIMEOUT_SECONDS' => 45,
             'DEDALUS_POST_ANALYSIS_PROMPT_PATH' => 'legacy-prompt.txt',
         ]);
 
-        assertSame('dedalus', $config->provider);
+        assertSame('openai', $config->provider);
         assertSame('dedalus-key', $config->apiKey);
-        assertSame('https://api.dedaluslabs.ai', $config->baseUrl);
-        assertSame('openai/gpt-5-nano', $config->model);
-        assertSame(60, $config->timeoutSeconds);
+        assertSame('https://legacy-gateway.example', $config->baseUrl);
+        assertSame('gpt-5-nano', $config->model);
+        assertSame(45, $config->timeoutSeconds);
         assertSame('legacy-prompt.txt', $config->postAnalysisPromptPath);
+    }
+
+    public function testCustomProviderRequiresExplicitBaseUrlAndModel(): void
+    {
+        $threw = false;
+        try {
+            LlmProviderConfig::fromPrivateConfig([
+                'LLM_PROVIDER' => 'litellm',
+                'LLM_API_KEY' => 'gateway-key',
+            ]);
+        } catch (RuntimeException $exception) {
+            $threw = true;
+            assertSame('LLM_API_BASE_URL must be set in the private config for provider "litellm".', $exception->getMessage());
+        }
+
+        assertSame(true, $threw);
     }
 
     public function testLegacyStubModeMapsToStubProvider(): void

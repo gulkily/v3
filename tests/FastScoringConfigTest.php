@@ -30,7 +30,7 @@ final class FastScoringConfigTest
     public function testFastScoringKeepsTheApplicationProviderAndMayUseALowerCostModel(): void
     {
         $config = FastScoringConfig::fromPrivateConfig([
-            'LLM_PROVIDER' => 'dedalus',
+            'LLM_PROVIDER' => 'openai',
             'LLM_MODEL' => 'full-analysis-model',
             'FAST_SCORING_ENABLED' => 'yes',
             'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED' => 'true',
@@ -44,9 +44,9 @@ final class FastScoringConfigTest
         ]);
 
         assertSame(true, $config->enabled);
-        assertSame('dedalus', $config->provider->provider);
+        assertSame('openai', $config->provider->provider);
         assertSame('', $config->provider->apiKey);
-        assertSame('https://api.dedaluslabs.ai', $config->provider->baseUrl);
+        assertSame('https://api.openai.com', $config->provider->baseUrl);
         assertSame('fast-model', $config->provider->model);
         assertSame(60, $config->provider->timeoutSeconds);
         assertSame([], $config->provider->extraHeaders);

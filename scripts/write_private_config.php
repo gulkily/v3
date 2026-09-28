@@ -109,10 +109,10 @@ if ($options['edit']) {
 }
 
 $defaults = [
-    'LLM_PROVIDER' => 'dedalus',
+    'LLM_PROVIDER' => '',
     'LLM_API_KEY' => 'replace-with-real-key',
-    'LLM_API_BASE_URL' => 'https://api.dedaluslabs.ai',
-    'LLM_MODEL' => 'openai/gpt-5-nano',
+    'LLM_API_BASE_URL' => '',
+    'LLM_MODEL' => '',
     'LLM_TIMEOUT_SECONDS' => 60,
     'LLM_EXTRA_HEADERS' => [],
     'LLM_POST_ANALYSIS_PROMPT_PATH' => 'prompts/dedalus_post_analysis_system.txt',
@@ -183,6 +183,9 @@ $action = is_file($path) && $existing !== [] ? ($options['refresh_template'] ? '
 fwrite(STDOUT, "{$action} private config at {$path}\n");
 if (($config['LLM_API_KEY'] ?? '') === 'replace-with-real-key') {
     fwrite(STDOUT, "LLM_API_KEY is still a placeholder. Update it before enabling real analysis.\n");
+}
+if (trim((string) ($config['LLM_PROVIDER'] ?? '')) === '') {
+    fwrite(STDOUT, "LLM_PROVIDER is not set. Set it to anthropic, openai, openrouter, stub, or a custom OpenAI-compatible gateway name before enabling real analysis.\n");
 }
 printUpdateReminder($path);
 
@@ -354,7 +357,7 @@ function renderPrivateConfigFile(array $config, array $defaults, array $existing
     $contents .= "return [\n";
     if ($includeComments) {
         $contents .= "    // LLM provider used for post analysis and agent reply drafting.\n"
-            . "    // Supported values: dedalus, openai, openrouter, anthropic, stub, or a custom OpenAI-compatible gateway name.\n";
+            . "    // Required, no default. Supported values: openai, openrouter, anthropic, stub, or a custom OpenAI-compatible gateway name.\n";
     }
     $contents .= renderConfigLine('LLM_PROVIDER', $config['LLM_PROVIDER']);
 
@@ -457,7 +460,7 @@ function printUpdateReminder(string $path): void
     fwrite(STDOUT, "  ./v3 private-config refresh-template\n");
     fwrite(STDOUT, "  printf '%s\\n' \"\$LLM_API_KEY\" | ./v3 private-config --api-key-stdin\n");
     fwrite(STDOUT, "  ./v3 private-config --path=" . escapeshellarg($path) . " --force\n");
-    fwrite(STDOUT, "Supported LLM_PROVIDER values: dedalus, openai, openrouter, anthropic, stub, or an OpenAI-compatible gateway name.\n");
+    fwrite(STDOUT, "LLM_PROVIDER is required (no default). Supported values: openai, openrouter, anthropic, stub, or an OpenAI-compatible gateway name.\n");
     fwrite(STDOUT, "OpenAI-compatible providers use LLM_API_BASE_URL + /v1/chat/completions; Anthropic uses LLM_API_BASE_URL + /v1/messages.\n");
     fwrite(STDOUT, "private-config edit uses VISUAL, EDITOR, or vi to open {$path} without printing secrets.\n");
     fwrite(STDOUT, "Edit {$path} directly for provider options such as LLM_PROVIDER, LLM_MODEL, FAST_SCORING_LLM_MODEL, and LLM_EXTRA_HEADERS.\n");
@@ -487,7 +490,7 @@ Use view/--view to print a redacted summary and update reminders without creatin
 Use edit/--edit to open an existing config file with VISUAL, EDITOR, or vi.
 Use refresh-template to rewrite the file with current comments/examples while preserving values.
 The default local path is ../forum-private/secrets.php relative to this app checkout.
-LLM_PROVIDER supports dedalus, openai, openrouter, anthropic, stub, and OpenAI-compatible gateways.
+LLM_PROVIDER is required (no default). Supported values: openai, openrouter, anthropic, stub, and OpenAI-compatible gateways.
 Legacy DEDALUS_* LLM settings are still read as fallbacks, but new writes use LLM_* names.
 
 TEXT);

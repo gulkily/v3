@@ -182,9 +182,10 @@ Post analysis and agent reply drafting use provider-neutral `LLM_*` private conf
 
 Use `refresh-template` after upgrades to rewrite the private config with current comments and provider examples while preserving existing effective values.
 
+Dedalus Labs, the OpenAI-compatible endpoint previously used as the default for existing installs, has been discontinued. Installs still configured with `LLM_PROVIDER => 'dedalus'` (or with no `LLM_PROVIDER` set at all) must pick one of the providers below — there is no default.
+
 Supported providers:
 
-- `dedalus`: OpenAI-compatible Dedalus endpoint, the default for existing installs
 - `openai`: direct OpenAI API
 - `openrouter`: OpenRouter API, with optional attribution headers
 - `anthropic`: direct Anthropic Messages API
@@ -194,10 +195,10 @@ Supported providers:
 The common keys are:
 
 ```php
-'LLM_PROVIDER' => 'dedalus',
+'LLM_PROVIDER' => '', // required: openai, openrouter, anthropic, stub, or a custom gateway name
 'LLM_API_KEY' => 'replace-with-real-key',
-'LLM_API_BASE_URL' => 'https://api.dedaluslabs.ai',
-'LLM_MODEL' => 'openai/gpt-5-nano',
+'LLM_API_BASE_URL' => '', // required for every provider except stub; see examples below
+'LLM_MODEL' => '', // required for every provider except stub; see examples below
 'LLM_TIMEOUT_SECONDS' => 60,
 'LLM_EXTRA_HEADERS' => [],
 'LLM_POST_ANALYSIS_PROMPT_PATH' => 'prompts/dedalus_post_analysis_system.txt',
@@ -231,7 +232,7 @@ Provider examples:
 'LLM_MODEL' => 'openai/gpt-5-nano',
 ```
 
-OpenAI-compatible providers are called at `LLM_API_BASE_URL + /v1/chat/completions`. Anthropic is called at `LLM_API_BASE_URL + /v1/messages`. Direct `DEDALUS_*` LLM settings remain supported as fallbacks for current deployments, but new config writes use `LLM_*`.
+OpenAI-compatible providers are called at `LLM_API_BASE_URL + /v1/chat/completions`. Anthropic is called at `LLM_API_BASE_URL + /v1/messages`. Legacy `DEDALUS_*` LLM settings are still read as fallbacks for current deployments, but new config writes use `LLM_*`, and `LLM_PROVIDER` must now be set explicitly since Dedalus Labs is no longer available.
 
 ## Agent Reply Requests
 

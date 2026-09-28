@@ -109,12 +109,12 @@ final class DedalusPostAnalyzer implements PostAnalyzer
 
         $prompt = @file_get_contents($this->systemPromptTemplatePath);
         if ($prompt === false) {
-            throw new RuntimeException('Dedalus prompt template could not be read: ' . $this->systemPromptTemplatePath);
+            throw new RuntimeException('Post analysis prompt template could not be read: ' . $this->systemPromptTemplatePath);
         }
 
         $prompt = trim($prompt);
         if ($prompt === '') {
-            throw new RuntimeException('Dedalus prompt template is empty: ' . $this->systemPromptTemplatePath);
+            throw new RuntimeException('Post analysis prompt template is empty: ' . $this->systemPromptTemplatePath);
         }
 
         $this->loadedSystemPrompt = $this->renderSystemPromptTemplate($prompt);
