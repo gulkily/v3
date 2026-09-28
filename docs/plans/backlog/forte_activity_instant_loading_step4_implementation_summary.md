@@ -29,3 +29,13 @@
   - `php -l templates/partials/paned_activity_detail_pane.php` and `git diff --check` — passed.
 - Notes:
   - Selected detail remains server-rendered; subsequent selections receive their detail in Stage 4.
+
+## Stage 4 - On-selection Activity details
+- Changes:
+  - Added Activity-detail loading, per-visit caching, loading/error states, and stale-response protection to the Activity reader.
+  - Reused the existing selected article when present and retained the separate Commit-detail flow.
+- Verification:
+  - `node --check public/assets/paned_activity_reader.js`, `php -l src/ForumRewrite/Http/ForteActivityController.php`, and `git diff --check` — passed.
+  - Stage 2's local API smoke confirmed the Activity-detail endpoint returns a rendered detail article.
+- Notes:
+  - A direct user selection updates row state before issuing the detail request, preventing a stale response from replacing a newer selection.
