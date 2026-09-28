@@ -14,9 +14,12 @@ final class SqliteTaskQueueStore
 
     public function __construct(
         private readonly PDO $pdo,
+        bool $ensureSchema = true,
     ) {
         $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-        $this->ensureSchema();
+        if ($ensureSchema) {
+            $this->ensureSchema();
+        }
     }
 
     /**
@@ -142,6 +145,27 @@ final class SqliteTaskQueueStore
         $stmt->execute();
 
         return array_map(fn (array $row): array => $this->hydrate($row), $stmt->fetchAll());
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function latestByType(string $type): ?array
+    {
+        $this->assertAllowedType($type);
+
+        $stmt = $this->pdo->prepare(
+            'SELECT id, type, deduplication_key, status, attempts, max_attempts, requested_at, claimed_at,
+                    completed_at, failure_code, failure_message
+             FROM internal_tasks
+             WHERE type = :type
+             ORDER BY id DESC
+             LIMIT 1'
+        );
+        $stmt->execute(['type' => $type]);
+        $row = $stmt->fetch();
+
+        return $row === false ? null : $this->hydrate($row);
     }
 
     /**

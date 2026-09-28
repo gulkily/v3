@@ -36,6 +36,7 @@ $testFiles = [
     __DIR__ . '/OpenPgpLoaderTest.php',
     __DIR__ . '/OpenPgpKeyInspectorTest.php',
     __DIR__ . '/OpenAiCompatibleStructuredChatProviderTest.php',
+    __DIR__ . '/OperatorStatusCollectorTest.php',
     __DIR__ . '/PrivateConfigCommandTest.php',
     __DIR__ . '/PrivateSiteAuthTest.php',
     __DIR__ . '/PostSignatureAuditCommandTest.php',

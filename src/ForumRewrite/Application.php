@@ -717,10 +717,9 @@ final class Application
             $this->routeServices(),
             $this->repositoryRoot,
             $this->databasePath,
+            TaskQueueDatabaseConfig::path($this->projectRoot),
             $this->executionLock(),
             $this->staleMarker(),
-            $this->commitsCapabilityAvailable(...),
-            $this->taskQueueStatus(...),
         );
     }
 
@@ -1912,28 +1911,6 @@ final class Application
         $this->taskQueueStore = new SqliteTaskQueueStore(new PDO('sqlite:' . $path));
 
         return $this->taskQueueStore;
-    }
-
-    /**
-     * @return array{status:string,queued:int,running:int,completed:int,failed:int}
-     */
-    private function taskQueueStatus(): array
-    {
-        $path = TaskQueueDatabaseConfig::path($this->projectRoot);
-        if (!is_file($path)) {
-            return ['status' => 'not_initialized', 'queued' => 0, 'running' => 0, 'completed' => 0, 'failed' => 0];
-        }
-
-        try {
-            $store = $this->taskQueueStoreInitialized
-                ? $this->taskQueueStore()
-                : new SqliteTaskQueueStore(new PDO('sqlite:' . $path));
-            $counts = $store->counts();
-
-            return ['status' => 'available'] + $counts;
-        } catch (\Throwable) {
-            return ['status' => 'unavailable', 'queued' => 0, 'running' => 0, 'completed' => 0, 'failed' => 0];
-        }
     }
 
     private function executionLock(): ExecutionLock
