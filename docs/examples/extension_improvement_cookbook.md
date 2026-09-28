@@ -38,3 +38,23 @@ Use this lifecycle for every recipe:
 | Configure, audit, or operate LLM-backed work | [production LLM and agent-work guidance](../runbooks/production_deploy.md#llm-provider-config) |
 
 Use a per-post workflow when one post supplies enough context. Use a queued workflow when provider work must not delay publishing or when it examines multiple posts. Use a handoff when the intended result is a developer decision or implementation task rather than a user-facing reply.
+
+## Recipe: Offer an NVC reply for a high moderation signal
+
+**Use when:** a post has a current, high Fastmod score and a community wants a constructive response option.
+
+- **Trigger and eligibility:** Start after the score is current for the post content and rubric. Treat the threshold as an explicit local policy, then apply the normal response-safety and loop-prevention checks before any reply work.
+- **Outcome:** Draft a nonviolent-communication-style reply that names observable content, its possible effect, and a constructive next step. Preserve the original post; never rewrite it or represent the score as a moderation decision.
+- **Guard:** Begin with an operator or moderator review. Automatic publishing, if ever enabled, needs its own explicit feature flag and the existing guarded agent-reply path.
+- **Operations:** Keep the scoring result, reply state, and model exchange auditable; bound retries and provide a disable path.
+- **Reuse:** [Fastmod](../reference/fast_post_scoring.md), the [agent-reply contract](../specs/agent_reply_one_step_analyze_publish_contract_v1.md), and [agent-reply operations](../runbooks/production_deploy.md#automatic-agent-replies).
+
+## Recipe: Turn a short bug report into a structured follow-up
+
+**Use when:** a post appears to report a bug but lacks reproduction details needed to investigate it.
+
+- **Trigger and eligibility:** Start from an explicit bug tag, moderator request, or conservative classifier result. Skip posts with enough existing detail or content that should not be sent to the configured model.
+- **Outcome:** Draft a reply organized as steps to reproduce, expected behavior, actual behavior, environment/version, and open questions. Label assumptions rather than inventing facts.
+- **Guard:** Show the draft for review before posting; the author or operator decides whether it is relevant and accurate.
+- **Operations:** Keep the result tied to the current post content, avoid duplicate follow-ups, and retain the normal audit and disable controls.
+- **Reuse:** the [agent-reply contract](../specs/agent_reply_one_step_analyze_publish_contract_v1.md), [`v3` agent-reply diagnostics](../reference/v3_cli.md#show-agent-reply-diagnostics), and [LLM operations guidance](../runbooks/production_deploy.md#llm-provider-config).

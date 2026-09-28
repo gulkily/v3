@@ -19,3 +19,13 @@
   - Ran `git diff --check`.
 - Notes:
   - The map links to canonical references instead of restating their configuration or API contracts.
+
+## Stage 3 - Per-post agent-work recipes
+- Changes:
+  - Added the high-moderation-signal NVC reply recipe with an advisory-score and reviewed-output boundary.
+  - Added the short bug-report structured-follow-up recipe with explicit assumptions and review expectations.
+- Verification:
+  - Reviewed both recipes against the shared lifecycle and their linked canonical documentation.
+  - Ran `git diff --check`.
+- Notes:
+  - Neither recipe claims that the described extension is already automatic; each is a safe design pattern for future feature work.
