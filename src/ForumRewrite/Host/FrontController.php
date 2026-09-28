@@ -286,8 +286,10 @@ final class FrontController
     private function activeStaticReleaseRoot(): ?string
     {
         $currentPath = $this->staticHtmlRoot . '/current';
+        clearstatcache(true, $currentPath);
+        $releaseRoot = realpath($currentPath);
 
-        return is_dir($currentPath) ? $currentPath : null;
+        return $releaseRoot !== false && is_dir($releaseRoot) ? $releaseRoot : null;
     }
 
     private function renderConfigurationError(string $details): string
