@@ -505,6 +505,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/forte_activity_detail') {
+            $this->forteActivityController()->activityDetail($query);
+            return;
+        }
+
         if ($path === '/api/forte_commit_detail') {
             $this->forteActivityController()->commitDetail($query);
             return;

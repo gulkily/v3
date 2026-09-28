@@ -18,6 +18,7 @@ namespace ForumRewrite\Http;
  */
 final class ForteActivityController
 {
+    private const INITIAL_ACTIVITY_ITEM_LIMIT = 20;
     /**
      * @param \Closure(): bool $commitsCapabilityAvailable
      * @param \Closure(): void $enqueueReadModelRecovery
@@ -71,6 +72,31 @@ final class ForteActivityController
         $this->routeServices->sendJson(['status' => 'ok', 'html' => $html], 200);
     }
 
+    /** @param array<string, mixed> $query */
+    public function activityDetail(array $query): void
+    {
+        $id = filter_var($query['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if ($id === false) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'invalid id'], 400);
+            return;
+        }
+
+        $item = $this->routeServices->activityService()->fetchActivityDetail($id);
+        if ($item === null) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'activity not found'], 404);
+            return;
+        }
+        $item['forte_link'] = $this->activityItemBoardLink($item);
+
+        $this->routeServices->sendJson([
+            'status' => 'ok',
+            'html' => $this->routeServices->renderFragment('partials/paned_activity_detail_article.php', [
+                'item' => $item,
+                'isSelected' => true,
+            ]),
+        ], 200);
+    }
+
     /**
      * Renders the Forte Activity three-pane view: a left pane of the same 5
      * category filters classic's `/activity/` offers, a list pane of items
@@ -103,58 +129,66 @@ final class ForteActivityController
 
         ['column' => $sortColumn, 'direction' => $sortDirection] = $activityService->resolveActivitySort($requestedSort, $requestedDirection);
 
-        $itemsById = [];
-        $viewItemIds = [];
-        $viewPagination = [];
-        foreach (array_keys($viewLabels) as $viewKey) {
-            $viewItemIds[$viewKey] = [];
-            $viewResult = $activityService->fetchActivity($viewKey, $sortColumn, $sortDirection);
-            foreach ($viewResult['items'] as $item) {
-                $itemId = (string) $item['id'];
-                $viewItemIds[$viewKey][] = $itemId;
-                if (!isset($itemsById[$itemId])) {
-                    $item['forte_link'] = $this->activityItemBoardLink($item);
-                    $itemsById[$itemId] = $item;
-                }
-            }
+        $commitsAvailable = ($this->commitsCapabilityAvailable)();
+        if (!$commitsAvailable) {
+            ($this->enqueueReadModelRecovery)();
+        }
 
-            // The cursor is derived from the last item actually returned for
-            // this view, so an empty page never exposes a "Load more"
-            // control with nothing to page from.
+        $selectedView = $activityService->normalizeActivityView($requestedView);
+        if (!$commitsAvailable && $selectedView === 'commits') {
+            $selectedView = 'all';
+        }
+
+        $items = [];
+        $viewPagination = [];
+        if ($selectedView !== 'commits') {
+            $viewResult = $activityService->fetchActivityRows(
+                $selectedView,
+                $sortColumn,
+                $sortDirection,
+                null,
+                self::INITIAL_ACTIVITY_ITEM_LIMIT,
+            );
+            $selectedItemId = (string) ($viewResult['items'][0]['id'] ?? '');
+            foreach ($viewResult['items'] as $item) {
+                foreach (array_keys($viewLabels) as $viewKey) {
+                    $item['view_' . $viewKey] = $viewKey === $selectedView;
+                }
+                $item['forte_link'] = $this->activityItemBoardLink($item);
+                $items[] = $item;
+            }
             $lastItem = $viewResult['items'][count($viewResult['items']) - 1] ?? null;
-            $viewPagination[$viewKey] = [
+            $viewPagination[$selectedView] = [
                 'has_more' => $viewResult['has_more'] && $lastItem !== null,
                 'next_cursor' => $lastItem !== null ? [
                     'sort_value' => $activityService->activitySortValueFromItem($lastItem, $sortColumn),
                     'id' => (int) $lastItem['id'],
                 ] : null,
             ];
-        }
-
-        foreach ($itemsById as $itemId => $item) {
-            // $itemId comes back as an int here (PHP casts numeric string
-            // array keys), so it must be re-stringified before a strict
-            // in_array() against $viewItemIds' string ids.
-            $itemIdString = (string) $itemId;
-            foreach (array_keys($viewLabels) as $viewKey) {
-                $itemsById[$itemId]['view_' . $viewKey] = in_array($itemIdString, $viewItemIds[$viewKey], true);
+            if ($requestedSelected !== '') {
+                foreach ($items as $item) {
+                    if ((string) $item['id'] === $requestedSelected) {
+                        $selectedItemId = $requestedSelected;
+                        break;
+                    }
+                }
             }
-        }
-
-        // Matches each fetchActivity() call's own DB-level order (same sort
-        // column, same id tiebreaker), so the merged cross-view pool's
-        // display order agrees with any single view's own fetch order.
-        $items = array_values($itemsById);
-        usort($items, function (array $a, array $b) use ($activityService, $sortColumn, $sortDirection): int {
-            $aValue = $activityService->activitySortValueFromItem($a, $sortColumn);
-            $bValue = $activityService->activitySortValueFromItem($b, $sortColumn);
-            $result = $sortDirection === 'desc' ? strcmp($bValue, $aValue) : strcmp($aValue, $bValue);
-            if ($result !== 0) {
-                return $result;
+            if ($selectedItemId !== '') {
+                $detail = $activityService->fetchActivityDetail((int) $selectedItemId);
+                if ($detail !== null) {
+                    foreach (array_keys($viewLabels) as $viewKey) {
+                        $detail['view_' . $viewKey] = $viewKey === $selectedView;
+                    }
+                    $detail['forte_link'] = $this->activityItemBoardLink($detail);
+                    $items = array_map(
+                        static fn (array $item): array => (string) $item['id'] === $selectedItemId ? $detail : $item,
+                        $items,
+                    );
+                }
             }
-
-            return $sortDirection === 'desc' ? ($b['id'] <=> $a['id']) : ($a['id'] <=> $b['id']);
-        });
+        } else {
+            $selectedItemId = '';
+        }
 
         $viewCounts = [];
         foreach ($viewLabels as $viewKey => $viewLabel) {
@@ -166,13 +200,8 @@ final class ForteActivityController
                 // are actually loaded/visible right now (below), which is
                 // what the status bar tracks.
                 'count' => $activityService->countActivityViewTotal($viewKey),
-                'loadedCount' => count($viewItemIds[$viewKey]),
+                'loadedCount' => $viewKey === $selectedView ? count($items) : 0,
             ];
-        }
-
-        $commitsAvailable = ($this->commitsCapabilityAvailable)();
-        if (!$commitsAvailable) {
-            ($this->enqueueReadModelRecovery)();
         }
 
         // Commits are a parallel, structurally different row set - not
@@ -183,7 +212,7 @@ final class ForteActivityController
         // Commits has no effect on commit order - a deliberate Step 3 scope
         // decision, not a bug.
         $commitItems = [];
-        if ($commitsAvailable) {
+        if ($commitsAvailable && $selectedView === 'commits') {
             ['column' => $commitSortColumn, 'direction' => $commitSortDirection] = $activityService->resolveCommitSort($requestedSort, $requestedDirection);
             $commitResult = $activityService->fetchCommits($commitSortColumn, $commitSortDirection);
             $commitItems = $commitResult['items'];
@@ -199,22 +228,20 @@ final class ForteActivityController
                 'key' => 'commits',
                 'label' => 'Commits',
                 'count' => $activityService->countCommitsTotal(),
-                'loadedCount' => count($commitItems),
+                'loadedCount' => $selectedView === 'commits' ? count($commitItems) : 0,
+            ];
+        } elseif ($commitsAvailable) {
+            $viewCounts[] = [
+                'key' => 'commits',
+                'label' => 'Commits',
+                'count' => $activityService->countCommitsTotal(),
+                'loadedCount' => 0,
             ];
         }
 
-        $selectedView = $activityService->normalizeActivityView($requestedView);
-        if (!$commitsAvailable && $selectedView === 'commits') {
-            $selectedView = 'all';
-        }
         // Commit selection is handled entirely client-side (Stage 4: fetched
         // on demand when a commit row is clicked, not pre-selected here) -
         // $viewItemIds has no 'commits' entry to look up against.
-        $selectedItemId = $selectedView === 'commits'
-            ? ''
-            : (in_array($requestedSelected, $viewItemIds[$selectedView], true)
-                ? $requestedSelected
-                : (string) ($viewItemIds[$selectedView][0] ?? ''));
         $sortHeaderLinks = $this->activitySortHeaderLinks($selectedView, $sortColumn, $sortDirection);
 
         return $this->routeServices->renderStandalonePage(
@@ -330,7 +357,10 @@ final class ForteActivityController
             (string) ($query['dir'] ?? ''),
         );
 
-        $result = $activityService->fetchActivity($view, $sortColumn, $sortDirection, $cursor);
+        $rowsOnly = ($query['rows_only'] ?? '') === '1';
+        $result = $rowsOnly
+            ? $activityService->fetchActivityRows($view, $sortColumn, $sortDirection, $cursor)
+            : $activityService->fetchActivity($view, $sortColumn, $sortDirection, $cursor);
 
         $html = '';
         $detailHtml = '';
@@ -352,10 +382,12 @@ final class ForteActivityController
             // its id, so every existing article - and the placeholder - end
             // up hidden). Reuses the same partial the initial page render
             // uses, so this is never selected by default.
-            $detailHtml .= $this->routeServices->renderFragment('partials/paned_activity_detail_article.php', [
-                'item' => $item,
-                'isSelected' => false,
-            ]);
+            if (!$rowsOnly) {
+                $detailHtml .= $this->routeServices->renderFragment('partials/paned_activity_detail_article.php', [
+                    'item' => $item,
+                    'isSelected' => false,
+                ]);
+            }
         }
 
         $lastItem = $result['items'][count($result['items']) - 1] ?? null;

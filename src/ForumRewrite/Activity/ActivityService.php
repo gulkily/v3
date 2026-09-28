@@ -90,7 +90,7 @@ final class ActivityService
      * @param array{sort_value: string, id: int}|null $afterCursor
      * @return array{items: array<int, array<string, mixed>>, has_more: bool}
      */
-    public function fetchActivityRows(string $view, string $sortColumn, string $sortDirection, ?array $afterCursor = null): array
+    public function fetchActivityRows(string $view, string $sortColumn, string $sortDirection, ?array $afterCursor = null, int $limit = self::ACTIVITY_ITEM_LIMIT): array
     {
         $view = $this->normalizeActivityView($view);
         ['column' => $sortColumn, 'direction' => $sortDirection] = $this->resolveActivitySort($sortColumn, $sortDirection);
@@ -133,13 +133,13 @@ final class ActivityService
         }
         // Fetch one extra row to detect whether a next page exists, then
         // trim it back off before building the returned item set.
-        $stmt->bindValue('limit', self::ACTIVITY_ITEM_LIMIT + 1, PDO::PARAM_INT);
+        $stmt->bindValue('limit', $limit + 1, PDO::PARAM_INT);
         $stmt->execute();
         $rows = $stmt->fetchAll();
 
-        $hasMore = count($rows) > self::ACTIVITY_ITEM_LIMIT;
+        $hasMore = count($rows) > $limit;
         if ($hasMore) {
-            $rows = array_slice($rows, 0, self::ACTIVITY_ITEM_LIMIT);
+            $rows = array_slice($rows, 0, $limit);
         }
 
         $items = array_values(array_filter($rows, function (array $item) use ($view): bool {
