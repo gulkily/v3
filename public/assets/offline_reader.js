@@ -206,6 +206,33 @@
       });
     }
 
+    function renderOfflineThread(database, threadId) {
+      var title = root.querySelector("h1");
+      var description = root.querySelector("article.card > p");
+      root.dataset.offlineNavigation = "thread";
+      if (title) title.textContent = "Thread";
+      if (description) description.textContent = "Showing public thread content saved on this device.";
+      setStatus("Showing saved thread content offline.", "ok");
+      snapshotPresentation.renderThreadDetail({
+        backLabel: "Back to Board",
+        content: content,
+        database: database,
+        onBack: function () {
+          window.location.assign("/");
+        },
+        onMissing: function () {
+          clearNode(content);
+          content.hidden = false;
+          var unavailable = document.createElement("p");
+          unavailable.className = "meta";
+          unavailable.textContent = "This thread is not in the saved snapshot. Reconnect to read it online.";
+          content.appendChild(unavailable);
+        },
+        setStatus: setStatus,
+        threadId: threadId
+      });
+    }
+
     async function loadSnapshot() {
       setStatus("Loading the local reading snapshot...", "loading");
       try {
@@ -241,6 +268,11 @@
       var database = event.detail.database;
       if (window.location.pathname === "/") {
         renderOfflineBoard(database);
+        return;
+      }
+      var pathThreadId = snapshotPresentation.threadIdFromPathname(window.location.pathname);
+      if (pathThreadId) {
+        renderOfflineThread(database, pathThreadId);
         return;
       }
       var threadId = threadIdFromHash();

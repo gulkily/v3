@@ -33,3 +33,13 @@
   - A Node DOM smoke loaded a fixture snapshot at `/` and verified Board labeling, saved-content status, and rendered list content.
 - Notes:
   - Online Board requests remain network-first server documents; this branch runs only inside the shell returned after an offline navigation failure.
+
+## Stage 4 - Offline normal thread
+- Changes:
+  - Recognized `/threads/<id>` inside the cached fallback shell and rendered saved root/reply content through the shared renderer.
+  - Returned back navigation to the normal Board URL and added a precise missing-thread reconnect state.
+- Verification:
+  - `node --check public/assets/offline_reader.js` passed.
+  - Node DOM smoke verified a saved normal thread's title, posts, online-only notice, and a missing thread's reconnect message.
+- Notes:
+  - URL fragments remain harmless presentation hints; the bounded snapshot, rather than a live post lookup, defines what content is available offline.
