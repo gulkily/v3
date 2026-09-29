@@ -256,6 +256,7 @@
     var modeBar = root.querySelector('[data-role="offline-mode-bar"]');
     var content = root.querySelector('[data-role="offline-reader-content"]');
     var snapshotUrl = root.getAttribute("data-snapshot-url") || "/offline/snapshot.sqlite3";
+    var runtimeUrl = root.getAttribute("data-runtime-url") || "/assets/sql-wasm.wasm";
 
     function setStatus(message, state) {
       if (!status) {
@@ -386,7 +387,7 @@
         var bytes = new Uint8Array(await response.arrayBuffer());
         var SQL = await window.initSqlJs({
           locateFile: function (fileName) {
-            return "/assets/" + fileName;
+            return fileName === "sql-wasm.wasm" ? runtimeUrl : "/assets/" + fileName;
           }
         });
         var database = new SQL.Database(bytes);

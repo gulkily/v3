@@ -2423,6 +2423,7 @@ PHP;
         assertStringContains('data-role="offline-health-summary"', $health);
         assertStringContains('data-role="offline-health-checks"', $health);
         assertStringContains('/assets/offline_health.', $health);
+        assertStringMatches('#data-runtime-url="/assets/sql-wasm\.[a-f0-9]{12}\.wasm"#', $health);
         assertStringNotContains('data-offline-reader', $health);
         assertStringContains('href="/offline/"', $tools);
         assertStringContains('Offline Reading', $tools);
@@ -2448,6 +2449,7 @@ PHP;
         assertStringContains('data-role="offline-mode-bar"', $reader);
         assertStringContains('offline mode', $reader);
         assertStringContains('/assets/sql-wasm.', $reader);
+        assertStringMatches('#data-runtime-url="/assets/sql-wasm\.[a-f0-9]{12}\.wasm"#', $reader);
         assertStringContains('/assets/offline_reader.', $reader);
         assertStringContains('/assets/thread-list.', $reader);
         assertStringContains('class="nav-link is-active" href="/"', $reader);
@@ -2473,15 +2475,18 @@ PHP;
         assertStringNotContains('href="/offline/"', $board);
         assertStringContains('refresh-offline-reader', $serviceWorker);
         assertStringContains('networkFirstNavigation', $serviceWorker);
-        assertStringContains('zenmemes-offline-reader-v7', $serviceWorker);
+        assertStringContains('zenmemes-offline-reader-v8', $serviceWorker);
         assertStringContains('const OFFLINE_HEALTH_URL = "/offline/"', $serviceWorker);
         assertStringContains('const OFFLINE_READER_URL = "/offline/reader/"', $serviceWorker);
+        assertStringContains('data-runtime-url', $serviceWorker);
+        assertStringNotContains('"/assets/sql-wasm.wasm"', $serviceWorker);
         assertStringContains('url.pathname.startsWith("/assets/")', $serviceWorker);
         assertStringNotContains('/api/', $serviceWorker);
         assertStringContains('navigator.serviceWorker.register("/service_worker.js", { scope: "/" })', $registration);
         assertStringContains('registration.unregister()', $registration);
         assertStringContains('/offline/reader/', $registration);
         assertStringContains('/offline/snapshot.sqlite3', $registration);
+        assertStringNotContains('/assets/sql-wasm.wasm', $registration);
     }
 
     public function testOfflineReaderUsesBoardControlsAndPinnedSnapshotPresentation(): void
@@ -2499,6 +2504,7 @@ PHP;
         assertStringContains('bodyExcerpt', $readerScript);
         assertStringContains('heatLevel', $readerScript);
         assertStringContains('dataset.heat', $readerScript);
+        assertStringContains('fileName === "sql-wasm.wasm" ? runtimeUrl', $readerScript);
     }
 
     public function testPrivateLayoutDoesNotRegisterOfflineReaderPwa(): void
@@ -2542,9 +2548,11 @@ PHP;
         assertStringMatches('#/assets/sqlite_viewer\.[a-f0-9]{12}\.js#', $viewer);
         assertTrue(is_file(dirname(__DIR__) . '/public/assets/sql-wasm.js'));
         assertTrue(is_file(dirname(__DIR__) . '/public/assets/sql-wasm.wasm'));
+        assertStringMatches('#data-runtime-url="/assets/sql-wasm\.[a-f0-9]{12}\.wasm"#', $viewer);
         assertStringContains('/downloads/read_model.sqlite3', $script);
         assertStringContains('initSqlJs', $script);
         assertStringContains('locateFile', $script);
+        assertStringContains('fileName === "sql-wasm.wasm" ? runtimeUrl', $script);
     }
 
     public function testSqliteViewerIncludesSchemaExplorerContract(): void

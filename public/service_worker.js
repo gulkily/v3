@@ -1,4 +1,4 @@
-const CACHE_NAME = "zenmemes-offline-reader-v7";
+const CACHE_NAME = "zenmemes-offline-reader-v8";
 const SNAPSHOT_URL = "/offline/snapshot.sqlite3";
 const OFFLINE_HEALTH_URL = "/offline/";
 const OFFLINE_READER_URL = "/offline/reader/";
@@ -32,7 +32,7 @@ async function refreshOfflineReader(extraUrls) {
   if (!health.ok) throw new Error("Unable to cache offline reading health page");
   const assetUrls = await Promise.all([shell, health].map(async (response) => {
     const html = await response.clone().text();
-    return [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
+    return [...html.matchAll(/(?:src|href|data-runtime-url)="([^"]+)"/g)]
       .map((match) => new URL(match[1], self.location.origin))
       .filter((url) => url.origin === self.location.origin)
       .map((url) => url.pathname);
@@ -43,7 +43,6 @@ async function refreshOfflineReader(extraUrls) {
     SNAPSHOT_URL,
     "/manifest.webmanifest",
     "/favicon.ico",
-    "/assets/sql-wasm.wasm",
     ...assetUrls.flat(),
     ...extraUrls,
   ]);

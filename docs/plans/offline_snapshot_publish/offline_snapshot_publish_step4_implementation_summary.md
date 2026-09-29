@@ -56,3 +56,16 @@
   - Operators can use `./v3 offline diagnose --url=https://your-public-domain`
     after publishing to distinguish an application-asset deployment issue from
     a snapshot publication issue.
+
+## Follow-up - Use the canonical SQLite runtime URL
+- Changes:
+  - Rendered the fingerprinted WASM URL into offline-reader, health, and
+    SQLite-viewer pages; their loaders now request that URL explicitly.
+  - Updated service-worker refresh to discover the runtime URL from the reader
+    shell, removed the bare runtime request, and advanced the cache generation.
+  - Made diagnosis check the fingerprinted public runtime endpoint.
+- Verification:
+  - Focused offline, reader, health, SQLite-viewer, and diagnosis tests passed.
+- Notes:
+  - This fixes hosts that serve the normal fingerprinted asset but return 404
+    for the bare `/assets/sql-wasm.wasm` filename.

@@ -3,7 +3,7 @@
   data-offline-health
   data-reader-url="/offline/reader/"
   data-snapshot-url="/offline/snapshot.sqlite3"
-  data-runtime-url="/assets/sql-wasm.wasm"
+  data-runtime-url="<?= htmlspecialchars((string) ($runtimeUrl ?? '/assets/sql-wasm.wasm'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
 >
   <article class="card">
     <h1>Offline Reading</h1>

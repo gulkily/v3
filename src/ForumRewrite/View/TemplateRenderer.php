@@ -562,7 +562,7 @@ final class TemplateRenderer
             . $escape($this->formatRelativeTimestamp($value)) . '</time>';
     }
 
-    private function assetPath(string $path): string
+    public function assetPath(string $path): string
     {
         return AssetFingerprint::fingerprintedPath(dirname($this->templateRoot) . '/public', $path);
     }

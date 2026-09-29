@@ -1,4 +1,4 @@
-<section class="stack" data-sqlite-viewer>
+<section class="stack" data-sqlite-viewer data-runtime-url="<?= htmlspecialchars((string) ($runtimeUrl ?? '/assets/sql-wasm.wasm'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
   <article class="card">
 <?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>

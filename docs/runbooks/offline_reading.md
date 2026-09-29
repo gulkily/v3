@@ -48,10 +48,12 @@ offline reading set without rendering every static post page:
 
 `offline publish` creates only the bounded public SQLite snapshot and atomically
 replaces the independently published copy. It does not rebuild the read model,
-render static HTML, deploy the reader assets (including `sql-wasm.wasm`), or
-refresh any browser cache. It preserves the prior snapshot if the new build
-fails. `build-static` remains the complete-site publication command and its
-snapshot remains a fallback when no independently published snapshot exists.
+render static HTML, deploy an application release, or refresh any browser
+cache. The reader uses the application’s canonical fingerprinted SQLite runtime
+URL, rather than relying on an unfingerprinted binary path. It preserves the
+prior snapshot if the new build fails. `build-static` remains the complete-site
+publication command and its snapshot remains a fallback when no independently
+published snapshot exists.
 
 Do not run the fast command until the read model contains the content intended
 for readers. It refuses to publish while approved-members-only mode is enabled.

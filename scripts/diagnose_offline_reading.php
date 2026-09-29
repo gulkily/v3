@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/autoload.php';
 
+use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -28,7 +29,8 @@ try {
     $snapshot = inspectSnapshot($staticHtmlRoot);
     $runtime = inspectRuntime($projectRoot);
     $snapshotEndpoint = isset($options['url']) ? inspectPublicResource((string) $options['url'], '/offline/snapshot.sqlite3') : null;
-    $runtimeEndpoint = isset($options['url']) ? inspectPublicResource((string) $options['url'], '/assets/sql-wasm.wasm', 'GET') : null;
+    $runtimeUrl = AssetFingerprint::fingerprintedPath($projectRoot . '/public', '/assets/sql-wasm.wasm');
+    $runtimeEndpoint = isset($options['url']) ? inspectPublicResource((string) $options['url'], $runtimeUrl, 'GET') : null;
 
     fwrite(STDOUT, "Offline reading diagnosis\n");
     fwrite(STDOUT, "Site profile: {$siteId}\n");
@@ -237,7 +239,7 @@ function assessment(bool $approvedMembersOnly, array $snapshot, array $runtime, 
         return ['The CLI-selected release has a valid snapshot, but the public endpoint is not successful. The web process likely uses a different FORUM_STATIC_HTML_ROOT, site profile, or deployment checkout.'];
     }
     if ($runtimeEndpoint !== null && !isSuccessful($runtimeEndpoint)) {
-        return ['The public SQLite runtime is unavailable. Deploy public/assets/sql-wasm.wasm; static publishing alone cannot provide this application asset.'];
+        return ['The public fingerprinted SQLite runtime is unavailable. Deploy the current application assets; static publishing alone cannot provide this application asset.'];
     }
     if ($snapshotEndpoint === null) {
         return ['The CLI-selected release and SQLite runtime are valid. Public endpoints were not checked.'];

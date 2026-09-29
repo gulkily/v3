@@ -25,6 +25,7 @@
     var queryResults = root.querySelector('[data-role="sqlite-query-results"]');
     var queryPagination = root.querySelector('[data-role="sqlite-query-pagination"]');
     var databaseUrl = "/downloads/read_model.sqlite3";
+    var runtimeUrl = root.getAttribute("data-runtime-url") || "/assets/sql-wasm.wasm";
     var database = null;
     var maxPreviewRows = 25;
     var maxQueryRows = 25;
@@ -559,7 +560,7 @@
         var bytes = new Uint8Array(await response.arrayBuffer());
         var SQL = await window.initSqlJs({
           locateFile: function (fileName) {
-            return "/assets/" + fileName;
+            return fileName === "sql-wasm.wasm" ? runtimeUrl : "/assets/" + fileName;
           }
         });
         database = new SQL.Database(bytes);
