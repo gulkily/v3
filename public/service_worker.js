@@ -1,4 +1,4 @@
-const CACHE_NAME = "zenmemes-offline-reader-v11";
+const CACHE_NAME = "zenmemes-offline-reader-v12";
 const SNAPSHOT_URL = "/offline/snapshot.sqlite3";
 const OFFLINE_HEALTH_URL = "/offline/";
 const OFFLINE_READER_URL = "/offline/reader/";
@@ -40,6 +40,14 @@ function errorDetails(error) {
   };
 }
 
+function cacheKey(url) {
+  return new URL(url, self.location.origin).href;
+}
+
+async function cachedResponse(cache, url) {
+  return cache.match(cacheKey(url), { ignoreVary: true });
+}
+
 async function fetchOfflineResource(url, purpose) {
   const cacheKeyUrl = new URL(url, self.location.origin).href;
   const requestUrl = new URL(cacheKeyUrl);
@@ -76,8 +84,7 @@ async function refreshResources(urls) {
   }));
   const cache = await caches.open(CACHE_NAME);
   for (const [url, response] of responses) {
-    const cacheKey = new Request(new URL(url, self.location.origin).href);
-    await cache.put(cacheKey, response.clone());
+    await cache.put(cacheKey(url), response.clone());
   }
   console.info("[offline reading] cache refresh stored", Object.assign(workerDetails(), {
     cacheKeys: (await cache.keys()).map((request) => request.url)
@@ -127,7 +134,7 @@ async function networkFirstNavigation(request) {
       ? OFFLINE_HEALTH_URL
       : supportsOfflineNavigation(url) ? OFFLINE_READER_URL : null;
     if (!fallbackUrl) throw error;
-    const shell = await (await caches.open(CACHE_NAME)).match(fallbackUrl);
+    const shell = await cachedResponse(await caches.open(CACHE_NAME), fallbackUrl);
     if (shell) return shell;
     throw error;
   }
@@ -152,5 +159,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   if (!cacheableRequest(event.request)) return;
-  event.respondWith((async () => (await (await caches.open(CACHE_NAME)).match(event.request)) || fetch(event.request))());
+  event.respondWith((async () => {
+    const cached = await cachedResponse(await caches.open(CACHE_NAME), event.request.url);
+    return cached || fetch(event.request);
+  })());
 });

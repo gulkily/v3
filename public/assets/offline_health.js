@@ -56,7 +56,7 @@
   }
 
   async function cachedResponse(cache, url) {
-    return cache.match(absoluteUrl(url));
+    return cache.match(absoluteUrl(url), { ignoreVary: true });
   }
 
   async function readerAssetUrls(response) {
