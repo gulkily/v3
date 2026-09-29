@@ -36,10 +36,15 @@
     }).then(function () {
       return navigator.serviceWorker.register("/service_worker.js", { scope: "/" });
     })
-      .then(function () { return navigator.serviceWorker.ready; })
+      .then(function (registration) {
+        if (!navigator.onLine) return registration;
+        return registration.update().then(function () { return registration; });
+      })
       .then(function (registration) {
         clearRegistrationError();
-        if (navigator.onLine && registration.active) registration.active.postMessage({ type: "refresh-offline-reader", urls: cacheUrls() });
+        if (navigator.onLine && registration.active && !registration.installing && !registration.waiting) {
+          registration.active.postMessage({ type: "refresh-offline-reader", urls: cacheUrls() });
+        }
       })
       .catch(saveRegistrationError);
   });

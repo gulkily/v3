@@ -2549,6 +2549,8 @@ PHP;
         assertStringContains('url.pathname.startsWith("/assets/")', $serviceWorker);
         assertStringNotContains('/api/', $serviceWorker);
         assertStringContains('navigator.serviceWorker.register("/service_worker.js", { scope: "/" })', $registration);
+        assertStringContains('registration.update()', $registration);
+        assertStringContains('!registration.installing && !registration.waiting', $registration);
         assertStringContains('registration.unregister()', $registration);
         assertStringContains('/offline/reader/', $registration);
         assertStringContains('/offline/snapshot.sqlite3', $registration);
