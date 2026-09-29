@@ -11,8 +11,10 @@ offline-reader cache. It stores the Offline Reading health page, a separate
 reader shell, their required same-origin assets, and the public SQLite snapshot
 at `/offline/snapshot.sqlite3`.
 
-Each static release builds a fresh snapshot from visible public content. It
-contains every visible pinned thread plus up to 50 additional recently active
+Each static release builds a fresh snapshot from visible public content. The
+fast offline publication command can refresh that snapshot later without
+rebuilding the release. The snapshot contains every visible pinned thread plus
+up to 50 additional recently active
 non-pinned threads, with all of their visible replies, subject to a 10 MiB
 file limit. Pinned threads are selected first; if the file limit is reached,
 the oldest whole non-pinned threads are omitted. The thin `offline mode` bar
@@ -33,6 +35,28 @@ and snapshot. Normal navigations remain network-first and are not saved as
 page copies. The replacement resources download before the new snapshot is
 saved, so a failed refresh leaves the prior saved snapshot available. To
 obtain a new release, reconnect and reload a public page.
+
+## Publishing a fresh snapshot
+
+After the normal ingest or read-model rebuild has completed, publish the latest
+offline reading set without rendering every static post page:
+
+```sh
+./v3 offline publish
+./v3 offline diagnose --url=https://your-public-domain
+```
+
+`offline publish` creates only the bounded public SQLite snapshot and atomically
+replaces the independently published copy. It does not rebuild the read model,
+render static HTML, deploy the reader assets (including `sql-wasm.wasm`), or
+refresh any browser cache. It preserves the prior snapshot if the new build
+fails. `build-static` remains the complete-site publication command and its
+snapshot remains a fallback when no independently published snapshot exists.
+
+Do not run the fast command until the read model contains the content intended
+for readers. It refuses to publish while approved-members-only mode is enabled.
+After a successful publish, visitors need to load a public page while online so
+their service worker can download the new snapshot.
 
 ## Health check
 

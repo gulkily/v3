@@ -43,3 +43,16 @@
 - Notes:
   - The command deliberately does not deploy `sql-wasm.wasm`, refresh browser
     caches, or make the read model current; those remain separate operations.
+
+## Stage 4 - Document and protect the operator workflow
+- Changes:
+  - Documented the fast publish-and-diagnose workflow, its data freshness
+    prerequisite, browser refresh requirement, asset-deployment boundary, and
+    static-release fallback.
+  - Added the completed feature to the plans index.
+- Verification:
+  - `php tests/run.php OfflineSnapshotPublisherTest OfflineSnapshotPublishCommandTest OfflineReadingDiagnosticCommandTest LocalAppSmokeTest::testFrontControllerServesPublicOfflineSnapshotFromActiveRelease LocalAppSmokeTest::testFrontControllerPrefersIndependentlyPublishedOfflineSnapshot LocalAppSmokeTest::testFrontControllerFallsBackWhenIndependentOfflineSnapshotIsInvalid LocalAppSmokeTest::testFrontControllerDoesNotServeOfflineSnapshotWhenMembersOnlyIsEnabled` passed: 10 run, 10 passed.
+- Notes:
+  - Operators can use `./v3 offline diagnose --url=https://your-public-domain`
+    after publishing to distinguish an application-asset deployment issue from
+    a snapshot publication issue.
