@@ -1,4 +1,4 @@
-const CACHE_NAME = "zenmemes-offline-reader-v8";
+const CACHE_NAME = "zenmemes-offline-reader-v9";
 const SNAPSHOT_URL = "/offline/snapshot.sqlite3";
 const OFFLINE_HEALTH_URL = "/offline/";
 const OFFLINE_READER_URL = "/offline/reader/";

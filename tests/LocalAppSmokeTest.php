@@ -2429,11 +2429,15 @@ PHP;
         assertStringContains('Offline Reading', $tools);
         assertStringContains('method: "HEAD"', $healthScript);
         assertStringContains('Not checked while offline', $healthScript);
-        assertStringContains('window.caches.match', $healthScript);
+        assertStringContains('window.caches.keys()', $healthScript);
         assertStringContains('Secure context', $healthScript);
         assertStringContains('Worker registrations', $healthScript);
         assertStringContains('Last registration error', $healthScript);
         assertStringContains('navigator.serviceWorker.getRegistrations()', $healthScript);
+        assertStringContains('Offline reading requires HTTPS.', $healthScript);
+        assertStringContains('Open https://', $healthScript);
+        assertStringContains('Offline reader cache', $healthScript);
+        assertStringContains('window.caches.open(matching[0])', $healthScript);
     }
 
     public function testOfflineReaderFallbackRouteUsesLocalSnapshotShell(): void
@@ -2479,7 +2483,7 @@ PHP;
         assertStringNotContains('href="/offline/"', $board);
         assertStringContains('refresh-offline-reader', $serviceWorker);
         assertStringContains('networkFirstNavigation', $serviceWorker);
-        assertStringContains('zenmemes-offline-reader-v8', $serviceWorker);
+        assertStringContains('zenmemes-offline-reader-v9', $serviceWorker);
         assertStringContains('const OFFLINE_HEALTH_URL = "/offline/"', $serviceWorker);
         assertStringContains('const OFFLINE_READER_URL = "/offline/reader/"', $serviceWorker);
         assertStringContains('data-runtime-url', $serviceWorker);

@@ -39,7 +39,7 @@
       .then(function () { return navigator.serviceWorker.ready; })
       .then(function (registration) {
         clearRegistrationError();
-        if (registration.active) registration.active.postMessage({ type: "refresh-offline-reader", urls: cacheUrls() });
+        if (navigator.onLine && registration.active) registration.active.postMessage({ type: "refresh-offline-reader", urls: cacheUrls() });
       })
       .catch(saveRegistrationError);
   });

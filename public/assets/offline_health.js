@@ -45,8 +45,18 @@
     }
   }
 
-  async function cachedResponse(url) {
-    return window.caches.match(absoluteUrl(url));
+  async function offlineCache() {
+    var names = await window.caches.keys();
+    var matching = names.filter(function (name) { return /^zenmemes-offline-reader-v\d+$/.test(name); });
+    matching.sort(function (left, right) {
+      return Number(right.slice(right.lastIndexOf("v") + 1)) - Number(left.slice(left.lastIndexOf("v") + 1));
+    });
+    if (!matching.length) return null;
+    return { name: matching[0], cache: await window.caches.open(matching[0]) };
+  }
+
+  async function cachedResponse(cache, url) {
+    return cache.match(absoluteUrl(url));
   }
 
   async function readerAssetUrls(response) {
@@ -58,19 +68,23 @@
       .map(function (url) { return new URL(url, window.location.origin); })
       .filter(function (url) { return url.origin === window.location.origin; })
       .map(function (url) { return url.href; });
-    urls.push(absoluteUrl(runtimeUrl));
+    var reader = documentFragment.querySelector("[data-offline-reader]");
+    var readerRuntimeUrl = reader ? reader.getAttribute("data-runtime-url") : null;
+    urls.push(absoluteUrl(readerRuntimeUrl || "/assets/sql-wasm.wasm"));
     return Array.from(new Set(urls));
   }
 
   async function localArtifacts() {
-    if (!("caches" in window)) return { available: false, ready: false, assetsReady: false, error: null };
+    if (!("caches" in window)) return { available: false, ready: false, assetsReady: false, cacheName: null, error: null };
     try {
-      var reader = await cachedResponse(readerUrl);
-      var snapshot = await cachedResponse(snapshotUrl);
-      if (!reader) return { available: true, ready: false, reader: false, snapshot: Boolean(snapshot), assetsReady: false, error: null };
+      var cacheInfo = await offlineCache();
+      if (!cacheInfo) return { available: true, ready: false, reader: false, snapshot: false, assetsReady: false, cacheName: null, error: null };
+      var reader = await cachedResponse(cacheInfo.cache, readerUrl);
+      var snapshot = await cachedResponse(cacheInfo.cache, snapshotUrl);
+      if (!reader) return { available: true, ready: false, reader: false, snapshot: Boolean(snapshot), assetsReady: false, cacheName: cacheInfo.name, error: null };
 
       var assets = await readerAssetUrls(reader.clone());
-      var responses = await Promise.all(assets.map(cachedResponse));
+      var responses = await Promise.all(assets.map(function (url) { return cachedResponse(cacheInfo.cache, url); }));
       var assetsReady = responses.every(Boolean);
       return {
         available: true,
@@ -78,10 +92,11 @@
         reader: true,
         snapshot: Boolean(snapshot),
         assetsReady: assetsReady,
+        cacheName: cacheInfo.name,
         error: null,
       };
     } catch (error) {
-      return { available: false, ready: false, assetsReady: false, error: error && error.message ? error.message : String(error) };
+      return { available: false, ready: false, assetsReady: false, cacheName: null, error: error && error.message ? error.message : String(error) };
     }
   }
 
@@ -182,7 +197,15 @@
       if (serviceWorker.error) setCheck("Registration inspection error", "missing", serviceWorker.error);
       if (serviceWorker.savedError) setCheck("Last registration error", "missing", serviceWorker.savedError.at + " | " + serviceWorker.savedError.name + ": " + serviceWorker.savedError.message);
 
+      if (!serviceWorker.secure) {
+        summary.textContent = "Offline reading requires HTTPS.";
+        guidance.hidden = false;
+        guidance.textContent = "Open https://" + window.location.host + "/offline/. This page is currently " + window.location.protocol + ", so the browser will not expose service workers or Cache Storage.";
+        return;
+      }
+
       var artifacts = await localArtifacts();
+      setCheck("Offline reader cache", artifacts.cacheName ? "ready" : "missing", diagnosticValue(artifacts.cacheName));
       setCheck("Saved reader shell", artifacts.reader ? "ready" : "missing", artifacts.reader ? "Available" : "Missing");
       setCheck("Saved reader assets", artifacts.assetsReady ? "ready" : "missing", artifacts.assetsReady ? "Available" : "Missing");
       setCheck("Saved public snapshot", artifacts.snapshot ? "ready" : "missing", artifacts.snapshot ? "Available" : "Missing");
