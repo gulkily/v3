@@ -1,5 +1,20 @@
 (function () {
   "use strict";
+  var diagnosticKey = "forum-offline-registration-error";
+
+  function saveRegistrationError(error) {
+    try {
+      window.localStorage.setItem(diagnosticKey, JSON.stringify({
+        at: new Date().toISOString(),
+        name: error && error.name ? String(error.name) : "Error",
+        message: error && error.message ? String(error.message) : String(error || "Unknown registration error")
+      }));
+    } catch (ignored) {}
+  }
+
+  function clearRegistrationError() {
+    try { window.localStorage.removeItem(diagnosticKey); } catch (ignored) {}
+  }
   function cacheUrls() {
     var urls = ["/offline/reader/", "/offline/snapshot.sqlite3", "/manifest.webmanifest", "/favicon.ico"];
     document.querySelectorAll('link[href], script[src]').forEach(function (node) {
@@ -23,8 +38,9 @@
     })
       .then(function () { return navigator.serviceWorker.ready; })
       .then(function (registration) {
+        clearRegistrationError();
         if (registration.active) registration.active.postMessage({ type: "refresh-offline-reader", urls: cacheUrls() });
       })
-      .catch(function () {});
+      .catch(saveRegistrationError);
   });
 })();

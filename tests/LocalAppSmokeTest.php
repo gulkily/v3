@@ -2430,6 +2430,10 @@ PHP;
         assertStringContains('method: "HEAD"', $healthScript);
         assertStringContains('Not checked while offline', $healthScript);
         assertStringContains('window.caches.match', $healthScript);
+        assertStringContains('Secure context', $healthScript);
+        assertStringContains('Worker registrations', $healthScript);
+        assertStringContains('Last registration error', $healthScript);
+        assertStringContains('navigator.serviceWorker.getRegistrations()', $healthScript);
     }
 
     public function testOfflineReaderFallbackRouteUsesLocalSnapshotShell(): void
