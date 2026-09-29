@@ -21,6 +21,7 @@ final class OfflineReadingDiagnosticCommandTest
             assertSame(0, $exitCode);
             assertStringContains('Local offline snapshot:', $stdout);
             assertStringContains('SQLite header valid', $stdout);
+            assertStringContains('Local SQLite runtime:', $stdout);
             assertStringContains('FORUM_STATIC_HTML_ROOT=', $stdout);
             assertSame('', $stderr);
         } finally {
