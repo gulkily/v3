@@ -4,19 +4,69 @@ const OFFLINE_HEALTH_URL = "/offline/";
 const OFFLINE_READER_URL = "/offline/reader/";
 
 self.addEventListener("install", (event) => event.waitUntil((async () => {
-  await refreshOfflineReader([]);
-  await self.skipWaiting();
+  console.info("[offline reading] worker install started", workerDetails());
+  try {
+    await refreshOfflineReader([]);
+    await self.skipWaiting();
+    console.info("[offline reading] worker install completed", workerDetails());
+  } catch (error) {
+    console.error("[offline reading] worker install failed", Object.assign(workerDetails(), errorDetails(error)));
+    throw error;
+  }
 })()));
 self.addEventListener("activate", (event) => event.waitUntil((async () => {
   const names = await caches.keys();
   await Promise.all(names.filter((name) => name.startsWith("zenmemes-offline-reader-") && name !== CACHE_NAME).map((name) => caches.delete(name)));
   await self.clients.claim();
+  console.info("[offline reading] worker activated", Object.assign(workerDetails(), { caches: await caches.keys() }));
 })()));
+
+function workerDetails() {
+  return {
+    cacheName: CACHE_NAME,
+    workerScript: self.location.href,
+    readerUrl: new URL(OFFLINE_READER_URL, self.location.origin).href,
+    healthUrl: new URL(OFFLINE_HEALTH_URL, self.location.origin).href,
+    snapshotUrl: new URL(SNAPSHOT_URL, self.location.origin).href,
+    online: self.navigator.onLine
+  };
+}
+
+function errorDetails(error) {
+  return {
+    errorName: error && error.name ? error.name : "Error",
+    errorMessage: error && error.message ? error.message : String(error)
+  };
+}
+
+async function fetchOfflineResource(url, purpose) {
+  const absoluteUrl = new URL(url, self.location.origin).href;
+  let response;
+  try {
+    response = await fetch(new Request(absoluteUrl, { credentials: "omit", cache: "no-store" }));
+  } catch (error) {
+    console.error("[offline reading] fetch failed", Object.assign(workerDetails(), {
+      purpose,
+      url: absoluteUrl
+    }, errorDetails(error)));
+    throw error;
+  }
+  if (!response.ok) {
+    const error = new Error("Unable to cache " + absoluteUrl + " (HTTP " + response.status + ")");
+    console.error("[offline reading] fetch returned an error response", Object.assign(workerDetails(), {
+      purpose,
+      url: absoluteUrl,
+      status: response.status,
+      statusText: response.statusText
+    }, errorDetails(error)));
+    throw error;
+  }
+  return response;
+}
 
 async function refreshResources(urls) {
   const responses = await Promise.all([...new Set(urls)].map(async (url) => {
-    const response = await fetch(new Request(url, { credentials: "omit", cache: "no-store" }));
-    if (!response.ok) throw new Error("Unable to cache " + url);
+    const response = await fetchOfflineResource(url, "cache resource");
     return [url, response];
   }));
   const cache = await caches.open(CACHE_NAME);
@@ -26,10 +76,8 @@ async function refreshResources(urls) {
 }
 
 async function refreshOfflineReader(extraUrls) {
-  const shell = await fetch(new Request(OFFLINE_READER_URL, { credentials: "omit", cache: "no-store" }));
-  if (!shell.ok) throw new Error("Unable to cache offline reader shell");
-  const health = await fetch(new Request(OFFLINE_HEALTH_URL, { credentials: "omit", cache: "no-store" }));
-  if (!health.ok) throw new Error("Unable to cache offline reading health page");
+  const shell = await fetchOfflineResource(OFFLINE_READER_URL, "offline reader shell");
+  const health = await fetchOfflineResource(OFFLINE_HEALTH_URL, "offline health page");
   const assetUrls = await Promise.all([shell, health].map(async (response) => {
     const html = await response.clone().text();
     return [...html.matchAll(/(?:src|href|data-runtime-url)="([^"]+)"/g)]
@@ -78,7 +126,15 @@ async function networkFirstNavigation(request) {
 
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "refresh-offline-reader") {
-    event.waitUntil(refreshOfflineReader(Array.isArray(event.data.urls) ? event.data.urls : []));
+    event.waitUntil((async () => {
+      try {
+        await refreshOfflineReader(Array.isArray(event.data.urls) ? event.data.urls : []);
+        console.info("[offline reading] reader refresh completed", workerDetails());
+      } catch (error) {
+        console.error("[offline reading] reader refresh failed", Object.assign(workerDetails(), errorDetails(error)));
+        throw error;
+      }
+    })());
   }
 });
 self.addEventListener("fetch", (event) => {
