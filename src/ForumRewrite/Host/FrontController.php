@@ -244,7 +244,7 @@ final class FrontController
         }
 
         if ((parse_url($requestUri, PHP_URL_PATH) ?: '/') !== '/offline/snapshot.sqlite3'
-            || (string) (parse_url($requestUri, PHP_URL_QUERY) ?? '') !== '') {
+            || !$this->isOfflineSnapshotQuery((string) (parse_url($requestUri, PHP_URL_QUERY) ?? ''))) {
             return null;
         }
 
@@ -261,6 +261,12 @@ final class FrontController
         }
 
         return null;
+    }
+
+    private function isOfflineSnapshotQuery(string $query): bool
+    {
+        return $query === ''
+            || preg_match('/^__offline_bootstrap=zenmemes-offline-reader-v[0-9]+$/', $query) === 1;
     }
 
     private function isValidOfflineSnapshot(string $path): bool

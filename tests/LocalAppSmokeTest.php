@@ -2541,10 +2541,11 @@ PHP;
         assertStringNotContains('href="/offline/"', $board);
         assertStringContains('refresh-offline-reader', $serviceWorker);
         assertStringContains('networkFirstNavigation', $serviceWorker);
-        assertStringContains('zenmemes-offline-reader-v9', $serviceWorker);
+        assertStringContains('zenmemes-offline-reader-v10', $serviceWorker);
         assertStringContains('[offline reading] worker install started', $serviceWorker);
         assertStringContains('[offline reading] fetch failed', $serviceWorker);
         assertStringContains('offline reader shell', $serviceWorker);
+        assertStringContains('__offline_bootstrap', $serviceWorker);
         assertStringContains('const OFFLINE_HEALTH_URL = "/offline/"', $serviceWorker);
         assertStringContains('const OFFLINE_READER_URL = "/offline/reader/"', $serviceWorker);
         assertStringContains('data-runtime-url', $serviceWorker);
@@ -2937,9 +2938,11 @@ PHP;
 
         try {
             $response = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3', []);
+            $bootstrapResponse = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3?__offline_bootstrap=zenmemes-offline-reader-v10', []);
 
             assertStringContains('SQLite format 3', $response);
             assertStringContains('offline fixture', $response);
+            assertSame($response, $bootstrapResponse);
         } finally {
             $this->deleteTree($staticHtmlRoot);
             $this->deleteTree($publicRoot);

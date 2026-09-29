@@ -1,7 +1,8 @@
-const CACHE_NAME = "zenmemes-offline-reader-v9";
+const CACHE_NAME = "zenmemes-offline-reader-v10";
 const SNAPSHOT_URL = "/offline/snapshot.sqlite3";
 const OFFLINE_HEALTH_URL = "/offline/";
 const OFFLINE_READER_URL = "/offline/reader/";
+const BOOTSTRAP_QUERY_PARAMETER = "__offline_bootstrap";
 
 self.addEventListener("install", (event) => event.waitUntil((async () => {
   console.info("[offline reading] worker install started", workerDetails());
@@ -40,22 +41,26 @@ function errorDetails(error) {
 }
 
 async function fetchOfflineResource(url, purpose) {
-  const absoluteUrl = new URL(url, self.location.origin).href;
+  const cacheKeyUrl = new URL(url, self.location.origin).href;
+  const requestUrl = new URL(cacheKeyUrl);
+  requestUrl.searchParams.set(BOOTSTRAP_QUERY_PARAMETER, CACHE_NAME);
   let response;
   try {
-    response = await fetch(new Request(absoluteUrl, { credentials: "omit", cache: "no-store" }));
+    response = await fetch(new Request(requestUrl.href, { credentials: "omit", cache: "no-store" }));
   } catch (error) {
     console.error("[offline reading] fetch failed", Object.assign(workerDetails(), {
       purpose,
-      url: absoluteUrl
+      cacheKeyUrl,
+      requestUrl: requestUrl.href
     }, errorDetails(error)));
     throw error;
   }
   if (!response.ok) {
-    const error = new Error("Unable to cache " + absoluteUrl + " (HTTP " + response.status + ")");
+    const error = new Error("Unable to cache " + cacheKeyUrl + " (HTTP " + response.status + ")");
     console.error("[offline reading] fetch returned an error response", Object.assign(workerDetails(), {
       purpose,
-      url: absoluteUrl,
+      cacheKeyUrl,
+      requestUrl: requestUrl.href,
       status: response.status,
       statusText: response.statusText
     }, errorDetails(error)));
