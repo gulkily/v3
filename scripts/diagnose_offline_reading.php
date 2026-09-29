@@ -269,7 +269,7 @@ function buildCommand(string $siteId, string $staticHtmlRoot): string
 {
     return 'FORUM_SITE_ID=' . escapeshellarg($siteId)
         . ' FORUM_STATIC_HTML_ROOT=' . escapeshellarg($staticHtmlRoot)
-        . ' ./v3 build-static';
+        . ' ./v3 offline publish';
 }
 
 function printUsage($stream): void
