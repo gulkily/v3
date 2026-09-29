@@ -2558,8 +2558,10 @@ PHP;
         assertStringContains('logOfflineState("update check completed"', $registration);
         assertStringContains('offlineCaches', $registration);
         assertStringContains('registration.unregister()', $registration);
-        assertStringContains('/offline/reader/', $registration);
-        assertStringContains('/offline/snapshot.sqlite3', $registration);
+        assertStringNotContains('querySelectorAll(\'link[href], script[src]\')', $registration);
+        assertStringNotContains('urls: cacheUrls()', $registration);
+        assertStringNotContains('/offline/reader/', $registration);
+        assertStringNotContains('/offline/snapshot.sqlite3', $registration);
         assertStringNotContains('/assets/sql-wasm.wasm', $registration);
     }
 

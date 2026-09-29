@@ -50,16 +50,6 @@
   function clearRegistrationError() {
     try { window.localStorage.removeItem(diagnosticKey); } catch (ignored) {}
   }
-  function cacheUrls() {
-    var urls = ["/offline/reader/", "/offline/snapshot.sqlite3", "/manifest.webmanifest", "/favicon.ico"];
-    document.querySelectorAll('link[href], script[src]').forEach(function (node) {
-      var value = node.getAttribute(node.tagName === "LINK" ? "href" : "src");
-      if (!value) return;
-      var url = new URL(value, window.location.href);
-      if (url.origin === window.location.origin) urls.push(url.pathname);
-    });
-    return Array.from(new Set(urls));
-  }
   if (!navigator.serviceWorker) {
     console.warn("[offline reading] registration unavailable", {
       pageUrl: window.location.href,
@@ -91,7 +81,7 @@
       .then(function (registration) {
         clearRegistrationError();
         if (navigator.onLine && registration.active && !registration.installing && !registration.waiting) {
-          registration.active.postMessage({ type: "refresh-offline-reader", urls: cacheUrls() });
+          registration.active.postMessage({ type: "refresh-offline-reader" });
           logOfflineState("requested reader refresh", registration);
         } else {
           logOfflineState("reader refresh deferred", registration);
