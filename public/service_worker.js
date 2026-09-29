@@ -1,4 +1,4 @@
-const CACHE_NAME = "zenmemes-offline-reader-v10";
+const CACHE_NAME = "zenmemes-offline-reader-v11";
 const SNAPSHOT_URL = "/offline/snapshot.sqlite3";
 const OFFLINE_HEALTH_URL = "/offline/";
 const OFFLINE_READER_URL = "/offline/reader/";
@@ -75,9 +75,13 @@ async function refreshResources(urls) {
     return [url, response];
   }));
   const cache = await caches.open(CACHE_NAME);
-  for (const [url, response] of responses) if (url !== SNAPSHOT_URL) await cache.put(url, response.clone());
-  const snapshot = responses.find(([url]) => url === SNAPSHOT_URL);
-  if (snapshot) await cache.put(SNAPSHOT_URL, snapshot[1].clone());
+  for (const [url, response] of responses) {
+    const cacheKey = new Request(new URL(url, self.location.origin).href);
+    await cache.put(cacheKey, response.clone());
+  }
+  console.info("[offline reading] cache refresh stored", Object.assign(workerDetails(), {
+    cacheKeys: (await cache.keys()).map((request) => request.url)
+  }));
 }
 
 async function refreshOfflineReader(extraUrls) {
