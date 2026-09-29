@@ -21,11 +21,43 @@ final class OfflineReadingDiagnosticCommandTest
             assertSame(0, $exitCode);
             assertStringContains('Local offline snapshot:', $stdout);
             assertStringContains('SQLite header valid', $stdout);
+            assertStringContains('active static release fallback', $stdout);
             assertStringContains('Local SQLite runtime:', $stdout);
             assertStringContains('FORUM_STATIC_HTML_ROOT=', $stdout);
             assertSame('', $stderr);
         } finally {
             @unlink($root . '/current');
+            @unlink($release . '/offline/snapshot.sqlite3');
+            @rmdir($release . '/offline');
+            @rmdir($release);
+            @rmdir($root . '/releases');
+            @rmdir($root);
+        }
+    }
+
+    public function testDiagnosePrefersIndependentPublishedSnapshot(): void
+    {
+        $root = sys_get_temp_dir() . '/forum-offline-diagnose-' . bin2hex(random_bytes(6));
+        $release = $root . '/releases/release-test';
+        try {
+            mkdir($release . '/offline', 0700, true);
+            mkdir($root . '/offline', 0700, true);
+            file_put_contents($release . '/offline/snapshot.sqlite3', "SQLite format 3\000release fixture");
+            file_put_contents($root . '/offline/snapshot.sqlite3', "SQLite format 3\000fast fixture");
+            symlink('releases/release-test', $root . '/current');
+
+            [$exitCode, $stdout] = $this->runCommand(
+                dirname(__DIR__),
+                './v3 offline diagnose --static-html-root=' . escapeshellarg($root),
+            );
+
+            assertSame(0, $exitCode);
+            assertStringContains($root . '/offline/snapshot.sqlite3', $stdout);
+            assertStringContains('independent publication', $stdout);
+        } finally {
+            @unlink($root . '/current');
+            @unlink($root . '/offline/snapshot.sqlite3');
+            @rmdir($root . '/offline');
             @unlink($release . '/offline/snapshot.sqlite3');
             @rmdir($release . '/offline');
             @rmdir($release);

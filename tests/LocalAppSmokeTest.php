@@ -2865,6 +2865,43 @@ PHP;
         }
     }
 
+    public function testFrontControllerPrefersIndependentlyPublishedOfflineSnapshot(): void
+    {
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($staticHtmlRoot . '/current/offline', 0777, true);
+        mkdir($staticHtmlRoot . '/offline', 0777, true);
+        file_put_contents($staticHtmlRoot . '/current/offline/snapshot.sqlite3', "SQLite format 3\000release fixture");
+        file_put_contents($staticHtmlRoot . '/offline/snapshot.sqlite3', "SQLite format 3\000fast fixture");
+
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3', []);
+
+            assertStringContains('fast fixture', $response);
+            assertStringNotContains('release fixture', $response);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
+    public function testFrontControllerFallsBackWhenIndependentOfflineSnapshotIsInvalid(): void
+    {
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($staticHtmlRoot . '/current/offline', 0777, true);
+        mkdir($staticHtmlRoot . '/offline', 0777, true);
+        file_put_contents($staticHtmlRoot . '/current/offline/snapshot.sqlite3', "SQLite format 3\000release fixture");
+        file_put_contents($staticHtmlRoot . '/offline/snapshot.sqlite3', 'invalid snapshot');
+
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3', []);
+
+            assertStringContains('release fixture', $response);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
     public function testFrontControllerDoesNotServeOfflineSnapshotWhenMembersOnlyIsEnabled(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');

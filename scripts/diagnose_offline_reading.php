@@ -98,32 +98,49 @@ function parseOptions(array $arguments): array
     return $options;
 }
 
-/** @return array{release:?string,path:?string,size:?int,sqlite:bool} */
+/** @return array{release:?string,path:?string,size:?int,sqlite:bool,source:?string} */
 function inspectSnapshot(string $staticHtmlRoot): array
 {
     $currentPath = $staticHtmlRoot . '/current';
     clearstatcache(true, $currentPath);
     $release = realpath($currentPath);
-    if ($release === false || !is_dir($release)) {
-        return ['release' => null, 'path' => null, 'size' => null, 'sqlite' => false];
+    $release = $release !== false && is_dir($release) ? $release : null;
+    $candidates = [
+        ['path' => $staticHtmlRoot . '/offline/snapshot.sqlite3', 'source' => 'independent publication'],
+    ];
+    if ($release !== null) {
+        $candidates[] = ['path' => $release . '/offline/snapshot.sqlite3', 'source' => 'active static release fallback'];
     }
 
-    $path = $release . '/offline/snapshot.sqlite3';
-    if (!is_file($path)) {
-        return ['release' => $release, 'path' => null, 'size' => null, 'sqlite' => false];
-    }
+    foreach ($candidates as $candidate) {
+        $path = $candidate['path'];
+        if (!is_file($path)) {
+            continue;
+        }
+        $handle = fopen($path, 'rb');
+        $header = $handle === false ? false : fread($handle, 16);
+        if ($handle !== false) {
+            fclose($handle);
+        }
+        if ($header !== "SQLite format 3\000") {
+            continue;
+        }
 
-    $handle = fopen($path, 'rb');
-    $header = $handle === false ? false : fread($handle, 16);
-    if ($handle !== false) {
-        fclose($handle);
+        return [
+            'release' => $release,
+            'path' => $path,
+            'size' => filesize($path) ?: 0,
+            'sqlite' => true,
+            'source' => $candidate['source'],
+        ];
     }
 
     return [
         'release' => $release,
-        'path' => $path,
-        'size' => filesize($path) ?: 0,
-        'sqlite' => $header === "SQLite format 3\000",
+        'path' => null,
+        'size' => null,
+        'sqlite' => false,
+        'source' => null,
     ];
 }
 
@@ -176,14 +193,14 @@ function publicUrl(string $baseUrl, string $requiredPath): string
     return $origin . $requiredPath;
 }
 
-/** @param array{release:?string,path:?string,size:?int,sqlite:bool} $snapshot */
+/** @param array{release:?string,path:?string,size:?int,sqlite:bool,source:?string} $snapshot */
 function snapshotDescription(array $snapshot): string
 {
     if ($snapshot['path'] === null) {
         return 'missing';
     }
 
-    return sprintf('%s, %d bytes%s', $snapshot['path'], $snapshot['size'], $snapshot['sqlite'] ? ', SQLite header valid' : ', invalid SQLite header');
+    return sprintf('%s, %d bytes, SQLite header valid (%s)', $snapshot['path'], $snapshot['size'], $snapshot['source']);
 }
 
 /** @param array{path:string,size:?int} $runtime */
@@ -199,7 +216,7 @@ function responseDescription(array $response): string
 }
 
 /**
- * @param array{release:?string,path:?string,size:?int,sqlite:bool} $snapshot
+ * @param array{release:?string,path:?string,size:?int,sqlite:bool,source:?string} $snapshot
  * @param array{path:string,size:?int} $runtime
  * @param array{url:string,status:?int}|null $snapshotEndpoint
  * @param array{url:string,status:?int}|null $runtimeEndpoint
@@ -211,7 +228,7 @@ function assessment(bool $approvedMembersOnly, array $snapshot, array $runtime, 
         return ['Approved-members-only is enabled, so public offline snapshots are intentionally unavailable.'];
     }
     if ($snapshot['path'] === null || !$snapshot['sqlite']) {
-        return ['The CLI-selected active release has no valid offline snapshot. Build and activate a release using the static root printed above.'];
+        return ['No valid independently published or active-release offline snapshot is available. Build and activate a release using the static root printed above.'];
     }
     if ($runtime['size'] === null) {
         return ['The local SQLite runtime is missing. Deploy public/assets/sql-wasm.wasm with the application assets.'];
@@ -226,11 +243,11 @@ function assessment(bool $approvedMembersOnly, array $snapshot, array $runtime, 
         return ['The CLI-selected release and SQLite runtime are valid. Public endpoints were not checked.'];
     }
 
-    return ['The active release and anonymous public snapshot endpoint are ready.'];
+    return ['The ' . $snapshot['source'] . ' and anonymous public snapshot endpoint are ready.'];
 }
 
 /**
- * @param array{release:?string,path:?string,size:?int,sqlite:bool} $snapshot
+ * @param array{release:?string,path:?string,size:?int,sqlite:bool,source:?string} $snapshot
  * @param array{path:string,size:?int} $runtime
  * @param array{url:string,status:?int}|null $snapshotEndpoint
  * @param array{url:string,status:?int}|null $runtimeEndpoint
