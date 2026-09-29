@@ -183,6 +183,64 @@ final class LocalAppSmokeTest
         }
     }
 
+    public function testBuildStaticHelpDoesNotTreatOptionsAsRepositoryPaths(): void
+    {
+        $command = escapeshellarg(__DIR__ . '/../v3') . ' build-static --help 2>&1';
+        exec($command, $output, $exitCode);
+        $text = implode("\n", $output);
+
+        assertSame(0, $exitCode, $text);
+        assertStringContains('Usage:', $text);
+        assertStringContains('./v3 build-static --shared-only', $text);
+        assertStringNotContains('Starting static HTML release build', $text);
+        assertStringNotContains('Repository: --help', $text);
+    }
+
+    public function testSharedStaticRefreshCommandKeepsDetailArtifactsWithoutRebuildingTheReadModel(): void
+    {
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-static-shared-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-static-shared-artifacts-' . bin2hex(random_bytes(6));
+
+        try {
+            (new ReadModelBuilder(
+                $this->repositoryRoot,
+                $databasePath,
+                new CanonicalRecordRepository($this->repositoryRoot),
+            ))->rebuild();
+            $publisher = new StaticArtifactReleasePublisher(dirname(__DIR__), $this->repositoryRoot, $artifactRoot);
+            $initialRelease = $publisher->build($databasePath);
+            $publisher->activate($initialRelease);
+            $detailArtifact = $artifactRoot . '/current/threads/root-001.html';
+            $detailContents = (string) file_get_contents($detailArtifact);
+
+            $command = sprintf(
+                'php %s %s %s %s 2>&1',
+                escapeshellarg(__DIR__ . '/../scripts/refresh_static_shared_artifacts.php'),
+                escapeshellarg($this->repositoryRoot),
+                escapeshellarg($databasePath),
+                escapeshellarg($artifactRoot),
+            );
+            exec($command, $output, $exitCode);
+            $text = implode("\n", $output);
+
+            assertSame(0, $exitCode, $text);
+            assertStringContains('Starting shared static release refresh', $text);
+            assertStringContains('does not rebuild the read model', $text);
+            assertStringContains('[1/2] Rendering shared pages (10/10): /tags/.', $text);
+            assertStringContains('[2/2] Shared static release activated.', $text);
+            assertStringNotContains('Rendering thread pages', $text);
+            assertStringNotContains('Rendering post pages', $text);
+            assertStringNotContains('Read model: index posts', $text);
+            assertTrue(is_link($artifactRoot . '/current'));
+            assertSame($detailContents, (string) file_get_contents($artifactRoot . '/current/threads/root-001.html'));
+            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/current/index.html'));
+            assertSame((string) file_get_contents(dirname(__DIR__) . '/public/service_worker.js'), (string) file_get_contents($artifactRoot . '/current/service_worker.js'));
+        } finally {
+            @unlink($databasePath);
+            $this->deleteTree($artifactRoot);
+        }
+    }
+
     public function testApprovedPrivateSessionCanViewOwnProfileAndBoard(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -3117,6 +3175,7 @@ PHP;
         }
         assertTrue(is_file($artifactRoot . '/offline/snapshot.sqlite3'));
         assertStringContains('SQLite format 3', (string) file_get_contents($artifactRoot . '/offline/snapshot.sqlite3'));
+        assertSame((string) file_get_contents(dirname(__DIR__) . '/public/service_worker.js'), (string) file_get_contents($artifactRoot . '/service_worker.js'));
         foreach (\ForumRewrite\View\ThemeRegistry::stylesheetPaths() as $path) {
             $fingerprintedPath = AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', $path);
             assertStringContains($fingerprintedPath, $indexArtifact);

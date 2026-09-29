@@ -67,6 +67,75 @@ final class StaticArtifactReleasePublisher
         }
     }
 
+    /**
+     * Starts from the active complete release, then refreshes only shared
+     * routes. This deliberately does not rebuild the read model or render
+     * every tag, thread, post, and profile page.
+     */
+    public function buildSharedRefresh(string $databasePath, ?\Closure $progressReporter = null): string
+    {
+        $activeReleasePath = realpath($this->staticHtmlRoot . '/current');
+        if ($activeReleasePath === false || !is_dir($activeReleasePath)) {
+            throw new RuntimeException('Shared static refresh requires an active complete static release. Run ./v3 build-static first.');
+        }
+
+        $candidatePath = $this->staticHtmlRoot . '/.candidate-' . bin2hex(random_bytes(8));
+        try {
+            $this->copyDirectory($activeReleasePath, $candidatePath);
+            (new StaticArtifactBuilder(
+                $this->projectRoot,
+                $this->repositoryRoot,
+                $databasePath,
+                $candidatePath,
+                $progressReporter,
+            ))->refreshSharedPagesFromReadModel();
+
+            $releaseDirectory = $this->staticHtmlRoot . '/releases';
+            if (!is_dir($releaseDirectory) && !mkdir($releaseDirectory, 0777, true) && !is_dir($releaseDirectory)) {
+                throw new RuntimeException('Unable to create static artifact release directory.');
+            }
+
+            $releasePath = $releaseDirectory . '/release-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(4));
+            if (!rename($candidatePath, $releasePath)) {
+                throw new RuntimeException('Unable to finalize static artifact release.');
+            }
+
+            return $releasePath;
+        } catch (\Throwable $throwable) {
+            $this->removeDirectory($candidatePath);
+            throw $throwable;
+        }
+    }
+
+    private function copyDirectory(string $sourcePath, string $targetPath): void
+    {
+        if (!mkdir($targetPath, 0777, true) && !is_dir($targetPath)) {
+            throw new RuntimeException('Unable to create static refresh candidate directory.');
+        }
+
+        $entries = scandir($sourcePath);
+        if ($entries === false) {
+            throw new RuntimeException('Unable to read active static release.');
+        }
+
+        foreach ($entries as $entry) {
+            if ($entry === '.' || $entry === '..' || $entry === '.locks') {
+                continue;
+            }
+
+            $sourceEntry = $sourcePath . '/' . $entry;
+            $targetEntry = $targetPath . '/' . $entry;
+            if (is_dir($sourceEntry) && !is_link($sourceEntry)) {
+                $this->copyDirectory($sourceEntry, $targetEntry);
+                continue;
+            }
+
+            if (!link($sourceEntry, $targetEntry) && !copy($sourceEntry, $targetEntry)) {
+                throw new RuntimeException('Unable to copy static artifact into refresh candidate: ' . $entry);
+            }
+        }
+    }
+
     private function removeDirectory(string $path): void
     {
         if (!is_dir($path)) {

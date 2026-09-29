@@ -37,14 +37,60 @@ final class StaticArtifactBuilder
 
     public function buildFromReadModel(): void
     {
-
         if (!is_dir($this->artifactRoot)) {
             mkdir($this->artifactRoot, 0777, true);
         }
 
         $application = $this->application();
 
+        $this->buildSharedPages($application);
+
+        $this->renderRouteBatch('tag pages', $this->fetchVisibleTagRoutes(), function (string $route) use ($application): void {
+            $artifactPaths = $this->artifactPathsForRoute($route);
+            $artifactPath = $artifactPaths[0] ?? null;
+            if ($artifactPath === null) {
+                throw new RuntimeException('Unable to resolve artifact path for route: ' . $route);
+            }
+
+            $this->writeRouteArtifact($application, $route, $artifactPath);
+        });
+        $this->renderRouteBatch('thread pages', $this->fetchVisibleThreadIds(), function (string $threadId) use ($application): void {
+            $this->writeRouteArtifact($application, '/threads/' . $threadId, $this->artifactRoot . '/threads/' . $threadId . '.html');
+        });
+        $this->renderRouteBatch('post pages', $this->fetchVisiblePostIds(), function (string $postId) use ($application): void {
+            $this->writeRouteArtifact($application, '/posts/' . $postId, $this->artifactRoot . '/posts/' . $postId . '.html');
+        });
+        $this->renderRouteBatch('profile pages', $this->fetchIds('SELECT profile_slug FROM profiles ORDER BY profile_slug'), function (string $profileSlug) use ($application): void {
+            $this->writeRouteArtifact($application, '/profiles/' . $profileSlug, $this->artifactRoot . '/profiles/' . $profileSlug . '.html');
+        });
+        $this->reportProgress('Building public offline reading snapshot...');
+        (new PublicOfflineSnapshotBuilder())->build(
+            $this->databasePath,
+            $this->artifactRoot . '/offline/snapshot.sqlite3',
+        );
+        $this->reportProgress('Fingerprinting and copying referenced assets complete.');
+    }
+
+    /**
+     * Renders only the shared public routes into an existing static release.
+     *
+     * The caller must seed the artifact root from a complete release first, so
+     * thread, post, profile, and tag artifacts remain available unchanged.
+     */
+    public function refreshSharedPagesFromReadModel(): void
+    {
+        if (!is_dir($this->artifactRoot)) {
+            throw new RuntimeException('Shared static refresh requires an existing release directory.');
+        }
+
+        $this->buildSharedPages($this->application());
+    }
+
+    private function buildSharedPages(Application $application): void
+    {
+
         $this->reportProgress('Fingerprinting and copying assets referenced by rendered pages...');
+        $this->copyOfflineRuntimeFiles();
         $this->reportProgress('Rendering shared pages (0/10).');
         $this->reportProgress('Rendering shared pages (1/10): /.');
         $this->writeRouteArtifact($application, '/', $this->artifactRoot . '/index.html');
@@ -79,31 +125,26 @@ final class StaticArtifactBuilder
             $this->artifactRoot . '/tags/index.html',
         ]);
         $this->reportProgress('Rendering shared pages complete (10/10).');
+    }
 
-        $this->renderRouteBatch('tag pages', $this->fetchVisibleTagRoutes(), function (string $route) use ($application): void {
-            $artifactPaths = $this->artifactPathsForRoute($route);
-            $artifactPath = $artifactPaths[0] ?? null;
-            if ($artifactPath === null) {
-                throw new RuntimeException('Unable to resolve artifact path for route: ' . $route);
+    private function copyOfflineRuntimeFiles(): void
+    {
+        foreach (['/service_worker.js', '/manifest.webmanifest', '/favicon.ico', '/favicon.gif'] as $requestPath) {
+            $sourcePath = $this->projectRoot . '/public' . $requestPath;
+            if (!is_file($sourcePath)) {
+                continue;
             }
 
-            $this->writeRouteArtifact($application, $route, $artifactPath);
-        });
-        $this->renderRouteBatch('thread pages', $this->fetchVisibleThreadIds(), function (string $threadId) use ($application): void {
-            $this->writeRouteArtifact($application, '/threads/' . $threadId, $this->artifactRoot . '/threads/' . $threadId . '.html');
-        });
-        $this->renderRouteBatch('post pages', $this->fetchVisiblePostIds(), function (string $postId) use ($application): void {
-            $this->writeRouteArtifact($application, '/posts/' . $postId, $this->artifactRoot . '/posts/' . $postId . '.html');
-        });
-        $this->renderRouteBatch('profile pages', $this->fetchIds('SELECT profile_slug FROM profiles ORDER BY profile_slug'), function (string $profileSlug) use ($application): void {
-            $this->writeRouteArtifact($application, '/profiles/' . $profileSlug, $this->artifactRoot . '/profiles/' . $profileSlug . '.html');
-        });
-        $this->reportProgress('Building public offline reading snapshot...');
-        (new PublicOfflineSnapshotBuilder())->build(
-            $this->databasePath,
-            $this->artifactRoot . '/offline/snapshot.sqlite3',
-        );
-        $this->reportProgress('Fingerprinting and copying referenced assets complete.');
+            $targetPath = $this->artifactRoot . $requestPath;
+            $targetDirectory = dirname($targetPath);
+            if (!is_dir($targetDirectory) && !mkdir($targetDirectory, 0777, true) && !is_dir($targetDirectory)) {
+                throw new RuntimeException('Unable to create static runtime directory.');
+            }
+
+            if (!copy($sourcePath, $targetPath)) {
+                throw new RuntimeException('Unable to copy static runtime file: ' . $requestPath);
+            }
+        }
     }
 
     public function buildSingleRoute(string $route): bool
