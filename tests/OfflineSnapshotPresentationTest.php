@@ -136,6 +136,40 @@ NODE;
         assertSame('unknown', $result['invalid']);
     }
 
+    public function testCompactOfflineIndicatorsUseStableLabelsAndFallbacks(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+global.window = {};
+global.document = { addEventListener() {} };
+vm.runInThisContext(source);
+const api = window.forumOfflineSnapshot;
+process.stdout.write(JSON.stringify({
+  archive: api.compactArchiveIndicator('2026-09-30T05:33:24Z'),
+  archiveFallback: api.compactArchiveIndicator(''),
+  reader: api.compactReaderIndicator('/assets/offline_reader.7d25a6f66fa7.js'),
+  readerFallback: api.compactReaderIndicator('unknown')
+}));
+NODE;
+        $command = sprintf(
+            'node -e %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/assets/offline_reader.js'),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Compact offline indicator helper failed: ' . implode("\n", $output));
+        }
+        $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame('archive 2026-09-30 05:33 UTC', $result['archive']);
+        assertSame('archive unknown', $result['archiveFallback']);
+        assertSame('reader 7d25a6f66fa7', $result['reader']);
+        assertSame('reader unknown', $result['readerFallback']);
+    }
+
     public function testTagsIndexRendersSavedGroupsAndEmptyState(): void
     {
         $script = <<<'NODE'

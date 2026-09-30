@@ -162,6 +162,43 @@ pre {
   line-height: 1;
   padding: 0.3rem 0.55rem;
   text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.offline-mode-bar__indicators {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: auto;
+  min-width: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.offline-mode-bar__indicator {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.offline-mode-bar__indicator + .offline-mode-bar__indicator {
+  border-left: 1px solid var(--line);
+  padding-left: 0.45rem;
+}
+
+@media (max-width: 420px) {
+  .offline-mode-bar {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .offline-mode-bar__indicators {
+    width: 100%;
+    margin-left: 0;
+  }
 }
 
 .eyebrow {

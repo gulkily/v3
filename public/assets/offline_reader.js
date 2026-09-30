@@ -14,6 +14,14 @@
       var reader = documentFragment && documentFragment.querySelector ? documentFragment.querySelector("[data-offline-reader]") : null;
       return reader && reader.getAttribute("data-reader-revision") || "unknown";
     },
+    compactArchiveIndicator: function (generatedAt) {
+      var match = String(generatedAt || "").match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+      return match ? "archive " + match[1] + " " + match[2] + " UTC" : "archive unknown";
+    },
+    compactReaderIndicator: function (revision) {
+      var match = String(revision || "").match(/offline_reader\.([a-f0-9]{12})\.js$/);
+      return match ? "reader " + match[1] : "reader unknown";
+    },
     normalThreadUrl: function (threadId) {
       return "/threads/" + encodeURIComponent(threadId);
     },
@@ -431,8 +439,9 @@
     }
 
     var status = root.querySelector('[data-role="offline-reader-status"]');
-    var details = root.querySelector('[data-role="offline-reader-details"]');
     var modeBar = root.querySelector('[data-role="offline-mode-bar"]');
+    var archiveIndicator = root.querySelector('[data-role="offline-archive-indicator"]');
+    var readerIndicator = root.querySelector('[data-role="offline-reader-indicator"]');
     var content = root.querySelector('[data-role="offline-reader-content"]');
     var snapshotUrl = root.getAttribute("data-snapshot-url") || "/offline/snapshot.sqlite3";
     var runtimeUrl = root.getAttribute("data-runtime-url") || "/assets/sql-wasm.wasm";
@@ -455,10 +464,15 @@
     }
 
     function setReaderDetails(generatedAt) {
-      if (!details) return;
       var revision = root.getAttribute("data-reader-revision") || "unknown";
-      details.textContent = "Saved archive generated: " + (generatedAt || "unknown") + ". Reader revision: " + revision + ".";
-      details.hidden = false;
+      if (archiveIndicator) {
+        archiveIndicator.textContent = snapshotPresentation.compactArchiveIndicator(generatedAt);
+        archiveIndicator.title = generatedAt || "unknown";
+      }
+      if (readerIndicator) {
+        readerIndicator.textContent = snapshotPresentation.compactReaderIndicator(revision);
+        readerIndicator.title = revision;
+      }
     }
 
     function metadataValue(database, key) {
