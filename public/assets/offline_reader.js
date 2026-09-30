@@ -13,6 +13,14 @@
     normalThreadUrl: function (threadId) {
       return "/threads/" + encodeURIComponent(threadId);
     },
+    boardPathFromPathname: function (pathname) {
+      return ["/", "/threads", "/threads/"].indexOf(String(pathname || "")) !== -1
+        ? String(pathname || "")
+        : "";
+    },
+    normalBoardUrl: function (pathname, state) {
+      return pathname + "?view=" + encodeURIComponent(state.view) + "&sort=" + encodeURIComponent(state.sort);
+    },
     threadIdFromPathname: function (pathname) {
       var match = String(pathname || "").match(/^\/threads\/([^/]+)\/?$/);
       return match ? decodeURIComponent(match[1]) : "";
@@ -121,7 +129,7 @@
       }
       return right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id);
     },
-    appendBoardControls: function (content, state, onChange) {
+    appendBoardControls: function (content, state, onChange, boardPath) {
       var controls = document.createElement("article");
       controls.className = "card";
       var nav = document.createElement("div");
@@ -137,7 +145,7 @@
         nextState[option.group] = option.key;
         var link = document.createElement("a");
         link.className = "nav-link" + (state[option.group] === option.key ? " is-active" : "");
-        link.href = "/?view=" + encodeURIComponent(nextState.view) + "&sort=" + encodeURIComponent(nextState.sort);
+        link.href = snapshotPresentation.normalBoardUrl(boardPath, nextState);
         link.textContent = option.label;
         link.addEventListener("click", function (event) {
           event.preventDefault();
@@ -162,7 +170,7 @@
       clearSnapshotNode(options.content);
       options.content.hidden = false;
       if (options.onBoardChange) {
-        snapshotPresentation.appendBoardControls(options.content, state, options.onBoardChange);
+        snapshotPresentation.appendBoardControls(options.content, state, options.onBoardChange, options.boardPath || "/");
       }
       rows.forEach(function (thread) {
         var card = document.createElement("article");
@@ -360,6 +368,7 @@
       root.dataset.offlineNavigation = "board";
       showOfflineMode();
       setStatus("Showing saved board content offline.", "ok");
+      var boardPath = snapshotPresentation.boardPathFromPathname(window.location.pathname);
       var parameters = new URLSearchParams(window.location.search);
       var boardState = {
         view: parameters.get("view") === "liked" ? "liked" : "all",
@@ -371,11 +380,12 @@
         content: content,
         database: database,
         boardState: boardState,
+        boardPath: boardPath,
         emptyMessage: boardState.view === "liked"
           ? "No liked public threads were included in this snapshot."
           : "No recent public threads were included in this snapshot.",
         onBoardChange: function (nextState) {
-          var nextUrl = "/?view=" + encodeURIComponent(nextState.view) + "&sort=" + encodeURIComponent(nextState.sort);
+          var nextUrl = snapshotPresentation.normalBoardUrl(boardPath, nextState);
           window.history.pushState({}, "", nextUrl);
           renderOfflineBoard(database);
         },
@@ -434,7 +444,7 @@
 
     root.addEventListener("forum-offline-reader-ready", function (event) {
       var database = event.detail.database;
-      if (window.location.pathname === "/") {
+      if (snapshotPresentation.boardPathFromPathname(window.location.pathname)) {
         renderOfflineBoard(database);
         window.addEventListener("popstate", function () {
           renderOfflineBoard(database);

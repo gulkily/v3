@@ -21,3 +21,14 @@
   - `php tests/run.php OfflineSnapshotPresentationTest LocalAppSmokeTest::testOfflineReaderUsesBoardControlsAndPinnedSnapshotPresentation` — 2 run, 2 passed.
 - Notes:
   - The existing public snapshot schema already contains the required fields; no archive or database change was needed.
+
+## Stage 3 - Render canonical Board control URLs
+- Changes:
+  - Added shared normal-Board route and URL helpers for `/`, `/threads`, and `/threads/`.
+  - Preserved the reader's current Board path and selected filter/sort state when offline controls change.
+  - Retained existing saved-thread links and archive-local empty states.
+- Verification:
+  - `node --check public/assets/offline_reader.js` passed.
+  - `php tests/run.php OfflineSnapshotPresentationTest LocalAppSmokeTest::testOfflineReaderUsesBoardControlsAndPinnedSnapshotPresentation` — 3 run, 3 passed.
+- Notes:
+  - The normal Board fallback remains a cached reader shell, not a cached Board document.

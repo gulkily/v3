@@ -60,4 +60,40 @@ NODE;
         assertSame('bug', $groups[2]['tag']);
         assertSame(1, $groups[2]['count']);
     }
+
+    public function testBoardUrlsPreserveNormalRouteAndSelectedState(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+global.window = {};
+global.document = { addEventListener() {} };
+vm.runInThisContext(source);
+const api = window.forumOfflineSnapshot;
+process.stdout.write(JSON.stringify({
+  root: api.normalBoardUrl(api.boardPathFromPathname('/'), { view: 'liked', sort: 'top' }),
+  threads: api.normalBoardUrl(api.boardPathFromPathname('/threads/'), { view: 'all', sort: 'oldest' }),
+  noSlash: api.normalBoardUrl(api.boardPathFromPathname('/threads'), { view: 'liked', sort: 'newest' }),
+  unsupported: api.boardPathFromPathname('/tags/'),
+  thread: api.normalThreadUrl('thread id')
+}));
+NODE;
+        $command = sprintf(
+            'node -e %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/assets/offline_reader.js'),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Board URL helper failed: ' . implode("\n", $output));
+        }
+        $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame('/?view=liked&sort=top', $result['root']);
+        assertSame('/threads/?view=all&sort=oldest', $result['threads']);
+        assertSame('/threads?view=liked&sort=newest', $result['noSlash']);
+        assertSame('', $result['unsupported']);
+        assertSame('/threads/thread%20id', $result['thread']);
+    }
 }
