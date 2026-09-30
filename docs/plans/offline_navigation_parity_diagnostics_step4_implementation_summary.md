@@ -31,3 +31,14 @@
   - `php tests/run.php OfflineNavigationWorkerTest LocalAppSmokeTest::testOfflineHealthRouteReportsDeviceReadiness` — 3 run, 3 passed.
 - Notes:
   - Live comparison is deliberately unavailable offline. A reader mismatch means the interface cache should be refreshed; it does not make a claim about the snapshot's content date.
+
+## Stage 4 - Document and verify recovery
+- Changes:
+  - Expanded the Offline Reading Runbook with the archive-time versus reader-revision distinction, match/mismatch/offline comparison meanings, and the Refresh saved reader recovery path.
+  - Documented how the Board/Tags subnav and reconnect-only New Post control should be interpreted when diagnosing a missing control.
+- Verification:
+  - `node --check` passed for the reader, health, and worker scripts; PHP syntax checks passed for the touched controller, templates, and tests.
+  - Focused suite: `php tests/run.php OfflineNavigationWorkerTest OfflineSnapshotPresentationTest LocalAppSmokeTest::testOfflineHealthRouteReportsDeviceReadiness LocalAppSmokeTest::testOfflineReaderFallbackRouteUsesLocalSnapshotShell` — 9 run, 9 passed.
+  - Full suite: `php tests/run.php` — 608 run, 601 passed, 7 long-standing unrelated failures (core-route/activity smoke expectations, the SQLite-viewer markup expectation, and the compose DOM harness).
+- Notes:
+  - The worker refresh request/response flow is covered with an isolated worker test. Browser service-worker smoke coverage remains dependent on an environment that retains service-worker registrations; this headless environment does not reliably do so.

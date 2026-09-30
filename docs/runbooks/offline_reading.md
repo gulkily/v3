@@ -67,7 +67,36 @@ their service worker can download the new snapshot.
 Open **Tools → Offline Reading** (or `/offline/`) to inspect this browser's
 offline-reading setup. The page reports the connection, root service worker,
 saved reader shell/assets, saved public snapshot, and—only while connected—the
-published snapshot's reachability.
+published snapshot's reachability. It also reports:
+
+- **Archive generated** — the timestamp embedded in the saved snapshot. This
+  is the saved-content date, not the date a browser last opened it.
+- **Saved reader revision** — the fingerprinted reader interface cached on the
+  device.
+- **Current reader revision** and **Saved reader freshness** — an online
+  comparison of the cached interface with the currently published interface.
+
+Use those signals to distinguish a capability issue from stale content:
+
+- If **Saved reader freshness** says `Matches current reader`, a missing
+  offline control is not caused by an old cached reader. Check the documented
+  offline boundary instead: only Board/Tags read navigation and saved threads
+  are available; posting and other personalized or write actions require a
+  connection.
+- If it says `Different from current reader`, choose **Refresh saved reader**
+  while online. Wait for `Saved reader refreshed and rechecked.`, then check
+  the comparison again. That refresh downloads the reader assets and public
+  snapshot but does not cache normal Board or Tag page documents.
+- If the comparison says `Not checked while offline`, reconnect before
+  determining whether the interface is stale. The saved archive can still be
+  read while disconnected.
+
+The offline Board and Tags subnav contains the normal supported read controls:
+Tags, All/Liked, and Newest/Oldest/Top. **New Post (reconnect)** is visible to
+make the online write boundary explicit. If those controls are absent, first
+use the online freshness comparison above; a matching reader means the control
+is deliberately outside the supported offline experience rather than a stale
+browser cache.
 
 `Offline reading is ready on this device` means the browser has the worker and
 all saved artifacts necessary to read the bounded snapshot. A connected browser
@@ -91,12 +120,14 @@ removed from their device.
 If the health page says offline reading is not ready, or saved Board, Tag, or
 thread content fails to load while offline:
 
-1. reconnect, reload a public page, and wait for it to finish loading;
-2. reopen **Tools → Offline Reading** and use **Check again** until the saved
-   reader shell, assets, and public snapshot are available;
-3. disconnect, then reopen a normal Board control URL, Tags or saved tag-result
+1. reconnect and open **Tools → Offline Reading**;
+2. if the saved reader differs from the current reader, use **Refresh saved
+   reader** and wait for its recheck confirmation; otherwise use **Check again**;
+3. confirm that the saved reader shell, assets, public snapshot, and the
+   desired archive generation time are available;
+4. disconnect, then reopen a normal Board control URL, Tags or saved tag-result
    URL, or saved thread URL and check that the `offline mode` bar appears;
-4. if it still fails, clear this site's storage/cache in the browser settings,
+5. if it still fails, clear this site's storage/cache in the browser settings,
    revisit a public page online, and check the health page again.
 
 Clearing site data removes the saved reader and snapshot until the browser
