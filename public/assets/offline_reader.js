@@ -52,7 +52,7 @@
     boardRows: function (database) {
       var result = database.exec(
         "SELECT root_post_id, subject, body_preview, reply_count, last_activity_at, author_label, "
-        + "root_post_created_at, thread_labels_json, score_total FROM threads"
+        + "root_post_created_at, thread_labels_json, board_tags_json, score_total FROM threads"
       )[0];
       return (result && result.values ? result.values : []).map(function (row) {
         return {
@@ -64,17 +64,48 @@
           author: String(row[5] || "guest"),
           createdAt: String(row[6] || ""),
           labels: snapshotPresentation.threadLabels(row[7]),
-          score: Number(row[8] || 0)
+          boardTags: snapshotPresentation.tagsFromJson(row[8]),
+          score: Number(row[9] || 0)
         };
       });
     },
     threadLabels: function (value) {
+      return snapshotPresentation.tagsFromJson(value);
+    },
+    tagsFromJson: function (value) {
       try {
-        var labels = JSON.parse(String(value || "[]"));
-        return Array.isArray(labels) ? labels : [];
+        var tags = JSON.parse(String(value || "[]"));
+        return Array.isArray(tags) ? tags.filter(function (tag) { return typeof tag === "string" && tag !== ""; }) : [];
       } catch (error) {
         return [];
       }
+    },
+    threadTags: function (thread) {
+      return [...new Set([...(thread.boardTags || []), ...(thread.labels || [])])];
+    },
+    tagGroups: function (database) {
+      var groups = {};
+      snapshotPresentation.boardRows(database).forEach(function (thread) {
+        snapshotPresentation.threadTags(thread).forEach(function (tag) {
+          if (!groups[tag]) groups[tag] = { tag: tag, threads: [] };
+          groups[tag].threads.push(thread);
+        });
+      });
+      return Object.values(groups).map(function (group) {
+        group.threads.sort(function (left, right) {
+          return right.lastActivityAt.localeCompare(left.lastActivityAt) || right.id.localeCompare(left.id);
+        });
+        return {
+          tag: group.tag,
+          count: group.threads.length,
+          threads: group.threads,
+          previewThreads: group.threads.slice(0, 5),
+          hasMore: group.threads.length > 5,
+          href: "/tags/" + encodeURIComponent(group.tag)
+        };
+      }).sort(function (left, right) {
+        return (right.count - left.count) || left.tag.localeCompare(right.tag);
+      });
     },
     isPinned: function (thread) {
       return thread.labels.indexOf("pinned") !== -1;

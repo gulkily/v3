@@ -1,0 +1,63 @@
+<?php
+
+declare(strict_types=1);
+
+final class OfflineSnapshotPresentationTest
+{
+    /** @return array<int, array<string, mixed>> */
+    private function tagGroups(): array
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+global.window = {};
+global.document = { addEventListener() {} };
+vm.runInThisContext(source);
+const rows = [
+  ['t1', 'One', '', 0, '2026-01-01T00:00:00Z', 'A', '2026-01-01T00:00:00Z', '["topic","topic"]', '["general","topic"]', 0],
+  ['t2', 'Two', '', 0, '2026-01-02T00:00:00Z', 'B', '2026-01-02T00:00:00Z', '["topic"]', '["general"]', 0],
+  ['t3', 'Three', '', 0, '2026-01-03T00:00:00Z', 'C', '2026-01-03T00:00:00Z', '["bug"]', 'not json', 0],
+  ['t4', 'Four', '', 0, '2026-01-04T00:00:00Z', 'D', '2026-01-04T00:00:00Z', '[]', '["general"]', 0],
+  ['t5', 'Five', '', 0, '2026-01-05T00:00:00Z', 'E', '2026-01-05T00:00:00Z', '[]', '["general"]', 0],
+  ['t6', 'Six', '', 0, '2026-01-06T00:00:00Z', 'F', '2026-01-06T00:00:00Z', '[]', '["general"]', 0],
+  ['t7', 'Seven', '', 0, '2026-01-07T00:00:00Z', 'G', '2026-01-07T00:00:00Z', '[]', '["general"]', 0]
+];
+const database = { exec() { return [{ values: rows }]; } };
+const groups = window.forumOfflineSnapshot.tagGroups(database).map((group) => ({
+  tag: group.tag, count: group.count, ids: group.threads.map((thread) => thread.id),
+  previewIds: group.previewThreads.map((thread) => thread.id), hasMore: group.hasMore, href: group.href
+}));
+process.stdout.write(JSON.stringify(groups));
+NODE;
+
+        $command = sprintf(
+            'node -e %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/assets/offline_reader.js'),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Snapshot presentation helper failed: ' . implode("\n", $output));
+        }
+
+        return json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    public function testTagGroupsMatchSavedBoardTagAndLabelSemantics(): void
+    {
+        $groups = $this->tagGroups();
+
+        assertSame('general', $groups[0]['tag']);
+        assertSame(6, $groups[0]['count']);
+        assertSame(['t7', 't6', 't5', 't4', 't2', 't1'], $groups[0]['ids']);
+        assertSame(['t7', 't6', 't5', 't4', 't2'], $groups[0]['previewIds']);
+        assertSame(true, $groups[0]['hasMore']);
+        assertSame('/tags/general', $groups[0]['href']);
+        assertSame('topic', $groups[1]['tag']);
+        assertSame(2, $groups[1]['count']);
+        assertSame(['t2', 't1'], $groups[1]['ids']);
+        assertSame('bug', $groups[2]['tag']);
+        assertSame(1, $groups[2]['count']);
+    }
+}
