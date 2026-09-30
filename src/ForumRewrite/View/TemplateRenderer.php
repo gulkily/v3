@@ -30,6 +30,7 @@ final class TemplateRenderer
         'codebase_state.php' => ['/assets/tool-details.css'],
         'feature_flags.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
+        'offline_health.php' => ['/assets/tool-details.css'],
         'offline_reader.php' => ['/assets/sqlite.css', '/assets/thread-list.css'],
         'tags.php' => ['/assets/tags.css'],
         'tag.php' => ['/assets/thread-list.css'],
@@ -562,7 +563,7 @@ final class TemplateRenderer
             . $escape($this->formatRelativeTimestamp($value)) . '</time>';
     }
 
-    private function assetPath(string $path): string
+    public function assetPath(string $path): string
     {
         return AssetFingerprint::fingerprintedPath(dirname($this->templateRoot) . '/public', $path);
     }

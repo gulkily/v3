@@ -183,6 +183,64 @@ final class LocalAppSmokeTest
         }
     }
 
+    public function testBuildStaticHelpDoesNotTreatOptionsAsRepositoryPaths(): void
+    {
+        $command = escapeshellarg(__DIR__ . '/../v3') . ' build-static --help 2>&1';
+        exec($command, $output, $exitCode);
+        $text = implode("\n", $output);
+
+        assertSame(0, $exitCode, $text);
+        assertStringContains('Usage:', $text);
+        assertStringContains('./v3 build-static --shared-only', $text);
+        assertStringNotContains('Starting static HTML release build', $text);
+        assertStringNotContains('Repository: --help', $text);
+    }
+
+    public function testSharedStaticRefreshCommandKeepsDetailArtifactsWithoutRebuildingTheReadModel(): void
+    {
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-static-shared-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-static-shared-artifacts-' . bin2hex(random_bytes(6));
+
+        try {
+            (new ReadModelBuilder(
+                $this->repositoryRoot,
+                $databasePath,
+                new CanonicalRecordRepository($this->repositoryRoot),
+            ))->rebuild();
+            $publisher = new StaticArtifactReleasePublisher(dirname(__DIR__), $this->repositoryRoot, $artifactRoot);
+            $initialRelease = $publisher->build($databasePath);
+            $publisher->activate($initialRelease);
+            $detailArtifact = $artifactRoot . '/current/threads/root-001.html';
+            $detailContents = (string) file_get_contents($detailArtifact);
+
+            $command = sprintf(
+                'php %s %s %s %s 2>&1',
+                escapeshellarg(__DIR__ . '/../scripts/refresh_static_shared_artifacts.php'),
+                escapeshellarg($this->repositoryRoot),
+                escapeshellarg($databasePath),
+                escapeshellarg($artifactRoot),
+            );
+            exec($command, $output, $exitCode);
+            $text = implode("\n", $output);
+
+            assertSame(0, $exitCode, $text);
+            assertStringContains('Starting shared static release refresh', $text);
+            assertStringContains('does not rebuild the read model', $text);
+            assertStringContains('[1/2] Rendering shared pages (10/10): /tags/.', $text);
+            assertStringContains('[2/2] Shared static release activated.', $text);
+            assertStringNotContains('Rendering thread pages', $text);
+            assertStringNotContains('Rendering post pages', $text);
+            assertStringNotContains('Read model: index posts', $text);
+            assertTrue(is_link($artifactRoot . '/current'));
+            assertSame($detailContents, (string) file_get_contents($artifactRoot . '/current/threads/root-001.html'));
+            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/current/index.html'));
+            assertSame((string) file_get_contents(dirname(__DIR__) . '/public/service_worker.js'), (string) file_get_contents($artifactRoot . '/current/service_worker.js'));
+        } finally {
+            @unlink($databasePath);
+            $this->deleteTree($artifactRoot);
+        }
+    }
+
     public function testApprovedPrivateSessionCanViewOwnProfileAndBoard(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -2499,7 +2557,7 @@ PHP;
         assertStringContains('href="/tools/sqlite/"', $this->render($application, '/tools/'));
     }
 
-    public function testOfflineReaderRouteUsesLocalSnapshotShell(): void
+    public function testOfflineHealthRouteReportsDeviceReadiness(): void
     {
         $application = new Application(
             dirname(__DIR__),
@@ -2507,7 +2565,60 @@ PHP;
             $this->databasePath,
         );
 
-        $reader = $this->render($application, '/offline/');
+        $health = $this->render($application, '/offline/');
+        $tools = $this->render($application, '/tools/');
+        $healthScript = (string) file_get_contents(dirname(__DIR__) . '/public/assets/offline_health.js');
+
+        assertStringContains('data-offline-health', $health);
+        assertStringContains('data-reader-url="/offline/reader/"', $health);
+        assertStringContains('data-snapshot-url="/offline/snapshot.sqlite3"', $health);
+        assertStringContains('data-role="offline-health-summary"', $health);
+        assertStringContains('data-role="offline-health-checks"', $health);
+        assertStringContains('data-role="offline-worker-checks"', $health);
+        assertStringContains('data-role="offline-archive-checks"', $health);
+        assertStringContains('data-role="offline-publication-checks"', $health);
+        assertStringContains('<h2>Device</h2>', $health);
+        assertStringContains('<h2>Saved archive</h2>', $health);
+        assertStringContains('<h2>Actions</h2>', $health);
+        assertStringContains('class="codebase-facts"', $health);
+        assertStringContains('data-role="offline-health-status"', $health);
+        assertStringContains('data-role="open-saved-archive"', $health);
+        assertStringContains('/assets/tool-details.', $health);
+        assertStringContains('/assets/offline_health.', $health);
+        assertStringMatches('#data-runtime-url="/assets/sql-wasm\.[a-f0-9]{12}\.wasm"#', $health);
+        assertStringNotContains('data-offline-reader', $health);
+        assertStringContains('href="/offline/"', $tools);
+        assertStringContains('Offline Reading', $tools);
+        assertStringContains('method: "HEAD"', $healthScript);
+        assertStringContains('Not checked while offline', $healthScript);
+        assertStringContains('window.caches.keys()', $healthScript);
+        assertStringContains('Secure context', $healthScript);
+        assertStringContains('Worker registrations', $healthScript);
+        assertStringContains('Last registration error', $healthScript);
+        assertStringContains('navigator.serviceWorker.getRegistrations()', $healthScript);
+        assertStringContains('Offline reading requires HTTPS.', $healthScript);
+        assertStringContains('Open https://', $healthScript);
+        assertStringContains('Offline reader cache', $healthScript);
+        assertStringContains('window.caches.open(matching[0])', $healthScript);
+        assertStringContains('new SQL.Database(bytes)', $healthScript);
+        assertStringContains('Saved archive size', $healthScript);
+        assertStringContains('Archive generated', $healthScript);
+        assertStringContains('Archive contents', $healthScript);
+        assertStringContains('Archive capacity', $healthScript);
+        assertStringContains('setHealthStatus("ready", "READY")', $healthScript);
+        assertStringContains('navigator.serviceWorker.getRegistrations()', $healthScript);
+        assertStringContains('cache.match(absoluteUrl(url), { ignoreVary: true })', $healthScript);
+    }
+
+    public function testOfflineReaderFallbackRouteUsesLocalSnapshotShell(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $reader = $this->render($application, '/offline/reader/');
 
         assertStringContains('data-offline-reader', $reader);
         assertStringContains('class="stack thread-list" data-offline-reader', $reader);
@@ -2516,6 +2627,7 @@ PHP;
         assertStringContains('data-role="offline-mode-bar"', $reader);
         assertStringContains('offline mode', $reader);
         assertStringContains('/assets/sql-wasm.', $reader);
+        assertStringMatches('#data-runtime-url="/assets/sql-wasm\.[a-f0-9]{12}\.wasm"#', $reader);
         assertStringContains('/assets/offline_reader.', $reader);
         assertStringContains('/assets/thread-list.', $reader);
         assertStringContains('class="nav-link is-active" href="/"', $reader);
@@ -2541,12 +2653,31 @@ PHP;
         assertStringNotContains('href="/offline/"', $board);
         assertStringContains('refresh-offline-reader', $serviceWorker);
         assertStringContains('networkFirstNavigation', $serviceWorker);
-        assertStringContains('zenmemes-offline-reader-v6', $serviceWorker);
+        assertStringContains('zenmemes-offline-reader-v12', $serviceWorker);
+        assertStringContains('[offline reading] worker install started', $serviceWorker);
+        assertStringContains('[offline reading] fetch failed', $serviceWorker);
+        assertStringContains('offline reader shell', $serviceWorker);
+        assertStringContains('__offline_bootstrap', $serviceWorker);
+        assertStringContains('cache.match(cacheKey(url), { ignoreVary: true })', $serviceWorker);
+        assertStringContains('cache.put(cacheKey(url), response.clone())', $serviceWorker);
+        assertStringContains('[offline reading] cache refresh stored', $serviceWorker);
+        assertStringContains('const OFFLINE_HEALTH_URL = "/offline/"', $serviceWorker);
+        assertStringContains('const OFFLINE_READER_URL = "/offline/reader/"', $serviceWorker);
+        assertStringContains('data-runtime-url', $serviceWorker);
+        assertStringNotContains('"/assets/sql-wasm.wasm"', $serviceWorker);
         assertStringContains('url.pathname.startsWith("/assets/")', $serviceWorker);
         assertStringNotContains('/api/', $serviceWorker);
         assertStringContains('navigator.serviceWorker.register("/service_worker.js", { scope: "/" })', $registration);
+        assertStringContains('registration.update()', $registration);
+        assertStringContains('!registration.installing && !registration.waiting', $registration);
+        assertStringContains('logOfflineState("update check completed"', $registration);
+        assertStringContains('offlineCaches', $registration);
         assertStringContains('registration.unregister()', $registration);
-        assertStringContains('/offline/snapshot.sqlite3', $registration);
+        assertStringNotContains('querySelectorAll(\'link[href], script[src]\')', $registration);
+        assertStringNotContains('urls: cacheUrls()', $registration);
+        assertStringNotContains('/offline/reader/', $registration);
+        assertStringNotContains('/offline/snapshot.sqlite3', $registration);
+        assertStringNotContains('/assets/sql-wasm.wasm', $registration);
     }
 
     public function testOfflineReaderUsesBoardControlsAndPinnedSnapshotPresentation(): void
@@ -2564,6 +2695,7 @@ PHP;
         assertStringContains('bodyExcerpt', $readerScript);
         assertStringContains('heatLevel', $readerScript);
         assertStringContains('dataset.heat', $readerScript);
+        assertStringContains('fileName === "sql-wasm.wasm" ? runtimeUrl', $readerScript);
     }
 
     public function testPrivateLayoutDoesNotRegisterOfflineReaderPwa(): void
@@ -2607,9 +2739,11 @@ PHP;
         assertStringMatches('#/assets/sqlite_viewer\.[a-f0-9]{12}\.js#', $viewer);
         assertTrue(is_file(dirname(__DIR__) . '/public/assets/sql-wasm.js'));
         assertTrue(is_file(dirname(__DIR__) . '/public/assets/sql-wasm.wasm'));
+        assertStringMatches('#data-runtime-url="/assets/sql-wasm\.[a-f0-9]{12}\.wasm"#', $viewer);
         assertStringContains('/downloads/read_model.sqlite3', $script);
         assertStringContains('initSqlJs', $script);
         assertStringContains('locateFile', $script);
+        assertStringContains('fileName === "sql-wasm.wasm" ? runtimeUrl', $script);
     }
 
     public function testSqliteViewerIncludesSchemaExplorerContract(): void
@@ -2921,9 +3055,48 @@ PHP;
 
         try {
             $response = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3', []);
+            $bootstrapResponse = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3?__offline_bootstrap=zenmemes-offline-reader-v10', []);
 
             assertStringContains('SQLite format 3', $response);
             assertStringContains('offline fixture', $response);
+            assertSame($response, $bootstrapResponse);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
+    public function testFrontControllerPrefersIndependentlyPublishedOfflineSnapshot(): void
+    {
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($staticHtmlRoot . '/current/offline', 0777, true);
+        mkdir($staticHtmlRoot . '/offline', 0777, true);
+        file_put_contents($staticHtmlRoot . '/current/offline/snapshot.sqlite3', "SQLite format 3\000release fixture");
+        file_put_contents($staticHtmlRoot . '/offline/snapshot.sqlite3', "SQLite format 3\000fast fixture");
+
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3', []);
+
+            assertStringContains('fast fixture', $response);
+            assertStringNotContains('release fixture', $response);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
+    public function testFrontControllerFallsBackWhenIndependentOfflineSnapshotIsInvalid(): void
+    {
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($staticHtmlRoot . '/current/offline', 0777, true);
+        mkdir($staticHtmlRoot . '/offline', 0777, true);
+        file_put_contents($staticHtmlRoot . '/current/offline/snapshot.sqlite3', "SQLite format 3\000release fixture");
+        file_put_contents($staticHtmlRoot . '/offline/snapshot.sqlite3', 'invalid snapshot');
+
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3', []);
+
+            assertStringContains('release fixture', $response);
         } finally {
             $this->deleteTree($staticHtmlRoot);
             $this->deleteTree($publicRoot);
@@ -3129,6 +3302,7 @@ PHP;
         }
         assertTrue(is_file($artifactRoot . '/offline/snapshot.sqlite3'));
         assertStringContains('SQLite format 3', (string) file_get_contents($artifactRoot . '/offline/snapshot.sqlite3'));
+        assertSame((string) file_get_contents(dirname(__DIR__) . '/public/service_worker.js'), (string) file_get_contents($artifactRoot . '/service_worker.js'));
         foreach (\ForumRewrite\View\ThemeRegistry::stylesheetPaths() as $path) {
             $fingerprintedPath = AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', $path);
             assertStringContains($fingerprintedPath, $indexArtifact);

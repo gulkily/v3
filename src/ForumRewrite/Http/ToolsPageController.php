@@ -128,6 +128,7 @@ final class ToolsPageController
             'sqlite_viewer.php',
             [
                 'toolNavOptions' => ToolsPageSupport::navOptions('sqlite'),
+                'runtimeUrl' => $this->routeServices->assetPath('/assets/sql-wasm.wasm'),
             ],
             'SQLite Viewer',
             'tools',

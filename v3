@@ -18,6 +18,9 @@ Usage:
   ./v3 delete-record <record_path_or_id> [repository_root] [database_path] [artifact_root]
   ./v3 unicode-risk-backfill [repository_root] [database_path] [--with-llm]
   ./v3 build-static [repository_root] [database_path] [artifact_root]
+  ./v3 build-static --shared-only [repository_root] [database_path] [artifact_root]
+  ./v3 offline publish [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html]
+  ./v3 offline diagnose [--url=https://public.example] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html]
   ./v3 archive-thread <thread_id> [repository_root] [database_path] [artifact_root] [archive_path]
   ./v3 private-config [view|edit|refresh-template|--view|--edit|--force|--api-key-stdin] [--path=/private/path/secrets.php]
   ./v3 fast-score status|audit|retry|invalidate|smoke|prune [...options]
@@ -99,7 +102,58 @@ case "${COMMAND}" in
     ;;
   build-static)
     shift
-    php "${ROOT}/scripts/build_static_artifacts.php" "$@"
+    case "${1:-}" in
+      --help|-h)
+        cat <<'EOF'
+Usage:
+  ./v3 build-static [repository_root] [database_path] [artifact_root]
+  ./v3 build-static --shared-only [repository_root] [database_path] [artifact_root]
+
+The default command rebuilds the read model and all static pages.
+--shared-only copies the active release and refreshes shared pages and assets
+without rebuilding data or rendering tag, thread, post, or profile pages.
+EOF
+        ;;
+      --shared-only)
+        shift
+        if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+          cat <<'EOF'
+Usage: ./v3 build-static --shared-only [repository_root] [database_path] [artifact_root]
+
+Requires an active complete static release. It copies that release, refreshes
+shared pages and assets, and atomically activates the result.
+EOF
+        else
+          php "${ROOT}/scripts/refresh_static_shared_artifacts.php" "$@"
+        fi
+        ;;
+      --*)
+        echo "Unknown build-static option: ${1}" >&2
+        echo "Run ./v3 build-static --help for usage." >&2
+        exit 1
+        ;;
+      *)
+        php "${ROOT}/scripts/build_static_artifacts.php" "$@"
+        ;;
+    esac
+    ;;
+  offline)
+    shift
+    SUBCOMMAND="${1:-}"
+    case "${SUBCOMMAND}" in
+      publish)
+        shift
+        php "${ROOT}/scripts/publish_offline_snapshot.php" "$@"
+        ;;
+      diagnose)
+        shift
+        php "${ROOT}/scripts/diagnose_offline_reading.php" "$@"
+        ;;
+      *)
+        echo "Usage: ./v3 offline {publish|diagnose} [options]" >&2
+        exit 1
+        ;;
+    esac
     ;;
   archive-thread)
     shift

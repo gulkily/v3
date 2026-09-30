@@ -40,6 +40,12 @@ offline support feature stub
 Tracked in `docs/plans/backlog/offline_support_roadmap.md`.
 	Completed: bounded public read-only Board/thread snapshot.
 	Next: snapshot lifecycle confidence and cache controls.
+		automate static-release publishing after deploys and coalesced public writes/read-model rebuilds
+			retain the last good snapshot while a replacement is built
+			new public posts should be available in the next offline snapshot promptly
+		add an Offline Reading feature flag so availability can be enabled, disabled, and rolled out independently of snapshot publishing
+		make approved-members-only mode compatible with offline reading without exposing member-only content through a public snapshot
+			define its authentication, privacy, cache, and revocation model first
 	Later: broader read-only navigation, saved drafts, queued reactions, and
 	queued replies/threads with explicit sync, conflict, and security design.
 

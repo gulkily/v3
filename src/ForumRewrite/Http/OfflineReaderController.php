@@ -15,10 +15,21 @@ final class OfflineReaderController
     {
         return $this->routeServices->renderPageTemplate(
             'offline_reader.php',
-            [],
+            ['runtimeUrl' => $this->routeServices->assetPath('/assets/sql-wasm.wasm')],
             'Offline Reading',
             'board',
             ['/assets/sql-wasm.js', '/assets/offline_reader.js'],
+        );
+    }
+
+    public function health(): string
+    {
+        return $this->routeServices->renderPageTemplate(
+            'offline_health.php',
+            ['runtimeUrl' => $this->routeServices->assetPath('/assets/sql-wasm.wasm')],
+            'Offline Reading',
+            'tools',
+            ['/assets/sql-wasm.js', '/assets/offline_health.js'],
         );
     }
 }

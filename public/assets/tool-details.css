@@ -24,6 +24,42 @@
   color: var(--status-error);
 }
 
+.offline-health-status[data-status="checking"],
+.offline-health-status[data-status="partial"] {
+  color: var(--status-warning);
+}
+
+.offline-health-status[data-status="not-ready"] {
+  color: var(--status-error);
+}
+
+.offline-health-card > h2 {
+  margin-top: 0;
+}
+
+.offline-health-action {
+  box-sizing: border-box;
+  min-height: 2.8rem;
+  margin-top: 0.35rem;
+  padding: 0.65rem 0.7rem;
+  font-family: var(--ui-font);
+  line-height: 1.2;
+}
+
+.offline-health-open-archive {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  background: var(--button-bg);
+  color: inherit;
+  text-decoration: none;
+}
+
+.offline-health-open-archive[hidden] {
+  display: none;
+}
+
 .codebase-facts {
   width: 100%;
   border-collapse: collapse;

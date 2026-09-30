@@ -7,14 +7,16 @@ complete archive.
 ## What is saved
 
 When a visitor loads a public page while online, the browser may install the
-offline-reader cache. It stores one reader shell, its required same-origin
-assets, and the public SQLite snapshot at
-`/offline/snapshot.sqlite3`.
+offline-reader cache. It stores the Offline Reading health page, a separate
+reader shell, their required same-origin assets, and the public SQLite snapshot
+at `/offline/snapshot.sqlite3`.
 
-Each static release builds a fresh snapshot from visible public content. It
-contains every visible pinned thread plus up to 50 additional recently active
-non-pinned threads, with all of their visible replies, subject to a 10 MiB
-file limit. Pinned threads are selected first; if the file limit is reached,
+Each static release builds a fresh snapshot from visible public content. The
+fast offline publication command can refresh that snapshot later without
+rebuilding the release. The snapshot contains every visible pinned thread plus
+up to 50 additional recently active non-pinned threads, with all of their
+visible replies, subject to a 25 MiB file limit. Pinned threads are selected
+first; if the file limit is reached,
 the oldest whole non-pinned threads are omitted. The thin `offline mode` bar
 identifies snapshot-backed reading.
 Hidden records, identity/bootstrap records, profiles, account data, workflow
@@ -34,6 +36,43 @@ page copies. The replacement resources download before the new snapshot is
 saved, so a failed refresh leaves the prior saved snapshot available. To
 obtain a new release, reconnect and reload a public page.
 
+## Publishing a fresh snapshot
+
+After the normal ingest or read-model rebuild has completed, publish the latest
+offline reading set without rendering every static post page:
+
+```sh
+./v3 offline publish
+./v3 offline diagnose --url=https://your-public-domain
+```
+
+`offline publish` creates only the bounded public SQLite snapshot and atomically
+replaces the independently published copy. It does not rebuild the read model,
+render static HTML, deploy an application release, or refresh any browser
+cache. The reader uses the application’s canonical fingerprinted SQLite runtime
+URL, rather than relying on an unfingerprinted binary path. It preserves the
+prior snapshot if the new build fails. `build-static` remains the complete-site
+publication command and its snapshot remains a fallback when no independently
+published snapshot exists.
+
+Do not run the fast command until the read model contains the content intended
+for readers. It refuses to publish while approved-members-only mode is enabled.
+After a successful publish, visitors need to load a public page while online so
+their service worker can download the new snapshot.
+
+## Health check
+
+Open **Tools → Offline Reading** (or `/offline/`) to inspect this browser's
+offline-reading setup. The page reports the connection, root service worker,
+saved reader shell/assets, saved public snapshot, and—only while connected—the
+published snapshot's reachability.
+
+`Offline reading is ready on this device` means the browser has the worker and
+all saved artifacts necessary to read the bounded snapshot. A connected browser
+can still be ready from its saved copy when the newest published snapshot is
+temporarily unavailable. While disconnected, the published-snapshot check is
+explicitly marked as not checked rather than guessed.
+
 ## Privacy boundary
 
 Approved-members-only deployments do not register the offline cache and do
@@ -47,12 +86,16 @@ removed from their device.
 
 ## Browser-cache recovery
 
-If saved Board or thread content is stale or fails to load while offline:
+If the health page says offline reading is not ready, or saved Board or thread
+content fails to load while offline:
 
 1. reconnect, reload a public page, and wait for it to finish loading;
-2. reopen the normal Board or saved thread URL and check that the `offline mode` bar appears;
-3. if it still fails, clear this site's storage/cache in the browser settings,
-   revisit a public page online, and try the normal Board URL again.
+2. reopen **Tools → Offline Reading** and use **Check again** until the saved
+   reader shell, assets, and public snapshot are available;
+3. disconnect, then reopen the normal Board or saved thread URL and check that
+   the `offline mode` bar appears;
+4. if it still fails, clear this site's storage/cache in the browser settings,
+   revisit a public page online, and check the health page again.
 
 Clearing site data removes the saved reader and snapshot until the browser
 next refreshes them online.

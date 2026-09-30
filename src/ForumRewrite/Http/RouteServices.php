@@ -387,6 +387,11 @@ final class RouteServices
         );
     }
 
+    public function assetPath(string $path): string
+    {
+        return $this->renderer->assetPath($path);
+    }
+
     /**
      * @param array<string, mixed> $pageData
      * @param string[] $scriptPaths

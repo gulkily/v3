@@ -365,8 +365,13 @@ final class Application
             return;
         }
 
-        if ($path === '/offline/' || $path === '/offline') {
+        if ($path === '/offline/reader/' || $path === '/offline/reader') {
             $this->sendHtml($this->offlineReaderController()->reader(), 200);
+            return;
+        }
+
+        if ($path === '/offline/' || $path === '/offline') {
+            $this->sendHtml($this->offlineReaderController()->health(), 200);
             return;
         }
 
@@ -1456,7 +1461,7 @@ final class Application
             '/lobby', '/lobby/',
             '/instance', '/instance/', '/backup', '/backup/', '/tools/backup', '/tools/backup/',
             '/tools/sqlite', '/tools/sqlite/',
-            '/offline', '/offline/',
+            '/offline', '/offline/', '/offline/reader', '/offline/reader/',
             '/tools/llm-exchanges', '/tools/llm-exchanges/',
             '/downloads/repository.tar.gz', '/downloads/repository.zip',
             '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',

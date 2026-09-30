@@ -119,6 +119,17 @@ PHP, which selects only the `current` release.
    release pointer only after validation. It may take time proportional to the
    repository, but it must not hold the live read-model write lock while it
    walks Git history or renders pages.
+
+   For a presentation-only deployment with an already active release, use the
+   fast shared-page refresh instead:
+
+   ```bash
+   time ./v3 build-static --shared-only
+   ```
+
+   It preserves the existing tag, thread, post, and profile pages, refreshes
+   shared pages and their fingerprinted assets, and does not rebuild data. It
+   is not a substitute for the complete build after content changes.
 3. Smoke-test both an anonymous window and an existing signed-in browser:
    `/`, a thread, `/account/key/`, and `/invites/`. A normal reload must be
    sufficient; HTML revalidates with an ETag, while fingerprinted assets are

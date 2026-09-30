@@ -42,6 +42,7 @@ that stays accurate even as implementation details move around:
 
 ### Examples (`docs/examples/`)
 
+- [Extension and Improvement Cookbook](docs/examples/extension_improvement_cookbook.md) — patterns and examples for safely extending the site, including agent-assisted workflows
 - [Apache Vhost Example](docs/examples/apache_vhost.conf)
 - [Production Env Example](docs/examples/env.production.example)
 - [Private Config Example](docs/examples/secrets.php.example) — template for the LLM private config `./v3 private-config` writes

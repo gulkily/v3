@@ -29,7 +29,8 @@ final class PublicOfflineSnapshotBuilderTest
             assertSame('0', (string) $snapshot->query("SELECT COUNT(*) FROM threads WHERE root_post_id IN ('thread-hidden', 'thread-bootstrap')")->fetchColumn());
             assertSame('0', (string) $snapshot->query("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'post_analyses'")->fetchColumn());
             assertSame('1', (string) $snapshot->query("SELECT COUNT(*) FROM metadata WHERE key = 'snapshot_version' AND value = '2'")->fetchColumn());
-            assertTrue($result['size_bytes'] <= 10485760);
+            assertTrue($result['size_bytes'] <= PublicOfflineSnapshotBuilder::DEFAULT_MAX_BYTES);
+            assertSame((string) PublicOfflineSnapshotBuilder::DEFAULT_MAX_BYTES, (string) $snapshot->query("SELECT value FROM metadata WHERE key = 'max_bytes'")->fetchColumn());
         } finally {
             @unlink($sourcePath);
             @unlink($targetPath);

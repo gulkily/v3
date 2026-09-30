@@ -237,6 +237,20 @@ normal requests continue using the prior complete state while the command runs.
 - `database_path` — read-model SQLite file to render from
 - `artifact_root` — static release root; defaults to `state/static_html` when not given via argument or `FORUM_STATIC_HTML_ROOT`. The active release is `artifact_root/current`.
 
+### Refresh only shared static pages
+
+```
+./v3 build-static --shared-only [repository_root] [database_path] [artifact_root]
+```
+
+Quickly creates and activates a release by copying the active complete release
+and rerendering only shared routes (Board, Activity, Users, Tools, and similar
+pages), including the service worker and its referenced assets. It does not
+rebuild the read model or render tag, thread, post, or profile pages. Use it
+after deploying presentation or fingerprinted-asset changes when the active
+release already exists. It preserves the existing detail pages, so use the
+full `build-static` after content changes or changes to a detail-page template.
+
 ## Archive and remove a thread
 
 ```
