@@ -1,5 +1,26 @@
 <section class="stack"<?= $createdPostId !== '' ? ' data-created-post-id="' . $e($createdPostId) . '"' : '' ?>>
 <?php
+// Continuations: same-author quick replies within this window merge visually with the previous post.
+$continuationWindowSeconds = 15 * 60;
+$isThreadPostContinuation = function (array $previousPost, array $post, int $windowSeconds): bool {
+    $previousAuthor = (string) ($previousPost['author_label'] ?? '');
+    $author = (string) ($post['author_label'] ?? '');
+    if ($previousAuthor === '' || $author === '' || $previousAuthor !== $author) {
+        return false;
+    }
+    if ($previousAuthor === 'reply-agent' || $author === 'reply-agent') {
+        return false;
+    }
+    try {
+        $previousTime = new DateTimeImmutable((string) ($previousPost['created_at'] ?? ''));
+        $time = new DateTimeImmutable((string) ($post['created_at'] ?? ''));
+    } catch (\Exception) {
+        return false;
+    }
+    $delta = $time->getTimestamp() - $previousTime->getTimestamp();
+    return $delta >= 0 && $delta <= $windowSeconds;
+};
+
 $rootPost = null;
 $replyPosts = [];
 foreach ($posts as $post) {
@@ -19,8 +40,13 @@ foreach ($posts as $post) {
     <p class="meta"><?= $contentMeta($thread, 'root_post_created_at', '') ?></p>
   </article>
 <?php endif; ?>
-<?php foreach ($replyPosts as $post): ?>
-<?= $indent($partial('partials/post_card.php', ['post' => $post]), 1) ?>
+<?php
+$previousPost = $rootPost;
+foreach ($replyPosts as $post):
+    $isContinuation = $previousPost !== null && $isThreadPostContinuation($previousPost, $post, $continuationWindowSeconds);
+    $previousPost = $post;
+?>
+<?= $indent($partial('partials/post_card.php', ['post' => $post, 'isContinuation' => $isContinuation]), 1) ?>
 <?php endforeach; ?>
   <article class="card inline-reply-composer" data-compose-root data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>">
     <details class="inline-reply-details" data-inline-reply-details>

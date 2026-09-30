@@ -1,0 +1,15 @@
+# Step 4: Implementation Summary — Merge Same-Author Reply Chains on Thread Pages
+
+## Stage 1 - Mark continuations server-side
+- Changes:
+  - `templates/pages/thread.php`: added a `$continuationWindowSeconds = 15 * 60` named window and a local `$isThreadPostContinuation` closure (same author, time delta within the window, neither post agent-authored via `author_label === 'reply-agent'`); the reply loop now tracks the previous post (root or prior reply) and passes `isContinuation` into each `post_card.php` partial call.
+  - `templates/partials/post_card.php`: added `continuation` class and `data-time="HH:MM"` to the `<article>` when flagged, plus `data-author="<author_label>"` on every post card.
+  - `templates/partials/thread_root_card.php`: added `data-author="<author_label>"` to the root `<article>` (root is never itself a continuation, but is the comparison anchor for the first reply).
+- Verification:
+  - `php -l` on all three changed files — no syntax errors.
+  - Scratch script (`/tmp/.../scratchpad/verify_stage1.php`, removed after use) built a temp repo copy with a root post, 6 guest replies 40s–85s apart, and a 7th guest reply ~28 minutes later; rendered `/threads/cont-root` via a real `Application` instance and inspected the raw HTML: all 6 quick replies got `continuation` + correct `data-time="HH:MM"`, the 28-minute-later reply did not, and the root card got `data-author="guest"` with no `continuation` class.
+  - Standalone unit check of the closure logic confirmed the agent-authored exclusion: a guest reply immediately after an agent-authored post is NOT flagged as a continuation, and two consecutive agent-authored posts are NOT flagged either.
+  - `php tests/run.php` (full suite): 590 run, typically 584 passed / 6 failed, matching the existing tracked pre-existing baseline. Ran the full suite 5x; the only failure that varied between runs was `WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh`, which failed 2/5 times with this stage's changes present. Investigated: the diff is on the `/activity/?view=approval` page, not the thread page, and is caused by two posts sharing the exact same `2026-09-30T05:11:16Z` timestamp getting tie-broken in a different order between the incremental-update DB path and the fresh-full-rebuild DB path — nothing to do with this stage's `continuation`/`data-time`/`data-author` attributes (confirmed absent from the diff). Re-ran the same test 5x with these changes fully reverted (`git stash`) and it still failed 1/5 times, confirming this is a pre-existing flake in the read-model tie-break logic, not a regression introduced here.
+- Notes:
+  - No visual change yet — this stage is server-side flagging only; Stage 2 does the CSS merge.
+  - Pre-existing flake `WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh` (same-second timestamp tie-break on the activity page) is out of scope for this feature and was not introduced by this change; left as-is.
