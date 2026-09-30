@@ -123,19 +123,11 @@
       var groups = snapshotPresentation.tagGroups(options.database);
       clearSnapshotNode(options.content);
       options.content.hidden = false;
-      var controls = document.createElement("article");
-      controls.className = "card";
-      var nav = document.createElement("div");
-      nav.className = "nav board-controls-nav";
-      [{ label: "Board", href: "/" }, { label: "Tags", href: "/tags/" }].forEach(function (item) {
-        var link = document.createElement("a");
-        link.className = "nav-link" + (item.label === "Tags" ? " is-active" : "");
-        link.href = item.href;
-        link.textContent = item.label;
-        nav.appendChild(link);
+      snapshotPresentation.appendBoardControls(options.content, { view: "all", sort: "newest" }, {
+        boardPath: "/threads/",
+        tagsActive: true,
+        onReconnectRequired: options.onReconnectRequired
       });
-      controls.appendChild(nav);
-      options.content.appendChild(controls);
 
       var card = document.createElement("article");
       card.className = "card tags-section-card";
@@ -247,30 +239,48 @@
       }
       return right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id);
     },
-    appendBoardControls: function (content, state, onChange, boardPath) {
+    appendBoardControls: function (content, state, options) {
       var controls = document.createElement("article");
       controls.className = "card";
       var nav = document.createElement("div");
       nav.className = "nav board-controls-nav";
-      [
+      var boardPath = options.boardPath || "/";
+      [{ key: "tags", label: "Tags", href: "/tags/", active: Boolean(options.tagsActive) }].concat([
         { key: "all", label: "All", group: "view" },
         { key: "liked", label: "Liked", group: "view" },
         { key: "newest", label: "Newest", group: "sort" },
         { key: "oldest", label: "Oldest", group: "sort" },
         { key: "top", label: "Top", group: "sort" }
-      ].forEach(function (option) {
+      ]).forEach(function (option) {
+        if (option.key === "tags") {
+          var tagsLink = document.createElement("a");
+          tagsLink.className = "nav-link" + (option.active ? " is-active" : "");
+          tagsLink.href = option.href;
+          tagsLink.textContent = option.label;
+          nav.appendChild(tagsLink);
+          return;
+        }
         var nextState = { view: state.view, sort: state.sort };
         nextState[option.group] = option.key;
         var link = document.createElement("a");
         link.className = "nav-link" + (state[option.group] === option.key ? " is-active" : "");
         link.href = snapshotPresentation.normalBoardUrl(boardPath, nextState);
         link.textContent = option.label;
-        link.addEventListener("click", function (event) {
+        if (options.onBoardChange) link.addEventListener("click", function (event) {
           event.preventDefault();
-          onChange(nextState);
+          options.onBoardChange(nextState);
         });
         nav.appendChild(link);
       });
+      var newPost = document.createElement("a");
+      newPost.className = "nav-link";
+      newPost.href = "/compose/thread";
+      newPost.textContent = "New Post (reconnect)";
+      newPost.addEventListener("click", function (event) {
+        event.preventDefault();
+        if (options.onReconnectRequired) options.onReconnectRequired();
+      });
+      nav.appendChild(newPost);
       controls.appendChild(nav);
       content.appendChild(controls);
     },
@@ -331,7 +341,11 @@
       clearSnapshotNode(options.content);
       options.content.hidden = false;
       if (options.onBoardChange) {
-        snapshotPresentation.appendBoardControls(options.content, state, options.onBoardChange, options.boardPath || "/");
+        snapshotPresentation.appendBoardControls(options.content, state, {
+          boardPath: options.boardPath || "/",
+          onBoardChange: options.onBoardChange,
+          onReconnectRequired: options.onReconnectRequired
+        });
       }
       snapshotPresentation.appendThreadCards(options.content, rows, options.onSelect);
       if (!rows.length) {
@@ -510,6 +524,9 @@
           window.history.pushState({}, "", nextUrl);
           renderOfflineBoard(database);
         },
+        onReconnectRequired: function () {
+          setStatus("New Post requires a connection. Reconnect to create a post.", "error");
+        },
         onSelect: function (threadId) {
           window.location.assign(snapshotPresentation.normalThreadUrl(threadId));
         }
@@ -520,7 +537,13 @@
       root.dataset.offlineNavigation = "tags";
       showOfflineMode();
       setStatus("Showing saved tags offline.", "ok");
-      snapshotPresentation.renderTagsIndex({ content: content, database: database });
+      snapshotPresentation.renderTagsIndex({
+        content: content,
+        database: database,
+        onReconnectRequired: function () {
+          setStatus("New Post requires a connection. Reconnect to create a post.", "error");
+        }
+      });
     }
 
     function renderOfflineTag(database, tag) {

@@ -150,8 +150,13 @@ NODE;
 
         assertSame(false, $result['hidden']);
         assertSame([
-            ['href' => '/', 'text' => 'Board'],
             ['href' => '/tags/', 'text' => 'Tags'],
+            ['href' => '/threads/?view=all&sort=newest', 'text' => 'All'],
+            ['href' => '/threads/?view=liked&sort=newest', 'text' => 'Liked'],
+            ['href' => '/threads/?view=all&sort=newest', 'text' => 'Newest'],
+            ['href' => '/threads/?view=all&sort=oldest', 'text' => 'Oldest'],
+            ['href' => '/threads/?view=all&sort=top', 'text' => 'Top'],
+            ['href' => '/compose/thread', 'text' => 'New Post (reconnect)'],
             ['href' => '/tags/general', 'text' => '#general'],
             ['href' => '/threads/t6', 'text' => 'Six'],
             ['href' => '/threads/t5', 'text' => 'Five'],
