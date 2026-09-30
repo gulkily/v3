@@ -56,13 +56,7 @@ $postBodyDisplay = ($postBodyFirstLine !== '' && $postBodyFirstLine === trim($ti
 <article id="<?= $e($postAnchorId) ?>" class="card post-card thread-root-card<?= $isAgentPost ? ' agent-authored-post' : '' ?>" data-heat="<?= $heat($thread['last_activity_at'] ?? ($post['created_at'] ?? null), (int) ($thread['reply_count'] ?? 0)) ?>" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>" data-post-id="<?= $e($post['post_id']) ?>" data-author="<?= $e((string) ($post['author_label'] ?? '')) ?>"<?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?>>
   <h1><?= $e($title) ?></h1>
   <div class="body"><?= $br($postBodyDisplay) ?></div>
-  <p class="meta"><?= $contentMeta($post, 'created_at', '') ?></p>
-<?php if ($thread['thread_labels'] !== []): ?>
-  <p class="meta">Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?></p>
-<?php endif; ?>
-<?php if ($isAgentPost): ?>
-  <p class="meta"><span class="agent-label">Agent-authored reply</span></p>
-<?php endif; ?>
+  <p class="meta"><?= $contentMeta($post, 'created_at', '') ?><?php if ($thread['thread_labels'] !== []): ?> · Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?><?php endif; ?><?php if ($isAgentPost): ?> · <span class="agent-label">Agent-authored reply</span><?php endif; ?><?php $trueReplyCount = (int) ($trueReplyCount ?? 0); if ($trueReplyCount > 0): ?> · <?= $trueReplyCount ?> <?= $trueReplyCount === 1 ? 'reply' : 'replies' ?><?php endif; ?></p>
 <?= $indent($partial('partials/post_identity_details.php', ['post' => $post]), 1) ?>
 <?php
 $postAnalysis = ((bool) ($viewerCanSeePostAnalysis ?? false))

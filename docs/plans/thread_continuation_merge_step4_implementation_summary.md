@@ -27,3 +27,16 @@
 - Notes:
   - Touch devices have no `:hover`; a tap/focus-reachable affordance for the per-run action-row reveal is deferred to Stage 4 (`:focus-within` already keeps it keyboard-reachable since the row isn't `display: none`).
   - `:has()` selector support wasn't independently verified in older browsers — acceptable for this stage since Stage 4 owns the full cross-browser/theme/touch acceptance pass.
+
+## Stage 3 - Collapse root card header to one meta line with a continuation-aware reply count
+- Changes:
+  - `templates/pages/thread.php`: pre-computes continuation flags for all replies in one pass (before rendering the root card, so the true reply count is known up front), counts replies where the flag is false into `$trueReplyCount`, and passes it to `thread_root_card.php`; the reply-render loop now reuses the pre-computed flags array instead of recomputing inline.
+  - `templates/partials/thread_root_card.php`: merged the three separate `<p class="meta">` lines (byline, labels, agent marker) into one `<p class="meta">`, joined with " · ", and appended `{N} reply`/`replies` (only when `$trueReplyCount > 0`), matching the existing pluralization convention already used by `thread_card.php`'s board/tag-list reply count. Did not invent a "like" text token in the merged line — no existing per-viewer like-state text exists anywhere else in this codebase to reuse, and the actual Like action remains unchanged in the action row below. Title/body dedup logic (from a prior slice) was untouched.
+- Verification:
+  - `php -l` on both changed files — no syntax errors.
+  - Reused the Stage 1 scratch script's temp repo (root + 6 quick continuations + 1 reply 28 minutes later) and asserted the root card's single meta line reads `"...· 1 reply"` — correctly counting only the true (non-continuation) reply, not the 6 merged pieces.
+  - Ran a second scratch check against the existing `parity_minimal_v1` fixture's `root-001` thread: its one reply (`reply-001`, same guest author, 5 minutes after root) is itself a continuation of the root, so the merged meta line correctly shows no reply-count segment (`0` true replies) while still showing `"· Labels: bug, needs-review"` for its thread labels — confirms the label-merge path works and that continuation detection is consistently applied to the fixture data already exercised by the existing test suite.
+  - `php tests/run.php` (full suite): 590 run, 584 passed, 6 failed — identical to the tracked pre-existing baseline (including the `WriteApiSmokeTest` timestamp-tie-break flake noted in Stage 1, unrelated to this change); confirmed the existing `assertStringContains('Labels: bug, needs-review', $thread)` assertion (which only checks substring presence) still passes against the merged single-line format.
+- Notes:
+  - Reintroduces a reply count on the root card that a prior, unrelated slice (`thread_root_card_remove_reply_count`) had deliberately removed — this is intentional per Step 2's scope (a continuation-aware count is a materially different feature than the flat count that was removed) and no test was found asserting the count's absence, so nothing needed to be reverted.
+  - Board/tag list reply counts (`thread_card.php`) remain untouched, per Step 2 scope.
