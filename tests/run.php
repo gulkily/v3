@@ -38,6 +38,7 @@ $testFiles = [
     __DIR__ . '/OpenAiCompatibleStructuredChatProviderTest.php',
     __DIR__ . '/OperatorStatusCollectorTest.php',
     __DIR__ . '/OfflineReadingDiagnosticCommandTest.php',
+    __DIR__ . '/OfflineNavigationWorkerTest.php',
     __DIR__ . '/OfflineSnapshotPublishCommandTest.php',
     __DIR__ . '/OfflineSnapshotPublisherTest.php',
     __DIR__ . '/PrivateConfigCommandTest.php',
