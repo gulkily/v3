@@ -97,6 +97,45 @@ NODE;
         assertSame('/threads/thread%20id', $result['thread']);
     }
 
+    public function testReaderRevisionUsesCachedShellFingerprintWithSafeFallback(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+global.window = {};
+global.document = { addEventListener() {} };
+vm.runInThisContext(source);
+const api = window.forumOfflineSnapshot;
+const shell = {
+  querySelector(selector) {
+    return selector === '[data-offline-reader]' ? {
+      getAttribute(name) { return name === 'data-reader-revision' ? '/assets/offline_reader.123456789abc.js' : ''; }
+    } : null;
+  }
+};
+process.stdout.write(JSON.stringify({
+  revision: api.readerRevisionFromShell(shell),
+  absent: api.readerRevisionFromShell({ querySelector() { return null; } }),
+  invalid: api.readerRevisionFromShell(null)
+}));
+NODE;
+        $command = sprintf(
+            'node -e %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/assets/offline_reader.js'),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Reader revision helper failed: ' . implode("\n", $output));
+        }
+        $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame('/assets/offline_reader.123456789abc.js', $result['revision']);
+        assertSame('unknown', $result['absent']);
+        assertSame('unknown', $result['invalid']);
+    }
+
     public function testTagsIndexRendersSavedGroupsAndEmptyState(): void
     {
         $script = <<<'NODE'

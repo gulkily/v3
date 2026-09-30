@@ -10,6 +10,10 @@
       var result = database.exec("SELECT value FROM metadata WHERE key = ?", [key])[0];
       return result && result.values && result.values[0] ? String(result.values[0][0] || "") : "";
     },
+    readerRevisionFromShell: function (documentFragment) {
+      var reader = documentFragment && documentFragment.querySelector ? documentFragment.querySelector("[data-offline-reader]") : null;
+      return reader && reader.getAttribute("data-reader-revision") || "unknown";
+    },
     normalThreadUrl: function (threadId) {
       return "/threads/" + encodeURIComponent(threadId);
     },
@@ -427,6 +431,7 @@
     }
 
     var status = root.querySelector('[data-role="offline-reader-status"]');
+    var details = root.querySelector('[data-role="offline-reader-details"]');
     var modeBar = root.querySelector('[data-role="offline-mode-bar"]');
     var content = root.querySelector('[data-role="offline-reader-content"]');
     var snapshotUrl = root.getAttribute("data-snapshot-url") || "/offline/snapshot.sqlite3";
@@ -447,6 +452,13 @@
 
     function showOfflineMode() {
       if (modeBar) modeBar.hidden = false;
+    }
+
+    function setReaderDetails(generatedAt) {
+      if (!details) return;
+      var revision = root.getAttribute("data-reader-revision") || "unknown";
+      details.textContent = "Saved archive generated: " + (generatedAt || "unknown") + ". Reader revision: " + revision + ".";
+      details.hidden = false;
     }
 
     function metadataValue(database, key) {
@@ -604,6 +616,7 @@
 
     root.addEventListener("forum-offline-reader-ready", function (event) {
       var database = event.detail.database;
+      setReaderDetails(event.detail.generatedAt);
       if (snapshotPresentation.boardPathFromPathname(window.location.pathname)) {
         renderOfflineBoard(database);
         window.addEventListener("popstate", function () {
