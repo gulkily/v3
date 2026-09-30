@@ -392,6 +392,13 @@ pre {
   font-family: var(--ui-font);
   font-size: 0.95rem;
   line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.post-card:hover .post-card-permalink,
+.post-card:focus-within .post-card-permalink {
+  opacity: 1;
 }
 
 .board-subsection {

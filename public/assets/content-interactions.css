@@ -55,3 +55,47 @@
   max-height: 24rem;
   overflow: auto;
 }
+
+/* Continuation runs: quick same-author replies merge visually into one card. */
+.post-card:has(+ .continuation) {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0.5rem;
+}
+.post-card.continuation {
+  margin-top: 0;
+  padding-top: 0.85rem;
+  border-top: 1px dashed color-mix(in srgb, var(--line) 35%, transparent);
+}
+.continuation > .meta {
+  display: none;
+}
+.continuation::before {
+  content: attr(data-time);
+  position: absolute;
+  left: -3.2rem;
+  top: 0.85rem;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+.continuation:hover::before,
+.continuation:focus-within::before {
+  opacity: 1;
+}
+.post-card:has(+ .continuation) > .post-card-actions {
+  max-height: 0;
+  margin-top: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.post-card:has(+ .continuation):hover > .post-card-actions,
+.post-card:has(+ .continuation):focus-within > .post-card-actions {
+  max-height: none;
+  margin-top: 1rem;
+  overflow: visible;
+  opacity: 1;
+}

@@ -13,3 +13,17 @@
 - Notes:
   - No visual change yet — this stage is server-side flagging only; Stage 2 does the CSS merge.
   - Pre-existing flake `WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh` (same-second timestamp tie-break on the activity page) is out of scope for this feature and was not introduced by this change; left as-is.
+
+## Stage 2 - Merge continuation runs visually with CSS
+- Changes:
+  - `public/assets/site.css`: `.post-card-permalink` now defaults to `opacity: 0` and reveals on `.post-card:hover`/`:focus-within` (applies to every post card, not just runs).
+  - `public/assets/content-interactions.css`: added the continuation-run rules — a card immediately followed by `.continuation` loses its bottom border/margin (`:has(+ .continuation)`); `.continuation` itself loses its top margin and gains a faint dashed top separator (`color-mix(in srgb, var(--line) 35%, transparent)`, theme-aware); `.continuation > .meta` is hidden; `.continuation::before` shows `attr(data-time)` in the left gutter on hover/focus; every card in a run except the last hides `.post-card-actions` until hover/focus-within.
+- Verification:
+  - `php` brace-balance sanity check on both CSS files (equal `{`/`}` counts).
+  - Seeded a throwaway thread (root + 6 quick guest continuations) into the local dev repo (`state/local_repository`, gitignored scratch data), ran `./v3 rebuild`, served the app locally, and captured headless-Chromium screenshots at desktop width and phone width (390px): the root post and all 6 continuations render as one visually merged card with a single byline and a single action row at the bottom (on the last piece); dashed separators appear between pieces; no repeated headers/action rows. Confirmed via `curl` that `data-time`/`continuation` attributes are present on exactly the 6 intended posts.
+  - Attempted an automated dark-theme screenshot (`--blink-settings=preferredColorScheme=2` / `--force-color-scheme=dark`); theme switching in this app is done by client-side JS swapping a `<link>` to a separate `theme-dark.css` file (not a `prefers-color-scheme` media query or `[data-theme]` selector in the edited stylesheets), so a single-shot headless screenshot didn't exercise it. Confirmed by reading the theme files directly that both `theme-light.css` and `theme-dark.css` redefine `--line`/`--ink-soft` — the only custom properties the new rules reference — so the merge rules are theme-agnostic by construction; an interactive dark-theme screenshot (actually switching the theme) is deferred to Stage 4's dedicated cross-theme pass.
+  - Cleaned up afterward: killed the temp dev server, hard-reset the scratch commit in `state/local_repository`, re-ran `./v3 rebuild` to restore the original read model (confirmed post/thread counts back to baseline), removed screenshots.
+  - `php tests/run.php` (full suite): 590 run, 584 passed, 6 failed — matches the tracked pre-existing baseline exactly, no new failures.
+- Notes:
+  - Touch devices have no `:hover`; a tap/focus-reachable affordance for the per-run action-row reveal is deferred to Stage 4 (`:focus-within` already keeps it keyboard-reachable since the row isn't `display: none`).
+  - `:has()` selector support wasn't independently verified in older browsers — acceptable for this stage since Stage 4 owns the full cross-browser/theme/touch acceptance pass.
