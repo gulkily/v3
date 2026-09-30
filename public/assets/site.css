@@ -229,6 +229,11 @@ pre {
   background: var(--panel);
 }
 
+.board-controls-nav .nav-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .tools-nav-divider {
   align-self: center;
   width: 1px;

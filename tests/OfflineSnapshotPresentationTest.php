@@ -201,11 +201,12 @@ const empty = element('div');
 window.forumOfflineSnapshot.renderTagsIndex({ empty, content: empty, database: { exec() { return [{ values: [] }]; } } });
 function collect(node, result) {
   if (node.type === 'a') result.links.push({ href: node.href, text: node.textContent });
+  if (node.type === 'button') result.buttons.push({ disabled: node.disabled, text: node.textContent });
   if (node.textContent) result.text.push(node.textContent);
   node.children.forEach((child) => collect(child, result));
 }
-const rendered = { links: [], text: [] };
-const emptyRendered = { links: [], text: [] };
+const rendered = { links: [], buttons: [], text: [] };
+const emptyRendered = { links: [], buttons: [], text: [] };
 collect(content, rendered);
 collect(empty, emptyRendered);
 process.stdout.write(JSON.stringify({ rendered, emptyRendered, hidden: content.hidden }));
@@ -229,7 +230,6 @@ NODE;
             ['href' => '/threads/?view=all&sort=newest', 'text' => 'Newest'],
             ['href' => '/threads/?view=all&sort=oldest', 'text' => 'Oldest'],
             ['href' => '/threads/?view=all&sort=top', 'text' => 'Top'],
-            ['href' => '/compose/thread', 'text' => 'New Post (reconnect)'],
             ['href' => '/tags/general', 'text' => '#general'],
             ['href' => '/threads/t6', 'text' => 'Six'],
             ['href' => '/threads/t5', 'text' => 'Five'],
@@ -237,6 +237,7 @@ NODE;
             ['href' => '/threads/t3', 'text' => 'Three'],
             ['href' => '/threads/t2', 'text' => 'Two'],
         ], $result['rendered']['links']);
+        assertSame([['disabled' => true, 'text' => 'New Post']], $result['rendered']['buttons']);
         assertSame(true, in_array('showing 5 newest of 6', $result['rendered']['text'], true));
         assertSame(true, in_array('No tags were included in this saved snapshot. Reconnect to browse live tags.', $result['emptyRendered']['text'], true));
     }

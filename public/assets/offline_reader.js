@@ -137,8 +137,7 @@
       options.content.hidden = false;
       snapshotPresentation.appendBoardControls(options.content, { view: "all", sort: "newest" }, {
         boardPath: "/threads/",
-        tagsActive: true,
-        onReconnectRequired: options.onReconnectRequired
+        tagsActive: true
       });
 
       var card = document.createElement("article");
@@ -284,14 +283,11 @@
         });
         nav.appendChild(link);
       });
-      var newPost = document.createElement("a");
+      var newPost = document.createElement("button");
       newPost.className = "nav-link";
-      newPost.href = "/compose/thread";
-      newPost.textContent = "New Post (reconnect)";
-      newPost.addEventListener("click", function (event) {
-        event.preventDefault();
-        if (options.onReconnectRequired) options.onReconnectRequired();
-      });
+      newPost.type = "button";
+      newPost.disabled = true;
+      newPost.textContent = "New Post";
       nav.appendChild(newPost);
       controls.appendChild(nav);
       content.appendChild(controls);
@@ -356,7 +352,6 @@
         snapshotPresentation.appendBoardControls(options.content, state, {
           boardPath: options.boardPath || "/",
           onBoardChange: options.onBoardChange,
-          onReconnectRequired: options.onReconnectRequired
         });
       }
       snapshotPresentation.appendThreadCards(options.content, rows, options.onSelect);
@@ -550,9 +545,6 @@
           window.history.pushState({}, "", nextUrl);
           renderOfflineBoard(database);
         },
-        onReconnectRequired: function () {
-          setStatus("New Post requires a connection. Reconnect to create a post.", "error");
-        },
         onSelect: function (threadId) {
           window.location.assign(snapshotPresentation.normalThreadUrl(threadId));
         }
@@ -566,9 +558,6 @@
       snapshotPresentation.renderTagsIndex({
         content: content,
         database: database,
-        onReconnectRequired: function () {
-          setStatus("New Post requires a connection. Reconnect to create a post.", "error");
-        }
       });
     }
 
