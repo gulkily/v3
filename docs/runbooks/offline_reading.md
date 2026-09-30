@@ -1,7 +1,7 @@
 # Offline Reading Runbook
 
-Offline reading keeps recent public Board and thread URLs usable without a
-connection. It is intended for recently active public discussions, not a
+Offline reading keeps recent public Board, Tag, and thread URLs usable without
+a connection. It is intended for recently active public discussions, not a
 complete archive.
 
 ## What is saved
@@ -22,11 +22,13 @@ identifies snapshot-backed reading.
 Hidden records, identity/bootstrap records, profiles, account data, workflow
 state, and LLM/operational tables are not included.
 
-When the network is unavailable, the normal Board URL and normal URLs for
-threads included in the snapshot render from those saved records. The saved
-Board retains its All/Liked and Newest/Oldest/Top controls, evaluated only
-against the downloaded public snapshot. Posting, voting, tagging, profiles,
-search, feeds, tools, and threads outside the snapshot require a connection.
+When the network is unavailable, normal Board URLs (including All/Liked and
+Newest/Oldest/Top controls), the Tags index, saved tag-result URLs, and normal
+URLs for threads included in the snapshot render from saved records. Board
+filters, tag counts, previews, and results are evaluated only against the
+downloaded public snapshot; an unavailable tag or thread explains that live
+results require reconnecting. Posting, voting, tagging, profiles, search,
+feeds, tools, and threads outside the snapshot require a connection.
 
 ## Refresh behavior
 
@@ -86,14 +88,14 @@ removed from their device.
 
 ## Browser-cache recovery
 
-If the health page says offline reading is not ready, or saved Board or thread
-content fails to load while offline:
+If the health page says offline reading is not ready, or saved Board, Tag, or
+thread content fails to load while offline:
 
 1. reconnect, reload a public page, and wait for it to finish loading;
 2. reopen **Tools → Offline Reading** and use **Check again** until the saved
    reader shell, assets, and public snapshot are available;
-3. disconnect, then reopen the normal Board or saved thread URL and check that
-   the `offline mode` bar appears;
+3. disconnect, then reopen a normal Board control URL, Tags or saved tag-result
+   URL, or saved thread URL and check that the `offline mode` bar appears;
 4. if it still fails, clear this site's storage/cache in the browser settings,
    revisit a public page online, and check the health page again.
 

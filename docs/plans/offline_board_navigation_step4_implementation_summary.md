@@ -55,3 +55,14 @@
   - `php tests/run.php OfflineSnapshotPresentationTest LocalAppSmokeTest::testOfflineReaderUsesBoardControlsAndPinnedSnapshotPresentation` — 5 run, 5 passed.
 - Notes:
   - An absent archive tag is not presented as a site-wide absence; readers are directed to reconnect for live results.
+
+## Stage 6 - Document and verify the boundary
+- Changes:
+  - Updated the Offline Reading Runbook with supported Board-control, Tags-index, tag-result, and recovery behavior.
+- Verification:
+  - `node --check public/service_worker.js`, `node --check public/assets/offline_reader.js`, and PHP lint for changed PHP/tests passed.
+  - Focused route, presentation, reader-shell, and approved-members-only checks — 7 run, 7 passed.
+  - `php tests/run.php` completed: all new offline tests passed; eight unrelated failures remain. Seven are long-standing. The eighth, `LocalAppSmokeTest::testSqliteViewerRouteUsesToolsShellAndPublishedSource`, was reproduced in isolation and expects an obsolete exact opening tag despite the current template retaining `data-sqlite-viewer` with its runtime attribute.
+  - Headless Chromium/CDP smoke confirmed a secure local page, but its service-worker registration is immediately dropped with a local "script not found" update error despite a 200 response for `/service_worker.js`; real-browser online-to-offline release QA remains required in this environment.
+- Notes:
+  - The worker admission tests and browser-side presentation tests cover the supported routes without caching normal Board or Tag documents.
