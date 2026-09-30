@@ -1287,9 +1287,11 @@ PHP;
         assertFingerprintedAsset($thread, 'post_analysis.js');
         assertStringContains('data-thread-reactions-root', $thread);
         assertStringContains('data-action="apply-thread-tag"', $thread);
-        assertStringContains('class="card post-card thread-root-card"', $thread);
+        assertStringContains('class="card post-card thread-root-card meta-deferred"', $thread);
         assertStringContains('data-thread-id="root-001" data-post-id="root-001"', $thread);
-        assertSame(1, substr_count($thread, 'by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>'));
+        // root-001 has a same-author continuation (reply-001) right after it, so the byline moves
+        // to reply-001 (the run's tail) instead of showing on the root card.
+        assertSame(1, substr_count($thread, 'by guest on <time datetime="2026-04-10T12:05:00Z">Apr 10, 2026 at 12:05 UTC</time>'));
         assertOrdered($thread, '<h1>Hello world</h1>', 'First line preview.');
         assertOrdered($thread, 'First line preview.', 'id="post-reply-001"');
         assertStringContains('inline-reply-composer', $thread);
@@ -1326,8 +1328,10 @@ PHP;
         assertStringNotContains('Score: 0', $thread);
         assertStringNotContains('Set up or choose an identity in <a href="/account/key/">Account</a> to use Like.', $thread);
         assertStringNotContains('disabled="disabled"', $thread);
-        assertStringContains('/user/guest', $thread);
-        assertStringContains('by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $thread);
+        // root-001's own byline (which links to /user/guest) is now deferred to reply-001, the
+        // run's tail; reply-001 has no claimed profile, so it renders a plain, unlinked "guest".
+        assertStringNotContains('/user/guest', $thread);
+        assertStringContains('by guest on <time datetime="2026-04-10T12:05:00Z">Apr 10, 2026 at 12:05 UTC</time>', $thread);
         assertStringNotContains('Last activity <time datetime=', $thread);
         assertStringContains('id="post-root-001"', $thread);
         assertStringContains('id="post-reply-001"', $thread);
@@ -1765,20 +1769,33 @@ PHP;
 
         assertStringNotContains('continuation', $tags['root']);
         assertStringContains('continuation', $tags['r1']);
-        assertStringContains('data-time="10:05"', $tags['r1']);
         assertStringContains('continuation', $tags['r2']);
-        assertStringContains('data-time="10:12"', $tags['r2']);
         assertStringNotContains('continuation', $tags['r3']);
         assertStringNotContains('continuation', $tags['r4']);
         assertStringContains('data-author="guest"', $tags['root']);
         assertStringContains('data-author="guest"', $tags['r1']);
 
+        // The byline moves to the run's LAST post (r2): root and r1 (the run's head and middle
+        // piece) hide their meta and instead carry a hover-revealed time; r2 shows the meta inline.
+        assertStringContains('meta-deferred', $tags['root']);
+        assertStringContains('data-time="10:00"', $tags['root']);
+        assertStringContains('meta-deferred', $tags['r1']);
+        assertStringContains('data-time="10:05"', $tags['r1']);
+        assertStringNotContains('meta-deferred', $tags['r2']);
+        assertStringNotContains('data-time=', $tags['r2']);
+
         assertStringContains('<a class="post-card-permalink" href="/posts/cont-merge-r1"', $thread);
         assertStringContains('<a class="post-card-permalink" href="/posts/cont-merge-r2"', $thread);
 
         assertTrue(
-            preg_match('/<article id="post-cont-merge-root"[^>]*>.*?<p class="meta">(.*?)<\/p>/s', $thread, $metaMatch) === 1,
-            'Expected to find the root card meta line.'
+            preg_match('/<article id="post-cont-merge-root"[^>]*>.*?<\/article>/s', $thread, $rootBlockMatch) === 1,
+            'Expected to find the root card block.'
+        );
+        assertStringNotContains('<p class="meta">', $rootBlockMatch[0]);
+
+        assertTrue(
+            preg_match('/<article id="post-cont-merge-r2"[^>]*>.*?<p class="meta">(.*?)<\/p>/s', $thread, $metaMatch) === 1,
+            'Expected to find the run tail (r2) meta line.'
         );
         assertStringContains('2 replies', $metaMatch[1]);
 

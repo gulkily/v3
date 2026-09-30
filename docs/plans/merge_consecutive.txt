@@ -1,0 +1,60 @@
+## Task: Merge same-author reply chains on thread pages into one visual post
+
+### Problem
+On thread pages (/threads/<id>), people often write one long post as a series of quick replies to their own thread. Right now every reply renders as its own card with the full header, the full action row and a permalink. So one continuous piece of writing gets chopped up by repeated "by guest on Sep 27, 2026 at 23:43 UTC" lines and repeated "Reply / Like / Flag / Request agent response" rows.
+
+Example: thread-20260927234240-a72307ac has a root post and then 6 more posts by `guest` within 4 minutes, followed by one `reply-agent` reply. It should read as one post plus one reply.
+
+### Constraint
+This is a presentation change only. Don't change the data model. Each reply stays its own record with its own id, permalink (`#post-<id>`), likes, flags and agent-request behavior.
+
+### Current DOM (for reference)
+- Posts are `section.stack > article.card.post-card`, with `data-post-id`.
+- The root post has `.thread-root-card`, and its children are: `h1`, 3× `p.meta` (byline / labels / reply count), `div.body`, `div.post-card-actions`, `a.post-card-permalink`.
+- A reply's children are: `p.meta` (byline), `div.body`, `div.post-card-actions`, `a.post-card-permalink`.
+- Agent replies also have `.agent-authored-post`.
+- The last item in the section is `article.card.inline-reply-composer`. It isn't a post, so skip it when grouping.
+
+### 1. Mark continuations in the server-side template
+While rendering the thread's posts in chronological order, flag a post as a continuation when:
+- its author is the same as the previous post's author,
+- the time since the previous post is 15 minutes or less (make this a named constant), and
+- neither post is agent-authored.
+
+When the flag is set:
+- add class `continuation` to the `<article>`
+- add `data-time="HH:MM"` (the post's time, for the hover label)
+
+It's also worth adding `data-author="<username>"` to every post card. Do this on the server, not in client-side JS, so it works without JS and has no layout flash.
+
+### 2. CSS
+Goal: a run of posts looks like one card.
+- A card followed by a `.continuation` gets no bottom border, no bottom margin and square bottom corners. The `.continuation` gets no top margin, square top corners and a very faint dashed top border (about `rgb(255 255 255 / .06)`) as a paragraph separator. Reduce the vertical padding between pieces so it reads like paragraph spacing.
+- If `section.stack` spaces its children with `gap`, set the gap to 0 and give each card that isn't followed by a continuation its own `margin-bottom`.
+- `.continuation > .meta` → `display: none`.
+- Hover timestamp: `.continuation::before { content: attr(data-time) }`, placed in the left gutter (about `left: -3.2rem`) in small muted text. Hidden (`opacity: 0`), shown on `.continuation:hover`.
+- Action row: every card in a run except the last hides `.post-card-actions` (`.post-card:has(+ .continuation) > .post-card-actions`) and shows it on `:hover`/`:focus-within`, so each piece can still be liked or flagged. Keep the actions reachable on touch devices too, e.g. show them on tap or use a small "⋯" toggle.
+- Permalinks: `.post-card-permalink` is `opacity: 0` by default and `1` when its card is hovered or focused (do this on every post, not only in runs).
+
+### 3. Clean up the root post's header
+- **Title duplicates the first line.** Titles are currently the first sentence cut off with "…". When the normalized body starts with the normalized title text (minus the ellipsis), show the full first sentence as the `h1` and remove it from the body, or hide the body's first line. Don't show the same text twice.
+- **Too many metadata lines.** Merge the three `p.meta` lines into one: `guest · Sep 27, 23:42 · like · 1 reply`.
+- **Reply count.** Count only posts that aren't continuations ("1 reply"). If you want to show both, use "6 continuations · 1 reply". Update the board/index page too if it shows the same count.
+
+### 4. Don't change
+- the ids, anchors and permalinks of individual posts (deep links to a continuation must still scroll to it and highlight it; if a highlight style exists, make sure it still looks right on a merged piece)
+- per-post like/flag/agent-request endpoints
+- how agent replies look (they should still stand out as separate cards)
+
+### Acceptance check
+Open thread-20260927234240-a72307ac. You should see:
+- one card containing the root post plus 6 continuations, with one byline at the top and one action row at the bottom;
+- hovering a continuation shows its time in the gutter and its own action row;
+- a separate reply-agent card;
+- the header reads "… · 1 reply" with no duplicated first sentence;
+- `#post-reply-20260927234349-7107e2e4` still jumps to that piece.
+
+Check dark and light themes and a phone-width viewport.
+
+### Optional follow-up (not in this task)
+Add an author-only "Continue" button that posts a reply with a `continues_id` field. Grouping would then be explicit instead of relying on the 15-minute rule.
