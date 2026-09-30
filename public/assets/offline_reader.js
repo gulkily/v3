@@ -115,6 +115,78 @@
         return (right.count - left.count) || left.tag.localeCompare(right.tag);
       });
     },
+    renderTagsIndex: function (options) {
+      var groups = snapshotPresentation.tagGroups(options.database);
+      clearSnapshotNode(options.content);
+      options.content.hidden = false;
+      var controls = document.createElement("article");
+      controls.className = "card";
+      var nav = document.createElement("div");
+      nav.className = "nav board-controls-nav";
+      [{ label: "Board", href: "/" }, { label: "Tags", href: "/tags/" }].forEach(function (item) {
+        var link = document.createElement("a");
+        link.className = "nav-link" + (item.label === "Tags" ? " is-active" : "");
+        link.href = item.href;
+        link.textContent = item.label;
+        nav.appendChild(link);
+      });
+      controls.appendChild(nav);
+      options.content.appendChild(controls);
+
+      var card = document.createElement("article");
+      card.className = "card tags-section-card";
+      if (!groups.length) {
+        var empty = document.createElement("p");
+        empty.className = "meta";
+        empty.textContent = "No tags were included in this saved snapshot. Reconnect to browse live tags.";
+        card.appendChild(empty);
+      } else {
+        var groupList = document.createElement("div");
+        groupList.className = "tag-groups";
+        groups.forEach(function (group) {
+          var section = document.createElement("section");
+          section.className = "tag-group";
+          var header = document.createElement("div");
+          header.className = "tag-group-header";
+          var heading = document.createElement("h2");
+          var tagLink = document.createElement("a");
+          tagLink.href = group.href;
+          tagLink.textContent = "#" + group.tag;
+          heading.appendChild(tagLink);
+          var count = document.createElement("p");
+          count.className = "meta";
+          count.textContent = group.count + (group.count === 1 ? " thread" : " threads");
+          header.appendChild(heading);
+          header.appendChild(count);
+          section.appendChild(header);
+          var threads = document.createElement("ul");
+          threads.className = "tag-thread-list";
+          group.previewThreads.forEach(function (thread) {
+            var item = document.createElement("li");
+            var threadLink = document.createElement("a");
+            threadLink.href = snapshotPresentation.normalThreadUrl(thread.id);
+            threadLink.textContent = snapshotPresentation.threadTitle(thread.subject, thread.preview);
+            var author = document.createElement("span");
+            author.className = "meta";
+            author.textContent = "by " + thread.author;
+            item.appendChild(threadLink);
+            item.appendChild(author);
+            threads.appendChild(item);
+          });
+          section.appendChild(threads);
+          if (group.hasMore) {
+            var footer = document.createElement("p");
+            footer.className = "meta tag-group-footer";
+            footer.textContent = "showing 5 newest of " + group.count;
+            section.appendChild(footer);
+          }
+          groupList.appendChild(section);
+        });
+        card.appendChild(groupList);
+      }
+      options.content.appendChild(card);
+      return groups;
+    },
     isPinned: function (thread) {
       return thread.labels.indexOf("pinned") !== -1;
     },
@@ -395,6 +467,13 @@
       });
     }
 
+    function renderOfflineTagsIndex(database) {
+      root.dataset.offlineNavigation = "tags";
+      showOfflineMode();
+      setStatus("Showing saved tags offline.", "ok");
+      snapshotPresentation.renderTagsIndex({ content: content, database: database });
+    }
+
     function renderOfflineThread(database, threadId) {
       root.dataset.offlineNavigation = "thread";
       showOfflineMode();
@@ -449,6 +528,10 @@
         window.addEventListener("popstate", function () {
           renderOfflineBoard(database);
         });
+        return;
+      }
+      if (window.location.pathname === "/tags" || window.location.pathname === "/tags/") {
+        renderOfflineTagsIndex(database);
         return;
       }
       var pathThreadId = snapshotPresentation.threadIdFromPathname(window.location.pathname);

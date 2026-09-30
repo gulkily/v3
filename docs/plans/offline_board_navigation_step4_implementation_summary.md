@@ -32,3 +32,15 @@
   - `php tests/run.php OfflineSnapshotPresentationTest LocalAppSmokeTest::testOfflineReaderUsesBoardControlsAndPinnedSnapshotPresentation` — 3 run, 3 passed.
 - Notes:
   - The normal Board fallback remains a cached reader shell, not a cached Board document.
+
+## Stage 4 - Render the Tags index
+- Changes:
+  - Added snapshot-backed Tags-index rendering with canonical tag groups, counts, five-thread previews, and normal Board/tag/thread links.
+  - Reused the existing tag-group stylesheet in the cached reader shell and omitted every write control.
+  - Added an explicit bounded-archive empty state with reconnect guidance.
+- Verification:
+  - `node --check public/assets/offline_reader.js` passed.
+  - `php -l src/ForumRewrite/View/TemplateRenderer.php` and `php -l tests/OfflineSnapshotPresentationTest.php` passed.
+  - `php tests/run.php OfflineSnapshotPresentationTest LocalAppSmokeTest::testOfflineReaderFallbackRouteUsesLocalSnapshotShell` — 4 run, 4 passed.
+- Notes:
+  - Tags-index links remain normal URLs; the service worker serves the reader shell only after network failure.

@@ -2536,6 +2536,7 @@ PHP;
         assertStringMatches('#data-runtime-url="/assets/sql-wasm\.[a-f0-9]{12}\.wasm"#', $reader);
         assertStringContains('/assets/offline_reader.', $reader);
         assertStringContains('/assets/thread-list.', $reader);
+        assertStringContains('/assets/tags.', $reader);
         assertStringContains('class="nav-link is-active" href="/"', $reader);
         assertStringNotContains('class="nav-link is-active" href="/offline/"', $reader);
         assertStringContains('rel="manifest" href="/manifest.webmanifest"', $reader);

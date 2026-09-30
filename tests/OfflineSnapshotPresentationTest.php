@@ -96,4 +96,70 @@ NODE;
         assertSame('', $result['unsupported']);
         assertSame('/threads/thread%20id', $result['thread']);
     }
+
+    public function testTagsIndexRendersSavedGroupsAndEmptyState(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+function element(type) {
+  return {
+    type, children: [], className: '', dataset: {}, textContent: '', href: '', hidden: false,
+    appendChild(child) { this.children.push(child); return child; },
+    removeChild(child) { this.children.splice(this.children.indexOf(child), 1); },
+    get firstChild() { return this.children[0] || null; }, addEventListener() {}
+  };
+}
+global.window = {};
+global.document = { addEventListener() {}, createElement: element };
+vm.runInThisContext(source);
+const rows = [
+  ['t1', 'One', '', 0, '2026-01-01T00:00:00Z', 'A', '', '[]', '["general"]', 0],
+  ['t2', 'Two', '', 0, '2026-01-02T00:00:00Z', 'B', '', '[]', '["general"]', 0],
+  ['t3', 'Three', '', 0, '2026-01-03T00:00:00Z', 'C', '', '[]', '["general"]', 0],
+  ['t4', 'Four', '', 0, '2026-01-04T00:00:00Z', 'D', '', '[]', '["general"]', 0],
+  ['t5', 'Five', '', 0, '2026-01-05T00:00:00Z', 'E', '', '[]', '["general"]', 0],
+  ['t6', 'Six', '', 0, '2026-01-06T00:00:00Z', 'F', '', '[]', '["general"]', 0]
+];
+const content = element('div');
+window.forumOfflineSnapshot.renderTagsIndex({ content, database: { exec() { return [{ values: rows }]; } } });
+const empty = element('div');
+window.forumOfflineSnapshot.renderTagsIndex({ empty, content: empty, database: { exec() { return [{ values: [] }]; } } });
+function collect(node, result) {
+  if (node.type === 'a') result.links.push({ href: node.href, text: node.textContent });
+  if (node.textContent) result.text.push(node.textContent);
+  node.children.forEach((child) => collect(child, result));
+}
+const rendered = { links: [], text: [] };
+const emptyRendered = { links: [], text: [] };
+collect(content, rendered);
+collect(empty, emptyRendered);
+process.stdout.write(JSON.stringify({ rendered, emptyRendered, hidden: content.hidden }));
+NODE;
+        $command = sprintf(
+            'node -e %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/assets/offline_reader.js'),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Tags index renderer failed: ' . implode("\n", $output));
+        }
+        $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame(false, $result['hidden']);
+        assertSame([
+            ['href' => '/', 'text' => 'Board'],
+            ['href' => '/tags/', 'text' => 'Tags'],
+            ['href' => '/tags/general', 'text' => '#general'],
+            ['href' => '/threads/t6', 'text' => 'Six'],
+            ['href' => '/threads/t5', 'text' => 'Five'],
+            ['href' => '/threads/t4', 'text' => 'Four'],
+            ['href' => '/threads/t3', 'text' => 'Three'],
+            ['href' => '/threads/t2', 'text' => 'Two'],
+        ], $result['rendered']['links']);
+        assertSame(true, in_array('showing 5 newest of 6', $result['rendered']['text'], true));
+        assertSame(true, in_array('No tags were included in this saved snapshot. Reconnect to browse live tags.', $result['emptyRendered']['text'], true));
+    }
 }
