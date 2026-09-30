@@ -14,9 +14,9 @@ at `/offline/snapshot.sqlite3`.
 Each static release builds a fresh snapshot from visible public content. The
 fast offline publication command can refresh that snapshot later without
 rebuilding the release. The snapshot contains every visible pinned thread plus
-up to 50 additional recently active
-non-pinned threads, with all of their visible replies, subject to a 10 MiB
-file limit. Pinned threads are selected first; if the file limit is reached,
+up to 50 additional recently active non-pinned threads, with all of their
+visible replies, subject to a 25 MiB file limit. Pinned threads are selected
+first; if the file limit is reached,
 the oldest whole non-pinned threads are omitted. The thin `offline mode` bar
 identifies snapshot-backed reading.
 Hidden records, identity/bootstrap records, profiles, account data, workflow

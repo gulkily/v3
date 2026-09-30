@@ -2480,6 +2480,16 @@ PHP;
         assertStringContains('data-snapshot-url="/offline/snapshot.sqlite3"', $health);
         assertStringContains('data-role="offline-health-summary"', $health);
         assertStringContains('data-role="offline-health-checks"', $health);
+        assertStringContains('data-role="offline-worker-checks"', $health);
+        assertStringContains('data-role="offline-archive-checks"', $health);
+        assertStringContains('data-role="offline-publication-checks"', $health);
+        assertStringContains('<h2>Device</h2>', $health);
+        assertStringContains('<h2>Saved archive</h2>', $health);
+        assertStringContains('<h2>Actions</h2>', $health);
+        assertStringContains('class="codebase-facts"', $health);
+        assertStringContains('data-role="offline-health-status"', $health);
+        assertStringContains('data-role="open-saved-archive"', $health);
+        assertStringContains('/assets/tool-details.', $health);
         assertStringContains('/assets/offline_health.', $health);
         assertStringMatches('#data-runtime-url="/assets/sql-wasm\.[a-f0-9]{12}\.wasm"#', $health);
         assertStringNotContains('data-offline-reader', $health);
@@ -2496,6 +2506,14 @@ PHP;
         assertStringContains('Open https://', $healthScript);
         assertStringContains('Offline reader cache', $healthScript);
         assertStringContains('window.caches.open(matching[0])', $healthScript);
+        assertStringContains('new SQL.Database(bytes)', $healthScript);
+        assertStringContains('Saved archive size', $healthScript);
+        assertStringContains('Archive generated', $healthScript);
+        assertStringContains('Archive contents', $healthScript);
+        assertStringContains('Archive capacity', $healthScript);
+        assertStringContains('setHealthStatus("ready", "READY")', $healthScript);
+        assertStringContains('navigator.serviceWorker.getRegistrations()', $healthScript);
+        assertStringContains('cache.match(absoluteUrl(url), { ignoreVary: true })', $healthScript);
     }
 
     public function testOfflineReaderFallbackRouteUsesLocalSnapshotShell(): void

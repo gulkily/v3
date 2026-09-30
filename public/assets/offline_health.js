@@ -5,9 +5,14 @@
   if (!root) return;
 
   var summary = root.querySelector('[data-role="offline-health-summary"]');
-  var checks = root.querySelector('[data-role="offline-health-checks"]');
+  var status = root.querySelector('[data-role="offline-health-status"]');
+  var deviceChecks = root.querySelector('[data-role="offline-health-checks"]');
+  var workerChecks = root.querySelector('[data-role="offline-worker-checks"]');
+  var archiveChecks = root.querySelector('[data-role="offline-archive-checks"]');
+  var publicationChecks = root.querySelector('[data-role="offline-publication-checks"]');
   var guidance = root.querySelector('[data-role="offline-health-guidance"]');
   var recheck = root.querySelector('[data-action="recheck-offline-health"]');
+  var openSavedArchive = root.querySelector('[data-role="open-saved-archive"]');
   var readerUrl = root.getAttribute("data-reader-url") || "/offline/reader/";
   var snapshotUrl = root.getAttribute("data-snapshot-url") || "/offline/snapshot.sqlite3";
   var runtimeUrl = root.getAttribute("data-runtime-url") || "/assets/sql-wasm.wasm";
@@ -19,11 +24,36 @@
     return new URL(url, window.location.origin).href;
   }
 
-  function setCheck(label, state, detail) {
-    var item = document.createElement("li");
-    item.setAttribute("data-state", state);
-    item.textContent = label + ": " + detail;
-    checks.appendChild(item);
+  function setCheck(section, label, state, detail, source) {
+    var row = document.createElement("tr");
+    row.setAttribute("data-state", state);
+    var heading = document.createElement("th");
+    heading.setAttribute("scope", "row");
+    heading.textContent = label;
+    var value = document.createElement("td");
+    value.textContent = detail;
+    if (source) {
+      var sourceLine = document.createElement("div");
+      sourceLine.className = "codebase-source";
+      var sourceCode = document.createElement("code");
+      sourceCode.textContent = source;
+      sourceLine.appendChild(sourceCode);
+      value.appendChild(sourceLine);
+    }
+    row.appendChild(heading);
+    row.appendChild(value);
+    section.appendChild(row);
+  }
+
+  function clearChecks() {
+    [deviceChecks, workerChecks, archiveChecks, publicationChecks].forEach(function (section) {
+      section.textContent = "";
+    });
+  }
+
+  function setHealthStatus(state, text) {
+    status.setAttribute("data-status", state);
+    status.textContent = text;
   }
 
   function diagnosticValue(value) {
@@ -59,6 +89,68 @@
     return cache.match(absoluteUrl(url), { ignoreVary: true });
   }
 
+  function metadataValue(database, key) {
+    var result = database.exec("SELECT value FROM metadata WHERE key = ?", [key])[0];
+    return result && result.values && result.values[0] ? String(result.values[0][0] || "") : "";
+  }
+
+  function positiveInteger(value) {
+    var number = Number(value);
+    return Number.isFinite(number) && number >= 0 ? Math.floor(number) : null;
+  }
+
+  function formatBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes < 0) return "Unknown";
+    if (bytes < 1024) return bytes + " bytes";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(bytes % 1024 === 0 ? 0 : 1) + " KiB";
+    return (bytes / (1024 * 1024)).toFixed(bytes % (1024 * 1024) === 0 ? 0 : 1) + " MiB";
+  }
+
+  async function savedArchiveStats(cache) {
+    var unavailable = {
+      available: false,
+      sizeBytes: null,
+      generatedAt: null,
+      threadCount: null,
+      postCount: null,
+      maxBytes: null,
+      error: null,
+    };
+    if (!cache) return unavailable;
+
+    try {
+      var response = await cachedResponse(cache, snapshotUrl);
+      if (!response) return unavailable;
+
+      var bytes = new Uint8Array(await response.arrayBuffer());
+      var stats = Object.assign({}, unavailable, { available: true, sizeBytes: bytes.byteLength });
+      if (typeof window.initSqlJs !== "function") {
+        stats.error = "Browser SQLite runtime is unavailable.";
+        return stats;
+      }
+
+      var SQL = await window.initSqlJs({
+        locateFile: function (fileName) {
+          return fileName === "sql-wasm.wasm" ? runtimeUrl : "/assets/" + fileName;
+        }
+      });
+      var database = new SQL.Database(bytes);
+      try {
+        stats.generatedAt = metadataValue(database, "generated_at") || null;
+        stats.threadCount = positiveInteger(metadataValue(database, "thread_count"));
+        stats.postCount = positiveInteger(metadataValue(database, "post_count"));
+        stats.maxBytes = positiveInteger(metadataValue(database, "max_bytes"));
+      } finally {
+        database.close();
+      }
+      return stats;
+    } catch (error) {
+      return Object.assign({}, unavailable, {
+        error: error && error.message ? error.message : String(error),
+      });
+    }
+  }
+
   async function readerAssetUrls(response) {
     var html = await response.text();
     var documentFragment = new DOMParser().parseFromString(html, "text/html");
@@ -75,13 +167,13 @@
   }
 
   async function localArtifacts() {
-    if (!("caches" in window)) return { available: false, ready: false, assetsReady: false, cacheName: null, error: null };
+    if (!("caches" in window)) return { available: false, ready: false, assetsReady: false, cacheName: null, cache: null, error: null };
     try {
       var cacheInfo = await offlineCache();
-      if (!cacheInfo) return { available: true, ready: false, reader: false, snapshot: false, assetsReady: false, cacheName: null, error: null };
+      if (!cacheInfo) return { available: true, ready: false, reader: false, snapshot: false, assetsReady: false, cacheName: null, cache: null, error: null };
       var reader = await cachedResponse(cacheInfo.cache, readerUrl);
       var snapshot = await cachedResponse(cacheInfo.cache, snapshotUrl);
-      if (!reader) return { available: true, ready: false, reader: false, snapshot: Boolean(snapshot), assetsReady: false, cacheName: cacheInfo.name, error: null };
+      if (!reader) return { available: true, ready: false, reader: false, snapshot: Boolean(snapshot), assetsReady: false, cacheName: cacheInfo.name, cache: cacheInfo.cache, error: null };
 
       var assets = await readerAssetUrls(reader.clone());
       var responses = await Promise.all(assets.map(function (url) { return cachedResponse(cacheInfo.cache, url); }));
@@ -93,10 +185,11 @@
         snapshot: Boolean(snapshot),
         assetsReady: assetsReady,
         cacheName: cacheInfo.name,
+        cache: cacheInfo.cache,
         error: null,
       };
     } catch (error) {
-      return { available: false, ready: false, assetsReady: false, cacheName: null, error: error && error.message ? error.message : String(error) };
+      return { available: false, ready: false, assetsReady: false, cacheName: null, cache: null, error: error && error.message ? error.message : String(error) };
     }
   }
 
@@ -175,29 +268,34 @@
       return;
     }
     checking = true;
-    checks.textContent = "";
+    clearChecks();
     guidance.hidden = true;
+    openSavedArchive.hidden = true;
+    setHealthStatus("checking", "CHECKING");
     summary.textContent = "Checking offline reading status…";
 
     try {
       var online = navigator.onLine;
-      setCheck("Connection", online ? "ready" : "offline", online ? "Online" : "Offline");
-      setCheck("Page URL", "ready", window.location.href);
-      setCheck("Secure context", window.isSecureContext === true ? "ready" : "missing", window.isSecureContext === true ? "true" : "false");
-      setCheck("Service-worker API", "serviceWorker" in navigator ? "ready" : "missing", "serviceWorker" in navigator ? "present" : "missing");
-      setCheck("Cache Storage API", "caches" in window ? "ready" : "missing", "caches" in window ? "present" : "missing");
+      setCheck(deviceChecks, "Connection", online ? "ready" : "offline", online ? "Online" : "Offline", "navigator.onLine");
+      setCheck(deviceChecks, "Page URL", "ready", window.location.href, "window.location.href");
+      setCheck(deviceChecks, "Secure context", window.isSecureContext === true ? "ready" : "missing", window.isSecureContext === true ? "true" : "false", "window.isSecureContext");
+      setCheck(deviceChecks, "Service-worker API", "serviceWorker" in navigator ? "ready" : "missing", "serviceWorker" in navigator ? "present" : "missing", "\"serviceWorker\" in navigator");
+      setCheck(deviceChecks, "Cache Storage API", "caches" in window ? "ready" : "missing", "caches" in window ? "present" : "missing", "\"caches\" in window");
 
       var serviceWorker = await serviceWorkerStatus();
-      setCheck("Service worker", serviceWorker.ready ? "ready" : "missing", serviceWorker.ready ? "Ready" : serviceWorker.supported ? "Not ready" : "Not supported");
-      setCheck("Worker registrations", serviceWorker.registrationCount === 0 ? "missing" : "ready", diagnosticValue(serviceWorker.registrationCount));
-      setCheck("Root registration scope", serviceWorker.registration ? "ready" : "missing", serviceWorker.registration ? serviceWorker.registration.scope : "none");
-      setCheck("Active worker script", serviceWorker.registration && serviceWorker.registration.active ? "ready" : "missing", serviceWorker.registration && serviceWorker.registration.active ? serviceWorker.registration.active.scriptURL : "none");
-      setCheck("Installing worker state", serviceWorker.registration && serviceWorker.registration.installing ? "missing" : "ready", serviceWorker.registration && serviceWorker.registration.installing ? serviceWorker.registration.installing.state : "none");
-      setCheck("Page controller", serviceWorker.controller ? "ready" : "missing", serviceWorker.controller ? serviceWorker.controller.scriptURL : "none");
-      if (serviceWorker.error) setCheck("Registration inspection error", "missing", serviceWorker.error);
-      if (serviceWorker.savedError) setCheck("Last registration error", "missing", serviceWorker.savedError.at + " | " + serviceWorker.savedError.name + ": " + serviceWorker.savedError.message);
+      setCheck(workerChecks, "Service worker", serviceWorker.ready ? "ready" : "missing", serviceWorker.ready ? "Ready" : serviceWorker.supported ? "Not ready" : "Not supported", "navigator.serviceWorker.getRegistrations()");
+      setCheck(workerChecks, "Worker registrations", serviceWorker.registrationCount === 0 ? "missing" : "ready", diagnosticValue(serviceWorker.registrationCount), "navigator.serviceWorker.getRegistrations()");
+      setCheck(workerChecks, "Root registration scope", serviceWorker.registration ? "ready" : "missing", serviceWorker.registration ? serviceWorker.registration.scope : "none", "registration.scope");
+      setCheck(workerChecks, "Active worker script", serviceWorker.registration && serviceWorker.registration.active ? "ready" : "missing", serviceWorker.registration && serviceWorker.registration.active ? serviceWorker.registration.active.scriptURL : "none", "registration.active.scriptURL");
+      setCheck(workerChecks, "Installing worker state", serviceWorker.registration && serviceWorker.registration.installing ? "missing" : "ready", serviceWorker.registration && serviceWorker.registration.installing ? serviceWorker.registration.installing.state : "none", "registration.installing.state");
+      setCheck(workerChecks, "Page controller", serviceWorker.controller ? "ready" : "missing", serviceWorker.controller ? serviceWorker.controller.scriptURL : "none", "navigator.serviceWorker.controller.scriptURL");
+      if (serviceWorker.error) setCheck(workerChecks, "Registration inspection error", "missing", serviceWorker.error, "navigator.serviceWorker.getRegistrations()");
+      if (serviceWorker.savedError) setCheck(workerChecks, "Last registration error", "missing", serviceWorker.savedError.at + " | " + serviceWorker.savedError.name + ": " + serviceWorker.savedError.message, "localStorage.getItem(\"forum-offline-registration-error\")");
 
       if (!serviceWorker.secure) {
+        setCheck(archiveChecks, "Saved archive", "missing", "Not checked — HTTPS is required.", "Cache Storage is unavailable without a secure context.");
+        setCheck(publicationChecks, "Published archive", "missing", "Not checked — HTTPS is required.", "fetch(\"/offline/snapshot.sqlite3\", { method: \"HEAD\" })");
+        setHealthStatus("not-ready", "NOT READY");
         summary.textContent = "Offline reading requires HTTPS.";
         guidance.hidden = false;
         guidance.textContent = "Open https://" + window.location.host + "/offline/. This page is currently " + window.location.protocol + ", so the browser will not expose service workers or Cache Storage.";
@@ -205,23 +303,32 @@
       }
 
       var artifacts = await localArtifacts();
-      setCheck("Offline reader cache", artifacts.cacheName ? "ready" : "missing", diagnosticValue(artifacts.cacheName));
-      setCheck("Saved reader shell", artifacts.reader ? "ready" : "missing", artifacts.reader ? "Available" : "Missing");
-      setCheck("Saved reader assets", artifacts.assetsReady ? "ready" : "missing", artifacts.assetsReady ? "Available" : "Missing");
-      setCheck("Saved public snapshot", artifacts.snapshot ? "ready" : "missing", artifacts.snapshot ? "Available" : "Missing");
-      if (artifacts.error) setCheck("Cache inspection error", "missing", artifacts.error);
+      setCheck(archiveChecks, "Offline reader cache", artifacts.cacheName ? "ready" : "missing", diagnosticValue(artifacts.cacheName), "caches.keys(); caches.open(cacheName)");
+      setCheck(archiveChecks, "Saved reader shell", artifacts.reader ? "ready" : "missing", artifacts.reader ? "Available" : "Missing", "cache.match(\"" + readerUrl + "\", { ignoreVary: true })");
+      setCheck(archiveChecks, "Saved reader assets", artifacts.assetsReady ? "ready" : "missing", artifacts.assetsReady ? "Available" : "Missing", "DOMParser(reader shell); cache.match(assetUrl, { ignoreVary: true })");
+      setCheck(archiveChecks, "Saved public snapshot", artifacts.snapshot ? "ready" : "missing", artifacts.snapshot ? "Available" : "Missing", "cache.match(\"" + snapshotUrl + "\", { ignoreVary: true })");
+      var archive = await savedArchiveStats(artifacts.cache);
+      setCheck(archiveChecks, "Saved archive size", archive.available ? "ready" : "missing", archive.available ? formatBytes(archive.sizeBytes) : "Missing", "cached /offline/snapshot.sqlite3 byte length");
+      setCheck(archiveChecks, "Archive generated", archive.generatedAt ? "ready" : "missing", archive.generatedAt || "Unknown", "SQLite metadata: generated_at");
+      setCheck(archiveChecks, "Archive contents", archive.threadCount !== null && archive.postCount !== null ? "ready" : "missing", archive.threadCount !== null && archive.postCount !== null ? archive.threadCount + " threads; " + archive.postCount + " posts" : "Unknown", "SQLite metadata: thread_count, post_count");
+      setCheck(archiveChecks, "Archive capacity", archive.maxBytes !== null ? "ready" : "missing", archive.maxBytes !== null ? formatBytes(archive.maxBytes) + " configured maximum" : "Unknown", "SQLite metadata: max_bytes");
+      if (archive.error) setCheck(archiveChecks, "Archive inspection error", "missing", archive.error, "window.initSqlJs(); new SQL.Database(bytes)");
+      if (artifacts.error) setCheck(archiveChecks, "Cache inspection error", "missing", artifacts.error, "Cache Storage API");
 
       var published = await publishedSnapshotStatus(online);
-      setCheck("Published public snapshot", published.checked ? (published.ready ? "ready" : "missing") : "unchecked", published.checked ? (published.ready ? "HTTP " + published.status : published.status ? "HTTP " + published.status : "Unavailable") : "Not checked while offline");
-      if (published.error) setCheck("Published snapshot error", "missing", published.error);
+      setCheck(publicationChecks, "Published public snapshot", published.checked ? (published.ready ? "ready" : "missing") : "unchecked", published.checked ? (published.ready ? "HTTP " + published.status : published.status ? "HTTP " + published.status : "Unavailable") : "Not checked while offline", "fetch(\"" + snapshotUrl + "\", { method: \"HEAD\", cache: \"no-store\" })");
+      if (published.error) setCheck(publicationChecks, "Published snapshot error", "missing", published.error, "fetch(\"" + snapshotUrl + "\", { method: \"HEAD\" })");
 
       if (serviceWorker.ready && artifacts.ready) {
+        setHealthStatus("ready", "READY");
+        openSavedArchive.hidden = false;
         summary.textContent = "Offline reading is ready on this device.";
         if (!published.ready && published.checked) guidance.textContent = "Saved content remains ready, but the current published snapshot is unavailable.";
         else guidance.hidden = true;
         return;
       }
 
+      setHealthStatus(serviceWorker.ready || artifacts.snapshot ? "partial" : "not-ready", serviceWorker.ready || artifacts.snapshot ? "PARTIAL" : "NOT READY");
       summary.textContent = "Offline reading is not ready on this device.";
       setGuidance(online, serviceWorker, artifacts, published);
     } finally {

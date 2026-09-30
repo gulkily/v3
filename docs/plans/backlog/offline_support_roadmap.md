@@ -19,7 +19,7 @@ The following is merged and considered the baseline for future work:
 - A public-only SQLite snapshot is built for each static release.
 - It includes every visible pinned thread plus up to 50 recent non-pinned
   threads, all visible posts in those threads, and no private or operational
-  tables; the snapshot remains capped at 10 MiB.
+  tables; the snapshot remains capped at 25 MiB.
 - Normal public Board and saved-thread URLs work from that snapshot when the
   network fails. Online navigation remains network-first.
 - Board controls supported by the snapshot are available offline: All/Liked

@@ -29,7 +29,7 @@ final class OfflineReaderController
             ['runtimeUrl' => $this->routeServices->assetPath('/assets/sql-wasm.wasm')],
             'Offline Reading',
             'tools',
-            ['/assets/offline_health.js'],
+            ['/assets/sql-wasm.js', '/assets/offline_health.js'],
         );
     }
 }

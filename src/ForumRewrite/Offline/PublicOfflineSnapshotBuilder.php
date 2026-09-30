@@ -15,6 +15,8 @@ use RuntimeException;
 final class PublicOfflineSnapshotBuilder
 {
     public const SNAPSHOT_VERSION = '2';
+    public const DEFAULT_THREAD_LIMIT = 50;
+    public const DEFAULT_MAX_BYTES = 25 * 1024 * 1024;
 
     /**
      * @return array{generated_at:string,thread_count:int,post_count:int,size_bytes:int}
@@ -22,8 +24,8 @@ final class PublicOfflineSnapshotBuilder
     public function build(
         string $sourcePath,
         string $targetPath,
-        int $threadLimit = 50,
-        int $maxBytes = 10485760,
+        int $threadLimit = self::DEFAULT_THREAD_LIMIT,
+        int $maxBytes = self::DEFAULT_MAX_BYTES,
     ): array {
         if (!is_file($sourcePath)) {
             throw new RuntimeException('Offline snapshot source database does not exist.');
