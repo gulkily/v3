@@ -12,6 +12,7 @@
   var publicationChecks = root.querySelector('[data-role="offline-publication-checks"]');
   var guidance = root.querySelector('[data-role="offline-health-guidance"]');
   var recheck = root.querySelector('[data-action="recheck-offline-health"]');
+  var refreshReader = root.querySelector('[data-action="refresh-offline-reader"]');
   var openSavedArchive = root.querySelector('[data-role="open-saved-archive"]');
   var readerUrl = root.getAttribute("data-reader-url") || "/offline/reader/";
   var snapshotUrl = root.getAttribute("data-snapshot-url") || "/offline/snapshot.sqlite3";
@@ -19,6 +20,7 @@
   var diagnosticKey = "forum-offline-registration-error";
   var checking = false;
   var pendingCheck = false;
+  var refreshing = false;
 
   function absoluteUrl(url) {
     return new URL(url, window.location.origin).href;
@@ -166,6 +168,13 @@
     return Array.from(new Set(urls));
   }
 
+  async function readerRevisionFromResponse(response) {
+    var html = await response.text();
+    var documentFragment = new DOMParser().parseFromString(html, "text/html");
+    var reader = documentFragment.querySelector("[data-offline-reader]");
+    return reader && reader.getAttribute("data-reader-revision") || null;
+  }
+
   async function localArtifacts() {
     if (!("caches" in window)) return { available: false, ready: false, assetsReady: false, cacheName: null, cache: null, error: null };
     try {
@@ -175,7 +184,11 @@
       var snapshot = await cachedResponse(cacheInfo.cache, snapshotUrl);
       if (!reader) return { available: true, ready: false, reader: false, snapshot: Boolean(snapshot), assetsReady: false, cacheName: cacheInfo.name, cache: cacheInfo.cache, error: null };
 
-      var assets = await readerAssetUrls(reader.clone());
+      var assetAndRevision = await Promise.all([
+        readerAssetUrls(reader.clone()),
+        readerRevisionFromResponse(reader.clone()),
+      ]);
+      var assets = assetAndRevision[0];
       var responses = await Promise.all(assets.map(function (url) { return cachedResponse(cacheInfo.cache, url); }));
       var assetsReady = responses.every(Boolean);
       return {
@@ -184,6 +197,7 @@
         reader: true,
         snapshot: Boolean(snapshot),
         assetsReady: assetsReady,
+        readerRevision: assetAndRevision[1],
         cacheName: cacheInfo.name,
         cache: cacheInfo.cache,
         error: null,
@@ -237,6 +251,34 @@
     } finally {
       if (timeout !== null) window.clearTimeout(timeout);
     }
+  }
+
+  async function publishedReaderRevision(online) {
+    if (!online) return { checked: false, revision: null, error: null };
+    var controller = "AbortController" in window ? new AbortController() : null;
+    var timeout = controller ? window.setTimeout(function () { controller.abort(); }, 3000) : null;
+    try {
+      var response = await window.fetch(readerUrl, {
+        credentials: "omit",
+        cache: "no-store",
+        signal: controller ? controller.signal : undefined,
+      });
+      if (!response.ok) return { checked: true, revision: null, error: "HTTP " + response.status };
+      return { checked: true, revision: await readerRevisionFromResponse(response), error: null };
+    } catch (error) {
+      return { checked: true, revision: null, error: error && error.message ? error.message : String(error) };
+    } finally {
+      if (timeout !== null) window.clearTimeout(timeout);
+    }
+  }
+
+  function readerRevisionStatus(savedRevision, publishedRevision) {
+    if (!publishedRevision.checked) return { state: "unchecked", detail: "Not checked while offline" };
+    if (publishedRevision.error) return { state: "missing", detail: "Unavailable — " + publishedRevision.error };
+    if (!savedRevision || !publishedRevision.revision) return { state: "missing", detail: "Unknown" };
+    return savedRevision === publishedRevision.revision
+      ? { state: "ready", detail: "Matches current reader" }
+      : { state: "missing", detail: "Different from current reader — refresh and recheck" };
   }
 
   function setGuidance(online, serviceWorker, artifacts, published) {
@@ -305,6 +347,7 @@
       var artifacts = await localArtifacts();
       setCheck(archiveChecks, "Offline reader cache", artifacts.cacheName ? "ready" : "missing", diagnosticValue(artifacts.cacheName), "caches.keys(); caches.open(cacheName)");
       setCheck(archiveChecks, "Saved reader shell", artifacts.reader ? "ready" : "missing", artifacts.reader ? "Available" : "Missing", "cache.match(\"" + readerUrl + "\", { ignoreVary: true })");
+      setCheck(archiveChecks, "Saved reader revision", artifacts.readerRevision ? "ready" : "missing", artifacts.readerRevision || "Unknown", "data-reader-revision from cached reader shell");
       setCheck(archiveChecks, "Saved reader assets", artifacts.assetsReady ? "ready" : "missing", artifacts.assetsReady ? "Available" : "Missing", "DOMParser(reader shell); cache.match(assetUrl, { ignoreVary: true })");
       setCheck(archiveChecks, "Saved public snapshot", artifacts.snapshot ? "ready" : "missing", artifacts.snapshot ? "Available" : "Missing", "cache.match(\"" + snapshotUrl + "\", { ignoreVary: true })");
       var archive = await savedArchiveStats(artifacts.cache);
@@ -316,8 +359,12 @@
       if (artifacts.error) setCheck(archiveChecks, "Cache inspection error", "missing", artifacts.error, "Cache Storage API");
 
       var published = await publishedSnapshotStatus(online);
+      var publishedReader = await publishedReaderRevision(online);
       setCheck(publicationChecks, "Published public snapshot", published.checked ? (published.ready ? "ready" : "missing") : "unchecked", published.checked ? (published.ready ? "HTTP " + published.status : published.status ? "HTTP " + published.status : "Unavailable") : "Not checked while offline", "fetch(\"" + snapshotUrl + "\", { method: \"HEAD\", cache: \"no-store\" })");
       if (published.error) setCheck(publicationChecks, "Published snapshot error", "missing", published.error, "fetch(\"" + snapshotUrl + "\", { method: \"HEAD\" })");
+      setCheck(publicationChecks, "Current reader revision", publishedReader.revision ? "ready" : publishedReader.checked ? "missing" : "unchecked", publishedReader.revision || (publishedReader.checked ? "Unavailable" : "Not checked while offline"), "fetch(\"" + readerUrl + "\", { cache: \"no-store\" })");
+      var revisionStatus = readerRevisionStatus(artifacts.readerRevision, publishedReader);
+      setCheck(publicationChecks, "Saved reader freshness", revisionStatus.state, revisionStatus.detail, "cached and current data-reader-revision");
 
       if (serviceWorker.ready && artifacts.ready) {
         setHealthStatus("ready", "READY");
@@ -340,7 +387,56 @@
     }
   }
 
+  function requestReaderRefresh(worker) {
+    if (!worker || typeof worker.postMessage !== "function") return Promise.reject(new Error("No active service worker is available."));
+    if (typeof MessageChannel !== "function") return Promise.reject(new Error("This browser cannot confirm a saved-reader refresh."));
+    return new Promise(function (resolve, reject) {
+      var channel = new MessageChannel();
+      var timeout = window.setTimeout(function () {
+        channel.port1.close();
+        reject(new Error("The saved-reader refresh did not report completion."));
+      }, 15000);
+      channel.port1.onmessage = function (event) {
+        window.clearTimeout(timeout);
+        channel.port1.close();
+        var result = event.data || {};
+        if (result.type === "offline-reader-refreshed" && result.status === "ready") return resolve(result);
+        reject(new Error(result.errorMessage || "The saved-reader refresh failed."));
+      };
+      worker.postMessage({ type: "refresh-offline-reader" }, [channel.port2]);
+    });
+  }
+
+  async function refreshSavedReader() {
+    if (refreshing) return;
+    if (!navigator.onLine) {
+      guidance.hidden = false;
+      guidance.textContent = "Reconnect before refreshing the saved reader.";
+      return;
+    }
+    refreshing = true;
+    refreshReader.disabled = true;
+    setHealthStatus("checking", "REFRESHING");
+    summary.textContent = "Refreshing the saved reader…";
+    try {
+      var worker = await serviceWorkerStatus();
+      await requestReaderRefresh(worker.controller || (worker.registration && worker.registration.active));
+      await checkHealth();
+      guidance.hidden = false;
+      guidance.textContent = "Saved reader refreshed and rechecked.";
+    } catch (error) {
+      setHealthStatus("partial", "REFRESH FAILED");
+      summary.textContent = "The saved reader could not be refreshed.";
+      guidance.hidden = false;
+      guidance.textContent = error && error.message ? error.message : String(error);
+    } finally {
+      refreshing = false;
+      refreshReader.disabled = false;
+    }
+  }
+
   recheck.addEventListener("click", checkHealth);
+  refreshReader.addEventListener("click", refreshSavedReader);
   checkHealth();
   if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("controllerchange", checkHealth);
 })();

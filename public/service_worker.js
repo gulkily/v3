@@ -149,8 +149,10 @@ self.addEventListener("message", (event) => {
       try {
         await refreshOfflineReader(Array.isArray(event.data.urls) ? event.data.urls : []);
         console.info("[offline reading] reader refresh completed", workerDetails());
+        if (event.ports[0]) event.ports[0].postMessage({ type: "offline-reader-refreshed", status: "ready", cacheName: CACHE_NAME });
       } catch (error) {
         console.error("[offline reading] reader refresh failed", Object.assign(workerDetails(), errorDetails(error)));
+        if (event.ports[0]) event.ports[0].postMessage(Object.assign({ type: "offline-reader-refreshed", status: "error" }, errorDetails(error)));
         throw error;
       }
     })());

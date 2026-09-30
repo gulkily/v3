@@ -20,3 +20,14 @@
   - `php tests/run.php LocalAppSmokeTest::testOfflineReaderFallbackRouteUsesLocalSnapshotShell OfflineSnapshotPresentationTest` — 6 run, 6 passed.
 - Notes:
   - The reader revision identifies the cached reader UI; the archive generation time identifies saved content freshness.
+
+## Stage 3 - Diagnose and refresh reader freshness
+- Changes:
+  - The health page now reports the cached reader revision, the current live revision when online, and an explicit match, mismatch, or offline-unavailable result.
+  - Added a Refresh saved reader action that waits for an acknowledgement from the service worker, rechecks its cache, and reports success or failure.
+  - Extended the `refresh-offline-reader` worker message with a MessageChannel response while preserving its existing cache-refresh behaviour.
+- Verification:
+  - `node --check public/assets/offline_health.js`, `node --check public/service_worker.js`, and PHP syntax checks passed.
+  - `php tests/run.php OfflineNavigationWorkerTest LocalAppSmokeTest::testOfflineHealthRouteReportsDeviceReadiness` — 3 run, 3 passed.
+- Notes:
+  - Live comparison is deliberately unavailable offline. A reader mismatch means the interface cache should be refreshed; it does not make a claim about the snapshot's content date.
