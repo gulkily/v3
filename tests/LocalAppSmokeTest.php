@@ -1634,6 +1634,100 @@ PHP;
         assertStringNotContains('<div class="body"><br', $titleMatchBlankLine);
     }
 
+    public function testThreadMergesSameAuthorQuickRepliesIntoContinuations(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-continuation-merge-repo-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+
+        file_put_contents(
+            $repositoryRoot . '/records/posts/cont-merge-root.txt',
+            "Post-ID: cont-merge-root\n"
+            . "Created-At: 2026-05-01T10:00:00Z\n"
+            . "Board-Tags: general\n"
+            . "Subject: Continuation merge test\n"
+            . "\n"
+            . "Root body.\n"
+        );
+        file_put_contents(
+            $repositoryRoot . '/records/posts/cont-merge-r1.txt',
+            "Post-ID: cont-merge-r1\n"
+            . "Created-At: 2026-05-01T10:05:00Z\n"
+            . "Board-Tags: general\n"
+            . "Thread-ID: cont-merge-root\n"
+            . "Parent-ID: cont-merge-root\n"
+            . "\n"
+            . "First quick reply.\n"
+        );
+        file_put_contents(
+            $repositoryRoot . '/records/posts/cont-merge-r2.txt',
+            "Post-ID: cont-merge-r2\n"
+            . "Created-At: 2026-05-01T10:12:00Z\n"
+            . "Board-Tags: general\n"
+            . "Thread-ID: cont-merge-root\n"
+            . "Parent-ID: cont-merge-root\n"
+            . "\n"
+            . "Second quick reply.\n"
+        );
+        file_put_contents(
+            $repositoryRoot . '/records/posts/cont-merge-r3.txt',
+            "Post-ID: cont-merge-r3\n"
+            . "Created-At: 2026-05-01T10:35:00Z\n"
+            . "Board-Tags: general\n"
+            . "Thread-ID: cont-merge-root\n"
+            . "Parent-ID: cont-merge-root\n"
+            . "\n"
+            . "Late reply after a gap.\n"
+        );
+        file_put_contents(
+            $repositoryRoot . '/records/posts/cont-merge-r4.txt',
+            "Post-ID: cont-merge-r4\n"
+            . "Created-At: 2026-05-01T10:52:00Z\n"
+            . "Board-Tags: general\n"
+            . "Thread-ID: cont-merge-root\n"
+            . "Parent-ID: cont-merge-root\n"
+            . "\n"
+            . "Another late reply after a second gap.\n"
+        );
+
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-continuation-merge-db-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+        $thread = $this->render($application, '/threads/cont-merge-root');
+
+        $tags = [];
+        foreach (['root', 'r1', 'r2', 'r3', 'r4'] as $suffix) {
+            $postId = $suffix === 'root' ? 'cont-merge-root' : 'cont-merge-' . $suffix;
+            assertTrue(
+                preg_match('/<article id="post-' . preg_quote($postId, '/') . '"[^>]*>/', $thread, $match) === 1,
+                'Expected to find article tag for ' . $postId . '.'
+            );
+            $tags[$suffix] = $match[0];
+        }
+
+        assertStringNotContains('continuation', $tags['root']);
+        assertStringContains('continuation', $tags['r1']);
+        assertStringContains('data-time="10:05"', $tags['r1']);
+        assertStringContains('continuation', $tags['r2']);
+        assertStringContains('data-time="10:12"', $tags['r2']);
+        assertStringNotContains('continuation', $tags['r3']);
+        assertStringNotContains('continuation', $tags['r4']);
+        assertStringContains('data-author="guest"', $tags['root']);
+        assertStringContains('data-author="guest"', $tags['r1']);
+
+        assertStringContains('<a class="post-card-permalink" href="/posts/cont-merge-r1"', $thread);
+        assertStringContains('<a class="post-card-permalink" href="/posts/cont-merge-r2"', $thread);
+
+        assertTrue(
+            preg_match('/<article id="post-cont-merge-root"[^>]*>.*?<p class="meta">(.*?)<\/p>/s', $thread, $metaMatch) === 1,
+            'Expected to find the root card meta line.'
+        );
+        assertStringContains('2 replies', $metaMatch[1]);
+
+        exec('rm -rf ' . escapeshellarg($repositoryRoot));
+        @unlink($databasePath);
+    }
+
     public function testThreadCardOmitsDuplicatePreviewLine(): void
     {
         $renderer = new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__) . '/templates');
