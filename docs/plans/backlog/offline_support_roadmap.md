@@ -38,7 +38,9 @@ The following is merged and considered the baseline for future work:
 See [Offline Reading Release 1](../offline_reading_release1/) and
 [Offline Normal Navigation](../offline_normal_navigation/) for the completed
 FDP records and [the operator runbook](../../runbooks/offline_reading.md) for
-current bounds and recovery instructions.
+current bounds and recovery instructions. The companion [Extended Offline
+Parity Roadmap](offline_support_extended_roadmap.md) maps the long-term
+maximum-safe-parity goal to specific capabilities and decision gates.
 
 ## Non-negotiable guardrails
 

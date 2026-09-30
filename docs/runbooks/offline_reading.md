@@ -92,8 +92,9 @@ Use those signals to distinguish a capability issue from stale content:
   read while disconnected.
 
 The offline Board and Tags subnav contains the normal supported read controls:
-Tags, All/Liked, and Newest/Oldest/Top. **New Post (reconnect)** is visible to
-make the online write boundary explicit. If those controls are absent, first
+Tags, All/Liked, and Newest/Oldest/Top. **New Post** remains visible but is
+disabled, making the current online-only write boundary explicit without
+navigation or an error message. If a supported read control is absent, first
 use the online freshness comparison above; a matching reader means the control
 is deliberately outside the supported offline experience rather than a stale
 browser cache.
