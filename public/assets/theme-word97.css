@@ -141,12 +141,24 @@
   padding-bottom: 2.25rem;
 }
 
+:root[data-theme="word97"] .post-card:has(+ .continuation) {
+  padding-bottom: 0.5rem;
+}
+
+:root[data-theme="word97"] .post-card.continuation {
+  padding-top: 0.85rem;
+}
+
 :root[data-theme="word97"] .inline-reply-composer {
   padding: 0;
 }
 
 :root[data-theme="word97"] .stack > * + * {
   margin-top: 1.5rem;
+}
+
+:root[data-theme="word97"] .post-card.continuation {
+  margin-top: 0;
 }
 
 :root[data-theme="word97"] .card > h1:first-child,

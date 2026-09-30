@@ -99,3 +99,22 @@
   overflow: visible;
   opacity: 1;
 }
+.post-card-actions-toggle {
+  display: none;
+}
+
+@media (hover: none) {
+  .post-card:has(+ .continuation) > .post-card-actions-toggle {
+    display: inline-block;
+    margin-top: 0.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .continuation::before {
+    left: 0.5rem;
+    top: -0.6rem;
+    padding: 0 0.3rem;
+    background: var(--panel);
+  }
+}

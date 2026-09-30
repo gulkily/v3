@@ -108,6 +108,7 @@ if (!is_array($postAnalysisLabels)) {
 $postLlmExchangesByPostId = is_array($llmExchangesByPostId ?? null) ? $llmExchangesByPostId : [];
 $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null) ? $postLlmExchangesByPostId[$post['post_id']] : [];
 ?>
+  <button type="button" class="post-card-actions-toggle thread-reaction-button" aria-label="Show actions for this reply">Actions</button>
   <div class="button-row button-row-natural post-card-actions">
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
     <button

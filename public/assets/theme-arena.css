@@ -41,8 +41,20 @@
   padding: 1.2rem;
 }
 
+:root[data-theme="arena"] .post-card:has(+ .continuation) {
+  padding-bottom: 0.5rem;
+}
+
+:root[data-theme="arena"] .post-card.continuation {
+  padding-top: 0.85rem;
+}
+
 :root[data-theme="arena"] .stack > * + * {
   margin-top: 1.25rem;
+}
+
+:root[data-theme="arena"] .post-card.continuation {
+  margin-top: 0;
 }
 
 :root[data-theme="arena"] .site-header::after {
