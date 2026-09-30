@@ -44,3 +44,14 @@
   - `php tests/run.php OfflineSnapshotPresentationTest LocalAppSmokeTest::testOfflineReaderFallbackRouteUsesLocalSnapshotShell` — 4 run, 4 passed.
 - Notes:
   - Tags-index links remain normal URLs; the service worker serves the reader shell only after network failure.
+
+## Stage 5 - Render individual tag results
+- Changes:
+  - Added normal `/tags/{tag}` route recognition and archive-backed result rendering for every saved matching thread.
+  - Reused shared snapshot thread cards and normal thread destinations; added Back to Tags/Board links.
+  - Added a precise missing-tag archive/reconnect state.
+- Verification:
+  - `node --check public/assets/offline_reader.js` and `php -l tests/OfflineSnapshotPresentationTest.php` passed.
+  - `php tests/run.php OfflineSnapshotPresentationTest LocalAppSmokeTest::testOfflineReaderUsesBoardControlsAndPinnedSnapshotPresentation` — 5 run, 5 passed.
+- Notes:
+  - An absent archive tag is not presented as a site-wide absence; readers are directed to reconnect for live results.

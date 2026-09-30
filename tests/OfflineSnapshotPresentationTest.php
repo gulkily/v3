@@ -162,4 +162,69 @@ NODE;
         assertSame(true, in_array('showing 5 newest of 6', $result['rendered']['text'], true));
         assertSame(true, in_array('No tags were included in this saved snapshot. Reconnect to browse live tags.', $result['emptyRendered']['text'], true));
     }
+
+    public function testTagResultRendersAllSavedThreadsAndMissingState(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+function element(type, text) {
+  return {
+    type, children: [], className: '', dataset: {}, textContent: text || '', href: '', hidden: false,
+    appendChild(child) { this.children.push(child); return child; },
+    removeChild(child) { this.children.splice(this.children.indexOf(child), 1); },
+    get firstChild() { return this.children[0] || null; }, addEventListener() {}
+  };
+}
+global.window = {};
+global.document = { addEventListener() {}, createElement: element, createTextNode(text) { return element('#text', text); } };
+vm.runInThisContext(source);
+const rows = [
+  ['t1', 'One', '', 0, '2026-01-01T00:00:00Z', 'A', '', '[]', '["general"]', 0],
+  ['t2', 'Two', '', 0, '2026-01-02T00:00:00Z', 'B', '', '["topic"]', '[]', 0],
+  ['t3', 'Three', '', 0, '2026-01-03T00:00:00Z', 'C', '', '["topic"]', '[]', 0]
+];
+const database = { exec() { return [{ values: rows }]; } };
+const content = element('div');
+const found = window.forumOfflineSnapshot.renderTagResult({ content, database, tag: 'topic' });
+const missing = element('div');
+const missingFound = window.forumOfflineSnapshot.renderTagResult({ content: missing, database, tag: 'absent' });
+function collect(node, result) {
+  if (node.type === 'a') result.links.push({ href: node.href, text: node.textContent });
+  if (node.textContent) result.text.push(node.textContent);
+  node.children.forEach((child) => collect(child, result));
+}
+const rendered = { links: [], text: [] };
+const missingRendered = { links: [], text: [] };
+collect(content, rendered);
+collect(missing, missingRendered);
+process.stdout.write(JSON.stringify({
+  found, missingFound, rendered, missingRendered,
+  tag: window.forumOfflineSnapshot.tagFromPathname('/tags/topic/'), invalid: window.forumOfflineSnapshot.tagFromPathname('/tags/Topic')
+}));
+NODE;
+        $command = sprintf(
+            'node -e %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/assets/offline_reader.js'),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Tag-result renderer failed: ' . implode("\n", $output));
+        }
+        $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame(true, $result['found']);
+        assertSame(false, $result['missingFound']);
+        assertSame('topic', $result['tag']);
+        assertSame('', $result['invalid']);
+        assertSame([
+            ['href' => '/tags/', 'text' => 'Back to Tags'],
+            ['href' => '/', 'text' => 'Back to Board'],
+            ['href' => '/threads/t3', 'text' => 'Three'],
+            ['href' => '/threads/t2', 'text' => 'Two'],
+        ], $result['rendered']['links']);
+        assertSame(true, in_array('This tag is not included in the saved snapshot. Reconnect to browse live results.', $result['missingRendered']['text'], true));
+    }
 }
