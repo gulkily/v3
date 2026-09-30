@@ -1551,7 +1551,7 @@ PHP;
         assertFingerprintedAsset($account, 'openpgp_loader.js');
         assertFingerprintedAsset($account, 'browser_signing.js');
         assertStringNotContains('Bootstrap post ID', $account);
-        assertStringContains('View: content', $activity);
+        assertStringContains('class="nav-link is-active" href="/activity/?view=content"', $activity);
         assertStringContains('by guest on <time datetime="2026-04-10T12:05:00Z">Apr 10, 2026 at 12:05 UTC</time>', $activity);
         assertStringNotContains('Author: guest', $activity);
         assertStringContains('thread_label_add', $activity);

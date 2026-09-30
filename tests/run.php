@@ -163,11 +163,16 @@ if ($historyDbPath === false || trim($historyDbPath) === '') {
     $historyDbPath = __DIR__ . '/../state/test_run_history.sqlite';
 }
 
-$historyStore = new TestRunHistoryStore($historyDbPath);
+$historyStore = new TestRunHistoryStore($historyDbPath, recoveryHighlightWindowRuns());
 $historyStore->ensureSchema();
 $testClassifications = $historyStore->recordResults($testResults, date('c'));
 
-printRunSummary($runCount, $failures, $testDurations, $testClassifications, STDOUT);
+$prunedCount = 0;
+if ($filters === []) {
+    $prunedCount = $historyStore->pruneStaleEntries(array_keys($testResults));
+}
+
+printRunSummary($runCount, $failures, $testDurations, $testClassifications, $prunedCount, STDOUT);
 
 if ($failures !== []) {
     exit(1);
@@ -176,13 +181,14 @@ if ($failures !== []) {
 /**
  * @param list<string> $failures
  * @param array<string, float> $testDurations
- * @param array<string, array{classification: string, consecutiveFailCount: int, firstFailedAt: ?string}> $classifications
+ * @param array<string, array{classification: string, consecutiveFailCount: int, firstFailedAt: ?string, consecutivePassCount: int, recoveredAt: ?string}> $classifications
  */
 function printRunSummary(
     int $runCount,
     array $failures,
     array $testDurations,
     array $classifications,
+    int $prunedCount,
     mixed $stream,
 ): void {
     $passedCount = $runCount - count($failures);
@@ -219,6 +225,12 @@ function printRunSummary(
                 $info['firstFailedAt'] ?? 'unknown'
             ),
             'recovered' => $recovered[] = $testName,
+            'recently_recovered' => $recovered[] = sprintf(
+                '%s (fixed %d run%s ago)',
+                $testName,
+                $info['consecutivePassCount'] - 1,
+                ($info['consecutivePassCount'] - 1) === 1 ? '' : 's'
+            ),
             'first_seen_failure' => $firstSeenFailures[] = $testName,
             default => null,
         };
@@ -250,6 +262,14 @@ function printRunSummary(
         foreach ($firstSeenFailures as $testName) {
             fwrite($stream, "  - {$testName}\n");
         }
+    }
+
+    if ($prunedCount > 0) {
+        fwrite($stream, sprintf(
+            "\nPruned %d stale history row%s for tests no longer in the suite.\n",
+            $prunedCount,
+            $prunedCount === 1 ? '' : 's'
+        ));
     }
 }
 
@@ -354,6 +374,16 @@ function slowTestReportThresholdSeconds(): float
     }
 
     return max(0.0, (float) $rawThreshold);
+}
+
+function recoveryHighlightWindowRuns(): int
+{
+    $rawWindow = getenv('FORUM_TEST_RECOVERY_HIGHLIGHT_WINDOW_RUNS');
+    if ($rawWindow === false || trim($rawWindow) === '' || !is_numeric($rawWindow)) {
+        return 5;
+    }
+
+    return max(1, (int) $rawWindow);
 }
 
 /**

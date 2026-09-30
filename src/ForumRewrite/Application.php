@@ -1718,7 +1718,7 @@ final class Application
      * @param array{sort_value: string, id: int}|null $afterCursor
      * @return array{items: array<int, array<string, mixed>>, has_more: bool}
      */
-    private function fetchActivity(string $view, string $sortColumn, string $sortDirection, ?array $afterCursor = null): array
+    private function fetchActivity(string $view, string $sortColumn = 'date', string $sortDirection = 'desc', ?array $afterCursor = null): array
     {
         return $this->routeServices()->activityService()->fetchActivity($view, $sortColumn, $sortDirection, $afterCursor);
     }
