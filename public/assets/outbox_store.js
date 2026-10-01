@@ -41,6 +41,9 @@
       target: input && input.target || {},
       summary: input && input.summary || "",
       payload: input && input.payload || {},
+      actionAt: input && input.actionAt || null,
+      integrationAt: input && input.integrationAt || null,
+      intent: input && input.intent || null,
       delivery: input && input.delivery || null,
       outcome: input && input.outcome || null
     };
