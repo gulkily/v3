@@ -14,6 +14,8 @@ final class TagScore
         return [
             'like' => 1,
             'flag' => -100,
+            'upvote' => 1,
+            'downvote' => -1,
         ];
     }
 
