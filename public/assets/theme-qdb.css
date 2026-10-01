@@ -99,6 +99,19 @@
   display: none;
 }
 
+:root[data-theme="qdb"] .qdb-footer {
+  margin-top: 1rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--active-bg);
+  color: var(--active-ink);
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+:root[data-theme="qdb"] .qdb-footer p {
+  margin: 0.2rem 0;
+}
+
 :root[data-theme="qdb"] .quote-card-vote-button {
   width: auto;
   margin-top: 0;

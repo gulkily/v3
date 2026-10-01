@@ -44,6 +44,7 @@ final class BoardPageController
         $viewerUpvotedThreadIds = [];
         $viewerDownvotedThreadIds = [];
         $viewerFlaggedPostIds = [];
+        $qdbQuoteCount = 0;
 
         if ($isQdbInstance) {
             $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
@@ -55,6 +56,9 @@ final class BoardPageController
                 $viewerDownvotedThreadIds = ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'downvote', $viewerIdentityId);
                 $viewerFlaggedPostIds = ViewerTagLookup::postTags($this->repositoryRoot, $rootPostIds, 'flag', $viewerIdentityId);
             }
+
+            // Total across every view/sort, not just the current filtered $threads list.
+            $qdbQuoteCount = count(ThreadRepository::fetchThreads($this->routeServices->pdo()));
         }
 
         return $this->routeServices->renderPageTemplate(
@@ -71,6 +75,7 @@ final class BoardPageController
                 'viewerUpvotedThreadIds' => $viewerUpvotedThreadIds,
                 'viewerDownvotedThreadIds' => $viewerDownvotedThreadIds,
                 'viewerFlaggedPostIds' => $viewerFlaggedPostIds,
+                'qdbQuoteCount' => $qdbQuoteCount,
             ],
             'Board',
             'board',

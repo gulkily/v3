@@ -130,10 +130,20 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
   100/Search) and the `#` quote-number jump box — those are specific
   features/routes the original had that we don't, not a styling gap. Our
   shared nav keeps its own real links (Board/Activity/etc.)._
-- [ ] **No footer at all.** Original had an orange footer bar with live
+- [x] **No footer at all.** Original had an orange footer bar with live
   counts ("20414 quotes approved; 330 quotes pending") and a copyright line
   ("© QDB 1999-2007"). We render nothing after the list. Would need a new
   template addition (or partial) scoped to this instance.
+  _Done, but honestly scaled back: added a `qdb-footer` block (orange bar,
+  matching `--active-bg`/`--active-ink`) to `board.php`, scoped to
+  `$isQdbInstance`, with a real total quote count (`BoardPageController`
+  now queries `ThreadRepository::fetchThreads()` unfiltered by view/sort
+  for this) and a copyright line ("© QDB 1999–<current year>.")._
+  _Deliberately not copying "N approved; N pending" verbatim: this app has
+  no moderation-queue/pending-approval concept for quotes, so a "pending"
+  number would be fabricated data, not a real stat. Showing just the real
+  total felt more honest than faking a second number to look more
+  authentic._
 - [ ] **No quote-number jump box.** Original had a `#` + text input in the
   nav to jump straight to a quote by ID. We have no equivalent — low
   priority unless you want real quote-number navigation.

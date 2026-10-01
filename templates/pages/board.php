@@ -55,3 +55,9 @@
 <?php endif; ?>
 <?php endforeach; ?>
 </section>
+<?php if ($isQdbInstance): ?>
+<footer class="qdb-footer">
+  <p class="qdb-footer-counts"><?= (int) ($qdbQuoteCount ?? 0) ?> <?= ((int) ($qdbQuoteCount ?? 0)) === 1 ? 'quote' : 'quotes' ?></p>
+  <p class="qdb-footer-copyright">&copy; QDB 1999&ndash;<?= date('Y') ?>. All rights reserved.</p>
+</footer>
+<?php endif; ?>
