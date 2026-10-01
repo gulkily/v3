@@ -40,3 +40,13 @@
   - `php tests/run.php OfflineOutboxStateTest OfflineSnapshotPresentationTest LocalAppSmokeTest::testOfflineReaderFallbackRouteUsesLocalSnapshotShell` — 10 run, 10 passed.
 - Notes:
   - Only Like is queueable in this stage; sending and server reconciliation are intentionally deferred to Stage 7.
+
+## Stage 5 - Capture reply drafts and queued replies
+- Changes:
+  - Added Save reply to Outbox on reply compose, storing an editable local reply draft with thread and parent context.
+  - Loaded the Outbox contract/storage on compose pages without preparing, signing, or submitting the reply.
+- Verification:
+  - JavaScript/PHP syntax checks passed.
+  - `php tests/run.php OfflineOutboxComposeTest OfflineOutboxStateTest` — 4 run, 4 passed.
+- Notes:
+  - This stage captures replies from an already-open compose page; direct offline compose navigation and explicit send/retry remain later work.
