@@ -27,9 +27,10 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
   default margins) tightened to small explicit margins so a quote's own
   header/body/buttons sit close together, like `p.quote`/`.qt`'s
   margin-collapse in the original._
-- [ ] **Everything is sized like a modern forum, not a dense 2004-era page.**
+- [x] **Everything is sized like a modern forum, not a dense 2004-era page.**
   Original body/chrome text ran 8–10px; ours inherits the standard
   `.meta` (0.95rem) / body (1rem) scale. Shrink font sizes for this theme.
+  _Done: quote body 0.85rem, header/score and action-row text 0.8rem._
 - [ ] **Score has no color coding.** Original (and qdb.us) show the score in
   green (`#008000`) when positive; ours is plain `--ink-soft` gray via `.meta`.
   Needs a themed override, ideally conditional on sign (harder — see Section B).
