@@ -55,8 +55,23 @@ moderation concept this app doesn't have — skipped per your call).
   than a new SQL query. Refactored the viewer-upvote/downvote/flag lookup
   out of `board()` into a shared private method so `search()` reuses it
   too. Verified all 4 URL combinations, including an actual term match._
-- [ ] **Numeric-style permalinks** — `/?<id>` (query flag) and bare `/<id>`
+- [x] **Numeric-style permalinks** — `/?<id>` (query flag) and bare `/<id>`
   (path) → resolve to the same page as `/threads/<id>`, for any real thread
   id in this instance (ours aren't numeric, but the mechanism works the
   same). Bare `/<id>` must be a last-resort fallback (checked only after
   every other real route fails to match) to avoid colliding with anything.
+  _Done: both forms 302-redirect to the canonical `/threads/<id>` (using
+  `ThreadRepository::byId()` as the lightweight existence check) rather
+  than duplicating the thread-rendering logic at a second URL. The bare
+  `/<id>` form is the literal last check in `handle()`, right before the
+  final `notFound()`, and only active for the qdb profile. Verified: both
+  forms redirect correctly for real thread ids, `/does-not-exist` still
+  404s, an unrecognized bare query flag still falls through to the normal
+  board render, and the zenmemes profile is completely unaffected (still
+  404s on a bare path that would redirect under qdb)._
+
+## Done
+
+All items checked. Everything here is additive and scoped to
+`SiteConfig::siteName() === 'qdb'` — no routing/behavior change for
+zenmemes/chouse anywhere in this checklist.

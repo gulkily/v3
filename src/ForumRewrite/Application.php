@@ -363,6 +363,19 @@ final class Application
                 $this->sendHtml($this->boardPageController()->search((string) ($query['search'] ?? '')), 200);
                 return;
             }
+
+            // Classic bash.org-style quote permalink: ?<thread-id> (e.g. ?833499), a bare
+            // query flag rather than a key=value pair.
+            foreach (array_keys($query) as $key) {
+                if (in_array($key, ['view', 'sort', 'format', 'latest', 'top', 'leetness', 'add', 'random', 'search'], true)) {
+                    continue;
+                }
+
+                if (ThreadRepository::byId($this->routeServices()->pdo(), $key) !== null) {
+                    $this->sendRedirect('/threads/' . $key, 'Here is that quote.', 302);
+                    return;
+                }
+            }
         }
 
         if ($path === '/' || $path === '' || $path === '/threads/' || $path === '/threads') {
@@ -698,6 +711,16 @@ final class Application
         if ($path === '/llms.txt') {
             $this->sendText($this->renderLlmsTxt(), 200);
             return;
+        }
+
+        // Classic qdb.us-style bare quote permalink (e.g. /311057), tried only as a
+        // last resort after every real route above has failed to match, so it can
+        // never shadow a real path.
+        if (SiteConfig::siteName() === 'qdb' && preg_match('#^/([^/]+)/?$#', $path, $matches) === 1) {
+            if (ThreadRepository::byId($this->routeServices()->pdo(), $matches[1]) !== null) {
+                $this->sendRedirect('/threads/' . $matches[1], 'Here is that quote.', 302);
+                return;
+            }
         }
 
         $this->notFound();
