@@ -52,4 +52,24 @@ final class PlatformDocsCatalogTest
             assertSame(null, PlatformDocsCatalog::resolvePath($this->projectRoot, $path));
         }
     }
+
+    public function testRejectsOversizedFilesAndSymlinkEscapes(): void
+    {
+        $root = sys_get_temp_dir() . '/forum-rewrite-platform-docs-boundary-' . bin2hex(random_bytes(6));
+        mkdir($root . '/docs', 0777, true);
+        file_put_contents($root . '/docs/large.md', str_repeat('a', PlatformDocsCatalog::MAX_DOCUMENT_BYTES + 1));
+        file_put_contents($root . '/outside.md', '# outside');
+        symlink($root . '/outside.md', $root . '/docs/escape.md');
+
+        try {
+            assertSame(null, PlatformDocsCatalog::resolvePath($root, 'docs/large.md'));
+            assertSame(null, PlatformDocsCatalog::resolvePath($root, 'docs/escape.md'));
+        } finally {
+            @unlink($root . '/docs/escape.md');
+            @unlink($root . '/docs/large.md');
+            @unlink($root . '/outside.md');
+            @rmdir($root . '/docs');
+            @rmdir($root);
+        }
+    }
 }

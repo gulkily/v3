@@ -54,6 +54,25 @@ final class PlatformDocsPageTest
         assertTrue(!str_contains($html, 'Repository source:'));
     }
 
+    public function testDocsRemainPublicWhenMembersOnlyModeIsEnabled(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+
+        try {
+            $html = $this->render('/docs/');
+
+            assertTrue(str_contains($html, '<h1>Platform Docs</h1>'));
+            assertTrue(!str_contains($html, '<h1>Lobby</h1>'));
+        } finally {
+            if ($previousFlag === false) {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            } else {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+            }
+        }
+    }
+
     public function testMarkdownEscapesRawHtmlAndRejectsUnsafeLinks(): void
     {
         $html = PublicMarkdownRenderer::render("# Title\n\n<script>alert(1)</script>\n\n[unsafe](javascript:alert(1))\n\n[safe](https://example.test/docs)");

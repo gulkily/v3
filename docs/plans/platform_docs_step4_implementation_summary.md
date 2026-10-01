@@ -77,3 +77,32 @@
 
 - The Stage 4 boundary tests can now concentrate on regression coverage; the
   public routes, navigation, and normal static publication path are complete.
+
+## Stage 4 — Public-boundary regression coverage
+
+### Changes
+
+- Added regression coverage for oversized documents and docs-directory
+  symlinks that resolve outside the public root.
+- Added coverage that Docs remains public under the optional members-only
+  feature flag and that an invalid path cannot be served by a static release.
+- Kept the focused route, discovery, Markdown-safety, catalog, and static
+  release tests in the normal PHP test runner.
+
+### Verification
+
+- `php tests/run.php PlatformDocsCatalogTest` — 4 passed.
+- `php tests/run.php PlatformDocsPageTest` — 6 passed.
+- `php tests/run.php PlatformDocsStaticTest` — 1 passed.
+- `php tests/run.php` — Docs coverage passed. Two pre-existing browser-signing
+  tests remain failing because their Node helper calls the missing
+  `state.resolveCreatePreparedPost`; the runner classifies both as long-standing
+  failures since 2026-09-30, and this feature does not change
+  `public/assets/browser_signing.js`.
+- `git diff --check`
+
+### Outcome
+
+- Public platform documentation is available at `/docs/`, visibly identifies
+  every document's repository source path, is discoverable from navigation and
+  Tools, and is included in normal static releases.

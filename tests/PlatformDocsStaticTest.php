@@ -43,11 +43,13 @@ final class PlatformDocsStaticTest
             );
             $index = $this->render($controller, '/docs/');
             $document = $this->render($controller, '/docs/examples/extension_improvement_cookbook.md');
+            $invalid = $this->render($controller, '/docs/%2e%2e/README.md');
 
             assertTrue(str_contains($index, 'route-source: static-html'));
             assertTrue(str_contains($index, 'Platform Docs'));
             assertTrue(str_contains($document, 'route-source: static-html'));
             assertTrue(str_contains($document, 'Repository source: <code>docs/examples/extension_improvement_cookbook.md</code>'));
+            assertTrue(str_contains($invalid, '<h1>Not Found</h1>'));
         } finally {
             @unlink($databasePath);
             $this->deleteTree($staticRoot);
