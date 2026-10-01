@@ -50,3 +50,13 @@
   - `php tests/run.php OfflineOutboxComposeTest OfflineOutboxStateTest` — 4 run, 4 passed.
 - Notes:
   - This stage captures replies from an already-open compose page; direct offline compose navigation and explicit send/retry remain later work.
+
+## Stage 6 - Capture new-thread drafts and queued threads
+- Changes:
+  - Added Save thread to Outbox on new-thread compose, retaining the subject, body, and board tags as a local draft.
+  - Kept capture local-only: it neither prepares nor signs nor submits a thread.
+- Verification:
+  - `node --check public/assets/outbox_compose.js` and PHP syntax checks passed.
+  - `php tests/run.php OfflineOutboxComposeTest OfflineOutboxStateTest` — 5 run, 5 passed.
+- Notes:
+  - This is available from an already-open compose page; explicit sending, retry, and reconciliation remain Stage 7 work.
