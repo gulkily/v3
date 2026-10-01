@@ -69,32 +69,22 @@
         var card = document.createElement("details");
         card.className = "card outbox-item";
         var heading = document.createElement("summary");
-        var summaryPrefix = document.createElement("span");
-        summaryPrefix.textContent = summary.action + " — " + displayState(summary.state) + " · ";
-        heading.appendChild(summaryPrefix);
-        var target = targetLink(item);
-        if (target) {
-          var linkTitle = targetTitle(item, summary.summary);
-          if (linkTitle.prefix) {
-            var titlePrefix = document.createElement("span");
-            titlePrefix.textContent = linkTitle.prefix;
-            heading.appendChild(titlePrefix);
-          }
-          var titleAnchor = document.createElement("a");
-          titleAnchor.href = target.href;
-          titleAnchor.textContent = linkTitle.text;
-          titleAnchor.addEventListener("click", function (event) { event.stopPropagation(); });
-          heading.appendChild(titleAnchor);
-        } else {
-          var title = document.createElement("span");
-          title.textContent = summary.summary || "Local action";
-          heading.appendChild(title);
-        }
+        heading.textContent = summary.action + " — " + displayState(summary.state) + " · " + (summary.summary || "Local action");
         var detailRoot = document.createElement("div");
         detailRoot.className = "outbox-item-detail";
         var detail = document.createElement("p");
         detail.className = "meta";
-        detail.textContent = summary.summary || "Local action";
+        var target = targetLink(item);
+        if (target) {
+          var linkTitle = targetTitle(item, summary.summary);
+          detail.textContent = linkTitle.prefix;
+          var titleAnchor = document.createElement("a");
+          titleAnchor.href = target.href;
+          titleAnchor.textContent = linkTitle.text;
+          detail.appendChild(titleAnchor);
+        } else {
+          detail.textContent = summary.summary || "Local action";
+        }
         var created = document.createElement("p");
         created.className = "meta";
         created.textContent = "Created " + summary.createdAt;
