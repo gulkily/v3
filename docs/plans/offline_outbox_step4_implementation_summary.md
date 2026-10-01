@@ -19,3 +19,14 @@
   - `php tests/run.php OfflineOutboxStateTest OfflineOutboxStorageTest` — 3 run, 3 passed.
 - Notes:
   - Storage is not yet loaded by a page; Stage 3 will expose it through Tools → Outbox.
+
+## Stage 3 - Expose Tools → Outbox offline
+- Changes:
+  - Added Tools → Outbox with a local-item/empty-state presentation backed by the dedicated Outbox store.
+  - Added a dedicated cached Outbox shell and offline navigation fallback without putting local items into the public snapshot cache.
+  - Narrowed service-worker asset discovery to scripts, stylesheets, and runtime assets so page links are not cached as resources.
+- Verification:
+  - JavaScript and PHP syntax checks passed.
+  - `php tests/run.php OfflineNavigationWorkerTest LocalAppSmokeTest::testOutboxRouteIsAvailableFromToolsWithLocalStorageAssets` — 4 run, 4 passed.
+- Notes:
+  - Stage 3 only observes stored items; action capture and send controls arrive in later stages.

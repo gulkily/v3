@@ -122,6 +122,17 @@ final class ToolsPageController
         );
     }
 
+    public function outbox(): string
+    {
+        return $this->routeServices->renderPageTemplate(
+            'outbox.php',
+            ['toolNavOptions' => ToolsPageSupport::navOptions('outbox')],
+            'Outbox',
+            'tools',
+            ['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox.js'],
+        );
+    }
+
     public function sqliteViewer(): string
     {
         return $this->routeServices->renderPageTemplate(

@@ -455,6 +455,11 @@ final class Application
             return;
         }
 
+        if ($path === '/tools/outbox/' || $path === '/tools/outbox') {
+            $this->sendHtml($this->toolsPageController()->outbox(), 200);
+            return;
+        }
+
         if ($path === '/tools/codebase/' || $path === '/tools/codebase') {
             $this->sendHtml($this->codebaseStateController()->render(), 200);
             return;
@@ -1469,7 +1474,7 @@ final class Application
             '/activity', '/activity/',
             '/users', '/users/', '/users/pending', '/users/pending/',
             '/tags', '/tags/',
-            '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/',
+            '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
             '/compose/thread', '/compose/reply',
             '/account/key', '/account/key/', '/invites', '/invites/',

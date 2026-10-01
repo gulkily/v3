@@ -2643,6 +2643,29 @@ PHP;
         assertStringContains('cache.match(absoluteUrl(url), { ignoreVary: true })', $healthScript);
     }
 
+    public function testOutboxRouteIsAvailableFromToolsWithLocalStorageAssets(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $outbox = $this->render($application, '/tools/outbox/');
+        $tools = $this->render($application, '/tools/');
+
+        assertStringContains('<h1>Outbox</h1>', $outbox);
+        assertStringContains('data-outbox', $outbox);
+        assertStringContains('data-role="outbox-status"', $outbox);
+        assertStringContains('data-role="outbox-items"', $outbox);
+        assertStringContains('class="nav-link is-active" href="/tools/outbox/"', $outbox);
+        assertFingerprintedAsset($outbox, 'outbox_store.js');
+        assertFingerprintedAsset($outbox, 'outbox_storage.js');
+        assertFingerprintedAsset($outbox, 'outbox.js');
+        assertStringContains('href="/tools/outbox/"', $tools);
+        assertStringContains('Outbox', $tools);
+    }
+
     public function testOfflineReaderFallbackRouteUsesLocalSnapshotShell(): void
     {
         $application = new Application(
