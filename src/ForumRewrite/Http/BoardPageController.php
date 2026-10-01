@@ -139,8 +139,25 @@ final class BoardPageController
         return match ($sort) {
             'oldest' => $this->compareOldest($left, $right),
             'top' => $this->compareTop($left, $right),
+            'leetness' => $this->compareLeetness($left, $right),
             default => $this->compareNewest($left, $right),
         };
+    }
+
+    /**
+     * QDB's "1337" sort: closest to a score of exactly 1337 first.
+     *
+     * @param array<string, mixed> $left
+     * @param array<string, mixed> $right
+     */
+    private function compareLeetness(array $left, array $right): int
+    {
+        $leetnessCompare = abs(1337 - (int) $left['score_total']) <=> abs(1337 - (int) $right['score_total']);
+        if ($leetnessCompare !== 0) {
+            return $leetnessCompare;
+        }
+
+        return $this->compareNewest($left, $right);
     }
 
     /**

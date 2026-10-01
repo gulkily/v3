@@ -20,11 +20,17 @@ moderation concept this app doesn't have — skipped per your call).
 - [x] **Top** — `/top`, `/?top` → same as `?view=all&sort=top`, rendered
   directly.
   _Done alongside Latest, same block._
-- [ ] **1337 (leetness)** — `/leetness`, `/?leetness` → sort by
+- [x] **1337 (leetness)** — `/leetness`, `/?leetness` → sort by
   `abs(1337 - score_total)` ascending (closest to exactly 1337 first), per
   your formula. Needs a new sort case in `BoardPageController`; added to
   `BoardViewOptions::normalizeSort()`'s allowlist but **not** to
   `sortOptions()`'s visible pills, so other profiles' sort UI is untouched.
+  _Done: `compareLeetness()` added to `BoardPageController`, 'leetness'
+  added to the shared `normalizeSort()` allowlist (so it isn't silently
+  coerced to 'newest'), both URL forms wired. Verified ordering for real
+  with distinctive scores (2000 and 100): `abs(1337-2000)=663 <
+  abs(1337-100)=1237`, confirmed the score-2000 thread ranked first in
+  both `/leetness` and `/?leetness`. Scores reset afterward._
 - [ ] **Add Quote** — `/add`, `/?add` → same as `/compose/thread`, rendered
   directly.
 - [ ] **Random** — `/random`, `/?random` → picks a random thread from this

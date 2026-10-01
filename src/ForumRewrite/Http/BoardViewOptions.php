@@ -18,7 +18,10 @@ final class BoardViewOptions
 
     public static function normalizeSort(string $sort): string
     {
-        return in_array($sort, ['newest', 'oldest', 'top'], true) ? $sort : 'newest';
+        // 'leetness' is a qdb-instance-only sort (routed directly, never
+        // surfaced in sortOptions()'s pills) - allowed through here so
+        // BoardPageController::board() doesn't coerce it back to 'newest'.
+        return in_array($sort, ['newest', 'oldest', 'top', 'leetness'], true) ? $sort : 'newest';
     }
 
     /**
