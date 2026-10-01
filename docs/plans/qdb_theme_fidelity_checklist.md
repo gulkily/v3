@@ -6,10 +6,11 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
 
 ## A. Highest-impact, CSS-only (scoped to `:root[data-theme="qdb"]`)
 
-- [ ] **Quote body isn't actually monospace.** `--code-font` is defined but
+- [x] **Quote body isn't actually monospace.** `--code-font` is defined but
   nothing applies it to `.quote-card-body` — it's silently rendering in
   `--body-font` (Arial). Add `font-family: var(--code-font)` to the body rule.
   This is probably the single most noticeable miss.
+  _Done: added `font-family: var(--code-font)` to `.quote-card-body` in `theme-qdb.css`._
 - [ ] **Every quote sits in a bordered, padded box.** The shared `.card` rule
   (`border: 1px solid var(--line); padding: 0.9rem; background: var(--panel)`)
   applies to `quote-card` too. The original has *zero* per-quote chrome — just
