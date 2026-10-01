@@ -85,12 +85,18 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
   class, so a quote that crosses zero via voting won't flip color until the
   next page load. Fixing that needs a shared-JS change (`setThreadScore`),
   which is more than this item's scope._
-- [ ] **The generic forum chrome above the list doesn't exist in the
+- [x] **The generic forum chrome above the list doesn't exist in the
   original.** `board.php`'s "Tags / All / Liked / Newest / Oldest / Top /
   New Post" nav bar and the inline "Submit a quote..." composer card are
   pure modern-forum additions. Decide: hide them for this instance (CSS
   `display:none` scoped to the theme, or a template conditional), or keep
   them as a deliberate modern feature layered on top. **Needs your call.**
+  _Decided: hide both. Done CSS-only, no `board.php` change needed —
+  `:root[data-theme="qdb"] .thread-list > .card:not(.quote-card)` hides
+  any direct-child card of the list that isn't a quote (currently just the
+  nav row and composer), leaving quote cards untouched. The markup still
+  renders (so `/compose/thread` still works by direct navigation), it's
+  just visually suppressed for this theme._
 
 ## C. New chrome the original had that we have none of
 

@@ -82,6 +82,10 @@
   color: var(--status-error);
 }
 
+:root[data-theme="qdb"] .thread-list > .card:not(.quote-card) {
+  display: none;
+}
+
 :root[data-theme="qdb"] .quote-card-vote-button {
   width: auto;
   margin-top: 0;
