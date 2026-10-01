@@ -72,3 +72,15 @@
   - `php tests/run.php OfflineOutboxSendTest OfflineOutboxStateTest OfflineOutboxComposeTest LocalAppSmokeTest::testOutboxRouteIsAvailableFromToolsWithLocalStorageAssets` — 7 run, 7 passed.
 - Notes:
   - Delivery remains user-triggered; Background Sync is intentionally not used to submit composed content.
+
+## Stage 8 - Document and release-test the MVP
+- Changes:
+  - Added the local-Outbox lifecycle, privacy boundary, recovery guidance, and current limits to the Offline Reading Runbook.
+  - Updated both offline roadmaps and the four-feature MVP checklist to distinguish delivered capture/send behavior from remaining edit, export, direct-compose, and server-idempotency work.
+  - Made Outbox timestamps/state explanations explicit and linked accepted replies/threads to their canonical server records.
+- Verification:
+  - `node --check public/assets/outbox.js` passed.
+  - Focused suite: `php tests/run.php OfflineOutboxStateTest OfflineOutboxStorageTest OfflineOutboxComposeTest OfflineOutboxSendTest OfflineNavigationWorkerTest LocalAppSmokeTest::testOutboxRouteIsAvailableFromToolsWithLocalStorageAssets BrowserSigningNormalizationTest` — Outbox-focused checks passed; two compose timing-fixture tests reported `state.resolveCreatePreparedPost is not a function`.
+  - Full `php tests/run.php` completed. In addition to those two compose timing-fixture failures, it reported failures in anonymous-board session handling, adjacent signature-file links, SQLite Viewer routing, and incremental approval/rebuild parity; none cover Outbox behavior.
+- Notes:
+  - The remaining unchecked MVP items are intentionally retained in the checklist rather than represented as delivered parity.

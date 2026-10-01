@@ -9,6 +9,21 @@
     return String(state || "unknown").replace(/_/g, " ");
   }
 
+  function stateExplanation(state) {
+    var explanations = {
+      draft: "Saved only on this device; queue it when it is ready.",
+      queued: "Waiting for your explicit Send action.",
+      waiting_for_connection: "No connection was available. Retry when online.",
+      sending: "Contacting the server; do not close this page until the result appears.",
+      accepted: "The server confirmed this action.",
+      rejected: "The server did not accept this action. Review the result before retrying.",
+      conflicted: "The target changed or is unavailable. Review before retrying.",
+      cancelled: "This local action was cancelled.",
+      needs_attention: "Local signing or identity setup needs your attention before retrying."
+    };
+    return explanations[state] || "Local Outbox state.";
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     var root = document.querySelector("[data-outbox]");
     if (!root || !window.forumOutbox || !window.forumOutboxStorage) return;
@@ -40,14 +55,32 @@
         var created = document.createElement("p");
         created.className = "meta";
         created.textContent = "Created " + summary.createdAt;
+        var updated = document.createElement("p");
+        updated.className = "meta";
+        updated.textContent = "Last updated " + summary.updatedAt;
+        var explanation = document.createElement("p");
+        explanation.className = "meta";
+        explanation.textContent = stateExplanation(summary.state);
         card.appendChild(heading);
         card.appendChild(detail);
         card.appendChild(created);
+        card.appendChild(updated);
+        card.appendChild(explanation);
         if (summary.outcome && summary.outcome.message) {
           var outcome = document.createElement("p");
           outcome.className = "meta";
           outcome.textContent = summary.outcome.message;
           card.appendChild(outcome);
+          if (summary.state === "accepted" && summary.outcome.postId) {
+            var published = document.createElement("p");
+            var link = document.createElement("a");
+            link.href = summary.action === "thread"
+              ? "/threads/" + encodeURIComponent(summary.outcome.threadId || summary.outcome.postId)
+              : "/posts/" + encodeURIComponent(summary.outcome.postId);
+            link.textContent = summary.action === "thread" ? "View published thread" : "View published post";
+            published.appendChild(link);
+            card.appendChild(published);
+          }
         }
         var actions = document.createElement("p");
         actions.className = "compose-form-actions";

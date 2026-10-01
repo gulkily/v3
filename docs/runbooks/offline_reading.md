@@ -27,8 +27,10 @@ Newest/Oldest/Top controls), the Tags index, saved tag-result URLs, and normal
 URLs for threads included in the snapshot render from saved records. Board
 filters, tag counts, previews, and results are evaluated only against the
 downloaded public snapshot; an unavailable tag or thread explains that live
-results require reconnecting. Posting, voting, tagging, profiles, search,
-feeds, tools, and threads outside the snapshot require a connection.
+results require reconnecting. Profiles, search, feeds, most tools, and threads
+outside the snapshot require a connection. **Tools → Outbox** is a separate
+local-work screen: it can be opened offline but is not part of the public
+snapshot.
 
 ## Refresh behavior
 
@@ -98,6 +100,34 @@ navigation or an error message. If a supported read control is absent, first
 use the online freshness comparison above; a matching reader means the control
 is deliberately outside the supported offline experience rather than a stale
 browser cache.
+
+## Local Outbox
+
+Open **Tools → Outbox** to review local likes, reply drafts, and thread drafts
+saved on this browser. The Outbox is cached as its own shell, while its items
+live in this browser's IndexedDB storage—not in the public SQLite snapshot or
+the service-worker cache. Its content is therefore device-local and is never
+published merely because it appears in the Outbox.
+
+A draft has been saved locally; queue it when it is ready. A queued item waits
+for the person to choose **Send**. Reconnecting does not send anything
+automatically. On Send, replies and threads use the normal identity, prepare,
+sign, and finalize flow; a queued Like uses the existing reaction endpoint.
+The outcome remains visible as accepted, rejected, conflicted,
+waiting-for-connection, or needs-attention. An accepted reply or thread links
+to its server record.
+
+If a reply or thread delivery loses its response, the Outbox retains the
+prepared record and retries that same record; it checks the known post ID
+before treating a missing prepared record as a failure. Do not clear browser
+site data until you have reviewed or discarded the local items. Browser storage
+is also the current recovery boundary: sharing a device can expose saved drafts
+to another person using the same browser profile.
+
+This MVP does not yet provide draft editing, export, bulk clear confirmation,
+or direct offline navigation to a fresh compose page. A compose page that is
+already open can save its reply or thread as a local draft; use **Discard** or
+**Remove** in the Outbox to remove individual local records.
 
 `Offline reading is ready on this device` means the browser has the worker and
 all saved artifacts necessary to read the bounded snapshot. A connected browser
