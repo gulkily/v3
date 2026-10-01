@@ -18,10 +18,15 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
   border/background/padding entirely.
   _Done: `.quote-card` override drops border/background/padding (including
   `.post-card`'s `padding-bottom` reserved for a permalink glyph we don't use)._
-- [ ] **Quotes are spaced ~1rem apart in boxes; the original is dense.** The
+- [x] **Quotes are spaced ~1rem apart in boxes; the original is dense.** The
   shared `.stack > * + *` margin rule adds a full rem between every quote.
   Needs a much tighter, QDB-specific vertical rhythm (closer to the
   original's tight `<p>`-to-`<p>` flow).
+  _Done: `.quote-card` margin-top reduced to 0.6rem (overriding the generic
+  1rem stack gap), and the header/body `<p>` tags (which had unreset browser
+  default margins) tightened to small explicit margins so a quote's own
+  header/body/buttons sit close together, like `p.quote`/`.qt`'s
+  margin-collapse in the original._
 - [ ] **Everything is sized like a modern forum, not a dense 2004-era page.**
   Original body/chrome text ran 8–10px; ours inherits the standard
   `.meta` (0.95rem) / body (1rem) scale. Shrink font sizes for this theme.

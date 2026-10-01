@@ -59,8 +59,13 @@
   border-color: var(--active-line);
 }
 
+:root[data-theme="qdb"] .quote-card-header {
+  margin: 0 0 0.25rem;
+}
+
 :root[data-theme="qdb"] .quote-card-body {
   font-family: var(--code-font);
+  margin: 0 0 0.4rem;
 }
 
 :root[data-theme="qdb"] .quote-card {
@@ -68,4 +73,5 @@
   background: transparent;
   padding: 0;
   padding-bottom: 0;
+  margin-top: 0.6rem;
 }
