@@ -29,6 +29,18 @@ final class SiteProfileRegistryTest
         }
     }
 
+    public function testActiveHonorsBashorgOverride(): void
+    {
+        putenv('FORUM_SITE_ID=bashorg');
+
+        try {
+            $profile = SiteProfileRegistry::active();
+            assertSame('bashorg', $profile['name']);
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+    }
+
     public function testActiveFallsBackToZenmemesForUnknownValue(): void
     {
         putenv('FORUM_SITE_ID=not-a-real-site');

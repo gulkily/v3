@@ -24,6 +24,11 @@ final class SiteProfileRegistry
                 'defaultTheme' => 'chouse',
                 'composerPrompt' => 'Start a thread...',
             ],
+            'bashorg' => [
+                'name' => 'bashorg',
+                'defaultTheme' => 'bashorg',
+                'composerPrompt' => 'Submit a quote...',
+            ],
         ];
     }
 
