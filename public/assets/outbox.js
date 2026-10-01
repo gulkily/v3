@@ -24,6 +24,19 @@
     return explanations[state] || "Local Outbox state.";
   }
 
+  function targetLink(item) {
+    var target = item && item.target && typeof item.target === "object" ? item.target : {};
+    var id = String(target.id || "");
+    if (!id) return null;
+    if (target.kind === "thread") {
+      return { href: "/threads/" + encodeURIComponent(id), text: "View target thread" };
+    }
+    if (target.kind === "post") {
+      return { href: "/posts/" + encodeURIComponent(id), text: "View target post" };
+    }
+    return null;
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     var root = document.querySelector("[data-outbox]");
     if (!root || !window.forumOutbox || !window.forumOutboxStorage) return;
@@ -76,6 +89,15 @@
         detailRoot.appendChild(actionTime);
         detailRoot.appendChild(integrationTime);
         detailRoot.appendChild(explanation);
+        var target = targetLink(item);
+        if (target) {
+          var targetLine = document.createElement("p");
+          var targetAnchor = document.createElement("a");
+          targetAnchor.href = target.href;
+          targetAnchor.textContent = target.text;
+          targetLine.appendChild(targetAnchor);
+          detailRoot.appendChild(targetLine);
+        }
         if (summary.outcome && summary.outcome.message) {
           var outcome = document.createElement("p");
           outcome.className = "meta";
