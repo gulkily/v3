@@ -156,9 +156,14 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
 
 ## D. qdb.us refinements not yet carried over
 
-- [ ] **No zebra striping.** qdb.us alternated row background `#ffffff`/
+- [x] **No zebra striping.** qdb.us alternated row background `#ffffff`/
   `#e8e8e8` per quote. Easy CSS (`:nth-child` or similar) once the card
   chrome from Section A is removed.
+  _Done: `.quote-card:nth-child(even) { background: #e8e8e8; }`. Also gave
+  `.quote-card` back a little padding (0.25rem/0.4rem) instead of the zero
+  from Section A — the original's rows had real table-cell padding
+  (`cellpadding`) too, so a zebra stripe with zero padding would actually
+  be *less* authentic, not more._
 - [ ] **No vote-count-vs-score ratio ("20/38").** qdb.us showed score and
   total votes cast side by side. Step 2 explicitly scoped this *out* as
   more than "small modifications" — flagging it here since "closer to the
