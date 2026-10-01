@@ -45,10 +45,12 @@
       setStatus(items.length + " local item" + (items.length === 1 ? "" : "s") + "; " + pending + " still need attention.", "ready");
       items.forEach(function (item) {
         var summary = window.forumOutbox.safeSummary(item);
-        var card = document.createElement("article");
-        card.className = "card";
-        var heading = document.createElement("h2");
-        heading.textContent = summary.action + " — " + displayState(summary.state);
+        var card = document.createElement("details");
+        card.className = "card outbox-item";
+        var heading = document.createElement("summary");
+        heading.textContent = summary.action + " — " + displayState(summary.state) + " · " + (summary.summary || "Local action");
+        var detailRoot = document.createElement("div");
+        detailRoot.className = "outbox-item-detail";
         var detail = document.createElement("p");
         detail.className = "meta";
         detail.textContent = summary.summary || "Local action";
@@ -58,19 +60,27 @@
         var updated = document.createElement("p");
         updated.className = "meta";
         updated.textContent = "Last updated " + summary.updatedAt;
+        var actionTime = document.createElement("p");
+        actionTime.className = "meta";
+        actionTime.textContent = item.actionAt ? "Action time (signed) " + item.actionAt : "Action time was not signed.";
+        var integrationTime = document.createElement("p");
+        integrationTime.className = "meta";
+        integrationTime.textContent = item.integrationAt ? "Integration time " + item.integrationAt : "Integration time pending.";
         var explanation = document.createElement("p");
         explanation.className = "meta";
         explanation.textContent = stateExplanation(summary.state);
         card.appendChild(heading);
-        card.appendChild(detail);
-        card.appendChild(created);
-        card.appendChild(updated);
-        card.appendChild(explanation);
+        detailRoot.appendChild(detail);
+        detailRoot.appendChild(created);
+        detailRoot.appendChild(updated);
+        detailRoot.appendChild(actionTime);
+        detailRoot.appendChild(integrationTime);
+        detailRoot.appendChild(explanation);
         if (summary.outcome && summary.outcome.message) {
           var outcome = document.createElement("p");
           outcome.className = "meta";
           outcome.textContent = summary.outcome.message;
-          card.appendChild(outcome);
+          detailRoot.appendChild(outcome);
           if (summary.state === "accepted" && summary.outcome.postId) {
             var published = document.createElement("p");
             var link = document.createElement("a");
@@ -79,7 +89,7 @@
               : "/posts/" + encodeURIComponent(summary.outcome.postId);
             link.textContent = summary.action === "thread" ? "View published thread" : "View published post";
             published.appendChild(link);
-            card.appendChild(published);
+            detailRoot.appendChild(published);
           }
         }
         var actions = document.createElement("p");
@@ -127,7 +137,8 @@
         if (item.state === "accepted" || item.state === "cancelled") {
           addAction("Remove", function () { return window.forumOutboxStorage.remove(item.id); });
         }
-        card.appendChild(actions);
+        if (actions.firstChild) detailRoot.appendChild(actions);
+        card.appendChild(detailRoot);
         itemsRoot.appendChild(card);
       });
     }

@@ -50,3 +50,13 @@
   - `php tests/run.php OfflineOutboxSendTest OfflineOutboxIntentTest LocalAppSmokeTest::testOfflineReaderFallbackRouteUsesLocalSnapshotShell` — 4 run, 4 passed.
 - Notes:
   - A closed browser page does not send work; Background Sync remains deliberately out of scope.
+
+## Stage 6 - Compact expandable Outbox rows
+- Changes:
+  - Replaced multi-line Outbox cards with one collapsed, expandable row per item, retaining action, state, and safe summary in the row label.
+  - Moved timestamps, outcomes, recovery explanation, published links, and controls into expansion detail; signed action time and integration time are labelled separately.
+- Verification:
+  - `node --check public/assets/outbox.js` and PHP syntax checks passed.
+  - `php tests/run.php OfflineOutboxPresentationTest LocalAppSmokeTest::testOutboxRouteIsAvailableFromToolsWithLocalStorageAssets` — 2 run, 2 passed.
+- Notes:
+  - Private local payload remains absent from both collapsed and expanded presentation.

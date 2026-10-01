@@ -42,6 +42,7 @@ $testFiles = [
     __DIR__ . '/OfflineOutboxStateTest.php',
     __DIR__ . '/OfflineOutboxComposeTest.php',
     __DIR__ . '/OfflineOutboxIntentTest.php',
+    __DIR__ . '/OfflineOutboxPresentationTest.php',
     __DIR__ . '/OfflineOutboxSendTest.php',
     __DIR__ . '/OfflineOutboxStorageTest.php',
     __DIR__ . '/OfflineSnapshotPresentationTest.php',
