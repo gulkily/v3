@@ -39,6 +39,7 @@ $testFiles = [
     __DIR__ . '/OperatorStatusCollectorTest.php',
     __DIR__ . '/OfflineReadingDiagnosticCommandTest.php',
     __DIR__ . '/OfflineNavigationWorkerTest.php',
+    __DIR__ . '/OfflineOutboxStateTest.php',
     __DIR__ . '/OfflineSnapshotPresentationTest.php',
     __DIR__ . '/OfflineSnapshotPublishCommandTest.php',
     __DIR__ . '/OfflineSnapshotPublisherTest.php',
