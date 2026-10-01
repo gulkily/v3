@@ -85,3 +85,6 @@ site is architected to make it easy for developers to extend and build their own
 				example 4: for short-form bug reports, write out the steps to reproduce, expected, and actual
 
 merge agent reply queue into task queue
+
+redesign the offline mode indicator to not take up extra vertical space (probably top corner?)
+	also, make it link to userful pages like /offline/
