@@ -31,9 +31,10 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
   Original body/chrome text ran 8–10px; ours inherits the standard
   `.meta` (0.95rem) / body (1rem) scale. Shrink font sizes for this theme.
   _Done: quote body 0.85rem, header/score and action-row text 0.8rem._
-- [ ] **Score has no color coding.** Original (and qdb.us) show the score in
+- [x] **Score has no color coding.** Original (and qdb.us) show the score in
   green (`#008000`) when positive; ours is plain `--ink-soft` gray via `.meta`.
   Needs a themed override, ideally conditional on sign (harder — see Section B).
+  _Done together with Section B's matching item — see there for details._
 
 ## B. Needs a template/JS change, not just CSS
 
@@ -45,9 +46,20 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
   "Upvote/Downvote/Flag"; the original used bare `+`/`-`/`[X]`; qdb.us used
   labeled `↑Funny`/`↓Not`/`⚑Flag`. Pick one and change `quote_card.php`'s
   button labels.
-- [ ] **No color-coded score logic.** Doing this properly (green when
+- [x] **No color-coded score logic.** Doing this properly (green when
   positive, something else when negative/zero) needs a small conditional in
   `quote_card.php`, not just a CSS rule, since score sign varies per quote.
+  _Done: `quote_card.php` computes a `quote-card-score-positive`/
+  `-negative` class from `score_total`'s sign (no class when zero);
+  `theme-qdb.css` colors them with the existing `--status-ok`/`--status-error`
+  tokens (already green/red-ish in this theme) rather than inventing new
+  colors. Verified by temporarily forcing the read-model score to +5/-3/0 and
+  confirming the right class/color rendered each time, then resetting to 0._
+  _Known gap, left as-is: the class is set at page-render time only — after
+  a vote, `thread_reactions.js` updates the score **text** live but not this
+  class, so a quote that crosses zero via voting won't flip color until the
+  next page load. Fixing that needs a shared-JS change (`setThreadScore`),
+  which is more than this item's scope._
 - [ ] **The generic forum chrome above the list doesn't exist in the
   original.** `board.php`'s "Tags / All / Liked / Newest / Oldest / Top /
   New Post" nav bar and the inline "Submit a quote..." composer card are

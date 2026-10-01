@@ -74,6 +74,14 @@
   font-size: 0.8rem;
 }
 
+:root[data-theme="qdb"] .quote-card-score-positive {
+  color: var(--status-ok);
+}
+
+:root[data-theme="qdb"] .quote-card-score-negative {
+  color: var(--status-error);
+}
+
 :root[data-theme="qdb"] .quote-card {
   border: none;
   background: transparent;
