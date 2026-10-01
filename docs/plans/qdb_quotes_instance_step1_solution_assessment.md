@@ -1,11 +1,11 @@
-# Bash.org-Style Quotes Instance — Step 1: Solution Assessment
+# QDB Quotes Instance — Step 1: Solution Assessment
 
 ## Problem
 
-We need a new site instance whose board/index page looks like classic
-bash.org (a flat numbered list of full quote text) while clicking a quote
-leads into a normal discussion thread, without forking the existing
-board/thread rendering pipeline.
+We need a new site instance whose board/index page looks like the
+classic QDB (a flat numbered list of full quote text) while clicking a
+quote leads into a normal discussion thread, without forking the
+existing board/thread rendering pipeline.
 
 ## Context found
 
@@ -19,7 +19,7 @@ board/thread rendering pipeline.
   work needed for "click a quote → see a discussion."
 - The index/list requirement is not solved: `templates/pages/board.php` and
   `templates/partials/thread_card.php` render a forum-style card (subject
-  as `<h2>`, meta date, labels, truncated preview, reply count) — bash.org's
+  as `<h2>`, meta date, labels, truncated preview, reply count) — QDB's
   list instead shows the *full* quote body under a bare `#ID`, with no
   subject/labels/preview truncation. This is a content-shape mismatch, not
   just a style mismatch.
@@ -28,12 +28,12 @@ board/thread rendering pipeline.
 
 ### Option A — CSS-only theme on existing templates
 - Add a `SiteProfileRegistry` entry + `ThemeRegistry` theme + one new
-  `theme-bashorg.css`; reuse `board.php`/`thread_card.php` unchanged.
+  `theme-qdb.css`; reuse `board.php`/`thread_card.php` unchanged.
 - Pros: smallest change; follows the theme guide's "CSS-only illusion"
   principle; zero template/controller risk.
-- Cons: can't actually get bash.org's format — subject-as-title and
+- Cons: can't actually get QDB's format — subject-as-title and
   truncated preview are baked into the markup, not styleable away; still
-  shows per-thread subject composer flow, which bash.org quotes don't have.
+  shows per-thread subject composer flow, which QDB quotes don't have.
 
 ### Option B — New instance + new quote-list partial, reuse thread page (Recommended)
 - Follow the `chouse` precedent for a new instance (profile + vhost env
@@ -63,4 +63,4 @@ board/thread rendering pipeline.
 path that stood up `chouse`) and the existing thread/reply system for the
 discussion side, keeping new work to one partial, one theme, and a
 per-instance board-rendering choice — the smallest change that produces an
-authentic bash.org list without forking shared templates.
+authentic QDB list without forking shared templates.

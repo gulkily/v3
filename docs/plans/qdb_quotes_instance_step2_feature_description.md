@@ -1,26 +1,28 @@
-# Bash.org-Style Quotes Instance — Step 2: Feature Description
+# QDB Quotes Instance — Step 2: Feature Description
 
 ## Problem
 
 We want a new site instance whose index page recreates the nostalgic
-look of bash.org's QDB (circa 2007) — numbered quotes, vote score,
-monospace body, burnt-orange/white chrome, blended with small UX
-refinements from a later interface (qdb.us, circa 2016) — but clicking
-a quote leads into a live discussion thread instead of a dead end.
+look of the classic QDB (circa 2007, as it ran on bash.org) — numbered
+quotes, vote score, monospace body, burnt-orange/white chrome, blended
+with small UX refinements from a later QDB interface (qdb.us, circa
+2016) — but clicking a quote leads into a live discussion thread
+instead of a dead end.
 
 ## Reference Material
 
-- bash.org (2007 Wayback snapshot): base palette/chrome/markup shape —
+- Classic QDB, 2007 Wayback snapshot (the operator's own brand, archived
+  from its bash.org-hosted era): base palette/chrome/markup shape —
   `#ID`, courier-new quote body, burnt-orange/white Arial chrome.
-- qdb.us (2016 Wayback snapshot, the operator's own later build): voting
+- qdb.us, 2016 Wayback snapshot (the operator's own later build): voting
   UX refinements worth borrowing — labeled up/down actions, a
   score-vs-total-votes display, and no-reload voting — adopted as "small
-  modifications" on top of the bash.org base look, not a wholesale
+  modifications" on top of the classic QDB base look, not a wholesale
   second skin.
 
 ## User Stories
 
-- As a former bash.org visitor, I want the quote list to look and read
+- As a former QDB visitor, I want the quote list to look and read
   like the old QDB (colors, fonts, numbering, markup shape) so browsing
   feels genuinely nostalgic.
 - As a visitor, I want to click a quote and land on a real discussion
@@ -42,12 +44,12 @@ a quote leads into a live discussion thread instead of a dead end.
   `FORUM_STATIC_HTML_ROOT` values, following the existing `chouse`
   precedent.
 - Index page renders each thread root as a flat `#ID (score) quote body`
-  entry matching the archived bash.org markup/CSS shape identified in
+  entry matching the archived classic-QDB markup/CSS shape identified in
   Step 1: monospace quote body, burnt-orange/white Arial chrome, no
   subject title, no preview truncation, no labels.
 - Voting/flagging controls borrow qdb.us's refinements — no full-page
-  reload, a visible score — layered on the bash.org-styled list rather
-  than replacing its look.
+  reload, a visible score — layered on the classic-QDB-styled list
+  rather than replacing its look.
 - Clicking a quote's `#ID` link navigates to the existing `/threads/<id>`
   discussion page, unmodified — replies render exactly as they do today.
 - Upvote/downvote reuse the existing per-post reaction/tag system (already
@@ -85,7 +87,7 @@ a quote leads into a live discussion thread instead of a dead end.
 - The new instance is deployable through site-profile + vhost env vars
   alone, with zero changes to zenmemes/chouse rendering behavior.
 - The index page's palette, fonts, and per-entry markup shape match the
-  archived bash.org reference closely enough that a former visitor
+  archived classic-QDB reference closely enough that a former visitor
   recognizes it at a glance, with voting that feels as responsive as
   qdb.us's.
 - Every quote's `#ID` link reaches a fully working discussion thread
