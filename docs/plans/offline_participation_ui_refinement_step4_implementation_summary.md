@@ -39,3 +39,14 @@
   - `php tests/run.php OfflineOutboxStateTest OfflineOutboxIntentTest OfflineSnapshotThreadPresentationTest LocalAppSmokeTest::testOfflineReaderFallbackRouteUsesLocalSnapshotShell` — 7 run, 7 passed.
 - Notes:
   - A missing locally saved identity reports a signing error and does not create an unsigned Like; automatic delivery is Stage 5.
+
+## Stage 5 - Process queued work on foreground reconnect
+- Changes:
+  - Added a foreground queue processor for queued/waiting items, guarded by a browser delivery lock and persisted sending state; drafts are never eligible.
+  - Switched signed reaction delivery to the verified signed-reaction API and retained its authoritative integration time locally.
+  - Started foreground processing on Tools → Outbox load/reconnect and offline-reader reconnect, without Background Sync.
+- Verification:
+  - JavaScript/PHP syntax checks passed.
+  - `php tests/run.php OfflineOutboxSendTest OfflineOutboxIntentTest LocalAppSmokeTest::testOfflineReaderFallbackRouteUsesLocalSnapshotShell` — 4 run, 4 passed.
+- Notes:
+  - A closed browser page does not send work; Background Sync remains deliberately out of scope.

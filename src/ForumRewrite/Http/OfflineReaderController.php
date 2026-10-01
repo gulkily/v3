@@ -28,6 +28,7 @@ final class OfflineReaderController
                 '/assets/outbox_store.js',
                 '/assets/outbox_storage.js',
                 '/assets/outbox_intent.js',
+                '/assets/outbox_sender.js',
                 '/assets/offline_reader.js',
             ],
         );

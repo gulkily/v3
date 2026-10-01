@@ -656,6 +656,13 @@
       });
     }
 
+    window.addEventListener("online", function () {
+      if (!window.forumOutboxSender || typeof window.forumOutboxSender.processQueuedOutbox !== "function") return;
+      window.forumOutboxSender.processQueuedOutbox().then(function (items) {
+        if (items.length) setStatus("Queued Outbox work was processed after reconnecting.", "ok");
+      });
+    });
+
     async function loadSnapshot() {
       setStatus("Loading the local reading snapshot...", "loading");
       try {

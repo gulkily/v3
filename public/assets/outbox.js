@@ -136,6 +136,17 @@
       return window.forumOutboxStorage.list().then(render);
     }
 
+    function processQueued() {
+      if (!window.forumOutboxSender || typeof window.forumOutboxSender.processQueuedOutbox !== "function") return;
+      window.forumOutboxSender.processQueuedOutbox().then(function (items) {
+        if (items.length) reload();
+      }).catch(function () {
+        reload();
+      });
+    }
+
+    window.addEventListener("online", processQueued);
+    processQueued();
     reload().catch(function (error) {
       setStatus(error && error.message ? error.message : "Outbox storage is unavailable on this device.", "error");
     });

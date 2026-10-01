@@ -61,6 +61,28 @@
   }
 
   function sendReaction(item) {
+    if (item.intent && item.intent.canonicalRecord && item.intent.detachedSignature) {
+      return fetch("/api/apply_signed_reaction", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+        body: new URLSearchParams({
+          canonical_record: item.intent.canonicalRecord,
+          detached_signature: item.intent.detachedSignature
+        }).toString()
+      }).then(function (response) {
+        return response.text();
+      }).then(function (text) {
+        if (responseValue(text, "status") !== "ok") throw new Error(responseValue(text, "error") || "Unable to apply this signed reaction.");
+        return {
+          threadId: responseValue(text, "thread_id"),
+          postId: responseValue(text, "post_id"),
+          commitSha: responseValue(text, "commit_sha"),
+          actionAt: responseValue(text, "action_at"),
+          integrationAt: responseValue(text, "integration_at")
+        };
+      });
+    }
     if (!window.ForumBrowserSigning || typeof window.ForumBrowserSigning.ensureActionIdentity !== "function") {
       return Promise.reject(new Error("Signing tools are unavailable. Reload while online and try again."));
     }
@@ -79,7 +101,7 @@
       return response.text();
     }).then(function (text) {
       if (responseValue(text, "status") !== "ok") throw new Error(responseValue(text, "error") || "Unable to apply this reaction.");
-      return { threadId: responseValue(text, "thread_id"), commitSha: responseValue(text, "commit_sha") };
+        return { threadId: responseValue(text, "thread_id"), commitSha: responseValue(text, "commit_sha") };
     });
   }
 
@@ -97,7 +119,8 @@
       sendingItem = sending;
       if (sending.action === "reaction") {
         return sendReaction(sending).then(function (result) {
-          return transitionAndSave(sending, "accepted", outcome("Reaction accepted by the server.", result));
+          var integrated = Object.assign({}, sending, { integrationAt: result.integrationAt || sending.integrationAt || new Date().toISOString() });
+          return transitionAndSave(integrated, "accepted", outcome("Reaction accepted by the server.", result));
         });
       }
 
@@ -137,5 +160,33 @@
     });
   }
 
-  window.forumOutboxSender = { send: send, failureState: failureState };
+  var processingPromise = null;
+
+  function processQueuedOutbox() {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return Promise.resolve([]);
+    if (processingPromise) return processingPromise;
+    var process = function () {
+      return window.forumOutboxStorage.list().then(function (items) {
+        var eligible = items.filter(function (item) {
+          return item.state === "queued" || item.state === "waiting_for_connection";
+        });
+        return eligible.reduce(function (chain, item) {
+          return chain.then(function (results) {
+            return send(item).then(function (result) {
+              results.push(result);
+              return results;
+            });
+          });
+        }, Promise.resolve([]));
+      });
+    };
+    var locks = typeof navigator !== "undefined" && navigator.locks && typeof navigator.locks.request === "function";
+    processingPromise = (locks
+      ? navigator.locks.request("forum-outbox-delivery", { ifAvailable: true }, function (lock) { return lock ? process() : []; })
+      : process()
+    ).finally(function () { processingPromise = null; });
+    return processingPromise;
+  }
+
+  window.forumOutboxSender = { send: send, failureState: failureState, processQueuedOutbox: processQueuedOutbox };
 })();
