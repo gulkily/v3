@@ -47,6 +47,13 @@
     return item;
   }
 
+  function createIntentId(action) {
+    var suffix = window.crypto && typeof window.crypto.randomUUID === "function"
+      ? window.crypto.randomUUID()
+      : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+    return "outbox-" + action + "-" + suffix;
+  }
+
   function canTransition(item, nextState) {
     requireItem(item);
     return transitions[item.state].indexOf(nextState) !== -1;
@@ -87,6 +94,7 @@
   window.forumOutbox = {
     actionTypes: actionTypes.slice(),
     states: states.slice(),
+    createIntentId: createIntentId,
     createItem: createItem,
     canTransition: canTransition,
     transition: transition,

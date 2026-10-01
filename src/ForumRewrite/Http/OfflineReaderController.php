@@ -21,7 +21,7 @@ final class OfflineReaderController
             ],
             'Offline Reading',
             'board',
-            ['/assets/sql-wasm.js', '/assets/offline_reader.js'],
+            ['/assets/sql-wasm.js', '/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/offline_reader.js'],
         );
     }
 

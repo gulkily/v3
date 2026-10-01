@@ -30,3 +30,13 @@
   - `php tests/run.php OfflineNavigationWorkerTest LocalAppSmokeTest::testOutboxRouteIsAvailableFromToolsWithLocalStorageAssets` — 4 run, 4 passed.
 - Notes:
   - Stage 3 only observes stored items; action capture and send controls arrive in later stages.
+
+## Stage 4 - Prove queueing with supported votes
+- Changes:
+  - Added Queue Like to saved thread reading, creating a local queued thread-like intent without changing the snapshot score or claiming server acceptance.
+  - Added stable local intent IDs and loaded the Outbox contract/storage with the offline reader.
+- Verification:
+  - JavaScript/PHP syntax checks passed.
+  - `php tests/run.php OfflineOutboxStateTest OfflineSnapshotPresentationTest LocalAppSmokeTest::testOfflineReaderFallbackRouteUsesLocalSnapshotShell` — 10 run, 10 passed.
+- Notes:
+  - Only Like is queueable in this stage; sending and server reconciliation are intentionally deferred to Stage 7.

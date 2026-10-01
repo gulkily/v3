@@ -8,16 +8,19 @@ final class OfflineOutboxStateTest
     private function runStateScript(string $script): array
     {
         $command = sprintf(
-            'node -e %s %s',
+            'node -e %s %s %s',
             escapeshellarg(<<<'NODE'
 const fs = require('fs');
 const vm = require('vm');
 const source = fs.readFileSync(process.argv[1], 'utf8');
 global.window = {};
+global.document = { addEventListener() {} };
 vm.runInThisContext(source);
+vm.runInThisContext(fs.readFileSync(process.argv[2], 'utf8'));
 NODE
                 . "\n" . $script),
             escapeshellarg(__DIR__ . '/../public/assets/outbox_store.js'),
+            escapeshellarg(__DIR__ . '/../public/assets/offline_reader.js'),
         );
         exec($command . ' 2>&1', $output, $exitCode);
         if ($exitCode !== 0) {
@@ -44,7 +47,8 @@ process.stdout.write(JSON.stringify({
   accepted: accepted.state,
   invalid,
   pending: api.pendingCount([draft, queued, accepted]),
-  summary: api.safeSummary(draft)
+  summary: api.safeSummary(draft),
+  intentId: api.createIntentId('reaction')
 }));
 NODE);
 
@@ -55,6 +59,7 @@ NODE);
         assertSame(2, $result['pending']);
         assertSame('Reply to Example', $result['summary']['summary']);
         assertFalse(array_key_exists('payload', $result['summary']));
+        assertStringContains('outbox-reaction-', $result['intentId']);
     }
 
     public function testInvalidActionAndStateAreRejected(): void
@@ -77,5 +82,24 @@ NODE);
             'Outbox item state is unsupported.',
             'Outbox items require a stable id.',
         ], $result['errors']);
+    }
+
+    public function testQueueThreadLikeStoresOnlyLocalReactionIntent(): void
+    {
+        $result = $this->runStateScript(<<<'NODE'
+window.crypto = { randomUUID() { return 'intent-uuid'; } };
+let saved = null;
+window.forumOutboxStorage = { save(item) { saved = item; return Promise.resolve(); } };
+window.forumOfflineSnapshot.queueThreadLike('thread-1', 'Example thread').then((item) => {
+  process.stdout.write(JSON.stringify({ item, saved }));
+});
+NODE);
+
+        assertSame('outbox-reaction-intent-uuid', $result['item']['id']);
+        assertSame('reaction', $result['item']['action']);
+        assertSame('queued', $result['item']['state']);
+        assertSame(['kind' => 'thread', 'id' => 'thread-1'], $result['item']['target']);
+        assertSame(['kind' => 'thread_tag', 'threadId' => 'thread-1', 'tag' => 'like'], $result['item']['payload']);
+        assertSame($result['item'], $result['saved']);
     }
 }
