@@ -31,8 +31,11 @@ moderation concept this app doesn't have — skipped per your call).
   with distinctive scores (2000 and 100): `abs(1337-2000)=663 <
   abs(1337-100)=1237`, confirmed the score-2000 thread ranked first in
   both `/leetness` and `/?leetness`. Scores reset afterward._
-- [ ] **Add Quote** — `/add`, `/?add` → same as `/compose/thread`, rendered
+- [x] **Add Quote** — `/add`, `/?add` → same as `/compose/thread`, rendered
   directly.
+  _Done: calls `composeAndAccountKeyController()->composeThread($query)`
+  directly, same as the real `/compose/thread` route. Verified both forms
+  render the compose form._
 - [ ] **Random** — `/random`, `/?random` → picks a random thread from this
   instance's quote list and redirects (302) to `/threads/<id>`.
 - [ ] **Search** — `/search`, `/?search` → new feature, not just a route.

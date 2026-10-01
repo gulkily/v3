@@ -329,7 +329,7 @@ final class Application
             return;
         }
 
-        if (SiteConfig::siteName() === 'qdb' && ($path === '/' || $path === '' || $path === '/latest' || $path === '/top' || $path === '/leetness')) {
+        if (SiteConfig::siteName() === 'qdb' && ($path === '/' || $path === '' || $path === '/latest' || $path === '/top' || $path === '/leetness' || $path === '/add')) {
             if ($path === '/latest' || array_key_exists('latest', $query)) {
                 $this->sendHtml($this->boardPageController()->board('all', 'newest'), 200);
                 return;
@@ -342,6 +342,11 @@ final class Application
 
             if ($path === '/leetness' || array_key_exists('leetness', $query)) {
                 $this->sendHtml($this->boardPageController()->board('all', 'leetness'), 200);
+                return;
+            }
+
+            if ($path === '/add' || array_key_exists('add', $query)) {
+                $this->sendHtml($this->composeAndAccountKeyController()->composeThread($query), 200);
                 return;
             }
         }
