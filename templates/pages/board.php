@@ -38,10 +38,20 @@
       </div>
     </details>
   </article>
+<?php $isBashorgInstance ??= false; ?>
 <?php foreach ($threads as $thread): ?>
+<?php if ($isBashorgInstance): ?>
+<?= $indent($partial('partials/quote_card.php', [
+    'thread' => $thread,
+    'viewerUpvotedThreadIds' => $viewerUpvotedThreadIds ?? [],
+    'viewerDownvotedThreadIds' => $viewerDownvotedThreadIds ?? [],
+    'viewerFlaggedPostIds' => $viewerFlaggedPostIds ?? [],
+]), 1) ?>
+<?php else: ?>
 <?= $indent($partial('partials/thread_card.php', [
     'thread' => $thread,
     'showPinnedMarker' => true,
 ]), 1) ?>
+<?php endif; ?>
 <?php endforeach; ?>
 </section>

@@ -746,7 +746,11 @@ final class Application
 
     private function boardPageController(): BoardPageController
     {
-        return new BoardPageController($this->routeServices());
+        return new BoardPageController(
+            $this->routeServices(),
+            $this->repositoryRoot,
+            $this->resolveViewerProfileFromIdentityHint(...),
+        );
     }
 
     private function forteBoardController(): ForteBoardController

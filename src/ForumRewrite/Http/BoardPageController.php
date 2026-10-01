@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use ForumRewrite\ReadModel\ThreadRepository;
+use ForumRewrite\ReadModel\ViewerTagLookup;
+use ForumRewrite\SiteConfig;
 use ForumRewrite\Support\ThreadTitle;
 
 /**
@@ -21,8 +23,13 @@ use ForumRewrite\Support\ThreadTitle;
  */
 final class BoardPageController
 {
+    /**
+     * @param \Closure(): (array<string, mixed>|null) $resolveViewerProfileFromIdentityHint
+     */
     public function __construct(
         private readonly RouteServices $routeServices,
+        private readonly string $repositoryRoot,
+        private readonly \Closure $resolveViewerProfileFromIdentityHint,
     ) {
     }
 
@@ -32,17 +39,38 @@ final class BoardPageController
         $sort = BoardViewOptions::normalizeSort($sort);
         $viewOptions = BoardViewOptions::viewOptions($view, $sort);
         $sortOptions = BoardViewOptions::sortOptions($view, $sort);
+        $threads = $this->fetchBoardThreads($view, $sort);
+        $isBashorgInstance = SiteConfig::siteName() === 'bashorg';
+        $viewerUpvotedThreadIds = [];
+        $viewerDownvotedThreadIds = [];
+        $viewerFlaggedPostIds = [];
+
+        if ($isBashorgInstance) {
+            $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
+            $viewerIdentityId = $viewerProfile !== null ? (string) $viewerProfile['identity_id'] : '';
+            $rootPostIds = array_column($threads, 'root_post_id');
+
+            if ($viewerProfile !== null) {
+                $viewerUpvotedThreadIds = ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'upvote', $viewerIdentityId);
+                $viewerDownvotedThreadIds = ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'downvote', $viewerIdentityId);
+                $viewerFlaggedPostIds = ViewerTagLookup::postTags($this->repositoryRoot, $rootPostIds, 'flag', $viewerIdentityId);
+            }
+        }
 
         return $this->routeServices->renderPageTemplate(
             'board.php',
             [
-                'threads' => $this->fetchBoardThreads($view, $sort),
+                'threads' => $threads,
                 'view' => $view,
                 'sort' => $sort,
                 'viewOptions' => $viewOptions,
                 'sortOptions' => $sortOptions,
                 'viewLabel' => BoardViewOptions::activeLabel($viewOptions, $view),
                 'sortLabel' => BoardViewOptions::activeLabel($sortOptions, $sort),
+                'isBashorgInstance' => $isBashorgInstance,
+                'viewerUpvotedThreadIds' => $viewerUpvotedThreadIds,
+                'viewerDownvotedThreadIds' => $viewerDownvotedThreadIds,
+                'viewerFlaggedPostIds' => $viewerFlaggedPostIds,
             ],
             'Board',
             'board',
