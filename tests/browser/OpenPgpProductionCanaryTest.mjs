@@ -10,6 +10,16 @@ test("canary requires an explicit production-write confirmation", () => {
   );
 });
 
+test("canary uses chromium found on PATH when no browser path is supplied", () => {
+  const options = parseOptions(
+    ["--confirm-production-write"],
+    {},
+    () => "/usr/bin/chromium",
+  );
+
+  assert.equal(options.browserExecutable, "/usr/bin/chromium");
+});
+
 test("canary reports a successful first identity, post, reload, and reuse workflow", async () => {
   const page = new FakePage({ repeatPrompt: false });
   const report = await runCanary(

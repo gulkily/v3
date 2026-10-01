@@ -75,8 +75,10 @@ npm install
 ```
 
 This is deliberately not a CI or deployment command. After the read-only
-smoke passes, manually run the canary from a machine with Node 18+ and a local
-Chromium executable. It opens an isolated **HTTP** browser profile, creates a
+smoke passes, manually run the canary from a machine with Node 18+ and local
+Chromium. It uses `which chromium` automatically; pass
+`--browser-executable=/path/to/chromium` only when that lookup is unsuitable.
+It opens an isolated **HTTP** browser profile, creates a
 new release-check identity, publishes “New release just dropped, making sure it
 works,” reloads the post, and exercises the existing browser identity path to
 confirm no second username prompt appears. It leaves the identity and post in

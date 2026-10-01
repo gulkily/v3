@@ -1,15 +1,16 @@
 import process from "node:process";
+import { execFileSync } from "node:child_process";
 
 const DEFAULT_ORIGIN = "http://zenmemes.com";
 const DEFAULT_SUBJECT = "New release just dropped, making sure it works";
 const DEFAULT_BODY = "New release just dropped, making sure it works.";
 const DEFAULT_TIMEOUT_MS = 90_000;
 
-export function parseOptions(argumentsList) {
+export function parseOptions(argumentsList, environment = process.env, findExecutable = findChromiumExecutable) {
   const options = {
     confirmProductionWrite: false,
     origin: DEFAULT_ORIGIN,
-    browserExecutable: process.env.OPENPGP_SMOKE_BROWSER_EXECUTABLE || "",
+    browserExecutable: environment.OPENPGP_SMOKE_BROWSER_EXECUTABLE || findExecutable(),
     headed: false,
     help: false,
   };
@@ -35,10 +36,18 @@ export function parseOptions(argumentsList) {
     throw new Error("Refusing to create a production identity and post without --confirm-production-write.");
   }
   if (!options.help && options.browserExecutable === "") {
-    throw new Error("A Chromium executable is required. Supply --browser-executable=/path/to/chromium or OPENPGP_SMOKE_BROWSER_EXECUTABLE.");
+    throw new Error("Chromium was not found with 'which chromium'. Supply --browser-executable=/path/to/chromium or OPENPGP_SMOKE_BROWSER_EXECUTABLE.");
   }
 
   return options;
+}
+
+export function findChromiumExecutable() {
+  try {
+    return execFileSync("which", ["chromium"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  } catch {
+    return "";
+  }
 }
 
 export function normalizeHttpOrigin(value) {
@@ -200,6 +209,7 @@ function describeDialog(dialog) {
 export function printUsage(stream = process.stdout) {
   stream.write("Usage: ./v3 openpgp canary --confirm-production-write [--origin=http://zenmemes.com] [--browser-executable=/path/to/chromium] [--headed]\n\n");
   stream.write("Creates one durable browser identity and the visible post ‘New release just dropped, making sure it works’.\n");
+  stream.write("When no browser path is supplied, it uses the result of 'which chromium'.\n");
   stream.write("Run manually and only after ./v3 openpgp smoke passes. Do not rerun after an ambiguous result: inspect the reported post URL first.\n");
 }
 
