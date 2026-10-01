@@ -2,6 +2,7 @@ import process from "node:process";
 import { execFileSync } from "node:child_process";
 
 const DEFAULT_ORIGIN = "http://zenmemes.com";
+const RELEASE_USERNAME = "release-check";
 const DEFAULT_SUBJECT = "New release just dropped, making sure it works";
 const DEFAULT_BODY = "New release just dropped, making sure it works.";
 const DEFAULT_TIMEOUT_MS = 90_000;
@@ -64,17 +65,16 @@ export function normalizeHttpOrigin(value) {
   return parsed.origin;
 }
 
-export function releaseUsername(now = new Date()) {
-  const compact = now.toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
-  return `release-check-${compact}`;
+export function releaseUsername() {
+  return RELEASE_USERNAME;
 }
 
 /**
  * Runs the durable, manually authorized production canary. `launchBrowser`
  * is injected so the workflow can be tested without reaching a live domain.
  */
-export async function runCanary(options, launchBrowser, now = new Date()) {
-  const username = releaseUsername(now);
+export async function runCanary(options, launchBrowser, onProgress = () => {}) {
+  const username = releaseUsername();
   const report = {
     passed: false,
     phase: "launching browser",
@@ -91,8 +91,13 @@ export async function runCanary(options, launchBrowser, now = new Date()) {
   };
   let browser;
   let context;
+  const setPhase = (phase) => {
+    report.phase = phase;
+    onProgress(phase);
+  };
 
   try {
+    setPhase("launching isolated browser");
     browser = await launchBrowser({
       headless: !options.headed,
       executablePath: options.browserExecutable,
@@ -145,13 +150,14 @@ export async function runCanary(options, launchBrowser, now = new Date()) {
       }
     });
 
-    report.phase = "opening HTTP compose page";
+    setPhase("opening HTTP compose page");
     await page.goto(`${options.origin}/compose/thread`, { waitUntil: "domcontentloaded", timeout: DEFAULT_TIMEOUT_MS });
+    setPhase("filling release post");
     await page.locator('input[name="board_tags"]').fill("general");
     await page.locator('input[name="subject"]').fill(DEFAULT_SUBJECT);
     await page.locator('textarea[name="body"]').fill(DEFAULT_BODY);
 
-    report.phase = "creating identity and publishing release post";
+    setPhase("creating identity and publishing release post");
     await page.locator('form[data-compose-kind="thread"] button[type="submit"]:not([data-action="submit-anonymous-compose"])').click();
     await page.waitForURL(/\/threads\//, { timeout: DEFAULT_TIMEOUT_MS });
     report.postUrl = page.url();
@@ -162,14 +168,14 @@ export async function runCanary(options, launchBrowser, now = new Date()) {
       throw new Error(`Expected exactly one username prompt while creating the identity; observed ${report.promptCount}.`);
     }
 
-    report.phase = "reloading published post";
+    setPhase("reloading published post");
     await page.reload({ waitUntil: "domcontentloaded", timeout: DEFAULT_TIMEOUT_MS });
     const postText = await page.locator("body").innerText();
     if (!postText.includes(DEFAULT_SUBJECT)) {
       throw new Error("Reloaded post does not contain the release-canary subject.");
     }
 
-    report.phase = "verifying identity reuse without another prompt";
+    setPhase("verifying identity reuse without another prompt");
     await page.goto(`${options.origin}/compose/thread`, { waitUntil: "domcontentloaded", timeout: DEFAULT_TIMEOUT_MS });
     await page.locator('textarea[name="body"]').focus();
     await page.waitForFunction(
@@ -196,7 +202,7 @@ export async function runCanary(options, launchBrowser, now = new Date()) {
     }
 
     report.passed = true;
-    report.phase = "complete";
+    setPhase("complete");
     return report;
   } catch (error) {
     report.failure = error instanceof Error ? error.message : String(error);
@@ -265,7 +271,11 @@ async function main() {
       return 0;
     }
     const { chromium } = await import("playwright-core");
-    const report = await runCanary(options, (launchOptions) => chromium.launch(launchOptions));
+    const report = await runCanary(
+      options,
+      (launchOptions) => chromium.launch(launchOptions),
+      (phase) => process.stdout.write(`[OpenPGP canary] ${phase}...\n`),
+    );
     process.stdout.write(`${formatReport(report)}\n`);
     return report.passed ? 0 : 2;
   } catch (error) {

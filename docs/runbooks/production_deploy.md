@@ -182,6 +182,9 @@ from CI, cron, browser page loads, and automatic deployment hooks.
    “New release just dropped, making sure it works,” reloads it, and verifies
    that the same identity is ready without a second username prompt.
 
+   The username is consistently `release-check`; each run still generates a
+   fresh browser-held keypair because it uses an isolated browser profile.
+
    The identity and post are intentional durable community records. If the
    command reports an ambiguous failure after posting, do **not** rerun it:
    inspect its reported post URL and browser output first. HTTP and HTTPS have

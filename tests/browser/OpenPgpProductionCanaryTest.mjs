@@ -39,17 +39,28 @@ test("canary classifies the missing new-identity profile lookup as expected", ()
 
 test("canary reports a successful first identity, post, reload, and reuse workflow", async () => {
   const page = new FakePage({ repeatPrompt: false });
+  const progress = [];
   const report = await runCanary(
     parseOptions(["--confirm-production-write", "--browser-executable=/tmp/chromium"]),
     async () => new FakeBrowser(page),
-    new Date("2026-10-01T12:34:56Z"),
+    (phase) => progress.push(phase),
   );
 
   assert.equal(report.passed, true);
+  assert.equal(report.username, "release-check");
   assert.equal(report.promptCount, 1);
   assert.equal(report.phase, "complete");
   assert.equal(report.postUrl, "http://zenmemes.com/threads/release-canary");
   assert.equal(page.closed, true);
+  assert.deepEqual(progress, [
+    "launching isolated browser",
+    "opening HTTP compose page",
+    "filling release post",
+    "creating identity and publishing release post",
+    "reloading published post",
+    "verifying identity reuse without another prompt",
+    "complete",
+  ]);
 });
 
 test("canary returns structured failure when reuse prompts for a username again", async () => {
@@ -57,7 +68,6 @@ test("canary returns structured failure when reuse prompts for a username again"
   const report = await runCanary(
     parseOptions(["--confirm-production-write", "--browser-executable=/tmp/chromium"]),
     async () => new FakeBrowser(page),
-    new Date("2026-10-01T12:34:56Z"),
   );
 
   assert.equal(report.passed, false);
@@ -131,7 +141,7 @@ class FakePage {
       await this.emitUsernamePrompt();
     }
     return {
-      username: "release-check-20261001123456",
+      username: "release-check",
       publicKey: "public",
       privateKey: "private",
       fingerprint: "fingerprint",
