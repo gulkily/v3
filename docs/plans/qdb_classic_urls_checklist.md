@@ -75,3 +75,17 @@ moderation concept this app doesn't have — skipped per your call).
 All items checked. Everything here is additive and scoped to
 `SiteConfig::siteName() === 'qdb'` — no routing/behavior change for
 zenmemes/chouse anywhere in this checklist.
+
+## Post-checklist follow-up
+
+- **Nav links:** this checklist made the classic routes *work*, but nothing
+  pointed at them — the top nav still showed the generic Board/About/Users/
+  Tools/Account for the qdb profile too. Replaced it (qdb profile only)
+  with Latest/Top/Random/Add Quote/Search/Account in
+  `TemplateRenderer::navItems()`.
+- **Bug found while verifying:** Latest, Top, and Random all shared the
+  same `board` nav section, so all three lit up `is-active` together on
+  any board-rendered page. Fixed by giving `BoardPageController::board()`
+  an explicit `$activeSection` parameter and distinct section values per
+  nav item, so exactly one highlights at a time. Verified on `/latest`,
+  `/top`, `/add`, `/search`.
