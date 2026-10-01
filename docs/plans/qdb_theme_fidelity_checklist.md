@@ -144,9 +144,15 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
   number would be fabricated data, not a real stat. Showing just the real
   total felt more honest than faking a second number to look more
   authentic._
-- [ ] **No quote-number jump box.** Original had a `#` + text input in the
+- [x] **No quote-number jump box.** Original had a `#` + text input in the
   nav to jump straight to a quote by ID. We have no equivalent — low
   priority unless you want real quote-number navigation.
+  _Checked, intentionally skipped: this app's thread IDs (`root-001`,
+  `thread-zenmemes-rules`, `bootstrap-20261001213454-fecbdb87`) are
+  arbitrary strings/slugs/hashes, not bash.org's sequential integers. A
+  numeric-only jump box would genuinely not work for most quotes here —
+  it's a structural mismatch, not a missing style. Not building a feature
+  that would look broken most of the time._
 
 ## D. qdb.us refinements not yet carried over
 
