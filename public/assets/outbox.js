@@ -29,10 +29,10 @@
     var id = String(target.id || "");
     if (!id) return null;
     if (target.kind === "thread") {
-      return { href: "/threads/" + encodeURIComponent(id), text: "View target thread" };
+      return { href: "/threads/" + encodeURIComponent(id) };
     }
     if (target.kind === "post") {
-      return { href: "/posts/" + encodeURIComponent(id), text: "View target post" };
+      return { href: "/posts/" + encodeURIComponent(id) };
     }
     return null;
   }
@@ -61,7 +61,16 @@
         var card = document.createElement("details");
         card.className = "card outbox-item";
         var heading = document.createElement("summary");
-        heading.textContent = summary.action + " — " + displayState(summary.state) + " · " + (summary.summary || "Local action");
+        heading.textContent = summary.action + " — " + displayState(summary.state) + " · ";
+        var target = targetLink(item);
+        if (target) {
+          var titleAnchor = document.createElement("a");
+          titleAnchor.href = target.href;
+          titleAnchor.textContent = summary.summary || "Local action";
+          heading.appendChild(titleAnchor);
+        } else {
+          heading.textContent += summary.summary || "Local action";
+        }
         var detailRoot = document.createElement("div");
         detailRoot.className = "outbox-item-detail";
         var detail = document.createElement("p");
@@ -89,15 +98,6 @@
         detailRoot.appendChild(actionTime);
         detailRoot.appendChild(integrationTime);
         detailRoot.appendChild(explanation);
-        var target = targetLink(item);
-        if (target) {
-          var targetLine = document.createElement("p");
-          var targetAnchor = document.createElement("a");
-          targetAnchor.href = target.href;
-          targetAnchor.textContent = target.text;
-          targetLine.appendChild(targetAnchor);
-          detailRoot.appendChild(targetLine);
-        }
         if (summary.outcome && summary.outcome.message) {
           var outcome = document.createElement("p");
           outcome.className = "meta";

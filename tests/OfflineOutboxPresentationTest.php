@@ -12,6 +12,8 @@ const source = fs.readFileSync(process.argv[1], 'utf8');
 process.stdout.write(JSON.stringify({
   details: source.includes('document.createElement("details")'),
   summary: source.includes('document.createElement("summary")'),
+  summaryTitleLink: source.includes('heading.appendChild(titleAnchor)'),
+  separateTargetLink: source.includes('View target thread'),
   actionTime: source.includes('Action time (signed)'),
   integrationTime: source.includes('Integration time '),
   privatePayload: !source.includes('item.payload')
@@ -24,7 +26,7 @@ NODE;
         }
         $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
 
-        assertSame(['details' => true, 'summary' => true, 'actionTime' => true, 'integrationTime' => true, 'privatePayload' => true], $result);
+        assertSame(['details' => true, 'summary' => true, 'summaryTitleLink' => true, 'separateTargetLink' => false, 'actionTime' => true, 'integrationTime' => true, 'privatePayload' => true], $result);
     }
 
     public function testOutboxLinksEligibleOriginalTargetsWithoutLinkingIncompleteTargets(): void
@@ -54,8 +56,8 @@ NODE;
         $links = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
 
         assertSame([
-            ['href' => '/threads/thread%20id', 'text' => 'View target thread'],
-            ['href' => '/posts/post%20id', 'text' => 'View target post'],
+            ['href' => '/threads/thread%20id'],
+            ['href' => '/posts/post%20id'],
             null,
             null,
         ], $links);
