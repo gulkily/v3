@@ -29,3 +29,13 @@
   - `php tests/run.php OfflineSnapshotPresentationTest OfflineSnapshotThreadPresentationTest` — 7 run, 7 passed.
 - Notes:
   - Like controls are deliberately added in Stage 4, after the signed-action contract is available.
+
+## Stage 4 - Queue signed Likes from roots and comments
+- Changes:
+  - Loaded browser signing and the signed-intent contract into the offline reader shell.
+  - Replaced the offline-only Queue Like control with online-style Like controls for both saved roots and comments; successful click-time signing queues a local intent and changes only the local button state.
+- Verification:
+  - JavaScript/PHP syntax checks passed.
+  - `php tests/run.php OfflineOutboxStateTest OfflineOutboxIntentTest OfflineSnapshotThreadPresentationTest LocalAppSmokeTest::testOfflineReaderFallbackRouteUsesLocalSnapshotShell` — 7 run, 7 passed.
+- Notes:
+  - A missing locally saved identity reports a signing error and does not create an unsigned Like; automatic delivery is Stage 5.

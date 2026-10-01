@@ -84,13 +84,16 @@ NODE);
         ], $result['errors']);
     }
 
-    public function testQueueThreadLikeStoresOnlyLocalReactionIntent(): void
+    public function testQueueSignedThreadLikeStoresOnlyLocalReactionIntent(): void
     {
         $result = $this->runStateScript(<<<'NODE'
 window.crypto = { randomUUID() { return 'intent-uuid'; } };
 let saved = null;
 window.forumOutboxStorage = { save(item) { saved = item; return Promise.resolve(); } };
-window.forumOfflineSnapshot.queueThreadLike('thread-1', 'Example thread').then((item) => {
+window.forumOutboxIntent = { createSignedIntent(input) { return Promise.resolve(window.forumOutbox.createItem(Object.assign({ id: window.forumOutbox.createIntentId('reaction') }, input))); } };
+window.forumOfflineSnapshot.queueSignedReaction(
+  { kind: 'thread', id: 'thread-1' }, 'Like Example thread', { kind: 'thread_tag', threadId: 'thread-1', tag: 'like' }
+).then((item) => {
   process.stdout.write(JSON.stringify({ item, saved }));
 });
 NODE);

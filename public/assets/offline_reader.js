@@ -22,19 +22,19 @@
       var match = String(revision || "").match(/offline_reader\.([a-f0-9]{12})\.js$/);
       return match ? "reader " + match[1] : "reader unknown";
     },
-    queueThreadLike: function (threadId, title) {
-      if (!window.forumOutbox || !window.forumOutboxStorage) {
+    queueSignedReaction: function (target, summary, payload) {
+      if (!window.forumOutboxIntent || !window.forumOutboxStorage) {
         return Promise.reject(new Error("Outbox storage is unavailable on this device."));
       }
-      var item = window.forumOutbox.createItem({
-        id: window.forumOutbox.createIntentId("reaction"),
+      return window.forumOutboxIntent.createSignedIntent({
         action: "reaction",
         state: "queued",
-        target: { kind: "thread", id: threadId },
-        summary: "Like " + title,
-        payload: { kind: "thread_tag", threadId: threadId, tag: "like" }
+        target: target,
+        summary: summary,
+        payload: payload
+      }).then(function (item) {
+        return window.forumOutboxStorage.save(item).then(function () { return item; });
       });
-      return window.forumOutboxStorage.save(item).then(function () { return item; });
     },
     normalThreadUrl: function (threadId) {
       return "/threads/" + encodeURIComponent(threadId);
@@ -450,20 +450,31 @@
         permalink.setAttribute("aria-label", permalink.title);
         permalink.textContent = "#";
         post.appendChild(permalink);
-        if (index === 0 && options.onQueueReaction) {
-          var actions = document.createElement("p");
+        if (options.onQueueReaction) {
+          var actions = document.createElement("div");
+          actions.className = "button-row button-row-natural post-card-actions" + (index === 0 ? " thread-root-actions" : "");
           var queueLike = document.createElement("button");
           queueLike.type = "button";
           queueLike.className = "thread-reaction-button";
-          queueLike.textContent = "Queue Like";
-          queueLike.addEventListener("click", function () {
-            queueLike.disabled = true;
-            options.onQueueReaction(options.threadId, snapshotPresentation.threadTitle(row[2], row[3])).then(function () {
-              queueLike.textContent = "Like queued";
-            }).catch(function () {
-              queueLike.disabled = false;
-            });
-          });
+          queueLike.setAttribute("data-action", "queue-offline-like");
+          queueLike.setAttribute("data-tag", "like");
+          queueLike.setAttribute("data-applied-label", "Liked");
+          queueLike.setAttribute("aria-pressed", "false");
+          queueLike.textContent = "Like";
+          queueLike.addEventListener("click", (function (postId, isRoot, title, button) {
+            return function () {
+              button.disabled = true;
+              options.onQueueReaction({ kind: isRoot ? "thread" : "post", id: postId }, "Like " + title, isRoot
+                ? { kind: "thread_tag", threadId: postId, tag: "like" }
+                : { kind: "post_tag", postId: postId, tag: "like" }
+              ).then(function () {
+                button.textContent = "Liked";
+                button.setAttribute("aria-pressed", "true");
+              }).catch(function () {
+                button.disabled = false;
+              });
+            };
+          })(String(row[0] || ""), index === 0, index === 0 ? snapshotPresentation.threadTitle(row[2], row[3]) : "comment", queueLike));
           actions.appendChild(queueLike);
           post.appendChild(actions);
         }
@@ -633,8 +644,8 @@
           content.appendChild(unavailable);
         },
         setStatus: setStatus,
-        onQueueReaction: function (threadId, title) {
-          return snapshotPresentation.queueThreadLike(threadId, title).then(function () {
+        onQueueReaction: function (target, summary, payload) {
+          return snapshotPresentation.queueSignedReaction(target, summary, payload).then(function () {
             setStatus("Like queued. Open Tools → Outbox to review it.", "ok");
           }).catch(function (error) {
             setStatus(error && error.message ? error.message : "Unable to queue Like.", "error");

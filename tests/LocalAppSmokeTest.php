@@ -2692,6 +2692,7 @@ PHP;
         assertStringMatches('#data-runtime-url="/assets/sql-wasm\.[a-f0-9]{12}\.wasm"#', $reader);
         assertFingerprintedAsset($reader, 'outbox_store.js');
         assertFingerprintedAsset($reader, 'outbox_storage.js');
+        assertFingerprintedAsset($reader, 'outbox_intent.js');
         assertStringContains('/assets/offline_reader.', $reader);
         assertStringContains('/assets/thread-list.', $reader);
         assertStringContains('/assets/tags.', $reader);
