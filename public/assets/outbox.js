@@ -49,11 +49,61 @@
           outcome.textContent = summary.outcome.message;
           card.appendChild(outcome);
         }
+        var actions = document.createElement("p");
+        actions.className = "compose-form-actions";
+        function addAction(label, handler) {
+          var button = document.createElement("button");
+          button.type = "button";
+          button.textContent = label;
+          button.addEventListener("click", function () {
+            button.disabled = true;
+            handler().then(reload).catch(function (error) {
+              button.disabled = false;
+              setStatus(error && error.message ? error.message : "Unable to update this Outbox item.", "error");
+            });
+          });
+          actions.appendChild(button);
+        }
+        function saveTransition(nextState) {
+          return window.forumOutboxStorage.save(window.forumOutbox.transition(item, nextState));
+        }
+        if (item.state === "draft") {
+          addAction("Queue", function () { return saveTransition("queued"); });
+        }
+        if (item.state === "rejected" || item.state === "conflicted" || item.state === "needs_attention") {
+          addAction("Retry", function () {
+            var retryState = item.state === "rejected" || item.state === "conflicted" ? "draft" : "queued";
+            return window.forumOutboxStorage.save(window.forumOutbox.transition(item, retryState)).then(function (retryItem) {
+              return retryItem.state === "queued"
+                ? window.forumOutboxSender.send(retryItem)
+                : window.forumOutboxStorage.save(window.forumOutbox.transition(retryItem, "queued")).then(function (queued) {
+                  return window.forumOutboxSender.send(queued);
+                });
+            });
+          });
+        }
+        if (item.state === "queued" || item.state === "waiting_for_connection") {
+          addAction(item.state === "waiting_for_connection" ? "Retry send" : "Send", function () {
+            if (!window.forumOutboxSender) return Promise.reject(new Error("Outbox sending is unavailable. Reload while online and try again."));
+            return window.forumOutboxSender.send(item);
+          });
+        }
+        if (item.state !== "sending" && item.state !== "accepted" && item.state !== "cancelled") {
+          addAction("Discard", function () { return window.forumOutboxStorage.remove(item.id); });
+        }
+        if (item.state === "accepted" || item.state === "cancelled") {
+          addAction("Remove", function () { return window.forumOutboxStorage.remove(item.id); });
+        }
+        card.appendChild(actions);
         itemsRoot.appendChild(card);
       });
     }
 
-    window.forumOutboxStorage.list().then(render).catch(function (error) {
+    function reload() {
+      return window.forumOutboxStorage.list().then(render);
+    }
+
+    reload().catch(function (error) {
       setStatus(error && error.message ? error.message : "Outbox storage is unavailable on this device.", "error");
     });
   });

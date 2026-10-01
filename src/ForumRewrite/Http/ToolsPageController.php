@@ -129,7 +129,14 @@ final class ToolsPageController
             ['toolNavOptions' => ToolsPageSupport::navOptions('outbox')],
             'Outbox',
             'tools',
-            ['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox.js'],
+            [
+                '/assets/openpgp_loader.js',
+                '/assets/browser_signing.js',
+                '/assets/outbox_store.js',
+                '/assets/outbox_storage.js',
+                '/assets/outbox_sender.js',
+                '/assets/outbox.js',
+            ],
         );
     }
 

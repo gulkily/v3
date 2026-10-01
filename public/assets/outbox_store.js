@@ -41,6 +41,7 @@
       target: input && input.target || {},
       summary: input && input.summary || "",
       payload: input && input.payload || {},
+      delivery: input && input.delivery || null,
       outcome: input && input.outcome || null
     };
     requireItem(item);

@@ -60,3 +60,15 @@
   - `php tests/run.php OfflineOutboxComposeTest OfflineOutboxStateTest` — 5 run, 5 passed.
 - Notes:
   - This is available from an already-open compose page; explicit sending, retry, and reconciliation remain Stage 7 work.
+
+## Stage 7 - Explicit send and reconciliation
+- Changes:
+  - Added Outbox queue, send/retry, discard, and remove controls. Sending is always initiated from Tools → Outbox; reconnecting alone cannot submit content.
+  - Reused the existing browser identity, prepare, detached-signature, and finalize APIs for reply and thread delivery; queued Likes use the existing reaction API.
+  - Retained prepared post metadata privately in the local item while delivery is uncertain. A retry finalizes that same prepared post, and a missing prepared record is checked by post ID before accepting an interrupted response, avoiding a duplicate post.
+  - Added accepted, rejected, conflicted, waiting-for-connection, and needs-attention outcomes with the server/local error available in the Outbox.
+- Verification:
+  - JavaScript and PHP syntax checks passed.
+  - `php tests/run.php OfflineOutboxSendTest OfflineOutboxStateTest OfflineOutboxComposeTest LocalAppSmokeTest::testOutboxRouteIsAvailableFromToolsWithLocalStorageAssets` — 7 run, 7 passed.
+- Notes:
+  - Delivery remains user-triggered; Background Sync is intentionally not used to submit composed content.

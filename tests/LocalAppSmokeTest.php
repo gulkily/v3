@@ -2661,6 +2661,7 @@ PHP;
         assertStringContains('class="nav-link is-active" href="/tools/outbox/"', $outbox);
         assertFingerprintedAsset($outbox, 'outbox_store.js');
         assertFingerprintedAsset($outbox, 'outbox_storage.js');
+        assertFingerprintedAsset($outbox, 'outbox_sender.js');
         assertFingerprintedAsset($outbox, 'outbox.js');
         assertStringContains('href="/tools/outbox/"', $tools);
         assertStringContains('Outbox', $tools);
