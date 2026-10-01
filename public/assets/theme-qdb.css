@@ -82,6 +82,16 @@
   color: var(--status-error);
 }
 
+:root[data-theme="qdb"] .quote-card-vote-button {
+  width: auto;
+  margin-top: 0;
+  border: none;
+  padding: 0 0.2rem;
+  background: transparent;
+  color: var(--line);
+  font-weight: 700;
+}
+
 :root[data-theme="qdb"] .quote-card {
   border: none;
   background: transparent;

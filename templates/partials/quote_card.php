@@ -15,32 +15,35 @@ $scoreSignClass = $scoreTotal > 0 ? 'quote-card-score-positive' : ($scoreTotal <
   <div class="button-row button-row-natural quote-card-actions">
     <button
       type="button"
-      class="thread-reaction-button"
+      class="thread-reaction-button quote-card-vote-button"
       data-action="apply-thread-tag"
       data-tag="upvote"
-      data-applied-label="Upvoted"
+      data-applied-label="+"
+      aria-label="Upvote this quote"
       aria-pressed="<?= $viewerHasUpvoted ? 'true' : 'false' ?>"
 <?= $viewerHasUpvoted ? ' disabled="disabled"' : '' ?>
-    ><?= $viewerHasUpvoted ? 'Upvoted' : 'Upvote' ?></button>
+    >+</button>
     <button
       type="button"
-      class="thread-reaction-button"
+      class="thread-reaction-button quote-card-vote-button"
       data-action="apply-thread-tag"
       data-tag="downvote"
-      data-applied-label="Downvoted"
+      data-applied-label="-"
+      aria-label="Downvote this quote"
       aria-pressed="<?= $viewerHasDownvoted ? 'true' : 'false' ?>"
 <?= $viewerHasDownvoted ? ' disabled="disabled"' : '' ?>
-    ><?= $viewerHasDownvoted ? 'Downvoted' : 'Downvote' ?></button>
+    >-</button>
     <button
       type="button"
-      class="thread-reaction-button"
+      class="thread-reaction-button quote-card-vote-button"
       data-action="apply-post-tag"
       data-post-id="<?= $e($quoteId) ?>"
       data-tag="flag"
-      data-applied-label="Flagged"
+      data-applied-label="[X]"
+      aria-label="Flag this quote for review"
       aria-pressed="<?= $viewerHasFlagged ? 'true' : 'false' ?>"
 <?= $viewerHasFlagged ? ' disabled="disabled"' : '' ?>
-    ><?= $viewerHasFlagged ? 'Flagged' : 'Flag' ?></button>
+    >[X]</button>
     <p class="meta thread-reaction-feedback" data-role="thread-reaction-feedback" hidden></p>
     <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
   </div>

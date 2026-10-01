@@ -55,10 +55,22 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
   Fixed by making the format lookup defensive (falls back to the old
   default if `getAttribute` isn't present) rather than editing every test's
   mock. All 5 tests pass again._
-- [ ] **Vote button wording is plain English, not QDB's.** We say
+- [x] **Vote button wording is plain English, not QDB's.** We say
   "Upvote/Downvote/Flag"; the original used bare `+`/`-`/`[X]`; qdb.us used
   labeled `↑Funny`/`↓Not`/`⚑Flag`. Pick one and change `quote_card.php`'s
   button labels.
+  _Done: went with the 2007 original's exact symbols (`+`/`-`/`[X]`) rather
+  than qdb.us's labeled version, since "the original" is specifically what
+  was asked for. Added `aria-label`s ("Upvote this quote", etc.) so the
+  terse symbols stay accessible. Kept the same symbol before and after a
+  click (just disabled + `aria-pressed`), matching how the original's links
+  never changed text either — `data-applied-label` is now the same symbol,
+  not a swapped word. Restyled `.quote-card-vote-button` to look like an
+  inline link (no border/background/padding) instead of a boxed button._
+  _Side effect, accepted: the hidden feedback paragraph now reads something
+  terse like "+." after a vote instead of "Upvoted." — that paragraph isn't
+  part of the original experience at all, so this is a minor, low-visibility
+  tradeoff, not a regression worth a separate mechanism._
 - [x] **No color-coded score logic.** Doing this properly (green when
   positive, something else when negative/zero) needs a small conditional in
   `quote_card.php`, not just a CSS rule, since score sign varies per quote.
