@@ -12,6 +12,7 @@ const source = fs.readFileSync(process.argv[1], 'utf8');
 process.stdout.write(JSON.stringify({
   details: source.includes('document.createElement("details")'),
   summary: source.includes('document.createElement("summary")'),
+  summaryPrefix: source.includes('heading.appendChild(summaryPrefix)'),
   summaryTitleLink: source.includes('heading.appendChild(titleAnchor)'),
   separateTargetLink: source.includes('View target thread'),
   actionTime: source.includes('Action time (signed)'),
@@ -26,7 +27,7 @@ NODE;
         }
         $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
 
-        assertSame(['details' => true, 'summary' => true, 'summaryTitleLink' => true, 'separateTargetLink' => false, 'actionTime' => true, 'integrationTime' => true, 'privatePayload' => true], $result);
+        assertSame(['details' => true, 'summary' => true, 'summaryPrefix' => true, 'summaryTitleLink' => true, 'separateTargetLink' => false, 'actionTime' => true, 'integrationTime' => true, 'privatePayload' => true], $result);
     }
 
     public function testOutboxLinksEligibleOriginalTargetsWithoutLinkingIncompleteTargets(): void

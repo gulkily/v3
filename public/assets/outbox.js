@@ -61,15 +61,20 @@
         var card = document.createElement("details");
         card.className = "card outbox-item";
         var heading = document.createElement("summary");
-        heading.textContent = summary.action + " — " + displayState(summary.state) + " · ";
+        var summaryPrefix = document.createElement("span");
+        summaryPrefix.textContent = summary.action + " — " + displayState(summary.state) + " · ";
+        heading.appendChild(summaryPrefix);
         var target = targetLink(item);
         if (target) {
           var titleAnchor = document.createElement("a");
           titleAnchor.href = target.href;
           titleAnchor.textContent = summary.summary || "Local action";
+          titleAnchor.addEventListener("click", function (event) { event.stopPropagation(); });
           heading.appendChild(titleAnchor);
         } else {
-          heading.textContent += summary.summary || "Local action";
+          var title = document.createElement("span");
+          title.textContent = summary.summary || "Local action";
+          heading.appendChild(title);
         }
         var detailRoot = document.createElement("div");
         detailRoot.className = "outbox-item-detail";
