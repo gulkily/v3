@@ -103,19 +103,33 @@ browser cache.
 
 ## Local Outbox
 
-Open **Tools → Outbox** to review local likes, reply drafts, and thread drafts
+Open **Tools → Outbox** to review local Likes, reply drafts, and thread drafts
 saved on this browser. The Outbox is cached as its own shell, while its items
 live in this browser's IndexedDB storage—not in the public SQLite snapshot or
 the service-worker cache. Its content is therefore device-local and is never
-published merely because it appears in the Outbox.
+published merely because it appears in the Outbox. Each item is a compact row;
+open it to inspect its status, timing, outcome, and available controls.
 
-A draft has been saved locally; queue it when it is ready. A queued item waits
-for the person to choose **Send**. Reconnecting does not send anything
-automatically. On Send, replies and threads use the normal identity, prepare,
-sign, and finalize flow; a queued Like uses the existing reaction endpoint.
-The outcome remains visible as accepted, rejected, conflicted,
-waiting-for-connection, or needs-attention. An accepted reply or thread links
-to its server record.
+A draft has been saved locally; queue it when it is ready. While an Outbox or
+offline-reader page is open, queued work is processed automatically when the
+browser regains a connection (and when either page opens while connected).
+Drafts are never sent automatically. A closed browser has no Background Sync
+worker and therefore cannot deliver queued work until an appropriate page is
+opened again.
+
+An offline Like is signed when the person presses **Like**, before it is saved
+locally. This applies to both thread and reply Likes. The signature includes an
+**action time**, which is the person's client-asserted time of the action; it is
+context rather than server ordering authority. At successful server handling,
+the server records an **integration time**. The Outbox shows both separately
+when available. Server acceptance, integration time, and the normal server
+ordering/moderation rules remain authoritative.
+
+On delivery, replies and threads use the normal identity, prepare, sign, and
+finalize flow; a queued Like submits its signed reaction intent to the
+verification endpoint. The outcome remains visible as accepted, rejected,
+conflicted, waiting-for-connection, or needs-attention. An accepted reply or
+thread links to its server record.
 
 If a reply or thread delivery loses its response, the Outbox retains the
 prepared record and retries that same record; it checks the known post ID

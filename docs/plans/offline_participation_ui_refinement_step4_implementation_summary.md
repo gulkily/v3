@@ -60,3 +60,11 @@
   - `php tests/run.php OfflineOutboxPresentationTest LocalAppSmokeTest::testOutboxRouteIsAvailableFromToolsWithLocalStorageAssets` — 2 run, 2 passed.
 - Notes:
   - Private local payload remains absent from both collapsed and expanded presentation.
+
+## Stage 7 - Documentation and release verification
+- Changes:
+  - Updated the offline reading runbook, MVP checklist, and both offline roadmaps for compact Outbox rows, signed thread/reply Likes, distinct action and integration times, and foreground automatic queued delivery.
+  - Documented the delivery boundary: queued work can be processed only while an Outbox or offline-reader page is open; drafts are never sent automatically and a closed browser has no Background Sync delivery.
+- Verification:
+  - `node --check public/assets/outbox.js`, `node --check public/assets/outbox_sender.js`, and `node --check public/assets/offline_reader.js` passed.
+  - `php tests/run.php OfflineOutboxStateTest OfflineOutboxIntentTest OfflineOutboxSendTest OfflineOutboxPresentationTest OfflineSnapshotPresentationTest OfflineSnapshotThreadPresentationTest LocalAppSmokeTest::testOfflineReaderFallbackRouteUsesLocalSnapshotShell LocalAppSmokeTest::testOutboxRouteIsAvailableFromToolsWithLocalStorageAssets WriteApiSmokeTest::testSignedReactionApiVerifiesCommentLikeAndRetainsBothTimes` — 18 run, 18 passed.

@@ -28,8 +28,9 @@ they can leave the online-only boundary.
 - [x] Snapshot time, reader revision, offline health diagnostics, and a
   confirmed refresh/recheck flow.
 - [x] Public-only cache boundary and approved-members-only exclusion.
-- [x] Tools → Outbox: local Likes, reply drafts, and thread drafts with
-  explicit sending, visible outcomes, and no automatic reconnect submission.
+- [x] Tools → Outbox: compact expandable local Likes, reply drafts, and thread
+  drafts with visible outcomes and foreground automatic delivery of queued
+  work after reconnect; drafts remain local.
 - [ ] User-visible snapshot-saved confirmation, clear-storage action, and
   browser QA matrix.
 
@@ -44,8 +45,8 @@ they can leave the online-only boundary.
 | Search and feeds | Search/browse only saved public content | Not started | Local index size, stale-result disclosure, unavailable global search |
 | Tools and diagnostics | Open a minimal offline-help/health surface | Partial, delivered; Outbox is cached separately | Never cache operator or personalized tools |
 | Compose | Create, retain, edit, export, and discard local drafts | Partial; capture from an open compose page | Shared-device privacy and clear retention rules |
-| Reactions | Queue eligible reactions and reconcile an outcome | Initial Like queue delivered | Identity, idempotency, moderation semantics |
-| Threads and replies | Queue signed content with explicit user control | Initial explicit delivery delivered | Durable signing, conflicts, parent availability, server idempotency |
+| Reactions | Queue eligible reactions and reconcile an outcome | Thread/reply Like queue delivered; signed at click time | Identity, idempotency, moderation semantics |
+| Threads and replies | Queue signed content with clear status and foreground automatic delivery | Initial delivery delivered | Durable signing, conflicts, parent availability, server idempotency |
 | Account, invitations, moderation, administration | Remain online unless separately designed | Intentionally online | Authentication, privilege, revocation, and audit guarantees |
 
 ## Delivery sequence
@@ -115,9 +116,10 @@ Delivered in the initial Outbox release:
 - [x] A device-local Outbox under Tools, separate from the public snapshot.
 - [x] Stable local item IDs, honest item states, and explicit Send/retry/discard
   controls.
-- [x] Reconnect behavior that never silently submits content and works without
-  Background Sync.
-- [x] Queue and explicitly reconcile a Like through the existing reaction API.
+- [x] Foreground reconnect delivery for queued work without Background Sync;
+  drafts are never sent automatically and a closed browser does not deliver.
+- [x] Queue and reconcile signed Likes for threads and replies; their signed
+  action time and server integration time remain distinct.
 
 Remaining hardening before broadening action types:
 

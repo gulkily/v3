@@ -11,14 +11,18 @@ initial Outbox release; remaining items are deliberate follow-up work.
 - [x] Keep flags, tagging, deletion, moderation, account actions, invitations,
   attachments, and privileged actions out of this MVP.
 - [x] Treat an offline item as local until the server confirms acceptance.
-- [x] Do not silently submit queued replies or threads after reconnecting.
+- [x] Automatically attempt queued work when an open Outbox or offline-reader
+  page regains a connection; drafts remain local and are never sent
+  automatically.
 
 ## Feature 1 — Outbox
 
 - [x] Provide a normal UI entry point with a pending-item count.
 - [x] List all items across supported action types, newest first by default.
 - [x] Show action type, safe target description, local creation time, last
-  attempt time, and current state.
+  attempt time, current state, and—where available—separate signed action and
+  server integration times.
+- [x] Keep the list compact as one expandable row per local item.
 - [x] Support the MVP states: `draft`, `queued`, `waiting for connection`,
   `sending`, `accepted`, `rejected`, `conflicted`, `cancelled`, and `needs
   attention`.
@@ -33,6 +37,7 @@ initial Outbox release; remaining items are deliberate follow-up work.
 
 - [x] Define exactly which existing reaction(s) are eligible for queueing.
 - [x] Queue an intent instead of presenting an offline change as server truth.
+- [x] Sign supported offline Likes at click time for both threads and replies.
 - [ ] Make repeat/undo behavior unambiguous before the original intent is sent.
 - [ ] Reconcile target removal, hidden content, authorization changes, and
   duplicate server acceptance.
@@ -74,8 +79,9 @@ initial Outbox release; remaining items are deliberate follow-up work.
 
 ## Shared connection and reconciliation
 
-- [x] Work without Background Sync; treat it only as an optional accelerator.
-- [ ] Detect offline/online changes without claiming that reconnection means
+- [x] Work without Background Sync; an open page performs foreground automatic
+  delivery when connectivity returns.
+- [x] Detect offline/online changes without claiming that reconnection means
   submission succeeded.
 - [x] Recheck authorization, target availability, and validation at send time.
 - [x] Record safe failure/conflict explanations and leave recoverable items in
@@ -99,7 +105,8 @@ initial Outbox release; remaining items are deliberate follow-up work.
 - [ ] Offline: queue one supported vote, one reply, and one new thread; inspect
   all three in the Outbox without a network connection.
 - [ ] Restart: confirm their state and editable content survive as documented.
-- [ ] Reconnect: explicitly send each item and observe accepted, rejected, or
-  needs-attention results without duplicate server actions.
+- [ ] Reconnect with the Outbox or offline reader open: observe automatic
+  delivery of queued items and accepted, rejected, or needs-attention results
+  without duplicate server actions.
 - [ ] Recover: cancel/export/discard an item and clear offline data only after
   an explicit warning about pending work.

@@ -34,7 +34,8 @@ The following is merged and considered the baseline for future work:
   reader revision, and a confirmed refresh/recheck action.
 - Tools → Outbox is available offline as a separate local-work shell. It keeps
   Likes, reply drafts, and thread drafts in device-local storage, shows their
-  states and outcomes, and requires an explicit Send action for delivery.
+  states and outcomes in compact expandable rows, and foreground-delivers
+  queued work automatically when an open page reconnects. Drafts remain local.
 - Public-only deployments opt in to the cache; approved-members-only
   deployments do not expose or register it.
 
@@ -109,15 +110,16 @@ default. Each changes the public-data and staleness boundary.
 
 ### 3. Saved drafts and explicit delivery
 
-**Status:** Partially complete; capture and explicit delivery are available
-from an already-open compose page.
+**Status:** Partially complete; capture and foreground automatic queued
+delivery are available from an already-open compose page.
 
 **Reader outcome:** A user can safely compose a thread or reply while offline
 and recover it after restart, but it remains a draft until the user explicitly
 submits online.
 
 **Delivered pieces:** Device-local reply/thread draft capture, individual
-discard, explicit signed send/retry from Tools → Outbox, and visible outcomes.
+discard, automatic foreground send/retry for queued work from Tools → Outbox,
+and visible outcomes. Drafts are never submitted automatically.
 
 **Remaining pieces:** Direct offline compose navigation, edit/restore/export,
 bulk-clear confirmation, per-thread recovery UI, and stronger shared-device
@@ -142,7 +144,9 @@ whether the server accepted, rejected, or no longer needs that intent.
 3. [x] Per-item states and explicit user-visible recovery actions.
 4. [ ] Broader reconciliation against changed/deleted/hidden posts and changed
    authorization or moderation state.
-5. [x] No-background-sync policy; reconnect never submits automatically.
+5. [x] No-background-sync policy; an open Outbox or offline-reader page
+   automatically attempts queued work on reconnection, while a closed browser
+   does not.
 
 **Open policy question:** A queued flag may affect moderation expectations.
 Decide whether it is appropriate to display it as a local intention before the
@@ -150,8 +154,8 @@ server has received it.
 
 ### 5. Queued replies and new threads
 
-**Status:** Initial explicit signed delivery delivered; composition and
-idempotency hardening remain.
+**Status:** Initial signed, foreground automatic delivery delivered;
+composition and idempotency hardening remain.
 
 **Reader outcome:** A user can create content offline and have it reliably
 submitted after reconnecting, with clear control over every pending item.
@@ -160,8 +164,9 @@ submitted after reconnecting, with clear control over every pending item.
 
 1. [x] Durable compose payloads, parent/thread references, and local draft
    capture from an open compose page.
-2. [x] Existing browser signing is used at deliberate send time; no private
-   key is copied into Outbox storage.
+2. [x] Existing browser signing is used for deliberate content delivery, and
+   Likes are signed at the original offline click; no private key is copied
+   into Outbox storage.
 3. [ ] Server-side client-intent idempotency beyond retrying the retained
    prepared post, and a durable server mapping for all retry windows.
 4. [ ] Detailed resolution UI for locked, hidden, or changed parent threads.
