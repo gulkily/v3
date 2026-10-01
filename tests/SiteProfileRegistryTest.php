@@ -29,13 +29,13 @@ final class SiteProfileRegistryTest
         }
     }
 
-    public function testActiveHonorsBashorgOverride(): void
+    public function testActiveHonorsQdbOverride(): void
     {
-        putenv('FORUM_SITE_ID=bashorg');
+        putenv('FORUM_SITE_ID=qdb');
 
         try {
             $profile = SiteProfileRegistry::active();
-            assertSame('bashorg', $profile['name']);
+            assertSame('qdb', $profile['name']);
         } finally {
             putenv('FORUM_SITE_ID');
         }

@@ -38,9 +38,9 @@
       </div>
     </details>
   </article>
-<?php $isBashorgInstance ??= false; ?>
+<?php $isQdbInstance ??= false; ?>
 <?php foreach ($threads as $thread): ?>
-<?php if ($isBashorgInstance): ?>
+<?php if ($isQdbInstance): ?>
 <?= $indent($partial('partials/quote_card.php', [
     'thread' => $thread,
     'viewerUpvotedThreadIds' => $viewerUpvotedThreadIds ?? [],

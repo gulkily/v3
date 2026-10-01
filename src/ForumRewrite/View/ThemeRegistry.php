@@ -28,7 +28,7 @@ final class ThemeRegistry
             ['name' => 'whitehot', 'label' => 'Whitehot', 'mode' => 'light'],
             ['name' => 'word97', 'label' => 'Word 97', 'mode' => 'light'],
             ['name' => 'chouse', 'label' => 'Chouse', 'mode' => 'dark'],
-            ['name' => 'bashorg', 'label' => 'Bashorg', 'mode' => 'light'],
+            ['name' => 'qdb', 'label' => 'QDB', 'mode' => 'light'],
         ];
     }
 

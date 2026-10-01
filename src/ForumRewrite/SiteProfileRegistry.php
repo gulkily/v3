@@ -24,9 +24,9 @@ final class SiteProfileRegistry
                 'defaultTheme' => 'chouse',
                 'composerPrompt' => 'Start a thread...',
             ],
-            'bashorg' => [
-                'name' => 'bashorg',
-                'defaultTheme' => 'bashorg',
+            'qdb' => [
+                'name' => 'qdb',
+                'defaultTheme' => 'qdb',
                 'composerPrompt' => 'Submit a quote...',
             ],
         ];

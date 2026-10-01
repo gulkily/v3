@@ -40,12 +40,12 @@ final class BoardPageController
         $viewOptions = BoardViewOptions::viewOptions($view, $sort);
         $sortOptions = BoardViewOptions::sortOptions($view, $sort);
         $threads = $this->fetchBoardThreads($view, $sort);
-        $isBashorgInstance = SiteConfig::siteName() === 'bashorg';
+        $isQdbInstance = SiteConfig::siteName() === 'qdb';
         $viewerUpvotedThreadIds = [];
         $viewerDownvotedThreadIds = [];
         $viewerFlaggedPostIds = [];
 
-        if ($isBashorgInstance) {
+        if ($isQdbInstance) {
             $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
             $viewerIdentityId = $viewerProfile !== null ? (string) $viewerProfile['identity_id'] : '';
             $rootPostIds = array_column($threads, 'root_post_id');
@@ -67,7 +67,7 @@ final class BoardPageController
                 'sortOptions' => $sortOptions,
                 'viewLabel' => BoardViewOptions::activeLabel($viewOptions, $view),
                 'sortLabel' => BoardViewOptions::activeLabel($sortOptions, $sort),
-                'isBashorgInstance' => $isBashorgInstance,
+                'isQdbInstance' => $isQdbInstance,
                 'viewerUpvotedThreadIds' => $viewerUpvotedThreadIds,
                 'viewerDownvotedThreadIds' => $viewerDownvotedThreadIds,
                 'viewerFlaggedPostIds' => $viewerFlaggedPostIds,
