@@ -203,9 +203,13 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
 
 ## E. Lower priority / cosmetic
 
-- [ ] Page width: original was an `80%`-wide table; we use a fixed
+- [x] Page width: original was an `80%`-wide table; we use a fixed
   `min(100%, 760px)` column. Visually close already; narrow only if it
   still looks too wide/roomy once A–D land.
+  _Checked after A–D landed: 760px already sits squarely in the range
+  `80%` of a typical 2004-era 800–1024px-wide monitor would have produced
+  (≈640–820px). No change made — would have been an arbitrary tweak with
+  no clearer target than what's already there._
 
 ---
 
