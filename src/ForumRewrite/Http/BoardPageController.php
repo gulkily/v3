@@ -41,25 +41,8 @@ final class BoardPageController
         $sortOptions = BoardViewOptions::sortOptions($view, $sort);
         $threads = $this->fetchBoardThreads($view, $sort);
         $isQdbInstance = SiteConfig::siteName() === 'qdb';
-        $viewerUpvotedThreadIds = [];
-        $viewerDownvotedThreadIds = [];
-        $viewerFlaggedPostIds = [];
-        $qdbQuoteCount = 0;
-
-        if ($isQdbInstance) {
-            $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
-            $viewerIdentityId = $viewerProfile !== null ? (string) $viewerProfile['identity_id'] : '';
-            $rootPostIds = array_column($threads, 'root_post_id');
-
-            if ($viewerProfile !== null) {
-                $viewerUpvotedThreadIds = ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'upvote', $viewerIdentityId);
-                $viewerDownvotedThreadIds = ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'downvote', $viewerIdentityId);
-                $viewerFlaggedPostIds = ViewerTagLookup::postTags($this->repositoryRoot, $rootPostIds, 'flag', $viewerIdentityId);
-            }
-
-            // Total across every view/sort, not just the current filtered $threads list.
-            $qdbQuoteCount = count(ThreadRepository::fetchThreads($this->routeServices->pdo()));
-        }
+        $viewerReactionState = $this->viewerReactionStateForThreads($threads, $isQdbInstance);
+        $qdbQuoteCount = $isQdbInstance ? count(ThreadRepository::fetchThreads($this->routeServices->pdo())) : 0;
 
         return $this->routeServices->renderPageTemplate(
             'board.php',
@@ -72,9 +55,9 @@ final class BoardPageController
                 'viewLabel' => BoardViewOptions::activeLabel($viewOptions, $view),
                 'sortLabel' => BoardViewOptions::activeLabel($sortOptions, $sort),
                 'isQdbInstance' => $isQdbInstance,
-                'viewerUpvotedThreadIds' => $viewerUpvotedThreadIds,
-                'viewerDownvotedThreadIds' => $viewerDownvotedThreadIds,
-                'viewerFlaggedPostIds' => $viewerFlaggedPostIds,
+                'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
+                'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
+                'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
                 'qdbQuoteCount' => $qdbQuoteCount,
             ],
             'Board',
@@ -84,6 +67,59 @@ final class BoardPageController
                 '/assets/lazy_compose_signing.js',
             ],
         );
+    }
+
+    /**
+     * QDB classic URL: /search, /?search(=term). Only meaningful for the
+     * qdb site profile - other profiles have no public search page.
+     */
+    public function search(string $term): string
+    {
+        $term = trim($term);
+        $threads = $term === '' ? [] : array_values(array_filter(
+            ThreadRepository::fetchThreads($this->routeServices->pdo()),
+            fn (array $thread): bool => stripos((string) $thread['root_post_body'], $term) !== false
+        ));
+        $viewerReactionState = $this->viewerReactionStateForThreads($threads, true);
+
+        return $this->routeServices->renderPageTemplate(
+            'qdb_search.php',
+            [
+                'threads' => $threads,
+                'term' => $term,
+                'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
+                'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
+                'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
+            ],
+            'Search',
+            'search',
+        );
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $threads
+     * @return array{upvoted: array<string, true>, downvoted: array<string, true>, flagged: array<string, true>}
+     */
+    private function viewerReactionStateForThreads(array $threads, bool $isQdbInstance): array
+    {
+        $empty = ['upvoted' => [], 'downvoted' => [], 'flagged' => []];
+        if (!$isQdbInstance) {
+            return $empty;
+        }
+
+        $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
+        if ($viewerProfile === null) {
+            return $empty;
+        }
+
+        $viewerIdentityId = (string) $viewerProfile['identity_id'];
+        $rootPostIds = array_column($threads, 'root_post_id');
+
+        return [
+            'upvoted' => ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'upvote', $viewerIdentityId),
+            'downvoted' => ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'downvote', $viewerIdentityId),
+            'flagged' => ViewerTagLookup::postTags($this->repositoryRoot, $rootPostIds, 'flag', $viewerIdentityId),
+        ];
     }
 
     public function rss(): string

@@ -329,7 +329,7 @@ final class Application
             return;
         }
 
-        if (SiteConfig::siteName() === 'qdb' && ($path === '/' || $path === '' || $path === '/latest' || $path === '/top' || $path === '/leetness' || $path === '/add' || $path === '/random')) {
+        if (SiteConfig::siteName() === 'qdb' && ($path === '/' || $path === '' || $path === '/latest' || $path === '/top' || $path === '/leetness' || $path === '/add' || $path === '/random' || $path === '/search')) {
             if ($path === '/latest' || array_key_exists('latest', $query)) {
                 $this->sendHtml($this->boardPageController()->board('all', 'newest'), 200);
                 return;
@@ -357,6 +357,11 @@ final class Application
                     $this->sendRedirect('/threads/' . $randomThread['root_post_id'], 'Here is a random quote.', 302);
                     return;
                 }
+            }
+
+            if ($path === '/search' || array_key_exists('search', $query)) {
+                $this->sendHtml($this->boardPageController()->search((string) ($query['search'] ?? '')), 200);
+                return;
             }
         }
 

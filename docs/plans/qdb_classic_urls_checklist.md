@@ -41,10 +41,20 @@ moderation concept this app doesn't have — skipped per your call).
   _Done: reuses `ThreadRepository::fetchThreads()` (same filtering as the
   board itself) + `array_rand()`, 302 via the existing `sendRedirect()`
   helper. Verified: response code 302, redirect target a real thread id._
-- [ ] **Search** — `/search`, `/?search` → new feature, not just a route.
+- [x] **Search** — `/search`, `/?search` → new feature, not just a route.
   Simple `?q=` full-text-ish match over quote bodies, rendered with the
   existing `quote_card.php` partial for result consistency. No `q` param
   shows an empty search form.
+  _Done, using the term param name the original actually used
+  (`?search=<term>`, found in the archived nav, e.g. `?search=Ninety`)
+  rather than inventing a `?q=` param: `/search` and `/?search` both
+  resolve to a new `BoardPageController::search()` + `qdb_search.php`
+  template, reusing `quote_card.php` per result. Bare `?search`/`/search`
+  (no value) shows an empty form; `search=<term>` does a `stripos` match
+  over `root_post_body`, reusing `ThreadRepository::fetchThreads()` rather
+  than a new SQL query. Refactored the viewer-upvote/downvote/flag lookup
+  out of `board()` into a shared private method so `search()` reuses it
+  too. Verified all 4 URL combinations, including an actual term match._
 - [ ] **Numeric-style permalinks** — `/?<id>` (query flag) and bare `/<id>`
   (path) → resolve to the same page as `/threads/<id>`, for any real thread
   id in this instance (ours aren't numeric, but the mechanism works the
