@@ -62,3 +62,10 @@
 :root[data-theme="qdb"] .quote-card-body {
   font-family: var(--code-font);
 }
+
+:root[data-theme="qdb"] .quote-card {
+  border: none;
+  background: transparent;
+  padding: 0;
+  padding-bottom: 0;
+}

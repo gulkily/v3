@@ -11,11 +11,13 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
   `--body-font` (Arial). Add `font-family: var(--code-font)` to the body rule.
   This is probably the single most noticeable miss.
   _Done: added `font-family: var(--code-font)` to `.quote-card-body` in `theme-qdb.css`._
-- [ ] **Every quote sits in a bordered, padded box.** The shared `.card` rule
+- [x] **Every quote sits in a bordered, padded box.** The shared `.card` rule
   (`border: 1px solid var(--line); padding: 0.9rem; background: var(--panel)`)
   applies to `quote-card` too. The original has *zero* per-quote chrome — just
   bare `<p>` tags flowing in a table cell. Override `.quote-card` to drop
   border/background/padding entirely.
+  _Done: `.quote-card` override drops border/background/padding (including
+  `.post-card`'s `padding-bottom` reserved for a permalink glyph we don't use)._
 - [ ] **Quotes are spaced ~1rem apart in boxes; the original is dense.** The
   shared `.stack > * + *` margin rule adds a full rem between every quote.
   Needs a much tighter, QDB-specific vertical rhythm (closer to the
