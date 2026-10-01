@@ -1,0 +1,51 @@
+.docs-page {
+  max-width: 76rem;
+}
+
+.docs-entry-list {
+  display: grid;
+  gap: 1rem;
+  padding-left: 1.25rem;
+}
+
+.docs-entry-list p,
+.docs-entry-list code {
+  display: block;
+  margin: 0.3rem 0 0;
+}
+
+.docs-source {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.docs-source p {
+  margin: 0;
+}
+
+.docs-content {
+  overflow-wrap: anywhere;
+}
+
+.docs-content > :first-child {
+  margin-top: 0;
+}
+
+.docs-content pre {
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.docs-content code {
+  font-family: var(--code-font);
+}
+
+.docs-content blockquote {
+  margin-left: 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--line);
+}

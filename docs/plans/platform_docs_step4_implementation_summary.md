@@ -25,3 +25,28 @@
 
 - Public document rendering and routes remain Stage 2 work. This stage only
   establishes the reusable discovery and boundary contract.
+
+## Stage 2 — Public index and document pages
+
+### Changes
+
+- Added public `/docs/` and `/docs/<path>` routes with a Docs-specific
+  controller and templates. The detail page visibly renders the exact
+  repository-relative source path for every document.
+- Added a small safe Markdown renderer for the repository documentation's
+  common structures. It escapes raw HTML, permits only safe link schemes, and
+  renders headings, paragraphs, lists, block quotes, inline formatting, and
+  fenced code blocks.
+- Kept Docs publicly readable even if the optional members-only site mode is
+  enabled, matching the open-repository boundary in the approved feature
+  description.
+
+### Verification
+
+- `php tests/run.php PlatformDocsCatalogTest` — 3 passed.
+- `php tests/run.php PlatformDocsPageTest` — 4 passed.
+- `git diff --check`
+
+### Notes
+
+- Site-wide Docs discovery and static-release publication remain Stage 3 work.

@@ -27,6 +27,7 @@ use ForumRewrite\Http\LlmExchangesController;
 use ForumRewrite\Http\LobbyController;
 use ForumRewrite\Http\OfflineReaderController;
 use ForumRewrite\Http\PostWorkflowApiController;
+use ForumRewrite\Http\PlatformDocsController;
 use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Http\SourceFileController;
@@ -347,6 +348,22 @@ final class Application
 
         if ($path === '/about/' || $path === '/about') {
             $this->sendHtml($this->renderAbout(), 200);
+            return;
+        }
+
+        if ($path === '/docs/' || $path === '/docs') {
+            $this->sendHtml($this->platformDocsController()->index(), 200);
+            return;
+        }
+
+        if (preg_match('#^/docs/(.+)$#', $path, $matches) === 1) {
+            $document = $this->platformDocsController()->document($matches[1]);
+            if ($document === null) {
+                $this->notFound();
+                return;
+            }
+
+            $this->sendHtml($document, 200);
             return;
         }
 
@@ -905,6 +922,11 @@ final class Application
         );
     }
 
+    private function platformDocsController(): PlatformDocsController
+    {
+        return new PlatformDocsController($this->routeServices(), $this->projectRoot);
+    }
+
     private function offlineReaderController(): OfflineReaderController
     {
         return new OfflineReaderController($this->routeServices());
@@ -1416,6 +1438,10 @@ final class Application
 
     private function membersOnlyRequestAllowed(string $method, string $path): bool
     {
+        if ($method === 'GET' && ($path === '/docs' || $path === '/docs/' || str_starts_with($path, '/docs/'))) {
+            return true;
+        }
+
         if ($path === '/lobby/' || $path === '/lobby'
             || $path === '/account/key/' || $path === '/account/key'
             || $path === '/api/auth_challenge' || $path === '/api/authenticate_identity' || $path === '/api/auth_status'
@@ -1458,6 +1484,7 @@ final class Application
             '', '/',
             '/threads', '/threads/',
             '/about', '/about/',
+            '/docs', '/docs/',
             '/lobby', '/lobby/',
             '/instance', '/instance/', '/backup', '/backup/', '/tools/backup', '/tools/backup/',
             '/tools/sqlite', '/tools/sqlite/',
@@ -1489,7 +1516,7 @@ final class Application
         }
 
         return preg_match(
-            '#^/(?:tools/llm-exchanges/\d+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-z0-9]+(?:-[a-z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+)/?$#',
+            '#^/(?:docs/.+|tools/llm-exchanges/\d+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-z0-9]+(?:-[a-z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+)/?$#',
             $path,
         ) === 1;
     }
