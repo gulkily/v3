@@ -72,6 +72,11 @@
   border-color: var(--active-line);
 }
 
+:root[data-theme="qdb"] .tool-launcher-button,
+:root[data-theme="qdb"] .offline-health-open-archive {
+  color: var(--active-ink);
+}
+
 :root[data-theme="qdb"] .quote-card-header {
   margin: 0 0 0.25rem;
   font-size: 0.8rem;
