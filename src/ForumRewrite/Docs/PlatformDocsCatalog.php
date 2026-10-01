@@ -19,6 +19,24 @@ final class PlatformDocsCatalog
     {
         return [
             [
+                'title' => 'Public Architecture and Trust Model',
+                'category' => 'Architecture',
+                'path' => 'docs/architecture/public_architecture_and_trust.md',
+                'description' => 'How Git-backed public records, derived views, PKI identity, and private boundaries fit together.',
+            ],
+            [
+                'title' => 'Canonical Post Record',
+                'category' => 'Architecture',
+                'path' => 'docs/specs/canonical_post_record_v1.md',
+                'description' => 'The plain-text, Git-backed format for durable public posts and replies.',
+            ],
+            [
+                'title' => 'Identity Bootstrap Record',
+                'category' => 'Trust and Identity',
+                'path' => 'docs/specs/identity_bootstrap_record_v1.md',
+                'description' => 'How an OpenPGP public key, fingerprint, username, and bootstrap event are bound together.',
+            ],
+            [
                 'title' => 'Extension and Improvement Cookbook',
                 'category' => 'Extending the Platform',
                 'path' => 'docs/examples/extension_improvement_cookbook.md',

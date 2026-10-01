@@ -22,16 +22,18 @@ final class PlatformDocsPageTest
 
         assertTrue(str_contains($html, '<h1>Platform Docs</h1>'));
         assertTrue(str_contains($html, 'Extending the Platform'));
+        assertTrue(str_contains($html, 'Transparent by construction'));
+        assertTrue(str_contains($html, '/docs/architecture/public_architecture_and_trust.md'));
         assertTrue(str_contains($html, '/docs/examples/extension_improvement_cookbook.md'));
         assertTrue(str_contains($html, 'docs/examples/extension_improvement_cookbook.md'));
     }
 
-    public function testDocsAreDiscoverableFromNavigationAndTools(): void
+    public function testDocsAreDiscoverableFromToolsWithoutAddingGlobalNavigation(): void
     {
         $board = $this->render('/');
         $tools = $this->render('/tools/');
 
-        assertTrue(str_contains($board, 'href="/docs/">Docs</a>'));
+        assertTrue(!str_contains($board, 'href="/docs/">Docs</a>'));
         assertTrue(str_contains($tools, 'href="/docs/">Platform Docs</a>'));
     }
 
@@ -39,11 +41,15 @@ final class PlatformDocsPageTest
     {
         $catalogued = $this->render('/docs/examples/extension_improvement_cookbook.md');
         $uncatalogued = $this->render('/docs/fdp/README.md');
+        $architecture = $this->render('/docs/architecture/public_architecture_and_trust.md');
 
         assertTrue(str_contains($catalogued, 'Repository source: <code>docs/examples/extension_improvement_cookbook.md</code>'));
         assertTrue(str_contains($catalogued, '<h1>Extension and Improvement Cookbook</h1>'));
         assertTrue(str_contains($uncatalogued, 'Repository source: <code>docs/fdp/README.md</code>'));
         assertTrue(str_contains($uncatalogued, '<h1>Feature Development Process (FDP)</h1>'));
+        assertTrue(str_contains($architecture, 'Repository source: <code>docs/architecture/public_architecture_and_trust.md</code>'));
+        assertTrue(str_contains($architecture, '<h1>Public Architecture and Trust Model</h1>'));
+        assertTrue(str_contains($architecture, 'Git-backed public record'));
     }
 
     public function testInvalidDocumentationPathsAreNotRendered(): void

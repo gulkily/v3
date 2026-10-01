@@ -14,6 +14,20 @@
   margin: 0.3rem 0 0;
 }
 
+.docs-transparency-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+
+.docs-transparency-grid h3 {
+  margin-bottom: 0.35rem;
+}
+
+.docs-transparency-grid p {
+  margin-top: 0;
+}
+
 .docs-source {
   display: flex;
   align-items: baseline;

@@ -106,3 +106,22 @@
 - Public platform documentation is available at `/docs/`, visibly identifies
   every document's repository source path, is discoverable from navigation and
   Tools, and is included in normal static releases.
+
+## Follow-up — Transparency overview and Tools discovery
+
+### Changes
+
+- Moved the Docs destination out of the global header; it remains discoverable
+  from the Tools page, where the platform-oriented destinations already live.
+- Expanded the Docs landing page with a visible transparency overview covering
+  Git-backed public records, rebuildable derived views, browser-held OpenPGP
+  private keys, and explicit private-runtime boundaries.
+- Added a catalogued `Public Architecture and Trust Model` guide, alongside
+  canonical-record and identity-bootstrap references.
+
+### Verification
+
+- `php tests/run.php PlatformDocsCatalogTest` — 4 passed.
+- `php tests/run.php PlatformDocsPageTest` — 6 passed.
+- `php tests/run.php PlatformDocsStaticTest` — 1 passed.
+- Static-build and shared-refresh progress smoke tests — 2 passed.
