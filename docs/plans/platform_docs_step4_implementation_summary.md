@@ -125,3 +125,27 @@
 - `php tests/run.php PlatformDocsPageTest` — 6 passed.
 - `php tests/run.php PlatformDocsStaticTest` — 1 passed.
 - Static-build and shared-refresh progress smoke tests — 2 passed.
+
+## Follow-up — Concrete Docs index and architecture diagram
+
+### Changes
+
+- Rewrote the Docs index with concrete language about Git records, derived
+  SQLite/static views, browser-held member keys, and the separate private
+  operator boundary.
+- Added an inline, theme-aware SVG diagram. It distinguishes the SQLite-only
+  `./v3 rebuild` path from the full `./v3 build-static` path, shows the
+  browser-to-records signed-write flow, and keeps `reply-agent` private state
+  separate from the public record.
+- Switched the overview cards to three desktop columns and one mobile column.
+- Updated catalog descriptions and added copy-regression coverage for the
+  concrete wording.
+
+### Verification
+
+- `php tests/run.php PlatformDocsCatalogTest` — 4 passed.
+- `php tests/run.php PlatformDocsPageTest` — 7 passed.
+- `php tests/run.php PlatformDocsStaticTest` — 1 passed.
+- Static-build and shared-refresh progress smoke tests — 2 passed.
+- Chromium inspection: light desktop render has no diagram scroll; dark-theme
+  375px render keeps page width at 375px, with scroll contained to the diagram.

@@ -16,7 +16,7 @@
 
 .docs-transparency-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
 }
 
@@ -26,6 +26,86 @@
 
 .docs-transparency-grid p {
   margin-top: 0;
+}
+
+.docs-architecture-diagram {
+  max-width: 100%;
+  margin: 1rem 0;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.docs-architecture-diagram svg {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  color: var(--ink);
+}
+
+.docs-architecture-diagram .docs-diagram-box,
+.docs-architecture-diagram .docs-diagram-records,
+.docs-architecture-diagram .docs-diagram-private {
+  fill: var(--panel);
+  stroke: var(--line);
+  stroke-width: 2;
+}
+
+.docs-architecture-diagram .docs-diagram-records {
+  stroke: var(--ink);
+  stroke-width: 4;
+}
+
+.docs-architecture-diagram .docs-diagram-private {
+  stroke-dasharray: 8 6;
+}
+
+.docs-architecture-diagram .docs-diagram-arrow,
+.docs-architecture-diagram .docs-diagram-key {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.docs-architecture-diagram .docs-diagram-arrowhead {
+  fill: var(--ink);
+}
+
+.docs-architecture-diagram .docs-diagram-title {
+  fill: var(--ink);
+  font-family: var(--ui-font);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.docs-architecture-diagram .docs-diagram-caption {
+  fill: var(--ink-soft);
+  font-family: var(--body-font);
+  font-size: 11px;
+}
+
+.docs-architecture-diagram .docs-diagram-code {
+  fill: var(--ink);
+  font-family: var(--code-font);
+  font-size: 11px;
+}
+
+.docs-architecture-diagram .docs-diagram-private-title {
+  fill: var(--ink);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .docs-transparency-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .docs-architecture-diagram svg {
+    min-width: 700px;
+  }
 }
 
 .docs-source {

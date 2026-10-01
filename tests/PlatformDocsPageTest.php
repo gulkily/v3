@@ -22,10 +22,24 @@ final class PlatformDocsPageTest
 
         assertTrue(str_contains($html, '<h1>Platform Docs</h1>'));
         assertTrue(str_contains($html, 'Extending the Platform'));
-        assertTrue(str_contains($html, 'Transparent by construction'));
+        assertTrue(str_contains($html, '<h2>How it works</h2>'));
+        assertTrue(str_contains($html, '<title id="docs-diagram-title">Zenmemes public architecture</title>'));
+        assertTrue(str_contains($html, './v3 build-static'));
+        assertTrue(str_contains($html, "Member's browser"));
         assertTrue(str_contains($html, '/docs/architecture/public_architecture_and_trust.md'));
         assertTrue(str_contains($html, '/docs/examples/extension_improvement_cookbook.md'));
         assertTrue(str_contains($html, 'docs/examples/extension_improvement_cookbook.md'));
+    }
+
+    public function testPublicIndexUsesConcreteCopy(): void
+    {
+        $text = strtolower(html_entity_decode(strip_tags($this->render('/docs/')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+
+        foreach (['legible', 'durable', 'accountable', 'by construction', 'safely', 'fit together'] as $forbidden) {
+            assertTrue(!str_contains($text, $forbidden));
+        }
+
+        assertSame(2, substr_count($text, 'canonical'));
     }
 
     public function testDocsAreDiscoverableFromToolsWithoutAddingGlobalNavigation(): void
