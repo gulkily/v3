@@ -13,10 +13,13 @@ moderation concept this app doesn't have — skipped per your call).
 
 ## Checklist
 
-- [ ] **Latest** — `/latest`, `/?latest` → same as `?view=all&sort=newest`,
+- [x] **Latest** — `/latest`, `/?latest` → same as `?view=all&sort=newest`,
   rendered directly (no redirect).
-- [ ] **Top** — `/top`, `/?top` → same as `?view=all&sort=top`, rendered
+  _Done: new early block in `Application::handle()`, gated on
+  `SiteConfig::siteName() === 'qdb'`, before the generic `/` handler._
+- [x] **Top** — `/top`, `/?top` → same as `?view=all&sort=top`, rendered
   directly.
+  _Done alongside Latest, same block._
 - [ ] **1337 (leetness)** — `/leetness`, `/?leetness` → sort by
   `abs(1337 - score_total)` ascending (closest to exactly 1337 first), per
   your formula. Needs a new sort case in `BoardPageController`; added to

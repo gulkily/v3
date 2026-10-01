@@ -329,6 +329,18 @@ final class Application
             return;
         }
 
+        if (SiteConfig::siteName() === 'qdb' && ($path === '/' || $path === '' || $path === '/latest' || $path === '/top')) {
+            if ($path === '/latest' || array_key_exists('latest', $query)) {
+                $this->sendHtml($this->boardPageController()->board('all', 'newest'), 200);
+                return;
+            }
+
+            if ($path === '/top' || array_key_exists('top', $query)) {
+                $this->sendHtml($this->boardPageController()->board('all', 'top'), 200);
+                return;
+            }
+        }
+
         if ($path === '/' || $path === '' || $path === '/threads/' || $path === '/threads') {
             if (($query['format'] ?? null) === 'rss') {
                 $this->sendXml($this->boardPageController()->rss(), 200);
