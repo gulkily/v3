@@ -228,13 +228,22 @@ final class TemplateRenderer
             return $items;
         }
 
-        $items = [
-            ['href' => '/', 'label' => 'Board', 'section' => 'board'],
-            ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
-            ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
-            ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],
-            ['href' => '/account/key/', 'label' => 'Account', 'section' => 'account'],
-        ];
+        $items = SiteConfig::siteName() === 'qdb'
+            ? [
+                ['href' => '/latest', 'label' => 'Latest', 'section' => 'latest'],
+                ['href' => '/top', 'label' => 'Top', 'section' => 'top'],
+                ['href' => '/random', 'label' => 'Random', 'section' => 'random'],
+                ['href' => '/add', 'label' => 'Add Quote', 'section' => 'compose'],
+                ['href' => '/search', 'label' => 'Search', 'section' => 'search'],
+                ['href' => '/account/key/', 'label' => 'Account', 'section' => 'account'],
+            ]
+            : [
+                ['href' => '/', 'label' => 'Board', 'section' => 'board'],
+                ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
+                ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
+                ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],
+                ['href' => '/account/key/', 'label' => 'Account', 'section' => 'account'],
+            ];
 
         if ($viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1

@@ -33,7 +33,7 @@ final class BoardPageController
     ) {
     }
 
-    public function board(string $view, string $sort): string
+    public function board(string $view, string $sort, string $activeSection = 'board'): string
     {
         $view = BoardViewOptions::normalizeView($view);
         $sort = BoardViewOptions::normalizeSort($sort);
@@ -61,7 +61,7 @@ final class BoardPageController
                 'qdbQuoteCount' => $qdbQuoteCount,
             ],
             'Board',
-            'board',
+            $activeSection,
             [
                 '/assets/inline_reply_form.js',
                 '/assets/lazy_compose_signing.js',

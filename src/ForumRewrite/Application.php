@@ -331,17 +331,17 @@ final class Application
 
         if (SiteConfig::siteName() === 'qdb' && ($path === '/' || $path === '' || $path === '/latest' || $path === '/top' || $path === '/leetness' || $path === '/add' || $path === '/random' || $path === '/search')) {
             if ($path === '/latest' || array_key_exists('latest', $query)) {
-                $this->sendHtml($this->boardPageController()->board('all', 'newest'), 200);
+                $this->sendHtml($this->boardPageController()->board('all', 'newest', 'latest'), 200);
                 return;
             }
 
             if ($path === '/top' || array_key_exists('top', $query)) {
-                $this->sendHtml($this->boardPageController()->board('all', 'top'), 200);
+                $this->sendHtml($this->boardPageController()->board('all', 'top', 'top'), 200);
                 return;
             }
 
             if ($path === '/leetness' || array_key_exists('leetness', $query)) {
-                $this->sendHtml($this->boardPageController()->board('all', 'leetness'), 200);
+                $this->sendHtml($this->boardPageController()->board('all', 'leetness', 'leetness'), 200);
                 return;
             }
 
