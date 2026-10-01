@@ -53,6 +53,20 @@ app smoke tests.
 
 - any arguments — passed straight through to the test runner, e.g. a specific test class name
 
+## Check the live OpenPGP asset contract
+
+```
+./v3 openpgp smoke [--origin=zenmemes.com]
+```
+
+Performs a read-only live check of the HTTP and HTTPS browser runtime paths.
+For each scheme it reads `window.__forumAssetPaths` from the public page, selects
+the same OpenPGP v5 (HTTP) or v6 (HTTPS) asset the browser would use, then also
+checks both legacy raw OpenPGP bundle URLs used by cached clients. It reports
+the selected URL, status, content type, redirects, and a failure reason. The
+default host is `zenmemes.com`; use `--origin=staging.example` to check a staging
+host. No records, browser identities, or posts are created.
+
 ## Inspect operator status
 
 ```
