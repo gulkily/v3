@@ -5,6 +5,19 @@
     while (node && node.firstChild) node.removeChild(node.firstChild);
   }
 
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function nl2br(value) {
+    return escapeHtml(value).replace(/(\r\n|\r|\n)/g, "<br>$1");
+  }
+
   var snapshotPresentation = {
     metadataValue: function (database, key) {
       var result = database.exec("SELECT value FROM metadata WHERE key = ?", [key])[0];
@@ -409,12 +422,14 @@
         body.className = "body";
         var postBody = String(row[3] || "");
         if (index === 0) {
-          var segments = postBody.split(/\r\n|\r|\n/, 2);
-          if (segments[0].trim() === snapshotPresentation.threadTitle(row[2], row[3])) {
-            postBody = String(segments[1] || "").replace(/^(?:\r\n|\r|\n)+/, "");
+          var firstLineBreak = /\r\n|\r|\n/.exec(postBody);
+          var firstLine = firstLineBreak ? postBody.slice(0, firstLineBreak.index) : postBody;
+          var remainder = firstLineBreak ? postBody.slice(firstLineBreak.index + firstLineBreak[0].length) : "";
+          if (firstLine.trim() === snapshotPresentation.threadTitle(row[2], row[3])) {
+            postBody = remainder.replace(/^(?:\r\n|\r|\n)+/, "");
           }
         }
-        body.textContent = postBody;
+        body.innerHTML = nl2br(postBody);
         post.appendChild(body);
         var meta = document.createElement("p");
         meta.className = "meta";
