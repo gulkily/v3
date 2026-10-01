@@ -5,17 +5,54 @@
     while (node && node.firstChild) node.removeChild(node.firstChild);
   }
 
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function nl2br(value) {
+    return escapeHtml(value).replace(/(\r\n|\r|\n)/g, "<br>$1");
+  }
+
   var snapshotPresentation = {
     metadataValue: function (database, key) {
       var result = database.exec("SELECT value FROM metadata WHERE key = ?", [key])[0];
       return result && result.values && result.values[0] ? String(result.values[0][0] || "") : "";
     },
+    readerRevisionFromShell: function (documentFragment) {
+      var reader = documentFragment && documentFragment.querySelector ? documentFragment.querySelector("[data-offline-reader]") : null;
+      return reader && reader.getAttribute("data-reader-revision") || "unknown";
+    },
+    compactArchiveIndicator: function (generatedAt) {
+      var match = String(generatedAt || "").match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+      return match ? "archive " + match[1] + " " + match[2] + " UTC" : "archive unknown";
+    },
+    compactReaderIndicator: function (revision) {
+      var match = String(revision || "").match(/offline_reader\.([a-f0-9]{12})\.js$/);
+      return match ? "reader " + match[1] : "reader unknown";
+    },
     normalThreadUrl: function (threadId) {
       return "/threads/" + encodeURIComponent(threadId);
+    },
+    boardPathFromPathname: function (pathname) {
+      return ["/", "/threads", "/threads/"].indexOf(String(pathname || "")) !== -1
+        ? String(pathname || "")
+        : "";
+    },
+    normalBoardUrl: function (pathname, state) {
+      return pathname + "?view=" + encodeURIComponent(state.view) + "&sort=" + encodeURIComponent(state.sort);
     },
     threadIdFromPathname: function (pathname) {
       var match = String(pathname || "").match(/^\/threads\/([^/]+)\/?$/);
       return match ? decodeURIComponent(match[1]) : "";
+    },
+    tagFromPathname: function (pathname) {
+      var match = String(pathname || "").match(/^\/tags\/([a-z0-9]+(?:-[a-z0-9]+)*)\/?$/);
+      return match ? match[1] : "";
     },
     threadTitle: function (subject, preview) {
       var title = String(subject || "").trim();
@@ -52,7 +89,7 @@
     boardRows: function (database) {
       var result = database.exec(
         "SELECT root_post_id, subject, body_preview, reply_count, last_activity_at, author_label, "
-        + "root_post_created_at, thread_labels_json, score_total FROM threads"
+        + "root_post_created_at, thread_labels_json, board_tags_json, score_total FROM threads"
       )[0];
       return (result && result.values ? result.values : []).map(function (row) {
         return {
@@ -64,17 +101,153 @@
           author: String(row[5] || "guest"),
           createdAt: String(row[6] || ""),
           labels: snapshotPresentation.threadLabels(row[7]),
-          score: Number(row[8] || 0)
+          boardTags: snapshotPresentation.tagsFromJson(row[8]),
+          score: Number(row[9] || 0)
         };
       });
     },
     threadLabels: function (value) {
+      return snapshotPresentation.tagsFromJson(value);
+    },
+    tagsFromJson: function (value) {
       try {
-        var labels = JSON.parse(String(value || "[]"));
-        return Array.isArray(labels) ? labels : [];
+        var tags = JSON.parse(String(value || "[]"));
+        return Array.isArray(tags) ? tags.filter(function (tag) { return typeof tag === "string" && tag !== ""; }) : [];
       } catch (error) {
         return [];
       }
+    },
+    threadTags: function (thread) {
+      return [...new Set([...(thread.boardTags || []), ...(thread.labels || [])])];
+    },
+    tagGroups: function (database) {
+      var groups = {};
+      snapshotPresentation.boardRows(database).forEach(function (thread) {
+        snapshotPresentation.threadTags(thread).forEach(function (tag) {
+          if (!groups[tag]) groups[tag] = { tag: tag, threads: [] };
+          groups[tag].threads.push(thread);
+        });
+      });
+      return Object.values(groups).map(function (group) {
+        group.threads.sort(function (left, right) {
+          return right.lastActivityAt.localeCompare(left.lastActivityAt) || right.id.localeCompare(left.id);
+        });
+        return {
+          tag: group.tag,
+          count: group.threads.length,
+          threads: group.threads,
+          previewThreads: group.threads.slice(0, 5),
+          hasMore: group.threads.length > 5,
+          href: "/tags/" + encodeURIComponent(group.tag)
+        };
+      }).sort(function (left, right) {
+        return (right.count - left.count) || left.tag.localeCompare(right.tag);
+      });
+    },
+    renderTagsIndex: function (options) {
+      var groups = snapshotPresentation.tagGroups(options.database);
+      clearSnapshotNode(options.content);
+      options.content.hidden = false;
+      snapshotPresentation.appendBoardControls(options.content, { view: "all", sort: "newest" }, {
+        boardPath: "/threads/",
+        tagsActive: true
+      });
+
+      var card = document.createElement("article");
+      card.className = "card tags-section-card";
+      if (!groups.length) {
+        var empty = document.createElement("p");
+        empty.className = "meta";
+        empty.textContent = "No tags were included in this saved snapshot. Reconnect to browse live tags.";
+        card.appendChild(empty);
+      } else {
+        var groupList = document.createElement("div");
+        groupList.className = "tag-groups";
+        groups.forEach(function (group) {
+          var section = document.createElement("section");
+          section.className = "tag-group";
+          var header = document.createElement("div");
+          header.className = "tag-group-header";
+          var heading = document.createElement("h2");
+          var tagLink = document.createElement("a");
+          tagLink.href = group.href;
+          tagLink.textContent = "#" + group.tag;
+          heading.appendChild(tagLink);
+          var count = document.createElement("p");
+          count.className = "meta";
+          count.textContent = group.count + (group.count === 1 ? " thread" : " threads");
+          header.appendChild(heading);
+          header.appendChild(count);
+          section.appendChild(header);
+          var threads = document.createElement("ul");
+          threads.className = "tag-thread-list";
+          group.previewThreads.forEach(function (thread) {
+            var item = document.createElement("li");
+            var threadLink = document.createElement("a");
+            threadLink.href = snapshotPresentation.normalThreadUrl(thread.id);
+            threadLink.textContent = snapshotPresentation.threadTitle(thread.subject, thread.preview);
+            var author = document.createElement("span");
+            author.className = "meta";
+            author.textContent = "by " + thread.author;
+            item.appendChild(threadLink);
+            item.appendChild(author);
+            threads.appendChild(item);
+          });
+          section.appendChild(threads);
+          if (group.hasMore) {
+            var footer = document.createElement("p");
+            footer.className = "meta tag-group-footer";
+            footer.textContent = "showing 5 newest of " + group.count;
+            section.appendChild(footer);
+          }
+          groupList.appendChild(section);
+        });
+        card.appendChild(groupList);
+      }
+      options.content.appendChild(card);
+      return groups;
+    },
+    renderTagResult: function (options) {
+      var group = snapshotPresentation.tagGroups(options.database).find(function (candidate) {
+        return candidate.tag === options.tag;
+      });
+      clearSnapshotNode(options.content);
+      options.content.hidden = false;
+      var header = document.createElement("article");
+      header.className = "card";
+      var eyebrow = document.createElement("p");
+      eyebrow.className = "eyebrow";
+      eyebrow.textContent = "Saved tag";
+      var heading = document.createElement("h1");
+      heading.textContent = "#" + options.tag;
+      var count = document.createElement("p");
+      count.className = "meta";
+      count.textContent = group ? group.count + (group.count === 1 ? " thread" : " threads") : "Not in saved snapshot";
+      var navigation = document.createElement("p");
+      navigation.className = "meta";
+      var tagsLink = document.createElement("a");
+      tagsLink.href = "/tags/";
+      tagsLink.textContent = "Back to Tags";
+      var boardLink = document.createElement("a");
+      boardLink.href = "/";
+      boardLink.textContent = "Back to Board";
+      navigation.appendChild(tagsLink);
+      navigation.appendChild(document.createTextNode(" | "));
+      navigation.appendChild(boardLink);
+      header.appendChild(eyebrow);
+      header.appendChild(heading);
+      header.appendChild(count);
+      header.appendChild(navigation);
+      options.content.appendChild(header);
+      if (!group) {
+        var unavailable = document.createElement("p");
+        unavailable.className = "meta";
+        unavailable.textContent = "This tag is not included in the saved snapshot. Reconnect to browse live results.";
+        options.content.appendChild(unavailable);
+        return false;
+      }
+      snapshotPresentation.appendThreadCards(options.content, group.threads);
+      return true;
     },
     isPinned: function (thread) {
       return thread.labels.indexOf("pinned") !== -1;
@@ -90,50 +263,50 @@
       }
       return right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id);
     },
-    appendBoardControls: function (content, state, onChange) {
+    appendBoardControls: function (content, state, options) {
       var controls = document.createElement("article");
       controls.className = "card";
       var nav = document.createElement("div");
       nav.className = "nav board-controls-nav";
-      [
+      var boardPath = options.boardPath || "/";
+      [{ key: "tags", label: "Tags", href: "/tags/", active: Boolean(options.tagsActive) }].concat([
         { key: "all", label: "All", group: "view" },
         { key: "liked", label: "Liked", group: "view" },
         { key: "newest", label: "Newest", group: "sort" },
         { key: "oldest", label: "Oldest", group: "sort" },
         { key: "top", label: "Top", group: "sort" }
-      ].forEach(function (option) {
+      ]).forEach(function (option) {
+        if (option.key === "tags") {
+          var tagsLink = document.createElement("a");
+          tagsLink.className = "nav-link" + (option.active ? " is-active" : "");
+          tagsLink.href = option.href;
+          tagsLink.textContent = option.label;
+          nav.appendChild(tagsLink);
+          return;
+        }
         var nextState = { view: state.view, sort: state.sort };
         nextState[option.group] = option.key;
         var link = document.createElement("a");
         link.className = "nav-link" + (state[option.group] === option.key ? " is-active" : "");
-        link.href = "/?view=" + encodeURIComponent(nextState.view) + "&sort=" + encodeURIComponent(nextState.sort);
+        link.href = snapshotPresentation.normalBoardUrl(boardPath, nextState);
         link.textContent = option.label;
-        link.addEventListener("click", function (event) {
+        if (options.onBoardChange) link.addEventListener("click", function (event) {
           event.preventDefault();
-          onChange(nextState);
+          options.onBoardChange(nextState);
         });
         nav.appendChild(link);
       });
+      var newPost = document.createElement("button");
+      newPost.className = "nav-link";
+      newPost.type = "button";
+      newPost.disabled = true;
+      newPost.textContent = "New Post";
+      nav.appendChild(newPost);
       controls.appendChild(nav);
       content.appendChild(controls);
     },
-    renderThreadList: function (options) {
-      var rows = snapshotPresentation.boardRows(options.database);
-      var state = options.boardState || { view: "all", sort: "newest" };
-      if (state.view === "liked") {
-        rows = rows.filter(function (thread) {
-          return thread.labels.indexOf("like") !== -1 && thread.score >= 0;
-        });
-      }
-      rows.sort(function (left, right) {
-        return snapshotPresentation.compareBoardThreads(left, right, state.sort);
-      });
-      clearSnapshotNode(options.content);
-      options.content.hidden = false;
-      if (options.onBoardChange) {
-        snapshotPresentation.appendBoardControls(options.content, state, options.onBoardChange);
-      }
-      rows.forEach(function (thread) {
+    appendThreadCards: function (content, threads, onSelect) {
+      threads.forEach(function (thread) {
         var card = document.createElement("article");
         card.className = "card thread-card";
         card.dataset.heat = String(snapshotPresentation.heatLevel(thread.lastActivityAt, thread.replyCount));
@@ -142,9 +315,9 @@
         link.href = snapshotPresentation.normalThreadUrl(thread.id);
         link.textContent = snapshotPresentation.threadTitle(thread.subject, thread.preview);
         link.addEventListener("click", function (event) {
-          if (options.onSelect) {
+          if (onSelect) {
             event.preventDefault();
-            options.onSelect(thread.id);
+            onSelect(thread.id);
           }
         });
         heading.appendChild(link);
@@ -172,8 +345,29 @@
           replies.textContent = thread.replyCount + (thread.replyCount === 1 ? " reply" : " replies");
           card.appendChild(replies);
         }
-        options.content.appendChild(card);
+        content.appendChild(card);
       });
+    },
+    renderThreadList: function (options) {
+      var rows = snapshotPresentation.boardRows(options.database);
+      var state = options.boardState || { view: "all", sort: "newest" };
+      if (state.view === "liked") {
+        rows = rows.filter(function (thread) {
+          return thread.labels.indexOf("like") !== -1 && thread.score >= 0;
+        });
+      }
+      rows.sort(function (left, right) {
+        return snapshotPresentation.compareBoardThreads(left, right, state.sort);
+      });
+      clearSnapshotNode(options.content);
+      options.content.hidden = false;
+      if (options.onBoardChange) {
+        snapshotPresentation.appendBoardControls(options.content, state, {
+          boardPath: options.boardPath || "/",
+          onBoardChange: options.onBoardChange,
+        });
+      }
+      snapshotPresentation.appendThreadCards(options.content, rows, options.onSelect);
       if (!rows.length) {
         var empty = document.createElement("p");
         empty.className = "meta";
@@ -228,12 +422,14 @@
         body.className = "body";
         var postBody = String(row[3] || "");
         if (index === 0) {
-          var segments = postBody.split(/\r\n|\r|\n/, 2);
-          if (segments[0].trim() === snapshotPresentation.threadTitle(row[2], row[3])) {
-            postBody = String(segments[1] || "").replace(/^(?:\r\n|\r|\n)+/, "");
+          var firstLineBreak = /\r\n|\r|\n/.exec(postBody);
+          var firstLine = firstLineBreak ? postBody.slice(0, firstLineBreak.index) : postBody;
+          var remainder = firstLineBreak ? postBody.slice(firstLineBreak.index + firstLineBreak[0].length) : "";
+          if (firstLine.trim() === snapshotPresentation.threadTitle(row[2], row[3])) {
+            postBody = remainder.replace(/^(?:\r\n|\r|\n)+/, "");
           }
         }
-        body.textContent = postBody;
+        body.innerHTML = nl2br(postBody);
         post.appendChild(body);
         var meta = document.createElement("p");
         meta.className = "meta";
@@ -254,6 +450,8 @@
 
     var status = root.querySelector('[data-role="offline-reader-status"]');
     var modeBar = root.querySelector('[data-role="offline-mode-bar"]');
+    var archiveIndicator = root.querySelector('[data-role="offline-archive-indicator"]');
+    var readerIndicator = root.querySelector('[data-role="offline-reader-indicator"]');
     var content = root.querySelector('[data-role="offline-reader-content"]');
     var snapshotUrl = root.getAttribute("data-snapshot-url") || "/offline/snapshot.sqlite3";
     var runtimeUrl = root.getAttribute("data-runtime-url") || "/assets/sql-wasm.wasm";
@@ -273,6 +471,18 @@
 
     function showOfflineMode() {
       if (modeBar) modeBar.hidden = false;
+    }
+
+    function setReaderDetails(generatedAt) {
+      var revision = root.getAttribute("data-reader-revision") || "unknown";
+      if (archiveIndicator) {
+        archiveIndicator.textContent = snapshotPresentation.compactArchiveIndicator(generatedAt);
+        archiveIndicator.title = generatedAt || "unknown";
+      }
+      if (readerIndicator) {
+        readerIndicator.textContent = snapshotPresentation.compactReaderIndicator(revision);
+        readerIndicator.title = revision;
+      }
     }
 
     function metadataValue(database, key) {
@@ -329,6 +539,7 @@
       root.dataset.offlineNavigation = "board";
       showOfflineMode();
       setStatus("Showing saved board content offline.", "ok");
+      var boardPath = snapshotPresentation.boardPathFromPathname(window.location.pathname);
       var parameters = new URLSearchParams(window.location.search);
       var boardState = {
         view: parameters.get("view") === "liked" ? "liked" : "all",
@@ -340,11 +551,12 @@
         content: content,
         database: database,
         boardState: boardState,
+        boardPath: boardPath,
         emptyMessage: boardState.view === "liked"
           ? "No liked public threads were included in this snapshot."
           : "No recent public threads were included in this snapshot.",
         onBoardChange: function (nextState) {
-          var nextUrl = "/?view=" + encodeURIComponent(nextState.view) + "&sort=" + encodeURIComponent(nextState.sort);
+          var nextUrl = snapshotPresentation.normalBoardUrl(boardPath, nextState);
           window.history.pushState({}, "", nextUrl);
           renderOfflineBoard(database);
         },
@@ -352,6 +564,25 @@
           window.location.assign(snapshotPresentation.normalThreadUrl(threadId));
         }
       });
+    }
+
+    function renderOfflineTagsIndex(database) {
+      root.dataset.offlineNavigation = "tags";
+      showOfflineMode();
+      setStatus("Showing saved tags offline.", "ok");
+      snapshotPresentation.renderTagsIndex({
+        content: content,
+        database: database,
+      });
+    }
+
+    function renderOfflineTag(database, tag) {
+      root.dataset.offlineNavigation = "tag";
+      showOfflineMode();
+      setStatus("Showing saved #" + tag + " results offline.", "ok");
+      if (!snapshotPresentation.renderTagResult({ content: content, database: database, tag: tag })) {
+        setStatus("That tag is not included in this offline snapshot. Reconnect to browse live results.", "error");
+      }
     }
 
     function renderOfflineThread(database, threadId) {
@@ -403,11 +634,21 @@
 
     root.addEventListener("forum-offline-reader-ready", function (event) {
       var database = event.detail.database;
-      if (window.location.pathname === "/") {
+      setReaderDetails(event.detail.generatedAt);
+      if (snapshotPresentation.boardPathFromPathname(window.location.pathname)) {
         renderOfflineBoard(database);
         window.addEventListener("popstate", function () {
           renderOfflineBoard(database);
         });
+        return;
+      }
+      if (window.location.pathname === "/tags" || window.location.pathname === "/tags/") {
+        renderOfflineTagsIndex(database);
+        return;
+      }
+      var tag = snapshotPresentation.tagFromPathname(window.location.pathname);
+      if (tag) {
+        renderOfflineTag(database, tag);
         return;
       }
       var pathThreadId = snapshotPresentation.threadIdFromPathname(window.location.pathname);

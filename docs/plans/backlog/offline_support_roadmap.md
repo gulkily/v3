@@ -24,16 +24,23 @@ The following is merged and considered the baseline for future work:
   network fails. Online navigation remains network-first.
 - Board controls supported by the snapshot are available offline: All/Liked
   and Newest/Oldest/Top.
+- The snapshot also supports a bounded Tags index and saved tag-result views;
+  the shared offline subnav includes Tags and a disabled New Post control.
 - Offline Board and thread cards follow normal title, hidden-post, heat, and
   theme presentation rules. A thin `offline mode` bar is the persistent
-  offline-state indicator.
+  offline-state indicator and carries compact archive-time and reader-revision
+  indicators.
+- Tools → Offline Reading reports saved archive metadata, cached-versus-live
+  reader revision, and a confirmed refresh/recheck action.
 - Public-only deployments opt in to the cache; approved-members-only
   deployments do not expose or register it.
 
 See [Offline Reading Release 1](../offline_reading_release1/) and
 [Offline Normal Navigation](../offline_normal_navigation/) for the completed
 FDP records and [the operator runbook](../../runbooks/offline_reading.md) for
-current bounds and recovery instructions.
+current bounds and recovery instructions. The companion [Extended Offline
+Parity Roadmap](offline_support_extended_roadmap.md) maps the long-term
+maximum-safe-parity goal to specific capabilities and decision gates.
 
 ## Non-negotiable guardrails
 
@@ -55,22 +62,22 @@ Every later slice must preserve these unless an FDP explicitly changes them:
 
 ### 1. Snapshot lifecycle and reader confidence
 
-**Status:** Next recommended FDP cycle.
+**Status:** Partially complete; finish confirmation, clearing, and browser QA.
 
 **Reader outcome:** A reader can tell that a snapshot has been saved, how old
 it is when needed, and how to refresh or remove it without using browser
 developer tools.
 
-**Likely pieces:**
+**Progress and remaining pieces:**
 
-1. A short, non-persistent online confirmation after a complete snapshot is
+1. [ ] A short, non-persistent online confirmation after a complete snapshot is
    saved; it must distinguish success, retained prior snapshot, and failure.
-2. An optional details surface for saved-at time, snapshot version, thread and
-   post counts, and size. Keep the ordinary offline view limited to its thin
-   `offline mode` bar.
-3. Explicit refresh and clear controls with confirmations and accessible
-   status messages.
-4. A browser QA matrix covering first install, refresh, failed refresh,
+2. [x] An optional details surface for saved-at time, reader revision, thread
+   and post counts, and size. The ordinary offline view remains limited to its
+   thin `offline mode` bar and compact indicators.
+3. [x] An explicit refresh/recheck control with confirmed status messages.
+4. [ ] An explicit clear control with confirmation and accessible status.
+5. [ ] A browser QA matrix covering first install, refresh, failed refresh,
    worker upgrade, clear, offline restart, and reconnection.
 
 **Dependencies / decisions:** Decide where the optional details and controls
@@ -79,19 +86,19 @@ minimal surface), and whether refresh is automatic-only or user-triggered.
 
 ### 2. Broader read-only navigation
 
-**Status:** Proposed after lifecycle confidence is complete.
+**Status:** Partially complete; Tags navigation is delivered.
 
 **Reader outcome:** More public navigation remains useful while offline,
 without turning the browser cache into a copy of the site.
 
-**Candidate slices, each independently scoped:**
+**Progress and candidate slices, each independently scoped:**
 
-1. Snapshot-backed tag index and tag-thread views, with a bounded tag index
+1. [x] Snapshot-backed tag index and tag-thread views, with a bounded tag index
    derived only from the saved threads.
-2. Links between saved posts, threads, and permitted public metadata.
-3. Carefully selected public profile summaries, only if their data boundary
+2. [ ] Links between saved posts, threads, and permitted public metadata.
+3. [ ] Carefully selected public profile summaries, only if their data boundary
    and deletion/revocation behavior are acceptable.
-4. Explicit unavailable pages for search, feeds, tools, and routes not in the
+4. [ ] Explicit unavailable pages for search, feeds, tools, and routes not in the
    snapshot, instead of ambiguous browser errors.
 
 **Do not assume:** Tags, profiles, search, or feeds belong in the snapshot by

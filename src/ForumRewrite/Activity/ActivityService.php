@@ -69,7 +69,7 @@ final class ActivityService
      *        matching the ORDER BY below. Pass null for the first page.
      * @return array{items: array<int, array<string, mixed>>, has_more: bool}
      */
-    public function fetchActivity(string $view, string $sortColumn, string $sortDirection, ?array $afterCursor = null): array
+    public function fetchActivity(string $view, string $sortColumn = 'date', string $sortDirection = 'desc', ?array $afterCursor = null): array
     {
         $result = $this->fetchActivityRows($view, $sortColumn, $sortDirection, $afterCursor);
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = "zenmemes-offline-reader-v12";
+const CACHE_NAME = "zenmemes-offline-reader-v13";
 const SNAPSHOT_URL = "/offline/snapshot.sqlite3";
 const OFFLINE_HEALTH_URL = "/offline/";
 const OFFLINE_READER_URL = "/offline/reader/";
@@ -122,7 +122,10 @@ function cacheableRequest(request) {
 }
 
 function supportsOfflineNavigation(url) {
-  return url.pathname === "/" || /^\/threads\/[^/]+\/?$/.test(url.pathname);
+  return url.pathname === "/" || url.pathname === "/threads" || url.pathname === "/threads/"
+    || /^\/threads\/[^/]+\/?$/.test(url.pathname)
+    || url.pathname === "/tags" || url.pathname === "/tags/"
+    || /^\/tags\/[a-z0-9]+(?:-[a-z0-9]+)*\/?$/.test(url.pathname);
 }
 
 async function networkFirstNavigation(request) {
@@ -146,8 +149,10 @@ self.addEventListener("message", (event) => {
       try {
         await refreshOfflineReader(Array.isArray(event.data.urls) ? event.data.urls : []);
         console.info("[offline reading] reader refresh completed", workerDetails());
+        if (event.ports[0]) event.ports[0].postMessage({ type: "offline-reader-refreshed", status: "ready", cacheName: CACHE_NAME });
       } catch (error) {
         console.error("[offline reading] reader refresh failed", Object.assign(workerDetails(), errorDetails(error)));
+        if (event.ports[0]) event.ports[0].postMessage(Object.assign({ type: "offline-reader-refreshed", status: "error" }, errorDetails(error)));
         throw error;
       }
     })());

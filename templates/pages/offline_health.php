@@ -39,6 +39,7 @@
     <p class="meta" data-role="offline-health-guidance" hidden></p>
     <div class="button-row button-row-natural">
       <button class="offline-health-action" type="button" data-action="recheck-offline-health">Check again</button>
+      <button class="offline-health-action" type="button" data-action="refresh-offline-reader">Refresh saved reader</button>
       <a class="offline-health-action offline-health-open-archive" data-role="open-saved-archive" href="/offline/reader/" hidden>Open saved archive</a>
     </div>
     <noscript><p class="meta">Offline health checks require JavaScript.</p></noscript>
