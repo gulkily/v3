@@ -38,10 +38,23 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
 
 ## B. Needs a template/JS change, not just CSS
 
-- [ ] **Score reads "Score: N", not "(N)".** `thread_reactions.js`'s
+- [x] **Score reads "Score: N", not "(N)".** `thread_reactions.js`'s
   `setThreadScore()` hardcodes the `"Score: "` prefix. Already flagged as a
   known gap in the Step 4 summary — fixing it means touching shared JS used
   by every theme, or restyling that text at the CSS level with a wrapper.
+  _Done: made the format opt-in via a `data-score-format="bare"` attribute
+  on the score node (`setThreadScore`/`parsedThreadScore`/the optimistic-
+  update path all check it, default unchanged `"Score: N"` for every other
+  theme/page that doesn't set the attribute). `quote_card.php` sets the
+  attribute and renders `(N)` server-side too, so there's no flash of the
+  wrong format before JS runs._
+  _Caught and fixed a real regression while verifying: the existing
+  thread-reaction JS tests mock `scoreNode` as a plain object with no
+  `getAttribute` method, which crashed the new code
+  (`scoreNode.getAttribute is not a function`) and broke 5 passing tests.
+  Fixed by making the format lookup defensive (falls back to the old
+  default if `getAttribute` isn't present) rather than editing every test's
+  mock. All 5 tests pass again._
 - [ ] **Vote button wording is plain English, not QDB's.** We say
   "Upvote/Downvote/Flag"; the original used bare `+`/`-`/`[X]`; qdb.us used
   labeled `↑Funny`/`↓Not`/`⚑Flag`. Pick one and change `quote_card.php`'s

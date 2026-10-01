@@ -9,7 +9,7 @@ $scoreSignClass = $scoreTotal > 0 ? 'quote-card-score-positive' : ($scoreTotal <
 <article class="card post-card quote-card" data-thread-reactions-root data-thread-id="<?= $e($quoteId) ?>" data-post-id="<?= $e($quoteId) ?>">
   <p class="quote-card-header">
     <a class="quote-card-permalink" href="/threads/<?= $e($quoteId) ?>">#<?= $e($quoteId) ?></a>
-    <span class="meta quote-card-score <?= $e($scoreSignClass) ?>" data-role="thread-score">Score: <?= $scoreTotal ?></span>
+    <span class="meta quote-card-score <?= $e($scoreSignClass) ?>" data-role="thread-score" data-score-format="bare">(<?= $scoreTotal ?>)</span>
   </p>
   <p class="quote-card-body"><?= $br($thread['root_post_body']) ?></p>
   <div class="button-row button-row-natural quote-card-actions">

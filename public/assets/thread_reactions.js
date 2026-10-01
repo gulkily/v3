@@ -274,18 +274,31 @@
     button.setAttribute("aria-pressed", "true");
   }
 
+  function threadScoreFormat(scoreNode) {
+    if (!scoreNode || typeof scoreNode.getAttribute !== "function") {
+      return "labeled";
+    }
+
+    return scoreNode.getAttribute("data-score-format") || "labeled";
+  }
+
+  function formatThreadScoreText(scoreNode, scoreTotal) {
+    return threadScoreFormat(scoreNode) === "bare" ? `(${scoreTotal})` : `Score: ${scoreTotal}`;
+  }
+
   function parsedThreadScore(scoreNode) {
     if (!scoreNode) {
       return null;
     }
 
-    const match = String(scoreNode.textContent || "").match(/^Score:\s*(-?\d+)$/);
+    const pattern = threadScoreFormat(scoreNode) === "bare" ? /^\((-?\d+)\)$/ : /^Score:\s*(-?\d+)$/;
+    const match = String(scoreNode.textContent || "").match(pattern);
     return match ? Number(match[1]) : null;
   }
 
   function setThreadScore(scoreNode, scoreTotal) {
     if (scoreNode && scoreTotal !== "") {
-      scoreNode.textContent = `Score: ${scoreTotal}`;
+      scoreNode.textContent = formatThreadScoreText(scoreNode, scoreTotal);
     }
   }
 
@@ -298,7 +311,7 @@
 
     const score = parsedThreadScore(scoreNode);
     if (score !== null && scoreNode) {
-      scoreNode.textContent = `Score: ${score + 1}`;
+      scoreNode.textContent = formatThreadScoreText(scoreNode, score + 1);
     }
   }
 
