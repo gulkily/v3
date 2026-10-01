@@ -100,7 +100,7 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
 
 ## C. New chrome the original had that we have none of
 
-- [ ] **No orange title-bar header.** Original's top bar was a two-cell
+- [x] **No orange title-bar header.** Original's top bar was a two-cell
   table: bold-italic "QDB" + an "Admin" link on the left, bold page title
   ("Quote Database Home") right-aligned, both on a `#c08000` background.
   Ours uses the shared theme-neutral `.site-header`. Can get partway there
@@ -108,6 +108,16 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
   already exists as a themeable element in other themes — but the exact
   two-cell layout needs checking against what `nav.php`/`layout.php`
   actually render for the site name.
+  _Checked rather than assumed: this was already substantially done back
+  in Stage 2 — the `.eyebrow` override (orange background, bold, italic)
+  plus the base theme's `text-transform: uppercase` already renders the
+  literal DOM text "qdb" as visually "QDB" on an orange bar. Verified by
+  rendering and extracting the actual `<p class="eyebrow">qdb</p>` markup._
+  _Not doing: an "Admin" link (no equivalent admin area to link to) or a
+  separate right-aligned page-title cell (the header's right side holds
+  the real theme menu/nav controls shared by every theme — changing that
+  layout in `layout.php` for cosmetic parity isn't worth that blast
+  radius)._
 - [ ] **No `#f0f0f0` link-bar nav.** Original's second row (Home / Latest /
   Browse / Random / Top 100 / Add Quote / Search, plus a `#` quote-number
   jump box) was a flat link row on a light-gray background. Ours uses
