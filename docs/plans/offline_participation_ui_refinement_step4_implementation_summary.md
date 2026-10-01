@@ -19,3 +19,13 @@
   - `php tests/run.php CanonicalRecordParsersTest WriteApiSmokeTest::testApplyThreadTagApiDuplicateShortCircuitsWithoutNewRecord WriteApiSmokeTest::testApplyPostTagApiDuplicateShortCircuitsWithoutNewRecord WriteApiSmokeTest::testSignedReactionApiVerifiesCommentLikeAndRetainsBothTimes` — 38 run, 38 passed.
 - Notes:
   - Existing unsigned reaction endpoints and legacy records remain supported; offline UI capture switches to the signed endpoint in Stage 4.
+
+## Stage 3 - Match supported snapshot card presentation
+- Changes:
+  - Brought snapshot thread roots and comments into the online card contract: stable post IDs/data, root/comment metadata ordering, preserved body line breaks, and post permalinks.
+  - Added a renderer contract test for the online-equivalent root/comment structure.
+- Verification:
+  - `node --check public/assets/offline_reader.js` and PHP syntax checks passed.
+  - `php tests/run.php OfflineSnapshotPresentationTest OfflineSnapshotThreadPresentationTest` — 7 run, 7 passed.
+- Notes:
+  - Like controls are deliberately added in Stage 4, after the signed-action contract is available.

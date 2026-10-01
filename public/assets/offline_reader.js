@@ -408,6 +408,9 @@
       rows.forEach(function (row, index) {
         var post = document.createElement("article");
         post.className = index === 0 ? "card post-card thread-root-card" : "card post-card";
+        post.id = "post-" + String(row[0] || "");
+        post.dataset.postId = String(row[0] || "");
+        post.dataset.author = String(row[4] || "guest");
         if (index === 0) {
           var heading = document.createElement("h1");
           heading.textContent = snapshotPresentation.threadTitle(row[2], row[3]);
@@ -421,6 +424,7 @@
         }
         var body = document.createElement("div");
         body.className = "body";
+        body.style.whiteSpace = "pre-wrap";
         var postBody = String(row[3] || "");
         if (index === 0) {
           var segments = postBody.split(/\r\n|\r|\n/, 2);
@@ -428,12 +432,24 @@
             postBody = String(segments[1] || "").replace(/^(?:\r\n|\r|\n)+/, "");
           }
         }
-        body.textContent = postBody;
-        post.appendChild(body);
         var meta = document.createElement("p");
         meta.className = "meta";
         meta.textContent = "by " + String(row[4] || "guest") + (row[5] ? " on " + String(row[5]) : "");
-        post.appendChild(meta);
+        body.textContent = postBody;
+        if (index === 0) {
+          post.appendChild(body);
+          post.appendChild(meta);
+        } else {
+          post.appendChild(meta);
+          post.appendChild(body);
+        }
+        var permalink = document.createElement("a");
+        permalink.className = "post-card-permalink";
+        permalink.href = "/posts/" + encodeURIComponent(String(row[0] || ""));
+        permalink.title = "Post " + String(row[0] || "");
+        permalink.setAttribute("aria-label", permalink.title);
+        permalink.textContent = "#";
+        post.appendChild(permalink);
         if (index === 0 && options.onQueueReaction) {
           var actions = document.createElement("p");
           var queueLike = document.createElement("button");
