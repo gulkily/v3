@@ -36,8 +36,11 @@ moderation concept this app doesn't have — skipped per your call).
   _Done: calls `composeAndAccountKeyController()->composeThread($query)`
   directly, same as the real `/compose/thread` route. Verified both forms
   render the compose form._
-- [ ] **Random** — `/random`, `/?random` → picks a random thread from this
+- [x] **Random** — `/random`, `/?random` → picks a random thread from this
   instance's quote list and redirects (302) to `/threads/<id>`.
+  _Done: reuses `ThreadRepository::fetchThreads()` (same filtering as the
+  board itself) + `array_rand()`, 302 via the existing `sendRedirect()`
+  helper. Verified: response code 302, redirect target a real thread id._
 - [ ] **Search** — `/search`, `/?search` → new feature, not just a route.
   Simple `?q=` full-text-ish match over quote bodies, rendered with the
   existing `quote_card.php` partial for result consistency. No `q` param

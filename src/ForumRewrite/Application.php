@@ -329,7 +329,7 @@ final class Application
             return;
         }
 
-        if (SiteConfig::siteName() === 'qdb' && ($path === '/' || $path === '' || $path === '/latest' || $path === '/top' || $path === '/leetness' || $path === '/add')) {
+        if (SiteConfig::siteName() === 'qdb' && ($path === '/' || $path === '' || $path === '/latest' || $path === '/top' || $path === '/leetness' || $path === '/add' || $path === '/random')) {
             if ($path === '/latest' || array_key_exists('latest', $query)) {
                 $this->sendHtml($this->boardPageController()->board('all', 'newest'), 200);
                 return;
@@ -348,6 +348,15 @@ final class Application
             if ($path === '/add' || array_key_exists('add', $query)) {
                 $this->sendHtml($this->composeAndAccountKeyController()->composeThread($query), 200);
                 return;
+            }
+
+            if ($path === '/random' || array_key_exists('random', $query)) {
+                $threads = ThreadRepository::fetchThreads($this->routeServices()->pdo());
+                if ($threads !== []) {
+                    $randomThread = $threads[array_rand($threads)];
+                    $this->sendRedirect('/threads/' . $randomThread['root_post_id'], 'Here is a random quote.', 302);
+                    return;
+                }
             }
         }
 
