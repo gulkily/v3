@@ -28,4 +28,17 @@ final class TagScore
     {
         return self::scoredTags()[$tag] ?? 0;
     }
+
+    /**
+     * @return list<string>
+     */
+    public static function voteTags(): array
+    {
+        return ['upvote', 'downvote'];
+    }
+
+    public static function isVoteTag(string $tag): bool
+    {
+        return in_array($tag, self::voteTags(), true);
+    }
 }

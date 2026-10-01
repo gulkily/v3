@@ -144,7 +144,7 @@ class IncrementalReadModelUpdater
             $this->measure(
                 $timings,
                 'update_thread_labels',
-                fn (): mixed => $this->updateThreadLabels($pdo, $threadId, $labelState['labels'], $labelState['score_total'])
+                fn (): mixed => $this->updateThreadLabels($pdo, $threadId, $labelState['labels'], $labelState['score_total'], $labelState['vote_count'])
             );
             $this->measure(
                 $timings,
@@ -1434,13 +1434,15 @@ class IncrementalReadModelUpdater
     /**
      * @param list<ThreadLabelRecord> $records
      * @param array<string, true> $approvedIdentityIds
-     * @return array{labels:list<string>,score_total:int,activity_events:list<array{created_at:string,author_identity_id:?string,labels_added:list<string>,source_path:string}>}
+     * @return array{labels:list<string>,score_total:int,vote_count:int,activity_events:list<array{created_at:string,author_identity_id:?string,labels_added:list<string>,source_path:string}>}
      */
     private function deriveThreadLabelState(string $threadId, array $records, array $approvedIdentityIds): array
     {
         $labels = [];
         $scoreTotal = 0;
+        $voteCount = 0;
         $countedApprovedScoredTags = [];
+        $countedVoteTags = [];
         $activityEvents = [];
 
         foreach ($records as $record) {
@@ -1453,6 +1455,14 @@ class IncrementalReadModelUpdater
                 if (!isset($labels[$label])) {
                     $labels[$label] = true;
                     $labelsAdded[] = $label;
+                }
+
+                if ($record->authorIdentityId !== null && TagScore::isVoteTag($label)) {
+                    $voteDedupeKey = $record->authorIdentityId . ':' . $label;
+                    if (!isset($countedVoteTags[$voteDedupeKey])) {
+                        $countedVoteTags[$voteDedupeKey] = true;
+                        $voteCount++;
+                    }
                 }
 
                 if ($record->authorIdentityId === null
@@ -1487,6 +1497,7 @@ class IncrementalReadModelUpdater
         return [
             'labels' => $labelList,
             'score_total' => $scoreTotal,
+            'vote_count' => $voteCount,
             'activity_events' => $activityEvents,
         ];
     }
@@ -1494,17 +1505,19 @@ class IncrementalReadModelUpdater
     /**
      * @param list<string> $labels
      */
-    private function updateThreadLabels(PDO $pdo, string $threadId, array $labels, int $scoreTotal): void
+    private function updateThreadLabels(PDO $pdo, string $threadId, array $labels, int $scoreTotal, int $voteCount): void
     {
         $stmt = $pdo->prepare(
             'UPDATE threads
              SET thread_labels_json = :thread_labels_json,
-                 score_total = :score_total
+                 score_total = :score_total,
+                 vote_count = :vote_count
              WHERE root_post_id = :thread_id'
         );
         $stmt->execute([
             'thread_labels_json' => json_encode($labels, JSON_THROW_ON_ERROR),
             'score_total' => $scoreTotal,
+            'vote_count' => $voteCount,
             'thread_id' => $threadId,
         ]);
 

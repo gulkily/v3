@@ -23,7 +23,7 @@ final class ThreadRepository
     {
         $rows = $pdo->query(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
-                    threads.reply_count, threads.score_total, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
+                    threads.reply_count, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
                     posts.body AS root_post_body,
                     posts.post_score_total AS root_post_score_total,
                     profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
@@ -54,7 +54,7 @@ final class ThreadRepository
     {
         $stmt = $pdo->prepare(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
-                    threads.reply_count, threads.score_total, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
+                    threads.reply_count, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
                     posts.body AS root_post_body,
                     posts.post_score_total AS root_post_score_total,
                     profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved

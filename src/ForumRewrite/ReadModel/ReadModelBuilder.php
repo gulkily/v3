@@ -140,7 +140,8 @@ final class ReadModelBuilder
                 last_post_id TEXT NOT NULL,
                 board_tags_json TEXT NOT NULL,
                 thread_labels_json TEXT NOT NULL,
-                score_total INTEGER NOT NULL DEFAULT 0
+                score_total INTEGER NOT NULL DEFAULT 0,
+                vote_count INTEGER NOT NULL DEFAULT 0
             )'
         );
 
@@ -371,6 +372,8 @@ final class ReadModelBuilder
         $labelsByThread = [];
         $scoreByThread = [];
         $countedApprovedScoredTagsByThread = [];
+        $voteCountByThread = [];
+        $countedVoteTagsByThread = [];
         foreach ($records as $record) {
             if (!isset($knownRootThreads[$record->threadId])) {
                 $this->invalidThreadLabelRecordCount++;
@@ -380,11 +383,21 @@ final class ReadModelBuilder
             $labelsByThread[$record->threadId] ??= [];
             $scoreByThread[$record->threadId] ??= 0;
             $countedApprovedScoredTagsByThread[$record->threadId] ??= [];
+            $voteCountByThread[$record->threadId] ??= 0;
+            $countedVoteTagsByThread[$record->threadId] ??= [];
             $labelsAdded = [];
             foreach ($record->labels as $label) {
                 if (!isset($labelsByThread[$record->threadId][$label])) {
                     $labelsByThread[$record->threadId][$label] = true;
                     $labelsAdded[] = $label;
+                }
+
+                if ($record->authorIdentityId !== null && TagScore::isVoteTag($label)) {
+                    $voteDedupeKey = $record->authorIdentityId . ':' . $label;
+                    if (!isset($countedVoteTagsByThread[$record->threadId][$voteDedupeKey])) {
+                        $countedVoteTagsByThread[$record->threadId][$voteDedupeKey] = true;
+                        $voteCountByThread[$record->threadId]++;
+                    }
                 }
 
                 if ($record->authorIdentityId === null || !isset($approvalState[$record->authorIdentityId]) || !TagScore::isScoredTag($label)) {
@@ -416,7 +429,8 @@ final class ReadModelBuilder
         $updateThread = $pdo->prepare(
             'UPDATE threads
              SET thread_labels_json = :thread_labels_json,
-                 score_total = :score_total
+                 score_total = :score_total,
+                 vote_count = :vote_count
              WHERE root_post_id = :root_post_id'
         );
 
@@ -426,6 +440,7 @@ final class ReadModelBuilder
             $updateThread->execute([
                 'thread_labels_json' => json_encode($labels, JSON_THROW_ON_ERROR),
                 'score_total' => $scoreByThread[$threadId] ?? 0,
+                'vote_count' => $voteCountByThread[$threadId] ?? 0,
                 'root_post_id' => $threadId,
             ]);
         }

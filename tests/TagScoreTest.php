@@ -31,6 +31,18 @@ final class TagScoreTest
         assertSame(false, TagScore::isScoredTag('not-a-real-tag'));
         assertSame(0, TagScore::scoreValueForTag('not-a-real-tag'));
     }
+
+    public function testUpvoteAndDownvoteAreVoteTags(): void
+    {
+        assertSame(true, TagScore::isVoteTag('upvote'));
+        assertSame(true, TagScore::isVoteTag('downvote'));
+    }
+
+    public function testLikeAndFlagAreNotVoteTags(): void
+    {
+        assertSame(false, TagScore::isVoteTag('like'));
+        assertSame(false, TagScore::isVoteTag('flag'));
+    }
 }
 
 if (!function_exists('assertSame')) {
