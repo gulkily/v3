@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 final class OpenPgpProductionCanaryCommandTest
 {
-    public function testBrowserCanaryHarnessCoversLookupSuccessAndRepeatPromptFailure(): void
+    public function testBrowserCanaryHarnessCoversLookupAndRepeatPromptFailure(): void
     {
         $descriptor = [
             0 => ['pipe', 'r'],
@@ -24,7 +24,7 @@ final class OpenPgpProductionCanaryCommandTest
         $exitCode = proc_close($process);
 
         assertSame(0, $exitCode);
-        assertStringContains('# pass 4', (string) $stdout);
+        assertStringContains('# pass 5', (string) $stdout);
         assertSame('', (string) $stderr);
     }
 }

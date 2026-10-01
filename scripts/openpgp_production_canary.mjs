@@ -85,6 +85,8 @@ export async function runCanary(options, launchBrowser, now = new Date()) {
     promptCount: 0,
     dialogs: [],
     consoleErrors: [],
+    expectedHttpResponses: [],
+    unexpectedHttpResponses: [],
     failure: null,
   };
   let browser;
@@ -117,7 +119,29 @@ export async function runCanary(options, launchBrowser, now = new Date()) {
     });
     page.on("console", (message) => {
       if (message.type() === "error") {
-        report.consoleErrors.push(message.text());
+        const text = message.text();
+        // Chromium prints an unhelpful generic console error for every HTTP
+        // 4xx response. The response listener below records its URL and
+        // classifies it, so retain only actual JavaScript/browser errors here.
+        if (!text.startsWith("Failed to load resource: the server responded with a status of")) {
+          report.consoleErrors.push(text);
+        }
+      }
+    });
+    page.on("response", (response) => {
+      if (response.status() < 400) {
+        return;
+      }
+      const details = {
+        status: response.status(),
+        method: response.request().method(),
+        resourceType: response.request().resourceType(),
+        url: response.url(),
+      };
+      if (isExpectedFirstIdentityProfileLookup(details, options.origin)) {
+        report.expectedHttpResponses.push(details);
+      } else {
+        report.unexpectedHttpResponses.push(details);
       }
     });
 
@@ -195,11 +219,31 @@ export function formatReport(report) {
     `Release post: ${report.postUrl || "not created"}`,
     `Username prompts: ${report.promptCount}`,
     `Phase: ${report.phase}`,
+    `Expected first-identity profile lookup 404s: ${report.expectedHttpResponses.length}`,
+    `Unexpected HTTP failures: ${report.unexpectedHttpResponses.length === 0 ? "none" : report.unexpectedHttpResponses.map(describeHttpResponse).join(" | ")}`,
     `Browser console errors: ${report.consoleErrors.length === 0 ? "none" : report.consoleErrors.join(" | ")}`,
     `Result: ${report.passed ? "PASS" : "FAIL"}${report.failure ? ` — ${report.failure}` : ""}`,
   ];
 
   return lines.join("\n");
+}
+
+export function isExpectedFirstIdentityProfileLookup(response, origin) {
+  let url;
+  try {
+    url = new URL(response.url);
+  } catch {
+    return false;
+  }
+
+  return response.status === 404
+    && response.method === "GET"
+    && url.origin === origin
+    && url.pathname === "/api/get_profile";
+}
+
+function describeHttpResponse(response) {
+  return `HTTP ${response.status} ${response.method} ${response.url}`;
 }
 
 function describeDialog(dialog) {

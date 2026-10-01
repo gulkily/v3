@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { parseOptions, runCanary } from "../../scripts/openpgp_production_canary.mjs";
+import {
+  isExpectedFirstIdentityProfileLookup,
+  parseOptions,
+  runCanary,
+} from "../../scripts/openpgp_production_canary.mjs";
 
 test("canary requires an explicit production-write confirmation", () => {
   assert.throws(
@@ -18,6 +22,19 @@ test("canary uses chromium found on PATH when no browser path is supplied", () =
   );
 
   assert.equal(options.browserExecutable, "/usr/bin/chromium");
+});
+
+test("canary classifies the missing new-identity profile lookup as expected", () => {
+  assert.equal(isExpectedFirstIdentityProfileLookup({
+    status: 404,
+    method: "GET",
+    url: "http://zenmemes.com/api/get_profile?profile_slug=openpgp-new",
+  }, "http://zenmemes.com"), true);
+  assert.equal(isExpectedFirstIdentityProfileLookup({
+    status: 404,
+    method: "GET",
+    url: "http://zenmemes.com/assets/openpgp.v5.11.3.min.js",
+  }, "http://zenmemes.com"), false);
 });
 
 test("canary reports a successful first identity, post, reload, and reuse workflow", async () => {
