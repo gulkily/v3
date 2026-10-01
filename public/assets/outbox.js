@@ -37,6 +37,14 @@
     return null;
   }
 
+  function targetTitle(item, summary) {
+    var text = String(summary || "Local action");
+    if (item && item.action === "reaction" && text.startsWith("Like ") && text.length > 5) {
+      return { prefix: "Like ", text: text.slice(5) };
+    }
+    return { prefix: "", text: text };
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     var root = document.querySelector("[data-outbox]");
     if (!root || !window.forumOutbox || !window.forumOutboxStorage) return;
@@ -66,9 +74,15 @@
         heading.appendChild(summaryPrefix);
         var target = targetLink(item);
         if (target) {
+          var linkTitle = targetTitle(item, summary.summary);
+          if (linkTitle.prefix) {
+            var titlePrefix = document.createElement("span");
+            titlePrefix.textContent = linkTitle.prefix;
+            heading.appendChild(titlePrefix);
+          }
           var titleAnchor = document.createElement("a");
           titleAnchor.href = target.href;
-          titleAnchor.textContent = summary.summary || "Local action";
+          titleAnchor.textContent = linkTitle.text;
           titleAnchor.addEventListener("click", function (event) { event.stopPropagation(); });
           heading.appendChild(titleAnchor);
         } else {
