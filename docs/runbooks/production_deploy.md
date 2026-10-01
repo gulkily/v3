@@ -170,11 +170,12 @@ from CI, cron, browser page loads, and automatic deployment hooks.
 
    ```bash
    npm install
-   ./v3 openpgp canary --confirm-production-write --browser-executable=/snap/bin/chromium
+   ./v3 openpgp canary --confirm-production-write --browser-executable=/path/to/chromium
    ```
 
-   Use the actual local Chromium path if it differs; `--headed` is available
-   when a visible browser window is useful. The command uses a fresh isolated
+   Use any locally installed Chromium or Chrome executable; no Snap install is
+   required. `--headed` is available when a visible browser window is useful.
+   The command uses a fresh isolated
    **HTTP** browser profile, creates a release-check identity, publishes
    “New release just dropped, making sure it works,” reloads it, and verifies
    that the same identity is ready without a second username prompt.
