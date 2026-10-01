@@ -1,7 +1,8 @@
 (function () {
+  const assetPaths = window.__forumAssetPaths || {};
   const config = {
-    v6Path: "/assets/openpgp.min.js",
-    v5Path: "/assets/openpgp.v5.11.3.min.js",
+    v6Path: typeof assetPaths.openpgpV6 === "string" ? assetPaths.openpgpV6 : "",
+    v5Path: typeof assetPaths.openpgpV5 === "string" ? assetPaths.openpgpV5 : "",
   };
 
   function selectedBundle() {
@@ -13,6 +14,9 @@
   }
 
   function preloadScript(path) {
+    if (!path) {
+      return;
+    }
     const link = document.createElement("link");
     link.rel = "preload";
     link.as = "script";
@@ -22,6 +26,9 @@
   }
 
   function loadScript(path) {
+    if (!path) {
+      return Promise.reject(new Error("OpenPGP bundle URL is missing from the page asset configuration."));
+    }
     return new Promise(function (resolve, reject) {
       const script = document.createElement("script");
       script.src = path;

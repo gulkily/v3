@@ -351,9 +351,10 @@ NODE;
     public function testInsecureOpenPgpLoaderFailureReportsAnonymousAndHttpsOptions(): void
     {
         $script = <<<'NODE'
+let promptCount = 0;
 global.window = {
   isSecureContext: false,
-  prompt() { return 'guest'; },
+  prompt() { promptCount += 1; return 'guest'; },
   confirm() { return true; }
 };
 const rejectedLoader = Promise.reject(new Error('legacy bundle unavailable'));
@@ -387,7 +388,7 @@ window.__forumBrowserIdentity.ensureReadyIdentity(root, statusNode).then(() => {
   process.exit(1);
 }).catch((error) => {
   const status = window.__forumBrowserIdentity.statusFromError(error, 'fallback');
-  process.stdout.write(JSON.stringify(status));
+  process.stdout.write(JSON.stringify({ ...status, promptCount }));
 });
 NODE;
 
@@ -399,6 +400,64 @@ NODE;
         );
         assertStringContains('/assets/openpgp.v5.11.3.min.js', $result['technicalDetails']);
         assertStringContains('legacy bundle unavailable', $result['technicalDetails']);
+        assertSame(0, $result['promptCount']);
+    }
+
+    public function testConcurrentIdentityPreparationPromptsAndGeneratesOnlyOnce(): void
+    {
+        $script = <<<'NODE'
+const storage = {};
+let promptCount = 0;
+let keyGenerationCount = 0;
+const fingerprint = '0168FF20EB09C3EA6193BD3C92A73AA7D20A0954';
+global.window = {
+  prompt() { promptCount += 1; return 'guest'; },
+  confirm() { return true; },
+  openpgp: {
+    async generateKey() {
+      keyGenerationCount += 1;
+      return { publicKey: 'public-key', privateKey: 'private-key' };
+    },
+    async readKey() {
+      return { getFingerprint() { return fingerprint; } };
+    }
+  }
+};
+global.window.__forumOpenPgpLoader = { load: async () => global.window.openpgp };
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(storage, key) ? storage[key] : ''; },
+  setItem(key, value) { storage[key] = String(value); },
+  removeItem(key) { delete storage[key]; }
+};
+global.fetch = async () => ({ ok: true, text: async () => '' });
+global.document = {
+  addEventListener(){},
+  querySelector(){ return null; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'', addEventListener(){}, appendChild(){} }; },
+  createTextNode(text){ return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+const fs = require('fs');
+const vm = require('vm');
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+const root = { querySelector(){ return null; } };
+Promise.all([
+  window.__forumBrowserIdentity.ensureReadyIdentity(root, null, { verifyPublishedIdentity: false }),
+  window.__forumBrowserIdentity.ensureReadyIdentity(root, null, { verifyPublishedIdentity: false })
+]).then(() => {
+  process.stdout.write(JSON.stringify({ promptCount, keyGenerationCount, username: storage.forum_pki_username }));
+}).catch((error) => {
+  process.stderr.write(error && error.stack ? error.stack : String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(1, $result['promptCount']);
+        assertSame(1, $result['keyGenerationCount']);
+        assertSame('guest', $result['username']);
     }
 
     public function testAccountClearIdentityButtonClearsSavedBrowserIdentity(): void

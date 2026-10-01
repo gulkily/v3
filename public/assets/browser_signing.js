@@ -11,6 +11,7 @@
   };
   let actionTimingSequence = 0;
   let clearedKeypairBackup = null;
+  let identityPreparationPromise = null;
   const pendingReplyOperations = new Set();
   const pendingThreadOperations = new Set();
   let identityPrewarmStarted = false;
@@ -2243,6 +2244,22 @@
   }
 
   async function ensureReadyIdentity(root, statusNode, options) {
+    if (identityPreparationPromise !== null) {
+      return identityPreparationPromise;
+    }
+
+    const pending = prepareReadyIdentity(root, statusNode, options);
+    identityPreparationPromise = pending;
+    try {
+      return await pending;
+    } finally {
+      if (identityPreparationPromise === pending) {
+        identityPreparationPromise = null;
+      }
+    }
+  }
+
+  async function prepareReadyIdentity(root, statusNode, options) {
     const config = options || {};
     const timing = config.timing || null;
     const promptForUsername = typeof config.promptForUsername === "function"
@@ -2254,6 +2271,7 @@
       .toUpperCase();
 
     if (!hasBrowserKeypair()) {
+      await ensureOpenPgpApi(["generateKey", "readKey"]);
       setStatus(statusNode, "Choose a username to prepare your browser keypair...", "info");
       markActionTiming(timing, "forum_username_prompt_start");
       const username = await promptForUsername();

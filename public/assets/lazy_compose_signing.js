@@ -41,9 +41,16 @@
 
   function loadSigningAssets() {
     if (!loadPromise) {
-      loadPromise = appendScript("/assets/openpgp_loader.js")
+      const assetPaths = window.__forumAssetPaths || {};
+      const loaderPath = typeof assetPaths.openpgpLoader === "string" ? assetPaths.openpgpLoader : "";
+      const signingPath = typeof assetPaths.browserSigning === "string" ? assetPaths.browserSigning : "";
+      if (!loaderPath || !signingPath) {
+        return Promise.reject(new Error("Browser signing asset URLs are missing from the page asset configuration."));
+      }
+
+      loadPromise = appendScript(loaderPath)
         .then(function () {
-          return appendScript("/assets/browser_signing.js");
+          return appendScript(signingPath);
         })
         .then(initializeSigning)
         .catch(function (error) {

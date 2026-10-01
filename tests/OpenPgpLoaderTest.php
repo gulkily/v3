@@ -14,7 +14,13 @@ const fs = require('fs');
 const vm = require('vm');
 
 const appendedNodes = [];
-global.window = { isSecureContext: process.argv[2] === '1' };
+global.window = {
+  isSecureContext: process.argv[2] === '1',
+  __forumAssetPaths: {
+    openpgpV6: '/assets/openpgp.min.js',
+    openpgpV5: '/assets/openpgp.v5.11.3.min.js'
+  }
+};
 global.document = {
   createElement(tagName) {
     return {
