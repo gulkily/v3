@@ -118,10 +118,18 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
   the real theme menu/nav controls shared by every theme — changing that
   layout in `layout.php` for cosmetic parity isn't worth that blast
   radius)._
-- [ ] **No `#f0f0f0` link-bar nav.** Original's second row (Home / Latest /
+- [x] **No `#f0f0f0` link-bar nav.** Original's second row (Home / Latest /
   Browse / Random / Top 100 / Add Quote / Search, plus a `#` quote-number
   jump box) was a flat link row on a light-gray background. Ours uses
   button-styled `.nav-link`s with borders. Restyle for this theme.
+  _Done: `.site-header-actions .nav` gets a `var(--panel)` (light gray)
+  background bar; `.nav-link` loses its border/background/padding in favor
+  of small flat text, matching the original's plain link row. The active
+  state keeps its orange highlight (unchanged)._
+  _Not doing: the exact link set (Home/Latest/Browse/Random/Top
+  100/Search) and the `#` quote-number jump box — those are specific
+  features/routes the original had that we don't, not a styling gap. Our
+  shared nav keeps its own real links (Board/Activity/etc.)._
 - [ ] **No footer at all.** Original had an orange footer bar with live
   counts ("20414 quotes approved; 330 quotes pending") and a copyright line
   ("© QDB 1999-2007"). We render nothing after the list. Would need a new
