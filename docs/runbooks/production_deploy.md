@@ -146,6 +146,45 @@ withdrawn and PHP serves current content until the next successful publish.
 Do not run the old static-build script from a pre-release checkout: upgrade the
 code before invoking `./v3 build-static`.
 
+## Manual OpenPGP Release Check
+
+Run these checks manually after a release. They are intentionally excluded
+from CI, cron, browser page loads, and automatic deployment hooks.
+
+1. First run the read-only asset gate from a machine that can reach the public
+   site:
+
+   ```bash
+   ./v3 openpgp smoke
+   ```
+
+   It must report `PASS` for both HTTP (selected OpenPGP v5) and HTTPS
+   (selected OpenPGP v6), as well as both legacy raw bundle URLs. A redirect,
+   non-JavaScript content type, missing runtime map, or failed request is a
+   release failure. Repair and redeploy before continuing; do not compensate
+   by clearing browser storage or changing Apache/vhost configuration.
+
+2. Only after the asset gate passes, run the visible new-user canary exactly
+   once. From the operator workstation, install the pinned browser driver once
+   for the checkout, then pass the local Chromium executable explicitly:
+
+   ```bash
+   npm install
+   ./v3 openpgp canary --confirm-production-write --browser-executable=/snap/bin/chromium
+   ```
+
+   Use the actual local Chromium path if it differs; `--headed` is available
+   when a visible browser window is useful. The command uses a fresh isolated
+   **HTTP** browser profile, creates a release-check identity, publishes
+   “New release just dropped, making sure it works,” reloads it, and verifies
+   that the same identity is ready without a second username prompt.
+
+   The identity and post are intentional durable community records. If the
+   command reports an ambiguous failure after posting, do **not** rerun it:
+   inspect its reported post URL and browser output first. HTTP and HTTPS have
+   separate browser storage, so this HTTP canary does not substitute for an
+   existing HTTPS identity.
+
 ## Public Session Restoration
 
 Public pages remain readable without a viewer session. A browser that already
