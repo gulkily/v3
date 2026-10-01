@@ -282,8 +282,15 @@
     return scoreNode.getAttribute("data-score-format") || "labeled";
   }
 
-  function formatThreadScoreText(scoreNode, scoreTotal) {
-    return threadScoreFormat(scoreNode) === "bare" ? `(${scoreTotal})` : `Score: ${scoreTotal}`;
+  function formatThreadScoreText(scoreNode, scoreTotal, voteCount) {
+    const format = threadScoreFormat(scoreNode);
+    if (format === "bare-ratio" && voteCount !== undefined && voteCount !== "") {
+      return `(${scoreTotal}/${voteCount})`;
+    }
+    if (format === "bare" || format === "bare-ratio") {
+      return `(${scoreTotal})`;
+    }
+    return `Score: ${scoreTotal}`;
   }
 
   function parsedThreadScore(scoreNode) {
@@ -291,14 +298,19 @@
       return null;
     }
 
-    const pattern = threadScoreFormat(scoreNode) === "bare" ? /^\((-?\d+)\)$/ : /^Score:\s*(-?\d+)$/;
+    const format = threadScoreFormat(scoreNode);
+    const pattern = format === "bare-ratio"
+      ? /^\((-?\d+)\/\d+\)$/
+      : format === "bare"
+        ? /^\((-?\d+)\)$/
+        : /^Score:\s*(-?\d+)$/;
     const match = String(scoreNode.textContent || "").match(pattern);
     return match ? Number(match[1]) : null;
   }
 
-  function setThreadScore(scoreNode, scoreTotal) {
+  function setThreadScore(scoreNode, scoreTotal, voteCount) {
     if (scoreNode && scoreTotal !== "") {
-      scoreNode.textContent = formatThreadScoreText(scoreNode, scoreTotal);
+      scoreNode.textContent = formatThreadScoreText(scoreNode, scoreTotal, voteCount);
     }
   }
 
@@ -479,10 +491,11 @@
         }
 
         const scoreTotal = parseResponseValue(text, "score_total");
+        const voteCount = parseResponseValue(text, "vote_count");
         const wroteRecord = parseResponseValue(text, "wrote_record") === "yes";
         const viewerIsApproved = parseResponseValue(text, "viewer_is_approved") === "yes";
 
-        setThreadScore(scoreNode, scoreTotal);
+        setThreadScore(scoreNode, scoreTotal, voteCount);
 
         setConfirmedReactionButton(button, appliedLabel);
 

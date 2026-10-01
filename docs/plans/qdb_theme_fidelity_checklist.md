@@ -164,12 +164,42 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
   from Section A — the original's rows had real table-cell padding
   (`cellpadding`) too, so a zebra stripe with zero padding would actually
   be *less* authentic, not more._
-- [ ] **No vote-count-vs-score ratio ("20/38").** qdb.us showed score and
+- [x] **No vote-count-vs-score ratio ("20/38").** qdb.us showed score and
   total votes cast side by side. Step 2 explicitly scoped this *out* as
   more than "small modifications" — flagging it here since "closer to the
   original" may now outweigh that earlier call. **Needs your call** on
   whether to reopen it (it needs a new read-model aggregate, unlike plain
   score which already exists).
+  _Decided: yes, add it. Implemented in 3 commits:_
+  1. _New `threads.vote_count` column, accumulated in both
+     `ReadModelBuilder` (full rebuild) and `IncrementalReadModelUpdater`
+     (incremental path): counts every distinct (identity, tag)
+     upvote/downvote event, **not** gated by approval (unlike
+     `score_total`) — this is "total votes cast by anyone," a genuinely
+     different, more honest number than the approval-gated score.
+     `TagScore::isVoteTag()` added so upvote/downvote are identified in one
+     place. `ThreadRepository`'s two SELECTs and `ThreadRowSupport` updated
+     to carry it through._
+  2. _`LocalWriteService::applyThreadTag()` now also returns `vote_count`
+     (new `currentThreadVoteCount()` helper mirroring the score one);
+     `TagApiController` includes it in the AJAX response text._
+  3. _`thread_reactions.js` gained a third score format, `bare-ratio`
+     (`"(score/total)"`), alongside the existing `labeled`/`bare` ones —
+     `bindThreadReactions` now parses `vote_count` from the response and
+     passes it through. `quote_card.php` sets `data-score-format=
+     "bare-ratio"` and renders `(score/voteCount)` server-side too._
+  _Verified end-to-end for real, not just structurally: applied a real
+  upvote via `LocalWriteService` using the fixture's real identity
+  (`openpgp:0168ff...`, which happens to be pre-approved there), got back
+  `score_total=1 vote_count=1`, and confirmed the board re-rendered
+  `(1/1)`. This is more verification depth than Stage 4 managed for plain
+  upvote/downvote (which only got structural/code-path verification), so
+  this closes that earlier gap too._
+  _Schema note: this is a read-model (cache) column, not a canonical-data
+  migration — any already-running deployment just needs one `./v3
+  rebuild` after this ships; existing canonical thread-label records are
+  re-aggregated from scratch with full fidelity, nothing is lost. Did
+  this myself for local dev's `state/cache/post_index_qdb.sqlite3`._
 
 ## E. Lower priority / cosmetic
 
