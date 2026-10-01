@@ -50,3 +50,30 @@
 ### Notes
 
 - Site-wide Docs discovery and static-release publication remain Stage 3 work.
+
+## Stage 3 — Public discovery and static release support
+
+### Changes
+
+- Added Docs to the public header navigation and the existing Tools discovery
+  registry, so it is both a first-class destination and reachable from the
+  established tools index.
+- Added Docs index and catalogued-document artifacts to the standard static
+  release and shared-refresh flows. The front controller safely maps those
+  routes to their pre-rendered artifacts; uncatalogued documents continue to
+  fall through to the public application route.
+- Added a release smoke test that builds a clean static artifact set, checks
+  every catalog entry, and serves the index and a document through the front
+  controller's static path.
+
+### Verification
+
+- `php tests/run.php PlatformDocsPageTest` — 5 passed.
+- `php tests/run.php PlatformDocsStaticTest` — 1 passed.
+- `php tests/run.php LocalAppSmokeTest::testBuildStaticCommandReportsProgressAndArtifactSummary LocalAppSmokeTest::testSharedStaticRefreshCommandKeepsDetailArtifactsWithoutRebuildingTheReadModel LocalAppSmokeTest::testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout` — 3 passed.
+- `git diff --check`
+
+### Notes
+
+- The Stage 4 boundary tests can now concentrate on regression coverage; the
+  public routes, navigation, and normal static publication path are complete.

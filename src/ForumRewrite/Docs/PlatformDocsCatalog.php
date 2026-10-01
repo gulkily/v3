@@ -79,6 +79,17 @@ final class PlatformDocsCatalog
         return $path;
     }
 
+    public static function routeForPath(string $sourcePath): ?string
+    {
+        if (self::normalizePath($sourcePath) !== $sourcePath) {
+            return null;
+        }
+
+        $relativePath = substr($sourcePath, strlen(self::DOCUMENT_ROOT . '/'));
+
+        return '/docs/' . implode('/', array_map(rawurlencode(...), explode('/', $relativePath)));
+    }
+
     public static function resolvePath(string $projectRoot, string $encodedPath): ?string
     {
         $path = self::normalizePath($encodedPath);

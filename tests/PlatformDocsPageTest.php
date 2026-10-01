@@ -26,6 +26,15 @@ final class PlatformDocsPageTest
         assertTrue(str_contains($html, 'docs/examples/extension_improvement_cookbook.md'));
     }
 
+    public function testDocsAreDiscoverableFromNavigationAndTools(): void
+    {
+        $board = $this->render('/');
+        $tools = $this->render('/tools/');
+
+        assertTrue(str_contains($board, 'href="/docs/">Docs</a>'));
+        assertTrue(str_contains($tools, 'href="/docs/">Platform Docs</a>'));
+    }
+
     public function testCataloguedAndUncataloguedDocumentsRenderWithSourcePaths(): void
     {
         $catalogued = $this->render('/docs/examples/extension_improvement_cookbook.md');

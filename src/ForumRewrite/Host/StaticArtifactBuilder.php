@@ -6,6 +6,7 @@ namespace ForumRewrite\Host;
 
 use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Docs\PlatformDocsCatalog;
 use ForumRewrite\Offline\PublicOfflineSnapshotBuilder;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
@@ -91,40 +92,56 @@ final class StaticArtifactBuilder
 
         $this->reportProgress('Fingerprinting and copying assets referenced by rendered pages...');
         $this->copyOfflineRuntimeFiles();
-        $this->reportProgress('Rendering shared pages (0/10).');
-        $this->reportProgress('Rendering shared pages (1/10): /.');
+        $totalSharedPages = 11 + count(PlatformDocsCatalog::entries());
+        $this->reportProgress("Rendering shared pages (0/{$totalSharedPages}).");
+        $this->reportProgress("Rendering shared pages (1/{$totalSharedPages}): /.");
         $this->writeRouteArtifact($application, '/', $this->artifactRoot . '/index.html');
-        $this->reportProgress('Rendering shared pages (2/10): /threads/.');
+        $this->reportProgress("Rendering shared pages (2/{$totalSharedPages}): /threads/.");
         $this->writeRouteArtifacts($application, '/threads/', [
             $this->artifactRoot . '/threads.html',
             $this->artifactRoot . '/threads/index.html',
         ]);
-        $this->reportProgress('Rendering shared pages (3/10): /about/.');
+        $this->reportProgress("Rendering shared pages (3/{$totalSharedPages}): /about/.");
         $this->writeRouteArtifacts($application, '/about/', [
             $this->artifactRoot . '/about.html',
             $this->artifactRoot . '/about/index.html',
         ]);
-        $this->reportProgress('Rendering shared pages (4/10): /instance/.');
+        $this->reportProgress("Rendering shared pages (4/{$totalSharedPages}): /instance/.");
         $this->writeRouteArtifact($application, '/instance/', $this->artifactRoot . '/instance.html');
-        $this->reportProgress('Rendering shared pages (5/10): /activity/.');
+        $this->reportProgress("Rendering shared pages (5/{$totalSharedPages}): /activity/.");
         $this->writeRouteArtifact($application, '/activity/', $this->artifactRoot . '/activity.html');
-        $this->reportProgress('Rendering shared pages (6/10): /users/.');
+        $this->reportProgress("Rendering shared pages (6/{$totalSharedPages}): /users/.");
         $this->writeRouteArtifact($application, '/users/', $this->artifactRoot . '/users.html');
-        $this->reportProgress('Rendering shared pages (7/10): /tools/.');
+        $this->reportProgress("Rendering shared pages (7/{$totalSharedPages}): /tools/.");
         $this->writeRouteArtifacts($application, '/tools/', [
             $this->artifactRoot . '/tools.html',
             $this->artifactRoot . '/tools/index.html',
         ]);
-        $this->reportProgress('Rendering shared pages (8/10): /tools/bookmarklets/.');
+        $this->reportProgress("Rendering shared pages (8/{$totalSharedPages}): /tools/bookmarklets/.");
         $this->writeRouteArtifact($application, '/tools/bookmarklets/', $this->artifactRoot . '/tools/bookmarklets.html');
-        $this->reportProgress('Rendering shared pages (9/10): /tools/feature-flags/.');
+        $this->reportProgress("Rendering shared pages (9/{$totalSharedPages}): /tools/feature-flags/.");
         $this->writeRouteArtifact($application, '/tools/feature-flags/', $this->artifactRoot . '/tools/feature-flags.html');
-        $this->reportProgress('Rendering shared pages (10/10): /tags/.');
+        $this->reportProgress("Rendering shared pages (10/{$totalSharedPages}): /tags/.");
         $this->writeRouteArtifacts($application, '/tags/', [
             $this->artifactRoot . '/tags.html',
             $this->artifactRoot . '/tags/index.html',
         ]);
-        $this->reportProgress('Rendering shared pages complete (10/10).');
+        $this->reportProgress("Rendering shared pages (11/{$totalSharedPages}): /docs/.");
+        $this->writeRouteArtifacts($application, '/docs/', [
+            $this->artifactRoot . '/docs.html',
+            $this->artifactRoot . '/docs/index.html',
+        ]);
+        foreach (PlatformDocsCatalog::entries() as $index => $entry) {
+            $route = PlatformDocsCatalog::routeForPath($entry['path']);
+            if ($route === null) {
+                throw new RuntimeException('Unable to resolve platform docs route: ' . $entry['path']);
+            }
+
+            $completed = $index + 12;
+            $this->reportProgress("Rendering shared pages ({$completed}/{$totalSharedPages}): {$route}.");
+            $this->writeRouteArtifact($application, $route, $this->artifactRoot . '/' . $entry['path'] . '.html');
+        }
+        $this->reportProgress("Rendering shared pages complete ({$totalSharedPages}/{$totalSharedPages}).");
     }
 
     private function copyOfflineRuntimeFiles(): void
@@ -397,6 +414,17 @@ final class StaticArtifactBuilder
             return '/about/';
         }
 
+        if ($path === '/docs' || $path === '/docs/') {
+            return '/docs/';
+        }
+
+        foreach (PlatformDocsCatalog::entries() as $entry) {
+            $route = PlatformDocsCatalog::routeForPath($entry['path']);
+            if ($route === $path || $route . '/' === $path) {
+                return $route;
+            }
+        }
+
         if ($path === '/instance' || $path === '/instance/' || $path === '/backup' || $path === '/backup/' || $path === '/tools/backup' || $path === '/tools/backup/') {
             return '/instance/';
         }
@@ -475,6 +503,19 @@ final class StaticArtifactBuilder
                 $this->artifactRoot . '/about.html',
                 $this->artifactRoot . '/about/index.html',
             ];
+        }
+
+        if ($route === '/docs/') {
+            return [
+                $this->artifactRoot . '/docs.html',
+                $this->artifactRoot . '/docs/index.html',
+            ];
+        }
+
+        foreach (PlatformDocsCatalog::entries() as $entry) {
+            if (PlatformDocsCatalog::routeForPath($entry['path']) === $route) {
+                return [$this->artifactRoot . '/' . $entry['path'] . '.html'];
+            }
         }
 
         if ($route === '/instance/') {

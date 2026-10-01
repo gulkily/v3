@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Host;
 
 use ForumRewrite\Application;
+use ForumRewrite\Docs\PlatformDocsCatalog;
 use ForumRewrite\Offline\OfflineSnapshotPublisher;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
@@ -195,6 +196,26 @@ final class FrontController
                 $this->publicRoot . '/about.html',
                 $this->publicRoot . '/about/index.html',
                 $this->staticHtmlRoot . '/about/index.html',
+            ]);
+        }
+
+        if ($path === '/docs/' || $path === '/docs') {
+            return $this->firstExistingPath([
+                $this->publicRoot . '/docs.html',
+                $this->publicRoot . '/docs/index.html',
+                $this->staticHtmlRoot . '/docs/index.html',
+            ]);
+        }
+
+        if (str_starts_with($path, '/docs/')) {
+            $sourcePath = PlatformDocsCatalog::normalizePath('docs/' . substr($path, strlen('/docs/')));
+            if ($sourcePath === null) {
+                return null;
+            }
+
+            return $this->firstExistingPath([
+                $this->publicRoot . '/' . $sourcePath . '.html',
+                $this->staticHtmlRoot . '/' . $sourcePath . '.html',
             ]);
         }
 

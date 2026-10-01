@@ -57,8 +57,6 @@ final class PlatformDocsController
 
     private function documentHref(string $sourcePath): string
     {
-        $relativePath = substr($sourcePath, strlen(PlatformDocsCatalog::DOCUMENT_ROOT . '/'));
-
-        return '/docs/' . implode('/', array_map(rawurlencode(...), explode('/', $relativePath)));
+        return PlatformDocsCatalog::routeForPath($sourcePath) ?? '/docs/';
     }
 }
