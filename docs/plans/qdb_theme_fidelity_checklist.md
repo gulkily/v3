@@ -221,3 +221,17 @@ seeing A–C.
 Two items need your decision before I touch them: hiding the modern board
 chrome (B) and whether to reopen the vote-ratio display (D) — both change
 things we deliberately scoped out in Step 2.
+
+## Post-checklist fixes
+
+- **Orange-on-orange text on `/tools/`:** the C2 "flatten the nav" item
+  added a blanket `:root[data-theme="qdb"] a { color: var(--line) }` so
+  plain links read orange. That unintentionally also applied to
+  anchor-styled buttons elsewhere in the app — `.tool-launcher-button`
+  (`tools.css`) sets its own `background: var(--button-bg)`, which is the
+  same orange as `--line` in this theme, so the text became invisible.
+  Fixed by giving `.tool-launcher-button` (and `.offline-health-open-archive`,
+  same pattern, defensively) an explicit `color: var(--active-ink)` rather
+  than relying on the generic link rule. Checked every other
+  `var(--button-bg)`/`var(--active-bg)` background usage site-wide for the
+  same exposure — this was the only real instance.
