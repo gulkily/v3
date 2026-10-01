@@ -730,6 +730,14 @@ PHP;
             assertStringContains("document.getElementById('theme-stylesheet')", $hintedHtml);
             assertStringContains('data-theme-hint-cookie="theme-hint"', $hintedHtml);
             assertStringContains('window.forumUpdateThemeHint = updateThemeHint;', $hintedHtml);
+            assertStringContains(
+                '"openpgpV6":"' . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/openpgp.min.js') . '"',
+                $hintedHtml,
+            );
+            assertStringContains(
+                '"openpgpV5":"' . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/openpgp.v5.11.3.min.js') . '"',
+                $hintedHtml,
+            );
 
             $_COOKIE = ['theme-hint' => 'auto'];
             $invalidHintHtml = $renderer->renderLayout('Theme', '<main></main>', 'board');
@@ -3172,6 +3180,28 @@ PHP;
         }
     }
 
+    public function testFrontControllerServesRawPublicAssetFallback(): void
+    {
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($publicRoot . '/assets', 0777, true);
+        file_put_contents($publicRoot . '/assets/openpgp.v5.11.3.min.js', 'window.openpgp = {};');
+        file_put_contents($publicRoot . '/private.txt', 'must not be served');
+
+        try {
+            http_response_code(200);
+            $response = $this->renderFrontController($controller, 'GET', '/assets/openpgp.v5.11.3.min.js', []);
+
+            assertSame('window.openpgp = {};', $response);
+            assertSame(200, http_response_code());
+
+            $traversalResponse = $this->renderFrontController($controller, 'GET', '/assets/../private.txt', []);
+            assertStringNotContains('must not be served', $traversalResponse);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
     public function testFrontControllerServesStaticArtifactForBackupAlias(): void
     {
         @unlink($this->databasePath);
@@ -3300,6 +3330,8 @@ PHP;
         foreach (array_unique($assetMatches[0]) as $assetPath) {
             assertTrue(is_file($artifactRoot . $assetPath));
         }
+        assertTrue(is_file($artifactRoot . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.min.js')));
+        assertTrue(is_file($artifactRoot . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.v5.11.3.min.js')));
         assertTrue(is_file($artifactRoot . '/offline/snapshot.sqlite3'));
         assertStringContains('SQLite format 3', (string) file_get_contents($artifactRoot . '/offline/snapshot.sqlite3'));
         assertSame((string) file_get_contents(dirname(__DIR__) . '/public/service_worker.js'), (string) file_get_contents($artifactRoot . '/service_worker.js'));

@@ -45,6 +45,10 @@ const vm = require('vm');
     }
   };
   global.window = {
+    __forumAssetPaths: {
+      openpgpLoader: '/assets/openpgp_loader.fingerprint.js',
+      browserSigning: '/assets/browser_signing.fingerprint.js'
+    },
     ForumBrowserSigning: {
       init(rootArg) {
         this.initCalled = true;
@@ -53,6 +57,9 @@ const vm = require('vm');
     }
   };
   global.document = {
+    querySelectorAll(selector) {
+      return selector === '[data-compose-root]' ? [root] : [];
+    },
     querySelector(selector) {
       if (selector === '[data-compose-root]') {
         return root;
@@ -100,11 +107,11 @@ NODE;
 
         $result = $this->runScript($script);
 
-        assertSame(['/assets/openpgp_loader.js'], $result['afterDuplicateIntent']);
+        assertSame(['/assets/openpgp_loader.fingerprint.js'], $result['afterDuplicateIntent']);
         assertSame(
             [
-                ['src' => '/assets/openpgp_loader.js', 'defer' => true],
-                ['src' => '/assets/browser_signing.js', 'defer' => true],
+                ['src' => '/assets/openpgp_loader.fingerprint.js', 'defer' => true],
+                ['src' => '/assets/browser_signing.fingerprint.js', 'defer' => true],
             ],
             $result['appended']
         );

@@ -146,6 +146,12 @@ final class TemplateRenderer
             'appVersion' => $this->appVersion,
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
             'siteCssPath' => $this->assetPath('/assets/site.css'),
+            'browserRuntimeAssetPaths' => [
+                'openpgpV6' => $this->assetPath('/assets/openpgp.min.js'),
+                'openpgpV5' => $this->assetPath('/assets/openpgp.v5.11.3.min.js'),
+                'openpgpLoader' => $this->assetPath('/assets/openpgp_loader.js'),
+                'browserSigning' => $this->assetPath('/assets/browser_signing.js'),
+            ],
             'pageStylesheetPaths' => $pageStylesheetPaths,
             'criticalCss' => $this->criticalCss(),
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),

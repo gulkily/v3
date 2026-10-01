@@ -86,6 +86,9 @@
 <?php if (!$approvedMembersOnlyEnabled): ?>
   <link rel="manifest" href="/manifest.webmanifest">
 <?php endif; ?>
+  <script>
+    window.__forumAssetPaths = <?= json_encode($browserRuntimeAssetPaths, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) ?>;
+  </script>
   <style data-role="critical-css"><?= $criticalCss ?></style>
   <link rel="preload" href="<?= $e($siteCssPath) ?>" as="style" fetchpriority="high">
   <link rel="stylesheet" href="<?= $e($siteCssPath) ?>" media="print" onload="this.media='all'">
