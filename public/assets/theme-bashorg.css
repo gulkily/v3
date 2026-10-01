@@ -1,0 +1,60 @@
+/* Theme: bashorg */
+:root[data-theme="bashorg"],
+.theme-menu__option[data-theme-option="bashorg"] {
+  color-scheme: light;
+  --page-bg: #ffffff;
+  --body-background: var(--page-bg);
+  --ink: #000000;
+  --ink-soft: #333333;
+  --line: #c08000;
+  --panel: #f0f0f0;
+  --input-bg: #ffffff;
+  --button-bg: #c08000;
+  --button-alt-bg: #f0f0f0;
+  --feedback-ok-bg: #f0f0d0;
+  --feedback-error-bg: #ffe0e0;
+  --status-error: #8f1f1f;
+  --status-ok: #008000;
+  --status-warning: #9a6400;
+  --active-bg: #c08000;
+  --active-ink: #000000;
+  --active-line: #c08000;
+  --active-ring: rgba(192, 128, 0, 0.25);
+  --body-font: Arial, Helvetica, sans-serif;
+  --ui-font: Arial, Helvetica, sans-serif;
+  --code-font: "Courier New", "Lucida Console", monospace;
+}
+
+.theme-swatch[data-theme="bashorg"] {
+  background: #ffffff;
+  border-color: #c08000;
+  box-shadow: inset 0 0 0 0.22rem #c08000;
+}
+
+:root[data-theme="bashorg"] a {
+  color: var(--line);
+}
+
+:root[data-theme="bashorg"] .site-header {
+  border-bottom: 3px solid var(--line);
+  padding-bottom: 0.5rem;
+}
+
+:root[data-theme="bashorg"] .eyebrow {
+  background: var(--active-bg);
+  color: var(--active-ink);
+  border: 1px solid var(--active-line);
+  font-style: italic;
+  font-weight: 700;
+}
+
+:root[data-theme="bashorg"] .card {
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+:root[data-theme="bashorg"] .nav-link.is-active {
+  background: var(--active-bg);
+  color: var(--active-ink);
+  border-color: var(--active-line);
+}
