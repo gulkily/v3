@@ -3246,14 +3246,20 @@ PHP;
         ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
         mkdir($publicRoot . '/assets', 0777, true);
         file_put_contents($publicRoot . '/assets/openpgp.v5.11.3.min.js', 'window.openpgp = {};');
+        file_put_contents($publicRoot . '/assets/openpgp.min.js', 'window.openpgpV6 = {};');
         file_put_contents($publicRoot . '/private.txt', 'must not be served');
 
         try {
-            http_response_code(200);
-            $response = $this->renderFrontController($controller, 'GET', '/assets/openpgp.v5.11.3.min.js', []);
+            foreach ([
+                '/assets/openpgp.v5.11.3.min.js' => 'window.openpgp = {};',
+                '/assets/openpgp.min.js' => 'window.openpgpV6 = {};',
+            ] as $requestUri => $expectedBody) {
+                http_response_code(200);
+                $response = $this->renderFrontController($controller, 'GET', $requestUri, []);
 
-            assertSame('window.openpgp = {};', $response);
-            assertSame(200, http_response_code());
+                assertSame($expectedBody, $response);
+                assertSame(200, http_response_code());
+            }
 
             $traversalResponse = $this->renderFrontController($controller, 'GET', '/assets/../private.txt', []);
             assertStringNotContains('must not be served', $traversalResponse);
@@ -3393,6 +3399,14 @@ PHP;
         }
         assertTrue(is_file($artifactRoot . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.min.js')));
         assertTrue(is_file($artifactRoot . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.v5.11.3.min.js')));
+        assertStringContains(
+            '"openpgpV6":"' . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.min.js') . '"',
+            $indexArtifact,
+        );
+        assertStringContains(
+            '"openpgpV5":"' . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.v5.11.3.min.js') . '"',
+            $indexArtifact,
+        );
         assertTrue(is_file($artifactRoot . '/offline/snapshot.sqlite3'));
         assertStringContains('SQLite format 3', (string) file_get_contents($artifactRoot . '/offline/snapshot.sqlite3'));
         assertSame((string) file_get_contents(dirname(__DIR__) . '/public/service_worker.js'), (string) file_get_contents($artifactRoot . '/service_worker.js'));

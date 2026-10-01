@@ -53,6 +53,38 @@ app smoke tests.
 
 - any arguments — passed straight through to the test runner, e.g. a specific test class name
 
+## Check the live OpenPGP asset contract
+
+```
+./v3 openpgp smoke [--origin=zenmemes.com]
+```
+
+Performs a read-only live check of the HTTP and HTTPS browser runtime paths.
+For each scheme it reads `window.__forumAssetPaths` from the public page, selects
+the same OpenPGP v5 (HTTP) or v6 (HTTPS) asset the browser would use, then also
+checks both legacy raw OpenPGP bundle URLs used by cached clients. It reports
+the selected URL, status, content type, redirects, and a failure reason. The
+default host is `zenmemes.com`; use `--origin=staging.example` to check a staging
+host. No records, browser identities, or posts are created.
+
+## Run the manual OpenPGP production canary
+
+```
+npm install
+./v3 openpgp canary --confirm-production-write --browser-executable=/path/to/chromium
+```
+
+This is deliberately not a CI or deployment command. After the read-only
+smoke passes, manually run the canary from a machine with Node 18+ and local
+Chromium. It uses `which chromium` automatically; pass
+`--browser-executable=/path/to/chromium` only when that lookup is unsuitable.
+It opens an isolated **HTTP** browser profile, creates a new identity using the
+consistent username `release-check`, publishes “New release just dropped,
+making sure it works,” reloads the post, and exercises the existing browser identity path to
+confirm no second username prompt appears. It leaves the identity and post in
+place intentionally. Do not rerun it after an ambiguous result—first inspect
+the reported post URL. `--confirm-production-write` is mandatory.
+
 ## Inspect operator status
 
 ```

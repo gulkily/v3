@@ -188,8 +188,14 @@ identities and do not restore the missing bundle.
 
 ## 7. Update operations and observability
 
-- [ ] Add the two direct bundle `GET` checks to the production deployment
-  runbook and deploy checklist.
+- [x] Add a manual-only release gate to the production deployment runbook:
+  `./v3 openpgp smoke` validates the page-emitted HTTP-v5/HTTPS-v6 assets and
+  both legacy raw bundle paths, followed by an explicitly confirmed isolated
+  browser canary. This records code/runbook readiness only; each production
+  release still needs its own manual invocation.
+- [x] Replace ad-hoc direct bundle `GET` checks with the command above so the
+  deployment gate also validates the page-emitted fingerprinted paths,
+  redirects, content type, and legacy raw compatibility URLs.
 - [ ] Record which deployment artifact owns `public/assets` and which owns
   `state/static_html`; they must not be conflated.
 - [ ] Add monitoring for failed `/assets/openpgp*.js` responses, including

@@ -10,7 +10,7 @@ final class OfflineSnapshotThreadPresentationTest
 const fs = require('fs');
 const vm = require('vm');
 function element(type) {
-  return { type, children: [], className: '', dataset: {}, style: {}, textContent: '', id: '', href: '', title: '',
+  return { type, children: [], className: '', dataset: {}, style: {}, textContent: '', innerHTML: '', id: '', href: '', title: '',
     appendChild(child) { this.children.push(child); return child; }, removeChild(child) { this.children.splice(this.children.indexOf(child), 1); },
     get firstChild() { return this.children[0] || null; }, setAttribute(name, value) { this[name] = value; }, addEventListener() {} };
 }
@@ -28,7 +28,7 @@ window.forumOfflineSnapshot.renderThreadDetail({ content, database, threadId: 'r
 const cards = content.children;
 process.stdout.write(JSON.stringify(cards.map((card) => ({
   id: card.id, className: card.className, postId: card.dataset.postId, author: card.dataset.author,
-  children: card.children.map((child) => ({ type: child.type, className: child.className, text: child.textContent, href: child.href, whiteSpace: child.style.whiteSpace || '' }))
+  children: card.children.map((child) => ({ type: child.type, className: child.className, text: child.textContent, html: child.innerHTML, href: child.href }))
 }))));
 NODE;
         $command = sprintf('node -e %s %s', escapeshellarg($script), escapeshellarg(__DIR__ . '/../public/assets/offline_reader.js'));
@@ -41,8 +41,7 @@ NODE;
         assertSame('post-root-1', $cards[0]['id']);
         assertSame('card post-card thread-root-card', $cards[0]['className']);
         assertSame(['h1', 'div', 'p', 'a'], array_column($cards[0]['children'], 'type'));
-        assertSame('Root body', $cards[0]['children'][1]['text']);
-        assertSame('pre-wrap', $cards[0]['children'][1]['whiteSpace']);
+        assertSame('Root body', $cards[0]['children'][1]['html']);
         assertSame(['p', 'div', 'a'], array_column($cards[1]['children'], 'type'));
         assertSame('/posts/reply-1', $cards[1]['children'][2]['href']);
     }

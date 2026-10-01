@@ -1,0 +1,7 @@
+{
+  "name": "forum-rewrite-operator-checks",
+  "private": true,
+  "devDependencies": {
+    "playwright-core": "1.58.1"
+  }
+}
