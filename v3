@@ -24,6 +24,7 @@ Usage:
   ./v3 archive-thread <thread_id> [repository_root] [database_path] [artifact_root] [archive_path]
   ./v3 private-config [view|edit|refresh-template|--view|--edit|--force|--api-key-stdin] [--path=/private/path/secrets.php]
   ./v3 openpgp smoke [--origin=zenmemes.com]
+  ./v3 openpgp canary --confirm-production-write [--origin=http://zenmemes.com] [--browser-executable=/path/to/chromium] [--headed]
   ./v3 fast-score status|audit|retry|invalidate|smoke|prune [...options]
   ./v3 agent-reply cron [--log=/var/log/forum-agent-replies.log]
   ./v3 agent-reply cron run [--limit=10] [--dry-run] [--quiet] [--post-id=<id>]
@@ -172,8 +173,14 @@ EOF
         shift
         php "${ROOT}/scripts/openpgp_smoke.php" "$@"
         ;;
+      canary)
+        shift
+        node "${ROOT}/scripts/openpgp_production_canary.mjs" "$@"
+        ;;
       *)
-        echo "Usage: ./v3 openpgp smoke [--origin=zenmemes.com]" >&2
+        echo "Usage:" >&2
+        echo "  ./v3 openpgp smoke [--origin=zenmemes.com]" >&2
+        echo "  ./v3 openpgp canary --confirm-production-write [--origin=http://zenmemes.com] [--browser-executable=/path/to/chromium] [--headed]" >&2
         exit 1
         ;;
     esac

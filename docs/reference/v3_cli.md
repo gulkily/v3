@@ -67,6 +67,22 @@ the selected URL, status, content type, redirects, and a failure reason. The
 default host is `zenmemes.com`; use `--origin=staging.example` to check a staging
 host. No records, browser identities, or posts are created.
 
+## Run the manual OpenPGP production canary
+
+```
+npm install
+./v3 openpgp canary --confirm-production-write --browser-executable=/path/to/chromium
+```
+
+This is deliberately not a CI or deployment command. After the read-only
+smoke passes, manually run the canary from a machine with Node 18+ and a local
+Chromium executable. It opens an isolated **HTTP** browser profile, creates a
+new release-check identity, publishes “New release just dropped, making sure it
+works,” reloads the post, and exercises the existing browser identity path to
+confirm no second username prompt appears. It leaves the identity and post in
+place intentionally. Do not rerun it after an ambiguous result—first inspect
+the reported post URL. `--confirm-production-write` is mandatory.
+
 ## Inspect operator status
 
 ```
