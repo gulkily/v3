@@ -75,7 +75,9 @@ const replyButton = content.children[1].children[3].children[0];
 rootButton.listeners.click();
 replyButton.listeners.click();
 Promise.resolve().then(() => Promise.resolve()).then(() => process.stdout.write(JSON.stringify({
-  buttons: [rootButton, replyButton].map((button) => ({ className: button.className, text: button.textContent, action: button.attributes['data-action'], tag: button.attributes['data-tag'], pressed: button.attributes['aria-pressed'] })), queued
+  buttons: [rootButton, replyButton].map((button) => ({ className: button.className, text: button.textContent, action: button.attributes['data-action'], tag: button.attributes['data-tag'], pressed: button.attributes['aria-pressed'] })),
+  queued,
+  actionRows: [content.children[0].children[4], content.children[1].children[3]].map((actions) => actions.className)
 })));
 NODE;
         $command = sprintf('node -e %s %s', escapeshellarg($script), escapeshellarg(__DIR__ . '/../public/assets/offline_reader.js'));
@@ -86,6 +88,10 @@ NODE;
         $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
 
         assertSame(['thread-reaction-button', 'thread-reaction-button'], array_column($result['buttons'], 'className'));
+        assertSame([
+            'button-row button-row-natural post-card-actions thread-root-actions',
+            'button-row button-row-natural post-card-actions',
+        ], $result['actionRows']);
         assertSame(['Liked', 'Liked'], array_column($result['buttons'], 'text'));
         assertSame(['queue-offline-like', 'queue-offline-like'], array_column($result['buttons'], 'action'));
         assertSame('thread', $result['queued'][0]['target']['kind']);

@@ -2697,6 +2697,7 @@ PHP;
         assertStringContains('/assets/offline_reader.', $reader);
         assertStringContains('/assets/thread-list.', $reader);
         assertStringContains('/assets/tags.', $reader);
+        assertFingerprintedAsset($reader, 'content-interactions.css');
         assertStringContains('class="nav-link is-active" href="/"', $reader);
         assertStringNotContains('class="nav-link is-active" href="/offline/"', $reader);
         assertStringContains('rel="manifest" href="/manifest.webmanifest"', $reader);
