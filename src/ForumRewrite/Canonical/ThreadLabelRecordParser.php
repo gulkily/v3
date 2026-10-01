@@ -51,7 +51,21 @@ final class ThreadLabelRecordParser
             $authorIdentityId,
             $record->headers['Reason'] ?? null,
             $record->body,
+            $this->optionalActionAt($record->headers['Action-At'] ?? null),
+            $record->headers['Intent-ID'] ?? null,
         );
+    }
+
+    private function optionalActionAt(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/', $value) !== 1) {
+            throw new CanonicalRecordParseException('Action-At must use RFC 3339 UTC format.');
+        }
+
+        return $value;
     }
 
     private function parseCreatedAt(string $value): string

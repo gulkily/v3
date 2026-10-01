@@ -246,6 +246,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/apply_signed_reaction') {
+            $this->tagApiController()->applySignedReaction($method, $query);
+            return;
+        }
+
         if ($path === '/api/set_feature_flag') {
             $this->toolsPageController()->submitFeatureFlagApi($method, $query);
             return;
@@ -1485,7 +1490,7 @@ final class Application
             '/api/prepare_thread', '/api/prepare_identity', '/api/create_reply',
             '/api/prepare_reply', '/api/create_prepared_post', '/api/create_identity',
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/codex_handoff',
-            '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag',
+            '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/set_feature_flag', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',

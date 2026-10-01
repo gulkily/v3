@@ -2635,6 +2635,48 @@ PHP);
         assertStringContains('data-action="apply-post-tag"', $threadPage);
     }
 
+    public function testSignedReactionApiVerifiesCommentLikeAndRetainsBothTimes(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $key = $this->createSigningKey('offline-like');
+
+        try {
+            $_POST = ['public_key' => $key['public_key']];
+            $identityResponse = $this->renderMethod($application, 'POST', '/api/link_identity');
+            $_POST = [];
+            $identityId = $this->extractValue($identityResponse, 'identity_id');
+            $canonical = "Schema: Forum Offline Intent v1\n"
+                . "Intent-ID: outbox-reaction-signed-like-1\n"
+                . "Action: reaction\n"
+                . "Target-Kind: post\n"
+                . "Target-ID: reply-001\n"
+                . "Action-At: 2026-10-01T12:00:00.000Z\n"
+                . "Author-Identity-ID: {$identityId}\n"
+                . "Payload: {\"postId\":\"reply-001\",\"tag\":\"like\"}\n";
+            $_POST = [
+                'canonical_record' => $canonical,
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $canonical),
+            ];
+            $response = $this->renderMethod($application, 'POST', '/api/apply_signed_reaction');
+            $_POST = [];
+
+            assertStringContains('status=ok', $response);
+            assertStringContains('post_id=reply-001', $response);
+            assertStringContains('tag=like', $response);
+            assertStringContains('action_at=2026-10-01T12:00:00.000Z', $response);
+            assertTrue($this->extractValue($response, 'integration_at') !== '');
+
+            $recordPaths = glob($repositoryRoot . '/records/post-reactions/*.txt') ?: [];
+            $record = (string) file_get_contents($recordPaths[0]);
+            assertStringContains('Action-At: 2026-10-01T12:00:00.000Z', $record);
+            assertStringContains('Intent-ID: outbox-reaction-signed-like-1', $record);
+        } finally {
+            $_POST = [];
+            $this->deleteTree($key['home']);
+        }
+    }
+
     public function testApplyPostTagApiWritesApprovedCommentLikeAndRendersLikedButton(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

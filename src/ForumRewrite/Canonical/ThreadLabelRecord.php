@@ -18,6 +18,8 @@ final class ThreadLabelRecord
         public readonly ?string $authorIdentityId,
         public readonly ?string $reason,
         public readonly string $body,
+        public readonly ?string $actionAt = null,
+        public readonly ?string $intentId = null,
     ) {
     }
 }
