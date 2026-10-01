@@ -475,12 +475,15 @@
 
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
+        const confirmationMessage = wroteRecord
+          ? `${appliedLabel}.`
+          : `Already ${appliedLabel.toLowerCase()}.`;
         if (viewerIsApproved) {
-          setFeedback(feedbackNode, wroteRecord ? "Liked." : "Already liked.", "ok");
+          setFeedback(feedbackNode, confirmationMessage, "ok");
           return;
         }
 
-        setFeedback(feedbackNode, wroteRecord ? "Liked." : "Already liked.", "ok");
+        setFeedback(feedbackNode, confirmationMessage, "ok");
       } catch (error) {
         restoreThreadReactionState(button, scoreNode, previousState);
         timing.errorKind = error instanceof Error && error.name ? error.name : "error";

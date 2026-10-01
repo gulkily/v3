@@ -5740,6 +5740,99 @@ NODE;
         assertSame(3.4, $result['debugEvents'][0]['payload']['server_timing']['total']);
     }
 
+    public function testThreadReactionFeedbackCopyFollowsAppliedLabelForNonLikeTags(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+let clickHandler = null;
+
+class HTMLButtonElement {
+  constructor() {
+    this.disabled = false;
+    this.textContent = 'Upvote';
+    this.attributes = {};
+  }
+  getAttribute(name) {
+    if (name === 'data-tag') return 'upvote';
+    if (name === 'data-applied-label') return 'Upvoted';
+    return this.attributes[name] || null;
+  }
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+  }
+  closest(selector) {
+    return selector === '[data-action="apply-thread-tag"]' ? this : null;
+  }
+}
+
+const button = new HTMLButtonElement();
+const scoreNode = { textContent: 'Score: 0' };
+const feedbackNode = { textContent: '', hidden: true, setAttribute(name, value) { this[name] = value; } };
+const root = {
+  getAttribute(name) {
+    return name === 'data-thread-id' ? 'root-001' : '';
+  },
+  querySelector(selector) {
+    if (selector === '[data-role="thread-score"]') return scoreNode;
+    if (selector === '[data-role="thread-reaction-feedback"]') return feedbackNode;
+    return null;
+  },
+  addEventListener(type, handler) {
+    if (type === 'click') {
+      clickHandler = handler;
+    }
+  }
+};
+
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = {
+  __forumBrowserIdentity: {
+    async ensureActionIdentity() {}
+  }
+};
+global.fetch = async function() {
+  return {
+    headers: { get() { return ''; } },
+    async text() {
+      return 'status=ok\nscore_total=4\nwrote_record=no\nviewer_is_approved=yes\n';
+    }
+  };
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      handler();
+    }
+  },
+  querySelector(selector) {
+    if (selector === '[data-thread-reactions-root]') {
+      return root;
+    }
+    return null;
+  }
+};
+
+vm.runInThisContext(source);
+clickHandler({
+  target: button,
+  preventDefault() {}
+}).then(() => {
+  process.stdout.write(JSON.stringify({
+    feedback: feedbackNode.textContent,
+    buttonText: button.textContent
+  }));
+});
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame('Already upvoted.', $result['feedback']);
+        assertSame('Upvoted', $result['buttonText']);
+    }
+
     public function testThreadReactionAppliesOptimisticStateBeforeFetchResolves(): void
     {
         $script = <<<'NODE'
