@@ -47,13 +47,47 @@ $viewerHasLikedPost = isset($viewerPostLikes[(string) $post['post_id']]);
 $viewerHasFlaggedPost = isset($viewerPostFlags[(string) $post['post_id']]);
 $postPermalinkLabel = 'Post ' . (string) $post['post_id'];
 $postAnchorId = 'post-' . (string) $post['post_id'];
+$isContinuation = (bool) ($isContinuation ?? false);
+$isRunTail = (bool) ($isRunTail ?? true);
+$showRootMetaExtras = (bool) ($showRootMetaExtras ?? false);
+$postTimeLabel = '';
+try {
+    $postTimeLabel = (new DateTimeImmutable((string) ($post['created_at'] ?? '')))->format('H:i');
+} catch (\Exception) {
+    $postTimeLabel = '';
+}
+$hoverTimeLabel = $isRunTail ? '' : $postTimeLabel;
 ?>
-<article id="<?= $e($postAnchorId) ?>" class="card post-card<?= $isAgentPost ? ' agent-authored-post' : '' ?>" data-heat="<?= $heat($post['created_at'] ?? null) ?>" data-post-id="<?= $e($post['post_id']) ?>"<?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?>>
-  <p class="meta"><?= $contentMeta($post, 'created_at', '') ?></p>
+<?php
+// A continuation's meta (when shown, i.e. it's the run's tail) reads as a trailing caption for the
+// whole merged run, so it renders after the body. A standalone reply's meta keeps the ordinary
+// byline-above-body order.
+$metaLine = '';
+if ($isRunTail) {
+    $metaLine = '<p class="meta">' . $contentMeta($post, 'created_at', '');
+    if ($showRootMetaExtras) {
+        if ($thread['thread_labels'] !== []) {
+            $metaLine .= ' · Labels: ' . $e(implode(', ', $thread['thread_labels']));
+        }
+        $trueReplyCount = (int) ($trueReplyCount ?? 0);
+        if ($trueReplyCount > 0) {
+            $metaLine .= ' · ' . $trueReplyCount . ' ' . ($trueReplyCount === 1 ? 'reply' : 'replies');
+        }
+    }
+    $metaLine .= '</p>';
+}
+?>
+<article id="<?= $e($postAnchorId) ?>" class="card post-card<?= $isAgentPost ? ' agent-authored-post' : '' ?><?= $isContinuation ? ' continuation' : '' ?><?= $isRunTail ? '' : ' meta-deferred' ?>" data-heat="<?= $heat($post['created_at'] ?? null) ?>" data-post-id="<?= $e($post['post_id']) ?>" data-author="<?= $e((string) ($post['author_label'] ?? '')) ?>"<?= $hoverTimeLabel !== '' ? ' data-time="' . $e($hoverTimeLabel) . '"' : '' ?><?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?>>
+<?php if ($metaLine !== '' && !$isContinuation): ?>
+  <?= $metaLine ?>
+<?php endif; ?>
 <?php if ($isAgentPost): ?>
   <p class="meta"><span class="agent-label">Agent-authored reply</span></p>
 <?php endif; ?>
   <div class="body"><?= $br($post['body']) ?></div>
+<?php if ($metaLine !== '' && $isContinuation): ?>
+  <?= $metaLine ?>
+<?php endif; ?>
 <?= $indent($partial('partials/post_identity_details.php', ['post' => $post]), 1) ?>
 <?php
 $postAnalysis = ((bool) ($viewerCanSeePostAnalysis ?? false))
@@ -99,6 +133,7 @@ if (!is_array($postAnalysisLabels)) {
 $postLlmExchangesByPostId = is_array($llmExchangesByPostId ?? null) ? $llmExchangesByPostId : [];
 $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null) ? $postLlmExchangesByPostId[$post['post_id']] : [];
 ?>
+  <button type="button" class="post-card-actions-toggle thread-reaction-button" aria-label="Show actions for this reply">Actions</button>
   <div class="button-row button-row-natural post-card-actions">
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
     <button

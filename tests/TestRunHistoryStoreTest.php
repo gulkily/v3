@@ -62,14 +62,59 @@ final class TestRunHistoryStoreTest
         assertSame('still_passing', $result['ExampleTest::testFoo']['classification']);
     }
 
-    private function makeStore(): TestRunHistoryStore
+    public function testRecoveredTestStaysHighlightedForTheConfiguredWindowThenStopsPassing(): void
+    {
+        $store = $this->makeStore(recoveryHighlightWindowRuns: 3);
+
+        $store->recordResults(['ExampleTest::testFoo' => false], '2026-01-01T00:00:00+00:00');
+        $runOne = $store->recordResults(['ExampleTest::testFoo' => true], '2026-01-02T00:00:00+00:00');
+        $runTwo = $store->recordResults(['ExampleTest::testFoo' => true], '2026-01-03T00:00:00+00:00');
+        $runThree = $store->recordResults(['ExampleTest::testFoo' => true], '2026-01-04T00:00:00+00:00');
+        $runFour = $store->recordResults(['ExampleTest::testFoo' => true], '2026-01-05T00:00:00+00:00');
+
+        assertSame('recovered', $runOne['ExampleTest::testFoo']['classification']);
+        assertSame('recently_recovered', $runTwo['ExampleTest::testFoo']['classification']);
+        assertSame('recently_recovered', $runThree['ExampleTest::testFoo']['classification']);
+        assertSame('still_passing', $runFour['ExampleTest::testFoo']['classification']);
+    }
+
+    public function testFailingAgainDuringTheRecoveryWindowResetsTheStreak(): void
+    {
+        $store = $this->makeStore(recoveryHighlightWindowRuns: 5);
+
+        $store->recordResults(['ExampleTest::testFoo' => false], '2026-01-01T00:00:00+00:00');
+        $store->recordResults(['ExampleTest::testFoo' => true], '2026-01-02T00:00:00+00:00');
+        $regressed = $store->recordResults(['ExampleTest::testFoo' => false], '2026-01-03T00:00:00+00:00');
+        $recoveredAgain = $store->recordResults(['ExampleTest::testFoo' => true], '2026-01-04T00:00:00+00:00');
+
+        assertSame('new_failure', $regressed['ExampleTest::testFoo']['classification']);
+        assertSame('recovered', $recoveredAgain['ExampleTest::testFoo']['classification']);
+    }
+
+    public function testPruneStaleEntriesRemovesRowsForTestsNoLongerInTheSuite(): void
+    {
+        $store = $this->makeStore();
+
+        $store->recordResults([
+            'ExampleTest::testFoo' => true,
+            'ExampleTest::testRenamed' => true,
+        ], '2026-01-01T00:00:00+00:00');
+
+        $prunedCount = $store->pruneStaleEntries(['ExampleTest::testFoo']);
+        $resultAfterPrune = $store->recordResults(['ExampleTest::testFoo' => true], '2026-01-02T00:00:00+00:00');
+
+        assertSame(1, $prunedCount);
+        assertSame('still_passing', $resultAfterPrune['ExampleTest::testFoo']['classification']);
+    }
+
+    private function makeStore(int $recoveryHighlightWindowRuns = 5): TestRunHistoryStore
     {
         $path = sys_get_temp_dir() . '/test-run-history-' . bin2hex(random_bytes(6)) . '.sqlite';
         register_shutdown_function(static function () use ($path): void {
             @unlink($path);
         });
 
-        $store = new TestRunHistoryStore($path);
+        $store = new TestRunHistoryStore($path, $recoveryHighlightWindowRuns);
         $store->ensureSchema();
 
         return $store;

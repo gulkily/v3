@@ -52,16 +52,21 @@ $postBodyFirstLine = trim($postBodyFirstLineSegments[0] ?? '');
 $postBodyDisplay = ($postBodyFirstLine !== '' && $postBodyFirstLine === trim($title))
     ? preg_replace('/^(?:\r\n|\r|\n)+/', '', $postBodyFirstLineSegments[1] ?? '')
     : $postBody;
+$metaVisible = (bool) ($metaVisible ?? true);
+$rootTimeLabel = '';
+if (!$metaVisible) {
+    try {
+        $rootTimeLabel = (new DateTimeImmutable((string) ($post['created_at'] ?? '')))->format('H:i');
+    } catch (\Exception) {
+        $rootTimeLabel = '';
+    }
+}
 ?>
-<article id="<?= $e($postAnchorId) ?>" class="card post-card thread-root-card<?= $isAgentPost ? ' agent-authored-post' : '' ?>" data-heat="<?= $heat($thread['last_activity_at'] ?? ($post['created_at'] ?? null), (int) ($thread['reply_count'] ?? 0)) ?>" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>" data-post-id="<?= $e($post['post_id']) ?>"<?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?>>
+<article id="<?= $e($postAnchorId) ?>" class="card post-card thread-root-card<?= $isAgentPost ? ' agent-authored-post' : '' ?><?= $metaVisible ? '' : ' meta-deferred' ?>" data-heat="<?= $heat($thread['last_activity_at'] ?? ($post['created_at'] ?? null), (int) ($thread['reply_count'] ?? 0)) ?>" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>" data-post-id="<?= $e($post['post_id']) ?>" data-author="<?= $e((string) ($post['author_label'] ?? '')) ?>"<?= $rootTimeLabel !== '' ? ' data-time="' . $e($rootTimeLabel) . '"' : '' ?><?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?>>
   <h1><?= $e($title) ?></h1>
   <div class="body"><?= $br($postBodyDisplay) ?></div>
-  <p class="meta"><?= $contentMeta($post, 'created_at', '') ?></p>
-<?php if ($thread['thread_labels'] !== []): ?>
-  <p class="meta">Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?></p>
-<?php endif; ?>
-<?php if ($isAgentPost): ?>
-  <p class="meta"><span class="agent-label">Agent-authored reply</span></p>
+<?php if ($metaVisible): ?>
+  <p class="meta"><?= $contentMeta($post, 'created_at', '') ?><?php if ($thread['thread_labels'] !== []): ?> · Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?><?php endif; ?><?php if ($isAgentPost): ?> · <span class="agent-label">Agent-authored reply</span><?php endif; ?><?php $trueReplyCount = (int) ($trueReplyCount ?? 0); if ($trueReplyCount > 0): ?> · <?= $trueReplyCount ?> <?= $trueReplyCount === 1 ? 'reply' : 'replies' ?><?php endif; ?></p>
 <?php endif; ?>
 <?= $indent($partial('partials/post_identity_details.php', ['post' => $post]), 1) ?>
 <?php
@@ -108,6 +113,7 @@ if (!is_array($postAnalysisLabels)) {
 $postLlmExchangesByPostId = is_array($llmExchangesByPostId ?? null) ? $llmExchangesByPostId : [];
 $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null) ? $postLlmExchangesByPostId[$post['post_id']] : [];
 ?>
+  <button type="button" class="post-card-actions-toggle thread-reaction-button" aria-label="Show actions for this post">Actions</button>
   <div class="button-row button-row-natural post-card-actions thread-root-actions">
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
     <button

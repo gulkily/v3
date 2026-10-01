@@ -55,3 +55,66 @@
   max-height: 24rem;
   overflow: auto;
 }
+
+/* Continuation runs: quick same-author replies merge visually into one card. */
+.post-card:has(+ .continuation) {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0.5rem;
+}
+.post-card.continuation {
+  margin-top: 0;
+  padding-top: 0.85rem;
+  border-top: 1px dashed color-mix(in srgb, var(--line) 35%, transparent);
+}
+/* A run's byline shows under its LAST post; every other post in the run (the head — which may be
+   the root card, or a plain reply starting a new run — and any middle pieces) hides its meta and
+   reveals its own time on hover/focus instead. */
+.meta-deferred::before {
+  content: attr(data-time);
+  position: absolute;
+  left: -3.2rem;
+  top: 0.85rem;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+.meta-deferred:hover::before,
+.meta-deferred:focus-within::before {
+  opacity: 1;
+}
+.post-card:has(+ .continuation) > .post-card-actions {
+  max-height: 0;
+  margin-top: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.post-card:has(+ .continuation):hover > .post-card-actions,
+.post-card:has(+ .continuation):focus-within > .post-card-actions {
+  max-height: none;
+  margin-top: 1rem;
+  overflow: visible;
+  opacity: 1;
+}
+.post-card-actions-toggle {
+  display: none;
+}
+
+@media (hover: none) {
+  .post-card:has(+ .continuation) > .post-card-actions-toggle {
+    display: inline-block;
+    margin-top: 0.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .meta-deferred::before {
+    left: 0.5rem;
+    top: -0.6rem;
+    padding: 0 0.3rem;
+    background: var(--panel);
+  }
+}

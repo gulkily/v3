@@ -52,6 +52,10 @@
   margin-top: 1.5rem;
 }
 
+:root[data-theme="sticker"] .post-card.continuation {
+  margin-top: 0.35rem;
+}
+
 :root[data-theme="sticker"] .pending-reply-card,
 :root[data-theme="sticker"] .pending-thread-shell {
   outline-style: dashed;

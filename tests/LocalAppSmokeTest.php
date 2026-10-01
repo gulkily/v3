@@ -730,6 +730,14 @@ PHP;
             assertStringContains("document.getElementById('theme-stylesheet')", $hintedHtml);
             assertStringContains('data-theme-hint-cookie="theme-hint"', $hintedHtml);
             assertStringContains('window.forumUpdateThemeHint = updateThemeHint;', $hintedHtml);
+            assertStringContains(
+                '"openpgpV6":"' . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/openpgp.min.js') . '"',
+                $hintedHtml,
+            );
+            assertStringContains(
+                '"openpgpV5":"' . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/openpgp.v5.11.3.min.js') . '"',
+                $hintedHtml,
+            );
 
             $_COOKIE = ['theme-hint' => 'auto'];
             $invalidHintHtml = $renderer->renderLayout('Theme', '<main></main>', 'board');
@@ -1287,9 +1295,11 @@ PHP;
         assertFingerprintedAsset($thread, 'post_analysis.js');
         assertStringContains('data-thread-reactions-root', $thread);
         assertStringContains('data-action="apply-thread-tag"', $thread);
-        assertStringContains('class="card post-card thread-root-card"', $thread);
+        assertStringContains('class="card post-card thread-root-card meta-deferred"', $thread);
         assertStringContains('data-thread-id="root-001" data-post-id="root-001"', $thread);
-        assertSame(1, substr_count($thread, 'by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>'));
+        // root-001 has a same-author continuation (reply-001) right after it, so the byline moves
+        // to reply-001 (the run's tail) instead of showing on the root card.
+        assertSame(1, substr_count($thread, 'by guest on <time datetime="2026-04-10T12:05:00Z">Apr 10, 2026 at 12:05 UTC</time>'));
         assertOrdered($thread, '<h1>Hello world</h1>', 'First line preview.');
         assertOrdered($thread, 'First line preview.', 'id="post-reply-001"');
         assertStringContains('inline-reply-composer', $thread);
@@ -1326,8 +1336,10 @@ PHP;
         assertStringNotContains('Score: 0', $thread);
         assertStringNotContains('Set up or choose an identity in <a href="/account/key/">Account</a> to use Like.', $thread);
         assertStringNotContains('disabled="disabled"', $thread);
-        assertStringContains('/user/guest', $thread);
-        assertStringContains('by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $thread);
+        // root-001's own byline (which links to /user/guest) is now deferred to reply-001, the
+        // run's tail; reply-001 has no claimed profile, so it renders a plain, unlinked "guest".
+        assertStringNotContains('/user/guest', $thread);
+        assertStringContains('by guest on <time datetime="2026-04-10T12:05:00Z">Apr 10, 2026 at 12:05 UTC</time>', $thread);
         assertStringNotContains('Last activity <time datetime=', $thread);
         assertStringContains('id="post-root-001"', $thread);
         assertStringContains('id="post-reply-001"', $thread);
@@ -1547,7 +1559,7 @@ PHP;
         assertFingerprintedAsset($account, 'openpgp_loader.js');
         assertFingerprintedAsset($account, 'browser_signing.js');
         assertStringNotContains('Bootstrap post ID', $account);
-        assertStringContains('View: content', $activity);
+        assertStringContains('class="nav-link is-active" href="/activity/?view=content"', $activity);
         assertStringContains('by guest on <time datetime="2026-04-10T12:05:00Z">Apr 10, 2026 at 12:05 UTC</time>', $activity);
         assertStringNotContains('Author: guest', $activity);
         assertStringContains('thread_label_add', $activity);
@@ -1690,6 +1702,113 @@ PHP;
         assertStringContains('<h1>On Accessibility</h1>', $titleMatchBlankLine);
         assertStringContains('<div class="body">First real line.', $titleMatchBlankLine);
         assertStringNotContains('<div class="body"><br', $titleMatchBlankLine);
+    }
+
+    public function testThreadMergesSameAuthorQuickRepliesIntoContinuations(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-continuation-merge-repo-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+
+        file_put_contents(
+            $repositoryRoot . '/records/posts/cont-merge-root.txt',
+            "Post-ID: cont-merge-root\n"
+            . "Created-At: 2026-05-01T10:00:00Z\n"
+            . "Board-Tags: general\n"
+            . "Subject: Continuation merge test\n"
+            . "\n"
+            . "Root body.\n"
+        );
+        file_put_contents(
+            $repositoryRoot . '/records/posts/cont-merge-r1.txt',
+            "Post-ID: cont-merge-r1\n"
+            . "Created-At: 2026-05-01T10:05:00Z\n"
+            . "Board-Tags: general\n"
+            . "Thread-ID: cont-merge-root\n"
+            . "Parent-ID: cont-merge-root\n"
+            . "\n"
+            . "First quick reply.\n"
+        );
+        file_put_contents(
+            $repositoryRoot . '/records/posts/cont-merge-r2.txt',
+            "Post-ID: cont-merge-r2\n"
+            . "Created-At: 2026-05-01T10:12:00Z\n"
+            . "Board-Tags: general\n"
+            . "Thread-ID: cont-merge-root\n"
+            . "Parent-ID: cont-merge-root\n"
+            . "\n"
+            . "Second quick reply.\n"
+        );
+        file_put_contents(
+            $repositoryRoot . '/records/posts/cont-merge-r3.txt',
+            "Post-ID: cont-merge-r3\n"
+            . "Created-At: 2026-05-01T10:35:00Z\n"
+            . "Board-Tags: general\n"
+            . "Thread-ID: cont-merge-root\n"
+            . "Parent-ID: cont-merge-root\n"
+            . "\n"
+            . "Late reply after a gap.\n"
+        );
+        file_put_contents(
+            $repositoryRoot . '/records/posts/cont-merge-r4.txt',
+            "Post-ID: cont-merge-r4\n"
+            . "Created-At: 2026-05-01T10:52:00Z\n"
+            . "Board-Tags: general\n"
+            . "Thread-ID: cont-merge-root\n"
+            . "Parent-ID: cont-merge-root\n"
+            . "\n"
+            . "Another late reply after a second gap.\n"
+        );
+
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-continuation-merge-db-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+        $thread = $this->render($application, '/threads/cont-merge-root');
+
+        $tags = [];
+        foreach (['root', 'r1', 'r2', 'r3', 'r4'] as $suffix) {
+            $postId = $suffix === 'root' ? 'cont-merge-root' : 'cont-merge-' . $suffix;
+            assertTrue(
+                preg_match('/<article id="post-' . preg_quote($postId, '/') . '"[^>]*>/', $thread, $match) === 1,
+                'Expected to find article tag for ' . $postId . '.'
+            );
+            $tags[$suffix] = $match[0];
+        }
+
+        assertStringNotContains('continuation', $tags['root']);
+        assertStringContains('continuation', $tags['r1']);
+        assertStringContains('continuation', $tags['r2']);
+        assertStringNotContains('continuation', $tags['r3']);
+        assertStringNotContains('continuation', $tags['r4']);
+        assertStringContains('data-author="guest"', $tags['root']);
+        assertStringContains('data-author="guest"', $tags['r1']);
+
+        // The byline moves to the run's LAST post (r2): root and r1 (the run's head and middle
+        // piece) hide their meta and instead carry a hover-revealed time; r2 shows the meta inline.
+        assertStringContains('meta-deferred', $tags['root']);
+        assertStringContains('data-time="10:00"', $tags['root']);
+        assertStringContains('meta-deferred', $tags['r1']);
+        assertStringContains('data-time="10:05"', $tags['r1']);
+        assertStringNotContains('meta-deferred', $tags['r2']);
+        assertStringNotContains('data-time=', $tags['r2']);
+
+        assertStringContains('<a class="post-card-permalink" href="/posts/cont-merge-r1"', $thread);
+        assertStringContains('<a class="post-card-permalink" href="/posts/cont-merge-r2"', $thread);
+
+        assertTrue(
+            preg_match('/<article id="post-cont-merge-root"[^>]*>.*?<\/article>/s', $thread, $rootBlockMatch) === 1,
+            'Expected to find the root card block.'
+        );
+        assertStringNotContains('<p class="meta">', $rootBlockMatch[0]);
+
+        assertTrue(
+            preg_match('/<article id="post-cont-merge-r2"[^>]*>.*?<p class="meta">(.*?)<\/p>/s', $thread, $metaMatch) === 1,
+            'Expected to find the run tail (r2) meta line.'
+        );
+        assertStringContains('2 replies', $metaMatch[1]);
+
+        exec('rm -rf ' . escapeshellarg($repositoryRoot));
+        @unlink($databasePath);
     }
 
     public function testThreadCardOmitsDuplicatePreviewLine(): void
@@ -3092,6 +3211,28 @@ PHP;
         }
     }
 
+    public function testFrontControllerServesRawPublicAssetFallback(): void
+    {
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($publicRoot . '/assets', 0777, true);
+        file_put_contents($publicRoot . '/assets/openpgp.v5.11.3.min.js', 'window.openpgp = {};');
+        file_put_contents($publicRoot . '/private.txt', 'must not be served');
+
+        try {
+            http_response_code(200);
+            $response = $this->renderFrontController($controller, 'GET', '/assets/openpgp.v5.11.3.min.js', []);
+
+            assertSame('window.openpgp = {};', $response);
+            assertSame(200, http_response_code());
+
+            $traversalResponse = $this->renderFrontController($controller, 'GET', '/assets/../private.txt', []);
+            assertStringNotContains('must not be served', $traversalResponse);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
     public function testFrontControllerServesStaticArtifactForBackupAlias(): void
     {
         @unlink($this->databasePath);
@@ -3220,6 +3361,8 @@ PHP;
         foreach (array_unique($assetMatches[0]) as $assetPath) {
             assertTrue(is_file($artifactRoot . $assetPath));
         }
+        assertTrue(is_file($artifactRoot . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.min.js')));
+        assertTrue(is_file($artifactRoot . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.v5.11.3.min.js')));
         assertTrue(is_file($artifactRoot . '/offline/snapshot.sqlite3'));
         assertStringContains('SQLite format 3', (string) file_get_contents($artifactRoot . '/offline/snapshot.sqlite3'));
         assertSame((string) file_get_contents(dirname(__DIR__) . '/public/service_worker.js'), (string) file_get_contents($artifactRoot . '/service_worker.js'));

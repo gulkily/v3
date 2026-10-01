@@ -52,6 +52,15 @@ final class FrontController
             return;
         }
 
+        // Shared hosts can route a missing physical asset through index.php.
+        // Keep the web-server fast path for files it can serve directly, but
+        // make public source assets available when that mapping is absent.
+        $rawAssetPath = $this->resolveRawPublicAssetPath($method, $requestUri);
+        if ($rawAssetPath !== null) {
+            $this->sendAsset($rawAssetPath, $method, false);
+            return;
+        }
+
         $offlineSnapshot = $approvedMembersOnly ? null : $this->resolveOfflineSnapshotPath($method, $requestUri, $cookies);
         if ($offlineSnapshot !== null) {
             $this->sendOfflineSnapshot($offlineSnapshot, $method);
@@ -107,6 +116,26 @@ final class FrontController
 
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
         return AssetFingerprint::replacementPathForFingerprint($this->publicRoot, $path);
+    }
+
+    private function resolveRawPublicAssetPath(string $method, string $requestUri): ?string
+    {
+        if ($method !== 'GET' && $method !== 'HEAD') {
+            return null;
+        }
+
+        $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+        if (preg_match('#^/assets/([A-Za-z0-9][A-Za-z0-9._-]*)$#', $path, $matches) !== 1) {
+            return null;
+        }
+
+        $assetRoot = realpath($this->publicRoot . '/assets');
+        $assetPath = realpath($this->publicRoot . '/assets/' . $matches[1]);
+        if ($assetRoot === false || $assetPath === false || dirname($assetPath) !== $assetRoot || !is_file($assetPath)) {
+            return null;
+        }
+
+        return $assetPath;
     }
 
     private function configurationError(): ?string
@@ -367,7 +396,7 @@ final class FrontController
         echo $html;
     }
 
-    private function sendAsset(string $path, string $method): void
+    private function sendAsset(string $path, string $method, bool $immutable = true): void
     {
         $contents = file_get_contents($path);
         if ($contents === false) {
@@ -377,7 +406,9 @@ final class FrontController
 
         http_response_code(200);
         header('Content-Type: ' . $this->contentTypeForAsset($path));
-        header('Cache-Control: public, max-age=31536000, immutable');
+        header($immutable
+            ? 'Cache-Control: public, max-age=31536000, immutable'
+            : 'Cache-Control: public, max-age=300, must-revalidate');
         header('Content-Length: ' . strlen($contents));
 
         if ($method !== 'HEAD') {
