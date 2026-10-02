@@ -43,7 +43,7 @@ obtain a new release, reconnect and reload a public page.
 ## Publishing a fresh snapshot
 
 The configured internal task queue requests this publication after successful
-public read-model updates and every 15 minutes as a backstop. After the normal
+public read-model updates. After the normal
 ingest or read-model rebuild has completed, an operator can also publish the
 latest offline reading set without rendering every static post page:
 

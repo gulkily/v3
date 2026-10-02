@@ -334,7 +334,7 @@ Install the cron worker with the current-path reference:
 ./v3 task-queue cron
 ```
 
-Install both lines printed by the command. The worker processes one task per minute and exits successfully when another queue worker is active; the second line requests an offline snapshot every 15 minutes as a freshness guard. Useful operator commands are:
+Install the line printed by the command. The worker processes one task per minute and exits successfully when another queue worker is active. Successful site updates enqueue the deduplicated offline-snapshot task. Useful operator commands are:
 
 ```bash
 ./v3 task-queue enqueue-rebuild

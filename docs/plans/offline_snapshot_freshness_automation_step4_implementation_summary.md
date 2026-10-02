@@ -50,4 +50,16 @@
 - Verification:
   - `php tests/run.php OfflineSnapshotPublisherTest OfflineSnapshotPublishCommandTest OfflineReadingDiagnosticCommandTest TaskQueueStoreTest TaskQueueCommandTest TaskQueueWorkerTest WriteApiSmokeTest::testNewPublishedPostEnqueuesPrivateBackgroundWork ForteActivityReadModelRecoveryTest` passed: 32 run, 32 passed.
 - Notes:
-  - The generated cron reference must be installed with both lines: the worker every minute and the snapshot enqueue guard every 15 minutes.
+  - The cron reference was subsequently simplified to one event-driven worker entry in Stage 6.
+
+## Stage 6 - Simplify to one event-driven cron entry
+- Changes:
+  - Removed the separate 15-minute snapshot enqueue schedule.
+  - Kept publication event-driven: successful site updates and queued read-model rebuilds enqueue the deduplicated task; the one per-minute worker consumes it.
+  - Updated CLI and operator documentation for the single-entry setup.
+- Verification:
+  - `php -l scripts/task_queue.php` and `php -l tests/TaskQueueCommandTest.php` passed.
+  - `php tests/run.php TaskQueueCommandTest TaskQueueStoreTest TaskQueueWorkerTest WriteApiSmokeTest::testNewPublishedPostEnqueuesPrivateBackgroundWork` passed: 24 run, 24 passed.
+  - Manual smoke: `./v3 task-queue cron --log=/tmp/forum-task-queue-test.log` printed exactly one worker cron line.
+- Notes:
+  - Direct database changes that bypass normal application write/rebuild paths must explicitly enqueue a snapshot when one is required.

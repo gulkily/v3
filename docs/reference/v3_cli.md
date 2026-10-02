@@ -171,9 +171,8 @@ being installed via cron.
 - `status` — prints queued/running/completed/failed counts plus the
   `--limit` (default 25) most recent tasks with attempt counts and failure
   codes
-- `cron` — prints ready-to-install crontab lines: the worker runs once a minute
-  and the offline-snapshot guard enqueues work every 15 minutes. `--log=...`
-  sets the log file path baked into both lines.
+- `cron` — prints one ready-to-install crontab line running the worker once a
+  minute. `--log=...` sets the log file path baked into the line.
 
 ## Audit or backfill Fastmod
 

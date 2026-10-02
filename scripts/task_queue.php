@@ -325,10 +325,7 @@ try {
         $workerCronLine = '* * * * * cd ' . escapeshellarg($appRoot)
             . ' && php scripts/task_queue.php run --quiet --limit=1 >> '
             . escapeshellarg($logPath) . ' 2>&1';
-        $snapshotGuardCronLine = '*/15 * * * * cd ' . escapeshellarg($appRoot)
-            . ' && php scripts/task_queue.php enqueue-offline-snapshot >> '
-            . escapeshellarg($logPath) . ' 2>&1';
-        fwrite(STDOUT, "Task queue cron reference\n\nInstall both:\n  crontab -e\n  {$workerCronLine}\n  {$snapshotGuardCronLine}\n");
+        fwrite(STDOUT, "Task queue cron reference\n\nInstall:\n  crontab -e\n  {$workerCronLine}\n");
         exit(0);
     }
 
