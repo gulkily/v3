@@ -293,6 +293,12 @@ final class TemplateRenderer
             'scriptPaths' => $assetScriptPaths,
             'siteCssPath' => $this->assetPath('/assets/site.css'),
             'additionalCssPaths' => $assetAdditionalCssPaths,
+            'browserRuntimeAssetPaths' => [
+                'openpgpV6' => $this->assetPath('/assets/openpgp.min.js'),
+                'openpgpV5' => $this->assetPath('/assets/openpgp.v5.11.3.min.js'),
+                'openpgpLoader' => $this->assetPath('/assets/openpgp_loader.js'),
+                'browserSigning' => $this->assetPath('/assets/browser_signing.js'),
+            ],
         ]);
     }
 

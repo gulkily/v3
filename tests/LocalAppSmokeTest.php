@@ -1278,6 +1278,7 @@ PHP;
         $account = $this->render($application, '/account/key/');
         $activity = $this->render($application, '/activity/?view=content');
         $forteActivity = $this->render($application, '/forte/activity/?view=content');
+        $forte = $this->render($application, '/forte?selected=root-001');
         $llms = $this->render($application, '/llms.txt');
 
         assertStringContains('Board', $board);
@@ -1319,6 +1320,16 @@ PHP;
         assertStringNotContains('Labels: bug, needs-review', $board);
         assertStringContains('Hello world', $thread);
         assertStringContains('Labels: bug, needs-review', $thread);
+        assertFingerprintedAsset($forte, 'lazy_compose_signing.js');
+        assertFingerprintedAsset($forte, 'thread_reactions.js');
+        assertStringContains(
+            '"openpgpLoader":"' . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp_loader.js') . '"',
+            $forte,
+        );
+        assertStringContains(
+            '"browserSigning":"' . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/browser_signing.js') . '"',
+            $forte,
+        );
         assertFingerprintedAsset($thread, 'openpgp_loader.js');
         assertFingerprintedAsset($thread, 'browser_signing.js');
         assertFingerprintedAsset($thread, 'inline_reply_form.js');

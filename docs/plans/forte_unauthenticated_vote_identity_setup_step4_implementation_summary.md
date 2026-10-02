@@ -22,3 +22,16 @@
   - `node --check public/assets/thread_reactions.js` passed.
 - Notes:
   - Thread and post reactions share the same identity handoff; the focused loader contract is exercised at the thread reaction while the existing post-reaction regression confirms the sibling reaction path remains intact.
+
+## Stage 3 - Verify Forte release asset consistency
+
+- Changes:
+  - Supplied standalone pages with the same fingerprinted browser runtime asset configuration as the shared layout, fixing Forte's missing lazy-loader URLs.
+  - Render coverage now asserts that Forte emits fingerprinted lazy-loader/reaction scripts and the matching fingerprinted OpenPGP-loader and browser-signing URLs.
+- Verification:
+  - `php -l src/ForumRewrite/View/TemplateRenderer.php` and `php -l templates/standalone_layout.php` passed.
+  - `php tests/run.php LocalAppSmokeTest::testApplicationRendersCoreRoutes BrowserSigningNormalizationTest::testThreadReactionReportsLazyLoaderFailuresWithoutWritingAndUsesALoadedIdentity LazyComposeSigningTest` passed (3/3).
+  - Fresh Chromium profiles on cache-busted local Forte selected a thread, then clicked Like and Flag separately without using the composer. Both dynamically loaded the fingerprinted OpenPGP-loader and browser-signing assets, initialized the browser identity helper, and reached the existing username/confirmation prompts; dialogs were dismissed before any write.
+  - Cache-busted local Forte HTML declared all four fingerprinted OpenPGP/signing paths; direct requests for its loader and browser-signing assets returned `200 application/javascript`.
+- Notes:
+  - The local correction and render contract prevent the observed standalone-page configuration mismatch. A staging/production cache-busted browser check remains appropriate after deployment to rule out an external cache retaining an older Forte page.
