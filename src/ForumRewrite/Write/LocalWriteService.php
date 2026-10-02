@@ -429,6 +429,7 @@ class LocalWriteService
                     'thread_id' => $threadId,
                     'tag' => $tag,
                     'score_total' => (string) $this->currentThreadScoreTotal($threadId),
+                    'vote_count' => (string) $this->currentThreadVoteCount($threadId),
                     'author_identity_id' => $authorIdentityId,
                     'viewer_is_approved' => $viewerIsApproved,
                     'wrote_record' => 'no',
@@ -459,6 +460,7 @@ class LocalWriteService
                 'thread_id' => $threadId,
                 'tag' => $tag,
                 'score_total' => (string) $this->currentThreadScoreTotal($threadId),
+                'vote_count' => (string) $this->currentThreadVoteCount($threadId),
                 'author_identity_id' => $authorIdentityId,
                 'viewer_is_approved' => $viewerIsApproved,
                 'wrote_record' => 'yes',
@@ -2247,6 +2249,18 @@ class LocalWriteService
     private function currentThreadScoreTotal(string $threadId): int
     {
         $stmt = $this->readModelPdo()->prepare('SELECT score_total FROM threads WHERE root_post_id = :thread_id');
+        $stmt->execute(['thread_id' => $threadId]);
+        $value = $stmt->fetchColumn();
+        if ($value === false) {
+            throw new RuntimeException('thread_id does not resolve to a known thread.');
+        }
+
+        return (int) $value;
+    }
+
+    private function currentThreadVoteCount(string $threadId): int
+    {
+        $stmt = $this->readModelPdo()->prepare('SELECT vote_count FROM threads WHERE root_post_id = :thread_id');
         $stmt->execute(['thread_id' => $threadId]);
         $value = $stmt->fetchColumn();
         if ($value === false) {

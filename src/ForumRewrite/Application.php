@@ -335,6 +335,56 @@ final class Application
             return;
         }
 
+        if (SiteConfig::siteName() === 'qdb' && ($path === '/' || $path === '' || $path === '/latest' || $path === '/top' || $path === '/leetness' || $path === '/add' || $path === '/random' || $path === '/search')) {
+            if ($path === '/latest' || array_key_exists('latest', $query)) {
+                $this->sendHtml($this->boardPageController()->board('all', 'newest', 'latest'), 200);
+                return;
+            }
+
+            if ($path === '/top' || array_key_exists('top', $query)) {
+                $this->sendHtml($this->boardPageController()->board('all', 'top', 'top'), 200);
+                return;
+            }
+
+            if ($path === '/leetness' || array_key_exists('leetness', $query)) {
+                $this->sendHtml($this->boardPageController()->board('all', 'leetness', 'leetness'), 200);
+                return;
+            }
+
+            if ($path === '/add' || array_key_exists('add', $query)) {
+                $this->sendHtml($this->composeAndAccountKeyController()->composeThreadCompact($query), 200);
+                return;
+            }
+
+            if ($path === '/random' || array_key_exists('random', $query)) {
+                $this->sendHtml($this->boardPageController()->random(), 200);
+                return;
+            }
+
+            if ($path === '/search' || array_key_exists('search', $query)) {
+                $this->sendHtml($this->boardPageController()->search((string) ($query['search'] ?? '')), 200);
+                return;
+            }
+
+            // Classic bash.org-style quote permalink: ?<thread-id> (e.g. ?833499), a bare
+            // query flag rather than a key=value pair.
+            foreach (array_keys($query) as $key) {
+                if (in_array($key, ['view', 'sort', 'format', 'latest', 'top', 'leetness', 'add', 'random', 'search'], true)) {
+                    continue;
+                }
+
+                if (ThreadRepository::byId($this->routeServices()->pdo(), $key) !== null) {
+                    $this->sendRedirect('/threads/' . $key, 'Here is that quote.', 302);
+                    return;
+                }
+            }
+
+            if (($path === '/' || $path === '') && ($query['format'] ?? null) !== 'rss') {
+                $this->sendHtml($this->boardPageController()->welcome(), 200);
+                return;
+            }
+        }
+
         if ($path === '/' || $path === '' || $path === '/threads/' || $path === '/threads') {
             if (($query['format'] ?? null) === 'rss') {
                 $this->sendXml($this->boardPageController()->rss(), 200);
@@ -691,6 +741,16 @@ final class Application
             return;
         }
 
+        // Classic qdb.us-style bare quote permalink (e.g. /311057), tried only as a
+        // last resort after every real route above has failed to match, so it can
+        // never shadow a real path.
+        if (SiteConfig::siteName() === 'qdb' && preg_match('#^/([^/]+)/?$#', $path, $matches) === 1) {
+            if (ThreadRepository::byId($this->routeServices()->pdo(), $matches[1]) !== null) {
+                $this->sendRedirect('/threads/' . $matches[1], 'Here is that quote.', 302);
+                return;
+            }
+        }
+
         $this->notFound();
     }
 
@@ -773,7 +833,11 @@ final class Application
 
     private function boardPageController(): BoardPageController
     {
-        return new BoardPageController($this->routeServices());
+        return new BoardPageController(
+            $this->routeServices(),
+            $this->repositoryRoot,
+            $this->resolveViewerProfileFromIdentityHint(...),
+        );
     }
 
     private function forteBoardController(): ForteBoardController
@@ -1521,6 +1585,7 @@ final class Application
             '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/set_feature_flag', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
+            '/latest', '/top', '/leetness', '/add', '/random', '/search',
         ], true)) {
             return true;
         }

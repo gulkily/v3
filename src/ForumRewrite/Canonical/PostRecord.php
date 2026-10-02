@@ -26,6 +26,8 @@ final class PostRecord
         public readonly array $taskDependsOn,
         public readonly array $taskSources,
         public readonly string $body,
+        public readonly ?int $importedScoreSeed = null,
+        public readonly ?int $importedVoteCountSeed = null,
     ) {
     }
 

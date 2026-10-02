@@ -53,6 +53,7 @@ final class ThreadRowSupport
     public static function hydrateThreadRow(array $thread): array
     {
         $thread['score_total'] = (int) ($thread['score_total'] ?? 0);
+        $thread['vote_count'] = (int) ($thread['vote_count'] ?? 0);
         $thread['root_post_score_total'] = (int) ($thread['root_post_score_total'] ?? 0);
         $thread['board_tags'] = self::decodeStringList((string) ($thread['board_tags_json'] ?? '[]'));
         $thread['thread_labels'] = self::decodeStringList((string) ($thread['thread_labels_json'] ?? '[]'));

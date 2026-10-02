@@ -29,6 +29,18 @@ final class SiteProfileRegistryTest
         }
     }
 
+    public function testActiveHonorsQdbOverride(): void
+    {
+        putenv('FORUM_SITE_ID=qdb');
+
+        try {
+            $profile = SiteProfileRegistry::active();
+            assertSame('qdb', $profile['name']);
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+    }
+
     public function testActiveFallsBackToZenmemesForUnknownValue(): void
     {
         putenv('FORUM_SITE_ID=not-a-real-site');

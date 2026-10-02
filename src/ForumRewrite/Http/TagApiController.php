@@ -68,6 +68,7 @@ final class TagApiController
                 . "thread_id={$result['thread_id']}\n"
                 . "tag={$result['tag']}\n"
                 . "score_total={$result['score_total']}\n"
+                . "vote_count={$result['vote_count']}\n"
                 . "viewer_identity_id={$result['author_identity_id']}\n"
                 . "viewer_is_approved={$result['viewer_is_approved']}\n"
                 . "wrote_record={$result['wrote_record']}\n";

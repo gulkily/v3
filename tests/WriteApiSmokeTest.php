@@ -2544,6 +2544,46 @@ PHP);
         assertStringContains('Score-Total: 1', $threadApi);
     }
 
+    public function testApplyThreadTagOnImportedQuoteAddsVoteOnTopOfImportedSeed(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+
+        $postId = 'thread-20030613104735-qdb-999';
+        $postDir = $repositoryRoot . '/records/posts/2003/06/13';
+        mkdir($postDir, 0777, true);
+        file_put_contents(
+            $postDir . '/' . $postId . '.txt',
+            "Post-ID: {$postId}\n"
+            . "Created-At: 2003-06-13T10:47:35Z\n"
+            . "Board-Tags: general\n"
+            . "Imported-Score-Seed: 842\n"
+            . "Imported-Vote-Count-Seed: 1200\n"
+            . "\nImported historical quote body.\n"
+        );
+        $this->runCommand($repositoryRoot, 'git add .');
+        $this->runCommand($repositoryRoot, 'git commit -m "Add imported quote fixture"');
+
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $result = $service->applyThreadTag([
+            'thread_id' => $postId,
+            'tag' => 'upvote',
+            'author_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+        ]);
+
+        $this->assertUsedIncrementalUpdate($result);
+
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $stmt = $pdo->prepare('SELECT score_total, vote_count FROM threads WHERE root_post_id = :root_post_id');
+        $stmt->execute(['root_post_id' => $postId]);
+        $row = $stmt->fetch();
+
+        assertSame('843', (string) $row['score_total']);
+        assertSame('1201', (string) $row['vote_count']);
+    }
+
     public function testApplyPostTagUsesIncrementalReadModelUpdateWhenDatabaseIsWarm(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

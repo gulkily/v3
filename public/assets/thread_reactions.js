@@ -274,18 +274,43 @@
     button.setAttribute("aria-pressed", "true");
   }
 
+  function threadScoreFormat(scoreNode) {
+    if (!scoreNode || typeof scoreNode.getAttribute !== "function") {
+      return "labeled";
+    }
+
+    return scoreNode.getAttribute("data-score-format") || "labeled";
+  }
+
+  function formatThreadScoreText(scoreNode, scoreTotal, voteCount) {
+    const format = threadScoreFormat(scoreNode);
+    if (format === "bare-ratio" && voteCount !== undefined && voteCount !== "") {
+      return `(${scoreTotal}/${voteCount})`;
+    }
+    if (format === "bare" || format === "bare-ratio") {
+      return `(${scoreTotal})`;
+    }
+    return `Score: ${scoreTotal}`;
+  }
+
   function parsedThreadScore(scoreNode) {
     if (!scoreNode) {
       return null;
     }
 
-    const match = String(scoreNode.textContent || "").match(/^Score:\s*(-?\d+)$/);
+    const format = threadScoreFormat(scoreNode);
+    const pattern = format === "bare-ratio"
+      ? /^\((-?\d+)\/\d+\)$/
+      : format === "bare"
+        ? /^\((-?\d+)\)$/
+        : /^Score:\s*(-?\d+)$/;
+    const match = String(scoreNode.textContent || "").match(pattern);
     return match ? Number(match[1]) : null;
   }
 
-  function setThreadScore(scoreNode, scoreTotal) {
+  function setThreadScore(scoreNode, scoreTotal, voteCount) {
     if (scoreNode && scoreTotal !== "") {
-      scoreNode.textContent = `Score: ${scoreTotal}`;
+      scoreNode.textContent = formatThreadScoreText(scoreNode, scoreTotal, voteCount);
     }
   }
 
@@ -298,7 +323,7 @@
 
     const score = parsedThreadScore(scoreNode);
     if (score !== null && scoreNode) {
-      scoreNode.textContent = `Score: ${score + 1}`;
+      scoreNode.textContent = formatThreadScoreText(scoreNode, score + 1);
     }
   }
 
@@ -479,21 +504,25 @@
         }
 
         const scoreTotal = parseResponseValue(text, "score_total");
+        const voteCount = parseResponseValue(text, "vote_count");
         const wroteRecord = parseResponseValue(text, "wrote_record") === "yes";
         const viewerIsApproved = parseResponseValue(text, "viewer_is_approved") === "yes";
 
-        setThreadScore(scoreNode, scoreTotal);
+        setThreadScore(scoreNode, scoreTotal, voteCount);
 
         setConfirmedReactionButton(button, appliedLabel);
 
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
+        const confirmationMessage = wroteRecord
+          ? `${appliedLabel}.`
+          : `Already ${appliedLabel.toLowerCase()}.`;
         if (viewerIsApproved) {
-          setFeedback(feedbackNode, wroteRecord ? "Liked." : "Already liked.", "ok");
+          setFeedback(feedbackNode, confirmationMessage, "ok");
           return;
         }
 
-        setFeedback(feedbackNode, wroteRecord ? "Liked." : "Already liked.", "ok");
+        setFeedback(feedbackNode, confirmationMessage, "ok");
       } catch (error) {
         restoreThreadReactionState(button, scoreNode, previousState);
         timing.errorKind = error instanceof Error && error.name ? error.name : "error";

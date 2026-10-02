@@ -206,7 +206,7 @@ Internal task-queue records are also private runtime data. Keep `FORUM_TASK_QUEU
 
 ## Site Profile
 
-`FORUM_SITE_ID` selects which `SiteProfileRegistry` entry (site name, default theme, composer copy) this deployment renders. Values: `zenmemes`, `chouse`. Unset, empty, or unrecognized values resolve to `zenmemes`.
+`FORUM_SITE_ID` selects which `SiteProfileRegistry` entry (site name, default theme, composer copy) this deployment renders. Values: `zenmemes`, `chouse`, `qdb`. Unset, empty, or unrecognized values resolve to `zenmemes`.
 
 Set it alongside the three path variables above, per vhost:
 

@@ -27,6 +27,7 @@ final class TemplateRenderer
         'board.php' => ['/assets/thread-list.css', '/assets/compose.css'],
         'compose_reply.php' => ['/assets/compose.css'],
         'compose_thread.php' => ['/assets/compose.css'],
+        'qdb_add.php' => ['/assets/compose.css'],
         'codebase_state.php' => ['/assets/tool-details.css'],
         'feature_flags.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
@@ -230,15 +231,27 @@ final class TemplateRenderer
             return $items;
         }
 
-        $items = [
-            ['href' => '/', 'label' => 'Board', 'section' => 'board'],
-            ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
-            ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
-            ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],
-            ['href' => '/account/key/', 'label' => 'Account', 'section' => 'account'],
-        ];
+        $items = SiteConfig::siteName() === 'qdb'
+            ? [
+                ['href' => '/', 'label' => 'Welcome', 'section' => 'welcome'],
+                ['href' => '/latest', 'label' => 'Latest', 'section' => 'latest'],
+                ['href' => '/top', 'label' => 'Top', 'section' => 'top'],
+                ['href' => '/random', 'label' => 'Random', 'section' => 'random'],
+                ['href' => '/add', 'label' => 'Add Quote', 'section' => 'compose'],
+                ['href' => '/search', 'label' => 'Search', 'section' => 'search'],
+            ]
+            : [
+                ['href' => '/', 'label' => 'Board', 'section' => 'board'],
+                ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
+                ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
+                ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],
+                ['href' => '/account/key/', 'label' => 'Account', 'section' => 'account'],
+            ];
 
-        if ($viewerProfile !== null
+        // Account/Invite are deliberately left out of the qdb profile's nav
+        // (operator's call) - both routes remain reachable by direct URL.
+        if (SiteConfig::siteName() !== 'qdb'
+            && $viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
             && (($viewerProfile['_authenticated_identity'] ?? true) === true)) {
             $items[] = ['href' => '/invites/', 'label' => 'Invite', 'section' => 'invite', 'invite_action' => true];

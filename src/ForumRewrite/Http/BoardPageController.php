@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use ForumRewrite\ReadModel\ThreadRepository;
+use ForumRewrite\ReadModel\ViewerTagLookup;
+use ForumRewrite\SiteConfig;
 use ForumRewrite\Support\ThreadTitle;
 
 /**
@@ -21,36 +23,149 @@ use ForumRewrite\Support\ThreadTitle;
  */
 final class BoardPageController
 {
+    /**
+     * @param \Closure(): (array<string, mixed>|null) $resolveViewerProfileFromIdentityHint
+     */
     public function __construct(
         private readonly RouteServices $routeServices,
+        private readonly string $repositoryRoot,
+        private readonly \Closure $resolveViewerProfileFromIdentityHint,
     ) {
     }
 
-    public function board(string $view, string $sort): string
+    public function board(string $view, string $sort, string $activeSection = 'board'): string
     {
         $view = BoardViewOptions::normalizeView($view);
         $sort = BoardViewOptions::normalizeSort($sort);
         $viewOptions = BoardViewOptions::viewOptions($view, $sort);
         $sortOptions = BoardViewOptions::sortOptions($view, $sort);
+        $threads = $this->fetchBoardThreads($view, $sort);
+        $isQdbInstance = SiteConfig::siteName() === 'qdb';
+        $viewerReactionState = $this->viewerReactionStateForThreads($threads, $isQdbInstance);
+        $qdbQuoteCount = $isQdbInstance ? count(ThreadRepository::fetchThreads($this->routeServices->pdo())) : 0;
 
         return $this->routeServices->renderPageTemplate(
             'board.php',
             [
-                'threads' => $this->fetchBoardThreads($view, $sort),
+                'threads' => $threads,
                 'view' => $view,
                 'sort' => $sort,
                 'viewOptions' => $viewOptions,
                 'sortOptions' => $sortOptions,
                 'viewLabel' => BoardViewOptions::activeLabel($viewOptions, $view),
                 'sortLabel' => BoardViewOptions::activeLabel($sortOptions, $sort),
+                'isQdbInstance' => $isQdbInstance,
+                'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
+                'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
+                'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
+                'qdbQuoteCount' => $qdbQuoteCount,
             ],
             'Board',
-            'board',
+            $activeSection,
             [
                 '/assets/inline_reply_form.js',
                 '/assets/lazy_compose_signing.js',
             ],
         );
+    }
+
+    /**
+     * QDB welcome page: the qdb profile's own "/", replacing the generic
+     * board default-view render with a short intro + the real quote count
+     * + links to the other classic pages.
+     */
+    public function welcome(): string
+    {
+        $threads = ThreadRepository::fetchThreads($this->routeServices->pdo());
+        $recentThreads = array_slice($threads, 0, 5);
+
+        return $this->routeServices->renderPageTemplate(
+            'qdb_welcome.php',
+            [
+                'qdbQuoteCount' => count($threads),
+                'recentThreads' => $recentThreads,
+            ],
+            'Welcome',
+            'welcome',
+        );
+    }
+
+    /**
+     * QDB classic URL: /random, /?random. A fresh shuffled page of quotes
+     * each time, not a redirect to a single one. Only meaningful for the
+     * qdb site profile.
+     */
+    public function random(int $count = 10): string
+    {
+        $threads = ThreadRepository::fetchThreads($this->routeServices->pdo());
+        shuffle($threads);
+        $threads = array_slice($threads, 0, $count);
+        $viewerReactionState = $this->viewerReactionStateForThreads($threads, true);
+
+        return $this->routeServices->renderPageTemplate(
+            'qdb_random.php',
+            [
+                'threads' => $threads,
+                'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
+                'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
+                'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
+            ],
+            'Random',
+            'random',
+        );
+    }
+
+    /**
+     * QDB classic URL: /search, /?search(=term). Only meaningful for the
+     * qdb site profile - other profiles have no public search page.
+     */
+    public function search(string $term): string
+    {
+        $term = trim($term);
+        $threads = $term === '' ? [] : array_values(array_filter(
+            ThreadRepository::fetchThreads($this->routeServices->pdo()),
+            fn (array $thread): bool => stripos((string) $thread['root_post_body'], $term) !== false
+        ));
+        $viewerReactionState = $this->viewerReactionStateForThreads($threads, true);
+
+        return $this->routeServices->renderPageTemplate(
+            'qdb_search.php',
+            [
+                'threads' => $threads,
+                'term' => $term,
+                'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
+                'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
+                'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
+            ],
+            'Search',
+            'search',
+        );
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $threads
+     * @return array{upvoted: array<string, true>, downvoted: array<string, true>, flagged: array<string, true>}
+     */
+    private function viewerReactionStateForThreads(array $threads, bool $isQdbInstance): array
+    {
+        $empty = ['upvoted' => [], 'downvoted' => [], 'flagged' => []];
+        if (!$isQdbInstance) {
+            return $empty;
+        }
+
+        $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
+        if ($viewerProfile === null) {
+            return $empty;
+        }
+
+        $viewerIdentityId = (string) $viewerProfile['identity_id'];
+        $rootPostIds = array_column($threads, 'root_post_id');
+
+        return [
+            'upvoted' => ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'upvote', $viewerIdentityId),
+            'downvoted' => ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'downvote', $viewerIdentityId),
+            'flagged' => ViewerTagLookup::postTags($this->repositoryRoot, $rootPostIds, 'flag', $viewerIdentityId),
+        ];
     }
 
     public function rss(): string
@@ -106,8 +221,25 @@ final class BoardPageController
         return match ($sort) {
             'oldest' => $this->compareOldest($left, $right),
             'top' => $this->compareTop($left, $right),
+            'leetness' => $this->compareLeetness($left, $right),
             default => $this->compareNewest($left, $right),
         };
+    }
+
+    /**
+     * QDB's "1337" sort: closest to a score of exactly 1337 first.
+     *
+     * @param array<string, mixed> $left
+     * @param array<string, mixed> $right
+     */
+    private function compareLeetness(array $left, array $right): int
+    {
+        $leetnessCompare = abs(1337 - (int) $left['score_total']) <=> abs(1337 - (int) $right['score_total']);
+        if ($leetnessCompare !== 0) {
+            return $leetnessCompare;
+        }
+
+        return $this->compareNewest($left, $right);
     }
 
     /**

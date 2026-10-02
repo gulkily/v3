@@ -38,10 +38,26 @@
       </div>
     </details>
   </article>
+<?php $isQdbInstance ??= false; ?>
 <?php foreach ($threads as $thread): ?>
+<?php if ($isQdbInstance): ?>
+<?= $indent($partial('partials/quote_card.php', [
+    'thread' => $thread,
+    'viewerUpvotedThreadIds' => $viewerUpvotedThreadIds ?? [],
+    'viewerDownvotedThreadIds' => $viewerDownvotedThreadIds ?? [],
+    'viewerFlaggedPostIds' => $viewerFlaggedPostIds ?? [],
+]), 1) ?>
+<?php else: ?>
 <?= $indent($partial('partials/thread_card.php', [
     'thread' => $thread,
     'showPinnedMarker' => true,
 ]), 1) ?>
+<?php endif; ?>
 <?php endforeach; ?>
 </section>
+<?php if ($isQdbInstance): ?>
+<footer class="qdb-footer">
+  <p class="qdb-footer-counts"><?= (int) ($qdbQuoteCount ?? 0) ?> <?= ((int) ($qdbQuoteCount ?? 0)) === 1 ? 'quote' : 'quotes' ?></p>
+  <p class="qdb-footer-copyright">&copy; QDB 1999&ndash;<?= date('Y') ?>. All rights reserved.</p>
+</footer>
+<?php endif; ?>

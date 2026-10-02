@@ -14,6 +14,8 @@ final class TagScore
         return [
             'like' => 1,
             'flag' => -100,
+            'upvote' => 1,
+            'downvote' => -1,
         ];
     }
 
@@ -25,5 +27,18 @@ final class TagScore
     public static function scoreValueForTag(string $tag): int
     {
         return self::scoredTags()[$tag] ?? 0;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function voteTags(): array
+    {
+        return ['upvote', 'downvote'];
+    }
+
+    public static function isVoteTag(string $tag): bool
+    {
+        return in_array($tag, self::voteTags(), true);
     }
 }

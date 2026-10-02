@@ -24,6 +24,11 @@ final class SiteProfileRegistry
                 'defaultTheme' => 'chouse',
                 'composerPrompt' => 'Start a thread...',
             ],
+            'qdb' => [
+                'name' => 'qdb',
+                'defaultTheme' => 'qdb',
+                'composerPrompt' => 'Submit a quote...',
+            ],
         ];
     }
 
