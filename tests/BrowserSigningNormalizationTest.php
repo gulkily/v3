@@ -5740,6 +5740,132 @@ NODE;
         assertSame(3.4, $result['debugEvents'][0]['payload']['server_timing']['total']);
     }
 
+    public function testThreadReactionReportsLazyLoaderFailuresWithoutWritingAndUsesALoadedIdentity(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+
+class HTMLButtonElement {
+  constructor() {
+    this.disabled = false;
+    this.textContent = 'Like';
+    this.attributes = {};
+  }
+  getAttribute(name) {
+    if (name === 'data-tag') return 'like';
+    if (name === 'data-applied-label') return 'Liked';
+    return this.attributes[name] || null;
+  }
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+  }
+  closest(selector) {
+    return selector === '[data-action="apply-thread-tag"]' ? this : null;
+  }
+}
+
+async function run(mode) {
+  let clickHandler = null;
+  let fetchCount = 0;
+  let loadCount = 0;
+  let identityCount = 0;
+  const button = new HTMLButtonElement();
+  const feedbackNode = {
+    textContent: '',
+    hidden: true,
+    setAttribute() {},
+    querySelector() { return null; }
+  };
+  const root = {
+    getAttribute(name) {
+      return name === 'data-thread-id' ? 'root-001' : '';
+    },
+    querySelector(selector) {
+      return selector === '[data-role="thread-reaction-feedback"]' ? feedbackNode : null;
+    },
+    addEventListener(type, handler) {
+      if (type === 'click') clickHandler = handler;
+    }
+  };
+
+  global.Element = HTMLButtonElement;
+  global.HTMLButtonElement = HTMLButtonElement;
+  global.window = {};
+  if (mode === 'loaded') {
+    window.ForumLazyComposeSigning = {
+      async load() {
+        loadCount += 1;
+        window.__forumBrowserIdentity = {
+          async ensureActionIdentity() {
+            identityCount += 1;
+          }
+        };
+      }
+    };
+  } else if (mode === 'rejected') {
+    window.ForumLazyComposeSigning = {
+      async load() {
+        loadCount += 1;
+        throw new Error('Signing bundle request failed.');
+      }
+    };
+  }
+  global.fetch = async function() {
+    fetchCount += 1;
+    return {
+      headers: { get() { return ''; } },
+      async text() { return 'status=ok\nscore_total=1\nwrote_record=yes\n'; }
+    };
+  };
+  global.document = {
+    addEventListener(type, handler) {
+      if (type === 'DOMContentLoaded') handler();
+    },
+    querySelectorAll(selector) {
+      return selector === '[data-thread-reactions-root]' ? [root] : [];
+    }
+  };
+
+  vm.runInThisContext(source);
+  await clickHandler({ target: button, preventDefault() {} });
+  return { loadCount, identityCount, fetchCount, feedback: feedbackNode.textContent, buttonDisabled: button.disabled };
+}
+
+(async function () {
+  process.stdout.write(JSON.stringify({
+    loaded: await run('loaded'),
+    rejected: await run('rejected'),
+    missing: await run('missing')
+  }));
+})().catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame(1, $result['loaded']['loadCount']);
+        assertSame(1, $result['loaded']['identityCount']);
+        assertSame(1, $result['loaded']['fetchCount']);
+        assertSame('Liked.', $result['loaded']['feedback']);
+        assertSame(true, $result['loaded']['buttonDisabled']);
+
+        assertSame(1, $result['rejected']['loadCount']);
+        assertSame(0, $result['rejected']['identityCount']);
+        assertSame(0, $result['rejected']['fetchCount']);
+        assertSame("Couldn't load identity tools. Reload the page and try again. If this keeps happening, contact the site operator.", $result['rejected']['feedback']);
+        assertSame(false, $result['rejected']['buttonDisabled']);
+
+        assertSame(0, $result['missing']['loadCount']);
+        assertSame(0, $result['missing']['identityCount']);
+        assertSame(0, $result['missing']['fetchCount']);
+        assertSame("This page's identity tools did not start. Reload the page and try again. If this keeps happening, contact the site operator.", $result['missing']['feedback']);
+        assertSame(false, $result['missing']['buttonDisabled']);
+    }
+
     public function testThreadReactionAppliesOptimisticStateBeforeFetchResolves(): void
     {
         $script = <<<'NODE'
