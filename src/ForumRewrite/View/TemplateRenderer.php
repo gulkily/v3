@@ -27,6 +27,7 @@ final class TemplateRenderer
         'board.php' => ['/assets/thread-list.css', '/assets/compose.css'],
         'compose_reply.php' => ['/assets/compose.css'],
         'compose_thread.php' => ['/assets/compose.css'],
+        'qdb_add.php' => ['/assets/compose.css'],
         'codebase_state.php' => ['/assets/tool-details.css'],
         'feature_flags.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
