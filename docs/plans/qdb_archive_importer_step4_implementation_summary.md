@@ -236,3 +236,30 @@
     live one.
   - Full suite: `php tests/run.php` - same 5 pre-existing failures (no
     `src/` changes this stage at all - orchestration only, as planned).
+
+## Stage 7 - Run the real import
+
+- Changes: none (execution only, as planned). Ran
+  `scripts/qdb_archive_import_run.php` for real against the live
+  `state/local_repository_qdb` repository and
+  `state/cache/post_index_qdb.sqlite3` read model (both gitignored in
+  this outer repo - their own 30 import commits live in that nested
+  repository's independent git history, not in this feature branch).
+- Verification:
+  - 14,881 post records written and committed in exactly 30 batches
+    (the last sized 381 = 14,881 mod 500); working tree clean
+    afterward.
+  - Full diff of `score_total`/`vote_count` for all 14,881 imported
+    threads against the source data - 0 mismatches, 0 missing.
+  - Ran a second full rebuild (`scripts/rebuild_read_model.php`)
+    against the now-real repository and re-diffed all 14,881 threads -
+    0 mismatches, confirming imported scores are rebuild-safe for real,
+    not just in a scratch copy.
+  - Rendered the real qdb board (`/latest`) through `Application`
+    directly: displayed numbers and scores for sampled quotes
+    (`#311675` showing `(38/48)`, `#311668` showing `(42/44)`) match
+    the source data exactly.
+  - Spot-read 10 random imported quotes' bodies straight from disk,
+    spanning 2003-2014 - legible, no mojibake.
+- Notes: this closes out the feature. All 7 stages landed; the qdb
+  instance now holds the real historical archive.
