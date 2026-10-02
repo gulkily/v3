@@ -12,10 +12,15 @@ $replyEnabled ??= false;
 $prevNextEnabled ??= $boardControlsEnabled;
 $viewerProfile ??= null;
 $viewerDisplayName = '';
+$viewerUsernameToken = '';
 if (is_array($viewerProfile)) {
     $viewerDisplayName = trim((string) ($viewerProfile['username'] ?? ''));
     if ($viewerDisplayName === '') {
         $viewerDisplayName = trim((string) ($viewerProfile['profile_slug'] ?? ''));
+    }
+    $viewerUsernameToken = trim((string) ($viewerProfile['username_token'] ?? ''));
+    if ($viewerUsernameToken === '') {
+        $viewerUsernameToken = trim((string) ($viewerProfile['profile_slug'] ?? ''));
     }
 }
 $viewerLoggedIn = $viewerDisplayName !== '';
@@ -57,7 +62,13 @@ $viewerStatusLabel = $viewerLoggedIn ? $viewerDisplayName : 'Guest';
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor"/><path d="M8 4.5 V8 L10.5 9.5" fill="none" stroke="currentColor"/></svg>
     <span>Activity</span>
   </a>
-  <span class="paned-toolbar-identity" data-paned-identity-status data-identity-logged-in="<?= $viewerLoggedIn ? '1' : '0' ?>">
-    <span class="paned-agent-badge" data-paned-identity-label><?= $e($viewerStatusLabel) ?></span>
-  </span>
+  <a href="/forte/user/<?= $e($viewerLoggedIn ? $viewerUsernameToken : 'guest') ?>" class="paned-toolbar-btn paned-toolbar-identity"
+     data-paned-identity-status data-identity-logged-in="<?= $viewerLoggedIn ? '1' : '0' ?>"
+     title="<?= $e($viewerLoggedIn ? 'Signed in as ' . $viewerStatusLabel : 'Not signed in') ?>">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <circle cx="8" cy="5.5" r="2.5" fill="none" stroke="currentColor"></circle>
+      <path d="M3 13.5 V12 Q3 9.5 8 9.5 Q13 9.5 13 12 V13.5 Z" fill="none" stroke="currentColor"></path>
+    </svg>
+    <span data-paned-identity-label><?= $e($viewerStatusLabel) ?></span>
+  </a>
 </div>

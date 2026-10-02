@@ -31,6 +31,8 @@
       if (labelNode) {
         labelNode.textContent = label;
       }
+      statusNode.setAttribute('href', '/forte/user/' + encodeURIComponent(loggedIn ? label : 'guest'));
+      statusNode.setAttribute('title', loggedIn ? 'Signed in as ' + label : 'Not signed in');
     }
   }
 

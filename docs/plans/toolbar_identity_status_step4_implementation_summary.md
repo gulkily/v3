@@ -40,3 +40,16 @@
   - `php tests/run.php LocalAppSmokeTest` — same 112 passed / 3 pre-existing failures; no new failures.
   - Node `vm`-sandboxed behavioral test simulating a cross-tab change: started guest (`logged-in=0`/"Guest"); fired a simulated `storage` event after writing a full keypair + username to the mock store -> updated live to `logged-in=1`/the stored username with no reload; fired another simulated `storage` event after clearing the keypair -> updated live back to `logged-in=0`/"Guest".
 - Notes: This completes the Step 3 Completion Contract — the toolbar's right-hand side now shows accurate, self-correcting, live-updating logged-in/guest status on all three Forte views through the normal page-load flow.
+
+## Post-handoff restyle - Icon link, user-mocked design
+User mocked up a restyled indicator live in the browser during review and specified the exact markup/CSS/JS; applied as given, with two implementation details filled in to match existing codebase convention rather than left to guesswork.
+- Changes:
+  - `templates/partials/paned_toolbar.php`: replaced the `<span class="paned-agent-badge">` badge with an `<a class="paned-toolbar-btn paned-toolbar-identity">` icon link (person-outline SVG + label), matching the other toolbar buttons' shape. No longer uses `.paned-agent-badge` (left untouched for its other use in the reply tree). `href` uses `$viewerProfile['username_token']` (falling back to `profile_slug`), matching the existing `/forte/user/<token>` convention already used in `paned_user_detail_pane.php` and `forte_profile.php` — not the raw display `username`, which can contain characters unsafe for a URL. `title` added for a native tooltip.
+  - `public/assets/forte.css`: added the five `.paned-toolbar-identity`-scoped rules (row layout, icon sizing, label ellipsis truncation past `max-width: 10rem`, dimmed color when guest, filled icon when logged in), placed right after the `.paned-toolbar-btn` rule group as specified; kept the existing right-alignment rule as-is.
+  - `public/assets/toolbar_identity_status.js`: added `href`/`title` updates to the existing correction loop, as specified.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest` — same 112 passed / 3 pre-existing failures; no new failures.
+  - Manual render check confirmed `href`/`title`/`data-identity-logged-in`/label all correct for guest and authenticated fixture states, and that `.paned-agent-badge` no longer appears in this partial's output.
+  - Node `vm` behavioral test confirmed the JS sets `href`/`title` correctly on initial load and after a simulated cross-tab `storage` event, including URL-encoding a username containing a space.
+  - Browser verification (Python Playwright driving headless Chromium against `./v3 start`, since no `chromium-cli`/MCP browser tool was available in this session): screenshotted the toolbar in guest and (via a locally-injected fake keypair) logged-in states, hovered the link (confirmed the existing `.paned-toolbar-btn:hover` bevel applies), and clicked it — navigated to `/forte/user/guest` and rendered that user's real profile page, with zero browser console errors.
+- Notes: Not a new Step 3 stage; a review-cycle revision to Stage 2's visual before merge, per the user's own live-mocked design.
