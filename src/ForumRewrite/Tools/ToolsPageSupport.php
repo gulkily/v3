@@ -67,6 +67,13 @@ final class ToolsPageSupport
                 'standalone' => false,
             ],
             [
+                'key' => 'outbox',
+                'label' => 'Outbox',
+                'href' => '/tools/outbox/',
+                'description' => 'Review local drafts and queued offline actions on this device.',
+                'standalone' => false,
+            ],
+            [
                 'key' => 'backup',
                 'label' => 'Backup',
                 'href' => '/tools/backup/',

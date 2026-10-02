@@ -1208,6 +1208,45 @@
     return submitSignedPreparedPost(form, prepareThreadFormForSigning, timing);
   }
 
+  async function prepareOutboxPost(kind, payload) {
+    await ensureActionIdentity(null, null);
+    const authorIdentityId = currentAuthorIdentityId();
+    if (!authorIdentityId) {
+      return { ok: false, error: "No saved browser identity is available to sign this post." };
+    }
+
+    const isReply = kind === "reply";
+    if (!isReply && kind !== "thread") {
+      return { ok: false, error: "This Outbox item cannot be sent as a post." };
+    }
+    const fields = isReply
+      ? {
+        thread_id: String((payload && payload.threadId) || ""),
+        parent_id: String((payload && payload.parentId) || ""),
+        board_tags: String((payload && payload.boardTags) || "general"),
+        body: String((payload && payload.body) || ""),
+        author_identity_id: authorIdentityId,
+      }
+      : {
+        board_tags: String((payload && payload.boardTags) || "general"),
+        subject: String((payload && payload.subject) || ""),
+        body: String((payload && payload.body) || ""),
+        author_identity_id: authorIdentityId,
+      };
+    const response = await submitUrlEncoded(isReply ? "/api/prepare_reply" : "/api/prepare_thread", fields);
+    const prepared = parsePreparedPostJsonResponse(
+      response.text,
+      response.serverTiming,
+      isReply ? "Unable to prepare reply for signing." : "Unable to prepare thread for signing."
+    );
+    return { ok: prepared.ok, fields: fields, prepared: prepared, error: prepared.error || "" };
+  }
+
+  async function finalizeOutboxPost(fields, prepared) {
+    const finalized = await signAndFinalizePreparedPost(fields, prepared, null);
+    return finalPreparedPostFailure(finalized);
+  }
+
   async function submitUnsignedReplyFormToApi(form) {
     const response = await fetch("/api/create_reply", {
       method: "POST",
@@ -3222,6 +3261,8 @@
   window.ForumBrowserSigning.ensureActionIdentity = ensureActionIdentity;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
   window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;
+  window.ForumBrowserSigning.prepareOutboxPost = prepareOutboxPost;
+  window.ForumBrowserSigning.finalizeOutboxPost = finalizeOutboxPost;
 
   document.addEventListener("DOMContentLoaded", function () {
     initBrowserSigning(document);

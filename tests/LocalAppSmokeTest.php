@@ -2643,6 +2643,30 @@ PHP;
         assertStringContains('cache.match(absoluteUrl(url), { ignoreVary: true })', $healthScript);
     }
 
+    public function testOutboxRouteIsAvailableFromToolsWithLocalStorageAssets(): void
+    {
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+
+        $outbox = $this->render($application, '/tools/outbox/');
+        $tools = $this->render($application, '/tools/');
+
+        assertStringContains('<h1>Outbox</h1>', $outbox);
+        assertStringContains('data-outbox', $outbox);
+        assertStringContains('data-role="outbox-status"', $outbox);
+        assertStringContains('data-role="outbox-items"', $outbox);
+        assertStringContains('class="nav-link is-active" href="/tools/outbox/"', $outbox);
+        assertFingerprintedAsset($outbox, 'outbox_store.js');
+        assertFingerprintedAsset($outbox, 'outbox_storage.js');
+        assertFingerprintedAsset($outbox, 'outbox_sender.js');
+        assertFingerprintedAsset($outbox, 'outbox.js');
+        assertStringContains('href="/tools/outbox/"', $tools);
+        assertStringContains('Outbox', $tools);
+    }
+
     public function testOfflineReaderFallbackRouteUsesLocalSnapshotShell(): void
     {
         $application = new Application(
@@ -2664,11 +2688,17 @@ PHP;
         assertStringContains('data-role="offline-reader-indicator"', $reader);
         assertStringNotContains('data-role="offline-reader-details"', $reader);
         assertStringContains('offline mode', $reader);
+        assertStringContains('class="offline-mode-bar__outbox" href="/tools/outbox/">Outbox</a>', $reader);
         assertStringContains('/assets/sql-wasm.', $reader);
         assertStringMatches('#data-runtime-url="/assets/sql-wasm\.[a-f0-9]{12}\.wasm"#', $reader);
+        assertFingerprintedAsset($reader, 'outbox_store.js');
+        assertFingerprintedAsset($reader, 'outbox_storage.js');
+        assertFingerprintedAsset($reader, 'outbox_intent.js');
+        assertFingerprintedAsset($reader, 'outbox_sender.js');
         assertStringContains('/assets/offline_reader.', $reader);
         assertStringContains('/assets/thread-list.', $reader);
         assertStringContains('/assets/tags.', $reader);
+        assertFingerprintedAsset($reader, 'content-interactions.css');
         assertStringContains('class="nav-link is-active" href="/"', $reader);
         assertStringNotContains('class="nav-link is-active" href="/offline/"', $reader);
         assertStringContains('rel="manifest" href="/manifest.webmanifest"', $reader);

@@ -18,6 +18,7 @@ global.self = {
 const paths = [
   '/', '/threads', '/threads/?view=liked&sort=top', '/threads/root-001',
   '/tags', '/tags/', '/tags/general', '/tags/bug-fix',
+  '/tools/outbox/',
   '/compose/thread', '/profiles/alice', '/search/', '/tags/Bad', '/tags/bug/extra'
 ];
 vm.runInThisContext(source);
@@ -109,5 +110,41 @@ NODE;
         assertSame('offline-reader-refreshed', $result[1]['type']);
         assertSame('error', $result[1]['status']);
         assertSame('Network unavailable', $result[1]['errorMessage']);
+    }
+
+    public function testOutboxNavigationFallsBackToItsDedicatedCachedShell(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const listeners = {};
+global.self = {
+  location: { href: 'https://forum.test/service_worker.js', origin: 'https://forum.test' },
+  navigator: { onLine: false },
+  addEventListener(type, listener) { listeners[type] = listener; }
+};
+global.caches = { open: async () => ({ match: async (url) => url.endsWith('/tools/outbox/') ? { shell: 'outbox' } : null }) };
+global.fetch = async () => { throw new Error('Offline'); };
+vm.runInThisContext(source);
+let responsePromise;
+listeners.fetch({
+  request: { mode: 'navigate', url: 'https://forum.test/tools/outbox/' },
+  respondWith(promise) { responsePromise = promise; }
+});
+responsePromise.then((response) => process.stdout.write(JSON.stringify(response)));
+NODE;
+        $command = sprintf(
+            'node -e %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/service_worker.js'),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Outbox worker fallback failed: ' . implode("\n", $output));
+        }
+        $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame('outbox', $result['shell']);
     }
 }

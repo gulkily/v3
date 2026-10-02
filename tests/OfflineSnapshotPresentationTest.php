@@ -181,7 +181,7 @@ function element(type) {
     type, children: [], className: '', dataset: {}, textContent: '', href: '', hidden: false,
     appendChild(child) { this.children.push(child); return child; },
     removeChild(child) { this.children.splice(this.children.indexOf(child), 1); },
-    get firstChild() { return this.children[0] || null; }, addEventListener() {}
+    get firstChild() { return this.children[0] || null; }, setAttribute(name, value) { this[name] = value; }, addEventListener() {}
   };
 }
 global.window = {};
@@ -253,7 +253,7 @@ function element(type, text) {
     type, children: [], className: '', dataset: {}, textContent: text || '', href: '', hidden: false,
     appendChild(child) { this.children.push(child); return child; },
     removeChild(child) { this.children.splice(this.children.indexOf(child), 1); },
-    get firstChild() { return this.children[0] || null; }, addEventListener() {}
+    get firstChild() { return this.children[0] || null; }, setAttribute(name, value) { this[name] = value; }, addEventListener() {}
   };
 }
 global.window = {};
@@ -318,7 +318,7 @@ function element(type) {
     type, children: [], className: '', dataset: {}, textContent: '', innerHTML: '', href: '', hidden: false,
     appendChild(child) { this.children.push(child); return child; },
     removeChild(child) { this.children.splice(this.children.indexOf(child), 1); },
-    get firstChild() { return this.children[0] || null; }, addEventListener() {}
+    get firstChild() { return this.children[0] || null; }, setAttribute(name, value) { this[name] = value; }, addEventListener() {}
   };
 }
 global.window = {};
@@ -340,7 +340,7 @@ window.forumOfflineSnapshot.renderThreadDetail({
 });
 process.stdout.write(JSON.stringify({
   rootBody: content.children[0].children[1].innerHTML,
-  replyBody: content.children[1].children[0].innerHTML
+  replyBody: content.children[1].children[1].innerHTML
 }));
 NODE;
         $command = sprintf(

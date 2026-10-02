@@ -27,8 +27,10 @@ Newest/Oldest/Top controls), the Tags index, saved tag-result URLs, and normal
 URLs for threads included in the snapshot render from saved records. Board
 filters, tag counts, previews, and results are evaluated only against the
 downloaded public snapshot; an unavailable tag or thread explains that live
-results require reconnecting. Posting, voting, tagging, profiles, search,
-feeds, tools, and threads outside the snapshot require a connection.
+results require reconnecting. Profiles, search, feeds, most tools, and threads
+outside the snapshot require a connection. **Tools → Outbox** is a separate
+local-work screen: it can be opened offline but is not part of the public
+snapshot.
 
 ## Refresh behavior
 
@@ -98,6 +100,48 @@ navigation or an error message. If a supported read control is absent, first
 use the online freshness comparison above; a matching reader means the control
 is deliberately outside the supported offline experience rather than a stale
 browser cache.
+
+## Local Outbox
+
+Open **Tools → Outbox** to review local Likes, reply drafts, and thread drafts
+saved on this browser. The Outbox is cached as its own shell, while its items
+live in this browser's IndexedDB storage—not in the public SQLite snapshot or
+the service-worker cache. Its content is therefore device-local and is never
+published merely because it appears in the Outbox. Each item is a compact row;
+open it to inspect its status, timing, outcome, and available controls.
+
+A draft has been saved locally; queue it when it is ready. While an Outbox or
+offline-reader page is open, queued work is processed automatically when the
+browser regains a connection (and when either page opens while connected).
+Drafts are never sent automatically. A closed browser has no Background Sync
+worker and therefore cannot deliver queued work until an appropriate page is
+opened again.
+
+An offline Like is signed when the person presses **Like**, before it is saved
+locally. This applies to both thread and reply Likes. The signature includes an
+**action time**, which is the person's client-asserted time of the action; it is
+context rather than server ordering authority. At successful server handling,
+the server records an **integration time**. The Outbox shows both separately
+when available. Server acceptance, integration time, and the normal server
+ordering/moderation rules remain authoritative.
+
+On delivery, replies and threads use the normal identity, prepare, sign, and
+finalize flow; a queued Like submits its signed reaction intent to the
+verification endpoint. The outcome remains visible as accepted, rejected,
+conflicted, waiting-for-connection, or needs-attention. An accepted reply or
+thread links to its server record.
+
+If a reply or thread delivery loses its response, the Outbox retains the
+prepared record and retries that same record; it checks the known post ID
+before treating a missing prepared record as a failure. Do not clear browser
+site data until you have reviewed or discarded the local items. Browser storage
+is also the current recovery boundary: sharing a device can expose saved drafts
+to another person using the same browser profile.
+
+This MVP does not yet provide draft editing, export, bulk clear confirmation,
+or direct offline navigation to a fresh compose page. A compose page that is
+already open can save its reply or thread as a local draft; use **Discard** or
+**Remove** in the Outbox to remove individual local records.
 
 `Offline reading is ready on this device` means the browser has the worker and
 all saved artifacts necessary to read the bounded snapshot. A connected browser

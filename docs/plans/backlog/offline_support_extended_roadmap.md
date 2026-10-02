@@ -28,6 +28,9 @@ they can leave the online-only boundary.
 - [x] Snapshot time, reader revision, offline health diagnostics, and a
   confirmed refresh/recheck flow.
 - [x] Public-only cache boundary and approved-members-only exclusion.
+- [x] Tools → Outbox: compact expandable local Likes, reply drafts, and thread
+  drafts with visible outcomes and foreground automatic delivery of queued
+  work after reconnect; drafts remain local.
 - [ ] User-visible snapshot-saved confirmation, clear-storage action, and
   browser QA matrix.
 
@@ -40,10 +43,10 @@ they can leave the online-only boundary.
 | Tags | Browse saved tags and saved results | Delivered | Keep index derived only from the snapshot |
 | Profiles | Read selected public summaries | Not started | Deletion, revocation, visibility, and identity boundary |
 | Search and feeds | Search/browse only saved public content | Not started | Local index size, stale-result disclosure, unavailable global search |
-| Tools and diagnostics | Open a minimal offline-help/health surface | Partial, delivered | Never cache operator or personalized tools |
-| Compose | Create, retain, edit, export, and discard local drafts | Not started | Shared-device privacy and clear retention rules |
-| Reactions | Queue eligible reactions and reconcile an outcome | Not started | Identity, encryption, idempotency, moderation semantics |
-| Threads and replies | Queue signed content with explicit user control | Not started | Durable signing, conflicts, parent availability, server idempotency |
+| Tools and diagnostics | Open a minimal offline-help/health surface | Partial, delivered; Outbox is cached separately | Never cache operator or personalized tools |
+| Compose | Create, retain, edit, export, and discard local drafts | Partial; capture from an open compose page | Shared-device privacy and clear retention rules |
+| Reactions | Queue eligible reactions and reconcile an outcome | Thread/reply Like queue delivered; signed at click time | Identity, idempotency, moderation semantics |
+| Threads and replies | Queue signed content with clear status and foreground automatic delivery | Initial delivery delivered | Durable signing, conflicts, parent availability, server idempotency |
 | Account, invitations, moderation, administration | Remain online unless separately designed | Intentionally online | Authentication, privilege, revocation, and audit guarantees |
 
 ## Delivery sequence
@@ -82,7 +85,7 @@ unsupported routes say so plainly instead of failing ambiguously.
 **Outcome:** Offline work is useful before it is networked, but never appears
 submitted.
 
-- [ ] Thread and reply drafts stored locally with clear ownership and retention.
+- [x] Thread and reply drafts stored locally from an already-open compose page.
 - [ ] Restore, edit, delete, export, and discard drafts after restart.
 - [ ] Per-thread draft association and safe recovery when a parent is absent.
 - [ ] Visible distinction between a local draft, a queued action, and an
@@ -108,19 +111,28 @@ future eligible action. It must show, for each item:
 - filtered counts and an accessible status summary so people can identify
   work that still needs attention.
 
-Before the first action type is queueable, the shared Outbox must have:
+Delivered in the initial Outbox release:
 
-- [ ] encrypted/authenticated local storage that does not expose private keys
+- [x] A device-local Outbox under Tools, separate from the public snapshot.
+- [x] Stable local item IDs, honest item states, and explicit Send/retry/discard
+  controls.
+- [x] Foreground reconnect delivery for queued work without Background Sync;
+  drafts are never sent automatically and a closed browser does not deliver.
+- [x] Queue and reconcile signed Likes for threads and replies; their signed
+  action time and server integration time remain distinct.
+
+Remaining hardening before broadening action types:
+
+- [ ] Encrypted/authenticated local storage appropriate for shared devices that
+  does not expose private keys
   through the public cache;
-- [ ] stable local intent IDs and server idempotency;
-- [ ] reconnect processing that works with or without Background Sync;
+- [ ] Server-side client-intent idempotency across all post retry windows;
 - [ ] reconciliation for removed, hidden, locked, or no-longer-authorized
   targets; and
 - [ ] clear-device-data behavior that warns before pending work is removed.
 
 After those foundations:
 
-- [ ] Queue and reconcile low-risk reactions.
 - [ ] Decide whether flags can be queued without misleading moderation users.
 
 ### 4. Queued replies and threads
@@ -128,12 +140,15 @@ After those foundations:
 **Outcome:** A person can deliberately submit composed content after
 reconnection and follow its result from the Outbox.
 
-- [ ] Durable signed compose payloads and local previews.
+- [x] Durable compose payloads and explicit signed send/retry for reply and
+  thread Outbox items.
 - [ ] Parent/thread availability checks and conflict paths for locked, removed,
   hidden, or changed threads.
+- [x] Accepted Outbox items link to their canonical post/thread IDs.
 - [ ] Server mapping from local intent IDs to canonical post IDs.
-- [ ] Outbox controls to edit, reorder, retry, cancel, export, and discard.
-- [ ] Clear disclosure that queued content is not public until accepted.
+- [ ] Outbox controls to edit, reorder, cancel, export, and bulk discard
+  (individual retry and discard are delivered).
+- [x] Clear disclosure that queued content is not public until accepted.
 
 ### 5. Synchronization maturity
 

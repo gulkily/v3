@@ -32,6 +32,10 @@ The following is merged and considered the baseline for future work:
   indicators.
 - Tools → Offline Reading reports saved archive metadata, cached-versus-live
   reader revision, and a confirmed refresh/recheck action.
+- Tools → Outbox is available offline as a separate local-work shell. It keeps
+  Likes, reply drafts, and thread drafts in device-local storage, shows their
+  states and outcomes in compact expandable rows, and foreground-delivers
+  queued work automatically when an open page reconnects. Drafts remain local.
 - Public-only deployments opt in to the cache; approved-members-only
   deployments do not expose or register it.
 
@@ -104,17 +108,22 @@ without turning the browser cache into a copy of the site.
 **Do not assume:** Tags, profiles, search, or feeds belong in the snapshot by
 default. Each changes the public-data and staleness boundary.
 
-### 3. Saved drafts, without sending offline writes
+### 3. Saved drafts and explicit delivery
 
-**Status:** Proposed; useful precursor to participation.
+**Status:** Partially complete; capture and foreground automatic queued
+delivery are available from an already-open compose page.
 
 **Reader outcome:** A user can safely compose a thread or reply while offline
 and recover it after restart, but it remains a draft until the user explicitly
 submits online.
 
-**Likely pieces:** Local draft storage, clear ownership/retention rules,
-per-thread draft recovery, conflict-safe restoration, deletion controls, and
-privacy warnings on shared devices.
+**Delivered pieces:** Device-local reply/thread draft capture, individual
+discard, automatic foreground send/retry for queued work from Tools → Outbox,
+and visible outcomes. Drafts are never submitted automatically.
+
+**Remaining pieces:** Direct offline compose navigation, edit/restore/export,
+bulk-clear confirmation, per-thread recovery UI, and stronger shared-device
+retention controls.
 
 **Why separate it:** Draft persistence is much safer than a write queue and
 can establish local-data lifecycle and recovery UX before any server mutation
@@ -122,23 +131,22 @@ is attempted.
 
 ### 4. Queued low-risk reactions
 
-**Status:** Later; requires an approved write-queue design.
+**Status:** Initial Like queue delivered; reconciliation hardening remains.
 
 **Reader outcome:** A user can queue a like or flag offline and later see
 whether the server accepted, rejected, or no longer needs that intent.
 
 **Required design work:**
 
-1. An authenticated, encrypted local queue with no private-key leakage into
-   the public cache.
-2. Stable intent IDs and server-side idempotency, so retries cannot duplicate
-   reactions.
-3. Per-item states such as queued, sending, accepted, rejected, conflicted,
-   and cancelled, with user-visible recovery actions.
-4. Reconciliation against changed/deleted/hidden posts and changed
+1. [x] A local queue that excludes private keys and the public cache.
+2. [x] Stable local intent IDs; existing reaction writes de-duplicate a
+   repeated tag from the same identity.
+3. [x] Per-item states and explicit user-visible recovery actions.
+4. [ ] Broader reconciliation against changed/deleted/hidden posts and changed
    authorization or moderation state.
-5. Explicit background-sync and browser-support policy; the queue must also
-   work when background sync is unavailable.
+5. [x] No-background-sync policy; an open Outbox or offline-reader page
+   automatically attempts queued work on reconnection, while a closed browser
+   does not.
 
 **Open policy question:** A queued flag may affect moderation expectations.
 Decide whether it is appropriate to display it as a local intention before the
@@ -146,25 +154,25 @@ server has received it.
 
 ### 5. Queued replies and new threads
 
-**Status:** Later; substantially larger than queued reactions.
+**Status:** Initial signed, foreground automatic delivery delivered;
+composition and idempotency hardening remain.
 
 **Reader outcome:** A user can create content offline and have it reliably
 submitted after reconnecting, with clear control over every pending item.
 
 **Required design work:**
 
-1. Everything in queued reactions, plus durable compose payloads, attachments
-   (if applicable), parent/thread references, and local preview state.
-2. A signing/authentication strategy that works after a browser restart
-   without retaining unsafe credentials.
-3. Server-side idempotency for post creation and a durable mapping from local
-   draft IDs to canonical post IDs.
-4. Resolution paths when the parent thread is deleted, locked, hidden, or
-   changed; when validation rules change; or when the identity loses access.
-5. User controls to edit, reorder, retry, cancel, export, or discard pending
-   content before transmission.
-6. Clear disclosure that a queued post is not public until the server accepts
-   it.
+1. [x] Durable compose payloads, parent/thread references, and local draft
+   capture from an open compose page.
+2. [x] Existing browser signing is used for deliberate content delivery, and
+   Likes are signed at the original offline click; no private key is copied
+   into Outbox storage.
+3. [ ] Server-side client-intent idempotency beyond retrying the retained
+   prepared post, and a durable server mapping for all retry windows.
+4. [ ] Detailed resolution UI for locked, hidden, or changed parent threads.
+5. [ ] Edit, reorder, cancel, and export controls (individual discard and
+   retry are delivered).
+6. [x] Queued content remains distinct from published content until accepted.
 
 This should be its own multi-stage release, not an extension of a read-only
 cycle.

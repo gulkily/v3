@@ -21,7 +21,16 @@ final class OfflineReaderController
             ],
             'Offline Reading',
             'board',
-            ['/assets/sql-wasm.js', '/assets/offline_reader.js'],
+            [
+                '/assets/sql-wasm.js',
+                '/assets/openpgp_loader.js',
+                '/assets/browser_signing.js',
+                '/assets/outbox_store.js',
+                '/assets/outbox_storage.js',
+                '/assets/outbox_intent.js',
+                '/assets/outbox_sender.js',
+                '/assets/offline_reader.js',
+            ],
         );
     }
 

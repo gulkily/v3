@@ -2,6 +2,7 @@ const CACHE_NAME = "zenmemes-offline-reader-v13";
 const SNAPSHOT_URL = "/offline/snapshot.sqlite3";
 const OFFLINE_HEALTH_URL = "/offline/";
 const OFFLINE_READER_URL = "/offline/reader/";
+const OFFLINE_OUTBOX_URL = "/tools/outbox/";
 const BOOTSTRAP_QUERY_PARAMETER = "__offline_bootstrap";
 
 self.addEventListener("install", (event) => event.waitUntil((async () => {
@@ -28,6 +29,7 @@ function workerDetails() {
     workerScript: self.location.href,
     readerUrl: new URL(OFFLINE_READER_URL, self.location.origin).href,
     healthUrl: new URL(OFFLINE_HEALTH_URL, self.location.origin).href,
+    outboxUrl: new URL(OFFLINE_OUTBOX_URL, self.location.origin).href,
     snapshotUrl: new URL(SNAPSHOT_URL, self.location.origin).href,
     online: self.navigator.onLine
   };
@@ -94,16 +96,19 @@ async function refreshResources(urls) {
 async function refreshOfflineReader(extraUrls) {
   const shell = await fetchOfflineResource(OFFLINE_READER_URL, "offline reader shell");
   const health = await fetchOfflineResource(OFFLINE_HEALTH_URL, "offline health page");
-  const assetUrls = await Promise.all([shell, health].map(async (response) => {
+  const outbox = await fetchOfflineResource(OFFLINE_OUTBOX_URL, "offline outbox page");
+  const assetUrls = await Promise.all([shell, health, outbox].map(async (response) => {
     const html = await response.clone().text();
-    return [...html.matchAll(/(?:src|href|data-runtime-url)="([^"]+)"/g)]
+    return [...html.matchAll(/(?:<script[^>]*\ssrc|<link[^>]*\shref|data-runtime-url)="([^"]+)"/g)]
       .map((match) => new URL(match[1], self.location.origin))
       .filter((url) => url.origin === self.location.origin)
+      .filter((url) => url.pathname.startsWith("/assets/"))
       .map((url) => url.pathname);
   }));
   await refreshResources([
     OFFLINE_HEALTH_URL,
     OFFLINE_READER_URL,
+    OFFLINE_OUTBOX_URL,
     SNAPSHOT_URL,
     "/manifest.webmanifest",
     "/favicon.ico",
@@ -117,6 +122,7 @@ function cacheableRequest(request) {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || url.search) return false;
   return url.pathname === OFFLINE_HEALTH_URL || url.pathname === OFFLINE_READER_URL || url.pathname === SNAPSHOT_URL
+    || url.pathname === OFFLINE_OUTBOX_URL
     || url.pathname === "/manifest.webmanifest" || url.pathname === "/favicon.ico"
     || url.pathname.startsWith("/assets/");
 }
@@ -135,6 +141,8 @@ async function networkFirstNavigation(request) {
     const url = new URL(request.url);
     const fallbackUrl = (url.pathname === "/offline" || url.pathname === OFFLINE_HEALTH_URL)
       ? OFFLINE_HEALTH_URL
+      : url.pathname === OFFLINE_OUTBOX_URL || url.pathname === "/tools/outbox"
+        ? OFFLINE_OUTBOX_URL
       : supportsOfflineNavigation(url) ? OFFLINE_READER_URL : null;
     if (!fallbackUrl) throw error;
     const shell = await cachedResponse(await caches.open(CACHE_NAME), fallbackUrl);

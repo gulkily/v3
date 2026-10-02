@@ -247,6 +247,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/apply_signed_reaction') {
+            $this->tagApiController()->applySignedReaction($method, $query);
+            return;
+        }
+
         if ($path === '/api/set_feature_flag') {
             $this->toolsPageController()->submitFeatureFlagApi($method, $query);
             return;
@@ -469,6 +474,11 @@ final class Application
 
         if ($path === '/tools/bookmarklets/' || $path === '/tools/bookmarklets') {
             $this->sendHtml($this->toolsPageController()->bookmarklets(), 200);
+            return;
+        }
+
+        if ($path === '/tools/outbox/' || $path === '/tools/outbox') {
+            $this->sendHtml($this->toolsPageController()->outbox(), 200);
             return;
         }
 
@@ -1496,7 +1506,7 @@ final class Application
             '/activity', '/activity/',
             '/users', '/users/', '/users/pending', '/users/pending/',
             '/tags', '/tags/',
-            '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/',
+            '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
             '/compose/thread', '/compose/reply',
             '/account/key', '/account/key/', '/invites', '/invites/',
@@ -1507,7 +1517,7 @@ final class Application
             '/api/prepare_thread', '/api/prepare_identity', '/api/create_reply',
             '/api/prepare_reply', '/api/create_prepared_post', '/api/create_identity',
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/codex_handoff',
-            '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag',
+            '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/set_feature_flag', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',

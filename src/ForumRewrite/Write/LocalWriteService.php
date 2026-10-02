@@ -409,6 +409,8 @@ class LocalWriteService
             $tag = $this->normalizeThreadTag((string) ($input['tag'] ?? ''));
             $authorIdentityId = $this->requireOpenPgpIdentityId((string) ($input['author_identity_id'] ?? ''), 'author_identity_id');
             $createdAt = $this->canonicalTimestampNow();
+            $actionAt = $this->optionalOfflineActionAt($input);
+            $intentId = $this->optionalOfflineIntentId($input);
 
             $thread = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($threadId));
             if ($thread->threadId !== null) {
@@ -425,12 +427,14 @@ class LocalWriteService
                     'author_identity_id' => $authorIdentityId,
                     'viewer_is_approved' => $viewerIsApproved,
                     'wrote_record' => 'no',
+                    'action_at' => $actionAt ?? $createdAt,
+                    'integration_at' => $createdAt,
                     'timings' => ['total' => $this->elapsedMilliseconds($totalStartedAt)],
                 ];
             }
 
             $phaseStartedAt = hrtime(true);
-            [$recordPath, $contents] = $this->buildThreadLabelRecord($threadId, [$tag], $authorIdentityId, $createdAt);
+            [$recordPath, $contents] = $this->buildThreadLabelRecord($threadId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
             $this->writeFile($recordPath, $contents);
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
 
@@ -454,6 +458,8 @@ class LocalWriteService
                 'viewer_is_approved' => $viewerIsApproved,
                 'wrote_record' => 'yes',
                 'commit_sha' => $commitSha,
+                'action_at' => $actionAt ?? $createdAt,
+                'integration_at' => $createdAt,
                 'timings' => $timings,
             ];
         });
@@ -473,6 +479,8 @@ class LocalWriteService
             $tag = $this->normalizeThreadTag((string) ($input['tag'] ?? ''));
             $authorIdentityId = $this->requireOpenPgpIdentityId((string) ($input['author_identity_id'] ?? ''), 'author_identity_id');
             $createdAt = $this->canonicalTimestampNow();
+            $actionAt = $this->optionalOfflineActionAt($input);
+            $intentId = $this->optionalOfflineIntentId($input);
 
             $post = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($postId));
             $threadId = $post->threadId ?? $post->postId;
@@ -491,12 +499,14 @@ class LocalWriteService
                     'author_identity_id' => $authorIdentityId,
                     'viewer_is_approved' => $viewerIsApproved,
                     'wrote_record' => 'no',
+                    'action_at' => $actionAt ?? $createdAt,
+                    'integration_at' => $createdAt,
                     'timings' => ['total' => $this->elapsedMilliseconds($totalStartedAt)],
                 ];
             }
 
             $phaseStartedAt = hrtime(true);
-            [$recordPath, $contents] = $this->buildPostReactionRecord($postId, [$tag], $authorIdentityId, $createdAt);
+            [$recordPath, $contents] = $this->buildPostReactionRecord($postId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
             $this->writeFile($recordPath, $contents);
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
 
@@ -529,9 +539,65 @@ class LocalWriteService
                 'viewer_is_approved' => $viewerIsApproved,
                 'wrote_record' => 'yes',
                 'commit_sha' => $commitSha,
+                'action_at' => $actionAt ?? $createdAt,
+                'integration_at' => $createdAt,
                 'timings' => $timings,
             ];
         });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, string>
+     */
+    public function applySignedReaction(array $input): array
+    {
+        $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+        $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+        $intentId = $this->intentField($canonicalRecord, 'Intent-ID');
+        $action = $this->intentField($canonicalRecord, 'Action');
+        $targetKind = $this->intentField($canonicalRecord, 'Target-Kind');
+        $targetId = $this->intentField($canonicalRecord, 'Target-ID');
+        $actionAt = $this->intentField($canonicalRecord, 'Action-At');
+        $authorIdentityId = $this->intentField($canonicalRecord, 'Author-Identity-ID');
+        $payloadJson = $this->intentField($canonicalRecord, 'Payload');
+        if (!str_starts_with($canonicalRecord, "Schema: Forum Offline Intent v1\n") || $action !== 'reaction') {
+            throw new RuntimeException('Signed offline intent is not a reaction.');
+        }
+        $authorIdentityId = $this->requireOpenPgpIdentityId($authorIdentityId, 'author_identity_id');
+        $this->optionalOfflineActionAt(['action_at' => $actionAt]);
+        $intentId = $this->optionalOfflineIntentId(['intent_id' => $intentId]);
+        if ($intentId === null) {
+            throw new RuntimeException('intent_id is required for a signed reaction.');
+        }
+        try {
+            $payload = json_decode($payloadJson, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            throw new RuntimeException('Signed offline intent payload is invalid.');
+        }
+        if (!is_array($payload) || ($payload['tag'] ?? '') !== 'like') {
+            throw new RuntimeException('Signed offline reactions currently support Like only.');
+        }
+        [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($authorIdentityId);
+        $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
+        if (!$verification['ok']) {
+            throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+        }
+
+        $reactionInput = [
+            'tag' => 'like',
+            'author_identity_id' => $authorIdentityId,
+            'action_at' => $actionAt,
+            'intent_id' => $intentId,
+        ];
+        if ($targetKind === 'thread' && (string) ($payload['threadId'] ?? '') === $targetId) {
+            return $this->applyThreadTag(array_merge($reactionInput, ['thread_id' => $targetId]));
+        }
+        if ($targetKind === 'post' && (string) ($payload['postId'] ?? '') === $targetId) {
+            return $this->applyPostTag(array_merge($reactionInput, ['post_id' => $targetId]));
+        }
+
+        throw new RuntimeException('Signed offline reaction target does not match its payload.');
     }
 
     /**
@@ -2016,7 +2082,7 @@ class LocalWriteService
      * @param list<string> $labels
      * @return array{string,string}
      */
-    private function buildThreadLabelRecord(string $threadId, array $labels, ?string $authorIdentityId, string $createdAt): array
+    private function buildThreadLabelRecord(string $threadId, array $labels, ?string $authorIdentityId, string $createdAt, ?string $actionAt = null, ?string $intentId = null): array
     {
         $recordId = $this->generateRecordId('thread-label');
         $contents = "Record-ID: {$recordId}\n"
@@ -2025,6 +2091,8 @@ class LocalWriteService
             . "Operation: add\n"
             . 'Labels: ' . implode(' ', $labels) . "\n"
             . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
+            . ($actionAt !== null ? "Action-At: {$actionAt}\n" : '')
+            . ($intentId !== null ? "Intent-ID: {$intentId}\n" : '')
             . "\n";
 
         (new ThreadLabelRecordParser())->parse($contents);
@@ -2035,7 +2103,7 @@ class LocalWriteService
         ];
     }
 
-    private function buildPostReactionRecord(string $postId, array $tags, ?string $authorIdentityId, string $createdAt): array
+    private function buildPostReactionRecord(string $postId, array $tags, ?string $authorIdentityId, string $createdAt, ?string $actionAt = null, ?string $intentId = null): array
     {
         $recordId = $this->generateRecordId('post-reaction');
         $contents = "Record-ID: {$recordId}\n"
@@ -2044,6 +2112,8 @@ class LocalWriteService
             . "Operation: add\n"
             . 'Tags: ' . implode(' ', $tags) . "\n"
             . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
+            . ($actionAt !== null ? "Action-At: {$actionAt}\n" : '')
+            . ($intentId !== null ? "Intent-ID: {$intentId}\n" : '')
             . "\n";
 
         (new PostReactionRecordParser())->parse($contents);
@@ -2300,6 +2370,41 @@ class LocalWriteService
         }
 
         return $value;
+    }
+
+    /** @param array<string, mixed> $input */
+    private function optionalOfflineActionAt(array $input): ?string
+    {
+        $value = trim((string) ($input['action_at'] ?? ''));
+        if ($value === '') {
+            return null;
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/', $value) !== 1) {
+            throw new RuntimeException('action_at must use RFC 3339 UTC format.');
+        }
+
+        return $value;
+    }
+
+    /** @param array<string, mixed> $input */
+    private function optionalOfflineIntentId(array $input): ?string
+    {
+        $value = trim((string) ($input['intent_id'] ?? ''));
+        if ($value === '') {
+            return null;
+        }
+
+        return $this->requireAsciiToken($value, 'intent_id');
+    }
+
+    private function intentField(string $canonicalRecord, string $field): string
+    {
+        $pattern = '/^' . preg_quote($field, '/') . ': (.*)$/m';
+        if (preg_match($pattern, $canonicalRecord, $matches) !== 1 || $matches[1] === '') {
+            throw new RuntimeException('Signed offline intent is missing ' . $field . '.');
+        }
+
+        return $matches[1];
     }
 
     private function requireHexToken(string $value, string $field): string

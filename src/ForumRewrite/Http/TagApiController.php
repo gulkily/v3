@@ -140,4 +140,44 @@ final class TagApiController
             );
         }
     }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    public function applySignedReaction(string $method, array $query): void
+    {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        if ($method !== 'POST') {
+            $this->routeServices->sendText("method not allowed\n", 405);
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $input = $this->routeServices->requestData($query);
+        $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
+        try {
+            $result = $this->routeServices->writer()->applySignedReaction($input);
+            $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
+            $targetLine = isset($result['post_id'])
+                ? "post_id={$result['post_id']}\nthread_id={$result['thread_id']}\n"
+                : "thread_id={$result['thread_id']}\n";
+            $response = "status=ok\n"
+                . $targetLine
+                . "tag={$result['tag']}\n"
+                . "action_at=" . ($result['action_at'] ?? '') . "\n"
+                . "integration_at=" . ($result['integration_at'] ?? '') . "\n"
+                . "wrote_record={$result['wrote_record']}\n";
+            if (isset($result['commit_sha'])) {
+                $response .= "commit_sha={$result['commit_sha']}\n";
+            }
+            $this->routeServices->sendText($response, 200, $this->routeServices->serverTimingHeaders($result));
+        } catch (RuntimeException $exception) {
+            $this->routeServices->sendText(
+                "error=" . $exception->getMessage() . "\n",
+                400,
+                $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
+            );
+        }
+    }
 }

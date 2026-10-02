@@ -18,6 +18,19 @@
     return escapeHtml(value).replace(/(\r\n|\r|\n)/g, "<br>$1");
   }
 
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function nl2br(value) {
+    return escapeHtml(value).replace(/(\r\n|\r|\n)/g, "<br>$1");
+  }
+
   var snapshotPresentation = {
     metadataValue: function (database, key) {
       var result = database.exec("SELECT value FROM metadata WHERE key = ?", [key])[0];
@@ -34,6 +47,20 @@
     compactReaderIndicator: function (revision) {
       var match = String(revision || "").match(/offline_reader\.([a-f0-9]{12})\.js$/);
       return match ? "reader " + match[1] : "reader unknown";
+    },
+    queueSignedReaction: function (target, summary, payload) {
+      if (!window.forumOutboxIntent || !window.forumOutboxStorage) {
+        return Promise.reject(new Error("Outbox storage is unavailable on this device."));
+      }
+      return window.forumOutboxIntent.createSignedIntent({
+        action: "reaction",
+        state: "queued",
+        target: target,
+        summary: summary,
+        payload: payload
+      }).then(function (item) {
+        return window.forumOutboxStorage.save(item).then(function () { return item; });
+      });
     },
     normalThreadUrl: function (threadId) {
       return "/threads/" + encodeURIComponent(threadId);
@@ -407,6 +434,9 @@
       rows.forEach(function (row, index) {
         var post = document.createElement("article");
         post.className = index === 0 ? "card post-card thread-root-card" : "card post-card";
+        post.id = "post-" + String(row[0] || "");
+        post.dataset.postId = String(row[0] || "");
+        post.dataset.author = String(row[4] || "guest");
         if (index === 0) {
           var heading = document.createElement("h1");
           heading.textContent = snapshotPresentation.threadTitle(row[2], row[3]);
@@ -429,12 +459,52 @@
             postBody = remainder.replace(/^(?:\r\n|\r|\n)+/, "");
           }
         }
-        body.innerHTML = nl2br(postBody);
-        post.appendChild(body);
         var meta = document.createElement("p");
         meta.className = "meta";
         meta.textContent = "by " + String(row[4] || "guest") + (row[5] ? " on " + String(row[5]) : "");
-        post.appendChild(meta);
+        body.innerHTML = nl2br(postBody);
+        if (index === 0) {
+          post.appendChild(body);
+          post.appendChild(meta);
+        } else {
+          post.appendChild(meta);
+          post.appendChild(body);
+        }
+        var permalink = document.createElement("a");
+        permalink.className = "post-card-permalink";
+        permalink.href = "/posts/" + encodeURIComponent(String(row[0] || ""));
+        permalink.title = "Post " + String(row[0] || "");
+        permalink.setAttribute("aria-label", permalink.title);
+        permalink.textContent = "#";
+        post.appendChild(permalink);
+        if (options.onQueueReaction) {
+          var actions = document.createElement("div");
+          actions.className = "button-row button-row-natural post-card-actions" + (index === 0 ? " thread-root-actions" : "");
+          var queueLike = document.createElement("button");
+          queueLike.type = "button";
+          queueLike.className = "thread-reaction-button";
+          queueLike.setAttribute("data-action", "queue-offline-like");
+          queueLike.setAttribute("data-tag", "like");
+          queueLike.setAttribute("data-applied-label", "Liked");
+          queueLike.setAttribute("aria-pressed", "false");
+          queueLike.textContent = "Like";
+          queueLike.addEventListener("click", (function (postId, isRoot, title, button) {
+            return function () {
+              button.disabled = true;
+              options.onQueueReaction({ kind: isRoot ? "thread" : "post", id: postId }, "Like " + title, isRoot
+                ? { kind: "thread_tag", threadId: postId, tag: "like" }
+                : { kind: "post_tag", postId: postId, tag: "like" }
+              ).then(function () {
+                button.textContent = "Liked";
+                button.setAttribute("aria-pressed", "true");
+              }).catch(function () {
+                button.disabled = false;
+              });
+            };
+          })(String(row[0] || ""), index === 0, index === 0 ? snapshotPresentation.threadTitle(row[2], row[3]) : "comment", queueLike));
+          actions.appendChild(queueLike);
+          post.appendChild(actions);
+        }
         options.content.appendChild(post);
       });
       return true;
@@ -601,9 +671,24 @@
           content.appendChild(unavailable);
         },
         setStatus: setStatus,
+        onQueueReaction: function (target, summary, payload) {
+          return snapshotPresentation.queueSignedReaction(target, summary, payload).then(function () {
+            setStatus("Like queued. Open Tools → Outbox to review it.", "ok");
+          }).catch(function (error) {
+            setStatus(error && error.message ? error.message : "Unable to queue Like.", "error");
+            throw error;
+          });
+        },
         threadId: threadId
       });
     }
+
+    window.addEventListener("online", function () {
+      if (!window.forumOutboxSender || typeof window.forumOutboxSender.processQueuedOutbox !== "function") return;
+      window.forumOutboxSender.processQueuedOutbox().then(function (items) {
+        if (items.length) setStatus("Queued Outbox work was processed after reconnecting.", "ok");
+      });
+    });
 
     async function loadSnapshot() {
       setStatus("Loading the local reading snapshot...", "loading");

@@ -240,7 +240,7 @@ final class ComposeAndAccountKeyController
             'body' => $body,
             'notice' => $notice,
             'error' => $error,
-        ], 'Compose Thread', 'compose', $this->identityScripts());
+        ], 'Compose Thread', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js']));
     }
 
     private function renderComposeReplyPage(
@@ -264,7 +264,7 @@ final class ComposeAndAccountKeyController
             'error' => $error,
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
             'body' => $body,
-        ], 'Compose Reply', 'compose', $this->identityScripts());
+        ], 'Compose Reply', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js']));
     }
 
     private function renderAccountKeyPage(?string $notice = null, ?string $error = null): string
