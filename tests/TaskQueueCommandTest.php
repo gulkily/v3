@@ -25,6 +25,7 @@ final class TaskQueueCommandTest
         assertSame(1, $exitCode);
         assertStringContains('./v3 task-queue enqueue-rebuild', $stdout);
         assertStringContains('./v3 task-queue enqueue-fast-score', $stdout);
+        assertStringContains('./v3 task-queue enqueue-offline-snapshot', $stdout);
         assertStringContains('./v3 task-queue run', $stdout);
         assertStringContains('./v3 task-queue status', $stdout);
         assertStringContains('./v3 task-queue cron', $stdout);
@@ -145,6 +146,43 @@ final class TaskQueueCommandTest
         assertSame('', $secondError);
     }
 
+    public function testTaskQueuePublishesEnqueuedOfflineSnapshot(): void
+    {
+        $suffix = bin2hex(random_bytes(6));
+        $base = sys_get_temp_dir() . '/forum-task-queue-offline-snapshot-' . $suffix;
+        $repositoryRoot = $base . '/repository';
+        $databasePath = $base . '/read-model.sqlite3';
+        $staticHtmlRoot = $base . '/static_html';
+        $queuePath = $base . '/internal_tasks.sqlite3';
+        mkdir($repositoryRoot . '/records', 0700, true);
+        $this->createOfflineSnapshotSource($databasePath);
+        try {
+            $arguments = ' --repository-root=' . escapeshellarg($repositoryRoot)
+                . ' --database-path=' . escapeshellarg($databasePath)
+                . ' --static-html-root=' . escapeshellarg($staticHtmlRoot)
+                . ' --queue-database-path=' . escapeshellarg($queuePath);
+            [$enqueueCode, $enqueueOutput, $enqueueError] = $this->runCommand(
+                dirname(__DIR__),
+                'FORUM_APPROVED_MEMBERS_ONLY=false ./v3 task-queue enqueue-offline-snapshot' . $arguments,
+            );
+            [$runCode, $runOutput, $runError] = $this->runCommand(
+                dirname(__DIR__),
+                'FORUM_APPROVED_MEMBERS_ONLY=false ./v3 task-queue run' . $arguments,
+            );
+            $published = is_file($staticHtmlRoot . '/offline/snapshot.sqlite3');
+        } finally {
+            $this->removeTree($base);
+        }
+
+        assertSame(0, $enqueueCode);
+        assertStringContains('Task enqueued: id=', $enqueueOutput);
+        assertSame('', $enqueueError);
+        assertSame(0, $runCode);
+        assertStringContains('Finished task id=', $runOutput);
+        assertSame('', $runError);
+        assertTrue($published);
+    }
+
     public function testFastScoreWorkerCapturesRepositoryForFeatureFlagEvaluation(): void
     {
         $queuePath = sys_get_temp_dir() . '/forum-fast-score-worker-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';
@@ -206,5 +244,29 @@ final class TaskQueueCommandTest
         fclose($pipes[2]);
 
         return [proc_close($process), (string) $stdout, (string) $stderr];
+    }
+
+    private function createOfflineSnapshotSource(string $path): void
+    {
+        $pdo = new PDO('sqlite:' . $path);
+        $pdo->exec('CREATE TABLE threads (root_post_id TEXT PRIMARY KEY, root_post_created_at TEXT, last_activity_at TEXT, subject TEXT, body_preview TEXT, board_tags_json TEXT, thread_labels_json TEXT, score_total INTEGER)');
+        $pdo->exec('CREATE TABLE posts (post_id TEXT PRIMARY KEY, created_at TEXT, thread_id TEXT, parent_id TEXT, subject TEXT, body TEXT, board_tags_json TEXT, thread_type TEXT, author_label TEXT, author_profile_slug TEXT, sequence_number INTEGER, is_hidden INTEGER)');
+        $pdo->exec("INSERT INTO threads VALUES ('root', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z', 'Subject', 'Preview', '[]', '[]', 0)");
+        $pdo->exec("INSERT INTO posts VALUES ('root', '2026-01-01T00:00:00Z', 'root', NULL, 'Subject', 'Body', '[]', NULL, 'Author', NULL, 1, 0)");
+    }
+
+    private function removeTree(string $path): void
+    {
+        if (!is_dir($path)) {
+            return;
+        }
+        foreach (scandir($path) ?: [] as $entry) {
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+            $entryPath = $path . '/' . $entry;
+            is_dir($entryPath) ? $this->removeTree($entryPath) : @unlink($entryPath);
+        }
+        @rmdir($path);
     }
 }

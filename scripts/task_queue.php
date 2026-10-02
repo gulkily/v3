@@ -6,6 +6,7 @@ require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
 use ForumRewrite\Llm\LlmExchangeRecorder;
+use ForumRewrite\Offline\OfflineSnapshotPublisher;
 use ForumRewrite\Scoring\FastScoreContextFactory;
 use ForumRewrite\Scoring\FastScoreDatabaseConfig;
 use ForumRewrite\Scoring\FastScoreSweepService;
@@ -17,6 +18,7 @@ use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\ExecutionLock;
+use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\TaskQueue\ReadModelRebuildTaskHandler;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
@@ -37,12 +39,15 @@ try {
         exit(0);
     }
 
-    if (!in_array($command, ['enqueue-rebuild', 'enqueue-fast-score', 'run', 'status', 'cron'], true)) {
+    if (!in_array($command, ['enqueue-rebuild', 'enqueue-fast-score', 'enqueue-offline-snapshot', 'run', 'status', 'cron'], true)) {
         throw new InvalidArgumentException('Unknown task-queue command: ' . ($command === '' ? '(none)' : $command));
     }
 
     $repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
     $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+    $siteId = SiteProfileRegistry::active()['name'];
+    $profileDefaultStaticRoot = $projectRoot . '/state/static_html' . ($siteId === 'zenmemes' ? '' : '_' . $siteId);
+    $staticHtmlRoot = (string) ($options['static-html-root'] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: $profileDefaultStaticRoot));
     $queuePath = TaskQueueDatabaseConfig::path($projectRoot, isset($options['queue-database-path']) ? (string) $options['queue-database-path'] : null);
     $queueDirectory = dirname($queuePath);
     if (!is_dir($queueDirectory) && !mkdir($queueDirectory, 0777, true) && !is_dir($queueDirectory)) {
@@ -65,6 +70,17 @@ try {
 
     if ($command === 'enqueue-fast-score') {
         $task = $store->enqueue(SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'fast-score-sweep');
+        fwrite(STDOUT, sprintf(
+            "Task %s: id=%d status=%s\n",
+            $task['enqueued'] ? 'enqueued' : 'already outstanding',
+            $task['id'],
+            $task['status'],
+        ));
+        exit(0);
+    }
+
+    if ($command === 'enqueue-offline-snapshot') {
+        $task = $store->enqueue(SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT, 'offline-snapshot');
         fwrite(STDOUT, sprintf(
             "Task %s: id=%d status=%s\n",
             $task['enqueued'] ? 'enqueued' : 'already outstanding',
@@ -122,13 +138,14 @@ try {
             exit(0);
         }
 
-        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose): void {
+        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose): void {
             $startedAt = microtime(true);
             $before = $store->counts();
             emitTaskQueue($quiet, "Task queue worker starting\n");
             emitTaskQueue($quiet, "Queue database: {$queuePath}\n");
             emitTaskQueue($quiet, "Repository: {$repositoryRoot}\n");
             emitTaskQueue($quiet, "Read model: {$databasePath}\n");
+            emitTaskQueue($quiet, "Offline snapshot root: {$staticHtmlRoot}\n");
             emitTaskQueue($quiet, "Limit: {$limit}\n");
             emitTaskQueue($quiet, "Fastmod provider-call limit: {$providerCallLimit}\n");
             emitTaskQueue($quiet, "Fastmod examined-work limit: {$workLimit}\n");
@@ -187,6 +204,13 @@ try {
                             }
                             : null,
                     );
+                },
+                static function () use ($projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot): void {
+                    if (FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)) {
+                        throw new RuntimeException('Offline snapshot publication is unavailable while approved-members-only is enabled.');
+                    }
+
+                    (new OfflineSnapshotPublisher($staticHtmlRoot))->publish($databasePath);
                 },
             );
             $taskStartedAt = [];
@@ -323,7 +347,7 @@ function parseTaskQueueOptions(array $arguments): array
             $options[substr($argument, 2)] = true;
             continue;
         }
-        foreach (['limit', 'score-limit', 'work-limit', 'repository-root', 'database-path', 'queue-database-path', 'log'] as $key) {
+        foreach (['limit', 'score-limit', 'work-limit', 'repository-root', 'database-path', 'static-html-root', 'queue-database-path', 'log'] as $key) {
             $prefix = '--' . $key . '=';
             if (str_starts_with($argument, $prefix)) {
                 $value = substr($argument, strlen($prefix));
@@ -402,7 +426,8 @@ function printTaskQueueUsage($stream): void
 Usage:
   php scripts/task_queue.php enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
-  php scripts/task_queue.php run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+  php scripts/task_queue.php enqueue-offline-snapshot [--queue-database-path=/private/path/tasks.sqlite3]
+  php scripts/task_queue.php run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php cron [--log=/var/log/forum-task-queue.log]
 
