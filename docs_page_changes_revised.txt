@@ -1,8 +1,8 @@
 # /docs/ Index Rewrite — Project-Verified Implementation Guide
 
 Use this guide instead of applying `docs_page_changes.txt` verbatim. It keeps
-the proposed concrete writing style, diagram, and layout direction while
-preserving the behavior this checkout actually implements.
+the proposed concrete writing style and layout direction while preserving the
+behavior this checkout actually implements.
 
 ## Scope
 
@@ -71,8 +71,7 @@ Relevant files:
 
 ## Required index copy
 
-Replace the existing intro and overview copy with the following, except where
-the diagram section below supplies more precise command wording.
+Replace the existing intro and overview copy with the following.
 
 ### Intro
 
@@ -182,19 +181,12 @@ It must:
   3. a visually emphasized “`records/` in Git” box with `records/posts/` and
      `records/identity/`;
   4. two derived boxes, “SQLite” and “static HTML”;
-  5. “Readers”; and
-  6. a visually separate dashed box for “Operator credentials and private
-     workflow state”, captioned “outside `public/` and outside Git”, with
-     “reply-agent key” as an example and no arrows to the public-record flow.
+  5. “Readers”.
 
-Use accurate command labels:
-
-- label the records-to-SQLite arrow `./v3 rebuild`;
-- label the records-to-static-HTML arrow `./v3 build-static`.
-
-This split is preferable to a shared command label because it reflects the
-actual CLI behavior. If the visual design needs one shared label, use only
-`./v3 build-static` and explain that it rebuilds both derived outputs.
+Use arrows only between the Git records and the derived views. Do not put CLI
+command labels or an operator-credentials box in the diagram. The overview
+card and CLI reference provide the command details; the private-state boundary
+is covered in the overview card and linked architecture guide.
 
 ## Layout
 
@@ -236,6 +228,7 @@ container is acceptable.
 
 ## Report after implementation
 
-Report the files changed, the two-command diagram treatment, the verified
-private-state boundary, any copy intentionally changed for accuracy, the test
-results, and screenshots for light and dark themes.
+Report the files changed, the simplified arrow-only diagram treatment, the
+verified private-state boundary in the supporting copy, any copy intentionally
+changed for accuracy, the test results, and screenshots for light and dark
+themes.

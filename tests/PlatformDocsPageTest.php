@@ -19,13 +19,18 @@ final class PlatformDocsPageTest
     public function testPublicIndexListsCataloguedDocuments(): void
     {
         $html = $this->render('/docs/');
+        $diagram = explode('</svg>', (string) strstr($html, '<svg'), 2)[0];
 
         assertTrue(str_contains($html, '<h1>Platform Docs</h1>'));
         assertTrue(str_contains($html, 'Extending the Platform'));
         assertTrue(str_contains($html, '<h2>How it works</h2>'));
         assertTrue(str_contains($html, '<title id="docs-diagram-title">Zenmemes public architecture</title>'));
-        assertTrue(str_contains($html, './v3 build-static'));
-        assertTrue(str_contains($html, "Member's browser"));
+        assertTrue(str_contains($diagram, "Member's browser"));
+        assertTrue(str_contains($diagram, 'signed write'));
+        assertTrue(str_contains($diagram, 'static HTML'));
+        assertTrue(!str_contains($diagram, './v3 rebuild'));
+        assertTrue(!str_contains($diagram, './v3 build-static'));
+        assertTrue(!str_contains($diagram, 'docs-diagram-private'));
         assertTrue(str_contains($html, '/docs/architecture/public_architecture_and_trust.md'));
         assertTrue(str_contains($html, '/docs/examples/extension_improvement_cookbook.md'));
         assertTrue(str_contains($html, 'docs/examples/extension_improvement_cookbook.md'));

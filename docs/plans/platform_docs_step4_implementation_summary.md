@@ -133,10 +133,10 @@
 - Rewrote the Docs index with concrete language about Git records, derived
   SQLite/static views, browser-held member keys, and the separate private
   operator boundary.
-- Added an inline, theme-aware SVG diagram. It distinguishes the SQLite-only
-  `./v3 rebuild` path from the full `./v3 build-static` path, shows the
-  browser-to-records signed-write flow, and keeps `reply-agent` private state
-  separate from the public record.
+- Added an inline, theme-aware SVG diagram showing the browser-to-records
+  signed-write flow and the derived SQLite/static views. The diagram uses
+  arrows rather than CLI command labels, and leaves private operator state to
+  the supporting copy and linked architecture guide.
 - Switched the overview cards to three desktop columns and one mobile column.
 - Updated catalog descriptions and added copy-regression coverage for the
   concrete wording.
