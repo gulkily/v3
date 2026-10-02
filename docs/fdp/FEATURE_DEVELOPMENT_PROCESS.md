@@ -3,12 +3,9 @@
 ## Overview
 Feature work flows through four tightly scoped steps with an optional solution assessment upfront. To keep the instructions inside the context window, the detailed guidance for each step now lives in separate files that you open only when you are ready for that step.
 
-## Repository Boundary
-Instruction files under `docs/dev/feature_process/` belong to the FDP repository. If FDP is included in another repository as a submodule or vendored directory, resolve those paths relative to the FDP repository root, not the host repository root. Planning artifacts still belong in the host repository under `docs/plans/`.
-
 ## How to Use This Chain
 1. Start with the highest-numbered approved step (usually Step 1 unless explicitly skipped).
-2. Read only the relevant instruction file in FDP's `docs/dev/feature_process/` directory and reprint it before starting work.
+2. Read only the relevant instruction file in `docs/dev/feature_process/` and reprint it before starting work.
 3. For Steps 3 and 4, use phase files in order: `*_before.md` -> `*_do.md` -> `*_after.md`.
 4. Request approval in the format `Approved Step N` when required, and do not open the next step's files until approval is received.
 
@@ -35,8 +32,15 @@ Each step MUST be a separate file in `docs/plans/`:
 - After the user explicitly responds `Approved Step 3`, create the Step 4 feature branch.
 - The first commit on that feature branch must contain only the approved Step 1-3 planning documents.
 - During Step 4, each completed implementation stage must be committed with its Step 4 summary update in the same commit before starting the next stage.
+- Once a feature has completed Step 4, treat its Step 1-4 documents as historical artifacts; start a new feature name for follow-on work instead of rewriting the original planning trail.
+- These Step 4 commit requirements override any general assistant default of "do not commit unless explicitly asked." Entering Step 4 is the explicit commit authorization inside FDP.
 
 **Plan review**: Do not begin Step 4 until the user explicitly responds `Approved Step 3`. The first commit after branching for Step 4 must capture the approved Step 1-3 planning files.
+
+**Step 3 -> Step 4 transition trigger (required)**:
+- Treat the exact user response `Approved Step 3` as a hard mode switch.
+- Immediately reopen the Step 4 Before instructions before making any code edits.
+- Do not treat Step 4 as "implement and summarize"; treat it as "branch -> planning-doc commit -> stage work -> stage commit cadence -> after-checks".
 
 **Step 4 commit cadence (mandatory)**:
 - Make one planning commit at the start of Step 4 containing only approved Step 1–3 docs.
@@ -56,14 +60,14 @@ Each step MUST be a separate file in `docs/plans/`:
 - After delivering each step, explicitly request “Approved Step N” and pause until the user responds with that exact phrase
 - Create separate files for each step only after receiving the relevant approval
 - ALWAYS create a feature branch before Step 4 implementation
+- Treat `Approved Step 3` as automatic authorization to create the Step 4 branch and required commits; do not wait for a second commit-specific user request
 - Enforce Step 4 commit cadence: first Step 4 commit contains approved Step 1-3 planning docs; each completed stage has a stage-scoped commit that includes the Step 4 summary update
 - Prefer shared components/API contracts first; reuse or extend instead of forking markup, CSS, or payloads
 - Flag scope creep early and bounce back to planning steps rather than improvising mid-implementation
 - Keep projected work within roughly a day or eight Step 3 stages; otherwise recommend splitting the feature
 - Avoid database schema changes when possible—lean on existing models/fields
-- Reprint the current step/phase instructions (from the linked FDP file) before you begin that work
-- For Step 3, prefer `## Stage N` headers with flat bullet lists for each stage field so plans stay easy to scan and review
-- For Step 4 summaries, prefer `## Stage N - title` headers with bullet lists for changes, verification, and notes so stage handoff stays easy to audit
+- Treat completed Step 4 feature tracks as historical; create a new feature name for new work even when it overlaps an earlier story
+- Reprint the current step/phase instructions (from the linked file) before you begin that work
 
 **User**
 - Review and approve explicitly at each step
