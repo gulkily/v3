@@ -140,3 +140,46 @@
     (`WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh`)
     confirmed flaky by rerunning 3x (passed 2/3) and unrelated to this
     stage (no `src/` changes in Stage 3 at all).
+
+## Stage 4 - Write canonical post records with number, date, and score seed
+
+- Changes:
+  - `scripts/qdb_archive_import_write_posts.php`: for each row in
+    Stage 3's output, builds `thread-<YYYYMMDDHHMMSS>-qdb-<quote_id>`
+    (the Stage 1 Post-ID convention) from `created_at`, normalizes line
+    endings and outer whitespace (matching the structural - not
+    character-filtering - part of what live-authored bodies already
+    go through), and writes one canonical post record straight into
+    `records/posts/` at its real dated-shard path (no
+    `LocalWriteService` call). Parses every record with
+    `PostRecordParser` before writing, so nothing unparseable ever
+    reaches disk.
+  - Found and handled a second, separate restriction while running
+    this for real: `GenericTextRecordParser` (the record format's own
+    low-level parser, not the optional `UnicodeTextPolicy`) rejects
+    true Unicode control/format characters (`\p{C}`) unconditionally,
+    on every instance, regardless of feature flags - `\n` and `\t` are
+    the only exceptions. This is a hard requirement of the canonical
+    file format, which the earlier "retain everything" decision wasn't
+    about (that was specifically about the optional, now-disabled
+    authoring policy). After excluding CRLF line endings (already
+    normalized), only 17 of 14,881 rows (0.1%) actually contain one of
+    these - mostly a soft hyphen (54 occurrences in one row) and a
+    handful of genuine stray control bytes. The script strips only
+    `\p{C}` characters, nothing else, and logs exactly which quote_ids
+    and codepoints were affected; since every one of them is
+    non-printable, nothing a reader would see changes.
+- Verification:
+  - Ran for real against the full Stage 3 output (14,881 rows) into a
+    scratch copy of the actual `state/local_repository_qdb` repository
+    (not the live one) - all 14,881 rows wrote successfully, file count
+    matches Stage 3's row count exactly, no Post-ID collisions.
+  - Re-parsed all 14,881 written files straight from disk with
+    `PostRecordParser` - 0 failures, every seed header round-trips.
+  - Ran a full `ReadModelBuilder::rebuild()` against that scratch
+    repository, then diffed `score_total`/`vote_count` for all 14,881
+    imported threads against the Stage 3 source values - 0 mismatches,
+    0 missing.
+  - Full suite: `php tests/run.php` - back to exactly the same 5
+    pre-existing failures (the one flaky test from Stage 3 passed
+    again), confirming it really was flaky and not a regression.
