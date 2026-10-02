@@ -147,3 +147,6 @@ zenmemes/chouse anywhere in this checklist.
   real "Recent activity" (the 5 most recently active threads), so
   nothing on the page is fabricated. Verified: renders correctly, zenmemes
   unaffected, full suite clean.
+- **Random page header removed, at the operator's request:** dropped the
+  "Random" heading + "Shuffle again" link card from `qdb_random.php` —
+  the page now goes straight into the quote list, no intro chrome.
