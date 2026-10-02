@@ -275,6 +275,50 @@ NODE;
         assertSame('', $result['status']['textContent']);
     }
 
+    public function testMissingKeyOnPublicAuthenticationResumeStaysOnCurrentPage(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const domContentLoadedHandlers = [];
+let replacedUrl = '';
+let fetchCount = 0;
+
+global.window = {
+  localStorage: { getItem() { return ''; } },
+  location: {
+    pathname: '/lobby/',
+    search: '',
+    replace(url) { replacedUrl = url; },
+    assign() {},
+    reload() {}
+  }
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') domContentLoadedHandlers.push(handler);
+  },
+  querySelector(selector) {
+    if (selector === '[data-private-site-auth-state]') {
+      return { dataset: { publicAuthResume: 'true', authenticatedIdentityId: '' } };
+    }
+    return null;
+  }
+};
+global.fetch = async function() { fetchCount += 1; throw new Error('keyless public browsing must not authenticate'); };
+
+vm.runInThisContext(source);
+domContentLoadedHandlers[0]();
+setImmediate(() => process.stdout.write(JSON.stringify({ replacedUrl, fetchCount })));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('', $result['replacedUrl']);
+        assertSame(0, $result['fetchCount']);
+    }
+
     public function testAuthenticationFailureIsVisible(): void
     {
         $script = <<<'NODE'
