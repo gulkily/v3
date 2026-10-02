@@ -1,6 +1,5 @@
 <section class="stack">
   <article class="card">
-    <h1>Search</h1>
     <form method="get" action="/search" class="stack">
       <input type="text" name="search" value="<?= $e($term) ?>" placeholder="Search quotes..." aria-label="Search quotes">
       <button type="submit">Search</button>

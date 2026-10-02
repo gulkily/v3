@@ -150,3 +150,23 @@ zenmemes/chouse anywhere in this checklist.
 - **Random page header removed, at the operator's request:** dropped the
   "Random" heading + "Shuffle again" link card from `qdb_random.php` —
   the page now goes straight into the quote list, no intro chrome.
+- **Add Quote page compacted, at the operator's request:** `/add` now
+  renders a new dedicated `qdb_add.php` (via a new
+  `ComposeAndAccountKeyController::composeThreadCompact()`) instead of
+  the shared `compose_thread.php` — no heading, no "Posts are stored..."
+  text, and — by passing `compact: true` to the existing
+  `thread_compose_form.php` partial (the same mode the inline board
+  composer already uses) — no visible Subject/Board tags fields, just
+  the body textarea. The shared `/compose/thread` route and its template
+  are untouched; verified zenmemes still shows the full form there.
+  - **Follow-up fix:** `compact: true`'s action-button row
+    (`.compact-thread-compose-actions`) only goes horizontal above a
+    640px CSS media-query breakpoint elsewhere (by design, for the small
+    inline composer embedded in the board page). On this full-page
+    context the operator saw it stacked. Added a scoped override
+    (`.qdb-add-page .compact-thread-compose-actions`) so the buttons are
+    reliably horizontal on this page specifically, without touching the
+    responsive behavior of the inline composer elsewhere.
+- **Search page heading removed, at the operator's request:** dropped
+  the `<h1>Search</h1>` from `qdb_search.php`; the search box is now the
+  first thing on the page.

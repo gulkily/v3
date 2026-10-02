@@ -56,6 +56,24 @@ final class ComposeAndAccountKeyController
     }
 
     /**
+     * QDB classic URL: /add, /?add. A compacted compose page - no heading,
+     * no "posts are stored..." text, no subject/board-tags fields (just the
+     * body, matching the compact inline composer's own field set).
+     *
+     * @param array<string, mixed> $query
+     */
+    public function composeThreadCompact(array $query): string
+    {
+        return $this->routeServices->renderPageTemplate('qdb_add.php', [
+            'boardTags' => 'general',
+            'subject' => '',
+            'body' => (string) ($query['body'] ?? ''),
+            'notice' => null,
+            'error' => null,
+        ], 'Add Quote', 'compose', $this->identityScripts());
+    }
+
+    /**
      * @param array<string, mixed> $query
      */
     public function composeReply(array $query): string

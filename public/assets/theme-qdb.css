@@ -168,6 +168,10 @@
   padding-left: 1.2rem;
 }
 
+:root[data-theme="qdb"] .qdb-add-page .compact-thread-compose-actions {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
 @media (max-width: 560px) {
   :root[data-theme="qdb"] .qdb-welcome-columns {
     flex-direction: column;

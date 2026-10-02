@@ -346,7 +346,7 @@ final class Application
             }
 
             if ($path === '/add' || array_key_exists('add', $query)) {
-                $this->sendHtml($this->composeAndAccountKeyController()->composeThread($query), 200);
+                $this->sendHtml($this->composeAndAccountKeyController()->composeThreadCompact($query), 200);
                 return;
             }
 
