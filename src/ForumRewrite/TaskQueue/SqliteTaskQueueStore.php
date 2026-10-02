@@ -11,6 +11,7 @@ final class SqliteTaskQueueStore
 {
     public const REBUILD_READ_MODEL = 'rebuild_read_model';
     public const FAST_SCORE_SWEEP = 'fast_score_sweep';
+    public const PUBLISH_OFFLINE_SNAPSHOT = 'publish_offline_snapshot';
 
     public function __construct(
         private readonly PDO $pdo,
@@ -344,7 +345,7 @@ final class SqliteTaskQueueStore
 
     private function assertAllowedType(string $type): void
     {
-        if (!in_array($type, [self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP], true)) {
+        if (!in_array($type, [self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::PUBLISH_OFFLINE_SNAPSHOT], true)) {
             throw new InvalidArgumentException('Unsupported internal task type: ' . $type);
         }
     }

@@ -30,6 +30,17 @@ final class TaskQueueStoreTest
         assertSame($first['id'], $second['id']);
     }
 
+    public function testEnqueueDeduplicatesOutstandingOfflineSnapshotPublication(): void
+    {
+        $store = $this->store();
+        $first = $store->enqueue(SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT, 'offline-snapshot');
+        $second = $store->enqueue(SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT, 'offline-snapshot');
+
+        assertSame(true, $first['enqueued']);
+        assertSame(false, $second['enqueued']);
+        assertSame($first['id'], $second['id']);
+    }
+
     public function testRequeueClaimedDoesNotSpendAWorkerFailureAttempt(): void
     {
         $store = $this->store();

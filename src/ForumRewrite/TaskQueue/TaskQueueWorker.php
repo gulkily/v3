@@ -12,18 +12,23 @@ final class TaskQueueWorker
     private $rebuildReadModel;
     /** @var (callable():array<string, mixed>)|null */
     private $runFastScoreSweep;
+    /** @var (callable():void)|null */
+    private $publishOfflineSnapshot;
 
     /**
      * @param callable():void $rebuildReadModel
      * @param (callable():array<string, mixed>)|null $runFastScoreSweep
+     * @param (callable():void)|null $publishOfflineSnapshot
      */
     public function __construct(
         private readonly SqliteTaskQueueStore $store,
         callable $rebuildReadModel,
         ?callable $runFastScoreSweep = null,
+        ?callable $publishOfflineSnapshot = null,
     ) {
         $this->rebuildReadModel = $rebuildReadModel;
         $this->runFastScoreSweep = $runFastScoreSweep;
+        $this->publishOfflineSnapshot = $publishOfflineSnapshot;
     }
 
     /**
@@ -80,6 +85,7 @@ final class TaskQueueWorker
         return match ($task['type'] ?? null) {
             SqliteTaskQueueStore::REBUILD_READ_MODEL => $this->runReadModelRebuild($id),
             SqliteTaskQueueStore::FAST_SCORE_SWEEP => $this->runFastScoreSweep($id),
+            SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT => $this->runOfflineSnapshotPublication($id),
             default => $this->store->markFailed($id, 'unsupported_task_type', 'The worker does not support this task type.', false),
         };
     }
@@ -119,5 +125,21 @@ final class TaskQueueWorker
         $task = $this->store->markCompleted($id);
         $task['sweep'] = $sweep;
         return $task;
+    }
+
+    /** @return array<string, mixed> */
+    private function runOfflineSnapshotPublication(int $id): array
+    {
+        if ($this->publishOfflineSnapshot === null) {
+            return $this->store->markFailed($id, 'offline_snapshot_publication_unavailable', 'Offline snapshot publication is not configured for this worker.', false);
+        }
+
+        try {
+            ($this->publishOfflineSnapshot)();
+        } catch (Throwable $throwable) {
+            return $this->store->markFailed($id, 'offline_snapshot_publication_failed', $throwable->getMessage(), true);
+        }
+
+        return $this->store->markCompleted($id);
     }
 }

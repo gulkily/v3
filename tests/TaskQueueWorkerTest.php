@@ -110,6 +110,52 @@ final class TaskQueueWorkerTest
         assertSame(1, $stored['attempts']);
     }
 
+    public function testWorkerCompletesOfflineSnapshotPublicationTask(): void
+    {
+        $store = $this->store();
+        $task = $store->enqueue(SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT, 'offline-snapshot');
+        $runs = 0;
+        $worker = new TaskQueueWorker(
+            $store,
+            static function (): void {
+            },
+            null,
+            static function () use (&$runs): void {
+                $runs++;
+            },
+        );
+
+        $summary = $worker->run();
+        $stored = $store->findById($task['id']);
+
+        assertSame(1, $runs);
+        assertSame(1, $summary['completed']);
+        assertSame('completed', $stored['status']);
+    }
+
+    public function testWorkerRetriesOfflineSnapshotPublicationFailure(): void
+    {
+        $store = $this->store();
+        $task = $store->enqueue(SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT, 'offline-snapshot', 2);
+        $worker = new TaskQueueWorker(
+            $store,
+            static function (): void {
+            },
+            null,
+            static function (): void {
+                throw new RuntimeException('Snapshot storage is unavailable.');
+            },
+        );
+
+        $first = $worker->run();
+        $second = $worker->run();
+        $stored = $store->findById($task['id']);
+
+        assertSame(1, $first['retried']);
+        assertSame(1, $second['failed']);
+        assertSame('offline_snapshot_publication_failed', $stored['failure_code']);
+    }
+
     private function store(): SqliteTaskQueueStore
     {
         return new SqliteTaskQueueStore(new PDO('sqlite::memory:'));
