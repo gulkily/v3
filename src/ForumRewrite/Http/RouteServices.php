@@ -386,11 +386,13 @@ final class RouteServices
         string $title,
         string $activeSection,
         array $scriptPaths = [],
+        bool $allowPublicAuthenticationResume = true,
     ): string {
         if (!array_key_exists('viewerProfile', $pageData)) {
             $pageData['viewerProfile'] = $this->defaultViewerProfile();
         }
-        $publicAuthenticationResume = !$this->approvedMembersOnlyEnabled
+        $publicAuthenticationResume = $allowPublicAuthenticationResume
+            && !$this->approvedMembersOnlyEnabled
             && $pageData['viewerProfile'] === null;
 
         return $this->renderer->renderPageTemplate(
@@ -427,6 +429,9 @@ final class RouteServices
 
     public function renderMessagePage(string $title, string $heading, string $message, string $activeSection): string
     {
+        // A message page is the final response for an error or other
+        // server-decided state. In particular, resuming an identity from a
+        // 404 would navigate straight back to the same missing URL and loop.
         return $this->renderPageTemplate(
             'message.php',
             [
@@ -435,6 +440,7 @@ final class RouteServices
             ],
             $title,
             $activeSection,
+            allowPublicAuthenticationResume: false,
         );
     }
 
