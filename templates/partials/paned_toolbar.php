@@ -4,11 +4,22 @@
  * @var bool $boardControlsEnabled
  * @var bool $replyEnabled
  * @var bool $prevNextEnabled
+ * @var array<string, mixed>|null $viewerProfile
  */
 $activeView ??= 'board';
 $boardControlsEnabled ??= false;
 $replyEnabled ??= false;
 $prevNextEnabled ??= $boardControlsEnabled;
+$viewerProfile ??= null;
+$viewerDisplayName = '';
+if (is_array($viewerProfile)) {
+    $viewerDisplayName = trim((string) ($viewerProfile['username'] ?? ''));
+    if ($viewerDisplayName === '') {
+        $viewerDisplayName = trim((string) ($viewerProfile['profile_slug'] ?? ''));
+    }
+}
+$viewerLoggedIn = $viewerDisplayName !== '';
+$viewerStatusLabel = $viewerLoggedIn ? $viewerDisplayName : 'Guest';
 ?>
 <div class="paned-toolbar">
   <button type="button" class="paned-toolbar-btn" data-paned-board-new<?= $boardControlsEnabled ? '' : ' disabled' ?>>
@@ -46,4 +57,7 @@ $prevNextEnabled ??= $boardControlsEnabled;
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor"/><path d="M8 4.5 V8 L10.5 9.5" fill="none" stroke="currentColor"/></svg>
     <span>Activity</span>
   </a>
+  <span class="paned-toolbar-identity" data-paned-identity-status data-identity-logged-in="<?= $viewerLoggedIn ? '1' : '0' ?>">
+    <span class="paned-agent-badge" data-paned-identity-label><?= $e($viewerStatusLabel) ?></span>
+  </span>
 </div>

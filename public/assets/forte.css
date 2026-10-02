@@ -103,6 +103,12 @@ body.paned-reader-body {
   box-shadow: 1px 0 0 var(--paned-border-light);
 }
 
+.paned-toolbar-identity {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
 .paned-panes-stack {
   flex: 1;
   min-height: 0;
