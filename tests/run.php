@@ -27,6 +27,7 @@ $testFiles = [
     __DIR__ . '/FastScoreWorkflowServiceTest.php',
     __DIR__ . '/ForteActivityReadModelRecoveryTest.php',
     __DIR__ . '/IdentityBootstrapDiagnosticsTest.php',
+    __DIR__ . '/ImportedQuoteSeedScoringTest.php',
     __DIR__ . '/InvitationIssuanceTest.php',
     __DIR__ . '/LocalAppSmokeTest.php',
     __DIR__ . '/LlmProviderConfigTest.php',

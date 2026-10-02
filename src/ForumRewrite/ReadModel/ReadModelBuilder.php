@@ -233,8 +233,8 @@ final class ReadModelBuilder
              VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :author_identity_id, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
-            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total)
-             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total)'
+            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count)
+             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count)'
         );
 
         $paths = $this->findRelativePaths('records/posts');
@@ -266,6 +266,8 @@ final class ReadModelBuilder
                 'board_tags_json' => json_encode($record->boardTags, JSON_THROW_ON_ERROR),
                 'thread_type' => $record->threadType,
                 'author_identity_id' => $record->authorIdentityId,
+                'imported_score_seed' => $record->importedScoreSeed,
+                'imported_vote_count_seed' => $record->importedVoteCountSeed,
                 'source_path' => $relativePath,
                 'source_commit_sha' => $this->sourceCommitShaForPath($relativePath),
                 'source_order' => $index + 1,
@@ -318,7 +320,8 @@ final class ReadModelBuilder
                     'last_post_id' => $post['post_id'],
                     'board_tags_json' => $post['board_tags_json'],
                     'thread_labels_json' => '[]',
-                    'score_total' => 0,
+                    'score_total' => $post['imported_score_seed'] ?? 0,
+                    'vote_count' => $post['imported_vote_count_seed'] ?? 0,
                 ];
             }
 
@@ -346,8 +349,16 @@ final class ReadModelBuilder
      */
     private function indexThreadLabels(PDO $pdo, array $approvalState): void
     {
-        $rootThreadIds = $pdo->query('SELECT root_post_id FROM threads')->fetchAll(PDO::FETCH_COLUMN);
-        $knownRootThreads = array_fill_keys(array_map(static fn (mixed $value): string => (string) $value, $rootThreadIds), true);
+        $rootThreadRows = $pdo->query('SELECT root_post_id, score_total, vote_count FROM threads')->fetchAll();
+        $knownRootThreads = [];
+        $seedScoreByThread = [];
+        $seedVoteCountByThread = [];
+        foreach ($rootThreadRows as $row) {
+            $rootPostId = (string) $row['root_post_id'];
+            $knownRootThreads[$rootPostId] = true;
+            $seedScoreByThread[$rootPostId] = (int) $row['score_total'];
+            $seedVoteCountByThread[$rootPostId] = (int) $row['vote_count'];
+        }
         $records = [];
 
         $paths = $this->findRelativePaths('records/thread-labels');
@@ -381,9 +392,9 @@ final class ReadModelBuilder
             }
 
             $labelsByThread[$record->threadId] ??= [];
-            $scoreByThread[$record->threadId] ??= 0;
+            $scoreByThread[$record->threadId] ??= $seedScoreByThread[$record->threadId] ?? 0;
             $countedApprovedScoredTagsByThread[$record->threadId] ??= [];
-            $voteCountByThread[$record->threadId] ??= 0;
+            $voteCountByThread[$record->threadId] ??= $seedVoteCountByThread[$record->threadId] ?? 0;
             $countedVoteTagsByThread[$record->threadId] ??= [];
             $labelsAdded = [];
             foreach ($record->labels as $label) {
@@ -439,8 +450,8 @@ final class ReadModelBuilder
             sort($labels);
             $updateThread->execute([
                 'thread_labels_json' => json_encode($labels, JSON_THROW_ON_ERROR),
-                'score_total' => $scoreByThread[$threadId] ?? 0,
-                'vote_count' => $voteCountByThread[$threadId] ?? 0,
+                'score_total' => $scoreByThread[$threadId] ?? ($seedScoreByThread[$threadId] ?? 0),
+                'vote_count' => $voteCountByThread[$threadId] ?? ($seedVoteCountByThread[$threadId] ?? 0),
                 'root_post_id' => $threadId,
             ]);
         }

@@ -61,6 +61,12 @@ final class PostRecordParser
                     throw new CanonicalRecordParseException('Replies must not include typed root header: ' . $header);
                 }
             }
+
+            foreach (['Imported-Score-Seed', 'Imported-Vote-Count-Seed'] as $header) {
+                if (isset($record->headers[$header])) {
+                    throw new CanonicalRecordParseException('Replies must not include typed root header: ' . $header);
+                }
+            }
         }
 
         if ($authorIdentityId !== null && preg_match('/[^A-Za-z0-9._:-]/', $authorIdentityId)) {
@@ -72,6 +78,11 @@ final class PostRecordParser
         $taskImplementationDifficulty = null;
         $taskDependsOn = [];
         $taskSources = [];
+
+        [$importedScoreSeed, $importedVoteCountSeed] = $this->parseImportedSeeds(
+            $record->headers['Imported-Score-Seed'] ?? null,
+            $record->headers['Imported-Vote-Count-Seed'] ?? null,
+        );
 
         if ($threadType !== null) {
             if ($isReply) {
@@ -110,7 +121,33 @@ final class PostRecordParser
             $taskDependsOn,
             $taskSources,
             $record->body,
+            $importedScoreSeed,
+            $importedVoteCountSeed,
         );
+    }
+
+    /**
+     * @return array{0: ?int, 1: ?int}
+     */
+    private function parseImportedSeeds(?string $scoreValue, ?string $voteCountValue): array
+    {
+        if ($scoreValue === null && $voteCountValue === null) {
+            return [null, null];
+        }
+
+        if ($scoreValue === null || $voteCountValue === null) {
+            throw new CanonicalRecordParseException('Imported-Score-Seed and Imported-Vote-Count-Seed must both be present or both absent.');
+        }
+
+        if (!preg_match('/^-?\d+$/', $scoreValue)) {
+            throw new CanonicalRecordParseException('Imported-Score-Seed must be an integer.');
+        }
+
+        if (!preg_match('/^\d+$/', $voteCountValue)) {
+            throw new CanonicalRecordParseException('Imported-Vote-Count-Seed must be a non-negative integer.');
+        }
+
+        return [(int) $scoreValue, (int) $voteCountValue];
     }
 
     private function parseCreatedAt(string $value): string
