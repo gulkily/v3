@@ -88,3 +88,6 @@ merge agent reply queue into task queue
 
 redesign the offline mode indicator to not take up extra vertical space (probably top corner?)
 	also, make it link to userful pages like /offline/
+
+plan/features for dealing with duplicate related items
+	how to merge duplicate threads, posts, and comments
