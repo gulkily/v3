@@ -89,3 +89,28 @@ zenmemes/chouse anywhere in this checklist.
   an explicit `$activeSection` parameter and distinct section values per
   nav item, so exactly one highlights at a time. Verified on `/latest`,
   `/top`, `/add`, `/search`.
+- **Reload-loop bug, reported by the operator:** `/latest`, `/top`,
+  `/leetness`, `/add`, `/random`, `/search` were never added to
+  `Application::isApplicationRoute()`'s allowlist. That allowlist gates
+  `shouldResumeViewerSession()` — without it, the PHP session never
+  resumes on these pages even when the browser already has one, so the
+  viewer's identity never resolves there. Combined with a pre-existing,
+  unrelated client-side quirk (`private_site_auth.js`'s "already
+  authenticated" short-circuit reads a `data-authenticated-identity-id`
+  body attribute that `layout.php` always renders empty, so it never
+  short-circuits), every load on one of these pages re-ran the browser's
+  auto re-authentication flow, which — once the identity resolved as
+  approved — called `location.replace()` back to the *same* page,
+  reloading it, re-running the same sequence, forever.
+  Fixed by adding the six paths to `isApplicationRoute()`'s allowlist, so
+  the session resumes there like it does on every other real route.
+  Verified with a simulated two-request session (set
+  `authenticated_identity_id`, then request each affected path reusing
+  that session): the `data-private-site-auth-state` marker (the thing
+  that triggers the client-side auto-re-auth flow) is now absent on all
+  six, matching `/threads/<id>` and every other pre-existing route. A
+  fresh visitor with no session still gets a normal 200 render.
+  The `data-authenticated-identity-id=""` client-side quirk itself is
+  pre-existing (not touched by this feature, not fixed here) — it just
+  happened to be harmless before because no pre-existing route was ever
+  missing from the allowlist in the way these six were.

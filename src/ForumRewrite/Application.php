@@ -1547,6 +1547,7 @@ final class Application
             '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/set_feature_flag', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
+            '/latest', '/top', '/leetness', '/add', '/random', '/search',
         ], true)) {
             return true;
         }
