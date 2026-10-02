@@ -76,6 +76,7 @@ final class TaskQueueCommandTest
         assertSame('', $secondError);
         assertSame(0, $statusCode);
         assertStringContains('Queued: 1, running: 0, completed: 0, failed: 0', $statusOutput);
+        assertStringContains('Executor: not_observed (last completed: none)', $statusOutput);
         assertSame('', $statusError);
         assertSame(0, $dryRunCode);
         assertStringContains('Task queue dry run', $dryRunOutput);

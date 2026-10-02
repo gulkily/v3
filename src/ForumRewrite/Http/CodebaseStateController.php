@@ -85,6 +85,7 @@ final class CodebaseStateController
             . 'task_queue_queued=' . $taskQueue['queued'] . "\n"
             . 'task_queue_running=' . $taskQueue['running'] . "\n"
             . 'task_queue_failed=' . $taskQueue['failed'] . "\n"
+            . 'task_queue_executor_status=' . $taskQueue['executor_status'] . "\n"
             . 'rebuild_task_status=' . $taskQueue['rebuild_task_status'] . "\n";
     }
 

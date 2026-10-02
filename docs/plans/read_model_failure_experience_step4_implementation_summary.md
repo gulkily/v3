@@ -12,3 +12,16 @@
   - Manual isolated queue run: `php scripts/task_queue.php run --quiet --queue-database-path=<temporary path>` followed by private history inspection returned `status=completed claimed=0 outcomes=0`.
 - Notes:
   - This is durable application-private history, not a `/var/log` dependency. Status presentation, liveness evaluation, and retention arrive in later stages.
+
+## Stage 2 - Executor liveness and status
+
+- Changes:
+  - Added a two-minute executor-heartbeat freshness window derived from the latest completed private queue run.
+  - Extended task-queue CLI status, `./v3 status`, and `/api/read_model_status` with safe executor status; they distinguish fresh, stale, running, failed, and not-observed state without claiming cron is installed.
+  - Added fresh/stale heartbeat and operator-status coverage.
+- Verification:
+  - `php -l src/ForumRewrite/TaskQueue/SqliteTaskQueueStore.php && php -l src/ForumRewrite/Support/OperatorStatusCollector.php && php -l src/ForumRewrite/Http/CodebaseStateController.php && php -l scripts/task_queue.php && php -l scripts/status.php && php -l tests/TaskQueueStoreTest.php && php -l tests/OperatorStatusCollectorTest.php`
+  - `php tests/run.php TaskQueueStoreTest TaskQueueCommandTest OperatorStatusCollectorTest StatusCommandTest` — 28 passed.
+  - Manual isolated quiet run followed by `php scripts/task_queue.php status --queue-database-path=<temporary path>` reported `Executor: fresh`.
+- Notes:
+  - A fresh heartbeat proves the queue worker ran successfully; it intentionally does not assert a host cron entry exists.

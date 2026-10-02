@@ -88,6 +88,30 @@ final class OperatorStatusCollectorTest
         }
     }
 
+    public function testCollectReportsFreshExecutorHeartbeat(): void
+    {
+        [$databasePath, $queuePath, $lockPath] = $this->paths();
+        try {
+            $store = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
+            $run = $store->startExecutorRun();
+            $store->completeExecutorRun($run['id'], [
+                'recovered' => 0,
+                'claimed' => 0,
+                'completed' => 0,
+                'continued' => 0,
+                'retried' => 0,
+                'failed' => 0,
+            ], []);
+
+            $queue = $this->collector($databasePath, $queuePath, $lockPath)->collect()['task_queue'];
+
+            assertSame('fresh', $queue['executor_status']);
+            assertTrue($queue['executor_last_completed_at'] !== 'none');
+        } finally {
+            $this->clean($databasePath, $queuePath, $lockPath);
+        }
+    }
+
     /**
      * @return array{string,string,string}
      */

@@ -92,6 +92,7 @@ try {
 
     if ($command === 'status') {
         $counts = $store->counts();
+        $heartbeat = $store->executorHeartbeatStatus();
         fwrite(STDOUT, "Task queue status\n");
         fwrite(STDOUT, "Queue database: {$queuePath}\n");
         fwrite(STDOUT, sprintf(
@@ -101,6 +102,7 @@ try {
             $counts['completed'],
             $counts['failed'],
         ));
+        fwrite(STDOUT, 'Executor: ' . $heartbeat['status'] . ' (last completed: ' . ($heartbeat['last_completed_at'] ?? 'none') . ")\n");
         foreach ($store->recent((int) ($options['limit'] ?? 25)) as $task) {
             fwrite(STDOUT, sprintf(
                 "Task id=%d type=%s status=%s attempts=%d/%d failure=%s\n",

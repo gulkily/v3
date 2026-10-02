@@ -12,6 +12,7 @@ final class SqliteTaskQueueStore
     public const REBUILD_READ_MODEL = 'rebuild_read_model';
     public const FAST_SCORE_SWEEP = 'fast_score_sweep';
     public const PUBLISH_OFFLINE_SNAPSHOT = 'publish_offline_snapshot';
+    public const EXECUTOR_HEARTBEAT_FRESHNESS_SECONDS = 120;
 
     public function __construct(
         private readonly PDO $pdo,
@@ -273,6 +274,35 @@ final class SqliteTaskQueueStore
         $stmt->execute();
 
         return array_map(fn (array $row): array => $this->hydrateExecutorRun($row), $stmt->fetchAll());
+    }
+
+    /**
+     * @return array{status:string,last_completed_at:?string}
+     */
+    public function executorHeartbeatStatus(
+        int $freshnessSeconds = self::EXECUTOR_HEARTBEAT_FRESHNESS_SECONDS,
+        ?int $now = null,
+    ): array {
+        $run = $this->recentExecutorRuns(1)[0] ?? null;
+        if ($run === null) {
+            return ['status' => 'not_observed', 'last_completed_at' => null];
+        }
+
+        if ($run['status'] === 'running') {
+            return ['status' => 'running', 'last_completed_at' => null];
+        }
+
+        if ($run['status'] !== 'completed' || $run['completed_at'] === null) {
+            return ['status' => 'failed', 'last_completed_at' => null];
+        }
+
+        $completedAt = strtotime((string) $run['completed_at']);
+        $referenceTime = $now ?? time();
+        if ($completedAt === false || $completedAt < $referenceTime - max(1, $freshnessSeconds)) {
+            return ['status' => 'stale', 'last_completed_at' => (string) $run['completed_at']];
+        }
+
+        return ['status' => 'fresh', 'last_completed_at' => (string) $run['completed_at']];
     }
 
     /**

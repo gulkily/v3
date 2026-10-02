@@ -136,6 +136,23 @@ final class TaskQueueStoreTest
         assertSame($run['id'], $store->recentExecutorRuns(1)[0]['id']);
     }
 
+    public function testExecutorHeartbeatDistinguishesFreshAndStaleCompletedRuns(): void
+    {
+        $store = $this->store();
+        $run = $store->startExecutorRun();
+        $completed = $store->completeExecutorRun($run['id'], [
+            'recovered' => 0,
+            'claimed' => 0,
+            'completed' => 0,
+            'continued' => 0,
+            'retried' => 0,
+            'failed' => 0,
+        ], []);
+
+        assertSame('fresh', $store->executorHeartbeatStatus(120, strtotime($completed['completed_at']))['status']);
+        assertSame('stale', $store->executorHeartbeatStatus(120, strtotime($completed['completed_at']) + 121)['status']);
+    }
+
     private function store(): SqliteTaskQueueStore
     {
         return new SqliteTaskQueueStore(new PDO('sqlite::memory:'));
