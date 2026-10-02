@@ -5919,7 +5919,7 @@ global.HTMLButtonElement = HTMLButtonElement;
 global.window = {
   __forumBrowserIdentity: {
     async ensureReadyIdentity() {
-      throw new Error('Posting paused until you choose a username.');
+      throw new Error('Choose a name before continuing.');
     }
   }
 };
@@ -5959,7 +5959,7 @@ NODE;
         $result = $this->runThreadReactionScript($script);
 
         assertSame(0, $result['fetchCount']);
-        assertSame('Posting paused until you choose a username.', $result['feedback']);
+        assertSame('Choose a name before continuing.', $result['feedback']);
         assertSame(false, $result['feedbackHidden']);
         assertSame(false, $result['buttonDisabled']);
         assertSame('Like', $result['buttonText']);

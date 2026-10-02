@@ -152,7 +152,7 @@ class FakePage {
     const handler = this.handlers.get("dialog");
     await handler({
       type: () => "prompt",
-      message: () => "Choose a username for your first post:",
+      message: () => "What should we call you?",
       accept: async () => {},
       dismiss: async () => {},
     });

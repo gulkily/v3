@@ -109,7 +109,7 @@ export async function runCanary(options, launchBrowser, onProgress = () => {}) {
     page.on("dialog", async (dialog) => {
       const details = { type: dialog.type(), message: dialog.message() };
       report.dialogs.push(details);
-      if (details.type === "prompt" && details.message.includes("Choose a username")) {
+      if (details.type === "prompt" && details.message.includes("What should we call you?")) {
         report.promptCount += 1;
         if (report.promptCount === 1) {
           await dialog.accept(username);

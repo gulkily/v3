@@ -2073,8 +2073,8 @@
   async function promptForComposeUsername() {
     try {
       const username = await promptForUsername(
-        "Choose a username for your first post:",
-        "Posting paused until you choose a username."
+        "What should we call you?",
+        "Choose a name before continuing."
       );
       localStorage.removeItem(storageKeys.composePromptCancelled);
       return username;
