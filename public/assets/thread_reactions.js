@@ -376,17 +376,30 @@
       return helper && (helper.ensureActionIdentity || helper.ensureReadyIdentity);
     };
     const notReady = typeof readiness() !== "function";
+    let loaderFailure = null;
     if (notReady && window.ForumLazyComposeSigning && typeof window.ForumLazyComposeSigning.load === "function") {
       setFeedback(feedbackNode, "Loading identity tools...", "ok");
       try {
         await window.ForumLazyComposeSigning.load();
       } catch (error) {
-        // Fall through -- the check below throws the standard error.
+        loaderFailure = error;
       }
       helper = window.__forumBrowserIdentity;
     }
 
     if (typeof readiness() !== "function") {
+      if (loaderFailure instanceof Error) {
+        const failure = new Error("Couldn't load identity tools. Reload the page and try again. If this keeps happening, contact the site operator.");
+        failure.technicalDetails = loaderFailure.technicalDetails || loaderFailure.message;
+        throw failure;
+      }
+
+      if (notReady) {
+        const failure = new Error("This page's identity tools did not start. Reload the page and try again. If this keeps happening, contact the site operator.");
+        failure.technicalDetails = "The browser identity helper and its lazy loader were unavailable when the reaction was selected.";
+        throw failure;
+      }
+
       throw new Error("Identity setup is unavailable. Reload the page and try again.");
     }
 
