@@ -26,6 +26,7 @@ final class TaskQueueCommandTest
         assertStringContains('./v3 task-queue enqueue-rebuild', $stdout);
         assertStringContains('./v3 task-queue enqueue-fast-score', $stdout);
         assertStringContains('./v3 task-queue enqueue-offline-snapshot', $stdout);
+        assertStringContains('./v3 task-queue reset-recovery', $stdout);
         assertStringContains('./v3 task-queue run', $stdout);
         assertStringContains('./v3 task-queue status', $stdout);
         assertStringContains('./v3 task-queue cron', $stdout);
@@ -128,6 +129,29 @@ final class TaskQueueCommandTest
         assertSame('completed', $runs[0]['status']);
         assertSame(0, $runs[0]['summary']['claimed']);
         assertSame([], $runs[0]['task_outcomes']);
+    }
+
+    public function testTaskQueueRecoveryResetCommandIsOperatorControlled(): void
+    {
+        $queuePath = sys_get_temp_dir() . '/forum-task-queue-reset-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            $store = new \ForumRewrite\TaskQueue\SqliteTaskQueueStore(new \PDO('sqlite:' . $queuePath));
+            $request = $store->requestAutomaticRebuild(\ForumRewrite\TaskQueue\SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON, 1);
+            $claimed = $store->claimNext()[0];
+            $store->markFailed($claimed['id'], 'test_failure', 'Test failure.', true);
+
+            [$exitCode, $stdout, $stderr] = $this->runCommand(
+                dirname(__DIR__),
+                './v3 task-queue reset-recovery --queue-database-path=' . escapeshellarg($queuePath),
+            );
+        } finally {
+            @unlink($queuePath);
+        }
+
+        assertSame(true, $request['task'] !== null);
+        assertSame(0, $exitCode);
+        assertStringContains('Automatic rebuild recovery reset.', $stdout);
+        assertSame('', $stderr);
     }
 
     public function testTaskQueueUnknownOptionsShowUsageWithoutAPhpStackTrace(): void

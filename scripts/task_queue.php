@@ -39,7 +39,7 @@ try {
         exit(0);
     }
 
-    if (!in_array($command, ['enqueue-rebuild', 'enqueue-fast-score', 'enqueue-offline-snapshot', 'run', 'status', 'cron'], true)) {
+    if (!in_array($command, ['enqueue-rebuild', 'enqueue-fast-score', 'enqueue-offline-snapshot', 'reset-recovery', 'run', 'status', 'cron'], true)) {
         throw new InvalidArgumentException('Unknown task-queue command: ' . ($command === '' ? '(none)' : $command));
     }
 
@@ -87,6 +87,12 @@ try {
             $task['id'],
             $task['status'],
         ));
+        exit(0);
+    }
+
+    if ($command === 'reset-recovery') {
+        $reset = $store->resetAutomaticRecovery(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON);
+        fwrite(STDOUT, $reset ? "Automatic rebuild recovery reset.\n" : "Automatic rebuild recovery was not blocked.\n");
         exit(0);
     }
 
@@ -448,6 +454,7 @@ Usage:
   php scripts/task_queue.php enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php enqueue-offline-snapshot [--queue-database-path=/private/path/tasks.sqlite3]
+  php scripts/task_queue.php reset-recovery [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php cron [--log=/var/log/forum-task-queue.log]

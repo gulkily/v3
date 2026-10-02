@@ -13,6 +13,7 @@ final class SqliteTaskQueueStore
     public const FAST_SCORE_SWEEP = 'fast_score_sweep';
     public const PUBLISH_OFFLINE_SNAPSHOT = 'publish_offline_snapshot';
     public const EXECUTOR_HEARTBEAT_FRESHNESS_SECONDS = 120;
+    public const READ_MODEL_SCHEMA_RECOVERY_REASON = 'read_model_schema';
 
     public function __construct(
         private readonly PDO $pdo,
@@ -37,34 +38,76 @@ final class SqliteTaskQueueStore
 
         $maxAttempts = max(1, $maxAttempts);
 
-        return $this->withImmediateTransaction(function () use ($type, $deduplicationKey, $maxAttempts): array {
-            $existing = $this->findOutstanding($type, $deduplicationKey);
-            if ($existing !== null) {
-                $existing['enqueued'] = false;
-                return $existing;
+        return $this->withImmediateTransaction(
+            fn (): array => $this->enqueueWithinTransaction($type, $deduplicationKey, $maxAttempts)
+        );
+    }
+
+    /**
+     * @return array{status:string,task:?array<string, mixed>}
+     */
+    public function requestAutomaticRebuild(string $reason, int $maxAttempts = 3): array
+    {
+        $this->assertRecoveryReason($reason);
+
+        return $this->withImmediateTransaction(function () use ($reason, $maxAttempts): array {
+            $state = $this->recoveryStateWithinTransaction($reason);
+            if ($state['status'] === 'blocked') {
+                return ['status' => 'blocked', 'task' => null];
             }
 
+            $task = $this->enqueueWithinTransaction(self::REBUILD_READ_MODEL, 'read-model', $maxAttempts);
             $now = gmdate('c');
-            $insert = $this->pdo->prepare(
-                'INSERT INTO internal_tasks (type, deduplication_key, status, attempts, max_attempts, requested_at)
-                 VALUES (:type, :deduplication_key, :status, 0, :max_attempts, :requested_at)'
+            $upsert = $this->pdo->prepare(
+                'INSERT INTO automatic_recovery_state (reason, status, task_id, updated_at, opened_at)
+                 VALUES (:reason, :status, :task_id, :updated_at, NULL)
+                 ON CONFLICT(reason) DO UPDATE SET
+                    status = excluded.status,
+                    task_id = excluded.task_id,
+                    updated_at = excluded.updated_at,
+                    opened_at = NULL'
             );
-            $insert->execute([
-                'type' => $type,
-                'deduplication_key' => $deduplicationKey,
-                'status' => 'queued',
-                'max_attempts' => $maxAttempts,
-                'requested_at' => $now,
+            $upsert->execute([
+                'reason' => $reason,
+                'status' => 'pending',
+                'task_id' => $task['id'],
+                'updated_at' => $now,
             ]);
 
-            $task = $this->findById((int) $this->pdo->lastInsertId());
-            if ($task === null) {
-                throw new \RuntimeException('Unable to load queued task.');
-            }
-
-            $task['enqueued'] = true;
-            return $task;
+            return ['status' => $task['enqueued'] ? 'queued' : 'already_outstanding', 'task' => $task];
         });
+    }
+
+    public function resetAutomaticRecovery(string $reason): bool
+    {
+        $this->assertRecoveryReason($reason);
+
+        return $this->withImmediateTransaction(function () use ($reason): bool {
+            $stmt = $this->pdo->prepare(
+                'UPDATE automatic_recovery_state
+                 SET status = :status, task_id = NULL, updated_at = :updated_at, opened_at = NULL
+                 WHERE reason = :reason AND status = :blocked'
+            );
+            $stmt->execute([
+                'status' => 'idle',
+                'updated_at' => gmdate('c'),
+                'reason' => $reason,
+                'blocked' => 'blocked',
+            ]);
+
+            return $stmt->rowCount() === 1;
+        });
+    }
+
+    /**
+     * @return array{status:string,task_id:?int}
+     */
+    public function automaticRecoveryStatus(string $reason): array
+    {
+        $this->assertRecoveryReason($reason);
+        $state = $this->recoveryStateWithinTransaction($reason);
+
+        return ['status' => $state['status'], 'task_id' => $state['task_id']];
     }
 
     /**
@@ -322,7 +365,10 @@ final class SqliteTaskQueueStore
             'running' => 'running',
         ]);
 
-        return $this->requiredTask($id);
+        $task = $this->requiredTask($id);
+        $this->resolveAutomaticRecoveryForCompletedTask($id);
+
+        return $task;
     }
 
     /**
@@ -376,7 +422,12 @@ final class SqliteTaskQueueStore
             'running' => 'running',
         ]);
 
-        return $this->requiredTask($id);
+        $updated = $this->requiredTask($id);
+        if ($updated['status'] === 'failed') {
+            $this->openAutomaticRecoveryCircuitForTask($id);
+        }
+
+        return $updated;
     }
 
     public function recoverAbandonedRunning(int $olderThanSeconds = 900): int
@@ -413,6 +464,26 @@ final class SqliteTaskQueueStore
                 'cutoff' => $cutoff,
             ]);
 
+            if ($fail->rowCount() > 0) {
+                $openCircuit = $this->pdo->prepare(
+                    'UPDATE automatic_recovery_state
+                     SET status = :status, updated_at = :updated_at, opened_at = :opened_at
+                     WHERE status = :pending AND task_id IN (
+                        SELECT id FROM internal_tasks
+                        WHERE status = :failed AND failure_code = :failure_code
+                     )'
+                );
+                $now = gmdate('c');
+                $openCircuit->execute([
+                    'status' => 'blocked',
+                    'updated_at' => $now,
+                    'opened_at' => $now,
+                    'pending' => 'pending',
+                    'failed' => 'failed',
+                    'failure_code' => 'worker_interrupted',
+                ]);
+            }
+
             return $recovered + $fail->rowCount();
         });
     }
@@ -438,6 +509,86 @@ final class SqliteTaskQueueStore
         $row = $stmt->fetch();
 
         return $row === false ? null : $this->hydrate($row);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function enqueueWithinTransaction(string $type, string $deduplicationKey, int $maxAttempts): array
+    {
+        $existing = $this->findOutstanding($type, $deduplicationKey);
+        if ($existing !== null) {
+            $existing['enqueued'] = false;
+            return $existing;
+        }
+
+        $insert = $this->pdo->prepare(
+            'INSERT INTO internal_tasks (type, deduplication_key, status, attempts, max_attempts, requested_at)
+             VALUES (:type, :deduplication_key, :status, 0, :max_attempts, :requested_at)'
+        );
+        $insert->execute([
+            'type' => $type,
+            'deduplication_key' => $deduplicationKey,
+            'status' => 'queued',
+            'max_attempts' => $maxAttempts,
+            'requested_at' => gmdate('c'),
+        ]);
+
+        $task = $this->findById((int) $this->pdo->lastInsertId());
+        if ($task === null) {
+            throw new \RuntimeException('Unable to load queued task.');
+        }
+
+        $task['enqueued'] = true;
+        return $task;
+    }
+
+    /**
+     * @return array{status:string,task_id:?int}
+     */
+    private function recoveryStateWithinTransaction(string $reason): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT status, task_id FROM automatic_recovery_state WHERE reason = :reason'
+        );
+        $stmt->execute(['reason' => $reason]);
+        $state = $stmt->fetch();
+
+        return $state === false
+            ? ['status' => 'idle', 'task_id' => null]
+            : ['status' => (string) $state['status'], 'task_id' => $state['task_id'] === null ? null : (int) $state['task_id']];
+    }
+
+    private function resolveAutomaticRecoveryForCompletedTask(int $taskId): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE automatic_recovery_state
+             SET status = :status, task_id = NULL, updated_at = :updated_at, opened_at = NULL
+             WHERE task_id = :task_id AND status = :pending'
+        );
+        $stmt->execute([
+            'status' => 'idle',
+            'updated_at' => gmdate('c'),
+            'task_id' => $taskId,
+            'pending' => 'pending',
+        ]);
+    }
+
+    private function openAutomaticRecoveryCircuitForTask(int $taskId): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE automatic_recovery_state
+             SET status = :status, updated_at = :updated_at, opened_at = :opened_at
+             WHERE task_id = :task_id AND status = :pending'
+        );
+        $now = gmdate('c');
+        $stmt->execute([
+            'status' => 'blocked',
+            'updated_at' => $now,
+            'opened_at' => $now,
+            'task_id' => $taskId,
+            'pending' => 'pending',
+        ]);
     }
 
     /**
@@ -476,6 +627,13 @@ final class SqliteTaskQueueStore
     {
         if (!in_array($type, [self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::PUBLISH_OFFLINE_SNAPSHOT], true)) {
             throw new InvalidArgumentException('Unsupported internal task type: ' . $type);
+        }
+    }
+
+    private function assertRecoveryReason(string $reason): void
+    {
+        if (preg_match('/^[a-z][a-z0-9_]{0,99}$/', $reason) !== 1) {
+            throw new InvalidArgumentException('Invalid automatic recovery reason.');
         }
     }
 
@@ -519,6 +677,15 @@ final class SqliteTaskQueueStore
         $this->pdo->exec(
             'CREATE INDEX IF NOT EXISTS task_queue_executor_runs_recent
              ON task_queue_executor_runs (id DESC)'
+        );
+        $this->pdo->exec(
+            'CREATE TABLE IF NOT EXISTS automatic_recovery_state (
+                reason TEXT PRIMARY KEY,
+                status TEXT NOT NULL,
+                task_id INTEGER NULL,
+                updated_at TEXT NOT NULL,
+                opened_at TEXT NULL
+            )'
         );
     }
 

@@ -25,3 +25,15 @@
   - Manual isolated quiet run followed by `php scripts/task_queue.php status --queue-database-path=<temporary path>` reported `Executor: fresh`.
 - Notes:
   - A fresh heartbeat proves the queue worker ran successfully; it intentionally does not assert a host cron entry exists.
+
+## Stage 3 - Automatic-recovery gate
+
+- Changes:
+  - Added reason-scoped automatic rebuild state in the private queue database, reusing the existing `rebuild_read_model` task and its deduplication key.
+  - Terminal task failures, including abandoned final attempts, now open a circuit that blocks later automatic recovery requests until an operator resets it.
+  - Added `./v3 task-queue reset-recovery` as the explicit operator-only reset path.
+- Verification:
+  - `php tests/run.php TaskQueueStoreTest TaskQueueCommandTest TaskQueueWorkerTest` — 29 passed.
+  - Manual isolated recovery: forced a one-attempt rebuild failure (`blocked`), ran `./v3 task-queue reset-recovery`, and confirmed state became `idle`.
+- Notes:
+  - Manual `enqueue-rebuild` remains unchanged. The circuit is used only by the forthcoming classified automatic-recovery path.

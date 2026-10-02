@@ -153,6 +153,36 @@ final class TaskQueueStoreTest
         assertSame('stale', $store->executorHeartbeatStatus(120, strtotime($completed['completed_at']) + 121)['status']);
     }
 
+    public function testAutomaticRebuildCircuitBlocksAfterTerminalFailureUntilReset(): void
+    {
+        $store = $this->store();
+        $first = $store->requestAutomaticRebuild(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON, 1);
+        $same = $store->requestAutomaticRebuild(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON, 1);
+        $claimed = $store->claimNext()[0];
+        $store->markFailed($claimed['id'], 'test_failure', 'Test failure.', true);
+
+        assertSame('queued', $first['status']);
+        assertSame('already_outstanding', $same['status']);
+        assertSame($first['task']['id'], $same['task']['id']);
+        assertSame('blocked', $store->automaticRecoveryStatus(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON)['status']);
+        assertSame('blocked', $store->requestAutomaticRebuild(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON)['status']);
+        assertSame(true, $store->resetAutomaticRecovery(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON));
+        assertSame('queued', $store->requestAutomaticRebuild(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON)['status']);
+    }
+
+    public function testAutomaticRebuildCircuitOpensForAnAbandonedFinalAttempt(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $store = new SqliteTaskQueueStore($pdo);
+        $request = $store->requestAutomaticRebuild(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON, 1);
+        $claimed = $store->claimNext()[0];
+        $pdo->exec("UPDATE internal_tasks SET claimed_at = '2000-01-01T00:00:00+00:00' WHERE id = " . $claimed['id']);
+
+        assertSame(1, $store->recoverAbandonedRunning());
+        assertSame($request['task']['id'], $claimed['id']);
+        assertSame('blocked', $store->automaticRecoveryStatus(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON)['status']);
+    }
+
     private function store(): SqliteTaskQueueStore
     {
         return new SqliteTaskQueueStore(new PDO('sqlite::memory:'));
