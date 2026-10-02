@@ -22,3 +22,13 @@
   - `php tests/run.php LocalAppSmokeTest` — same 112 passed / 3 pre-existing failures as Stage 1; no new failures.
   - Manual: rendered `/forte`, `/forte/users/`, `/forte/activity/` as guest (no session/cookie) and as the fixture's one approved identity (`$_SESSION['authenticated_identity_id']` set, matching the pattern used elsewhere in `LocalAppSmokeTest`). Guest case rendered `data-identity-logged-in="0"` with label "Guest" on all three pages. Authenticated case rendered `data-identity-logged-in="1"` with the resolved profile's actual `username` value on all three pages (confirmed against the resolver's own output via reflection — the fixture's one approved identity happens to have the literal username "guest", a coincidence of the fixture data, not a bug: the indicator correctly reflected whatever `username` the resolver returned).
 - Notes: First-paint value only (server/cookie best guess); Stage 3 adds the authoritative localStorage correction.
+
+## Stage 3 - Client-side localStorage correction
+- Changes:
+  - `public/assets/toolbar_identity_status.js` (new): on load, reads `forum_pki_public_key`/`forum_pki_private_key`/`forum_pki_username` directly from `localStorage` (the same raw keys and try/catch pattern `account_key.php`'s own inline script already uses) and updates every `[data-paned-identity-status]` node's `data-identity-logged-in` attribute and `[data-paned-identity-label]` text if it disagrees with the server-seeded guess. Deliberately does not depend on `browser_signing.js`/`window.__forumBrowserIdentity`, since that bundle is lazy-loaded only when a signing action is needed and isn't guaranteed present on a plain page view.
+  - `ForteBoardController`, `ForteActivityController`, `ForteUserDirectoryController`: added `/assets/toolbar_identity_status.js` to each page's script-path list.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest` — same 112 passed / 3 pre-existing failures; no new failures.
+  - Confirmed the script tag is present in rendered output of `/forte`, `/forte/users/`, and `/forte/activity/`.
+  - Node `vm`-sandboxed behavioral test of the script against a mock DOM/localStorage: no local identity -> `logged-in=0`/"Guest"; full keypair + username -> `logged-in=1`/the stored username; only one of the two keys present (incomplete) -> `logged-in=0`/"Guest".
+- Notes: Runs once on load only; Stage 4 adds the cross-tab `storage` listener.
