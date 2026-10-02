@@ -122,3 +122,18 @@ zenmemes/chouse anywhere in this checklist.
   `quote_card.php`, same pattern as `search()`), with a "Shuffle again"
   link. Verified both URL forms render a multi-item page (200, not a
   redirect) and the Random nav item highlights correctly.
+- **Welcome page, added at the operator's request:** the qdb profile's
+  bare `/` used to fall through to the generic board's default "liked"
+  view (confusingly empty). Added a dedicated `qdb_welcome.php` page
+  (short intro, real quote count, links to Latest/Random/Add Quote/Search)
+  via a new `BoardPageController::welcome()`, and made it the first nav
+  item. `/?format=rss` is explicitly excluded from the welcome-page
+  takeover so the RSS feed at `/` keeps working. Verified: 200 + the
+  welcome heading on `/`, RSS still XML, zenmemes' own `/` and nav
+  untouched.
+- **Account/Invite dropped from the qdb nav, at the operator's request:**
+  both routes (`/account/key/`, `/invites/`) remain fully reachable by
+  direct URL — only the nav *links* are gone for the qdb profile, same
+  "hide from nav, don't remove the feature" pattern already used for
+  Tools/Users. Verified `/account/key/` still returns 200 and the
+  zenmemes profile's Invite link is unaffected.

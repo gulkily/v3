@@ -70,6 +70,25 @@ final class BoardPageController
     }
 
     /**
+     * QDB welcome page: the qdb profile's own "/", replacing the generic
+     * board default-view render with a short intro + the real quote count
+     * + links to the other classic pages.
+     */
+    public function welcome(): string
+    {
+        $qdbQuoteCount = count(ThreadRepository::fetchThreads($this->routeServices->pdo()));
+
+        return $this->routeServices->renderPageTemplate(
+            'qdb_welcome.php',
+            [
+                'qdbQuoteCount' => $qdbQuoteCount,
+            ],
+            'Welcome',
+            'welcome',
+        );
+    }
+
+    /**
      * QDB classic URL: /random, /?random. A fresh shuffled page of quotes
      * each time, not a redirect to a single one. Only meaningful for the
      * qdb site profile.

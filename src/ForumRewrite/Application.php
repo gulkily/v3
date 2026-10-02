@@ -372,6 +372,11 @@ final class Application
                     return;
                 }
             }
+
+            if (($path === '/' || $path === '') && ($query['format'] ?? null) !== 'rss') {
+                $this->sendHtml($this->boardPageController()->welcome(), 200);
+                return;
+            }
         }
 
         if ($path === '/' || $path === '' || $path === '/threads/' || $path === '/threads') {
