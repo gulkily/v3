@@ -8,7 +8,7 @@ use PDO;
 
 final class ReadModelMetadata
 {
-    public const SCHEMA_VERSION = '13';
+    public const SCHEMA_VERSION = '14';
 
     public static function repositoryHead(string $repositoryRoot): string
     {
