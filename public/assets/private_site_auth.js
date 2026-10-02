@@ -78,6 +78,11 @@
     return safeRelativeDestination(options && options.returnTo) || configuredReturnDestination();
   }
 
+  function isPublicAuthenticationResume() {
+    var node = document.querySelector("[data-private-site-auth-state]");
+    return Boolean(node && node.dataset && node.dataset.publicAuthResume === "true");
+  }
+
   function approvedDestination(options) {
     var requestedDestination = requestedReturnDestination(options);
     if (requestedDestination) {
@@ -124,7 +129,10 @@
 
     if (!publicKey || !privateKey || !/^[a-f0-9]{40}$/.test(fingerprint)) {
       var returnTo = requestedReturnDestination(options);
-      if (returnTo !== "") {
+      // Public pages opportunistically resume a saved identity, but browsing
+      // does not require one. Redirecting a keyless visitor to the Lobby
+      // would make the Lobby try to resume again and redirect to itself.
+      if (returnTo !== "" && !isPublicAuthenticationResume()) {
         window.location.replace("/lobby/?return_to=" + encodeURIComponent(returnTo));
       }
       return { status: "not-configured" };

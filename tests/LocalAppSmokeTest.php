@@ -378,6 +378,37 @@ PHP;
         }
     }
 
+    public function testPublicNotFoundPageDoesNotAttemptIdentityResume(): void
+    {
+        $previousCookie = $_COOKIE;
+        $previousSession = $_SESSION ?? null;
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-public-not-found-' . bin2hex(random_bytes(6)) . '.sqlite3';
+
+        try {
+            $_COOKIE = [];
+            session_id('');
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
+
+            $notFound = $this->render($application, '/missing-route');
+
+            assertStringContains('<h1>Not Found</h1>', $notFound);
+            assertStringNotContains('data-public-auth-resume="true"', $notFound);
+            assertStringNotContains('private_site_auth.', $notFound);
+        } finally {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            session_id('');
+            $_COOKIE = $previousCookie;
+            if ($previousSession === null) {
+                unset($_SESSION);
+            } else {
+                $_SESSION = $previousSession;
+            }
+            @unlink($databasePath);
+        }
+    }
+
     public function testPrivateViewerSessionCookiePersistsAcrossBrowserRestart(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
