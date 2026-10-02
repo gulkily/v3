@@ -1768,7 +1768,7 @@
       case "loading_openpgp":
         return "Loading browser identity tools...";
       case "needs_consent":
-        return "Prepare a browser identity before signed actions.";
+        return "You may be asked to choose a username.";
       case "needs_fingerprint":
         return "Finishing saved browser identity...";
       case "needs_publish":

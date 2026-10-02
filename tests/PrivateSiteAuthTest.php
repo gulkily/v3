@@ -226,6 +226,55 @@ NODE;
         assertSame('/threads/root-001?view=full', $result['replacedUrl']);
     }
 
+    public function testMissingKeyWithReturnTargetEntersLobbyWithoutAuthentication(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+let assignedUrl = '';
+let replacedUrl = '';
+let fetchCount = 0;
+const status = { hidden: true, textContent: '', dataset: {} };
+
+global.window = {
+  localStorage: { getItem() { return ''; } },
+  location: {
+    assign(url) { assignedUrl = url; },
+    replace(url) { replacedUrl = url; },
+    reload() { throw new Error('missing-key viewer must not reload'); }
+  }
+};
+global.document = {
+  addEventListener(){},
+  querySelector(selector) {
+    if (selector === '[data-private-site-auth-state]') {
+      return { dataset: { authenticatedIdentityId: '', authReturnTo: '/threads/root-001?view=full' } };
+    }
+    if (selector === '[data-role="private-site-auth-status"]') return status;
+    return null;
+  }
+};
+global.fetch = async function() { fetchCount += 1; throw new Error('missing-key viewer must not authenticate'); };
+
+vm.runInThisContext(source);
+window.PrivateSiteAuth.authenticate()
+  .then((result) => process.stdout.write(JSON.stringify({ result, assignedUrl, replacedUrl, fetchCount, status })))
+  .catch((error) => {
+    process.stderr.write(error.stack || String(error));
+    process.exit(1);
+  });
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('not-configured', $result['result']['status']);
+        assertSame('', $result['assignedUrl']);
+        assertSame('/lobby/?return_to=%2Fthreads%2Froot-001%3Fview%3Dfull', $result['replacedUrl']);
+        assertSame(0, $result['fetchCount']);
+        assertSame('', $result['status']['textContent']);
+    }
+
     public function testAuthenticationFailureIsVisible(): void
     {
         $script = <<<'NODE'
