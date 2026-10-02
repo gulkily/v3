@@ -206,3 +206,33 @@
     is actually browsed.
   - Full suite: `php tests/run.php` - same 5 pre-existing failures,
     0 new regressions.
+
+## Stage 6 - Orchestrate extract -> normalize -> write -> commit -> rebuild
+
+- Changes:
+  - `scripts/qdb_archive_import_run.php`: shells out to the Stages 2-4
+    scripts in sequence (each stays independently runnable on its
+    own), then owns the one thing none of them do - batching the
+    newly written files into git commits of `--batch-size` (default
+    500) records each, and triggering exactly one rebuild afterward
+    via the existing `scripts/rebuild_read_model.php` (the safer
+    build-candidate-then-promote path, not a raw
+    `ReadModelBuilder::rebuild()` call, since this is meant to run for
+    real). `--repository-root` and `--database-path` are both
+    required, no defaults, since this writes and commits real files.
+    `--limit=N` truncates to the first N normalized rows, for a small
+    dry run without re-querying MySQL differently.
+- Verification:
+  - Small dry run (`--limit=1200 --batch-size=100`) against a scratch
+    copy of the real qdb repository: exactly 12 commits, 100 records
+    each; full score/vote_count diff against the source for all 1,200
+    rows - 0 mismatches.
+  - Full-scale run (no limit, default `--batch-size=500`) against a
+    fresh scratch copy: exactly 30 commits (last one correctly sized
+    at 381 = 14,881 mod 500) - "dozens," matching Step 3's target
+    exactly; full diff against the source for all 14,881 rows - 0
+    mismatches, 0 missing. This is effectively a full dry run of
+    Stage 7 already, just against a scratch repository instead of the
+    live one.
+  - Full suite: `php tests/run.php` - same 5 pre-existing failures (no
+    `src/` changes this stage at all - orchestration only, as planned).
