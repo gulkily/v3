@@ -32,3 +32,11 @@
   - Confirmed the script tag is present in rendered output of `/forte`, `/forte/users/`, and `/forte/activity/`.
   - Node `vm`-sandboxed behavioral test of the script against a mock DOM/localStorage: no local identity -> `logged-in=0`/"Guest"; full keypair + username -> `logged-in=1`/the stored username; only one of the two keys present (incomplete) -> `logged-in=0`/"Guest".
 - Notes: Runs once on load only; Stage 4 adds the cross-tab `storage` listener.
+
+## Stage 4 - Live cross-tab update
+- Changes:
+  - `public/assets/toolbar_identity_status.js`: added `window.addEventListener('storage', syncIdentityIndicator)`, mirroring the same pattern `account_key.php`'s own inline script already uses (`window.addEventListener('storage', syncSimpleUI)`), so the badge re-runs its correction whenever another tab changes the local keypair/username.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest` — same 112 passed / 3 pre-existing failures; no new failures.
+  - Node `vm`-sandboxed behavioral test simulating a cross-tab change: started guest (`logged-in=0`/"Guest"); fired a simulated `storage` event after writing a full keypair + username to the mock store -> updated live to `logged-in=1`/the stored username with no reload; fired another simulated `storage` event after clearing the keypair -> updated live back to `logged-in=0`/"Guest".
+- Notes: This completes the Step 3 Completion Contract — the toolbar's right-hand side now shows accurate, self-correcting, live-updating logged-in/guest status on all three Forte views through the normal page-load flow.

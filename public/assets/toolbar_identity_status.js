@@ -35,4 +35,5 @@
   }
 
   syncIdentityIndicator();
+  window.addEventListener('storage', syncIdentityIndicator);
 })();
