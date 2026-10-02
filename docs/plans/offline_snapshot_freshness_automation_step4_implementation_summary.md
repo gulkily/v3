@@ -21,3 +21,14 @@
   - `php tests/run.php TaskQueueCommandTest TaskQueueStoreTest TaskQueueWorkerTest OfflineSnapshotPublisherTest` passed: 25 run, 25 passed.
 - Notes:
   - The command enables safe manual recovery; event hooks and the periodic guard follow in later stages.
+
+## Stage 3 - Enqueue after ready read-model changes
+- Changes:
+  - Routed successful committed web writes through a best-effort, deduplicated offline-snapshot enqueue after their read-model synchronization completes.
+  - Made queued read-model rebuild completion request the same publication task.
+  - Kept enqueue failures out of successful write and rebuild results, logging them for operator diagnosis instead.
+- Verification:
+  - `php -l` passed for `LocalWriteService`, `RouteServices`, `ReadModelRebuildTaskHandler`, `scripts/task_queue.php`, and `WriteApiSmokeTest.php`.
+  - `php tests/run.php WriteApiSmokeTest::testNewPublishedPostEnqueuesPrivateBackgroundWork TaskQueueCommandTest TaskQueueWorkerTest` passed: 16 run, 16 passed.
+- Notes:
+  - Direct operator updates remain covered by the periodic guard added in Stage 4.

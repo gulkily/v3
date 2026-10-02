@@ -97,6 +97,23 @@ final class RouteServices
             new CanonicalRecordRepository($this->repositoryRoot),
             featureFlags: $this->featureFlags,
             additionalArtifactRoots: $this->additionalArtifactRoots(),
+            enqueueOfflineSnapshotPublication: function (): void {
+                $this->enqueueOfflineSnapshotPublication();
+            },
+        );
+    }
+
+    public function enqueueOfflineSnapshotPublication(): void
+    {
+        $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+        $queueDirectory = dirname($queuePath);
+        if (!is_dir($queueDirectory) && !mkdir($queueDirectory, 0777, true) && !is_dir($queueDirectory)) {
+            throw new RuntimeException('Task queue directory is not writable.');
+        }
+
+        (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(
+            SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT,
+            'offline-snapshot',
         );
     }
 

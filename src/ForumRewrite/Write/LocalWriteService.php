@@ -33,6 +33,9 @@ class LocalWriteService
 {
     private const HIDDEN_BOOTSTRAP_BOARD_TAGS = 'identity internal';
 
+    /** @var (callable():void)|null */
+    private $enqueueOfflineSnapshotPublication;
+
     public function __construct(
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
@@ -42,7 +45,9 @@ class LocalWriteService
         private readonly OpenPgpSignatureVerifier $signatureVerifier = new OpenPgpSignatureVerifier(),
         private readonly FeatureFlagEvaluator $featureFlags = new FeatureFlagEvaluator(),
         private readonly array $additionalArtifactRoots = [],
+        ?callable $enqueueOfflineSnapshotPublication = null,
     ) {
+        $this->enqueueOfflineSnapshotPublication = $enqueueOfflineSnapshotPublication;
     }
 
     /**
@@ -2011,6 +2016,13 @@ class LocalWriteService
     {
         $locked = $this->executionLock()->withExclusiveLockTimed($callback);
         $result = $locked['result'];
+        if (($result['commit_sha'] ?? null) !== null && $this->enqueueOfflineSnapshotPublication !== null) {
+            try {
+                ($this->enqueueOfflineSnapshotPublication)();
+            } catch (\Throwable) {
+                error_log('Offline snapshot publication enqueue failed after a successful write.');
+            }
+        }
         $timings = isset($result['timings']) && is_array($result['timings'])
             ? $result['timings']
             : [];

@@ -158,7 +158,13 @@ try {
             ));
             $worker = new TaskQueueWorker(
                 $store,
-                new ReadModelRebuildTaskHandler($repositoryRoot, $databasePath),
+                new ReadModelRebuildTaskHandler(
+                    $repositoryRoot,
+                    $databasePath,
+                    static function () use ($store): void {
+                        $store->enqueue(SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT, 'offline-snapshot');
+                    },
+                ),
                 static function () use ($projectRoot, $repositoryRoot, $databasePath, $providerCallLimit, $workLimit, $quiet, $verbose): array {
                     if (!is_file($databasePath)) {
                         throw new RuntimeException('Read model database not found: ' . $databasePath);

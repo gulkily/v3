@@ -11,10 +11,15 @@ use ForumRewrite\Support\ExecutionLock;
 
 final class ReadModelRebuildTaskHandler
 {
+    /** @var (callable():void)|null */
+    private $enqueueOfflineSnapshotPublication;
+
     public function __construct(
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
+        ?callable $enqueueOfflineSnapshotPublication = null,
     ) {
+        $this->enqueueOfflineSnapshotPublication = $enqueueOfflineSnapshotPublication;
     }
 
     public function __invoke(): void
@@ -28,5 +33,13 @@ final class ReadModelRebuildTaskHandler
             ))->rebuild();
             (new ReadModelStaleMarker($this->databasePath))->clear();
         });
+
+        if ($this->enqueueOfflineSnapshotPublication !== null) {
+            try {
+                ($this->enqueueOfflineSnapshotPublication)();
+            } catch (\Throwable) {
+                error_log('Offline snapshot publication enqueue failed after a queued read-model rebuild.');
+            }
+        }
     }
 }

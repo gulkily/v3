@@ -239,7 +239,7 @@ final class WriteApiSmokeTest
         }
     }
 
-    public function testNewPublishedPostEnqueuesOnlyPrivateFastScoreWork(): void
+    public function testNewPublishedPostEnqueuesPrivateBackgroundWork(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $scorePath = sys_get_temp_dir() . '/forum-fast-score-work-' . bin2hex(random_bytes(6)) . '.sqlite3';
@@ -261,12 +261,15 @@ final class WriteApiSmokeTest
             $postId = $this->extractValue($response, 'post_id');
             $work = (new PDO('sqlite:' . $scorePath))->query('SELECT post_id, state, attempt_count FROM fast_score_work')->fetch(PDO::FETCH_ASSOC);
             $queue = (new PDO('sqlite:' . $queuePath))->query("SELECT type, status FROM internal_tasks WHERE type = 'fast_score_sweep'")->fetch(PDO::FETCH_ASSOC);
+            $snapshotQueue = (new PDO('sqlite:' . $queuePath))->query("SELECT type, status FROM internal_tasks WHERE type = 'publish_offline_snapshot'")->fetch(PDO::FETCH_ASSOC);
 
             assertSame($postId, $work['post_id']);
             assertSame('pending', $work['state']);
             assertSame(0, (int) $work['attempt_count']);
             assertSame('fast_score_sweep', $queue['type']);
             assertSame('queued', $queue['status']);
+            assertSame('publish_offline_snapshot', $snapshotQueue['type']);
+            assertSame('queued', $snapshotQueue['status']);
         } finally {
             foreach ($previous as $name => $value) {
                 $value === false ? putenv($name) : putenv($name . '=' . $value);
