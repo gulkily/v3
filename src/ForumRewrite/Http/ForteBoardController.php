@@ -92,6 +92,9 @@ final class ForteBoardController
         $viewerLikedThreadIds = $viewerProfile !== null
             ? ViewerTagLookup::threadTags($this->repositoryRoot, array_column($contentThreads, 'root_post_id'), 'like', $viewerIdentityId)
             : [];
+        $viewerLikedPostIds = $viewerProfile !== null
+            ? ViewerTagLookup::postTags($this->repositoryRoot, $allPostIds, 'like', $viewerIdentityId)
+            : [];
         $viewerFlaggedPostIds = $viewerProfile !== null
             ? ViewerTagLookup::postTags($this->repositoryRoot, $allPostIds, 'flag', $viewerIdentityId)
             : [];
@@ -108,6 +111,7 @@ final class ForteBoardController
                 'sortDir' => $sort['dir'],
                 'replyTreesByThreadId' => $replyTreesByThreadId,
                 'viewerLikedThreadIds' => $viewerLikedThreadIds,
+                'viewerLikedPostIds' => $viewerLikedPostIds,
                 'viewerFlaggedPostIds' => $viewerFlaggedPostIds,
                 'highlightedPostId' => $highlightedPostId,
             ],
