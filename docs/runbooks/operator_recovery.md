@@ -24,7 +24,8 @@ Important status values:
 - Shared lock: `locked` or `unlocked`. A lock means general protected
   activity, not proof that a manual rebuild is running.
 - Task queue: availability and queued/running/failed counts. Use
-  `./v3 task-queue status` for task IDs, attempts, and failure codes.
+  `./v3 task-queue status` for task IDs, attempts, failure codes, and the
+  latest private rebuild checkpoint.
 
 The API retains the same underlying data in key/value form, including
 `rebuild_task_status`, `task_queue_status`, and task-queue counts.
@@ -68,7 +69,49 @@ When the internal task queue is configured, an operator can request the same reb
 ./v3 task-queue status
 ```
 
-The configured cron worker runs the queue. A failed task remains visible in the status output; investigate the logged failure and use the manual rebuild command when immediate recovery is required.
+The configured cron worker runs the queue. A failed task remains visible in the status output; investigate its private queue history/checkpoint and use the manual rebuild command when immediate recovery is required.
+
+### Classified schema-recovery fallback
+
+When a visitor encounters the narrowly recognized missing `threads.vote_count`
+read-model column, the application queues the existing rebuild task. A fresh
+executor heartbeat yields the short site-update page. With no fresh heartbeat,
+the application may make one detached worker launch only when
+`FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED=true`; it records the outcome in the
+private queue database and never retries that launch on page refresh.
+
+If the automatic rebuild exhausts its attempts, the recovery circuit is
+blocked. After fixing the root cause, reset it explicitly and inspect status:
+
+```bash
+./v3 task-queue reset-recovery
+./v3 task-queue status
+```
+
+Do not enable the detached fallback on a host that kills or forbids child
+processes. In that case the visitor page correctly remains maintenance while
+the normal cron worker can process the queued task.
+
+### Scratch verification of schema recovery
+
+Use only an isolated repository, read-model path, and queue path. Do not alter
+the production read-model database to test recovery.
+
+1. Run a quiet worker once, then confirm `Executor: fresh` with
+   `./v3 task-queue status`; this is the normal queued-recovery path.
+2. Remove `threads.vote_count` from the scratch read-model database and request
+   a dynamic page. Confirm HTTP 503 update copy contains neither SQL text nor
+   a configuration-error heading, then confirm one rebuild is queued.
+3. For the fallback path, use a stale/missing heartbeat and set
+   `FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED=true`. Make the same request,
+   close the client, and confirm the private queue status later reports a fresh
+   executor heartbeat and checkpoint or completed rebuild.
+4. In a separate scratch run, force the rebuild to exhaust its attempt limit.
+   Confirm automatic recovery becomes `blocked`, reset it with
+   `./v3 task-queue reset-recovery`, and confirm the next request may queue one
+   rebuild again.
+5. Drop an unrelated scratch table and confirm its visitor response is the
+   generic temporary-unavailability page, not a schema-recovery claim.
 
 ### 2. Lock Contention
 

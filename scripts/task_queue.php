@@ -109,6 +109,11 @@ try {
             $counts['failed'],
         ));
         fwrite(STDOUT, 'Executor: ' . $heartbeat['status'] . ' (last completed: ' . ($heartbeat['last_completed_at'] ?? 'none') . ")\n");
+        $recovery = $store->automaticRecoveryStatus(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON);
+        $launch = $recovery['task_id'] === null
+            ? 'none'
+            : ($store->automaticRecoveryLaunchStatus(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON, $recovery['task_id']) ?? 'none');
+        fwrite(STDOUT, 'Automatic schema recovery: ' . $recovery['status'] . ' (detached launch: ' . $launch . ")\n");
         foreach ($store->recent((int) ($options['limit'] ?? 25)) as $task) {
             fwrite(STDOUT, sprintf(
                 "Task id=%d type=%s status=%s attempts=%d/%d failure=%s\n",
@@ -125,6 +130,10 @@ try {
                 $task['claimed_at'] ?? 'none',
                 $task['completed_at'] ?? 'none',
             ));
+            $progress = $store->latestTaskProgress((int) $task['id']);
+            if ($progress !== null) {
+                fwrite(STDOUT, sprintf("  progress=%s at=%s\n", $progress['message'], $progress['created_at']));
+            }
         }
         exit(0);
     }
@@ -173,6 +182,10 @@ try {
                     $databasePath,
                     static function () use ($store): void {
                         $store->enqueue(SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT, 'offline-snapshot');
+                    },
+                    static function (int $taskId, string $message) use ($store, $quiet): void {
+                        $store->recordTaskProgress($taskId, $message);
+                        emitTaskQueue($quiet, "  {$message}\n");
                     },
                 ),
                 static function () use ($projectRoot, $repositoryRoot, $databasePath, $providerCallLimit, $workLimit, $quiet, $verbose): array {
@@ -306,6 +319,8 @@ try {
             } catch (Throwable $throwable) {
                 $store->failExecutorRun((int) $executorRun['id'], 'worker_exception');
                 throw $throwable;
+            } finally {
+                $store->pruneHistory();
             }
             $after = $store->counts();
             emitTaskQueue($quiet, sprintf(
@@ -341,7 +356,7 @@ try {
     }
 
     if ($command === 'cron') {
-        $logPath = (string) ($options['log'] ?? '/var/log/forum-task-queue.log');
+        $logPath = (string) ($options['log'] ?? ($projectRoot . '/state/private/task_queue_cron.log'));
         $appRoot = realpath($projectRoot) ?: $projectRoot;
         $workerCronLine = '* * * * * cd ' . escapeshellarg($appRoot)
             . ' && php scripts/task_queue.php run --quiet --limit=1 >> '

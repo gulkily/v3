@@ -200,6 +200,39 @@ final class TaskQueueStoreTest
         assertSame('launched', $store->automaticRecoveryLaunchStatus(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON, $taskId));
     }
 
+    public function testPruneHistoryRetainsActiveTaskAndBoundsTerminalRecords(): void
+    {
+        $store = $this->store();
+        $first = $store->enqueue(SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'first');
+        $store->markCompleted($store->claimNext()[0]['id']);
+        $second = $store->enqueue(SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'second');
+        $store->markCompleted($store->claimNext()[0]['id']);
+        $active = $store->enqueue(SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'active');
+        $store->recordTaskProgress($first['id'], 'first checkpoint');
+        $store->recordTaskProgress($second['id'], 'second checkpoint');
+        $firstRun = $store->startExecutorRun();
+        $store->completeExecutorRun($firstRun['id'], $this->emptyRunSummary(), []);
+        $secondRun = $store->startExecutorRun();
+        $store->completeExecutorRun($secondRun['id'], $this->emptyRunSummary(), []);
+
+        $pruned = $store->pruneHistory(1, 1, 1);
+
+        assertSame(1, $pruned['tasks']);
+        assertSame(1, $pruned['executor_runs']);
+        assertSame(1, $pruned['progress_events']);
+        assertSame(null, $store->findById($first['id']));
+        assertSame('completed', $store->findById($second['id'])['status']);
+        assertSame('queued', $store->findById($active['id'])['status']);
+        assertSame(1, count($store->recentExecutorRuns(10)));
+        assertSame('second checkpoint', $store->recentTaskProgress(10)[0]['message']);
+    }
+
+    /** @return array{recovered:int,claimed:int,completed:int,continued:int,retried:int,failed:int} */
+    private function emptyRunSummary(): array
+    {
+        return ['recovered' => 0, 'claimed' => 0, 'completed' => 0, 'continued' => 0, 'retried' => 0, 'failed' => 0];
+    }
+
     private function store(): SqliteTaskQueueStore
     {
         return new SqliteTaskQueueStore(new PDO('sqlite::memory:'));

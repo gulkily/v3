@@ -62,6 +62,7 @@ Optional runtime setting:
 - `LLM_CONVERSATION_UI_ENABLED`: controls approved-user/operator web visibility of captured exchanges. The default is enabled.
 - `LLM_EXCHANGE_DATABASE_PATH`: optional private SQLite path; defaults to `<application-root>/state/private/llm_exchanges.sqlite3`.
 - `FORUM_TASK_QUEUE_DATABASE_PATH`: optional private SQLite path for queued internal maintenance; defaults to `<application-root>/state/private/internal_tasks.sqlite3`.
+- `FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED`: optional `true` enables one detached, allowlisted queue-worker launch when a classified schema recovery finds no fresh executor heartbeat. Leave it unset on hosts that prohibit child processes.
 - `FAST_SCORING_DATABASE_PATH`: optional private SQLite score-state path; defaults to `<application-root>/state/private/fast_scores.sqlite3`.
 - `FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED`: when `true` alongside `FAST_SCORING_ENABLED`, creates private score work for newly published posts only; defaults to `false`.
 
@@ -202,7 +203,7 @@ restored session plus its existing browser signature verification.
 
 LLM exchange records are private runtime data. Keep `LLM_EXCHANGE_DATABASE_PATH` outside `public/`, the canonical repository, and the published read-model database; restrict the file to the deployment/web users. The exchange UI is available only to approved viewers and can be disabled independently with `LLM_CONVERSATION_UI_ENABLED=false`.
 
-Internal task-queue records are also private runtime data. Keep `FORUM_TASK_QUEUE_DATABASE_PATH` outside `public/`, the canonical repository, and the published read-model database. The queue is deliberately separate from the rebuildable read model so a rebuild task retains its state and final outcome.
+Internal task-queue records are also private runtime data. Keep `FORUM_TASK_QUEUE_DATABASE_PATH` outside `public/`, the canonical repository, and the published read-model database. The queue is deliberately separate from the rebuildable read model so a rebuild task retains its state and final outcome. Its executor history, detached-launch outcomes, and rebuild checkpoints live in that same private database; terminal history is bounded while active work and automatic-recovery circuit state are retained.
 
 ## Site Profile
 
@@ -334,11 +335,12 @@ Install the cron worker with the current-path reference:
 ./v3 task-queue cron
 ```
 
-Install the line printed by the command. The worker processes one task per minute and exits successfully when another queue worker is active. Successful site updates enqueue the deduplicated offline-snapshot task. Useful operator commands are:
+Install the line printed by the command. The worker processes one task per minute and exits successfully when another queue worker is active. The default cron-output path is application-private (`state/private/task_queue_cron.log`), so ensure its directory is writable by the cron user before installing the line. Successful site updates enqueue the deduplicated offline-snapshot task. Useful operator commands are:
 
 ```bash
 ./v3 task-queue enqueue-rebuild
 ./v3 task-queue enqueue-offline-snapshot
+./v3 task-queue reset-recovery
 ./v3 task-queue status
 ./v3 task-queue run --dry-run
 ./v3 task-queue run --limit=1

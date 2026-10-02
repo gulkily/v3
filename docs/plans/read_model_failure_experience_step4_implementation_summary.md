@@ -61,3 +61,16 @@
   - Manual isolated detached launch with the opt-in environment variable returned `launched`; its independent worker recorded a fresh executor heartbeat in the temporary private queue database.
 - Notes:
   - This is a best-effort host capability, not a claim that every PHP host permits background process creation. A host without it safely shows maintenance and preserves the queued task for the normal worker.
+
+## Stage 6 - Progress, retention, and recovery verification
+
+- Changes:
+  - Routed the existing read-model builder’s bounded phase/checkpoint reporter through the queued rebuild handler into private task-queue progress history; `./v3 task-queue status` now shows a task’s latest checkpoint.
+  - Added bounded pruning after each worker run: it keeps the newest 100 terminal tasks, 100 terminal executor runs, 250 progress events, and 100 terminal detached-launch records. Queued/running tasks, in-progress executor runs/launches, and automatic-recovery circuit state are never pruning targets.
+  - Extended CLI/operator/API status with automatic schema-recovery and detached-launch state, moved the default cron-reference log path to application-private `state/private/task_queue_cron.log`, and documented deployment prerequisites, circuit reset, and scratch verification.
+- Verification:
+  - `php tests/run.php TaskQueueStoreTest TaskQueueWorkerTest TaskQueueCommandTest DetachedTaskQueueLauncherTest OperatorStatusCollectorTest StatusCommandTest LocalAppSmokeTest::testFrontControllerQueuesMissingVoteCountRecoveryWithoutLeakingSql LocalAppSmokeTest::testFrontControllerMakesOnlyOneDisabledFallbackLaunchAttempt LocalAppSmokeTest::testFrontControllerSanitizesUnexpectedApplicationFailure LocalAppSmokeTest::testFrontControllerShowsConfigurationErrorForMissingRepository LocalAppSmokeTest::testFrontControllerShowsBusyErrorForExecutionLockContention` — 51 passed.
+  - `./v3 task-queue cron` printed its once-per-minute worker with the application-private log path.
+  - Earlier Stage 5 isolated-host smoke confirmed the opt-in detached worker outlives the request and records a fresh private heartbeat.
+- Notes:
+  - Recovery remains atomic rather than resumable: checkpoint history improves observability, while `ReadModelBuilder` continues to promote only its completed candidate.

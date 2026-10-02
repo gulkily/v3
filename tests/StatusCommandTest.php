@@ -32,6 +32,7 @@ final class StatusCommandTest
             assertStringContains('Task queue status: not_initialized', $stdout);
             assertStringContains('Read-model rebuild task: absent', $stdout);
             assertStringContains('Task queue executor: not_observed (last completed: none)', $stdout);
+            assertStringContains('Automatic schema recovery: not_observed (detached launch: none)', $stdout);
             assertStringContains('Run ./v3 task-queue enqueue-rebuild', $stdout);
             assertSame('', $stderr);
             assertSame(false, is_file($databasePath));

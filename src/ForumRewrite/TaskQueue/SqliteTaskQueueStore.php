@@ -14,6 +14,9 @@ final class SqliteTaskQueueStore
     public const PUBLISH_OFFLINE_SNAPSHOT = 'publish_offline_snapshot';
     public const EXECUTOR_HEARTBEAT_FRESHNESS_SECONDS = 120;
     public const READ_MODEL_SCHEMA_RECOVERY_REASON = 'read_model_schema';
+    public const TERMINAL_TASK_HISTORY_LIMIT = 100;
+    public const EXECUTOR_RUN_HISTORY_LIMIT = 100;
+    public const TASK_PROGRESS_HISTORY_LIMIT = 250;
 
     public function __construct(
         private readonly PDO $pdo,
@@ -166,6 +169,139 @@ final class SqliteTaskQueueStore
         $status = $stmt->fetchColumn();
 
         return is_string($status) ? $status : null;
+    }
+
+    public function recordTaskProgress(int $taskId, string $message): void
+    {
+        if ($taskId < 1) {
+            throw new InvalidArgumentException('Task id is required for progress.');
+        }
+
+        $message = trim(preg_replace('/[\x00-\x1F\x7F]+/', ' ', $message) ?? '');
+        if ($message === '') {
+            throw new InvalidArgumentException('Task progress message is required.');
+        }
+
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO task_queue_progress_events (task_id, message, created_at)
+             VALUES (:task_id, :message, :created_at)'
+        );
+        $stmt->execute([
+            'task_id' => $taskId,
+            'message' => substr($message, 0, 300),
+            'created_at' => gmdate('c'),
+        ]);
+    }
+
+    /** @return array<string, mixed>|null */
+    public function latestTaskProgress(int $taskId): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, task_id, message, created_at
+             FROM task_queue_progress_events
+             WHERE task_id = :task_id
+             ORDER BY id DESC
+             LIMIT 1'
+        );
+        $stmt->execute(['task_id' => $taskId]);
+        $event = $stmt->fetch();
+
+        return $event === false ? null : $event;
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function recentTaskProgress(int $limit = 25): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, task_id, message, created_at
+             FROM task_queue_progress_events
+             ORDER BY id DESC
+             LIMIT :limit'
+        );
+        $stmt->bindValue('limit', max(1, $limit), PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Retains only bounded terminal history. Active tasks and recovery state are never deleted.
+     *
+     * @return array{tasks:int,executor_runs:int,progress_events:int,launches:int}
+     */
+    public function pruneHistory(
+        int $terminalTaskLimit = self::TERMINAL_TASK_HISTORY_LIMIT,
+        int $executorRunLimit = self::EXECUTOR_RUN_HISTORY_LIMIT,
+        int $progressLimit = self::TASK_PROGRESS_HISTORY_LIMIT,
+    ): array {
+        $terminalTaskLimit = max(1, $terminalTaskLimit);
+        $executorRunLimit = max(1, $executorRunLimit);
+        $progressLimit = max(1, $progressLimit);
+
+        return $this->withImmediateTransaction(function () use ($terminalTaskLimit, $executorRunLimit, $progressLimit): array {
+            $deleteTerminalTasks = $this->pdo->prepare(
+                'DELETE FROM internal_tasks
+                 WHERE status IN (:completed, :failed)
+                   AND id NOT IN (
+                       SELECT id FROM internal_tasks
+                       WHERE status IN (:completed_recent, :failed_recent)
+                       ORDER BY id DESC
+                       LIMIT :limit
+                   )'
+            );
+            $deleteTerminalTasks->bindValue('completed', 'completed');
+            $deleteTerminalTasks->bindValue('failed', 'failed');
+            $deleteTerminalTasks->bindValue('completed_recent', 'completed');
+            $deleteTerminalTasks->bindValue('failed_recent', 'failed');
+            $deleteTerminalTasks->bindValue('limit', $terminalTaskLimit, PDO::PARAM_INT);
+            $deleteTerminalTasks->execute();
+
+            $deleteExecutorRuns = $this->pdo->prepare(
+                'DELETE FROM task_queue_executor_runs
+                 WHERE completed_at IS NOT NULL
+                   AND id NOT IN (
+                       SELECT id FROM task_queue_executor_runs
+                       WHERE completed_at IS NOT NULL
+                       ORDER BY id DESC
+                       LIMIT :limit
+                   )'
+            );
+            $deleteExecutorRuns->bindValue('limit', $executorRunLimit, PDO::PARAM_INT);
+            $deleteExecutorRuns->execute();
+
+            $deleteProgress = $this->pdo->prepare(
+                'DELETE FROM task_queue_progress_events
+                 WHERE id NOT IN (
+                     SELECT id FROM task_queue_progress_events
+                     ORDER BY id DESC
+                     LIMIT :limit
+                 )'
+            );
+            $deleteProgress->bindValue('limit', $progressLimit, PDO::PARAM_INT);
+            $deleteProgress->execute();
+
+            $deleteLaunches = $this->pdo->prepare(
+                'DELETE FROM automatic_recovery_launches
+                 WHERE status != :starting
+                   AND id NOT IN (
+                     SELECT id FROM automatic_recovery_launches
+                     WHERE status != :starting_recent
+                     ORDER BY id DESC
+                     LIMIT :limit
+                 )'
+            );
+            $deleteLaunches->bindValue('starting', 'starting');
+            $deleteLaunches->bindValue('starting_recent', 'starting');
+            $deleteLaunches->bindValue('limit', $terminalTaskLimit, PDO::PARAM_INT);
+            $deleteLaunches->execute();
+
+            return [
+                'tasks' => $deleteTerminalTasks->rowCount(),
+                'executor_runs' => $deleteExecutorRuns->rowCount(),
+                'progress_events' => $deleteProgress->rowCount(),
+                'launches' => $deleteLaunches->rowCount(),
+            ];
+        });
     }
 
     /**
@@ -755,6 +891,18 @@ final class SqliteTaskQueueStore
                 completed_at TEXT NULL,
                 UNIQUE (reason, task_id)
             )'
+        );
+        $this->pdo->exec(
+            'CREATE TABLE IF NOT EXISTS task_queue_progress_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task_id INTEGER NOT NULL,
+                message TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )'
+        );
+        $this->pdo->exec(
+            'CREATE INDEX IF NOT EXISTS task_queue_progress_events_task_recent
+             ON task_queue_progress_events (task_id, id DESC)'
         );
     }
 

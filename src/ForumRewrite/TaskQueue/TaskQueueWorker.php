@@ -8,7 +8,7 @@ use Throwable;
 
 final class TaskQueueWorker
 {
-    /** @var callable():void */
+    /** @var callable(int):void */
     private $rebuildReadModel;
     /** @var (callable():array<string, mixed>)|null */
     private $runFastScoreSweep;
@@ -16,7 +16,7 @@ final class TaskQueueWorker
     private $publishOfflineSnapshot;
 
     /**
-     * @param callable():void $rebuildReadModel
+     * @param callable(int):void $rebuildReadModel
      * @param (callable():array<string, mixed>)|null $runFastScoreSweep
      * @param (callable():void)|null $publishOfflineSnapshot
      */
@@ -94,7 +94,7 @@ final class TaskQueueWorker
     private function runReadModelRebuild(int $id): array
     {
         try {
-            ($this->rebuildReadModel)();
+            ($this->rebuildReadModel)($id);
         } catch (Throwable $throwable) {
             return $this->store->markFailed($id, 'read_model_rebuild_failed', $throwable->getMessage(), true);
         }

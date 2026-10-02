@@ -25,6 +25,7 @@ final class OperatorStatusCollectorTest
             assertSame('unlocked', $status['read_model']['lock_status']);
             assertSame('not_initialized', $status['task_queue']['status']);
             assertSame('absent', $status['task_queue']['rebuild_task_status']);
+            assertSame('not_observed', $status['task_queue']['automatic_recovery_status']);
             assertSame(false, is_file($queuePath));
             assertSame(false, is_file($lockPath));
         } finally {
@@ -107,6 +108,24 @@ final class OperatorStatusCollectorTest
 
             assertSame('fresh', $queue['executor_status']);
             assertTrue($queue['executor_last_completed_at'] !== 'none');
+        } finally {
+            $this->clean($databasePath, $queuePath, $lockPath);
+        }
+    }
+
+    public function testCollectReportsAutomaticRecoveryAndDetachedLaunchStatus(): void
+    {
+        [$databasePath, $queuePath, $lockPath] = $this->paths();
+        try {
+            $store = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
+            $request = $store->requestAutomaticRebuild(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON);
+            $launchId = $store->reserveAutomaticRecoveryLaunch(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON, $request['task']['id']);
+            $store->completeAutomaticRecoveryLaunch($launchId, 'launched');
+
+            $queue = $this->collector($databasePath, $queuePath, $lockPath)->collect()['task_queue'];
+
+            assertSame('pending', $queue['automatic_recovery_status']);
+            assertSame('launched', $queue['automatic_recovery_launch_status']);
         } finally {
             $this->clean($databasePath, $queuePath, $lockPath);
         }
