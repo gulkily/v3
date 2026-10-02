@@ -116,6 +116,26 @@ final class TaskQueueStoreTest
         throw new RuntimeException('Expected unsupported task type to be rejected.');
     }
 
+    public function testExecutorRunHistoryCapturesSafeTaskOutcomes(): void
+    {
+        $store = $this->store();
+        $run = $store->startExecutorRun();
+        $completed = $store->completeExecutorRun($run['id'], [
+            'recovered' => 0,
+            'claimed' => 1,
+            'completed' => 1,
+            'continued' => 0,
+            'retried' => 0,
+            'failed' => 0,
+        ], [['id' => 9, 'status' => 'completed', 'failure_code' => null]]);
+
+        assertSame('completed', $completed['status']);
+        assertTrue($completed['completed_at'] !== null);
+        assertSame(1, $completed['summary']['claimed']);
+        assertSame([['id' => 9, 'status' => 'completed', 'failure_code' => null]], $completed['task_outcomes']);
+        assertSame($run['id'], $store->recentExecutorRuns(1)[0]['id']);
+    }
+
     private function store(): SqliteTaskQueueStore
     {
         return new SqliteTaskQueueStore(new PDO('sqlite::memory:'));

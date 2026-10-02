@@ -198,6 +198,86 @@ final class SqliteTaskQueueStore
     /**
      * @return array<string, mixed>
      */
+    public function startExecutorRun(): array
+    {
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO task_queue_executor_runs (status, started_at)
+             VALUES (:status, :started_at)'
+        );
+        $stmt->execute([
+            'status' => 'running',
+            'started_at' => gmdate('c'),
+        ]);
+
+        return $this->requiredExecutorRun((int) $this->pdo->lastInsertId());
+    }
+
+    /**
+     * @param array{recovered:int,claimed:int,completed:int,continued:int,retried:int,failed:int} $summary
+     * @param list<array{id:int,status:string,failure_code:?string}> $taskOutcomes
+     * @return array<string, mixed>
+     */
+    public function completeExecutorRun(int $id, array $summary, array $taskOutcomes): array
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE task_queue_executor_runs
+             SET status = :status, completed_at = :completed_at, summary_json = :summary_json,
+                 task_outcomes_json = :task_outcomes_json
+             WHERE id = :id AND status = :running'
+        );
+        $stmt->execute([
+            'status' => 'completed',
+            'completed_at' => gmdate('c'),
+            'summary_json' => json_encode($summary, JSON_THROW_ON_ERROR),
+            'task_outcomes_json' => json_encode($taskOutcomes, JSON_THROW_ON_ERROR),
+            'id' => $id,
+            'running' => 'running',
+        ]);
+
+        return $this->requiredExecutorRun($id);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function failExecutorRun(int $id, string $failureCode): array
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE task_queue_executor_runs
+             SET status = :status, completed_at = :completed_at, failure_code = :failure_code
+             WHERE id = :id AND status = :running'
+        );
+        $stmt->execute([
+            'status' => 'failed',
+            'completed_at' => gmdate('c'),
+            'failure_code' => substr($failureCode, 0, 100),
+            'id' => $id,
+            'running' => 'running',
+        ]);
+
+        return $this->requiredExecutorRun($id);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function recentExecutorRuns(int $limit = 25): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, status, started_at, completed_at, failure_code, summary_json, task_outcomes_json
+             FROM task_queue_executor_runs
+             ORDER BY id DESC
+             LIMIT :limit'
+        );
+        $stmt->bindValue('limit', max(1, $limit), PDO::PARAM_INT);
+        $stmt->execute();
+
+        return array_map(fn (array $row): array => $this->hydrateExecutorRun($row), $stmt->fetchAll());
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function markCompleted(int $id): array
     {
         $stmt = $this->pdo->prepare(
@@ -343,6 +423,25 @@ final class SqliteTaskQueueStore
         return $task;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function requiredExecutorRun(int $id): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, status, started_at, completed_at, failure_code, summary_json, task_outcomes_json
+             FROM task_queue_executor_runs
+             WHERE id = :id'
+        );
+        $stmt->execute(['id' => $id]);
+        $run = $stmt->fetch();
+        if ($run === false) {
+            throw new InvalidArgumentException('Executor run does not exist: ' . $id);
+        }
+
+        return $this->hydrateExecutorRun($run);
+    }
+
     private function assertAllowedType(string $type): void
     {
         if (!in_array($type, [self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::PUBLISH_OFFLINE_SNAPSHOT], true)) {
@@ -375,6 +474,21 @@ final class SqliteTaskQueueStore
         $this->pdo->exec(
             'CREATE INDEX IF NOT EXISTS internal_tasks_claimable
              ON internal_tasks (status, requested_at, id)'
+        );
+        $this->pdo->exec(
+            'CREATE TABLE IF NOT EXISTS task_queue_executor_runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                status TEXT NOT NULL,
+                started_at TEXT NOT NULL,
+                completed_at TEXT NULL,
+                failure_code TEXT NULL,
+                summary_json TEXT NOT NULL DEFAULT \'{}\',
+                task_outcomes_json TEXT NOT NULL DEFAULT \'[]\'
+            )'
+        );
+        $this->pdo->exec(
+            'CREATE INDEX IF NOT EXISTS task_queue_executor_runs_recent
+             ON task_queue_executor_runs (id DESC)'
         );
     }
 
@@ -412,6 +526,20 @@ final class SqliteTaskQueueStore
         $row['id'] = (int) $row['id'];
         $row['attempts'] = (int) $row['attempts'];
         $row['max_attempts'] = (int) $row['max_attempts'];
+
+        return $row;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    private function hydrateExecutorRun(array $row): array
+    {
+        $row['id'] = (int) $row['id'];
+        $row['summary'] = json_decode((string) $row['summary_json'], true, 512, JSON_THROW_ON_ERROR);
+        $row['task_outcomes'] = json_decode((string) $row['task_outcomes_json'], true, 512, JSON_THROW_ON_ERROR);
+        unset($row['summary_json'], $row['task_outcomes_json']);
 
         return $row;
     }

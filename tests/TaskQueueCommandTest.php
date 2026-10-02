@@ -107,6 +107,28 @@ final class TaskQueueCommandTest
         assertSame('', $stderr);
     }
 
+    public function testQuietEmptyWorkerRunRecordsExecutorHistory(): void
+    {
+        $queuePath = sys_get_temp_dir() . '/forum-task-queue-history-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            [$exitCode, $stdout, $stderr] = $this->runCommand(
+                dirname(__DIR__),
+                './v3 task-queue run --quiet --queue-database-path=' . escapeshellarg($queuePath),
+            );
+            $runs = (new \ForumRewrite\TaskQueue\SqliteTaskQueueStore(new \PDO('sqlite:' . $queuePath)))->recentExecutorRuns(1);
+        } finally {
+            @unlink($queuePath);
+        }
+
+        assertSame(0, $exitCode);
+        assertSame('', $stdout);
+        assertSame('', $stderr);
+        assertSame(1, count($runs));
+        assertSame('completed', $runs[0]['status']);
+        assertSame(0, $runs[0]['summary']['claimed']);
+        assertSame([], $runs[0]['task_outcomes']);
+    }
+
     public function testTaskQueueUnknownOptionsShowUsageWithoutAPhpStackTrace(): void
     {
         foreach (['--test', '--unknown'] as $option) {

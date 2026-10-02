@@ -140,6 +140,8 @@ try {
 
         $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose): void {
             $startedAt = microtime(true);
+            $executorRun = $store->startExecutorRun();
+            $taskOutcomes = [];
             $before = $store->counts();
             emitTaskQueue($quiet, "Task queue worker starting\n");
             emitTaskQueue($quiet, "Queue database: {$queuePath}\n");
@@ -220,7 +222,8 @@ try {
                 },
             );
             $taskStartedAt = [];
-            $summary = $worker->run($limit, static function (string $event, array $task) use ($quiet, &$taskStartedAt): void {
+            try {
+                $summary = $worker->run($limit, static function (string $event, array $task) use ($quiet, &$taskStartedAt, &$taskOutcomes): void {
                 if ($event === 'recovered') {
                     emitTaskQueue($quiet, 'Recovered abandoned tasks: ' . $task['count'] . "\n");
                     return;
@@ -240,6 +243,11 @@ try {
                 }
 
                 $elapsed = isset($taskStartedAt[$taskId]) ? microtime(true) - $taskStartedAt[$taskId] : 0.0;
+                $taskOutcomes[] = [
+                    'id' => $taskId,
+                    'status' => (string) $task['status'],
+                    'failure_code' => isset($task['failure_code']) ? (string) $task['failure_code'] : null,
+                ];
                 emitTaskQueue($quiet, sprintf(
                     "Finished task id=%d status=%s elapsed=%.3fs failure=%s\n",
                     $taskId,
@@ -285,7 +293,12 @@ try {
                         emitTaskQueue($quiet, "  Continuation queued for remaining Fastmod work; this is not a failure or retry.\n");
                     }
                 }
-            });
+                });
+                $store->completeExecutorRun((int) $executorRun['id'], $summary, $taskOutcomes);
+            } catch (Throwable $throwable) {
+                $store->failExecutorRun((int) $executorRun['id'], 'worker_exception');
+                throw $throwable;
+            }
             $after = $store->counts();
             emitTaskQueue($quiet, sprintf(
                 "Task queue run complete: recovered=%d claimed=%d completed=%d continued=%d retried=%d failed=%d\n",
