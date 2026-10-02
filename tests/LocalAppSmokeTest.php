@@ -19,6 +19,7 @@ use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
+use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\StaticArtifactInvalidator;
 
@@ -3398,6 +3399,70 @@ PHP;
 
         assertStringContains('Configuration Error', $response);
         assertStringContains('Repository root does not exist', $response);
+    }
+
+    public function testFrontControllerQueuesMissingVoteCountRecoveryWithoutLeakingSql(): void
+    {
+        $queuePath = sys_get_temp_dir() . '/forum-rewrite-recovery-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previousQueuePath = getenv('FORUM_TASK_QUEUE_DATABASE_PATH');
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
+        @unlink($this->databasePath);
+        (new ReadModelBuilder($this->repositoryRoot, $this->databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+        (new PDO('sqlite:' . $this->databasePath))->exec('ALTER TABLE threads DROP COLUMN vote_count');
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+
+        try {
+            $store = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
+            $run = $store->startExecutorRun();
+            $store->completeExecutorRun($run['id'], [
+                'recovered' => 0,
+                'claimed' => 0,
+                'completed' => 0,
+                'continued' => 0,
+                'retried' => 0,
+                'failed' => 0,
+            ], []);
+
+            http_response_code(200);
+            $first = $this->renderFrontController($controller, 'GET', '/', []);
+            $second = $this->renderFrontController($controller, 'GET', '/', []);
+
+            assertSame(503, http_response_code());
+            assertStringContains('Site Update', $first);
+            assertStringContains('The site will be back soon', $first);
+            assertStringNotContains('SQLSTATE', $first);
+            assertStringNotContains('threads.vote_count', $first);
+            assertStringNotContains('Configuration Error', $first);
+            assertSame($first, $second);
+            assertSame(1, $store->counts()['queued']);
+        } finally {
+            $previousQueuePath === false ? putenv('FORUM_TASK_QUEUE_DATABASE_PATH') : putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $previousQueuePath);
+            @unlink($queuePath);
+            @unlink($this->databasePath);
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
+    public function testFrontControllerSanitizesUnexpectedApplicationFailure(): void
+    {
+        @unlink($this->databasePath);
+        (new ReadModelBuilder($this->repositoryRoot, $this->databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+        (new PDO('sqlite:' . $this->databasePath))->exec('DROP TABLE threads');
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/', []);
+
+            assertStringContains('Temporarily Unavailable', $response);
+            assertStringNotContains('SQLSTATE', $response);
+            assertStringNotContains('no such table', $response);
+            assertStringNotContains('Configuration Error', $response);
+        } finally {
+            @unlink($this->databasePath);
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
     }
 
     public function testFrontControllerShowsBusyErrorForExecutionLockContention(): void

@@ -37,3 +37,15 @@
   - Manual isolated recovery: forced a one-attempt rebuild failure (`blocked`), ran `./v3 task-queue reset-recovery`, and confirmed state became `idle`.
 - Notes:
   - Manual `enqueue-rebuild` remains unchanged. The circuit is used only by the forthcoming classified automatic-recovery path.
+
+## Stage 4 - Safe classified visitor recovery
+
+- Changes:
+  - FrontController now narrowly recognizes only SQLite’s missing threads.vote_count error, requests the guarded existing rebuild task, and returns a safe 503 update/maintenance page.
+  - A fresh executor heartbeat produces “site will be back soon”; stale, blocked, or queue-unavailable recovery produces maintenance copy.
+  - Other escaped application failures now use a generic temporary-unavailability page rather than exposing exception details. Existing busy and preflight configuration pages remain unchanged.
+- Verification:
+  - php -l src/ForumRewrite/Host/FrontController.php && php -l tests/LocalAppSmokeTest.php
+  - php tests/run.php LocalAppSmokeTest::testFrontControllerQueuesMissingVoteCountRecoveryWithoutLeakingSql LocalAppSmokeTest::testFrontControllerSanitizesUnexpectedApplicationFailure LocalAppSmokeTest::testFrontControllerShowsConfigurationErrorForMissingRepository LocalAppSmokeTest::testFrontControllerShowsBusyErrorForExecutionLockContention — 4 passed.
+- Notes:
+  - The stale-executor page deliberately does not claim that rebuilding began; Stage 5 adds the configured detached launcher for that path.
