@@ -110,6 +110,7 @@ final class ForteBoardController
                 'viewerLikedThreadIds' => $viewerLikedThreadIds,
                 'viewerFlaggedPostIds' => $viewerFlaggedPostIds,
                 'highlightedPostId' => $highlightedPostId,
+                'viewerProfile' => $viewerProfile,
             ],
             'Forte',
             'paned-reader-body',

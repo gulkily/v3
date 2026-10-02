@@ -1076,6 +1076,7 @@ final class Application
                 $this->artifactRoot,
                 $this->staticHtmlRoot,
                 $this->featureFlags(),
+                $this->resolveViewerProfileFromIdentityHint(...),
             );
         }
 
