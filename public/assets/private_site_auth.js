@@ -123,8 +123,9 @@
     var browserIdentity = window.__forumBrowserIdentity;
 
     if (!publicKey || !privateKey || !/^[a-f0-9]{40}$/.test(fingerprint)) {
-      if (requestedReturnDestination(options) !== "") {
-        setStatus("This browser key is unavailable. Check your browser key to continue.", "error");
+      var returnTo = requestedReturnDestination(options);
+      if (returnTo !== "") {
+        window.location.replace("/lobby/?return_to=" + encodeURIComponent(returnTo));
       }
       return { status: "not-configured" };
     }
