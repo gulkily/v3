@@ -43,3 +43,11 @@
   - Manual smoke: `./v3 task-queue cron --log=/tmp/forum-task-queue-test.log` printed the per-minute worker and `*/15` guard lines.
 - Notes:
   - The guard only enqueues; the normal worker performs atomic publication, so concurrent triggers remain coalesced.
+
+## Stage 5 - Verify freshness behavior and operator handoff
+- Changes:
+  - Completed focused regression coverage across event enqueueing, task coalescing/retry, queued atomic publication, snapshot diagnostics, and the documented cron guard.
+- Verification:
+  - `php tests/run.php OfflineSnapshotPublisherTest OfflineSnapshotPublishCommandTest OfflineReadingDiagnosticCommandTest TaskQueueStoreTest TaskQueueCommandTest TaskQueueWorkerTest WriteApiSmokeTest::testNewPublishedPostEnqueuesPrivateBackgroundWork ForteActivityReadModelRecoveryTest` passed: 32 run, 32 passed.
+- Notes:
+  - The generated cron reference must be installed with both lines: the worker every minute and the snapshot enqueue guard every 15 minutes.
