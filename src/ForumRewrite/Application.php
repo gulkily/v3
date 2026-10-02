@@ -351,12 +351,8 @@ final class Application
             }
 
             if ($path === '/random' || array_key_exists('random', $query)) {
-                $threads = ThreadRepository::fetchThreads($this->routeServices()->pdo());
-                if ($threads !== []) {
-                    $randomThread = $threads[array_rand($threads)];
-                    $this->sendRedirect('/threads/' . $randomThread['root_post_id'], 'Here is a random quote.', 302);
-                    return;
-                }
+                $this->sendHtml($this->boardPageController()->random(), 200);
+                return;
             }
 
             if ($path === '/search' || array_key_exists('search', $query)) {

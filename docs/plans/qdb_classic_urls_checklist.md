@@ -114,3 +114,11 @@ zenmemes/chouse anywhere in this checklist.
   pre-existing (not touched by this feature, not fixed here) — it just
   happened to be harmless before because no pre-existing route was ever
   missing from the allowlist in the way these six were.
+- **Random, redefined at the operator's request:** `/random` originally
+  302-redirected to one random thread, matching the classic behavior. The
+  operator asked for a page of random items instead. Changed
+  `BoardPageController::random()` to shuffle `ThreadRepository::fetchThreads()`
+  and render the first 10 via a new `qdb_random.php` template (reusing
+  `quote_card.php`, same pattern as `search()`), with a "Shuffle again"
+  link. Verified both URL forms render a multi-item page (200, not a
+  redirect) and the Random nav item highlights correctly.

@@ -70,6 +70,31 @@ final class BoardPageController
     }
 
     /**
+     * QDB classic URL: /random, /?random. A fresh shuffled page of quotes
+     * each time, not a redirect to a single one. Only meaningful for the
+     * qdb site profile.
+     */
+    public function random(int $count = 10): string
+    {
+        $threads = ThreadRepository::fetchThreads($this->routeServices->pdo());
+        shuffle($threads);
+        $threads = array_slice($threads, 0, $count);
+        $viewerReactionState = $this->viewerReactionStateForThreads($threads, true);
+
+        return $this->routeServices->renderPageTemplate(
+            'qdb_random.php',
+            [
+                'threads' => $threads,
+                'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
+                'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
+                'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
+            ],
+            'Random',
+            'random',
+        );
+    }
+
+    /**
      * QDB classic URL: /search, /?search(=term). Only meaningful for the
      * qdb site profile - other profiles have no public search page.
      */
