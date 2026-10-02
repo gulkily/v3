@@ -42,35 +42,34 @@ This keeps each project self-contained (no submodule workflow) while still letti
 2. Let the assistant draft the artifact in `docs/plans/`, then review/edit it directly or issue follow-up instructions until you’re satisfied.
 3. When the doc hits the bar, reply verbatim with `Approved Step N, please continue to Step N+1.` The bot must stop until that phrase arrives, so you control scope creep.
 4. Repeat the review/approval loop for each step. Keep Step 1-3 planning docs uncommitted through drafting/review.
-5. After `Approved Step 3`, immediately switch into Step 4 branch/commit mode: create the Step 4 feature branch and make the first commit with only the approved Step 1-3 docs.
+5. After `Approved Step 3`, create the Step 4 feature branch and make the first commit with only the approved Step 1-3 docs.
 6. During Step 4, make at least one stage-scoped commit per implemented stage, and include that stage's Step 4 summary update in the same commit.
-7. Once a feature completes Step 4, treat its Step 1-4 docs as historical. If new work overlaps that feature later, start a new feature name instead of rewriting the old planning trail.
-
-Important: within FDP, `Approved Step 3` is the explicit authorization to start the required Step 4 commits. It overrides any generic assistant habit of avoiding commits unless the user separately asks for one.
 
 The strict per-step files mean you always paste a small, targeted instruction block into the chat; no more scrolling through a 4k-token mega-brief.
 
 ## What each step enforces
 | Step | Goal | Key outputs |
 | --- | --- | --- |
-| Step 1 – Solution Assessment (optional) | Resolve ambiguity across competing approaches. | ≤1-page pros/cons doc ending with a recommendation. |
+| Step 1 – Solution Assessment (optional) | Resolve ambiguity across competing approaches. | Original query (mechanically corrected only), then a ≤1-page pros/cons doc ending with a recommendation. |
 | Step 2 – Feature Description | Nail down problem context, user stories, requirements, shared components, and success criteria. | `{feature}_step2_feature_description.md` |
-| Step 3 – Development Plan | Break work into atomic stages with dependencies, verification notes, and component touchpoints. | `{feature}_step3_development_plan.md` |
-| Step 4 – Implementation | Execute stages sequentially on a feature branch, logging verification in a Step 4 summary. | `{feature}_step4_implementation_summary.md` |
+| Step 3 – Development Plan | Break work into atomic stages with dependencies, verification notes, and component touchpoints. Prefer `## Stage N` headers plus flat bullets for each stage field. | `{feature}_step3_development_plan.md` |
+| Step 4 – Implementation | Execute stages sequentially on a feature branch, logging verification in a Step 4 summary. Prefer `## Stage N - title` headers plus bullets for changes, verification, and notes. | `{feature}_step4_implementation_summary.md` |
 
 Each step/phase file lists guardrails plus "Next" instructions so the model always knows when to stop.
 
+Every Step 1–4 artifact begins with a compact relative-link bar to the other artifacts for that feature. This keeps the record easy to traverse in GitHub whether it stays in `docs/plans/` or moves into a feature folder.
+
 ## Tips for stubborn assistants
 - **Reprint instructions**: before starting a step/phase, force the assistant to paste the relevant `docs/dev/feature_process/stepX...` file back to you. This keeps both sides aligned and provides an audit trail.
-- **Guard the Step 3 -> Step 4 handoff**: when you reply `Approved Step 3`, expect the assistant's next actions to be `step4_implementation_before.md`, branch creation, and the planning-doc commit before any implementation edits.
-- **Call out warning signs early**: if a stage threatens to exceed the one-page or ~1-hour limit, bounce back to Step 2/3 instead of winging it mid-implementation.
+- **Call out risks early**: Step 2 records material risks, their impact, early validation, and mitigation. Step 3 starts with `## Key Risks` and makes unresolved risks gates before dependent work begins.
 - **Shared component inventory**: Step 2 explicitly asks which canonical UI/API bits already exist. Reuse them; duplication is the fastest way models drift.
+- **Finish a feature, not a layer**: Every FDP cycle has a Completion Contract: a normal user entry point, an end-to-end outcome, and required failure/recovery behavior. Split larger stories into independently usable vertical slices; label component-only work as internal maintenance.
 - **Manual verification only**: Step 4 leans on quick smoke tests. If you need deeper coverage, capture that as a new feature request and restart the chain.
 
 ## Extending the process
 - Need a domain-specific checklist? Fork one of the step files, add the extra bullets, and point your assistant to the customized version.
 - Supporting artifacts (mockups, DB diagrams) belong beside the step docs in `docs/plans/{feature}/`. Reference them inside the deliverables but keep the main files concise.
-- When a feature balloons past eight stages, spin up a new feature name with its own Step 2/3 docs to keep things reviewable.
+- When a feature balloons past eight stages, spin up a new feature name with its own Step 2/3 docs. Each resulting cycle must still be an independently usable vertical slice, not one incomplete layer of a larger feature.
 
 ## Getting help
 Because every instruction lives in plain Markdown, you can diff tweaks, annotate lines for your assistant, or even inline reminders like “STOP after this file.” When in doubt, start from `FEATURE_DEVELOPMENT_PROCESS.md` and follow the breadcrumbs.
