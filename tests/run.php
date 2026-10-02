@@ -46,6 +46,7 @@ $testFiles = [
     __DIR__ . '/PrivateConfigCommandTest.php',
     __DIR__ . '/PrivateSiteAuthTest.php',
     __DIR__ . '/PublicOfflineSnapshotBuilderTest.php',
+    __DIR__ . '/QuoteCardDisplayNumberTest.php',
     __DIR__ . '/PostSignatureAuditCommandTest.php',
     __DIR__ . '/PostAnalyzerFactoryTest.php',
     __DIR__ . '/RelatedContentSearchServiceTest.php',

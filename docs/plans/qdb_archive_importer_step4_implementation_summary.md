@@ -183,3 +183,26 @@
   - Full suite: `php tests/run.php` - back to exactly the same 5
     pre-existing failures (the one flaky test from Stage 3 passed
     again), confirming it really was flaky and not a regression.
+
+## Stage 5 - Show the imported quote number on the board
+
+- Changes:
+  - `templates/partials/quote_card.php`: extracts the trailing
+    `-qdb-<quote_id>` suffix from the Post-ID for display only (the
+    `#...` permalink text), leaving every other use of the real
+    Post-ID untouched (href, `data-thread-id`, `data-post-id`).
+    Live-authored posts have no such suffix and display their Post-ID
+    exactly as before.
+- Verification:
+  - New `tests/QuoteCardDisplayNumberTest.php` (2 cases): a qdb-site
+    render of a quote with Post-ID `thread-20030613104735-qdb-42`
+    shows `#42`, not the internal ID; a non-qdb (zenmemes) render of
+    the same post renders `thread_card.php` instead of `quote_card.php`
+    at all, confirming the change is scoped to the qdb card and
+    doesn't touch the shared board template other instances use.
+  - Found along the way: plain `/` on the qdb instance renders the
+    welcome page, not the quote list - `/latest` (or `/top`,
+    `/leetness`) is the real board route, matching how the live site
+    is actually browsed.
+  - Full suite: `php tests/run.php` - same 5 pre-existing failures,
+    0 new regressions.
