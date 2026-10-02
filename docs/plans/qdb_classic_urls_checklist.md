@@ -137,3 +137,13 @@ zenmemes/chouse anywhere in this checklist.
   "hide from nav, don't remove the feature" pattern already used for
   Tools/Users. Verified `/account/key/` still returns 200 and the
   zenmemes profile's Invite link is unaffected.
+- **Welcome page layout, matched more closely to a 2009 qdb.us reference**
+  (archived snapshot reviewed for structure/style only; all page copy
+  here is original). Adopted the two-column pattern: an intro + a
+  voting-instructions callout box on the left (light-gray background,
+  matching the original's `.instructions` treatment) separated by a
+  thin orange vertical divider from a right column — but instead of
+  copying static site-news text we don't have, the right column shows
+  real "Recent activity" (the 5 most recently active threads), so
+  nothing on the page is fabricated. Verified: renders correctly, zenmemes
+  unaffected, full suite clean.

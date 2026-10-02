@@ -76,12 +76,14 @@ final class BoardPageController
      */
     public function welcome(): string
     {
-        $qdbQuoteCount = count(ThreadRepository::fetchThreads($this->routeServices->pdo()));
+        $threads = ThreadRepository::fetchThreads($this->routeServices->pdo());
+        $recentThreads = array_slice($threads, 0, 5);
 
         return $this->routeServices->renderPageTemplate(
             'qdb_welcome.php',
             [
-                'qdbQuoteCount' => $qdbQuoteCount,
+                'qdbQuoteCount' => count($threads),
+                'recentThreads' => $recentThreads,
             ],
             'Welcome',
             'welcome',

@@ -138,3 +138,43 @@
 :root[data-theme="qdb"] .quote-card:nth-child(even) {
   background: #e8e8e8;
 }
+
+:root[data-theme="qdb"] .qdb-welcome-columns {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+:root[data-theme="qdb"] .qdb-welcome-intro,
+:root[data-theme="qdb"] .qdb-welcome-recent {
+  flex: 1 1 50%;
+  min-width: 0;
+}
+
+:root[data-theme="qdb"] .qdb-welcome-divider {
+  flex: 0 0 auto;
+  width: 4px;
+  background: var(--line);
+}
+
+:root[data-theme="qdb"] .qdb-welcome-instructions {
+  background: var(--panel);
+  padding: 0.5rem 0.7rem;
+}
+
+:root[data-theme="qdb"] .qdb-welcome-recent ul,
+:root[data-theme="qdb"] .qdb-welcome-intro ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+@media (max-width: 560px) {
+  :root[data-theme="qdb"] .qdb-welcome-columns {
+    flex-direction: column;
+  }
+
+  :root[data-theme="qdb"] .qdb-welcome-divider {
+    width: auto;
+    height: 4px;
+  }
+}
