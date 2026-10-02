@@ -32,6 +32,8 @@ final class TemplateRenderer
         'llm_exchanges.php' => ['/assets/tool-details.css'],
         'offline_health.php' => ['/assets/tool-details.css'],
         'offline_reader.php' => ['/assets/sqlite.css', '/assets/thread-list.css', '/assets/tags.css', '/assets/content-interactions.css'],
+        'platform_docs_document.php' => ['/assets/platform_docs.css'],
+        'platform_docs_index.php' => ['/assets/platform_docs.css'],
         'tags.php' => ['/assets/tags.css'],
         'tag.php' => ['/assets/thread-list.css'],
         'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/compose.css'],

@@ -164,7 +164,7 @@ final class LocalAppSmokeTest
             assertStringContains('[1/4] Read-model candidate is ready.', $text);
             assertStringContains('[2/4] Rendering static HTML and fingerprinted assets...', $text);
             assertStringContains('[2/4] Fingerprinting and copying assets referenced by rendered pages...', $text);
-            assertStringContains('[2/4] Rendering shared pages (1/10): /.', $text);
+            assertStringContains('[2/4] Rendering shared pages (1/20): /.', $text);
             assertStringContains('[2/4] Rendering thread pages (0/', $text);
             assertStringContains('[2/4] Static release is ready:', $text);
             assertStringContains('Static artifacts:', $text);
@@ -226,7 +226,7 @@ final class LocalAppSmokeTest
             assertSame(0, $exitCode, $text);
             assertStringContains('Starting shared static release refresh', $text);
             assertStringContains('does not rebuild the read model', $text);
-            assertStringContains('[1/2] Rendering shared pages (10/10): /tags/.', $text);
+            assertStringContains('[1/2] Rendering shared pages (10/20): /tags/.', $text);
             assertStringContains('[2/2] Shared static release activated.', $text);
             assertStringNotContains('Rendering thread pages', $text);
             assertStringNotContains('Rendering post pages', $text);

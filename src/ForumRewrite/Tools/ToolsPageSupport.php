@@ -53,6 +53,13 @@ final class ToolsPageSupport
                 'standalone' => true,
             ],
             [
+                'key' => 'docs',
+                'label' => 'Platform Docs',
+                'href' => '/docs/',
+                'description' => 'How the site is built, operated, and extended, with repository source paths.',
+                'standalone' => true,
+            ],
+            [
                 'key' => 'bookmarklets',
                 'label' => 'Bookmarklets',
                 'href' => '/tools/bookmarklets/',

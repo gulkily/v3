@@ -1,0 +1,234 @@
+# /docs/ Index Rewrite — Project-Verified Implementation Guide
+
+Use this guide instead of applying `docs_page_changes.txt` verbatim. It keeps
+the proposed concrete writing style and layout direction while preserving the
+behavior this checkout actually implements.
+
+## Scope
+
+Change only the `/docs/` index page and its stylesheet/tests.
+
+Do not change:
+
+- Docs routes or link targets.
+- Displayed repository paths.
+- Catalog categories or entry titles.
+- The linked Markdown documents.
+- The public-document path policy or static-release behavior.
+
+Relevant files:
+
+- `templates/pages/platform_docs_index.php` — index markup and copy.
+- `public/assets/platform_docs.css` — Docs page layout and diagram styles.
+- `src/ForumRewrite/Docs/PlatformDocsCatalog.php` — entry descriptions only.
+- `tests/PlatformDocsPageTest.php` and `tests/PlatformDocsStaticTest.php` —
+  focused regression coverage.
+
+## Verified project facts
+
+### Public records and derived views
+
+- Public content records live under `records/` in the writable canonical Git
+  repository. Posts, public keys, identity bootstrap records, approvals, and
+  reactions are represented as plain-text records.
+- The SQLite read model is derived from those records.
+- Static HTML is also derived state. It is published as an atomic static
+  release, not treated as the source of truth.
+
+### Commands
+
+- `./v3 rebuild` is the primary CLI shorthand for rebuilding the SQLite read
+  model. It dispatches to `scripts/rebuild_read_model.php`.
+- `./v3 build-static` builds a candidate read model and all static pages, then
+  publishes the static release. It is the command that accurately represents
+  rebuilding both SQLite and static HTML.
+- Therefore, do not label one arrow to both SQLite and static HTML with
+  `./v3 rebuild`.
+
+### Identity and signatures
+
+- A member who chooses browser identity generates and keeps an OpenPGP private
+  key in the browser. The normal signed-write flow sends a detached signature,
+  canonical record, and public identity reference; the server verifies the
+  signature against the published public key.
+- Do not imply that every public post is signed. Anonymous posts remain
+  supported. Say “signed public writes” or “a member’s signed writes.”
+- The server does have a distinct `reply-agent` private key when automatic
+  agent replies are used. It is a server agent key, not a member key.
+
+### Private state and secrets
+
+- Member OpenPGP private keys are not kept in the public record or application
+  checkout.
+- The server can have private material. LLM provider credentials normally live
+  in `../forum-private/secrets.php`, outside the application checkout. Private
+  runtime state lives under `state/private/`.
+- `state/` is ignored by `.gitignore`, so
+  `state/private/agent-reply/` is outside Git as well as outside `public/`.
+- It is accurate to say that operator credentials and private workflow state
+  live outside `public/` and Git. It is not accurate to say that no secret can
+  exist on the server.
+
+## Required index copy
+
+Replace the existing intro and overview copy with the following.
+
+### Intro
+
+Paragraph 1:
+
+Zenmemes keeps its public state in Git and builds the site's pages from it.
+These docs are rendered from the same repository.
+
+Paragraph 2:
+
+Each entry below shows the path of the file it is rendered from, so you can
+read the source and propose changes.
+
+### Overview heading
+
+Use:
+
+How it works
+
+### Card 1
+
+Heading:
+
+Public records live in Git
+
+Body:
+
+Posts, public keys, and identity events are stored as plain-text files under
+`records/`, one file per record, in Git. The SQLite database is built from
+those files and can be rebuilt with `./v3 rebuild`. Static HTML is built and
+published with `./v3 build-static`.
+
+This is the one intentional change from the supplied feedback. It avoids the
+incorrect claim that `./v3 rebuild` rebuilds static HTML.
+
+### Card 2
+
+Heading:
+
+Identity is an OpenPGP key
+
+Body:
+
+Each member who uses browser identity has an OpenPGP key pair. The private key
+stays in the member's browser. The public key and fingerprint are published,
+and a member's signed public writes can be verified against them.
+
+The “signed” qualifier is required because anonymous posts are supported.
+
+### Card 3
+
+Heading:
+
+What stays out of the public record
+
+Body:
+
+The server does not generate or store member private keys. Operator credentials
+and private workflow state are kept outside `public/` and outside Git.
+
+This wording is verified. Do not broaden it to say that the server has no
+secrets: the optional LLM and reply-agent features need private server-side
+material.
+
+### Link below cards
+
+Use this exact structure so only the document title is linked:
+
+Full details: [Public Architecture and Trust Model]
+
+Keep its existing target:
+
+`/docs/architecture/public_architecture_and_trust.md`
+
+## Entry descriptions
+
+Use these descriptions in `PlatformDocsCatalog`:
+
+| Entry | Description |
+| --- | --- |
+| Public Architecture and Trust Model | How the Git records, the views built from them, OpenPGP identity, and private data relate. |
+| Canonical Post Record | The file format for posts and replies: one text file per post, headers then body. |
+| Theme Development Guide | How themes work and how to add one. |
+| Identity Bootstrap Record | The file that records a new identity: its OpenPGP public key, fingerprint, and username. |
+| Extension and Improvement Cookbook | Worked examples of extending the site, including with coding agents. |
+| Agent Reply Analyze/Publish Contract | How `POST /api/analyze_post` stores a post's analysis and, when agent replies are enabled and the reply gates pass, posts the suggested reply as `reply-agent`. |
+| v3 CLI Reference | Commands, options, and error handling for the v3 CLI. |
+| Production Deploy Runbook | How to deploy to production, and what a shared host needs. |
+| Operator Recovery Runbook | How to check and repair the production read model and workers. |
+
+The agent-reply description matches the documented one-step analyze/publish
+contract. Do not make it describe unrestricted or guaranteed agent posting.
+
+## Diagram
+
+Place an inline SVG directly below “How it works” and above the three cards.
+It must:
+
+- use existing CSS variables such as `--ink`, `--line`, `--panel`, and
+  `--code-font`; use no external assets or dependencies;
+- include a `<title>` and one-sentence `<desc>`;
+- allow scrolling inside a diagram container on narrow screens, without
+  causing horizontal page scroll;
+- show, left to right:
+  1. “Member's browser” with “private key (never leaves)”; 
+  2. an arrow labelled “signed write”;
+  3. a visually emphasized “`records/` in Git” box with `records/posts/` and
+     `records/identity/`;
+  4. two derived boxes, “SQLite” and “static HTML”;
+  5. “Readers”.
+
+Use arrows only between the Git records and the derived views. Do not put CLI
+command labels or an operator-credentials box in the diagram. The overview
+card and CLI reference provide the command details; the private-state boundary
+is covered in the overview card and linked architecture guide.
+
+## Layout
+
+- Use three equal columns for the overview cards at wide widths.
+- Switch to one column at a mobile breakpoint.
+- Do not use the current auto-fit grid for this section: at intermediate
+  widths it can place the third card on a separate row.
+
+## Copy guardrails
+
+- Headings should name their content, not make slogans.
+- Prefer concrete nouns and verbs.
+- Avoid: `legible`, `durable`, `accountable`, `by construction`, `safely`, and
+  `fit together` in new index copy.
+- Keep “canonical” limited to the existing “Canonical Post Record” title and
+  file paths on the index.
+- Do not use em dashes.
+
+## Verification
+
+Run:
+
+```text
+php tests/run.php PlatformDocsCatalogTest
+php tests/run.php PlatformDocsPageTest
+php tests/run.php PlatformDocsStaticTest
+php tests/run.php LocalAppSmokeTest::testBuildStaticCommandReportsProgressAndArtifactSummary LocalAppSmokeTest::testSharedStaticRefreshCommandKeepsDetailArtifactsWithoutRebuildingTheReadModel
+```
+
+Also verify the rendered `/docs/` text does not contain:
+
+```text
+legible|durable|accountable|by construction|safely|fit together
+```
+
+Inspect both light and dark themes and a 375px-wide viewport. The page itself
+must not acquire horizontal scrolling; horizontal scrolling inside the diagram
+container is acceptable.
+
+## Report after implementation
+
+Report the files changed, the simplified arrow-only diagram treatment, the
+verified private-state boundary in the supporting copy, any copy intentionally
+changed for accuracy, the test results, and screenshots for light and dark
+themes.
