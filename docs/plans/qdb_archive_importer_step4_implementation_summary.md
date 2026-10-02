@@ -56,3 +56,43 @@
     silently reset on the next live vote or approval change — the same
     correctness property Step 3 asked for, just one more code path that
     turned out to implement it.
+
+## Stage 2 - Extract qualifying quote rows from the dump
+
+- Changes:
+  - Loaded `~/qdb_database/backup.sql` into a scratch MariaDB database
+    (`qdb_import_check`); created a scoped local-only `qdb_import`
+    MySQL user with `SELECT` on just that database (root's own
+    authentication wasn't usable from a non-sudo shell, and widening
+    that was unnecessary for a read-only scratch task).
+  - `scripts/qdb_archive_import_extract.php`: connects with
+    `charset=latin1` (matching the column's real charset, so MySQL
+    performs no conversion), runs the `approved=1 AND spam=0 AND
+    deleted_flag=0` query, and writes one JSON-Lines record per
+    qualifying quote to `state/qdb_archive_import/extracted_quotes.jsonl`
+    (already covered by the repo's existing `state/` gitignore rule) —
+    `quote_id`, `created_at`, `score`, `vote_count`, and the quote body
+    base64-encoded (keeps the output valid JSON regardless of the
+    original bytes; Stage 3 owns the latin1-to-UTF-8 decision, not this
+    step).
+- Verification:
+  - Extracted row count (14,881) matches `SELECT COUNT(*)` with the
+    same `WHERE` clause exactly.
+  - Byte-exact round-trip check on quote_id 24 (has embedded quotes,
+    commas, and newlines): `HEX(quote)` from a direct query against the
+    live table matches `bin2hex(base64_decode(...))` from the extracted
+    row exactly, and `score`/`vote_count` match too.
+- Notes:
+  - Real-data finding, not anticipated in Step 3: ~45% of qualifying
+    quotes (6,683 of 14,881) have a NULL `add_timestamp` — every
+    quote_id <= 20162, none above it, a clean historical cutoff rather
+    than scattered bad data. No other column recovers the true date
+    (`vote_timestamp` is populated but is a 2018/2019 rescoring date,
+    not the original post date). Flagged to the user; decision was an
+    honest placeholder rather than excluding these quotes or using the
+    misleading rescoring date: a fixed date safely before the earliest
+    real `add_timestamp` (2003-01-01T00:00:00Z), offset by quote_id
+    seconds so the known relative submission order is preserved instead
+    of 6,683 rows colliding on one identical instant. Each extracted
+    row carries `date_is_placeholder` so later stages (and any future
+    display decision) can tell a real date from this marker.
