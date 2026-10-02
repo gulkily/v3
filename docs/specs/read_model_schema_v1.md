@@ -18,6 +18,16 @@ updated incrementally on writes (`IncrementalReadModelUpdater`). See
 `docs/specs/php_forum_rewrite_spec_v1.md` §6 for the design principles
 behind this layer.
 
+## Schema-change contract
+
+When changing a core read-model table, column, index, constraint, or a query
+that requires one, increment `ReadModelMetadata::SCHEMA_VERSION` in the same
+change. Application startup uses that version to identify an incompatible
+derived database and rebuild it before queries run. Also update this reference
+and add a regression test for startup from the prior schema version. See
+[`CONTRIBUTING.md`](../../CONTRIBUTING.md) for the complete contributor
+checklist.
+
 ## Core read-model tables
 
 Defined in `src/ForumRewrite/ReadModel/ReadModelBuilder.php`'s
@@ -73,6 +83,7 @@ One row per thread (keyed by its root post).
 | `board_tags_json` | TEXT | JSON array |
 | `thread_labels_json` | TEXT | JSON array |
 | `score_total` | INTEGER | default 0 |
+| `vote_count` | INTEGER | default 0; distinct upvote/downvote events |
 
 ### `profiles`
 
