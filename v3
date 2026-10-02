@@ -4,12 +4,115 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMMAND="${1:-}"
 
+fdp_usage() {
+  cat <<'EOF'
+Usage:
+  ./v3 fdp sync [--repository-root=/path/repository] [--remote-url=https://github.com/gulkily/fdp.git]
+
+Synchronizes the vendored docs/fdp subtree from the FDP main branch. The target
+repository must have no uncommitted changes. --remote-url is only needed to add
+or replace the fdp remote (for example, when testing against a fork).
+EOF
+}
+
+fdp_sync() {
+  local repository_root="${ROOT}"
+  local remote_url="https://github.com/gulkily/fdp.git"
+  local remote_url_explicit=0
+  local argument
+
+  for argument in "$@"; do
+    case "${argument}" in
+      --repository-root=*)
+        repository_root="${argument#--repository-root=}"
+        ;;
+      --remote-url=*)
+        remote_url="${argument#--remote-url=}"
+        remote_url_explicit=1
+        ;;
+      -h|--help)
+        fdp_usage
+        return 0
+        ;;
+      *)
+        echo "Unknown fdp sync option: ${argument}" >&2
+        fdp_usage >&2
+        return 1
+        ;;
+    esac
+  done
+
+  if [[ -z "${repository_root}" || ! -d "${repository_root}" ]]; then
+    echo "FDP repository root is not a directory: ${repository_root}" >&2
+    return 1
+  fi
+  if [[ -z "${remote_url}" ]]; then
+    echo "FDP remote URL must not be empty." >&2
+    return 1
+  fi
+  repository_root="$(cd "${repository_root}" && pwd)"
+
+  if ! git -C "${repository_root}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "FDP repository root is not a Git work tree: ${repository_root}" >&2
+    return 1
+  fi
+  if [[ -n "$(git -C "${repository_root}" status --porcelain)" ]]; then
+    echo "FDP sync requires a clean working tree: ${repository_root}" >&2
+    return 1
+  fi
+  if ! git -C "${repository_root}" cat-file -e HEAD:docs/fdp 2>/dev/null; then
+    echo "FDP sync requires an existing docs/fdp subtree: ${repository_root}" >&2
+    return 1
+  fi
+
+  if git -C "${repository_root}" remote get-url fdp >/dev/null 2>&1; then
+    if (( remote_url_explicit )); then
+      git -C "${repository_root}" remote set-url fdp "${remote_url}"
+    fi
+  else
+    git -C "${repository_root}" remote add fdp "${remote_url}"
+  fi
+
+  git -C "${repository_root}" fetch fdp main
+
+  local latest_squash
+  local split_commit
+  latest_squash="$(git -C "${repository_root}" log -1 --format=%H --grep='^git-subtree-dir: docs/fdp/*$' HEAD)"
+  if [[ -z "${latest_squash}" ]]; then
+    echo "FDP sync could not find docs/fdp subtree metadata; add the subtree before syncing." >&2
+    return 1
+  fi
+  split_commit="$(git -C "${repository_root}" show -s --format=%B "${latest_squash}" | sed -n 's/^git-subtree-split: //p' | head -n 1)"
+
+  if [[ -n "${split_commit}" ]] && git -C "${repository_root}" rev-parse -q --verify "${split_commit}^{commit}" >/dev/null; then
+    git -C "${repository_root}" subtree pull --prefix=docs/fdp fdp main --squash
+    return
+  fi
+
+  # Older imports recorded an upstream commit that no longer exists. Recreate
+  # the squash marker against the current upstream snapshot, then merge that
+  # marker while applying only the vendored directory's content.
+  local upstream_snapshot
+  upstream_snapshot="$(
+    printf '%s\n\n%s\n%s\n' \
+      "Squashed 'docs/fdp/' content from commit $(git -C "${repository_root}" rev-parse --short fdp/main)" \
+      'git-subtree-dir: docs/fdp' \
+      "git-subtree-split: $(git -C "${repository_root}" rev-parse fdp/main)" \
+      | git -C "${repository_root}" commit-tree fdp/main^{tree} -p "${latest_squash}"
+  )"
+  git -C "${repository_root}" merge -s ours --no-commit "${upstream_snapshot}"
+  git -C "${repository_root}" diff --binary HEAD:docs/fdp fdp/main | git -C "${repository_root}" apply --index --directory=docs/fdp
+  git -C "${repository_root}" commit -m "Merge commit '${upstream_snapshot}' as 'docs/fdp'"
+  echo "Repaired legacy FDP subtree metadata and synchronized docs/fdp."
+}
+
 if [[ -z "${COMMAND}" ]]; then
   cat <<'EOF'
 Usage:
   ./v3 start [--listen-all|host:port]
   ./v3 test
   ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+  ./v3 fdp sync [--repository-root=/path/repository] [--remote-url=https://github.com/gulkily/fdp.git]
   ./v3 rebuild [repository_root] [database_path]
   ./v3 rebuild diagnose [repository_root] [database_path]
   ./v3 rebuild recover --confirm [repository_root] [database_path]
@@ -70,6 +173,23 @@ case "${COMMAND}" in
   status)
     shift
     php "${ROOT}/scripts/status.php" "$@"
+    ;;
+  fdp)
+    shift
+    case "${1:-}" in
+      sync)
+        shift
+        fdp_sync "$@"
+        ;;
+      -h|--help|'')
+        fdp_usage
+        ;;
+      *)
+        echo "Unknown fdp command: ${1}" >&2
+        fdp_usage >&2
+        exit 1
+        ;;
+    esac
     ;;
   rebuild)
     shift

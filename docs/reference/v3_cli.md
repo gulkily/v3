@@ -31,6 +31,22 @@ Most data-touching commands accept optional positional `repository_root` and
 See [Local Run](../../README.md#local-run) in the README for the defaults
 and the bootstrap flow.
 
+## Synchronize the Feature Development Process documentation
+
+```
+./v3 fdp sync [--repository-root=/path/repository] [--remote-url=https://github.com/gulkily/fdp.git]
+```
+
+Updates the vendored `docs/fdp/` subtree from `gulkily/fdp`'s `main` branch and
+commits the resulting documentation update. Run it from a clean target working
+tree. By default it updates this checkout; use `--repository-root` to update
+another v3 copy from the same command. The command adds the `fdp` remote when
+missing and otherwise preserves its configured URL. Pass `--remote-url` only to
+intentionally set that remote, such as when testing a fork.
+
+The command also repairs legacy FDP imports whose recorded upstream commit was
+rewritten, so later syncs use the ordinary subtree pull workflow.
+
 ## Start the local dev server
 
 ```
