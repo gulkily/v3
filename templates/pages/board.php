@@ -13,6 +13,9 @@
       <a class="nav-link" href="/compose/thread">New Post</a>
     </div>
   </article>
+<?php if (!empty($pagination)): ?>
+<?= $indent($partial('partials/board_pagination_nav.php', ['pagination' => $pagination]), 0) ?>
+<?php endif; ?>
   <article class="card inline-reply-composer compact-thread-compose" data-compose-root data-pending-thread-position="after" data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>">
     <details class="inline-reply-details compact-thread-compose-details" data-inline-reply-details>
       <summary class="inline-reply-summary">
@@ -54,6 +57,9 @@
 ]), 1) ?>
 <?php endif; ?>
 <?php endforeach; ?>
+<?php if (!empty($pagination)): ?>
+<?= $indent($partial('partials/board_pagination_nav.php', ['pagination' => $pagination]), 0) ?>
+<?php endif; ?>
 </section>
 <?php if ($isQdbInstance): ?>
 <footer class="qdb-footer">

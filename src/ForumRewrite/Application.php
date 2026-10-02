@@ -335,14 +335,19 @@ final class Application
             return;
         }
 
-        if (SiteConfig::siteName() === 'qdb' && ($path === '/' || $path === '' || $path === '/latest' || $path === '/top' || $path === '/leetness' || $path === '/add' || $path === '/random' || $path === '/search')) {
-            if ($path === '/latest' || array_key_exists('latest', $query)) {
-                $this->sendHtml($this->boardPageController()->board('all', 'newest', 'latest'), 200);
+        $latestPageMatch = preg_match('#^/latest/(\d+)/?$#', $path, $latestPathMatches) === 1;
+        $topPageMatch = preg_match('#^/top/(\d+)/?$#', $path, $topPathMatches) === 1;
+
+        if (SiteConfig::siteName() === 'qdb' && ($path === '/' || $path === '' || $path === '/latest' || $path === '/top' || $path === '/leetness' || $path === '/add' || $path === '/random' || $path === '/search' || $latestPageMatch || $topPageMatch)) {
+            if ($path === '/latest' || $latestPageMatch || array_key_exists('latest', $query)) {
+                $page = $latestPageMatch ? (int) $latestPathMatches[1] : (int) ($query['latest'] ?? 1);
+                $this->sendHtml($this->boardPageController()->board('all', 'newest', 'latest', max(1, $page)), 200);
                 return;
             }
 
-            if ($path === '/top' || array_key_exists('top', $query)) {
-                $this->sendHtml($this->boardPageController()->board('all', 'top', 'top'), 200);
+            if ($path === '/top' || $topPageMatch || array_key_exists('top', $query)) {
+                $page = $topPageMatch ? (int) $topPathMatches[1] : (int) ($query['top'] ?? 1);
+                $this->sendHtml($this->boardPageController()->board('all', 'top', 'top', max(1, $page)), 200);
                 return;
             }
 
@@ -1591,7 +1596,7 @@ final class Application
         }
 
         return preg_match(
-            '#^/(?:docs/.+|tools/llm-exchanges/\d+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-z0-9]+(?:-[a-z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+)/?$#',
+            '#^/(?:docs/.+|tools/llm-exchanges/\d+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-z0-9]+(?:-[a-z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
             $path,
         ) === 1;
     }

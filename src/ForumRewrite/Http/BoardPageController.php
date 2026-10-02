@@ -24,6 +24,16 @@ use ForumRewrite\Support\ThreadTitle;
 final class BoardPageController
 {
     /**
+     * Classic qdb.us paginates Latest/Top at 25 quotes per page rather than
+     * dumping the whole unbounded board in one response (see
+     * docs/plans/qdb_classic_urls_checklist.md); only these two activeSection
+     * values have routing in Application.php that understands a page number,
+     * so pagination is scoped to just those two, not every board() caller.
+     */
+    private const PAGE_SIZE = 25;
+    private const PAGINATED_SECTIONS = ['latest', 'top'];
+
+    /**
      * @param \Closure(): (array<string, mixed>|null) $resolveViewerProfileFromIdentityHint
      */
     public function __construct(
@@ -33,7 +43,7 @@ final class BoardPageController
     ) {
     }
 
-    public function board(string $view, string $sort, string $activeSection = 'board'): string
+    public function board(string $view, string $sort, string $activeSection = 'board', int $page = 1): string
     {
         $view = BoardViewOptions::normalizeView($view);
         $sort = BoardViewOptions::normalizeSort($sort);
@@ -41,6 +51,15 @@ final class BoardPageController
         $sortOptions = BoardViewOptions::sortOptions($view, $sort);
         $threads = $this->fetchBoardThreads($view, $sort);
         $isQdbInstance = SiteConfig::siteName() === 'qdb';
+
+        $pagination = null;
+        if ($isQdbInstance && in_array($activeSection, self::PAGINATED_SECTIONS, true)) {
+            $totalPages = max(1, (int) ceil(count($threads) / self::PAGE_SIZE));
+            $page = max(1, min($page, $totalPages));
+            $threads = array_slice($threads, ($page - 1) * self::PAGE_SIZE, self::PAGE_SIZE);
+            $pagination = BoardViewOptions::pagination('/' . $activeSection, $page, $totalPages);
+        }
+
         $viewerReactionState = $this->viewerReactionStateForThreads($threads, $isQdbInstance);
         $qdbQuoteCount = $isQdbInstance ? count(ThreadRepository::fetchThreads($this->routeServices->pdo())) : 0;
 
@@ -59,6 +78,7 @@ final class BoardPageController
                 'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
                 'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
                 'qdbQuoteCount' => $qdbQuoteCount,
+                'pagination' => $pagination,
             ],
             'Board',
             $activeSection,
