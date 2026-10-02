@@ -1242,6 +1242,42 @@ PHP;
         assertStringContains('labels: (none)', $combinedOutput);
     }
 
+    public function testForteReplyLikesRenderAndRestoreViewerState(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-forte-reply-likes-' . bin2hex(random_bytes(6));
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-forte-reply-likes-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        mkdir($repositoryRoot . '/records/post-reactions');
+        file_put_contents(
+            $repositoryRoot . '/records/posts/reply-002.txt',
+            "Post-ID: reply-002\nCreated-At: 2026-04-10T12:06:00Z\nBoard-Tags: general\nThread-ID: root-001\nParent-ID: reply-001\n\nNested reply body.\n"
+        );
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+            $_COOKIE = [];
+            $anonymousForte = $this->render($application, '/forte?selected=root-001');
+            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-001" data-applied-label="Liked" aria-pressed="false">Like</button>', $anonymousForte);
+            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-002" data-applied-label="Liked" aria-pressed="false">Like</button>', $anonymousForte);
+            assertStringContains('data-action="apply-post-tag" data-tag="flag" data-post-id="reply-001"', $anonymousForte);
+
+            file_put_contents(
+                $repositoryRoot . '/records/post-reactions/post-reaction-20261002120000-replylike.txt',
+                "Record-ID: post-reaction-20261002120000-replylike\nCreated-At: 2026-10-02T12:00:00Z\nPost-ID: reply-002\nOperation: add\nTags: like\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n"
+            );
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $likedForte = $this->render($application, '/forte?selected=root-001');
+
+            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-002" data-applied-label="Liked" aria-pressed="true" disabled>Liked</button>', $likedForte);
+        } finally {
+            $_COOKIE = [];
+            $this->deleteTree($repositoryRoot);
+            @unlink($databasePath);
+        }
+    }
+
     public function testApplicationRendersCoreRoutes(): void
     {
         @unlink($this->databasePath);
