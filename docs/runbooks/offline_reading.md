@@ -42,11 +42,14 @@ obtain a new release, reconnect and reload a public page.
 
 ## Publishing a fresh snapshot
 
-After the normal ingest or read-model rebuild has completed, publish the latest
-offline reading set without rendering every static post page:
+The configured internal task queue requests this publication after successful
+public read-model updates and every 15 minutes as a backstop. After the normal
+ingest or read-model rebuild has completed, an operator can also publish the
+latest offline reading set without rendering every static post page:
 
 ```sh
 ./v3 offline publish
+./v3 task-queue enqueue-offline-snapshot
 ./v3 offline diagnose --url=https://your-public-domain
 ```
 

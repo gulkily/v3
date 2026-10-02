@@ -135,6 +135,7 @@ It refuses recovery while the lock or an open file holder is detected.
 ```
 ./v3 task-queue enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
+./v3 task-queue enqueue-offline-snapshot [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue cron [--log=/var/log/forum-task-queue.log]
@@ -152,6 +153,8 @@ being installed via cron.
 - `enqueue-fast-score` — enqueues the coalesced Fastmod sweep (also a
   no-op if one is already queued/running). It evaluates all nonempty posts over
   successive bounded runs when Fastmod is enabled.
+- `enqueue-offline-snapshot` — enqueues the coalesced public offline snapshot
+  publication (also a no-op if one is already queued/running).
 - `run` — claims and runs up to `--limit` queued tasks (default 1), recovering
   any abandoned in-progress tasks first; guarded by an exclusive file lock so
   concurrent invocations don't double-run. `--dry-run` reports the queued
@@ -168,9 +171,9 @@ being installed via cron.
 - `status` — prints queued/running/completed/failed counts plus the
   `--limit` (default 25) most recent tasks with attempt counts and failure
   codes
-- `cron` — prints a ready-to-install crontab line running `task_queue.php run
-  --quiet --limit=1` once a minute; `--log=...` sets the log file path baked
-  into the printed line
+- `cron` — prints ready-to-install crontab lines: the worker runs once a minute
+  and the offline-snapshot guard enqueues work every 15 minutes. `--log=...`
+  sets the log file path baked into both lines.
 
 ## Audit or backfill Fastmod
 

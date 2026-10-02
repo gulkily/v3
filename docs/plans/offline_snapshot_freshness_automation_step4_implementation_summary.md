@@ -32,3 +32,14 @@
   - `php tests/run.php WriteApiSmokeTest::testNewPublishedPostEnqueuesPrivateBackgroundWork TaskQueueCommandTest TaskQueueWorkerTest` passed: 16 run, 16 passed.
 - Notes:
   - Direct operator updates remain covered by the periodic guard added in Stage 4.
+
+## Stage 4 - Add the periodic freshness guard
+- Changes:
+  - Extended `task-queue cron` to print both the once-per-minute worker and a 15-minute offline-snapshot enqueue guard.
+  - Documented the new enqueue command, coalescing behavior, schedules, and manual recovery path in the CLI and offline/production runbooks.
+- Verification:
+  - `php -l scripts/task_queue.php` and `php -l tests/TaskQueueCommandTest.php` passed.
+  - `php tests/run.php TaskQueueCommandTest` passed: 8 run, 8 passed.
+  - Manual smoke: `./v3 task-queue cron --log=/tmp/forum-task-queue-test.log` printed the per-minute worker and `*/15` guard lines.
+- Notes:
+  - The guard only enqueues; the normal worker performs atomic publication, so concurrent triggers remain coalesced.

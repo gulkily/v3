@@ -326,7 +326,7 @@ php scripts/run_agent_reply_requests.php --post-id=<post-id>
 
 ## Internal Task Queue
 
-The internal task queue handles allowlisted maintenance work outside visitor requests. Its first task type is read-model rebuild/recovery; it does not run user-supplied commands and is separate from the agent-reply and Codex-handoff queues.
+The internal task queue handles allowlisted maintenance work outside visitor requests, including read-model rebuild/recovery, Fastmod sweeps, and public offline-snapshot publication. It does not run user-supplied commands and is separate from the agent-reply and Codex-handoff queues.
 
 Install the cron worker with the current-path reference:
 
@@ -334,10 +334,11 @@ Install the cron worker with the current-path reference:
 ./v3 task-queue cron
 ```
 
-The default schedule processes one task per minute and exits successfully when another queue worker is active. Useful operator commands are:
+Install both lines printed by the command. The worker processes one task per minute and exits successfully when another queue worker is active; the second line requests an offline snapshot every 15 minutes as a freshness guard. Useful operator commands are:
 
 ```bash
 ./v3 task-queue enqueue-rebuild
+./v3 task-queue enqueue-offline-snapshot
 ./v3 task-queue status
 ./v3 task-queue run --dry-run
 ./v3 task-queue run --limit=1
