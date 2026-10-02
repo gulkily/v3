@@ -263,3 +263,28 @@
     spanning 2003-2014 - legible, no mojibake.
 - Notes: this closes out the feature. All 7 stages landed; the qdb
   instance now holds the real historical archive.
+
+## Post-completion follow-up - production runbook
+
+Added after Stage 7, at the user's request, since this feature will
+eventually need to run against a real production vhost, not just local
+dev:
+
+- `docs/runbooks/qdb_archive_import.md`: the production procedure.
+  Production has no MySQL dependency and shouldn't gain one for a
+  one-shot backfill, so extraction/normalization stay local; only
+  `state/qdb_archive_import/normalized_quotes.jsonl` (9.8MB) needs to
+  reach the production host.
+- `scripts/qdb_archive_import_run.php`: added `--normalized-input=path`,
+  which skips extraction/normalization entirely and runs straight
+  through writing, batching, committing, and rebuilding from an
+  already-produced normalized file - the flag the production runbook
+  actually uses, so prod reuses the same tested batching/commit code
+  path instead of hand-written `git` commands.
+- Verified the new flag against a clean fixture-based scratch repo (not
+  the now-imported real one, which would have made every written file
+  byte-identical to what's already there and silently reported 0
+  commits - caught this on the first attempt before trusting the
+  result): 300 rows, batch-size 50 -> exactly 6 commits, full
+  score/vote_count diff against the source - 0 mismatches. Full suite
+  still at the same 5 pre-existing failures.

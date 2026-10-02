@@ -9,6 +9,13 @@ declare(strict_types=1);
  * Each sub-step is still its own standalone script (scripts/qdb_archive_
  * import_{extract,normalize,write_posts}.php); this just runs them in
  * sequence and owns the one thing none of them do yet: git commits.
+ *
+ * --normalized-input=path skips extraction and normalization entirely and
+ * writes/commits/rebuilds straight from an already-produced normalized
+ * file. That is the production path: prod has no MySQL dependency and
+ * shouldn't gain one just for this one-shot backfill, so extraction runs
+ * once wherever the dump lives and only the ~10MB normalized file travels
+ * to the production host (see docs/runbooks/qdb_archive_import.md).
  */
 $projectRoot = dirname(__DIR__);
 $arguments = parseRunArguments(array_slice($argv, 1));
@@ -32,21 +39,36 @@ if (!is_dir($repositoryRoot . '/records/posts')) {
 }
 
 $startedAt = microtime(true);
+$skippingFetch = $arguments['normalizedInput'] !== null;
+$totalSteps = $skippingFetch ? 3 : 4;
+$step = 0;
 
-fwrite(STDOUT, "[1/4] Extracting qualifying quotes from the MySQL dump...\n");
-runPhpScript($projectRoot . '/scripts/qdb_archive_import_extract.php', array_filter([
-    '--output' => $extractedPath,
-    '--database' => $arguments['mysqlDatabase'],
-    '--user' => $arguments['mysqlUser'],
-    '--password' => $arguments['mysqlPassword'],
-    '--host' => $arguments['mysqlHost'],
-]));
+if ($skippingFetch) {
+    if (!is_file($arguments['normalizedInput'])) {
+        fwrite(STDERR, "--normalized-input file not found: {$arguments['normalizedInput']}\n");
+        exit(1);
+    }
+    $step++;
+    fwrite(STDOUT, "[{$step}/{$totalSteps}] Skipping extraction/normalization - using --normalized-input directly.\n");
+    $normalizedPath = $arguments['normalizedInput'];
+} else {
+    $step++;
+    fwrite(STDOUT, "[{$step}/{$totalSteps}] Extracting qualifying quotes from the MySQL dump...\n");
+    runPhpScript($projectRoot . '/scripts/qdb_archive_import_extract.php', array_filter([
+        '--output' => $extractedPath,
+        '--database' => $arguments['mysqlDatabase'],
+        '--user' => $arguments['mysqlUser'],
+        '--password' => $arguments['mysqlPassword'],
+        '--host' => $arguments['mysqlHost'],
+    ]));
 
-fwrite(STDOUT, "[2/4] Normalizing quote bodies to UTF-8...\n");
-runPhpScript($projectRoot . '/scripts/qdb_archive_import_normalize.php', [
-    '--input' => $extractedPath,
-    '--output' => $normalizedPath,
-]);
+    $step++;
+    fwrite(STDOUT, "[{$step}/{$totalSteps}] Normalizing quote bodies to UTF-8...\n");
+    runPhpScript($projectRoot . '/scripts/qdb_archive_import_normalize.php', [
+        '--input' => $extractedPath,
+        '--output' => $normalizedPath,
+    ]);
+}
 
 $writeInputPath = $normalizedPath;
 if ($limit !== null) {
@@ -55,13 +77,15 @@ if ($limit !== null) {
     fwrite(STDOUT, "Limited to the first {$limit} rows for this run: {$writeInputPath}\n");
 }
 
-fwrite(STDOUT, "[3/4] Writing canonical post records...\n");
+$step++;
+fwrite(STDOUT, "[{$step}/{$totalSteps}] Writing canonical post records...\n");
 runPhpScript($projectRoot . '/scripts/qdb_archive_import_write_posts.php', [
     '--input' => $writeInputPath,
     '--repository-root' => $repositoryRoot,
 ]);
 
-fwrite(STDOUT, "[4/4] Committing in batches of {$batchSize} and rebuilding the read model...\n");
+$step++;
+fwrite(STDOUT, "[{$step}/{$totalSteps}] Committing in batches of {$batchSize} and rebuilding the read model...\n");
 $paths = newOrChangedPostPaths($repositoryRoot);
 fwrite(STDOUT, 'Files to commit: ' . count($paths) . "\n");
 
@@ -211,6 +235,7 @@ function parseRunArguments(array $argv): array
         'databasePath' => $options['database-path'] ?? null,
         'batchSize' => isset($options['batch-size']) ? max(1, (int) $options['batch-size']) : 500,
         'limit' => isset($options['limit']) ? max(1, (int) $options['limit']) : null,
+        'normalizedInput' => $options['normalized-input'] ?? null,
         'mysqlDatabase' => $options['mysql-database'] ?? null,
         'mysqlUser' => $options['mysql-user'] ?? (getenv('QDB_IMPORT_MYSQL_USER') ?: null),
         'mysqlPassword' => $options['mysql-password'] ?? (getenv('QDB_IMPORT_MYSQL_PASSWORD') ?: null),
@@ -222,10 +247,18 @@ function parseRunArguments(array $argv): array
 function runUsage(): string
 {
     return "Usage:\n"
-        . "  php scripts/qdb_archive_import_run.php --repository-root=path [--database-path=path]\n"
-        . "    [--batch-size=500] [--limit=N] [--mysql-database=name] [--mysql-user=name]\n"
-        . "    [--mysql-password=secret] [--mysql-host=host]\n"
-        . "  --repository-root and --database-path are both required (no defaults) -
-  this writes and commits real files, and rebuilds a specific read model.\n"
+        . "  php scripts/qdb_archive_import_run.php --repository-root=path --database-path=path\n"
+        . "    [--batch-size=500] [--limit=N]\n"
+        . "    [--mysql-database=name] [--mysql-user=name] [--mysql-password=secret] [--mysql-host=host]\n"
+        . "    | --normalized-input=path\n"
+        . "\n"
+        . "  --repository-root and --database-path are both required (no defaults) -\n"
+        . "  this writes and commits real files, and rebuilds a specific read model.\n"
+        . "\n"
+        . "  --normalized-input=path skips extraction/normalization entirely and runs\n"
+        . "  straight from an already-produced normalized file (the mysql-* options are\n"
+        . "  ignored when this is set). This is the production path: see\n"
+        . "  docs/runbooks/qdb_archive_import.md.\n"
+        . "\n"
         . "  --limit truncates to the first N normalized rows, for a small dry run.\n";
 }
