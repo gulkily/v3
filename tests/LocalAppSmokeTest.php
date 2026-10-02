@@ -3444,6 +3444,40 @@ PHP;
         }
     }
 
+    public function testFrontControllerMakesOnlyOneDisabledFallbackLaunchAttempt(): void
+    {
+        $queuePath = sys_get_temp_dir() . '/forum-rewrite-recovery-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previousQueuePath = getenv('FORUM_TASK_QUEUE_DATABASE_PATH');
+        $previousEmergencyLaunch = getenv('FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED');
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
+        putenv('FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED');
+        @unlink($this->databasePath);
+        (new ReadModelBuilder($this->repositoryRoot, $this->databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+        (new PDO('sqlite:' . $this->databasePath))->exec('ALTER TABLE threads DROP COLUMN vote_count');
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+
+        try {
+            $store = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
+            $first = $this->renderFrontController($controller, 'GET', '/', []);
+            $second = $this->renderFrontController($controller, 'GET', '/', []);
+            $recovery = $store->automaticRecoveryStatus(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON);
+
+            assertStringContains('This site needs maintenance', $first);
+            assertSame($first, $second);
+            assertSame('disabled', $store->automaticRecoveryLaunchStatus(
+                SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON,
+                $recovery['task_id'],
+            ));
+        } finally {
+            $previousQueuePath === false ? putenv('FORUM_TASK_QUEUE_DATABASE_PATH') : putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $previousQueuePath);
+            $previousEmergencyLaunch === false ? putenv('FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED') : putenv('FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED=' . $previousEmergencyLaunch);
+            @unlink($queuePath);
+            @unlink($this->databasePath);
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
     public function testFrontControllerSanitizesUnexpectedApplicationFailure(): void
     {
         @unlink($this->databasePath);

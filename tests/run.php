@@ -18,6 +18,7 @@ $testFiles = [
     __DIR__ . '/CodexHandoffRunnerTest.php',
     __DIR__ . '/CodexHandoffStoreTest.php',
     __DIR__ . '/DedalusPostAnalyzerTest.php',
+    __DIR__ . '/DetachedTaskQueueLauncherTest.php',
     __DIR__ . '/FeatureFlagEvaluatorTest.php',
     __DIR__ . '/FeatureFlagsBehaviorTest.php',
     __DIR__ . '/FastScoringConfigTest.php',

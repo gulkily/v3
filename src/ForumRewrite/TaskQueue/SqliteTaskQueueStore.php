@@ -111,6 +111,64 @@ final class SqliteTaskQueueStore
     }
 
     /**
+     * Reserves the one detached-worker launch allowed for this recovery task.
+     *
+     * @return int|null The launch record id, or null when another request already reserved it.
+     */
+    public function reserveAutomaticRecoveryLaunch(string $reason, int $taskId): ?int
+    {
+        $this->assertRecoveryReason($reason);
+
+        return $this->withImmediateTransaction(function () use ($reason, $taskId): ?int {
+            $stmt = $this->pdo->prepare(
+                'INSERT INTO automatic_recovery_launches (reason, task_id, status, created_at, completed_at)
+                 VALUES (:reason, :task_id, :status, :created_at, NULL)
+                 ON CONFLICT(reason, task_id) DO NOTHING'
+            );
+            $stmt->execute([
+                'reason' => $reason,
+                'task_id' => $taskId,
+                'status' => 'starting',
+                'created_at' => gmdate('c'),
+            ]);
+
+            return $stmt->rowCount() === 1 ? (int) $this->pdo->lastInsertId() : null;
+        });
+    }
+
+    public function completeAutomaticRecoveryLaunch(int $launchId, string $status): void
+    {
+        if (!in_array($status, ['launched', 'failed', 'disabled', 'unavailable'], true)) {
+            throw new InvalidArgumentException('Invalid automatic recovery launch status.');
+        }
+
+        $stmt = $this->pdo->prepare(
+            'UPDATE automatic_recovery_launches
+             SET status = :status, completed_at = :completed_at
+             WHERE id = :id AND status = :starting'
+        );
+        $stmt->execute([
+            'id' => $launchId,
+            'status' => $status,
+            'starting' => 'starting',
+            'completed_at' => gmdate('c'),
+        ]);
+    }
+
+    public function automaticRecoveryLaunchStatus(string $reason, int $taskId): ?string
+    {
+        $this->assertRecoveryReason($reason);
+        $stmt = $this->pdo->prepare(
+            'SELECT status FROM automatic_recovery_launches
+             WHERE reason = :reason AND task_id = :task_id'
+        );
+        $stmt->execute(['reason' => $reason, 'task_id' => $taskId]);
+        $status = $stmt->fetchColumn();
+
+        return is_string($status) ? $status : null;
+    }
+
+    /**
      * @return list<array<string, mixed>>
      */
     public function claimNext(int $limit = 1): array
@@ -685,6 +743,17 @@ final class SqliteTaskQueueStore
                 task_id INTEGER NULL,
                 updated_at TEXT NOT NULL,
                 opened_at TEXT NULL
+            )'
+        );
+        $this->pdo->exec(
+            'CREATE TABLE IF NOT EXISTS automatic_recovery_launches (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                reason TEXT NOT NULL,
+                task_id INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                completed_at TEXT NULL,
+                UNIQUE (reason, task_id)
             )'
         );
     }

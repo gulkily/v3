@@ -183,6 +183,23 @@ final class TaskQueueStoreTest
         assertSame('blocked', $store->automaticRecoveryStatus(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON)['status']);
     }
 
+    public function testAutomaticRecoveryReservesOnlyOneDetachedLaunchPerTask(): void
+    {
+        $store = $this->store();
+        $request = $store->requestAutomaticRebuild(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON);
+        $taskId = $request['task']['id'];
+
+        $launchId = $store->reserveAutomaticRecoveryLaunch(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON, $taskId);
+
+        assertTrue($launchId !== null);
+        assertSame(null, $store->reserveAutomaticRecoveryLaunch(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON, $taskId));
+        assertSame('starting', $store->automaticRecoveryLaunchStatus(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON, $taskId));
+
+        $store->completeAutomaticRecoveryLaunch($launchId, 'launched');
+
+        assertSame('launched', $store->automaticRecoveryLaunchStatus(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON, $taskId));
+    }
+
     private function store(): SqliteTaskQueueStore
     {
         return new SqliteTaskQueueStore(new PDO('sqlite::memory:'));

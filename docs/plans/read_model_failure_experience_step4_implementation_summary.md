@@ -49,3 +49,15 @@
   - php tests/run.php LocalAppSmokeTest::testFrontControllerQueuesMissingVoteCountRecoveryWithoutLeakingSql LocalAppSmokeTest::testFrontControllerSanitizesUnexpectedApplicationFailure LocalAppSmokeTest::testFrontControllerShowsConfigurationErrorForMissingRepository LocalAppSmokeTest::testFrontControllerShowsBusyErrorForExecutionLockContention — 4 passed.
 - Notes:
   - The stale-executor page deliberately does not claim that rebuilding began; Stage 5 adds the configured detached launcher for that path.
+
+## Stage 5 - Bounded detached recovery fallback
+
+- Changes:
+  - Added an opt-in detached launcher that invokes only the application’s fixed queue-worker command with `nohup`, fully escaped executable/path arguments, private queue path, quiet output, and a one-task limit.
+  - A stale or missing heartbeat now reserves exactly one launch record for the queued automatic-recovery task. It reports rebuilding only after that worker was started; disabled, unavailable, or failed launch states remain on truthful maintenance copy and are not retried by page refreshes.
+  - The fallback is disabled unless `FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED=true`; its launch status is recorded in the private queue database.
+- Verification:
+  - `php tests/run.php TaskQueueStoreTest TaskQueueCommandTest DetachedTaskQueueLauncherTest LocalAppSmokeTest::testFrontControllerQueuesMissingVoteCountRecoveryWithoutLeakingSql LocalAppSmokeTest::testFrontControllerMakesOnlyOneDisabledFallbackLaunchAttempt LocalAppSmokeTest::testFrontControllerSanitizesUnexpectedApplicationFailure LocalAppSmokeTest::testFrontControllerShowsConfigurationErrorForMissingRepository LocalAppSmokeTest::testFrontControllerShowsBusyErrorForExecutionLockContention` — 30 passed.
+  - Manual isolated detached launch with the opt-in environment variable returned `launched`; its independent worker recorded a fresh executor heartbeat in the temporary private queue database.
+- Notes:
+  - This is a best-effort host capability, not a claim that every PHP host permits background process creation. A host without it safely shows maintenance and preserves the queued task for the normal worker.

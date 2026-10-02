@@ -10,6 +10,7 @@ use ForumRewrite\Offline\OfflineSnapshotPublisher;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
+use ForumRewrite\TaskQueue\DetachedTaskQueueLauncher;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 use PDO;
@@ -126,9 +127,34 @@ final class FrontController
                 return 'maintenance';
             }
 
-            return $store->executorHeartbeatStatus()['status'] === 'fresh'
-                ? 'updating'
-                : 'maintenance';
+            if ($store->executorHeartbeatStatus()['status'] === 'fresh') {
+                return 'updating';
+            }
+
+            $taskId = (int) $request['task']['id'];
+            $existingLaunch = $store->automaticRecoveryLaunchStatus(
+                SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON,
+                $taskId,
+            );
+            if ($existingLaunch === 'launched') {
+                return 'rebuilding';
+            }
+            if ($existingLaunch !== null) {
+                return 'maintenance';
+            }
+
+            $launchId = $store->reserveAutomaticRecoveryLaunch(
+                SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON,
+                $taskId,
+            );
+            if ($launchId === null) {
+                return 'maintenance';
+            }
+
+            $launchStatus = (new DetachedTaskQueueLauncher($this->projectRoot, $queuePath))->launchQueuedWorker();
+            $store->completeAutomaticRecoveryLaunch($launchId, $launchStatus);
+
+            return $launchStatus === 'launched' ? 'rebuilding' : 'maintenance';
         } catch (Throwable) {
             return 'maintenance';
         }
@@ -423,9 +449,11 @@ final class FrontController
 
     private function renderReadModelRecovery(string $state): string
     {
-        $message = $state === 'updating'
-            ? 'We’re updating site data. The site will be back soon. Please try again in a moment.'
-            : 'This site needs maintenance. Please try again later.';
+        $message = match ($state) {
+            'updating' => 'We’re updating site data. The site will be back soon. Please try again in a moment.',
+            'rebuilding' => 'We’re rebuilding site data. The site will be back soon. Please try again in a moment.',
+            default => 'This site needs maintenance. Please try again later.',
+        };
 
         return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
             . '<title>Site Update</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
