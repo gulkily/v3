@@ -13,6 +13,15 @@ Later: implement shared lifecycle status (Option B from the `v3 status`
 assessment) so operator reporting can identify manual and queued rebuilds
 precisely, including interrupted-work recovery.
 
+terminal operator ui (`./v3 tui`)
+----------------------------------
+	config-first status/config dashboard and command launcher
+	extract shared config schema: defaults, validation, redaction, precedence
+	private-config editor: presets, masked secrets, atomic writes, save diff
+	later: guided destructive workflows with review, confirmation, output, cancellation
+	keep scripts as executor/validator; do not duplicate web feature-flags ui
+	use whiptail with dependency check and cli fallback
+
 
 forte
 =====
@@ -50,12 +59,6 @@ Tracked in `docs/plans/backlog/offline_support_roadmap.md`.
 	queued replies/threads with explicit sync, conflict, and security design.
 
 
-post presentation
-	if title == first line, don't show the first line in the body
-	put the byline below the post
-	put the labels below the post
-
-
 convert user-facing versioning to more human-readable
 	use either sequential version numbers (for things like js modules)
 	or traditional M.m.r semantic versioning (for things like the app itself)
@@ -65,24 +68,6 @@ feature flags page
 add search/filter toolbar (search input + status chips: All/Enabled/Overridden/Locked)
 to /tools/feature-flags/ — deferred from the layout/badges/grouping redesign,
 see docs/plans/feature_flags_redesign_step2/3_*.md
-
-
-why are some feature flags locked?
-	how to change locked feature flags?
-		should this be explained on the page?
-
-should all docs be available from the site?
-
-in forte, the board and users sections load instantly, while activity takes too long
-
-site is architected to make it easy for developers to extend and build their own features
-	but this is hard to see without examples
-		so we should have some examples of how to extend the site, and how to build new features
-			especially using llm/agentic features, and how to use the existing features to build new ones
-				example 1: for posts that have a high moderation score, an automatic nvc rewrite/reply
-				example 2: for posts with high-signal information, aggregate and summarize the information into a new post
-				example 3: for posts that propose a new feature, automatically create a new feature request post with the relevant information
-				example 4: for short-form bug reports, write out the steps to reproduce, expected, and actual
 
 merge agent reply queue into task queue
 
