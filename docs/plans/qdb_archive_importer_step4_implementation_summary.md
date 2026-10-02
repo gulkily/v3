@@ -96,3 +96,47 @@
     of 6,683 rows colliding on one identical instant. Each extracted
     row carries `date_is_placeholder` so later stages (and any future
     display decision) can tell a real date from this marker.
+
+## Stage 3 - Transcode quote bodies to UTF-8
+
+- Changes:
+  - `scripts/qdb_archive_import_normalize.php`: for each extracted row,
+    detects whether the raw bytes are already valid multi-byte UTF-8
+    (28 rows) versus needing transcoding (14,853 rows), and converts
+    the latter from Windows-1252 rather than strict Latin-1 - the
+    source is 2003-era IRC chat, and Windows-1252's byte range for
+    smart quotes/em-dashes/guillemets is exactly what strict Latin-1
+    would otherwise turn into control characters. Writes
+    `state/qdb_archive_import/normalized_quotes.jsonl` with a `body`
+    field per row; only flags a row if the result fails to be valid
+    UTF-8 (0 of 14,881 did).
+  - Scope changed from Step 3's plan text after a direct instruction:
+    originally this stage ran every body through
+    `UnicodeTextPolicy::normalizeBody()` and flagged whatever it
+    rejected (156 of 14,881 - mostly non-breaking spaces/tabs/soft
+    hyphens, plus real symbol characters like `£`/`°`/`€` as genuine
+    quote content, plus a handful of stray control bytes including one
+    quote that's deliberately garbled IRC-prank text). The user then
+    enabled Unicode authoring for the qdb instance and said to retain
+    original characters - including stray control bytes - unless
+    something is a genuine functional problem, since the policy that
+    produced those 156 flags no longer applies to this instance at all.
+    This step now only transcodes; it does not filter content.
+- Verification:
+  - All 14,881 rows produced valid UTF-8; 0 flagged.
+  - Spot-checked a mixed sample of `already-utf8` and `windows-1252`
+    rows containing visible non-ASCII characters (smart quotes,
+    guillemets) by eye - text reads correctly, no mojibake.
+  - Re-checked the three rows that were flagged under the old
+    (now-abandoned) policy-based approach - the NBSP-formatted quote,
+    the tab-containing quote, and the deliberately-garbled IRC-prank
+    quote - all three now pass through with their original bytes
+    intact rather than being altered or excluded.
+  - No NUL bytes found in any of the 14,881 extracted quote bodies
+    (checked before deciding there was no other functional-risk
+    character worth special-casing).
+  - Full suite: `php tests/run.php` - same 5 pre-existing long-standing
+    failures; one additional failure
+    (`WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh`)
+    confirmed flaky by rerunning 3x (passed 2/3) and unrelated to this
+    stage (no `src/` changes in Stage 3 at all).
