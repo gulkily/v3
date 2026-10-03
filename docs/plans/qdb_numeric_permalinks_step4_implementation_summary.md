@@ -38,3 +38,42 @@
   addressed by construction — the new check lives strictly inside the
   already-last-resort block, after the existing exact-ID check, not as a
   new earlier route.
+
+## Stage 2 - Short link in quote_card.php
+- Changes:
+  - `templates/partials/quote_card.php`: anchor `href` is now
+    `/<displayNumber>` when a `-qdb-<N>` suffix was actually matched,
+    otherwise unchanged `/threads/<full-id>` for any quote predating the
+    numbering convention. Also corrected an adjacent comment that was
+    stale since the quote-numbering feature shipped (it said
+    live-authored quotes never carry a `-qdb-` suffix; they do now).
+- Verification:
+  - `php -l` — no syntax errors.
+  - Added four tests to `tests/QuoteCardDisplayNumberTest.php`:
+    - `testQuoteCardLinksToTheShortNumericPermalinkOnLatest` — a numbered
+      quote's card on `/latest` links `href="/42"`, not the full ID.
+    - `testQuoteCardLinksToTheShortNumericPermalinkOnTopSearchAndRandom`
+      — the same holds on `/top`, `/search`, and `/random` (all three
+      reuse `quote_card.php`, confirming the shared-partial change is
+      consistent across every consumer, not just `/latest`).
+    - `testQuoteWithoutAQdbNumberKeepsItsFullIdPermalink` — the base
+      fixture's un-numbered `root-001` thread keeps its old
+      `/threads/root-001` link.
+    - `testFollowingTheShortNumericPermalinkReachesTheUnchangedQuotePage`
+      — `/42` 302s to `/threads/thread-...-qdb-42`, and that page's
+      rendered content is byte-identical to requesting it directly.
+  - `./v3 test QuoteCardDisplayNumberTest` — 9 run, 9 passed.
+  - Full suite `./v3 test` — same 7 pre-existing failures as Stage 1's
+    baseline, no new ones.
+  - Live click-through: started a real local server (`php -S` via
+    `public/router.php`) against a disposable scratch qdb repository,
+    submitted a real quote (minted `#1`), confirmed `GET /latest` shows
+    `href="/1"` for it and `href="/threads/root-001"` unchanged for the
+    un-numbered fixture thread, confirmed `GET /1` returns `302` and
+    `GET /999999` returns `404`. Server stopped afterward; scratch
+    repo/db disposable (job tmp dir), nothing persisted.
+- Notes: both remaining Key Risks (shared-partial affecting every
+  consumer; un-numbered quotes needing their old link preserved) are
+  covered directly by this stage's test list, not left as assumptions.
+  Feature complete — Completion Contract satisfied end to end, no
+  follow-up cycle required.

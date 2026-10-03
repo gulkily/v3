@@ -42,6 +42,81 @@ final class QuoteCardDisplayNumberTest
         assertStringNotContains('quote-card', $board);
     }
 
+    public function testQuoteCardLinksToTheShortNumericPermalinkOnLatest(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $board = $this->render($application, '/latest');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertStringContains('href="/42">#42</a>', $board);
+        assertStringNotContains('href="/threads/thread-20030613104735-qdb-42"', $board);
+    }
+
+    public function testQuoteCardLinksToTheShortNumericPermalinkOnTopSearchAndRandom(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $top = $this->render($application, '/top');
+            $search = $this->render($application, '/search?search=quoted');
+            $random = $this->render($application, '/random');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertStringContains('href="/42">#42</a>', $top);
+        assertStringContains('href="/42">#42</a>', $search);
+        assertStringContains('href="/42">#42</a>', $random);
+    }
+
+    public function testQuoteWithoutAQdbNumberKeepsItsFullIdPermalink(): void
+    {
+        // The base fixture's "root-001" predates the quote-numbering feature
+        // and has no "-qdb-<N>" suffix, so it must keep linking by full ID.
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $board = $this->render($application, '/latest');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertStringContains('href="/threads/root-001">#root-001</a>', $board);
+    }
+
+    public function testFollowingTheShortNumericPermalinkReachesTheUnchangedQuotePage(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $directThreadPage = $this->render($application, '/threads/thread-20030613104735-qdb-42');
+            $viaShortLink = $this->render($application, '/42');
+            $shortLinkStatus = http_response_code();
+            $resolvedPage = $this->render($application, '/threads/thread-20030613104735-qdb-42');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertSame(302, $shortLinkStatus);
+        assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $viaShortLink);
+        assertSame($directThreadPage, $resolvedPage);
+    }
+
     public function testBareNumericPathRedirectsToTheQuoteWithThatNumber(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
