@@ -27,6 +27,7 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\UnicodeTextPolicy;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
+use ForumRewrite\SiteProfileRegistry;
 use RuntimeException;
 
 class LocalWriteService
@@ -60,7 +61,7 @@ class LocalWriteService
             $this->assertWritableRepository();
             $timings = [];
             $totalStartedAt = hrtime(true);
-            $postId = $this->generateRecordId('thread');
+            $postId = $this->mintThreadPostId();
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $subject = $this->normalizeAuthoredLine((string) ($input['subject'] ?? ''), 'subject');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
@@ -171,7 +172,7 @@ class LocalWriteService
             $this->assertWritableRepository();
             $timings = [];
             $totalStartedAt = hrtime(true);
-            $postId = $this->generateRecordId('thread');
+            $postId = $this->mintThreadPostId();
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $subject = $this->normalizeAuthoredLine((string) ($input['subject'] ?? ''), 'subject');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
@@ -2056,6 +2057,25 @@ class LocalWriteService
     private function generateRecordId(string $prefix): string
     {
         return sprintf('%s-%s-%s', $prefix, gmdate('YmdHis'), substr(bin2hex(random_bytes(4)), 0, 8));
+    }
+
+    private function mintThreadPostId(): string
+    {
+        if (SiteProfileRegistry::active()['name'] !== 'qdb') {
+            return $this->generateRecordId('thread');
+        }
+
+        return sprintf('thread-%s-qdb-%d', gmdate('YmdHis'), $this->nextQdbQuoteNumber());
+    }
+
+    private function nextQdbQuoteNumber(): int
+    {
+        $maxNumber = $this->readModelPdo()->query(
+            "SELECT MAX(CAST(substr(root_post_id, instr(root_post_id, '-qdb-') + 5) AS INTEGER))
+             FROM threads WHERE root_post_id LIKE '%-qdb-%'"
+        )->fetchColumn();
+
+        return ((int) $maxNumber) + 1;
     }
 
     private function canonicalTimestampNow(): string
