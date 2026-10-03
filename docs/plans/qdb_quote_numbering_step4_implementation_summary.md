@@ -69,3 +69,42 @@
     `qdb_quotes_instance_step4_implementation_summary.md`). No failures
     introduced by this feature.
 - Notes: none.
+
+## Stage 3 - End-to-end verification on a real local qdb instance
+- Changes: updated `qdb_todo.txt` — marked item 2 ("figure out how to do
+  quote number headers") and the related loose note ("when adding a new
+  quote, it should also get a quote id?") as resolved, pointing at this
+  feature's plan docs.
+- Verification:
+  - Started a real local server (`php -S` via `public/router.php`,
+    the same entry point `./v3 start` uses) against a disposable scratch
+    git repository seeded from `tests/fixtures/parity_minimal_v1`, with
+    `FORUM_SITE_ID=qdb`.
+  - Plain-form path: `curl POST /api/create_thread` minted
+    `thread-<ts>-qdb-1`; `curl GET /latest` showed the real rendered
+    board card `#1` for it, while the pre-existing non-qdb fixture
+    threads kept showing their raw IDs unchanged.
+  - Signed-form path (the default the compose form's JS uses): generated
+    a real GPG keypair in a scratch `GNUPGHOME`, linked it via
+    `POST /api/link_identity`, called `POST /api/prepare_thread` under
+    that identity (minted `-qdb-2`), signed the returned canonical
+    record with `gpg --detach-sign --armor`, and completed
+    `POST /api/create_prepared_post` — real signature verification
+    passed and the commit succeeded.
+  - Re-fetched `GET /latest`: board now shows both `#1` and `#2` cards,
+    confirming one continuous sequence across both entry points end to
+    end, through real HTTP requests against a real running server.
+  - Stopped the scratch server; scratch repo/db/keyring are disposable
+    (job tmp dir), nothing persisted outside this verification.
+- Notes:
+  - The one piece not driven through an actual browser is
+    `browser_signing.js`'s client-side UI/JS plumbing itself (its own
+    `BrowserSigningNormalizationTest` suite covers that, with its own
+    pre-existing unrelated failures noted above); that layer only calls
+    the same `/api/prepare_thread` and `/api/create_prepared_post`
+    endpoints exercised directly here; it does not influence numbering,
+    which is decided entirely server-side before the client ever signs
+    anything.
+  - All three Completion Contract pieces (normal entry point, observable
+    end-to-end outcome, no-number-consumed-on-failure) are satisfied;
+    feature is complete, no follow-up cycle required.

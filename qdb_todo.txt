@@ -1,0 +1,88 @@
+1. make the +/-/[x] buttons work
+   - confirmed real bug, not just cosmetic: buttons do nothing on click,
+     and should bump score/vote count in place.
+   - root cause found: /assets/thread_reactions.js (the click-handler
+     script for apply-thread-tag/apply-post-tag) is only included on
+     thread/post detail pages and the paned reader. BoardPageController's
+     board(), random(), and search() - the only places quote_card.php
+     actually renders on qdb - never pass it in scriptPaths, so there's no
+     listener bound at all on quote cards.
+   - fix: add '/assets/thread_reactions.js' to the scriptPaths array in
+     all three of those methods in src/ForumRewrite/Http/BoardPageController.php.
+   - make them look more like qdb.us buttons
+     - reference: https://web.archive.org/web/20100210200238/http://qdb.us/latest/5
+   - confirmed (live, thread-20260526032027-014695b3): a quote's score can
+     read nonsensical things like "(5/0)" - 5 in the numerator, 0 votes in
+     the denominator. Cause: the quote's permalink page (/threads/<id>)
+     doesn't render quote_card.php at all - it's the generic forum
+     thread.php/thread_root_card.php template, which shows a plain
+     "Like"/"Flag" button pair instead of qdb's upvote/downvote/flag.
+     Liking it there adds +1 to score_total (TagScore counts 'like' as
+     scored) but vote_count only counts 'upvote'/'downvote' tags
+     (TagScore::voteTags()), so a like moves the numerator without ever
+     touching the denominator. Two different tag families are both
+     feeding one quote's score through two different buttons on two
+     different pages.
+   - likely real fix: give qdb permalink pages their own thread template
+     with upvote/downvote/flag (matching quote_card.php) instead of
+     reusing the generic Like/Flag one, so there's exactly one voting
+     mechanism per quote. (Narrower patch - just adding 'like' to
+     TagScore::voteTags() - would fix the ratio math but leaves two
+     buttons able to move a qdb quote's score, which doesn't feel right
+     for the classic-qdb experience.) Needs a decision before implementing.
+
+2. figure out how to do quote number headers
+   - RESOLVED (docs/plans/qdb_quote_numbering_step1_solution_assessment.md
+     through step4_implementation_summary.md). New qdb submissions now
+     mint a `thread-<timestamp>-qdb-<N>` ID (N = one past the highest
+     qdb-numbered quote so far, imported or live) from both real
+     submission paths (plain createThread and the signed
+     prepareThread/createPreparedPost flow), so quote_card.php's existing
+     `#<N>` display picks them up with no template changes.
+
+3. anon voting / why vote counts are all 0
+   - just a note for now, not fixing on this branch.
+   - score_total is gated on approved identity
+     (LocalWriteService::isApprovedIdentity(), enforced in
+     ReadModelBuilder/IncrementalReadModelUpdater's score loops) - a
+     drive-by anon voter's vote never moves the score. Already assessed in
+     docs/plans/anonymous_reaction_scoring_step1_solution_assessment.md,
+     recommendation is Option B (count upvote/downvote toward score
+     regardless of approval, leave Like/Flag and the write path alone) -
+     scoped to its own plan/branch, not this one.
+   - vote_count (the denominator) is NOT approval-gated in the code as
+     written - it should increment for any real vote regardless of
+     approval. If it's still reading 0 once item 1's wiring bug is fixed
+     and real clicks are happening, that's a separate thing worth
+     rechecking rather than assuming it's the same approval-gating issue.
+   - user wants to go further than the Option B assessment: auto-create
+     a guest keypair for every visitor on first page load (behind a
+     proof-of-work challenge), and let any identity's vote count toward
+     the total immediately, persisting across reloads. Captured as its
+     own future feature, not scoped to this branch -
+     docs/plans/guest_identity_proof_of_work_voting.md. Sequencing:
+     after the qdb archive importer, not before - see that plan's
+     "Sequencing decision".
+
+there's a bug where the user ends up at the lobby page once
+	when already has a keypair
+
+quote links should link to /quote_id
+	/quote_id links should work
+	/?quote_id links should work
+	quote pages should be quote-formatted
+
+when adding a new quote, it should also get a quote id?
+	- RESOLVED, see item 2 above.
+
+some pages are different width than others, the layout shifts.
+	could be scrollbars?
+
+what should we modularize that we've embedded?
+
+take more design queues from qdb.us
+	up and down arrows on vote buttons
+	vote button captions (variable)
+	filled in buttons for some things
+
+remove the theme selector so it doesn't detract from the look?
