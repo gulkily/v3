@@ -42,6 +42,53 @@ final class QuoteCardDisplayNumberTest
         assertStringNotContains('quote-card', $board);
     }
 
+    public function testBareNumericPathRedirectsToTheQuoteWithThatNumber(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $body = $this->render($application, '/42');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertSame(302, http_response_code());
+        assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $body);
+    }
+
+    public function testBareNumericPathWithNoMatchingQuoteStill404s(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $this->render($application, '/999999');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertSame(404, http_response_code());
+    }
+
+    public function testBareNumericPathOnNonQdbProfileDoesNotRedirect(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+
+        // No FORUM_SITE_ID override: default (zenmemes) profile - the bare-path
+        // block this feature extends is qdb-only, so /42 should 404 like any
+        // other unmatched path, not resolve by quote number.
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+        $this->render($application, '/42');
+
+        assertSame(404, http_response_code());
+    }
+
     private function render(Application $application, string $path): string
     {
         ob_start();

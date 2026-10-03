@@ -70,6 +70,26 @@ final class ThreadRepository
     }
 
     /**
+     * Resolves a classic qdb-style quote number (the `-qdb-<N>` suffix
+     * minted by the quote-numbering feature) to its full thread ID, for
+     * the bare `/N` permalink shortcut. Returns only the ID, not a full
+     * hydrated row, since callers redirect to `/threads/<id>` rather than
+     * rendering directly here.
+     */
+    public static function byQdbQuoteNumber(PDO $pdo, int $number): ?string
+    {
+        $stmt = $pdo->prepare(
+            "SELECT root_post_id FROM threads
+             WHERE CAST(substr(root_post_id, instr(root_post_id, '-qdb-') + 5) AS INTEGER) = :number
+               AND root_post_id LIKE '%-qdb-%'"
+        );
+        $stmt->execute(['number' => $number]);
+        $threadId = $stmt->fetchColumn();
+
+        return $threadId === false ? null : (string) $threadId;
+    }
+
+    /**
      * Every non-root, visible post across every thread, grouped by
      * thread_id - one query for building reply trees across many threads at
      * once instead of one query per thread.
