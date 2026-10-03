@@ -748,10 +748,16 @@ final class Application
 
         // Classic qdb.us-style bare quote permalink (e.g. /311057), tried only as a
         // last resort after every real route above has failed to match, so it can
-        // never shadow a real path.
+        // never shadow a real path. A bare numeric path (e.g. /3) additionally
+        // resolves by classic quote number, not just by full internal ID.
         if (SiteConfig::siteName() === 'qdb' && preg_match('#^/([^/]+)/?$#', $path, $matches) === 1) {
-            if (ThreadRepository::byId($this->routeServices()->pdo(), $matches[1]) !== null) {
-                $this->sendRedirect('/threads/' . $matches[1], 'Here is that quote.', 302);
+            $pdo = $this->routeServices()->pdo();
+            $resolvedThreadId = ThreadRepository::byId($pdo, $matches[1]) !== null ? $matches[1] : null;
+            if ($resolvedThreadId === null && ctype_digit($matches[1])) {
+                $resolvedThreadId = ThreadRepository::byQdbQuoteNumber($pdo, (int) $matches[1]);
+            }
+            if ($resolvedThreadId !== null) {
+                $this->sendRedirect('/threads/' . $resolvedThreadId, 'Here is that quote.', 302);
                 return;
             }
         }
@@ -1076,6 +1082,7 @@ final class Application
                 $this->artifactRoot,
                 $this->staticHtmlRoot,
                 $this->featureFlags(),
+                $this->resolveViewerProfileFromIdentityHint(...),
             );
         }
 

@@ -114,10 +114,11 @@ final class ForteBoardController
                 'viewerLikedPostIds' => $viewerLikedPostIds,
                 'viewerFlaggedPostIds' => $viewerFlaggedPostIds,
                 'highlightedPostId' => $highlightedPostId,
+                'viewerProfile' => $viewerProfile,
             ],
             'Forte',
             'paned-reader-body',
-            ['/assets/paned_board_reader.js', '/assets/lazy_compose_signing.js', '/assets/thread_reactions.js'],
+            ['/assets/toolbar_identity_status.js', '/assets/paned_board_reader.js', '/assets/lazy_compose_signing.js', '/assets/thread_reactions.js'],
             ['/assets/forte.css'],
         );
     }

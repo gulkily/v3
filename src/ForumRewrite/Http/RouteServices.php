@@ -52,10 +52,13 @@ final class RouteServices
 {
     private bool $viewerProfileResolved = false;
     private ?array $resolvedViewerProfile = null;
+    private bool $lenientViewerProfileResolved = false;
+    private ?array $resolvedLenientViewerProfile = null;
     private ?ActivityService $activityService = null;
 
     /**
      * @param \Closure(): (array<string, mixed>|null) $viewerProfileResolver
+     * @param \Closure(): (array<string, mixed>|null) $lenientViewerProfileResolver
      */
     public function __construct(
         private readonly string $databasePath,
@@ -68,6 +71,7 @@ final class RouteServices
         private readonly ?string $artifactRoot,
         private readonly ?string $staticHtmlRoot,
         private readonly FeatureFlagEvaluator $featureFlags,
+        private readonly \Closure $lenientViewerProfileResolver,
     ) {
     }
 
@@ -424,6 +428,10 @@ final class RouteServices
         array $scriptPaths = [],
         array $additionalCssPaths = [],
     ): string {
+        if (!array_key_exists('viewerProfile', $pageData)) {
+            $pageData['viewerProfile'] = $this->defaultLenientViewerProfile();
+        }
+
         return $this->renderer->renderStandalonePage($pageTemplate, $pageData, $title, $bodyClass, $scriptPaths, $additionalCssPaths);
     }
 
@@ -577,5 +585,18 @@ final class RouteServices
         }
 
         return $this->resolvedViewerProfile;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function defaultLenientViewerProfile(): ?array
+    {
+        if (!$this->lenientViewerProfileResolved) {
+            $this->resolvedLenientViewerProfile = ($this->lenientViewerProfileResolver)();
+            $this->lenientViewerProfileResolved = true;
+        }
+
+        return $this->resolvedLenientViewerProfile;
     }
 }

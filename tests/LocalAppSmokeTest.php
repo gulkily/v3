@@ -3090,6 +3090,7 @@ PHP;
             null,
             null,
             FeatureFlagEvaluator::forApplication($this->repositoryRoot, dirname(__DIR__)),
+            static fn (): ?array => null,
         );
         $controller = new InstancePageController(
             $routeServices,
@@ -3142,6 +3143,7 @@ PHP;
             null,
             null,
             FeatureFlagEvaluator::forApplication($this->repositoryRoot, dirname(__DIR__)),
+            static fn (): ?array => null,
         );
         $method = new ReflectionMethod(RouteServices::class, 'mergeRequestBodyData');
         $method->setAccessible(true);

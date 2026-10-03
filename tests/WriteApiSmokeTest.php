@@ -1629,6 +1629,97 @@ PHP);
         assertFalse(is_file($repositoryRoot . '/' . $payload['record_path']));
     }
 
+    public function testQdbSiteAssignsSequentialQuoteNumbersAcrossDigitBoundary(): void
+    {
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+            for ($expectedNumber = 1; $expectedNumber <= 10; $expectedNumber++) {
+                $response = $this->renderMethod(
+                    $application,
+                    'POST',
+                    '/api/create_thread?board_tags=general&subject=&body=' . rawurlencode('Quote ' . $expectedNumber)
+                );
+                $threadId = $this->extractValue($response, 'thread_id');
+
+                assertTrue(
+                    preg_match('/^thread-\d{14}-qdb-(\d+)$/', $threadId, $matches) === 1,
+                    'Unexpected qdb thread ID shape: ' . $threadId
+                );
+                assertSame((string) $expectedNumber, $matches[1]);
+            }
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+    }
+
+    public function testQdbSiteStartsQuoteNumberingAtOneWithNoExistingQuotes(): void
+    {
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+            $response = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=&body=First%20quote'
+            );
+            $threadId = $this->extractValue($response, 'thread_id');
+
+            assertTrue(str_ends_with($threadId, '-qdb-1'));
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+    }
+
+    public function testQdbPrepareThreadContinuesSameQuoteNumberSequenceAsCreateThread(): void
+    {
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $identityId = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+
+            $createResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=&body=First%20quote'
+            );
+            $createdThreadId = $this->extractValue($createResponse, 'thread_id');
+
+            $prepareResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/prepare_thread?board_tags=general&subject=&body=Second%20quote&author_identity_id=' . rawurlencode($identityId)
+            );
+            $prepared = json_decode($prepareResponse, true, 512, JSON_THROW_ON_ERROR);
+
+            assertTrue(str_ends_with($createdThreadId, '-qdb-1'));
+            assertTrue(str_ends_with((string) $prepared['thread_id'], '-qdb-2'));
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+    }
+
+    public function testNonQdbSiteProfileThreadIdsAreUnaffectedByQuoteNumbering(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_thread?board_tags=general&subject=Not%20a%20quote&body=Thread%20body'
+        );
+        $threadId = $this->extractValue($response, 'thread_id');
+
+        assertTrue(preg_match('/^thread-\d{14}-[0-9a-f]{8}$/', $threadId) === 1, 'Unexpected thread ID shape: ' . $threadId);
+        assertStringNotContains('-qdb-', $threadId);
+    }
+
     public function testPrepareReplyReturnsCanonicalRecordWithoutCommittingPost(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

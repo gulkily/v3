@@ -1,12 +1,12 @@
 <?php
 $quoteId = (string) $thread['root_post_id'];
-// Imported qdb archive quotes carry their original qdb.us number in their
-// Post-ID (thread-<timestamp>-qdb-<quote_id>) so it survives independent of
-// the internal record ID; live-authored quotes have no such suffix and
-// display their Post-ID unchanged, exactly as before.
-$displayNumber = preg_match('/-qdb-(\d+)$/', $quoteId, $quoteNumberMatch) === 1
-    ? $quoteNumberMatch[1]
-    : $quoteId;
+// Both imported qdb archive quotes and live-authored qdb submissions carry
+// their classic quote number in their Post-ID (thread-<timestamp>-qdb-<N>);
+// any quote predating that convention falls back to its raw Post-ID, exactly
+// as before.
+$hasQdbQuoteNumber = preg_match('/-qdb-(\d+)$/', $quoteId, $quoteNumberMatch) === 1;
+$displayNumber = $hasQdbQuoteNumber ? $quoteNumberMatch[1] : $quoteId;
+$permalinkHref = $hasQdbQuoteNumber ? '/' . $displayNumber : '/threads/' . $quoteId;
 $viewerHasUpvoted = isset($viewerUpvotedThreadIds[$quoteId]);
 $viewerHasDownvoted = isset($viewerDownvotedThreadIds[$quoteId]);
 $viewerHasFlagged = isset($viewerFlaggedPostIds[$quoteId]);
@@ -16,7 +16,7 @@ $scoreSignClass = $scoreTotal > 0 ? 'quote-card-score-positive' : ($scoreTotal <
 ?>
 <article class="card post-card quote-card" data-thread-reactions-root data-thread-id="<?= $e($quoteId) ?>" data-post-id="<?= $e($quoteId) ?>">
   <p class="quote-card-header">
-    <a class="quote-card-permalink" href="/threads/<?= $e($quoteId) ?>">#<?= $e($displayNumber) ?></a>
+    <a class="quote-card-permalink" href="<?= $e($permalinkHref) ?>">#<?= $e($displayNumber) ?></a>
     <span class="meta quote-card-score <?= $e($scoreSignClass) ?>" data-role="thread-score" data-score-format="bare-ratio">(<?= $scoreTotal ?>/<?= $voteCount ?>)</span>
   </p>
   <p class="quote-card-body"><?= $br($thread['root_post_body']) ?></p>

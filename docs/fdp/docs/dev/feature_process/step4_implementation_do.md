@@ -9,9 +9,9 @@ Execute the plan in atomic stages on a dedicated feature branch, documenting pro
 - Work stages sequentially, keeping each stage <2 hours
 - Favor the simplest viable implementation first; iterate only when necessary
 - Before adding new presentation markup or API payloads, confirm whether a canonical component/contract already exists per the Step 2 inventory and reuse/extend instead of duplicating
+- Complete the Step 3 Contract—not just a subsystem, direct route, or preparatory asset
 - Require one stage-scoped commit per completed stage; do not batch multiple stages into one commit
 - Commit code plus the Step 4 summary update for that stage in the same commit before beginning the next stage
-- Do not rely on memory for commit cadence; if uncertain, reopen `step4_implementation_before.md` and this file before proceeding
 
 ## Stage Boundary Protocol (Required)
 At every stage boundary (including Stage 1), complete this sequence before starting the next stage:
@@ -26,6 +26,11 @@ At every stage boundary (including Stage 1), complete this sequence before start
 ## Implementation Summary Artifact
 - Location: `docs/plans/`
 - Filename: `{feature_name}_step4_implementation_summary.md`
+- Begin with the standard Plan navigation bar (template in `FEATURE_DEVELOPMENT_PROCESS.md`; omit skipped Step 1)
+- Preferred format per stage:
+  - One `## Stage N - {title}` header per completed stage
+  - Flat bullets for `Changes`, `Verification`, and `Notes`
+  - Nested bullets under those fields when listing multiple concrete items
 - Contents per stage:
   - Stage number/name
   - Changes shipped
@@ -39,6 +44,8 @@ _Template_
 - Verification:
 - Notes:
 ```
+
+Prefer this header-plus-bullets structure over prose paragraphs so the implementation summary stays easy to diff against the Step 3 plan and easy to review at stage boundaries.
 
 ## Next
 After all planned stages are implemented and committed, continue with `docs/dev/feature_process/step4_implementation_after.md`.

@@ -9,7 +9,7 @@ fdp_usage() {
 Usage:
   ./v3 fdp sync [--repository-root=/path/repository] [--remote-url=https://github.com/gulkily/fdp.git]
 
-Synchronizes the vendored docs/fdp subtree from the FDP main branch. The target
+Synchronizes the vendored docs/fdp subtree from the FDP master branch. The target
 repository must have no uncommitted changes. --remote-url is only needed to add
 or replace the fdp remote (for example, when testing against a fork).
 EOF
@@ -73,7 +73,7 @@ fdp_sync() {
     git -C "${repository_root}" remote add fdp "${remote_url}"
   fi
 
-  git -C "${repository_root}" fetch fdp main
+  git -C "${repository_root}" fetch fdp master
 
   local latest_squash
   local split_commit
@@ -85,7 +85,7 @@ fdp_sync() {
   split_commit="$(git -C "${repository_root}" show -s --format=%B "${latest_squash}" | sed -n 's/^git-subtree-split: //p' | head -n 1)"
 
   if [[ -n "${split_commit}" ]] && git -C "${repository_root}" rev-parse -q --verify "${split_commit}^{commit}" >/dev/null; then
-    git -C "${repository_root}" subtree pull --prefix=docs/fdp fdp main --squash
+    git -C "${repository_root}" subtree pull --prefix=docs/fdp fdp master --squash
     return
   fi
 
@@ -95,10 +95,10 @@ fdp_sync() {
   local upstream_snapshot
   upstream_snapshot="$(
     printf '%s\n\n%s\n%s\n' \
-      "Squashed 'docs/fdp/' content from commit $(git -C "${repository_root}" rev-parse --short fdp/main)" \
+      "Squashed 'docs/fdp/' content from commit $(git -C "${repository_root}" rev-parse --short fdp/master)" \
       'git-subtree-dir: docs/fdp' \
-      "git-subtree-split: $(git -C "${repository_root}" rev-parse fdp/main)" \
-      | git -C "${repository_root}" commit-tree fdp/main^{tree} -p "${latest_squash}"
+      "git-subtree-split: $(git -C "${repository_root}" rev-parse fdp/master)" \
+      | git -C "${repository_root}" commit-tree fdp/master^{tree} -p "${latest_squash}"
   )"
   git -C "${repository_root}" merge -s ours --no-commit "${upstream_snapshot}"
   git -C "${repository_root}" diff --binary HEAD:docs/fdp fdp/main | git -C "${repository_root}" apply --index --directory=docs/fdp

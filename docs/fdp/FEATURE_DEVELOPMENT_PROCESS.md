@@ -3,9 +3,12 @@
 ## Overview
 Feature work flows through four tightly scoped steps with an optional solution assessment upfront. To keep the instructions inside the context window, the detailed guidance for each step now lives in separate files that you open only when you are ready for that step.
 
+## Repository Boundary
+Instruction files under `docs/dev/feature_process/` belong to the FDP repository. If FDP is included in another repository as a submodule or vendored directory, resolve those paths relative to the FDP repository root, not the host repository root. Planning artifacts still belong in the host repository under `docs/plans/`.
+
 ## How to Use This Chain
 1. Start with the highest-numbered approved step (usually Step 1 unless explicitly skipped).
-2. Read only the relevant instruction file in `docs/dev/feature_process/` and reprint it before starting work.
+2. Read only the relevant instruction file in FDP's `docs/dev/feature_process/` directory and reprint it before starting work.
 3. For Steps 3 and 4, use phase files in order: `*_before.md` -> `*_do.md` -> `*_after.md`.
 4. Request approval in the format `Approved Step N` when required, and do not open the next step's files until approval is received.
 
@@ -26,21 +29,20 @@ Each step MUST be a separate file in `docs/plans/`:
 
 **Directory structure**: When a feature accumulates four or more planning artifacts (e.g., all Step 1–4 docs plus auxiliary notes), move them into `docs/plans/{feature_name}/`. Keep smaller efforts at the root until they grow, and update `docs/plans/README.md` when a new folder appears so others can navigate.
 
+**Plan navigation**: Start every artifact with this relative-link bar; omit Step 1 only when skipped.
+
+```md
+> **Feature plan:** [Step 1](./{feature_name}_step1_solution_assessment.md) · [Step 2](./{feature_name}_step2_feature_description.md) · [Step 3](./{feature_name}_step3_development_plan.md) · [Step 4](./{feature_name}_step4_implementation_summary.md)
+```
+
 **Commit discipline**:
 - Keep Step 1-3 planning documents uncommitted while they are being drafted/revised.
 - Do not commit Step 1-3 planning documents when Step 1 or Step 2 is approved.
 - After the user explicitly responds `Approved Step 3`, create the Step 4 feature branch.
 - The first commit on that feature branch must contain only the approved Step 1-3 planning documents.
 - During Step 4, each completed implementation stage must be committed with its Step 4 summary update in the same commit before starting the next stage.
-- Once a feature has completed Step 4, treat its Step 1-4 documents as historical artifacts; start a new feature name for follow-on work instead of rewriting the original planning trail.
-- These Step 4 commit requirements override any general assistant default of "do not commit unless explicitly asked." Entering Step 4 is the explicit commit authorization inside FDP.
 
 **Plan review**: Do not begin Step 4 until the user explicitly responds `Approved Step 3`. The first commit after branching for Step 4 must capture the approved Step 1-3 planning files.
-
-**Step 3 -> Step 4 transition trigger (required)**:
-- Treat the exact user response `Approved Step 3` as a hard mode switch.
-- Immediately reopen the Step 4 Before instructions before making any code edits.
-- Do not treat Step 4 as "implement and summarize"; treat it as "branch -> planning-doc commit -> stage work -> stage commit cadence -> after-checks".
 
 **Step 4 commit cadence (mandatory)**:
 - Make one planning commit at the start of Step 4 containing only approved Step 1–3 docs.
@@ -60,14 +62,18 @@ Each step MUST be a separate file in `docs/plans/`:
 - After delivering each step, explicitly request “Approved Step N” and pause until the user responds with that exact phrase
 - Create separate files for each step only after receiving the relevant approval
 - ALWAYS create a feature branch before Step 4 implementation
-- Treat `Approved Step 3` as automatic authorization to create the Step 4 branch and required commits; do not wait for a second commit-specific user request
 - Enforce Step 4 commit cadence: first Step 4 commit contains approved Step 1-3 planning docs; each completed stage has a stage-scoped commit that includes the Step 4 summary update
 - Prefer shared components/API contracts first; reuse or extend instead of forking markup, CSS, or payloads
 - Flag scope creep early and bounce back to planning steps rather than improvising mid-implementation
-- Keep projected work within roughly a day or eight Step 3 stages; otherwise recommend splitting the feature
+- A feature is a releasable vertical slice: normal entry, end-to-end outcome, and required recovery. Component-only work is internal maintenance; split larger stories vertically.
+- Keep work within a day or eight Step 3 stages; otherwise rescope the slice.
 - Avoid database schema changes when possible—lean on existing models/fields
-- Treat completed Step 4 feature tracks as historical; create a new feature name for new work even when it overlaps an earlier story
-- Reprint the current step/phase instructions (from the linked file) before you begin that work
+- Reprint the current step/phase instructions (from the linked FDP file) before you begin that work
+- Add the Plan navigation bar to every Step 1–4 artifact
+- Step 1 starts with `## Original Query`: preserve the request except mechanical grammar, spelling, capitalization, punctuation, and formatting fixes
+- For Step 3, prefer `## Stage N` headers with flat bullet lists for each stage field so plans stay easy to scan and review
+- Step 2 risks state impact, early validation, and mitigation; Step 3 begins with `## Key Risks`, and unresolved risks block dependents
+- For Step 4 summaries, prefer `## Stage N - title` headers with bullet lists for changes, verification, and notes so stage handoff stays easy to audit
 
 **User**
 - Review and approve explicitly at each step
@@ -77,9 +83,9 @@ Each step MUST be a separate file in `docs/plans/`:
 
 ## Warning Signs
 - **Step 1**: >1 page, >4 options, or verbose explanations
-- **Step 2**: >1 page, includes code/DB details, or drifts into UI mockups
-- **Step 3**: >1 page, stages >2 hours, or tangled dependencies
-- **Step 4**: Missing feature branch, missing initial Step 1-3 planning-doc commit, skipping stages, changing requirements mid-flight, a stage without a stage-scoped commit + summary update, or commit count lower than `1 + stage count`
+- **Step 2**: >1 page, code/DB details, mockups, buried risks, or a component-only "feature"
+- **Step 3**: >1 page, stages >2 hours, tangled dependencies, missing Completion Contract/Key Risks, unusable outcome, or incomplete risk details
+- **Step 4**: Missing branch/planning commit/stage commit + summary, scope changes, direct-only behavior, or too few commits
 
 ## Workflows
 - **Simple**: Step 2 → Step 3 → Step 4 (feature branch → implement stages → test/commit → complete)
