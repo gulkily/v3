@@ -39,3 +39,33 @@
     site-identity check.
   - No change to `quote_card.php` was needed — its existing
     `-qdb-(\d+)$` display regex already picks up the new IDs unchanged.
+
+## Stage 2 - Automated regression coverage
+- Changes: added four tests to `tests/WriteApiSmokeTest.php`:
+  - `testQdbSiteAssignsSequentialQuoteNumbersAcrossDigitBoundary` —
+    10 sequential qdb submissions get `-qdb-1` through `-qdb-10`,
+    crossing the single-to-double-digit boundary the numeric `CAST`
+    guards against (vs. a naive string-sorted `MAX`).
+  - `testQdbSiteStartsQuoteNumberingAtOneWithNoExistingQuotes` — a fresh
+    qdb instance's first submission mints `-qdb-1` (`COALESCE` fallback
+    on an empty `threads` table).
+  - `testQdbPrepareThreadContinuesSameQuoteNumberSequenceAsCreateThread`
+    — a `createThread()` call (`-qdb-1`) followed by a `prepareThread()`
+    call (`-qdb-2`) on the same instance share one sequence, directly
+    covering the two-entry-point risk from Step 3.
+  - `testNonQdbSiteProfileThreadIdsAreUnaffectedByQuoteNumbering` — a
+    default-profile submission still mints the original
+    `thread-<timestamp>-<random-hex>` form, with no `-qdb-` suffix.
+- Verification:
+  - `php -l tests/WriteApiSmokeTest.php` — no syntax errors.
+  - `./v3 test` targeted at the four new tests — 4 run, 4 passed.
+  - Full suite `./v3 test` — 680 run, 673 passed, 7 failed; the 7
+    failures are the same set already tracked before this change (6
+    long-standing, plus
+    `testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh`,
+    which the harness flagged as "new" only because of run-order
+    sensitivity — re-ran it alone and it passed, matching the identical
+    pre-existing order-dependent flakiness already documented in
+    `qdb_quotes_instance_step4_implementation_summary.md`). No failures
+    introduced by this feature.
+- Notes: none.
