@@ -117,6 +117,39 @@ final class QuoteCardDisplayNumberTest
         assertSame($directThreadPage, $resolvedPage);
     }
 
+    public function testQdbListingPagesLoadTheVoteButtonScript(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $latest = $this->render($application, '/latest');
+            $top = $this->render($application, '/top');
+            $random = $this->render($application, '/random');
+            $search = $this->render($application, '/search?search=quoted');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertStringContains('thread_reactions', $latest);
+        assertStringContains('thread_reactions', $top);
+        assertStringContains('thread_reactions', $random);
+        assertStringContains('thread_reactions', $search);
+    }
+
+    public function testNonQdbBoardDoesNotLoadTheVoteButtonScript(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+        $board = $this->render($application, '/?view=all&sort=newest');
+
+        assertStringNotContains('thread_reactions', $board);
+    }
+
     public function testQdbPermalinkRootCardMatchesListingCardWithoutLike(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();

@@ -82,10 +82,10 @@ final class BoardPageController
             ],
             'Board',
             $activeSection,
-            [
+            array_merge([
                 '/assets/inline_reply_form.js',
                 '/assets/lazy_compose_signing.js',
-            ],
+            ], $isQdbInstance ? ['/assets/thread_reactions.js'] : []),
         );
     }
 
@@ -132,6 +132,7 @@ final class BoardPageController
             ],
             'Random',
             'random',
+            ['/assets/thread_reactions.js'],
         );
     }
 
@@ -159,6 +160,7 @@ final class BoardPageController
             ],
             'Search',
             'search',
+            ['/assets/thread_reactions.js'],
         );
     }
 

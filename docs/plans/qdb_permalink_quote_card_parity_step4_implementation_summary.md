@@ -93,3 +93,45 @@
   - Flagged for follow-up: that pre-existing failure is now failing
     consistently in isolation, unlike earlier runs, so it deserves its own
     investigation outside this feature.
+
+## Stage 4 - Listing vote buttons work on qdb
+- Changes:
+  - `BoardPageController::board()` (`/latest`, `/top`, board): adds
+    `/assets/thread_reactions.js` to its script list only when the qdb
+    profile is active.
+  - `BoardPageController::random()` and `search()` (qdb-only routes): add
+    `/assets/thread_reactions.js` to their script lists. Neither method
+    passed a script list before.
+- Verification:
+  - `php -l` — clean.
+  - `QuoteCardDisplayNumberTest::testQdbListingPagesLoadTheVoteButtonScript`
+    — `/latest`, `/top`, `/random`, and `/search?search=quoted` on qdb all
+    include the script.
+  - `QuoteCardDisplayNumberTest::testNonQdbBoardDoesNotLoadTheVoteButtonScript`
+    — the default profile's board does not include it, so zenmemes and
+    chouse boards are unchanged. Chouse shares the non-qdb branch.
+  - Live check against a real local server on a disposable scratch qdb
+    repository (`php -S` via `public/router.php`): created a quote
+    (`#1`), linked a real GPG-generated identity, upvoted it via
+    `POST /api/apply_thread_tag` with that identity's cookie.
+    - Permalink `/threads/<id>`: readout `(0/1)`, upvote control
+      `aria-pressed="true"` for the voter.
+    - Listing `/latest`: same `(0/1)` readout on the card.
+    - Score stays `0` because the identity is not yet approved — existing
+      approval-gating, not part of this feature. The denominator now
+      counts the vote on both surfaces, which was the `(x/0)` symptom.
+  - Deployment boundary, exercised live: `./v3 rebuild <repo> <db>` ran
+    cleanly and the rebuilt row read `score_total=0, vote_count=1`,
+    matching the incremental update.
+  - Full suite `./v3 test`: 695 run, 688 passed, 7 failed — the six
+    long-standing failures plus the pre-existing approval-freshness test
+    noted in Stage 3, which also fails at `3bc6044`.
+- Notes:
+  - Live click behavior of the buttons is not driven in a real browser
+    here; script loading and the server-side vote path are verified, and the
+    client-side click handler itself is covered only by the existing
+    `thread_reactions.js` path it shares with the permalink.
+  - Completion Contract met end to end: listing and permalink both vote
+    through the same controls and show the same readout; the already-voted
+    state is shown on both; legacy Likes count toward the denominator after
+    the rebuild step.
