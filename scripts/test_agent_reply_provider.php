@@ -8,7 +8,7 @@ use ForumRewrite\Analysis\ProviderRequestException;
 use ForumRewrite\Llm\AnthropicStructuredChatProvider;
 use ForumRewrite\Llm\LlmProviderConfig;
 use ForumRewrite\Llm\OpenAiCompatibleStructuredChatProvider;
-use ForumRewrite\Llm\StructuredChatProvider;
+use ForumRewrite\Llm\TextChatProvider;
 use ForumRewrite\Support\PrivateConfig;
 
 $projectRoot = dirname(__DIR__);
@@ -49,41 +49,31 @@ try {
     }
 
     $startedAt = microtime(true);
-    $result = provider($config)->completeStructuredChat(
-        'ForumAgentReplyLiveTest',
+    $result = provider($config)->completeTextChat(
         [
             [
                 'role' => 'system',
-                'content' => 'Return only valid structured JSON for this connectivity test.',
+                'content' => 'Return one short plain-text confirmation. Do not return JSON.',
             ],
             [
                 'role' => 'user',
-                'content' => 'Reply with ok=true and message="agent reply provider reachable".',
+                'content' => "TASK\nprovider_connectivity_check\n\nREQUEST\n---\nConfirm that the agent response provider is reachable.\n---",
             ],
-        ],
-        [
-            'type' => 'object',
-            'additionalProperties' => false,
-            'properties' => [
-                'ok' => ['type' => 'boolean'],
-                'message' => ['type' => 'string'],
-            ],
-            'required' => ['ok', 'message'],
         ],
         [
             'max_completion_tokens' => 2000,
             'max_tokens' => 2000,
         ]
     );
-    $decoded = $result['decoded'];
-    if (($decoded['ok'] ?? null) !== true) {
-        throw new RuntimeException('Provider response decoded, but ok was not true.');
+    $responseText = trim((string) ($result['response_text'] ?? ''));
+    if ($responseText === '') {
+        throw new RuntimeException('Provider returned no text response.');
     }
 
     fwrite(STDOUT, "Status: ok\n");
     fwrite(STDOUT, 'Provider response model: ' . value($result['provider_model'] ?? null) . "\n");
     fwrite(STDOUT, 'Provider request id: ' . value($result['provider_request_id'] ?? null) . "\n");
-    fwrite(STDOUT, 'Decoded message: ' . value($decoded['message'] ?? null) . "\n");
+    fwrite(STDOUT, 'Response text: ' . value($responseText) . "\n");
     fwrite(STDOUT, sprintf("Elapsed: %.3f seconds\n", microtime(true) - $startedAt));
 } catch (ProviderRequestException $exception) {
     fwrite(STDERR, 'Status: failed' . "\n");
@@ -124,7 +114,7 @@ function parseOptions(array $args): array
     return $options;
 }
 
-function provider(LlmProviderConfig $config): StructuredChatProvider
+function provider(LlmProviderConfig $config): TextChatProvider
 {
     if ($config->provider === 'anthropic') {
         return new AnthropicStructuredChatProvider(
@@ -187,5 +177,5 @@ function usageText(): string
 {
     return "Usage: php scripts/test_agent_reply_provider.php [--timeout=30]\n"
         . "       ./v3 agent-reply test [--timeout=30]\n"
-        . "Sends one live structured prompt to the configured LLM provider to validate the API key and model service.\n";
+        . "Sends one live plain-text task prompt to the configured LLM provider to validate the API key and model service.\n";
 }

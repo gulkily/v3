@@ -152,9 +152,10 @@ It refuses recovery while the lock or an open file holder is detected.
 ./v3 task-queue enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue enqueue-offline-snapshot [--queue-database-path=/private/path/tasks.sqlite3]
+./v3 task-queue reset-recovery [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
-./v3 task-queue cron [--log=/var/log/forum-task-queue.log]
+./v3 task-queue cron [--log=<application-private-log-path>]
 ```
 
 A small SQLite-backed job queue (`scripts/task_queue.php`), currently used to
@@ -171,6 +172,8 @@ being installed via cron.
   successive bounded runs when Fastmod is enabled.
 - `enqueue-offline-snapshot` — enqueues the coalesced public offline snapshot
   publication (also a no-op if one is already queued/running).
+- `reset-recovery` — resets the blocked automatic read-model schema-recovery
+  circuit. It is an operator action; it does not enqueue or run a rebuild.
 - `run` — claims and runs up to `--limit` queued tasks (default 1), recovering
   any abandoned in-progress tasks first; guarded by an exclusive file lock so
   concurrent invocations don't double-run. `--dry-run` reports the queued
@@ -185,10 +188,13 @@ being installed via cron.
   as it happens. `--quiet` suppresses all worker progress output, including
   verbose output when both options are supplied.
 - `status` — prints queued/running/completed/failed counts plus the
-  `--limit` (default 25) most recent tasks with attempt counts and failure
-  codes
+  `--limit` (default 25) most recent tasks with attempt counts, failure codes,
+  and the latest private rebuild checkpoint when available. Terminal task and
+  executor history is bounded; active tasks are retained.
 - `cron` — prints one ready-to-install crontab line running the worker once a
-  minute. `--log=...` sets the log file path baked into the line.
+  minute. The default log path is
+  `<application-root>/state/private/task_queue_cron.log`; `--log=...` changes
+  the path baked into the line.
 
 ## Audit or backfill Fastmod
 
@@ -383,7 +389,7 @@ Read-only diagnostics for skipped or failed agent-reply generation rows.
 ./v3 agent-reply test [--timeout=30]
 ```
 
-Sends one live structured prompt to the configured LLM provider to validate
+Sends one live plain-text task prompt to the configured LLM provider to validate
 the API key and model/service reachability.
 
 - `--timeout=...` — seconds to wait for the provider response

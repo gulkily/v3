@@ -7,7 +7,7 @@ namespace ForumRewrite\Llm;
 use ForumRewrite\Analysis\ProviderRequestException;
 use RuntimeException;
 
-final class AnthropicStructuredChatProvider implements StructuredChatProvider
+final class AnthropicStructuredChatProvider implements StructuredChatProvider, TextChatProvider
 {
     /**
      * @param array<string, string> $extraHeaders
@@ -34,6 +34,23 @@ final class AnthropicStructuredChatProvider implements StructuredChatProvider
             'provider_model' => (string) ($response['model'] ?? $this->model),
             'provider_request_id' => isset($response['id']) ? (string) $response['id'] : null,
             'decoded' => $decoded,
+            'raw_response' => $response,
+            'timings' => [
+                'external_provider' => $this->elapsedMilliseconds($startedAt),
+            ],
+        ];
+    }
+
+    public function completeTextChat(array $messages, array $options = []): array
+    {
+        $startedAt = hrtime(true);
+        $response = $this->postJson('/v1/messages', $this->textPayloadFor($messages, $options), $this->exchangeContext($options));
+
+        return [
+            'provider' => 'anthropic',
+            'provider_model' => (string) ($response['model'] ?? $this->model),
+            'provider_request_id' => isset($response['id']) ? (string) $response['id'] : null,
+            'response_text' => TextChatCompletionDecoder::decodeAnthropicPayload($response),
             'raw_response' => $response,
             'timings' => [
                 'external_provider' => $this->elapsedMilliseconds($startedAt),
@@ -75,6 +92,41 @@ final class AnthropicStructuredChatProvider implements StructuredChatProvider
                     'schema' => $this->anthropicSchema($jsonSchema),
                 ],
             ],
+        ];
+        if ($system !== []) {
+            $payload['system'] = implode("\n\n", $system);
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param list<array{role:string, content:string}> $messages
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    private function textPayloadFor(array $messages, array $options): array
+    {
+        $system = [];
+        $anthropicMessages = [];
+        foreach ($messages as $message) {
+            $role = (string) ($message['role'] ?? '');
+            $content = (string) ($message['content'] ?? '');
+            if ($role === 'system') {
+                $system[] = $content;
+                continue;
+            }
+
+            $anthropicMessages[] = [
+                'role' => $role === 'assistant' ? 'assistant' : 'user',
+                'content' => $content,
+            ];
+        }
+
+        $payload = [
+            'model' => $this->model,
+            'max_tokens' => max(1, (int) ($options['max_tokens'] ?? $options['max_completion_tokens'] ?? 800)),
+            'messages' => $anthropicMessages,
         ];
         if ($system !== []) {
             $payload['system'] = implode("\n\n", $system);

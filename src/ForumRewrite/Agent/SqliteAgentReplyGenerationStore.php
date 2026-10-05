@@ -41,6 +41,9 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
         if ($existing !== null && in_array($existing['status'], ['complete', 'posted'], true)) {
             return $existing;
         }
+        $requestContext = is_array($existing['request_context'] ?? null)
+            ? array_merge($existing['request_context'], $context)
+            : $context;
 
         $now = gmdate('c');
         $row = [
@@ -63,7 +66,7 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
             'failure_code' => null,
             'failure_message' => null,
             'retry_after' => null,
-            'request_context_json' => $this->encode($context),
+            'request_context_json' => $this->encode($requestContext),
             'raw_response_json' => $this->encode($generation['raw_response'] ?? []),
         ];
         $this->upsert($row);
@@ -283,6 +286,8 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
 
     public function saveFailed(string $postId, string $contentHash, string $analysisHash, string $failureCode, string $failureMessage, array $rawResponse = []): array
     {
+        $existing = $this->findByTarget($postId, $contentHash);
+        $requestContext = is_array($existing['request_context'] ?? null) ? $existing['request_context'] : [];
         $now = gmdate('c');
         $row = [
             'target_post_id' => $postId,
@@ -304,7 +309,7 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
             'failure_code' => $failureCode,
             'failure_message' => substr($failureMessage, 0, 500),
             'retry_after' => gmdate('c', time() + 300),
-            'request_context_json' => $this->encode([]),
+            'request_context_json' => $this->encode($requestContext),
             'raw_response_json' => $this->encode($rawResponse),
         ];
         $this->upsert($row);

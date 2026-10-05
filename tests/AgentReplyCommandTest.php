@@ -62,7 +62,7 @@ final class AgentReplyCommandTest
         [$exitCode, $stdout, $stderr] = $this->runCommand(dirname(__DIR__), './v3 agent-reply test --help');
 
         assertSame(0, $exitCode);
-        assertStringContains('Sends one live structured prompt', $stdout);
+        assertStringContains('Sends one live plain-text task prompt', $stdout);
         assertStringContains('validate the API key and model service', $stdout);
         assertStringContains('./v3 agent-reply test [--timeout=30]', $stdout);
         assertSame('', $stderr);

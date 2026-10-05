@@ -26,6 +26,7 @@ final class TaskQueueCommandTest
         assertStringContains('./v3 task-queue enqueue-rebuild', $stdout);
         assertStringContains('./v3 task-queue enqueue-fast-score', $stdout);
         assertStringContains('./v3 task-queue enqueue-offline-snapshot', $stdout);
+        assertStringContains('./v3 task-queue reset-recovery', $stdout);
         assertStringContains('./v3 task-queue run', $stdout);
         assertStringContains('./v3 task-queue status', $stdout);
         assertStringContains('./v3 task-queue cron', $stdout);
@@ -76,6 +77,7 @@ final class TaskQueueCommandTest
         assertSame('', $secondError);
         assertSame(0, $statusCode);
         assertStringContains('Queued: 1, running: 0, completed: 0, failed: 0', $statusOutput);
+        assertStringContains('Executor: not_observed (last completed: none)', $statusOutput);
         assertSame('', $statusError);
         assertSame(0, $dryRunCode);
         assertStringContains('Task queue dry run', $dryRunOutput);
@@ -104,6 +106,94 @@ final class TaskQueueCommandTest
         assertStringContains('php scripts/task_queue.php run --quiet --limit=1', $stdout);
         assertStringNotContains('enqueue-offline-snapshot', $stdout);
         assertStringContains('/tmp/forum-task-queue-test.log', $stdout);
+        assertSame('', $stderr);
+    }
+
+    public function testTaskQueueCronReferenceDefaultsItsLogToPrivateApplicationState(): void
+    {
+        [$exitCode, $stdout, $stderr] = $this->runCommand(dirname(__DIR__), './v3 task-queue cron');
+
+        assertSame(0, $exitCode);
+        assertStringContains('/state/private/task_queue_cron.log', $stdout);
+        assertSame('', $stderr);
+    }
+
+    public function testQuietEmptyWorkerRunRecordsExecutorHistory(): void
+    {
+        $queuePath = sys_get_temp_dir() . '/forum-task-queue-history-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            [$exitCode, $stdout, $stderr] = $this->runCommand(
+                dirname(__DIR__),
+                './v3 task-queue run --quiet --queue-database-path=' . escapeshellarg($queuePath),
+            );
+            $runs = (new \ForumRewrite\TaskQueue\SqliteTaskQueueStore(new \PDO('sqlite:' . $queuePath)))->recentExecutorRuns(1);
+        } finally {
+            @unlink($queuePath);
+        }
+
+        assertSame(0, $exitCode);
+        assertSame('', $stdout);
+        assertSame('', $stderr);
+        assertSame(1, count($runs));
+        assertSame('completed', $runs[0]['status']);
+        assertSame(0, $runs[0]['summary']['claimed']);
+        assertSame([], $runs[0]['task_outcomes']);
+    }
+
+    public function testRebuildWorkerRecordsPrivateProgressCheckpoints(): void
+    {
+        $queuePath = sys_get_temp_dir() . '/forum-task-queue-progress-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $databasePath = sys_get_temp_dir() . '/forum-task-queue-read-model-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            [$enqueueCode] = $this->runCommand(
+                dirname(__DIR__),
+                './v3 task-queue enqueue-rebuild --queue-database-path=' . escapeshellarg($queuePath),
+            );
+            [$runCode, $runOutput, $runError] = $this->runCommand(
+                dirname(__DIR__),
+                './v3 task-queue run --queue-database-path=' . escapeshellarg($queuePath)
+                . ' --repository-root=' . escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1')
+                . ' --database-path=' . escapeshellarg($databasePath),
+            );
+            $store = new \ForumRewrite\TaskQueue\SqliteTaskQueueStore(new \PDO('sqlite:' . $queuePath));
+            [$statusCode, $statusOutput] = $this->runCommand(
+                dirname(__DIR__),
+                './v3 task-queue status --queue-database-path=' . escapeshellarg($queuePath),
+            );
+        } finally {
+            @unlink($queuePath);
+            @unlink($databasePath);
+        }
+
+        assertSame(0, $enqueueCode);
+        assertSame(0, $runCode);
+        assertSame('', $runError);
+        assertStringContains('Read model: index posts', $runOutput);
+        assertTrue(count($store->recentTaskProgress()) > 0);
+        assertSame(0, $statusCode);
+        assertStringContains('progress=Read model:', $statusOutput);
+    }
+
+    public function testTaskQueueRecoveryResetCommandIsOperatorControlled(): void
+    {
+        $queuePath = sys_get_temp_dir() . '/forum-task-queue-reset-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            $store = new \ForumRewrite\TaskQueue\SqliteTaskQueueStore(new \PDO('sqlite:' . $queuePath));
+            $request = $store->requestAutomaticRebuild(\ForumRewrite\TaskQueue\SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON, 1);
+            $claimed = $store->claimNext()[0];
+            $store->markFailed($claimed['id'], 'test_failure', 'Test failure.', true);
+
+            [$exitCode, $stdout, $stderr] = $this->runCommand(
+                dirname(__DIR__),
+                './v3 task-queue reset-recovery --queue-database-path=' . escapeshellarg($queuePath),
+            );
+        } finally {
+            @unlink($queuePath);
+        }
+
+        assertSame(true, $request['task'] !== null);
+        assertSame(0, $exitCode);
+        assertStringContains('Automatic rebuild recovery reset.', $stdout);
         assertSame('', $stderr);
     }
 

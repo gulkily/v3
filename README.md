@@ -15,6 +15,7 @@ Operational how-tos for running and maintaining a deployment:
 - [Operator Recovery Runbook](docs/runbooks/operator_recovery.md) — read-model status, stale-marker recovery, lock contention, write failures
 - [Offline Reading Runbook](docs/runbooks/offline_reading.md) — public snapshot limits, refresh, and browser-cache recovery
 - [Theme Development Guide](docs/runbooks/theme_development_guide.md) — how to add or modify a theme
+- [Contributor Guide](CONTRIBUTING.md) — project-wide development requirements
 - [QDB Archive Import Runbook](docs/runbooks/qdb_archive_import.md) — running the one-shot qdb.us quote backfill against a production vhost
 
 ### Specs (`docs/specs/`)
@@ -181,7 +182,7 @@ Run the queued agent reply worker directly:
 ./v3 agent-reply cron run --limit=10
 ```
 
-Validate the configured agent reply LLM provider/API key with one live structured prompt:
+Validate the configured agent reply LLM provider/API key with one live plain-text task prompt:
 
 ```bash
 ./v3 agent-reply test

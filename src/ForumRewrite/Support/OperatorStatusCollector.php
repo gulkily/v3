@@ -28,7 +28,7 @@ final class OperatorStatusCollector
     /**
      * @return array{
      *   read_model:array{status:string,freshness_status:string,database_exists:bool,metadata_readable:bool,schema_version:string,repository_root:string,repository_head:string,current_repository_head:string,rebuilt_at:string,rebuild_reason:string,lock_status:string,stale_marker:string,stale_reason:string,stale_commit_sha:string,commits_capability:string},
-     *   task_queue:array{status:string,queued:int,running:int,completed:int,failed:int,rebuild_task_status:string}
+     *   task_queue:array{status:string,queued:int,running:int,completed:int,failed:int,rebuild_task_status:string,executor_status:string,executor_last_completed_at:string,automatic_recovery_status:string,automatic_recovery_launch_status:string}
      * }
      */
     public function collect(): array
@@ -86,13 +86,13 @@ final class OperatorStatusCollector
     }
 
     /**
-     * @return array{status:string,queued:int,running:int,completed:int,failed:int,rebuild_task_status:string}
+     * @return array{status:string,queued:int,running:int,completed:int,failed:int,rebuild_task_status:string,executor_status:string,executor_last_completed_at:string,automatic_recovery_status:string,automatic_recovery_launch_status:string}
      */
     private function taskQueueStatus(): array
     {
         $empty = ['queued' => 0, 'running' => 0, 'completed' => 0, 'failed' => 0];
         if (!is_file($this->queuePath)) {
-            return ['status' => 'not_initialized', 'rebuild_task_status' => 'absent'] + $empty;
+            return ['status' => 'not_initialized', 'rebuild_task_status' => 'absent', 'executor_status' => 'not_observed', 'executor_last_completed_at' => 'none', 'automatic_recovery_status' => 'not_observed', 'automatic_recovery_launch_status' => 'none'] + $empty;
         }
 
         try {
@@ -103,9 +103,22 @@ final class OperatorStatusCollector
                 $taskStatus = 'absent';
             }
 
-            return ['status' => 'available', 'rebuild_task_status' => $taskStatus] + $store->counts();
+            $heartbeat = $store->executorHeartbeatStatus();
+            $recovery = $store->automaticRecoveryStatus(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON);
+            $launchStatus = $recovery['task_id'] === null
+                ? 'none'
+                : ($store->automaticRecoveryLaunchStatus(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON, $recovery['task_id']) ?? 'none');
+
+            return [
+                'status' => 'available',
+                'rebuild_task_status' => $taskStatus,
+                'executor_status' => $heartbeat['status'],
+                'executor_last_completed_at' => $heartbeat['last_completed_at'] ?? 'none',
+                'automatic_recovery_status' => $recovery['status'],
+                'automatic_recovery_launch_status' => $launchStatus,
+            ] + $store->counts();
         } catch (\Throwable) {
-            return ['status' => 'unavailable', 'rebuild_task_status' => 'unavailable'] + $empty;
+            return ['status' => 'unavailable', 'rebuild_task_status' => 'unavailable', 'executor_status' => 'unavailable', 'executor_last_completed_at' => 'none', 'automatic_recovery_status' => 'unavailable', 'automatic_recovery_launch_status' => 'unavailable'] + $empty;
         }
     }
 }

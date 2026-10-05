@@ -1,3 +1,4 @@
+<?= $partial('partials/agent_response_mode_catalog.php') ?>
 <section class="stack"<?= $createdPostId !== '' ? ' data-created-post-id="' . $e($createdPostId) . '"' : '' ?>>
 <?php
 // Continuations: same-author quick replies within this window merge visually with the previous post.

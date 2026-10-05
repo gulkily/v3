@@ -10,6 +10,10 @@ use ForumRewrite\Offline\OfflineSnapshotPublisher;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
+use ForumRewrite\TaskQueue\DetachedTaskQueueLauncher;
+use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
+use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
+use PDO;
 use RuntimeException;
 use Throwable;
 
@@ -94,7 +98,65 @@ final class FrontController
                 return;
             }
 
-            $this->sendHtml($this->renderConfigurationError($throwable->getMessage()), 503);
+            $recovery = $this->requestReadModelSchemaRecovery($throwable);
+            if ($recovery !== null) {
+                $this->sendHtml($this->renderReadModelRecovery($recovery), 503);
+                return;
+            }
+
+            $this->sendHtml($this->renderUnexpectedError(), 503);
+        }
+    }
+
+    private function requestReadModelSchemaRecovery(Throwable $throwable): ?string
+    {
+        if (!str_contains($throwable->getMessage(), 'no such column: threads.vote_count')) {
+            return null;
+        }
+
+        try {
+            $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+            $queueDirectory = dirname($queuePath);
+            if (!is_dir($queueDirectory) && !mkdir($queueDirectory, 0777, true) && !is_dir($queueDirectory)) {
+                return 'maintenance';
+            }
+
+            $store = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
+            $request = $store->requestAutomaticRebuild(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON);
+            if ($request['status'] === 'blocked') {
+                return 'maintenance';
+            }
+
+            if ($store->executorHeartbeatStatus()['status'] === 'fresh') {
+                return 'updating';
+            }
+
+            $taskId = (int) $request['task']['id'];
+            $existingLaunch = $store->automaticRecoveryLaunchStatus(
+                SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON,
+                $taskId,
+            );
+            if ($existingLaunch === 'launched') {
+                return 'rebuilding';
+            }
+            if ($existingLaunch !== null) {
+                return 'maintenance';
+            }
+
+            $launchId = $store->reserveAutomaticRecoveryLaunch(
+                SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON,
+                $taskId,
+            );
+            if ($launchId === null) {
+                return 'maintenance';
+            }
+
+            $launchStatus = (new DetachedTaskQueueLauncher($this->projectRoot, $queuePath))->launchQueuedWorker();
+            $store->completeAutomaticRecoveryLaunch($launchId, $launchStatus);
+
+            return $launchStatus === 'launched' ? 'rebuilding' : 'maintenance';
+        } catch (Throwable) {
+            return 'maintenance';
         }
     }
 
@@ -383,6 +445,35 @@ final class FrontController
             . '<article class="card"><p>The PHP host configuration is incomplete or invalid.</p><p>'
             . htmlspecialchars($details, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
             . '</p></article></section></main></div></body></html>';
+    }
+
+    private function renderReadModelRecovery(string $state): string
+    {
+        $message = match ($state) {
+            'updating' => 'We’re updating site data. The site will be back soon. Please try again in a moment.',
+            'rebuilding' => 'We’re rebuilding site data. The site will be back soon. Please try again in a moment.',
+            default => 'This site needs maintenance. Please try again later.',
+        };
+
+        return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+            . '<title>Site Update</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
+            . '<div class="shell"><header class="site-header"><p class="eyebrow">'
+            . htmlspecialchars(SiteConfig::siteName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+            . '</p></header>'
+            . '<main class="main"><section class="stack"><h1>Site Update</h1>'
+            . '<article class="card"><p>' . $message . '</p></article></section></main></div></body></html>';
+    }
+
+    private function renderUnexpectedError(): string
+    {
+        return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+            . '<title>Temporarily Unavailable</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
+            . '<div class="shell"><header class="site-header"><p class="eyebrow">'
+            . htmlspecialchars(SiteConfig::siteName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+            . '</p></header>'
+            . '<main class="main"><section class="stack"><h1>Temporarily Unavailable</h1>'
+            . '<article class="card"><p>The site is temporarily unavailable. Please try again later.</p>'
+            . '</article></section></main></div></body></html>';
     }
 
     private function renderBusyError(): string

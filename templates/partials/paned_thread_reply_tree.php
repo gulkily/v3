@@ -1,18 +1,21 @@
 <?php
 /**
  * @var array<int, array{post: array<string, mixed>, children: array}> $replyTree
+ * @var array<string, true> $viewerLikedPostIds
  * @var array<string, true> $viewerFlaggedPostIds
  * @var string $highlightedPostId
  */
+$viewerLikedPostIds ??= [];
 $viewerFlaggedPostIds ??= [];
 $highlightedPostId ??= '';
 $renderNode = null;
-$renderNode = function (array $node, int $depth) use (&$renderNode, $e, $forteAuthor, $timestamp, $br, $viewerFlaggedPostIds, $highlightedPostId): string {
+$renderNode = function (array $node, int $depth) use (&$renderNode, $e, $forteAuthor, $timestamp, $br, $viewerLikedPostIds, $viewerFlaggedPostIds, $highlightedPostId): string {
     $post = $node['post'];
     $isAgentPost = (string) ($post['author_label'] ?? '') === 'reply-agent';
 
     $postId = (string) $post['post_id'];
     $threadId = (string) ($post['thread_id'] ?? '');
+    $viewerHasLiked = isset($viewerLikedPostIds[$postId]);
     $viewerHasFlagged = isset($viewerFlaggedPostIds[$postId]);
     $isHighlighted = $highlightedPostId !== '' && $postId === $highlightedPostId;
     $permalinkHref = '/forte?selected=' . $e($threadId) . '&amp;created_post_id=' . $e($postId) . '#post-' . $e($postId);
@@ -24,7 +27,7 @@ $renderNode = function (array $node, int $depth) use (&$renderNode, $e, $forteAu
     $html .= $forteAuthor($post) . ' &middot; ' . $timestamp((string) ($post['created_at'] ?? ''));
     $html .= '</div>';
     $html .= '<div class="paned-reply-body">' . $br($post['body']) . '</div>';
-    $html .= '<div class="paned-reaction-row"><button type="button" class="paned-reaction-button" data-action="apply-post-tag" data-tag="flag" data-post-id="' . $e($postId) . '" data-applied-label="Flagged" aria-pressed="' . ($viewerHasFlagged ? 'true' : 'false') . '"' . ($viewerHasFlagged ? ' disabled' : '') . '>' . ($viewerHasFlagged ? 'Flagged' : 'Flag') . '</button><a class="paned-permalink-link" href="' . $permalinkHref . '" title="Permalink to this post" aria-label="Permalink to this post">#</a></div>';
+    $html .= '<div class="paned-reaction-row"><button type="button" class="paned-reaction-button" data-action="apply-post-tag" data-tag="like" data-post-id="' . $e($postId) . '" data-applied-label="Liked" aria-pressed="' . ($viewerHasLiked ? 'true' : 'false') . '"' . ($viewerHasLiked ? ' disabled' : '') . '>' . ($viewerHasLiked ? 'Liked' : 'Like') . '</button><button type="button" class="paned-reaction-button" data-action="apply-post-tag" data-tag="flag" data-post-id="' . $e($postId) . '" data-applied-label="Flagged" aria-pressed="' . ($viewerHasFlagged ? 'true' : 'false') . '"' . ($viewerHasFlagged ? ' disabled' : '') . '>' . ($viewerHasFlagged ? 'Flagged' : 'Flag') . '</button><a class="paned-permalink-link" href="' . $permalinkHref . '" title="Permalink to this post" aria-label="Permalink to this post">#</a></div>';
     $html .= '<p class="paned-reaction-feedback" data-role="post-reaction-feedback" hidden></p>';
     $html .= '</div>';
 

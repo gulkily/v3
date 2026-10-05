@@ -19,6 +19,7 @@ use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
+use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\StaticArtifactInvalidator;
 
@@ -1240,6 +1241,42 @@ PHP;
         assertStringContains('thread_id: thread-zenmemes-rules', $combinedOutput);
         assertStringContains('subject: The Rules of ZenMemes.com', $combinedOutput);
         assertStringContains('labels: (none)', $combinedOutput);
+    }
+
+    public function testForteReplyLikesRenderAndRestoreViewerState(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-forte-reply-likes-' . bin2hex(random_bytes(6));
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-forte-reply-likes-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        mkdir($repositoryRoot . '/records/post-reactions');
+        file_put_contents(
+            $repositoryRoot . '/records/posts/reply-002.txt',
+            "Post-ID: reply-002\nCreated-At: 2026-04-10T12:06:00Z\nBoard-Tags: general\nThread-ID: root-001\nParent-ID: reply-001\n\nNested reply body.\n"
+        );
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+            $_COOKIE = [];
+            $anonymousForte = $this->render($application, '/forte?selected=root-001');
+            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-001" data-applied-label="Liked" aria-pressed="false">Like</button>', $anonymousForte);
+            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-002" data-applied-label="Liked" aria-pressed="false">Like</button>', $anonymousForte);
+            assertStringContains('data-action="apply-post-tag" data-tag="flag" data-post-id="reply-001"', $anonymousForte);
+
+            file_put_contents(
+                $repositoryRoot . '/records/post-reactions/post-reaction-20261002120000-replylike.txt',
+                "Record-ID: post-reaction-20261002120000-replylike\nCreated-At: 2026-10-02T12:00:00Z\nPost-ID: reply-002\nOperation: add\nTags: like\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n"
+            );
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $likedForte = $this->render($application, '/forte?selected=root-001');
+
+            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-002" data-applied-label="Liked" aria-pressed="true" disabled>Liked</button>', $likedForte);
+        } finally {
+            $_COOKIE = [];
+            $this->deleteTree($repositoryRoot);
+            @unlink($databasePath);
+        }
     }
 
     public function testApplicationRendersCoreRoutes(): void
@@ -3364,6 +3401,104 @@ PHP;
 
         assertStringContains('Configuration Error', $response);
         assertStringContains('Repository root does not exist', $response);
+    }
+
+    public function testFrontControllerQueuesMissingVoteCountRecoveryWithoutLeakingSql(): void
+    {
+        $queuePath = sys_get_temp_dir() . '/forum-rewrite-recovery-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previousQueuePath = getenv('FORUM_TASK_QUEUE_DATABASE_PATH');
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
+        @unlink($this->databasePath);
+        (new ReadModelBuilder($this->repositoryRoot, $this->databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+        (new PDO('sqlite:' . $this->databasePath))->exec('ALTER TABLE threads DROP COLUMN vote_count');
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+
+        try {
+            $store = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
+            $run = $store->startExecutorRun();
+            $store->completeExecutorRun($run['id'], [
+                'recovered' => 0,
+                'claimed' => 0,
+                'completed' => 0,
+                'continued' => 0,
+                'retried' => 0,
+                'failed' => 0,
+            ], []);
+
+            http_response_code(200);
+            $first = $this->renderFrontController($controller, 'GET', '/', []);
+            $second = $this->renderFrontController($controller, 'GET', '/', []);
+
+            assertSame(503, http_response_code());
+            assertStringContains('Site Update', $first);
+            assertStringContains('The site will be back soon', $first);
+            assertStringNotContains('SQLSTATE', $first);
+            assertStringNotContains('threads.vote_count', $first);
+            assertStringNotContains('Configuration Error', $first);
+            assertSame($first, $second);
+            assertSame(1, $store->counts()['queued']);
+        } finally {
+            $previousQueuePath === false ? putenv('FORUM_TASK_QUEUE_DATABASE_PATH') : putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $previousQueuePath);
+            @unlink($queuePath);
+            @unlink($this->databasePath);
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
+    public function testFrontControllerMakesOnlyOneDisabledFallbackLaunchAttempt(): void
+    {
+        $queuePath = sys_get_temp_dir() . '/forum-rewrite-recovery-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previousQueuePath = getenv('FORUM_TASK_QUEUE_DATABASE_PATH');
+        $previousEmergencyLaunch = getenv('FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED');
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
+        putenv('FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED');
+        @unlink($this->databasePath);
+        (new ReadModelBuilder($this->repositoryRoot, $this->databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+        (new PDO('sqlite:' . $this->databasePath))->exec('ALTER TABLE threads DROP COLUMN vote_count');
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+
+        try {
+            $store = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
+            $first = $this->renderFrontController($controller, 'GET', '/', []);
+            $second = $this->renderFrontController($controller, 'GET', '/', []);
+            $recovery = $store->automaticRecoveryStatus(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON);
+
+            assertStringContains('This site needs maintenance', $first);
+            assertSame($first, $second);
+            assertSame('disabled', $store->automaticRecoveryLaunchStatus(
+                SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON,
+                $recovery['task_id'],
+            ));
+        } finally {
+            $previousQueuePath === false ? putenv('FORUM_TASK_QUEUE_DATABASE_PATH') : putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $previousQueuePath);
+            $previousEmergencyLaunch === false ? putenv('FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED') : putenv('FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED=' . $previousEmergencyLaunch);
+            @unlink($queuePath);
+            @unlink($this->databasePath);
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
+    public function testFrontControllerSanitizesUnexpectedApplicationFailure(): void
+    {
+        @unlink($this->databasePath);
+        (new ReadModelBuilder($this->repositoryRoot, $this->databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+        (new PDO('sqlite:' . $this->databasePath))->exec('DROP TABLE threads');
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/', []);
+
+            assertStringContains('Temporarily Unavailable', $response);
+            assertStringNotContains('SQLSTATE', $response);
+            assertStringNotContains('no such table', $response);
+            assertStringNotContains('Configuration Error', $response);
+        } finally {
+            @unlink($this->databasePath);
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
     }
 
     public function testFrontControllerShowsBusyErrorForExecutionLockContention(): void

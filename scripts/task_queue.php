@@ -39,7 +39,7 @@ try {
         exit(0);
     }
 
-    if (!in_array($command, ['enqueue-rebuild', 'enqueue-fast-score', 'enqueue-offline-snapshot', 'run', 'status', 'cron'], true)) {
+    if (!in_array($command, ['enqueue-rebuild', 'enqueue-fast-score', 'enqueue-offline-snapshot', 'reset-recovery', 'run', 'status', 'cron'], true)) {
         throw new InvalidArgumentException('Unknown task-queue command: ' . ($command === '' ? '(none)' : $command));
     }
 
@@ -90,8 +90,15 @@ try {
         exit(0);
     }
 
+    if ($command === 'reset-recovery') {
+        $reset = $store->resetAutomaticRecovery(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON);
+        fwrite(STDOUT, $reset ? "Automatic rebuild recovery reset.\n" : "Automatic rebuild recovery was not blocked.\n");
+        exit(0);
+    }
+
     if ($command === 'status') {
         $counts = $store->counts();
+        $heartbeat = $store->executorHeartbeatStatus();
         fwrite(STDOUT, "Task queue status\n");
         fwrite(STDOUT, "Queue database: {$queuePath}\n");
         fwrite(STDOUT, sprintf(
@@ -101,6 +108,12 @@ try {
             $counts['completed'],
             $counts['failed'],
         ));
+        fwrite(STDOUT, 'Executor: ' . $heartbeat['status'] . ' (last completed: ' . ($heartbeat['last_completed_at'] ?? 'none') . ")\n");
+        $recovery = $store->automaticRecoveryStatus(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON);
+        $launch = $recovery['task_id'] === null
+            ? 'none'
+            : ($store->automaticRecoveryLaunchStatus(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON, $recovery['task_id']) ?? 'none');
+        fwrite(STDOUT, 'Automatic schema recovery: ' . $recovery['status'] . ' (detached launch: ' . $launch . ")\n");
         foreach ($store->recent((int) ($options['limit'] ?? 25)) as $task) {
             fwrite(STDOUT, sprintf(
                 "Task id=%d type=%s status=%s attempts=%d/%d failure=%s\n",
@@ -117,6 +130,10 @@ try {
                 $task['claimed_at'] ?? 'none',
                 $task['completed_at'] ?? 'none',
             ));
+            $progress = $store->latestTaskProgress((int) $task['id']);
+            if ($progress !== null) {
+                fwrite(STDOUT, sprintf("  progress=%s at=%s\n", $progress['message'], $progress['created_at']));
+            }
         }
         exit(0);
     }
@@ -140,6 +157,8 @@ try {
 
         $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose): void {
             $startedAt = microtime(true);
+            $executorRun = $store->startExecutorRun();
+            $taskOutcomes = [];
             $before = $store->counts();
             emitTaskQueue($quiet, "Task queue worker starting\n");
             emitTaskQueue($quiet, "Queue database: {$queuePath}\n");
@@ -163,6 +182,10 @@ try {
                     $databasePath,
                     static function () use ($store): void {
                         $store->enqueue(SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT, 'offline-snapshot');
+                    },
+                    static function (int $taskId, string $message) use ($store, $quiet): void {
+                        $store->recordTaskProgress($taskId, $message);
+                        emitTaskQueue($quiet, "  {$message}\n");
                     },
                 ),
                 static function () use ($projectRoot, $repositoryRoot, $databasePath, $providerCallLimit, $workLimit, $quiet, $verbose): array {
@@ -220,7 +243,8 @@ try {
                 },
             );
             $taskStartedAt = [];
-            $summary = $worker->run($limit, static function (string $event, array $task) use ($quiet, &$taskStartedAt): void {
+            try {
+                $summary = $worker->run($limit, static function (string $event, array $task) use ($quiet, &$taskStartedAt, &$taskOutcomes): void {
                 if ($event === 'recovered') {
                     emitTaskQueue($quiet, 'Recovered abandoned tasks: ' . $task['count'] . "\n");
                     return;
@@ -240,6 +264,11 @@ try {
                 }
 
                 $elapsed = isset($taskStartedAt[$taskId]) ? microtime(true) - $taskStartedAt[$taskId] : 0.0;
+                $taskOutcomes[] = [
+                    'id' => $taskId,
+                    'status' => (string) $task['status'],
+                    'failure_code' => isset($task['failure_code']) ? (string) $task['failure_code'] : null,
+                ];
                 emitTaskQueue($quiet, sprintf(
                     "Finished task id=%d status=%s elapsed=%.3fs failure=%s\n",
                     $taskId,
@@ -285,7 +314,14 @@ try {
                         emitTaskQueue($quiet, "  Continuation queued for remaining Fastmod work; this is not a failure or retry.\n");
                     }
                 }
-            });
+                });
+                $store->completeExecutorRun((int) $executorRun['id'], $summary, $taskOutcomes);
+            } catch (Throwable $throwable) {
+                $store->failExecutorRun((int) $executorRun['id'], 'worker_exception');
+                throw $throwable;
+            } finally {
+                $store->pruneHistory();
+            }
             $after = $store->counts();
             emitTaskQueue($quiet, sprintf(
                 "Task queue run complete: recovered=%d claimed=%d completed=%d continued=%d retried=%d failed=%d\n",
@@ -320,7 +356,7 @@ try {
     }
 
     if ($command === 'cron') {
-        $logPath = (string) ($options['log'] ?? '/var/log/forum-task-queue.log');
+        $logPath = (string) ($options['log'] ?? ($projectRoot . '/state/private/task_queue_cron.log'));
         $appRoot = realpath($projectRoot) ?: $projectRoot;
         $workerCronLine = '* * * * * cd ' . escapeshellarg($appRoot)
             . ' && php scripts/task_queue.php run --quiet --limit=1 >> '
@@ -433,6 +469,7 @@ Usage:
   php scripts/task_queue.php enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php enqueue-offline-snapshot [--queue-database-path=/private/path/tasks.sqlite3]
+  php scripts/task_queue.php reset-recovery [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php cron [--log=/var/log/forum-task-queue.log]

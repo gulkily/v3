@@ -2,6 +2,8 @@
 $agentReply = $agentRepliesByPostId[$post['post_id']] ?? null;
 $agentReplyPostedId = is_array($agentReply) && isset($agentReply['agent_post_id']) ? (string) $agentReply['agent_post_id'] : '';
 $agentReplyStatus = is_array($agentReply) ? (string) ($agentReply['status'] ?? '') : '';
+$agentReplyModeLabel = is_array($agentReply) ? (string) ($agentReply['response_mode_label'] ?? '') : '';
+$agentReplyFeedbackSubject = $agentReplyModeLabel !== '' ? $agentReplyModeLabel : 'Agent reply';
 $agentReplyWork = (string) ($agentReplyWorkByPostId[$post['post_id']] ?? '');
 $isAgentPost = (string) ($post['author_label'] ?? '') === 'reply-agent';
 $viewerCanRequestAgentReply = (bool) ($viewerCanRequestAgentReply ?? $viewerCanSeePostAnalysis ?? false);
@@ -33,15 +35,15 @@ $codexHandoffSummaryLabel = match ($codexHandoffStatus) {
 };
 $agentReplyFeedbackText = '';
 if ($agentReplyPostedId !== '') {
-    $agentReplyFeedbackText = 'Agent reply available.';
+    $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' available.';
 } elseif ($agentReplyStatus === 'requested') {
-    $agentReplyFeedbackText = 'Agent reply requested.';
+    $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' requested.';
 } elseif (in_array($agentReplyStatus, ['pending', 'complete', 'posting'], true)) {
-    $agentReplyFeedbackText = 'Agent reply request in progress.';
+    $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' request in progress.';
 } elseif ($agentReplyStatus === 'skipped') {
-    $agentReplyFeedbackText = 'Agent reply skipped.';
+    $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' skipped.';
 } elseif ($agentReplyStatus === 'failed') {
-    $agentReplyFeedbackText = 'Agent reply failed.';
+    $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' failed.';
 }
 $viewerHasFlaggedPost = isset($viewerPostFlags[(string) $post['post_id']]);
 $postPermalinkLabel = 'Post ' . (string) $post['post_id'];

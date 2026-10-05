@@ -139,6 +139,7 @@ Usage:
   ./v3 task-queue enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 task-queue enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 task-queue enqueue-offline-snapshot [--queue-database-path=/private/path/tasks.sqlite3]
+  ./v3 task-queue reset-recovery [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 task-queue run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose]
   ./v3 task-queue status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 task-queue cron [--log=/var/log/forum-task-queue.log]

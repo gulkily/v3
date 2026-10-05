@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\Agent\AgentResponseTask;
 use RuntimeException;
 
 /**
@@ -124,7 +125,6 @@ final class PostWorkflowApiController
             $this->routeServices->sendJson(['status' => 'error', 'error' => 'Missing post_id.'], 400, $headersWithTimings());
             return;
         }
-
         $phaseStartedAt = hrtime(true);
         $post = ($this->fetchPost)($postId);
         $timings['fetch_post'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
@@ -151,14 +151,14 @@ final class PostWorkflowApiController
 
         $phaseStartedAt = hrtime(true);
         $response = $service->postAnalysisResponse($result, $viewerCanSeePostAnalysis);
-        $agentReplyEnabled = $service->agentRepliesEnabled();
+        $legacyAutomaticAgentRepliesEnabled = $service->legacyAgentRepliesAutomaticEnabled();
         $analysisComplete = ($result['status'] ?? null) === 'complete';
         $gateFailure = $analysisComplete ? $service->agentReplyGateFailure($post, $result) : null;
-        $agentReplyAllowed = $agentReplyEnabled && $analysisComplete && $gateFailure === null;
+        $agentReplyAllowed = $legacyAutomaticAgentRepliesEnabled && $analysisComplete && $gateFailure === null;
         $timings['analysis_response'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
 
         $phaseStartedAt = hrtime(true);
-        if (!$agentReplyEnabled) {
+        if (!$legacyAutomaticAgentRepliesEnabled) {
             $agentReplyResult = $service->agentReplyStatusResponse('not_recommended', $postId, [
                 'reason' => 'config_disabled',
             ]);
@@ -210,6 +210,14 @@ final class PostWorkflowApiController
             $this->routeServices->sendJson(['status' => 'error', 'error' => 'Missing post_id.'], 400, $headersWithTimings());
             return;
         }
+        $responseMode = trim((string) ($input['response_mode'] ?? ''));
+        if ($responseMode === '') {
+            $responseMode = AgentResponseTask::DEFAULT_TYPE;
+        }
+        if ($responseMode !== AgentResponseTask::DEFAULT_TYPE && !AgentResponseTask::isSelectableType($responseMode)) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'invalid response_mode'], 400, $headersWithTimings());
+            return;
+        }
 
         $phaseStartedAt = hrtime(true);
         $post = ($this->fetchPost)($postId);
@@ -226,9 +234,17 @@ final class PostWorkflowApiController
             $this->routeServices->sendJson(['status' => 'error', 'error' => 'forbidden'], 403, $headersWithTimings());
             return;
         }
+        if (!$service->agentResponseRequestsEnabled()) {
+            $this->routeServices->sendJson(
+                $service->agentReplyStatusResponse('not_recommended', $postId, ['reason' => 'config_disabled']),
+                200,
+                $headersWithTimings()
+            );
+            return;
+        }
 
         $phaseStartedAt = hrtime(true);
-        $response = $service->agentReplyRequestResultForPost($post, $viewerProfile);
+        $response = $service->agentReplyRequestResultForPost($post, $viewerProfile, $responseMode);
         $timings['agent_reply'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
         foreach ($this->timingMetricsFrom($response['timings'] ?? null) as $name => $duration) {
             $timings[$name] = $duration;
