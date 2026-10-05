@@ -34,6 +34,24 @@ final class OpenAiCompatibleStructuredChatProviderTest
         assertSame(123, $payload['max_completion_tokens']);
     }
 
+    public function testProviderBuildsPlainTextChatCompletionPayloadAndDecodesText(): void
+    {
+        $provider = new OpenAiCompatibleStructuredChatProvider('openrouter', 'test-key', 'https://openrouter.ai/api', 'openai/gpt-5-nano');
+        $method = new ReflectionMethod(OpenAiCompatibleStructuredChatProvider::class, 'textPayloadFor');
+        $method->setAccessible(true);
+
+        $payload = $method->invoke($provider, [['role' => 'user', 'content' => 'Reply.']], ['max_completion_tokens' => 123]);
+        $text = \ForumRewrite\Llm\TextChatCompletionDecoder::decodeOpenAiCompatiblePayload([
+            'choices' => [['message' => ['content' => 'Plain reply.']]],
+        ]);
+
+        assertSame('openai/gpt-5-nano', $payload['model']);
+        assertSame('Reply.', $payload['messages'][0]['content']);
+        assertSame(false, isset($payload['response_format']));
+        assertSame(123, $payload['max_completion_tokens']);
+        assertSame('Plain reply.', $text);
+    }
+
     public function testProviderExtractsNestedProviderErrorMessage(): void
     {
         $provider = new OpenAiCompatibleStructuredChatProvider('dedalus', 'test-key', 'https://api.dedaluslabs.ai', 'openai/gpt-5-nano');

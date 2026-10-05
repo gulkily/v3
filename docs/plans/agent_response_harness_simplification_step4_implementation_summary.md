@@ -25,3 +25,15 @@
   - `php -l src/ForumRewrite/Agent/AgentResponseGenerator.php` — no syntax errors.
 - Notes:
   - Production OpenAI-compatible and Anthropic adapters are intentionally deferred to Stage 3.
+
+## Stage 3 - Provider text adapters
+
+- Changes:
+  - Extended the existing OpenAI-compatible and Anthropic providers with ordinary text-completion methods.
+  - Added a shared text-content decoder and preserved existing provider configuration, metadata, timing, and diagnostics paths.
+  - Added payload tests proving text tasks omit JSON-schema/output-format requests.
+- Verification:
+  - `php tests/run.php OpenAiCompatibleStructuredChatProviderTest AnthropicStructuredChatProviderTest AgentResponseGeneratorTest` — 11 passed.
+  - `php -l` on both providers and `TextChatCompletionDecoder` — no syntax errors.
+- Notes:
+  - The task generator can now use a configured live provider; fulfillment and public routing remain unchanged until later stages.

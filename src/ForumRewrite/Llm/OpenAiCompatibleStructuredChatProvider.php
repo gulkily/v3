@@ -7,7 +7,7 @@ namespace ForumRewrite\Llm;
 use ForumRewrite\Analysis\ProviderRequestException;
 use RuntimeException;
 
-final class OpenAiCompatibleStructuredChatProvider implements StructuredChatProvider
+final class OpenAiCompatibleStructuredChatProvider implements StructuredChatProvider, TextChatProvider
 {
     /**
      * @param array<string, string> $extraHeaders
@@ -42,6 +42,23 @@ final class OpenAiCompatibleStructuredChatProvider implements StructuredChatProv
         ];
     }
 
+    public function completeTextChat(array $messages, array $options = []): array
+    {
+        $startedAt = hrtime(true);
+        $response = $this->postJson('/v1/chat/completions', $this->textPayloadFor($messages, $options), $this->exchangeContext($options));
+
+        return [
+            'provider' => $this->providerName,
+            'provider_model' => (string) ($response['model'] ?? $this->model),
+            'provider_request_id' => isset($response['id']) ? (string) $response['id'] : null,
+            'response_text' => TextChatCompletionDecoder::decodeOpenAiCompatiblePayload($response),
+            'raw_response' => $response,
+            'timings' => [
+                'external_provider' => $this->elapsedMilliseconds($startedAt),
+            ],
+        ];
+    }
+
     /**
      * @param list<array{role:string, content:string}> $messages
      * @param array<string, mixed> $jsonSchema
@@ -61,6 +78,20 @@ final class OpenAiCompatibleStructuredChatProvider implements StructuredChatProv
                 ],
             ],
             'max_completion_tokens' => max(1, (int) ($options['max_completion_tokens'] ?? 8000)),
+        ];
+    }
+
+    /**
+     * @param list<array{role:string, content:string}> $messages
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    private function textPayloadFor(array $messages, array $options): array
+    {
+        return [
+            'model' => $this->model,
+            'messages' => $messages,
+            'max_completion_tokens' => max(1, (int) ($options['max_completion_tokens'] ?? 800)),
         ];
     }
 
