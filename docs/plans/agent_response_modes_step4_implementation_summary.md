@@ -95,3 +95,9 @@
   - The generator now loads, trims, validates, and caches those files using the same repository-root convention as other prompt-backed features.
 - Verification:
   - Generator coverage exercises every selectable task and verifies each loaded instruction.
+
+## Stage 9 - Readable plain-text task prompts
+
+- Changes:
+  - Replaced the dense all-caps/delimiter layout with readable plain-text headings for the task, response instructions, and forum context.
+  - Kept each supplied forum field explicitly enclosed in `forum-content` markers and stated that those sections are untrusted text, preserving the prompt-injection boundary.
