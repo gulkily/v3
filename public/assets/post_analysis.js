@@ -460,7 +460,7 @@
     });
   }
 
-  let agentResponseModeDialog = null;
+  let agentResponseModeMenu = null;
   let agentResponseModeTrigger = null;
 
   function agentResponseModes() {
@@ -479,38 +479,32 @@
     }
   }
 
-  function closeAgentResponseModeDialog() {
-    if (agentResponseModeDialog && agentResponseModeDialog.open) {
-      agentResponseModeDialog.close();
+  function closeAgentResponseModeMenu(restoreFocus) {
+    if (!agentResponseModeMenu || agentResponseModeMenu.hidden) {
+      return;
     }
+    const trigger = agentResponseModeTrigger;
+    agentResponseModeMenu.hidden = true;
+    if (trigger) {
+      trigger.setAttribute("aria-expanded", "false");
+      if (restoreFocus) {
+        trigger.focus();
+      }
+    }
+    agentResponseModeTrigger = null;
   }
 
-  function ensureAgentResponseModeDialog() {
-    if (agentResponseModeDialog) {
-      return agentResponseModeDialog;
+  function ensureAgentResponseModeMenu() {
+    if (agentResponseModeMenu) {
+      return agentResponseModeMenu;
     }
 
-    const dialog = document.createElement("dialog");
-    dialog.className = "agent-response-mode-dialog";
-    dialog.setAttribute("aria-modal", "true");
-    dialog.setAttribute("aria-labelledby", "agent-response-mode-title");
-    const heading = document.createElement("h2");
-    heading.id = "agent-response-mode-title";
-    heading.textContent = "Choose an agent response";
-    dialog.appendChild(heading);
-
-    const close = document.createElement("button");
-    close.type = "button";
-    close.className = "agent-response-mode-close";
-    close.setAttribute("aria-label", "Close response choices");
-    close.textContent = "×";
-    close.addEventListener("click", closeAgentResponseModeDialog);
-    dialog.appendChild(close);
-
-    const intro = document.createElement("p");
-    intro.className = "meta";
-    intro.textContent = "Select the kind of help you want for this post.";
-    dialog.appendChild(intro);
+    const menu = document.createElement("div");
+    menu.className = "agent-response-mode-menu";
+    menu.id = "agent-response-mode-menu";
+    menu.setAttribute("role", "menu");
+    menu.setAttribute("aria-label", "Choose an agent response");
+    menu.hidden = true;
 
     const choices = document.createElement("div");
     choices.className = "agent-response-mode-choices";
@@ -518,45 +512,47 @@
       const choice = document.createElement("button");
       choice.type = "button";
       choice.className = "agent-response-mode-choice";
+      choice.setAttribute("role", "menuitem");
       choice.setAttribute("data-response-mode", mode.type);
       const label = document.createElement("strong");
       label.textContent = mode.label;
       choice.appendChild(label);
       choice.addEventListener("click", function () {
         const trigger = agentResponseModeTrigger;
-        closeAgentResponseModeDialog();
+        closeAgentResponseModeMenu(false);
         if (trigger) {
           requestAgentReply(trigger, mode);
         }
       });
       choices.appendChild(choice);
     });
-    dialog.appendChild(choices);
+    menu.appendChild(choices);
 
     const notice = document.createElement("p");
     notice.className = "meta agent-response-mode-notice";
     notice.textContent = "Facts analysis uses this post and supplied thread context only; it is not independently verified research.";
-    dialog.appendChild(notice);
-
-    const cancel = document.createElement("button");
-    cancel.type = "button";
-    cancel.className = "thread-reaction-button";
-    cancel.textContent = "Cancel";
-    cancel.addEventListener("click", closeAgentResponseModeDialog);
-    dialog.appendChild(cancel);
-
-    dialog.addEventListener("close", function () {
-      if (agentResponseModeTrigger) {
-        agentResponseModeTrigger.setAttribute("aria-expanded", "false");
+    menu.appendChild(notice);
+    document.body.appendChild(menu);
+    agentResponseModeMenu = menu;
+    document.addEventListener("pointerdown", function (event) {
+      if (!agentResponseModeMenu || agentResponseModeMenu.hidden) {
+        return;
       }
-      agentResponseModeTrigger = null;
+      if (!agentResponseModeMenu.contains(event.target)
+        && (!agentResponseModeTrigger || !agentResponseModeTrigger.contains(event.target))) {
+        closeAgentResponseModeMenu(false);
+      }
     });
-    document.body.appendChild(dialog);
-    agentResponseModeDialog = dialog;
-    return dialog;
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && agentResponseModeMenu && !agentResponseModeMenu.hidden) {
+        event.preventDefault();
+        closeAgentResponseModeMenu(true);
+      }
+    });
+    return menu;
   }
 
-  function openAgentResponseModeDialog(button) {
+  function openAgentResponseModeMenu(button) {
     const modes = agentResponseModes();
     const postId = button.getAttribute("data-post-id") || "";
     if (postId === "" || modes.length === 0) {
@@ -564,16 +560,15 @@
       return;
     }
 
-    const dialog = ensureAgentResponseModeDialog();
-    if (typeof dialog.showModal !== "function") {
-      setFeedback(feedbackForPost(postId), "Agent response modes are unavailable.");
-      return;
-    }
+    const menu = ensureAgentResponseModeMenu();
+    closeAgentResponseModeMenu(false);
     agentResponseModeTrigger = button;
-    button.setAttribute("aria-haspopup", "dialog");
     button.setAttribute("aria-expanded", "true");
-    dialog.showModal();
-    const firstChoice = dialog.querySelector('[data-response-mode]');
+    const bounds = button.getBoundingClientRect();
+    menu.style.left = Math.max(8, Math.min(bounds.left, window.innerWidth - 328)) + "px";
+    menu.style.top = Math.min(bounds.bottom + 6, window.innerHeight - 120) + "px";
+    menu.hidden = false;
+    const firstChoice = menu.querySelector('[data-response-mode]');
     if (firstChoice) {
       firstChoice.focus();
     }
@@ -614,10 +609,11 @@
       }
 
       button.setAttribute("data-agent-reply-request-bound", "1");
-      button.setAttribute("aria-haspopup", "dialog");
+      button.setAttribute("aria-haspopup", "menu");
+      button.setAttribute("aria-controls", "agent-response-mode-menu");
       button.setAttribute("aria-expanded", "false");
       button.addEventListener("click", function () {
-        openAgentResponseModeDialog(button);
+        openAgentResponseModeMenu(button);
       });
     });
   }

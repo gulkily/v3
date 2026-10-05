@@ -55,3 +55,14 @@
   - `./v3 test AgentResponseTaskTest AgentResponseGeneratorTest WriteApiSmokeTest::testApprovedViewerSeesAgentReplyRequestButtonUntilRequestExists WriteApiSmokeTest::testPostAnalysisScriptDoesNotExposeInProgressReplyGeneration` — 11 passed.
 - Notes:
   - No request, fulfillment, or safety behavior changed.
+
+## Stage 5 - Dropdown chooser correction
+
+- Changes:
+  - Replaced the modal with an anchored, non-modal dropdown menu.
+  - Retained label-only choices and the shared facts-analysis limitation notice; added Escape and outside-click dismissal with trigger state restoration.
+- Verification:
+  - `node --check public/assets/post_analysis.js`
+  - `./v3 test AgentResponseTaskTest AgentResponseGeneratorTest WriteApiSmokeTest::testApprovedViewerSeesAgentReplyRequestButtonUntilRequestExists WriteApiSmokeTest::testPostAnalysisScriptDoesNotExposeInProgressReplyGeneration` — 11 passed.
+- Notes:
+  - No request, fulfillment, or safety behavior changed.

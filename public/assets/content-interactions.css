@@ -56,52 +56,28 @@
   overflow: auto;
 }
 
-.agent-response-mode-dialog {
-  width: min(31rem, calc(100vw - 2rem));
-  max-height: min(42rem, calc(100vh - 2rem));
-  padding: 1.25rem;
+.agent-response-mode-menu {
+  position: fixed;
+  z-index: 40;
+  width: min(20rem, calc(100vw - 1rem));
+  max-height: min(32rem, calc(100vh - 1rem));
+  padding: 0.55rem;
   border: 1px solid var(--line);
-  border-radius: 0.75rem;
+  border-radius: 0.45rem;
   background: var(--panel);
   color: var(--ink);
-  box-shadow: 0 1rem 3rem color-mix(in srgb, var(--ink) 25%, transparent);
-}
-.agent-response-mode-dialog::backdrop {
-  background: color-mix(in srgb, var(--ink) 28%, transparent);
-}
-.agent-response-mode-dialog h2 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-.agent-response-mode-close {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.7rem;
-  width: auto;
-  min-width: 2rem;
-  margin: 0;
-  padding: 0.15rem 0.45rem;
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  font-size: 1.35rem;
-  line-height: 1;
-}
-.agent-response-mode-dialog > .meta {
-  margin: 0.4rem 0 0;
+  box-shadow: 0 0.6rem 1.5rem color-mix(in srgb, var(--ink) 20%, transparent);
 }
 .agent-response-mode-choices {
   display: grid;
-  gap: 0.45rem;
-  margin: 1rem 0;
+  gap: 0.15rem;
 }
 .agent-response-mode-choice {
-  display: grid;
-  gap: 0.15rem;
   width: 100%;
-  padding: 0.7rem 0.8rem;
-  border: 1px solid var(--line);
-  border-radius: 0.45rem;
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
   background: transparent;
   color: inherit;
   text-align: left;
@@ -113,10 +89,11 @@
   background: color-mix(in srgb, var(--ink) 8%, transparent);
 }
 .agent-response-mode-notice {
+  margin: 0.55rem 0 0;
   color: var(--ink-soft);
 }
 .agent-response-mode-notice {
-  padding-top: 0.8rem;
+  padding-top: 0.55rem;
   border-top: 1px solid var(--line);
 }
 
@@ -175,15 +152,8 @@
 }
 
 @media (max-width: 640px) {
-  .agent-response-mode-dialog {
-    width: 100%;
-    max-width: none;
-    max-height: min(85vh, 42rem);
-    margin: auto 0 0;
-    border-right: 0;
-    border-bottom: 0;
-    border-left: 0;
-    border-radius: 0.75rem 0.75rem 0 0;
+  .agent-response-mode-menu {
+    width: min(20rem, calc(100vw - 1rem));
   }
 
   .meta-deferred::before {
