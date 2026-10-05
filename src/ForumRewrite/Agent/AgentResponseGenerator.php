@@ -23,7 +23,7 @@ final class AgentResponseGenerator
      */
     public function generate(array $task): array
     {
-        if (($task['type'] ?? '') !== AgentResponseTask::DEFAULT_TYPE) {
+        if (!AgentResponseTask::isSupportedType((string) ($task['type'] ?? ''))) {
             throw new RuntimeException('Unsupported agent response task type.');
         }
 
@@ -63,6 +63,7 @@ final class AgentResponseGenerator
      */
     private function messages(array $task): array
     {
+        $type = (string) ($task['type'] ?? '');
         return [
             [
                 'role' => 'system',
@@ -71,7 +72,9 @@ final class AgentResponseGenerator
             ],
             [
                 'role' => 'user',
-                'content' => "TASK\ndefault_text_reply\n\nTHREAD SUBJECT\n---\n"
+                'content' => "TASK\n" . $type . "\n\nRESPONSE INSTRUCTIONS\n---\n"
+                    . $this->instructionsFor($type)
+                    . "\n---\n\nTHREAD SUBJECT\n---\n"
                     . ($task['thread_subject'] ?? '')
                     . "\n---\n\nTARGET SUBJECT\n---\n"
                     . ($task['target_subject'] ?? '')
@@ -82,5 +85,17 @@ final class AgentResponseGenerator
                     . "\n---",
             ],
         ];
+    }
+
+    private function instructionsFor(string $type): string
+    {
+        return match ($type) {
+            AgentResponseTask::FACTS_ANALYSIS_TYPE => 'Begin with "Facts analysis:". Use only the supplied forum content; do not imply external research, browsing, verification, or sourcing. Distinguish claims, support present in that content, missing evidence, and uncertainty.',
+            AgentResponseTask::EXPLAIN_JOKE_OR_REFERENCE_TYPE => 'Begin with "Joke or reference:". Explain the apparent humor, allusions, or cultural context from the supplied forum content. State uncertainty when the reference is unclear.',
+            AgentResponseTask::SUMMARY_AND_KEY_TAKEAWAYS_TYPE => 'Begin with "Summary and key takeaways:". Concisely summarize the supplied forum content and its main points without adding unsupported claims.',
+            AgentResponseTask::EXPLAIN_SIMPLY_TYPE => 'Begin with "Explain simply:". Restate the supplied forum content in plain language, defining important jargon without adding unsupported claims.',
+            AgentResponseTask::CONSTRUCTIVE_COUNTERPOINT_TYPE => 'Begin with "Constructive counterpoint:". Give the strongest reasonable alternative view based on the supplied forum content; be respectful and distinguish inference from fact.',
+            default => 'Write a useful response to the supplied forum content.',
+        };
     }
 }
