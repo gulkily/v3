@@ -66,3 +66,30 @@
   - Found and fixed during this stage: the quote body disappeared on the
     qdb root card because the body helper strips a first line that matches
     the title; the qdb branch now uses the full body, since it has no `<h1>`.
+
+## Stage 3 - Viewer's existing upvote/downvote shown as pressed on the permalink
+- Changes:
+  - `ThreadAndPostPageController::thread()`: on the qdb profile, for a
+    signed-in viewer, looks up whether they have upvoted or downvoted the
+    root thread using the same `ViewerTagLookup::threadTags()` lookup the
+    listing uses, and passes `viewerHasUpvoted` / `viewerHasDownvoted` to
+    the page. The lookup runs only on qdb and only for a known viewer, so
+    other profiles pay no extra scan.
+  - The existing root-card template (Stage 2) already reads these values, so
+    no template change was needed here; partials inherit the page's variables.
+- Verification:
+  - `php -l` — clean.
+  - `WriteApiSmokeTest::testQdbPermalinkShowsViewersExistingUpvoteAsPressedAndDisabled`
+    — a viewer who upvoted a qdb quote through the API sees its upvote
+    control `aria-pressed="true"` and `disabled` on the permalink; an
+    anonymous visitor sees `aria-pressed="false"` and enabled.
+  - Full suite `./v3 test`: 693 run, 686 passed, 7 failed. The six
+    long-standing failures are unchanged. The seventh is
+    `testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh`.
+    It fails in isolation, and I confirmed it also fails at `3bc6044`, before
+    any parity work, using a temporary worktree (since removed). It is a
+    pre-existing failure, not introduced here; it passed in an earlier run.
+- Notes:
+  - Flagged for follow-up: that pre-existing failure is now failing
+    consistently in isolation, unlike earlier runs, so it deserves its own
+    investigation outside this feature.

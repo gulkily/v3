@@ -2617,6 +2617,35 @@ PHP);
         assertStringContains('Pending Liked Thread', $boardLiked);
     }
 
+    public function testQdbPermalinkShowsViewersExistingUpvoteAsPressedAndDisabled(): void
+    {
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $identity = $this->linkGeneratedIdentity($application, 'permalink-upvoter');
+
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=&body=Quote%20to%20upvote'
+            );
+            $threadId = $this->extractValue($threadResponse, 'thread_id');
+
+            $_COOKIE = ['identity_hint' => $identity['identity_id']];
+            $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=' . rawurlencode($threadId) . '&tag=upvote');
+            $votedPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($threadId));
+            $_COOKIE = [];
+            $anonymousPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($threadId));
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertTrue(preg_match('/data-tag="upvote"[^>]*aria-pressed="true"[^>]*disabled="disabled"/', $votedPage) === 1);
+        assertTrue(preg_match('/data-tag="upvote"[^>]*aria-pressed="false"/', $anonymousPage) === 1);
+        assertFalse(preg_match('/data-tag="upvote"[^>]*disabled="disabled"/', $anonymousPage) === 1);
+    }
+
     public function testQdbLegacyLikeCountsTowardVoteTotalOnIncrementalAndRebuildPaths(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
