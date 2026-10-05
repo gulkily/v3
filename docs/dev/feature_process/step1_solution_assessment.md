@@ -10,11 +10,9 @@ Resolve uncertainty when there are multiple viable approaches, complex trade-off
 - Filename: `{feature_name}_step1_solution_assessment.md`
 
 ## Structure
-- Standard Plan navigation bar (template in `FEATURE_DEVELOPMENT_PROCESS.md`)
-- `## Original Query` first: preserve the request except grammar, spelling, capitalization, punctuation, and formatting fixes; do not summarize or omit anything
 - Problem statement (1 sentence)
 - ≥2 solution options tagged sequentially (Option A/B/C/etc.) with pros/cons listed as bullets
-- Recommendation, including vertical-slice viability
+- Clear recommendation with brief justification
 
 ## Guardrails
 - Keep content at a high level; no implementation details, code, or verbose prose

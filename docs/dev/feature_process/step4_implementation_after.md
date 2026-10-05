@@ -11,8 +11,8 @@ Run final Step 4 verification gates and prepare handoff.
 3. Run `git log --oneline` and verify:
    - the first Step 4 commit is the planning-doc commit for approved Step 1-3 docs
    - commit count is not lower than `1 + number_of_stages`
-4. Confirm the Contract: normal UI/CLI flow, end-to-end outcome, and required recovery—not direct-only behavior.
-5. Verify scoped deployment, release, external-system, role, migration, and other dependencies in the applicable environment.
+4. Confirm feature behavior is accessible through normal UI/CLI flows (not only direct URLs).
+5. Confirm required roles, migrations, or other dependencies are resolved.
 6. Confirm documentation is updated, including the finalized Step 4 implementation summary.
 
 ## Next

@@ -29,12 +29,6 @@ Each step MUST be a separate file in `docs/plans/`:
 
 **Directory structure**: When a feature accumulates four or more planning artifacts (e.g., all Step 1–4 docs plus auxiliary notes), move them into `docs/plans/{feature_name}/`. Keep smaller efforts at the root until they grow, and update `docs/plans/README.md` when a new folder appears so others can navigate.
 
-**Plan navigation**: Start every artifact with this relative-link bar; omit Step 1 only when skipped.
-
-```md
-> **Feature plan:** [Step 1](./{feature_name}_step1_solution_assessment.md) · [Step 2](./{feature_name}_step2_feature_description.md) · [Step 3](./{feature_name}_step3_development_plan.md) · [Step 4](./{feature_name}_step4_implementation_summary.md)
-```
-
 **Commit discipline**:
 - Keep Step 1-3 planning documents uncommitted while they are being drafted/revised.
 - Do not commit Step 1-3 planning documents when Step 1 or Step 2 is approved.
@@ -65,14 +59,10 @@ Each step MUST be a separate file in `docs/plans/`:
 - Enforce Step 4 commit cadence: first Step 4 commit contains approved Step 1-3 planning docs; each completed stage has a stage-scoped commit that includes the Step 4 summary update
 - Prefer shared components/API contracts first; reuse or extend instead of forking markup, CSS, or payloads
 - Flag scope creep early and bounce back to planning steps rather than improvising mid-implementation
-- A feature is a releasable vertical slice: normal entry, end-to-end outcome, and required recovery. Component-only work is internal maintenance; split larger stories vertically.
-- Keep work within a day or eight Step 3 stages; otherwise rescope the slice.
+- Keep projected work within roughly a day or eight Step 3 stages; otherwise recommend splitting the feature
 - Avoid database schema changes when possible—lean on existing models/fields
 - Reprint the current step/phase instructions (from the linked FDP file) before you begin that work
-- Add the Plan navigation bar to every Step 1–4 artifact
-- Step 1 starts with `## Original Query`: preserve the request except mechanical grammar, spelling, capitalization, punctuation, and formatting fixes
 - For Step 3, prefer `## Stage N` headers with flat bullet lists for each stage field so plans stay easy to scan and review
-- Step 2 risks state impact, early validation, and mitigation; Step 3 begins with `## Key Risks`, and unresolved risks block dependents
 - For Step 4 summaries, prefer `## Stage N - title` headers with bullet lists for changes, verification, and notes so stage handoff stays easy to audit
 
 **User**
@@ -83,9 +73,9 @@ Each step MUST be a separate file in `docs/plans/`:
 
 ## Warning Signs
 - **Step 1**: >1 page, >4 options, or verbose explanations
-- **Step 2**: >1 page, code/DB details, mockups, buried risks, or a component-only "feature"
-- **Step 3**: >1 page, stages >2 hours, tangled dependencies, missing Completion Contract/Key Risks, unusable outcome, or incomplete risk details
-- **Step 4**: Missing branch/planning commit/stage commit + summary, scope changes, direct-only behavior, or too few commits
+- **Step 2**: >1 page, includes code/DB details, or drifts into UI mockups
+- **Step 3**: >1 page, stages >2 hours, or tangled dependencies
+- **Step 4**: Missing feature branch, missing initial Step 1-3 planning-doc commit, skipping stages, changing requirements mid-flight, a stage without a stage-scoped commit + summary update, or commit count lower than `1 + stage count`
 
 ## Workflows
 - **Simple**: Step 2 → Step 3 → Step 4 (feature branch → implement stages → test/commit → complete)
