@@ -483,10 +483,18 @@ PHP);
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId) . '?created_post_id=' . rawurlencode($postId));
+            $analysis = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
+            $generationCount = (int) (new PDO('sqlite:' . $databasePath))
+                ->query('SELECT COUNT(*) FROM post_generated_responses')
+                ->fetchColumn();
             $_COOKIE = ['identity_hint' => 'guest'];
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
 
             assertStringNotContains('data-agent-reply-work=', $threadPage);
+            assertSame(false, $analysis['agent_reply_generation_allowed']);
+            assertSame('not_recommended', $analysis['agent_reply_generation_status']);
+            assertSame('config_disabled', $analysis['agent_reply_reason']);
+            assertSame(0, $generationCount);
             assertSame('ok', $response['status']);
             assertSame('requested', $response['generation_status']);
         } finally {

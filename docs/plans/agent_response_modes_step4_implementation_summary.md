@@ -101,3 +101,11 @@
 - Changes:
   - Replaced the dense all-caps/delimiter layout with readable plain-text headings for the task, response instructions, and forum context.
   - Kept each supplied forum field explicitly enclosed in `forum-content` markers and stated that those sections are untrusted text, preserving the prompt-injection boundary.
+
+## Stage 10 - Legacy automatic-response flag separation
+
+- Changes:
+  - Made `DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED` the complete gate for the legacy analysis-suggested response path, including direct analysis requests as well as page-triggered work.
+  - Clarified in the private feature-flag catalog that it is independent from `AGENT_RESPONSE_REQUESTS_ENABLED`, which controls reader-selected response tasks.
+- Operational note:
+  - Set `DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED=false` to disable legacy automatic replies while retaining the “Request agent response” feature.

@@ -151,14 +151,14 @@ final class PostWorkflowApiController
 
         $phaseStartedAt = hrtime(true);
         $response = $service->postAnalysisResponse($result, $viewerCanSeePostAnalysis);
-        $agentReplyEnabled = $service->agentRepliesEnabled();
+        $legacyAutomaticAgentRepliesEnabled = $service->legacyAgentRepliesAutomaticEnabled();
         $analysisComplete = ($result['status'] ?? null) === 'complete';
         $gateFailure = $analysisComplete ? $service->agentReplyGateFailure($post, $result) : null;
-        $agentReplyAllowed = $agentReplyEnabled && $analysisComplete && $gateFailure === null;
+        $agentReplyAllowed = $legacyAutomaticAgentRepliesEnabled && $analysisComplete && $gateFailure === null;
         $timings['analysis_response'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
 
         $phaseStartedAt = hrtime(true);
-        if (!$agentReplyEnabled) {
+        if (!$legacyAutomaticAgentRepliesEnabled) {
             $agentReplyResult = $service->agentReplyStatusResponse('not_recommended', $postId, [
                 'reason' => 'config_disabled',
             ]);
