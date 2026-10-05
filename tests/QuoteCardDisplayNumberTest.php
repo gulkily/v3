@@ -167,6 +167,7 @@ final class QuoteCardDisplayNumberTest
         assertStringContains('data-role="thread-score" data-score-format="bare-ratio">(5/7)</span>', $permalink);
         assertStringContains('<p class="quote-card-body">The quoted body.<br />', $permalink);
         assertStringNotContains('<p class="meta">', $permalink);
+        assertStringNotContains('>Reply</a>', $permalink);
         assertStringContains('data-tag="upvote"', $permalink);
         assertStringContains('data-tag="downvote"', $permalink);
         assertStringContains('data-tag="flag"', $permalink);

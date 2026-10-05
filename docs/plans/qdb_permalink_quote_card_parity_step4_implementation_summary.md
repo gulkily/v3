@@ -144,3 +144,12 @@
 - Verification: `QuoteCardDisplayNumberTest::testQdbPermalinkRootCardMatchesListingCardWithoutLike`
   asserts no `<p class="meta">` on the qdb permalink. `QuoteCardDisplayNumberTest`
   passes 13/13.
+
+## Follow-up 2 - No Reply button on the qdb quote root card
+- Requested after the meta-line fix: remove the Reply link from the qdb
+  quote card.
+- Change: `thread_root_card.php` renders the Reply link only on non-qdb
+  profiles. The reply list and composer below the card are unchanged.
+- Verification: the qdb permalink test asserts no `>Reply</a>`;
+  `QuoteCardDisplayNumberTest` passes 13/13; full suite 688 passed, with the
+  same 7 pre-existing failures.

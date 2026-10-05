@@ -133,7 +133,9 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
 ?>
   <button type="button" class="post-card-actions-toggle thread-reaction-button" aria-label="Show actions for this post">Actions</button>
   <div class="button-row button-row-natural post-card-actions thread-root-actions">
+<?php if (!$isQdbQuoteRoot): ?>
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
+<?php endif; ?>
 <?php if ($isQdbQuoteRoot): ?>
     <button
       type="button"
