@@ -33,6 +33,8 @@ final class AgentResponseTask
     {
         return [
             'type' => self::DEFAULT_TYPE,
+            'post_id' => (string) ($context['post_id'] ?? ''),
+            'content_hash' => (string) ($context['content_hash'] ?? ''),
             'thread_subject' => self::limit((string) ($context['thread_subject'] ?? ''), 500),
             'target_subject' => self::limit((string) ($context['subject'] ?? ''), 500),
             'target_body' => self::limit((string) ($context['body'] ?? ''), 6000),

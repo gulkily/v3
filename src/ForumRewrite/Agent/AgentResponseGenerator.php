@@ -29,7 +29,11 @@ final class AgentResponseGenerator
 
         $completion = $this->provider->completeTextChat($this->messages($task), [
             'max_completion_tokens' => 2000,
-            'exchange_context' => ['call_type' => 'agent_response_task'],
+            'exchange_context' => [
+                'call_type' => 'agent_response_task',
+                'post_id' => (string) ($task['post_id'] ?? ''),
+                'content_hash' => (string) ($task['content_hash'] ?? ''),
+            ],
         ]);
         if (trim((string) ($completion['response_text'] ?? '')) === '') {
             throw new RuntimeException('Agent response task returned empty text.');
