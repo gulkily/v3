@@ -57,6 +57,19 @@ final class AgentReplyFulfillmentService
             return $this->markSkippedResponse($postId, $contentHash, 'target_content_changed');
         }
 
+        $task = AgentResponseTask::fromStoredRequestContext(
+            is_array($requestRow['request_context'] ?? null) ? $requestRow['request_context'] : []
+        );
+        if (AgentResponseTask::isSupportedType((string) $task['type'])) {
+            if (!$this->taskMatchesContext($task, $context)) {
+                return $this->markSkippedResponse($postId, $contentHash, 'task_context_mismatch');
+            }
+
+            if ($this->taskGenerator === null) {
+                return $this->markSkippedResponse($postId, $contentHash, 'task_generator_unavailable');
+            }
+        }
+
         $analysis = $this->analysisStore->find($postId, $contentHash);
         if ($analysis === null || ($analysis['status'] ?? null) !== 'complete') {
             $analysis = $this->analysisService->analyze($context);
@@ -76,18 +89,7 @@ final class AgentReplyFulfillmentService
             return $this->markSkippedResponse($postId, $contentHash, $gateFailure);
         }
 
-        $task = AgentResponseTask::fromStoredRequestContext(
-            is_array($requestRow['request_context'] ?? null) ? $requestRow['request_context'] : []
-        );
         if (AgentResponseTask::isSupportedType((string) $task['type'])) {
-            if (!$this->taskMatchesContext($task, $context)) {
-                return $this->markSkippedResponse($postId, $contentHash, 'task_context_mismatch');
-            }
-
-            if ($this->taskGenerator === null) {
-                return $this->markSkippedResponse($postId, $contentHash, 'task_generator_unavailable');
-            }
-
             return $this->publishForPost(
                 $post,
                 fn (array $generationContext): array => $this->generationFromTask($task, $generationContext)

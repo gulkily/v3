@@ -848,6 +848,43 @@ PHP);
         }
     }
 
+    public function testTaskPreflightRejectsMismatchedContextWithoutAnalysis(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Stale%20task&body=This%20task%20must%20not%20be%20analyzed.'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->renderMethod(
+                $application,
+                'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=logic_analysis'
+            );
+            $_COOKIE = [];
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $claimed = $store->claimRequestedForPost($postId);
+            $claimed['request_context']['agent_reply_request']['agent_response_task']['target_content_hash'] = 'mismatched-content-hash';
+            $result = $application->fulfillAgentReplyRequest($claimed);
+            $analysisCount = (int) (new PDO('sqlite:' . $databasePath))
+                ->query('SELECT COUNT(*) FROM post_analyses')
+                ->fetchColumn();
+
+            assertSame('not_recommended', $result['generation_status']);
+            assertSame('task_context_mismatch', $result['reason']);
+            assertSame(0, $analysisCount);
+        } finally {
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
+            $_COOKIE = [];
+        }
+    }
+
     public function testGenerateAgentReplyRejectsLowRespondabilityHighRiskHighModerationAndPrivateResponse(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
