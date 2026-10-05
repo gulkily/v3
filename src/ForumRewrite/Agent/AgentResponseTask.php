@@ -26,6 +26,21 @@ final class AgentResponseTask
     }
 
     /**
+     * @param array<string, mixed> $context
+     * @return array<string, string>
+     */
+    public static function defaultGenerationInput(array $context): array
+    {
+        return [
+            'type' => self::DEFAULT_TYPE,
+            'thread_subject' => self::limit((string) ($context['thread_subject'] ?? ''), 500),
+            'target_subject' => self::limit((string) ($context['subject'] ?? ''), 500),
+            'target_body' => self::limit((string) ($context['body'] ?? ''), 6000),
+            'parent_body_preview' => self::limit((string) ($context['parent_body_preview'] ?? ''), 1200),
+        ];
+    }
+
+    /**
      * @param array<string, mixed> $storedRequestContext
      * @return array<string, string|int>
      */
@@ -58,5 +73,10 @@ final class AgentResponseTask
             'target_post_id' => '',
             'target_content_hash' => '',
         ];
+    }
+
+    private static function limit(string $value, int $limit): string
+    {
+        return substr($value, 0, $limit);
     }
 }

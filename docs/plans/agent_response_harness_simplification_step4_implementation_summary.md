@@ -13,3 +13,15 @@
   - Reviewed the existing store's target/content-hash uniqueness tests to confirm the default and legacy paths continue sharing one publication slot.
 - Notes:
   - No request routing, provider call, queue contract, or database schema changed in this stage.
+
+## Stage 2 - Plain-text task contract and generator
+
+- Changes:
+  - Added the provider-neutral `TextChatProvider` contract and deterministic stub implementation.
+  - Added `AgentResponseGenerator` to build bounded, labeled default-task input and return normalized plain text without a response schema.
+  - Added task input bounds and focused generator tests.
+- Verification:
+  - `php tests/run.php AgentResponseGeneratorTest AgentResponseTaskTest GeneratedReplyTextNormalizerTest` — 9 passed.
+  - `php -l src/ForumRewrite/Agent/AgentResponseGenerator.php` — no syntax errors.
+- Notes:
+  - Production OpenAI-compatible and Anthropic adapters are intentionally deferred to Stage 3.
