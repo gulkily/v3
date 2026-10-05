@@ -1524,6 +1524,48 @@ PHP);
         }
     }
 
+    public function testLegacyAutomaticFlagDoesNotDisableDirectRequestedTasks(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
+        putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED=false');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Flag%20separation&body=Confirm%20the%20two%20reply%20paths%20are%20separate.'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+            $analysis = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/analyze_post?post_id=' . rawurlencode($postId)
+            ), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $request = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=logic_analysis'
+            ), true);
+            $_COOKIE = [];
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $fulfilled = $application->fulfillAgentReplyRequest($store->claimRequestedForPost($postId));
+
+            assertSame(false, $analysis['agent_reply_generation_allowed']);
+            assertSame('not_recommended', $analysis['agent_reply_generation_status']);
+            assertSame('config_disabled', $analysis['agent_reply_reason']);
+            assertSame('requested', $request['generation_status']);
+            assertSame('generated', $fulfilled['generation_status']);
+            assertSame('logic_analysis', $fulfilled['response_intent']);
+        } finally {
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
+            putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED');
+            $_COOKIE = [];
+        }
+    }
+
     public function testGenerateAgentReplyRecordsPostingFailureAfterGeneration(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

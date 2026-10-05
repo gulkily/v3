@@ -25,3 +25,13 @@
   - `./v3 test WriteApiSmokeTest::testGenerateAgentReplyDoesNotRequireCompletedAnalysis WriteApiSmokeTest::testGenerateAgentReplyBypassesModelDerivedGates WriteApiSmokeTest::testGenerateAgentReplyPersistsAndFulfillsSelectedResponseMode WriteApiSmokeTest::testClaimedAgentReplyRequestPublishesWithoutAnalysis WriteApiSmokeTest::testTaskPreflightRejectsMismatchedContextWithoutAnalysis AgentReplyGenerationTest AgentResponseTaskTest AgentResponseGeneratorTest` — 27 passed.
 - Notes:
   - A pre-existing analysis record remains untouched and is no longer a prerequisite; fresh task fulfillment leaves the post-analysis store empty.
+
+## Stage 3 - Legacy isolation and operational verification
+
+- Changes:
+  - Added regression coverage for the two independent controls: legacy automatic replies remain disabled by `DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED`, while `AGENT_RESPONSE_REQUESTS_ENABLED` continues to allow selected direct tasks.
+  - Confirmed no UI or request-contract changes were needed; both paths reuse their existing flags and lifecycle surfaces.
+- Verification:
+  - `./v3 test FeatureFlagEvaluatorTest WriteApiSmokeTest::testLegacyAutomaticFlagDoesNotDisableDirectRequestedTasks WriteApiSmokeTest::testAutomaticAgentReplyWorkCanBeDisabledWithoutDisablingApi WriteApiSmokeTest::testAgentResponseRequestFlagHidesChooserAndRejectsRequests WriteApiSmokeTest::testClaimedAgentReplyRequestPublishesWithoutAnalysis WriteApiSmokeTest::testTaskPreflightRejectsMismatchedContextWithoutAnalysis` — 19 passed.
+- Notes:
+  - Set `DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED=false` to suppress legacy automatic suggested replies; selected reader requests remain governed by `AGENT_RESPONSE_REQUESTS_ENABLED`.
