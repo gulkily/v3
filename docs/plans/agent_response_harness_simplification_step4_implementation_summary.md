@@ -61,3 +61,17 @@
   - `php -l` on `PostAnalyzerFactory` and `PostWorkflowService` — no syntax errors.
 - Notes:
   - The response-type selector is intentionally out of scope; it can later supply additional named tasks through this same request and fulfillment path.
+
+## Stage 6 - Operations and completion verification
+
+- Changes:
+  - Changed `./v3 agent-reply test` from a structured JSON probe to a labeled plain-text task probe and updated its CLI and README reference.
+  - Set the plain-text task completion budget to 2,000 tokens so configured reasoning models can produce a response before exhausting their reasoning budget.
+- Verification:
+  - `php tests/run.php AgentReplyCommandTest OpenAiCompatibleStructuredChatProviderTest AnthropicStructuredChatProviderTest AgentResponseGeneratorTest` — 17 passed.
+  - `php tests/run.php WriteApiSmokeTest::testAgentReplyRequestCommandProcessesQueuedRequestOnce AgentReplyCommandTest` — 7 passed, including a temporary-database queued-worker smoke flow.
+  - `./v3 test` — 708 passed; 7 documented long-standing unrelated browser/local-app/docs failures remained.
+  - `./v3 agent-reply test --timeout=30` — live OpenAI plain-text task succeeded and created no forum post.
+- Notes:
+  - The initial live 200-token probe exhausted the reasoning budget without text; the 2,000-token retry succeeded with `gpt-5-nano`.
+  - No response selector, new queue, or database migration was introduced.

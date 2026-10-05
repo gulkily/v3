@@ -28,7 +28,7 @@ final class AgentResponseGenerator
         }
 
         $completion = $this->provider->completeTextChat($this->messages($task), [
-            'max_completion_tokens' => 800,
+            'max_completion_tokens' => 2000,
             'exchange_context' => ['call_type' => 'agent_response_task'],
         ]);
         if (trim((string) ($completion['response_text'] ?? '')) === '') {
