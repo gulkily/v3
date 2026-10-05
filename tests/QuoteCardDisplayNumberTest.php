@@ -117,6 +117,40 @@ final class QuoteCardDisplayNumberTest
         assertSame($directThreadPage, $resolvedPage);
     }
 
+    public function testQdbPermalinkRootCardMatchesListingCardWithoutLike(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $permalink = $this->render($application, '/threads/thread-20030613104735-qdb-42');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertStringContains('class="quote-card-permalink" href="/42">#42</a>', $permalink);
+        assertStringContains('data-role="thread-score" data-score-format="bare-ratio">(5/7)</span>', $permalink);
+        assertStringContains('<p class="quote-card-body">The quoted body.<br />', $permalink);
+        assertStringContains('data-tag="upvote"', $permalink);
+        assertStringContains('data-tag="downvote"', $permalink);
+        assertStringContains('data-tag="flag"', $permalink);
+        assertStringNotContains('data-tag="like"', $permalink);
+    }
+
+    public function testNonQdbPermalinkRootCardKeepsLikeAndHasNoQuoteHeader(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+        $permalink = $this->render($application, '/threads/thread-20030613104735-qdb-42');
+
+        assertStringContains('data-tag="like"', $permalink);
+        assertStringNotContains('quote-card-permalink', $permalink);
+    }
+
     public function testBareNumericPathRedirectsToTheQuoteWithThatNumber(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();

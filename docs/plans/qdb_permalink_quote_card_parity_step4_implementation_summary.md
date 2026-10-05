@@ -27,3 +27,42 @@
     and will be verified when Stage 4 closes out.
   - The High-risk parity item (incremental vs rebuild) is covered by the
     second test above.
+
+## Stage 2 - Permalink root card matches the listing card on qdb
+- Changes:
+  - `templates/partials/thread_root_card.php`: on the qdb profile, the root
+    card shows the listing's `#N` header and `(score/votes)` readout, the
+    full quote body in quote-card styling, and upvote, downvote, and flag
+    controls with `quote_card.php`'s markup and data attributes. Like is no
+    longer rendered there. Non-qdb profiles keep the original `<h1>`, body,
+    and Like/Flag buttons. Reply, agent, Codex, and analysis features are
+    untouched.
+  - `Application::fetchThread()`: added `threads.vote_count` to the SELECT.
+    It was missing, so every permalink page read a denominator of 0 — the
+    `(5/0)` symptom in `qdb_todo.txt` item 1 has this cause as well as the
+    Like-counting one fixed in Stage 1. Affects all profiles' thread pages
+    only by making the value available; no display change outside the qdb
+    root card.
+- Verification:
+  - `php -l` on the template and `Application.php` — clean.
+  - `QuoteCardDisplayNumberTest::testQdbPermalinkRootCardMatchesListingCardWithoutLike`
+    — on qdb, `/threads/<id>` shows `href="/42">#42`, the
+    `(5/7)` readout from the seeded imported score and vote counts, the
+    full body `The quoted body.`, and upvote/downvote/flag, with no
+    `data-tag="like"`.
+  - `QuoteCardDisplayNumberTest::testNonQdbPermalinkRootCardKeepsLikeAndHasNoQuoteHeader`
+    — default profile keeps the Like control and shows no quote header.
+  - Live check during investigation: a scratch server rendered the same
+    imported quote; the DB row held `vote_count = 7` while the page showed
+    `(5/0)` before the `fetchThread()` fix, and the page is now covered by
+    the test above.
+  - Full suite `./v3 test`: 692 run, 686 passed, 6 failed — the pre-existing
+    set (the order-dependent approval test failed in this run and passed
+    in an earlier one).
+- Notes:
+  - Non-qdb byte-identical output was not captured as a before/after diff;
+    the non-qdb guarantee is covered structurally (Like present, no quote
+    header) rather than by a byte comparison.
+  - Found and fixed during this stage: the quote body disappeared on the
+    qdb root card because the body helper strips a first line that matches
+    the title; the qdb branch now uses the full body, since it has no `<h1>`.
