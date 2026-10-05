@@ -44,7 +44,7 @@ final class AgentResponseTask
     }
 
     /**
-     * @return list<array{type:string, label:string, description:string}>
+     * @return list<array{type:string, label:string}>
      */
     public static function selectableModes(): array
     {
@@ -52,27 +52,22 @@ final class AgentResponseTask
             [
                 'type' => self::FACTS_ANALYSIS_TYPE,
                 'label' => 'Facts analysis',
-                'description' => 'Claims, support, missing evidence, and uncertainty.',
             ],
             [
                 'type' => self::EXPLAIN_JOKE_OR_REFERENCE_TYPE,
                 'label' => 'Explain the joke or reference',
-                'description' => 'Unpack humor, allusions, and cultural context.',
             ],
             [
                 'type' => self::SUMMARY_AND_KEY_TAKEAWAYS_TYPE,
                 'label' => 'Summary and key takeaways',
-                'description' => 'Condense the main points.',
             ],
             [
                 'type' => self::EXPLAIN_SIMPLY_TYPE,
                 'label' => 'Explain simply',
-                'description' => 'Restate the argument in plain language.',
             ],
             [
                 'type' => self::CONSTRUCTIVE_COUNTERPOINT_TYPE,
                 'label' => 'Constructive counterpoint',
-                'description' => 'Surface a strong reasonable alternative view.',
             ],
         ];
     }

@@ -43,3 +43,15 @@
   - `./v3 test` — 720 run, 712 passed; the 8 failures are all classified by the suite as long-standing and outside this slice.
 - Notes:
   - The chooser uses the browser’s native dialog focus and Escape behavior. A final human browser pass at desktop and narrow viewport remains the release handoff check.
+
+## Stage 4 - Modal chooser refinement
+
+- Changes:
+  - Made the native dialog presentation explicit with modal semantics, backdrop, and a visible close control.
+  - Removed per-choice sub-captions; the chooser now presents only the five mode labels, plus the shared facts-analysis limitation notice.
+- Verification:
+  - `php -l src/ForumRewrite/Agent/AgentResponseTask.php`
+  - `node --check public/assets/post_analysis.js`
+  - `./v3 test AgentResponseTaskTest AgentResponseGeneratorTest WriteApiSmokeTest::testApprovedViewerSeesAgentReplyRequestButtonUntilRequestExists WriteApiSmokeTest::testPostAnalysisScriptDoesNotExposeInProgressReplyGeneration` — 11 passed.
+- Notes:
+  - No request, fulfillment, or safety behavior changed.

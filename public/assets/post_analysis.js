@@ -472,7 +472,7 @@
     try {
       const modes = JSON.parse(catalog.textContent || "[]");
       return Array.isArray(modes) ? modes.filter(function (mode) {
-        return mode && typeof mode.type === "string" && typeof mode.label === "string" && typeof mode.description === "string";
+        return mode && typeof mode.type === "string" && typeof mode.label === "string";
       }) : [];
     } catch (error) {
       return [];
@@ -492,11 +492,20 @@
 
     const dialog = document.createElement("dialog");
     dialog.className = "agent-response-mode-dialog";
+    dialog.setAttribute("aria-modal", "true");
     dialog.setAttribute("aria-labelledby", "agent-response-mode-title");
     const heading = document.createElement("h2");
     heading.id = "agent-response-mode-title";
-    heading.textContent = "Choose a response";
+    heading.textContent = "Choose an agent response";
     dialog.appendChild(heading);
+
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "agent-response-mode-close";
+    close.setAttribute("aria-label", "Close response choices");
+    close.textContent = "×";
+    close.addEventListener("click", closeAgentResponseModeDialog);
+    dialog.appendChild(close);
 
     const intro = document.createElement("p");
     intro.className = "meta";
@@ -512,10 +521,7 @@
       choice.setAttribute("data-response-mode", mode.type);
       const label = document.createElement("strong");
       label.textContent = mode.label;
-      const description = document.createElement("span");
-      description.textContent = mode.description;
       choice.appendChild(label);
-      choice.appendChild(description);
       choice.addEventListener("click", function () {
         const trigger = agentResponseModeTrigger;
         closeAgentResponseModeDialog();

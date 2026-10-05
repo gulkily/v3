@@ -73,6 +73,20 @@
   margin: 0;
   font-size: 1.1rem;
 }
+.agent-response-mode-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.7rem;
+  width: auto;
+  min-width: 2rem;
+  margin: 0;
+  padding: 0.15rem 0.45rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 1.35rem;
+  line-height: 1;
+}
 .agent-response-mode-dialog > .meta {
   margin: 0.4rem 0 0;
 }
@@ -98,7 +112,6 @@
   border-color: var(--ink);
   background: color-mix(in srgb, var(--ink) 8%, transparent);
 }
-.agent-response-mode-choice span,
 .agent-response-mode-notice {
   color: var(--ink-soft);
 }
