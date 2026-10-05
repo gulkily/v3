@@ -403,7 +403,7 @@ final class ReadModelBuilder
                     $labelsAdded[] = $label;
                 }
 
-                if ($record->authorIdentityId !== null && TagScore::isVoteTag($label)) {
+                if ($record->authorIdentityId !== null && TagScore::countsTowardVoteTotal($label)) {
                     $voteDedupeKey = $record->authorIdentityId . ':' . $label;
                     if (!isset($countedVoteTagsByThread[$record->threadId][$voteDedupeKey])) {
                         $countedVoteTagsByThread[$record->threadId][$voteDedupeKey] = true;

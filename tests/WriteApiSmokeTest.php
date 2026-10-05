@@ -13,6 +13,7 @@ use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\Scoring\FastScoreContextFactory;
@@ -2614,6 +2615,54 @@ PHP);
         $boardLiked = $this->renderMethod($application, 'GET', '/?view=liked&sort=newest');
 
         assertStringContains('Pending Liked Thread', $boardLiked);
+    }
+
+    public function testQdbLegacyLikeCountsTowardVoteTotalOnIncrementalAndRebuildPaths(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->renderMethod(new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot), 'GET', '/');
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $service->applyThreadTag([
+                'thread_id' => 'root-001',
+                'tag' => 'like',
+                'author_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+            ]);
+            $incrementalVoteCount = $this->threadVoteCount($databasePath, 'root-001');
+
+            (new ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot), 'qdb-like-parity-test'))->rebuild();
+            $rebuiltVoteCount = $this->threadVoteCount($databasePath, 'root-001');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertSame(1, $incrementalVoteCount);
+        assertSame(1, $rebuiltVoteCount);
+    }
+
+    public function testNonQdbLikeDoesNotCountTowardVoteTotal(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->renderMethod(new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot), 'GET', '/');
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+
+        $service->applyThreadTag([
+            'thread_id' => 'root-001',
+            'tag' => 'like',
+            'author_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+        ]);
+
+        assertSame(0, $this->threadVoteCount($databasePath, 'root-001'));
+    }
+
+    private function threadVoteCount(string $databasePath, string $threadId): int
+    {
+        $stmt = (new ReadModelConnection($databasePath))->open()->prepare('SELECT vote_count FROM threads WHERE root_post_id = :id');
+        $stmt->execute(['id' => $threadId]);
+
+        return (int) $stmt->fetchColumn();
     }
 
     public function testApplyThreadTagUsesIncrementalReadModelUpdateWhenDatabaseIsWarm(): void

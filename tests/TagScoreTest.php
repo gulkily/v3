@@ -43,6 +43,21 @@ final class TagScoreTest
         assertSame(false, TagScore::isVoteTag('like'));
         assertSame(false, TagScore::isVoteTag('flag'));
     }
+
+    public function testLikeCountsTowardVoteTotalOnlyOnQdb(): void
+    {
+        putenv('FORUM_SITE_ID');
+        assertSame(false, TagScore::countsTowardVoteTotal('like'));
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            assertSame(true, TagScore::countsTowardVoteTotal('like'));
+            assertSame(true, TagScore::countsTowardVoteTotal('upvote'));
+            assertSame(false, TagScore::countsTowardVoteTotal('flag'));
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+    }
 }
 
 if (!function_exists('assertSame')) {

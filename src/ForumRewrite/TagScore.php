@@ -41,4 +41,13 @@ final class TagScore
     {
         return in_array($tag, self::voteTags(), true);
     }
+
+    public static function countsTowardVoteTotal(string $tag): bool
+    {
+        if (self::isVoteTag($tag)) {
+            return true;
+        }
+
+        return $tag === 'like' && SiteConfig::siteName() === 'qdb';
+    }
 }
