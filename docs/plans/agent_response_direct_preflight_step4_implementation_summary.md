@@ -30,8 +30,19 @@
 
 - Changes:
   - Added regression coverage for the two independent controls: legacy automatic replies remain disabled by `DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED`, while `AGENT_RESPONSE_REQUESTS_ENABLED` continues to allow selected direct tasks.
+  - Made the legacy automatic-reply fixtures explicitly opt in to that flag, rather than inheriting a machine-specific private-config default.
+  - Reworked the legacy gate fixture to enqueue an intentionally unmarked historical request, proving that only that compatibility path still consults analysis and its gates.
   - Confirmed no UI or request-contract changes were needed; both paths reuse their existing flags and lifecycle surfaces.
 - Verification:
   - `./v3 test FeatureFlagEvaluatorTest WriteApiSmokeTest::testLegacyAutomaticFlagDoesNotDisableDirectRequestedTasks WriteApiSmokeTest::testAutomaticAgentReplyWorkCanBeDisabledWithoutDisablingApi WriteApiSmokeTest::testAgentResponseRequestFlagHidesChooserAndRejectsRequests WriteApiSmokeTest::testClaimedAgentReplyRequestPublishesWithoutAnalysis WriteApiSmokeTest::testTaskPreflightRejectsMismatchedContextWithoutAnalysis` — 19 passed.
+  - `./v3 test WriteApiSmokeTest::testPostAnalysisEndpointStoresStubResultIdempotently WriteApiSmokeTest::testAnalyzePostGateFailureUsesCompactVisibilityRules WriteApiSmokeTest::testClaimedUnmarkedAgentReplyRequestStoresGateSkip` — 3 passed.
+  - `./v3 test WriteApiSmokeTest` — direct-response coverage passed; one unrelated, order-sensitive approval-rendering assertion failed in the class run and passed in isolation.
 - Notes:
   - Set `DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED=false` to suppress legacy automatic suggested replies; selected reader requests remain governed by `AGENT_RESPONSE_REQUESTS_ENABLED`.
+
+## Final verification and handoff
+
+- The normal reader flow is covered end to end: an approved viewer queues a selected task, `./v3 agent-reply cron run` claims it, and the existing lifecycle publishes the generated reply. Direct tasks neither read nor create post-analysis records.
+- Invalid direct-task context safely skips before model work. Existing publication reservation, retry, and posting-failure behavior remain covered by the agent-reply smoke tests.
+- No migration, deployment procedure, new role, or external-system configuration is required. Operators retain the two independent server-wide controls: `AGENT_RESPONSE_REQUESTS_ENABLED` for reader requests and `DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED` for legacy automatic suggestions.
+- Final repository-wide verification: `./v3 test` ran 726 tests: 718 passed and 8 failed. Seven failures are already longstanding browser, local-app, and documentation fixtures; the eighth is the order-sensitive approval-rendering test noted above, which passes when run alone. None exercises the direct task-preflight or legacy-isolation changes.
