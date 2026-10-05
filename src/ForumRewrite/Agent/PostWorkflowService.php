@@ -693,7 +693,11 @@ final class PostWorkflowService
      * @param array<string, mixed> $viewerProfile
      * @return array<string, mixed>
      */
-    public function agentReplyRequestResultForPost(array $post, array $viewerProfile): array
+    public function agentReplyRequestResultForPost(
+        array $post,
+        array $viewerProfile,
+        string $responseMode = AgentResponseTask::DEFAULT_TYPE,
+    ): array
     {
         $postId = (string) ($post['post_id'] ?? '');
         if ((string) ($post['author_label'] ?? '') === AgentIdentityService::USERNAME) {
@@ -708,7 +712,7 @@ final class PostWorkflowService
             'requested_by_identity_id' => (string) ($viewerProfile['identity_id'] ?? ''),
             'requested_by_profile_slug' => (string) ($viewerProfile['profile_slug'] ?? ''),
             'requested_by_username' => (string) ($viewerProfile['username'] ?? ''),
-            'agent_response_task' => AgentResponseTask::defaultForPost($context),
+            'agent_response_task' => AgentResponseTask::forPost($context, $responseMode),
         ]);
 
         return $this->agentReplyResponseForStoredRequest($row, $postId);
@@ -720,33 +724,48 @@ final class PostWorkflowService
      */
     private function agentReplyResponseForStoredRequest(array $row, string $postId): array
     {
+        $modeLabel = $this->agentReplyModeLabel($row);
+        $withModeLabel = static function (array $extra = []) use ($modeLabel): array {
+            return $modeLabel === null ? $extra : array_merge(['response_mode_label' => $modeLabel], $extra);
+        };
         if ($row['agent_post_id'] !== null) {
-            return $this->agentReplyStatusResponse('already_posted', $postId, [
+            return $this->agentReplyStatusResponse('already_posted', $postId, $withModeLabel([
                 'agent_post_id' => $row['agent_post_id'],
                 'agent_post_url' => '/posts/' . $row['agent_post_id'],
-            ]);
+            ]));
         }
 
         $status = (string) ($row['status'] ?? '');
         if ($status === 'requested') {
-            return $this->agentReplyStatusResponse('requested', $postId);
+            return $this->agentReplyStatusResponse('requested', $postId, $withModeLabel());
         }
 
         if (in_array($status, ['pending', 'complete', 'posting'], true)) {
-            return $this->agentReplyStatusResponse('in_progress', $postId);
+            return $this->agentReplyStatusResponse('in_progress', $postId, $withModeLabel());
         }
 
         if ($status === 'skipped') {
-            return $this->agentReplyStatusResponse('not_recommended', $postId, [
+            return $this->agentReplyStatusResponse('not_recommended', $postId, $withModeLabel([
                 'reason' => (string) ($row['failure_code'] ?? 'not_recommended'),
-            ]);
+            ]));
         }
 
         if ($status === 'failed') {
-            return $this->failedAgentReplyResponse($row);
+            return array_merge($this->failedAgentReplyResponse($row), $withModeLabel());
         }
 
-        return $this->agentReplyStatusResponse('in_progress', $postId);
+        return $this->agentReplyStatusResponse('in_progress', $postId, $withModeLabel());
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function agentReplyModeLabel(array $row): ?string
+    {
+        $requestContext = is_array($row['request_context'] ?? null) ? $row['request_context'] : [];
+        $task = AgentResponseTask::fromStoredRequestContext($requestContext);
+
+        return AgentResponseTask::labelForType((string) ($task['type'] ?? ''));
     }
 
     /**

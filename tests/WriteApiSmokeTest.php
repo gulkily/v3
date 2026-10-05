@@ -1164,6 +1164,45 @@ PHP);
         }
     }
 
+    public function testGenerateAgentReplyPersistsAndFulfillsSelectedResponseMode(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $postId = $this->createAnalyzedThread($application, $databasePath);
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $request = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=facts_analysis'
+            ), true);
+            $invalid = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=unknown'
+            ), true);
+            $_COOKIE = [];
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $claimed = $store->claimRequestedForPost($postId);
+            $fulfilled = $application->fulfillAgentReplyRequest($claimed);
+            $stored = $store->findByTarget($postId, (string) $claimed['target_content_hash']);
+
+            assertSame('requested', $request['generation_status']);
+            assertSame('Facts analysis', $request['response_mode_label']);
+            assertSame('error', $invalid['status']);
+            assertSame('invalid response_mode', $invalid['error']);
+            assertSame('facts_analysis', $stored['request_context']['agent_reply_request']['agent_response_task']['type']);
+            assertSame('facts_analysis', $stored['response_intent']);
+            assertSame('generated', $fulfilled['generation_status']);
+        } finally {
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
+            $_COOKIE = [];
+        }
+    }
+
     public function testGenerateAgentReplyUsesDefaultTextTaskInsteadOfStructuredSuggestion(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

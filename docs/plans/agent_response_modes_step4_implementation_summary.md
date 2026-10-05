@@ -14,3 +14,18 @@
   - `./v3 test AgentResponseTaskTest AgentResponseGeneratorTest` — 9 passed.
 - Notes:
   - No request endpoint or presentation behavior changed in this stage; a selectable mode cannot reach generation until Stage 2 wiring is complete.
+
+## Stage 2 - Selected-mode request and fulfillment lifecycle
+
+- Changes:
+  - Extended the existing request API with validated `response_mode` input while retaining the legacy default for callers that omit it.
+  - Persisted the selected task through request completion and failure, surfaced its safe label in lifecycle responses, and fulfilled every supported task through mode-specific generation input.
+  - Added end-to-end coverage for selected-mode request, invalid-mode rejection, durable task retention, and worker fulfillment; no schema migration was required.
+- Verification:
+  - `php -l src/ForumRewrite/Http/PostWorkflowApiController.php`
+  - `php -l src/ForumRewrite/Agent/PostWorkflowService.php`
+  - `php -l src/ForumRewrite/Agent/AgentReplyFulfillmentService.php`
+  - `php -l src/ForumRewrite/Agent/SqliteAgentReplyGenerationStore.php`
+  - `./v3 test AgentReplyGenerationTest AgentResponseTaskTest AgentResponseGeneratorTest WriteApiSmokeTest` — passed.
+- Notes:
+  - Historical unmarked requests remain legacy analysis replies; request rows now retain a selected task after completion or failure so subsequent lifecycle feedback remains mode-aware.

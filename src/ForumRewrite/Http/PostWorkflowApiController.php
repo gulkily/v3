@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\Agent\AgentResponseTask;
 use RuntimeException;
 
 /**
@@ -124,7 +125,6 @@ final class PostWorkflowApiController
             $this->routeServices->sendJson(['status' => 'error', 'error' => 'Missing post_id.'], 400, $headersWithTimings());
             return;
         }
-
         $phaseStartedAt = hrtime(true);
         $post = ($this->fetchPost)($postId);
         $timings['fetch_post'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
@@ -210,6 +210,14 @@ final class PostWorkflowApiController
             $this->routeServices->sendJson(['status' => 'error', 'error' => 'Missing post_id.'], 400, $headersWithTimings());
             return;
         }
+        $responseMode = trim((string) ($input['response_mode'] ?? ''));
+        if ($responseMode === '') {
+            $responseMode = AgentResponseTask::DEFAULT_TYPE;
+        }
+        if (!AgentResponseTask::isSupportedType($responseMode)) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'invalid response_mode'], 400, $headersWithTimings());
+            return;
+        }
 
         $phaseStartedAt = hrtime(true);
         $post = ($this->fetchPost)($postId);
@@ -228,7 +236,7 @@ final class PostWorkflowApiController
         }
 
         $phaseStartedAt = hrtime(true);
-        $response = $service->agentReplyRequestResultForPost($post, $viewerProfile);
+        $response = $service->agentReplyRequestResultForPost($post, $viewerProfile, $responseMode);
         $timings['agent_reply'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
         foreach ($this->timingMetricsFrom($response['timings'] ?? null) as $name => $duration) {
             $timings[$name] = $duration;

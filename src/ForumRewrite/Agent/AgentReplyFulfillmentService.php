@@ -79,7 +79,7 @@ final class AgentReplyFulfillmentService
         $task = AgentResponseTask::fromStoredRequestContext(
             is_array($requestRow['request_context'] ?? null) ? $requestRow['request_context'] : []
         );
-        if ($task['type'] === AgentResponseTask::DEFAULT_TYPE) {
+        if (AgentResponseTask::isSupportedType((string) $task['type'])) {
             if (!$this->taskMatchesContext($task, $context)) {
                 return $this->markSkippedResponse($postId, $contentHash, 'task_context_mismatch');
             }
@@ -287,7 +287,9 @@ final class AgentReplyFulfillmentService
             throw new RuntimeException('Agent response task generator is unavailable.');
         }
 
-        $generation = $this->taskGenerator->generate(AgentResponseTask::defaultGenerationInput($context));
+        $generation = $this->taskGenerator->generate(
+            AgentResponseTask::generationInputForType($context, (string) $task['type'])
+        );
         $generation['response_style'] = 'task';
         $generation['response_intent'] = (string) $task['type'];
 
