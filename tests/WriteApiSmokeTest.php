@@ -813,7 +813,7 @@ PHP);
         }
     }
 
-    public function testGenerateAgentReplyReportsFailedAnalysisAsRequired(): void
+    public function testGenerateAgentReplyDoesNotRequireCompletedAnalysis(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
@@ -834,14 +834,9 @@ PHP);
 
             assertSame('ok', $response['status']);
             assertSame('requested', $response['generation_status']);
-            assertSame('not_recommended', $result['generation_status']);
-            assertSame('analysis_not_complete', $result['reason']);
-            assertSame('failed', $result['analysis_status']);
-            assertSame('skipped', $row['status']);
-            assertSame('analysis_not_complete', $row['failure_code']);
-            assertStringContains('provider_error', (string) $row['failure_message']);
-            assertSame('failed', $row['request_context']['agent_reply_skip']['analysis_status']);
-            assertSame('provider_error', $row['request_context']['agent_reply_skip']['failure_code']);
+            assertSame('generated', $result['generation_status']);
+            assertSame('posted', $row['status']);
+            assertSame('default_text_reply', $row['response_intent']);
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
@@ -885,7 +880,7 @@ PHP);
         }
     }
 
-    public function testGenerateAgentReplyRejectsLowRespondabilityHighRiskHighModerationAndPrivateResponse(): void
+    public function testGenerateAgentReplyBypassesModelDerivedGates(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
@@ -922,14 +917,10 @@ PHP);
             assertSame('requested', $riskRequest['generation_status']);
             assertSame('requested', $moderationRequest['generation_status']);
             assertSame('requested', $privateRequest['generation_status']);
-            assertSame('not_recommended', $low['generation_status']);
-            assertSame('respondability_score_low', $low['reason']);
-            assertSame('not_recommended', $risk['generation_status']);
-            assertSame('response_risk_high', $risk['reason']);
-            assertSame('not_recommended', $moderation['generation_status']);
-            assertSame('moderation_severity_high', $moderation['reason']);
-            assertSame('not_recommended', $private['generation_status']);
-            assertSame('response_not_public', $private['reason']);
+            assertSame('generated', $low['generation_status']);
+            assertSame('generated', $risk['generation_status']);
+            assertSame('generated', $moderation['generation_status']);
+            assertSame('generated', $private['generation_status']);
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
@@ -1010,7 +1001,7 @@ PHP);
         }
     }
 
-    public function testClaimedAgentReplyRequestAnalyzesAndPublishes(): void
+    public function testClaimedAgentReplyRequestPublishesWithoutAnalysis(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
@@ -1034,6 +1025,9 @@ PHP);
             $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
             $row = $store->findByTarget($postId, $claimed[0]['target_content_hash']);
             $second = $application->fulfillAgentReplyRequest($claimed[0]);
+            $analysisCount = (int) (new PDO('sqlite:' . $databasePath))
+                ->query('SELECT COUNT(*) FROM post_analyses')
+                ->fetchColumn();
 
             assertSame('requested', $request['generation_status']);
             assertSame(1, count($claimed));
@@ -1044,6 +1038,7 @@ PHP);
             assertSame($result['agent_post_id'], $row['agent_post_id']);
             assertSame('already_posted', $second['generation_status']);
             assertSame($postCountAfter, $this->countCanonicalPostFiles($repositoryRoot));
+            assertSame(0, $analysisCount);
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
@@ -1246,6 +1241,9 @@ PHP);
             $claimed = $store->claimRequestedForPost($postId);
             $fulfilled = $application->fulfillAgentReplyRequest($claimed);
             $stored = $store->findByTarget($postId, (string) $claimed['target_content_hash']);
+            $analysisCount = (int) (new PDO('sqlite:' . $databasePath))
+                ->query('SELECT COUNT(*) FROM post_analyses')
+                ->fetchColumn();
 
             assertSame('requested', $request['generation_status']);
             assertSame('Logic analysis', $request['response_mode_label']);
@@ -1256,6 +1254,8 @@ PHP);
             assertSame('logic_analysis', $stored['request_context']['agent_reply_request']['agent_response_task']['type']);
             assertSame('logic_analysis', $stored['response_intent']);
             assertSame('generated', $fulfilled['generation_status']);
+            assertSame(1, $analysisCount);
+            assertSame(true, str_starts_with($stored['analysis_hash'], 'task:'));
             assertStringContains(
                 'Logic analysis available.',
                 $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId))
