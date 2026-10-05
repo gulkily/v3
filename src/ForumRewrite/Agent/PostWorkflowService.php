@@ -443,6 +443,10 @@ final class PostWorkflowService
             if ($generation === null) {
                 continue;
             }
+            $task = AgentResponseTask::fromStoredRequestContext(
+                is_array($generation['request_context'] ?? null) ? $generation['request_context'] : []
+            );
+            $generation['response_mode_label'] = AgentResponseTask::labelForType((string) ($task['type'] ?? ''));
 
             $generations[(string) $context['post_id']] = $generation;
         }

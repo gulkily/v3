@@ -109,7 +109,6 @@ final class WriteApiSmokeTest
                 '/api/create_thread?board_tags=general&subject=Analyzed&body=Thoughtful%20body%3F'
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
-
             $_COOKIE = [];
             $first = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
             $postCountAfterFirstAnalyze = $this->countCanonicalPostFiles($repositoryRoot);
@@ -509,6 +508,11 @@ PHP);
                 '/api/create_thread?board_tags=general&subject=Agent%20Request&body=Should%20the%20agent%20join%3F'
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
+            $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_reply?thread_id=' . rawurlencode($postId) . '&parent_id=' . rawurlencode($postId) . '&body=Reply%20body'
+            );
 
             $_COOKIE = [];
             $anonymousThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
@@ -519,9 +523,12 @@ PHP);
 
             assertStringNotContains('data-action="request-agent-reply"', $anonymousThreadPage);
             assertStringContains('data-action="request-agent-reply"', $approvedThreadPage);
-            assertStringContains('Request agent response', $approvedThreadPage);
+            assertStringContains('Choose agent response', $approvedThreadPage);
+            assertStringContains('data-agent-response-mode-catalog', $approvedThreadPage);
+            assertStringContains('Facts analysis', $approvedThreadPage);
+            assertSame(2, substr_count($approvedThreadPage, 'data-action="request-agent-reply"'));
             assertSame('requested', $response['generation_status']);
-            assertStringNotContains('data-action="request-agent-reply"', $requestedThreadPage);
+            assertSame(1, substr_count($requestedThreadPage, 'data-action="request-agent-reply"'));
             assertStringContains('Agent reply requested.', $requestedThreadPage);
         } finally {
             $_COOKIE = [];
@@ -1197,6 +1204,10 @@ PHP);
             assertSame('facts_analysis', $stored['request_context']['agent_reply_request']['agent_response_task']['type']);
             assertSame('facts_analysis', $stored['response_intent']);
             assertSame('generated', $fulfilled['generation_status']);
+            assertStringContains(
+                'Facts analysis available.',
+                $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId))
+            );
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
@@ -1343,9 +1354,13 @@ PHP);
         assertStringContains('work === "analyze"', $script);
         assertStringContains('work !== "analyze" && work !== "publish"', $script);
         assertStringContains('const result = agentReplyResultFromAnalysis(analysis);', $script);
-        assertStringContains('Agent analysis and reply added below this post.', $script);
-        assertStringContains('Agent reply requested.', $script);
-        assertStringContains('Requesting agent reply...', $script);
+        assertStringContains('function agentResponseModes()', $script);
+        assertStringContains('data-agent-response-mode-catalog', $script);
+        assertStringContains('showModal', $script);
+        assertStringContains('response_mode', $script);
+        assertStringContains('agentReplySubject(result) + " added below this post."', $script);
+        assertStringContains('agentReplySubject(result) + " requested."', $script);
+        assertStringContains('Requesting " + mode.label', $script);
         assertStringContains('View agent reply.', $script);
         assertStringContains('result.reason === "config_disabled"', $script);
         assertStringContains('url.searchParams.set("created_post_id", agentPostId);', $script);

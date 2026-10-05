@@ -101,7 +101,7 @@ final class AgentResponseTask
             }
         }
 
-        return $type === self::DEFAULT_TYPE ? 'Agent response' : null;
+        return null;
     }
 
     /**

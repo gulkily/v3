@@ -2,6 +2,7 @@
 $authorPublicKeyPath = trim((string) ($post['author_public_key_path'] ?? ''));
 $authorPublicKeyHref = trim((string) ($post['author_public_key_href'] ?? ''));
 ?>
+<?= $partial('partials/agent_response_mode_catalog.php') ?>
 <section class="stack">
   <article class="card">
     <h1>Post <?= $e($post['post_id']) ?></h1>

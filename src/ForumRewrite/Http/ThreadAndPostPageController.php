@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\Agent\AgentResponseTask;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ViewerTagLookup;
 use ForumRewrite\Support\ThreadTitle;
@@ -115,6 +116,7 @@ final class ThreadAndPostPageController
                 'createdPostId' => $createdPostId,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
                 'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
+                'agentResponseModes' => $viewerCanSeePostAnalysis ? AgentResponseTask::selectableModes() : [],
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
                 'llmExchangesByPostId' => $llmExchangesByPostId,
@@ -194,6 +196,7 @@ final class ThreadAndPostPageController
                 'viewerPostLikes' => $viewerPostLikes,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
                 'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
+                'agentResponseModes' => $viewerCanSeePostAnalysis ? AgentResponseTask::selectableModes() : [],
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
                 'llmExchangesByPostId' => $llmExchangesByPostId,

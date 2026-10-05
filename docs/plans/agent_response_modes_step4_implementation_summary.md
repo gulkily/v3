@@ -29,3 +29,16 @@
   - `./v3 test AgentReplyGenerationTest AgentResponseTaskTest AgentResponseGeneratorTest WriteApiSmokeTest` — passed.
 - Notes:
   - Historical unmarked requests remain legacy analysis replies; request rows now retain a selected task after completion or failure so subsequent lifecycle feedback remains mode-aware.
+
+## Stage 3 - Shared response-mode chooser
+
+- Changes:
+  - Replaced the direct request action on both canonical post-card surfaces with “Choose agent response,” backed by one server-rendered mode catalog and one shared client dialog.
+  - Added named choices, descriptions, a supplied-context facts-analysis notice, keyboard/escape-capable native dialog behavior, selected-mode feedback, and a narrow-screen bottom-sheet presentation.
+  - Retained generic status text for historical default requests while selected-mode requests display their label through queued, completed, and failed lifecycle states.
+- Verification:
+  - `node --check public/assets/post_analysis.js`
+  - Focused smoke checks rendered one shared catalog and response chooser on both root and reply cards, hid only the requested card’s chooser, and displayed the selected-mode completion label.
+  - `./v3 test AgentReplyGenerationTest AgentResponseTaskTest AgentResponseGeneratorTest WriteApiSmokeTest` — passed.
+- Notes:
+  - The chooser uses the browser’s native dialog focus and Escape behavior. A final human browser pass at desktop and narrow viewport remains the release handoff check.
