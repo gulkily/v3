@@ -83,7 +83,7 @@ if (!$metaVisible) {
   <h1><?= $e($title) ?></h1>
   <div class="body"><?= $br($postBodyDisplay) ?></div>
 <?php endif; ?>
-<?php if ($metaVisible): ?>
+<?php if ($metaVisible && !$isQdbQuoteRoot): ?>
   <p class="meta"><?= $contentMeta($post, 'created_at', '') ?><?php if ($thread['thread_labels'] !== []): ?> · Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?><?php endif; ?><?php if ($isAgentPost): ?> · <span class="agent-label">Agent-authored reply</span><?php endif; ?><?php $trueReplyCount = (int) ($trueReplyCount ?? 0); if ($trueReplyCount > 0): ?> · <?= $trueReplyCount ?> <?= $trueReplyCount === 1 ? 'reply' : 'replies' ?><?php endif; ?></p>
 <?php endif; ?>
 <?= $indent($partial('partials/post_identity_details.php', ['post' => $post]), 1) ?>

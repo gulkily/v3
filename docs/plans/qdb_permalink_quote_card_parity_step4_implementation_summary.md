@@ -135,3 +135,12 @@
     through the same controls and show the same readout; the already-voted
     state is shown on both; legacy Likes count toward the denominator after
     the rebuild step.
+
+## Follow-up - No meta line on the qdb quote root card
+- Requested after Stage 4: the `by <author> on <date> · Labels: …` line
+  should not appear on a qdb quote card.
+- Change: `thread_root_card.php` skips its meta paragraph on the qdb profile
+  only. Non-qdb profiles are unchanged.
+- Verification: `QuoteCardDisplayNumberTest::testQdbPermalinkRootCardMatchesListingCardWithoutLike`
+  asserts no `<p class="meta">` on the qdb permalink. `QuoteCardDisplayNumberTest`
+  passes 13/13.
