@@ -37,3 +37,15 @@
   - `php -l` on both providers and `TextChatCompletionDecoder` — no syntax errors.
 - Notes:
   - The task generator can now use a configured live provider; fulfillment and public routing remain unchanged until later stages.
+
+## Stage 4 - Task fulfillment dispatch
+
+- Changes:
+  - Extended agent-reply fulfillment to recognize the stored default-task descriptor, verify that it matches current content, and generate through the plain-text task generator.
+  - Retained structured analysis as the safety preflight and preserved unmarked legacy and automatic reply fulfillment.
+  - Reused the existing reservation, persistence, publication, and failure paths; no second worker or publisher was added.
+- Verification:
+  - `php -l src/ForumRewrite/Agent/AgentReplyFulfillmentService.php` — no syntax errors.
+  - `php tests/run.php AgentReplyGenerationTest WriteApiSmokeTest` — 123 passed; one pre-existing, long-standing `WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh` failure remains.
+- Notes:
+  - The default task is not publicly routable yet; Stage 5 will wire the current manual request and cover this branch end to end.
