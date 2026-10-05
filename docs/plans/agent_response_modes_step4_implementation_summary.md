@@ -87,3 +87,11 @@
   - Kept the old task identifier readable and fulfillable solely for requests already stored before this change; new API requests accept only selectable current modes.
 - Verification:
   - Focused task, generator, request API, and feature-flag tests cover the new mode, rejection of no-longer-selectable modes, and legacy fulfillment compatibility.
+
+## Stage 8 - External response-mode prompts
+
+- Changes:
+  - Moved the shared system prompt and every response-task instruction into individually reviewable files under `prompts/`.
+  - The generator now loads, trims, validates, and caches those files using the same repository-root convention as other prompt-backed features.
+- Verification:
+  - Generator coverage exercises every selectable task and verifies each loaded instruction.
