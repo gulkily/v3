@@ -9,7 +9,8 @@ final class AgentResponseTask
     public const DEFAULT_TYPE = 'default_text_reply';
     public const LEGACY_TYPE = 'legacy_analysis_reply';
     public const PUBLICATION_SLOT = 'agent_reply';
-    public const FACTS_ANALYSIS_TYPE = 'facts_analysis';
+    public const LOGIC_ANALYSIS_TYPE = 'logic_analysis';
+    private const LEGACY_FACTS_ANALYSIS_TYPE = 'facts_analysis';
     public const EXPLAIN_JOKE_OR_REFERENCE_TYPE = 'explain_joke_or_reference';
     public const SUMMARY_AND_KEY_TAKEAWAYS_TYPE = 'summary_and_key_takeaways';
     public const EXPLAIN_SIMPLY_TYPE = 'explain_simply';
@@ -50,8 +51,8 @@ final class AgentResponseTask
     {
         return [
             [
-                'type' => self::FACTS_ANALYSIS_TYPE,
-                'label' => 'Facts analysis',
+                'type' => self::LOGIC_ANALYSIS_TYPE,
+                'label' => 'Logic analysis',
             ],
             [
                 'type' => self::EXPLAIN_JOKE_OR_REFERENCE_TYPE,
@@ -85,7 +86,9 @@ final class AgentResponseTask
 
     public static function isSupportedType(string $type): bool
     {
-        return $type === self::DEFAULT_TYPE || self::isSelectableType($type);
+        return $type === self::DEFAULT_TYPE
+            || $type === self::LEGACY_FACTS_ANALYSIS_TYPE
+            || self::isSelectableType($type);
     }
 
     public static function labelForType(string $type): ?string

@@ -6,7 +6,7 @@
 
 - Changes:
   - Added the five approved selectable response modes with stable types, labels, and descriptions.
-  - Added per-mode generation instructions, including supplied-context-only facts analysis with required claims, support, evidence gaps, and uncertainty treatment.
+  - Added per-mode generation instructions, including the initial supplied-context-only analysis mode.
   - Preserved default and legacy task compatibility while allowing selected-task storage and bounded generation input.
 - Verification:
   - `php -l src/ForumRewrite/Agent/AgentResponseTask.php`
@@ -34,7 +34,7 @@
 
 - Changes:
   - Replaced the direct request action on both canonical post-card surfaces with “Choose agent response,” backed by one server-rendered mode catalog and one shared client dialog.
-  - Added named choices, descriptions, a supplied-context facts-analysis notice, keyboard/escape-capable native dialog behavior, selected-mode feedback, and a narrow-screen bottom-sheet presentation.
+  - Added named choices, descriptions, a supplied-context analysis notice, keyboard/escape-capable native dialog behavior, selected-mode feedback, and a narrow-screen bottom-sheet presentation.
   - Retained generic status text for historical default requests while selected-mode requests display their label through queued, completed, and failed lifecycle states.
 - Verification:
   - `node --check public/assets/post_analysis.js`
@@ -48,7 +48,7 @@
 
 - Changes:
   - Made the native dialog presentation explicit with modal semantics, backdrop, and a visible close control.
-  - Removed per-choice sub-captions; the chooser now presents only the five mode labels, plus the shared facts-analysis limitation notice.
+  - Removed per-choice sub-captions; the chooser presented five mode labels with a shared analysis limitation notice.
 - Verification:
   - `php -l src/ForumRewrite/Agent/AgentResponseTask.php`
   - `node --check public/assets/post_analysis.js`
@@ -60,7 +60,7 @@
 
 - Changes:
   - Replaced the modal with an anchored, non-modal dropdown menu.
-  - Retained label-only choices and the shared facts-analysis limitation notice; added Escape and outside-click dismissal with trigger state restoration.
+  - Retained label-only choices and added Escape and outside-click dismissal with trigger state restoration.
 - Verification:
   - `node --check public/assets/post_analysis.js`
   - `./v3 test AgentResponseTaskTest AgentResponseGeneratorTest WriteApiSmokeTest::testApprovedViewerSeesAgentReplyRequestButtonUntilRequestExists WriteApiSmokeTest::testPostAnalysisScriptDoesNotExposeInProgressReplyGeneration` — 11 passed.
@@ -77,3 +77,13 @@
   - `./v3 test FeatureFlagEvaluatorTest WriteApiSmokeTest::testAgentResponseRequestFlagHidesChooserAndRejectsRequests WriteApiSmokeTest::testApprovedViewerSeesAgentReplyRequestButtonUntilRequestExists WriteApiSmokeTest::testGenerateAgentReplyPersistsAndFulfillsSelectedResponseMode` — 17 passed.
 - Notes:
   - Set `AGENT_RESPONSE_REQUESTS_ENABLED=false` in the server private config or environment to disable the feature everywhere; re-enable it with `true` or by removing the override.
+
+## Stage 7 - Logic analysis replacement
+
+- Changes:
+  - Replaced the selectable `facts_analysis` mode with `logic_analysis`, labelled “Logic analysis.”
+  - Replaced evidence-verification instructions with a charitable analysis of premises, conclusions, assumptions, and logical gaps.
+  - Removed the dropdown’s facts-analysis disclaimer and its unused styling.
+  - Kept the old task identifier readable and fulfillable solely for requests already stored before this change; new API requests accept only selectable current modes.
+- Verification:
+  - Focused task, generator, request API, and feature-flag tests cover the new mode, rejection of no-longer-selectable modes, and legacy fulfillment compatibility.

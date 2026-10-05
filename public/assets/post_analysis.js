@@ -528,10 +528,6 @@
     });
     menu.appendChild(choices);
 
-    const notice = document.createElement("p");
-    notice.className = "meta agent-response-mode-notice";
-    notice.textContent = "Facts analysis uses this post and supplied thread context only; it is not independently verified research.";
-    menu.appendChild(notice);
     document.body.appendChild(menu);
     agentResponseModeMenu = menu;
     document.addEventListener("pointerdown", function (event) {

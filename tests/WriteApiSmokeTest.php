@@ -525,7 +525,7 @@ PHP);
             assertStringContains('data-action="request-agent-reply"', $approvedThreadPage);
             assertStringContains('Request agent response', $approvedThreadPage);
             assertStringContains('data-agent-response-mode-catalog', $approvedThreadPage);
-            assertStringContains('Facts analysis', $approvedThreadPage);
+            assertStringContains('Logic analysis', $approvedThreadPage);
             assertSame(2, substr_count($approvedThreadPage, 'data-action="request-agent-reply"'));
             assertSame('requested', $response['generation_status']);
             assertSame(1, substr_count($requestedThreadPage, 'data-action="request-agent-reply"'));
@@ -1184,12 +1184,17 @@ PHP);
             $request = json_decode($this->renderMethod(
                 $application,
                 'POST',
-                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=facts_analysis'
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=logic_analysis'
             ), true);
             $invalid = json_decode($this->renderMethod(
                 $application,
                 'POST',
                 '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=unknown'
+            ), true);
+            $retired = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=facts_analysis'
             ), true);
             $_COOKIE = [];
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
@@ -1198,14 +1203,16 @@ PHP);
             $stored = $store->findByTarget($postId, (string) $claimed['target_content_hash']);
 
             assertSame('requested', $request['generation_status']);
-            assertSame('Facts analysis', $request['response_mode_label']);
+            assertSame('Logic analysis', $request['response_mode_label']);
             assertSame('error', $invalid['status']);
             assertSame('invalid response_mode', $invalid['error']);
-            assertSame('facts_analysis', $stored['request_context']['agent_reply_request']['agent_response_task']['type']);
-            assertSame('facts_analysis', $stored['response_intent']);
+            assertSame('error', $retired['status']);
+            assertSame('invalid response_mode', $retired['error']);
+            assertSame('logic_analysis', $stored['request_context']['agent_reply_request']['agent_response_task']['type']);
+            assertSame('logic_analysis', $stored['response_intent']);
             assertSame('generated', $fulfilled['generation_status']);
             assertStringContains(
-                'Facts analysis available.',
+                'Logic analysis available.',
                 $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId))
             );
         } finally {
@@ -1454,7 +1461,7 @@ PHP);
             $response = json_decode($this->renderMethod(
                 $application,
                 'POST',
-                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=facts_analysis'
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=logic_analysis'
             ), true);
             $_COOKIE = [];
             $rowCount = (int) (new PDO('sqlite:' . $databasePath))

@@ -131,19 +131,19 @@ final class AgentReplyGenerationTest
         $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));
         $context = $this->context();
         $context['agent_reply_request'] = [
-            'agent_response_task' => ['type' => 'facts_analysis'],
+            'agent_response_task' => ['type' => 'logic_analysis'],
         ];
         $store->requestForTarget($context, [
-            'agent_response_task' => ['type' => 'facts_analysis'],
+            'agent_response_task' => ['type' => 'logic_analysis'],
         ]);
         $completed = $store->saveComplete($this->context(), [
-            'response_text' => 'Facts analysis: Limits.',
-            'response_intent' => 'facts_analysis',
+            'response_text' => 'Logic analysis: The conclusion does not follow.',
+            'response_intent' => 'logic_analysis',
         ]);
         $failed = $store->saveFailed('root-001', 'hash-001', 'analysis-hash-001', 'provider_error', 'Unavailable');
 
-        assertSame('facts_analysis', $completed['request_context']['agent_reply_request']['agent_response_task']['type']);
-        assertSame('facts_analysis', $failed['request_context']['agent_reply_request']['agent_response_task']['type']);
+        assertSame('logic_analysis', $completed['request_context']['agent_reply_request']['agent_response_task']['type']);
+        assertSame('logic_analysis', $failed['request_context']['agent_reply_request']['agent_response_task']['type']);
     }
 
     public function testStoreDoesNotReplaceExistingPostedRowWithRequest(): void

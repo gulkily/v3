@@ -90,7 +90,8 @@ final class AgentResponseGenerator
     private function instructionsFor(string $type): string
     {
         return match ($type) {
-            AgentResponseTask::FACTS_ANALYSIS_TYPE => 'Begin with "Facts analysis:". Use only the supplied forum content; do not imply external research, browsing, verification, or sourcing. Distinguish claims, support present in that content, missing evidence, and uncertainty.',
+            AgentResponseTask::LOGIC_ANALYSIS_TYPE => 'Begin with "Logic analysis:". Analyze the reasoning in the supplied forum content. Identify premises, conclusions, assumptions, logical gaps, and where the argument follows or breaks down. Be charitable, specific, and respectful.',
+            'facts_analysis' => 'Begin with "Logic analysis:". Analyze the reasoning in the supplied forum content. Identify premises, conclusions, assumptions, logical gaps, and where the argument follows or breaks down. Be charitable, specific, and respectful.',
             AgentResponseTask::EXPLAIN_JOKE_OR_REFERENCE_TYPE => 'Begin with "Joke or reference:". Explain the apparent humor, allusions, or cultural context from the supplied forum content. State uncertainty when the reference is unclear.',
             AgentResponseTask::SUMMARY_AND_KEY_TAKEAWAYS_TYPE => 'Begin with "Summary and key takeaways:". Concisely summarize the supplied forum content and its main points without adding unsupported claims.',
             AgentResponseTask::EXPLAIN_SIMPLY_TYPE => 'Begin with "Explain simply:". Restate the supplied forum content in plain language, defining important jargon without adding unsupported claims.',

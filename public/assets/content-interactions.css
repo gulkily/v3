@@ -88,15 +88,6 @@
   border-color: var(--ink);
   background: color-mix(in srgb, var(--ink) 8%, transparent);
 }
-.agent-response-mode-notice {
-  margin: 0.55rem 0 0;
-  color: var(--ink-soft);
-}
-.agent-response-mode-notice {
-  padding-top: 0.55rem;
-  border-top: 1px solid var(--line);
-}
-
 /* Continuation runs: quick same-author replies merge visually into one card. */
 .post-card:has(+ .continuation) {
   border-bottom: none;

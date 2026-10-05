@@ -214,7 +214,7 @@ final class PostWorkflowApiController
         if ($responseMode === '') {
             $responseMode = AgentResponseTask::DEFAULT_TYPE;
         }
-        if (!AgentResponseTask::isSupportedType($responseMode)) {
+        if ($responseMode !== AgentResponseTask::DEFAULT_TYPE && !AgentResponseTask::isSelectableType($responseMode)) {
             $this->routeServices->sendJson(['status' => 'error', 'error' => 'invalid response_mode'], 400, $headersWithTimings());
             return;
         }

@@ -9,14 +9,14 @@
 ## User Stories
 
 - As an eligible reader, I want to choose a named response mode for a post so that I can request help suited to what I am trying to understand.
-- As a reader, I want facts analysis to state uncertainty and evidentiary limits so that I do not mistake it for independently verified research.
+- As a reader, I want logic analysis to explain the structure and soundness of an argument so that I can assess its reasoning.
 - As a reader, I want clear request, completion, and failure feedback so that I know whether and where to find the selected response.
 
 ## Core Requirements
 
-- Replace the generic request action with one compact chooser offering exactly these initial modes: Facts analysis, Explain the joke or reference, Summary and key takeaways, Explain simply, and Constructive counterpoint.
+- Replace the generic request action with one compact chooser offering exactly these initial modes: Logic analysis, Explain the joke or reference, Summary and key takeaways, Explain simply, and Constructive counterpoint.
 - Each choice must submit and retain its distinct named task, and the resulting agent reply must visibly identify the selected mode.
-- Facts analysis is limited to the target post and the bounded supplied thread context; it distinguishes claims, internal support, missing evidence, and uncertainty, and makes no claim of external verification or sourcing.
+- Logic analysis examines the reasoning in the target post and bounded supplied thread context, identifying premises, conclusions, assumptions, and logical gaps charitably and respectfully.
 - The chooser must preserve current eligibility, duplicate-request, agent-loop-prevention, publication, and status behavior; requests recorded before release remain readable and fulfill through their compatible behavior.
 - All modes use the shared plain-text response-task boundary established by the agent-response-harness simplification; free-form instructions and external research are out of scope.
 
@@ -29,7 +29,7 @@
 
 ## Risks
 
-- **Misleading factual authority:** facts analysis may be read as research. **Earliest validation:** review its label and representative responses. **Mitigation:** state the supplied-context limit in chooser and response instructions, and require uncertainty/missing-evidence treatment.
+- **Uncharitable or shallow reasoning critique:** logic analysis may oversimplify an argument or treat an assumption as a defect. **Earliest validation:** review its label and representative responses. **Mitigation:** require premise, conclusion, assumption, and logical-gap treatment, with charitable and respectful language.
 - **Mode-selection divergence:** root and reply cards could offer or submit different choices. **Earliest validation:** exercise every mode from both surfaces. **Mitigation:** extend their canonical shared interaction and request contract.
 - **Duplicate or stale lifecycle states:** a modal flow could obscure existing queued/completed outcomes. **Earliest validation:** test requested, posted, failed, and repeat-request states. **Mitigation:** retain the current status and publication lifecycle as the authority.
 - **Scope growth:** free-form prompting or external lookup would expand safety and product scope. **Earliest validation:** review the task list and context policy before planning. **Mitigation:** ship only the fixed five presets with bounded supplied context.
@@ -44,13 +44,13 @@
 ## User Flow
 
 1. An eligible reader opens the response-mode chooser on a root or reply post.
-2. The reader reads the short descriptions and selects one of the five fixed modes.
+2. The reader selects one of the five fixed, clearly labelled modes.
 3. The system records the selected task and shows the existing request status.
 4. The agent produces and publishes a reply labelled with that mode, or the reader receives a clear lifecycle failure or recovery status.
 
 ## Success Criteria
 
 - A manual acceptance pass can select each of the five modes from both root and reply cards and observe the matching labelled response task through publication.
-- Facts-analysis acceptance examples consistently distinguish claims, available internal support, missing evidence, and uncertainty without representing supplied context as external research.
+- Logic-analysis acceptance examples consistently identify reasoning structure and potential gaps without becoming dismissive or personal.
 - Existing eligibility, duplicate-request, agent-loop-prevention, queued, posted, and failure behaviors continue to pass for both card surfaces.
 - No free-form instruction or external-research path is exposed in this release.

@@ -4,7 +4,7 @@
 
 ## Original Query
 
-The "Request agent response" button is really vague about what it does. We should engineer several different modes of agent responses, including "facts analysis", "explain the joke"; please help me find other ideas.
+The "Request agent response" button is really vague about what it does. We should engineer several different modes of agent responses, including "logic analysis", "explain the joke"; please help me find other ideas.
 
 ## Problem Statement
 
@@ -54,7 +54,7 @@ Cons:
 ## Recommendation
 
 Recommend Option B, with a vertical slice of five presets:
-- **Facts analysis** — distinguish claims, supporting evidence, missing evidence, and uncertainty.
+- **Logic analysis** — identify premises, conclusions, assumptions, and logical gaps in an argument.
 - **Explain the joke or reference** — unpack the humor, allusion, or cultural context.
 - **Summary and key takeaways** — condense a long or dense post.
 - **Explain simply** — define jargon and restate the argument in plain language.
@@ -63,4 +63,4 @@ Recommend Option B, with a vertical slice of five presets:
 Brief justification:
 - A chooser gives the vague control a clear promise while retaining one unobtrusive entry point.
 - The presets serve frequent reading needs; a later free-form instruction path can complement rather than replace them.
-- Step 2 should define mode labels and descriptions, response/context boundaries, fact-analysis sourcing and uncertainty policy, eligibility, and completion states.
+- Step 2 should define mode labels and descriptions, response/context boundaries, logic-analysis reasoning policy, eligibility, and completion states.
