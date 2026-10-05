@@ -95,6 +95,7 @@ final class ThreadAndPostPageController
             ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'like', (string) $viewerProfile['identity_id'])
             : [];
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $viewerCanRequestAgentReply = $viewerCanSeePostAnalysis && $service->agentResponseRequestsEnabled();
         $viewerCanUseCodexHandoff = $service->viewerCanUseCodexHandoff($viewerProfile);
         $createdPostId = $this->createdPostIdForThread($threadId, $createdPostId);
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);
@@ -115,8 +116,9 @@ final class ThreadAndPostPageController
                 'viewerPostLikes' => $viewerPostLikes,
                 'createdPostId' => $createdPostId,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
+                'viewerCanRequestAgentReply' => $viewerCanRequestAgentReply,
                 'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
-                'agentResponseModes' => $viewerCanSeePostAnalysis ? AgentResponseTask::selectableModes() : [],
+                'agentResponseModes' => $viewerCanRequestAgentReply ? AgentResponseTask::selectableModes() : [],
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
                 'llmExchangesByPostId' => $llmExchangesByPostId,
@@ -179,6 +181,7 @@ final class ThreadAndPostPageController
             ? $this->viewerPostTagsForPosts([$post['post_id']], 'like', (string) $viewerProfile['identity_id'])
             : [];
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $viewerCanRequestAgentReply = $viewerCanSeePostAnalysis && $service->agentResponseRequestsEnabled();
         $viewerCanUseCodexHandoff = $service->viewerCanUseCodexHandoff($viewerProfile);
         $posts = [$post];
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);
@@ -195,8 +198,9 @@ final class ThreadAndPostPageController
                 'viewerPostFlags' => $viewerPostFlags,
                 'viewerPostLikes' => $viewerPostLikes,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
+                'viewerCanRequestAgentReply' => $viewerCanRequestAgentReply,
                 'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
-                'agentResponseModes' => $viewerCanSeePostAnalysis ? AgentResponseTask::selectableModes() : [],
+                'agentResponseModes' => $viewerCanRequestAgentReply ? AgentResponseTask::selectableModes() : [],
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
                 'llmExchangesByPostId' => $llmExchangesByPostId,

@@ -66,3 +66,14 @@
   - `./v3 test AgentResponseTaskTest AgentResponseGeneratorTest WriteApiSmokeTest::testApprovedViewerSeesAgentReplyRequestButtonUntilRequestExists WriteApiSmokeTest::testPostAnalysisScriptDoesNotExposeInProgressReplyGeneration` — 11 passed.
 - Notes:
   - No request, fulfillment, or safety behavior changed.
+
+## Stage 6 - Server-wide request feature flag
+
+- Changes:
+  - Added the private, server-wide `AGENT_RESPONSE_REQUESTS_ENABLED` flag, enabled by default and configurable through the private config file or environment.
+  - Applied it to both canonical card surfaces and the request endpoint, so disabling it hides the dropdown and prevents direct requests from creating work.
+  - Restored the dropdown trigger label to “Request agent response.”
+- Verification:
+  - `./v3 test FeatureFlagEvaluatorTest WriteApiSmokeTest::testAgentResponseRequestFlagHidesChooserAndRejectsRequests WriteApiSmokeTest::testApprovedViewerSeesAgentReplyRequestButtonUntilRequestExists WriteApiSmokeTest::testGenerateAgentReplyPersistsAndFulfillsSelectedResponseMode` — 17 passed.
+- Notes:
+  - Set `AGENT_RESPONSE_REQUESTS_ENABLED=false` in the server private config or environment to disable the feature everywhere; re-enable it with `true` or by removing the override.

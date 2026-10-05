@@ -143,7 +143,7 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
       class="thread-reaction-button"
       data-action="request-agent-reply"
       data-post-id="<?= $e($post['post_id']) ?>"
-    >Choose agent response</button>
+    >Request agent response</button>
 <?php endif; ?>
 <?php if ($showCodexHandoffButton): ?>
     <button

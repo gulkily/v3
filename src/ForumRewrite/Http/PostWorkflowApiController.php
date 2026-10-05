@@ -234,6 +234,14 @@ final class PostWorkflowApiController
             $this->routeServices->sendJson(['status' => 'error', 'error' => 'forbidden'], 403, $headersWithTimings());
             return;
         }
+        if (!$service->agentResponseRequestsEnabled()) {
+            $this->routeServices->sendJson(
+                $service->agentReplyStatusResponse('not_recommended', $postId, ['reason' => 'config_disabled']),
+                200,
+                $headersWithTimings()
+            );
+            return;
+        }
 
         $phaseStartedAt = hrtime(true);
         $response = $service->agentReplyRequestResultForPost($post, $viewerProfile, $responseMode);

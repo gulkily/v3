@@ -523,7 +523,7 @@ PHP);
 
             assertStringNotContains('data-action="request-agent-reply"', $anonymousThreadPage);
             assertStringContains('data-action="request-agent-reply"', $approvedThreadPage);
-            assertStringContains('Choose agent response', $approvedThreadPage);
+            assertStringContains('Request agent response', $approvedThreadPage);
             assertStringContains('data-agent-response-mode-catalog', $approvedThreadPage);
             assertStringContains('Facts analysis', $approvedThreadPage);
             assertSame(2, substr_count($approvedThreadPage, 'data-action="request-agent-reply"'));
@@ -1431,6 +1431,43 @@ PHP);
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             putenv('DEDALUS_AGENT_REPLIES_ENABLED');
+            $_COOKIE = [];
+        }
+    }
+
+    public function testAgentResponseRequestFlagHidesChooserAndRejectsRequests(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('AGENT_RESPONSE_REQUESTS_ENABLED=false');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Disabled%20request&body=Do%20not%20request%20an%20agent%20response.'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $page = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $response = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=facts_analysis'
+            ), true);
+            $_COOKIE = [];
+            $rowCount = (int) (new PDO('sqlite:' . $databasePath))
+                ->query('SELECT COUNT(*) FROM post_generated_responses')
+                ->fetchColumn();
+
+            assertStringNotContains('data-action="request-agent-reply"', $page);
+            assertStringNotContains('data-agent-response-mode-catalog', $page);
+            assertSame('not_recommended', $response['generation_status']);
+            assertSame('config_disabled', $response['reason']);
+            assertSame(0, $rowCount);
+        } finally {
+            putenv('AGENT_RESPONSE_REQUESTS_ENABLED');
             $_COOKIE = [];
         }
     }

@@ -882,6 +882,11 @@ final class PostWorkflowService
         return $this->configFlagEnabled($config, 'DEDALUS_AGENT_REPLIES_ENABLED', true);
     }
 
+    public function agentResponseRequestsEnabled(): bool
+    {
+        return $this->featureFlags->isEnabled(FeatureFlagRegistry::AGENT_RESPONSE_REQUESTS_ENABLED);
+    }
+
     private function agentRepliesAutomaticEnabled(): bool
     {
         if (!$this->agentRepliesEnabled()) {
