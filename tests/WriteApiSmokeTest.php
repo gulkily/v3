@@ -100,6 +100,8 @@ final class WriteApiSmokeTest
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
+        $previousAutomaticReplies = getenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED');
+        putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED=true');
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -185,6 +187,7 @@ final class WriteApiSmokeTest
             assertFalse(is_dir($repositoryRoot . '/records/post-analyses'));
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
+            $this->restoreEnvironmentValue('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $previousAutomaticReplies);
             $_COOKIE = [];
         }
     }
@@ -931,6 +934,8 @@ PHP);
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
+        $previousAutomaticReplies = getenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED');
+        putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED=true');
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -964,6 +969,7 @@ PHP);
             assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM sqlite_master WHERE type = "table" AND name = "post_generated_responses"')->fetchColumn());
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
+            $this->restoreEnvironmentValue('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $previousAutomaticReplies);
             $_COOKIE = [];
         }
     }
@@ -1045,7 +1051,7 @@ PHP);
         }
     }
 
-    public function testClaimedAgentReplyRequestStoresGateSkip(): void
+    public function testClaimedUnmarkedAgentReplyRequestStoresGateSkip(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
@@ -1055,16 +1061,21 @@ PHP);
             $postId = $this->createAnalyzedThread($application, $databasePath, [
                 'respondability' => ['overall_score' => 0.4],
             ]);
-            $_COOKIE = ['identity_hint' => 'guest'];
-            $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
-            $_COOKIE = [];
+            $contentHash = $this->contentHashForAnalysis($databasePath, $postId);
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $request = $store->requestForTarget([
+                'post_id' => $postId,
+                'content_hash' => $contentHash,
+                'analysis_hash' => 'legacy-analysis-hash',
+            ], [
+                'requested_by_identity_id' => 'openpgp:legacy-requester',
+            ]);
             $claimed = $store->claimNextRequested();
 
             $result = $application->fulfillAgentReplyRequest($claimed[0]);
             $row = $store->findByTarget($postId, $claimed[0]['target_content_hash']);
 
-            assertSame('requested', $request['generation_status']);
+            assertSame('requested', $request['status']);
             assertSame('not_recommended', $result['generation_status']);
             assertSame('respondability_score_low', $result['reason']);
             assertSame('skipped', $row['status']);
@@ -4176,14 +4187,18 @@ PHP);
     private function restoreLlmProviderEnv(array $previous): void
     {
         foreach (['LLM_PROVIDER', 'DEDALUS_ANALYSIS_MODE'] as $key) {
-            $value = $previous[$key] ?? false;
-            if ($value === false) {
-                putenv($key);
-                continue;
-            }
-
-            putenv($key . '=' . $value);
+            $this->restoreEnvironmentValue($key, $previous[$key] ?? false);
         }
+    }
+
+    private function restoreEnvironmentValue(string $key, string|false $value): void
+    {
+        if ($value === false) {
+            putenv($key);
+            return;
+        }
+
+        putenv($key . '=' . $value);
     }
 
     private function contentHashForAnalysis(string $databasePath, string $postId): string
