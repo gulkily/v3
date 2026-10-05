@@ -9,6 +9,7 @@ use ForumRewrite\Analysis\PostAnalyzerFactory;
 use ForumRewrite\Analysis\StubPostAnalyzer;
 use ForumRewrite\Llm\AnthropicStructuredChatProvider;
 use ForumRewrite\Llm\OpenAiCompatibleStructuredChatProvider;
+use ForumRewrite\Llm\StubTextChatProvider;
 
 final class PostAnalyzerFactoryTest
 {
@@ -95,6 +96,19 @@ final class PostAnalyzerFactoryTest
         assertSame(AnthropicStructuredChatProvider::class, $provider::class);
         assertSame('https://api.anthropic.com', $this->privateProperty($provider, 'baseUrl'));
         assertSame('claude-haiku-4-5-20251001', $this->privateProperty($provider, 'model'));
+    }
+
+    public function testFactoryBuildsStubTextProviderAndSkipsMissingApiKey(): void
+    {
+        $stub = PostAnalyzerFactory::textChatProviderFromPrivateConfig([
+            'LLM_PROVIDER' => 'stub',
+        ]);
+        $missing = PostAnalyzerFactory::textChatProviderFromPrivateConfig([
+            'LLM_PROVIDER' => 'openai',
+        ]);
+
+        assertSame(StubTextChatProvider::class, $stub::class);
+        assertSame(null, $missing);
     }
 
     private function providerFromAnalyzer(object $analyzer): object

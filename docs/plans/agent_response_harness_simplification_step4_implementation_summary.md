@@ -49,3 +49,15 @@
   - `php tests/run.php AgentReplyGenerationTest WriteApiSmokeTest` — 123 passed; one pre-existing, long-standing `WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh` failure remains.
 - Notes:
   - The default task is not publicly routable yet; Stage 5 will wire the current manual request and cover this branch end to end.
+
+## Stage 5 - Default manual request routing
+
+- Changes:
+  - Routed newly created `/api/generate_agent_reply` requests to `default_text_reply` without changing the request payload, controls, statuses, or feedback UI.
+  - Added configured text-provider construction, including the existing stub path, and passed it into the shared fulfillment service.
+  - Added API assertions that the default task is persisted and that its published body is independent of structured `suggested_response`.
+- Verification:
+  - `php tests/run.php PostAnalyzerFactoryTest WriteApiSmokeTest AgentReplyGenerationTest AgentResponseGeneratorTest` — 134 passed.
+  - `php -l` on `PostAnalyzerFactory` and `PostWorkflowService` — no syntax errors.
+- Notes:
+  - The response-type selector is intentionally out of scope; it can later supply additional named tasks through this same request and fulfillment path.

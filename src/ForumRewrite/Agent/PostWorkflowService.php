@@ -15,6 +15,7 @@ use ForumRewrite\Codex\CodexHandoffDraftService;
 use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\ReadModel\ThreadRowSupport;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\Write\LocalWriteService;
 use PDO;
@@ -707,6 +708,7 @@ final class PostWorkflowService
             'requested_by_identity_id' => (string) ($viewerProfile['identity_id'] ?? ''),
             'requested_by_profile_slug' => (string) ($viewerProfile['profile_slug'] ?? ''),
             'requested_by_username' => (string) ($viewerProfile['username'] ?? ''),
+            'agent_response_task' => AgentResponseTask::defaultForPost($context),
         ]);
 
         return $this->agentReplyResponseForStoredRequest($row, $postId);
@@ -807,6 +809,24 @@ final class PostWorkflowService
             $this->fetchPost,
             fn (array $post): array => $this->postAnalysisContext($post),
             fn (array $post, array $analysis): ?array => $this->agentReplyGateFailure($post, $analysis),
+            $this->agentResponseGenerator(),
+        );
+    }
+
+    private function agentResponseGenerator(): ?AgentResponseGenerator
+    {
+        $provider = PostAnalyzerFactory::textChatProviderFromPrivateConfig(
+            PrivateConfig::load($this->projectRoot),
+            ($this->llmExchangeRecorderFactory)(),
+        );
+        if ($provider === null) {
+            return null;
+        }
+
+        return new AgentResponseGenerator(
+            $provider,
+            $this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
+            $this->featureFlags->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT),
         );
     }
 

@@ -453,6 +453,7 @@ final class WriteApiSmokeTest
             assertSame($postCountBefore, $postCountAfter);
             assertSame('requested', $row['status']);
             assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $requestContext['agent_reply_request']['requested_by_identity_id']);
+            assertSame('default_text_reply', $requestContext['agent_reply_request']['agent_response_task']['type']);
         } finally {
             putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED');
             $_COOKIE = [];
@@ -1125,19 +1126,19 @@ PHP);
             assertSame('generated', $first['generation_status']);
             assertSame(true, $first['cached']);
             assertSame('stub', $first['provider']);
-            assertSame('stub/post-analysis', $first['provider_model']);
-            assertStringContains('strongest reason', $first['response_text']);
+            assertSame('stub/agent-response', $first['provider_model']);
+            assertSame('Stub agent response.', $first['response_text']);
             assertSame(true, $first['posted']);
             assertSame('/posts/' . $agentPostId, $first['agent_post_url']);
             assertStringContains('Parent-ID: ' . $postId, $replyRecord);
             assertStringContains('Author-Identity-ID: openpgp:', $replyRecord);
-            assertStringContains('strongest reason', $replyRecord);
+            assertStringContains('Stub agent response.', $replyRecord);
             assertSame('already_posted', $second['generation_status']);
             assertSame($agentPostId, $second['agent_post_id']);
             assertSame($postCountAfterFirst, $postCountAfter);
             assertSame('posted', $row['status']);
             assertSame('stub', $row['provider']);
-            assertStringContains('strongest reason', $row['response_text']);
+            assertSame('Stub agent response.', $row['response_text']);
             assertSame($agentPostId, $row['agent_post_id']);
             assertStringContains('openpgp:', $row['agent_identity_id']);
             assertStringContains('openpgp-', $row['agent_profile_slug']);
@@ -1145,7 +1146,7 @@ PHP);
             assertStringContains('reply-agent', $threadPage);
             assertStringContains('Agent-authored reply', $threadPage);
             assertStringContains('data-agent-authored="reply-agent"', $threadPage);
-            assertStringContains('strongest reason', $threadPage);
+            assertStringContains('Stub agent response.', $threadPage);
             assertStringContains('data-created-post-id="' . $postId . '"', $createdThreadPage);
             assertStringContains('data-post-id="' . $postId . '"', $createdThreadPage);
             assertStringContains('data-agent-reply-posted-id="' . $agentPostId . '"', $createdThreadPage);
@@ -1163,7 +1164,7 @@ PHP);
         }
     }
 
-    public function testGenerateAgentReplyPreservesVisibleUnicodeWhenAuthoredTextFlagIsEnabled(): void
+    public function testGenerateAgentReplyUsesDefaultTextTaskInsteadOfStructuredSuggestion(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
@@ -1191,9 +1192,10 @@ PHP);
 
             assertSame('requested', $request['generation_status']);
             assertSame('generated', $response['generation_status']);
-            assertStringContains("'Хорошо'", (string) $row['response_text']);
-            assertStringContains("'Хорошо'", $replyRecord);
-            assertStringContains('Хорошо', $postPage);
+            assertSame('Stub agent response.', (string) $row['response_text']);
+            assertStringContains('Stub agent response.', $replyRecord);
+            assertStringContains('Stub agent response.', $postPage);
+            assertStringNotContains('Хорошо', (string) $row['response_text']);
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             putenv('FORUM_UNICODE_AUTHORED_TEXT');
