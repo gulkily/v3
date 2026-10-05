@@ -40,5 +40,6 @@
   - `node --check public/assets/post_analysis.js`
   - Focused smoke checks rendered one shared catalog and response chooser on both root and reply cards, hid only the requested card’s chooser, and displayed the selected-mode completion label.
   - `./v3 test AgentReplyGenerationTest AgentResponseTaskTest AgentResponseGeneratorTest WriteApiSmokeTest` — passed.
+  - `./v3 test` — 720 run, 712 passed; the 8 failures are all classified by the suite as long-standing and outside this slice.
 - Notes:
   - The chooser uses the browser’s native dialog focus and Escape behavior. A final human browser pass at desktop and narrow viewport remains the release handoff check.
