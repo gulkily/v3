@@ -109,7 +109,7 @@ fdp_sync() {
 if [[ -z "${COMMAND}" ]]; then
   cat <<'EOF'
 Usage:
-  ./v3 start [--listen-all|host:port]
+  ./v3 start [--listen-all|host:port] [--verbose|--quiet] [--log-file=/path/dev.log]
   ./v3 test
   ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 fdp sync [--repository-root=/path/repository] [--remote-url=https://github.com/gulkily/fdp.git]
@@ -153,7 +153,15 @@ fi
 case "${COMMAND}" in
   start)
     shift
-    ADDRESS="${1:-127.0.0.1:8000}"
+    ADDRESS_ARGUMENT="127.0.0.1:8000"
+    DEV_SERVER_ARGS=()
+    for ARGUMENT in "$@"; do
+      case "${ARGUMENT}" in
+        --verbose|--quiet|--log-file=*) DEV_SERVER_ARGS+=("${ARGUMENT}") ;;
+        *) ADDRESS_ARGUMENT="${ARGUMENT}" ;;
+      esac
+    done
+    ADDRESS="${ADDRESS_ARGUMENT}"
     if [[ "${ADDRESS}" == "--listen-all" ]]; then
       ADDRESS="0.0.0.0:8000"
     elif [[ "${ADDRESS}" =~ ^:?([0-9]+)$ ]]; then
@@ -165,7 +173,7 @@ case "${COMMAND}" in
       fi
       ADDRESS="127.0.0.1:${PORT_NUMBER}"
     fi
-    php -S "${ADDRESS}" -t "${ROOT}/public" "${ROOT}/public/router.php"
+    exec php "${ROOT}/scripts/dev_server.php" "--address=${ADDRESS}" ${DEV_SERVER_ARGS[@]+"${DEV_SERVER_ARGS[@]}"}
     ;;
   test)
     shift

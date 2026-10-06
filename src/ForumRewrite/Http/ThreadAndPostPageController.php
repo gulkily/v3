@@ -87,6 +87,13 @@ final class ThreadAndPostPageController
         $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
         $viewerHasLiked = $viewerProfile !== null
             && $this->viewerHasThreadTag($threadId, 'like', (string) $viewerProfile['identity_id']);
+        $viewerHasUpvoted = false;
+        $viewerHasDownvoted = false;
+        if ($viewerProfile !== null && \ForumRewrite\SiteConfig::siteName() === 'qdb') {
+            $viewerIdentityId = (string) $viewerProfile['identity_id'];
+            $viewerHasUpvoted = isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'upvote', $viewerIdentityId)[$threadId]);
+            $viewerHasDownvoted = isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'downvote', $viewerIdentityId)[$threadId]);
+        }
         $posts = ($this->fetchThreadPosts)($threadId);
         $viewerPostFlags = $viewerProfile !== null
             ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'flag', (string) $viewerProfile['identity_id'])
@@ -112,6 +119,8 @@ final class ThreadAndPostPageController
                 'title' => $title,
                 'viewerProfile' => $viewerProfile,
                 'viewerHasLiked' => $viewerHasLiked,
+                'viewerHasUpvoted' => $viewerHasUpvoted,
+                'viewerHasDownvoted' => $viewerHasDownvoted,
                 'viewerPostFlags' => $viewerPostFlags,
                 'viewerPostLikes' => $viewerPostLikes,
                 'createdPostId' => $createdPostId,
