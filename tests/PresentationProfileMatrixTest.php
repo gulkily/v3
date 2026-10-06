@@ -53,6 +53,10 @@ final class PresentationProfileMatrixTest
             $repositoryRoot . '/records/posts/thread-presentation-matrix.txt',
             "Post-ID: thread-presentation-matrix\nCreated-At: 2026-10-06T00:00:00Z\nBoard-Tags: general\nSubject: Presentation matrix\n\nVisible matrix thread.\n",
         );
+        file_put_contents(
+            $repositoryRoot . '/records/posts/thread-20261006000001-qdb-42.txt',
+            "Post-ID: thread-20261006000001-qdb-42\nCreated-At: 2026-10-06T00:00:01Z\nBoard-Tags: general\nSubject: Presentation matrix quote\n\nVisible matrix quote.\n",
+        );
         $this->runCommand($repositoryRoot, 'git add .');
         $this->runCommand($repositoryRoot, 'git commit -m "Add presentation matrix thread"');
 

@@ -46,4 +46,19 @@ final class QdbBoardPolicyTest
         assertSame(['thread-20030613104735-qdb-42'], array_column($quotes, 'root_post_id'));
         assertSame(1, $policy->quoteCount($threads));
     }
+
+    public function testPaginatesEligibleQuotesWithoutLegacyRootsCreatingSparsePages(): void
+    {
+        $policy = new QdbBoardPolicy('/unused', static fn (): ?array => null);
+        $threads = [['root_post_id' => 'root-001']];
+        foreach (range(1, 26) as $number) {
+            $threads[] = ['root_post_id' => sprintf('thread-20030613104735-qdb-%d', $number)];
+        }
+
+        $firstPage = $policy->paginate($policy->eligibleQuotes($threads), 'latest', 1);
+        $secondPage = $policy->paginate($policy->eligibleQuotes($threads), 'latest', 2);
+
+        assertSame(25, count($firstPage['threads']));
+        assertSame(['thread-20030613104735-qdb-26'], array_column($secondPage['threads'], 'root_post_id'));
+    }
 }

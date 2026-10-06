@@ -125,6 +125,34 @@ final class QuoteCardDisplayNumberTest
         assertStringContains('1 quote so far', $surfaces[0]);
     }
 
+    public function testQdbDirectLegacyThreadPermalinkRemainsAvailable(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $legacyThread = $this->render($application, '/threads/root-001');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertSame(200, http_response_code());
+        assertStringContains('Hello world', $legacyThread);
+    }
+
+    public function testGenericBoardStillListsLegacyAndQuoteRoots(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+        $board = $this->render($application, '/?view=all&sort=newest');
+
+        assertStringContains('root-001', $board);
+        assertStringContains('thread-20030613104735-qdb-42', $board);
+    }
+
     public function testFollowingTheShortNumericPermalinkReachesTheUnchangedQuotePage(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();

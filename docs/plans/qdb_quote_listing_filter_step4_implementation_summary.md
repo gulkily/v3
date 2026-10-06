@@ -34,3 +34,15 @@
   - `git diff --check` — passed.
 - Notes:
   - All QDB reader-facing collections now source their roots from the same eligibility contract.
+
+## Stage 4 - Recovery, isolation, and release verification
+
+- Changes:
+  - Added quote-only pagination coverage plus direct historic-permalink and generic-board recovery coverage.
+  - Updated the shared presentation matrix fixture with a valid quote root so its QDB scenario represents the new collection contract.
+- Verification:
+  - `php tests/run.php PresentationProfileMatrixTest QdbQuoteNumbersTest QdbBoardPolicyTest QdbExperienceRoutingTest QuoteCardDisplayNumberTest` — 27 passed.
+  - `./v3 test` — 787 run, 780 passed, 7 long-standing unrelated failures (two browser-signing harness checks, four local-app smoke checks, and one platform-docs rendering check).
+  - `git diff --check` — passed.
+- Notes:
+  - Full QDB legacy-thread permalinks remain available, while all QDB collection surfaces exclude unnumbered roots.
