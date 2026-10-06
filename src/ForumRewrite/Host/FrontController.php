@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Host;
 
 use ForumRewrite\Application;
+use ForumRewrite\BrowserRuntimeProfile;
 use ForumRewrite\Docs\PlatformDocsCatalog;
 use ForumRewrite\Offline\OfflineSnapshotPublisher;
 use ForumRewrite\ProfilePresentationContent;
@@ -379,8 +380,10 @@ final class FrontController
 
     private function isOfflineSnapshotQuery(string $query): bool
     {
+        $runtime = BrowserRuntimeProfile::fromProfile(SiteProfileRegistry::active());
+
         return $query === ''
-            || preg_match('/^__offline_bootstrap=zenmemes-offline-reader-v[0-9]+$/', $query) === 1;
+            || $query === '__offline_bootstrap=' . $runtime['offlineCacheName'];
     }
 
     private function isValidOfflineSnapshot(string $path): bool

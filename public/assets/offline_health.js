@@ -17,7 +17,9 @@
   var readerUrl = root.getAttribute("data-reader-url") || "/offline/reader/";
   var snapshotUrl = root.getAttribute("data-snapshot-url") || "/offline/snapshot.sqlite3";
   var runtimeUrl = root.getAttribute("data-runtime-url") || "/assets/sql-wasm.wasm";
-  var diagnosticKey = "forum-offline-registration-error";
+  var runtime = window.forumBrowserRuntime || null;
+  if (!runtime || !runtime.offlineDiagnosticKey || !runtime.offlineCachePrefix) return;
+  var diagnosticKey = runtime.offlineDiagnosticKey;
   var checking = false;
   var pendingCheck = false;
   var refreshing = false;
@@ -79,7 +81,9 @@
 
   async function offlineCache() {
     var names = await window.caches.keys();
-    var matching = names.filter(function (name) { return /^zenmemes-offline-reader-v\d+$/.test(name); });
+    var matching = names.filter(function (name) {
+      return name.indexOf(runtime.offlineCachePrefix) === 0 && /-v\d+$/.test(name);
+    });
     matching.sort(function (left, right) {
       return Number(right.slice(right.lastIndexOf("v") + 1)) - Number(left.slice(left.lastIndexOf("v") + 1));
     });

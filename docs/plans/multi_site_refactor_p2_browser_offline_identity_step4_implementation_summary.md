@@ -24,3 +24,15 @@
   - `git diff --check` — passed.
 - Notes:
   - Zenmemes' derived preference key intentionally remains its historical key; Chouse and QDB therefore never read or overwrite it.
+
+## Stage 3 - Profile-owned offline cache lifecycle
+
+- Changes:
+  - Made worker cache identity, cleanup, bootstrap validation, registration diagnostics, and offline-health cache discovery derive from the active runtime descriptor.
+  - Raised the owned cache revision to `v14`; activation now removes stale caches only from the active profile's cache family.
+  - Added a worker isolation test that proves a Chouse worker leaves Zenmemes and QDB cache names untouched.
+- Verification:
+  - `php tests/run.php OfflineNavigationWorkerTest LocalAppSmokeTest::testPublicLayoutRegistersTheNormalNavigationOfflineWorker LocalAppSmokeTest::testOfflineSnapshotAllowsWorkerBootstrapQueries` — 5 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - Runtime configuration delivery for non-Zen profiles is completed in the next stage; the checked-in source remains the safe Zenmemes fallback for direct development serving.

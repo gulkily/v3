@@ -1,6 +1,8 @@
 (function () {
   "use strict";
-  var diagnosticKey = "forum-offline-registration-error";
+  var runtime = window.forumBrowserRuntime || null;
+  if (!runtime || !runtime.offlineDiagnosticKey || !runtime.offlineCachePrefix) return;
+  var diagnosticKey = runtime.offlineDiagnosticKey;
   var registrationScriptUrl = document.currentScript && document.currentScript.src
     ? document.currentScript.src
     : "(unknown)";
@@ -31,7 +33,7 @@
         installingWorker: workerDetails(registration && registration.installing),
         waitingWorker: workerDetails(registration && registration.waiting),
         pageController: workerDetails(navigator.serviceWorker && navigator.serviceWorker.controller),
-        offlineCaches: names.filter(function (name) { return name.indexOf("zenmemes-offline-reader-") === 0; }),
+        offlineCaches: names.filter(function (name) { return name.indexOf(runtime.offlineCachePrefix) === 0; }),
         error: error ? { name: error.name || "Error", message: error.message || String(error) } : null
       });
     });

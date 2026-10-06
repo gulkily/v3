@@ -1,4 +1,10 @@
-const CACHE_NAME = "zenmemes-offline-reader-v13";
+const RUNTIME = self.__forumBrowserRuntime || {
+  namespace: "zenmemes",
+  offlineCachePrefix: "zenmemes-offline-reader-",
+  offlineCacheName: "zenmemes-offline-reader-v14"
+};
+const CACHE_NAME = RUNTIME.offlineCacheName;
+const CACHE_PREFIX = RUNTIME.offlineCachePrefix;
 const SNAPSHOT_URL = "/offline/snapshot.sqlite3";
 const OFFLINE_HEALTH_URL = "/offline/";
 const OFFLINE_READER_URL = "/offline/reader/";
@@ -18,13 +24,14 @@ self.addEventListener("install", (event) => event.waitUntil((async () => {
 })()));
 self.addEventListener("activate", (event) => event.waitUntil((async () => {
   const names = await caches.keys();
-  await Promise.all(names.filter((name) => name.startsWith("zenmemes-offline-reader-") && name !== CACHE_NAME).map((name) => caches.delete(name)));
+  await Promise.all(names.filter((name) => isOwnedCacheName(name) && name !== CACHE_NAME).map((name) => caches.delete(name)));
   await self.clients.claim();
   console.info("[offline reading] worker activated", Object.assign(workerDetails(), { caches: await caches.keys() }));
 })()));
 
 function workerDetails() {
   return {
+    namespace: RUNTIME.namespace,
     cacheName: CACHE_NAME,
     workerScript: self.location.href,
     readerUrl: new URL(OFFLINE_READER_URL, self.location.origin).href,
@@ -33,6 +40,10 @@ function workerDetails() {
     snapshotUrl: new URL(SNAPSHOT_URL, self.location.origin).href,
     online: self.navigator.onLine
   };
+}
+
+function isOwnedCacheName(name) {
+  return typeof name === "string" && name.startsWith(CACHE_PREFIX);
 }
 
 function errorDetails(error) {

@@ -106,7 +106,7 @@ NODE;
 
         assertSame('offline-reader-refreshed', $result[0]['type']);
         assertSame('ready', $result[0]['status']);
-        assertSame('zenmemes-offline-reader-v13', $result[0]['cacheName']);
+        assertSame('zenmemes-offline-reader-v14', $result[0]['cacheName']);
         assertSame('offline-reader-refreshed', $result[1]['type']);
         assertSame('error', $result[1]['status']);
         assertSame('Network unavailable', $result[1]['errorMessage']);
@@ -146,5 +146,45 @@ NODE;
         $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
 
         assertSame('outbox', $result['shell']);
+    }
+
+    public function testActivationRefreshesOnlyTheActiveProfileCacheFamily(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const listeners = {};
+const deleted = [];
+const context = {
+  URL, Promise, console: { info() {}, error() {} },
+  self: {
+    __forumBrowserRuntime: { namespace: 'chouse', offlineCachePrefix: 'chouse-offline-reader-', offlineCacheName: 'chouse-offline-reader-v14' },
+    location: { href: 'https://forum.test/service_worker.js', origin: 'https://forum.test' },
+    navigator: { onLine: true },
+    addEventListener(type, listener) { listeners[type] = listener; },
+    clients: { claim() { return Promise.resolve(); } }
+  },
+  caches: {
+    keys() { return Promise.resolve(['chouse-offline-reader-v13', 'chouse-offline-reader-v14', 'zenmemes-offline-reader-v14', 'qdb-offline-reader-v14']); },
+    delete(name) { deleted.push(name); return Promise.resolve(true); }
+  }
+};
+vm.runInNewContext(source, context);
+let completion;
+listeners.activate({ waitUntil(promise) { completion = promise; } });
+completion.then(() => process.stdout.write(JSON.stringify(deleted)));
+NODE;
+        $command = sprintf(
+            'node -e %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/service_worker.js'),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Worker cache-isolation contract failed: ' . implode("\n", $output));
+        }
+
+        assertSame(['chouse-offline-reader-v13'], json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR));
     }
 }
