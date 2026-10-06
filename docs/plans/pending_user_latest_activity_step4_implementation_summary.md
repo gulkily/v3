@@ -34,7 +34,7 @@
 - Changes:
   - Linked each rendered activity description to its canonical item page.
   - Ordered pending profiles by most recent activity, using stable activity tie-breakers and placing profiles without activity last.
-  - Tightened the paired table rows so the activity context stays visually associated with its user.
+  - Made the Approve cell span the user and activity rows so its button height does not push activity away from the user context.
 - Verification:
   - Pending-directory coverage verifies bootstrap and later-activity destinations, newest-first ordering, and the missing-activity fallback position.
   - `php tests/run.php WriteApiSmokeTest` — 127 passed.

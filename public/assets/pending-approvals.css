@@ -32,13 +32,10 @@
   margin-top: 0;
 }
 .pending-approvals-activity-row td {
-  padding-top: 0.1rem;
+  padding-top: 0;
   border-top: 0 !important;
   color: var(--ink-soft);
   font-size: 0.9em;
-}
-.pending-approval-row td {
-  padding-bottom: 0.1rem;
 }
 .pending-approvals-activity-cell {
   overflow-wrap: anywhere;
@@ -110,9 +107,6 @@
   }
   .pending-approvals-activity-row td::before {
     display: none;
-  }
-  .pending-approvals-activity-spacer {
-    display: none !important;
   }
   [data-role="pending-approvals-table-element"] td::before {
     content: attr(data-label);

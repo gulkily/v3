@@ -3819,6 +3819,7 @@ NODE;
         assertStringContains('<table ', $pendingUsers);
         assertStringContains('data-role="pending-approval-activity-row"', $pendingUsers);
         assertStringContains('colspan="2"', $pendingUsers);
+        assertStringContains('rowspan="2"', $pendingUsers);
         assertStringContains('account bootstrap', $pendingUsers);
         assertStringContains('href="/posts/' . $pendingTarget['bootstrap_post_id'] . '"', $pendingUsers);
         assertStringContains('<time datetime="', $pendingUsers);

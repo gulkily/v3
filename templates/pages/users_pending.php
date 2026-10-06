@@ -44,7 +44,7 @@ $latestActivityPostId = trim((string) ($profile['latest_activity_post_id'] ?? ''
               aria-label="<?= $e($profile['profile_slug']) ?>"
             ><?= $e($shortenProfileSlug($profile['profile_slug'])) ?></a>
           </td>
-          <td class="pending-approvals-action-cell" data-label="Approve">
+          <td class="pending-approvals-action-cell" data-label="Approve" rowspan="2">
             <button type="button" class="pending-approvals-action-button" data-action="approve-user" data-profile-slug="<?= $e($profile['profile_slug']) ?>">
               Approve
             </button>
@@ -61,7 +61,6 @@ $latestActivityPostId = trim((string) ($profile['latest_activity_post_id'] ?? ''
             <span class="meta">&mdash; <?= $relativeTimestamp($latestActivityAt) ?></span>
 <?php endif; ?>
           </td>
-          <td class="pending-approvals-activity-spacer" aria-hidden="true"></td>
         </tr>
 <?php endforeach; ?>
       </tbody>
