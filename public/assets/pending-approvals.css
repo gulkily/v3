@@ -31,6 +31,15 @@
   min-width: 0;
   margin-top: 0;
 }
+.pending-approvals-activity-row td {
+  padding-top: 0;
+  border-top: 0 !important;
+  color: var(--ink-soft);
+  font-size: 0.9em;
+}
+.pending-approvals-activity-cell {
+  overflow-wrap: anywhere;
+}
 [data-role="pending-approvals-table"] {
   overflow-x: visible;
 }
@@ -76,8 +85,7 @@
     white-space: nowrap;
   }
   [data-role="pending-approvals-table-element"] tbody {
-    display: grid;
-    gap: 0.75rem;
+    display: block;
   }
   [data-role="pending-approvals-table-element"] tbody tr {
     padding-top: 0.7rem;
@@ -96,6 +104,9 @@
   }
   [data-role="pending-approvals-table-element"] tbody tr + tr td {
     border-top: 0;
+  }
+  .pending-approvals-activity-row td::before {
+    display: none;
   }
   [data-role="pending-approvals-table-element"] td::before {
     content: attr(data-label);

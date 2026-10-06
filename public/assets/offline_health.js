@@ -404,10 +404,10 @@
         window.clearTimeout(timeout);
         channel.port1.close();
         var result = event.data || {};
-        if (result.type === "offline-reader-refreshed" && result.status === "ready") return resolve(result);
+        if (result.type === "offline-reader-refreshed" && (result.status === "ready" || result.status === "unchanged")) return resolve(result);
         reject(new Error(result.errorMessage || "The saved-reader refresh failed."));
       };
-      worker.postMessage({ type: "refresh-offline-reader" }, [channel.port2]);
+      worker.postMessage({ type: "refresh-offline-reader", force: true }, [channel.port2]);
     });
   }
 

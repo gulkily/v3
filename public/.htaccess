@@ -3,10 +3,48 @@ DirectoryIndex index.php index.html
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
+# Static releases are exposed to Apache through a document-root `.static`
+# symlink on hosts that permit it. Do not allow a browser to enumerate or fetch
+# that storage path directly; the rules below serve only reviewed QDB routes.
+RewriteCond %{THE_REQUEST} \s/+\.static(?:/|\s) [NC]
+RewriteRule ^\.static(?:/|$) - [F,L]
+
 # Only public presentation assets may bypass the PHP access gate.
 RewriteCond %{REQUEST_URI} ^/(?:assets(?:/|$)|favicon\.ico)$ [NC]
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
+
+# A QDB deployment may serve its anonymous, queryless hot paths directly from
+# the active complete release. The presence of latest.html identifies a QDB
+# release; every target is also tested so a missing or withdrawn release falls
+# through to PHP.
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Cookie} ^$
+RewriteCond %{DOCUMENT_ROOT}/.static/current/latest.html -f
+RewriteCond %{DOCUMENT_ROOT}/.static/current/index.html -f
+RewriteRule ^$ .static/current/index.html [END]
+
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Cookie} ^$
+RewriteCond %{DOCUMENT_ROOT}/.static/current/latest.html -f
+RewriteCond %{DOCUMENT_ROOT}/.static/current/$1.html -f
+RewriteRule ^(latest|top|leetness)/?$ .static/current/$1.html [END]
+
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Cookie} ^$
+RewriteCond %{DOCUMENT_ROOT}/.static/current/latest.html -f
+RewriteCond %{DOCUMENT_ROOT}/.static/current/threads/$1.html -f
+RewriteRule ^threads/([A-Za-z0-9._:-]+)/?$ .static/current/threads/$1.html [END]
+
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Cookie} ^$
+RewriteCond %{DOCUMENT_ROOT}/.static/current/latest.html -f
+RewriteCond %{DOCUMENT_ROOT}/.static/current/qdb/quotes/$1.html -f
+RewriteRule ^([1-9][0-9]*)/?$ .static/current/qdb/quotes/$1.html [END]
 
 # Every content, API, download, and generated-artifact request goes through the
 # front controller. Public instances still use its static-artifact fast path;

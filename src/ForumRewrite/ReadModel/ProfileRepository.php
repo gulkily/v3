@@ -95,10 +95,27 @@ final class ProfileRepository
     public static function pendingDirectoryProfiles(PDO $pdo): array
     {
         $stmt = $pdo->query(
-            'SELECT profile_slug, username, username_token, fallback_label, post_count, thread_count, bootstrap_post_id, bootstrap_thread_id
+            'SELECT profiles.profile_slug, profiles.username, profiles.username_token, profiles.fallback_label,
+                    profiles.post_count, profiles.thread_count, profiles.bootstrap_post_id, profiles.bootstrap_thread_id,
+                    latest_activity.label AS latest_activity_label,
+                    latest_activity.created_at AS latest_activity_at,
+                    latest_activity.post_id AS latest_activity_post_id
              FROM profiles
+             LEFT JOIN activity AS latest_activity ON latest_activity.id = (
+                 SELECT candidate.id
+                 FROM activity AS candidate
+                 WHERE candidate.author_identity_id = profiles.identity_id
+                    OR candidate.post_id = profiles.bootstrap_post_id
+                 ORDER BY candidate.created_at DESC, candidate.action_key DESC, candidate.id DESC
+                 LIMIT 1
+             )
              WHERE is_approved = 0
-             ORDER BY thread_count DESC, post_count DESC, username_token ASC, profile_slug ASC'
+             ORDER BY CASE WHEN latest_activity.created_at IS NULL THEN 1 ELSE 0 END ASC,
+                      latest_activity.created_at DESC,
+                      latest_activity.action_key DESC,
+                      latest_activity.id DESC,
+                      profiles.username_token ASC,
+                      profiles.profile_slug ASC'
         );
 
         return $stmt->fetchAll();

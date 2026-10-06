@@ -10,6 +10,7 @@ const OFFLINE_HEALTH_URL = "/offline/";
 const OFFLINE_READER_URL = "/offline/reader/";
 const OFFLINE_OUTBOX_URL = "/tools/outbox/";
 const BOOTSTRAP_QUERY_PARAMETER = "__offline_bootstrap";
+const REVISION_KEY = "/__offline_reader_revision__";
 
 self.addEventListener("install", (event) => event.waitUntil((async () => {
   console.info("[offline reading] worker install started", workerDetails());
@@ -90,13 +91,13 @@ async function fetchOfflineResource(url, purpose) {
   return response;
 }
 
-async function refreshResources(urls) {
+async function refreshResources(urls, alreadyFetched = []) {
   const responses = await Promise.all([...new Set(urls)].map(async (url) => {
     const response = await fetchOfflineResource(url, "cache resource");
     return [url, response];
   }));
   const cache = await caches.open(CACHE_NAME);
-  for (const [url, response] of responses) {
+  for (const [url, response] of [...alreadyFetched, ...responses]) {
     await cache.put(cacheKey(url), response.clone());
   }
   console.info("[offline reading] cache refresh stored", Object.assign(workerDetails(), {
@@ -108,6 +109,7 @@ async function refreshOfflineReader(extraUrls) {
   const shell = await fetchOfflineResource(OFFLINE_READER_URL, "offline reader shell");
   const health = await fetchOfflineResource(OFFLINE_HEALTH_URL, "offline health page");
   const outbox = await fetchOfflineResource(OFFLINE_OUTBOX_URL, "offline outbox page");
+  const shellBodies = await Promise.all([shell, health, outbox].map((response) => response.clone().text()));
   const assetUrls = await Promise.all([shell, health, outbox].map(async (response) => {
     const html = await response.clone().text();
     return [...html.matchAll(/(?:<script[^>]*\ssrc|<link[^>]*\shref|data-runtime-url)="([^"]+)"/g)]
@@ -117,15 +119,50 @@ async function refreshOfflineReader(extraUrls) {
       .map((url) => url.pathname);
   }));
   await refreshResources([
-    OFFLINE_HEALTH_URL,
-    OFFLINE_READER_URL,
-    OFFLINE_OUTBOX_URL,
-    SNAPSHOT_URL,
     "/manifest.webmanifest",
     "/favicon.ico",
     ...assetUrls.flat(),
     ...extraUrls,
+  ], [
+    [OFFLINE_READER_URL, shell],
+    [OFFLINE_HEALTH_URL, health],
+    [OFFLINE_OUTBOX_URL, outbox],
   ]);
+  await refreshSnapshot();
+  await storeRevision(await revisionFromBodies(shellBodies));
+}
+
+async function refreshSnapshot() {
+  try {
+    const response = await fetchOfflineResource(SNAPSHOT_URL, "offline snapshot");
+    await (await caches.open(CACHE_NAME)).put(cacheKey(SNAPSHOT_URL), response.clone());
+  } catch (error) {
+    console.info("[offline reading] snapshot unavailable; reader shell and assets remain cached", Object.assign(workerDetails(), errorDetails(error)));
+  }
+}
+
+// The shell pages embed every asset URL and the published snapshot revision,
+// so hashing them captures a deploy or a snapshot publish.
+async function revisionFromBodies(bodies) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(bodies.join("\u0000")));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function currentRevision() {
+  const bodies = await Promise.all([OFFLINE_READER_URL, OFFLINE_HEALTH_URL, OFFLINE_OUTBOX_URL].map(async (url) => {
+    const response = await fetchOfflineResource(url, "revision shell");
+    return response.text();
+  }));
+  return revisionFromBodies(bodies);
+}
+
+async function storeRevision(revision) {
+  await (await caches.open(CACHE_NAME)).put(cacheKey(REVISION_KEY), new Response(revision));
+}
+
+async function storedRevision() {
+  const response = await cachedResponse(await caches.open(CACHE_NAME), REVISION_KEY);
+  return response ? response.text() : null;
 }
 
 function cacheableRequest(request) {
@@ -166,6 +203,10 @@ self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "refresh-offline-reader") {
     event.waitUntil((async () => {
       try {
+        if (!event.data.force && await currentRevision() === await storedRevision()) {
+          if (event.ports[0]) event.ports[0].postMessage({ type: "offline-reader-refreshed", status: "unchanged", cacheName: CACHE_NAME });
+          return;
+        }
         await refreshOfflineReader(Array.isArray(event.data.urls) ? event.data.urls : []);
         console.info("[offline reading] reader refresh completed", workerDetails());
         if (event.ports[0]) event.ports[0].postMessage({ type: "offline-reader-refreshed", status: "ready", cacheName: CACHE_NAME });

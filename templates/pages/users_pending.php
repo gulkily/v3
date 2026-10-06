@@ -27,7 +27,12 @@ $shortenProfileSlug = static function (string $slug): string {
       </thead>
       <tbody data-role="pending-approvals-body">
 <?php foreach ($profiles as $profile): ?>
-        <tr data-profile-slug="<?= $e($profile['profile_slug']) ?>" data-username="<?= $e($profile['username']) ?>">
+<?php
+$latestActivityLabel = trim((string) ($profile['latest_activity_label'] ?? ''));
+$latestActivityAt = trim((string) ($profile['latest_activity_at'] ?? ''));
+$latestActivityPostId = trim((string) ($profile['latest_activity_post_id'] ?? ''));
+?>
+        <tr data-role="pending-approval-row" data-profile-slug="<?= $e($profile['profile_slug']) ?>" data-username="<?= $e($profile['username']) ?>">
           <td class="pending-approvals-user-cell" data-label="User">
             <a href="/profiles/<?= $e($profile['profile_slug']) ?>"><?= $e($profile['username']) ?></a>
           </td>
@@ -39,10 +44,22 @@ $shortenProfileSlug = static function (string $slug): string {
               aria-label="<?= $e($profile['profile_slug']) ?>"
             ><?= $e($shortenProfileSlug($profile['profile_slug'])) ?></a>
           </td>
-          <td class="pending-approvals-action-cell" data-label="Approve">
+          <td class="pending-approvals-action-cell" data-label="Approve" rowspan="2">
             <button type="button" class="pending-approvals-action-button" data-action="approve-user" data-profile-slug="<?= $e($profile['profile_slug']) ?>">
               Approve
             </button>
+          </td>
+        </tr>
+        <tr class="pending-approvals-activity-row" data-role="pending-approval-activity-row" data-profile-slug="<?= $e($profile['profile_slug']) ?>">
+          <td class="pending-approvals-activity-cell" colspan="2">
+<?php if ($latestActivityLabel !== '' && $latestActivityPostId !== ''): ?>
+            <a href="/posts/<?= $e($latestActivityPostId) ?>"><?= $e($latestActivityLabel) ?></a>
+<?php else: ?>
+            <?= $e($latestActivityLabel !== '' ? $latestActivityLabel : 'No recorded activity') ?>
+<?php endif; ?>
+<?php if ($latestActivityAt !== ''): ?>
+            <span class="meta">&mdash; <?= $relativeTimestamp($latestActivityAt) ?></span>
+<?php endif; ?>
           </td>
         </tr>
 <?php endforeach; ?>

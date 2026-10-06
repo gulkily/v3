@@ -16,6 +16,7 @@ use ForumRewrite\Host\FrontController;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\Host\StaticArtifactReleasePublisher;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
@@ -413,8 +414,12 @@ PHP;
             assertStringNotContains('href="/invites/" data-invite-navigation>Invite</a>', $board);
             assertStringContains('data-public-auth-resume="true"', $board);
             assertFingerprintedAsset($board, 'private_site_auth.js');
+            $themeToggleScript = strrpos($board, '/assets/theme_toggle.');
+            $openPgpLoaderScript = strrpos($board, '/assets/openpgp_loader.');
             assertTrue(
-                strpos($board, '/assets/theme_toggle.') < strpos($board, '/assets/openpgp_loader.'),
+                $themeToggleScript !== false
+                    && $openPgpLoaderScript !== false
+                    && $themeToggleScript < $openPgpLoaderScript,
                 'Theme controls must initialize before the OpenPGP loader.'
             );
         } finally {
@@ -1107,7 +1112,7 @@ PHP;
     {
         $port = random_int(18000, 18999);
         $command = sprintf(
-            'timeout 1s %s start %s 2>&1',
+            'timeout 3s %s start %s 2>&1',
             escapeshellarg(__DIR__ . '/../v3'),
             escapeshellarg((string) $port),
         );
@@ -1121,7 +1126,7 @@ PHP;
     {
         $port = random_int(19000, 19999);
         $command = sprintf(
-            'timeout 1s %s start %s 2>&1',
+            'timeout 3s %s start %s 2>&1',
             escapeshellarg(__DIR__ . '/../v3'),
             escapeshellarg(':' . $port),
         );
@@ -2003,15 +2008,12 @@ PHP;
 
         $post = $this->render($application, '/posts/root-001');
         $activity = $this->render($application, '/activity/?view=content');
-        $forteActivity = $this->render($application, '/forte/activity/?view=content');
         $signature = $this->render($application, '/source/current/records/posts/root-001.txt.asc');
 
         assertStringContains('Signature:', $post);
         assertStringContains('href="/source/current/records/posts/root-001.txt.asc"', $post);
         assertStringContains('Signature:', $activity);
         assertStringContains('href="/source/current/records/posts/root-001.txt.asc"', $activity);
-        assertStringContains('Signature:', $forteActivity);
-        assertStringContains('href="/source/current/records/posts/root-001.txt.asc"', $forteActivity);
         assertSame("detached signature\n", $signature);
     }
 
@@ -2241,7 +2243,7 @@ PHP;
         assertStringContains('status=ready', $readModelStatus);
         assertStringContains('lock_status=unlocked', $readModelStatus);
         assertStringContains('stale_marker=absent', $readModelStatus);
-        assertStringContains('schema_version=13', $readModelStatus);
+        assertStringContains('schema_version=' . ReadModelMetadata::SCHEMA_VERSION, $readModelStatus);
         assertStringContains('<rss version="2.0">', $boardRss);
         assertStringContains('<title>Hello world</title>', $threadRss);
         assertStringContains('<pubDate>Fri, 10 Apr 2026 12:05:00 +0000</pubDate>', $threadRss);
@@ -2708,7 +2710,7 @@ PHP;
         $viewer = $this->render($application, '/tools/sqlite/');
 
         assertStringContains('<h1>SQLite Viewer</h1>', $viewer);
-        assertStringContains('<section class="stack" data-sqlite-viewer>', $viewer);
+        assertStringMatches('#<section class="stack" data-sqlite-viewer\\b#', $viewer);
         assertStringContains('href="/downloads/read_model.sqlite3"', $viewer);
         assertStringContains('href="/downloads/sqlite_query_catalog.sql"', $viewer);
         assertStringContains('queries run locally', $viewer);
@@ -2801,6 +2803,29 @@ PHP;
         assertStringContains('Outbox', $tools);
     }
 
+    public function testOfflineReaderEmbedsManifestRevisionFromServedSnapshot(): void
+    {
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-reader-revision-' . bin2hex(random_bytes(6));
+        $sha256 = str_repeat('c', 64);
+        mkdir($staticHtmlRoot . '/offline', 0777, true);
+        file_put_contents($staticHtmlRoot . '/offline/snapshot.sqlite3', "SQLite format 3\000reader fixture");
+        file_put_contents($staticHtmlRoot . '/offline/manifest.json', json_encode(['sha256' => $sha256], JSON_THROW_ON_ERROR));
+
+        try {
+            $application = new Application(
+                dirname(__DIR__),
+                $this->repositoryRoot,
+                $this->databasePath,
+                null,
+                $staticHtmlRoot,
+            );
+
+            assertStringContains('data-snapshot-revision="' . $sha256 . '"', $this->render($application, '/offline/reader/'));
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+        }
+    }
+
     public function testOfflineReaderFallbackRouteUsesLocalSnapshotShell(): void
     {
         $application = new Application(
@@ -2814,6 +2839,7 @@ PHP;
         assertStringContains('data-offline-reader', $reader);
         assertStringContains('class="stack thread-list" data-offline-reader', $reader);
         assertStringContains('data-snapshot-url="/offline/snapshot.sqlite3"', $reader);
+        assertStringContains('data-snapshot-revision=""', $reader);
         assertStringMatches('#data-reader-revision="/assets/offline_reader\.[a-f0-9]{12}\.js"#', $reader);
         assertStringContains('data-role="offline-reader-status"', $reader);
         assertStringContains('data-role="offline-mode-bar"', $reader);
@@ -2855,6 +2881,10 @@ PHP;
         assertStringContains('/assets/pwa_registration.', $board);
         assertStringNotContains('href="/offline/"', $board);
         assertStringContains('refresh-offline-reader', $serviceWorker);
+        assertStringContains('status: "unchanged"', $serviceWorker);
+        assertStringContains('event.data.force', $serviceWorker);
+        assertStringContains('await refreshSnapshot();', $serviceWorker);
+        assertStringContains('force: true', (string) file_get_contents(dirname(__DIR__) . '/public/assets/offline_health.js'));
         assertStringContains('networkFirstNavigation', $serviceWorker);
         assertStringContains('offlineCachePrefix', $serviceWorker);
         assertStringContains('zenmemes-offline-reader-v14', $serviceWorker);

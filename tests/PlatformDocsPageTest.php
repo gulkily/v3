@@ -68,7 +68,7 @@ final class PlatformDocsPageTest
         assertTrue(str_contains($uncatalogued, '<h1>Feature Development Process (FDP)</h1>'));
         assertTrue(str_contains($architecture, 'Repository source: <code>docs/architecture/public_architecture_and_trust.md</code>'));
         assertTrue(str_contains($architecture, '<h1>Public Architecture and Trust Model</h1>'));
-        assertTrue(str_contains($architecture, 'Git-backed public record'));
+        assertTrue(str_contains($architecture, 'The public record lives in Git'));
     }
 
     public function testInvalidDocumentationPathsAreNotRendered(): void

@@ -103,6 +103,7 @@ final class PublicOfflineSnapshotBuilder
             if (!rename($temporaryPath, $targetPath)) {
                 throw new RuntimeException('Unable to publish offline snapshot.');
             }
+            $this->writeManifest($targetPath, $generatedAt, $size);
 
             return [
                 'generated_at' => $generatedAt,
@@ -151,6 +152,27 @@ final class PublicOfflineSnapshotBuilder
         )');
         $pdo->exec('CREATE INDEX posts_thread_sequence_idx ON posts (thread_id, sequence_number, post_id)');
         $pdo->exec('PRAGMA max_page_count = ' . intdiv($maxBytes, 4096));
+    }
+
+    /**
+     * Written only after the snapshot is in place, so the hash always
+     * describes the published file. Replaced atomically like the snapshot.
+     */
+    private function writeManifest(string $snapshotPath, string $generatedAt, int $size): void
+    {
+        $manifestPath = dirname($snapshotPath) . '/manifest.json';
+        $temporaryPath = $manifestPath . '.tmp-' . bin2hex(random_bytes(8));
+        $manifest = json_encode([
+            'snapshot_version' => self::SNAPSHOT_VERSION,
+            'generated_at' => $generatedAt,
+            'size_bytes' => $size,
+            'sha256' => hash_file('sha256', $snapshotPath),
+        ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
+
+        if (file_put_contents($temporaryPath, $manifest) === false || !rename($temporaryPath, $manifestPath)) {
+            @unlink($temporaryPath);
+            throw new RuntimeException('Unable to publish offline snapshot manifest.');
+        }
     }
 
     /** @param array<string, string> $metadata */

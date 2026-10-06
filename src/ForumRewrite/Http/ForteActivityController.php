@@ -162,6 +162,7 @@ final class ForteActivityController
                 'has_more' => $viewResult['has_more'] && $lastItem !== null,
                 'next_cursor' => $lastItem !== null ? [
                     'sort_value' => $activityService->activitySortValueFromItem($lastItem, $sortColumn),
+                    'action_key' => (string) $lastItem['action_key'],
                     'id' => (int) $lastItem['id'],
                 ] : null,
             ];
@@ -296,6 +297,7 @@ final class ForteActivityController
                 || !isset($decodedCursor['sort_value'], $decodedCursor['id'])
                 || !is_string($decodedCursor['sort_value'])
                 || !is_int($decodedCursor['id'])
+                || ($view !== 'commits' && (!isset($decodedCursor['action_key']) || !is_string($decodedCursor['action_key'])))
             ) {
                 $this->routeServices->sendJson(['status' => 'error', 'error' => 'invalid cursor'], 400);
                 return;
@@ -305,6 +307,9 @@ final class ForteActivityController
                 'sort_value' => $decodedCursor['sort_value'],
                 'id' => $decodedCursor['id'],
             ];
+            if (isset($decodedCursor['action_key']) && is_string($decodedCursor['action_key'])) {
+                $cursor['action_key'] = $decodedCursor['action_key'];
+            }
         }
 
         if ($view === 'commits') {
@@ -394,6 +399,7 @@ final class ForteActivityController
         $hasMore = $result['has_more'] && $lastItem !== null;
         $nextCursor = $lastItem !== null ? [
             'sort_value' => $activityService->activitySortValueFromItem($lastItem, $sortColumn),
+            'action_key' => (string) $lastItem['action_key'],
             'id' => (int) $lastItem['id'],
         ] : null;
 
