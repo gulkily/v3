@@ -65,3 +65,15 @@
   - `git diff --check` passed.
 - Notes:
   - Generic page/layout rendering remains shared; QDB supplies only registered presentation choices.
+
+## Stage 6 - Regression contract and release handoff
+
+- Changes:
+  - Added focused QDB quote-number, route, board-policy, card, and write coverage to the runner.
+  - Marked the completed P1 checklist items after the three-profile route matrix passed.
+- Verification:
+  - `php tests/run.php QdbQuoteNumbersTest QdbExperienceRoutingTest QdbBoardPolicyTest QuoteCardDisplayNumberTest WriteApiSmokeTest` — 130 passed.
+  - `php tests/run.php` — the same three pre-existing failures recorded before P1 remain: the two pending-shell `BrowserSigningNormalizationTest` cases and `LocalAppSmokeTest::testAnonymousPublicBoardDoesNotStartViewerSession`.
+  - `git diff --check` passed.
+- Notes:
+  - Deployed QDB route-matrix verification remains an operator release check; no deployment configuration changed in P1.

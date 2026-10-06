@@ -11,10 +11,10 @@ Use this checklist to refactor Zenmemes, Chouse, and QDB into explicit site comp
 
 ## P1 — Extract QDB as a specialized experience
 
-- [ ] Move QDB classic route matching and dispatch out of `Application` into a QDB experience module; retain every current classic URL and reject those routes for other profiles.
-- [ ] Move QDB navigation, welcome/search/random/add surfaces, board policy, card selection, pagination, and footer out of generic board/template branches into that module's named interfaces.
-- [ ] Extract QDB quote-number minting, parsing, lookup, and display-permalink logic from `LocalWriteService`, `ThreadRepository`, and `quote_card.php` into one QDB quote-number component.
-- [ ] Keep QDB-specific behavior specialized unless a second plausible consumer justifies a reusable capability.
+- [x] Move QDB classic route matching and dispatch out of `Application` into a QDB experience module; retain every current classic URL and reject those routes for other profiles.
+- [x] Move QDB navigation, welcome/search/random/add surfaces, board policy, card selection, pagination, and footer out of generic board/template branches into that module's named interfaces.
+- [x] Extract QDB quote-number minting, parsing, lookup, and display-permalink logic from `LocalWriteService`, `ThreadRepository`, and `quote_card.php` into one QDB quote-number component.
+- [x] Keep QDB-specific behavior specialized unless a second plausible consumer justifies a reusable capability.
 
 ## P2 — Bound presentation variation
 
