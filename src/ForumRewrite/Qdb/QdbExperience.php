@@ -203,7 +203,10 @@ final class QdbExperience
         $reactions = $this->boardPolicy->viewerReactionState($threads);
         return $this->routeServices->renderPageTemplate($template, $data + [
             'viewerUpvotedThreadIds' => $reactions['upvoted'], 'viewerDownvotedThreadIds' => $reactions['downvoted'], 'viewerFlaggedPostIds' => $reactions['flagged'],
-        ], $title, $section, ['/assets/thread_reactions.js']);
+        ], $title, $section, [
+            '/assets/lazy_compose_signing.js',
+            '/assets/thread_reactions.js',
+        ]);
     }
 
     /** @return array<int, array<string, mixed>> */
