@@ -47,6 +47,7 @@ use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\ReadModel\ThreadRowSupport;
 use ForumRewrite\Qdb\QdbExperience;
 use ForumRewrite\Qdb\QdbExperienceRouteResult;
+use ForumRewrite\Qdb\QdbBoardPolicy;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -806,6 +807,7 @@ final class Application
             $this->boardPageController(),
             $this->composeAndAccountKeyController(),
             $this->routeServices()->pdo(),
+            new QdbBoardPolicy($this->repositoryRoot, $this->resolveViewerProfileFromIdentityHint(...)),
         );
     }
 

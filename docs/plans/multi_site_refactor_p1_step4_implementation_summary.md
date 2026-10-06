@@ -27,3 +27,15 @@
   - `git diff --check` passed.
 - Notes:
   - Board and presentation policy remain in their current shared components until Stages 3-5; this stage changes route ownership only.
+
+## Stage 3 - QDB board policy
+
+- Changes:
+  - Added `QdbBoardPolicy` for QDB pagination, viewer reaction state, quote count, and 1337 sort behavior.
+  - Made generic board rendering accept an explicit QDB policy instead of detecting the active profile; the QDB experience supplies that policy for latest, top, and leetness.
+- Verification:
+  - `php -l` passed for the policy, QDB experience, board controller, application wiring, and policy test.
+  - `php tests/run.php QdbBoardPolicyTest QdbExperienceRoutingTest QuoteCardDisplayNumberTest` — 13 passed.
+  - `git diff --check` passed.
+- Notes:
+  - Dedicated QDB welcome/random/search/add pages remain for Stage 4; navigation, footer, and card-template isolation remain for Stage 5.

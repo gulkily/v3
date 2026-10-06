@@ -18,6 +18,7 @@ final class QdbExperience
         private readonly BoardPageController $boardPages,
         private readonly ComposeAndAccountKeyController $composePages,
         private readonly PDO $pdo,
+        private readonly QdbBoardPolicy $boardPolicy,
     ) {
     }
 
@@ -43,17 +44,17 @@ final class QdbExperience
         if ($path === '/latest' || $latestPageMatch || array_key_exists('latest', $query)) {
             $page = $latestPageMatch ? (int) $latestPathMatches[1] : (int) ($query['latest'] ?? 1);
 
-            return QdbExperienceRouteResult::page($this->boardPages->board('all', 'newest', 'latest', max(1, $page)));
+            return QdbExperienceRouteResult::page($this->boardPages->board('all', 'newest', 'latest', max(1, $page), $this->boardPolicy));
         }
 
         if ($path === '/top' || $topPageMatch || array_key_exists('top', $query)) {
             $page = $topPageMatch ? (int) $topPathMatches[1] : (int) ($query['top'] ?? 1);
 
-            return QdbExperienceRouteResult::page($this->boardPages->board('all', 'top', 'top', max(1, $page)));
+            return QdbExperienceRouteResult::page($this->boardPages->board('all', 'top', 'top', max(1, $page), $this->boardPolicy));
         }
 
         if ($path === '/leetness' || array_key_exists('leetness', $query)) {
-            return QdbExperienceRouteResult::page($this->boardPages->board('all', 'leetness', 'leetness'));
+            return QdbExperienceRouteResult::page($this->boardPages->board('all', 'leetness', 'leetness', 1, $this->boardPolicy));
         }
 
         if ($path === '/add' || array_key_exists('add', $query)) {
