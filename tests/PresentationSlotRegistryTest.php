@@ -26,4 +26,17 @@ final class PresentationSlotRegistryTest
         assertSame('forum', PresentationSlotRegistry::resolve($profile, 'navigation'));
         assertThrowsRuntime(static fn (): mixed => PresentationSlotRegistry::validate($profile['presentationSlots'], 'zenmemes'), 'Site profile zenmemes has an invalid presentation slot selection.');
     }
+
+    public function testEveryMissingOrInvalidSlotUsesItsRegisteredFallback(): void
+    {
+        foreach (PresentationSlotRegistry::all() as $slot => $definition) {
+            $missingSelection = SiteProfileRegistry::all()['zenmemes'];
+            unset($missingSelection['presentationSlots'][$slot]);
+            assertSame($definition['fallback'], PresentationSlotRegistry::resolve($missingSelection, $slot));
+
+            $invalidSelection = SiteProfileRegistry::all()['zenmemes'];
+            $invalidSelection['presentationSlots'][$slot] = 'untrusted-selection';
+            assertSame($definition['fallback'], PresentationSlotRegistry::resolve($invalidSelection, $slot));
+        }
+    }
 }

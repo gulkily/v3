@@ -61,3 +61,16 @@
   - `php tests/run.php ProfileThemePresentationTest ThemeRegistryTest SiteProfileRegistryTest PresentationSlotRegistryTest` — 17 passed.
   - `php tests/run.php LocalAppSmokeTest` — 115 passed; four unrelated long-standing failures remain (anonymous public session, adjacent signature links, API/RSS schema version, and SQLite-viewer route source).
   - `git diff --check` passed.
+
+## Stage 6 - Presentation regression contract and handoff
+
+- Changes:
+  - Added a three-profile rendering matrix for navigation, board cards, compose surfaces, about content, and branded theme availability.
+  - Extended slot coverage so every missing or invalid slot selection resolves to its registered fallback.
+  - Updated the P2 bounded-presentation checklist as complete.
+- Verification:
+  - `php tests/run.php PresentationProfileMatrixTest PresentationSlotRegistryTest ProfilePresentationContentTest ProfileThemePresentationTest QdbExperienceRoutingTest QuoteCardDisplayNumberTest` — 25 passed.
+  - `php tests/run.php` completed with P2 coverage passing. Seven unrelated long-standing failures remain: two browser-signing Node-harness helpers, four LocalAppSmoke checks, and `PlatformDocsPageTest::testCataloguedAndUncataloguedDocumentsRenderWithSourcePaths`.
+  - `git diff --check` passed.
+- Deployment note:
+  - No deployed entry point was supplied in this workspace, so the planned operator render check remains an external release task; local profile render coverage is complete.
