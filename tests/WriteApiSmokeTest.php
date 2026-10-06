@@ -1498,6 +1498,64 @@ PHP);
         assertStringNotContains('Agent reply posted', $script);
     }
 
+    public function testPostAnalysisScriptKeepsOnlyUnfinishedAgentFeedbackOutsideActions(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+let source = fs.readFileSync(process.argv[1], 'utf8');
+source = source.replace(
+  'function boot() {',
+  'window.agentReplyFeedbackTest = { applyGenerationResult, placeAgentReplyFeedback }; function boot() {'
+);
+const codexFeedback = {};
+const actions = {
+  outsideCount: 0,
+  restoredCount: 0,
+  before(node) { this.outsideCount++; node.parent = 'outside'; },
+  querySelector(selector) { return selector === '[data-role="codex-handoff-feedback"]' ? codexFeedback : null; },
+  insertBefore(node, reference) { if (reference === codexFeedback) { this.restoredCount++; node.parent = 'actions'; } },
+  appendChild(node) { node.parent = 'actions'; }
+};
+const card = { querySelector(selector) { return selector === '.post-card-actions' ? actions : null; } };
+const feedback = {
+  hidden: true,
+  textContent: '',
+  parent: 'actions',
+  closest(selector) { return selector === '[data-post-id]' ? card : null; }
+};
+global.window = {};
+global.document = { readyState: 'loading', addEventListener() {} };
+vm.runInThisContext(source);
+window.agentReplyFeedbackTest.applyGenerationResult(feedback, {
+  status: 'ok', generation_status: 'requested', response_mode_label: 'Logic analysis'
+}, null);
+const requested = { parent: feedback.parent, text: feedback.textContent };
+window.agentReplyFeedbackTest.applyGenerationResult(feedback, {
+  status: 'ok', generation_status: 'failed', response_mode_label: 'Logic analysis'
+}, null);
+process.stdout.write(JSON.stringify({
+  requested,
+  failed: { parent: feedback.parent, text: feedback.textContent },
+  outsideCount: actions.outsideCount,
+  restoredCount: actions.restoredCount
+}));
+NODE;
+        $command = sprintf('node -e %s %s', escapeshellarg($script), escapeshellarg(dirname(__DIR__) . '/public/assets/post_analysis.js'));
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Agent-feedback presentation check failed: ' . implode("\n", $output));
+        }
+        $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame([
+            'requested' => ['parent' => 'outside', 'text' => 'Logic analysis requested.'],
+            'failed' => ['parent' => 'actions', 'text' => 'Logic analysis request failed.'],
+            'outsideCount' => 1,
+            'restoredCount' => 1,
+        ], $result);
+    }
+
     public function testPostAnalysisScriptBindsCodexHandoffActions(): void
     {
         $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/post_analysis.js');

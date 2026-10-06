@@ -15,3 +15,19 @@
   - `git diff --check` passed.
 - Notes:
   - No API, persistence, lifecycle wording, or continuation rules changed.
+
+## Stage 2 - In-page status synchronization
+
+- Changes:
+  - Added a shared browser-controller helper that moves agent-response feedback before the action footer for requesting, requested, and in-progress states.
+  - Restored terminal, skipped, and failed feedback to its existing position in the action footer.
+  - Added a browser-controller regression test covering requested-to-failed placement and wording.
+- Verification:
+  - `node --check public/assets/post_analysis.js` and `php -l tests/WriteApiSmokeTest.php` passed.
+  - `php tests/run.php WriteApiSmokeTest::testPostAnalysisScriptDoesNotExposeInProgressReplyGeneration WriteApiSmokeTest::testPostAnalysisScriptKeepsOnlyUnfinishedAgentFeedbackOutsideActions WriteApiSmokeTest::testApprovedViewerSeesAgentReplyRequestButtonUntilRequestExists WriteApiSmokeTest::testRequestedAgentReplyNoticePrecedesCollapsedReplyActions` passed: 4 run, 4 passed.
+  - `php tests/run.php WriteApiSmokeTest LocalAppSmokeTest` ran 239 tests: 234 passed; the 5 failures are tracked long-standing failures unrelated to this feature.
+  - Full `php tests/run.php` ran 728 tests: 720 passed, 8 failed. Seven are tracked long-standing unrelated failures; the approval read-model parity failure was also present in the earlier focused run and does not touch this feature’s templates or browser controller.
+  - In a disposable local repository, real API requests for a collapsed root and reply card both returned `generation_status: requested`; Chromium rendered each `Logic analysis requested.` notice directly before its `post-card-actions` footer.
+  - `git diff --check` passed.
+- Notes:
+  - No endpoint, request payload, database, response lifecycle, or terminal-status wording changed.
