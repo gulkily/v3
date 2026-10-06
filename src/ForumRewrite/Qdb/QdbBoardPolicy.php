@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Qdb;
 
 use ForumRewrite\Http\BoardViewOptions;
-use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\ReadModel\ViewerTagLookup;
-use PDO;
 
 final class QdbBoardPolicy
 {
@@ -64,9 +62,22 @@ final class QdbBoardPolicy
         ];
     }
 
-    public function quoteCount(PDO $pdo): int
+    /**
+     * @param array<int, array<string, mixed>> $threads
+     * @return array<int, array<string, mixed>>
+     */
+    public function eligibleQuotes(array $threads): array
     {
-        return count(ThreadRepository::fetchThreads($pdo));
+        return array_values(array_filter(
+            $threads,
+            static fn (array $thread): bool => QdbQuoteNumbers::fromThreadId((string) ($thread['root_post_id'] ?? '')) !== null,
+        ));
+    }
+
+    /** @param array<int, array<string, mixed>> $threads */
+    public function quoteCount(array $threads): int
+    {
+        return count($this->eligibleQuotes($threads));
     }
 
     /**

@@ -31,4 +31,19 @@ final class QdbBoardPolicyTest
         assertSame(-1, $policy->compareLeetness(['score_total' => 1336], ['score_total' => 1300], 1));
         assertSame(-1, $policy->compareLeetness(['score_total' => 1336], ['score_total' => 1338], -1));
     }
+
+    public function testRetainsOnlyThreadsWithCanonicalQuoteIds(): void
+    {
+        $policy = new QdbBoardPolicy('/unused', static fn (): ?array => null);
+        $threads = [
+            ['root_post_id' => 'thread-20030613104735-qdb-42'],
+            ['root_post_id' => 'root-001'],
+            ['root_post_id' => 'thread-20030613104735-qdb-not-a-number'],
+        ];
+
+        $quotes = $policy->eligibleQuotes($threads);
+
+        assertSame(['thread-20030613104735-qdb-42'], array_column($quotes, 'root_post_id'));
+        assertSame(1, $policy->quoteCount($threads));
+    }
 }
