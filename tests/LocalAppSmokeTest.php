@@ -2826,7 +2826,7 @@ PHP;
         assertStringNotContains('href="/offline/"', $board);
         assertStringContains('refresh-offline-reader', $serviceWorker);
         assertStringContains('networkFirstNavigation', $serviceWorker);
-        assertStringContains('zenmemes-offline-reader-v13', $serviceWorker);
+        assertStringContains('zenmemes-offline-reader-v14', $serviceWorker);
         assertStringContains('[offline reading] worker install started', $serviceWorker);
         assertStringContains('[offline reading] fetch failed', $serviceWorker);
         assertStringContains('offline reader shell', $serviceWorker);

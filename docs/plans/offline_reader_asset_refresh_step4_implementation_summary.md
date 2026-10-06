@@ -55,3 +55,20 @@
 - Notes:
   - `currentRevision()` and `storedRevision()` are not used by production code until Stage 5 gates the load-time refresh on them.
   - `CACHE_NAME` is still v13; it moves to v14 in Stage 5 with the behavior change.
+
+## Stage 5 - Gate load-time refresh on revision; failed refresh keeps previous copy
+- Changes:
+  - `public/service_worker.js`: `refresh-offline-reader` computes `currentRevision()`; if it equals `storedRevision()`, replies `unchanged` and returns without fetching assets or the snapshot. Otherwise refreshes as before.
+  - `CACHE_NAME` bumped to `zenmemes-offline-reader-v14`.
+  - `public/assets/offline_health.js`: `requestReaderRefresh()` accepts `unchanged` as success (see Notes).
+  - `tests/OfflineNavigationWorkerTest.php`: new `testUnchangedRevisionSkipsRefreshAndFailedRefreshKeepsPreviousRevision` (first refresh ready; unchanged load makes zero asset and snapshot fetches; changed shell with a failing asset replies `error` and keeps the old revision and cached asset; recovery replies `ready`). Older cache mocks gain `match`.
+  - `tests/LocalAppSmokeTest.php`: v13 assertion updated to v14 (the bump requires it; this was planned for Stage 7).
+- Verification:
+  - `php tests/run.php OfflineNavigationWorkerTest`: 6 passed.
+  - `php tests/run.php LocalAppSmokeTest`: 116 passed, 4 failed; the same four pre-existing failures as the Stage 3 baseline.
+  - `OfflineSnapshotPresentationTest` (7), `OfflineReadingDiagnosticCommandTest` (3), `OfflineSnapshotPublishCommandTest` (3), `OfflineSnapshotThreadPresentationTest` (2), `OfflineOutboxStateTest` (3): all pass.
+  - Not applicable: UI in a browser (Stage 8), deployment, migration.
+- Notes:
+  - Deviation: `offline_health.js` change was not in the Stage 5 plan. Without it, the manual button would report failure whenever the revision is unchanged, until Stage 6 adds `force`.
+  - On a changed revision, the shell pages are fetched twice in one refresh (once to compare, once inside `refreshOfflineReader()`). This is three small requests, only when content has changed. It can be removed by passing the bodies through, if it matters.
+  - Stage 7's test updates for v14 are partly done here.

@@ -73,7 +73,7 @@ async function refreshResult(fail) {
       clients: { claim() { return Promise.resolve(); } }
     },
     caches: {
-      open() { return Promise.resolve({ put() { return Promise.resolve(); }, keys() { return Promise.resolve([]); } }); },
+      open() { return Promise.resolve({ put() { return Promise.resolve(); }, match() { return Promise.resolve(undefined); }, keys() { return Promise.resolve([]); } }); },
       keys() { return Promise.resolve([]); }, delete() { return Promise.resolve(true); }
     },
     fetch: async function (request) {
@@ -106,7 +106,7 @@ NODE;
 
         assertSame('offline-reader-refreshed', $result[0]['type']);
         assertSame('ready', $result[0]['status']);
-        assertSame('zenmemes-offline-reader-v13', $result[0]['cacheName']);
+        assertSame('zenmemes-offline-reader-v14', $result[0]['cacheName']);
         assertSame('offline-reader-refreshed', $result[1]['type']);
         assertSame('error', $result[1]['status']);
         assertSame('Network unavailable', $result[1]['errorMessage']);
@@ -132,7 +132,7 @@ async function refreshWithMissingSnapshot() {
       clients: { claim() { return Promise.resolve(); } }
     },
     caches: {
-      open() { return Promise.resolve({ put(request) { stored.push(new URL(request.url || request).pathname); return Promise.resolve(); }, keys() { return Promise.resolve([]); } }); },
+      open() { return Promise.resolve({ put(request) { stored.push(new URL(request.url || request).pathname); return Promise.resolve(); }, match() { return Promise.resolve(undefined); }, keys() { return Promise.resolve([]); } }); },
       keys() { return Promise.resolve([]); }, delete() { return Promise.resolve(true); }
     },
     fetch: async function (request) {
@@ -239,6 +239,98 @@ NODE;
         assertTrue($result['a'] !== $result['b'], 'A changed embedded snapshot revision should change the reader revision.');
         assertSame($result['b'], $result['stored']);
         assertSame('ready', $result['status']);
+    }
+
+    public function testUnchangedRevisionSkipsRefreshAndFailedRefreshKeepsPreviousRevision(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const { webcrypto } = require('crypto');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+async function run() {
+  const state = { snapshotRevision: 'a1', failAssets: false };
+  const fetched = [];
+  const store = new Map();
+  const listeners = {};
+  const context = {
+    URL, Request, Response, Promise, TextEncoder, crypto: webcrypto, console: { info() {}, error() {} },
+    self: {
+      location: { href: 'https://forum.test/service_worker.js', origin: 'https://forum.test' },
+      navigator: { onLine: true },
+      addEventListener(type, listener) { listeners[type] = listener; },
+      skipWaiting() { return Promise.resolve(); },
+      clients: { claim() { return Promise.resolve(); } }
+    },
+    caches: {
+      open() {
+        return Promise.resolve({
+          put(key, response) { store.set(key, response); return Promise.resolve(); },
+          match(key) { const hit = store.get(key); return Promise.resolve(hit ? hit.clone() : undefined); },
+          keys() { return Promise.resolve([...store.keys()].map((url) => ({ url }))); }
+        });
+      },
+      keys() { return Promise.resolve([]); }, delete() { return Promise.resolve(true); }
+    },
+    fetch: async function (request) {
+      const pathname = new URL(request.url).pathname;
+      fetched.push(pathname);
+      if (pathname === '/offline/snapshot.sqlite3') return new Response('missing', { status: 404 });
+      if (pathname.startsWith('/assets/') && state.failAssets) return new Response('boom', { status: 500 });
+      const html = pathname === '/offline/reader/'
+        ? `<section data-offline-reader data-snapshot-revision="${state.snapshotRevision}"><script src="/assets/offline_reader.js"></script></section>`
+        : pathname === '/offline/' ? `<section data-snapshot-revision="${state.snapshotRevision}"></section>`
+        : pathname === '/tools/outbox/' ? '<section></section>' : 'asset';
+      return new Response(html, { status: 200 });
+    }
+  };
+  vm.runInNewContext(source, context);
+  async function message() {
+    const port = { messages: [], postMessage(message) { this.messages.push(message); } };
+    fetched.length = 0;
+    let completion;
+    listeners.message({ data: { type: 'refresh-offline-reader' }, ports: [port], waitUntil(promise) { completion = promise; } });
+    try { await completion; } catch (error) {}
+    return {
+      status: port.messages[0].status,
+      assetFetches: fetched.filter((path) => path.startsWith('/assets/')).length,
+      snapshotFetches: fetched.filter((path) => path === '/offline/snapshot.sqlite3').length
+    };
+  }
+  const first = await message();
+  const revisionAfterFirst = await context.storedRevision();
+  const second = await message();
+  state.snapshotRevision = 'b2';
+  state.failAssets = true;
+  const third = await message();
+  const revisionAfterFailure = await context.storedRevision();
+  const cachedAssetAfterFailure = store.has('https://forum.test/assets/offline_reader.js');
+  state.failAssets = false;
+  const fourth = await message();
+  return { first, second, third, fourth, revisionAfterFirst, revisionAfterFailure, cachedAssetAfterFailure, revisionAfterRecovery: await context.storedRevision() };
+}
+run().then((outcome) => process.stdout.write(JSON.stringify(outcome)));
+NODE;
+        $command = sprintf(
+            'node -e %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/service_worker.js'),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Worker gating contract failed: ' . implode("\n", $output));
+        }
+        $outcome = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame('ready', $outcome['first']['status']);
+        assertSame('unchanged', $outcome['second']['status']);
+        assertSame(0, $outcome['second']['assetFetches']);
+        assertSame(0, $outcome['second']['snapshotFetches']);
+        assertSame('error', $outcome['third']['status']);
+        assertSame($outcome['revisionAfterFirst'], $outcome['revisionAfterFailure']);
+        assertTrue($outcome['cachedAssetAfterFailure'], 'A failed refresh should keep previously cached assets.');
+        assertSame('ready', $outcome['fourth']['status']);
+        assertTrue($outcome['revisionAfterRecovery'] !== $outcome['revisionAfterFirst'], 'A successful refresh should store the new revision.');
     }
 
     public function testOutboxNavigationFallsBackToItsDedicatedCachedShell(): void

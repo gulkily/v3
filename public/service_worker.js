@@ -1,4 +1,4 @@
-const CACHE_NAME = "zenmemes-offline-reader-v13";
+const CACHE_NAME = "zenmemes-offline-reader-v14";
 const SNAPSHOT_URL = "/offline/snapshot.sqlite3";
 const OFFLINE_HEALTH_URL = "/offline/";
 const OFFLINE_READER_URL = "/offline/reader/";
@@ -191,6 +191,10 @@ self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "refresh-offline-reader") {
     event.waitUntil((async () => {
       try {
+        if (await currentRevision() === await storedRevision()) {
+          if (event.ports[0]) event.ports[0].postMessage({ type: "offline-reader-refreshed", status: "unchanged", cacheName: CACHE_NAME });
+          return;
+        }
         await refreshOfflineReader(Array.isArray(event.data.urls) ? event.data.urls : []);
         console.info("[offline reading] reader refresh completed", workerDetails());
         if (event.ports[0]) event.ports[0].postMessage({ type: "offline-reader-refreshed", status: "ready", cacheName: CACHE_NAME });
