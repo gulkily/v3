@@ -118,4 +118,64 @@ NODE;
         assertSame(true, $result['initCalled']);
         assertSame(true, $result['initRootMatched']);
     }
+
+    public function testReactionOnlyPageExposesTheLazyLoaderWithoutAComposeForm(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+
+(async function () {
+  const appended = [];
+  global.window = {
+    __forumAssetPaths: {
+      openpgpLoader: '/assets/openpgp_loader.fingerprint.js',
+      browserSigning: '/assets/browser_signing.fingerprint.js'
+    }
+  };
+  global.document = {
+    querySelectorAll() {
+      return [];
+    },
+    querySelector(selector) {
+      if (selector.startsWith('script[src*=')) {
+        return appended.find((entry) => entry.src.includes(selector.slice(13, -2))) || null;
+      }
+      return null;
+    },
+    createElement(tagName) {
+      return { tagName, src: '', defer: false, onload: null, onerror: null };
+    },
+    head: {
+      appendChild(script) {
+        appended.push(script);
+      }
+    }
+  };
+
+  vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+  const loading = window.ForumLazyComposeSigning.load();
+  appended[0].onload();
+  await Promise.resolve();
+  appended[1].onload();
+  await loading;
+
+  process.stdout.write(JSON.stringify({
+    hasLoader: typeof window.ForumLazyComposeSigning.load === 'function',
+    appended: appended.map((script) => script.src)
+  }));
+})().catch((error) => {
+  console.error(error && error.stack ? error.stack : error);
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(true, $result['hasLoader']);
+        assertSame([
+            '/assets/openpgp_loader.fingerprint.js',
+            '/assets/browser_signing.fingerprint.js',
+        ], $result['appended']);
+    }
 }

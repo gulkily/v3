@@ -10,6 +10,7 @@ final class FeatureFlagRegistry
     public const EMOJI_AUTHORED_TEXT = 'FORUM_EMOJI_AUTHORED_TEXT';
     public const APP_VERSION_NOTIFICATION = 'FORUM_APP_VERSION_NOTIFICATION';
     public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
+    public const STATIC_DETAIL_PAGES_ENABLED = 'FORUM_STATIC_DETAIL_PAGES_ENABLED';
     public const DEDALUS_AGENT_REPLIES_ENABLED = 'DEDALUS_AGENT_REPLIES_ENABLED';
     public const DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED = 'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED';
     public const AGENT_RESPONSE_REQUESTS_ENABLED = 'AGENT_RESPONSE_REQUESTS_ENABLED';
@@ -64,6 +65,14 @@ final class FeatureFlagRegistry
                 'Show the Comfortable/Compact thread density menu in the board/tag header. Off by default: the menu has known bugs and crowds the header on mobile.',
                 false,
                 self::THREAD_DENSITY_TOGGLE_ENABLED,
+                siteMutable: true,
+            ),
+            new FeatureFlagDefinition(
+                self::STATIC_DETAIL_PAGES_ENABLED,
+                'Static detail pages',
+                'Pre-build individual thread and post pages during a full static release. Disable this on a large QDB instance to keep shared listing pages static while individual quotes render dynamically.',
+                true,
+                self::STATIC_DETAIL_PAGES_ENABLED,
                 siteMutable: true,
             ),
             new FeatureFlagDefinition(

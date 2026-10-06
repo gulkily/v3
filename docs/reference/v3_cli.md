@@ -295,6 +295,13 @@ normal requests continue using the prior complete state while the command runs.
 - `database_path` — read-model SQLite file to render from
 - `artifact_root` — static release root; defaults to `state/static_html` when not given via argument or `FORUM_STATIC_HTML_ROOT`. The active release is `artifact_root/current`.
 
+`FORUM_STATIC_DETAIL_PAGES_ENABLED` defaults to `true`. Set it to `false`
+through the instance feature-flags page (or as an environment override) to omit
+the individual thread and post HTML files from a full release. Shared pages,
+including QDB's home, Latest, Top, and Leetness pages, are still generated;
+individual quote and thread requests fall back to PHP. Run a full build after
+changing this flag so the active release reflects it.
+
 ### Refresh only shared static pages
 
 ```

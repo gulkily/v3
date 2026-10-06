@@ -10,7 +10,7 @@ use ForumRewrite\ReadModel\ViewerTagLookup;
 final class QdbBoardPolicy
 {
     private const PAGE_SIZE = 25;
-    private const PAGINATED_SECTIONS = ['latest', 'top'];
+    private const PAGINATED_SECTIONS = ['latest', 'top', 'leetness', 'search'];
 
     /**
      * @param \Closure(): (array<string, mixed>|null) $resolveViewerProfile
@@ -25,7 +25,7 @@ final class QdbBoardPolicy
      * @param array<int, array<string, mixed>> $threads
      * @return array{threads: array<int, array<string, mixed>>, pagination: array<int, array<string, mixed>>|null}
      */
-    public function paginate(array $threads, string $activeSection, int $page): array
+    public function paginate(array $threads, string $activeSection, int $page, ?string $basePath = null): array
     {
         if (!in_array($activeSection, self::PAGINATED_SECTIONS, true)) {
             return ['threads' => $threads, 'pagination' => null];
@@ -36,7 +36,7 @@ final class QdbBoardPolicy
 
         return [
             'threads' => array_slice($threads, ($page - 1) * self::PAGE_SIZE, self::PAGE_SIZE),
-            'pagination' => BoardViewOptions::pagination('/' . $activeSection, $page, $totalPages),
+            'pagination' => BoardViewOptions::pagination($basePath ?? '/' . $activeSection, $page, $totalPages),
         ];
     }
 

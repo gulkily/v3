@@ -1,9 +1,5 @@
 (function () {
   const composeRoots = Array.from(document.querySelectorAll("[data-compose-root]"));
-  if (composeRoots.length === 0) {
-    return;
-  }
-
   const intentSelector = 'textarea[name="body"], input[name="subject"]';
   let loadPromise = null;
 

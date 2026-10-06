@@ -12,6 +12,8 @@ use ForumRewrite\Qdb\QdbQuoteNumbers;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\SiteProfileRegistry;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use PDO;
 use RuntimeException;
 
@@ -60,13 +62,17 @@ final class StaticArtifactBuilder
 
             $this->writeRouteArtifact($application, $route, $artifactPath);
         });
-        $this->renderRouteBatch('thread pages', $this->fetchVisibleThreadIds(), function (string $threadId) use ($application): void {
-            $this->writeRouteArtifact($application, '/threads/' . $threadId, $this->artifactRoot . '/threads/' . $threadId . '.html');
-            $this->writeQdbNumericQuoteAlias($threadId);
-        });
-        $this->renderRouteBatch('post pages', $this->fetchVisiblePostIds(), function (string $postId) use ($application): void {
-            $this->writeRouteArtifact($application, '/posts/' . $postId, $this->artifactRoot . '/posts/' . $postId . '.html');
-        });
+        if ($this->prebuildDetailPages()) {
+            $this->renderRouteBatch('thread pages', $this->fetchVisibleThreadIds(), function (string $threadId) use ($application): void {
+                $this->writeRouteArtifact($application, '/threads/' . $threadId, $this->artifactRoot . '/threads/' . $threadId . '.html');
+                $this->writeQdbNumericQuoteAlias($threadId);
+            });
+            $this->renderRouteBatch('post pages', $this->fetchVisiblePostIds(), function (string $postId) use ($application): void {
+                $this->writeRouteArtifact($application, '/posts/' . $postId, $this->artifactRoot . '/posts/' . $postId . '.html');
+            });
+        } else {
+            $this->reportProgress('Skipping individual thread and post pages (FORUM_STATIC_DETAIL_PAGES_ENABLED is disabled).');
+        }
         $this->renderRouteBatch('profile pages', $this->fetchIds('SELECT profile_slug FROM profiles ORDER BY profile_slug'), function (string $profileSlug) use ($application): void {
             $this->writeRouteArtifact($application, '/profiles/' . $profileSlug, $this->artifactRoot . '/profiles/' . $profileSlug . '.html');
         });
@@ -159,6 +165,12 @@ final class StaticArtifactBuilder
                 $this->artifactRoot . '/' . $name . '/index.html',
             ]);
         }
+    }
+
+    private function prebuildDetailPages(): bool
+    {
+        return FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)
+            ->isEnabled(FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED);
     }
 
     private function writeQdbNumericQuoteAlias(string $threadId): void

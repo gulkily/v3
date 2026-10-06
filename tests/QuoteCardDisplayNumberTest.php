@@ -275,7 +275,35 @@ final class QuoteCardDisplayNumberTest
         );
     }
 
-    public function testQdbListingPagesLoadTheVoteButtonScript(): void
+    public function testQdbStaticReleaseCanSkipIndividualDetailPages(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-qdb-static-no-details-' . bin2hex(random_bytes(6));
+
+        $previousStaticDetailPages = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+        putenv('FORUM_SITE_ID=qdb');
+        putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=false');
+        try {
+            (new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot))->build();
+        } finally {
+            if ($previousStaticDetailPages === false) {
+                putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+            } else {
+                putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $previousStaticDetailPages);
+            }
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertTrue(is_file($artifactRoot . '/latest.html'));
+        assertTrue(is_file($artifactRoot . '/top.html'));
+        assertTrue(is_file($artifactRoot . '/leetness.html'));
+        assertFalse(is_file($artifactRoot . '/threads/thread-20030613104735-qdb-42.html'));
+        assertFalse(is_file($artifactRoot . '/posts/thread-20030613104735-qdb-42.html'));
+        assertFalse(is_file($artifactRoot . '/qdb/quotes/42.html'));
+    }
+
+    public function testQdbListingPagesLoadTheVoteButtonAndIdentityLoaderScripts(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
         $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
@@ -285,6 +313,7 @@ final class QuoteCardDisplayNumberTest
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
             $latest = $this->render($application, '/latest');
             $top = $this->render($application, '/top');
+            $leetness = $this->render($application, '/leetness');
             $random = $this->render($application, '/random');
             $search = $this->render($application, '/search?search=quoted');
         } finally {
@@ -293,8 +322,14 @@ final class QuoteCardDisplayNumberTest
 
         assertStringContains('thread_reactions', $latest);
         assertStringContains('thread_reactions', $top);
+        assertStringContains('thread_reactions', $leetness);
         assertStringContains('thread_reactions', $random);
         assertStringContains('thread_reactions', $search);
+        assertStringContains('lazy_compose_signing', $latest);
+        assertStringContains('lazy_compose_signing', $top);
+        assertStringContains('lazy_compose_signing', $leetness);
+        assertStringContains('lazy_compose_signing', $random);
+        assertStringContains('lazy_compose_signing', $search);
     }
 
     public function testNonQdbBoardDoesNotLoadTheVoteButtonScript(): void

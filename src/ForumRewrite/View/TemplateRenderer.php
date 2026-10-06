@@ -46,6 +46,11 @@ final class TemplateRenderer
         'users_pending.php' => ['/assets/pending-approvals.css'],
     ];
     private const CRITICAL_CSS_END_MARKER = '/* critical-css-end */';
+    // Indentation is only for readable generated markup.  Splitting a large
+    // fragment into one PHP array entry per line can consume more memory than
+    // the response itself, so keep it out of the request's peak allocation.
+    private const MAX_INDENTED_HTML_BYTES = 1048576;
+    private const MAX_INDENTED_HTML_LINES = 10000;
     private ?string $criticalCss = null;
 
     public function __construct(
@@ -364,6 +369,12 @@ final class TemplateRenderer
             array_merge($data, $partialData)
         );
         $indent = static function (string $html, int $levels = 1, string $unit = '  '): string {
+            if (strlen($html) > self::MAX_INDENTED_HTML_BYTES
+                || substr_count($html, "\n") > self::MAX_INDENTED_HTML_LINES
+            ) {
+                return $html;
+            }
+
             $prefix = str_repeat($unit, max(0, $levels));
             $lines = explode("\n", $html);
             $protectedTags = ['pre', 'textarea', 'script', 'style'];
