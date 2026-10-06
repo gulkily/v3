@@ -25,3 +25,14 @@
   - `git diff --check` — passed.
 - Notes:
   - No new route or presentation-specific title/date formatter was introduced.
+
+## Stage 3 - Release-path verification
+
+- Changes:
+  - Added a static-artifact regression proving QDB Welcome renders Site News, retains its all-news link, and generates `/tags/news.html` for a four-item news fixture.
+- Verification:
+  - `php tests/run.php QdbBoardPolicyTest QuoteCardDisplayNumberTest QdbExperienceRoutingTest` — 26 passed, 0 failed.
+  - `php tests/run.php` — QDB Site News coverage passed; the suite reported four failures outside this change: two pending-submit browser-signing tests, anonymous-public-board session behavior, and platform-doc source-path rendering.
+  - `git diff --check` — passed.
+- Notes:
+  - Reused the existing `/tags/news` route and static artifact enumeration; no route, API, schema, or deployment configuration changed.

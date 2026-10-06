@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
+use ForumRewrite\Host\StaticArtifactBuilder;
 
 final class QuoteCardDisplayNumberTest
 {
@@ -171,6 +172,31 @@ final class QuoteCardDisplayNumberTest
         assertStringContains('<h2>Site News</h2>', $welcome);
         assertStringContains('No site news yet.', $welcome);
         assertStringNotContains('href="/tags/news">All news</a>', $welcome);
+    }
+
+    public function testQdbStaticWelcomeAndAllNewsArtifactsAreGenerated(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-qdb-news-static-' . bin2hex(random_bytes(6));
+        $this->writeNews($repositoryRoot, [
+            ['news-one', '2026-10-01T12:00:00Z', 'First news', 'First body.'],
+            ['news-two', '2026-10-02T12:00:00Z', 'Second news', 'Second body.'],
+            ['news-three', '2026-10-03T12:00:00Z', 'Third news', 'Third body.'],
+            ['news-four', '2026-10-04T12:00:00Z', 'Fourth news', 'Fourth body.'],
+        ]);
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            (new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot))->build();
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        $welcome = (string) file_get_contents($artifactRoot . '/index.html');
+
+        assertStringContains('<h2>Site News</h2>', $welcome);
+        assertStringContains('href="/tags/news">All news</a>', $welcome);
+        assertTrue(is_file($artifactRoot . '/tags/news.html'));
     }
 
     public function testQdbDirectLegacyThreadPermalinkRemainsAvailable(): void
