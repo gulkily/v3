@@ -34,9 +34,9 @@ Use this checklist to refactor Zenmemes, Chouse, and QDB into explicit site comp
 
 ## P3 — Add the regression contract
 
-- [ ] Replace fixed site literals in profile/theme/smoke/worker tests with expectations derived from the profile descriptor and selected experience.
-- [ ] Add a three-profile matrix covering route availability, navigation/card/chrome selection, browser namespace, PWA/cache identity, static output path, and shared instance state.
-- [ ] Add a fourth-site fixture before shipping the next design to prove the declared profile contract is sufficient.
+- [x] Replace fixed site literals in profile/theme/smoke/worker tests with expectations derived from the profile descriptor and selected experience.
+- [x] Add a three-profile matrix covering route availability, navigation/card/chrome selection, browser namespace, PWA/cache identity, static output path, and shared instance state.
+- [x] Add a fourth-site fixture before shipping the next design to prove the declared profile contract is sufficient.
 
 ## New-site gate
 

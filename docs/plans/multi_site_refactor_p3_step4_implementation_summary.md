@@ -57,3 +57,14 @@
   - `git diff --check` — passed.
 - Notes:
   - The test hook is reset in `finally`; it does not alter configured production profiles or normal selection behavior.
+
+## Stage 6 - Verification and checklist completion
+
+- Changes:
+  - Marked the three verified P3 regression-contract checklist entries complete; preserved completed P2 evidence.
+- Verification:
+  - `php tests/run.php SiteProfileRegistryTest PresentationPathResolverTest ProfileThemePresentationTest PresentationProfileMatrixTest QdbExperienceRoutingTest OfflineNavigationWorkerTest LocalAppSmokeTest::testFrontControllerDerivesManifestAndWorkerFromTheActiveProfile LocalAppSmokeTest::testStaticArtifactBuilderDerivesRuntimeAssetsForEveryProfile LocalAppSmokeTest::testChangingTheActiveProfilePreservesThePublicSession LocalAppSmokeTest::testFourthProfileFixtureUsesTheSameRuntimeAndSharedStateMatrix` — 26 passed.
+  - `./v3 test` — 782 run, 774 passed, 8 long-standing unrelated failures (two browser-signing harness checks; four pre-existing local-app smoke checks; one platform-docs rendering check; one incremental-approval parity check).
+  - `git diff --check` — passed.
+- Notes:
+  - Runtime and physical-static artifact verification are included above; deployment is not applicable to this internal regression-maintenance slice.
