@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\View;
 
 use ForumRewrite\Host\AssetFingerprint;
+use ForumRewrite\PresentationSlotRegistry;
 use ForumRewrite\Qdb\QdbPresentation;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\SiteProfileRegistry;
@@ -134,7 +135,9 @@ final class TemplateRenderer
         foreach (ThemeRegistry::stylesheetPaths() as $name => $path) {
             $themeStylesheetPaths[$name] = $this->assetPath($path);
         }
-        $defaultTheme = SiteProfileRegistry::active()['defaultTheme'];
+        $profile = SiteProfileRegistry::active();
+        $brandedStylesheet = PresentationSlotRegistry::resolve($profile, 'brandedStylesheet');
+        $defaultTheme = $brandedStylesheet === 'site' ? $profile['defaultTheme'] : $brandedStylesheet;
         $themeHint = $this->themeHint();
         $initialTheme = $themeHint
             ?? (ThemeRegistry::isExplicitName($defaultTheme) ? $defaultTheme : 'light');
@@ -232,8 +235,8 @@ final class TemplateRenderer
             return $items;
         }
 
-        $isQdbExperience = in_array('qdb', SiteProfileRegistry::active()['enabledExperienceKeys'], true);
-        $items = $isQdbExperience
+        $isQdbNavigation = PresentationSlotRegistry::resolve(SiteProfileRegistry::active(), 'navigation') === 'qdb';
+        $items = $isQdbNavigation
             ? QdbPresentation::navigation()
             : [
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],
@@ -245,7 +248,7 @@ final class TemplateRenderer
 
         // Account/Invite are deliberately left out of the qdb profile's nav
         // (operator's call) - both routes remain reachable by direct URL.
-        if (!$isQdbExperience
+        if (!$isQdbNavigation
             && $viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
             && (($viewerProfile['_authenticated_identity'] ?? true) === true)) {

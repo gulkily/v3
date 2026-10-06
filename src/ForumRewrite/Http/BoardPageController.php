@@ -75,7 +75,7 @@ final class BoardPageController
             array_merge([
                 '/assets/inline_reply_form.js',
                 '/assets/lazy_compose_signing.js',
-            ], $isQdbInstance ? ['/assets/thread_reactions.js'] : []),
+            ], $qdbPolicy !== null ? ['/assets/thread_reactions.js'] : []),
         );
     }
 
