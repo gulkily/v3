@@ -41,8 +41,10 @@ Updates the vendored `docs/fdp/` subtree from `gulkily/fdp`'s `main` branch and
 commits the resulting documentation update. Run it from a clean target working
 tree. By default it updates this checkout; use `--repository-root` to update
 another v3 copy from the same command. The command adds the `fdp` remote when
-missing and otherwise preserves its configured URL. Pass `--remote-url` only to
-intentionally set that remote, such as when testing a fork.
+missing. When it already exists, the command requires its source URL to be
+`https://github.com/gulkily/fdp.git`, preventing an accidental sync from a
+different local checkout or fork. Pass `--remote-url` only to intentionally
+replace that remote, such as when repairing it or testing a fork.
 
 The command also repairs legacy FDP imports whose recorded upstream commit was
 rewritten, so later syncs use the ordinary subtree pull workflow.
