@@ -689,6 +689,7 @@ class LocalWriteService
         try {
             return $this->withTimedWriteLock(function () use ($input, &$timings, $totalStartedAt): array {
                 $this->assertWritableRepository();
+                $diagnosticContext = $this->identityBootstrapDiagnosticContext($input);
                 $publicKey = $this->normalizeAsciiBody((string) ($input['public_key'] ?? ''), 'public_key');
                 $inspected = $this->timePhase($timings, 'gpg_key_inspect', fn (): array => $this->keyInspector->inspect($publicKey));
                 $fingerprintUpper = $inspected['fingerprint'];
@@ -720,10 +721,11 @@ class LocalWriteService
                     'public_key' => $publicKey,
                     'fingerprint' => $fingerprintUpper,
                     'username' => $inspected['username'],
+                    'diagnostic_context' => $diagnosticContext,
                 ]));
                 $timings['write_total'] = $this->elapsedMilliseconds($totalStartedAt);
 
-                return array_merge($prepared, [
+                return array_merge($prepared, $diagnosticContext, [
                     'status' => 'ok',
                     'post_id' => $postId,
                     'thread_id' => $postId,
@@ -760,6 +762,13 @@ class LocalWriteService
             if (strtotime((string) ($prepared['expires_at'] ?? '')) < time()) {
                 throw new RuntimeException('Prepared identity bootstrap has expired.');
             }
+            $diagnosticContext = $this->identityBootstrapDiagnosticContext($input);
+            $preparedDiagnosticContext = is_array($prepared['diagnostic_context'] ?? null)
+                ? $prepared['diagnostic_context']
+                : [];
+            if ($diagnosticContext !== $preparedDiagnosticContext) {
+                throw new RuntimeException('Prepared identity bootstrap diagnostic context mismatch.');
+            }
 
             $canonicalRecord = (string) ($input['canonical_record'] ?? '');
             if ($canonicalRecord === '' || hash('sha256', $canonicalRecord) !== (string) $prepared['canonical_sha256']) {
@@ -778,7 +787,7 @@ class LocalWriteService
             );
             $timings = array_merge($timings, $verification['timings']);
             if (!$verification['ok']) {
-                $this->logIdentityBootstrapVerificationFailure($verification, (string) $prepared['fingerprint']);
+                $this->logIdentityBootstrapVerificationFailure($verification, (string) $prepared['fingerprint'], $diagnosticContext);
                 throw new RuntimeException('Identity bootstrap signature verification failed: ' . $verification['status']);
             }
 
@@ -844,6 +853,7 @@ class LocalWriteService
             });
             $this->timePhase($timings, 'prepared_post_delete', fn () => $this->deletePreparedPost($prepareToken));
             $timings['write_total'] = $this->elapsedMilliseconds($totalStartedAt);
+            $this->logIdentityBootstrapVerificationSuccess($verification, (string) $prepared['fingerprint'], $diagnosticContext);
 
             return [
                 'status' => 'ok',
@@ -2535,32 +2545,104 @@ class LocalWriteService
     }
 
     /**
-     * @param array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>} $verification
+     * @param array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>,diagnostics:array{import_exit_code:?int,import_accepted:?bool,import_result_counts:?list<int>,import_debug_output:list<string>,gpg_import_started_at_epoch:?int,public_key_packet_inspection_exit_code:?int,public_key_creation_epoch:?int,public_key_creation_offset_seconds:?int,post_import_key_lookup_exit_code:?int,post_import_key_lookup_found:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>}} $verification
+     * @param array{bootstrap_attempt_id:string,bootstrap_retry_index:int,openpgp_bundle_version:string}|array{} $diagnosticContext
      */
-    private function logIdentityBootstrapVerificationFailure(array $verification, string $expectedFingerprint): void
+    private function logIdentityBootstrapVerificationFailure(array $verification, string $expectedFingerprint, array $diagnosticContext): void
     {
-        error_log('[forum] ' . self::identityBootstrapVerificationDiagnostic($verification, $expectedFingerprint));
+        error_log('[forum] ' . self::identityBootstrapVerificationDiagnostic($verification, $expectedFingerprint, $diagnosticContext));
     }
 
     /**
-     * Builds an operator diagnostic without retaining any key, signature, or raw GnuPG output.
-     *
-     * @param array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>} $verification
+     * @param array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>,diagnostics:array{import_exit_code:?int,import_accepted:?bool,import_result_counts:?list<int>,import_debug_output:list<string>,gpg_import_started_at_epoch:?int,public_key_packet_inspection_exit_code:?int,public_key_creation_epoch:?int,public_key_creation_offset_seconds:?int,post_import_key_lookup_exit_code:?int,post_import_key_lookup_found:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>}} $verification
+     * @param array{bootstrap_attempt_id:string,bootstrap_retry_index:int,openpgp_bundle_version:string}|array{} $diagnosticContext
      */
-    private static function identityBootstrapVerificationDiagnostic(array $verification, string $expectedFingerprint): string
+    private function logIdentityBootstrapVerificationSuccess(array $verification, string $expectedFingerprint, array $diagnosticContext): void
     {
-        $gpgStatusCodes = [];
-        if (preg_match_all('/\[GNUPG:\]\s+([A-Z_]+)/', (string) $verification['details'], $matches) > 0) {
-            $gpgStatusCodes = array_values(array_unique($matches[1]));
-        }
+        error_log('[forum] ' . self::identityBootstrapVerificationDiagnostic(
+            $verification,
+            $expectedFingerprint,
+            $diagnosticContext,
+            'identity_bootstrap_signature_verified',
+        ));
+    }
 
-        return (string) json_encode([
-            'event' => 'identity_bootstrap_signature_verification_failed',
+    /**
+     * Builds an operator diagnostic without retaining key or signature material.
+     * An import anomaly includes bounded GnuPG output for local debugging.
+     *
+     * @param array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>,diagnostics:array{import_exit_code:?int,import_accepted:?bool,import_result_counts:?list<int>,import_debug_output:list<string>,gpg_import_started_at_epoch:?int,public_key_packet_inspection_exit_code:?int,public_key_creation_epoch:?int,public_key_creation_offset_seconds:?int,post_import_key_lookup_exit_code:?int,post_import_key_lookup_found:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>}} $verification
+     * @param array{bootstrap_attempt_id:string,bootstrap_retry_index:int,openpgp_bundle_version:string}|array{} $diagnosticContext
+     */
+    private static function identityBootstrapVerificationDiagnostic(
+        array $verification,
+        string $expectedFingerprint,
+        array $diagnosticContext = [],
+        string $event = 'identity_bootstrap_signature_verification_failed',
+    ): string
+    {
+        $diagnostics = is_array($verification['diagnostics'] ?? null) ? $verification['diagnostics'] : [];
+        $gpgStatusCodes = is_array($diagnostics['gpg_status_codes'] ?? null)
+            ? array_values(array_filter($diagnostics['gpg_status_codes'], 'is_string'))
+            : [];
+        $importResultCounts = is_array($diagnostics['import_result_counts'] ?? null)
+            ? array_values(array_filter($diagnostics['import_result_counts'], 'is_int'))
+            : null;
+        $importDebugOutput = is_array($diagnostics['import_debug_output'] ?? null)
+            ? array_values(array_filter($diagnostics['import_debug_output'], 'is_string'))
+            : [];
+
+        $payload = array_merge([
+            'event' => $event,
             'status' => (string) $verification['status'],
             'expected_fingerprint' => strtoupper(trim($expectedFingerprint)),
             'reported_fingerprint' => strtoupper(trim((string) ($verification['fingerprint'] ?? ''))),
+            'import_exit_code' => is_int($diagnostics['import_exit_code'] ?? null) ? $diagnostics['import_exit_code'] : null,
+            'import_accepted' => is_bool($diagnostics['import_accepted'] ?? null) ? $diagnostics['import_accepted'] : null,
+            'import_result_counts' => $importResultCounts,
+            'import_debug_output' => $importDebugOutput,
+            'gpg_import_started_at_epoch' => is_int($diagnostics['gpg_import_started_at_epoch'] ?? null) ? $diagnostics['gpg_import_started_at_epoch'] : null,
+            'public_key_packet_inspection_exit_code' => is_int($diagnostics['public_key_packet_inspection_exit_code'] ?? null) ? $diagnostics['public_key_packet_inspection_exit_code'] : null,
+            'public_key_creation_epoch' => is_int($diagnostics['public_key_creation_epoch'] ?? null) ? $diagnostics['public_key_creation_epoch'] : null,
+            'public_key_creation_offset_seconds' => is_int($diagnostics['public_key_creation_offset_seconds'] ?? null) ? $diagnostics['public_key_creation_offset_seconds'] : null,
+            'post_import_key_lookup_exit_code' => is_int($diagnostics['post_import_key_lookup_exit_code'] ?? null) ? $diagnostics['post_import_key_lookup_exit_code'] : null,
+            'post_import_key_lookup_found' => is_bool($diagnostics['post_import_key_lookup_found'] ?? null) ? $diagnostics['post_import_key_lookup_found'] : null,
+            'verification_exit_code' => is_int($diagnostics['verification_exit_code'] ?? null) ? $diagnostics['verification_exit_code'] : null,
+            'validsig_present' => ($diagnostics['validsig_present'] ?? false) === true,
             'gpg_status_codes' => $gpgStatusCodes,
-        ], JSON_UNESCAPED_SLASHES);
+        ], $diagnosticContext);
+
+        return (string) json_encode($payload, JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array{bootstrap_attempt_id:string,bootstrap_retry_index:int,openpgp_bundle_version:string}|array{}
+     */
+    private function identityBootstrapDiagnosticContext(array $input): array
+    {
+        $attemptId = trim((string) ($input['bootstrap_attempt_id'] ?? ''));
+        $retryIndex = trim((string) ($input['bootstrap_retry_index'] ?? ''));
+        $bundleVersion = trim((string) ($input['openpgp_bundle_version'] ?? ''));
+        if ($attemptId === '' && $retryIndex === '' && $bundleVersion === '') {
+            return [];
+        }
+
+        if (preg_match('/^[a-z0-9][a-z0-9-]{7,63}$/', $attemptId) !== 1) {
+            throw new RuntimeException('bootstrap_attempt_id is invalid.');
+        }
+        if (preg_match('/^(?:0|[1-9][0-9]{0,2})$/', $retryIndex) !== 1) {
+            throw new RuntimeException('bootstrap_retry_index is invalid.');
+        }
+        if (preg_match('/^[A-Za-z0-9._-]{1,64}$/', $bundleVersion) !== 1) {
+            throw new RuntimeException('openpgp_bundle_version is invalid.');
+        }
+
+        return [
+            'bootstrap_attempt_id' => $attemptId,
+            'bootstrap_retry_index' => (int) $retryIndex,
+            'openpgp_bundle_version' => $bundleVersion,
+        ];
     }
 
     private function normalizeAuthoredBody(string $value, string $field): string
