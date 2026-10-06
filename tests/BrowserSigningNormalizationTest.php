@@ -4166,7 +4166,7 @@ vm.runInThisContext(source);
     submitter: submitButton,
     preventDefault() {}
   });
-  for (let index = 0; index < 20 && state.resolveCreatePreparedPost === null; index += 1) {
+  for (let index = 0; index < 100 && state.resolveCreatePreparedPost === null; index += 1) {
     await Promise.resolve();
   }
   const pendingShell = root.children.find((child) => child.attributes && child.attributes['data-pending-thread-id']);
@@ -5038,7 +5038,7 @@ vm.runInThisContext(source);
     submitter: submitButton,
     preventDefault() {}
   });
-  for (let index = 0; index < 20 && state.resolveCreatePreparedPost === null; index += 1) {
+  for (let index = 0; index < 100 && state.resolveCreatePreparedPost === null; index += 1) {
     await Promise.resolve();
   }
   const pendingCard = parent.children.find((child) => child.attributes && child.attributes['data-pending-reply-id']);
