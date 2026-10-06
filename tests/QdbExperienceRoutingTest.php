@@ -13,7 +13,7 @@ final class QdbExperienceRoutingTest
     public function testRegisteredProfilesHonorTheSelectedExperienceRoutes(): void
     {
         $application = $this->application();
-        $experienceRoutes = ['/latest', '/latest/1', '/top', '/top/1', '/leetness', '/add', '/random', '/search?search=fixture', '/?latest=1', '/?top=1', '/?leetness', '/?add', '/?random', '/?search=fixture'];
+        $experienceRoutes = ['/latest', '/latest/1', '/top', '/top/1', '/leetness', '/leetness/1', '/add', '/random', '/search?search=fixture', '/?latest=1', '/?top=1', '/?leetness', '/?add', '/?random', '/?search=fixture'];
 
         foreach (ProfileRegressionContract::all() as $profileId => $contract) {
             putenv('FORUM_SITE_ID=' . $profileId);

@@ -124,7 +124,7 @@ final class BoardPageController
             ],
             'Random',
             'random',
-            ['/assets/thread_reactions.js'],
+            ['/assets/lazy_compose_signing.js', '/assets/thread_reactions.js'],
         );
     }
 
@@ -152,7 +152,7 @@ final class BoardPageController
             ],
             'Search',
             'search',
-            ['/assets/thread_reactions.js'],
+            ['/assets/lazy_compose_signing.js', '/assets/thread_reactions.js'],
         );
     }
 

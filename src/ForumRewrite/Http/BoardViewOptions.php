@@ -92,6 +92,7 @@ final class BoardViewOptions
      * before, four after - matches the shape of the archived qdb.us "..."
      * truncation), with "<Prev"/"Next>" at the ends. Page 1's href is the
      * bare base path (e.g. "/latest"), every other page appends "/<n>".
+     * Query-string base paths retain their query and append `page=<n>`.
      *
      * @return list<array{type:string, href?:string, label?:string, is_active?:bool}>
      */
@@ -101,7 +102,9 @@ final class BoardViewOptions
             return [];
         }
 
-        $href = static fn (int $page): string => $page <= 1 ? $basePath : $basePath . '/' . $page;
+        $href = static fn (int $page): string => $page <= 1
+            ? $basePath
+            : $basePath . (str_contains($basePath, '?') ? '&page=' : '/') . $page;
         $pageItem = static fn (int $page): array => [
             'type' => 'page',
             'href' => $href($page),

@@ -76,6 +76,24 @@ final class ProfileThemePresentationTest
         });
     }
 
+    public function testLargeFragmentsSkipCosmeticIndentation(): void
+    {
+        $templateRoot = sys_get_temp_dir() . '/forum-rewrite-template-renderer-' . bin2hex(random_bytes(6));
+        mkdir($templateRoot, 0777, true);
+        $templatePath = $templateRoot . '/fragment.php';
+        file_put_contents($templatePath, '<?= $indent($html, 2) ?>');
+        $html = str_repeat("large fragment line\n", 60000);
+
+        try {
+            $rendered = (new TemplateRenderer($templateRoot))->renderFragment('fragment.php', ['html' => $html]);
+
+            assertSame($html, $rendered);
+        } finally {
+            @unlink($templatePath);
+            @rmdir($templateRoot);
+        }
+    }
+
     /** @return list<string> */
     private function allowedThemes(string $html): array
     {

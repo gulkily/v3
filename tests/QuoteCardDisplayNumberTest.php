@@ -303,7 +303,7 @@ final class QuoteCardDisplayNumberTest
         assertFalse(is_file($artifactRoot . '/qdb/quotes/42.html'));
     }
 
-    public function testQdbListingPagesLoadTheVoteButtonScript(): void
+    public function testQdbListingPagesLoadTheVoteButtonAndIdentityLoaderScripts(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
         $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
@@ -313,6 +313,7 @@ final class QuoteCardDisplayNumberTest
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
             $latest = $this->render($application, '/latest');
             $top = $this->render($application, '/top');
+            $leetness = $this->render($application, '/leetness');
             $random = $this->render($application, '/random');
             $search = $this->render($application, '/search?search=quoted');
         } finally {
@@ -321,8 +322,14 @@ final class QuoteCardDisplayNumberTest
 
         assertStringContains('thread_reactions', $latest);
         assertStringContains('thread_reactions', $top);
+        assertStringContains('thread_reactions', $leetness);
         assertStringContains('thread_reactions', $random);
         assertStringContains('thread_reactions', $search);
+        assertStringContains('lazy_compose_signing', $latest);
+        assertStringContains('lazy_compose_signing', $top);
+        assertStringContains('lazy_compose_signing', $leetness);
+        assertStringContains('lazy_compose_signing', $random);
+        assertStringContains('lazy_compose_signing', $search);
     }
 
     public function testNonQdbBoardDoesNotLoadTheVoteButtonScript(): void
