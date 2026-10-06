@@ -14,3 +14,15 @@
   - `php tests/run.php SiteProfileRegistryTest` — 6 passed.
 - Notes:
   - Browser/storage consumers remain unchanged until P2; P0 establishes their canonical metadata only.
+
+## Stage 2 - Shared presentation-path resolver
+
+- Changes:
+  - Added `PresentationPathResolver` as the sole owner of the profile-derived static-output-root rule.
+  - Preserved `state/static_html` for Zenmemes and assigned `_chouse`/`_qdb` roots from validated browser namespaces.
+- Verification:
+  - `php -l src/ForumRewrite/PresentationPathResolver.php`
+  - `php -l tests/PresentationPathResolverTest.php`
+  - `php tests/run.php PresentationPathResolverTest` — 1 passed.
+- Notes:
+  - The resolver owns presentation paths only; it does not resolve repository, database, or other instance paths.
