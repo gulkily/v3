@@ -805,9 +805,9 @@ final class Application
     {
         return $this->qdbExperience ??= new QdbExperience(
             $this->boardPageController(),
-            $this->composeAndAccountKeyController(),
             $this->routeServices()->pdo(),
             new QdbBoardPolicy($this->repositoryRoot, $this->resolveViewerProfileFromIdentityHint(...)),
+            $this->routeServices(),
         );
     }
 

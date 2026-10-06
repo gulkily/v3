@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Qdb;
 
 use ForumRewrite\Http\BoardPageController;
-use ForumRewrite\Http\ComposeAndAccountKeyController;
+use ForumRewrite\Http\RouteServices;
 use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\SiteProfileRegistry;
 use PDO;
@@ -16,9 +16,9 @@ final class QdbExperience
 
     public function __construct(
         private readonly BoardPageController $boardPages,
-        private readonly ComposeAndAccountKeyController $composePages,
         private readonly PDO $pdo,
         private readonly QdbBoardPolicy $boardPolicy,
+        private readonly RouteServices $routeServices,
     ) {
     }
 
@@ -58,15 +58,15 @@ final class QdbExperience
         }
 
         if ($path === '/add' || array_key_exists('add', $query)) {
-            return QdbExperienceRouteResult::page($this->composePages->composeThreadCompact($query));
+            return QdbExperienceRouteResult::page($this->add($query));
         }
 
         if ($path === '/random' || array_key_exists('random', $query)) {
-            return QdbExperienceRouteResult::page($this->boardPages->random());
+            return QdbExperienceRouteResult::page($this->random());
         }
 
         if ($path === '/search' || array_key_exists('search', $query)) {
-            return QdbExperienceRouteResult::page($this->boardPages->search((string) ($query['search'] ?? '')));
+            return QdbExperienceRouteResult::page($this->search((string) ($query['search'] ?? '')));
         }
 
         foreach (array_keys($query) as $key) {
@@ -80,7 +80,7 @@ final class QdbExperience
         }
 
         if (($path === '/' || $path === '') && ($query['format'] ?? null) !== 'rss') {
-            return QdbExperienceRouteResult::page($this->boardPages->welcome());
+            return QdbExperienceRouteResult::page($this->welcome());
         }
 
         return null;
@@ -133,6 +133,56 @@ final class QdbExperience
     private function isEnabled(): bool
     {
         return in_array('qdb', SiteProfileRegistry::active()['enabledExperienceKeys'], true);
+    }
+
+    private function welcome(): string
+    {
+        $threads = ThreadRepository::fetchThreads($this->pdo);
+
+        return $this->routeServices->renderPageTemplate('qdb_welcome.php', [
+            'qdbQuoteCount' => count($threads),
+            'recentThreads' => array_slice($threads, 0, 5),
+        ], 'Welcome', 'welcome');
+    }
+
+    /** @param array<string, mixed> $query */
+    private function add(array $query): string
+    {
+        return $this->routeServices->renderPageTemplate('qdb_add.php', [
+            'boardTags' => 'general', 'subject' => '', 'body' => (string) ($query['body'] ?? ''), 'notice' => null, 'error' => null,
+        ], 'Add Quote', 'compose', ['/assets/openpgp_loader.js', '/assets/browser_signing.js']);
+    }
+
+    private function random(): string
+    {
+        $threads = ThreadRepository::fetchThreads($this->pdo);
+        shuffle($threads);
+        $threads = array_slice($threads, 0, 10);
+
+        return $this->renderQuotePage('qdb_random.php', ['threads' => $threads], 'Random', 'random', $threads);
+    }
+
+    private function search(string $term): string
+    {
+        $term = trim($term);
+        $threads = $term === '' ? [] : array_values(array_filter(
+            ThreadRepository::fetchThreads($this->pdo),
+            static fn (array $thread): bool => stripos((string) $thread['root_post_body'], $term) !== false,
+        ));
+
+        return $this->renderQuotePage('qdb_search.php', ['threads' => $threads, 'term' => $term], 'Search', 'search', $threads);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @param array<int, array<string, mixed>> $threads
+     */
+    private function renderQuotePage(string $template, array $data, string $title, string $section, array $threads): string
+    {
+        $reactions = $this->boardPolicy->viewerReactionState($threads);
+        return $this->routeServices->renderPageTemplate($template, $data + [
+            'viewerUpvotedThreadIds' => $reactions['upvoted'], 'viewerDownvotedThreadIds' => $reactions['downvoted'], 'viewerFlaggedPostIds' => $reactions['flagged'],
+        ], $title, $section);
     }
 
     private function isPrimaryRoutePath(string $path): bool

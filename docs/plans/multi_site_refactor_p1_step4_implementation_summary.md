@@ -39,3 +39,16 @@
   - `git diff --check` passed.
 - Notes:
   - Dedicated QDB welcome/random/search/add pages remain for Stage 4; navigation, footer, and card-template isolation remain for Stage 5.
+
+## Stage 4 - Dedicated QDB surfaces
+
+- Changes:
+  - Moved QDB welcome, random, search, and Add Quote rendering into `QdbExperience`.
+  - Reused the existing shared page renderer, browser-signing scripts, read model, and QDB reaction policy.
+- Verification:
+  - `php -l src/ForumRewrite/Qdb/QdbExperience.php`
+  - `php -l src/ForumRewrite/Application.php`
+  - `php tests/run.php QdbExperienceRoutingTest QuoteCardDisplayNumberTest` — 11 passed.
+  - `git diff --check` passed.
+- Notes:
+  - Generic legacy helpers are now unused and will be removed alongside chrome/card selection in Stage 5.
