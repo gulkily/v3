@@ -24,3 +24,16 @@
   - `git diff --check` — passed.
 - Notes:
   - Metadata is optional for compatibility with existing clients, but when supplied it is validated and bound to the prepared bootstrap so an unrelated create request cannot relabel the log event.
+
+## Stage 3 - Browser attempt context and reportable failure
+- Changes:
+  - The canonical browser identity publish/retry path creates one non-secret attempt ID, preserves it across both existing attempts, and sends retry index plus selected loader version to both identity endpoints.
+  - Persistent signature-verification failure now retains the existing manual-key guidance and adds `signature_verification_failed` plus the attempt ID.
+  - Extended the retry-flow test to assert both requests for both attempts carry one ID, indexes `0`/`1`, and the selected `v6` bundle version.
+- Verification:
+  - `php -l tests/BrowserSigningNormalizationTest.php`
+  - `node --check public/assets/browser_signing.js`
+  - `php tests/run.php BrowserSigningNormalizationTest` — 65 run, 63 passed; the two failures (`testThreadSubmitRendersPendingShellBeforeApiResponseAndNavigatesOnSuccess`, `testInlineReplySubmitRendersPendingCardBeforeApiResponseAndNavigatesOnSuccess`) are documented long-standing failures, each failing for 21 runs before this change.
+  - `git diff --check` — passed.
+- Notes:
+  - The immediate retry predicate, attempt count, signing sequence, and manual-key fallback are unchanged; this slice only makes the attempts observable and reportable.
