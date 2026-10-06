@@ -39,26 +39,26 @@ final class ProfileThemePresentationTest
         $previousCookie = $_COOKIE;
         $renderer = new TemplateRenderer(dirname(__DIR__) . '/templates');
         $publicRoot = dirname(__DIR__) . '/public';
+        $themeNames = array_column(ThemeRegistry::all(), 'name');
 
         try {
-            putenv('FORUM_SITE_ID=zenmemes');
-            $_COOKIE = [ThemeRegistry::THEME_HINT_COOKIE => 'qdb'];
-            $zenmemesHtml = $renderer->renderLayout('Theme', '<main></main>', 'board');
-            assertSame(true, str_contains($zenmemesHtml, 'data-default-theme="auto"'));
-            assertSame(true, str_contains($zenmemesHtml, 'href="' . \ForumRewrite\Host\AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-light.css') . '"'));
-            assertSame(false, str_contains($zenmemesHtml, 'theme-qdb'));
+            foreach (ProfileRegressionContract::all() as $profileId => $contract) {
+                $profile = $contract['profile'];
+                $unavailableTheme = current(array_values(array_diff($themeNames, $profile['permittedThemes'])));
+                assertSame(true, is_string($unavailableTheme));
+                putenv('FORUM_SITE_ID=' . $profileId);
+                $_COOKIE = [ThemeRegistry::THEME_HINT_COOKIE => $unavailableTheme];
+                $html = $renderer->renderLayout('Theme', '<main></main>', 'board');
+                $initialTheme = $profile['defaultTheme'] === 'auto' ? 'light' : $profile['defaultTheme'];
 
-            putenv('FORUM_SITE_ID=qdb');
-            $_COOKIE = [ThemeRegistry::THEME_HINT_COOKIE => 'chouse'];
-            $qdbHtml = $renderer->renderLayout('Theme', '<main></main>', 'board');
-            assertSame(true, str_contains($qdbHtml, 'data-default-theme="qdb"'));
-            assertSame(true, str_contains($qdbHtml, 'href="' . \ForumRewrite\Host\AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-qdb.css') . '"'));
-            assertSame(false, str_contains($qdbHtml, 'theme-chouse'));
+                assertSame(true, str_contains($html, 'data-default-theme="' . $profile['defaultTheme'] . '"'));
+                assertSame(true, str_contains($html, 'href="' . \ForumRewrite\Host\AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-' . $initialTheme . '.css') . '"'));
+                assertSame(false, str_contains($html, 'theme-' . $unavailableTheme));
+                assertSame(true, str_contains($html, '"themeStorageKey":"' . $contract['runtime']['themeStorageKey'] . '"'));
+            }
 
             $script = file_get_contents($publicRoot . '/assets/theme_toggle.js');
             assertSame(true, $script !== false);
-            assertSame(true, str_contains($zenmemesHtml, '"themeStorageKey":"forum-zenmemes-theme"'));
-            assertSame(true, str_contains($qdbHtml, '"themeStorageKey":"forum-qdb-theme"'));
             assertSame(true, str_contains((string) $script, 'var storageKey = runtime && runtime.themeStorageKey;'));
             assertSame(true, str_contains((string) $script, 'return themes.indexOf(storedTheme) === -1 ? defaultTheme() : storedTheme;'));
         } finally {

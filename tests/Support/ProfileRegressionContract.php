@@ -8,7 +8,7 @@ use ForumRewrite\SiteProfileRegistry;
 
 final class ProfileRegressionContract
 {
-    /** @return array<string, array{profile: array<string, mixed>, runtime: array<string, string>, presentation: array<string, mixed>}> */
+    /** @return array<string, array{profile: array<string, mixed>, runtime: array<string, string>, presentation: array<string, mixed>, experience: string}> */
     public static function all(): array
     {
         $contracts = [];
@@ -17,6 +17,7 @@ final class ProfileRegressionContract
                 'profile' => $profile,
                 'runtime' => BrowserRuntimeProfile::fromProfile($profile),
                 'presentation' => self::presentation($profile),
+                'experience' => self::experience($profile),
             ];
         }
 
@@ -28,7 +29,7 @@ final class ProfileRegressionContract
      */
     private static function presentation(array $profile): array
     {
-        $isQdbExperience = in_array('qdb', $profile['enabledExperienceKeys'] ?? [], true);
+        $isQdbExperience = self::experience($profile) === 'qdb';
         $navigation = PresentationSlotRegistry::resolve($profile, 'navigation');
         $card = PresentationSlotRegistry::resolve($profile, 'boardCard');
         $compose = PresentationSlotRegistry::resolve($profile, 'compose');
@@ -44,5 +45,11 @@ final class ProfileRegressionContract
             'aboutHackable' => $about === 'chouse',
             'brandedTheme' => $stylesheet === 'site' ? null : $stylesheet,
         ];
+    }
+
+    /** @param array<string, mixed> $profile */
+    private static function experience(array $profile): string
+    {
+        return in_array('qdb', $profile['enabledExperienceKeys'] ?? [], true) ? 'qdb' : 'forum';
     }
 }

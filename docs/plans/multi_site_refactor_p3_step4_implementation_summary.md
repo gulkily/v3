@@ -12,3 +12,14 @@
   - `git diff --check` — passed.
 - Notes:
   - No production component or API changed; later stages consume the test-only contract.
+
+## Stage 2 - Profile presentation and route matrix
+
+- Changes:
+  - Migrated theme, presentation, and specialized-route coverage to the shared profile contract.
+  - Derived route availability from the selected experience and surface expectations from registered slot selections.
+- Verification:
+  - `php tests/run.php PresentationProfileMatrixTest ProfileThemePresentationTest QdbExperienceRoutingTest` — 4 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - Specialized QDB routes remain asserted, but no assertion branches on an existing profile ID.

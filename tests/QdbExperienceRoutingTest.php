@@ -3,50 +3,27 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/ProfileRegressionContract.php';
 
 use ForumRewrite\Application;
 
 final class QdbExperienceRoutingTest
 {
-    public function testClassicQdbRoutesRemainAvailableForTheQdbProfile(): void
+    public function testRegisteredProfilesHonorTheSelectedExperienceRoutes(): void
     {
         $application = $this->application();
-        putenv('FORUM_SITE_ID=qdb');
-        try {
-            foreach (['/', '/latest', '/latest/1', '/top', '/top/1', '/leetness', '/add', '/random', '/search?search=fixture', '/?latest=1', '/?top=1', '/?leetness', '/?add', '/?random', '/?search=fixture'] as $requestUri) {
-                assertSame(200, $this->statusFor($application, $requestUri), 'Expected QDB route to succeed: ' . $requestUri);
-            }
-        } finally {
-            putenv('FORUM_SITE_ID');
-        }
-    }
+        $experienceRoutes = ['/latest', '/latest/1', '/top', '/top/1', '/leetness', '/add', '/random', '/search?search=fixture', '/?latest=1', '/?top=1', '/?leetness', '/?add', '/?random', '/?search=fixture'];
 
-    public function testQdbOnlyPathsAndQueryRoutesAreRejectedOutsideQdb(): void
-    {
-        foreach (['zenmemes', 'chouse'] as $profile) {
-            $application = $this->application();
-            putenv('FORUM_SITE_ID=' . $profile);
+        foreach (ProfileRegressionContract::all() as $profileId => $contract) {
+            putenv('FORUM_SITE_ID=' . $profileId);
             try {
-                foreach (['/latest', '/top', '/leetness', '/add', '/random', '/search', '/?latest=1', '/?top=1', '/?leetness', '/?add', '/?random', '/?search=fixture'] as $requestUri) {
-                    assertSame(404, $this->statusFor($application, $requestUri), "Expected {$profile} to reject {$requestUri}");
+                foreach ($experienceRoutes as $requestUri) {
+                    $expectedStatus = $contract['experience'] === 'qdb' ? 200 : 404;
+                    assertSame($expectedStatus, $this->statusFor($application, $requestUri), "Unexpected {$contract['experience']} route status for {$requestUri}");
                 }
             } finally {
                 putenv('FORUM_SITE_ID');
             }
-        }
-    }
-
-    public function testQdbAddSurfaceUsesTheRegisteredComposeSelection(): void
-    {
-        $application = $this->application();
-        putenv('FORUM_SITE_ID=qdb');
-        try {
-            $html = $this->render($application, '/add');
-
-            assertTrue(str_contains($html, 'class="stack qdb-add-page"'));
-            assertTrue(!str_contains($html, '<h1>Compose Thread</h1>'));
-        } finally {
-            putenv('FORUM_SITE_ID');
         }
     }
 

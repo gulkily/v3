@@ -7,43 +7,15 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 
 require __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/ProfileRegressionContract.php';
 
 final class PresentationProfileMatrixTest
 {
     public function testProfilesRenderTheirRegisteredPresentationSelections(): void
     {
         $application = $this->application();
-        $matrix = [
-            'zenmemes' => [
-                'boardPath' => '/?view=all&sort=newest',
-                'boardMarker' => 'class="card thread-card"',
-                'navigationMarker' => '>Board</a>',
-                'composePath' => '/compose/thread',
-                'composeMarker' => '<h1>Compose Thread</h1>',
-                'aboutHackable' => false,
-                'brandedTheme' => null,
-            ],
-            'chouse' => [
-                'boardPath' => '/?view=all&sort=newest',
-                'boardMarker' => 'class="card thread-card"',
-                'navigationMarker' => '>Board</a>',
-                'composePath' => '/compose/thread',
-                'composeMarker' => '<h1>Compose Thread</h1>',
-                'aboutHackable' => true,
-                'brandedTheme' => 'chouse',
-            ],
-            'qdb' => [
-                'boardPath' => '/latest',
-                'boardMarker' => 'class="card post-card quote-card"',
-                'navigationMarker' => '>Welcome</a>',
-                'composePath' => '/add',
-                'composeMarker' => 'class="stack qdb-add-page"',
-                'aboutHackable' => false,
-                'brandedTheme' => 'qdb',
-            ],
-        ];
-
-        foreach ($matrix as $profileId => $expected) {
+        foreach (ProfileRegressionContract::all() as $profileId => $contract) {
+            $expected = $contract['presentation'];
             putenv('FORUM_SITE_ID=' . $profileId);
             try {
                 $board = $this->render($application, $expected['boardPath']);
