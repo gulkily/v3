@@ -38,7 +38,7 @@
 - Notes:
   - The immediate retry predicate, attempt count, signing sequence, and manual-key fallback are unchanged; this slice only makes the attempts observable and reportable.
   - Follow-up: retained the raw signature-verification status and attempt ID together in the expandable technical details while keeping the safe diagnostic code in the main message and the retry marker internal.
-  - Follow-up: made browser-key and reaction technical-detail controls one-way reveals; the link disappears and the copied diagnostic text starts on its own line.
+  - Follow-up: made browser-key and reaction technical-detail controls one-way reveals using a hidden line break; the link disappears and the copied diagnostic text starts on its own line without forcing hidden content visible.
 
 ## Stage 4 - Automated coverage and staging procedure
 - Changes:

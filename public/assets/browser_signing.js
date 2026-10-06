@@ -1516,24 +1516,30 @@
     toggle.setAttribute("data-role", "browser-key-status-technical-toggle");
     toggle.hidden = true;
 
+    const detailsBreak = document.createElement("br");
+    detailsBreak.setAttribute("data-role", "browser-key-status-technical-break");
+    detailsBreak.hidden = true;
+
     const details = document.createElement("code");
     details.setAttribute("data-role", "browser-key-status-technical-details");
     details.hidden = true;
-    details.style.display = "block";
     details.style.whiteSpace = "pre-wrap";
 
     toggle.addEventListener("click", function (event) {
       event.preventDefault();
+      detailsBreak.hidden = false;
       details.hidden = false;
       toggle.hidden = true;
     });
 
     node.appendChild(spacer);
     node.appendChild(toggle);
+    node.appendChild(detailsBreak);
     node.appendChild(details);
 
     return {
       toggle: toggle,
+      detailsBreak: detailsBreak,
       details: details,
     };
   }
@@ -1544,22 +1550,25 @@
     }
 
     let toggle = node.querySelector('[data-role="browser-key-status-technical-toggle"]');
+    let detailsBreak = node.querySelector('[data-role="browser-key-status-technical-break"]');
     let details = node.querySelector('[data-role="browser-key-status-technical-details"]');
-    if ((!toggle || !details) && technicalDetails !== "") {
+    if ((!toggle || !detailsBreak || !details) && technicalDetails !== "") {
       const created = createTechnicalStatusToggle(node);
       if (created) {
         toggle = created.toggle;
+        detailsBreak = created.detailsBreak;
         details = created.details;
       }
     }
 
-    if (!toggle || !details) {
+    if (!toggle || !detailsBreak || !details) {
       return;
     }
 
     if (technicalDetails === "") {
       toggle.hidden = true;
       toggle.textContent = "details";
+      detailsBreak.hidden = true;
       details.hidden = true;
       details.textContent = "";
       return;
@@ -1567,6 +1576,7 @@
 
     toggle.hidden = false;
     toggle.textContent = "details";
+    detailsBreak.hidden = true;
     details.hidden = true;
     details.textContent = technicalDetails;
   }
