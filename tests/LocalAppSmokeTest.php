@@ -353,6 +353,7 @@ use ForumRewrite\Application;
 
 $sessionId = 'profile-switch-' . bin2hex(random_bytes(8));
 $databasePath = sys_get_temp_dir() . '/forum-rewrite-profile-switch-' . bin2hex(random_bytes(6)) . '.sqlite3';
+$profileIds = json_decode($argv[3], true, 512, JSON_THROW_ON_ERROR);
 
 try {
     session_id($sessionId);
@@ -361,7 +362,7 @@ try {
     session_write_close();
     $_COOKIE[session_name()] = $sessionId;
 
-    foreach (['zenmemes', 'chouse', 'qdb'] as $profileId) {
+    foreach ($profileIds as $profileId) {
         putenv('FORUM_SITE_ID=' . $profileId);
         session_id($sessionId);
         $application = new Application($argv[1], $argv[2], $databasePath);
@@ -383,10 +384,11 @@ try {
 }
 PHP;
         $command = sprintf(
-            'php -r %s %s %s',
+            'php -r %s %s %s %s',
             escapeshellarg($script),
             escapeshellarg(dirname(__DIR__)),
             escapeshellarg($this->repositoryRoot),
+            escapeshellarg(json_encode(array_keys(ProfileRegressionContract::all()), JSON_THROW_ON_ERROR)),
         );
         exec($command . ' 2>&1', $output, $exitCode);
 

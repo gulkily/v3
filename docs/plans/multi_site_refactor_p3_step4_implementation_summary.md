@@ -34,3 +34,14 @@
   - `git diff --check` — passed.
 - Notes:
   - Worker tests inject the existing runtime bootstrap value; production worker behavior is unchanged.
+
+## Stage 4 - Static output and shared state
+
+- Changes:
+  - Derived public-session profile switching from the registered profile set.
+  - Confirmed descriptor-derived static-root isolation and physical static runtime assets remain covered for every profile.
+- Verification:
+  - `php tests/run.php PresentationPathResolverTest LocalAppSmokeTest::testChangingTheActiveProfilePreservesThePublicSession LocalAppSmokeTest::testStaticArtifactBuilderDerivesRuntimeAssetsForEveryProfile` — 3 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - The shared session remains profile-independent; static artifacts remain profile-scoped.
