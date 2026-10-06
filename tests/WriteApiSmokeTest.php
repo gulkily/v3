@@ -541,6 +541,62 @@ PHP);
             assertSame('requested', $response['generation_status']);
             assertSame(1, substr_count($requestedThreadPage, 'data-action="request-agent-reply"'));
             assertStringContains('Agent reply requested.', $requestedThreadPage);
+            assertSame(
+                1,
+                preg_match('#<article id="post-' . preg_quote($postId, '#') . '"[^>]*thread-root-card[^>]*meta-deferred[^>]*>(.*?)</article>#s', $requestedThreadPage, $rootCard),
+            );
+            assertOrdered(
+                $rootCard[1],
+                'data-role="agent-reply-feedback">Agent reply requested.</p>',
+                'class="button-row button-row-natural post-card-actions thread-root-actions"',
+            );
+        } finally {
+            $_COOKIE = [];
+        }
+    }
+
+    public function testRequestedAgentReplyNoticePrecedesCollapsedReplyActions(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Reply%20Request&body=Thread%20body'
+            );
+            $threadId = $this->extractValue($threadResponse, 'post_id');
+            $firstReply = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_reply?thread_id=' . rawurlencode($threadId) . '&parent_id=' . rawurlencode($threadId) . '&body=First%20reply'
+            );
+            $firstReplyId = $this->extractValue($firstReply, 'post_id');
+            $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_reply?thread_id=' . rawurlencode($threadId) . '&parent_id=' . rawurlencode($firstReplyId) . '&body=Second%20reply'
+            );
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $response = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($firstReplyId)
+            ), true);
+            $requestedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($threadId));
+
+            assertSame('requested', $response['generation_status']);
+            assertSame(
+                1,
+                preg_match('#<article id="post-' . preg_quote($firstReplyId, '#') . '"[^>]*continuation[^>]*>(.*?)</article>#s', $requestedThreadPage, $replyCard),
+            );
+            assertOrdered(
+                $replyCard[1],
+                'data-role="agent-reply-feedback">Agent reply requested.</p>',
+                'class="button-row button-row-natural post-card-actions"',
+            );
         } finally {
             $_COOKIE = [];
         }
