@@ -37,6 +37,7 @@
   - `git diff --check` — passed.
 - Notes:
   - The immediate retry predicate, attempt count, signing sequence, and manual-key fallback are unchanged; this slice only makes the attempts observable and reportable.
+  - Follow-up: hid the raw signature-verification status from the expandable technical details while retaining it as an internal retry marker; the user sees only the safe diagnostic code and attempt ID.
 
 ## Stage 4 - Automated coverage and staging procedure
 - Changes:

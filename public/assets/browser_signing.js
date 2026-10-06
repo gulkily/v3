@@ -1631,7 +1631,7 @@
         : "";
       return {
         friendlyMessage: `${fallback} Diagnostic code: signature_verification_failed.${attemptId ? ` Attempt ID: ${attemptId}.` : ""}`,
-        technicalDetails: technicalDetails,
+        technicalDetails: "",
       };
     }
 
@@ -1656,7 +1656,9 @@
 
   function identityBootstrapFailureError(rawMessage, diagnosticContext) {
     const failure = classifyIdentityBootstrapFailure(rawMessage, diagnosticContext);
-    return buildFriendlyError(failure.friendlyMessage, failure.technicalDetails);
+    const error = buildFriendlyError(failure.friendlyMessage, failure.technicalDetails);
+    error.retryableIdentityBootstrapFailure = isRetryableIdentityBootstrapFailure(rawMessage);
+    return error;
   }
 
   function newIdentityBootstrapAttemptId() {
@@ -2276,7 +2278,8 @@
       const technicalDetails = error instanceof Error && typeof error.technicalDetails === "string"
         ? error.technicalDetails
         : "";
-      if (!isRetryableIdentityBootstrapFailure(technicalDetails)) {
+      const retryable = error instanceof Error && error.retryableIdentityBootstrapFailure === true;
+      if (!retryable && !isRetryableIdentityBootstrapFailure(technicalDetails)) {
         throw error;
       }
     }
