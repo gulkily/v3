@@ -1853,8 +1853,8 @@ NODE;
         assertSame(2, $result['prepareCalls']);
         assertSame(2, $result['createCalls']);
         assertSame('', $result['publishedFingerprint']);
-        assertSame('Could not prepare your browser identity automatically. Open /account/key/ to finish manually. Diagnostic code: signature_verification_failed. Attempt ID: 0b60dfd0-0161-4d34-9e89-bc4089bb23c4.', $result['message']);
-        assertSame('', $result['technicalDetails']);
+        assertSame('Could not prepare your browser identity automatically. Open /account/key/ to finish manually. Diagnostic code: signature_verification_failed.', $result['message']);
+        assertSame('Attempt ID: 0b60dfd0-0161-4d34-9e89-bc4089bb23c4', $result['technicalDetails']);
     }
 
     public function testActionIdentityReadinessUsesTheSharedRecoveryPath(): void

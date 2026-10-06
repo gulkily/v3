@@ -1519,18 +1519,17 @@
     const details = document.createElement("code");
     details.setAttribute("data-role", "browser-key-status-technical-details");
     details.hidden = true;
+    details.style.display = "block";
     details.style.whiteSpace = "pre-wrap";
 
     toggle.addEventListener("click", function (event) {
       event.preventDefault();
-      const expanded = !details.hidden;
-      details.hidden = expanded;
-      toggle.textContent = expanded ? "details" : "hide";
+      details.hidden = false;
+      toggle.hidden = true;
     });
 
     node.appendChild(spacer);
     node.appendChild(toggle);
-    node.appendChild(document.createTextNode(" "));
     node.appendChild(details);
 
     return {
@@ -1630,8 +1629,8 @@
         ? diagnosticContext.bootstrapAttemptId
         : "";
       return {
-        friendlyMessage: `${fallback} Diagnostic code: signature_verification_failed.${attemptId ? ` Attempt ID: ${attemptId}.` : ""}`,
-        technicalDetails: "",
+        friendlyMessage: `${fallback} Diagnostic code: signature_verification_failed.`,
+        technicalDetails: attemptId ? `Attempt ID: ${attemptId}` : "",
       };
     }
 
