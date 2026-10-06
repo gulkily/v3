@@ -41,6 +41,15 @@ final class ThemeRegistryTest
         );
     }
 
+    public function testPermittedThemesKeepRegistryOrderAndExcludeUnknownNames(): void
+    {
+        $themes = ThemeRegistry::permitted(['qdb', 'auto', 'light', 'unknown']);
+
+        assertSame(['auto', 'light', 'qdb'], array_column($themes, 'name'));
+        assertSame(true, ThemeRegistry::isKnownName('qdb'));
+        assertSame(false, ThemeRegistry::isKnownName('unknown'));
+    }
+
     public function testExplicitThemeAssetsAndHintCookieHaveCanonicalContracts(): void
     {
         $paths = ThemeRegistry::stylesheetPaths();

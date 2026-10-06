@@ -48,6 +48,31 @@ final class ThemeRegistry
         return $names;
     }
 
+    public static function isKnownName(string $name): bool
+    {
+        foreach (self::all() as $theme) {
+            if ($theme['name'] === $name) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param list<string> $names
+     * @return list<array{name: string, label: string, mode: string}>
+     */
+    public static function permitted(array $names): array
+    {
+        $allowed = array_fill_keys($names, true);
+
+        return array_values(array_filter(
+            self::all(),
+            static fn (array $theme): bool => isset($allowed[$theme['name']]),
+        ));
+    }
+
     public static function isExplicitName(string $name): bool
     {
         return in_array($name, self::explicitNames(), true);

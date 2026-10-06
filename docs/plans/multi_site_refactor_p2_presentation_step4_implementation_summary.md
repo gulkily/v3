@@ -48,3 +48,15 @@
   - `php -l` passed for the content catalog and affected controllers.
   - `php tests/run.php ProfilePresentationContentTest PresentationSlotRegistryTest SiteProfileRegistryTest` — 11 passed, including the three-profile about/docs render matrix and invalid-slot fallback.
   - `git diff --check` passed.
+
+## Stage 5 - Profile-owned theme availability
+
+- Changes:
+  - Restricted each profile's theme menu, early stylesheet map, and accepted theme hint to its validated permitted themes.
+  - Made `chouse` available only to Chouse and `qdb` only to QDB; shared themes remain available to all three profiles.
+  - Recovered unavailable stored/hinted themes to the active profile default without changing the existing browser storage-key contract, which remains the separate browser/offline P2 slice.
+  - Validated that profile descriptors cannot name unknown or duplicate theme choices.
+- Verification:
+  - `php tests/run.php ProfileThemePresentationTest ThemeRegistryTest SiteProfileRegistryTest PresentationSlotRegistryTest` — 17 passed.
+  - `php tests/run.php LocalAppSmokeTest` — 115 passed; four unrelated long-standing failures remain (anonymous public session, adjacent signature links, API/RSS schema version, and SQLite-viewer route source).
+  - `git diff --check` passed.

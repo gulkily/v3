@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ForumRewrite;
 
+use ForumRewrite\View\ThemeRegistry;
+
 final class SiteProfileRegistry
 {
     private const DEFAULT_SITE_ID = 'zenmemes';
@@ -18,7 +20,7 @@ final class SiteProfileRegistry
                 'name' => 'zenmemes',
                 'displayName' => 'zenmemes',
                 'defaultTheme' => 'auto',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'chouse', 'qdb'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97'],
                 'browserNamespace' => 'zenmemes',
                 'editorialContentKey' => 'zenmemes',
                 'enabledExperienceKeys' => ['forum'],
@@ -29,7 +31,7 @@ final class SiteProfileRegistry
                 'name' => 'chouse',
                 'displayName' => 'chouse',
                 'defaultTheme' => 'chouse',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'chouse', 'qdb'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'chouse'],
                 'browserNamespace' => 'chouse',
                 'editorialContentKey' => 'chouse',
                 'enabledExperienceKeys' => ['forum'],
@@ -40,7 +42,7 @@ final class SiteProfileRegistry
                 'name' => 'qdb',
                 'displayName' => 'qdb',
                 'defaultTheme' => 'qdb',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'chouse', 'qdb'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'qdb'],
                 'browserNamespace' => 'qdb',
                 'editorialContentKey' => 'qdb',
                 'enabledExperienceKeys' => ['qdb'],
@@ -98,6 +100,15 @@ final class SiteProfileRegistry
                     if (!is_string($value) || $value === '') {
                         throw new \RuntimeException("Site profile {$siteId} has an invalid {$field} value.");
                     }
+                }
+            }
+
+            if (count($profile['permittedThemes']) !== count(array_unique($profile['permittedThemes']))) {
+                throw new \RuntimeException("Site profile {$siteId} has duplicate permitted themes.");
+            }
+            foreach ($profile['permittedThemes'] as $theme) {
+                if (!ThemeRegistry::isKnownName($theme)) {
+                    throw new \RuntimeException("Site profile {$siteId} has an unknown permitted theme: {$theme}");
                 }
             }
 
