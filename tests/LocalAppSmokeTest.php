@@ -343,6 +343,55 @@ PHP;
         assertSame(0, $exitCode, implode("\n", $output));
     }
 
+    public function testChangingTheActiveProfilePreservesThePublicSession(): void
+    {
+        $script = <<<'PHP'
+require $argv[1] . '/autoload.php';
+
+use ForumRewrite\Application;
+
+$sessionId = 'profile-switch-' . bin2hex(random_bytes(8));
+$databasePath = sys_get_temp_dir() . '/forum-rewrite-profile-switch-' . bin2hex(random_bytes(6)) . '.sqlite3';
+
+try {
+    session_id($sessionId);
+    session_start();
+    $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+    session_write_close();
+    $_COOKIE[session_name()] = $sessionId;
+
+    foreach (['zenmemes', 'chouse', 'qdb'] as $profileId) {
+        putenv('FORUM_SITE_ID=' . $profileId);
+        session_id($sessionId);
+        $application = new Application($argv[1], $argv[2], $databasePath);
+        ob_start();
+        $application->handle('GET', '/api/auth_status');
+        $authStatus = (string) ob_get_clean();
+        if ($authStatus !== "status=authenticated\n") {
+            throw new RuntimeException('Profile switch lost the public session for ' . $profileId . '.');
+        }
+        session_write_close();
+        session_id('');
+    }
+} finally {
+    putenv('FORUM_SITE_ID');
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+    @unlink($databasePath);
+}
+PHP;
+        $command = sprintf(
+            'php -r %s %s %s',
+            escapeshellarg($script),
+            escapeshellarg(dirname(__DIR__)),
+            escapeshellarg($this->repositoryRoot),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+
+        assertSame(0, $exitCode, implode("\n", $output));
+    }
+
     public function testAnonymousPublicBoardDoesNotStartViewerSession(): void
     {
         $previousCookie = $_COOKIE;
@@ -2018,7 +2067,7 @@ PHP;
             assertStringContains('var densityStorageKey = browserRuntime.threadDensityStorageKey;', $board);
             assertStringContains('var densityStorageKey = browserRuntime.threadDensityStorageKey;', $tagPage);
             assertStringNotContains('var densityStorageKey = browserRuntime.threadDensityStorageKey;', $thread);
-            assertStringContains('"threadDensityStorageKey":"zenmemes-thread-density"', $board);
+            assertStringContains('"threadDensityStorageKey":"forum-zenmemes-thread-density"', $board);
             assertStringContains('data-role="thread-density-menu"', $board);
             assertStringContains('data-thread-density-option="comfortable"', $board);
             assertStringContains('data-thread-density-option="compact"', $board);
@@ -3222,17 +3271,19 @@ PHP;
     public function testFrontControllerDerivesManifestAndWorkerFromTheActiveProfile(): void
     {
         $previousProfile = getenv('FORUM_SITE_ID');
-        putenv('FORUM_SITE_ID=chouse');
         ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
 
         try {
-            $manifest = $this->renderFrontController($controller, 'GET', '/manifest.webmanifest', []);
-            $worker = $this->renderFrontController($controller, 'GET', '/service_worker.js', []);
+            foreach (['zenmemes' => 'Zenmemes', 'chouse' => 'Chouse', 'qdb' => 'Qdb'] as $profileId => $label) {
+                putenv('FORUM_SITE_ID=' . $profileId);
+                $manifest = $this->renderFrontController($controller, 'GET', '/manifest.webmanifest', []);
+                $worker = $this->renderFrontController($controller, 'GET', '/service_worker.js', []);
 
-            assertStringContains('"id": "/offline/?site=chouse"', $manifest);
-            assertStringContains('"name": "Chouse Offline Reading"', $manifest);
-            assertStringContains('self.__forumBrowserRuntime = {"namespace":"chouse"', $worker);
-            assertStringContains('"offlineCacheName":"chouse-offline-reader-v14"', $worker);
+                assertStringContains('"id": "/offline/?site=' . $profileId . '"', $manifest);
+                assertStringContains('"name": "' . $label . ' Offline Reading"', $manifest);
+                assertStringContains('self.__forumBrowserRuntime = {"namespace":"' . $profileId . '"', $worker);
+                assertStringContains('"offlineCacheName":"' . $profileId . '-offline-reader-v14"', $worker);
+            }
         } finally {
             if ($previousProfile === false) {
                 putenv('FORUM_SITE_ID');
@@ -3716,6 +3767,45 @@ PHP;
             assertSame(1, $exitCodeAfterRemoval);
         } finally {
             $this->deleteTree($artifactRoot);
+        }
+    }
+
+    public function testStaticArtifactBuilderDerivesRuntimeAssetsForEveryProfile(): void
+    {
+        @unlink($this->databasePath);
+        (new ReadModelBuilder(
+            $this->repositoryRoot,
+            $this->databasePath,
+            new CanonicalRecordRepository($this->repositoryRoot),
+        ))->rebuild();
+        $previousProfile = getenv('FORUM_SITE_ID');
+
+        try {
+            foreach (['zenmemes', 'chouse', 'qdb'] as $profileId) {
+                $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-runtime-matrix-' . $profileId . '-' . bin2hex(random_bytes(6));
+                putenv('FORUM_SITE_ID=' . $profileId);
+                try {
+                    (new StaticArtifactBuilder(
+                        dirname(__DIR__),
+                        $this->repositoryRoot,
+                        $this->databasePath,
+                        $artifactRoot,
+                    ))->buildFromReadModel();
+
+                    assertStringContains('"id": "/offline/?site=' . $profileId . '"', (string) file_get_contents($artifactRoot . '/manifest.webmanifest'));
+                    assertStringContains('self.__forumBrowserRuntime = {"namespace":"' . $profileId . '"', (string) file_get_contents($artifactRoot . '/service_worker.js'));
+                    assertStringContains('"offlineCacheName":"' . $profileId . '-offline-reader-v14"', (string) file_get_contents($artifactRoot . '/service_worker.js'));
+                } finally {
+                    $this->deleteTree($artifactRoot);
+                }
+            }
+        } finally {
+            if ($previousProfile === false) {
+                putenv('FORUM_SITE_ID');
+            } else {
+                putenv('FORUM_SITE_ID=' . $previousProfile);
+            }
+            @unlink($this->databasePath);
         }
     }
 

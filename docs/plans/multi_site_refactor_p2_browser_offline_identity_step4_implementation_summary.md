@@ -23,7 +23,7 @@
   - `php tests/run.php ProfileThemePresentationTest LocalAppSmokeTest::testThreadDensityToggleIsHiddenByDefaultAndShownWhenFlagEnabled` — 3 passed.
   - `git diff --check` — passed.
 - Notes:
-  - Zenmemes' derived preference key intentionally remains its historical key; Chouse and QDB therefore never read or overwrite it.
+  - The new `forum-{namespace}-…` keys make the Zenmemes fallback an actual one-time migration; Chouse and QDB never read or overwrite legacy Zenmemes preferences.
 
 ## Stage 3 - Profile-owned offline cache lifecycle
 
@@ -59,3 +59,16 @@
   - `git diff --check` — passed.
 - Notes:
   - Static publication uses the server-selected profile at build time, matching the isolated static artifact root already derived from its browser namespace.
+
+## Stage 6 - Browser/offline regression matrix
+
+- Changes:
+  - Extended dynamic manifest/worker coverage and physical static artifact coverage to Zenmemes, Chouse, and QDB.
+  - Added a public-session regression that changes active profiles sequentially and confirms the authenticated identity remains available.
+  - Marked the four verified P2 browser/offline checklist entries complete.
+- Verification:
+  - `php -l src/ForumRewrite/BrowserRuntimeProfile.php && php tests/run.php SiteProfileRegistryTest ProfileThemePresentationTest LocalAppSmokeTest::testThreadDensityToggleIsHiddenByDefaultAndShownWhenFlagEnabled LocalAppSmokeTest::testChangingTheActiveProfilePreservesThePublicSession LocalAppSmokeTest::testFrontControllerDerivesManifestAndWorkerFromTheActiveProfile LocalAppSmokeTest::testStaticArtifactBuilderDerivesRuntimeAssetsForEveryProfile OfflineNavigationWorkerTest` — syntax check passed; 18 tests passed.
+  - `./v3 test` — 778 run, 770 passed, 8 failed; all 8 are recorded long-standing failures unrelated to this feature: two browser-signing Node harness tests, four pre-existing local-app smoke tests, the platform-docs page test, and the incremental approval/activity snapshot test.
+  - `git diff --check` — passed.
+- Notes:
+  - Deployment remains an operator responsibility; this matrix validates both application-routed delivery and physical static files locally.

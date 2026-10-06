@@ -26,8 +26,8 @@ final class BrowserRuntimeProfile
 
         return [
             'namespace' => $namespace,
-            'themeStorageKey' => $namespace . '-theme',
-            'threadDensityStorageKey' => $namespace . '-thread-density',
+            'themeStorageKey' => 'forum-' . $namespace . '-theme',
+            'threadDensityStorageKey' => 'forum-' . $namespace . '-thread-density',
             'offlineCachePrefix' => $offlineCachePrefix,
             'offlineCacheName' => $offlineCachePrefix . 'v' . self::OFFLINE_CACHE_VERSION,
             'offlineDiagnosticKey' => $namespace . '-offline-registration-error',

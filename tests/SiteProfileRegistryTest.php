@@ -116,15 +116,15 @@ final class SiteProfileRegistryTest
             $runtimeProfiles[$siteId] = $runtime;
 
             assertSame($profile['browserNamespace'], $runtime['namespace']);
-            assertSame($profile['browserNamespace'] . '-theme', $runtime['themeStorageKey']);
-            assertSame($profile['browserNamespace'] . '-thread-density', $runtime['threadDensityStorageKey']);
+            assertSame('forum-' . $profile['browserNamespace'] . '-theme', $runtime['themeStorageKey']);
+            assertSame('forum-' . $profile['browserNamespace'] . '-thread-density', $runtime['threadDensityStorageKey']);
             assertSame($profile['browserNamespace'] . '-offline-reader-', $runtime['offlineCachePrefix']);
             assertSame($runtime['offlineCachePrefix'] . 'v14', $runtime['offlineCacheName']);
         }
 
-        assertSame('zenmemes-theme', $runtimeProfiles['zenmemes']['themeStorageKey']);
-        assertSame('chouse-theme', $runtimeProfiles['chouse']['themeStorageKey']);
-        assertSame('qdb-theme', $runtimeProfiles['qdb']['themeStorageKey']);
+        assertSame('forum-zenmemes-theme', $runtimeProfiles['zenmemes']['themeStorageKey']);
+        assertSame('forum-chouse-theme', $runtimeProfiles['chouse']['themeStorageKey']);
+        assertSame('forum-qdb-theme', $runtimeProfiles['qdb']['themeStorageKey']);
     }
 
     public function testBrowserRuntimeProfileRejectsInvalidIdentity(): void

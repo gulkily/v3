@@ -25,12 +25,12 @@ Use this checklist to refactor Zenmemes, Chouse, and QDB into explicit site comp
 
 ## P2 — Profile browser and offline identity
 
-> **Continuation handoff (2026-10-06):** Draft [P2 browser/offline Step 3](./multi_site_refactor_p2_browser_offline_identity_step3_development_plan.md) is awaiting review. Resume from Step 3 in a new conversation; do not begin Step 4 until `Approved Step 3`.
+> **Completed (2026-10-06):** [P2 browser/offline Step 4](./multi_site_refactor_p2_browser_offline_identity_step4_implementation_summary.md) verifies isolated browser preferences and offline/PWA runtime identity for Zenmemes, Chouse, and QDB. A shared origin supports one active root-scope worker at a time while preserving the existing logged-in session and browser-held identity.
 
-- [ ] Replace Zenmemes-only theme/density storage keys with profile-derived keys, including a one-time Zenmemes legacy-preference fallback.
-- [ ] Make worker cache names, cache discovery/cleanup, bootstrap validation, offline-health diagnostics, and PWA identity profile-derived.
-- [ ] Define one profile-aware manifest/worker delivery contract that works for dynamic pages and published static artifacts, including hosts that serve physical files directly.
-- [ ] Verify a matching profile cache is retained, stale cache is refreshed, and a foreign-profile cache is untouched.
+- [x] Replace Zenmemes-only theme/density storage keys with profile-derived keys, including a one-time Zenmemes legacy-preference fallback.
+- [x] Make worker cache names, cache discovery/cleanup, bootstrap validation, offline-health diagnostics, and PWA identity profile-derived.
+- [x] Define one profile-aware manifest/worker delivery contract that works for dynamic pages and published static artifacts, including hosts that serve physical files directly.
+- [x] Verify a matching profile cache is retained, stale cache is refreshed, and a foreign-profile cache is untouched.
 
 ## P3 — Add the regression contract
 
