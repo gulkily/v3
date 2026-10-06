@@ -542,6 +542,62 @@ PHP);
             assertSame('requested', $response['generation_status']);
             assertSame(1, substr_count($requestedThreadPage, 'data-action="request-agent-reply"'));
             assertStringContains('Agent reply requested.', $requestedThreadPage);
+            assertSame(
+                1,
+                preg_match('#<article id="post-' . preg_quote($postId, '#') . '"[^>]*thread-root-card[^>]*meta-deferred[^>]*>(.*?)</article>#s', $requestedThreadPage, $rootCard),
+            );
+            assertOrdered(
+                $rootCard[1],
+                'data-role="agent-reply-feedback">Agent reply requested.</p>',
+                'class="button-row button-row-natural post-card-actions thread-root-actions"',
+            );
+        } finally {
+            $_COOKIE = [];
+        }
+    }
+
+    public function testRequestedAgentReplyNoticePrecedesCollapsedReplyActions(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Reply%20Request&body=Thread%20body'
+            );
+            $threadId = $this->extractValue($threadResponse, 'post_id');
+            $firstReply = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_reply?thread_id=' . rawurlencode($threadId) . '&parent_id=' . rawurlencode($threadId) . '&body=First%20reply'
+            );
+            $firstReplyId = $this->extractValue($firstReply, 'post_id');
+            $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_reply?thread_id=' . rawurlencode($threadId) . '&parent_id=' . rawurlencode($firstReplyId) . '&body=Second%20reply'
+            );
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $response = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($firstReplyId)
+            ), true);
+            $requestedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($threadId));
+
+            assertSame('requested', $response['generation_status']);
+            assertSame(
+                1,
+                preg_match('#<article id="post-' . preg_quote($firstReplyId, '#') . '"[^>]*continuation[^>]*>(.*?)</article>#s', $requestedThreadPage, $replyCard),
+            );
+            assertOrdered(
+                $replyCard[1],
+                'data-role="agent-reply-feedback">Agent reply requested.</p>',
+                'class="button-row button-row-natural post-card-actions"',
+            );
         } finally {
             $_COOKIE = [];
         }
@@ -1441,6 +1497,64 @@ PHP);
         assertStringNotContains('Generating agent reply...', $script);
         assertStringNotContains('Agent reply failed', $script);
         assertStringNotContains('Agent reply posted', $script);
+    }
+
+    public function testPostAnalysisScriptKeepsOnlyUnfinishedAgentFeedbackOutsideActions(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+let source = fs.readFileSync(process.argv[1], 'utf8');
+source = source.replace(
+  'function boot() {',
+  'window.agentReplyFeedbackTest = { applyGenerationResult, placeAgentReplyFeedback }; function boot() {'
+);
+const codexFeedback = {};
+const actions = {
+  outsideCount: 0,
+  restoredCount: 0,
+  before(node) { this.outsideCount++; node.parent = 'outside'; },
+  querySelector(selector) { return selector === '[data-role="codex-handoff-feedback"]' ? codexFeedback : null; },
+  insertBefore(node, reference) { if (reference === codexFeedback) { this.restoredCount++; node.parent = 'actions'; } },
+  appendChild(node) { node.parent = 'actions'; }
+};
+const card = { querySelector(selector) { return selector === '.post-card-actions' ? actions : null; } };
+const feedback = {
+  hidden: true,
+  textContent: '',
+  parent: 'actions',
+  closest(selector) { return selector === '[data-post-id]' ? card : null; }
+};
+global.window = {};
+global.document = { readyState: 'loading', addEventListener() {} };
+vm.runInThisContext(source);
+window.agentReplyFeedbackTest.applyGenerationResult(feedback, {
+  status: 'ok', generation_status: 'requested', response_mode_label: 'Logic analysis'
+}, null);
+const requested = { parent: feedback.parent, text: feedback.textContent };
+window.agentReplyFeedbackTest.applyGenerationResult(feedback, {
+  status: 'ok', generation_status: 'failed', response_mode_label: 'Logic analysis'
+}, null);
+process.stdout.write(JSON.stringify({
+  requested,
+  failed: { parent: feedback.parent, text: feedback.textContent },
+  outsideCount: actions.outsideCount,
+  restoredCount: actions.restoredCount
+}));
+NODE;
+        $command = sprintf('node -e %s %s', escapeshellarg($script), escapeshellarg(dirname(__DIR__) . '/public/assets/post_analysis.js'));
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Agent-feedback presentation check failed: ' . implode("\n", $output));
+        }
+        $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame([
+            'requested' => ['parent' => 'outside', 'text' => 'Logic analysis requested.'],
+            'failed' => ['parent' => 'actions', 'text' => 'Logic analysis request failed.'],
+            'outsideCount' => 1,
+            'restoredCount' => 1,
+        ], $result);
     }
 
     public function testPostAnalysisScriptBindsCodexHandoffActions(): void

@@ -18,6 +18,7 @@ use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\ExecutionLock;
+use ForumRewrite\PresentationPathResolver;
 use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\TaskQueue\ReadModelRebuildTaskHandler;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
@@ -45,9 +46,8 @@ try {
 
     $repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
     $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
-    $siteId = SiteProfileRegistry::active()['name'];
-    $profileDefaultStaticRoot = $projectRoot . '/state/static_html' . ($siteId === 'zenmemes' ? '' : '_' . $siteId);
-    $staticHtmlRoot = (string) ($options['static-html-root'] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: $profileDefaultStaticRoot));
+    $profile = SiteProfileRegistry::active();
+    $staticHtmlRoot = (string) ($options['static-html-root'] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, $profile)));
     $queuePath = TaskQueueDatabaseConfig::path($projectRoot, isset($options['queue-database-path']) ? (string) $options['queue-database-path'] : null);
     $queueDirectory = dirname($queuePath);
     if (!is_dir($queueDirectory) && !mkdir($queueDirectory, 0777, true) && !is_dir($queueDirectory)) {

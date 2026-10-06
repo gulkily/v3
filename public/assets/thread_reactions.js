@@ -147,6 +147,10 @@
     toggle.setAttribute("data-role", "thread-reaction-technical-toggle");
     toggle.hidden = true;
 
+    const detailsBreak = document.createElement("br");
+    detailsBreak.setAttribute("data-role", "thread-reaction-technical-break");
+    detailsBreak.hidden = true;
+
     const details = document.createElement("code");
     details.setAttribute("data-role", "thread-reaction-technical-details");
     details.hidden = true;
@@ -154,18 +158,19 @@
 
     toggle.addEventListener("click", function (event) {
       event.preventDefault();
-      const expanded = !details.hidden;
-      details.hidden = expanded;
-      toggle.textContent = expanded ? "details" : "hide";
+      detailsBreak.hidden = false;
+      details.hidden = false;
+      toggle.hidden = true;
     });
 
     node.appendChild(document.createTextNode(" "));
     node.appendChild(toggle);
-    node.appendChild(document.createTextNode(" "));
+    node.appendChild(detailsBreak);
     node.appendChild(details);
 
     return {
       toggle: toggle,
+      detailsBreak: detailsBreak,
       details: details,
     };
   }
@@ -176,22 +181,25 @@
     }
 
     let toggle = node.querySelector('[data-role="thread-reaction-technical-toggle"]');
+    let detailsBreak = node.querySelector('[data-role="thread-reaction-technical-break"]');
     let details = node.querySelector('[data-role="thread-reaction-technical-details"]');
-    if ((!toggle || !details) && technicalDetails !== "") {
+    if ((!toggle || !detailsBreak || !details) && technicalDetails !== "") {
       const created = createTechnicalFeedbackToggle(node);
       if (created) {
         toggle = created.toggle;
+        detailsBreak = created.detailsBreak;
         details = created.details;
       }
     }
 
-    if (!toggle || !details) {
+    if (!toggle || !detailsBreak || !details) {
       return;
     }
 
     if (technicalDetails === "") {
       toggle.hidden = true;
       toggle.textContent = "details";
+      detailsBreak.hidden = true;
       details.hidden = true;
       details.textContent = "";
       return;
@@ -199,6 +207,7 @@
 
     toggle.hidden = false;
     toggle.textContent = "details";
+    detailsBreak.hidden = true;
     details.hidden = true;
     details.textContent = technicalDetails;
   }

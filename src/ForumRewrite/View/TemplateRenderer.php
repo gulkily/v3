@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\View;
 
 use ForumRewrite\Host\AssetFingerprint;
+use ForumRewrite\Qdb\QdbPresentation;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
@@ -231,15 +232,9 @@ final class TemplateRenderer
             return $items;
         }
 
-        $items = SiteConfig::siteName() === 'qdb'
-            ? [
-                ['href' => '/', 'label' => 'Welcome', 'section' => 'welcome'],
-                ['href' => '/latest', 'label' => 'Latest', 'section' => 'latest'],
-                ['href' => '/top', 'label' => 'Top', 'section' => 'top'],
-                ['href' => '/random', 'label' => 'Random', 'section' => 'random'],
-                ['href' => '/add', 'label' => 'Add Quote', 'section' => 'compose'],
-                ['href' => '/search', 'label' => 'Search', 'section' => 'search'],
-            ]
+        $isQdbExperience = in_array('qdb', SiteProfileRegistry::active()['enabledExperienceKeys'], true);
+        $items = $isQdbExperience
+            ? QdbPresentation::navigation()
             : [
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],
                 ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
@@ -250,7 +245,7 @@ final class TemplateRenderer
 
         // Account/Invite are deliberately left out of the qdb profile's nav
         // (operator's call) - both routes remain reachable by direct URL.
-        if (SiteConfig::siteName() !== 'qdb'
+        if (!$isQdbExperience
             && $viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
             && (($viewerProfile['_authenticated_identity'] ?? true) === true)) {

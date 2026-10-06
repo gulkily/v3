@@ -147,6 +147,27 @@
     node.appendChild(link);
   }
 
+  function placeAgentReplyFeedback(node, isUnfinished) {
+    const card = node ? node.closest("[data-post-id]") : null;
+    const actions = card ? card.querySelector(".post-card-actions") : null;
+    if (!node || !actions) {
+      return;
+    }
+
+    if (isUnfinished) {
+      actions.before(node);
+      return;
+    }
+
+    const codexFeedback = actions.querySelector('[data-role="codex-handoff-feedback"]');
+    if (codexFeedback) {
+      actions.insertBefore(node, codexFeedback);
+      return;
+    }
+
+    actions.appendChild(node);
+  }
+
   function appendTextElement(parent, tagName, label, value) {
     if (!value) {
       return;
@@ -209,6 +230,7 @@
     }
 
     if (result.generation_status === "generated" && result.agent_post_id) {
+      placeAgentReplyFeedback(node, false);
       setFeedbackLink(
         node,
         agentReplySubject(result) + " added below this post.",
@@ -219,6 +241,7 @@
     }
 
     if (result.generation_status === "already_posted" && result.agent_post_id) {
+      placeAgentReplyFeedback(node, false);
       setFeedbackLink(
         node,
         agentReplySubject(result) + " already exists below this post.",
@@ -229,34 +252,41 @@
     }
 
     if (result.generation_status === "requested") {
+      placeAgentReplyFeedback(node, true);
       setFeedback(node, agentReplySubject(result) + " requested.");
       return true;
     }
 
     if (result.generation_status === "not_recommended") {
       if (result.reason === "config_disabled") {
+        placeAgentReplyFeedback(node, false);
         return false;
       }
 
+      placeAgentReplyFeedback(node, false);
       setFeedback(node, "Agent reply skipped" + skippedReason(result, analysis) + ".", "");
       return true;
     }
 
     if (result.generation_status === "analysis_required") {
+      placeAgentReplyFeedback(node, false);
       setFeedback(node, "Agent reply skipped: analysis required.", "");
       return true;
     }
 
     if (result.generation_status === "in_progress") {
+      placeAgentReplyFeedback(node, true);
       setFeedback(node, agentReplySubject(result) + " request in progress.");
       return true;
     }
 
     if (result.generation_status === "failed") {
+      placeAgentReplyFeedback(node, false);
       setFeedback(node, agentReplySubject(result) + " request failed.", "");
       return true;
     }
 
+    placeAgentReplyFeedback(node, false);
     setFeedback(node, "Agent reply skipped.", "");
     return true;
   }
@@ -580,6 +610,7 @@
     const feedback = feedbackForPost(postId);
     button.disabled = true;
     button.textContent = "Requesting...";
+    placeAgentReplyFeedback(feedback, true);
     setFeedback(feedback, "Requesting " + mode.label + "...");
 
     try {
@@ -595,6 +626,7 @@
     generationStartedPostIds.delete(postId);
     button.disabled = false;
     button.textContent = originalText;
+    placeAgentReplyFeedback(feedback, false);
     setFeedback(feedback, mode.label + " request failed.");
   }
 

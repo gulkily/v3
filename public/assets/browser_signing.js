@@ -9,6 +9,7 @@
     composeDraftPrefix: "forum_compose_draft",
     recentlyClearedComposeDraft: "forum_recently_cleared_compose_draft",
   };
+  const browserKeyCreationBackdateMilliseconds = 60 * 1000;
   let actionTimingSequence = 0;
   let clearedKeypairBackup = null;
   let identityPreparationPromise = null;
@@ -1516,6 +1517,10 @@
     toggle.setAttribute("data-role", "browser-key-status-technical-toggle");
     toggle.hidden = true;
 
+    const detailsBreak = document.createElement("br");
+    detailsBreak.setAttribute("data-role", "browser-key-status-technical-break");
+    detailsBreak.hidden = true;
+
     const details = document.createElement("code");
     details.setAttribute("data-role", "browser-key-status-technical-details");
     details.hidden = true;
@@ -1523,18 +1528,19 @@
 
     toggle.addEventListener("click", function (event) {
       event.preventDefault();
-      const expanded = !details.hidden;
-      details.hidden = expanded;
-      toggle.textContent = expanded ? "details" : "hide";
+      detailsBreak.hidden = false;
+      details.hidden = false;
+      toggle.hidden = true;
     });
 
     node.appendChild(spacer);
     node.appendChild(toggle);
-    node.appendChild(document.createTextNode(" "));
+    node.appendChild(detailsBreak);
     node.appendChild(details);
 
     return {
       toggle: toggle,
+      detailsBreak: detailsBreak,
       details: details,
     };
   }
@@ -1545,22 +1551,25 @@
     }
 
     let toggle = node.querySelector('[data-role="browser-key-status-technical-toggle"]');
+    let detailsBreak = node.querySelector('[data-role="browser-key-status-technical-break"]');
     let details = node.querySelector('[data-role="browser-key-status-technical-details"]');
-    if ((!toggle || !details) && technicalDetails !== "") {
+    if ((!toggle || !detailsBreak || !details) && technicalDetails !== "") {
       const created = createTechnicalStatusToggle(node);
       if (created) {
         toggle = created.toggle;
+        detailsBreak = created.detailsBreak;
         details = created.details;
       }
     }
 
-    if (!toggle || !details) {
+    if (!toggle || !detailsBreak || !details) {
       return;
     }
 
     if (technicalDetails === "") {
       toggle.hidden = true;
       toggle.textContent = "details";
+      detailsBreak.hidden = true;
       details.hidden = true;
       details.textContent = "";
       return;
@@ -1568,6 +1577,7 @@
 
     toggle.hidden = false;
     toggle.textContent = "details";
+    detailsBreak.hidden = true;
     details.hidden = true;
     details.textContent = technicalDetails;
   }
@@ -1585,7 +1595,7 @@
     return String(text || "").trim();
   }
 
-  function classifyIdentityBootstrapFailure(rawMessage) {
+  function classifyIdentityBootstrapFailure(rawMessage, diagnosticContext) {
     const technicalDetails = String(rawMessage || "").trim();
     const fallback = "Could not prepare your browser identity automatically. Open /account/key/ to finish manually.";
 
@@ -1625,6 +1635,18 @@
       };
     }
 
+    if (technicalDetails === "Identity bootstrap signature verification failed: signature_verification_failed") {
+      const attemptId = diagnosticContext && typeof diagnosticContext.bootstrapAttemptId === "string"
+        ? diagnosticContext.bootstrapAttemptId
+        : "";
+      return {
+        friendlyMessage: `${fallback} Diagnostic code: signature_verification_failed.`,
+        technicalDetails: attemptId
+          ? `${technicalDetails}\nAttempt ID: ${attemptId}`
+          : technicalDetails,
+      };
+    }
+
     return {
       friendlyMessage: fallback,
       technicalDetails: technicalDetails,
@@ -1644,9 +1666,28 @@
       || message === "Identity bootstrap signature verification failed: signature_verification_failed";
   }
 
-  function identityBootstrapFailureError(rawMessage) {
-    const failure = classifyIdentityBootstrapFailure(rawMessage);
-    return buildFriendlyError(failure.friendlyMessage, failure.technicalDetails);
+  function identityBootstrapFailureError(rawMessage, diagnosticContext) {
+    const failure = classifyIdentityBootstrapFailure(rawMessage, diagnosticContext);
+    const error = buildFriendlyError(failure.friendlyMessage, failure.technicalDetails);
+    error.retryableIdentityBootstrapFailure = isRetryableIdentityBootstrapFailure(rawMessage);
+    return error;
+  }
+
+  function newIdentityBootstrapAttemptId() {
+    const cryptoApi = window.crypto || (typeof crypto !== "undefined" ? crypto : null);
+    if (cryptoApi && typeof cryptoApi.randomUUID === "function") {
+      return String(cryptoApi.randomUUID()).toLowerCase();
+    }
+
+    return `bootstrap-${Date.now().toString(36)}-${Math.random().toString(36).slice(2) || "0"}`;
+  }
+
+  function selectedOpenPgpBundleVersion() {
+    const loader = window.__forumOpenPgpLoader || null;
+    const version = loader && typeof loader.selectedVersion === "string"
+      ? loader.selectedVersion.trim()
+      : "";
+    return /^[A-Za-z0-9._-]{1,64}$/.test(version) ? version : "unknown";
   }
 
   function openPgpUnavailableError(technicalDetails) {
@@ -2101,6 +2142,9 @@
       curve: "ed25519",
       userIDs: [{ name: username }],
       format: "armored",
+      // GnuPG rejects a key whose packet timestamp is even slightly ahead of
+      // the server clock. Leave a small margin for browser/server clock skew.
+      date: new Date(Date.now() - browserKeyCreationBackdateMilliseconds),
     });
     const key = await openpgp.readKey({ armoredKey: result.publicKey });
     const fingerprint = String(key.getFingerprint()).toUpperCase();
@@ -2118,7 +2162,12 @@
     return username;
   }
 
-  async function publishPublicKey(root, timing) {
+  async function publishPublicKey(root, timing, diagnosticContext) {
+    const context = diagnosticContext || {
+      bootstrapAttemptId: newIdentityBootstrapAttemptId(),
+      bootstrapRetryIndex: 0,
+      openPgpBundleVersion: selectedOpenPgpBundleVersion(),
+    };
     const publicKey = localStorage.getItem(storageKeys.publicKey) || "";
     const fingerprint = await ensureStoredFingerprint();
     if (!publicKey) {
@@ -2143,7 +2192,12 @@
         headers: {
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         },
-        body: new URLSearchParams({ public_key: publicKey }).toString(),
+        body: new URLSearchParams({
+          public_key: publicKey,
+          bootstrap_attempt_id: context.bootstrapAttemptId,
+          bootstrap_retry_index: String(context.bootstrapRetryIndex),
+          openpgp_bundle_version: context.openPgpBundleVersion,
+        }).toString(),
       });
     } catch (error) {
       // Older installations may not expose the signed identity endpoints yet.
@@ -2185,7 +2239,7 @@
         renderSavedState(root);
         return;
       }
-      throw identityBootstrapFailureError(rawError);
+      throw identityBootstrapFailureError(rawError, context);
     }
 
     const detachedSignature = await signCanonicalRecord(String(prepared.canonical_record || ""));
@@ -2199,6 +2253,9 @@
         prepare_token: String(prepared.prepare_token || ""),
         canonical_record: String(prepared.canonical_record || ""),
         detached_signature: detachedSignature,
+        bootstrap_attempt_id: context.bootstrapAttemptId,
+        bootstrap_retry_index: String(context.bootstrapRetryIndex),
+        openpgp_bundle_version: context.openPgpBundleVersion,
       }).toString(),
     });
     const finalizedText = await finalizedResponse.text();
@@ -2210,7 +2267,8 @@
     }
     if (!finalized || finalized.status !== "ok") {
       throw identityBootstrapFailureError(
-        finalized && finalized.error ? String(finalized.error) : "Unable to finalize browser identity."
+        finalized && finalized.error ? String(finalized.error) : "Unable to finalize browser identity.",
+        context
       );
     }
 
@@ -2222,20 +2280,31 @@
   }
 
   async function publishPublicKeyWithRetry(root, timing) {
+    const bootstrapAttemptId = newIdentityBootstrapAttemptId();
+    const openPgpBundleVersion = selectedOpenPgpBundleVersion();
     try {
-      await publishPublicKey(root, timing);
+      await publishPublicKey(root, timing, {
+        bootstrapAttemptId: bootstrapAttemptId,
+        bootstrapRetryIndex: 0,
+        openPgpBundleVersion: openPgpBundleVersion,
+      });
       return;
     } catch (error) {
       const technicalDetails = error instanceof Error && typeof error.technicalDetails === "string"
         ? error.technicalDetails
         : "";
-      if (!isRetryableIdentityBootstrapFailure(technicalDetails)) {
+      const retryable = error instanceof Error && error.retryableIdentityBootstrapFailure === true;
+      if (!retryable && !isRetryableIdentityBootstrapFailure(technicalDetails)) {
         throw error;
       }
     }
 
     await ensureStoredFingerprint();
-    await publishPublicKey(root, timing);
+    await publishPublicKey(root, timing, {
+      bootstrapAttemptId: bootstrapAttemptId,
+      bootstrapRetryIndex: 1,
+      openPgpBundleVersion: openPgpBundleVersion,
+    });
   }
 
   async function serverKnowsCurrentIdentity(fingerprint) {

@@ -45,6 +45,8 @@ if ($agentReplyPostedId !== '') {
 } elseif ($agentReplyStatus === 'failed') {
     $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' failed.';
 }
+$agentReplyIsUnfinished = $agentReplyPostedId === ''
+    && in_array($agentReplyStatus, ['requested', 'pending', 'complete', 'posting'], true);
 $viewerHasLikedPost = isset($viewerPostLikes[(string) $post['post_id']]);
 $viewerHasFlaggedPost = isset($viewerPostFlags[(string) $post['post_id']]);
 $postPermalinkLabel = 'Post ' . (string) $post['post_id'];
@@ -136,6 +138,9 @@ $postLlmExchangesByPostId = is_array($llmExchangesByPostId ?? null) ? $llmExchan
 $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null) ? $postLlmExchangesByPostId[$post['post_id']] : [];
 ?>
   <button type="button" class="post-card-actions-toggle thread-reaction-button" aria-label="Show actions for this reply">Actions</button>
+<?php if ($agentReplyIsUnfinished): ?>
+  <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"><?= $e($agentReplyFeedbackText) ?></p>
+<?php endif; ?>
   <div class="button-row button-row-natural post-card-actions">
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
     <button
@@ -178,7 +183,9 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
     <span class="meta">LLM exchanges: <?php foreach ($postLlmExchanges as $index => $exchange): ?><?php if ($index > 0): ?>, <?php endif; ?><a href="/tools/llm-exchanges/<?= (int) $exchange['id'] ?>">#<?= (int) $exchange['id'] ?></a><?php endforeach; ?></span>
 <?php endif; ?>
     <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
+<?php if (!$agentReplyIsUnfinished): ?>
     <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"<?= $agentReplyFeedbackText === '' ? ' hidden' : '' ?>><?= $e($agentReplyFeedbackText) ?><?php if ($agentReplyPostedId !== ''): ?> <a href="/posts/<?= $e($agentReplyPostedId) ?>">View agent reply.</a><?php endif; ?></p>
+<?php endif; ?>
     <p class="meta codex-handoff-feedback" data-role="codex-handoff-feedback"<?= $codexHandoffFeedbackText === '' ? ' hidden' : '' ?>><?= $e($codexHandoffFeedbackText) ?></p>
 <?php if (is_array($codexHandoff)): ?>
   <details class="codex-handoff-preview" data-role="codex-handoff-preview" data-handoff-id="<?= $e($codexHandoffId) ?>" data-handoff-status="<?= $e($codexHandoffStatus) ?>"<?= $codexHandoffStatus === 'draft_ready' ? ' open' : '' ?>>

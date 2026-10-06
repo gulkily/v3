@@ -725,8 +725,11 @@ const state = {
   fetches: [],
   domContentLoaded: null,
   generateClickHandler: null,
-  generatedUsername: ''
+  generatedUsername: '',
+  generatedKeyDate: null
 };
+
+Date.now = () => 200000;
 
 function makeElement(text) {
   return {
@@ -801,6 +804,7 @@ global.window = {
   openpgp: {
     async generateKey(options) {
       state.generatedUsername = options.userIDs[0].name;
+      state.generatedKeyDate = options.date.getTime();
       return { publicKey: generatedPublicKey, privateKey: generatedPrivateKey };
     },
     async readKey() {
@@ -857,6 +861,7 @@ state.domContentLoaded();
 Promise.resolve(state.generateClickHandler()).then(() => {
   process.stdout.write(JSON.stringify({
     generatedUsername: state.generatedUsername,
+    generatedKeyDate: state.generatedKeyDate,
     fetches: state.fetches,
     localSetCalls: state.localSetCalls,
     localRemoveCalls: state.localRemoveCalls,
@@ -874,6 +879,7 @@ NODE;
         $result = $this->runScript($script);
 
         assertSame('forum-user', $result['generatedUsername']);
+        assertSame(140000, $result['generatedKeyDate']);
         assertSame('/api/set_identity_hint?identity_hint=openpgp%3A0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][0]['url']);
         assertSame('/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][1]['url']);
         assertSame('/api/prepare_identity', $result['fetches'][2]['url']);
@@ -1667,7 +1673,8 @@ const state = {
     forum_pki_fingerprint: fingerprint
   },
   prepareCalls: 0,
-  createCalls: 0
+  createCalls: 0,
+  fetches: []
 };
 
 global.localStorage = {
@@ -1677,6 +1684,8 @@ global.localStorage = {
 };
 global.window = {
   localStorage: global.localStorage,
+  crypto: { randomUUID() { return '0b60dfd0-0161-4d34-9e89-bc4089bb23c4'; } },
+  __forumOpenPgpLoader: { selectedVersion: 'v6' },
   openpgp: {
     async readKey() { return { getFingerprint() { return fingerprint; } }; },
     async readPrivateKey() { return { getFingerprint() { return fingerprint; } }; },
@@ -1694,7 +1703,8 @@ global.document = {
   body: { appendChild(){}, removeChild(){} }
 };
 global.navigator = {};
-global.fetch = async function(url) {
+global.fetch = async function(url, options) {
+  state.fetches.push({ url: String(url), body: options && options.body ? String(options.body) : '' });
   if (String(url) === '/api/prepare_identity') {
     state.prepareCalls += 1;
     return { ok: true, async text() {
@@ -1724,6 +1734,9 @@ window.__forumBrowserIdentity.ensureReadyIdentity(null, null, { verifyPublishedI
   .then(() => process.stdout.write(JSON.stringify({
     prepareCalls: state.prepareCalls,
     createCalls: state.createCalls,
+    diagnosticRequests: state.fetches
+      .filter((request) => request.url === '/api/prepare_identity' || request.url === '/api/create_identity')
+      .map((request) => Object.fromEntries(new URLSearchParams(request.body))),
     publishedFingerprint: state.localStore.forum_pki_published_fingerprint || ''
   })))
   .catch((error) => { process.stderr.write(error.stack || String(error)); process.exit(1); });
@@ -1733,6 +1746,36 @@ NODE;
 
         assertSame(2, $result['prepareCalls']);
         assertSame(2, $result['createCalls']);
+        assertSame([
+            [
+                'public_key' => 'public-key',
+                'bootstrap_attempt_id' => '0b60dfd0-0161-4d34-9e89-bc4089bb23c4',
+                'bootstrap_retry_index' => '0',
+                'openpgp_bundle_version' => 'v6',
+            ],
+            [
+                'prepare_token' => 'token-1',
+                'canonical_record' => 'Post-ID: bootstrap-1\\n',
+                'detached_signature' => "detached-signature\n",
+                'bootstrap_attempt_id' => '0b60dfd0-0161-4d34-9e89-bc4089bb23c4',
+                'bootstrap_retry_index' => '0',
+                'openpgp_bundle_version' => 'v6',
+            ],
+            [
+                'public_key' => 'public-key',
+                'bootstrap_attempt_id' => '0b60dfd0-0161-4d34-9e89-bc4089bb23c4',
+                'bootstrap_retry_index' => '1',
+                'openpgp_bundle_version' => 'v6',
+            ],
+            [
+                'prepare_token' => 'token-2',
+                'canonical_record' => 'Post-ID: bootstrap-2\\n',
+                'detached_signature' => "detached-signature\n",
+                'bootstrap_attempt_id' => '0b60dfd0-0161-4d34-9e89-bc4089bb23c4',
+                'bootstrap_retry_index' => '1',
+                'openpgp_bundle_version' => 'v6',
+            ],
+        ], $result['diagnosticRequests']);
         assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $result['publishedFingerprint']);
     }
 
@@ -1760,6 +1803,8 @@ global.localStorage = {
 };
 global.window = {
   localStorage: global.localStorage,
+  crypto: { randomUUID() { return '0b60dfd0-0161-4d34-9e89-bc4089bb23c4'; } },
+  __forumOpenPgpLoader: { selectedVersion: 'v6' },
   openpgp: {
     async readKey() { return { getFingerprint() { return fingerprint; } }; },
     async readPrivateKey() { return { getFingerprint() { return fingerprint; } }; },
@@ -1814,8 +1859,8 @@ NODE;
         assertSame(2, $result['prepareCalls']);
         assertSame(2, $result['createCalls']);
         assertSame('', $result['publishedFingerprint']);
-        assertSame('Could not prepare your browser identity automatically. Open /account/key/ to finish manually.', $result['message']);
-        assertSame('Identity bootstrap signature verification failed: signature_verification_failed', $result['technicalDetails']);
+        assertSame('Could not prepare your browser identity automatically. Open /account/key/ to finish manually. Diagnostic code: signature_verification_failed.', $result['message']);
+        assertSame("Identity bootstrap signature verification failed: signature_verification_failed\nAttempt ID: 0b60dfd0-0161-4d34-9e89-bc4089bb23c4", $result['technicalDetails']);
     }
 
     public function testActionIdentityReadinessUsesTheSharedRecoveryPath(): void

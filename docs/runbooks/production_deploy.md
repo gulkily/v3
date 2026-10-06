@@ -165,6 +165,24 @@ from CI, cron, browser page loads, and automatic deployment hooks.
    release failure. Repair and redeploy before continuing; do not compensate
    by clearing browser storage or changing Apache/vhost configuration.
 
+   For a staging investigation, use the staging hostname instead:
+
+   ```bash
+   ./v3 openpgp smoke --origin=staging.example
+   ```
+
+   Then use separate fresh browser profiles to submit a disposable post through
+   both `http://staging.example/compose/thread` (v5) and
+   `https://staging.example/compose/thread` (v6). If identity bootstrap fails,
+   allow the existing automatic retry to finish and record the browser's
+   diagnostic code and attempt ID. Join that ID to the
+   `identity_bootstrap_signature_verification_failed` server event; retain only
+   its safe attempt, bundle, retry, exit-result, `VALIDSIG`, and GnuPG
+   status-code fields. Do not copy key armor, signatures, canonical records,
+   raw GnuPG output, or user IDs into an issue. A successful path should create
+   one staging identity and post, then reuse that identity without another
+   username prompt.
+
 2. Only after the asset gate passes, run the visible new-user canary exactly
    once. From the operator workstation, install the pinned browser driver once
    for the checkout, then pass the local Chromium executable explicitly:

@@ -45,6 +45,8 @@ if ($agentReplyPostedId !== '') {
 } elseif ($agentReplyStatus === 'failed') {
     $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' failed.';
 }
+$agentReplyIsUnfinished = $agentReplyPostedId === ''
+    && in_array($agentReplyStatus, ['requested', 'pending', 'complete', 'posting'], true);
 $viewerHasFlaggedPost = isset($viewerPostFlags[(string) $post['post_id']]);
 $postPermalinkLabel = 'Post ' . (string) $post['post_id'];
 $postAnchorId = 'post-' . (string) $post['post_id'];
@@ -134,6 +136,9 @@ $postLlmExchangesByPostId = is_array($llmExchangesByPostId ?? null) ? $llmExchan
 $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null) ? $postLlmExchangesByPostId[$post['post_id']] : [];
 ?>
   <button type="button" class="post-card-actions-toggle thread-reaction-button" aria-label="Show actions for this post">Actions</button>
+<?php if ($agentReplyIsUnfinished): ?>
+  <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"><?= $e($agentReplyFeedbackText) ?></p>
+<?php endif; ?>
   <div class="button-row button-row-natural post-card-actions thread-root-actions">
 <?php if (!$isQdbQuoteRoot): ?>
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
@@ -212,7 +217,9 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
 <?php endif; ?>
     <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
     <p class="meta thread-reaction-feedback" data-role="thread-reaction-feedback" hidden></p>
+<?php if (!$agentReplyIsUnfinished): ?>
     <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"<?= $agentReplyFeedbackText === '' ? ' hidden' : '' ?>><?= $e($agentReplyFeedbackText) ?><?php if ($agentReplyPostedId !== ''): ?> <a href="/posts/<?= $e($agentReplyPostedId) ?>">View agent reply.</a><?php endif; ?></p>
+<?php endif; ?>
     <p class="meta codex-handoff-feedback" data-role="codex-handoff-feedback"<?= $codexHandoffFeedbackText === '' ? ' hidden' : '' ?>><?= $e($codexHandoffFeedbackText) ?></p>
 <?php if (is_array($codexHandoff)): ?>
   <details class="codex-handoff-preview" data-role="codex-handoff-preview" data-handoff-id="<?= $e($codexHandoffId) ?>" data-handoff-status="<?= $e($codexHandoffStatus) ?>"<?= $codexHandoffStatus === 'draft_ready' ? ' open' : '' ?>>

@@ -1,12 +1,8 @@
 <?php
 $quoteId = (string) $thread['root_post_id'];
-// Both imported qdb archive quotes and live-authored qdb submissions carry
-// their classic quote number in their Post-ID (thread-<timestamp>-qdb-<N>);
-// any quote predating that convention falls back to its raw Post-ID, exactly
-// as before.
-$hasQdbQuoteNumber = preg_match('/-qdb-(\d+)$/', $quoteId, $quoteNumberMatch) === 1;
-$displayNumber = $hasQdbQuoteNumber ? $quoteNumberMatch[1] : $quoteId;
-$permalinkHref = $hasQdbQuoteNumber ? '/' . $displayNumber : '/threads/' . $quoteId;
+$permalink = \ForumRewrite\Qdb\QdbQuoteNumbers::displayPermalink($quoteId);
+$displayNumber = $permalink['displayNumber'];
+$permalinkHref = $permalink['permalinkHref'];
 $viewerHasUpvoted = isset($viewerUpvotedThreadIds[$quoteId]);
 $viewerHasDownvoted = isset($viewerDownvotedThreadIds[$quoteId]);
 $viewerHasFlagged = isset($viewerFlaggedPostIds[$quoteId]);
