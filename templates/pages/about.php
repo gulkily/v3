@@ -1,15 +1,16 @@
 <section class="stack">
   <article class="card about-sections">
-    <section class="about-section" data-about-section="zenmemes">
-      <h1>About <?= $e($siteName) ?></h1>
-      <p><?= $e($siteName) ?> is a small forum for people who want a more durable local internet: readable in public, accountable through identity, and portable enough that the community is not trapped inside a single server.</p>
+    <section class="about-section" data-about-section="intro">
+      <h1><?= $e($aboutContent['title']) ?></h1>
+      <p><?= $e($aboutContent['introduction']) ?></p>
     </section>
     <section class="about-section" data-about-section="community">
-      <h2>The community</h2>
-      <p>This board is meant for extraordinary people: founders, creators, researchers, artists, organizers, and people who make the local internet more alive.</p>
-      <p>The initial community is rooted in Boston, especially founders and creators around Harvard St Commons. From there, it can grow outward through real relationships and earned trust.</p>
+      <h2><?= $e($aboutContent['communityHeading']) ?></h2>
+<?php foreach ($aboutContent['communityParagraphs'] as $paragraph): ?>
+      <p><?= $e($paragraph) ?></p>
+<?php endforeach; ?>
     </section>
-<?php if ($siteName === 'chouse'): ?>
+<?php if ($aboutContent['showHackableSection']): ?>
     <section class="about-section" data-about-section="hackable">
       <h2>Hackable by design</h2>
       <p>chouse is built to be changed. Its open code and legible data make it easy to build tools, experiments, and new ways of participating on top of the forum.</p>

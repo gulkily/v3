@@ -7,7 +7,9 @@ namespace ForumRewrite\Host;
 use ForumRewrite\Application;
 use ForumRewrite\Docs\PlatformDocsCatalog;
 use ForumRewrite\Offline\OfflineSnapshotPublisher;
+use ForumRewrite\ProfilePresentationContent;
 use ForumRewrite\SiteConfig;
+use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\TaskQueue\DetachedTaskQueueLauncher;
@@ -478,13 +480,15 @@ final class FrontController
 
     private function renderBusyError(): string
     {
+        $busyContent = ProfilePresentationContent::busy(SiteProfileRegistry::active());
+
         return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
-            . '<title>Meme Oven Is Busy</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
+            . '<title>' . htmlspecialchars($busyContent['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
             . '<div class="shell"><header class="site-header"><p class="eyebrow">'
             . htmlspecialchars(SiteConfig::siteName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
             . '</p></header>'
-            . '<main class="main"><section class="stack"><h1>Meme Oven Is Busy</h1>'
-            . '<article class="card"><p>The next batch of zenmemes is still baking. Try again in a moment.</p>'
+            . '<main class="main"><section class="stack"><h1>' . htmlspecialchars($busyContent['heading'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</h1>'
+            . '<article class="card"><p>' . htmlspecialchars($busyContent['message'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
             . '</article></section></main></div></body></html>';
     }
 

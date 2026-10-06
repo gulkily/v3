@@ -37,3 +37,14 @@
   - `php -l` passed for the board controller and QDB experience.
   - `php tests/run.php QdbExperienceRoutingTest QuoteCardDisplayNumberTest PresentationSlotRegistryTest` — 17 passed.
   - `git diff --check` passed.
+
+## Stage 4 - Profile-selected editorial content
+
+- Changes:
+  - Added a closed profile-presentation content catalog selected through the validated about and editorial slots.
+  - Moved the about/editorial copy, Chouse-only about section, platform-document branding, and lock-contention busy message out of direct profile-name conditionals and templates.
+  - Preserved the Zenmemes busy message and supplied neutral busy copy for the Boston and QDB editorial selections.
+- Verification:
+  - `php -l` passed for the content catalog and affected controllers.
+  - `php tests/run.php ProfilePresentationContentTest PresentationSlotRegistryTest SiteProfileRegistryTest` — 11 passed, including the three-profile about/docs render matrix and invalid-slot fallback.
+  - `git diff --check` passed.

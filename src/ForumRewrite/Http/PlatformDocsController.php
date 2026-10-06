@@ -6,6 +6,8 @@ namespace ForumRewrite\Http;
 
 use ForumRewrite\Docs\PlatformDocsCatalog;
 use ForumRewrite\Docs\PublicMarkdownRenderer;
+use ForumRewrite\ProfilePresentationContent;
+use ForumRewrite\SiteProfileRegistry;
 
 final class PlatformDocsController
 {
@@ -25,7 +27,7 @@ final class PlatformDocsController
 
         return $this->routeServices->renderPageTemplate(
             'platform_docs_index.php',
-            ['categories' => $categories],
+            ['categories' => $categories, 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active())],
             'Platform Docs',
             'docs',
         );
@@ -49,6 +51,7 @@ final class PlatformDocsController
             [
                 'sourcePath' => $sourcePath,
                 'documentHtml' => PublicMarkdownRenderer::render($markdown),
+                'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active()),
             ],
             'Platform Docs',
             'docs',

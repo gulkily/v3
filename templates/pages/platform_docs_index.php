@@ -1,15 +1,15 @@
 <section class="stack docs-page">
   <article class="card">
-    <h1>Platform Docs</h1>
-    <p>Zenmemes keeps its public state in Git and builds the site's pages from it. These docs are rendered from the same repository.</p>
+    <h1><?= $e($platformDocsBrand['heading']) ?></h1>
+    <p><?= $e($platformDocsBrand['introduction']) ?></p>
     <p>Each entry below shows the path of the file it is rendered from, so you can read the source and propose changes.</p>
   </article>
   <article class="card docs-transparency">
     <h2>How it works</h2>
     <div class="docs-architecture-diagram">
       <svg viewBox="0 0 740 250" role="img" aria-labelledby="docs-diagram-title docs-diagram-description">
-        <title id="docs-diagram-title">Zenmemes public architecture</title>
-        <desc id="docs-diagram-description">A member's browser creates signed writes to records in Git, which produce SQLite and static HTML views for readers.</desc>
+        <title id="docs-diagram-title"><?= $e($platformDocsBrand['architectureTitle']) ?></title>
+        <desc id="docs-diagram-description"><?= $e($platformDocsBrand['architectureDescription']) ?></desc>
         <defs>
           <marker id="docs-diagram-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
             <path d="M0,0 L8,4 L0,8 z" class="docs-diagram-arrowhead" />

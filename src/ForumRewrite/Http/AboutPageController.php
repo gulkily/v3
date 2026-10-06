@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
-use ForumRewrite\SiteConfig;
+use ForumRewrite\ProfilePresentationContent;
+use ForumRewrite\SiteProfileRegistry;
 
 /**
  * Renders the static /about page. First slice of moving route-group
@@ -30,7 +31,7 @@ final class AboutPageController
     {
         return ($this->renderPageTemplate)(
             'about.php',
-            ['siteName' => SiteConfig::siteName()],
+            ['aboutContent' => ProfilePresentationContent::about(SiteProfileRegistry::active())],
             'About',
             'about',
             [],
