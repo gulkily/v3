@@ -15,3 +15,21 @@
   - `git diff --check`
 - Notes:
   - Existing article data attributes, reply-tree rendering, reaction controls, permalink, and compose-pane placement are preserved for subsequent detail loading.
+
+## Stage 2 - Deliver one scoped pane through a detail endpoint
+
+- Changes:
+  - Added `ThreadRepository::replyPostsByThreadId()` for one thread's visible replies.
+  - Added `GET /api/forte_thread_detail`, which resolves a direct-addressable thread, renders the canonical article, supplies viewer reaction state, and optionally highlights a requested reply.
+  - Added endpoint and private-route regression coverage.
+- Verification:
+  - `php -l src/ForumRewrite/ReadModel/ThreadRepository.php`
+  - `php -l src/ForumRewrite/Http/ForteBoardController.php`
+  - `php -l src/ForumRewrite/Application.php`
+  - `php -l tests/LocalAppSmokeTest.php`
+  - `php tests/run.php LocalAppSmokeTest::testForteThreadDetailApiRendersOneRequestedThread`
+  - `php tests/run.php LocalAppSmokeTest::testPrivateForteRoutesRecoverExpiredSessionsInsteadOfReturningFalseNotFound`
+  - `php tests/run.php LocalAppSmokeTest::testForteReplyLikesRenderAndRestoreViewerState`
+  - `git diff --check`
+- Notes:
+  - The endpoint uses the board's existing one-thread lookup, so direct links to list-excluded but addressable threads retain their current eligibility semantics.

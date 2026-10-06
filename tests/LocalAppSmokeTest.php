@@ -701,6 +701,7 @@ PHP;
             foreach ([
                 '/api/forte_activity_page?view=all',
                 '/api/forte_commit_detail?sha=abc123',
+                '/api/forte_thread_detail?thread_id=root-001',
                 '/api/get_forte_content_summary?post_id=root-001',
             ] as $path) {
                 $response = $this->render($application, $path);
@@ -1335,6 +1336,26 @@ PHP;
             $this->deleteTree($repositoryRoot);
             @unlink($databasePath);
         }
+    }
+
+    public function testForteThreadDetailApiRendersOneRequestedThread(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath);
+
+        $payload = json_decode($this->render($application, '/api/forte_thread_detail?thread_id=root-001&created_post_id=reply-001'), true);
+        assertSame('ok', $payload['status']);
+        assertStringContains('data-paned-board-content-post-id="root-001"', $payload['html']);
+        assertStringContains('data-paned-reply-post-id="reply-001"', $payload['html']);
+        assertStringContains('paned-highlight-new', $payload['html']);
+
+        $missing = json_decode($this->render($application, '/api/forte_thread_detail?thread_id=missing'), true);
+        assertSame('error', $missing['status']);
+        assertSame('thread not found', $missing['error']);
+
+        $invalid = json_decode($this->render($application, '/api/forte_thread_detail?thread_id=not%2Fallowed'), true);
+        assertSame('error', $invalid['status']);
+        assertSame('invalid thread id', $invalid['error']);
     }
 
     public function testApplicationRendersCoreRoutes(): void

@@ -123,6 +123,69 @@ final class ForteBoardController
         );
     }
 
+    public function threadDetail(string $requestedThreadId, string $requestedCreatedPostId = ''): void
+    {
+        if (preg_match('/^[A-Za-z0-9._:-]+$/', $requestedThreadId) !== 1) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'invalid thread id'], 400);
+            return;
+        }
+
+        $thread = ThreadRepository::byId($this->routeServices->pdo(), $requestedThreadId);
+        if ($thread === null) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'thread not found'], 404);
+            return;
+        }
+
+        $highlightedPostId = preg_match('/^[A-Za-z0-9._:-]+$/', $requestedCreatedPostId) === 1
+            ? $requestedCreatedPostId
+            : '';
+
+        $this->routeServices->sendJson([
+            'status' => 'ok',
+            'html' => $this->renderThreadArticle($thread, $highlightedPostId),
+        ], 200);
+    }
+
+    /**
+     * @param array<string, mixed> $thread
+     */
+    private function renderThreadArticle(array $thread, string $requestedCreatedPostId = ''): string
+    {
+        $threadId = (string) $thread['root_post_id'];
+        $replyPosts = ThreadRepository::replyPostsByThreadId($this->routeServices->pdo(), $threadId);
+        $allPostIds = [$threadId];
+        $highlightedPostId = '';
+        foreach ($replyPosts as $replyPost) {
+            $postId = (string) $replyPost['post_id'];
+            $allPostIds[] = $postId;
+            if ($postId === $requestedCreatedPostId) {
+                $highlightedPostId = $postId;
+            }
+        }
+
+        $viewerProfile = ($this->resolveViewerProfile)();
+        $viewerIdentityId = $viewerProfile !== null ? (string) $viewerProfile['identity_id'] : '';
+        $viewerLikedThreadIds = $viewerProfile !== null
+            ? ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'like', $viewerIdentityId)
+            : [];
+        $viewerLikedPostIds = $viewerProfile !== null
+            ? ViewerTagLookup::postTags($this->repositoryRoot, $allPostIds, 'like', $viewerIdentityId)
+            : [];
+        $viewerFlaggedPostIds = $viewerProfile !== null
+            ? ViewerTagLookup::postTags($this->repositoryRoot, $allPostIds, 'flag', $viewerIdentityId)
+            : [];
+
+        return $this->routeServices->renderFragment('partials/paned_board_content_article.php', [
+            'thread' => $thread,
+            'replyTree' => $this->buildReplyTree($replyPosts),
+            'isSelectedThread' => true,
+            'viewerLikedThreadIds' => $viewerLikedThreadIds,
+            'viewerLikedPostIds' => $viewerLikedPostIds,
+            'viewerFlaggedPostIds' => $viewerFlaggedPostIds,
+            'highlightedPostId' => $highlightedPostId,
+        ]);
+    }
+
     /**
      * @param array<int, array<string, mixed>> $threads
      * @param array<int, array{tag: string, count: int, threads: array}> $tagGroups
