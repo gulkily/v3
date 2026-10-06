@@ -360,8 +360,12 @@ PHP;
             assertStringNotContains('href="/invites/" data-invite-navigation>Invite</a>', $board);
             assertStringContains('data-public-auth-resume="true"', $board);
             assertFingerprintedAsset($board, 'private_site_auth.js');
+            $themeToggleScript = strrpos($board, '/assets/theme_toggle.');
+            $openPgpLoaderScript = strrpos($board, '/assets/openpgp_loader.');
             assertTrue(
-                strpos($board, '/assets/theme_toggle.') < strpos($board, '/assets/openpgp_loader.'),
+                $themeToggleScript !== false
+                    && $openPgpLoaderScript !== false
+                    && $themeToggleScript < $openPgpLoaderScript,
                 'Theme controls must initialize before the OpenPGP loader.'
             );
         } finally {
