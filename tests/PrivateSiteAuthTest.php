@@ -319,6 +319,150 @@ NODE;
         assertSame(0, $result['fetchCount']);
     }
 
+    public function testUnapprovedPublicIdentityReturnsToRequestedPage(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const fingerprint = '0123456789abcdef0123456789abcdef01234567';
+let assignedUrl = '';
+let replacedUrl = '';
+let reloadCount = 0;
+const status = { hidden: true, textContent: '', dataset: {} };
+
+global.window = {
+  localStorage: {
+    getItem(key) {
+      return {
+        forum_pki_public_key: 'public-key',
+        forum_pki_private_key: 'private-key',
+        forum_pki_fingerprint: fingerprint
+      }[key] || '';
+    }
+  },
+  __forumOpenPgpLoader: { ready: Promise.resolve({}) },
+  __forumBrowserIdentity: { async ensureReadyIdentity() {} },
+  openpgp: {
+    async readKey() { return { getFingerprint() { return fingerprint; } }; },
+    async readPrivateKey() { return { getFingerprint() { return fingerprint; } }; },
+    async createMessage({ text }) { return { text }; },
+    async sign() { return 'detached-signature'; }
+  },
+  location: {
+    assign(url) { assignedUrl = url; },
+    replace(url) { replacedUrl = url; },
+    reload() { reloadCount += 1; }
+  }
+};
+global.document = {
+  documentElement: { dataset: { approvedMembersOnly: '0' } },
+  addEventListener(){},
+  querySelector(selector) {
+    if (selector === '[data-private-site-auth-state]') {
+      return { dataset: { publicAuthResume: 'true', authenticatedIdentityId: '' } };
+    }
+    if (selector === '[data-role="private-site-auth-status"]') return status;
+    return null;
+  }
+};
+global.fetch = async function(url) {
+  if (String(url) === '/api/auth_challenge') {
+    return { ok: true, async text() { return 'challenge=abcdef012345\n'; } };
+  }
+  return { ok: true, async text() { return 'status=ok\napproved=0\n'; } };
+};
+
+vm.runInThisContext(source);
+window.PrivateSiteAuth.authenticate({ returnTo: '/about/', replaceHistory: true })
+  .then((result) => process.stdout.write(JSON.stringify({ result, assignedUrl, replacedUrl, reloadCount, status })))
+  .catch((error) => {
+    process.stderr.write(error.stack || String(error));
+    process.exit(1);
+  });
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('authenticated', $result['result']['status']);
+        assertSame('', $result['assignedUrl']);
+        assertSame('/about/', $result['replacedUrl']);
+        assertSame(0, $result['reloadCount']);
+        assertSame('Identity verified.', $result['status']['textContent']);
+    }
+
+    public function testUnapprovedMembersOnlyIdentityStillEntersLobby(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const fingerprint = '0123456789abcdef0123456789abcdef01234567';
+let assignedUrl = '';
+let replacedUrl = '';
+let reloadCount = 0;
+const status = { hidden: true, textContent: '', dataset: {} };
+
+global.window = {
+  localStorage: {
+    getItem(key) {
+      return {
+        forum_pki_public_key: 'public-key',
+        forum_pki_private_key: 'private-key',
+        forum_pki_fingerprint: fingerprint
+      }[key] || '';
+    }
+  },
+  __forumOpenPgpLoader: { ready: Promise.resolve({}) },
+  __forumBrowserIdentity: { async ensureReadyIdentity() {} },
+  openpgp: {
+    async readKey() { return { getFingerprint() { return fingerprint; } }; },
+    async readPrivateKey() { return { getFingerprint() { return fingerprint; } }; },
+    async createMessage({ text }) { return { text }; },
+    async sign() { return 'detached-signature'; }
+  },
+  location: {
+    assign(url) { assignedUrl = url; },
+    replace(url) { replacedUrl = url; },
+    reload() { reloadCount += 1; }
+  }
+};
+global.document = {
+  documentElement: { dataset: { approvedMembersOnly: '1' } },
+  addEventListener(){},
+  querySelector(selector) {
+    if (selector === '[data-private-site-auth-state]') {
+      return { dataset: { authenticatedIdentityId: '' } };
+    }
+    if (selector === '[data-role="private-site-auth-status"]') return status;
+    return null;
+  }
+};
+global.fetch = async function(url) {
+  if (String(url) === '/api/auth_challenge') {
+    return { ok: true, async text() { return 'challenge=abcdef012345\n'; } };
+  }
+  return { ok: true, async text() { return 'status=ok\napproved=0\n'; } };
+};
+
+vm.runInThisContext(source);
+window.PrivateSiteAuth.authenticate({ returnTo: '/about/', replaceHistory: true })
+  .then((result) => process.stdout.write(JSON.stringify({ result, assignedUrl, replacedUrl, reloadCount, status })))
+  .catch((error) => {
+    process.stderr.write(error.stack || String(error));
+    process.exit(1);
+  });
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('pending', $result['result']['status']);
+        assertSame('', $result['assignedUrl']);
+        assertSame('/lobby/?return_to=%2Fabout%2F', $result['replacedUrl']);
+        assertSame(0, $result['reloadCount']);
+        assertSame('Identity verified. Approval is still pending.', $result['status']['textContent']);
+    }
+
     public function testAuthenticationFailureIsVisible(): void
     {
         $script = <<<'NODE'

@@ -152,4 +152,11 @@ shared authentication module.
 
 ## Status
 
-Investigation and fix plan complete. No application code has been changed.
+Resolved 2026-10-06. `private_site_auth.js` now reads the server-rendered
+`data-approved-members-only` flag before deciding how to handle a successful
+but unapproved identity authentication. Public deployments treat that outcome
+as successful identity verification and return to the requested destination;
+members-only deployments preserve the pending-approval Lobby redirect.
+
+`PrivateSiteAuthTest` covers both modes, including the public-resume history
+replacement path. Ready for UAT.
