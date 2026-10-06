@@ -50,3 +50,21 @@
   - `git diff --check`
 - Notes:
   - This removes the production memory-growth path before client-side cache/preload work: an initial request no longer constructs hidden pane HTML for other listed threads.
+
+## Stage 4 - Make selection load and bind a dynamic pane
+
+- Changes:
+  - Extended the Forte board reader to fetch and replace one selected article, preserve URL/history/keyboard selection behavior, reject stale responses, and offer retryable failure feedback without discarding the previous valid pane.
+  - Exposed an idempotent `ForumThreadReactions.bindWithin()` contract and used it for injected article roots.
+  - Added Node-harness coverage for selecting a thread and binding reactions on an injected pane; registered the test suite.
+- Verification:
+  - `php -l tests/ForteBoardReaderTest.php`
+  - `php tests/run.php ForteBoardReaderTest`
+  - `php tests/run.php LocalAppSmokeTest::testForteInitialPageOmitsUnselectedThreadContent`
+  - `php tests/run.php LocalAppSmokeTest::testForteThreadDetailApiRendersOneRequestedThread`
+  - `php tests/run.php LocalAppSmokeTest::testApplicationRendersCoreRoutes`
+  - `node --check public/assets/paned_board_reader.js`
+  - `node --check public/assets/thread_reactions.js`
+  - `git diff --check`
+- Notes:
+  - The compose panel remains outside the replaceable article. Cache and background preloading are intentionally deferred to Stage 5.

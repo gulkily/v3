@@ -11,7 +11,6 @@
     var rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
     var originalRowOrder = rows.slice();
     var placeholder = contentPane.querySelector("[data-paned-board-content-placeholder]");
-    var contentPosts = Array.prototype.slice.call(contentPane.querySelectorAll("[data-paned-board-content-post-id]"));
     var statusCount = document.querySelector("[data-paned-board-status-count]");
     var totalThreadCount = statusCount ? parseInt(statusCount.getAttribute("data-paned-board-total-count"), 10) : rows.length;
     var totalTagCount = statusCount ? parseInt(statusCount.getAttribute("data-paned-board-tag-count"), 10) : folderItems.length;
@@ -20,6 +19,103 @@
     var newButton = document.querySelector("[data-paned-board-new]");
     var newThreadDialog = document.querySelector("[data-paned-new-thread-dialog]");
     var newThreadCancelButton = document.querySelector("[data-paned-new-thread-cancel]");
+    var activeDetailRequest = 0;
+    var activeThreadId = "";
+
+    function contentArticle() {
+      return contentPane.querySelector("[data-paned-board-content-post-id]");
+    }
+
+    function detailStatus() {
+      return contentPane.querySelector("[data-paned-board-detail-status]");
+    }
+
+    function setDetailStatus(message, retry) {
+      var existing = detailStatus();
+      var html = '<p class="meta" data-paned-board-detail-status>' + message + (retry ? ' <button type="button" data-paned-board-retry>Retry</button>' : '') + '</p>';
+      if (existing) {
+        existing.outerHTML = html;
+      } else if (composePanel) {
+        composePanel.insertAdjacentHTML("beforebegin", html);
+      } else {
+        contentPane.insertAdjacentHTML("beforeend", html);
+      }
+    }
+
+    function clearDetailStatus() {
+      var status = detailStatus();
+      if (status) {
+        status.remove();
+      }
+    }
+
+    function insertContentArticle(html) {
+      var existing = contentArticle();
+      if (existing) {
+        existing.outerHTML = html;
+      } else if (composePanel) {
+        composePanel.insertAdjacentHTML("beforebegin", html);
+      } else {
+        contentPane.insertAdjacentHTML("beforeend", html);
+      }
+
+      var article = contentArticle();
+      if (article && window.ForumThreadReactions && typeof window.ForumThreadReactions.bindWithin === "function") {
+        window.ForumThreadReactions.bindWithin(article);
+      }
+      return article;
+    }
+
+    function showDetailFailure(threadId) {
+      var article = contentArticle();
+      if (article && article.getAttribute("data-paned-board-content-post-id") !== threadId) {
+        setDetailStatus("Failed to load this thread.", true);
+        return;
+      }
+
+      insertContentArticle(
+        '<article class="paned-content-post" data-paned-board-content-post-id="' + threadId + '"><p class="meta">Failed to load this thread. <button type="button" data-paned-board-retry>Retry</button></p></article>'
+      );
+    }
+
+    function loadThread(threadId, createdPostId) {
+      var requestId = ++activeDetailRequest;
+      var article = contentArticle();
+      if (article) {
+        setDetailStatus("Loading thread…", false);
+      } else {
+        insertContentArticle(
+          '<article class="paned-content-post" data-paned-board-content-post-id="' + threadId + '"><p class="meta">Loading thread…</p></article>'
+        );
+      }
+
+      var params = new URLSearchParams();
+      params.set("thread_id", threadId);
+      if (createdPostId) {
+        params.set("created_post_id", createdPostId);
+      }
+      fetch("/api/forte_thread_detail?" + params.toString())
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("thread detail fetch failed");
+          }
+          return response.json();
+        })
+        .then(function (data) {
+          if (data.status !== "ok" || typeof data.html !== "string") {
+            throw new Error("thread detail fetch failed");
+          }
+          if (requestId === activeDetailRequest && currentSelectedThreadId() === threadId) {
+            insertContentArticle(data.html);
+            clearDetailStatus();
+          }
+        })
+        .catch(function () {
+          if (requestId === activeDetailRequest && currentSelectedThreadId() === threadId) {
+            showDetailFailure(threadId);
+          }
+        });
+    }
 
     function currentTagFromUrl() {
       return new URLSearchParams(location.search).get("tag") || "";
@@ -29,7 +125,7 @@
       var selectedRow = rows.filter(function (row) {
         return row.classList.contains("paned-list-row--selected");
       })[0];
-      return selectedRow ? selectedRow.getAttribute("data-paned-thread-id") : "";
+      return selectedRow ? selectedRow.getAttribute("data-paned-thread-id") : activeThreadId;
     }
 
     function composeReturnToUrl(threadId) {
@@ -73,9 +169,13 @@
     }
 
     function resetContentPane() {
-      contentPosts.forEach(function (article) {
-        article.hidden = true;
-      });
+      activeDetailRequest++;
+      activeThreadId = "";
+      var article = contentArticle();
+      if (article) {
+        article.remove();
+      }
+      clearDetailStatus();
       rows.forEach(function (row) {
         row.classList.remove("paned-list-row--selected");
         row.setAttribute("aria-selected", "false");
@@ -103,14 +203,12 @@
       });
     }
 
-    function selectThread(threadId) {
+    function selectThread(threadId, createdPostId) {
+      activeThreadId = threadId;
       clearHighlights();
       if (placeholder) {
         placeholder.hidden = true;
       }
-      contentPosts.forEach(function (article) {
-        article.hidden = article.getAttribute("data-paned-board-content-post-id") !== threadId;
-      });
       rows.forEach(function (row) {
         var isSelected = row.getAttribute("data-paned-thread-id") === threadId;
         row.classList.toggle("paned-list-row--selected", isSelected);
@@ -121,6 +219,11 @@
         replyButton.disabled = false;
       }
       setComposeTarget(threadId);
+
+      var article = contentArticle();
+      if (!article || article.getAttribute("data-paned-board-content-post-id") !== threadId) {
+        loadThread(threadId, createdPostId || "");
+      }
     }
 
     function restoreSelectionFromUrl(scrollRowIntoView) {
@@ -139,16 +242,17 @@
       // server still rendered its content article when linked to directly
       // (see fetchThreadById()) - fall back to that article before giving
       // up; it just has no row to highlight or scroll into view.
-      var selectedPost = selectedRow || selected === "" ? null : contentPosts.filter(function (post) {
-        return post.getAttribute("data-paned-board-content-post-id") === selected;
-      })[0];
+      var article = contentArticle();
+      var selectedPost = selectedRow || selected === "" || !article || article.getAttribute("data-paned-board-content-post-id") !== selected
+        ? null
+        : article;
 
       if (!selectedRow && !selectedPost) {
         resetContentPane();
         return;
       }
 
-      selectThread(selected);
+      selectThread(selected, createdPostId);
       if (selectedRow && scrollRowIntoView) {
         selectedRow.scrollIntoView({ block: "nearest" });
       }
@@ -344,6 +448,13 @@
         var threadId = row.getAttribute("data-paned-thread-id");
         selectThread(threadId);
         syncSelectionUrlForClick(threadId);
+      }
+    });
+
+    contentPane.addEventListener("click", function (event) {
+      var retry = event.target.closest ? event.target.closest("[data-paned-board-retry]") : null;
+      if (retry) {
+        loadThread(currentSelectedThreadId(), "");
       }
     });
 
