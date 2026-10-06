@@ -39,3 +39,41 @@
   - `git diff --check` passed.
 - Notes:
   - Dedicated QDB welcome/random/search/add pages remain for Stage 4; navigation, footer, and card-template isolation remain for Stage 5.
+
+## Stage 4 - Dedicated QDB surfaces
+
+- Changes:
+  - Moved QDB welcome, random, search, and Add Quote rendering into `QdbExperience`.
+  - Reused the existing shared page renderer, browser-signing scripts, read model, and QDB reaction policy.
+- Verification:
+  - `php -l src/ForumRewrite/Qdb/QdbExperience.php`
+  - `php -l src/ForumRewrite/Application.php`
+  - `php tests/run.php QdbExperienceRoutingTest QuoteCardDisplayNumberTest` — 11 passed.
+  - `git diff --check` passed.
+- Notes:
+  - Generic legacy helpers are now unused and will be removed alongside chrome/card selection in Stage 5.
+
+## Stage 5 - QDB presentation slots
+
+- Changes:
+  - Added named QDB navigation and footer presentation assets.
+  - Replaced generic QDB card/footer branches with policy-selected board-card and footer slots.
+  - Replaced the template renderer's direct QDB navigation branch with enabled-experience selection.
+- Verification:
+  - `php -l` passed for QDB presentation, board controller, and template renderer.
+  - `php tests/run.php QdbExperienceRoutingTest QuoteCardDisplayNumberTest` — 11 passed.
+  - `git diff --check` passed.
+- Notes:
+  - Generic page/layout rendering remains shared; QDB supplies only registered presentation choices.
+
+## Stage 6 - Regression contract and release handoff
+
+- Changes:
+  - Added focused QDB quote-number, route, board-policy, card, and write coverage to the runner.
+  - Marked the completed P1 checklist items after the three-profile route matrix passed.
+- Verification:
+  - `php tests/run.php QdbQuoteNumbersTest QdbExperienceRoutingTest QdbBoardPolicyTest QuoteCardDisplayNumberTest WriteApiSmokeTest` — 130 passed.
+  - `php tests/run.php` — the same three pre-existing failures recorded before P1 remain: the two pending-shell `BrowserSigningNormalizationTest` cases and `LocalAppSmokeTest::testAnonymousPublicBoardDoesNotStartViewerSession`.
+  - `git diff --check` passed.
+- Notes:
+  - Deployed QDB route-matrix verification remains an operator release check; no deployment configuration changed in P1.
