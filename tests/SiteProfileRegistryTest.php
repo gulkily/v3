@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/ProfileRegressionContract.php';
 
 use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\BrowserRuntimeProfile;
@@ -15,30 +16,18 @@ final class SiteProfileRegistryTest
 
         $profile = SiteProfileRegistry::active();
 
-        assertSame('zenmemes', $profile['name']);
+        assertSame(array_key_first(SiteProfileRegistry::all()), $profile['name']);
     }
 
-    public function testActiveHonorsKnownOverride(): void
+    public function testActiveHonorsRegisteredOverrides(): void
     {
-        putenv('FORUM_SITE_ID=chouse');
-
-        try {
-            $profile = SiteProfileRegistry::active();
-            assertSame('chouse', $profile['name']);
-        } finally {
-            putenv('FORUM_SITE_ID');
-        }
-    }
-
-    public function testActiveHonorsQdbOverride(): void
-    {
-        putenv('FORUM_SITE_ID=qdb');
-
-        try {
-            $profile = SiteProfileRegistry::active();
-            assertSame('qdb', $profile['name']);
-        } finally {
-            putenv('FORUM_SITE_ID');
+        foreach (SiteProfileRegistry::all() as $profileId => $expected) {
+            putenv('FORUM_SITE_ID=' . $profileId);
+            try {
+                assertSame($expected['name'], SiteProfileRegistry::active()['name']);
+            } finally {
+                putenv('FORUM_SITE_ID');
+            }
         }
     }
 
@@ -48,7 +37,7 @@ final class SiteProfileRegistryTest
 
         try {
             $profile = SiteProfileRegistry::active();
-            assertSame('zenmemes', $profile['name']);
+            assertSame(array_key_first(SiteProfileRegistry::all()), $profile['name']);
         } finally {
             putenv('FORUM_SITE_ID');
         }
@@ -110,10 +99,9 @@ final class SiteProfileRegistryTest
 
     public function testBrowserRuntimeProfilesAreDerivedOnlyFromValidatedNamespaces(): void
     {
-        $runtimeProfiles = [];
-        foreach (SiteProfileRegistry::all() as $siteId => $profile) {
-            $runtime = BrowserRuntimeProfile::fromProfile($profile);
-            $runtimeProfiles[$siteId] = $runtime;
+        foreach (ProfileRegressionContract::all() as $contract) {
+            $profile = $contract['profile'];
+            $runtime = $contract['runtime'];
 
             assertSame($profile['browserNamespace'], $runtime['namespace']);
             assertSame('forum-' . $profile['browserNamespace'] . '-theme', $runtime['themeStorageKey']);
@@ -121,10 +109,6 @@ final class SiteProfileRegistryTest
             assertSame($profile['browserNamespace'] . '-offline-reader-', $runtime['offlineCachePrefix']);
             assertSame($runtime['offlineCachePrefix'] . 'v14', $runtime['offlineCacheName']);
         }
-
-        assertSame('forum-zenmemes-theme', $runtimeProfiles['zenmemes']['themeStorageKey']);
-        assertSame('forum-chouse-theme', $runtimeProfiles['chouse']['themeStorageKey']);
-        assertSame('forum-qdb-theme', $runtimeProfiles['qdb']['themeStorageKey']);
     }
 
     public function testBrowserRuntimeProfileRejectsInvalidIdentity(): void

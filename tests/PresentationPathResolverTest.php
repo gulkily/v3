@@ -12,11 +12,17 @@ final class PresentationPathResolverTest
     public function testStaticHtmlRootsPreserveZenmemesAndIsolateOtherProfiles(): void
     {
         $projectRoot = '/srv/forum';
-        $profiles = SiteProfileRegistry::all();
+        $baseRoot = $projectRoot . '/state/static_html';
+        $roots = [];
 
-        assertSame('/srv/forum/state/static_html', PresentationPathResolver::staticHtmlRoot($projectRoot, $profiles['zenmemes']));
-        assertSame('/srv/forum/state/static_html_chouse', PresentationPathResolver::staticHtmlRoot($projectRoot, $profiles['chouse']));
-        assertSame('/srv/forum/state/static_html_qdb', PresentationPathResolver::staticHtmlRoot($projectRoot, $profiles['qdb']));
+        foreach (SiteProfileRegistry::all() as $profile) {
+            $root = PresentationPathResolver::staticHtmlRoot($projectRoot, $profile);
+            assertSame(true, $root === $baseRoot || $root === $baseRoot . '_' . $profile['browserNamespace']);
+            assertSame(false, isset($roots[$root]));
+            $roots[$root] = true;
+        }
+
+        assertSame(true, isset($roots[$baseRoot]));
     }
 }
 

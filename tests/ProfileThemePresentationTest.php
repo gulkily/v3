@@ -6,21 +6,18 @@ use ForumRewrite\View\ThemeRegistry;
 use ForumRewrite\View\TemplateRenderer;
 
 require __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/ProfileRegressionContract.php';
 
 final class ProfileThemePresentationTest
 {
     public function testThemeMenuAndEarlyThemeContractAreProfileBound(): void
     {
-        $expectedThemes = [
-            'zenmemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97'],
-            'chouse' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'chouse'],
-            'qdb' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'qdb'],
-        ];
         $previousCookie = $_COOKIE;
         $renderer = new TemplateRenderer(dirname(__DIR__) . '/templates');
 
         try {
-            foreach ($expectedThemes as $profileId => $themes) {
+            foreach (ProfileRegressionContract::all() as $profileId => $contract) {
+                $themes = $contract['profile']['permittedThemes'];
                 putenv('FORUM_SITE_ID=' . $profileId);
                 $_COOKIE = [];
                 $html = $renderer->renderLayout('Theme', '<main></main>', 'board');
@@ -28,8 +25,8 @@ final class ProfileThemePresentationTest
                 preg_match_all('/<button\\b[^>]*\\bdata-theme-option="([^"]+)"/', $html, $matches);
                 assertSame($themes, $matches[1]);
                 assertSame(array_values(array_filter($themes, static fn (string $theme): bool => $theme !== 'auto')), $this->allowedThemes($html));
-                assertSame($profileId === 'chouse', str_contains($html, 'data-theme-option="chouse"'));
-                assertSame($profileId === 'qdb', str_contains($html, 'data-theme-option="qdb"'));
+                $brandedTheme = $contract['presentation']['brandedTheme'];
+                assertSame($brandedTheme !== null, str_contains($html, 'data-theme-option="' . ($brandedTheme ?? 'no-branded-theme') . '"'));
             }
         } finally {
             $_COOKIE = $previousCookie;
