@@ -106,7 +106,6 @@ final class QuoteCardDisplayNumberTest
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
             $surfaces = [
-                $this->render($application, '/'),
                 $this->render($application, '/latest'),
                 $this->render($application, '/top'),
                 $this->render($application, '/leetness'),
@@ -122,7 +121,56 @@ final class QuoteCardDisplayNumberTest
             assertStringContains('42', $surface);
             assertStringNotContains('root-001', $surface);
         }
-        assertStringContains('1 quote so far', $surfaces[0]);
+    }
+
+    public function testQdbWelcomeDisplaysThreeNewestNewsItemsAndLinksToAllNews(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeNews($repositoryRoot, [
+            ['news-oldest', '2026-10-01T12:00:00Z', 'Oldest news', 'Oldest body.'],
+            ['news-older', '2026-10-02T12:00:00Z', 'Older news', 'Older body.'],
+            ['news-titleless', '2026-10-03T12:00:00Z', '', "Titleless news headline\nMore detail."],
+            ['news-newest', '2026-10-04T12:00:00Z', 'Newest news', 'Newest body.'],
+        ]);
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $welcome = $this->render($application, '/');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertStringContains('<h2>Site News</h2>', $welcome);
+        assertStringNotContains('Recent activity', $welcome);
+        assertSame(3, substr_count($welcome, 'href="/threads/news-'));
+        assertStringContains('href="/threads/news-newest">Newest news</a>', $welcome);
+        assertStringContains('href="/threads/news-titleless">Titleless news headline</a>', $welcome);
+        assertStringContains('href="/threads/news-older">Older news</a>', $welcome);
+        assertStringNotContains('news-oldest', $welcome);
+        assertStringContains('<time datetime="2026-10-04T12:00:00Z">Oct 4, 2026 at 12:00 UTC</time>', $welcome);
+        assertStringContains('href="/tags/news">All news</a>', $welcome);
+        assertTrue(
+            strpos($welcome, 'Newest news') < strpos($welcome, 'Titleless news headline')
+            && strpos($welcome, 'Titleless news headline') < strpos($welcome, 'Older news')
+        );
+    }
+
+    public function testQdbWelcomeShowsAnEmptySiteNewsState(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $welcome = $this->render($application, '/');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertStringContains('<h2>Site News</h2>', $welcome);
+        assertStringContains('No site news yet.', $welcome);
+        assertStringNotContains('href="/tags/news">All news</a>', $welcome);
     }
 
     public function testQdbDirectLegacyThreadPermalinkRemainsAvailable(): void
@@ -311,6 +359,24 @@ final class QuoteCardDisplayNumberTest
         );
         $this->runCommand($repositoryRoot, 'git add .');
         $this->runCommand($repositoryRoot, 'git commit -m "Add imported quote fixture"');
+    }
+
+    /** @param array<int, array{string,string,string,string}> $news */
+    private function writeNews(string $repositoryRoot, array $news): void
+    {
+        foreach ($news as [$postId, $createdAt, $subject, $body]) {
+            file_put_contents(
+                $repositoryRoot . '/records/posts/' . $postId . '.txt',
+                "Post-ID: {$postId}\n"
+                . "Created-At: {$createdAt}\n"
+                . "Board-Tags: news\n"
+                . ($subject === '' ? '' : "Subject: {$subject}\n")
+                . "\n{$body}\n"
+            );
+        }
+
+        $this->runCommand($repositoryRoot, 'git add .');
+        $this->runCommand($repositoryRoot, 'git commit -m "Add news fixtures"');
     }
 
     /**

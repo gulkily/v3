@@ -13,3 +13,15 @@
   - `git diff --check` — passed.
 - Notes:
   - No database, route, API, or generic board behavior changed.
+
+## Stage 2 - Site News presentation
+
+- Changes:
+  - Replaced the QDB Welcome “Recent activity” list with Site News title/date links, an empty state, and a conditional `/tags/news` continuation.
+  - Added QDB Welcome coverage for a non-quote four-item news collection, three-item cap, authored-date order, title fallback, and the all-news link.
+  - Updated the quote-collection regression to exclude Welcome, which is now a news surface rather than a quote collection.
+- Verification:
+  - `php tests/run.php QuoteCardDisplayNumberTest` — 18 passed, 0 failed.
+  - `git diff --check` — passed.
+- Notes:
+  - No new route or presentation-specific title/date formatter was introduced.

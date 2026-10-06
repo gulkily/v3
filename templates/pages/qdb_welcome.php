@@ -16,15 +16,18 @@
       </div>
       <div class="qdb-welcome-divider"></div>
       <div class="qdb-welcome-recent">
-        <h2>Recent activity</h2>
-<?php if ($recentThreads === []): ?>
-        <p class="meta">No quotes yet.</p>
+        <h2>Site News</h2>
+<?php if ($newsThreads === []): ?>
+        <p class="meta">No site news yet.</p>
 <?php else: ?>
         <ul>
-<?php foreach ($recentThreads as $thread): ?>
-          <li><a href="/threads/<?= $e($thread['root_post_id']) ?>">#<?= $e($thread['root_post_id']) ?></a> <?= $e(mb_strimwidth((string) $thread['body_preview'], 0, 60, '...')) ?></li>
+<?php foreach ($newsThreads as $thread): ?>
+          <li><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($threadTitle($thread)) ?></a> <span class="meta"><?= $contentMeta($thread, 'root_post_created_at', '') ?></span></li>
 <?php endforeach; ?>
         </ul>
+<?php if ($hasMoreNews): ?>
+        <p class="meta"><a href="/tags/news">All news</a></p>
+<?php endif; ?>
 <?php endif; ?>
       </div>
     </div>
