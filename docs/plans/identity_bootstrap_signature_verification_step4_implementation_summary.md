@@ -37,3 +37,15 @@
   - `git diff --check` — passed.
 - Notes:
   - The immediate retry predicate, attempt count, signing sequence, and manual-key fallback are unchanged; this slice only makes the attempts observable and reportable.
+
+## Stage 4 - Automated coverage and staging procedure
+- Changes:
+  - Added the staging diagnostic procedure to the existing OpenPGP release runbook: run the read-only smoke probe, then use separate fresh HTTP/v5 and HTTPS/v6 browser profiles and join any failure by its safe attempt ID.
+  - Reused the existing verifier, diagnostic, browser-flow, loader-selection, and live-asset probe tests; no new deployment or write command was introduced.
+- Verification:
+  - `php tests/run.php IdentityBootstrapDiagnosticsTest OpenPgpKeyInspectorTest OpenPgpLoaderTest OpenPgpAssetSmokeProbeTest BrowserSigningNormalizationTest` — 82 run, 80 passed.
+  - `git diff --check` — passed.
+  - Staging browser smoke: not run. No staging hostname or external write authorization was provided.
+- Notes:
+  - The remaining two browser-suite failures are long-standing pending-shell failures (`testThreadSubmitRendersPendingShellBeforeApiResponseAndNavigatesOnSuccess` and `testInlineReplySubmitRendersPendingCardBeforeApiResponseAndNavigatesOnSuccess`), each recorded by the runner before this slice and unrelated to identity bootstrap.
+  - A fresh-browser staging run on both origins is still required before release; it is an external verification gate, not a reason to change retry behavior.
