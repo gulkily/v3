@@ -24,6 +24,7 @@
 - Verification:
   - `node --check public/assets/pending_approvals.js` — passed.
   - `php tests/run.php WriteApiSmokeTest::testUserDirectoryShowsOnlyApprovedUsersAndPendingDirectoryRequiresApprovedViewer WriteApiSmokeTest::testPendingDirectoryRendersLaterActivityWithReadingFriendlyTimestampAndFallback WriteApiSmokeTest::testPendingDirectoryProfilesIncludeBootstrapActivitySummary WriteApiSmokeTest::testPendingDirectoryProfilesPreferLaterActivityAndHandleMissingActivity` — 4 passed.
+  - `php tests/run.php WriteApiSmokeTest` — 126 passed.
   - `git diff --check` — passed.
 - Notes:
   - No migration, deployment, or external-service verification applies; the route remains approved-viewer-only and the server remains authoritative for approval.
