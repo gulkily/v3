@@ -352,7 +352,12 @@ final class Application
 
         if ($path === '/' || $path === '' || $path === '/threads/' || $path === '/threads') {
             if (($query['format'] ?? null) === 'rss') {
-                $this->sendXml($this->boardPageController()->rss(), 200);
+                $this->sendXml(
+                    $this->qdbExperience()->isEnabled()
+                        ? $this->qdbExperience()->rss()
+                        : $this->boardPageController()->rss(),
+                    200,
+                );
                 return;
             }
 

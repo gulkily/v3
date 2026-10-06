@@ -23,3 +23,14 @@
   - `git diff --check` — passed.
 - Notes:
   - Generic boards do not receive the QDB policy and retain their existing roots.
+
+## Stage 3 - QDB collections and RSS
+
+- Changes:
+  - Applied the shared QDB policy to welcome, random, search, and board RSS.
+  - Routed QDB RSS through its selected experience policy while retaining generic RSS behavior for other profiles.
+- Verification:
+  - `php tests/run.php QdbExperienceRoutingTest QdbBoardPolicyTest QuoteCardDisplayNumberTest` — 19 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - All QDB reader-facing collections now source their roots from the same eligibility contract.

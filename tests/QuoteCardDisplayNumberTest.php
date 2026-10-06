@@ -97,6 +97,34 @@ final class QuoteCardDisplayNumberTest
         assertStringContains('1 quote', $board);
     }
 
+    public function testQdbCollectionSurfacesExcludeThreadsWithoutQuoteIds(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $surfaces = [
+                $this->render($application, '/'),
+                $this->render($application, '/latest'),
+                $this->render($application, '/top'),
+                $this->render($application, '/leetness'),
+                $this->render($application, '/random'),
+                $this->render($application, '/search?search=body'),
+                $this->render($application, '/?format=rss'),
+            ];
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        foreach ($surfaces as $surface) {
+            assertStringContains('42', $surface);
+            assertStringNotContains('root-001', $surface);
+        }
+        assertStringContains('1 quote so far', $surfaces[0]);
+    }
+
     public function testFollowingTheShortNumericPermalinkReachesTheUnchangedQuotePage(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();

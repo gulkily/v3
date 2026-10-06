@@ -182,10 +182,14 @@ final class BoardPageController
         ];
     }
 
-    public function rss(): string
+    public function rss(?QdbBoardPolicy $qdbPolicy = null): string
     {
         $items = [];
-        foreach (ThreadRepository::fetchThreads($this->routeServices->pdo()) as $thread) {
+        $threads = ThreadRepository::fetchThreads($this->routeServices->pdo());
+        if ($qdbPolicy !== null) {
+            $threads = $qdbPolicy->eligibleQuotes($threads);
+        }
+        foreach ($threads as $thread) {
             $title = $this->displayThreadTitle($thread);
             $items[] = RssFeed::item($title, '/threads/' . $thread['root_post_id'], $thread['body_preview'], (string) $thread['last_activity_at']);
         }

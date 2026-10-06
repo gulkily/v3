@@ -31,6 +31,11 @@ final class QdbExperience
         return $this->isEnabled() && $this->isPrimaryRoutePath($path);
     }
 
+    public function isEnabled(): bool
+    {
+        return in_array('qdb', SiteProfileRegistry::active()['enabledExperienceKeys'], true);
+    }
+
     /**
      * @param array<string, mixed> $query
      */
@@ -131,17 +136,17 @@ final class QdbExperience
         return false;
     }
 
-    private function isEnabled(): bool
+    public function rss(): string
     {
-        return in_array('qdb', SiteProfileRegistry::active()['enabledExperienceKeys'], true);
+        return $this->boardPages->rss($this->boardPolicy);
     }
 
     private function welcome(): string
     {
-        $threads = ThreadRepository::fetchThreads($this->pdo);
+        $threads = $this->eligibleQuotes();
 
         return $this->routeServices->renderPageTemplate('qdb_welcome.php', [
-            'qdbQuoteCount' => count($threads),
+            'qdbQuoteCount' => $this->boardPolicy->quoteCount($threads),
             'recentThreads' => array_slice($threads, 0, 5),
         ], 'Welcome', 'welcome');
     }
@@ -167,7 +172,7 @@ final class QdbExperience
 
     private function random(): string
     {
-        $threads = ThreadRepository::fetchThreads($this->pdo);
+        $threads = $this->eligibleQuotes();
         shuffle($threads);
         $threads = array_slice($threads, 0, 10);
 
@@ -178,7 +183,7 @@ final class QdbExperience
     {
         $term = trim($term);
         $threads = $term === '' ? [] : array_values(array_filter(
-            ThreadRepository::fetchThreads($this->pdo),
+            $this->eligibleQuotes(),
             static fn (array $thread): bool => stripos((string) $thread['root_post_body'], $term) !== false,
         ));
 
@@ -195,6 +200,12 @@ final class QdbExperience
         return $this->routeServices->renderPageTemplate($template, $data + [
             'viewerUpvotedThreadIds' => $reactions['upvoted'], 'viewerDownvotedThreadIds' => $reactions['downvoted'], 'viewerFlaggedPostIds' => $reactions['flagged'],
         ], $title, $section, ['/assets/thread_reactions.js']);
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function eligibleQuotes(): array
+    {
+        return $this->boardPolicy->eligibleQuotes(ThreadRepository::fetchThreads($this->pdo));
     }
 
     private function isPrimaryRoutePath(string $path): bool
