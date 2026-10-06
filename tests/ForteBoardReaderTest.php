@@ -126,12 +126,59 @@ global.document = { addEventListener(name, listener) { documentListeners[name] =
 vm.runInThisContext(source);
 window.ForumThreadReactions.bindWithin(article);
 window.ForumThreadReactions.bindWithin(article);
-process.stdout.write(JSON.stringify({ threadBound: article.getAttribute("data-thread-reactions-bound"), postBound: post.getAttribute("data-post-reactions-bound"), threadListeners: article.listenerCount(), postListeners: post.listenerCount() }));
+process.stdout.write(JSON.stringify({ threadListeners: article.listenerCount(), postListeners: post.listenerCount() }));
 NODE);
 
-        assertSame('1', $result['threadBound']);
-        assertSame('1', $result['postBound']);
         assertSame(1, $result['threadListeners']);
         assertSame(1, $result['postListeners']);
+    }
+
+    public function testPaneCacheUsesByteBoundedLruEviction(): void
+    {
+        $result = $this->runScript('paned_board_reader.js', <<<'NODE'
+const fs = require("fs");
+const vm = require("vm");
+const source = fs.readFileSync(process.argv[1], "utf8");
+const documentListeners = {};
+function element() {
+  return {
+    hidden: false,
+    classList: { contains() { return false; }, toggle() {}, remove() {} },
+    getAttribute() { return null; }, setAttribute() {}, addEventListener() {},
+    querySelector() { return null; }, querySelectorAll() { return []; }, insertAdjacentHTML() {}
+  };
+}
+const folderTree = element();
+const listBody = element();
+const contentPane = element();
+global.window = { location: { pathname: "/forte", search: "" }, addEventListener() {}, setTimeout() {} };
+global.location = window.location;
+global.history = { pushState() {}, replaceState() {} };
+global.document = {
+  addEventListener(name, listener) { documentListeners[name] = listener; },
+  querySelector(selector) {
+    if (selector === "[data-paned-folder-tree]") return folderTree;
+    if (selector === "[data-paned-board-list-body]") return listBody;
+    if (selector === "[data-paned-board-content-pane]") return contentPane;
+    return null;
+  }
+};
+vm.runInThisContext(source);
+documentListeners.DOMContentLoaded();
+const cache = window.ForteBoardReader.createPaneCache(2, 12);
+cache.set("alpha", "aaa", "alpha");
+cache.set("beta", "bbb", "alpha");
+cache.get("alpha");
+cache.set("gamma", "ccc", "alpha");
+const oversized = cache.set("large", "1234567", "alpha");
+process.stdout.write(JSON.stringify({ alpha: cache.get("alpha"), beta: cache.get("beta"), gamma: cache.get("gamma"), oversized, snapshot: cache.snapshot() }));
+NODE);
+
+        assertSame('aaa', $result['alpha']);
+        assertSame(null, $result['beta']);
+        assertSame('ccc', $result['gamma']);
+        assertSame(false, $result['oversized']);
+        assertSame(2, $result['snapshot']['count']);
+        assertSame(12, $result['snapshot']['bytes']);
     }
 }

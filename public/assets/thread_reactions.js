@@ -1,6 +1,8 @@
 (function () {
   let actionTimingSequence = 0;
   const pendingReactionOperations = new Set();
+  const boundThreadRoots = new WeakSet();
+  const boundPostRoots = new WeakSet();
 
   function browserPerformance() {
     return typeof window !== "undefined" && window.performance && typeof window.performance.mark === "function"
@@ -283,6 +285,13 @@
     button.setAttribute("aria-pressed", "true");
   }
 
+  function notifyReactionApplied() {
+    if (typeof document.dispatchEvent !== "function" || typeof Event !== "function") {
+      return;
+    }
+    document.dispatchEvent(new Event("forum:thread-reaction-applied"));
+  }
+
   function threadScoreFormat(scoreNode) {
     if (!scoreNode || typeof scoreNode.getAttribute !== "function") {
       return "labeled";
@@ -467,10 +476,10 @@
   }
 
   function bindThreadReactions(root) {
-    if (root.getAttribute("data-thread-reactions-bound") === "1") {
+    if (boundThreadRoots.has(root)) {
       return;
     }
-    root.setAttribute("data-thread-reactions-bound", "1");
+    boundThreadRoots.add(root);
     const threadId = root.getAttribute("data-thread-id") || "";
     const scoreNode = root.querySelector('[data-role="thread-score"]');
     const feedbackNode = root.querySelector('[data-role="thread-reaction-feedback"]');
@@ -524,6 +533,7 @@
         setThreadScore(scoreNode, scoreTotal, voteCount);
 
         setConfirmedReactionButton(button, appliedLabel);
+        notifyReactionApplied();
 
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
@@ -554,10 +564,10 @@
   }
 
   function bindPostReactions(root) {
-    if (root.getAttribute("data-post-reactions-bound") === "1") {
+    if (boundPostRoots.has(root)) {
       return;
     }
-    root.setAttribute("data-post-reactions-bound", "1");
+    boundPostRoots.add(root);
     const postId = root.getAttribute("data-post-id") || "";
     const feedbackNode = root.querySelector('[data-role="post-reaction-feedback"]');
 
@@ -606,6 +616,7 @@
         const isHidden = parseResponseValue(text, "is_hidden") === "yes";
 
         setConfirmedReactionButton(button, appliedLabel);
+        notifyReactionApplied();
 
         if (isHidden) {
           root.hidden = true;

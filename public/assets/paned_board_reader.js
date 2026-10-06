@@ -21,6 +21,12 @@
     var newThreadCancelButton = document.querySelector("[data-paned-new-thread-cancel]");
     var activeDetailRequest = 0;
     var activeThreadId = "";
+    var preloadQueue = [];
+    var preloadInFlight = false;
+    var preloadScheduled = false;
+    var maxCachedPanes = 24;
+    var maxCachedBytes = 4 * 1024 * 1024;
+    var paneCache = createPaneCache(maxCachedPanes, maxCachedBytes);
 
     function contentArticle() {
       return contentPane.querySelector("[data-paned-board-content-post-id]");
@@ -46,6 +52,156 @@
       var status = detailStatus();
       if (status) {
         status.remove();
+      }
+    }
+
+    function htmlBytes(html) {
+      return String(html).length * 2;
+    }
+
+    function createPaneCache(maxEntries, maxBytes) {
+      var entries = {};
+      var order = [];
+      var bytes = 0;
+
+      function remove(threadId) {
+        if (!Object.prototype.hasOwnProperty.call(entries, threadId)) {
+          return;
+        }
+        bytes -= entries[threadId].bytes;
+        delete entries[threadId];
+        order = order.filter(function (id) { return id !== threadId; });
+      }
+
+      function evict(excludedThreadId) {
+        var candidate = order.filter(function (id) { return id !== excludedThreadId; })[0];
+        if (!candidate) {
+          return false;
+        }
+        remove(candidate);
+        return true;
+      }
+
+      return {
+        get: function (threadId) {
+          if (!Object.prototype.hasOwnProperty.call(entries, threadId)) {
+            return null;
+          }
+          order = order.filter(function (id) { return id !== threadId; });
+          order.push(threadId);
+          return entries[threadId].html;
+        },
+        set: function (threadId, html, excludedThreadId) {
+          var paneBytes = htmlBytes(html);
+          if (paneBytes > maxBytes) {
+            return false;
+          }
+          remove(threadId);
+          while ((order.length >= maxEntries || bytes + paneBytes > maxBytes) && evict(excludedThreadId)) {
+          }
+          if (order.length >= maxEntries || bytes + paneBytes > maxBytes) {
+            return false;
+          }
+          entries[threadId] = { html: html, bytes: paneBytes };
+          order.push(threadId);
+          bytes += paneBytes;
+          return true;
+        },
+        clear: function () {
+          entries = {};
+          order = [];
+          bytes = 0;
+        },
+        snapshot: function () {
+          return { count: order.length, bytes: bytes, order: order.slice() };
+        }
+      };
+    }
+
+    function cachedPane(threadId) {
+      return paneCache.get(threadId);
+    }
+
+    function cachePane(threadId, html) {
+      paneCache.set(threadId, html, currentSelectedThreadId());
+    }
+
+    function clearPaneCache() {
+      paneCache.clear();
+    }
+
+    window.ForteBoardReader = { createPaneCache: createPaneCache };
+
+    function preloadCandidates() {
+      var selectedThreadId = currentSelectedThreadId();
+      var visible = rows.filter(function (row) { return !row.hidden; });
+      var index = visible.findIndex(function (row) {
+        return row.getAttribute("data-paned-thread-id") === selectedThreadId;
+      });
+      if (index === -1) {
+        return [];
+      }
+
+      var candidates = [];
+      for (var offset = 1; offset < visible.length; offset++) {
+        [index + offset, index - offset].forEach(function (candidateIndex) {
+          var row = visible[candidateIndex];
+          var threadId = row ? row.getAttribute("data-paned-thread-id") : "";
+          if (threadId && !cachedPane(threadId)) {
+            candidates.push(threadId);
+          }
+        });
+      }
+
+      return candidates;
+    }
+
+    function preloadNextThread() {
+      preloadScheduled = false;
+      if (preloadInFlight || preloadQueue.length === 0) {
+        return;
+      }
+      var threadId = preloadQueue.shift();
+      if (!threadId || cachedPane(threadId)) {
+        schedulePreload();
+        return;
+      }
+
+      preloadInFlight = true;
+      fetch("/api/forte_thread_detail?thread_id=" + encodeURIComponent(threadId))
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("thread preload failed");
+          }
+          return response.json();
+        })
+        .then(function (data) {
+          if (data.status === "ok" && typeof data.html === "string") {
+            cachePane(threadId, data.html);
+          }
+        })
+        .catch(function () {
+          // A speculative preload must never disrupt the active pane.
+        })
+        .then(function () {
+          preloadInFlight = false;
+          schedulePreload();
+        });
+    }
+
+    function schedulePreload() {
+      if (preloadScheduled || preloadInFlight) {
+        return;
+      }
+      preloadQueue = preloadCandidates();
+      if (preloadQueue.length === 0) {
+        return;
+      }
+      preloadScheduled = true;
+      if (typeof window.requestIdleCallback === "function") {
+        window.requestIdleCallback(preloadNextThread, { timeout: 1000 });
+      } else {
+        window.setTimeout(preloadNextThread, 0);
       }
     }
 
@@ -79,6 +235,13 @@
     }
 
     function loadThread(threadId, createdPostId) {
+      var cached = cachedPane(threadId);
+      if (cached) {
+        insertContentArticle(cached);
+        clearDetailStatus();
+        schedulePreload();
+        return;
+      }
       var requestId = ++activeDetailRequest;
       var article = contentArticle();
       if (article) {
@@ -106,8 +269,10 @@
             throw new Error("thread detail fetch failed");
           }
           if (requestId === activeDetailRequest && currentSelectedThreadId() === threadId) {
+            cachePane(threadId, data.html);
             insertContentArticle(data.html);
             clearDetailStatus();
+            schedulePreload();
           }
         })
         .catch(function () {
@@ -223,6 +388,9 @@
       var article = contentArticle();
       if (!article || article.getAttribute("data-paned-board-content-post-id") !== threadId) {
         loadThread(threadId, createdPostId || "");
+      } else {
+        cachePane(threadId, article.outerHTML);
+        schedulePreload();
       }
     }
 
@@ -456,6 +624,10 @@
       if (retry) {
         loadThread(currentSelectedThreadId(), "");
       }
+    });
+
+    document.addEventListener("forum:thread-reaction-applied", function () {
+      clearPaneCache();
     });
 
     listBody.addEventListener("keydown", function (event) {

@@ -68,3 +68,21 @@
   - `git diff --check`
 - Notes:
   - The compose panel remains outside the replaceable article. Cache and background preloading are intentionally deferred to Stage 5.
+
+## Stage 5 - Add bounded progressive preloading
+
+- Changes:
+  - Added a 24-pane, estimated-4 MiB LRU HTML cache to the Forte reader; cache hits replace the article without another detail request.
+  - Added idle, one-at-a-time preloading ordered by distance from the selected visible row, allowing small boards to warm completely while large boards remain bounded.
+  - Invalidated cached panes after reactions and made reaction binding idempotent in memory, so cached HTML never carries stale binding markers.
+  - Added cache LRU/byte-bound Node coverage.
+- Verification:
+  - `php tests/run.php ForteBoardReaderTest`
+  - `php tests/run.php LocalAppSmokeTest::testForteInitialPageOmitsUnselectedThreadContent`
+  - `php tests/run.php LocalAppSmokeTest::testForteThreadDetailApiRendersOneRequestedThread`
+  - `php tests/run.php LocalAppSmokeTest::testForteReplyLikesRenderAndRestoreViewerState`
+  - `node --check public/assets/paned_board_reader.js`
+  - `node --check public/assets/thread_reactions.js`
+  - `git diff --check`
+- Notes:
+  - A pane larger than the byte budget is displayed but not cached; LRU eviction protects the current pane's cache entry whenever another entry is available for eviction.
