@@ -48,3 +48,14 @@
   - `git diff --check` — passed.
 - Notes:
   - The root scope remains intentionally singular: changing the active profile updates that one worker rather than creating concurrent root-scope workers.
+
+## Stage 5 - Static PWA runtime delivery
+
+- Changes:
+  - Replaced raw worker/manifest copying with the same profile-aware renderer used by dynamic delivery.
+  - Kept favicon copying unchanged and verified static release refreshes now contain an injected profile runtime.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest::testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout LocalAppSmokeTest::testSharedStaticRefreshCommandKeepsDetailArtifactsWithoutRebuildingTheReadModel` — 2 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - Static publication uses the server-selected profile at build time, matching the isolated static artifact root already derived from its browser namespace.

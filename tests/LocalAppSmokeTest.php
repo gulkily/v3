@@ -235,7 +235,7 @@ final class LocalAppSmokeTest
             assertTrue(is_link($artifactRoot . '/current'));
             assertSame($detailContents, (string) file_get_contents($artifactRoot . '/current/threads/root-001.html'));
             assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/current/index.html'));
-            assertSame((string) file_get_contents(dirname(__DIR__) . '/public/service_worker.js'), (string) file_get_contents($artifactRoot . '/current/service_worker.js'));
+            assertStringContains('self.__forumBrowserRuntime = {"namespace":"zenmemes"', (string) file_get_contents($artifactRoot . '/current/service_worker.js'));
         } finally {
             @unlink($databasePath);
             $this->deleteTree($artifactRoot);
@@ -3616,7 +3616,8 @@ PHP;
         );
         assertTrue(is_file($artifactRoot . '/offline/snapshot.sqlite3'));
         assertStringContains('SQLite format 3', (string) file_get_contents($artifactRoot . '/offline/snapshot.sqlite3'));
-        assertSame((string) file_get_contents(dirname(__DIR__) . '/public/service_worker.js'), (string) file_get_contents($artifactRoot . '/service_worker.js'));
+        assertStringContains('self.__forumBrowserRuntime = {"namespace":"zenmemes"', (string) file_get_contents($artifactRoot . '/service_worker.js'));
+        assertStringContains('"id": "/offline/?site=zenmemes"', (string) file_get_contents($artifactRoot . '/manifest.webmanifest'));
         foreach (\ForumRewrite\View\ThemeRegistry::permitted(\ForumRewrite\SiteProfileRegistry::all()['zenmemes']['permittedThemes']) as $theme) {
             if ($theme['name'] === 'auto') {
                 continue;

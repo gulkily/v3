@@ -10,6 +10,7 @@ use ForumRewrite\Docs\PlatformDocsCatalog;
 use ForumRewrite\Offline\PublicOfflineSnapshotBuilder;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
+use ForumRewrite\SiteProfileRegistry;
 use PDO;
 use RuntimeException;
 
@@ -146,7 +147,23 @@ final class StaticArtifactBuilder
 
     private function copyOfflineRuntimeFiles(): void
     {
-        foreach (['/service_worker.js', '/manifest.webmanifest', '/favicon.ico', '/favicon.gif'] as $requestPath) {
+        $workerSource = file_get_contents($this->projectRoot . '/public/service_worker.js');
+        if ($workerSource === false) {
+            throw new RuntimeException('Unable to read offline worker source.');
+        }
+        $profile = SiteProfileRegistry::active();
+        $runtimeFiles = [
+            '/service_worker.js' => BrowserRuntimeAssetRenderer::serviceWorker($workerSource, $profile),
+            '/manifest.webmanifest' => BrowserRuntimeAssetRenderer::manifest($profile),
+        ];
+        foreach ($runtimeFiles as $requestPath => $contents) {
+            $targetPath = $this->artifactRoot . $requestPath;
+            if (!file_put_contents($targetPath, $contents)) {
+                throw new RuntimeException('Unable to write static runtime file: ' . $requestPath);
+            }
+        }
+
+        foreach (['/favicon.ico', '/favicon.gif'] as $requestPath) {
             $sourcePath = $this->projectRoot . '/public' . $requestPath;
             if (!is_file($sourcePath)) {
                 continue;
