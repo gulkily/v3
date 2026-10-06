@@ -52,3 +52,16 @@
   - `git diff --check` passed.
 - Notes:
   - Generic legacy helpers are now unused and will be removed alongside chrome/card selection in Stage 5.
+
+## Stage 5 - QDB presentation slots
+
+- Changes:
+  - Added named QDB navigation and footer presentation assets.
+  - Replaced generic QDB card/footer branches with policy-selected board-card and footer slots.
+  - Replaced the template renderer's direct QDB navigation branch with enabled-experience selection.
+- Verification:
+  - `php -l` passed for QDB presentation, board controller, and template renderer.
+  - `php tests/run.php QdbExperienceRoutingTest QuoteCardDisplayNumberTest` — 11 passed.
+  - `git diff --check` passed.
+- Notes:
+  - Generic page/layout rendering remains shared; QDB supplies only registered presentation choices.

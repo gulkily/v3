@@ -57,6 +57,13 @@ final class BoardPageController
                 'viewLabel' => BoardViewOptions::activeLabel($viewOptions, $view),
                 'sortLabel' => BoardViewOptions::activeLabel($sortOptions, $sort),
                 'isQdbInstance' => $qdbPolicy !== null,
+                'boardCardPartial' => $qdbPolicy === null ? 'partials/thread_card.php' : 'partials/quote_card.php',
+                'boardCardData' => $qdbPolicy === null ? ['showPinnedMarker' => true] : [
+                    'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
+                    'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
+                    'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
+                ],
+                'boardFooterPartial' => $qdbPolicy === null ? null : 'partials/qdb_footer.php',
                 'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
                 'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
                 'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
