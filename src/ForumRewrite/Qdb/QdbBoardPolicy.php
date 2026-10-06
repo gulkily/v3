@@ -81,6 +81,28 @@ final class QdbBoardPolicy
     }
 
     /**
+     * @param array<int, array<string, mixed>> $threads
+     * @return array<int, array<string, mixed>>
+     */
+    public function newsThreads(array $threads): array
+    {
+        $newsThreads = array_values(array_filter(
+            $threads,
+            static fn (array $thread): bool => in_array('news', $thread['board_tags'] ?? [], true),
+        ));
+
+        usort($newsThreads, static function (array $left, array $right): int {
+            $createdCompare = strcmp((string) ($right['root_post_created_at'] ?? ''), (string) ($left['root_post_created_at'] ?? ''));
+
+            return $createdCompare !== 0
+                ? $createdCompare
+                : strcmp((string) ($right['root_post_id'] ?? ''), (string) ($left['root_post_id'] ?? ''));
+        });
+
+        return $newsThreads;
+    }
+
+    /**
      * @param array<string, mixed> $left
      * @param array<string, mixed> $right
      */

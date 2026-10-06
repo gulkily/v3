@@ -61,4 +61,19 @@ final class QdbBoardPolicyTest
         assertSame(25, count($firstPage['threads']));
         assertSame(['thread-20030613104735-qdb-26'], array_column($secondPage['threads'], 'root_post_id'));
     }
+
+    public function testSelectsNewsThreadsByAuthoredDateWithoutQuoteIdRequirement(): void
+    {
+        $policy = new QdbBoardPolicy('/unused', static fn (): ?array => null);
+        $threads = [
+            ['root_post_id' => 'quote-news', 'root_post_created_at' => '2026-10-03T12:00:00Z', 'board_tags' => ['news']],
+            ['root_post_id' => 'non-quote-news', 'root_post_created_at' => '2026-10-04T12:00:00Z', 'board_tags' => ['news']],
+            ['root_post_id' => 'not-news', 'root_post_created_at' => '2026-10-05T12:00:00Z', 'board_tags' => ['general']],
+            ['root_post_id' => 'older-news', 'root_post_created_at' => '2026-10-01T12:00:00Z', 'board_tags' => ['news']],
+        ];
+
+        $news = $policy->newsThreads($threads);
+
+        assertSame(['non-quote-news', 'quote-news', 'older-news'], array_column($news, 'root_post_id'));
+    }
 }
