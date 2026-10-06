@@ -45,7 +45,8 @@ use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\ReadModel\ThreadRowSupport;
-use ForumRewrite\Qdb\QdbQuoteNumbers;
+use ForumRewrite\Qdb\QdbExperience;
+use ForumRewrite\Qdb\QdbExperienceRouteResult;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -80,6 +81,7 @@ final class Application
     private ?bool $commitsCapabilityAvailable = null;
     private ?SqliteTaskQueueStore $taskQueueStore = null;
     private bool $taskQueueStoreInitialized = false;
+    private ?QdbExperience $qdbExperience = null;
 
     public function __construct(
         private readonly string $projectRoot,
@@ -336,59 +338,15 @@ final class Application
             return;
         }
 
-        $latestPageMatch = preg_match('#^/latest/(\d+)/?$#', $path, $latestPathMatches) === 1;
-        $topPageMatch = preg_match('#^/top/(\d+)/?$#', $path, $topPathMatches) === 1;
+        if ($this->qdbExperience()->rejects($path, $query)) {
+            $this->notFound();
+            return;
+        }
 
-        if (SiteConfig::siteName() === 'qdb' && ($path === '/' || $path === '' || $path === '/latest' || $path === '/top' || $path === '/leetness' || $path === '/add' || $path === '/random' || $path === '/search' || $latestPageMatch || $topPageMatch)) {
-            if ($path === '/latest' || $latestPageMatch || array_key_exists('latest', $query)) {
-                $page = $latestPageMatch ? (int) $latestPathMatches[1] : (int) ($query['latest'] ?? 1);
-                $this->sendHtml($this->boardPageController()->board('all', 'newest', 'latest', max(1, $page)), 200);
-                return;
-            }
-
-            if ($path === '/top' || $topPageMatch || array_key_exists('top', $query)) {
-                $page = $topPageMatch ? (int) $topPathMatches[1] : (int) ($query['top'] ?? 1);
-                $this->sendHtml($this->boardPageController()->board('all', 'top', 'top', max(1, $page)), 200);
-                return;
-            }
-
-            if ($path === '/leetness' || array_key_exists('leetness', $query)) {
-                $this->sendHtml($this->boardPageController()->board('all', 'leetness', 'leetness'), 200);
-                return;
-            }
-
-            if ($path === '/add' || array_key_exists('add', $query)) {
-                $this->sendHtml($this->composeAndAccountKeyController()->composeThreadCompact($query), 200);
-                return;
-            }
-
-            if ($path === '/random' || array_key_exists('random', $query)) {
-                $this->sendHtml($this->boardPageController()->random(), 200);
-                return;
-            }
-
-            if ($path === '/search' || array_key_exists('search', $query)) {
-                $this->sendHtml($this->boardPageController()->search((string) ($query['search'] ?? '')), 200);
-                return;
-            }
-
-            // Classic bash.org-style quote permalink: ?<thread-id> (e.g. ?833499), a bare
-            // query flag rather than a key=value pair.
-            foreach (array_keys($query) as $key) {
-                if (in_array($key, ['view', 'sort', 'format', 'latest', 'top', 'leetness', 'add', 'random', 'search'], true)) {
-                    continue;
-                }
-
-                if (ThreadRepository::byId($this->routeServices()->pdo(), $key) !== null) {
-                    $this->sendRedirect('/threads/' . $key, 'Here is that quote.', 302);
-                    return;
-                }
-            }
-
-            if (($path === '/' || $path === '') && ($query['format'] ?? null) !== 'rss') {
-                $this->sendHtml($this->boardPageController()->welcome(), 200);
-                return;
-            }
+        $qdbRoute = $this->qdbExperience()->dispatch($path, $query);
+        if ($qdbRoute !== null) {
+            $this->sendQdbExperienceResult($qdbRoute);
+            return;
         }
 
         if ($path === '/' || $path === '' || $path === '/threads/' || $path === '/threads') {
@@ -747,20 +705,10 @@ final class Application
             return;
         }
 
-        // Classic qdb.us-style bare quote permalink (e.g. /311057), tried only as a
-        // last resort after every real route above has failed to match, so it can
-        // never shadow a real path. A bare numeric path (e.g. /3) additionally
-        // resolves by classic quote number, not just by full internal ID.
-        if (SiteConfig::siteName() === 'qdb' && preg_match('#^/([^/]+)/?$#', $path, $matches) === 1) {
-            $pdo = $this->routeServices()->pdo();
-            $resolvedThreadId = ThreadRepository::byId($pdo, $matches[1]) !== null ? $matches[1] : null;
-            if ($resolvedThreadId === null && ctype_digit($matches[1])) {
-                $resolvedThreadId = QdbQuoteNumbers::resolve($pdo, (int) $matches[1]);
-            }
-            if ($resolvedThreadId !== null) {
-                $this->sendRedirect('/threads/' . $resolvedThreadId, 'Here is that quote.', 302);
-                return;
-            }
+        $qdbRoute = $this->qdbExperience()->dispatchUnmatched($path);
+        if ($qdbRoute !== null) {
+            $this->sendQdbExperienceResult($qdbRoute);
+            return;
         }
 
         $this->notFound();
@@ -849,6 +797,15 @@ final class Application
             $this->routeServices(),
             $this->repositoryRoot,
             $this->resolveViewerProfileFromIdentityHint(...),
+        );
+    }
+
+    private function qdbExperience(): QdbExperience
+    {
+        return $this->qdbExperience ??= new QdbExperience(
+            $this->boardPageController(),
+            $this->composeAndAccountKeyController(),
+            $this->routeServices()->pdo(),
         );
     }
 
@@ -2072,6 +2029,16 @@ final class Application
     private function notFound(): void
     {
         $this->routeServices()->notFound();
+    }
+
+    private function sendQdbExperienceResult(QdbExperienceRouteResult $result): void
+    {
+        if ($result->isRedirect()) {
+            $this->sendRedirect($result->redirectLocation(), $result->redirectMessage(), 302);
+            return;
+        }
+
+        $this->sendHtml($result->html(), 200);
     }
 
     private function sendHtml(string $html, int $statusCode, array $headers = []): void

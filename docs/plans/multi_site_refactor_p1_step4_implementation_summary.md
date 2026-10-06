@@ -14,3 +14,16 @@
   - `git diff --check` passed.
 - Notes:
   - Existing QDB ID shape and legacy full-ID fallback are preserved; route ownership moves in Stage 2.
+
+## Stage 2 - Classic QDB route boundary
+
+- Changes:
+  - Added `QdbExperience` and its typed route result as the owner of classic QDB route matching, dispatch, redirects, and non-QDB route rejection.
+  - Replaced QDB-specific routing branches in `Application`; unmatched numeric shortcuts remain at the final fallback position.
+  - Added a QDB/Zenmemes/Chouse route matrix for direct and legacy query URLs.
+- Verification:
+  - `php -l` passed for the new route module, result type, application wiring, and route test.
+  - `php tests/run.php QdbExperienceRoutingTest QuoteCardDisplayNumberTest` — 11 passed.
+  - `git diff --check` passed.
+- Notes:
+  - Board and presentation policy remain in their current shared components until Stages 3-5; this stage changes route ownership only.
