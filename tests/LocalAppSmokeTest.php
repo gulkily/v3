@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/ProfileRegressionContract.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
@@ -3274,15 +3275,16 @@ PHP;
         ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
 
         try {
-            foreach (['zenmemes' => 'Zenmemes', 'chouse' => 'Chouse', 'qdb' => 'Qdb'] as $profileId => $label) {
+            foreach (ProfileRegressionContract::all() as $profileId => $contract) {
+                $runtime = $contract['runtime'];
                 putenv('FORUM_SITE_ID=' . $profileId);
                 $manifest = $this->renderFrontController($controller, 'GET', '/manifest.webmanifest', []);
                 $worker = $this->renderFrontController($controller, 'GET', '/service_worker.js', []);
 
-                assertStringContains('"id": "/offline/?site=' . $profileId . '"', $manifest);
-                assertStringContains('"name": "' . $label . ' Offline Reading"', $manifest);
-                assertStringContains('self.__forumBrowserRuntime = {"namespace":"' . $profileId . '"', $worker);
-                assertStringContains('"offlineCacheName":"' . $profileId . '-offline-reader-v14"', $worker);
+                assertStringContains('"id": "/offline/?site=' . $runtime['namespace'] . '"', $manifest);
+                assertStringContains('"name": "' . $runtime['manifestName'] . '"', $manifest);
+                assertStringContains('self.__forumBrowserRuntime = {"namespace":"' . $runtime['namespace'] . '"', $worker);
+                assertStringContains('"offlineCacheName":"' . $runtime['offlineCacheName'] . '"', $worker);
             }
         } finally {
             if ($previousProfile === false) {
@@ -3781,7 +3783,8 @@ PHP;
         $previousProfile = getenv('FORUM_SITE_ID');
 
         try {
-            foreach (['zenmemes', 'chouse', 'qdb'] as $profileId) {
+            foreach (ProfileRegressionContract::all() as $profileId => $contract) {
+                $runtime = $contract['runtime'];
                 $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-runtime-matrix-' . $profileId . '-' . bin2hex(random_bytes(6));
                 putenv('FORUM_SITE_ID=' . $profileId);
                 try {
@@ -3792,9 +3795,9 @@ PHP;
                         $artifactRoot,
                     ))->buildFromReadModel();
 
-                    assertStringContains('"id": "/offline/?site=' . $profileId . '"', (string) file_get_contents($artifactRoot . '/manifest.webmanifest'));
-                    assertStringContains('self.__forumBrowserRuntime = {"namespace":"' . $profileId . '"', (string) file_get_contents($artifactRoot . '/service_worker.js'));
-                    assertStringContains('"offlineCacheName":"' . $profileId . '-offline-reader-v14"', (string) file_get_contents($artifactRoot . '/service_worker.js'));
+                    assertStringContains('"id": "/offline/?site=' . $runtime['namespace'] . '"', (string) file_get_contents($artifactRoot . '/manifest.webmanifest'));
+                    assertStringContains('self.__forumBrowserRuntime = {"namespace":"' . $runtime['namespace'] . '"', (string) file_get_contents($artifactRoot . '/service_worker.js'));
+                    assertStringContains('"offlineCacheName":"' . $runtime['offlineCacheName'] . '"', (string) file_get_contents($artifactRoot . '/service_worker.js'));
                 } finally {
                     $this->deleteTree($artifactRoot);
                 }

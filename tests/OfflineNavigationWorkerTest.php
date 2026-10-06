@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+require __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/ProfileRegressionContract.php';
+
 final class OfflineNavigationWorkerTest
 {
     /** @return array<string, bool> */
@@ -60,12 +63,14 @@ NODE;
 const fs = require('fs');
 const vm = require('vm');
 const source = fs.readFileSync(process.argv[1], 'utf8');
+const runtime = JSON.parse(process.argv[2]);
 async function refreshResult(fail) {
   const listeners = {};
   const port = { messages: [], postMessage(message) { this.messages.push(message); } };
   const context = {
     URL, Request, Response, Promise, console: { info() {}, error() {} },
     self: {
+      __forumBrowserRuntime: runtime,
       location: { href: 'https://forum.test/service_worker.js', origin: 'https://forum.test' },
       navigator: { onLine: true },
       addEventListener(type, listener) { listeners[type] = listener; },
@@ -93,23 +98,27 @@ async function refreshResult(fail) {
 }
 Promise.all([refreshResult(false), refreshResult(true)]).then((results) => process.stdout.write(JSON.stringify(results)));
 NODE;
-        $command = sprintf(
-            'node -e %s %s',
-            escapeshellarg($script),
-            escapeshellarg(__DIR__ . '/../public/service_worker.js'),
-        );
-        exec($command . ' 2>&1', $output, $exitCode);
-        if ($exitCode !== 0) {
-            throw new RuntimeException('Worker refresh-message contract failed: ' . implode("\n", $output));
-        }
-        $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+        foreach (ProfileRegressionContract::all() as $contract) {
+            $command = sprintf(
+                'node -e %s %s %s',
+                escapeshellarg($script),
+                escapeshellarg(__DIR__ . '/../public/service_worker.js'),
+                escapeshellarg(json_encode($contract['runtime'], JSON_THROW_ON_ERROR)),
+            );
+            $output = [];
+            exec($command . ' 2>&1', $output, $exitCode);
+            if ($exitCode !== 0) {
+                throw new RuntimeException('Worker refresh-message contract failed: ' . implode("\n", $output));
+            }
+            $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
 
-        assertSame('offline-reader-refreshed', $result[0]['type']);
-        assertSame('ready', $result[0]['status']);
-        assertSame('zenmemes-offline-reader-v14', $result[0]['cacheName']);
-        assertSame('offline-reader-refreshed', $result[1]['type']);
-        assertSame('error', $result[1]['status']);
-        assertSame('Network unavailable', $result[1]['errorMessage']);
+            assertSame('offline-reader-refreshed', $result[0]['type']);
+            assertSame('ready', $result[0]['status']);
+            assertSame($contract['runtime']['offlineCacheName'], $result[0]['cacheName']);
+            assertSame('offline-reader-refreshed', $result[1]['type']);
+            assertSame('error', $result[1]['status']);
+            assertSame('Network unavailable', $result[1]['errorMessage']);
+        }
     }
 
     public function testOutboxNavigationFallsBackToItsDedicatedCachedShell(): void
@@ -154,19 +163,21 @@ NODE;
 const fs = require('fs');
 const vm = require('vm');
 const source = fs.readFileSync(process.argv[1], 'utf8');
+const runtime = JSON.parse(process.argv[2]);
+const cacheNames = JSON.parse(process.argv[3]);
 const listeners = {};
 const deleted = [];
 const context = {
   URL, Promise, console: { info() {}, error() {} },
   self: {
-    __forumBrowserRuntime: { namespace: 'chouse', offlineCachePrefix: 'chouse-offline-reader-', offlineCacheName: 'chouse-offline-reader-v14' },
+    __forumBrowserRuntime: runtime,
     location: { href: 'https://forum.test/service_worker.js', origin: 'https://forum.test' },
     navigator: { onLine: true },
     addEventListener(type, listener) { listeners[type] = listener; },
     clients: { claim() { return Promise.resolve(); } }
   },
   caches: {
-    keys() { return Promise.resolve(['chouse-offline-reader-v13', 'chouse-offline-reader-v14', 'zenmemes-offline-reader-v14', 'qdb-offline-reader-v14']); },
+    keys() { return Promise.resolve(cacheNames); },
     delete(name) { deleted.push(name); return Promise.resolve(true); }
   }
 };
@@ -175,16 +186,29 @@ let completion;
 listeners.activate({ waitUntil(promise) { completion = promise; } });
 completion.then(() => process.stdout.write(JSON.stringify(deleted)));
 NODE;
-        $command = sprintf(
-            'node -e %s %s',
-            escapeshellarg($script),
-            escapeshellarg(__DIR__ . '/../public/service_worker.js'),
-        );
-        exec($command . ' 2>&1', $output, $exitCode);
-        if ($exitCode !== 0) {
-            throw new RuntimeException('Worker cache-isolation contract failed: ' . implode("\n", $output));
-        }
+        $contracts = ProfileRegressionContract::all();
+        foreach ($contracts as $contract) {
+            $runtime = $contract['runtime'];
+            $cacheNames = [$runtime['offlineCachePrefix'] . 'v13', $runtime['offlineCacheName']];
+            foreach ($contracts as $foreignContract) {
+                if ($foreignContract['runtime']['offlineCacheName'] !== $runtime['offlineCacheName']) {
+                    $cacheNames[] = $foreignContract['runtime']['offlineCacheName'];
+                }
+            }
+            $command = sprintf(
+                'node -e %s %s %s %s',
+                escapeshellarg($script),
+                escapeshellarg(__DIR__ . '/../public/service_worker.js'),
+                escapeshellarg(json_encode($runtime, JSON_THROW_ON_ERROR)),
+                escapeshellarg(json_encode($cacheNames, JSON_THROW_ON_ERROR)),
+            );
+            $output = [];
+            exec($command . ' 2>&1', $output, $exitCode);
+            if ($exitCode !== 0) {
+                throw new RuntimeException('Worker cache-isolation contract failed: ' . implode("\n", $output));
+            }
 
-        assertSame(['chouse-offline-reader-v13'], json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR));
+            assertSame([$runtime['offlineCachePrefix'] . 'v13'], json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR));
+        }
     }
 }

@@ -23,3 +23,14 @@
   - `git diff --check` — passed.
 - Notes:
   - Specialized QDB routes remain asserted, but no assertion branches on an existing profile ID.
+
+## Stage 3 - Browser and offline runtime matrix
+
+- Changes:
+  - Derived dynamic and static PWA manifest/worker expectations from every registered runtime profile.
+  - Exercised worker refresh and stale-cache cleanup with each profile's runtime identity while retaining foreign-cache protection.
+- Verification:
+  - `php tests/run.php OfflineNavigationWorkerTest LocalAppSmokeTest::testFrontControllerDerivesManifestAndWorkerFromTheActiveProfile LocalAppSmokeTest::testStaticArtifactBuilderDerivesRuntimeAssetsForEveryProfile` — 6 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - Worker tests inject the existing runtime bootstrap value; production worker behavior is unchanged.
