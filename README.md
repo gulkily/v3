@@ -43,30 +43,34 @@ This keeps each project self-contained (no submodule workflow) while still letti
 3. When the doc hits the bar, reply verbatim with `Approved Step N, please continue to Step N+1.` The bot must stop until that phrase arrives, so you control scope creep.
 4. Repeat the review/approval loop for each step. Keep Step 1-3 planning docs uncommitted through drafting/review.
 5. After `Approved Step 3`, create the Step 4 feature branch and make the first commit with only the approved Step 1-3 docs.
-6. During Step 4, make at least one stage-scoped commit per implemented stage, and include that stage's Step 4 summary update in the same commit.
+6. During Step 4, make at least one stage-scoped commit per completed stage, and include that stage's Step 4 summary update in the same commit.
 
 The strict per-step files mean you always paste a small, targeted instruction block into the chat; no more scrolling through a 4k-token mega-brief.
 
 ## What each step enforces
 | Step | Goal | Key outputs |
 | --- | --- | --- |
-| Step 1 – Solution Assessment (optional) | Resolve ambiguity across competing approaches. | ≤1-page pros/cons doc ending with a recommendation. |
+| Step 1 – Solution Assessment (optional) | Resolve ambiguity across competing approaches. | Original query (mechanically corrected only), plus a brief labeled understood-intent note when needed, then a ≤1-page pros/cons doc ending with a recommendation. |
 | Step 2 – Feature Description | Nail down problem context, user stories, requirements, shared components, and success criteria. | `{feature}_step2_feature_description.md` |
 | Step 3 – Development Plan | Break work into atomic stages with dependencies, verification notes, and component touchpoints. Prefer `## Stage N` headers plus flat bullets for each stage field. | `{feature}_step3_development_plan.md` |
-| Step 4 – Implementation | Execute stages sequentially on a feature branch, logging verification in a Step 4 summary. Prefer `## Stage N - title` headers plus bullets for changes, verification, and notes. | `{feature}_step4_implementation_summary.md` |
+| Step 4 – Implementation | Execute the approved artifact sequentially on a feature branch, logging applicable verification in a Step 4 summary. The artifact may be application changes or explicitly scoped documentation-only work. Prefer `## Stage N - title` headers plus bullets for changes, verification, and notes. | `{feature}_step4_implementation_summary.md` |
 
 Each step/phase file lists guardrails plus "Next" instructions so the model always knows when to stop.
 
+Every Step 1–4 artifact begins with a relative-link bar to the others, keeping the feature record navigable in GitHub.
+
 ## Tips for stubborn assistants
 - **Reprint instructions**: before starting a step/phase, force the assistant to paste the relevant `docs/dev/feature_process/stepX...` file back to you. This keeps both sides aligned and provides an audit trail.
-- **Call out warning signs early**: if a stage threatens to exceed the one-page or ~1-hour limit, bounce back to Step 2/3 instead of winging it mid-implementation.
+- **Call out risks early**: Step 2 records impact, early validation, and mitigation; Step 3 gates dependents on unresolved risks.
 - **Shared component inventory**: Step 2 explicitly asks which canonical UI/API bits already exist. Reuse them; duplication is the fastest way models drift.
-- **Manual verification only**: Step 4 leans on quick smoke tests. If you need deeper coverage, capture that as a new feature request and restart the chain.
+- **Finish a feature, not a layer**: Each cycle has a normal entry point, end-to-end outcome, and required recovery. Component-only work is internal maintenance.
+- **Proportional verification**: Step 4 records verification appropriate to the approved artifact. Documentation-only work still requires document-integrity, evidence, link/path, and allowed-file-scope checks, but runtime, UI, deployment, migration, and release checks are not required unless the approved documents make a claim that needs them.
+- **Documentation-only cycles**: Declare this work type and its allowed documentation file scope in Step 2, retain it in Step 3's Completion Contract, and do not alter application source, tests, CI, deployment configuration, or generated artifacts without returning for approval.
 
 ## Extending the process
 - Need a domain-specific checklist? Fork one of the step files, add the extra bullets, and point your assistant to the customized version.
 - Supporting artifacts (mockups, DB diagrams) belong beside the step docs in `docs/plans/{feature}/`. Reference them inside the deliverables but keep the main files concise.
-- When a feature balloons past eight stages, spin up a new feature name with its own Step 2/3 docs to keep things reviewable.
+- When a feature exceeds eight stages, start a new Step 2/3 cycle; each must remain a usable vertical slice.
 
 ## Getting help
 Because every instruction lives in plain Markdown, you can diff tweaks, annotate lines for your assistant, or even inline reminders like “STOP after this file.” When in doubt, start from `FEATURE_DEVELOPMENT_PROCESS.md` and follow the breadcrumbs.
