@@ -16,6 +16,7 @@ use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
+use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\Scoring\FastScoreContextFactory;
 use ForumRewrite\Scoring\SqliteFastScoreStore;
 use ForumRewrite\Write\LocalWriteService;
@@ -3824,6 +3825,82 @@ NODE;
         assertStringNotContains('Posts', $pendingUsers);
         assertStringNotContains('Bootstrap thread', $pendingUsers);
         assertStringContains('Only approved users can view the pending approval directory.', $pendingUsersForbidden);
+    }
+
+    public function testPendingDirectoryProfilesIncludeBootstrapActivitySummary(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+        $target = $this->linkGeneratedIdentity($application, 'bob');
+
+        $profiles = ProfileRepository::pendingDirectoryProfiles(new PDO('sqlite:' . $databasePath));
+        $profile = array_values(array_filter(
+            $profiles,
+            static fn (array $profile): bool => $profile['profile_slug'] === $target['profile_slug'],
+        ))[0] ?? null;
+
+        assertTrue(is_array($profile));
+        assertSame('account bootstrap', $profile['latest_activity_label']);
+        assertTrue((string) $profile['latest_activity_at'] !== '');
+    }
+
+    public function testPendingDirectoryProfilesPreferLaterActivityAndHandleMissingActivity(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+        $target = $this->linkGeneratedIdentity($application, 'bob');
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $service->createThread([
+            'board_tags' => 'general',
+            'subject' => 'Pending later activity',
+            'body' => 'This is the newer pending-user activity.',
+            'author_identity_id' => $target['identity_id'],
+        ]);
+
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $summary = static function () use ($pdo, $target): ?array {
+            $profiles = ProfileRepository::pendingDirectoryProfiles($pdo);
+
+            return array_values(array_filter(
+                $profiles,
+                static fn (array $profile): bool => $profile['profile_slug'] === $target['profile_slug'],
+            ))[0] ?? null;
+        };
+
+        $profile = $summary();
+        assertTrue(is_array($profile));
+        assertSame('Pending later activity', $profile['latest_activity_label']);
+
+        $sameTimestamp = '2030-01-01T00:00:00Z';
+        $update = $pdo->prepare(
+            'UPDATE activity
+             SET created_at = :created_at
+             WHERE author_identity_id = :identity_id OR post_id = :bootstrap_post_id'
+        );
+        $update->execute([
+            'created_at' => $sameTimestamp,
+            'identity_id' => $target['identity_id'],
+            'bootstrap_post_id' => $target['bootstrap_post_id'],
+        ]);
+
+        $profile = $summary();
+        assertTrue(is_array($profile));
+        assertSame('Pending later activity', $profile['latest_activity_label']);
+
+        $delete = $pdo->prepare(
+            'DELETE FROM activity WHERE author_identity_id = :identity_id OR post_id = :bootstrap_post_id'
+        );
+        $delete->execute([
+            'identity_id' => $target['identity_id'],
+            'bootstrap_post_id' => $target['bootstrap_post_id'],
+        ]);
+
+        $profile = $summary();
+        assertTrue(is_array($profile));
+        assertSame(null, $profile['latest_activity_label']);
+        assertSame(null, $profile['latest_activity_at']);
     }
 
     public function testUnsignedApproveUserApiRequiresBrowserSignature(): void
