@@ -109,12 +109,21 @@ async function refreshOfflineReader(extraUrls) {
     OFFLINE_HEALTH_URL,
     OFFLINE_READER_URL,
     OFFLINE_OUTBOX_URL,
-    SNAPSHOT_URL,
     "/manifest.webmanifest",
     "/favicon.ico",
     ...assetUrls.flat(),
     ...extraUrls,
   ]);
+  await refreshSnapshot();
+}
+
+async function refreshSnapshot() {
+  try {
+    const response = await fetchOfflineResource(SNAPSHOT_URL, "offline snapshot");
+    await (await caches.open(CACHE_NAME)).put(cacheKey(SNAPSHOT_URL), response.clone());
+  } catch (error) {
+    console.info("[offline reading] snapshot unavailable; reader shell and assets remain cached", Object.assign(workerDetails(), errorDetails(error)));
+  }
 }
 
 function cacheableRequest(request) {
