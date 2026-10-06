@@ -64,7 +64,7 @@ final class ActivityService
     }
 
     /**
-     * @param array{sort_value: string, id: int}|null $afterCursor
+     * @param array{sort_value: string, action_key: string, id: int}|null $afterCursor
      *        Keyset cursor identifying the last item of the previous page,
      *        matching the ORDER BY below. Pass null for the first page.
      * @return array{items: array<int, array<string, mixed>>, has_more: bool}
@@ -87,7 +87,7 @@ final class ActivityService
      * manifest enrichment. Forte uses this for rows that are not selected;
      * classic Activity continues to use fetchActivity() above.
      *
-     * @param array{sort_value: string, id: int}|null $afterCursor
+     * @param array{sort_value: string, action_key: string, id: int}|null $afterCursor
      * @return array{items: array<int, array<string, mixed>>, has_more: bool}
      */
     public function fetchActivityRows(string $view, string $sortColumn, string $sortDirection, ?array $afterCursor = null, int $limit = self::ACTIVITY_ITEM_LIMIT): array
@@ -100,16 +100,20 @@ final class ActivityService
 
         $cursorWhere = '';
         if ($afterCursor !== null) {
-            // `id` is the sole tiebreaker (rather than also comparing
-            // post_id, as the old date-only cursor did): id is already
-            // unique, so it alone guarantees a stable, gapless order
-            // regardless of which column is being sorted on.
+            // The canonical action key is stable across a fresh rebuild and
+            // an incremental update. SQLite row ids are not: their order
+            // changes when records share a timestamp and are re-indexed.
+            // Keep id only as a final guard for an unexpected duplicate key.
             $comparisonOperator = $sortDirection === 'desc' ? '<' : '>';
             $cursorWhere = 'AND (
                 ' . $sortColumnSql . ' ' . $comparisonOperator . ' :cursor_sort_value
-                OR (' . $sortColumnSql . ' = :cursor_sort_value AND activity.id ' . $comparisonOperator . ' :cursor_id)
+                OR (' . $sortColumnSql . ' = :cursor_sort_value AND (
+                    activity.action_key ' . $comparisonOperator . ' :cursor_action_key
+                    OR (activity.action_key = :cursor_action_key AND activity.id ' . $comparisonOperator . ' :cursor_id)
+                ))
             )';
             $viewParameters['cursor_sort_value'] = $afterCursor['sort_value'];
+            $viewParameters['cursor_action_key'] = $afterCursor['action_key'];
             $viewParameters['cursor_id'] = $afterCursor['id'];
         }
 
@@ -125,7 +129,7 @@ final class ActivityService
              WHERE 1 = 1
              ' . $viewWhere . '
              ' . $cursorWhere . '
-             ORDER BY ' . $sortColumnSql . ' ' . $sortDirectionSql . ', activity.id ' . $sortDirectionSql . '
+             ORDER BY ' . $sortColumnSql . ' ' . $sortDirectionSql . ', activity.action_key ' . $sortDirectionSql . ', activity.id ' . $sortDirectionSql . '
              LIMIT :limit'
         );
         foreach ($viewParameters as $parameter => $value) {
@@ -340,7 +344,7 @@ final class ActivityService
     /**
      * Reads the value of whichever column is currently the active sort key
      * out of an already-built `fetchActivity()` item, for constructing that
-     * item's keyset cursor (`{sort_value, id}`). Keeps the column-to-field
+     * item's keyset cursor (`{sort_value, action_key, id}`). Keeps the column-to-field
      * mapping in one place alongside `activitySortSql()`'s column-to-SQL
      * mapping, rather than duplicating a match() at each call site.
      *
