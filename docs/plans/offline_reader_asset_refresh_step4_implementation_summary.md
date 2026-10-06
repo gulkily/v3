@@ -41,3 +41,17 @@
 - Notes:
   - `FrontController` still has its own copy of the active-release lookup (used by its other route); the locator has a copy too. Consolidating them is a follow-up, not part of this stage.
   - The embedded value reflects the manifest, which is written after the snapshot rename. A render in the brief window between the two self-corrects on the next load.
+
+## Stage 4 - Worker revision
+- Changes:
+  - `public/service_worker.js`: `revisionFromBodies()` (SHA-256 hex over the three shell bodies); `currentRevision()` (fetches the shells and hashes them); `storeRevision()` and `storedRevision()` (a non-served cache key, `REVISION_KEY`).
+  - `refreshOfflineReader()` stores the revision computed from the shell bodies it already fetched, after a successful refresh. No extra requests.
+  - The worker does not fetch `manifest.json`.
+  - `tests/OfflineNavigationWorkerTest.php`: new `testReaderRevisionFollowsEmbeddedSnapshotRevisionAndIsStoredByRefresh`. The existing worker harnesses now provide `crypto` and `TextEncoder`, as the real worker context does.
+- Verification:
+  - `php tests/run.php OfflineNavigationWorkerTest`: 5 passed.
+  - The new test checks: a 64-hex digest; the same shells give the same revision; a changed embedded `data-snapshot-revision` changes it; a refresh stores the revision computed from the shells it fetched.
+  - Not applicable: UI, deployment, migration.
+- Notes:
+  - `currentRevision()` and `storedRevision()` are not used by production code until Stage 5 gates the load-time refresh on them.
+  - `CACHE_NAME` is still v13; it moves to v14 in Stage 5 with the behavior change.
