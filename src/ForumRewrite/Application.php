@@ -45,6 +45,7 @@ use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\ReadModel\ThreadRowSupport;
+use ForumRewrite\Qdb\QdbQuoteNumbers;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -754,7 +755,7 @@ final class Application
             $pdo = $this->routeServices()->pdo();
             $resolvedThreadId = ThreadRepository::byId($pdo, $matches[1]) !== null ? $matches[1] : null;
             if ($resolvedThreadId === null && ctype_digit($matches[1])) {
-                $resolvedThreadId = ThreadRepository::byQdbQuoteNumber($pdo, (int) $matches[1]);
+                $resolvedThreadId = QdbQuoteNumbers::resolve($pdo, (int) $matches[1]);
             }
             if ($resolvedThreadId !== null) {
                 $this->sendRedirect('/threads/' . $resolvedThreadId, 'Here is that quote.', 302);

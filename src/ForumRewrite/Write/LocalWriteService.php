@@ -13,6 +13,7 @@ use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
+use ForumRewrite\Qdb\QdbQuoteNumbers;
 use ForumRewrite\TagScore;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
 use ForumRewrite\ReadModel\ReadModelBuilder;
@@ -2065,17 +2066,7 @@ class LocalWriteService
             return $this->generateRecordId('thread');
         }
 
-        return sprintf('thread-%s-qdb-%d', gmdate('YmdHis'), $this->nextQdbQuoteNumber());
-    }
-
-    private function nextQdbQuoteNumber(): int
-    {
-        $maxNumber = $this->readModelPdo()->query(
-            "SELECT MAX(CAST(substr(root_post_id, instr(root_post_id, '-qdb-') + 5) AS INTEGER))
-             FROM threads WHERE root_post_id LIKE '%-qdb-%'"
-        )->fetchColumn();
-
-        return ((int) $maxNumber) + 1;
+        return QdbQuoteNumbers::mint(gmdate('YmdHis'), QdbQuoteNumbers::nextAvailable($this->readModelPdo()));
     }
 
     private function canonicalTimestampNow(): string
