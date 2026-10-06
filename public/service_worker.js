@@ -191,7 +191,7 @@ self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "refresh-offline-reader") {
     event.waitUntil((async () => {
       try {
-        if (await currentRevision() === await storedRevision()) {
+        if (!event.data.force && await currentRevision() === await storedRevision()) {
           if (event.ports[0]) event.ports[0].postMessage({ type: "offline-reader-refreshed", status: "unchanged", cacheName: CACHE_NAME });
           return;
         }

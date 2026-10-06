@@ -403,7 +403,7 @@
         if (result.type === "offline-reader-refreshed" && (result.status === "ready" || result.status === "unchanged")) return resolve(result);
         reject(new Error(result.errorMessage || "The saved-reader refresh failed."));
       };
-      worker.postMessage({ type: "refresh-offline-reader" }, [channel.port2]);
+      worker.postMessage({ type: "refresh-offline-reader", force: true }, [channel.port2]);
     });
   }
 

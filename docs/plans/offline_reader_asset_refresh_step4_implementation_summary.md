@@ -72,3 +72,15 @@
   - Deviation: `offline_health.js` change was not in the Stage 5 plan. Without it, the manual button would report failure whenever the revision is unchanged, until Stage 6 adds `force`.
   - On a changed revision, the shell pages are fetched twice in one refresh (once to compare, once inside `refreshOfflineReader()`). This is three small requests, only when content has changed. It can be removed by passing the bodies through, if it matters.
   - Stage 7's test updates for v14 are partly done here.
+
+## Stage 6 - Manual refresh always refreshes
+- Changes:
+  - `public/assets/offline_health.js`: `requestReaderRefresh()` sends `force: true`.
+  - `public/service_worker.js`: the revision check is skipped when `force` is set.
+  - `tests/OfflineNavigationWorkerTest.php`: new `testForcedRefreshRefetchesEvenWhenRevisionMatches` (unchanged load makes no asset requests; forced load refetches assets and replies `ready`).
+- Verification:
+  - `php tests/run.php OfflineNavigationWorkerTest`: 7 passed.
+  - `php tests/run.php LocalAppSmokeTest`: 116 passed, 4 failed; the same four pre-existing failures.
+  - Not applicable: UI in a browser (Stage 8), deployment, migration.
+- Notes:
+  - With `force` in place, the Stage 5 `unchanged` acceptance in `offline_health.js` is no longer exercised by the button, but it stays as the contract for any other caller.
