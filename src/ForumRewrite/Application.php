@@ -974,7 +974,7 @@ final class Application
 
     private function offlineReaderController(): OfflineReaderController
     {
-        return new OfflineReaderController($this->routeServices());
+        return new OfflineReaderController($this->routeServices(), $this->staticHtmlRoot ?? '');
     }
 
     private function invalidateFeatureFlagsCache(): void

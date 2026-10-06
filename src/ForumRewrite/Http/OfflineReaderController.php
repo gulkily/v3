@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\Offline\OfflineSnapshotLocator;
+
 final class OfflineReaderController
 {
     public function __construct(
         private readonly RouteServices $routeServices,
+        private readonly string $staticHtmlRoot = '',
     ) {
     }
 
@@ -18,6 +21,7 @@ final class OfflineReaderController
             [
                 'runtimeUrl' => $this->routeServices->assetPath('/assets/sql-wasm.wasm'),
                 'readerRevision' => $this->routeServices->assetPath('/assets/offline_reader.js'),
+                'snapshotRevision' => (new OfflineSnapshotLocator())->manifestRevision($this->staticHtmlRoot),
             ],
             'Offline Reading',
             'board',

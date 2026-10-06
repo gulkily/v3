@@ -6,7 +6,7 @@ namespace ForumRewrite\Host;
 
 use ForumRewrite\Application;
 use ForumRewrite\Docs\PlatformDocsCatalog;
-use ForumRewrite\Offline\OfflineSnapshotPublisher;
+use ForumRewrite\Offline\OfflineSnapshotLocator;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -360,43 +360,13 @@ final class FrontController
             return null;
         }
 
-        $paths = [(new OfflineSnapshotPublisher($this->staticHtmlRoot))->snapshotPath()];
-        $releaseRoot = $this->activeStaticReleaseRoot();
-        if ($releaseRoot !== null) {
-            $paths[] = $releaseRoot . '/offline/snapshot.sqlite3';
-        }
-
-        foreach ($paths as $path) {
-            if ($this->isValidOfflineSnapshot($path)) {
-                return $path;
-            }
-        }
-
-        return null;
+        return (new OfflineSnapshotLocator())->servedSnapshotPath($this->staticHtmlRoot);
     }
 
     private function isOfflineSnapshotQuery(string $query): bool
     {
         return $query === ''
             || preg_match('/^__offline_bootstrap=zenmemes-offline-reader-v[0-9]+$/', $query) === 1;
-    }
-
-    private function isValidOfflineSnapshot(string $path): bool
-    {
-        if (!is_file($path)) {
-            return false;
-        }
-
-        $handle = @fopen($path, 'rb');
-        if ($handle === false) {
-            return false;
-        }
-
-        try {
-            return fread($handle, 16) === "SQLite format 3\000";
-        } finally {
-            fclose($handle);
-        }
     }
 
     /**

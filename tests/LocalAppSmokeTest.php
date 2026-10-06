@@ -2747,6 +2747,29 @@ PHP;
         assertStringContains('Outbox', $tools);
     }
 
+    public function testOfflineReaderEmbedsManifestRevisionFromServedSnapshot(): void
+    {
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-reader-revision-' . bin2hex(random_bytes(6));
+        $sha256 = str_repeat('c', 64);
+        mkdir($staticHtmlRoot . '/offline', 0777, true);
+        file_put_contents($staticHtmlRoot . '/offline/snapshot.sqlite3', "SQLite format 3\000reader fixture");
+        file_put_contents($staticHtmlRoot . '/offline/manifest.json', json_encode(['sha256' => $sha256], JSON_THROW_ON_ERROR));
+
+        try {
+            $application = new Application(
+                dirname(__DIR__),
+                $this->repositoryRoot,
+                $this->databasePath,
+                null,
+                $staticHtmlRoot,
+            );
+
+            assertStringContains('data-snapshot-revision="' . $sha256 . '"', $this->render($application, '/offline/reader/'));
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+        }
+    }
+
     public function testOfflineReaderFallbackRouteUsesLocalSnapshotShell(): void
     {
         $application = new Application(
@@ -2760,6 +2783,7 @@ PHP;
         assertStringContains('data-offline-reader', $reader);
         assertStringContains('class="stack thread-list" data-offline-reader', $reader);
         assertStringContains('data-snapshot-url="/offline/snapshot.sqlite3"', $reader);
+        assertStringContains('data-snapshot-revision=""', $reader);
         assertStringMatches('#data-reader-revision="/assets/offline_reader\.[a-f0-9]{12}\.js"#', $reader);
         assertStringContains('data-role="offline-reader-status"', $reader);
         assertStringContains('data-role="offline-mode-bar"', $reader);
