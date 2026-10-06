@@ -55,12 +55,46 @@ final class SiteProfileRegistryTest
 
     public function testAllProfilesHaveRequiredFields(): void
     {
+        $browserNamespaces = [];
         foreach (SiteProfileRegistry::all() as $siteId => $profile) {
-            assertSame(true, is_string($siteId) && $siteId !== '');
+            assertSame(true, preg_match('/^[a-z][a-z0-9-]*$/', $siteId) === 1);
             assertSame(true, $profile['name'] !== '');
+            assertSame(true, $profile['displayName'] !== '');
             assertSame(true, $profile['defaultTheme'] !== '');
+            assertSame(true, $profile['permittedThemes'] !== []);
+            assertSame(true, in_array($profile['defaultTheme'], $profile['permittedThemes'], true));
+            assertSame(true, preg_match('/^[a-z][a-z0-9-]*$/', $profile['browserNamespace']) === 1);
+            assertSame(false, isset($browserNamespaces[$profile['browserNamespace']]));
+            $browserNamespaces[$profile['browserNamespace']] = true;
+            assertSame(true, $profile['editorialContentKey'] !== '');
+            assertSame(true, $profile['enabledExperienceKeys'] !== []);
             assertSame(true, $profile['composerPrompt'] !== '');
         }
+    }
+
+    public function testValidationRejectsDuplicateOrUnsafeBrowserIdentifiers(): void
+    {
+        $duplicateNamespaceProfiles = SiteProfileRegistry::all();
+        $duplicateNamespaceProfiles['chouse']['browserNamespace'] = 'zenmemes';
+
+        assertThrowsRuntime(
+            static function () use ($duplicateNamespaceProfiles): void {
+                SiteProfileRegistry::validate($duplicateNamespaceProfiles);
+            },
+            'Site profile browser namespace is invalid or duplicated: zenmemes',
+        );
+
+        $unsafeSiteIdProfiles = SiteProfileRegistry::all();
+        $unsafeProfile = $unsafeSiteIdProfiles['chouse'];
+        unset($unsafeSiteIdProfiles['chouse']);
+        $unsafeSiteIdProfiles['Chouse!'] = $unsafeProfile;
+
+        assertThrowsRuntime(
+            static function () use ($unsafeSiteIdProfiles): void {
+                SiteProfileRegistry::validate($unsafeSiteIdProfiles);
+            },
+            'Site profile ID is not browser-safe: Chouse!',
+        );
     }
 }
 
@@ -76,5 +110,19 @@ if (!function_exists('assertSame')) {
                 . '.'
             );
         }
+    }
+}
+
+if (!function_exists('assertThrowsRuntime')) {
+    function assertThrowsRuntime(callable $callback, string $expectedMessage): void
+    {
+        try {
+            $callback();
+        } catch (RuntimeException $exception) {
+            assertSame($expectedMessage, $exception->getMessage());
+            return;
+        }
+
+        throw new RuntimeException('Expected RuntimeException was not thrown.');
     }
 }
