@@ -9,6 +9,7 @@
     composeDraftPrefix: "forum_compose_draft",
     recentlyClearedComposeDraft: "forum_recently_cleared_compose_draft",
   };
+  const browserKeyCreationBackdateMilliseconds = 60 * 1000;
   let actionTimingSequence = 0;
   let clearedKeypairBackup = null;
   let identityPreparationPromise = null;
@@ -2141,6 +2142,9 @@
       curve: "ed25519",
       userIDs: [{ name: username }],
       format: "armored",
+      // GnuPG rejects a key whose packet timestamp is even slightly ahead of
+      // the server clock. Leave a small margin for browser/server clock skew.
+      date: new Date(Date.now() - browserKeyCreationBackdateMilliseconds),
     });
     const key = await openpgp.readKey({ armoredKey: result.publicKey });
     const fingerprint = String(key.getFingerprint()).toUpperCase();

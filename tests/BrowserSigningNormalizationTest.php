@@ -725,8 +725,11 @@ const state = {
   fetches: [],
   domContentLoaded: null,
   generateClickHandler: null,
-  generatedUsername: ''
+  generatedUsername: '',
+  generatedKeyDate: null
 };
+
+Date.now = () => 200000;
 
 function makeElement(text) {
   return {
@@ -801,6 +804,7 @@ global.window = {
   openpgp: {
     async generateKey(options) {
       state.generatedUsername = options.userIDs[0].name;
+      state.generatedKeyDate = options.date.getTime();
       return { publicKey: generatedPublicKey, privateKey: generatedPrivateKey };
     },
     async readKey() {
@@ -857,6 +861,7 @@ state.domContentLoaded();
 Promise.resolve(state.generateClickHandler()).then(() => {
   process.stdout.write(JSON.stringify({
     generatedUsername: state.generatedUsername,
+    generatedKeyDate: state.generatedKeyDate,
     fetches: state.fetches,
     localSetCalls: state.localSetCalls,
     localRemoveCalls: state.localRemoveCalls,
@@ -874,6 +879,7 @@ NODE;
         $result = $this->runScript($script);
 
         assertSame('forum-user', $result['generatedUsername']);
+        assertSame(140000, $result['generatedKeyDate']);
         assertSame('/api/set_identity_hint?identity_hint=openpgp%3A0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][0]['url']);
         assertSame('/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $result['fetches'][1]['url']);
         assertSame('/api/prepare_identity', $result['fetches'][2]['url']);

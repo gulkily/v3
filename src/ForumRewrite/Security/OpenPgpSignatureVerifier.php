@@ -7,7 +7,7 @@ namespace ForumRewrite\Security;
 final class OpenPgpSignatureVerifier
 {
     /**
-     * @return array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>,diagnostics:array{import_exit_code:?int,import_accepted:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>}}
+     * @return array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>,diagnostics:array{import_exit_code:?int,import_accepted:?bool,import_result_counts:?list<int>,import_debug_output:list<string>,gpg_import_started_at_epoch:?int,public_key_packet_inspection_exit_code:?int,public_key_creation_epoch:?int,public_key_creation_offset_seconds:?int,post_import_key_lookup_exit_code:?int,post_import_key_lookup_found:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>}}
      */
     public function verifyDetached(
         string $armoredPublicKey,
@@ -41,11 +41,28 @@ final class OpenPgpSignatureVerifier
             file_put_contents($textPath, $signedText);
             file_put_contents($signaturePath, $armoredDetachedSignature);
 
+            $keyPacketInspection = $this->runGpg($tempDir, ['--list-packets', $keyPath]);
+            $timings['gpg_public_key_packet_inspection'] = $keyPacketInspection['duration_ms'];
+            $diagnostics['public_key_packet_inspection_exit_code'] = $keyPacketInspection['exit_code'];
+            $diagnostics['public_key_creation_epoch'] = $this->publicKeyCreationEpoch($keyPacketInspection['output']);
+            $diagnostics['gpg_import_started_at_epoch'] = time();
+            if ($diagnostics['public_key_creation_epoch'] !== null) {
+                $diagnostics['public_key_creation_offset_seconds'] = $diagnostics['public_key_creation_epoch'] - $diagnostics['gpg_import_started_at_epoch'];
+            }
+
             $import = $this->runGpg($tempDir, ['--status-fd', '1', '--import', $keyPath]);
             $timings['gpg_public_key_import'] = $import['duration_ms'];
             $diagnostics['import_exit_code'] = $import['exit_code'];
             $diagnostics['import_accepted'] = $import['exit_code'] === 0 || $this->hasSuccessfulImport($import['output']);
             $diagnostics['gpg_status_codes'] = $this->statusCodes($import['output']);
+            if ($import['exit_code'] === 0 && !$this->hasSuccessfulImport($import['output'])) {
+                $diagnostics['import_result_counts'] = $this->importResultCounts($import['output']);
+                $diagnostics['import_debug_output'] = $this->limitedOutput($import['output']);
+            }
+            $keyLookup = $this->runGpg($tempDir, ['--with-colons', '--list-keys', $expectedFingerprint]);
+            $timings['gpg_post_import_key_lookup'] = $keyLookup['duration_ms'];
+            $diagnostics['post_import_key_lookup_exit_code'] = $keyLookup['exit_code'];
+            $diagnostics['post_import_key_lookup_found'] = $this->keyListingIncludesFingerprint($keyLookup['output'], $expectedFingerprint);
             if (!$diagnostics['import_accepted']) {
                 return $this->failure('public_key_import_failed', null, $this->compactOutput($import['output']), $timings, $diagnostics);
             }
@@ -146,6 +163,92 @@ final class OpenPgpSignatureVerifier
 
     /**
      * @param list<string> $output
+     */
+    private function keyListingIncludesFingerprint(array $output, string $expectedFingerprint): bool
+    {
+        foreach ($output as $line) {
+            $parts = explode(':', $line);
+            if (($parts[0] ?? '') === 'fpr' && strtoupper((string) ($parts[9] ?? '')) === $expectedFingerprint) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param list<string> $output
+     */
+    private function publicKeyCreationEpoch(array $output): ?int
+    {
+        $insidePublicKeyPacket = false;
+        foreach ($output as $line) {
+            $trimmed = trim($line);
+            if ($trimmed === ':public key packet:') {
+                $insidePublicKeyPacket = true;
+                continue;
+            }
+            if ($insidePublicKeyPacket && preg_match('/\bcreated ([0-9]+),/', $trimmed, $matches) === 1) {
+                return (int) $matches[1];
+            }
+            if ($insidePublicKeyPacket && str_starts_with($trimmed, ':')) {
+                $insidePublicKeyPacket = false;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<string> $output
+     * @return ?list<int>
+     */
+    private function importResultCounts(array $output): ?array
+    {
+        foreach ($output as $line) {
+            if (preg_match('/^\[GNUPG:\]\s+IMPORT_RES(?:\s+(.+))?$/', $line, $matches) !== 1) {
+                continue;
+            }
+
+            $values = preg_split('/\s+/', trim((string) ($matches[1] ?? ''))) ?: [];
+            if ($values === [] || array_filter($values, static fn (string $value): bool => preg_match('/^[0-9]+$/', $value) !== 1) !== []) {
+                return null;
+            }
+
+            return array_map('intval', $values);
+        }
+
+        return null;
+    }
+
+    /**
+     * Import anomalies are local debugging evidence. GnuPG does not echo key
+     * material for an import, but bound its output in case a malformed key
+     * causes unusually verbose diagnostics.
+     *
+     * @param list<string> $output
+     * @return list<string>
+     */
+    private function limitedOutput(array $output): array
+    {
+        $lines = [];
+        foreach ($output as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+
+            $lines[] = substr($line, 0, 512);
+            if (count($lines) === 20) {
+                break;
+            }
+        }
+
+        return $lines;
+    }
+
+    /**
+     * @param list<string> $output
      * @return list<string>
      */
     private function statusCodes(array $output): array
@@ -180,8 +283,8 @@ final class OpenPgpSignatureVerifier
 
     /**
      * @param array<string, float> $timings
-     * @param array{import_exit_code:?int,import_accepted:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>} $diagnostics
-     * @return array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>,diagnostics:array{import_exit_code:?int,import_accepted:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>}}
+     * @param array{import_exit_code:?int,import_accepted:?bool,import_result_counts:?list<int>,import_debug_output:list<string>,gpg_import_started_at_epoch:?int,public_key_packet_inspection_exit_code:?int,public_key_creation_epoch:?int,public_key_creation_offset_seconds:?int,post_import_key_lookup_exit_code:?int,post_import_key_lookup_found:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>} $diagnostics
+     * @return array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>,diagnostics:array{import_exit_code:?int,import_accepted:?bool,import_result_counts:?list<int>,import_debug_output:list<string>,gpg_import_started_at_epoch:?int,public_key_packet_inspection_exit_code:?int,public_key_creation_epoch:?int,public_key_creation_offset_seconds:?int,post_import_key_lookup_exit_code:?int,post_import_key_lookup_found:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>}}
      */
     private function failure(string $status, ?string $fingerprint, string $details, array $timings, array $diagnostics): array
     {
@@ -196,13 +299,21 @@ final class OpenPgpSignatureVerifier
     }
 
     /**
-     * @return array{import_exit_code:?int,import_accepted:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>}
+     * @return array{import_exit_code:?int,import_accepted:?bool,import_result_counts:?list<int>,import_debug_output:list<string>,gpg_import_started_at_epoch:?int,public_key_packet_inspection_exit_code:?int,public_key_creation_epoch:?int,public_key_creation_offset_seconds:?int,post_import_key_lookup_exit_code:?int,post_import_key_lookup_found:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>}
      */
     private function emptyDiagnostics(): array
     {
         return [
             'import_exit_code' => null,
             'import_accepted' => null,
+            'import_result_counts' => null,
+            'import_debug_output' => [],
+            'gpg_import_started_at_epoch' => null,
+            'public_key_packet_inspection_exit_code' => null,
+            'public_key_creation_epoch' => null,
+            'public_key_creation_offset_seconds' => null,
+            'post_import_key_lookup_exit_code' => null,
+            'post_import_key_lookup_found' => null,
             'verification_exit_code' => null,
             'validsig_present' => false,
             'gpg_status_codes' => [],

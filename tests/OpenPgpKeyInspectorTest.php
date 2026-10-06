@@ -53,6 +53,12 @@ final class OpenPgpKeyInspectorTest
         assertSame('ok', $result['status']);
         assertSame(0, $result['diagnostics']['import_exit_code']);
         assertSame(true, $result['diagnostics']['import_accepted']);
+        assertSame(0, $result['diagnostics']['public_key_packet_inspection_exit_code']);
+        assertTrue(is_int($result['diagnostics']['public_key_creation_epoch']));
+        assertTrue(is_int($result['diagnostics']['gpg_import_started_at_epoch']));
+        assertTrue(is_int($result['diagnostics']['public_key_creation_offset_seconds']));
+        assertSame(0, $result['diagnostics']['post_import_key_lookup_exit_code']);
+        assertSame(true, $result['diagnostics']['post_import_key_lookup_found']);
         assertSame(0, $result['diagnostics']['verification_exit_code']);
         assertSame(true, $result['diagnostics']['validsig_present']);
         assertTrue(in_array('VALIDSIG', $result['diagnostics']['gpg_status_codes'], true));
@@ -75,6 +81,12 @@ final class OpenPgpKeyInspectorTest
         assertSame('signature_verification_failed', $result['status']);
         assertSame(0, $result['diagnostics']['import_exit_code']);
         assertSame(true, $result['diagnostics']['import_accepted']);
+        assertSame(0, $result['diagnostics']['public_key_packet_inspection_exit_code']);
+        assertTrue(is_int($result['diagnostics']['public_key_creation_epoch']));
+        assertTrue(is_int($result['diagnostics']['gpg_import_started_at_epoch']));
+        assertTrue(is_int($result['diagnostics']['public_key_creation_offset_seconds']));
+        assertSame(0, $result['diagnostics']['post_import_key_lookup_exit_code']);
+        assertSame(true, $result['diagnostics']['post_import_key_lookup_found']);
         assertTrue(is_int($result['diagnostics']['verification_exit_code']));
         assertSame(false, $result['diagnostics']['validsig_present']);
         assertTrue(in_array('BADSIG', $result['diagnostics']['gpg_status_codes'], true));

@@ -852,6 +852,7 @@ class LocalWriteService
             });
             $this->timePhase($timings, 'prepared_post_delete', fn () => $this->deletePreparedPost($prepareToken));
             $timings['write_total'] = $this->elapsedMilliseconds($totalStartedAt);
+            $this->logIdentityBootstrapVerificationSuccess($verification, (string) $prepared['fingerprint'], $diagnosticContext);
 
             return [
                 'status' => 'ok',
@@ -2553,7 +2554,7 @@ class LocalWriteService
     }
 
     /**
-     * @param array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>,diagnostics:array{import_exit_code:?int,import_accepted:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>}} $verification
+     * @param array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>,diagnostics:array{import_exit_code:?int,import_accepted:?bool,import_result_counts:?list<int>,import_debug_output:list<string>,gpg_import_started_at_epoch:?int,public_key_packet_inspection_exit_code:?int,public_key_creation_epoch:?int,public_key_creation_offset_seconds:?int,post_import_key_lookup_exit_code:?int,post_import_key_lookup_found:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>}} $verification
      * @param array{bootstrap_attempt_id:string,bootstrap_retry_index:int,openpgp_bundle_version:string}|array{} $diagnosticContext
      */
     private function logIdentityBootstrapVerificationFailure(array $verification, string $expectedFingerprint, array $diagnosticContext): void
@@ -2562,25 +2563,59 @@ class LocalWriteService
     }
 
     /**
-     * Builds an operator diagnostic without retaining any key, signature, or raw GnuPG output.
-     *
-     * @param array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>,diagnostics:array{import_exit_code:?int,import_accepted:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>}} $verification
+     * @param array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>,diagnostics:array{import_exit_code:?int,import_accepted:?bool,import_result_counts:?list<int>,import_debug_output:list<string>,gpg_import_started_at_epoch:?int,public_key_packet_inspection_exit_code:?int,public_key_creation_epoch:?int,public_key_creation_offset_seconds:?int,post_import_key_lookup_exit_code:?int,post_import_key_lookup_found:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>}} $verification
      * @param array{bootstrap_attempt_id:string,bootstrap_retry_index:int,openpgp_bundle_version:string}|array{} $diagnosticContext
      */
-    private static function identityBootstrapVerificationDiagnostic(array $verification, string $expectedFingerprint, array $diagnosticContext = []): string
+    private function logIdentityBootstrapVerificationSuccess(array $verification, string $expectedFingerprint, array $diagnosticContext): void
+    {
+        error_log('[forum] ' . self::identityBootstrapVerificationDiagnostic(
+            $verification,
+            $expectedFingerprint,
+            $diagnosticContext,
+            'identity_bootstrap_signature_verified',
+        ));
+    }
+
+    /**
+     * Builds an operator diagnostic without retaining key or signature material.
+     * An import anomaly includes bounded GnuPG output for local debugging.
+     *
+     * @param array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>,diagnostics:array{import_exit_code:?int,import_accepted:?bool,import_result_counts:?list<int>,import_debug_output:list<string>,gpg_import_started_at_epoch:?int,public_key_packet_inspection_exit_code:?int,public_key_creation_epoch:?int,public_key_creation_offset_seconds:?int,post_import_key_lookup_exit_code:?int,post_import_key_lookup_found:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>}} $verification
+     * @param array{bootstrap_attempt_id:string,bootstrap_retry_index:int,openpgp_bundle_version:string}|array{} $diagnosticContext
+     */
+    private static function identityBootstrapVerificationDiagnostic(
+        array $verification,
+        string $expectedFingerprint,
+        array $diagnosticContext = [],
+        string $event = 'identity_bootstrap_signature_verification_failed',
+    ): string
     {
         $diagnostics = is_array($verification['diagnostics'] ?? null) ? $verification['diagnostics'] : [];
         $gpgStatusCodes = is_array($diagnostics['gpg_status_codes'] ?? null)
             ? array_values(array_filter($diagnostics['gpg_status_codes'], 'is_string'))
             : [];
+        $importResultCounts = is_array($diagnostics['import_result_counts'] ?? null)
+            ? array_values(array_filter($diagnostics['import_result_counts'], 'is_int'))
+            : null;
+        $importDebugOutput = is_array($diagnostics['import_debug_output'] ?? null)
+            ? array_values(array_filter($diagnostics['import_debug_output'], 'is_string'))
+            : [];
 
         $payload = array_merge([
-            'event' => 'identity_bootstrap_signature_verification_failed',
+            'event' => $event,
             'status' => (string) $verification['status'],
             'expected_fingerprint' => strtoupper(trim($expectedFingerprint)),
             'reported_fingerprint' => strtoupper(trim((string) ($verification['fingerprint'] ?? ''))),
             'import_exit_code' => is_int($diagnostics['import_exit_code'] ?? null) ? $diagnostics['import_exit_code'] : null,
             'import_accepted' => is_bool($diagnostics['import_accepted'] ?? null) ? $diagnostics['import_accepted'] : null,
+            'import_result_counts' => $importResultCounts,
+            'import_debug_output' => $importDebugOutput,
+            'gpg_import_started_at_epoch' => is_int($diagnostics['gpg_import_started_at_epoch'] ?? null) ? $diagnostics['gpg_import_started_at_epoch'] : null,
+            'public_key_packet_inspection_exit_code' => is_int($diagnostics['public_key_packet_inspection_exit_code'] ?? null) ? $diagnostics['public_key_packet_inspection_exit_code'] : null,
+            'public_key_creation_epoch' => is_int($diagnostics['public_key_creation_epoch'] ?? null) ? $diagnostics['public_key_creation_epoch'] : null,
+            'public_key_creation_offset_seconds' => is_int($diagnostics['public_key_creation_offset_seconds'] ?? null) ? $diagnostics['public_key_creation_offset_seconds'] : null,
+            'post_import_key_lookup_exit_code' => is_int($diagnostics['post_import_key_lookup_exit_code'] ?? null) ? $diagnostics['post_import_key_lookup_exit_code'] : null,
+            'post_import_key_lookup_found' => is_bool($diagnostics['post_import_key_lookup_found'] ?? null) ? $diagnostics['post_import_key_lookup_found'] : null,
             'verification_exit_code' => is_int($diagnostics['verification_exit_code'] ?? null) ? $diagnostics['verification_exit_code'] : null,
             'validsig_present' => ($diagnostics['validsig_present'] ?? false) === true,
             'gpg_status_codes' => $gpgStatusCodes,
