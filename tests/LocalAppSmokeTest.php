@@ -2656,7 +2656,7 @@ PHP;
         $viewer = $this->render($application, '/tools/sqlite/');
 
         assertStringContains('<h1>SQLite Viewer</h1>', $viewer);
-        assertStringContains('<section class="stack" data-sqlite-viewer>', $viewer);
+        assertStringMatches('#<section class="stack" data-sqlite-viewer\\b#', $viewer);
         assertStringContains('href="/downloads/read_model.sqlite3"', $viewer);
         assertStringContains('href="/downloads/sqlite_query_catalog.sql"', $viewer);
         assertStringContains('queries run locally', $viewer);
