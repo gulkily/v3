@@ -40,6 +40,8 @@ Use this checklist to refactor Zenmemes, Chouse, and QDB into explicit site comp
 
 ## New-site gate
 
+Write the proposal with the [New-Site Specification Style Guide](../architecture/new_site_spec_style_guide.md) before opening implementation work.
+
 - [ ] Supply a stable ID/display identity, default/permitted themes, browser/offline namespace, editorial-content selection, and enabled experiences.
 - [ ] Reuse generic routes, board/card/compose slots, shared palettes, publication machinery, and instance state by default.
 - [ ] Add a specialized module only for a coherent product behavior with its own route set, domain convention, or board policy.
