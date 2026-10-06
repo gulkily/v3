@@ -4,10 +4,10 @@ Use this checklist to refactor Zenmemes, Chouse, and QDB into explicit site comp
 
 ## P0 — Establish the profile contract
 
-- [ ] Extend `SiteProfileRegistry` into the canonical profile descriptor: display identity, default/permitted themes, browser/offline namespace, editorial-content key, and enabled experience keys.
-- [ ] Add registry validation for unique, browser-safe identifiers and safe fallback to Zenmemes for an absent or unknown profile.
-- [ ] Create one shared presentation-path resolver for static-output roots; replace the repeated Zenmemes empty-suffix rule in the web entry point and operational scripts.
-- [ ] Preserve shared repository, database, identity, approval, and content state as instance concerns—not profile concerns.
+- [x] Extend `SiteProfileRegistry` into the canonical profile descriptor: display identity, default/permitted themes, browser/offline namespace, editorial-content key, and enabled experience keys.
+- [x] Add registry validation for unique, browser-safe identifiers and safe fallback to Zenmemes for an absent or unknown profile.
+- [x] Create one shared presentation-path resolver for static-output roots; replace the repeated Zenmemes empty-suffix rule in the web entry point and operational scripts.
+- [x] Preserve shared repository, database, identity, approval, and content state as instance concerns—not profile concerns.
 
 ## P1 — Extract QDB as a specialized experience
 
