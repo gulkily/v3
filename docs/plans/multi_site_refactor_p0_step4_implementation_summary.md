@@ -26,3 +26,16 @@
   - `php tests/run.php PresentationPathResolverTest` — 1 passed.
 - Notes:
   - The resolver owns presentation paths only; it does not resolve repository, database, or other instance paths.
+
+## Stage 3 - Web and task-queue path migration
+
+- Changes:
+  - Replaced the web entry point's local Zenmemes suffix branch with `PresentationPathResolver`.
+  - Replaced the task queue's duplicated default-root branch without changing explicit option or environment precedence.
+- Verification:
+  - `php -l public/index.php`
+  - `php -l scripts/task_queue.php`
+  - `php tests/run.php PresentationPathResolverTest TaskQueueCommandTest` — 13 passed.
+  - Confirmed no hand-written profile-suffix branch remains in these two consumers.
+- Notes:
+  - Existing task-queue explicit-root coverage remains green, preserving operator-supplied root behavior.
