@@ -275,6 +275,34 @@ final class QuoteCardDisplayNumberTest
         );
     }
 
+    public function testQdbStaticReleaseCanSkipIndividualDetailPages(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-qdb-static-no-details-' . bin2hex(random_bytes(6));
+
+        $previousStaticDetailPages = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+        putenv('FORUM_SITE_ID=qdb');
+        putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=false');
+        try {
+            (new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot))->build();
+        } finally {
+            if ($previousStaticDetailPages === false) {
+                putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+            } else {
+                putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $previousStaticDetailPages);
+            }
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertTrue(is_file($artifactRoot . '/latest.html'));
+        assertTrue(is_file($artifactRoot . '/top.html'));
+        assertTrue(is_file($artifactRoot . '/leetness.html'));
+        assertFalse(is_file($artifactRoot . '/threads/thread-20030613104735-qdb-42.html'));
+        assertFalse(is_file($artifactRoot . '/posts/thread-20030613104735-qdb-42.html'));
+        assertFalse(is_file($artifactRoot . '/qdb/quotes/42.html'));
+    }
+
     public function testQdbListingPagesLoadTheVoteButtonScript(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();

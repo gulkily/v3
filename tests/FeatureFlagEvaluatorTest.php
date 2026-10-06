@@ -17,6 +17,7 @@ final class FeatureFlagEvaluatorTest
             $unicode = $evaluator->evaluate(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
             $emoji = $evaluator->evaluate(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT);
             $notification = $evaluator->evaluate(FeatureFlagRegistry::APP_VERSION_NOTIFICATION);
+            $staticDetailPages = $evaluator->evaluate(FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED);
             $agentReplies = $evaluator->evaluate(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED);
             $automaticAgentReplies = $evaluator->evaluate(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED);
             $agentResponseRequests = $evaluator->evaluate(FeatureFlagRegistry::AGENT_RESPONSE_REQUESTS_ENABLED);
@@ -35,6 +36,9 @@ final class FeatureFlagEvaluatorTest
             assertSame(true, $notification->effectiveValue);
             assertSame('default', $notification->source);
             assertSame(true, $notification->isDefault());
+            assertSame(true, $staticDetailPages->effectiveValue);
+            assertSame('default', $staticDetailPages->source);
+            assertSame(true, $staticDetailPages->isDefault());
             assertSame(true, $agentReplies->effectiveValue);
             assertSame('default', $agentReplies->source);
             assertSame(true, $automaticAgentReplies->effectiveValue);
@@ -98,6 +102,7 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::EMOJI_AUTHORED_TEXT,
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
             FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED,
+            FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
             FeatureFlagRegistry::AGENT_RESPONSE_REQUESTS_ENABLED,
@@ -340,6 +345,7 @@ PHP);
             FeatureFlagRegistry::EMOJI_AUTHORED_TEXT,
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
             FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED,
+            FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
             FeatureFlagRegistry::AGENT_RESPONSE_REQUESTS_ENABLED,
