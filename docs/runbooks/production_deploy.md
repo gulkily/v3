@@ -102,6 +102,25 @@ FORUM_STATIC_HTML_ROOT=/srv/forum-rewrite/state/static_html
 It is not under `public/`; Apache continues to route content requests through
 PHP, which selects only the `current` release.
 
+### Optional QDB Apache-direct static reads
+
+For a public QDB deployment that has been validated on the target shared host,
+Apache 2.4+ can serve the anonymous hot-path artifacts without starting PHP.
+The host must permit `mod_rewrite` to follow the following document-root
+symlink:
+
+```bash
+ln -s "$FORUM_STATIC_HTML_ROOT" public/.static
+```
+
+The checked-in `.htaccess` then serves only cookie-free, query-free `GET` and
+`HEAD` requests for `/`, `/latest`, `/top`, `/leetness`, canonical quote pages,
+and existing numeric quote aliases. It confirms every target exists and falls
+back to `index.php` if the `current` release pointer is absent. Cookie-bearing,
+query, account, write, reaction, search, random, and unknown requests remain
+dynamic. Do not enable this on a host that cannot verify the symlink/rewrite
+behavior in staging; remove `public/.static` to roll back to PHP artifacts.
+
 ## Safe Deployment Procedure
 
 1. Deploy the application code first. Do not copy generated HTML into `public/`.

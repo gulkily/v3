@@ -15,3 +15,16 @@
   - `git diff --check` — passed.
 - Notes:
   - Host-specific document-root exposure and Apache direct-file routing remain Stage 2 work; no shared-host deployment was available for external verification.
+
+## Stage 2 - Guarded Apache-direct QDB reads
+
+- Changes:
+  - Added Apache 2.4 `.htaccess` rules for cookie-free, query-free `GET`/`HEAD` QDB landing, listing, canonical quote, and numeric quote-alias artifacts.
+  - Blocked direct browsing of the document-root static-release link and retained the front controller for every non-allowlisted request or absent artifact.
+  - Documented the one-time `public/.static` release-root link, host prerequisites, and immediate rollback procedure.
+- Verification:
+  - `php tests/run.php WebServerRoutingTest QuoteCardDisplayNumberTest LocalAppSmokeTest::testStaticArtifactReleasePublisherActivatesCompleteReleaseForFrontController LocalAppSmokeTest::testFrontControllerFallsBackDynamicallyUntilAReleaseIsActivated` — 18 passed.
+  - `git diff --check` — passed.
+  - Shared-host staging validation is pending because this workspace has no target host; it is a release gate in the deployment runbook.
+- Notes:
+  - The direct path uses Apache 2.4's `[END]` flag so an internal artifact rewrite cannot re-enter the front-controller rule.
