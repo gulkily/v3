@@ -47,6 +47,7 @@ final class QdbExperience
 
         $latestPageMatch = preg_match('#^/latest/(\d+)/?$#', $path, $latestPathMatches) === 1;
         $topPageMatch = preg_match('#^/top/(\d+)/?$#', $path, $topPathMatches) === 1;
+        $leetnessPageMatch = preg_match('#^/leetness/(\d+)/?$#', $path, $leetnessPathMatches) === 1;
         if ($path === '/latest' || $latestPageMatch || array_key_exists('latest', $query)) {
             $page = $latestPageMatch ? (int) $latestPathMatches[1] : (int) ($query['latest'] ?? 1);
 
@@ -59,8 +60,10 @@ final class QdbExperience
             return QdbExperienceRouteResult::page($this->boardPages->board('all', 'top', 'top', max(1, $page), $this->boardPolicy));
         }
 
-        if ($path === '/leetness' || array_key_exists('leetness', $query)) {
-            return QdbExperienceRouteResult::page($this->boardPages->board('all', 'leetness', 'leetness', 1, $this->boardPolicy));
+        if ($path === '/leetness' || $leetnessPageMatch || array_key_exists('leetness', $query)) {
+            $page = $leetnessPageMatch ? (int) $leetnessPathMatches[1] : (int) ($query['leetness'] ?? 1);
+
+            return QdbExperienceRouteResult::page($this->boardPages->board('all', 'leetness', 'leetness', max(1, $page), $this->boardPolicy));
         }
 
         if ($path === '/add' || array_key_exists('add', $query)) {
@@ -72,7 +75,7 @@ final class QdbExperience
         }
 
         if ($path === '/search' || array_key_exists('search', $query)) {
-            return QdbExperienceRouteResult::page($this->search((string) ($query['search'] ?? '')));
+            return QdbExperienceRouteResult::page($this->search((string) ($query['search'] ?? ''), (int) ($query['page'] ?? 1)));
         }
 
         foreach (array_keys($query) as $key) {
@@ -183,15 +186,29 @@ final class QdbExperience
         return $this->renderQuotePage('qdb_random.php', ['threads' => $threads], 'Random', 'random', $threads);
     }
 
-    private function search(string $term): string
+    private function search(string $term, int $page): string
     {
         $term = trim($term);
-        $threads = $term === '' ? [] : array_values(array_filter(
+        $matches = $term === '' ? [] : array_values(array_filter(
             $this->eligibleQuotes(),
             static fn (array $thread): bool => stripos((string) $thread['root_post_body'], $term) !== false,
         ));
+        $resultCount = count($matches);
+        $presentation = $this->boardPolicy->paginate(
+            $matches,
+            'search',
+            max(1, $page),
+            '/search?search=' . rawurlencode($term),
+        );
+        unset($matches);
+        $threads = $presentation['threads'];
 
-        return $this->renderQuotePage('qdb_search.php', ['threads' => $threads, 'term' => $term], 'Search', 'search', $threads);
+        return $this->renderQuotePage('qdb_search.php', [
+            'threads' => $threads,
+            'term' => $term,
+            'resultCount' => $resultCount,
+            'pagination' => $presentation['pagination'],
+        ], 'Search', 'search', $threads);
     }
 
     /**
@@ -218,6 +235,6 @@ final class QdbExperience
     private function isPrimaryRoutePath(string $path): bool
     {
         return $path === '/' || $path === '' || in_array($path, ['/latest', '/top', '/leetness', '/add', '/random', '/search'], true)
-            || preg_match('#^/(?:latest|top)/(\d+)/?$#', $path) === 1;
+            || preg_match('#^/(?:latest|top|leetness)/(\d+)/?$#', $path) === 1;
     }
 }

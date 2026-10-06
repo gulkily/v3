@@ -5,9 +5,12 @@
       <button type="submit">Search</button>
     </form>
 <?php if ($term !== ''): ?>
-    <p class="meta"><?= count($threads) ?> <?= count($threads) === 1 ? 'result' : 'results' ?> for &quot;<?= $e($term) ?>&quot;</p>
+    <p class="meta"><?= $resultCount ?> <?= $resultCount === 1 ? 'result' : 'results' ?> for &quot;<?= $e($term) ?>&quot;</p>
 <?php endif; ?>
   </article>
+<?php if (!empty($pagination)): ?>
+<?= $indent($partial('partials/board_pagination_nav.php', ['pagination' => $pagination]), 0) ?>
+<?php endif; ?>
 <?php foreach ($threads as $thread): ?>
 <?= $indent($partial('partials/quote_card.php', [
     'thread' => $thread,
@@ -16,4 +19,7 @@
     'viewerFlaggedPostIds' => $viewerFlaggedPostIds ?? [],
 ]), 1) ?>
 <?php endforeach; ?>
+<?php if (!empty($pagination)): ?>
+<?= $indent($partial('partials/board_pagination_nav.php', ['pagination' => $pagination]), 0) ?>
+<?php endif; ?>
 </section>

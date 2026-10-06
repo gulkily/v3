@@ -8,7 +8,7 @@ use ForumRewrite\Qdb\QdbBoardPolicy;
 
 final class QdbBoardPolicyTest
 {
-    public function testPaginatesLatestAndLeavesOtherSectionsUnbounded(): void
+    public function testPaginatesEveryQdbQuoteListingSection(): void
     {
         $policy = new QdbBoardPolicy('/unused', static fn (): ?array => null);
         $threads = array_map(static fn (int $number): array => ['root_post_id' => 'thread-' . $number], range(1, 26));
@@ -21,7 +21,12 @@ final class QdbBoardPolicyTest
         $finalPage = $policy->paginate($threads, 'top', 2);
         assertSame(1, count($finalPage['threads']));
         assertSame('thread-26', $finalPage['threads'][0]['root_post_id']);
-        assertSame(null, $policy->paginate($threads, 'leetness', 1)['pagination']);
+        $leetness = $policy->paginate($threads, 'leetness', 2);
+        assertSame(1, count($leetness['threads']));
+        assertSame('thread-26', $leetness['threads'][0]['root_post_id']);
+
+        $search = $policy->paginate($threads, 'search', 2, '/search?search=quote');
+        assertSame('/search?search=quote&page=2', $search['pagination'][2]['href']);
     }
 
     public function testUsesDistanceFrom1337ForLeetness(): void
