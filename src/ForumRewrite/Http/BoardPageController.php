@@ -41,11 +41,11 @@ final class BoardPageController
         $viewOptions = BoardViewOptions::viewOptions($view, $sort);
         $sortOptions = BoardViewOptions::sortOptions($view, $sort);
         $threads = $this->fetchBoardThreads($view, $sort, $qdbPolicy);
+        $qdbQuoteCount = $qdbPolicy?->quoteCount($threads) ?? 0;
         $qdbPresentation = $qdbPolicy?->paginate($threads, $activeSection, $page);
         $threads = $qdbPresentation['threads'] ?? $threads;
         $pagination = $qdbPresentation['pagination'] ?? null;
         $viewerReactionState = $qdbPolicy?->viewerReactionState($threads) ?? ['upvoted' => [], 'downvoted' => [], 'flagged' => []];
-        $qdbQuoteCount = $qdbPolicy?->quoteCount($this->routeServices->pdo()) ?? 0;
         $boardCardSlot = PresentationSlotRegistry::resolve(\ForumRewrite\SiteProfileRegistry::active(), 'boardCard');
 
         return $this->routeServices->renderPageTemplate(
@@ -202,6 +202,9 @@ final class BoardPageController
             ThreadRepository::fetchThreads($this->routeServices->pdo()),
             fn (array $thread): bool => $this->matchesView($thread, $view)
         ));
+        if ($qdbPolicy !== null) {
+            $threads = $qdbPolicy->eligibleQuotes($threads);
+        }
 
         usort($threads, fn (array $left, array $right): int => $this->compareThreads($left, $right, $sort, $qdbPolicy));
 

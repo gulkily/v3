@@ -12,3 +12,14 @@
   - `git diff --check` — passed.
 - Notes:
   - This stage changes no rendered surface; later stages apply the policy to collections.
+
+## Stage 2 - QDB board filtering and counts
+
+- Changes:
+  - Applied quote eligibility before QDB board sorting and pagination.
+  - Derived the QDB footer count from the complete eligible set before page slicing.
+- Verification:
+  - `php tests/run.php QdbBoardPolicyTest QuoteCardDisplayNumberTest` — 16 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - Generic boards do not receive the QDB policy and retain their existing roots.
