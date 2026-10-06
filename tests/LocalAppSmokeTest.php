@@ -1058,7 +1058,7 @@ PHP;
     {
         $port = random_int(18000, 18999);
         $command = sprintf(
-            'timeout 1s %s start %s 2>&1',
+            'timeout 3s %s start %s 2>&1',
             escapeshellarg(__DIR__ . '/../v3'),
             escapeshellarg((string) $port),
         );
@@ -1072,7 +1072,7 @@ PHP;
     {
         $port = random_int(19000, 19999);
         $command = sprintf(
-            'timeout 1s %s start %s 2>&1',
+            'timeout 3s %s start %s 2>&1',
             escapeshellarg(__DIR__ . '/../v3'),
             escapeshellarg(':' . $port),
         );
