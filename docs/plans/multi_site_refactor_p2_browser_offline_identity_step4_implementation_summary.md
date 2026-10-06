@@ -36,3 +36,15 @@
   - `git diff --check` — passed.
 - Notes:
   - Runtime configuration delivery for non-Zen profiles is completed in the next stage; the checked-in source remains the safe Zenmemes fallback for direct development serving.
+
+## Stage 4 - Dynamic PWA runtime delivery
+
+- Changes:
+  - Added a shared browser-runtime asset renderer for profile-derived manifests and worker configuration.
+  - Routed manifest and worker requests through the front controller instead of allowing web servers to serve Zenmemes source files directly.
+  - Allowed matching historical cache-family bootstrap requests while still rejecting a foreign profile's cache family.
+- Verification:
+  - `php tests/run.php WebServerRoutingTest LocalAppSmokeTest::testFrontControllerServesPublicOfflineSnapshotFromActiveRelease LocalAppSmokeTest::testFrontControllerDerivesManifestAndWorkerFromTheActiveProfile LocalAppSmokeTest::testFrontControllerDoesNotServeOfflineSnapshotWhenMembersOnlyIsEnabled` — 5 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - The root scope remains intentionally singular: changing the active profile updates that one worker rather than creating concurrent root-scope workers.

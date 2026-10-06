@@ -5,7 +5,7 @@ declare(strict_types=1);
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $file = __DIR__ . $path;
 $isPublicAsset = str_starts_with($path, '/assets/')
-    || in_array($path, ['/favicon.ico', '/manifest.webmanifest', '/service_worker.js'], true);
+    || $path === '/favicon.ico';
 
 // scripts/dev_server.php sets V3_DEV_LOG; it reads one line per request from stderr.
 $devLogEnabled = getenv('V3_DEV_LOG') === '1';

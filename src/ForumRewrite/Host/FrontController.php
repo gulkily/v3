@@ -48,6 +48,12 @@ final class FrontController
         $approvedMembersOnly = FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)
             ->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
 
+        $browserRuntimeAsset = $this->browserRuntimeAsset($method, $requestUri);
+        if ($browserRuntimeAsset !== null) {
+            $this->sendBrowserRuntimeAsset($browserRuntimeAsset['contents'], $browserRuntimeAsset['contentType'], $method);
+            return;
+        }
+
         $assetPath = $this->resolveFingerprintedAssetPath($method, $requestUri);
         if ($assetPath !== null) {
             $this->sendAsset($assetPath, $method);
@@ -202,6 +208,36 @@ final class FrontController
         }
 
         return $assetPath;
+    }
+
+    /** @return array{contents:string, contentType:string}|null */
+    private function browserRuntimeAsset(string $method, string $requestUri): ?array
+    {
+        if ($method !== 'GET' && $method !== 'HEAD') {
+            return null;
+        }
+
+        $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+        $profile = SiteProfileRegistry::active();
+        if ($path === '/manifest.webmanifest') {
+            return [
+                'contents' => BrowserRuntimeAssetRenderer::manifest($profile),
+                'contentType' => 'application/manifest+json; charset=utf-8',
+            ];
+        }
+        if ($path !== '/service_worker.js') {
+            return null;
+        }
+
+        $source = file_get_contents($this->projectRoot . '/public/service_worker.js');
+        if ($source === false) {
+            throw new RuntimeException('Unable to read offline worker source.');
+        }
+
+        return [
+            'contents' => BrowserRuntimeAssetRenderer::serviceWorker($source, $profile),
+            'contentType' => 'application/javascript; charset=utf-8',
+        ];
     }
 
     private function configurationError(): ?string
@@ -383,7 +419,7 @@ final class FrontController
         $runtime = BrowserRuntimeProfile::fromProfile(SiteProfileRegistry::active());
 
         return $query === ''
-            || $query === '__offline_bootstrap=' . $runtime['offlineCacheName'];
+            || preg_match('/^__offline_bootstrap=' . preg_quote($runtime['offlineCachePrefix'], '/') . 'v[0-9]+$/', $query) === 1;
     }
 
     private function isValidOfflineSnapshot(string $path): bool
@@ -528,6 +564,18 @@ final class FrontController
         header($immutable
             ? 'Cache-Control: public, max-age=31536000, immutable'
             : 'Cache-Control: public, max-age=300, must-revalidate');
+        header('Content-Length: ' . strlen($contents));
+
+        if ($method !== 'HEAD') {
+            echo $contents;
+        }
+    }
+
+    private function sendBrowserRuntimeAsset(string $contents, string $contentType, string $method): void
+    {
+        http_response_code(200);
+        header('Content-Type: ' . $contentType);
+        header('Cache-Control: no-store');
         header('Content-Length: ' . strlen($contents));
 
         if ($method !== 'HEAD') {

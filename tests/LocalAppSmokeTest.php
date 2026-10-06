@@ -3219,6 +3219,31 @@ PHP;
         }
     }
 
+    public function testFrontControllerDerivesManifestAndWorkerFromTheActiveProfile(): void
+    {
+        $previousProfile = getenv('FORUM_SITE_ID');
+        putenv('FORUM_SITE_ID=chouse');
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+
+        try {
+            $manifest = $this->renderFrontController($controller, 'GET', '/manifest.webmanifest', []);
+            $worker = $this->renderFrontController($controller, 'GET', '/service_worker.js', []);
+
+            assertStringContains('"id": "/offline/?site=chouse"', $manifest);
+            assertStringContains('"name": "Chouse Offline Reading"', $manifest);
+            assertStringContains('self.__forumBrowserRuntime = {"namespace":"chouse"', $worker);
+            assertStringContains('"offlineCacheName":"chouse-offline-reader-v14"', $worker);
+        } finally {
+            if ($previousProfile === false) {
+                putenv('FORUM_SITE_ID');
+            } else {
+                putenv('FORUM_SITE_ID=' . $previousProfile);
+            }
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
     public function testFrontControllerPrefersIndependentlyPublishedOfflineSnapshot(): void
     {
         ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();

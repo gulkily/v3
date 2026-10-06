@@ -4,7 +4,7 @@ DirectoryIndex index.php index.html
 RewriteEngine On
 
 # Only public presentation assets may bypass the PHP access gate.
-RewriteCond %{REQUEST_URI} ^/(?:assets(?:/|$)|favicon\.ico|manifest\.webmanifest|service_worker\.js)$ [NC]
+RewriteCond %{REQUEST_URI} ^/(?:assets(?:/|$)|favicon\.ico)$ [NC]
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
