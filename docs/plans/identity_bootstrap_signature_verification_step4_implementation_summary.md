@@ -11,3 +11,16 @@
   - `php tests/run.php OpenPgpKeyInspectorTest IdentityBootstrapDiagnosticsTest` — 7 run, 7 passed.
 - Notes:
   - The diagnostics structure contains only process results and status-code tokens; it does not expose key, signature, canonical-record, or raw GnuPG-output content.
+
+## Stage 2 - Correlated identity API diagnostics
+- Changes:
+  - Extended the existing prepare/create identity contract with optional, validated bootstrap attempt ID, retry index, and OpenPGP bundle-version context; persisted it with the prepared bootstrap and require the create request to match it.
+  - Enriched the existing server failure event with the Stage 1 safe verifier outcomes and the matching correlation context.
+  - Added coverage for absent, valid, and invalid diagnostic context plus the expanded safe event payload.
+- Verification:
+  - `php -l src/ForumRewrite/Write/LocalWriteService.php`
+  - `php -l tests/IdentityBootstrapDiagnosticsTest.php`
+  - `php tests/run.php IdentityBootstrapDiagnosticsTest OpenPgpKeyInspectorTest` — 8 run, 8 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - Metadata is optional for compatibility with existing clients, but when supplied it is validated and bound to the prepared bootstrap so an unrelated create request cannot relabel the log event.
