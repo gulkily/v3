@@ -23,6 +23,7 @@ final class SiteProfileRegistry
                 'editorialContentKey' => 'zenmemes',
                 'enabledExperienceKeys' => ['forum'],
                 'composerPrompt' => 'Start a thread...',
+                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'zenmemes', 'brandedStylesheet' => 'site'],
             ],
             'chouse' => [
                 'name' => 'chouse',
@@ -33,6 +34,7 @@ final class SiteProfileRegistry
                 'editorialContentKey' => 'chouse',
                 'enabledExperienceKeys' => ['forum'],
                 'composerPrompt' => 'Start a thread...',
+                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'chouse', 'editorial' => 'boston', 'brandedStylesheet' => 'chouse'],
             ],
             'qdb' => [
                 'name' => 'qdb',
@@ -43,6 +45,7 @@ final class SiteProfileRegistry
                 'editorialContentKey' => 'qdb',
                 'enabledExperienceKeys' => ['qdb'],
                 'composerPrompt' => 'Submit a quote...',
+                'presentationSlots' => ['navigation' => 'qdb', 'boardCard' => 'quote', 'compose' => 'qdb', 'about' => 'default', 'editorial' => 'qdb', 'brandedStylesheet' => 'qdb'],
             ],
         ];
 
@@ -107,6 +110,11 @@ final class SiteProfileRegistry
                 throw new \RuntimeException("Site profile browser namespace is invalid or duplicated: {$browserNamespace}");
             }
             $browserNamespaces[$browserNamespace] = true;
+
+            if (!isset($profile['presentationSlots']) || !is_array($profile['presentationSlots'])) {
+                throw new \RuntimeException("Site profile {$siteId} requires presentation slots.");
+            }
+            PresentationSlotRegistry::validate($profile['presentationSlots'], $siteId);
         }
     }
 

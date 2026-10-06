@@ -70,6 +70,7 @@ $testFiles = [
     __DIR__ . '/PostSignatureAuditCommandTest.php',
     __DIR__ . '/PostAnalyzerFactoryTest.php',
     __DIR__ . '/PresentationPathResolverTest.php',
+    __DIR__ . '/PresentationSlotRegistryTest.php',
     __DIR__ . '/RelatedContentSearchServiceTest.php',
     __DIR__ . '/RepositoryArchiveImportCommandTest.php',
     __DIR__ . '/ReadModelBuilderTimingTest.php',
