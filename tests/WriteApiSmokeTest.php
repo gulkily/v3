@@ -3817,6 +3817,11 @@ NODE;
         );
         assertStringNotContains('>' . $pendingTarget['profile_slug'] . '</a>', $pendingUsers);
         assertStringContains('<table ', $pendingUsers);
+        assertStringContains('data-role="pending-approval-activity-row"', $pendingUsers);
+        assertStringContains('colspan="2"', $pendingUsers);
+        assertStringContains('account bootstrap', $pendingUsers);
+        assertStringContains('<time datetime="', $pendingUsers);
+        assertStringNotContains('Latest activity:', $pendingUsers);
         assertStringContains('Approve', $pendingUsers);
         assertStringContains('/assets/browser_signing.', $pendingUsers);
         assertStringContains('/assets/pending_approvals.', $pendingUsers);
@@ -3825,6 +3830,44 @@ NODE;
         assertStringNotContains('Posts', $pendingUsers);
         assertStringNotContains('Bootstrap thread', $pendingUsers);
         assertStringContains('Only approved users can view the pending approval directory.', $pendingUsersForbidden);
+    }
+
+    public function testPendingDirectoryRendersLaterActivityWithReadingFriendlyTimestampAndFallback(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+        $target = $this->linkGeneratedIdentity($application, 'bob');
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $service->createThread([
+            'board_tags' => 'general',
+            'subject' => 'Later pending activity',
+            'body' => 'This pending profile has newer activity.',
+            'author_identity_id' => $target['identity_id'],
+        ]);
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $pendingUsers = $this->renderMethod($application, 'GET', '/users/pending/');
+        $_COOKIE = [];
+
+        assertStringContains('Later pending activity', $pendingUsers);
+        assertStringMatches('#<time datetime="[^"]+" title="[^"]+">(?:just now|\d+ minutes? ago)</time>#', $pendingUsers);
+        assertStringNotContains('Latest activity:', $pendingUsers);
+
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $delete = $pdo->prepare(
+            'DELETE FROM activity WHERE author_identity_id = :identity_id OR post_id = :bootstrap_post_id'
+        );
+        $delete->execute([
+            'identity_id' => $target['identity_id'],
+            'bootstrap_post_id' => $target['bootstrap_post_id'],
+        ]);
+
+        $_COOKIE = ['identity_hint' => 'guest'];
+        $fallback = $this->renderMethod($application, 'GET', '/users/pending/');
+        $_COOKIE = [];
+
+        assertStringContains('No recorded activity', $fallback);
     }
 
     public function testPendingDirectoryProfilesIncludeBootstrapActivitySummary(): void

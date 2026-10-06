@@ -51,9 +51,16 @@
         await approveUser(profileSlug);
 
         const row = button.closest("tr");
+        const activityRow = row && row.nextElementSibling
+          && row.nextElementSibling.getAttribute("data-role") === "pending-approval-activity-row"
+          ? row.nextElementSibling
+          : null;
         const username = row ? row.getAttribute("data-username") || profileSlug : profileSlug;
         if (row) {
           row.remove();
+        }
+        if (activityRow) {
+          activityRow.remove();
         }
 
         if (body && body.children.length === 0) {

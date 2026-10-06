@@ -14,3 +14,16 @@
   - `git diff --check` — passed.
 - Notes:
   - No schema, migration, deployment, or external-service change was required.
+
+## Stage 2 - Pending queue presentation
+
+- Changes:
+  - Added a paired activity row under every pending user, spanning User and Profile while retaining a separate Approve column.
+  - Rendered the existing reading-friendly relative timestamp without a `Latest activity:` prefix, and rendered the missing-activity fallback safely.
+  - Updated the existing pending-approval behavior to remove the paired activity row after successful approval.
+- Verification:
+  - `node --check public/assets/pending_approvals.js` — passed.
+  - `php tests/run.php WriteApiSmokeTest::testUserDirectoryShowsOnlyApprovedUsersAndPendingDirectoryRequiresApprovedViewer WriteApiSmokeTest::testPendingDirectoryRendersLaterActivityWithReadingFriendlyTimestampAndFallback WriteApiSmokeTest::testPendingDirectoryProfilesIncludeBootstrapActivitySummary WriteApiSmokeTest::testPendingDirectoryProfilesPreferLaterActivityAndHandleMissingActivity` — 4 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - No migration, deployment, or external-service verification applies; the route remains approved-viewer-only and the server remains authoritative for approval.
