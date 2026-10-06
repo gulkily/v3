@@ -30,6 +30,7 @@ $shortenProfileSlug = static function (string $slug): string {
 <?php
 $latestActivityLabel = trim((string) ($profile['latest_activity_label'] ?? ''));
 $latestActivityAt = trim((string) ($profile['latest_activity_at'] ?? ''));
+$latestActivityPostId = trim((string) ($profile['latest_activity_post_id'] ?? ''));
 ?>
         <tr data-role="pending-approval-row" data-profile-slug="<?= $e($profile['profile_slug']) ?>" data-username="<?= $e($profile['username']) ?>">
           <td class="pending-approvals-user-cell" data-label="User">
@@ -51,7 +52,11 @@ $latestActivityAt = trim((string) ($profile['latest_activity_at'] ?? ''));
         </tr>
         <tr class="pending-approvals-activity-row" data-role="pending-approval-activity-row" data-profile-slug="<?= $e($profile['profile_slug']) ?>">
           <td class="pending-approvals-activity-cell" colspan="2">
+<?php if ($latestActivityLabel !== '' && $latestActivityPostId !== ''): ?>
+            <a href="/posts/<?= $e($latestActivityPostId) ?>"><?= $e($latestActivityLabel) ?></a>
+<?php else: ?>
             <?= $e($latestActivityLabel !== '' ? $latestActivityLabel : 'No recorded activity') ?>
+<?php endif; ?>
 <?php if ($latestActivityAt !== ''): ?>
             <span class="meta">&mdash; <?= $relativeTimestamp($latestActivityAt) ?></span>
 <?php endif; ?>

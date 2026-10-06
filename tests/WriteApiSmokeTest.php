@@ -3820,6 +3820,7 @@ NODE;
         assertStringContains('data-role="pending-approval-activity-row"', $pendingUsers);
         assertStringContains('colspan="2"', $pendingUsers);
         assertStringContains('account bootstrap', $pendingUsers);
+        assertStringContains('href="/posts/' . $pendingTarget['bootstrap_post_id'] . '"', $pendingUsers);
         assertStringContains('<time datetime="', $pendingUsers);
         assertStringNotContains('Latest activity:', $pendingUsers);
         assertStringContains('Approve', $pendingUsers);
@@ -3839,7 +3840,7 @@ NODE;
         $this->renderMethod($application, 'GET', '/');
         $target = $this->linkGeneratedIdentity($application, 'bob');
         $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
-        $service->createThread([
+        $laterActivity = $service->createThread([
             'board_tags' => 'general',
             'subject' => 'Later pending activity',
             'body' => 'This pending profile has newer activity.',
@@ -3851,6 +3852,7 @@ NODE;
         $_COOKIE = [];
 
         assertStringContains('Later pending activity', $pendingUsers);
+        assertStringContains('href="/posts/' . $laterActivity['post_id'] . '"', $pendingUsers);
         assertStringMatches('#<time datetime="[^"]+" title="[^"]+">(?:just now|\d+ minutes? ago)</time>#', $pendingUsers);
         assertStringNotContains('Latest activity:', $pendingUsers);
 
@@ -3886,6 +3888,7 @@ NODE;
         assertTrue(is_array($profile));
         assertSame('account bootstrap', $profile['latest_activity_label']);
         assertTrue((string) $profile['latest_activity_at'] !== '');
+        assertSame($target['bootstrap_post_id'], $profile['latest_activity_post_id']);
     }
 
     public function testPendingDirectoryProfilesPreferLaterActivityAndHandleMissingActivity(): void
@@ -3944,6 +3947,69 @@ NODE;
         assertTrue(is_array($profile));
         assertSame(null, $profile['latest_activity_label']);
         assertSame(null, $profile['latest_activity_at']);
+        assertSame(null, $profile['latest_activity_post_id']);
+    }
+
+    public function testPendingDirectoryProfilesSortByLatestActivityWithMissingActivityLast(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $this->renderMethod($application, 'GET', '/');
+        $oldest = $this->linkGeneratedIdentity($application, 'alice');
+        $newest = $this->linkGeneratedIdentity($application, 'bob');
+        $missing = $this->linkGeneratedIdentity($application, 'carol');
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $service->createThread([
+            'board_tags' => 'general',
+            'subject' => 'Older pending activity',
+            'body' => 'This pending profile has older activity.',
+            'author_identity_id' => $oldest['identity_id'],
+        ]);
+        $service->createThread([
+            'board_tags' => 'general',
+            'subject' => 'Newest pending activity',
+            'body' => 'This pending profile has newer activity.',
+            'author_identity_id' => $newest['identity_id'],
+        ]);
+
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $update = $pdo->prepare(
+            'UPDATE activity
+             SET created_at = :created_at
+             WHERE author_identity_id = :identity_id OR post_id = :bootstrap_post_id'
+        );
+        foreach ([
+            [$oldest, '2030-01-01T00:00:00Z'],
+            [$newest, '2030-01-02T00:00:00Z'],
+        ] as [$target, $createdAt]) {
+            $update->execute([
+                'created_at' => $createdAt,
+                'identity_id' => $target['identity_id'],
+                'bootstrap_post_id' => $target['bootstrap_post_id'],
+            ]);
+        }
+        $delete = $pdo->prepare(
+            'DELETE FROM activity WHERE author_identity_id = :identity_id OR post_id = :bootstrap_post_id'
+        );
+        $delete->execute([
+            'identity_id' => $missing['identity_id'],
+            'bootstrap_post_id' => $missing['bootstrap_post_id'],
+        ]);
+
+        $targets = [
+            $oldest['profile_slug'],
+            $newest['profile_slug'],
+            $missing['profile_slug'],
+        ];
+        $profiles = array_values(array_filter(
+            ProfileRepository::pendingDirectoryProfiles($pdo),
+            static fn (array $profile): bool => in_array($profile['profile_slug'], $targets, true),
+        ));
+
+        assertSame(
+            [$newest['profile_slug'], $oldest['profile_slug'], $missing['profile_slug']],
+            array_column($profiles, 'profile_slug')
+        );
     }
 
     public function testUnsignedApproveUserApiRequiresBrowserSignature(): void

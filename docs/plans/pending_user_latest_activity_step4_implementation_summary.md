@@ -28,3 +28,15 @@
   - `git diff --check` — passed.
 - Notes:
   - No migration, deployment, or external-service verification applies; the route remains approved-viewer-only and the server remains authoritative for approval.
+
+## Stage 3 - Activity navigation and ordering
+
+- Changes:
+  - Linked each rendered activity description to its canonical item page.
+  - Ordered pending profiles by most recent activity, using stable activity tie-breakers and placing profiles without activity last.
+  - Tightened the paired table rows so the activity context stays visually associated with its user.
+- Verification:
+  - Pending-directory coverage verifies bootstrap and later-activity destinations, newest-first ordering, and the missing-activity fallback position.
+  - `php tests/run.php WriteApiSmokeTest` — 127 passed.
+  - `node --check public/assets/pending_approvals.js` — passed.
+  - `git diff --check` — passed.

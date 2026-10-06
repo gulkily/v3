@@ -98,7 +98,8 @@ final class ProfileRepository
             'SELECT profiles.profile_slug, profiles.username, profiles.username_token, profiles.fallback_label,
                     profiles.post_count, profiles.thread_count, profiles.bootstrap_post_id, profiles.bootstrap_thread_id,
                     latest_activity.label AS latest_activity_label,
-                    latest_activity.created_at AS latest_activity_at
+                    latest_activity.created_at AS latest_activity_at,
+                    latest_activity.post_id AS latest_activity_post_id
              FROM profiles
              LEFT JOIN activity AS latest_activity ON latest_activity.id = (
                  SELECT candidate.id
@@ -109,7 +110,12 @@ final class ProfileRepository
                  LIMIT 1
              )
              WHERE is_approved = 0
-             ORDER BY profiles.thread_count DESC, profiles.post_count DESC, profiles.username_token ASC, profiles.profile_slug ASC'
+             ORDER BY CASE WHEN latest_activity.created_at IS NULL THEN 1 ELSE 0 END ASC,
+                      latest_activity.created_at DESC,
+                      latest_activity.action_key DESC,
+                      latest_activity.id DESC,
+                      profiles.username_token ASC,
+                      profiles.profile_slug ASC'
         );
 
         return $stmt->fetchAll();
