@@ -8,7 +8,9 @@ use ForumRewrite\Llm\AnthropicStructuredChatProvider;
 use ForumRewrite\Llm\LlmExchangeRecorder;
 use ForumRewrite\Llm\LlmProviderConfig;
 use ForumRewrite\Llm\OpenAiCompatibleStructuredChatProvider;
+use ForumRewrite\Llm\StubTextChatProvider;
 use ForumRewrite\Llm\StructuredChatProvider;
+use ForumRewrite\Llm\TextChatProvider;
 
 final class PostAnalyzerFactory
 {
@@ -30,6 +32,41 @@ final class PostAnalyzerFactory
             $config->apiKey,
             systemPromptTemplatePath: self::promptTemplatePath($projectRoot, $config->postAnalysisPromptPath),
             provider: self::structuredChatProvider($config, $exchangeRecorder),
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $privateConfig
+     */
+    public static function textChatProviderFromPrivateConfig(array $privateConfig, ?LlmExchangeRecorder $exchangeRecorder = null): ?TextChatProvider
+    {
+        $config = LlmProviderConfig::fromPrivateConfig($privateConfig);
+        if ($config->provider === 'stub') {
+            return new StubTextChatProvider();
+        }
+        if ($config->apiKey === '') {
+            return null;
+        }
+
+        if ($config->provider === 'anthropic') {
+            return new AnthropicStructuredChatProvider(
+                $config->apiKey,
+                $config->baseUrl,
+                $config->model,
+                $config->timeoutSeconds,
+                $config->extraHeaders,
+                $exchangeRecorder,
+            );
+        }
+
+        return new OpenAiCompatibleStructuredChatProvider(
+            $config->provider,
+            $config->apiKey,
+            $config->baseUrl,
+            $config->model,
+            $config->timeoutSeconds,
+            $config->extraHeaders,
+            $exchangeRecorder,
         );
     }
 

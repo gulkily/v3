@@ -2,6 +2,8 @@
 $agentReply = $agentRepliesByPostId[$post['post_id']] ?? null;
 $agentReplyPostedId = is_array($agentReply) && isset($agentReply['agent_post_id']) ? (string) $agentReply['agent_post_id'] : '';
 $agentReplyStatus = is_array($agentReply) ? (string) ($agentReply['status'] ?? '') : '';
+$agentReplyModeLabel = is_array($agentReply) ? (string) ($agentReply['response_mode_label'] ?? '') : '';
+$agentReplyFeedbackSubject = $agentReplyModeLabel !== '' ? $agentReplyModeLabel : 'Agent reply';
 $agentReplyWork = (string) ($agentReplyWorkByPostId[$post['post_id']] ?? '');
 $isAgentPost = (string) ($post['author_label'] ?? '') === 'reply-agent';
 $viewerCanRequestAgentReply = (bool) ($viewerCanRequestAgentReply ?? $viewerCanSeePostAnalysis ?? false);
@@ -33,15 +35,15 @@ $codexHandoffSummaryLabel = match ($codexHandoffStatus) {
 };
 $agentReplyFeedbackText = '';
 if ($agentReplyPostedId !== '') {
-    $agentReplyFeedbackText = 'Agent reply available.';
+    $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' available.';
 } elseif ($agentReplyStatus === 'requested') {
-    $agentReplyFeedbackText = 'Agent reply requested.';
+    $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' requested.';
 } elseif (in_array($agentReplyStatus, ['pending', 'complete', 'posting'], true)) {
-    $agentReplyFeedbackText = 'Agent reply request in progress.';
+    $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' request in progress.';
 } elseif ($agentReplyStatus === 'skipped') {
-    $agentReplyFeedbackText = 'Agent reply skipped.';
+    $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' skipped.';
 } elseif ($agentReplyStatus === 'failed') {
-    $agentReplyFeedbackText = 'Agent reply failed.';
+    $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' failed.';
 }
 $viewerHasFlaggedPost = isset($viewerPostFlags[(string) $post['post_id']]);
 $postPermalinkLabel = 'Post ' . (string) $post['post_id'];
@@ -52,6 +54,16 @@ $postBodyFirstLine = trim($postBodyFirstLineSegments[0] ?? '');
 $postBodyDisplay = ($postBodyFirstLine !== '' && $postBodyFirstLine === trim($title))
     ? preg_replace('/^(?:\r\n|\r|\n)+/', '', $postBodyFirstLineSegments[1] ?? '')
     : $postBody;
+$isQdbQuoteRoot = \ForumRewrite\SiteConfig::siteName() === 'qdb';
+$quoteRootId = (string) $thread['root_post_id'];
+$quoteRootHasNumber = preg_match('/-qdb-(\d+)$/', $quoteRootId, $quoteRootNumberMatch) === 1;
+$quoteRootDisplayNumber = $quoteRootHasNumber ? $quoteRootNumberMatch[1] : $quoteRootId;
+$quoteRootPermalinkHref = $quoteRootHasNumber ? '/' . $quoteRootDisplayNumber : '/threads/' . $quoteRootId;
+$quoteRootScoreTotal = (int) ($thread['score_total'] ?? 0);
+$quoteRootVoteCount = (int) ($thread['vote_count'] ?? 0);
+$quoteRootScoreSignClass = $quoteRootScoreTotal > 0 ? 'quote-card-score-positive' : ($quoteRootScoreTotal < 0 ? 'quote-card-score-negative' : '');
+$viewerHasUpvoted = (bool) ($viewerHasUpvoted ?? false);
+$viewerHasDownvoted = (bool) ($viewerHasDownvoted ?? false);
 $metaVisible = (bool) ($metaVisible ?? true);
 $rootTimeLabel = '';
 if (!$metaVisible) {
@@ -63,9 +75,17 @@ if (!$metaVisible) {
 }
 ?>
 <article id="<?= $e($postAnchorId) ?>" class="card post-card thread-root-card<?= $isAgentPost ? ' agent-authored-post' : '' ?><?= $metaVisible ? '' : ' meta-deferred' ?>" data-heat="<?= $heat($thread['last_activity_at'] ?? ($post['created_at'] ?? null), (int) ($thread['reply_count'] ?? 0)) ?>" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>" data-post-id="<?= $e($post['post_id']) ?>" data-author="<?= $e((string) ($post['author_label'] ?? '')) ?>"<?= $rootTimeLabel !== '' ? ' data-time="' . $e($rootTimeLabel) . '"' : '' ?><?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?>>
+<?php if ($isQdbQuoteRoot): ?>
+  <p class="quote-card-header">
+    <a class="quote-card-permalink" href="<?= $e($quoteRootPermalinkHref) ?>">#<?= $e($quoteRootDisplayNumber) ?></a>
+    <span class="meta quote-card-score <?= $e($quoteRootScoreSignClass) ?>" data-role="thread-score" data-score-format="bare-ratio">(<?= $quoteRootScoreTotal ?>/<?= $quoteRootVoteCount ?>)</span>
+  </p>
+  <p class="quote-card-body"><?= $br($postBody) ?></p>
+<?php else: ?>
   <h1><?= $e($title) ?></h1>
   <div class="body"><?= $br($postBodyDisplay) ?></div>
-<?php if ($metaVisible): ?>
+<?php endif; ?>
+<?php if ($metaVisible && !$isQdbQuoteRoot): ?>
   <p class="meta"><?= $contentMeta($post, 'created_at', '') ?><?php if ($thread['thread_labels'] !== []): ?> · Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?><?php endif; ?><?php if ($isAgentPost): ?> · <span class="agent-label">Agent-authored reply</span><?php endif; ?><?php $trueReplyCount = (int) ($trueReplyCount ?? 0); if ($trueReplyCount > 0): ?> · <?= $trueReplyCount ?> <?= $trueReplyCount === 1 ? 'reply' : 'replies' ?><?php endif; ?></p>
 <?php endif; ?>
 <?= $indent($partial('partials/post_identity_details.php', ['post' => $post]), 1) ?>
@@ -115,7 +135,42 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
 ?>
   <button type="button" class="post-card-actions-toggle thread-reaction-button" aria-label="Show actions for this post">Actions</button>
   <div class="button-row button-row-natural post-card-actions thread-root-actions">
+<?php if (!$isQdbQuoteRoot): ?>
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
+<?php endif; ?>
+<?php if ($isQdbQuoteRoot): ?>
+    <button
+      type="button"
+      class="thread-reaction-button quote-card-vote-button"
+      data-action="apply-thread-tag"
+      data-tag="upvote"
+      data-applied-label="+"
+      aria-label="Upvote this quote"
+      aria-pressed="<?= $viewerHasUpvoted ? 'true' : 'false' ?>"
+<?= $viewerHasUpvoted ? ' disabled="disabled"' : '' ?>
+    >+</button>
+    <button
+      type="button"
+      class="thread-reaction-button quote-card-vote-button"
+      data-action="apply-thread-tag"
+      data-tag="downvote"
+      data-applied-label="-"
+      aria-label="Downvote this quote"
+      aria-pressed="<?= $viewerHasDownvoted ? 'true' : 'false' ?>"
+<?= $viewerHasDownvoted ? ' disabled="disabled"' : '' ?>
+    >-</button>
+    <button
+      type="button"
+      class="thread-reaction-button quote-card-vote-button"
+      data-action="apply-post-tag"
+      data-post-id="<?= $e($post['post_id']) ?>"
+      data-tag="flag"
+      data-applied-label="[X]"
+      aria-label="Flag this quote for review"
+      aria-pressed="<?= $viewerHasFlaggedPost ? 'true' : 'false' ?>"
+<?= $viewerHasFlaggedPost ? ' disabled="disabled"' : '' ?>
+    >[X]</button>
+<?php else: ?>
     <button
       type="button"
       class="thread-reaction-button"
@@ -135,6 +190,7 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
       aria-pressed="<?= $viewerHasFlaggedPost ? 'true' : 'false' ?>"
 <?= $viewerHasFlaggedPost ? ' disabled="disabled"' : '' ?>
     ><?= $viewerHasFlaggedPost ? 'Flagged' : 'Flag' ?></button>
+<?php endif; ?>
 <?php if ($showAgentReplyRequestButton): ?>
     <button
       type="button"

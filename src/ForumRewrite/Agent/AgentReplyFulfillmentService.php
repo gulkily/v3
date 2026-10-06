@@ -19,6 +19,7 @@ final class AgentReplyFulfillmentService
      * @param callable(string): array<string, mixed>|null $postForId
      * @param callable(array<string, mixed>): array<string, mixed> $contextForPost
      * @param callable(array<string, mixed>, array<string, mixed>): array<string, mixed>|null $gateFailureForPost
+     * @param null|callable(array<string, mixed>): array<string, mixed> $generationForContext
      */
     public function __construct(
         private readonly AgentReplyGenerationStore $generationStore,
@@ -30,6 +31,7 @@ final class AgentReplyFulfillmentService
         private readonly mixed $postForId,
         private readonly mixed $contextForPost,
         private readonly mixed $gateFailureForPost,
+        private readonly ?AgentResponseGenerator $taskGenerator = null,
     ) {
     }
 
@@ -53,6 +55,25 @@ final class AgentReplyFulfillmentService
         $context = ($this->contextForPost)($post);
         if ((string) ($context['content_hash'] ?? '') !== $contentHash) {
             return $this->markSkippedResponse($postId, $contentHash, 'target_content_changed');
+        }
+
+        $task = AgentResponseTask::fromStoredRequestContext(
+            is_array($requestRow['request_context'] ?? null) ? $requestRow['request_context'] : []
+        );
+        if (AgentResponseTask::isSupportedType((string) $task['type'])) {
+            if (!$this->taskMatchesContext($task, $context)) {
+                return $this->markSkippedResponse($postId, $contentHash, 'task_context_mismatch');
+            }
+
+            if ($this->taskGenerator === null) {
+                return $this->markSkippedResponse($postId, $contentHash, 'task_generator_unavailable');
+            }
+
+            return $this->publishForPost(
+                $post,
+                fn (array $generationContext): array => $this->generationFromTask($task, $generationContext),
+                $task
+            );
         }
 
         $analysis = $this->analysisStore->find($postId, $contentHash);
@@ -81,7 +102,7 @@ final class AgentReplyFulfillmentService
      * @param array<string, mixed> $post
      * @return array<string, mixed>
      */
-    public function publishForPost(array $post): array
+    public function publishForPost(array $post, ?callable $generationForContext = null, ?array $task = null): array
     {
         $postId = (string) ($post['post_id'] ?? '');
         $context = ($this->contextForPost)($post);
@@ -103,31 +124,35 @@ final class AgentReplyFulfillmentService
             return $this->statusResponse('in_progress', $postId);
         }
 
-        $analysis = $this->analysisStore->find(
-            (string) $context['post_id'],
-            (string) $context['content_hash']
-        );
-        if ($analysis === null || ($analysis['status'] ?? null) !== 'complete') {
-            return $this->statusResponse('analysis_required', $postId, [
-                'reason' => $analysis === null ? 'missing_analysis' : 'analysis_not_complete',
-                'analysis_status' => $analysis['status'] ?? null,
-                'failure_code' => $analysis['failure_code'] ?? null,
-            ]);
-        }
-
-        $gateFailure = ($this->gateFailureForPost)($post, $analysis);
-        if ($gateFailure !== null) {
-            return $this->statusResponse('not_recommended', $postId, $gateFailure);
-        }
-
         $generationContext = $context;
-        $generationContext['analysis'] = [
-            'moderation' => $analysis['moderation'] ?? [],
-            'engagement' => $analysis['engagement'] ?? [],
-            'quality' => $analysis['quality'] ?? [],
-            'respondability' => $analysis['respondability'] ?? [],
-        ];
-        $generationContext['analysis_hash'] = $this->analysisHash($analysis);
+        if ($task === null) {
+            $analysis = $this->analysisStore->find(
+                (string) $context['post_id'],
+                (string) $context['content_hash']
+            );
+            if ($analysis === null || ($analysis['status'] ?? null) !== 'complete') {
+                return $this->statusResponse('analysis_required', $postId, [
+                    'reason' => $analysis === null ? 'missing_analysis' : 'analysis_not_complete',
+                    'analysis_status' => $analysis['status'] ?? null,
+                    'failure_code' => $analysis['failure_code'] ?? null,
+                ]);
+            }
+
+            $gateFailure = ($this->gateFailureForPost)($post, $analysis);
+            if ($gateFailure !== null) {
+                return $this->statusResponse('not_recommended', $postId, $gateFailure);
+            }
+
+            $generationContext['analysis'] = [
+                'moderation' => $analysis['moderation'] ?? [],
+                'engagement' => $analysis['engagement'] ?? [],
+                'quality' => $analysis['quality'] ?? [],
+                'respondability' => $analysis['respondability'] ?? [],
+            ];
+            $generationContext['analysis_hash'] = $this->analysisHash($analysis);
+        } else {
+            $generationContext['analysis_hash'] = $this->taskHash($task);
+        }
 
         $stored = $existing !== null && $existing['status'] === 'complete' ? $existing : null;
         if ($stored === null && !$existingIsClaimedRequest) {
@@ -151,7 +176,9 @@ final class AgentReplyFulfillmentService
 
         if ($stored === null) {
             try {
-                $generation = $this->generationFromAnalysis($analysis);
+                $generation = $generationForContext === null
+                    ? $this->generationFromAnalysis($analysis)
+                    : $generationForContext($context);
                 $stored = $this->generationStore->saveComplete($generationContext, $generation);
             } catch (\Throwable $throwable) {
                 $failed = $this->generationStore->saveFailed(
@@ -255,6 +282,36 @@ final class AgentReplyFulfillmentService
     }
 
     /**
+     * @param array<string, string|int> $task
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    private function generationFromTask(array $task, array $context): array
+    {
+        if ($this->taskGenerator === null) {
+            throw new RuntimeException('Agent response task generator is unavailable.');
+        }
+
+        $generation = $this->taskGenerator->generate(
+            AgentResponseTask::generationInputForType($context, (string) $task['type'])
+        );
+        $generation['response_style'] = 'task';
+        $generation['response_intent'] = (string) $task['type'];
+
+        return $generation;
+    }
+
+    /**
+     * @param array<string, string|int> $task
+     * @param array<string, mixed> $context
+     */
+    private function taskMatchesContext(array $task, array $context): bool
+    {
+        return (string) ($task['target_post_id'] ?? '') === (string) ($context['post_id'] ?? '')
+            && (string) ($task['target_content_hash'] ?? '') === (string) ($context['content_hash'] ?? '');
+    }
+
+    /**
      * @param array<string, mixed> $analysis
      */
     private function analysisHash(array $analysis): string
@@ -265,6 +322,18 @@ final class AgentReplyFulfillmentService
             'engagement' => $analysis['engagement'] ?? [],
             'quality' => $analysis['quality'] ?? [],
             'respondability' => $analysis['respondability'] ?? [],
+        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
+    }
+
+    /** @param array<string, string|int> $task */
+    private function taskHash(array $task): string
+    {
+        return 'task:' . hash('sha256', json_encode([
+            'version' => $task['version'] ?? null,
+            'type' => $task['type'] ?? null,
+            'publication_slot' => $task['publication_slot'] ?? null,
+            'target_post_id' => $task['target_post_id'] ?? null,
+            'target_content_hash' => $task['target_content_hash'] ?? null,
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
     }
 

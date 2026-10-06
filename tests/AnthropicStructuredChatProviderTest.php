@@ -58,6 +58,27 @@ final class AnthropicStructuredChatProviderTest
         assertSame('Summary.', $decoded['post_summary']);
     }
 
+    public function testProviderBuildsPlainTextPayloadAndDecodesText(): void
+    {
+        $provider = new AnthropicStructuredChatProvider('test-key', 'https://api.anthropic.com', 'claude-haiku-4-5-20251001');
+        $method = new ReflectionMethod(AnthropicStructuredChatProvider::class, 'textPayloadFor');
+        $method->setAccessible(true);
+
+        $payload = $method->invoke($provider, [
+            ['role' => 'system', 'content' => 'Write.'],
+            ['role' => 'user', 'content' => 'Reply.'],
+        ], ['max_completion_tokens' => 123]);
+        $text = \ForumRewrite\Llm\TextChatCompletionDecoder::decodeAnthropicPayload([
+            'content' => [['type' => 'text', 'text' => 'Plain reply.']],
+        ]);
+
+        assertSame('claude-haiku-4-5-20251001', $payload['model']);
+        assertSame(123, $payload['max_tokens']);
+        assertSame('Write.', $payload['system']);
+        assertSame(false, isset($payload['output_config']));
+        assertSame('Plain reply.', $text);
+    }
+
     public function testProviderExtractsAnthropicErrorMessageAndRedactsKey(): void
     {
         $provider = new AnthropicStructuredChatProvider('test-key', 'https://api.anthropic.com', 'claude-haiku-4-5-20251001');

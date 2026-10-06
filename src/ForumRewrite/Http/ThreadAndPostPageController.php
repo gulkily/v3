@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\Agent\AgentResponseTask;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ViewerTagLookup;
 use ForumRewrite\Support\ThreadTitle;
@@ -86,6 +87,13 @@ final class ThreadAndPostPageController
         $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
         $viewerHasLiked = $viewerProfile !== null
             && $this->viewerHasThreadTag($threadId, 'like', (string) $viewerProfile['identity_id']);
+        $viewerHasUpvoted = false;
+        $viewerHasDownvoted = false;
+        if ($viewerProfile !== null && \ForumRewrite\SiteConfig::siteName() === 'qdb') {
+            $viewerIdentityId = (string) $viewerProfile['identity_id'];
+            $viewerHasUpvoted = isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'upvote', $viewerIdentityId)[$threadId]);
+            $viewerHasDownvoted = isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'downvote', $viewerIdentityId)[$threadId]);
+        }
         $posts = ($this->fetchThreadPosts)($threadId);
         $viewerPostFlags = $viewerProfile !== null
             ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'flag', (string) $viewerProfile['identity_id'])
@@ -94,6 +102,7 @@ final class ThreadAndPostPageController
             ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'like', (string) $viewerProfile['identity_id'])
             : [];
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $viewerCanRequestAgentReply = $viewerCanSeePostAnalysis && $service->agentResponseRequestsEnabled();
         $viewerCanUseCodexHandoff = $service->viewerCanUseCodexHandoff($viewerProfile);
         $createdPostId = $this->createdPostIdForThread($threadId, $createdPostId);
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);
@@ -110,11 +119,15 @@ final class ThreadAndPostPageController
                 'title' => $title,
                 'viewerProfile' => $viewerProfile,
                 'viewerHasLiked' => $viewerHasLiked,
+                'viewerHasUpvoted' => $viewerHasUpvoted,
+                'viewerHasDownvoted' => $viewerHasDownvoted,
                 'viewerPostFlags' => $viewerPostFlags,
                 'viewerPostLikes' => $viewerPostLikes,
                 'createdPostId' => $createdPostId,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
+                'viewerCanRequestAgentReply' => $viewerCanRequestAgentReply,
                 'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
+                'agentResponseModes' => $viewerCanRequestAgentReply ? AgentResponseTask::selectableModes() : [],
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
                 'llmExchangesByPostId' => $llmExchangesByPostId,
@@ -177,6 +190,7 @@ final class ThreadAndPostPageController
             ? $this->viewerPostTagsForPosts([$post['post_id']], 'like', (string) $viewerProfile['identity_id'])
             : [];
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $viewerCanRequestAgentReply = $viewerCanSeePostAnalysis && $service->agentResponseRequestsEnabled();
         $viewerCanUseCodexHandoff = $service->viewerCanUseCodexHandoff($viewerProfile);
         $posts = [$post];
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);
@@ -193,7 +207,9 @@ final class ThreadAndPostPageController
                 'viewerPostFlags' => $viewerPostFlags,
                 'viewerPostLikes' => $viewerPostLikes,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
+                'viewerCanRequestAgentReply' => $viewerCanRequestAgentReply,
                 'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
+                'agentResponseModes' => $viewerCanRequestAgentReply ? AgentResponseTask::selectableModes() : [],
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
                 'llmExchangesByPostId' => $llmExchangesByPostId,

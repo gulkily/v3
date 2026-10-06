@@ -13,6 +13,7 @@ use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\Scoring\FastScoreContextFactory;
@@ -100,6 +101,8 @@ final class WriteApiSmokeTest
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
+        $previousAutomaticReplies = getenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED');
+        putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED=true');
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -109,7 +112,6 @@ final class WriteApiSmokeTest
                 '/api/create_thread?board_tags=general&subject=Analyzed&body=Thoughtful%20body%3F'
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
-
             $_COOKIE = [];
             $first = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
             $postCountAfterFirstAnalyze = $this->countCanonicalPostFiles($repositoryRoot);
@@ -186,6 +188,7 @@ final class WriteApiSmokeTest
             assertFalse(is_dir($repositoryRoot . '/records/post-analyses'));
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
+            $this->restoreEnvironmentValue('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $previousAutomaticReplies);
             $_COOKIE = [];
         }
     }
@@ -453,6 +456,7 @@ final class WriteApiSmokeTest
             assertSame($postCountBefore, $postCountAfter);
             assertSame('requested', $row['status']);
             assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $requestContext['agent_reply_request']['requested_by_identity_id']);
+            assertSame('default_text_reply', $requestContext['agent_reply_request']['agent_response_task']['type']);
         } finally {
             putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED');
             $_COOKIE = [];
@@ -483,10 +487,18 @@ PHP);
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId) . '?created_post_id=' . rawurlencode($postId));
+            $analysis = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
+            $generationCount = (int) (new PDO('sqlite:' . $databasePath))
+                ->query('SELECT COUNT(*) FROM post_generated_responses')
+                ->fetchColumn();
             $_COOKIE = ['identity_hint' => 'guest'];
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
 
             assertStringNotContains('data-agent-reply-work=', $threadPage);
+            assertSame(false, $analysis['agent_reply_generation_allowed']);
+            assertSame('not_recommended', $analysis['agent_reply_generation_status']);
+            assertSame('config_disabled', $analysis['agent_reply_reason']);
+            assertSame(0, $generationCount);
             assertSame('ok', $response['status']);
             assertSame('requested', $response['generation_status']);
         } finally {
@@ -508,6 +520,11 @@ PHP);
                 '/api/create_thread?board_tags=general&subject=Agent%20Request&body=Should%20the%20agent%20join%3F'
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
+            $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_reply?thread_id=' . rawurlencode($postId) . '&parent_id=' . rawurlencode($postId) . '&body=Reply%20body'
+            );
 
             $_COOKIE = [];
             $anonymousThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
@@ -519,8 +536,11 @@ PHP);
             assertStringNotContains('data-action="request-agent-reply"', $anonymousThreadPage);
             assertStringContains('data-action="request-agent-reply"', $approvedThreadPage);
             assertStringContains('Request agent response', $approvedThreadPage);
+            assertStringContains('data-agent-response-mode-catalog', $approvedThreadPage);
+            assertStringContains('Logic analysis', $approvedThreadPage);
+            assertSame(2, substr_count($approvedThreadPage, 'data-action="request-agent-reply"'));
             assertSame('requested', $response['generation_status']);
-            assertStringNotContains('data-action="request-agent-reply"', $requestedThreadPage);
+            assertSame(1, substr_count($requestedThreadPage, 'data-action="request-agent-reply"'));
             assertStringContains('Agent reply requested.', $requestedThreadPage);
         } finally {
             $_COOKIE = [];
@@ -797,7 +817,7 @@ PHP);
         }
     }
 
-    public function testGenerateAgentReplyReportsFailedAnalysisAsRequired(): void
+    public function testGenerateAgentReplyDoesNotRequireCompletedAnalysis(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
@@ -818,21 +838,53 @@ PHP);
 
             assertSame('ok', $response['status']);
             assertSame('requested', $response['generation_status']);
-            assertSame('not_recommended', $result['generation_status']);
-            assertSame('analysis_not_complete', $result['reason']);
-            assertSame('failed', $result['analysis_status']);
-            assertSame('skipped', $row['status']);
-            assertSame('analysis_not_complete', $row['failure_code']);
-            assertStringContains('provider_error', (string) $row['failure_message']);
-            assertSame('failed', $row['request_context']['agent_reply_skip']['analysis_status']);
-            assertSame('provider_error', $row['request_context']['agent_reply_skip']['failure_code']);
+            assertSame('generated', $result['generation_status']);
+            assertSame('posted', $row['status']);
+            assertSame('default_text_reply', $row['response_intent']);
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
 
-    public function testGenerateAgentReplyRejectsLowRespondabilityHighRiskHighModerationAndPrivateResponse(): void
+    public function testTaskPreflightRejectsMismatchedContextWithoutAnalysis(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Stale%20task&body=This%20task%20must%20not%20be%20analyzed.'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->renderMethod(
+                $application,
+                'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=logic_analysis'
+            );
+            $_COOKIE = [];
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $claimed = $store->claimRequestedForPost($postId);
+            $claimed['request_context']['agent_reply_request']['agent_response_task']['target_content_hash'] = 'mismatched-content-hash';
+            $result = $application->fulfillAgentReplyRequest($claimed);
+            $analysisCount = (int) (new PDO('sqlite:' . $databasePath))
+                ->query('SELECT COUNT(*) FROM post_analyses')
+                ->fetchColumn();
+
+            assertSame('not_recommended', $result['generation_status']);
+            assertSame('task_context_mismatch', $result['reason']);
+            assertSame(0, $analysisCount);
+        } finally {
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
+            $_COOKIE = [];
+        }
+    }
+
+    public function testGenerateAgentReplyBypassesModelDerivedGates(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
@@ -869,14 +921,10 @@ PHP);
             assertSame('requested', $riskRequest['generation_status']);
             assertSame('requested', $moderationRequest['generation_status']);
             assertSame('requested', $privateRequest['generation_status']);
-            assertSame('not_recommended', $low['generation_status']);
-            assertSame('respondability_score_low', $low['reason']);
-            assertSame('not_recommended', $risk['generation_status']);
-            assertSame('response_risk_high', $risk['reason']);
-            assertSame('not_recommended', $moderation['generation_status']);
-            assertSame('moderation_severity_high', $moderation['reason']);
-            assertSame('not_recommended', $private['generation_status']);
-            assertSame('response_not_public', $private['reason']);
+            assertSame('generated', $low['generation_status']);
+            assertSame('generated', $risk['generation_status']);
+            assertSame('generated', $moderation['generation_status']);
+            assertSame('generated', $private['generation_status']);
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
@@ -887,6 +935,8 @@ PHP);
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
+        $previousAutomaticReplies = getenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED');
+        putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED=true');
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -920,6 +970,7 @@ PHP);
             assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM sqlite_master WHERE type = "table" AND name = "post_generated_responses"')->fetchColumn());
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
+            $this->restoreEnvironmentValue('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $previousAutomaticReplies);
             $_COOKIE = [];
         }
     }
@@ -957,7 +1008,7 @@ PHP);
         }
     }
 
-    public function testClaimedAgentReplyRequestAnalyzesAndPublishes(): void
+    public function testClaimedAgentReplyRequestPublishesWithoutAnalysis(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
@@ -981,6 +1032,9 @@ PHP);
             $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
             $row = $store->findByTarget($postId, $claimed[0]['target_content_hash']);
             $second = $application->fulfillAgentReplyRequest($claimed[0]);
+            $analysisCount = (int) (new PDO('sqlite:' . $databasePath))
+                ->query('SELECT COUNT(*) FROM post_analyses')
+                ->fetchColumn();
 
             assertSame('requested', $request['generation_status']);
             assertSame(1, count($claimed));
@@ -991,13 +1045,14 @@ PHP);
             assertSame($result['agent_post_id'], $row['agent_post_id']);
             assertSame('already_posted', $second['generation_status']);
             assertSame($postCountAfter, $this->countCanonicalPostFiles($repositoryRoot));
+            assertSame(0, $analysisCount);
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
     }
 
-    public function testClaimedAgentReplyRequestStoresGateSkip(): void
+    public function testClaimedUnmarkedAgentReplyRequestStoresGateSkip(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
@@ -1007,16 +1062,21 @@ PHP);
             $postId = $this->createAnalyzedThread($application, $databasePath, [
                 'respondability' => ['overall_score' => 0.4],
             ]);
-            $_COOKIE = ['identity_hint' => 'guest'];
-            $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
-            $_COOKIE = [];
+            $contentHash = $this->contentHashForAnalysis($databasePath, $postId);
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $request = $store->requestForTarget([
+                'post_id' => $postId,
+                'content_hash' => $contentHash,
+                'analysis_hash' => 'legacy-analysis-hash',
+            ], [
+                'requested_by_identity_id' => 'openpgp:legacy-requester',
+            ]);
             $claimed = $store->claimNextRequested();
 
             $result = $application->fulfillAgentReplyRequest($claimed[0]);
             $row = $store->findByTarget($postId, $claimed[0]['target_content_hash']);
 
-            assertSame('requested', $request['generation_status']);
+            assertSame('requested', $request['status']);
             assertSame('not_recommended', $result['generation_status']);
             assertSame('respondability_score_low', $result['reason']);
             assertSame('skipped', $row['status']);
@@ -1125,19 +1185,19 @@ PHP);
             assertSame('generated', $first['generation_status']);
             assertSame(true, $first['cached']);
             assertSame('stub', $first['provider']);
-            assertSame('stub/post-analysis', $first['provider_model']);
-            assertStringContains('strongest reason', $first['response_text']);
+            assertSame('stub/agent-response', $first['provider_model']);
+            assertSame('Stub agent response.', $first['response_text']);
             assertSame(true, $first['posted']);
             assertSame('/posts/' . $agentPostId, $first['agent_post_url']);
             assertStringContains('Parent-ID: ' . $postId, $replyRecord);
             assertStringContains('Author-Identity-ID: openpgp:', $replyRecord);
-            assertStringContains('strongest reason', $replyRecord);
+            assertStringContains('Stub agent response.', $replyRecord);
             assertSame('already_posted', $second['generation_status']);
             assertSame($agentPostId, $second['agent_post_id']);
             assertSame($postCountAfterFirst, $postCountAfter);
             assertSame('posted', $row['status']);
             assertSame('stub', $row['provider']);
-            assertStringContains('strongest reason', $row['response_text']);
+            assertSame('Stub agent response.', $row['response_text']);
             assertSame($agentPostId, $row['agent_post_id']);
             assertStringContains('openpgp:', $row['agent_identity_id']);
             assertStringContains('openpgp-', $row['agent_profile_slug']);
@@ -1145,7 +1205,7 @@ PHP);
             assertStringContains('reply-agent', $threadPage);
             assertStringContains('Agent-authored reply', $threadPage);
             assertStringContains('data-agent-authored="reply-agent"', $threadPage);
-            assertStringContains('strongest reason', $threadPage);
+            assertStringContains('Stub agent response.', $threadPage);
             assertStringContains('data-created-post-id="' . $postId . '"', $createdThreadPage);
             assertStringContains('data-post-id="' . $postId . '"', $createdThreadPage);
             assertStringContains('data-agent-reply-posted-id="' . $agentPostId . '"', $createdThreadPage);
@@ -1163,7 +1223,62 @@ PHP);
         }
     }
 
-    public function testGenerateAgentReplyPreservesVisibleUnicodeWhenAuthoredTextFlagIsEnabled(): void
+    public function testGenerateAgentReplyPersistsAndFulfillsSelectedResponseMode(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $postId = $this->createAnalyzedThread($application, $databasePath);
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $request = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=logic_analysis'
+            ), true);
+            $invalid = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=unknown'
+            ), true);
+            $retired = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=facts_analysis'
+            ), true);
+            $_COOKIE = [];
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $claimed = $store->claimRequestedForPost($postId);
+            $fulfilled = $application->fulfillAgentReplyRequest($claimed);
+            $stored = $store->findByTarget($postId, (string) $claimed['target_content_hash']);
+            $analysisCount = (int) (new PDO('sqlite:' . $databasePath))
+                ->query('SELECT COUNT(*) FROM post_analyses')
+                ->fetchColumn();
+
+            assertSame('requested', $request['generation_status']);
+            assertSame('Logic analysis', $request['response_mode_label']);
+            assertSame('error', $invalid['status']);
+            assertSame('invalid response_mode', $invalid['error']);
+            assertSame('error', $retired['status']);
+            assertSame('invalid response_mode', $retired['error']);
+            assertSame('logic_analysis', $stored['request_context']['agent_reply_request']['agent_response_task']['type']);
+            assertSame('logic_analysis', $stored['response_intent']);
+            assertSame('generated', $fulfilled['generation_status']);
+            assertSame(1, $analysisCount);
+            assertSame(true, str_starts_with($stored['analysis_hash'], 'task:'));
+            assertStringContains(
+                'Logic analysis available.',
+                $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId))
+            );
+        } finally {
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
+            $_COOKIE = [];
+        }
+    }
+
+    public function testGenerateAgentReplyUsesDefaultTextTaskInsteadOfStructuredSuggestion(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
@@ -1191,9 +1306,10 @@ PHP);
 
             assertSame('requested', $request['generation_status']);
             assertSame('generated', $response['generation_status']);
-            assertStringContains("'Хорошо'", (string) $row['response_text']);
-            assertStringContains("'Хорошо'", $replyRecord);
-            assertStringContains('Хорошо', $postPage);
+            assertSame('Stub agent response.', (string) $row['response_text']);
+            assertStringContains('Stub agent response.', $replyRecord);
+            assertStringContains('Stub agent response.', $postPage);
+            assertStringNotContains('Хорошо', (string) $row['response_text']);
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             putenv('FORUM_UNICODE_AUTHORED_TEXT');
@@ -1302,9 +1418,15 @@ PHP);
         assertStringContains('work === "analyze"', $script);
         assertStringContains('work !== "analyze" && work !== "publish"', $script);
         assertStringContains('const result = agentReplyResultFromAnalysis(analysis);', $script);
-        assertStringContains('Agent analysis and reply added below this post.', $script);
-        assertStringContains('Agent reply requested.', $script);
-        assertStringContains('Requesting agent reply...', $script);
+        assertStringContains('function agentResponseModes()', $script);
+        assertStringContains('data-agent-response-mode-catalog', $script);
+        assertStringContains('function openAgentResponseModeMenu(button)', $script);
+        assertStringContains('setAttribute("role", "menu")', $script);
+        assertStringContains('pointerdown', $script);
+        assertStringContains('response_mode', $script);
+        assertStringContains('agentReplySubject(result) + " added below this post."', $script);
+        assertStringContains('agentReplySubject(result) + " requested."', $script);
+        assertStringContains('Requesting " + mode.label', $script);
         assertStringContains('View agent reply.', $script);
         assertStringContains('result.reason === "config_disabled"', $script);
         assertStringContains('url.searchParams.set("created_post_id", agentPostId);', $script);
@@ -1373,6 +1495,85 @@ PHP);
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             putenv('DEDALUS_AGENT_REPLIES_ENABLED');
+            $_COOKIE = [];
+        }
+    }
+
+    public function testAgentResponseRequestFlagHidesChooserAndRejectsRequests(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        putenv('AGENT_RESPONSE_REQUESTS_ENABLED=false');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Disabled%20request&body=Do%20not%20request%20an%20agent%20response.'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $page = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $response = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=logic_analysis'
+            ), true);
+            $_COOKIE = [];
+            $rowCount = (int) (new PDO('sqlite:' . $databasePath))
+                ->query('SELECT COUNT(*) FROM post_generated_responses')
+                ->fetchColumn();
+
+            assertStringNotContains('data-action="request-agent-reply"', $page);
+            assertStringNotContains('data-agent-response-mode-catalog', $page);
+            assertSame('not_recommended', $response['generation_status']);
+            assertSame('config_disabled', $response['reason']);
+            assertSame(0, $rowCount);
+        } finally {
+            putenv('AGENT_RESPONSE_REQUESTS_ENABLED');
+            $_COOKIE = [];
+        }
+    }
+
+    public function testLegacyAutomaticFlagDoesNotDisableDirectRequestedTasks(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $previousLlmProviderEnv = $this->useStubLlmProvider();
+        putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED=false');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Flag%20separation&body=Confirm%20the%20two%20reply%20paths%20are%20separate.'
+            );
+            $postId = $this->extractValue($threadResponse, 'post_id');
+            $analysis = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/analyze_post?post_id=' . rawurlencode($postId)
+            ), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $request = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=logic_analysis'
+            ), true);
+            $_COOKIE = [];
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $fulfilled = $application->fulfillAgentReplyRequest($store->claimRequestedForPost($postId));
+
+            assertSame(false, $analysis['agent_reply_generation_allowed']);
+            assertSame('not_recommended', $analysis['agent_reply_generation_status']);
+            assertSame('config_disabled', $analysis['agent_reply_reason']);
+            assertSame('requested', $request['generation_status']);
+            assertSame('generated', $fulfilled['generation_status']);
+            assertSame('logic_analysis', $fulfilled['response_intent']);
+        } finally {
+            $this->restoreLlmProviderEnv($previousLlmProviderEnv);
+            putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED');
             $_COOKIE = [];
         }
     }
@@ -2614,6 +2815,83 @@ PHP);
         $boardLiked = $this->renderMethod($application, 'GET', '/?view=liked&sort=newest');
 
         assertStringContains('Pending Liked Thread', $boardLiked);
+    }
+
+    public function testQdbPermalinkShowsViewersExistingUpvoteAsPressedAndDisabled(): void
+    {
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $identity = $this->linkGeneratedIdentity($application, 'permalink-upvoter');
+
+            $threadResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=&body=Quote%20to%20upvote'
+            );
+            $threadId = $this->extractValue($threadResponse, 'thread_id');
+
+            $_COOKIE = ['identity_hint' => $identity['identity_id']];
+            $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=' . rawurlencode($threadId) . '&tag=upvote');
+            $votedPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($threadId));
+            $_COOKIE = [];
+            $anonymousPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($threadId));
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertTrue(preg_match('/data-tag="upvote"[^>]*aria-pressed="true"[^>]*disabled="disabled"/', $votedPage) === 1);
+        assertTrue(preg_match('/data-tag="upvote"[^>]*aria-pressed="false"/', $anonymousPage) === 1);
+        assertFalse(preg_match('/data-tag="upvote"[^>]*disabled="disabled"/', $anonymousPage) === 1);
+    }
+
+    public function testQdbLegacyLikeCountsTowardVoteTotalOnIncrementalAndRebuildPaths(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->renderMethod(new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot), 'GET', '/');
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $service->applyThreadTag([
+                'thread_id' => 'root-001',
+                'tag' => 'like',
+                'author_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+            ]);
+            $incrementalVoteCount = $this->threadVoteCount($databasePath, 'root-001');
+
+            (new ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot), 'qdb-like-parity-test'))->rebuild();
+            $rebuiltVoteCount = $this->threadVoteCount($databasePath, 'root-001');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertSame(1, $incrementalVoteCount);
+        assertSame(1, $rebuiltVoteCount);
+    }
+
+    public function testNonQdbLikeDoesNotCountTowardVoteTotal(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $this->renderMethod(new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot), 'GET', '/');
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+
+        $service->applyThreadTag([
+            'thread_id' => 'root-001',
+            'tag' => 'like',
+            'author_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+        ]);
+
+        assertSame(0, $this->threadVoteCount($databasePath, 'root-001'));
+    }
+
+    private function threadVoteCount(string $databasePath, string $threadId): int
+    {
+        $stmt = (new ReadModelConnection($databasePath))->open()->prepare('SELECT vote_count FROM threads WHERE root_post_id = :id');
+        $stmt->execute(['id' => $threadId]);
+
+        return (int) $stmt->fetchColumn();
     }
 
     public function testApplyThreadTagUsesIncrementalReadModelUpdateWhenDatabaseIsWarm(): void
@@ -3987,14 +4265,18 @@ PHP);
     private function restoreLlmProviderEnv(array $previous): void
     {
         foreach (['LLM_PROVIDER', 'DEDALUS_ANALYSIS_MODE'] as $key) {
-            $value = $previous[$key] ?? false;
-            if ($value === false) {
-                putenv($key);
-                continue;
-            }
-
-            putenv($key . '=' . $value);
+            $this->restoreEnvironmentValue($key, $previous[$key] ?? false);
         }
+    }
+
+    private function restoreEnvironmentValue(string $key, string|false $value): void
+    {
+        if ($value === false) {
+            putenv($key);
+            return;
+        }
+
+        putenv($key . '=' . $value);
     }
 
     private function contentHashForAnalysis(string $databasePath, string $postId): string

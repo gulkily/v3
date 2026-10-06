@@ -182,7 +182,7 @@ Run the queued agent reply worker directly:
 ./v3 agent-reply cron run --limit=10
 ```
 
-Validate the configured agent reply LLM provider/API key with one live structured prompt:
+Validate the configured agent reply LLM provider/API key with one live plain-text task prompt:
 
 ```bash
 ./v3 agent-reply test

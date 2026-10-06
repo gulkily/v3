@@ -50,7 +50,7 @@
     return response.json();
   }
 
-  async function generateAgentReply(postId) {
+  async function generateAgentReply(postId, responseMode) {
     const response = await fetch("/api/generate_agent_reply", {
       method: "POST",
       credentials: "same-origin",
@@ -58,7 +58,7 @@
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         "Accept": "application/json",
       },
-      body: new URLSearchParams({ post_id: postId }).toString(),
+      body: new URLSearchParams({ post_id: postId, response_mode: responseMode || "" }).toString(),
     });
 
     return response.json();
@@ -199,6 +199,10 @@
     };
   }
 
+  function agentReplySubject(result) {
+    return result && result.response_mode_label ? result.response_mode_label : "Agent reply";
+  }
+
   function applyGenerationResult(node, result, analysis) {
     if (!result || result.status !== "ok") {
       return false;
@@ -207,7 +211,7 @@
     if (result.generation_status === "generated" && result.agent_post_id) {
       setFeedbackLink(
         node,
-        "Agent analysis and reply added below this post.",
+        agentReplySubject(result) + " added below this post.",
         agentReplyAnchorUrl(result.agent_post_id),
         "View agent reply."
       );
@@ -217,7 +221,7 @@
     if (result.generation_status === "already_posted" && result.agent_post_id) {
       setFeedbackLink(
         node,
-        "Agent analysis and reply already exists below this post.",
+        agentReplySubject(result) + " already exists below this post.",
         agentReplyAnchorUrl(result.agent_post_id),
         "View agent reply."
       );
@@ -225,7 +229,7 @@
     }
 
     if (result.generation_status === "requested") {
-      setFeedback(node, "Agent reply requested.");
+      setFeedback(node, agentReplySubject(result) + " requested.");
       return true;
     }
 
@@ -244,12 +248,12 @@
     }
 
     if (result.generation_status === "in_progress") {
-      setFeedback(node, "Agent reply request in progress.");
+      setFeedback(node, agentReplySubject(result) + " request in progress.");
       return true;
     }
 
     if (result.generation_status === "failed") {
-      setFeedback(node, "Agent reply request failed.", "");
+      setFeedback(node, agentReplySubject(result) + " request failed.", "");
       return true;
     }
 
@@ -456,6 +460,144 @@
     });
   }
 
+  let agentResponseModeMenu = null;
+  let agentResponseModeTrigger = null;
+
+  function agentResponseModes() {
+    const catalog = document.querySelector('[data-agent-response-mode-catalog]');
+    if (!catalog) {
+      return [];
+    }
+
+    try {
+      const modes = JSON.parse(catalog.textContent || "[]");
+      return Array.isArray(modes) ? modes.filter(function (mode) {
+        return mode && typeof mode.type === "string" && typeof mode.label === "string";
+      }) : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function closeAgentResponseModeMenu(restoreFocus) {
+    if (!agentResponseModeMenu || agentResponseModeMenu.hidden) {
+      return;
+    }
+    const trigger = agentResponseModeTrigger;
+    agentResponseModeMenu.hidden = true;
+    if (trigger) {
+      trigger.setAttribute("aria-expanded", "false");
+      if (restoreFocus) {
+        trigger.focus();
+      }
+    }
+    agentResponseModeTrigger = null;
+  }
+
+  function ensureAgentResponseModeMenu() {
+    if (agentResponseModeMenu) {
+      return agentResponseModeMenu;
+    }
+
+    const menu = document.createElement("div");
+    menu.className = "agent-response-mode-menu";
+    menu.id = "agent-response-mode-menu";
+    menu.setAttribute("role", "menu");
+    menu.setAttribute("aria-label", "Choose an agent response");
+    menu.hidden = true;
+
+    const choices = document.createElement("div");
+    choices.className = "agent-response-mode-choices";
+    agentResponseModes().forEach(function (mode) {
+      const choice = document.createElement("button");
+      choice.type = "button";
+      choice.className = "agent-response-mode-choice";
+      choice.setAttribute("role", "menuitem");
+      choice.setAttribute("data-response-mode", mode.type);
+      const label = document.createElement("strong");
+      label.textContent = mode.label;
+      choice.appendChild(label);
+      choice.addEventListener("click", function () {
+        const trigger = agentResponseModeTrigger;
+        closeAgentResponseModeMenu(false);
+        if (trigger) {
+          requestAgentReply(trigger, mode);
+        }
+      });
+      choices.appendChild(choice);
+    });
+    menu.appendChild(choices);
+
+    document.body.appendChild(menu);
+    agentResponseModeMenu = menu;
+    document.addEventListener("pointerdown", function (event) {
+      if (!agentResponseModeMenu || agentResponseModeMenu.hidden) {
+        return;
+      }
+      if (!agentResponseModeMenu.contains(event.target)
+        && (!agentResponseModeTrigger || !agentResponseModeTrigger.contains(event.target))) {
+        closeAgentResponseModeMenu(false);
+      }
+    });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && agentResponseModeMenu && !agentResponseModeMenu.hidden) {
+        event.preventDefault();
+        closeAgentResponseModeMenu(true);
+      }
+    });
+    return menu;
+  }
+
+  function openAgentResponseModeMenu(button) {
+    const modes = agentResponseModes();
+    const postId = button.getAttribute("data-post-id") || "";
+    if (postId === "" || modes.length === 0) {
+      setFeedback(feedbackForPost(postId), "Agent response modes are unavailable.");
+      return;
+    }
+
+    const menu = ensureAgentResponseModeMenu();
+    closeAgentResponseModeMenu(false);
+    agentResponseModeTrigger = button;
+    button.setAttribute("aria-expanded", "true");
+    const bounds = button.getBoundingClientRect();
+    menu.style.left = Math.max(8, Math.min(bounds.left, window.innerWidth - 328)) + "px";
+    menu.style.top = Math.min(bounds.bottom + 6, window.innerHeight - 120) + "px";
+    menu.hidden = false;
+    const firstChoice = menu.querySelector('[data-response-mode]');
+    if (firstChoice) {
+      firstChoice.focus();
+    }
+  }
+
+  async function requestAgentReply(button, mode) {
+    const postId = button.getAttribute("data-post-id") || "";
+    if (postId === "" || !markGenerationStarted(postId)) {
+      return;
+    }
+
+    const originalText = button.textContent;
+    const feedback = feedbackForPost(postId);
+    button.disabled = true;
+    button.textContent = "Requesting...";
+    setFeedback(feedback, "Requesting " + mode.label + "...");
+
+    try {
+      const result = await generateAgentReply(postId, mode.type);
+      const handled = applyGenerationResult(feedback, result, null);
+      if (handled && result && result.status === "ok") {
+        button.hidden = true;
+        return;
+      }
+    } catch (error) {
+    }
+
+    generationStartedPostIds.delete(postId);
+    button.disabled = false;
+    button.textContent = originalText;
+    setFeedback(feedback, mode.label + " request failed.");
+  }
+
   function bindAgentReplyRequestButtons() {
     document.querySelectorAll('[data-action="request-agent-reply"]').forEach(function (button) {
       if (button.getAttribute("data-agent-reply-request-bound") === "1") {
@@ -463,32 +605,11 @@
       }
 
       button.setAttribute("data-agent-reply-request-bound", "1");
-      button.addEventListener("click", async function () {
-        const postId = button.getAttribute("data-post-id") || "";
-        if (postId === "" || !markGenerationStarted(postId)) {
-          return;
-        }
-
-        const originalText = button.textContent;
-        const feedback = feedbackForPost(postId);
-        button.disabled = true;
-        button.textContent = "Requesting...";
-        setFeedback(feedback, "Requesting agent reply...");
-
-        try {
-          const result = await generateAgentReply(postId);
-          const handled = applyGenerationResult(feedback, result, null);
-          if (handled && result && result.status === "ok") {
-            button.hidden = true;
-            return;
-          }
-        } catch (error) {
-        }
-
-        generationStartedPostIds.delete(postId);
-        button.disabled = false;
-        button.textContent = originalText;
-        setFeedback(feedback, "Agent reply request failed.");
+      button.setAttribute("aria-haspopup", "menu");
+      button.setAttribute("aria-controls", "agent-response-mode-menu");
+      button.setAttribute("aria-expanded", "false");
+      button.addEventListener("click", function () {
+        openAgentResponseModeMenu(button);
       });
     });
   }

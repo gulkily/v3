@@ -389,7 +389,7 @@ Read-only diagnostics for skipped or failed agent-reply generation rows.
 ./v3 agent-reply test [--timeout=30]
 ```
 
-Sends one live structured prompt to the configured LLM provider to validate
+Sends one live plain-text task prompt to the configured LLM provider to validate
 the API key and model/service reachability.
 
 - `--timeout=...` — seconds to wait for the provider response

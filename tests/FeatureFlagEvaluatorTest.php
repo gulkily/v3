@@ -19,6 +19,7 @@ final class FeatureFlagEvaluatorTest
             $notification = $evaluator->evaluate(FeatureFlagRegistry::APP_VERSION_NOTIFICATION);
             $agentReplies = $evaluator->evaluate(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED);
             $automaticAgentReplies = $evaluator->evaluate(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED);
+            $agentResponseRequests = $evaluator->evaluate(FeatureFlagRegistry::AGENT_RESPONSE_REQUESTS_ENABLED);
             $conversationRecording = $evaluator->evaluate(FeatureFlagRegistry::LLM_CONVERSATION_RECORDING_ENABLED);
             $conversationUi = $evaluator->evaluate(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED);
             $approvedMembersOnly = $evaluator->evaluate(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
@@ -38,6 +39,8 @@ final class FeatureFlagEvaluatorTest
             assertSame('default', $agentReplies->source);
             assertSame(true, $automaticAgentReplies->effectiveValue);
             assertSame('default', $automaticAgentReplies->source);
+            assertSame(true, $agentResponseRequests->effectiveValue);
+            assertSame('default', $agentResponseRequests->source);
             assertSame(true, $conversationRecording->effectiveValue);
             assertSame('default', $conversationRecording->source);
             assertSame(true, $conversationUi->effectiveValue);
@@ -97,6 +100,7 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
+            FeatureFlagRegistry::AGENT_RESPONSE_REQUESTS_ENABLED,
             FeatureFlagRegistry::LLM_CONVERSATION_RECORDING_ENABLED,
             FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED,
             FeatureFlagRegistry::FAST_SCORING_ENABLED,
@@ -122,6 +126,26 @@ PHP);
             assertSame('private-config', $agentReplies->source);
             assertSame(false, $agentReplies->canChangeFromSite());
             assertNullValue($agentReplies->siteValue);
+        });
+    }
+
+    public function testAgentResponseRequestFlagUsesPrivateConfig(): void
+    {
+        $this->withEnvironment([], function (): void {
+            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\n");
+            $projectRoot = $this->projectRootWithPrivateConfig(<<<'PHP'
+<?php
+
+return [
+    'AGENT_RESPONSE_REQUESTS_ENABLED' => false,
+];
+PHP);
+            $requests = FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)
+                ->evaluate(FeatureFlagRegistry::AGENT_RESPONSE_REQUESTS_ENABLED);
+
+            assertSame(false, $requests->effectiveValue);
+            assertSame('private-config', $requests->source);
+            assertSame(false, $requests->canChangeFromSite());
         });
     }
 
@@ -318,6 +342,7 @@ PHP);
             FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
+            FeatureFlagRegistry::AGENT_RESPONSE_REQUESTS_ENABLED,
             FeatureFlagRegistry::LLM_CONVERSATION_RECORDING_ENABLED,
             FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED,
             FeatureFlagRegistry::FAST_SCORING_ENABLED,

@@ -56,6 +56,38 @@
   overflow: auto;
 }
 
+.agent-response-mode-menu {
+  position: fixed;
+  z-index: 40;
+  width: min(20rem, calc(100vw - 1rem));
+  max-height: min(32rem, calc(100vh - 1rem));
+  padding: 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 0.45rem;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 0.6rem 1.5rem color-mix(in srgb, var(--ink) 20%, transparent);
+}
+.agent-response-mode-choices {
+  display: grid;
+  gap: 0.15rem;
+}
+.agent-response-mode-choice {
+  width: 100%;
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+}
+.agent-response-mode-choice:hover,
+.agent-response-mode-choice:focus-visible {
+  border-color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
 /* Continuation runs: quick same-author replies merge visually into one card. */
 .post-card:has(+ .continuation) {
   border-bottom: none;
@@ -111,6 +143,10 @@
 }
 
 @media (max-width: 640px) {
+  .agent-response-mode-menu {
+    width: min(20rem, calc(100vw - 1rem));
+  }
+
   .meta-deferred::before {
     left: 0.5rem;
     top: -0.6rem;

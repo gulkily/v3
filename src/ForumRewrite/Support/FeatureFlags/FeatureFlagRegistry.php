@@ -12,6 +12,7 @@ final class FeatureFlagRegistry
     public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
     public const DEDALUS_AGENT_REPLIES_ENABLED = 'DEDALUS_AGENT_REPLIES_ENABLED';
     public const DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED = 'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED';
+    public const AGENT_RESPONSE_REQUESTS_ENABLED = 'AGENT_RESPONSE_REQUESTS_ENABLED';
     public const LLM_CONVERSATION_RECORDING_ENABLED = 'LLM_CONVERSATION_RECORDING_ENABLED';
     public const LLM_CONVERSATION_UI_ENABLED = 'LLM_CONVERSATION_UI_ENABLED';
     public const APPROVED_MEMBERS_ONLY = 'FORUM_APPROVED_MEMBERS_ONLY';
@@ -67,20 +68,28 @@ final class FeatureFlagRegistry
             ),
             new FeatureFlagDefinition(
                 self::DEDALUS_AGENT_REPLIES_ENABLED,
-                'Agent replies',
-                'Allow post analysis to generate and publish suggested agent replies when reply gates pass.',
+                'Legacy suggested agent replies',
+                'Allow the legacy post-analysis suggested-response path to generate and publish agent replies when reply gates pass.',
                 true,
                 self::DEDALUS_AGENT_REPLIES_ENABLED,
                 'private',
             ),
             new FeatureFlagDefinition(
                 self::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
-                'Automatic agent replies',
-                'Allow eligible post pages to trigger agent reply work automatically.',
+                'Legacy automatic agent replies',
+                'Allow eligible post pages and analysis requests to publish legacy suggested agent replies automatically. Does not affect reader-requested response modes.',
                 true,
                 self::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
                 'private',
                 requiresEnabledFlag: self::DEDALUS_AGENT_REPLIES_ENABLED,
+            ),
+            new FeatureFlagDefinition(
+                self::AGENT_RESPONSE_REQUESTS_ENABLED,
+                'Request agent responses',
+                'Allow approved readers to request a selected agent response for a post.',
+                true,
+                self::AGENT_RESPONSE_REQUESTS_ENABLED,
+                'private',
             ),
             new FeatureFlagDefinition(
                 self::LLM_CONVERSATION_RECORDING_ENABLED,

@@ -1,0 +1,1 @@
+Begin with "Logic analysis:". Analyze the reasoning in the supplied forum content. Identify premises, conclusions, assumptions, logical gaps, and where the argument follows or breaks down. Be charitable, specific, and respectful.
