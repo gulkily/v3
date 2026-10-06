@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
+use ForumRewrite\Host\StaticArtifactBuilder;
 
 final class QuoteCardDisplayNumberTest
 {
@@ -115,6 +116,33 @@ final class QuoteCardDisplayNumberTest
         assertSame(302, $shortLinkStatus);
         assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $viaShortLink);
         assertSame($directThreadPage, $resolvedPage);
+    }
+
+    public function testQdbStaticReleaseIncludesPublicListingsAndNumericQuoteAlias(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-qdb-static-' . bin2hex(random_bytes(6));
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            (new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot))->build();
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertTrue(is_file($artifactRoot . '/latest.html'));
+        assertTrue(is_file($artifactRoot . '/latest/index.html'));
+        assertTrue(is_file($artifactRoot . '/top.html'));
+        assertTrue(is_file($artifactRoot . '/top/index.html'));
+        assertTrue(is_file($artifactRoot . '/leetness.html'));
+        assertTrue(is_file($artifactRoot . '/leetness/index.html'));
+        assertTrue(is_file($artifactRoot . '/threads/thread-20030613104735-qdb-42.html'));
+        assertTrue(is_file($artifactRoot . '/qdb/quotes/42.html'));
+        assertSame(
+            (string) file_get_contents($artifactRoot . '/threads/thread-20030613104735-qdb-42.html'),
+            (string) file_get_contents($artifactRoot . '/qdb/quotes/42.html')
+        );
     }
 
     public function testQdbListingPagesLoadTheVoteButtonScript(): void

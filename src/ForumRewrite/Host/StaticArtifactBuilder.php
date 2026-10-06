@@ -8,8 +8,10 @@ use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Docs\PlatformDocsCatalog;
 use ForumRewrite\Offline\PublicOfflineSnapshotBuilder;
+use ForumRewrite\Qdb\QdbQuoteNumbers;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
+use ForumRewrite\SiteProfileRegistry;
 use PDO;
 use RuntimeException;
 
@@ -45,6 +47,9 @@ final class StaticArtifactBuilder
         $application = $this->application();
 
         $this->buildSharedPages($application);
+        if (SiteProfileRegistry::active()['name'] === 'qdb') {
+            $this->buildQdbPages($application);
+        }
 
         $this->renderRouteBatch('tag pages', $this->fetchVisibleTagRoutes(), function (string $route) use ($application): void {
             $artifactPaths = $this->artifactPathsForRoute($route);
@@ -57,6 +62,7 @@ final class StaticArtifactBuilder
         });
         $this->renderRouteBatch('thread pages', $this->fetchVisibleThreadIds(), function (string $threadId) use ($application): void {
             $this->writeRouteArtifact($application, '/threads/' . $threadId, $this->artifactRoot . '/threads/' . $threadId . '.html');
+            $this->writeQdbNumericQuoteAlias($threadId);
         });
         $this->renderRouteBatch('post pages', $this->fetchVisiblePostIds(), function (string $postId) use ($application): void {
             $this->writeRouteArtifact($application, '/posts/' . $postId, $this->artifactRoot . '/posts/' . $postId . '.html');
@@ -142,6 +148,40 @@ final class StaticArtifactBuilder
             $this->writeRouteArtifact($application, $route, $this->artifactRoot . '/' . $entry['path'] . '.html');
         }
         $this->reportProgress("Rendering shared pages complete ({$totalSharedPages}/{$totalSharedPages}).");
+    }
+
+    private function buildQdbPages(Application $application): void
+    {
+        foreach (['/latest', '/top', '/leetness'] as $route) {
+            $name = ltrim($route, '/');
+            $this->writeRouteArtifacts($application, $route, [
+                $this->artifactRoot . '/' . $name . '.html',
+                $this->artifactRoot . '/' . $name . '/index.html',
+            ]);
+        }
+    }
+
+    private function writeQdbNumericQuoteAlias(string $threadId): void
+    {
+        if (SiteProfileRegistry::active()['name'] !== 'qdb') {
+            return;
+        }
+
+        $number = QdbQuoteNumbers::fromThreadId($threadId);
+        if ($number === null) {
+            return;
+        }
+
+        $sourcePath = $this->artifactRoot . '/threads/' . $threadId . '.html';
+        $targetPath = $this->artifactRoot . '/qdb/quotes/' . $number . '.html';
+        $targetDirectory = dirname($targetPath);
+        if (!is_dir($targetDirectory) && !mkdir($targetDirectory, 0777, true) && !is_dir($targetDirectory)) {
+            throw new RuntimeException('Unable to create QDB numeric quote artifact directory.');
+        }
+
+        if (!link($sourcePath, $targetPath) && !copy($sourcePath, $targetPath)) {
+            throw new RuntimeException('Unable to create QDB numeric quote artifact alias.');
+        }
     }
 
     private function copyOfflineRuntimeFiles(): void
