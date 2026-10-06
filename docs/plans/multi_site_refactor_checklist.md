@@ -25,6 +25,8 @@ Use this checklist to refactor Zenmemes, Chouse, and QDB into explicit site comp
 
 ## P2 — Profile browser and offline identity
 
+> **Continuation handoff (2026-10-06):** Draft [P2 browser/offline Step 3](./multi_site_refactor_p2_browser_offline_identity_step3_development_plan.md) is awaiting review. Resume from Step 3 in a new conversation; do not begin Step 4 until `Approved Step 3`.
+
 - [ ] Replace Zenmemes-only theme/density storage keys with profile-derived keys, including a one-time Zenmemes legacy-preference fallback.
 - [ ] Make worker cache names, cache discovery/cleanup, bootstrap validation, offline-health diagnostics, and PWA identity profile-derived.
 - [ ] Define one profile-aware manifest/worker delivery contract that works for dynamic pages and published static artifacts, including hosts that serve physical files directly.
