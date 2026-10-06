@@ -51,6 +51,11 @@ final class OpenPgpKeyInspectorTest
         assertSame(true, $result['ok']);
         assertSame('15C2EF95BAEE78F4C635A43323B6AE7EC7AF9919', $result['fingerprint']);
         assertSame('ok', $result['status']);
+        assertSame(0, $result['diagnostics']['import_exit_code']);
+        assertSame(true, $result['diagnostics']['import_accepted']);
+        assertSame(0, $result['diagnostics']['verification_exit_code']);
+        assertSame(true, $result['diagnostics']['validsig_present']);
+        assertTrue(in_array('VALIDSIG', $result['diagnostics']['gpg_status_codes'], true));
         $this->assertPositiveTiming($result, 'gpg_public_key_import');
         $this->assertPositiveTiming($result, 'gpg_signature_verify');
     }
@@ -68,6 +73,11 @@ final class OpenPgpKeyInspectorTest
 
         assertSame(false, $result['ok']);
         assertSame('signature_verification_failed', $result['status']);
+        assertSame(0, $result['diagnostics']['import_exit_code']);
+        assertSame(true, $result['diagnostics']['import_accepted']);
+        assertTrue(is_int($result['diagnostics']['verification_exit_code']));
+        assertSame(false, $result['diagnostics']['validsig_present']);
+        assertTrue(in_array('BADSIG', $result['diagnostics']['gpg_status_codes'], true));
         $this->assertPositiveTiming($result, 'gpg_public_key_import');
         $this->assertPositiveTiming($result, 'gpg_signature_verify');
     }
