@@ -1,14 +1,9 @@
 1. make the +/-/[x] buttons work
-   - confirmed real bug, not just cosmetic: buttons do nothing on click,
-     and should bump score/vote count in place.
-   - root cause found: /assets/thread_reactions.js (the click-handler
-     script for apply-thread-tag/apply-post-tag) is only included on
-     thread/post detail pages and the paned reader. BoardPageController's
-     board(), random(), and search() - the only places quote_card.php
-     actually renders on qdb - never pass it in scriptPaths, so there's no
-     listener bound at all on quote cards.
-   - fix: add '/assets/thread_reactions.js' to the scriptPaths array in
-     all three of those methods in src/ForumRewrite/Http/BoardPageController.php.
+   - RESOLVED. BoardPageController's board/random/search and QdbExperience
+     now load /assets/thread_reactions.js, so the +/- buttons bind and
+     update the score in place. Routine vote status ("Saving tag...") is
+     overlaid in theme-qdb.css so it no longer grows the card; errors still
+     expand it.
    - make them look more like qdb.us buttons
      - reference: https://web.archive.org/web/20100210200238/http://qdb.us/latest/5
    - confirmed (live, thread-20260526032027-014695b3): a quote's score can
