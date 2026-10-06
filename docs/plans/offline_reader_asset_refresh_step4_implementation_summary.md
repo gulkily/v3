@@ -93,3 +93,19 @@
   - `php tests/run.php LocalAppSmokeTest`: 116 passed, 4 failed; the same four pre-existing failures.
   - `OfflineNavigationWorkerTest` (7), `OfflineSnapshotLocatorTest` (5), `PublicOfflineSnapshotManifestTest` (1), `PublicOfflineSnapshotBuilderTest` (1), `OfflineSnapshotPublisherTest` (2): all pass.
   - Not applicable: UI, deployment, migration.
+
+## Stage 8 - Completion Contract verification (partial)
+- Changes: none (verification only).
+- Verification:
+  - Scripted, against a scratch static root (`scripts/publish_offline_snapshot.php --static-html-root=<scratch>`), not the project's static root:
+    - Published snapshot: 52 threads, 83 posts, 102400 bytes.
+    - `manifest.json` `sha256` (`1f10bc00…f5810a`) equals `sha256sum` of `snapshot.sqlite3`.
+    - Reader rendered through `Application` with that root: `data-snapshot-revision` equals the manifest hash.
+    - Second publish: manifest hash changed to `6a0ddfa2…e78cb6`, and the rendered attribute followed it.
+  - Not yet verified (requires a browser with the service worker registered, on a build serving the real static root):
+    - Five consecutive quiet loads make no `/assets/*` or `/offline/snapshot.sqlite3` requests with `__offline_bootstrap`. The dev-server log should show only the three shell pages per load.
+    - One refresh after a publish, then none.
+    - "Refresh saved reader" refreshes on demand.
+  - Not applicable: deployment, migration.
+- Notes:
+  - Stage 8 is not complete until the browser checks above are recorded. They need a publish to the project's static root, which was not done here.
