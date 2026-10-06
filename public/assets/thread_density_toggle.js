@@ -1,5 +1,7 @@
 (function () {
-  var storageKey = "zenmemes-thread-density";
+  var runtime = window.forumBrowserRuntime || null;
+  var storageKey = runtime && runtime.threadDensityStorageKey;
+  if (!storageKey) return;
 
   function readStoredDensity() {
     try {

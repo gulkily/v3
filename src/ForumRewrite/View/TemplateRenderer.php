@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\View;
 
+use ForumRewrite\BrowserRuntimeProfile;
 use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\PresentationSlotRegistry;
 use ForumRewrite\Qdb\QdbPresentation;
@@ -132,6 +133,7 @@ final class TemplateRenderer
         }
 
         $profile = SiteProfileRegistry::active();
+        $browserRuntime = BrowserRuntimeProfile::fromProfile($profile);
         $themes = ThemeRegistry::permitted($profile['permittedThemes']);
         $permittedThemeNames = array_column($themes, 'name');
         $explicitThemeNames = array_values(array_filter(
@@ -170,6 +172,7 @@ final class TemplateRenderer
                 'openpgpLoader' => $this->assetPath('/assets/openpgp_loader.js'),
                 'browserSigning' => $this->assetPath('/assets/browser_signing.js'),
             ],
+            'browserRuntime' => $browserRuntime,
             'pageStylesheetPaths' => $pageStylesheetPaths,
             'criticalCss' => $this->criticalCss(),
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),

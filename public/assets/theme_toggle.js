@@ -1,5 +1,7 @@
 (function () {
-  var storageKey = "zenmemes-theme";
+  var runtime = window.forumBrowserRuntime || null;
+  var storageKey = runtime && runtime.themeStorageKey;
+  if (!storageKey) return;
 
   function systemTheme() {
     return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches

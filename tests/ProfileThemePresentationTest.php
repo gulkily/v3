@@ -60,7 +60,9 @@ final class ProfileThemePresentationTest
 
             $script = file_get_contents($publicRoot . '/assets/theme_toggle.js');
             assertSame(true, $script !== false);
-            assertSame(true, str_contains((string) $script, 'var storageKey = "zenmemes-theme";'));
+            assertSame(true, str_contains($zenmemesHtml, '"themeStorageKey":"zenmemes-theme"'));
+            assertSame(true, str_contains($qdbHtml, '"themeStorageKey":"qdb-theme"'));
+            assertSame(true, str_contains((string) $script, 'var storageKey = runtime && runtime.themeStorageKey;'));
             assertSame(true, str_contains((string) $script, 'return themes.indexOf(storedTheme) === -1 ? defaultTheme() : storedTheme;'));
         } finally {
             $_COOKIE = $previousCookie;

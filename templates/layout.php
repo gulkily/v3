@@ -10,7 +10,9 @@
       var allowed = <?= json_encode($explicitThemeNames, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
       var themeStylesheetPaths = <?= json_encode($themeStylesheetPaths, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) ?>;
       var themeHintCookieName = <?= json_encode($themeHintCookieName, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+      var browserRuntime = <?= json_encode($browserRuntime, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) ?>;
       var theme = null;
+      window.forumBrowserRuntime = browserRuntime;
 
       function cookieValue(name) {
         var prefix = name + '=';
@@ -34,7 +36,13 @@
       }
 
       try {
-        theme = localStorage.getItem('zenmemes-theme');
+        theme = localStorage.getItem(browserRuntime.themeStorageKey);
+        if (theme === null && browserRuntime.namespace === 'zenmemes' && browserRuntime.themeStorageKey !== 'zenmemes-theme') {
+          theme = localStorage.getItem('zenmemes-theme');
+          if (theme !== null) {
+            localStorage.setItem(browserRuntime.themeStorageKey, theme);
+          }
+        }
       } catch (error) {
       }
 
@@ -61,7 +69,7 @@
 
 <?php if ($showThreadDensityToggle): ?>
       try {
-        var densityStorageKey = 'zenmemes-thread-density';
+        var densityStorageKey = browserRuntime.threadDensityStorageKey;
         var densityParam = new URLSearchParams(location.search).get('density');
         var density;
         if (densityParam === 'compact' || densityParam === 'comfortable') {

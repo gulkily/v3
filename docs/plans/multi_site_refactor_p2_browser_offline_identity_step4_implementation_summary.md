@@ -12,3 +12,15 @@
   - `git diff --check` — passed.
 - Notes:
   - Authentication, session, and browser-held identity storage are intentionally absent from the descriptor.
+
+## Stage 2 - Profile-owned preferences
+
+- Changes:
+  - Passed the browser-runtime descriptor into the shared layout and exposed it to the existing theme and density controls.
+  - Replaced hard-coded preference access with the descriptor's theme and density keys; retained a Zenmemes-only absent-key migration boundary.
+  - Kept browser identity, session, and authentication storage entirely outside this work.
+- Verification:
+  - `php tests/run.php ProfileThemePresentationTest LocalAppSmokeTest::testThreadDensityToggleIsHiddenByDefaultAndShownWhenFlagEnabled` — 3 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - Zenmemes' derived preference key intentionally remains its historical key; Chouse and QDB therefore never read or overwrite it.
