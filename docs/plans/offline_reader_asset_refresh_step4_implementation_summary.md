@@ -109,3 +109,15 @@
   - Not applicable: deployment, migration.
 - Notes:
   - Stage 8 is not complete until the browser checks above are recorded. They need a publish to the project's static root, which was not done here.
+
+## Post-Stage 8 - Browser verification and shell double-fetch fix
+- Changes:
+  - `public/service_worker.js`: `refreshResources()` takes already-fetched responses, so a full refresh caches the three shell pages from the responses it already has instead of fetching them a second time.
+  - `tests/OfflineNavigationWorkerTest.php`: the forced-refresh test asserts each shell page is fetched exactly once. Confirmed to fail on the previous worker.
+- Verification:
+  - Browser log, after the v14 worker update: first load did one full refresh (shells, all assets, snapshot); every later load (`/about/`, `/users/`, `/tools/`, `/account/key/`, `/`, `/users/`) made only the three shell requests. Five-plus quiet loads met.
+  - Browser log, "Refresh saved reader": forced full refresh (shells, all assets, snapshot). The trailing `HEAD /offline/snapshot.sqlite3` comes from the health page's publication check, not the worker.
+  - Not yet observed: a refresh triggered by a new snapshot publish, with the page open.
+  - `php tests/run.php OfflineNavigationWorkerTest`: 7 passed. `LocalAppSmokeTest`: 116 passed, 4 failed (the four pre-existing failures).
+- Notes:
+  - Before this fix, a full refresh requested the three shell pages twice (the second pass came from the required-URL list in `refreshResources()`). That was original code; this fix removes the extra three requests.

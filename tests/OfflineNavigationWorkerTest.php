@@ -381,7 +381,12 @@ async function run() {
     let completion;
     listeners.message({ data, ports: [port], waitUntil(promise) { completion = promise; } });
     try { await completion; } catch (error) {}
-    return { status: port.messages[0].status, assetFetches: fetched.filter((path) => path.startsWith('/assets/')).length };
+    const count = (path) => fetched.filter((fetchedPath) => fetchedPath === path).length;
+    return {
+      status: port.messages[0].status,
+      assetFetches: fetched.filter((path) => path.startsWith('/assets/')).length,
+      shellFetches: [count('/offline/reader/'), count('/offline/'), count('/tools/outbox/')]
+    };
   }
   await message({ type: 'refresh-offline-reader' });
   const unchanged = await message({ type: 'refresh-offline-reader' });
@@ -404,6 +409,7 @@ NODE;
         assertSame('unchanged', $outcome['unchanged']['status']);
         assertSame('ready', $outcome['forced']['status']);
         assertTrue($outcome['forced']['assetFetches'] > 0, 'A forced refresh should refetch assets even when the revision matches.');
+        assertSame([1, 1, 1], $outcome['forced']['shellFetches'], 'A full refresh should fetch each shell page once.');
     }
 
     public function testOutboxNavigationFallsBackToItsDedicatedCachedShell(): void

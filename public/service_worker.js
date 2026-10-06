@@ -80,13 +80,13 @@ async function fetchOfflineResource(url, purpose) {
   return response;
 }
 
-async function refreshResources(urls) {
+async function refreshResources(urls, alreadyFetched = []) {
   const responses = await Promise.all([...new Set(urls)].map(async (url) => {
     const response = await fetchOfflineResource(url, "cache resource");
     return [url, response];
   }));
   const cache = await caches.open(CACHE_NAME);
-  for (const [url, response] of responses) {
+  for (const [url, response] of [...alreadyFetched, ...responses]) {
     await cache.put(cacheKey(url), response.clone());
   }
   console.info("[offline reading] cache refresh stored", Object.assign(workerDetails(), {
@@ -108,13 +108,14 @@ async function refreshOfflineReader(extraUrls) {
       .map((url) => url.pathname);
   }));
   await refreshResources([
-    OFFLINE_HEALTH_URL,
-    OFFLINE_READER_URL,
-    OFFLINE_OUTBOX_URL,
     "/manifest.webmanifest",
     "/favicon.ico",
     ...assetUrls.flat(),
     ...extraUrls,
+  ], [
+    [OFFLINE_READER_URL, shell],
+    [OFFLINE_HEALTH_URL, health],
+    [OFFLINE_OUTBOX_URL, outbox],
   ]);
   await refreshSnapshot();
   await storeRevision(await revisionFromBodies(shellBodies));
