@@ -40,6 +40,23 @@ final class OfflineSnapshotPublishCommandTest
         }
     }
 
+    public function testPublishReportsSelectedProfileWithoutChangingExplicitRootPrecedence(): void
+    {
+        [$repositoryRoot, $databasePath, $staticHtmlRoot] = $this->createEnvironment();
+        try {
+            [$exitCode, $stdout, $stderr] = $this->runCommand($repositoryRoot, $databasePath, $staticHtmlRoot, false, 'chouse');
+
+            assertSame(0, $exitCode);
+            assertSame('', $stderr);
+            assertStringContains('Site profile: chouse', $stdout);
+            assertTrue(is_file($staticHtmlRoot . '/offline/snapshot.sqlite3'));
+        } finally {
+            $this->removeTree(dirname($repositoryRoot));
+            @unlink($databasePath);
+            $this->removeTree($staticHtmlRoot);
+        }
+    }
+
     /** @return array{0:string,1:string,2:string} */
     private function createEnvironment(): array
     {
@@ -64,9 +81,10 @@ final class OfflineSnapshotPublishCommandTest
     }
 
     /** @return array{int,string,string} */
-    private function runCommand(string $repositoryRoot, string $databasePath, string $staticHtmlRoot, bool $membersOnly = false): array
+    private function runCommand(string $repositoryRoot, string $databasePath, string $staticHtmlRoot, bool $membersOnly = false, ?string $siteId = null): array
     {
         $command = 'FORUM_APPROVED_MEMBERS_ONLY=' . ($membersOnly ? 'true' : 'false')
+            . ($siteId === null ? '' : ' FORUM_SITE_ID=' . escapeshellarg($siteId))
             . ' ./v3 offline publish --repository-root=' . escapeshellarg($repositoryRoot)
             . ' --database-path=' . escapeshellarg($databasePath)
             . ' --static-html-root=' . escapeshellarg($staticHtmlRoot);

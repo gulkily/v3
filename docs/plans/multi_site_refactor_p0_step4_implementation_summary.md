@@ -39,3 +39,18 @@
   - Confirmed no hand-written profile-suffix branch remains in these two consumers.
 - Notes:
   - Existing task-queue explicit-root coverage remains green, preserving operator-supplied root behavior.
+
+## Stage 4 - Offline command migration and release verification
+
+- Changes:
+  - Migrated offline snapshot publication and diagnosis fallback roots to `PresentationPathResolver`.
+  - Added command coverage for a selected Chouse profile with explicit CLI and environment static-root overrides.
+- Verification:
+  - `php -l scripts/publish_offline_snapshot.php`
+  - `php -l scripts/diagnose_offline_reading.php`
+  - `php -l tests/OfflineSnapshotPublishCommandTest.php`
+  - `php -l tests/OfflineReadingDiagnosticCommandTest.php`
+  - `php tests/run.php OfflineSnapshotPublishCommandTest OfflineReadingDiagnosticCommandTest PresentationPathResolverTest SiteProfileRegistryTest TaskQueueCommandTest` — 25 passed.
+  - `php tests/run.php` — the only three failures reproduce on pre-P0 commit `803948d`: `BrowserSigningNormalizationTest::testThreadSubmitRendersPendingShellBeforeApiResponseAndNavigatesOnSuccess`, `BrowserSigningNormalizationTest::testInlineReplySubmitRendersPendingCardBeforeApiResponseAndNavigatesOnSuccess`, and `LocalAppSmokeTest::testAnonymousPublicBoardDoesNotStartViewerSession`.
+- Notes:
+  - Deployment verification remains for the operator: confirm an existing Zenmemes deployment reads `state/static_html`, then verify Chouse and QDB default roots are isolated before rollout.
