@@ -33,3 +33,20 @@
   - `git diff --check`
 - Notes:
   - The endpoint uses the board's existing one-thread lookup, so direct links to list-excluded but addressable threads retain their current eligibility semantics.
+
+## Stage 3 - Bound the initial Forte document
+
+- Changes:
+  - Changed the board page to prepare content/reaction state for only the requested thread, rather than fetching reply trees and post state across the full list.
+  - Preserved the content-pane shell and direct-link resolution; an unselected board now renders its placeholder without complete thread bodies.
+  - Added a two-thread regression that proves unselected root content is absent from both selected and unselected initial pages.
+- Verification:
+  - `php -l src/ForumRewrite/Http/ForteBoardController.php`
+  - `php -l tests/LocalAppSmokeTest.php`
+  - `php tests/run.php LocalAppSmokeTest::testForteInitialPageOmitsUnselectedThreadContent`
+  - `php tests/run.php LocalAppSmokeTest::testForteReplyLikesRenderAndRestoreViewerState`
+  - `php tests/run.php LocalAppSmokeTest::testForteThreadDetailApiRendersOneRequestedThread`
+  - `php tests/run.php LocalAppSmokeTest::testApplicationRendersCoreRoutes`
+  - `git diff --check`
+- Notes:
+  - This removes the production memory-growth path before client-side cache/preload work: an initial request no longer constructs hidden pane HTML for other listed threads.

@@ -1358,6 +1358,34 @@ PHP;
         assertSame('invalid thread id', $invalid['error']);
     }
 
+    public function testForteInitialPageOmitsUnselectedThreadContent(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-forte-initial-pane-' . bin2hex(random_bytes(6));
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-forte-initial-pane-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        file_put_contents(
+            $repositoryRoot . '/records/posts/root-002.txt',
+            "Post-ID: root-002\nCreated-At: 2026-10-06T14:00:00Z\nBoard-Tags: general\nSubject: Unselected thread\n\nUnselected thread body sentinel.\n"
+        );
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $selected = $this->render($application, '/forte?selected=root-001');
+            assertStringContains('data-paned-board-content-post-id="root-001"', $selected);
+            assertStringContains('First line preview.', $selected);
+            assertStringNotContains('Unselected thread body sentinel.', $selected);
+
+            $unselected = $this->render($application, '/forte');
+            assertStringContains('No thread selected', $unselected);
+            assertStringNotContains('First line preview.', $unselected);
+            assertStringNotContains('Unselected thread body sentinel.', $unselected);
+        } finally {
+            $this->deleteTree($repositoryRoot);
+            @unlink($databasePath);
+        }
+    }
+
     public function testApplicationRendersCoreRoutes(): void
     {
         @unlink($this->databasePath);
