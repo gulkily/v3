@@ -95,6 +95,16 @@ final class SiteProfileRegistryTest
             },
             'Site profile ID is not browser-safe: Chouse!',
         );
+
+        $unknownThemeProfiles = SiteProfileRegistry::all();
+        $unknownThemeProfiles['chouse']['permittedThemes'][] = 'untrusted-theme';
+
+        assertThrowsRuntime(
+            static function () use ($unknownThemeProfiles): void {
+                SiteProfileRegistry::validate($unknownThemeProfiles);
+            },
+            'Site profile chouse has an unknown permitted theme: untrusted-theme',
+        );
     }
 }
 

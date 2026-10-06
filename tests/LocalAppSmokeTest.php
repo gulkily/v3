@@ -1555,14 +1555,14 @@ PHP;
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="no-git"', $board);
-        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","word97","chouse","qdb"];', $board);
+        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","word97"];', $board);
         assertStringContains('data-role="theme-menu"', $board);
         assertStringContains('aria-haspopup="menu"', $board);
         assertStringContains('data-theme-option="auto"', $board);
         assertStringContains('data-theme-option="thermal"', $board);
         assertStringContains('data-theme-option="whitehot"', $board);
         assertStringContains('data-theme-option="word97"', $board);
-        assertStringContains('data-theme-option="qdb"', $board);
+        assertStringNotContains('data-theme-option="qdb"', $board);
         assertStringContains('class="site-status-bar"', $board);
         assertStringContains('data-heat="', $thread);
         assertStringContains('data-heat="', $tagPage);
@@ -3618,7 +3618,11 @@ PHP;
         assertTrue(is_file($artifactRoot . '/offline/snapshot.sqlite3'));
         assertStringContains('SQLite format 3', (string) file_get_contents($artifactRoot . '/offline/snapshot.sqlite3'));
         assertSame((string) file_get_contents(dirname(__DIR__) . '/public/service_worker.js'), (string) file_get_contents($artifactRoot . '/service_worker.js'));
-        foreach (\ForumRewrite\View\ThemeRegistry::stylesheetPaths() as $path) {
+        foreach (\ForumRewrite\View\ThemeRegistry::permitted(\ForumRewrite\SiteProfileRegistry::all()['zenmemes']['permittedThemes']) as $theme) {
+            if ($theme['name'] === 'auto') {
+                continue;
+            }
+            $path = \ForumRewrite\View\ThemeRegistry::stylesheetPaths()[$theme['name']];
             $fingerprintedPath = AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', $path);
             assertStringContains($fingerprintedPath, $indexArtifact);
             assertTrue(is_file($artifactRoot . $fingerprintedPath));

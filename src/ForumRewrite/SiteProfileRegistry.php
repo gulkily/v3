@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ForumRewrite;
 
+use ForumRewrite\View\ThemeRegistry;
+
 final class SiteProfileRegistry
 {
     private const DEFAULT_SITE_ID = 'zenmemes';
@@ -18,31 +20,34 @@ final class SiteProfileRegistry
                 'name' => 'zenmemes',
                 'displayName' => 'zenmemes',
                 'defaultTheme' => 'auto',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'chouse', 'qdb'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97'],
                 'browserNamespace' => 'zenmemes',
                 'editorialContentKey' => 'zenmemes',
                 'enabledExperienceKeys' => ['forum'],
                 'composerPrompt' => 'Start a thread...',
+                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'zenmemes', 'brandedStylesheet' => 'site'],
             ],
             'chouse' => [
                 'name' => 'chouse',
                 'displayName' => 'chouse',
                 'defaultTheme' => 'chouse',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'chouse', 'qdb'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'chouse'],
                 'browserNamespace' => 'chouse',
                 'editorialContentKey' => 'chouse',
                 'enabledExperienceKeys' => ['forum'],
                 'composerPrompt' => 'Start a thread...',
+                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'chouse', 'editorial' => 'boston', 'brandedStylesheet' => 'chouse'],
             ],
             'qdb' => [
                 'name' => 'qdb',
                 'displayName' => 'qdb',
                 'defaultTheme' => 'qdb',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'chouse', 'qdb'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'qdb'],
                 'browserNamespace' => 'qdb',
                 'editorialContentKey' => 'qdb',
                 'enabledExperienceKeys' => ['qdb'],
                 'composerPrompt' => 'Submit a quote...',
+                'presentationSlots' => ['navigation' => 'qdb', 'boardCard' => 'quote', 'compose' => 'qdb', 'about' => 'default', 'editorial' => 'qdb', 'brandedStylesheet' => 'qdb'],
             ],
         ];
 
@@ -98,6 +103,15 @@ final class SiteProfileRegistry
                 }
             }
 
+            if (count($profile['permittedThemes']) !== count(array_unique($profile['permittedThemes']))) {
+                throw new \RuntimeException("Site profile {$siteId} has duplicate permitted themes.");
+            }
+            foreach ($profile['permittedThemes'] as $theme) {
+                if (!ThemeRegistry::isKnownName($theme)) {
+                    throw new \RuntimeException("Site profile {$siteId} has an unknown permitted theme: {$theme}");
+                }
+            }
+
             if (!in_array($profile['defaultTheme'], $profile['permittedThemes'], true)) {
                 throw new \RuntimeException("Site profile {$siteId} default theme must be permitted.");
             }
@@ -107,6 +121,11 @@ final class SiteProfileRegistry
                 throw new \RuntimeException("Site profile browser namespace is invalid or duplicated: {$browserNamespace}");
             }
             $browserNamespaces[$browserNamespace] = true;
+
+            if (!isset($profile['presentationSlots']) || !is_array($profile['presentationSlots'])) {
+                throw new \RuntimeException("Site profile {$siteId} requires presentation slots.");
+            }
+            PresentationSlotRegistry::validate($profile['presentationSlots'], $siteId);
         }
     }
 

@@ -21,10 +21,10 @@ final class PlatformDocsPageTest
         $html = $this->render('/docs/');
         $diagram = explode('</svg>', (string) strstr($html, '<svg'), 2)[0];
 
-        assertTrue(str_contains($html, '<h1>Platform Docs</h1>'));
+        assertTrue(str_contains($html, '<h1>zenmemes Platform Docs</h1>'));
         assertTrue(str_contains($html, 'Extending the Platform'));
         assertTrue(str_contains($html, '<h2>How it works</h2>'));
-        assertTrue(str_contains($html, '<title id="docs-diagram-title">Zenmemes public architecture</title>'));
+        assertTrue(str_contains($html, '<title id="docs-diagram-title">zenmemes public architecture</title>'));
         assertTrue(str_contains($diagram, "Member's browser"));
         assertTrue(str_contains($diagram, 'signed write'));
         assertTrue(str_contains($diagram, 'static HTML'));
@@ -87,7 +87,7 @@ final class PlatformDocsPageTest
         try {
             $html = $this->render('/docs/');
 
-            assertTrue(str_contains($html, '<h1>Platform Docs</h1>'));
+            assertTrue(str_contains($html, '<h1>zenmemes Platform Docs</h1>'));
             assertTrue(!str_contains($html, '<h1>Lobby</h1>'));
         } finally {
             if ($previousFlag === false) {

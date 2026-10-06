@@ -11,7 +11,9 @@ Usage:
 
 Synchronizes the vendored docs/fdp subtree from the FDP master branch. The target
 repository must have no uncommitted changes. --remote-url is only needed to add
-or replace the fdp remote (for example, when testing against a fork).
+or replace the fdp remote (for example, to repair an unexpected source or when
+testing against a fork). Without it, an existing fdp remote must point to the
+canonical GitHub source.
 EOF
 }
 
@@ -65,9 +67,16 @@ fdp_sync() {
     return 1
   fi
 
+  local existing_remote_url
   if git -C "${repository_root}" remote get-url fdp >/dev/null 2>&1; then
+    existing_remote_url="$(git -C "${repository_root}" remote get-url fdp)"
     if (( remote_url_explicit )); then
       git -C "${repository_root}" remote set-url fdp "${remote_url}"
+    elif [[ "${existing_remote_url}" != "${remote_url}" ]]; then
+      echo "FDP remote URL is not the canonical source: ${existing_remote_url}" >&2
+      echo "Expected: ${remote_url}" >&2
+      echo "Re-run with --remote-url=${remote_url} to replace it deliberately." >&2
+      return 1
     fi
   else
     git -C "${repository_root}" remote add fdp "${remote_url}"

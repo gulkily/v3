@@ -18,10 +18,10 @@ Use this checklist to refactor Zenmemes, Chouse, and QDB into explicit site comp
 
 ## P2 — Bound presentation variation
 
-- [ ] Define named presentation slots with shared fallbacks: navigation, board card, compose surface, about sections, and branded stylesheet.
-- [ ] Move Zenmemes/Boston editorial content, the Chouse about section, platform-document branding, and the Zenmemes busy message into profile-owned content data or bounded partial slots.
-- [ ] Decide and document whether Chouse and QDB branded themes are selectable outside their own profiles; make theme-menu availability profile-owned.
-- [ ] Do not support arbitrary template paths, ordered theme stacks, or CSS concatenation overrides; profile overrides must select only registered slots.
+- [x] Define named presentation slots with shared fallbacks: navigation, board card, compose surface, about sections, and branded stylesheet.
+- [x] Move Zenmemes/Boston editorial content, the Chouse about section, platform-document branding, and the Zenmemes busy message into profile-owned content data or bounded partial slots.
+- [x] Decide and document whether Chouse and QDB branded themes are selectable outside their own profiles; make theme-menu availability profile-owned.
+- [x] Do not support arbitrary template paths, ordered theme stacks, or CSS concatenation overrides; profile overrides must select only registered slots.
 
 ## P2 — Profile browser and offline identity
 

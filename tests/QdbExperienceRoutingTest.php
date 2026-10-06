@@ -36,6 +36,20 @@ final class QdbExperienceRoutingTest
         }
     }
 
+    public function testQdbAddSurfaceUsesTheRegisteredComposeSelection(): void
+    {
+        $application = $this->application();
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $html = $this->render($application, '/add');
+
+            assertTrue(str_contains($html, 'class="stack qdb-add-page"'));
+            assertTrue(!str_contains($html, '<h1>Compose Thread</h1>'));
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+    }
+
     private function application(): Application
     {
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-qdb-routes-repo-' . bin2hex(random_bytes(6));
@@ -61,6 +75,14 @@ final class QdbExperienceRoutingTest
         ob_end_clean();
 
         return http_response_code();
+    }
+
+    private function render(Application $application, string $requestUri): string
+    {
+        ob_start();
+        $application->handle('GET', $requestUri);
+
+        return (string) ob_get_clean();
     }
 
     private function copyDirectory(string $source, string $target): void

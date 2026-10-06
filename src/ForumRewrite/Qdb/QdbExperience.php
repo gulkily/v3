@@ -6,6 +6,7 @@ namespace ForumRewrite\Qdb;
 
 use ForumRewrite\Http\BoardPageController;
 use ForumRewrite\Http\RouteServices;
+use ForumRewrite\PresentationSlotRegistry;
 use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\SiteProfileRegistry;
 use PDO;
@@ -148,9 +149,20 @@ final class QdbExperience
     /** @param array<string, mixed> $query */
     private function add(array $query): string
     {
-        return $this->routeServices->renderPageTemplate('qdb_add.php', [
+        $isQdbCompose = PresentationSlotRegistry::resolve(SiteProfileRegistry::active(), 'compose') === 'qdb';
+        $data = [
             'boardTags' => 'general', 'subject' => '', 'body' => (string) ($query['body'] ?? ''), 'notice' => null, 'error' => null,
-        ], 'Add Quote', 'compose', ['/assets/openpgp_loader.js', '/assets/browser_signing.js']);
+        ];
+
+        return $this->routeServices->renderPageTemplate(
+            $isQdbCompose ? 'qdb_add.php' : 'compose_thread.php',
+            $data,
+            $isQdbCompose ? 'Add Quote' : 'Compose Thread',
+            'compose',
+            $isQdbCompose
+                ? ['/assets/openpgp_loader.js', '/assets/browser_signing.js']
+                : ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js'],
+        );
     }
 
     private function random(): string
@@ -182,7 +194,7 @@ final class QdbExperience
         $reactions = $this->boardPolicy->viewerReactionState($threads);
         return $this->routeServices->renderPageTemplate($template, $data + [
             'viewerUpvotedThreadIds' => $reactions['upvoted'], 'viewerDownvotedThreadIds' => $reactions['downvoted'], 'viewerFlaggedPostIds' => $reactions['flagged'],
-        ], $title, $section);
+        ], $title, $section, ['/assets/thread_reactions.js']);
     }
 
     private function isPrimaryRoutePath(string $path): bool

@@ -83,6 +83,14 @@
     return Boolean(node && node.dataset && node.dataset.publicAuthResume === "true");
   }
 
+  function isApprovedMembersOnly() {
+    return Boolean(
+      document.documentElement
+      && document.documentElement.dataset
+      && document.documentElement.dataset.approvedMembersOnly === "1"
+    );
+  }
+
   function approvedDestination(options) {
     var requestedDestination = requestedReturnDestination(options);
     if (requestedDestination) {
@@ -216,8 +224,18 @@
       return { status: "approved", identityId: identityId };
     }
 
-    setStatus("Identity verified. Approval is still pending.", "ok");
     var returnTo = requestedReturnDestination(options);
+    if (!isApprovedMembersOnly()) {
+      setStatus("Identity verified.", "ok");
+      if (returnTo !== "") {
+        navigateAfterApproval(options);
+        return { status: "authenticated", identityId: identityId };
+      }
+      window.location.reload();
+      return { status: "authenticated", identityId: identityId };
+    }
+
+    setStatus("Identity verified. Approval is still pending.", "ok");
     if (returnTo !== "") {
       window.location.replace("/lobby/?return_to=" + encodeURIComponent(returnTo));
       return { status: "pending", identityId: identityId };

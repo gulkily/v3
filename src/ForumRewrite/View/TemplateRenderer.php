@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\View;
 
 use ForumRewrite\Host\AssetFingerprint;
+use ForumRewrite\PresentationSlotRegistry;
 use ForumRewrite\Qdb\QdbPresentation;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\SiteProfileRegistry;
@@ -130,12 +131,25 @@ final class TemplateRenderer
             $assetScriptPaths[] = $this->assetPath($scriptPath);
         }
 
+        $profile = SiteProfileRegistry::active();
+        $themes = ThemeRegistry::permitted($profile['permittedThemes']);
+        $permittedThemeNames = array_column($themes, 'name');
+        $explicitThemeNames = array_values(array_filter(
+            $permittedThemeNames,
+            static fn (string $name): bool => ThemeRegistry::isExplicitName($name),
+        ));
         $themeStylesheetPaths = [];
         foreach (ThemeRegistry::stylesheetPaths() as $name => $path) {
-            $themeStylesheetPaths[$name] = $this->assetPath($path);
+            if (in_array($name, $explicitThemeNames, true)) {
+                $themeStylesheetPaths[$name] = $this->assetPath($path);
+            }
         }
-        $defaultTheme = SiteProfileRegistry::active()['defaultTheme'];
-        $themeHint = $this->themeHint();
+        $brandedStylesheet = PresentationSlotRegistry::resolve($profile, 'brandedStylesheet');
+        $defaultTheme = $brandedStylesheet === 'site' ? $profile['defaultTheme'] : $brandedStylesheet;
+        if (!in_array($defaultTheme, $permittedThemeNames, true)) {
+            $defaultTheme = $profile['defaultTheme'];
+        }
+        $themeHint = $this->themeHint($explicitThemeNames);
         $initialTheme = $themeHint
             ?? (ThemeRegistry::isExplicitName($defaultTheme) ? $defaultTheme : 'light');
 
@@ -164,8 +178,8 @@ final class TemplateRenderer
             'inviteNavigationScriptPath' => $this->assetPath('/assets/invite_navigation.js'),
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
             'pwaRegistrationScriptPath' => $this->assetPath('/assets/pwa_registration.js'),
-            'themes' => ThemeRegistry::all(),
-            'explicitThemeNames' => ThemeRegistry::explicitNames(),
+            'themes' => $themes,
+            'explicitThemeNames' => $explicitThemeNames,
             'defaultTheme' => $defaultTheme,
             'themeStylesheetPaths' => $themeStylesheetPaths,
             'initialThemeStylesheetPath' => $themeStylesheetPaths[$initialTheme],
@@ -198,11 +212,12 @@ final class TemplateRenderer
         return $this->criticalCss;
     }
 
-    private function themeHint(): ?string
+    /** @param list<string> $explicitThemeNames */
+    private function themeHint(array $explicitThemeNames): ?string
     {
         $hint = (string) ($_COOKIE[ThemeRegistry::THEME_HINT_COOKIE] ?? '');
 
-        return ThemeRegistry::isExplicitName($hint) ? $hint : null;
+        return in_array($hint, $explicitThemeNames, true) ? $hint : null;
     }
 
     /**
@@ -232,8 +247,8 @@ final class TemplateRenderer
             return $items;
         }
 
-        $isQdbExperience = in_array('qdb', SiteProfileRegistry::active()['enabledExperienceKeys'], true);
-        $items = $isQdbExperience
+        $isQdbNavigation = PresentationSlotRegistry::resolve(SiteProfileRegistry::active(), 'navigation') === 'qdb';
+        $items = $isQdbNavigation
             ? QdbPresentation::navigation()
             : [
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],
@@ -245,7 +260,7 @@ final class TemplateRenderer
 
         // Account/Invite are deliberately left out of the qdb profile's nav
         // (operator's call) - both routes remain reachable by direct URL.
-        if (!$isQdbExperience
+        if (!$isQdbNavigation
             && $viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
             && (($viewerProfile['_authenticated_identity'] ?? true) === true)) {
