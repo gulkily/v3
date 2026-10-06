@@ -28,3 +28,17 @@
   - Shared-host staging validation is pending because this workspace has no target host; it is a release gate in the deployment runbook.
 - Notes:
   - The direct path uses Apache 2.4's `[END]` flag so an internal artifact rewrite cannot re-enter the front-controller rule.
+
+## Stage 3 - Repeatable capacity evidence
+
+- Changes:
+  - Added a k6 read-only probe that mixes anonymous static reads with opt-in cookie/query PHP fallback reads and accepts per-run SLO values.
+  - Added the QDB shared-host capacity runbook with host authorization, staged ramp, evidence, stop, rollback, upgrade, and measured-SQL follow-up guidance.
+  - Added a guard test proving the probe includes the intended paths and emits no write request.
+- Verification:
+  - `node --check scripts/qdb_capacity_probe.js` — passed.
+  - `php tests/run.php QdbCapacityProbeTest` — 1 passed.
+  - `php -l tests/QdbCapacityProbeTest.php` and `git diff --check` — passed.
+  - `k6` is not installed in this workspace, and no target shared host is available; executing the external load run is deferred to the host-approved staging release gate.
+- Notes:
+  - Operators raise concurrency only between completed runs; the probe itself has no write scenario.

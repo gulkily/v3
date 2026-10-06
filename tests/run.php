@@ -67,6 +67,7 @@ $testFiles = [
     __DIR__ . '/OfflineSnapshotLocatorTest.php',
     __DIR__ . '/QuoteCardDisplayNumberTest.php',
     __DIR__ . '/QdbQuoteNumbersTest.php',
+    __DIR__ . '/QdbCapacityProbeTest.php',
     __DIR__ . '/QdbExperienceRoutingTest.php',
     __DIR__ . '/QdbBoardPolicyTest.php',
     __DIR__ . '/PostSignatureAuditCommandTest.php',
