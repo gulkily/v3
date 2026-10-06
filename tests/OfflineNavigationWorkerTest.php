@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../autoload.php';
 require_once __DIR__ . '/Support/ProfileRegressionContract.php';
+require_once __DIR__ . '/Support/ProfileRegressionFixture.php';
 
 final class OfflineNavigationWorkerTest
 {
@@ -210,5 +211,13 @@ NODE;
 
             assertSame([$runtime['offlineCachePrefix'] . 'v13'], json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR));
         }
+    }
+
+    public function testFourthProfileFixtureUsesTheSameWorkerMatrix(): void
+    {
+        ProfileRegressionFixture::withFourthProfile(function (): void {
+            $this->testRefreshMessageReportsSuccessAndFailureToRequester();
+            $this->testActivationRefreshesOnlyTheActiveProfileCacheFamily();
+        });
     }
 }

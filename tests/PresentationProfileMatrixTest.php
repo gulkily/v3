@@ -8,6 +8,7 @@ use ForumRewrite\ReadModel\ReadModelBuilder;
 
 require __DIR__ . '/../autoload.php';
 require_once __DIR__ . '/Support/ProfileRegressionContract.php';
+require_once __DIR__ . '/Support/ProfileRegressionFixture.php';
 
 final class PresentationProfileMatrixTest
 {
@@ -31,6 +32,11 @@ final class PresentationProfileMatrixTest
                 putenv('FORUM_SITE_ID');
             }
         }
+    }
+
+    public function testFourthProfileFixtureUsesTheSamePresentationMatrix(): void
+    {
+        ProfileRegressionFixture::withFourthProfile(fn (): mixed => $this->testProfilesRenderTheirRegisteredPresentationSelections());
     }
 
     private function application(): Application

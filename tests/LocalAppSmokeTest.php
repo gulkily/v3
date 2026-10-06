@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../autoload.php';
 require_once __DIR__ . '/Support/ProfileRegressionContract.php';
+require_once __DIR__ . '/Support/ProfileRegressionFixture.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
@@ -3812,6 +3813,15 @@ PHP;
             }
             @unlink($this->databasePath);
         }
+    }
+
+    public function testFourthProfileFixtureUsesTheSameRuntimeAndSharedStateMatrix(): void
+    {
+        ProfileRegressionFixture::withFourthProfile(function (): void {
+            $this->testFrontControllerDerivesManifestAndWorkerFromTheActiveProfile();
+            $this->testStaticArtifactBuilderDerivesRuntimeAssetsForEveryProfile();
+            $this->testChangingTheActiveProfilePreservesThePublicSession();
+        });
     }
 
     public function testFrontControllerFallsBackDynamicallyUntilAReleaseIsActivated(): void

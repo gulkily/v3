@@ -10,12 +10,15 @@ final class SiteProfileRegistry
 {
     private const DEFAULT_SITE_ID = 'zenmemes';
 
+    /** @var null|array<string, array<string, mixed>> */
+    private static ?array $profilesForTesting = null;
+
     /**
      * @return array<string, array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string}>
      */
     public static function all(): array
     {
-        $profiles = [
+        $profiles = self::$profilesForTesting ?? [
             'zenmemes' => [
                 'name' => 'zenmemes',
                 'displayName' => 'zenmemes',
@@ -54,6 +57,16 @@ final class SiteProfileRegistry
         self::validate($profiles);
 
         return $profiles;
+    }
+
+    /** @param null|array<string, array<string, mixed>> $profiles */
+    public static function setProfilesForTesting(?array $profiles): void
+    {
+        if ($profiles !== null) {
+            self::validate($profiles);
+        }
+
+        self::$profilesForTesting = $profiles;
     }
 
     /**

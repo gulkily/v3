@@ -45,3 +45,15 @@
   - `git diff --check` — passed.
 - Notes:
   - The shared session remains profile-independent; static artifacts remain profile-scoped.
+
+## Stage 5 - Fourth-profile contract fixture
+
+- Changes:
+  - Added a resettable test-only profile source and a valid fourth profile fixture with a distinct browser namespace.
+  - Ran the fixture through the existing presentation, route, theme, worker, dynamic/static PWA, static-root, and shared-session matrices.
+  - Added valid and invalid fourth-profile descriptor validation coverage.
+- Verification:
+  - `php tests/run.php SiteProfileRegistryTest PresentationPathResolverTest ProfileThemePresentationTest PresentationProfileMatrixTest QdbExperienceRoutingTest OfflineNavigationWorkerTest LocalAppSmokeTest::testFourthProfileFixtureUsesTheSameRuntimeAndSharedStateMatrix` — 23 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - The test hook is reset in `finally`; it does not alter configured production profiles or normal selection behavior.

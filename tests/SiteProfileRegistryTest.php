@@ -118,6 +118,25 @@ final class SiteProfileRegistryTest
             'Profile requires a valid browser runtime identity.',
         );
     }
+
+    public function testFourthProfileFixturePassesValidationAndRejectsInvalidIdentity(): void
+    {
+        $profiles = SiteProfileRegistry::all();
+        $fixture = current($profiles);
+        assertSame(true, is_array($fixture));
+        $fixture['name'] = 'future-site';
+        $fixture['displayName'] = 'Future Site';
+        $fixture['browserNamespace'] = 'future-site';
+        $profiles['future-site'] = $fixture;
+
+        SiteProfileRegistry::validate($profiles);
+        $profiles['future-site']['browserNamespace'] = 'invalid!';
+
+        assertThrowsRuntime(
+            static fn (): mixed => SiteProfileRegistry::validate($profiles),
+            'Site profile browser namespace is invalid or duplicated: invalid!',
+        );
+    }
 }
 
 if (!function_exists('assertSame')) {
