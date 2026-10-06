@@ -84,3 +84,12 @@
   - Not applicable: UI in a browser (Stage 8), deployment, migration.
 - Notes:
   - With `force` in place, the Stage 5 `unchanged` acceptance in `offline_health.js` is no longer exercised by the button, but it stays as the contract for any other caller.
+
+## Stage 7 - Update existing tests
+- Changes:
+  - `tests/LocalAppSmokeTest.php`: worker source assertions for `status: "unchanged"`, `event.data.force`, `await refreshSnapshot();`, and `force: true` in `offline_health.js`.
+  - The v14 cache-name assertions and worker harness updates were made in Stages 4–5 and are not repeated here.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest`: 116 passed, 4 failed; the same four pre-existing failures.
+  - `OfflineNavigationWorkerTest` (7), `OfflineSnapshotLocatorTest` (5), `PublicOfflineSnapshotManifestTest` (1), `PublicOfflineSnapshotBuilderTest` (1), `OfflineSnapshotPublisherTest` (2): all pass.
+  - Not applicable: UI, deployment, migration.
