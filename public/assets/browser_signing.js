@@ -1630,7 +1630,9 @@
         : "";
       return {
         friendlyMessage: `${fallback} Diagnostic code: signature_verification_failed.`,
-        technicalDetails: attemptId ? `Attempt ID: ${attemptId}` : "",
+        technicalDetails: attemptId
+          ? `${technicalDetails}\nAttempt ID: ${attemptId}`
+          : technicalDetails,
       };
     }
 

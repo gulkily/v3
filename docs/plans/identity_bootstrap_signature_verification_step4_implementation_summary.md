@@ -37,7 +37,7 @@
   - `git diff --check` — passed.
 - Notes:
   - The immediate retry predicate, attempt count, signing sequence, and manual-key fallback are unchanged; this slice only makes the attempts observable and reportable.
-  - Follow-up: hid the raw signature-verification status from the expandable technical details while retaining it as an internal retry marker; the user sees the safe diagnostic code, with the attempt ID available in details.
+  - Follow-up: retained the raw signature-verification status and attempt ID together in the expandable technical details while keeping the safe diagnostic code in the main message and the retry marker internal.
   - Follow-up: made browser-key and reaction technical-detail controls one-way reveals; the link disappears and the copied diagnostic text starts on its own line.
 
 ## Stage 4 - Automated coverage and staging procedure
