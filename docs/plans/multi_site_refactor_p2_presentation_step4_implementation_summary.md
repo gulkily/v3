@@ -26,3 +26,14 @@
   - `git diff --check` passed.
 - Notes:
   - Theme-menu filtering and unavailable-preference recovery remain Stage 5.
+
+## Stage 3 - Board-card presentation slot
+
+- Changes:
+  - Resolved the board-card partial and its data contract from the registered `boardCard` profile slot.
+  - Preserved the QDB quote-card interface and generic thread-card fallback without introducing profile-specific template paths.
+  - Restored the QDB vote-handler script on random and search quote listings after their route extraction.
+- Verification:
+  - `php -l` passed for the board controller and QDB experience.
+  - `php tests/run.php QdbExperienceRoutingTest QuoteCardDisplayNumberTest PresentationSlotRegistryTest` — 17 passed.
+  - `git diff --check` passed.

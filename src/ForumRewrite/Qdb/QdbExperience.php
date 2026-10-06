@@ -182,7 +182,7 @@ final class QdbExperience
         $reactions = $this->boardPolicy->viewerReactionState($threads);
         return $this->routeServices->renderPageTemplate($template, $data + [
             'viewerUpvotedThreadIds' => $reactions['upvoted'], 'viewerDownvotedThreadIds' => $reactions['downvoted'], 'viewerFlaggedPostIds' => $reactions['flagged'],
-        ], $title, $section);
+        ], $title, $section, ['/assets/thread_reactions.js']);
     }
 
     private function isPrimaryRoutePath(string $path): bool

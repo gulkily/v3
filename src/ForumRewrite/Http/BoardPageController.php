@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\PresentationSlotRegistry;
 use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\ReadModel\ViewerTagLookup;
 use ForumRewrite\Qdb\QdbBoardPolicy;
@@ -45,6 +46,7 @@ final class BoardPageController
         $pagination = $qdbPresentation['pagination'] ?? null;
         $viewerReactionState = $qdbPolicy?->viewerReactionState($threads) ?? ['upvoted' => [], 'downvoted' => [], 'flagged' => []];
         $qdbQuoteCount = $qdbPolicy?->quoteCount($this->routeServices->pdo()) ?? 0;
+        $boardCardSlot = PresentationSlotRegistry::resolve(\ForumRewrite\SiteProfileRegistry::active(), 'boardCard');
 
         return $this->routeServices->renderPageTemplate(
             'board.php',
@@ -57,12 +59,12 @@ final class BoardPageController
                 'viewLabel' => BoardViewOptions::activeLabel($viewOptions, $view),
                 'sortLabel' => BoardViewOptions::activeLabel($sortOptions, $sort),
                 'isQdbInstance' => $qdbPolicy !== null,
-                'boardCardPartial' => $qdbPolicy === null ? 'partials/thread_card.php' : 'partials/quote_card.php',
-                'boardCardData' => $qdbPolicy === null ? ['showPinnedMarker' => true] : [
+                'boardCardPartial' => $boardCardSlot === 'quote' ? 'partials/quote_card.php' : 'partials/thread_card.php',
+                'boardCardData' => $boardCardSlot === 'quote' ? [
                     'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
                     'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
                     'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
-                ],
+                ] : ['showPinnedMarker' => true],
                 'boardFooterPartial' => $qdbPolicy === null ? null : 'partials/qdb_footer.php',
                 'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
                 'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
