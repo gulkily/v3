@@ -5,6 +5,7 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Offline\OfflineSnapshotPublisher;
+use ForumRewrite\PresentationPathResolver;
 use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -19,11 +20,11 @@ try {
         exit(0);
     }
 
-    $siteId = SiteProfileRegistry::active()['name'];
+    $profile = SiteProfileRegistry::active();
+    $siteId = $profile['name'];
     $repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
     $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: LocalRepositoryBootstrap::defaultDatabasePath($projectRoot)));
-    $profileDefaultRoot = $projectRoot . '/state/static_html' . ($siteId === 'zenmemes' ? '' : '_' . $siteId);
-    $staticHtmlRoot = (string) ($options['static-html-root'] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: $profileDefaultRoot));
+    $staticHtmlRoot = (string) ($options['static-html-root'] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, $profile)));
     $flagState = FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)
         ->evaluate(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
 

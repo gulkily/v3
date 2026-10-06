@@ -6,7 +6,7 @@ namespace ForumRewrite\Http;
 
 use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\ReadModel\ViewerTagLookup;
-use ForumRewrite\SiteConfig;
+use ForumRewrite\Qdb\QdbBoardPolicy;
 use ForumRewrite\Support\ThreadTitle;
 
 /**
@@ -24,16 +24,6 @@ use ForumRewrite\Support\ThreadTitle;
 final class BoardPageController
 {
     /**
-     * Classic qdb.us paginates Latest/Top at 25 quotes per page rather than
-     * dumping the whole unbounded board in one response (see
-     * docs/plans/qdb_classic_urls_checklist.md); only these two activeSection
-     * values have routing in Application.php that understands a page number,
-     * so pagination is scoped to just those two, not every board() caller.
-     */
-    private const PAGE_SIZE = 25;
-    private const PAGINATED_SECTIONS = ['latest', 'top'];
-
-    /**
      * @param \Closure(): (array<string, mixed>|null) $resolveViewerProfileFromIdentityHint
      */
     public function __construct(
@@ -43,25 +33,18 @@ final class BoardPageController
     ) {
     }
 
-    public function board(string $view, string $sort, string $activeSection = 'board', int $page = 1): string
+    public function board(string $view, string $sort, string $activeSection = 'board', int $page = 1, ?QdbBoardPolicy $qdbPolicy = null): string
     {
         $view = BoardViewOptions::normalizeView($view);
         $sort = BoardViewOptions::normalizeSort($sort);
         $viewOptions = BoardViewOptions::viewOptions($view, $sort);
         $sortOptions = BoardViewOptions::sortOptions($view, $sort);
-        $threads = $this->fetchBoardThreads($view, $sort);
-        $isQdbInstance = SiteConfig::siteName() === 'qdb';
-
-        $pagination = null;
-        if ($isQdbInstance && in_array($activeSection, self::PAGINATED_SECTIONS, true)) {
-            $totalPages = max(1, (int) ceil(count($threads) / self::PAGE_SIZE));
-            $page = max(1, min($page, $totalPages));
-            $threads = array_slice($threads, ($page - 1) * self::PAGE_SIZE, self::PAGE_SIZE);
-            $pagination = BoardViewOptions::pagination('/' . $activeSection, $page, $totalPages);
-        }
-
-        $viewerReactionState = $this->viewerReactionStateForThreads($threads, $isQdbInstance);
-        $qdbQuoteCount = $isQdbInstance ? count(ThreadRepository::fetchThreads($this->routeServices->pdo())) : 0;
+        $threads = $this->fetchBoardThreads($view, $sort, $qdbPolicy);
+        $qdbPresentation = $qdbPolicy?->paginate($threads, $activeSection, $page);
+        $threads = $qdbPresentation['threads'] ?? $threads;
+        $pagination = $qdbPresentation['pagination'] ?? null;
+        $viewerReactionState = $qdbPolicy?->viewerReactionState($threads) ?? ['upvoted' => [], 'downvoted' => [], 'flagged' => []];
+        $qdbQuoteCount = $qdbPolicy?->quoteCount($this->routeServices->pdo()) ?? 0;
 
         return $this->routeServices->renderPageTemplate(
             'board.php',
@@ -73,7 +56,14 @@ final class BoardPageController
                 'sortOptions' => $sortOptions,
                 'viewLabel' => BoardViewOptions::activeLabel($viewOptions, $view),
                 'sortLabel' => BoardViewOptions::activeLabel($sortOptions, $sort),
-                'isQdbInstance' => $isQdbInstance,
+                'isQdbInstance' => $qdbPolicy !== null,
+                'boardCardPartial' => $qdbPolicy === null ? 'partials/thread_card.php' : 'partials/quote_card.php',
+                'boardCardData' => $qdbPolicy === null ? ['showPinnedMarker' => true] : [
+                    'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
+                    'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
+                    'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
+                ],
+                'boardFooterPartial' => $qdbPolicy === null ? null : 'partials/qdb_footer.php',
                 'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
                 'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
                 'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
@@ -204,14 +194,14 @@ final class BoardPageController
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function fetchBoardThreads(string $view, string $sort): array
+    private function fetchBoardThreads(string $view, string $sort, ?QdbBoardPolicy $qdbPolicy): array
     {
         $threads = array_values(array_filter(
             ThreadRepository::fetchThreads($this->routeServices->pdo()),
             fn (array $thread): bool => $this->matchesView($thread, $view)
         ));
 
-        usort($threads, fn (array $left, array $right): int => $this->compareThreads($left, $right, $sort));
+        usort($threads, fn (array $left, array $right): int => $this->compareThreads($left, $right, $sort, $qdbPolicy));
 
         return $threads;
     }
@@ -233,35 +223,22 @@ final class BoardPageController
      * @param array<string, mixed> $left
      * @param array<string, mixed> $right
      */
-    private function compareThreads(array $left, array $right, string $sort): int
+    private function compareThreads(array $left, array $right, string $sort, ?QdbBoardPolicy $qdbPolicy): int
     {
         $pinnedCompare = $this->comparePinnedStatus($left, $right);
         if ($pinnedCompare !== 0) {
             return $pinnedCompare;
         }
 
+        if ($sort === 'leetness' && $qdbPolicy !== null) {
+            return $qdbPolicy->compareLeetness($left, $right, $this->compareNewest($left, $right));
+        }
+
         return match ($sort) {
             'oldest' => $this->compareOldest($left, $right),
             'top' => $this->compareTop($left, $right),
-            'leetness' => $this->compareLeetness($left, $right),
             default => $this->compareNewest($left, $right),
         };
-    }
-
-    /**
-     * QDB's "1337" sort: closest to a score of exactly 1337 first.
-     *
-     * @param array<string, mixed> $left
-     * @param array<string, mixed> $right
-     */
-    private function compareLeetness(array $left, array $right): int
-    {
-        $leetnessCompare = abs(1337 - (int) $left['score_total']) <=> abs(1337 - (int) $right['score_total']);
-        if ($leetnessCompare !== 0) {
-            return $leetnessCompare;
-        }
-
-        return $this->compareNewest($left, $right);
     }
 
     /**

@@ -66,6 +66,34 @@ final class OfflineReadingDiagnosticCommandTest
         }
     }
 
+    public function testDiagnoseHonorsEnvironmentStaticRootForSelectedProfile(): void
+    {
+        $root = sys_get_temp_dir() . '/forum-offline-diagnose-' . bin2hex(random_bytes(6));
+        $release = $root . '/releases/release-test';
+        try {
+            mkdir($release . '/offline', 0700, true);
+            file_put_contents($release . '/offline/snapshot.sqlite3', "SQLite format 3\000fixture");
+            symlink('releases/release-test', $root . '/current');
+
+            [$exitCode, $stdout, $stderr] = $this->runCommand(
+                dirname(__DIR__),
+                'FORUM_SITE_ID=chouse FORUM_STATIC_HTML_ROOT=' . escapeshellarg($root) . ' ./v3 offline diagnose',
+            );
+
+            assertSame(0, $exitCode);
+            assertStringContains('Site profile: chouse', $stdout);
+            assertStringContains('Static artifact root: ' . $root, $stdout);
+            assertSame('', $stderr);
+        } finally {
+            @unlink($root . '/current');
+            @unlink($release . '/offline/snapshot.sqlite3');
+            @rmdir($release . '/offline');
+            @rmdir($release);
+            @rmdir($root . '/releases');
+            @rmdir($root);
+        }
+    }
+
     /** @return array{int,string,string} */
     private function runCommand(string $cwd, string $command): array
     {
