@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\SiteProfileRegistry;
+use ForumRewrite\BrowserRuntimeProfile;
 
 final class SiteProfileRegistryTest
 {
@@ -106,6 +107,33 @@ final class SiteProfileRegistryTest
             'Site profile chouse has an unknown permitted theme: untrusted-theme',
         );
     }
+
+    public function testBrowserRuntimeProfilesAreDerivedOnlyFromValidatedNamespaces(): void
+    {
+        $runtimeProfiles = [];
+        foreach (SiteProfileRegistry::all() as $siteId => $profile) {
+            $runtime = BrowserRuntimeProfile::fromProfile($profile);
+            $runtimeProfiles[$siteId] = $runtime;
+
+            assertSame($profile['browserNamespace'], $runtime['namespace']);
+            assertSame($profile['browserNamespace'] . '-theme', $runtime['themeStorageKey']);
+            assertSame($profile['browserNamespace'] . '-thread-density', $runtime['threadDensityStorageKey']);
+            assertSame($profile['browserNamespace'] . '-offline-reader-', $runtime['offlineCachePrefix']);
+            assertSame($runtime['offlineCachePrefix'] . 'v14', $runtime['offlineCacheName']);
+        }
+
+        assertSame('zenmemes-theme', $runtimeProfiles['zenmemes']['themeStorageKey']);
+        assertSame('chouse-theme', $runtimeProfiles['chouse']['themeStorageKey']);
+        assertSame('qdb-theme', $runtimeProfiles['qdb']['themeStorageKey']);
+    }
+
+    public function testBrowserRuntimeProfileRejectsInvalidIdentity(): void
+    {
+        assertThrowsInvalidArgument(
+            static fn (): array => BrowserRuntimeProfile::fromProfile(['browserNamespace' => 'unsafe!', 'displayName' => 'Unsafe']),
+            'Profile requires a valid browser runtime identity.',
+        );
+    }
 }
 
 if (!function_exists('assertSame')) {
@@ -134,5 +162,19 @@ if (!function_exists('assertThrowsRuntime')) {
         }
 
         throw new RuntimeException('Expected RuntimeException was not thrown.');
+    }
+}
+
+if (!function_exists('assertThrowsInvalidArgument')) {
+    function assertThrowsInvalidArgument(callable $callback, string $expectedMessage): void
+    {
+        try {
+            $callback();
+        } catch (InvalidArgumentException $exception) {
+            assertSame($expectedMessage, $exception->getMessage());
+            return;
+        }
+
+        throw new RuntimeException('Expected InvalidArgumentException was not thrown.');
     }
 }
