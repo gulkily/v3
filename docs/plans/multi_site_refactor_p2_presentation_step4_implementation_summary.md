@@ -31,11 +31,12 @@
 
 - Changes:
   - Resolved the board-card partial and its data contract from the registered `boardCard` profile slot.
+  - Resolved the QDB add surface from the registered `compose` slot, with the shared thread compose surface as its bounded fallback.
   - Preserved the QDB quote-card interface and generic thread-card fallback without introducing profile-specific template paths.
   - Restored the QDB vote-handler script on random and search quote listings after their route extraction.
 - Verification:
   - `php -l` passed for the board controller and QDB experience.
-  - `php tests/run.php QdbExperienceRoutingTest QuoteCardDisplayNumberTest PresentationSlotRegistryTest` — 17 passed.
+  - `php tests/run.php QdbExperienceRoutingTest QuoteCardDisplayNumberTest PresentationSlotRegistryTest` — 18 passed.
   - `git diff --check` passed.
 
 ## Stage 4 - Profile-selected editorial content
