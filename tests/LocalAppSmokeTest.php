@@ -1386,6 +1386,56 @@ PHP;
         }
     }
 
+    public function testForteSelectedPageStaysWithinProductionMemoryLimitWhenAnotherThreadIsLarge(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-forte-memory-limit-' . bin2hex(random_bytes(6));
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-forte-memory-limit-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previousMemoryLimit = ini_set('memory_limit', '128M');
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $this->render($application, '/forte');
+            $sentinel = 'unselected-memory-body-sentinel';
+            $largeBody = $sentinel . str_repeat('x', (16 * 1024 * 1024) - strlen($sentinel));
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $pdo->prepare(
+                'INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, author_identity_id, author_profile_slug, author_label, post_tags_json, post_score_total, approved_flag_count, is_hidden, hidden_reason, sequence_number)
+                 VALUES (:post_id, :created_at, :thread_id, NULL, :subject, :body, :board_tags_json, NULL, NULL, NULL, :author_label, :post_tags_json, 0, 0, 0, NULL, 1)'
+            )->execute([
+                'post_id' => 'root-memory-heavy',
+                'created_at' => '2026-10-06T14:00:00Z',
+                'thread_id' => 'root-memory-heavy',
+                'subject' => 'Large unselected thread',
+                'body' => $largeBody,
+                'board_tags_json' => '["general"]',
+                'author_label' => 'guest',
+                'post_tags_json' => '[]',
+            ]);
+            $pdo->prepare(
+                'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count)
+                 VALUES (:root_post_id, :created_at, :created_at, :subject, :body_preview, 0, :root_post_id, :board_tags_json, :thread_labels_json, 0, 0)'
+            )->execute([
+                'root_post_id' => 'root-memory-heavy',
+                'created_at' => '2026-10-06T14:00:00Z',
+                'subject' => 'Large unselected thread',
+                'body_preview' => $sentinel,
+                'board_tags_json' => '["general"]',
+                'thread_labels_json' => '[]',
+            ]);
+            unset($largeBody);
+            $page = $this->render($application, '/forte?selected=root-001');
+
+            assertStringContains('data-paned-board-content-post-id="root-001"', $page);
+            assertStringNotContains($sentinel, $page);
+        } finally {
+            $this->deleteTree($repositoryRoot);
+            @unlink($databasePath);
+            ini_set('memory_limit', $previousMemoryLimit === false ? '-1' : $previousMemoryLimit);
+        }
+    }
+
     public function testApplicationRendersCoreRoutes(): void
     {
         @unlink($this->databasePath);

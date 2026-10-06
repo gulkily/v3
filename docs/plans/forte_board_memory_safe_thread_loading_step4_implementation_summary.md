@@ -86,3 +86,18 @@
   - `git diff --check`
 - Notes:
   - A pane larger than the byte budget is displayed but not cached; LRU eviction protects the current pane's cache entry whenever another entry is available for eviction.
+
+## Stage 6 - Prove the memory and interaction boundary
+
+- Changes:
+  - Added a 128 MiB regression that inserts a 16 MiB unselected root body directly into the test read model and verifies selected Forte rendering succeeds without returning its body.
+  - Completed focused server/client checks and the full test suite.
+- Verification:
+  - `php -l tests/LocalAppSmokeTest.php`
+  - `php tests/run.php LocalAppSmokeTest::testForteSelectedPageStaysWithinProductionMemoryLimitWhenAnotherThreadIsLarge`
+  - `php tests/run.php ForteBoardReaderTest`
+  - `php tests/run.php` — 814 run, 814 passed, 0 failed.
+  - `git diff --check`
+  - Deployment/log verification is pending release because it requires production traffic and log access.
+- Notes:
+  - The large row is seeded after the fixture read model is built so the test measures Forte rendering rather than the generic-record parser's unrelated per-character validation cost.
