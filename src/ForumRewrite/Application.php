@@ -572,6 +572,14 @@ final class Application
             return;
         }
 
+        if ($path === '/api/forte_thread_detail') {
+            $this->forteBoardController()->threadDetail(
+                (string) ($query['thread_id'] ?? ''),
+                (string) ($query['created_post_id'] ?? ''),
+            );
+            return;
+        }
+
         if ($path === '/api/forte_user_detail') {
             $this->forteContentAndUserDetailApiController()->userDetail($query);
             return;

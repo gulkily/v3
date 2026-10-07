@@ -1,6 +1,8 @@
 (function () {
   let actionTimingSequence = 0;
   const pendingReactionOperations = new Set();
+  const boundThreadRoots = new WeakSet();
+  const boundPostRoots = new WeakSet();
 
   function browserPerformance() {
     return typeof window !== "undefined" && window.performance && typeof window.performance.mark === "function"
@@ -283,6 +285,13 @@
     button.setAttribute("aria-pressed", "true");
   }
 
+  function notifyReactionApplied() {
+    if (typeof document.dispatchEvent !== "function" || typeof Event !== "function") {
+      return;
+    }
+    document.dispatchEvent(new Event("forum:thread-reaction-applied"));
+  }
+
   function threadScoreFormat(scoreNode) {
     if (!scoreNode || typeof scoreNode.getAttribute !== "function") {
       return "labeled";
@@ -467,6 +476,10 @@
   }
 
   function bindThreadReactions(root) {
+    if (boundThreadRoots.has(root)) {
+      return;
+    }
+    boundThreadRoots.add(root);
     const threadId = root.getAttribute("data-thread-id") || "";
     const scoreNode = root.querySelector('[data-role="thread-score"]');
     const feedbackNode = root.querySelector('[data-role="thread-reaction-feedback"]');
@@ -520,6 +533,7 @@
         setThreadScore(scoreNode, scoreTotal, voteCount);
 
         setConfirmedReactionButton(button, appliedLabel);
+        notifyReactionApplied();
 
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
@@ -550,6 +564,10 @@
   }
 
   function bindPostReactions(root) {
+    if (boundPostRoots.has(root)) {
+      return;
+    }
+    boundPostRoots.add(root);
     const postId = root.getAttribute("data-post-id") || "";
     const feedbackNode = root.querySelector('[data-role="post-reaction-feedback"]');
 
@@ -598,6 +616,7 @@
         const isHidden = parseResponseValue(text, "is_hidden") === "yes";
 
         setConfirmedReactionButton(button, appliedLabel);
+        notifyReactionApplied();
 
         if (isHidden) {
           root.hidden = true;
@@ -626,23 +645,36 @@
     });
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
-    const threadRoots = typeof document.querySelectorAll === "function"
-      ? Array.from(document.querySelectorAll("[data-thread-reactions-root]"))
-      : typeof document.querySelector === "function"
-        ? [document.querySelector("[data-thread-reactions-root]")].filter(Boolean)
+  function matchingRoots(root, selector) {
+    const roots = typeof root.querySelectorAll === "function"
+      ? Array.from(root.querySelectorAll(selector))
+      : typeof root.querySelector === "function"
+        ? [root.querySelector(selector)].filter(Boolean)
         : [];
+    if (typeof root.matches === "function" && root.matches(selector)) {
+      roots.unshift(root);
+    }
+
+    return roots;
+  }
+
+  function bindWithin(root) {
+    const threadRoots = matchingRoots(root, "[data-thread-reactions-root]");
     threadRoots.forEach((root) => {
       bindThreadReactions(root);
     });
 
-    const postRoots = typeof document.querySelectorAll === "function"
-      ? Array.from(document.querySelectorAll(".post-card[data-post-id]"))
-      : typeof document.querySelector === "function"
-        ? [document.querySelector(".post-card[data-post-id]")].filter(Boolean)
-        : [];
+    const postRoots = matchingRoots(root, ".post-card[data-post-id]");
     postRoots.forEach((postRoot) => {
       bindPostReactions(postRoot);
     });
+  }
+
+  if (typeof window !== "undefined") {
+    window.ForumThreadReactions = { bindWithin: bindWithin };
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    bindWithin(document);
   });
 })();

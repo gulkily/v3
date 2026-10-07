@@ -68,29 +68,104 @@ final class ForteBoardController
                 $selectedThreadId = $requestedSelected;
             }
         }
-        $contentThreads = $extraThread !== null ? array_merge($threads, [$extraThread]) : $threads;
-
-        $replyPostsByThreadId = ThreadRepository::allReplyPostsByThreadId($pdo);
-        $replyTreesByThreadId = [];
-        $allPostIds = [];
-        $highlightedPostId = '';
-        foreach ($contentThreads as $thread) {
-            $threadId = (string) $thread['root_post_id'];
-            $replyTreesByThreadId[$threadId] = $this->buildReplyTree($replyPostsByThreadId[$threadId] ?? []);
-            $allPostIds[] = $threadId;
-            foreach ($replyPostsByThreadId[$threadId] ?? [] as $replyPost) {
-                $postId = (string) $replyPost['post_id'];
-                $allPostIds[] = $postId;
-                if ($threadId === $selectedThreadId && $postId === $requestedCreatedPostId) {
-                    $highlightedPostId = $postId;
+        $viewerProfile = ($this->resolveViewerProfile)();
+        $selectedThread = $extraThread;
+        if ($selectedThread === null && $selectedThreadId !== '') {
+            foreach ($threads as $thread) {
+                if ((string) $thread['root_post_id'] === $selectedThreadId) {
+                    $selectedThread = $thread;
+                    break;
                 }
             }
         }
+        $selectedThreadData = $selectedThread !== null
+            ? $this->threadArticleData($selectedThread, $requestedCreatedPostId, $viewerProfile)
+            : null;
+
+        return $this->routeServices->renderStandalonePage(
+            'forte_board.php',
+            [
+                'threads' => $threads,
+                'contentThreads' => $selectedThread !== null ? [$selectedThread] : [],
+                'tagGroups' => $tagGroups,
+                'selectedTag' => $selectedTag,
+                'selectedThreadId' => $selectedThreadId,
+                'sortColumn' => $sort['column'],
+                'sortDir' => $sort['dir'],
+                'replyTreesByThreadId' => $selectedThread !== null ? [
+                    (string) $selectedThread['root_post_id'] => $selectedThreadData['replyTree'],
+                ] : [],
+                'viewerLikedThreadIds' => $selectedThreadData['viewerLikedThreadIds'] ?? [],
+                'viewerLikedPostIds' => $selectedThreadData['viewerLikedPostIds'] ?? [],
+                'viewerFlaggedPostIds' => $selectedThreadData['viewerFlaggedPostIds'] ?? [],
+                'highlightedPostId' => $selectedThreadData['highlightedPostId'] ?? '',
+                'viewerProfile' => $viewerProfile,
+            ],
+            'Forte',
+            'paned-reader-body',
+            ['/assets/toolbar_identity_status.js', '/assets/paned_board_reader.js', '/assets/lazy_compose_signing.js', '/assets/thread_reactions.js'],
+            ['/assets/forte.css'],
+        );
+    }
+
+    public function threadDetail(string $requestedThreadId, string $requestedCreatedPostId = ''): void
+    {
+        if (preg_match('/^[A-Za-z0-9._:-]+$/', $requestedThreadId) !== 1) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'invalid thread id'], 400);
+            return;
+        }
+
+        $thread = ThreadRepository::byId($this->routeServices->pdo(), $requestedThreadId);
+        if ($thread === null) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'thread not found'], 404);
+            return;
+        }
+
+        $highlightedPostId = preg_match('/^[A-Za-z0-9._:-]+$/', $requestedCreatedPostId) === 1
+            ? $requestedCreatedPostId
+            : '';
 
         $viewerProfile = ($this->resolveViewerProfile)();
+        $this->routeServices->sendJson([
+            'status' => 'ok',
+            'html' => $this->renderThreadArticle($thread, $highlightedPostId, $viewerProfile),
+        ], 200);
+    }
+
+    /**
+     * @param array<string, mixed> $thread
+     * @param array<string, mixed>|null $viewerProfile
+     */
+    private function renderThreadArticle(array $thread, string $requestedCreatedPostId, ?array $viewerProfile): string
+    {
+        return $this->routeServices->renderFragment('partials/paned_board_content_article.php', [
+            'thread' => $thread,
+            'isSelectedThread' => true,
+        ] + $this->threadArticleData($thread, $requestedCreatedPostId, $viewerProfile));
+    }
+
+    /**
+     * @param array<string, mixed> $thread
+     * @param array<string, mixed>|null $viewerProfile
+     * @return array{replyTree: array<int, array{post: array<string, mixed>, children: array}>, viewerLikedThreadIds: array<string, true>, viewerLikedPostIds: array<string, true>, viewerFlaggedPostIds: array<string, true>, highlightedPostId: string}
+     */
+    private function threadArticleData(array $thread, string $requestedCreatedPostId, ?array $viewerProfile): array
+    {
+        $threadId = (string) $thread['root_post_id'];
+        $replyPosts = ThreadRepository::replyPostsByThreadId($this->routeServices->pdo(), $threadId);
+        $allPostIds = [$threadId];
+        $highlightedPostId = '';
+        foreach ($replyPosts as $replyPost) {
+            $postId = (string) $replyPost['post_id'];
+            $allPostIds[] = $postId;
+            if ($postId === $requestedCreatedPostId) {
+                $highlightedPostId = $postId;
+            }
+        }
+
         $viewerIdentityId = $viewerProfile !== null ? (string) $viewerProfile['identity_id'] : '';
         $viewerLikedThreadIds = $viewerProfile !== null
-            ? ViewerTagLookup::threadTags($this->repositoryRoot, array_column($contentThreads, 'root_post_id'), 'like', $viewerIdentityId)
+            ? ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'like', $viewerIdentityId)
             : [];
         $viewerLikedPostIds = $viewerProfile !== null
             ? ViewerTagLookup::postTags($this->repositoryRoot, $allPostIds, 'like', $viewerIdentityId)
@@ -99,28 +174,13 @@ final class ForteBoardController
             ? ViewerTagLookup::postTags($this->repositoryRoot, $allPostIds, 'flag', $viewerIdentityId)
             : [];
 
-        return $this->routeServices->renderStandalonePage(
-            'forte_board.php',
-            [
-                'threads' => $threads,
-                'contentThreads' => $contentThreads,
-                'tagGroups' => $tagGroups,
-                'selectedTag' => $selectedTag,
-                'selectedThreadId' => $selectedThreadId,
-                'sortColumn' => $sort['column'],
-                'sortDir' => $sort['dir'],
-                'replyTreesByThreadId' => $replyTreesByThreadId,
-                'viewerLikedThreadIds' => $viewerLikedThreadIds,
-                'viewerLikedPostIds' => $viewerLikedPostIds,
-                'viewerFlaggedPostIds' => $viewerFlaggedPostIds,
-                'highlightedPostId' => $highlightedPostId,
-                'viewerProfile' => $viewerProfile,
-            ],
-            'Forte',
-            'paned-reader-body',
-            ['/assets/toolbar_identity_status.js', '/assets/paned_board_reader.js', '/assets/lazy_compose_signing.js', '/assets/thread_reactions.js'],
-            ['/assets/forte.css'],
-        );
+        return [
+            'replyTree' => $this->buildReplyTree($replyPosts),
+            'viewerLikedThreadIds' => $viewerLikedThreadIds,
+            'viewerLikedPostIds' => $viewerLikedPostIds,
+            'viewerFlaggedPostIds' => $viewerFlaggedPostIds,
+            'highlightedPostId' => $highlightedPostId,
+        ];
     }
 
     /**

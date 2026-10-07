@@ -98,4 +98,30 @@ final class ThreadRepository
 
         return $postsByThreadId;
     }
+
+    /**
+     * Visible non-root posts for one thread, in the same row shape and order
+     * used by allReplyPostsByThreadId().
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function replyPostsByThreadId(PDO $pdo, string $threadId): array
+    {
+        $stmt = $pdo->prepare(
+            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_identity_id, posts.author_label,
+                    posts.created_at, posts.board_tags_json,
+                    posts.author_profile_slug, profiles.username_token AS author_username_token,
+                    COALESCE(profiles.is_approved, 0) AS author_is_approved,
+                    profiles.public_key AS author_public_key
+             FROM posts
+             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
+             WHERE posts.thread_id = :thread_id
+               AND posts.thread_id != posts.post_id
+               AND posts.is_hidden = 0
+             ORDER BY posts.sequence_number ASC'
+        );
+        $stmt->execute(['thread_id' => $threadId]);
+
+        return $stmt->fetchAll();
+    }
 }
