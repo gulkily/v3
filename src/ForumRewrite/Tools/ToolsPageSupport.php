@@ -102,6 +102,13 @@ final class ToolsPageSupport
                 'standalone' => false,
             ],
             [
+                'key' => 'visitor-statistics',
+                'label' => 'Visitor Statistics',
+                'href' => '/tools/visitor-statistics/',
+                'description' => 'Privacy-preserving recent aggregate visits, client estimates, and authenticated-user counts.',
+                'standalone' => false,
+            ],
+            [
                 'key' => 'feature-flags',
                 'label' => 'Feature Flags',
                 'href' => '/tools/feature-flags/',

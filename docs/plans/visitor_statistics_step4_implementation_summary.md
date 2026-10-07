@@ -29,3 +29,18 @@
 - Notes:
   - The observer derives its aggregate contribution in memory from request metadata; it persists only Stage 1's counter/bitmap fields.
   - UI, deployment, and release checks remain for later stages; recorder-failure behavior is covered directly here.
+
+## Stage 3 - Protected Tools statistics page
+
+- Changes:
+  - Added Visitor Statistics to the canonical Tools registry, index, and sub-navigation.
+  - Added a root-session-protected render route and page for 24-hour, 7-day, and 30-day visits, estimated clients, and authenticated users.
+  - Added explicit coverage/privacy definitions plus initializing and unavailable states; the page does not use an identity hint as authorization.
+- Verification:
+  - `php tests/run.php VisitorStatisticsDatabaseConfigTest VisitorStatisticsStoreTest VisitorStatisticsObserverTest VisitorStatisticsPageTest` — 7 passed.
+  - `php tests/run.php LocalAppSmokeTest::testApplicationRendersCoreRoutes` — passed.
+  - `php -l src/ForumRewrite/Http/VisitorStatisticsController.php` and `php -l src/ForumRewrite/Application.php` — no syntax errors.
+  - `git diff --check` — passed.
+- Notes:
+  - The Tools launcher may link to the protected route, but all summary reads enforce a server-authenticated, root-approved identity and return 403 otherwise.
+  - Deployment/artifact-boundary verification remains for Stage 4.
