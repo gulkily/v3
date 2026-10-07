@@ -44,3 +44,14 @@
   - Manually rendered `/about/` for all four profiles: `zenmemes`/`chouse`/`qdb` show no "Find us" section (unchanged); `mitrapclub` shows all three links with the correct URLs.
 - Notes:
   - The Facebook link uses the specific post URL given in Step 1's research links (`facebook.com/photo/?fbid=...`), not a confirmed page URL — the club's actual Facebook page slug wasn't verified during research. Worth swapping for the real page URL once known.
+
+## Stage 6 - Full profile-regression verification
+- Changes: none (verification-only stage, as planned).
+- Verification:
+  - `./v3 test` — full suite: 817 run, 817 passed, 0 failed.
+  - Confirmed `SiteProfileRegistryTest` (all cases) and `ProfilePresentationContentTest` pass with `mitrapclub` included (already checked in Stage 4).
+  - Confirmed the profile-iteration smoke tests in `LocalAppSmokeTest` pass with the new fourth profile present, including `testChangingTheActiveProfilePreservesThePublicSession`, `testInjectApprovalScriptUsesInstanceOverridesAcrossSiteProfiles`, `testFrontControllerDerivesManifestAndWorkerFromTheActiveProfile`, `testStaticArtifactBuilderDerivesRuntimeAssetsForEveryProfile`, `testFourthProfileFixtureUsesTheSameRuntimeAndSharedStateMatrix`, `testDefaultInstanceStateIsIndependentOfSiteProfile`, and `testBoardPageRendersActiveSiteProfilePerFormSiteId`.
+  - Runtime/deployment/release checks beyond the above: not applicable — standing up a real hosted `mitrapclub` instance is explicitly out of scope for this feature (Completion Contract).
+- Notes:
+  - No regression to `zenmemes`/`chouse`/`qdb` at any stage. Feature complete per the Step 3 Completion Contract: branded board + themed, about page with club story and social links, working composer, clean fallback to `zenmemes` when `FORUM_SITE_ID` is unset/unknown.
+  - Open follow-ups (not blocking, carried from earlier stages): visual polish of the theme against `cypherposium.com` is a judgment call rather than a pass/fail check; the Facebook link should be swapped for the club's real page URL once confirmed; a dedicated events experience (Step 1's Option B) remains a possible future feature if tagged/pinned threads prove insufficient.
