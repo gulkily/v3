@@ -32,9 +32,12 @@ try {
 
     $application = new Application($argv[1], $argv[2], $databasePath);
     ob_start();
+    $application->handle('GET', '/threads/');
+    ob_end_clean();
+    ob_start();
     $application->handle('GET', '/tools/visitor-statistics/');
     $allowed = (string) ob_get_clean();
-    if (!str_contains($allowed, 'Last 30 days') || !str_contains($allowed, 'Estimated clients') || !str_contains($allowed, 'Visitor Statistics')) {
+    if (!str_contains($allowed, 'Last 30 days') || !str_contains($allowed, 'Estimated clients') || !str_contains($allowed, '>2</td>')) {
         throw new RuntimeException('Root-authenticated statistics page did not render its summary.');
     }
 

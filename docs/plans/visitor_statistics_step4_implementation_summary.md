@@ -44,3 +44,18 @@
 - Notes:
   - The Tools launcher may link to the protected route, but all summary reads enforce a server-authenticated, root-approved identity and return 403 otherwise.
   - Deployment/artifact-boundary verification remains for Stage 4.
+
+## Stage 4 - Release and deployment verification
+
+- Changes:
+  - Extended the protected-page check to prove an eligible dynamic page request is recorded before the operator reads its summary.
+  - Documented the private-state override, writable-path requirement, and PHP/edge traffic boundary in the production deployment runbook.
+- Verification:
+  - `php tests/run.php VisitorStatisticsPageTest VisitorStatisticsObserverTest VisitorStatisticsStoreTest VisitorStatisticsDatabaseConfigTest` — 7 passed.
+  - `php tests/run.php LocalAppSmokeTest::testApplicationRendersCoreRoutes` — passed.
+  - `php tests/run.php` — 821 passed; 3 pre-existing, unrelated failures in `OfflineReadingDiagnosticCommandTest` (each had already failed for 5 consecutive runs).
+  - `git diff --check` — passed.
+  - Reviewed the static-artifact and ignore boundaries: private state lives under `state/private/` (ignored), while published static releases live under the separate static-artifact root.
+- Notes:
+  - No database migration is required: the new private SQLite state is created lazily and is separate from the rebuildable read model.
+  - The release condition is met apart from the three documented pre-existing offline-diagnostic failures, which are outside this feature's changed surface.
