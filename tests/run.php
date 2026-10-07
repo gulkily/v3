@@ -42,6 +42,7 @@ $testFiles = [
     __DIR__ . '/LlmExchangeRecorderTest.php',
     __DIR__ . '/VisitorStatisticsDatabaseConfigTest.php',
     __DIR__ . '/VisitorStatisticsStoreTest.php',
+    __DIR__ . '/VisitorStatisticsObserverTest.php',
     __DIR__ . '/OpenPgpLoaderTest.php',
     __DIR__ . '/OpenPgpAssetSmokeProbeTest.php',
     __DIR__ . '/OpenPgpProductionCanaryCommandTest.php',

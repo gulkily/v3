@@ -64,6 +64,7 @@ use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
+use ForumRewrite\Statistics\VisitorStatisticsObserver;
 use ForumRewrite\Tools\ToolsPageSupport;
 use PDO;
 use RuntimeException;
@@ -83,6 +84,7 @@ final class Application
     private ?SqliteTaskQueueStore $taskQueueStore = null;
     private bool $taskQueueStoreInitialized = false;
     private ?QdbExperience $qdbExperience = null;
+    private ?VisitorStatisticsObserver $visitorStatisticsObserver = null;
 
     public function __construct(
         private readonly string $projectRoot,
@@ -126,6 +128,7 @@ final class Application
         }
 
         $this->ensureReadModel();
+        $this->observeVisitorPageRequest($method, $path);
 
         if ($this->approvedMembersOnlyEnabled() && $this->membersOnlyLobbyRedirect($method, $path, $query)) {
             $this->logLobbyGateDiagnostics('lobby_redirect', $method, $path);
@@ -1455,6 +1458,18 @@ final class Application
     private function approvedMembersOnlyEnabled(): bool
     {
         return $this->featureFlags()->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
+    }
+
+    private function observeVisitorPageRequest(string $method, string $path): void
+    {
+        $profile = $this->authenticatedViewerProfile();
+        $identityId = $profile === null ? null : (string) ($profile['identity_id'] ?? '');
+        $this->visitorStatisticsObserver()->record($method, $path, $identityId);
+    }
+
+    private function visitorStatisticsObserver(): VisitorStatisticsObserver
+    {
+        return $this->visitorStatisticsObserver ??= new VisitorStatisticsObserver($this->projectRoot);
     }
 
     private function authenticatedViewerProfile(): ?array

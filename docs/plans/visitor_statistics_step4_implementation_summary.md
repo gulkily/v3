@@ -15,3 +15,17 @@
 - Notes:
   - Distinct counts are cardinality estimates; the later page will label client counts accordingly.
   - Runtime, UI, deployment, and migration verification are not applicable until later stages; this stage creates private runtime state only.
+
+## Stage 2 - Safe page-request observation
+
+- Changes:
+  - Added a shared, fail-open observer for eligible GET page requests, with API, asset, non-GET, statistics-page, and recognizable-automation exclusion.
+  - Wired the observer into the mutually exclusive static `FrontController` and dynamic `Application` page paths.
+  - Added the private state-path override to the existing private-configuration loader.
+- Verification:
+  - `php tests/run.php VisitorStatisticsObserverTest VisitorStatisticsStoreTest VisitorStatisticsDatabaseConfigTest` — 6 passed.
+  - `php -l src/ForumRewrite/Statistics/VisitorStatisticsObserver.php` and `php -l src/ForumRewrite/Support/PrivateConfig.php` — no syntax errors.
+  - `git diff --check` — passed.
+- Notes:
+  - The observer derives its aggregate contribution in memory from request metadata; it persists only Stage 1's counter/bitmap fields.
+  - UI, deployment, and release checks remain for later stages; recorder-failure behavior is covered directly here.

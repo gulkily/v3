@@ -11,6 +11,7 @@ use ForumRewrite\Offline\OfflineSnapshotLocator;
 use ForumRewrite\ProfilePresentationContent;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\SiteProfileRegistry;
+use ForumRewrite\Statistics\VisitorStatisticsObserver;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\TaskQueue\DetachedTaskQueueLauncher;
@@ -83,6 +84,7 @@ final class FrontController
 
         $staticArtifact = $approvedMembersOnly ? null : $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
         if ($staticArtifact !== null && is_file($staticArtifact)) {
+            (new VisitorStatisticsObserver($this->projectRoot))->record($method, parse_url($requestUri, PHP_URL_PATH) ?: '/');
             $contents = file_get_contents($staticArtifact);
             if ($contents === false) {
                 throw new RuntimeException('Unable to read static HTML artifact: ' . $staticArtifact);
