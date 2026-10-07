@@ -167,7 +167,7 @@ final class TemplateRenderer
             'scriptPaths' => $assetScriptPaths,
             'routeSource' => $routeSource,
             'showThreadDensityToggle' => $showThreadDensityToggle,
-            'siteName' => SiteConfig::siteName(),
+            'siteName' => SiteConfig::displayName(),
             'appVersion' => $this->appVersion,
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
             'siteCssPath' => $this->assetPath('/assets/site.css'),
