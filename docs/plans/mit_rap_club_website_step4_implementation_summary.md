@@ -24,3 +24,12 @@
   - `./v3 test` — full suite: 817 run, 817 passed, 0 failed (key not yet wired to a profile, so no new behavior is exercised until Stage 4).
 - Notes:
   - Per Step 2's accepted risk: the fixed `about()` intro sentence stays generic; the club-specific description lives in `communityParagraphs`, exercised once Stage 4 registers the profile.
+
+## Stage 4 - Site profile registration
+- Changes:
+  - `src/ForumRewrite/SiteProfileRegistry.php`: added the `mitrapclub` profile — `defaultTheme: 'mitrapclub'`, `browserNamespace: 'mitrapclub'`, `editorialContentKey: 'mitrapclub'`, `enabledExperienceKeys: ['forum']`, `composerPrompt: 'Drop a verse, a cypher clip, or an announcement...'`, `presentationSlots: {navigation: 'forum', boardCard: 'thread', compose: 'thread', about: 'default', editorial: 'mitrapclub', brandedStylesheet: 'mitrapclub'}`.
+- Verification:
+  - `./v3 test` — full suite: 817 run, 817 passed, 0 failed.
+  - Confirmed specifically: `SiteProfileRegistryTest` (all cases, including browser-namespace collision/uniqueness checks) and `ProfilePresentationContentTest` (including `testAboutAndPlatformDocumentPagesRenderTheActiveProfileContent`, which iterates every registered profile and now covers `mitrapclub`) all pass.
+- Notes:
+  - No browser-namespace or permitted-theme collisions, as anticipated in Step 3's Stage 4 risk.
