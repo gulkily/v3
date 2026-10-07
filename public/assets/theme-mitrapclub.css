@@ -1,0 +1,85 @@
+/* Theme: mitrapclub */
+:root[data-theme="mitrapclub"],
+.theme-menu__option[data-theme-option="mitrapclub"] {
+  color-scheme: dark;
+  --page-bg: #15120f;
+  --body-background:
+    radial-gradient(circle at top, rgba(217, 79, 43, 0.10), transparent 45%),
+    #15120f;
+  --ink: #f4efe6;
+  --ink-soft: #b8ac98;
+  --line: #4a4038;
+  --panel: #201c17;
+  --input-bg: #0f0d0b;
+  --button-bg: #2a2521;
+  --button-alt-bg: #332c25;
+  --feedback-ok-bg: #16241a;
+  --feedback-error-bg: #2a1512;
+  --status-error: #ff8a65;
+  --status-ok: #8bd17c;
+  --status-warning: #ffcc66;
+  --active-bg: #d94f2b;
+  --active-ink: #fff6ee;
+  --active-line: #ff7a45;
+  --active-ring: rgba(217, 79, 43, 0.25);
+  --body-font: "Courier New", "Courier Prime", ui-monospace, monospace;
+  --ui-font: "Arial Black", "Helvetica Neue", Arial, sans-serif;
+  --code-font: ui-monospace, "Cascadia Code", "SF Mono", "Consolas",
+               "Liberation Mono", monospace;
+}
+
+.theme-swatch[data-theme="mitrapclub"] {
+  background:
+    radial-gradient(circle at 35% 35%, #d94f2b 0 32%, #201c17 33% 100%);
+  border-color: #ff7a45;
+  box-shadow: inset 0 0 0 0.22rem #15120f;
+}
+
+:root[data-theme="mitrapclub"] .site-header {
+  border-bottom: 3px solid var(--active-line);
+  padding-bottom: 0.6rem;
+}
+
+:root[data-theme="mitrapclub"] .eyebrow {
+  background: var(--active-bg);
+  color: var(--active-ink);
+  border: 1px solid var(--active-line);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="mitrapclub"] .card {
+  position: relative;
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+:root[data-theme="mitrapclub"] .card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--active-line), transparent 85%);
+}
+
+:root[data-theme="mitrapclub"] a {
+  color: var(--active-line);
+}
+
+:root[data-theme="mitrapclub"] .nav-link.is-active {
+  color: var(--active-ink);
+  background: var(--active-bg);
+}
+
+:root[data-theme="mitrapclub"] input,
+:root[data-theme="mitrapclub"] textarea {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme="mitrapclub"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover,
+:root[data-theme="mitrapclub"] .nav-link:hover {
+  border-color: var(--active-line);
+}
