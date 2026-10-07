@@ -33,3 +33,14 @@
   - Confirmed specifically: `SiteProfileRegistryTest` (all cases, including browser-namespace collision/uniqueness checks) and `ProfilePresentationContentTest` (including `testAboutAndPlatformDocumentPagesRenderTheActiveProfileContent`, which iterates every registered profile and now covers `mitrapclub`) all pass.
 - Notes:
   - No browser-namespace or permitted-theme collisions, as anticipated in Step 3's Stage 4 risk.
+  - Manually rendered `/about/` and the board for `mitrapclub`: `theme-mitrapclub.css` is correctly linked (fingerprinted path), site name and the custom composer prompt render.
+
+## Stage 5 - Social links on the about page
+- Changes:
+  - `src/ForumRewrite/ProfilePresentationContent.php`: added a `socialLinks` field to every `EDITORIAL` entry (`[]` for `zenmemes`/`boston`/`qdb`; YouTube/Instagram/Facebook for `mitrapclub`) and threaded it through `about()`'s return value.
+  - `templates/pages/about.php`: added an additive "Find us" section/list, rendered only when `socialLinks` is non-empty.
+- Verification:
+  - `./v3 test` — full suite: 817 run, 817 passed, 0 failed.
+  - Manually rendered `/about/` for all four profiles: `zenmemes`/`chouse`/`qdb` show no "Find us" section (unchanged); `mitrapclub` shows all three links with the correct URLs.
+- Notes:
+  - The Facebook link uses the specific post URL given in Step 1's research links (`facebook.com/photo/?fbid=...`), not a confirmed page URL — the club's actual Facebook page slug wasn't verified during research. Worth swapping for the real page URL once known.

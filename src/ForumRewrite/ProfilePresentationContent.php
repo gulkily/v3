@@ -14,7 +14,7 @@ namespace ForumRewrite;
 final class ProfilePresentationContent
 {
     /**
-     * @var array<string, array{communityHeading:string, communityParagraphs:list<string>, docsIntro:string, architectureTitle:string, architectureDescription:string, busyTitle:string, busyHeading:string, busyMessage:string}>
+     * @var array<string, array{communityHeading:string, communityParagraphs:list<string>, docsIntro:string, architectureTitle:string, architectureDescription:string, busyTitle:string, busyHeading:string, busyMessage:string, socialLinks:list<array{label:string, url:string}>}>
      */
     private const EDITORIAL = [
         'zenmemes' => [
@@ -29,6 +29,7 @@ final class ProfilePresentationContent
             'busyTitle' => 'Meme Oven Is Busy',
             'busyHeading' => 'Meme Oven Is Busy',
             'busyMessage' => 'The next batch of zenmemes is still baking. Try again in a moment.',
+            'socialLinks' => [],
         ],
         'boston' => [
             'communityHeading' => 'The community',
@@ -42,6 +43,7 @@ final class ProfilePresentationContent
             'busyTitle' => 'Temporarily Busy',
             'busyHeading' => 'Temporarily Busy',
             'busyMessage' => 'The site is temporarily busy. Try again in a moment.',
+            'socialLinks' => [],
         ],
         'qdb' => [
             'communityHeading' => 'The community',
@@ -55,6 +57,7 @@ final class ProfilePresentationContent
             'busyTitle' => 'Temporarily Busy',
             'busyHeading' => 'Temporarily Busy',
             'busyMessage' => 'The site is temporarily busy. Try again in a moment.',
+            'socialLinks' => [],
         ],
         'mitrapclub' => [
             'communityHeading' => 'The cypher',
@@ -68,12 +71,17 @@ final class ProfilePresentationContent
             'busyTitle' => 'Temporarily Busy',
             'busyHeading' => 'Temporarily Busy',
             'busyMessage' => 'The site is temporarily busy. Try again in a moment.',
+            'socialLinks' => [
+                ['label' => 'YouTube', 'url' => 'https://www.youtube.com/@MITRAPCLUB'],
+                ['label' => 'Instagram', 'url' => 'https://www.instagram.com/mitrapclub/'],
+                ['label' => 'Facebook', 'url' => 'https://www.facebook.com/photo/?fbid=1560725412089676&set=a.290414092454154'],
+            ],
         ],
     ];
 
     /**
      * @param array<string, mixed> $profile
-     * @return array{title:string, introduction:string, communityHeading:string, communityParagraphs:list<string>, showHackableSection:bool}
+     * @return array{title:string, introduction:string, communityHeading:string, communityParagraphs:list<string>, showHackableSection:bool, socialLinks:list<array{label:string, url:string}>}
      */
     public static function about(array $profile): array
     {
@@ -86,6 +94,7 @@ final class ProfilePresentationContent
             'communityHeading' => $editorial['communityHeading'],
             'communityParagraphs' => $editorial['communityParagraphs'],
             'showHackableSection' => PresentationSlotRegistry::resolve($profile, 'about') === 'chouse',
+            'socialLinks' => $editorial['socialLinks'],
         ];
     }
 
@@ -123,7 +132,7 @@ final class ProfilePresentationContent
 
     /**
      * @param array<string, mixed> $profile
-     * @return array{communityHeading:string, communityParagraphs:list<string>, docsIntro:string, architectureTitle:string, architectureDescription:string, busyTitle:string, busyHeading:string, busyMessage:string}
+     * @return array{communityHeading:string, communityParagraphs:list<string>, docsIntro:string, architectureTitle:string, architectureDescription:string, busyTitle:string, busyHeading:string, busyMessage:string, socialLinks:list<array{label:string, url:string}>}
      */
     private static function editorial(array $profile): array
     {

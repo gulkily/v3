@@ -17,6 +17,16 @@
       <p>Bring an idea, make a fork, or add a small feature: the site is a shared foundation, not a finished product.</p>
     </section>
 <?php endif; ?>
+<?php if ($aboutContent['socialLinks'] !== []): ?>
+    <section class="about-section" data-about-section="social-links">
+      <h2>Find us</h2>
+      <ul class="about-social-links">
+<?php foreach ($aboutContent['socialLinks'] as $socialLink): ?>
+        <li><a href="<?= $e($socialLink['url']) ?>"><?= $e($socialLink['label']) ?></a></li>
+<?php endforeach; ?>
+      </ul>
+    </section>
+<?php endif; ?>
     <section class="about-section" data-about-section="graph">
       <h2>A continuous social graph</h2>
       <p>Membership grows through a continuous social graph. Every new participant is invited or approved by someone already trusted by the community, so there is always a visible path of accountability back into the group.</p>
