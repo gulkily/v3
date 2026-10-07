@@ -123,6 +123,9 @@ $defaults = [
     'FAST_SCORING_DATABASE_PATH' => '',
     'DEDALUS_AGENT_REPLIES_ENABLED' => true,
     'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED' => false,
+    'AGENT_RESPONSE_REQUESTS_ENABLED' => true,
+    'LLM_CONVERSATION_RECORDING_ENABLED' => true,
+    'LLM_CONVERSATION_UI_ENABLED' => true,
 ];
 
 $existing = [];
@@ -406,7 +409,14 @@ function renderPrivateConfigFile(array $config, array $defaults, array $existing
         $contents .= "\n    // Agent reply controls. These names remain Dedalus-prefixed for backward compatibility.\n";
     }
     $contents .= renderConfigLine('DEDALUS_AGENT_REPLIES_ENABLED', $config['DEDALUS_AGENT_REPLIES_ENABLED'])
-        . renderConfigLine('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $config['DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED']);
+        . renderConfigLine('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $config['DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED'])
+        . renderConfigLine('AGENT_RESPONSE_REQUESTS_ENABLED', $config['AGENT_RESPONSE_REQUESTS_ENABLED']);
+
+    if ($includeComments) {
+        $contents .= "\n    // Private LLM exchange capture and web visibility. Both default to true.\n";
+    }
+    $contents .= renderConfigLine('LLM_CONVERSATION_RECORDING_ENABLED', $config['LLM_CONVERSATION_RECORDING_ENABLED'])
+        . renderConfigLine('LLM_CONVERSATION_UI_ENABLED', $config['LLM_CONVERSATION_UI_ENABLED']);
 
     if ($additionalKeys !== []) {
         if ($includeComments) {
@@ -464,7 +474,7 @@ function printUpdateReminder(string $path): void
     fwrite(STDOUT, "OpenAI-compatible providers use LLM_API_BASE_URL + /v1/chat/completions; Anthropic uses LLM_API_BASE_URL + /v1/messages.\n");
     fwrite(STDOUT, "private-config edit uses VISUAL, EDITOR, or vi to open {$path} without printing secrets.\n");
     fwrite(STDOUT, "Edit {$path} directly for provider options such as LLM_PROVIDER, LLM_MODEL, FAST_SCORING_LLM_MODEL, and LLM_EXTRA_HEADERS.\n");
-    fwrite(STDOUT, "Edit {$path} directly for booleans such as FAST_SCORING_ENABLED, DEDALUS_AGENT_REPLIES_ENABLED, and DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED.\n");
+    fwrite(STDOUT, "Edit {$path} directly for booleans such as FAST_SCORING_ENABLED, DEDALUS_AGENT_REPLIES_ENABLED, AGENT_RESPONSE_REQUESTS_ENABLED, and LLM_CONVERSATION_RECORDING_ENABLED.\n");
 }
 
 function renderConfigLine(string $key, mixed $value): string

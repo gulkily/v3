@@ -31,6 +31,7 @@ $testFiles = [
     __DIR__ . '/DeterministicFastScoreEvaluatorTest.php',
     __DIR__ . '/FastScoreWorkflowServiceTest.php',
     __DIR__ . '/ForteActivityReadModelRecoveryTest.php',
+    __DIR__ . '/ForteBoardReaderTest.php',
     __DIR__ . '/IdentityBootstrapDiagnosticsTest.php',
     __DIR__ . '/ImportedQuoteSeedScoringTest.php',
     __DIR__ . '/InvitationIssuanceTest.php',

@@ -701,6 +701,7 @@ PHP;
             foreach ([
                 '/api/forte_activity_page?view=all',
                 '/api/forte_commit_detail?sha=abc123',
+                '/api/forte_thread_detail?thread_id=root-001',
                 '/api/get_forte_content_summary?post_id=root-001',
             ] as $path) {
                 $response = $this->render($application, $path);
@@ -1334,6 +1335,104 @@ PHP;
             $_COOKIE = [];
             $this->deleteTree($repositoryRoot);
             @unlink($databasePath);
+        }
+    }
+
+    public function testForteThreadDetailApiRendersOneRequestedThread(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath);
+
+        $payload = json_decode($this->render($application, '/api/forte_thread_detail?thread_id=root-001&created_post_id=reply-001'), true);
+        assertSame('ok', $payload['status']);
+        assertStringContains('data-paned-board-content-post-id="root-001"', $payload['html']);
+        assertStringContains('data-paned-reply-post-id="reply-001"', $payload['html']);
+        assertStringContains('paned-highlight-new', $payload['html']);
+
+        $missing = json_decode($this->render($application, '/api/forte_thread_detail?thread_id=missing'), true);
+        assertSame('error', $missing['status']);
+        assertSame('thread not found', $missing['error']);
+
+        $invalid = json_decode($this->render($application, '/api/forte_thread_detail?thread_id=not%2Fallowed'), true);
+        assertSame('error', $invalid['status']);
+        assertSame('invalid thread id', $invalid['error']);
+    }
+
+    public function testForteInitialPageOmitsUnselectedThreadContent(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-forte-initial-pane-' . bin2hex(random_bytes(6));
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-forte-initial-pane-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        file_put_contents(
+            $repositoryRoot . '/records/posts/root-002.txt',
+            "Post-ID: root-002\nCreated-At: 2026-10-06T14:00:00Z\nBoard-Tags: general\nSubject: Unselected thread\n\nUnselected thread body sentinel.\n"
+        );
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $selected = $this->render($application, '/forte?selected=root-001');
+            assertStringContains('data-paned-board-content-post-id="root-001"', $selected);
+            assertStringContains('First line preview.', $selected);
+            assertStringNotContains('Unselected thread body sentinel.', $selected);
+
+            $unselected = $this->render($application, '/forte');
+            assertStringContains('No thread selected', $unselected);
+            assertStringNotContains('First line preview.', $unselected);
+            assertStringNotContains('Unselected thread body sentinel.', $unselected);
+        } finally {
+            $this->deleteTree($repositoryRoot);
+            @unlink($databasePath);
+        }
+    }
+
+    public function testForteSelectedPageStaysWithinProductionMemoryLimitWhenAnotherThreadIsLarge(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-forte-memory-limit-' . bin2hex(random_bytes(6));
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-forte-memory-limit-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previousMemoryLimit = ini_set('memory_limit', '128M');
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $this->render($application, '/forte');
+            $sentinel = 'unselected-memory-body-sentinel';
+            $largeBody = $sentinel . str_repeat('x', (16 * 1024 * 1024) - strlen($sentinel));
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $pdo->prepare(
+                'INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, author_identity_id, author_profile_slug, author_label, post_tags_json, post_score_total, approved_flag_count, is_hidden, hidden_reason, sequence_number)
+                 VALUES (:post_id, :created_at, :thread_id, NULL, :subject, :body, :board_tags_json, NULL, NULL, NULL, :author_label, :post_tags_json, 0, 0, 0, NULL, 1)'
+            )->execute([
+                'post_id' => 'root-memory-heavy',
+                'created_at' => '2026-10-06T14:00:00Z',
+                'thread_id' => 'root-memory-heavy',
+                'subject' => 'Large unselected thread',
+                'body' => $largeBody,
+                'board_tags_json' => '["general"]',
+                'author_label' => 'guest',
+                'post_tags_json' => '[]',
+            ]);
+            $pdo->prepare(
+                'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count)
+                 VALUES (:root_post_id, :created_at, :created_at, :subject, :body_preview, 0, :root_post_id, :board_tags_json, :thread_labels_json, 0, 0)'
+            )->execute([
+                'root_post_id' => 'root-memory-heavy',
+                'created_at' => '2026-10-06T14:00:00Z',
+                'subject' => 'Large unselected thread',
+                'body_preview' => $sentinel,
+                'board_tags_json' => '["general"]',
+                'thread_labels_json' => '[]',
+            ]);
+            unset($largeBody);
+            $page = $this->render($application, '/forte?selected=root-001');
+
+            assertStringContains('data-paned-board-content-post-id="root-001"', $page);
+            assertStringNotContains($sentinel, $page);
+        } finally {
+            $this->deleteTree($repositoryRoot);
+            @unlink($databasePath);
+            ini_set('memory_limit', $previousMemoryLimit === false ? '-1' : $previousMemoryLimit);
         }
     }
 

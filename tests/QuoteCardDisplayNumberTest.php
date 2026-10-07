@@ -330,6 +330,8 @@ final class QuoteCardDisplayNumberTest
         assertStringContains('lazy_compose_signing', $leetness);
         assertStringContains('lazy_compose_signing', $random);
         assertStringContains('lazy_compose_signing', $search);
+        assertStringContains('class="nav-link" href="/leetness">1337</a>', $latest);
+        assertStringContains('class="nav-link is-active" href="/leetness">1337</a>', $leetness);
     }
 
     public function testNonQdbBoardDoesNotLoadTheVoteButtonScript(): void

@@ -13,6 +13,7 @@ final class QdbPresentation
             ['href' => '/', 'label' => 'Welcome', 'section' => 'welcome'],
             ['href' => '/latest', 'label' => 'Latest', 'section' => 'latest'],
             ['href' => '/top', 'label' => 'Top', 'section' => 'top'],
+            ['href' => '/leetness', 'label' => '1337', 'section' => 'leetness'],
             ['href' => '/random', 'label' => 'Random', 'section' => 'random'],
             ['href' => '/add', 'label' => 'Add Quote', 'section' => 'compose'],
             ['href' => '/search', 'label' => 'Search', 'section' => 'search'],
