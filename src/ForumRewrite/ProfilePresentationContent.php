@@ -56,6 +56,19 @@ final class ProfilePresentationContent
             'busyHeading' => 'Temporarily Busy',
             'busyMessage' => 'The site is temporarily busy. Try again in a moment.',
         ],
+        'mitrapclub' => [
+            'communityHeading' => 'The cypher',
+            'communityParagraphs' => [
+                'MIT Rap Club is a community for people who study rap as seriously as they perform it: cyphers, salons, and the Code Cypher hackathon pair live freestyle with rap theory and practice.',
+                'The club grew out of MIT\'s rap-theory programming, including CMS/W and Lupe Fiasco\'s MLK Visiting Professorship, and keeps going through term-time cyphers, guest sessions, and events open to the wider MIT community.',
+            ],
+            'docsIntro' => '%s keeps its public state in Git and builds the site\'s pages from it. These docs are rendered from the same repository.',
+            'architectureTitle' => '%s public architecture',
+            'architectureDescription' => 'A member\'s browser creates signed writes to records in Git, which produce SQLite and static HTML views for readers.',
+            'busyTitle' => 'Temporarily Busy',
+            'busyHeading' => 'Temporarily Busy',
+            'busyMessage' => 'The site is temporarily busy. Try again in a moment.',
+        ],
     ];
 
     /**

@@ -16,3 +16,11 @@
   - `./v3 test` — full suite: 817 run, 817 passed, 0 failed.
 - Notes:
   - No behavior change for existing profiles; purely additive to the allowed-choices lists.
+
+## Stage 3 - Editorial content
+- Changes:
+  - `src/ForumRewrite/ProfilePresentationContent.php`: added a `'mitrapclub'` key to `EDITORIAL` with club-specific `communityHeading`/`communityParagraphs` (cyphers, Code Cypher, CMS/W rap-theory context from Step 1 research); `docsIntro`/`architectureTitle`/`architectureDescription`/`busy*` follow the existing generic (non-club-specific) shape shared by `boston`/`qdb`.
+- Verification:
+  - `./v3 test` — full suite: 817 run, 817 passed, 0 failed (key not yet wired to a profile, so no new behavior is exercised until Stage 4).
+- Notes:
+  - Per Step 2's accepted risk: the fixed `about()` intro sentence stays generic; the club-specific description lives in `communityParagraphs`, exercised once Stage 4 registers the profile.
