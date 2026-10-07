@@ -68,9 +68,9 @@ final class ProfilePresentationContent
             'docsIntro' => '%s keeps its public state in Git and builds the site\'s pages from it. These docs are rendered from the same repository.',
             'architectureTitle' => '%s public architecture',
             'architectureDescription' => 'A member\'s browser creates signed writes to records in Git, which produce SQLite and static HTML views for readers.',
-            'busyTitle' => 'Temporarily Busy',
-            'busyHeading' => 'Temporarily Busy',
-            'busyMessage' => 'The site is temporarily busy. Try again in a moment.',
+            'busyTitle' => 'Cypher\'s Full',
+            'busyHeading' => 'The Cypher\'s Full',
+            'busyMessage' => 'The mic\'s getting passed around right now. Try again in a moment.',
             'socialLinks' => [
                 ['label' => 'YouTube', 'url' => 'https://www.youtube.com/@MITRAPCLUB'],
                 ['label' => 'Instagram', 'url' => 'https://www.instagram.com/mitrapclub/'],

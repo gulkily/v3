@@ -12,3 +12,12 @@
   - Confirmed qdb-specific tests (`QuoteCardDisplayNumberTest`, etc.) still pass — the identifier-based `siteName() === 'qdb'` branches are untouched.
 - Notes:
   - No missed display call site; the full inventory from Step 3 planning accounted for every occurrence in the codebase.
+
+## Stage 2 - Club-voiced busy-page copy
+- Changes:
+  - `src/ForumRewrite/ProfilePresentationContent.php`: updated `EDITORIAL['mitrapclub']['busyTitle']`/`['busyHeading']`/`['busyMessage']` to "Cypher's Full" / "The Cypher's Full" / "The mic's getting passed around right now. Try again in a moment."
+- Verification:
+  - `./v3 test` — full suite: 817 run, 817 passed, 0 failed.
+  - Rendered `ProfilePresentationContent::busy()` for all four profiles: `zenmemes`/`chouse`/`qdb` unchanged; `mitrapclub` shows the new club-voiced copy.
+- Notes:
+  - Feature complete per the Step 3 Completion Contract: both branding-fix items (site-name display, busy-page copy) shipped with no regression to other profiles.
