@@ -8,3 +8,11 @@
   - `./v3 test` — full suite: 817 run, 817 passed, 0 failed.
 - Notes:
   - Visual review against `cypherposium.com`'s aesthetic is still open (Key Risks: High risk) — will revisit once the profile is wired up in Stage 4 and a real page can render with this theme.
+
+## Stage 2 - Presentation slot choices
+- Changes:
+  - `src/ForumRewrite/PresentationSlotRegistry.php`: added `'mitrapclub'` to the `editorial` and `brandedStylesheet` slot `choices` lists.
+- Verification:
+  - `./v3 test` — full suite: 817 run, 817 passed, 0 failed.
+- Notes:
+  - No behavior change for existing profiles; purely additive to the allowed-choices lists.
