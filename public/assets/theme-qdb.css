@@ -128,7 +128,6 @@
 }
 
 :root[data-theme="qdb"] .quote-card {
-  position: relative;
   border: none;
   background: transparent;
   padding: 0.25rem 0.4rem;
@@ -136,19 +135,19 @@
   margin-top: 0.6rem;
 }
 
-/* Routine vote status ("Saving tag...", "Liked.") would otherwise wrap into the
-   +/- row and grow the card. Overlay it on the button line so the card keeps its
-   size. Errors (data-kind="error") stay in flow so their full text can show. */
+/* Routine vote status ("Saving tag...", identity progress) sits on the button line,
+   right after the buttons, and truncates instead of wrapping so the card keeps its
+   size. Errors (data-kind="error") keep normal wrapping so their full text shows. */
 :root[data-theme="qdb"] .quote-card-actions > .thread-reaction-feedback[data-kind="ok"] {
-  position: absolute;
-  left: 5.6rem;
-  right: 0.4rem;
-  bottom: 0.25rem;
+  flex: 1 1 0;
+  min-width: 0;
   margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+  align-self: center;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  text-align: left;
 }
 
 :root[data-theme="qdb"] .quote-card:nth-child(even) {
