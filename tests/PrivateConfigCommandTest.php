@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require __DIR__ . '/../autoload.php';
+
 final class PrivateConfigCommandTest
 {
     public function testPrivateConfigExistingMessageMentionsView(): void
@@ -86,6 +88,16 @@ final class PrivateConfigCommandTest
             assertSame('https://example.test', $config['LLM_EXTRA_HEADERS']['HTTP-Referer']);
             assertSame('prod-secret-value', $config['DEDALUS_API_KEY']);
             assertSame('kept', $config['CUSTOM_SETTING']);
+            assertSame(true, $config['AGENT_RESPONSE_REQUESTS_ENABLED']);
+            assertSame(true, $config['LLM_CONVERSATION_RECORDING_ENABLED']);
+            assertSame(true, $config['LLM_CONVERSATION_UI_ENABLED']);
+            foreach ((new \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry())->all() as $definition) {
+                if ($definition->category !== 'private') {
+                    continue;
+                }
+
+                assertTrue(array_key_exists($definition->environmentVariable, $config));
+            }
             assertStringContains('Run ./v3 private-config refresh-template', $contents);
             assertStringContains('Provider examples. Copy the relevant values into the returned array above.', $contents);
             assertStringContains('Direct Anthropic:', $contents);
