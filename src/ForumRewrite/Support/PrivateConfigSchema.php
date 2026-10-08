@@ -199,7 +199,7 @@ final class PrivateConfigSchema
     }
 
     /** @param array<string, mixed> $fileValues @param array<string, mixed> $environment @return list<string> */
-    public static function lockedLlmKeys(array $fileValues, array $environment): array
+    public static function lockedLlmKeys(array $fileValues, ?array $environment = null): array
     {
         $resolved = self::resolve($fileValues, $environment);
         return array_values(array_filter(self::llmEditableKeys(), static fn (string $key): bool => $resolved[$key]['source'] === 'environment override'));

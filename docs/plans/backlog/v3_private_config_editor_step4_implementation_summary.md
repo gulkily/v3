@@ -11,3 +11,17 @@
   - `./v3 test PrivateConfigSchemaTest PrivateConfigCommandTest LlmProviderConfigTest` — 16 passed.
 - Notes:
   - No database, deployment, or terminal UI behavior is applicable to this schema stage.
+
+## Stage 2 - Stdin-only LLM save contract
+
+- Changes:
+  - Added `private-config update-llm`, which accepts editable LLM values only as a JSON request on standard input.
+  - Reused schema validation, environment locks, and the existing atomic writer while preserving unrelated values.
+  - Added a command test proving the API key stays out of output and unrelated values survive the update.
+- Verification:
+  - `php -l scripts/write_private_config.php`
+  - `php -l src/ForumRewrite/Support/PrivateConfigSchema.php`
+  - `php -l tests/PrivateConfigCommandTest.php`
+  - `./v3 test PrivateConfigSchemaTest PrivateConfigCommandTest` — 10 passed.
+- Notes:
+  - The request is deliberately standard-input-only; no database, deployment, or terminal UI verification applies at this stage.
