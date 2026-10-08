@@ -42,3 +42,16 @@
   - Direct pseudo-terminal check rendered the `whiptail` dialog; the harness could not send its close key, so the isolated no-op dialog was terminated.
 - Notes:
   - The entry path starts no operational command before its terminal/dependency checks pass. Dashboard interaction and launcher cancellation coverage follow in later stages.
+
+## Stage 4 - Read-only dashboard
+
+- Changes:
+  - Replaced the entry placeholder with a `whiptail` dashboard for canonical operator status, redacted effective private configuration, and the web-only feature-flags handoff.
+  - Added explicit read-only context for environment overrides and site flags.
+  - Added a pseudo-terminal dashboard test using a fake `whiptail` to inspect delegated output without running operational work.
+- Verification:
+  - `bash -n scripts/terminal_operator_ui.sh`
+  - `php -l tests/TerminalOperatorUiDashboardTest.php`
+  - `./v3 test TerminalOperatorUiCommandTest TerminalOperatorUiDashboardTest PrivateConfigCommandTest StatusCommandTest` — 13 passed.
+- Notes:
+  - The dashboard delegates status/configuration rendering to existing commands. Feature-flag editing remains exclusively on `/tools/feature-flags/`; no database, deployment, or write-path verification applies.
