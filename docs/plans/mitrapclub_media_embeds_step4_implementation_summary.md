@@ -9,3 +9,16 @@
   - `php tests/run.php FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest` — 16 run, 16 passed.
 - Notes:
   - No changes needed to `testDefaultsMatchExistingSiteFlags` — that test only individually asserts a subset of flags (e.g. `THREAD_DENSITY_TOGGLE_ENABLED` is likewise absent from it), consistent with existing precedent.
+
+## Stage 2 - URL detector
+
+- Changes:
+  - Added `ForumRewrite\View\MediaEmbedDetector::detect(string $body)`, matching documented YouTube (`youtube.com/watch?...v=`, `youtu.be/...`) and Instagram (`instagram.com/p/...`, `instagram.com/reel/...`) http(s) URL shapes only; returns `provider`, `url`, `displayUrl`, `offset`, `length` per match.
+  - `displayUrl` strips a fixed per-provider tracking-param allowlist (`si`, `igshid`, `igsh`, `fbclid`, any `utm_*`) via `parse_url`/`parse_str`/`http_build_query`; every other query param (e.g. YouTube's `t`, `list`) passes through untouched.
+  - Trailing sentence punctuation (`.,;:!?)'"]`) is trimmed off a matched URL so prose like "...clip. Cool right?" doesn't pull the period into the match.
+  - Added `tests/MediaEmbedDetectorTest.php` and registered it in `tests/run.php`.
+- Verification:
+  - `php tests/run.php MediaEmbedDetectorTest` — 5 run, 5 passed: known YouTube/Instagram shapes match; bare domain, other-provider, `javascript:` scheme, and truncated URLs do not; trailing punctuation excluded from the match span; tracking params stripped while content params (`t`, `list`) are preserved.
+  - `php tests/run.php` (full suite) — no new failures from this stage. Two failures are present (`LocalAppSmokeTest::testFeatureFlagsPageShowsLockedBadgeWithReasonForNonMutableFlags`, `WriteApiSmokeTest::testTaskQueueProcessesQueuedAgentReplyOnce`); confirmed via `git stash` against the Stage 1 commit that both already fail without any of this feature's changes — pre-existing, out of this feature's scope.
+- Notes:
+  - Detection is a pure string operation — no network calls, consistent with Step 2's scope.

@@ -25,6 +25,7 @@ $testFiles = [
     __DIR__ . '/DevServerLogTest.php',
     __DIR__ . '/FeatureFlagEvaluatorTest.php',
     __DIR__ . '/FeatureFlagsBehaviorTest.php',
+    __DIR__ . '/MediaEmbedDetectorTest.php',
     __DIR__ . '/FastScoringConfigTest.php',
     __DIR__ . '/FastScoreContextFactoryTest.php',
     __DIR__ . '/FdpSyncCommandTest.php',
