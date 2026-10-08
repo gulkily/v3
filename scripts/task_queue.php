@@ -160,6 +160,7 @@ try {
 
         $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose): void {
             $startedAt = microtime(true);
+            $reconciledAgentReplyTasks = reconcileAgentReplyTasks($store, $databasePath);
             $executorRun = $store->startExecutorRun();
             $taskOutcomes = [];
             $before = $store->counts();
@@ -171,6 +172,9 @@ try {
             emitTaskQueue($quiet, "Limit: {$limit}\n");
             emitTaskQueue($quiet, "Fastmod provider-call limit: {$providerCallLimit}\n");
             emitTaskQueue($quiet, "Fastmod examined-work limit: {$workLimit}\n");
+            if ($reconciledAgentReplyTasks > 0) {
+                emitTaskQueue($quiet, "Reconciled agent-reply tasks: {$reconciledAgentReplyTasks}\n");
+            }
             emitTaskQueue($quiet, sprintf(
                 "Queue before: queued=%d running=%d completed=%d failed=%d\n",
                 $before['queued'],
@@ -247,7 +251,7 @@ try {
                 static function (array $task) use ($projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot): void {
                     $target = AgentReplyTask::targetFromDeduplicationKey((string) ($task['deduplication_key'] ?? ''));
                     $replyStore = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
-                    $request = $replyStore->claimRequestedForTarget($target['post_id'], $target['content_hash']);
+                    $request = $replyStore->claimOrResumeRequestedForTarget($target['post_id'], $target['content_hash']);
                     if ($request === null) {
                         return;
                     }
@@ -428,6 +432,23 @@ function emitTaskQueue(bool $quiet, string $message): void
     if (!$quiet) {
         fwrite(STDOUT, $message);
     }
+}
+
+function reconcileAgentReplyTasks(SqliteTaskQueueStore $taskStore, string $databasePath): int
+{
+    $replyStore = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+    $enqueued = 0;
+    foreach ($replyStore->requestedTargets() as $target) {
+        $task = $taskStore->enqueue(
+            SqliteTaskQueueStore::AGENT_REPLY,
+            AgentReplyTask::deduplicationKey($target['target_post_id'], $target['target_content_hash']),
+        );
+        if (($task['enqueued'] ?? false) === true) {
+            $enqueued++;
+        }
+    }
+
+    return $enqueued;
 }
 
 /** @param array<string,mixed> $progress */

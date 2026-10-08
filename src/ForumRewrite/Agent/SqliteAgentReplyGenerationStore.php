@@ -287,6 +287,47 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
         });
     }
 
+    public function claimOrResumeRequestedForTarget(string $postId, string $contentHash): ?array
+    {
+        $claimed = $this->claimRequestedForTarget($postId, $contentHash);
+        if ($claimed !== null) {
+            return $claimed;
+        }
+
+        $existing = $this->findByTarget($postId, $contentHash);
+        if ($existing === null
+            || ($existing['status'] ?? null) !== 'pending'
+            || !is_array($existing['request_context']['agent_reply_request'] ?? null)
+        ) {
+            return null;
+        }
+
+        $existing['resumed'] = true;
+        return $existing;
+    }
+
+    public function requestedTargets(int $limit = 100): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT target_post_id, target_content_hash
+             FROM post_generated_responses
+             WHERE status = :status
+             ORDER BY requested_at ASC, id ASC
+             LIMIT :limit'
+        );
+        $stmt->bindValue('status', 'requested');
+        $stmt->bindValue('limit', max(1, $limit), PDO::PARAM_INT);
+        $stmt->execute();
+
+        return array_map(
+            static fn (array $row): array => [
+                'target_post_id' => (string) $row['target_post_id'],
+                'target_content_hash' => (string) $row['target_content_hash'],
+            ],
+            $stmt->fetchAll(),
+        );
+    }
+
     public function reservePosting(string $postId, string $contentHash): ?array
     {
         $stmt = $this->pdo->prepare(

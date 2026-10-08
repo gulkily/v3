@@ -24,3 +24,15 @@
   - `git diff --check` for Stage 2 files — passed.
 - Notes:
   - Reply publication, gate decisions, and domain failure records remain delegated to the established fulfillment service; the queue owns worker execution and retry state.
+
+## Stage 3 - Queue new requests and reconcile outstanding work
+- Changes:
+  - New approved-user requests now enqueue or reuse the matching `agent_reply` general-purpose task.
+  - Task-queue runs reconcile durable requested rows that lack an active task, covering pre-merge and interrupted enqueue paths.
+  - Recovered queue tasks can resume an interrupted request claim without creating a duplicate reply request.
+- Verification:
+  - `php tests/run.php AgentReplyGenerationTest TaskQueueWorkerTest TaskQueueCommandTest WriteApiSmokeTest::testGenerateAgentReplyRequiresApprovedViewerAndRecordsRequest` — 37 passed.
+  - `php -l src/ForumRewrite/Agent/SqliteAgentReplyGenerationStore.php` and `php -l scripts/task_queue.php` — passed.
+  - `git diff --check` for Stage 3 files — passed.
+- Notes:
+  - The task queue is now the durable execution owner; reply records remain the source of truth for target identity and publication state.

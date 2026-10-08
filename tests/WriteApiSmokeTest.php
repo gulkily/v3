@@ -19,6 +19,8 @@ use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\Scoring\FastScoreContextFactory;
 use ForumRewrite\Scoring\SqliteFastScoreStore;
+use ForumRewrite\TaskQueue\AgentReplyTask;
+use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
@@ -425,6 +427,9 @@ final class WriteApiSmokeTest
     public function testGenerateAgentReplyRequiresApprovedViewerAndRecordsRequest(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $queuePath = sys_get_temp_dir() . '/forum-rewrite-agent-reply-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previousQueuePath = getenv('FORUM_TASK_QUEUE_DATABASE_PATH');
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
         putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED=true');
 
         try {
@@ -442,23 +447,36 @@ final class WriteApiSmokeTest
             $forbidden = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = ['identity_hint' => 'guest'];
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $duplicate = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
             $pdo = new PDO('sqlite:' . $databasePath);
             $stmt = $pdo->prepare('SELECT status, request_context_json FROM post_generated_responses WHERE target_post_id = :post_id');
             $stmt->execute(['post_id' => $postId]);
             $row = $stmt->fetch();
             $requestContext = json_decode((string) $row['request_context_json'], true);
+            $tasks = array_values(array_filter(
+                (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->recent(10),
+                static fn (array $task): bool => $task['type'] === SqliteTaskQueueStore::AGENT_REPLY,
+            ));
 
             assertStringContains('data-agent-reply-work="analyze"', $threadPage);
             assertSame('error', $forbidden['status']);
             assertSame('forbidden', $forbidden['error']);
             assertSame('ok', $response['status']);
             assertSame('requested', $response['generation_status']);
+            assertSame('requested', $duplicate['generation_status']);
             assertSame($postCountBefore, $postCountAfter);
             assertSame('requested', $row['status']);
             assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $requestContext['agent_reply_request']['requested_by_identity_id']);
             assertSame('default_text_reply', $requestContext['agent_reply_request']['agent_response_task']['type']);
+            assertSame(1, count($tasks));
+            assertSame(SqliteTaskQueueStore::AGENT_REPLY, $tasks[0]['type']);
+            assertSame($postId, AgentReplyTask::targetFromDeduplicationKey($tasks[0]['deduplication_key'])['post_id']);
         } finally {
+            $previousQueuePath === false
+                ? putenv('FORUM_TASK_QUEUE_DATABASE_PATH')
+                : putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $previousQueuePath);
+            @unlink($queuePath);
             putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED');
             $_COOKIE = [];
         }
