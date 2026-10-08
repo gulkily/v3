@@ -62,10 +62,7 @@
 there's a bug where the user ends up at the lobby page once
 	when already has a keypair
 
-quote links should link to /quote_id
-	/quote_id links should work
-	/?quote_id links should work
-	quote pages should be quote-formatted
+/123 quote id links should not redirect to /threads, but just render in-place
 
 when adding a new quote, it should also get a quote id?
 	- RESOLVED, see item 2 above.
