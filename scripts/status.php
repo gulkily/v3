@@ -24,11 +24,17 @@ try {
         $projectRoot,
         isset($options['queue-database-path']) ? (string) $options['queue-database-path'] : null,
     );
+    $executionLock = new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock');
+    if ($executionLock->isLocked()) {
+        fwrite(STDOUT, "Waiting for shared lock before collecting status...\n");
+        fflush(STDOUT);
+    }
+
     $status = (new OperatorStatusCollector(
         $repositoryRoot,
         $databasePath,
         $queuePath,
-        new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock'),
+        $executionLock,
         new ReadModelStaleMarker($databasePath),
         static fn (): PDO => (new ReadModelConnection($databasePath))->open(),
     ))->collect();

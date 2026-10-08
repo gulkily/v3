@@ -151,7 +151,29 @@ final class PrivateConfigCommandTest
         }
     }
 
-    private function runCommand(string $cwd, string $command): string
+    public function testPrivateConfigUpdateLlmReadsSecretOnlyFromStandardInput(): void
+    {
+        $secretsPath = sys_get_temp_dir() . '/forum-rewrite-private-config-' . bin2hex(random_bytes(6)) . '/secrets.php';
+        mkdir(dirname($secretsPath), 0700, true);
+        file_put_contents($secretsPath, "<?php\n\nreturn ['CUSTOM_SETTING' => 'kept', 'LLM_API_KEY' => 'old-secret'];\n");
+        $request = json_encode(['values' => [
+            'LLM_PROVIDER' => 'openai', 'LLM_API_KEY' => 'new-secret', 'LLM_API_BASE_URL' => 'https://api.openai.com', 'LLM_MODEL' => 'gpt-5-nano', 'LLM_TIMEOUT_SECONDS' => 30,
+        ]], JSON_THROW_ON_ERROR);
+
+        try {
+            $output = $this->runCommand(dirname(__DIR__), 'FORUM_SECRETS_PATH=' . escapeshellarg($secretsPath) . ' ./v3 private-config update-llm', $request);
+            $config = require $secretsPath;
+            assertStringContains('Updated private config', $output);
+            assertStringNotContains('new-secret', $output);
+            assertSame('new-secret', $config['LLM_API_KEY']);
+            assertSame('kept', $config['CUSTOM_SETTING']);
+        } finally {
+            @unlink($secretsPath);
+            @rmdir(dirname($secretsPath));
+        }
+    }
+
+    private function runCommand(string $cwd, string $command, string $input = ''): string
     {
         $descriptor = [
             0 => ['pipe', 'r'],
@@ -163,6 +185,7 @@ final class PrivateConfigCommandTest
             throw new RuntimeException('Unable to run command.');
         }
 
+        fwrite($pipes[0], $input);
         fclose($pipes[0]);
         $stdout = stream_get_contents($pipes[1]);
         $stderr = stream_get_contents($pipes[2]);

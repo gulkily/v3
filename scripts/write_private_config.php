@@ -13,6 +13,7 @@ $options = [
     'refresh_template' => false,
     'view' => false,
     'edit' => false,
+    'update_llm' => false,
     'help' => false,
 ];
 
@@ -29,6 +30,11 @@ foreach (array_slice($argv, 1) as $arg) {
 
     if ($arg === 'edit' || $arg === '--edit') {
         $options['edit'] = true;
+        continue;
+    }
+
+    if ($arg === 'update-llm' || $arg === '--update-llm') {
+        $options['update_llm'] = true;
         continue;
     }
 
@@ -69,7 +75,7 @@ if ($path === '') {
 }
 
 if ($options['edit']) {
-    if ($options['view'] || $options['refresh_template'] || $options['force'] || $options['api_key_stdin']) {
+    if ($options['view'] || $options['refresh_template'] || $options['force'] || $options['api_key_stdin'] || $options['update_llm']) {
         fwrite(STDERR, "edit cannot be combined with another private-config action.\n");
         exit(2);
     }
@@ -122,7 +128,48 @@ if ($options['view']) {
     exit(0);
 }
 
+$llmUpdate = null;
+if ($options['update_llm']) {
+    try {
+        $request = json_decode((string) stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
+    } catch (JsonException) {
+        fwrite(STDERR, "Invalid LLM update request.\n");
+        exit(2);
+    }
+    if (!is_array($request) || !isset($request['values']) || !is_array($request['values'])) {
+        fwrite(STDERR, "LLM update request requires a values object.\n");
+        exit(2);
+    }
+    $values = $request['values'];
+    $editable = \ForumRewrite\Support\PrivateConfigSchema::llmEditableKeys();
+    foreach (array_keys($values) as $key) {
+        if (!is_string($key) || !in_array($key, $editable, true)) {
+            fwrite(STDERR, "LLM update request contains an unsupported field.\n");
+            exit(2);
+        }
+    }
+    $locked = \ForumRewrite\Support\PrivateConfigSchema::lockedLlmKeys($existing, null);
+    if (array_intersect(array_keys($values), $locked) !== []) {
+        fwrite(STDERR, "An LLM setting is locked by an environment override.\n");
+        exit(1);
+    }
+    $llmUpdate = $values;
+}
+
 $config = resolvedTemplateConfig($existing);
+if ($llmUpdate !== null) {
+    foreach ($llmUpdate as $key => $value) {
+        if ($key === 'LLM_API_KEY' && trim((string) $value) === '') {
+            continue;
+        }
+        $config[$key] = $value;
+    }
+    $errors = \ForumRewrite\Support\PrivateConfigSchema::validateLlmConnection($config);
+    if ($errors !== []) {
+        fwrite(STDERR, implode("\n", $errors) . "\n");
+        exit(2);
+    }
+}
 if ($options['api_key_stdin']) {
     $apiKey = trim((string) fgets(STDIN));
     if ($apiKey === '') {
@@ -134,7 +181,7 @@ if ($options['api_key_stdin']) {
     $config['LLM_API_KEY'] = $apiKey;
 }
 
-if (is_file($path) && !$options['force'] && !$options['api_key_stdin'] && !$options['refresh_template']) {
+if (is_file($path) && !$options['force'] && !$options['api_key_stdin'] && !$options['refresh_template'] && !$options['update_llm']) {
     fwrite(STDOUT, "Private config already exists at {$path}\n");
     fwrite(STDOUT, "Run with view to inspect redacted current values.\n");
     fwrite(STDOUT, "Run with refresh-template to add current comments/examples while preserving values.\n");
@@ -390,6 +437,7 @@ Usage:
   php scripts/write_private_config.php
   php scripts/write_private_config.php view
   php scripts/write_private_config.php edit
+  php scripts/write_private_config.php update-llm
   php scripts/write_private_config.php --view
   php scripts/write_private_config.php refresh-template
   php scripts/write_private_config.php --force
@@ -403,6 +451,7 @@ Use refresh-template to rewrite the file with current comments/examples while pr
 The default local path is ../forum-private/secrets.php relative to this app checkout.
 LLM_PROVIDER is required (no default). Supported values: openai, openrouter, anthropic, stub, and OpenAI-compatible gateways.
 Legacy DEDALUS_* LLM settings are still read as fallbacks, but new writes use LLM_* names.
+update-llm accepts a JSON request only on standard input; never pass a secret in an argument.
 
 TEXT);
 }

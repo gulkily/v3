@@ -156,6 +156,70 @@ final class PrivateConfigSchema
         return $additional;
     }
 
+    /** @return array<string, array<string, mixed>> */
+    public static function llmPresets(): array
+    {
+        return [
+            'openai' => ['LLM_PROVIDER' => 'openai', 'LLM_API_BASE_URL' => 'https://api.openai.com', 'LLM_MODEL' => 'gpt-5-nano'],
+            'openrouter' => ['LLM_PROVIDER' => 'openrouter', 'LLM_API_BASE_URL' => 'https://openrouter.ai/api', 'LLM_MODEL' => 'openai/gpt-5-nano'],
+            'anthropic' => ['LLM_PROVIDER' => 'anthropic', 'LLM_API_BASE_URL' => 'https://api.anthropic.com', 'LLM_MODEL' => 'claude-haiku-4-5-20251001'],
+            'stub' => ['LLM_PROVIDER' => 'stub', 'LLM_API_BASE_URL' => '', 'LLM_MODEL' => ''],
+            'custom' => ['LLM_PROVIDER' => '', 'LLM_API_BASE_URL' => '', 'LLM_MODEL' => ''],
+        ];
+    }
+
+    /** @return list<string> */
+    public static function llmEditableKeys(): array
+    {
+        return ['LLM_PROVIDER', 'LLM_API_KEY', 'LLM_API_BASE_URL', 'LLM_MODEL', 'LLM_TIMEOUT_SECONDS'];
+    }
+
+    /** @param array<string, mixed> $values @return list<string> */
+    public static function validateLlmConnection(array $values): array
+    {
+        $provider = strtolower(trim((string) ($values['LLM_PROVIDER'] ?? '')));
+        $baseUrl = trim((string) ($values['LLM_API_BASE_URL'] ?? ''));
+        $model = trim((string) ($values['LLM_MODEL'] ?? ''));
+        $timeout = filter_var($values['LLM_TIMEOUT_SECONDS'] ?? null, FILTER_VALIDATE_INT);
+        $errors = [];
+        if ($provider === '') {
+            $errors[] = 'Provider is required.';
+        }
+        if ($provider !== 'stub' && $baseUrl === '') {
+            $errors[] = 'Base URL is required unless the provider is stub.';
+        }
+        if ($provider !== 'stub' && $model === '') {
+            $errors[] = 'Model is required unless the provider is stub.';
+        }
+        if ($timeout === false || $timeout < 1) {
+            $errors[] = 'Timeout must be a positive whole number.';
+        }
+
+        return $errors;
+    }
+
+    /** @param array<string, mixed> $fileValues @param array<string, mixed> $environment @return list<string> */
+    public static function lockedLlmKeys(array $fileValues, ?array $environment = null): array
+    {
+        $resolved = self::resolve($fileValues, $environment);
+        return array_values(array_filter(self::llmEditableKeys(), static fn (string $key): bool => $resolved[$key]['source'] === 'environment override'));
+    }
+
+    /** @param array<string, mixed> $before @param array<string, mixed> $after @return array<string, array{before:string,after:string}> */
+    public static function redactedLlmDiff(array $before, array $after): array
+    {
+        $diff = [];
+        foreach (self::llmEditableKeys() as $key) {
+            $old = $before[$key] ?? self::definitions()[$key]['default'];
+            $new = $after[$key] ?? $old;
+            if ($old !== $new) {
+                $diff[$key] = ['before' => self::formatValue($key, $old), 'after' => self::formatValue($key, $new)];
+            }
+        }
+
+        return $diff;
+    }
+
     /**
      * @return array{default:mixed,type:string,secret:bool,template:bool,required:bool}
      */
