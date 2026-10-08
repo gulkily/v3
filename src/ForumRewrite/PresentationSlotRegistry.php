@@ -15,6 +15,7 @@ final class PresentationSlotRegistry
         'editorial' => ['fallback' => 'zenmemes', 'choices' => ['zenmemes', 'boston', 'qdb', 'mitrapclub']],
         'brandedStylesheet' => ['fallback' => 'site', 'choices' => ['site', 'chouse', 'qdb', 'mitrapclub']],
         'toolsNav' => ['fallback' => 'visible', 'choices' => ['visible', 'hidden']],
+        'favicon' => ['fallback' => 'default', 'choices' => ['default', 'mitrapclub']],
     ];
 
     /** @return array<string, array{fallback:string, choices:list<string>}> */

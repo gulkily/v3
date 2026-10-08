@@ -11,3 +11,18 @@
   - Rendered `/tools/` directly on `mitrapclub`: returns the page normally, confirming the route stays reachable by direct URL.
 - Notes:
   - Matches the existing precedent of dropping Account/Invite from qdb's nav while keeping the routes reachable directly.
+
+## Stage 2 - Per-profile favicon/icon override mechanism (no-op by construction)
+- Changes:
+  - `src/ForumRewrite/PresentationSlotRegistry.php`: added a `favicon` slot (`fallback: 'default'`, `choices: ['default', 'mitrapclub']`).
+  - New `src/ForumRewrite/View/FaviconRegistry.php`: `resolve(array $profile): string` maps the resolved slot value to a stable, unfingerprinted asset path (`'default'` → `/favicon.ico`, `'mitrapclub'` → `/assets/favicon-mitrapclub.ico`); single source of truth for both call sites below.
+  - `src/ForumRewrite/View/TemplateRenderer.php`: both `renderLayout()` and `renderStandalonePage()` now pass `'faviconPath' => FaviconRegistry::resolve($profile)` to their templates; `renderStandalonePage()` gained a `SiteProfileRegistry::active()` lookup to support this.
+  - `templates/layout.php` and `templates/standalone_layout.php`: `<link rel="icon">` now reads `$e($faviconPath)` instead of the hardcoded `/favicon.ico`.
+  - `src/ForumRewrite/Host/BrowserRuntimeAssetRenderer.php::manifest()`: `icons[0].src` now reads `FaviconRegistry::resolve($profile)` instead of the hardcoded literal.
+  - No profile opts into the `favicon` slot yet (`mitrapclub`'s `presentationSlots` is untouched in this stage), so every profile still resolves to the `default` choice.
+- Verification:
+  - `./v3 test` — full suite: 817 run, 817 passed, 0 failed.
+  - Rendered `/` and `/manifest.webmanifest` for all four profiles via `FrontController` directly: every profile's `<link rel="icon">` and manifest `icons[0].src` still read `/favicon.ico` — confirmed no-op for all four, including `mitrapclub`, exactly as planned for this stage.
+- Notes:
+  - The mechanism is real and wired end-to-end but deliberately unexercised until Stage 3, so this stage's correctness is proven by the absence of change, not the presence of one.
+  - Kept the favicon path unfingerprinted (not routed through `TemplateRenderer::assetPath()`) per Step 3's Key Risks, matching today's existing convention for this one asset.

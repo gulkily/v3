@@ -171,6 +171,7 @@ final class TemplateRenderer
             'appVersion' => $this->appVersion,
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
             'siteCssPath' => $this->assetPath('/assets/site.css'),
+            'faviconPath' => FaviconRegistry::resolve($profile),
             'browserRuntimeAssetPaths' => [
                 'openpgpV6' => $this->assetPath('/assets/openpgp.min.js'),
                 'openpgpV5' => $this->assetPath('/assets/openpgp.v5.11.3.min.js'),
@@ -328,12 +329,15 @@ final class TemplateRenderer
             $assetAdditionalCssPaths[] = $this->assetPath($additionalCssPath);
         }
 
+        $profile = SiteProfileRegistry::active();
+
         return $this->renderFile('standalone_layout.php', [
             'title' => $title,
             'content' => $content,
             'bodyClass' => $bodyClass,
             'scriptPaths' => $assetScriptPaths,
             'siteCssPath' => $this->assetPath('/assets/site.css'),
+            'faviconPath' => FaviconRegistry::resolve($profile),
             'additionalCssPaths' => $assetAdditionalCssPaths,
             'browserRuntimeAssetPaths' => [
                 'openpgpV6' => $this->assetPath('/assets/openpgp.min.js'),
