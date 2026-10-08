@@ -48,3 +48,15 @@
   - `git diff --check` for Stage 4 files — passed.
 - Notes:
   - Agent-reply queue state is visible in normal task-queue status by type, while `agent-reply status` continues to expose reply-specific failure and skip details.
+
+## Stage 5 - Document unified operations and verify release
+- Changes:
+  - Updated the CLI reference, deployment runbook, production example, and README to make `task-queue` the sole agent-reply execution and cron path.
+  - Documented removal of legacy agent-reply cron entries during deployment while retaining reply-specific diagnostic commands.
+- Verification:
+  - `git diff --check` for Stage 5 documentation — passed.
+  - Retired-command search across operator documentation and scripts — no stale execution reference remains; the runbook retains only the instruction to remove a legacy cron entry.
+  - Focused Stage 4 suite — 29 passed; `./v3 agent-reply test-local` — 21 passed.
+  - `./v3 test` and isolated `LocalAppSmokeTest::testRebuildDiagnosisAndRecoveryArchiveSQLiteSidecarsBeforeRebuilding` fail on the existing read-model-diagnosis text assertion (`Next action: ./v3 rebuild recover --confirm`); this feature does not modify that subsystem.
+- Notes:
+  - Deployment verification requiring configured LLM credentials remains external: install only `./v3 task-queue cron`, remove the legacy cron entry, and confirm one requested reply is processed on the target environment.
