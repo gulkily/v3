@@ -141,7 +141,10 @@ final class ReadModelBuilder
                 board_tags_json TEXT NOT NULL,
                 thread_labels_json TEXT NOT NULL,
                 score_total INTEGER NOT NULL DEFAULT 0,
-                vote_count INTEGER NOT NULL DEFAULT 0
+                vote_count INTEGER NOT NULL DEFAULT 0,
+                event_date TEXT NULL,
+                event_location TEXT NULL,
+                event_link TEXT NULL
             )'
         );
 
@@ -233,8 +236,8 @@ final class ReadModelBuilder
              VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :author_identity_id, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
-            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count)
-             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count)'
+            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link)
+             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link)'
         );
 
         $paths = $this->findRelativePaths('records/posts');
@@ -268,6 +271,9 @@ final class ReadModelBuilder
                 'author_identity_id' => $record->authorIdentityId,
                 'imported_score_seed' => $record->importedScoreSeed,
                 'imported_vote_count_seed' => $record->importedVoteCountSeed,
+                'event_date' => $record->eventDate,
+                'event_location' => $record->eventLocation,
+                'event_link' => $record->eventLink,
                 'source_path' => $relativePath,
                 'source_commit_sha' => $this->sourceCommitShaForPath($relativePath),
                 'source_order' => $index + 1,
@@ -322,6 +328,9 @@ final class ReadModelBuilder
                     'thread_labels_json' => '[]',
                     'score_total' => $post['imported_score_seed'] ?? 0,
                     'vote_count' => $post['imported_vote_count_seed'] ?? 0,
+                    'event_date' => $post['event_date'],
+                    'event_location' => $post['event_location'],
+                    'event_link' => $post['event_link'],
                 ];
             }
 
