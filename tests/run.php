@@ -69,6 +69,7 @@ $testFiles = [
     __DIR__ . '/OfflineSnapshotPublishCommandTest.php',
     __DIR__ . '/OfflineSnapshotPublisherTest.php',
     __DIR__ . '/PrivateConfigCommandTest.php',
+    __DIR__ . '/PrivateConfigSchemaTest.php',
     __DIR__ . '/PrivateSiteAuthTest.php',
     __DIR__ . '/PublicOfflineSnapshotBuilderTest.php',
     __DIR__ . '/PublicOfflineSnapshotManifestTest.php',
