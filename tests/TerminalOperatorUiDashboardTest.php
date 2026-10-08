@@ -16,6 +16,10 @@ final class TerminalOperatorUiDashboardTest
 set -euo pipefail
 printf 'ARGS:%s\n' "$*" >> "$V3_TUI_TEST_LOG"
 if [[ " $* " == *' --menu '* ]]; then
+  if [[ " $* " == *' Read-only commands '* ]]; then
+    printf 'status\n' >&2
+    exit 0
+  fi
   count=0
   if [[ -f "$V3_TUI_TEST_STATE" ]]; then
     count="$(cat "$V3_TUI_TEST_STATE")"
@@ -26,6 +30,7 @@ if [[ " $* " == *' --menu '* ]]; then
     1) printf 'status\n' >&2 ;;
     2) printf 'config\n' >&2 ;;
     3) printf 'flags\n' >&2 ;;
+    4) printf 'commands\n' >&2 ;;
     *) printf 'exit\n' >&2 ;;
   esac
 elif [[ " $* " == *' --textbox '* ]]; then
@@ -63,6 +68,9 @@ BASH);
             assertStringContains('Private configuration (redacted)', $log);
             assertStringContains('Private config path:', $log);
             assertStringContains('/tools/feature-flags/', $log);
+            assertStringContains('./v3 task-queue status', $log);
+            assertStringContains('Run this existing read-only command?', $log);
+            assertStringContains('./v3 status', $log);
             assertStringNotContains('LLM_API_KEY = ', $stdout);
         } finally {
             @unlink($fakeWhiptail);

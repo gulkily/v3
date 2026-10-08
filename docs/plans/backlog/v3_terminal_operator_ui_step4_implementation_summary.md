@@ -55,3 +55,16 @@
   - `./v3 test TerminalOperatorUiCommandTest TerminalOperatorUiDashboardTest PrivateConfigCommandTest StatusCommandTest` — 13 passed.
 - Notes:
   - The dashboard delegates status/configuration rendering to existing commands. Feature-flag editing remains exclusively on `/tools/feature-flags/`; no database, deployment, or write-path verification applies.
+
+## Stage 5 - Bounded command launcher
+
+- Changes:
+  - Added a read-only command catalog for `./v3 status`, `./v3 task-queue status`, and `./v3 fast-score status`.
+  - Added selected-command review before delegation and return-to-dashboard behavior after output.
+  - Extended the pseudo-terminal test to exercise the catalog, review dialog, delegated output, and dashboard return.
+- Verification:
+  - `bash -n scripts/terminal_operator_ui.sh`
+  - `php -l tests/TerminalOperatorUiDashboardTest.php`
+  - `./v3 test TerminalOperatorUiCommandTest TerminalOperatorUiDashboardTest PrivateConfigCommandTest StatusCommandTest` — 13 passed.
+- Notes:
+  - The catalog is a fixed read-only allowlist: it accepts no operator-supplied arguments and omits all destructive, enqueue, and configuration-write commands.
