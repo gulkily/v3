@@ -124,6 +124,32 @@ activity is in progress; it does not prove a manual rebuild is running.
 Use `./v3 task-queue status` for individual task details and
 `./v3 fast-score status` for Fastmod work details.
 
+## Open the terminal operator UI
+
+```
+./v3 tui
+```
+
+Opens a `whiptail` dashboard in an interactive terminal. It displays the
+canonical `./v3 status` result and a redacted effective private-config view,
+including each value's source. Environment overrides are read-only in the UI;
+manage site feature flags through `/tools/feature-flags/`.
+
+The launcher shows the selected command before running one of its fixed
+read-only entries: `./v3 status`, `./v3 task-queue status`, or
+`./v3 fast-score status`. It accepts no command arguments and does not edit
+private config, modify feature flags, enqueue work, or offer destructive
+workflows. The private-config editor and guided destructive workflows remain
+separate follow-up work.
+
+`whiptail` and interactive stdin, stdout, and stderr are required. If either
+is unavailable, `./v3 tui` makes no change and directs the operator to:
+
+```
+./v3 status
+./v3 private-config view
+```
+
 ## Rebuild the SQLite read model
 
 ```
