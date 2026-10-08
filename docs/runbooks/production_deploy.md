@@ -61,6 +61,7 @@ Optional runtime setting:
 - `LLM_CONVERSATION_RECORDING_ENABLED`: controls private exact-prompt/response capture. The default is enabled.
 - `LLM_CONVERSATION_UI_ENABLED`: controls approved-user/operator web visibility of captured exchanges. The default is enabled.
 - `LLM_EXCHANGE_DATABASE_PATH`: optional private SQLite path; defaults to `<application-root>/state/private/llm_exchanges.sqlite3`.
+- `VISITOR_STATISTICS_DATABASE_PATH`: optional private SQLite path for aggregate visitor statistics; defaults to `<application-root>/state/private/visitor_statistics.sqlite3`.
 - `FORUM_TASK_QUEUE_DATABASE_PATH`: optional private SQLite path for queued internal maintenance; defaults to `<application-root>/state/private/internal_tasks.sqlite3`.
 - `FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED`: optional `true` enables one detached, allowlisted queue-worker launch when a classified schema recovery finds no fresh executor heartbeat. Leave it unset on hosts that prohibit child processes.
 - `FAST_SCORING_DATABASE_PATH`: optional private SQLite score-state path; defaults to `<application-root>/state/private/fast_scores.sqlite3`.
@@ -76,6 +77,7 @@ The web user must be able to write:
 - `FORUM_STATIC_HTML_ROOT` and its `releases/` directory
 - `state/private/agent-reply/` under the application root if agent reply fulfillment is enabled
 - the parent directory of `LLM_EXCHANGE_DATABASE_PATH` if LLM conversation recording is enabled
+- the parent directory of `VISITOR_STATISTICS_DATABASE_PATH` when visitor statistics are in use
 - the parent directory of `FORUM_TASK_QUEUE_DATABASE_PATH` when the internal task queue is enabled
 - the parent directory of `FAST_SCORING_DATABASE_PATH` when Fastmod sweeps are enabled
 Static HTML is derived state. A write removes the `current` release pointer, so
@@ -241,6 +243,8 @@ restored session plus its existing browser signature verification.
 LLM exchange records are private runtime data. Keep `LLM_EXCHANGE_DATABASE_PATH` outside `public/`, the canonical repository, and the published read-model database; restrict the file to the deployment/web users. The exchange UI is available only to approved viewers and can be disabled independently with `LLM_CONVERSATION_UI_ENABLED=false`.
 
 Internal task-queue records are also private runtime data. Keep `FORUM_TASK_QUEUE_DATABASE_PATH` outside `public/`, the canonical repository, and the published read-model database. The queue is deliberately separate from the rebuildable read model so a rebuild task retains its state and final outcome. Its executor history, detached-launch outcomes, and rebuild checkpoints live in that same private database; terminal history is bounded while active work and automatic-recovery circuit state are retained.
+
+Visitor statistics are private runtime data. Keep `VISITOR_STATISTICS_DATABASE_PATH` outside `public/`, the canonical repository, and published artifacts. It retains only bounded UTC hourly aggregates for up to 90 days: eligible-request counters, anonymous/server-authenticated request counters, and mergeable client/authenticated-user cardinality sketches. It never retains raw visitor, session, key, identity, route, referrer, header, or network records. A deployment begins a new hourly collection epoch; legacy daily aggregates are not converted into hourly history. Its protected page reports only server-observed eligible traffic; direct edge/static delivery outside PHP is not included.
 
 ## Site Profile
 

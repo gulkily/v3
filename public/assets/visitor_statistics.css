@@ -1,0 +1,121 @@
+.visitor-statistics-period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 1rem 0;
+}
+
+.visitor-statistics-period label,
+.visitor-statistics-period select,
+.visitor-statistics-period button {
+  font-family: var(--ui-font);
+}
+
+.visitor-statistics-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.65rem;
+  margin: 1rem 0;
+}
+
+.visitor-statistics-tiles > div {
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.visitor-statistics-tiles dt {
+  color: var(--ink-soft);
+  font-family: var(--ui-font);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.visitor-statistics-tiles dd {
+  margin: 0.18rem 0 0;
+  font-family: var(--ui-font);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.visitor-statistics-trend {
+  margin: 1.2rem 0;
+  overflow-x: auto;
+}
+
+.visitor-statistics-trend figcaption {
+  margin-bottom: 0.35rem;
+  font-family: var(--ui-font);
+  font-weight: 700;
+}
+
+.visitor-statistics-trend svg {
+  display: block;
+  min-width: 40rem;
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--input-bg);
+}
+
+.visitor-statistics-trend text {
+  fill: var(--ink-soft);
+  font-family: var(--ui-font);
+  font-size: 11px;
+}
+
+.visitor-statistics-axis {
+  stroke: var(--line);
+}
+
+.visitor-statistics-bar-anonymous {
+  fill: color-mix(in srgb, var(--status-ok) 62%, var(--panel) 38%);
+}
+
+.visitor-statistics-bar-authenticated {
+  fill: var(--status-ok);
+}
+
+.visitor-statistics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.visitor-statistics-table th,
+.visitor-statistics-table td {
+  padding: 0.45rem 0.55rem;
+  text-align: right;
+  vertical-align: top;
+}
+
+.visitor-statistics-table th:first-child {
+  text-align: left;
+}
+
+.visitor-statistics-table tr + tr th,
+.visitor-statistics-table tr + tr td {
+  border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent 30%);
+}
+
+.visitor-statistics-counting {
+  margin-top: 1rem;
+}
+
+.feedback-warning {
+  background: color-mix(in srgb, var(--status-warning) 14%, var(--panel) 86%);
+}
+
+.visitor-statistics-counting summary {
+  cursor: pointer;
+  font-family: var(--ui-font);
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .visitor-statistics-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
