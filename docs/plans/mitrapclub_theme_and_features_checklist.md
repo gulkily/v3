@@ -95,13 +95,15 @@ checked in the current code, not a guess.
       rendered as a distinct block on the board and thread page. A full
       qdb-style events experience remains available later if this proves
       insufficient.
-- [ ] No embedded media support for YouTube clips or Instagram posts inside
+- [x] No embedded media support for YouTube clips or Instagram posts inside
       threads, even though the club's actual content is video/photo-heavy.
-      **In progress** (Cycle 5, `mitrapclub_media_embeds_*`): Step 1 approved
-      (link-preview card, no raw third-party HTML); Step 2 in progress,
-      scoped to YouTube + Instagram only, behind a new feature flag
-      defaulted off everywhere (manual per-site enable, no auto-enable for
-      `mitrapclub`).
+      **Done** (Cycle 5, `feature/mitrapclub-media-embeds`,
+      `mitrapclub_media_embeds_*`): a YouTube/Instagram URL in a post body
+      renders as a small local card (no raw third-party HTML), with a
+      narrow per-provider tracking-param strip on the card's displayed
+      URL. Shipped behind a new feature flag (`FORUM_MEDIA_EMBEDS_ENABLED`)
+      defaulted off everywhere; still needs a manual operator enable on the
+      production `mitrapclub` instance before it's visible there.
 - [ ] Media-embed provider list beyond YouTube/Instagram — unscheduled,
       flagged during Cycle 5's Step 2 for a future iteration. Suggested
       platforms, prioritized by fit for the club's actual (rap/hip-hop)
@@ -163,4 +165,13 @@ uncertainty each has:
    distinct from the thread list stayed out of scope — still open below.
 5. **Media embeds** — YouTube/Instagram embedding in threads. Independent
    of events; has real technical options (oEmbed fetch vs. link preview
-   vs. iframe); give it a Step 1.
+   vs. iframe); give it a Step 1. **Done** on
+   `feature/mitrapclub-media-embeds` (not yet merged to `main`): Step 1
+   picked the link-preview card (no raw third-party HTML); shipped a
+   YouTube/Instagram URL detector, a card-aware body renderer (byte-identical
+   output when disabled), wired into the one shared body-rendering closure
+   used by all 8 post/reply render call sites, behind a new
+   `FORUM_MEDIA_EMBEDS_ENABLED` flag defaulted off everywhere. A broader
+   provider list (SoundCloud, TikTok, Spotify, Bandcamp, etc.) and
+   general-purpose URL canonicalization both stayed out of scope — see the
+   open item above and `todo.txt`.

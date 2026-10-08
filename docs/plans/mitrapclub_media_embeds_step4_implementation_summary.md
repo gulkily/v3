@@ -44,3 +44,24 @@
   - The board-listing route in the same scratch run didn't surface the card for this directly-inserted-into-SQLite fixture post (unrelated canonical-record warnings from bypassing the normal write path); not pursued further since Stage 3's unit tests already prove `paned_board_content_article.php`'s call site shares the exact same `$br` closure now wired in Stage 4, and Stage 5 covers a fuller per-call-site pass.
 - Notes:
   - This stage's change is architecturally a one-line swap inside the single shared closure — by design, no per-template edits were needed or made.
+
+## Stage 5 - End-to-end verification and checklist close-out
+
+- Changes:
+  - None (verification-only stage).
+  - Marked the Cycle 5 line in `mitrapclub_theme_and_features_checklist.md` as Done, noting the flag still needs a manual operator enable on the production `mitrapclub` instance; updated the Cycle 5 entry in the checklist's "Cycle split" section to match.
+- Verification:
+  - `php tests/run.php` (full suite) re-run after Stage 4's wiring, with zero code changes in between — the same two pre-existing failures reappeared, plus one additional flaky failure (`WriteApiSmokeTest::testApprovalIncrementalFailureFallsBackToFullRebuildAndKeepsReadModelHealthy`); re-running that test alone passed immediately, confirming it's a pre-existing timing-sensitive flake unrelated to this feature (no source files changed between the Stage 4 run and this one).
+  - Directly rendered every one of the 8 `$br(...)` call sites via `TemplateRenderer::renderFragment()` (plus the `thread_root_card.php` qdb-quote-root branch, a 9th code path through the same template), each with the flag off and then on via `putenv('FORUM_MEDIA_EMBEDS_ENABLED=true')`:
+    - `thread_card.php` (board listing card) — no card off, card on.
+    - `thread_root_card.php`, non-qdb branch (thread page root body) — confirmed earlier via a full `Application` pipeline run (flag off: plain escaped link; flag on: card, tracking-stripped href, no `si=` leak) and again here directly.
+    - `thread_root_card.php`, qdb-quote-root branch — no card off, card on.
+    - `post_card.php` (a reply) — no card off; card on with `data-provider="instagram"` and no `igshid` leak.
+    - `quote_card.php` (qdb board card) — no card off, card on.
+    - `paned_thread_reply_tree.php` (paned view reply) — no card off, card on.
+    - `paned_board_content_article.php` (paned view root) — no card off, card on.
+    - `compose_reply.php` (reply-compose parent-context preview) — no card off; card on with `data-provider="instagram"`.
+  - All flag-off renders showed no `data-media-embed-card` markup, matching today's plain-link behavior; all flag-on renders with a matchable URL showed the card with the correct provider and a tracking-stripped link.
+- Notes:
+  - The Stage 4 manual check's board-listing gap (via the `Application`/SQLite-fixture route) is resolved here: rendering `thread_card.php` directly with `renderFragment()` shows the card correctly — that gap was a fixture/canonical-record data-shape artifact of the scratch script, not a product issue.
+  - Per Step 2/3, this feature's own rollout does not enable the flag anywhere; enabling `FORUM_MEDIA_EMBEDS_ENABLED` on the production `mitrapclub` instance remains a manual operator action.
