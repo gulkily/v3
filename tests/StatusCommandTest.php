@@ -36,6 +36,7 @@ final class StatusCommandTest
             assertStringContains('Task queue executor: not_observed (last completed: none)', $stdout);
             assertStringContains('Automatic schema recovery: not_observed (detached launch: none)', $stdout);
             assertStringContains('Run ./v3 task-queue enqueue-rebuild', $stdout);
+            assertStringNotContains('Waiting for shared lock before collecting status...', $stdout);
             assertSame('', $stderr);
             assertSame(false, is_file($databasePath));
             assertSame(false, is_file($queuePath));

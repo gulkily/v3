@@ -18,6 +18,7 @@
 - Changes:
   - Added command-level coverage that runs a separate process holding both the shared execution lock and an exclusive SQLite transaction.
   - The test observes the waiting notice while `./v3 status` is still running, releases the holder, then verifies the ready report and unlocked final lock state.
+  - Asserted the existing unlocked status path does not emit the waiting notice.
 - Verification:
   - `php -l tests/StatusCommandTest.php` — no syntax errors.
   - `./v3 test StatusCommandTest` — 5 passed, 0 failed.
