@@ -39,3 +39,16 @@
   - Incremental path: called `LocalWriteService::createThread()` live with event fields (no rebuild), then queried that same database directly: the three columns were already populated, closing the "two read-model write paths must agree" Key Risk.
 - Notes:
   - Both high-risk items from Step 3's Key Risks (duplicate SELECT call sites; duplicate read-model write paths) were independently verified rather than assumed.
+
+## Stage 4 - Event block rendering on the board and thread page
+- Changes:
+  - New `templates/partials/event_block.php`: renders a `<p class="event-block">` with date, location (if present), and link (if present) when `$thread['event_date']` is non-empty; renders nothing otherwise. The link only becomes a clickable `<a href>` when it starts with `http://`/`https://` (case-insensitive) — `event_link` is author-submitted free text with no URL-scheme restriction at write time, so this guards against a stray non-http(s) scheme (e.g. `javascript:`) ever being rendered as a clickable anchor; a non-http(s) value still displays as escaped plain text.
+  - `templates/partials/thread_card.php`: includes the new partial right after the existing meta line.
+  - `templates/partials/thread_root_card.php` (the actual root-post card partial `thread.php` delegates to — Step 3 named `thread.php` directly; this is the real file touched): includes the new partial right after the title/body block, for both the ordinary and qdb-quote-root branches.
+- Verification:
+  - `./v3 test` — full suite: 834 run, 834 passed, 0 failed (two different unrelated tests flaked once each across reruns in this stage — `TaskQueueCommandTest::testRebuildWorkerRecordsPrivateProgressCheckpoints` and `WriteApiSmokeTest::testGenerateAgentReplyDoesNotRequireCompletedAnalysis`, neither touching compose/write/read-model/rendering code this feature changed; both passed clean on the next run, confirming pre-existing suite flakiness rather than a regression).
+  - Byte-diffed rendered board HTML (both the default `?view=liked` and `?view=all&sort=newest`) for all four profiles against a pre-Stage-4 snapshot (via `git stash`/`stash pop` around the render calls): identical for all four in both views.
+  - Added one event-bearing post to a disposable copy of the fixture repository, rebuilt the read model, and rendered via `FrontController`: the event block appears with the correct date/location/link on **both** the board card (`?view=all`) and the thread page — closing the Step 3 Key Risks duplication item at the presentation layer too.
+  - Confirmed via direct render that a non-http(s) `event_link` would render as plain text, not a clickable anchor (code-reviewed against the regex condition; no existing fixture data exercises this path, so this was verified by inspection rather than a rendered example).
+- Notes:
+  - Feature complete per the Step 3 Completion Contract: a `mitrapclub` (or any profile's) thread with an event date renders a structured, visually distinct event block on both the board and the thread page; threads without one, and every other profile, render byte-identical to before this feature.

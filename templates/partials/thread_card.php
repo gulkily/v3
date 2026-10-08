@@ -8,6 +8,7 @@ $previewDuplicatesTitle = trim((string) $thread['body_preview']) === trim($subje
 <article class="card thread-card" data-heat="<?= $heat($thread['last_activity_at'] ?? null, (int) ($thread['reply_count'] ?? 0)) ?>">
   <h2><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($subject) ?></a><?php if ($isPinned): ?> <span class="pinned-thread-marker">Pinned</span><?php endif; ?></h2>
   <p class="meta"><?= $contentMeta($thread, 'root_post_created_at', '') ?></p>
+<?= $partial('partials/event_block.php') ?>
 <?php if ($showLabels && ($thread['thread_labels'] ?? []) !== []): ?>
   <p class="meta">Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?></p>
 <?php endif; ?>
