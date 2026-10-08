@@ -1765,6 +1765,15 @@
     return localStorage.getItem(storageKeys.automaticGuestPublication) === "immediate";
   }
 
+  function setAutomaticGuestPublicationIsImmediate(immediate) {
+    if (immediate) {
+      localStorage.setItem(storageKeys.automaticGuestPublication, "immediate");
+      return;
+    }
+
+    localStorage.removeItem(storageKeys.automaticGuestPublication);
+  }
+
   function storedFingerprint() {
     return (localStorage.getItem(storageKeys.fingerprint) || "")
       .trim()
@@ -2487,6 +2496,7 @@
       renderIdentityPreparationState: renderIdentityPreparationState,
       scheduleIdentityPrewarm: scheduleIdentityPrewarm,
       scheduleAutomaticGuestIdentity: scheduleAutomaticGuestIdentity,
+      automaticGuestPublicationIsImmediate: automaticGuestPublicationIsImmediate,
       classifyIdentityBootstrapFailure: classifyIdentityBootstrapFailure,
       statusFromError: statusFromError,
       ensureOpenPgpApi: ensureOpenPgpApi,
@@ -2572,8 +2582,12 @@
     const copyPublicButton = root.querySelector('[data-action="copy-public-key"]');
     const copyPrivateButton = root.querySelector('[data-action="copy-private-key"]');
     const restorePrivateButton = root.querySelector('[data-action="restore-private-key"]');
+    const automaticGuestPublicationInput = root.querySelector('[data-role="automatic-guest-publication"]');
 
     renderSavedState(root);
+    if (automaticGuestPublicationInput) {
+      automaticGuestPublicationInput.checked = automaticGuestPublicationIsImmediate();
+    }
     if (hasBrowserKeypair()) {
       void syncIdentityHint(preferredIdentityHint());
     }
@@ -2610,6 +2624,33 @@
           setStatus(statusNode, error instanceof Error ? error.message : "Unable to generate browser keypair.", "error");
         } finally {
           generateButton.disabled = false;
+        }
+      });
+    }
+
+    if (automaticGuestPublicationInput) {
+      automaticGuestPublicationInput.addEventListener("change", async function () {
+        const publishImmediately = automaticGuestPublicationInput.checked;
+        setAutomaticGuestPublicationIsImmediate(publishImmediately);
+
+        if (!publishImmediately || !hasBrowserKeypair()) {
+          return;
+        }
+
+        automaticGuestPublicationInput.disabled = true;
+        try {
+          const fingerprint = await ensureStoredFingerprint();
+          if (fingerprint !== "" && publishedFingerprint() !== fingerprint) {
+            setStatus(statusNode, "Publishing your public key in the background...", "info");
+            await publishPublicKeyWithRetry(root);
+            await authenticatePrivateSiteIfAvailable();
+          }
+          setStatus(statusNode, "Automatic guest public-key publication is enabled for this browser.", "ok");
+        } catch (error) {
+          const status = statusFromError(error, "Unable to publish the browser public key.");
+          setStatus(statusNode, status.message, "error", { technicalDetails: status.technicalDetails });
+        } finally {
+          automaticGuestPublicationInput.disabled = false;
         }
       });
     }

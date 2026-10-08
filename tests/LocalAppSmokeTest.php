@@ -2226,11 +2226,14 @@ PHP;
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
 
         $board = $this->render($application, '/');
+        $accountKey = $this->render($application, '/account/key/');
         $featureFlags = $this->render($application, '/tools/feature-flags/');
 
         assertStringContains('automaticGuestKeypairEnabled: true', $board);
         assertFingerprintedAsset($board, 'openpgp_loader.js');
         assertFingerprintedAsset($board, 'browser_signing.js');
+        assertStringContains('data-role="automatic-guest-publication"', $accountKey);
+        assertStringContains("Off by default: the public key stays on this browser until your first signed action.", $accountKey);
         assertStringContains('FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED', $featureFlags);
         assertStringContains('Automatic guest keypair', $featureFlags);
     }

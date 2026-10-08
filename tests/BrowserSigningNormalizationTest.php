@@ -7079,6 +7079,147 @@ NODE;
         assertSame('resident', $result['storage']['forum_pki_username']);
     }
 
+    public function testAutomaticGuestIdentityPublishesImmediatelyWhenBrowserPreferenceIsSet(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const storage = { forum_pki_automatic_guest_publication: 'immediate' };
+const fingerprint = '89ABCDEF0123456789ABCDEF0123456789ABCDEF';
+const fetchUrls = [];
+
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(storage, key) ? storage[key] : ''; },
+  setItem(key, value) { storage[key] = String(value); },
+  removeItem(key) { delete storage[key]; }
+};
+global.window = {
+  forumBrowserIdentityOptions: { automaticGuestKeypairEnabled: true },
+  __forumOpenPgpLoader: { load: async () => global.window.openpgp },
+  openpgp: {
+    async generateKey() { return { publicKey: 'public-key', privateKey: 'private-key' }; },
+    async readKey() { return { getFingerprint() { return fingerprint; } }; }
+  }
+};
+global.openpgp = global.window.openpgp;
+global.fetch = async function(url) {
+  fetchUrls.push(String(url));
+  return { ok: true, async text() { return ''; } };
+};
+global.document = {
+  addEventListener(type, handler) { if (type === 'DOMContentLoaded') handler(); },
+  querySelector() { return null; },
+  querySelectorAll() { return []; },
+  createElement() { return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+(async function () {
+  for (let i = 0; i < 30 && !storage.forum_pki_published_fingerprint; i += 1) {
+    await Promise.resolve();
+  }
+  process.stdout.write(JSON.stringify({
+    username: storage.forum_pki_username,
+    published: storage.forum_pki_published_fingerprint || '',
+    fetchUrls
+  }));
+})().catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('guest', $result['username']);
+        assertSame('89ABCDEF0123456789ABCDEF0123456789ABCDEF', $result['published']);
+        assertStringContains('/api/get_profile?profile_slug=openpgp-89abcdef0123456789abcdef0123456789abcdef', implode("\n", $result['fetchUrls']));
+    }
+
+    public function testAccountGuestPublicationPreferencePersistsAndPublishesCurrentKey(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const fingerprint = 'FEDCBA9876543210FEDCBA9876543210FEDCBA98';
+const storage = {
+  forum_pki_public_key: 'public-key',
+  forum_pki_private_key: 'private-key',
+  forum_pki_fingerprint: fingerprint
+};
+const fetchUrls = [];
+let changeHandler = null;
+const publicationInput = {
+  checked: false,
+  disabled: false,
+  addEventListener(type, handler) { if (type === 'change') changeHandler = handler; }
+};
+const accountRoot = {
+  dataset: {},
+  querySelector(selector) {
+    if (selector === '[data-role="automatic-guest-publication"]') return publicationInput;
+    return null;
+  },
+  querySelectorAll() { return []; }
+};
+
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(storage, key) ? storage[key] : ''; },
+  setItem(key, value) { storage[key] = String(value); },
+  removeItem(key) { delete storage[key]; }
+};
+global.window = {
+  addEventListener() {},
+  openpgp: { async readKey() { return { getFingerprint() { return fingerprint; } }; } },
+  __forumOpenPgpLoader: { load: async () => global.window.openpgp }
+};
+global.openpgp = global.window.openpgp;
+global.fetch = async function(url) {
+  fetchUrls.push(String(url));
+  return { ok: true, async text() { return ''; } };
+};
+global.document = {
+  documentElement: { dataset: {} },
+  addEventListener(type, handler) { if (type === 'DOMContentLoaded') handler(); },
+  querySelector(selector) {
+    if (selector === '[data-account-key-root]') return accountRoot;
+    return null;
+  },
+  querySelectorAll() { return []; },
+  createElement() { return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+(async function () {
+  const initialWasDeferred = publicationInput.checked === false;
+  publicationInput.checked = true;
+  await changeHandler();
+  process.stdout.write(JSON.stringify({
+    initialWasDeferred,
+    preference: storage.forum_pki_automatic_guest_publication || '',
+    published: storage.forum_pki_published_fingerprint || '',
+    fetchUrls
+  }));
+})().catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(true, $result['initialWasDeferred']);
+        assertSame('immediate', $result['preference']);
+        assertSame('FEDCBA9876543210FEDCBA9876543210FEDCBA98', $result['published']);
+        assertStringContains('/api/get_profile?profile_slug=openpgp-fedcba9876543210fedcba9876543210fedcba98', implode("\n", $result['fetchUrls']));
+    }
+
     public function testIdentityPrewarmDoesNotGenerateOrLinkIdentity(): void
     {
         $script = <<<'NODE'

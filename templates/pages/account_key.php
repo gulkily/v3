@@ -43,6 +43,11 @@ $authenticatedIdentityId = is_array($viewerProfile)
               <a href="#" data-action="undo-clear-browser-key" hidden>Undo</a>
             </p>
           </div>
+          <fieldset class="stack">
+            <legend class="account-key-label">Automatic guest identity</legend>
+            <label><input type="checkbox" data-role="automatic-guest-publication"> Publish this browser's automatically prepared guest public key immediately</label>
+            <p class="meta">Off by default: the public key stays on this browser until your first signed action. This setting applies only to this browser.</p>
+          </fieldset>
           <div class="button-row account-key-advanced-actions">
             <button type="button" data-action="load-browser-key">Load Saved Public Key</button>
             <button type="button" data-action="restore-private-key">Restore Private Key</button>

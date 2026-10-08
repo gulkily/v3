@@ -25,3 +25,15 @@
   - `./v3 test BrowserSigningNormalizationTest::testAutomaticGuestIdentityDefersPublicationUntilFirstSignedAction BrowserSigningNormalizationTest::testAutomaticGuestIdentityPreservesExistingBrowserKeypair BrowserSigningNormalizationTest::testIdentityPrewarmDoesNotGenerateOrLinkIdentity LocalAppSmokeTest::testAutomaticGuestKeypairFlagRendersBrowserRuntimeOption` — 4 passed.
 - Notes:
   - Background setup failures are intentionally silent; a subsequent signed action or Account Key page uses the established recovery path.
+
+## Stage 3 - Per-browser publication preference
+
+- Changes:
+  - Added an Account Key control for this browser's automatic-guest publication preference, defaulting to first signed use.
+  - Persisted the immediate choice only in browser storage and immediately published an existing unpublished key when the visitor explicitly enables it.
+  - Kept existing account-key generation/import publication behavior unchanged and reused the canonical publication and private-site authentication paths.
+- Verification:
+  - `php -l` passed for the Account Key template and changed tests.
+  - `./v3 test BrowserSigningNormalizationTest::testAutomaticGuestIdentityDefersPublicationUntilFirstSignedAction BrowserSigningNormalizationTest::testAutomaticGuestIdentityPreservesExistingBrowserKeypair BrowserSigningNormalizationTest::testAutomaticGuestIdentityPublishesImmediatelyWhenBrowserPreferenceIsSet BrowserSigningNormalizationTest::testAccountGuestPublicationPreferencePersistsAndPublishesCurrentKey LocalAppSmokeTest::testAutomaticGuestKeypairFlagRendersBrowserRuntimeOption` — 5 passed.
+- Notes:
+  - The control is deliberately on Account Key, not the operator Feature Flags page, because it governs only the local browser identity.
