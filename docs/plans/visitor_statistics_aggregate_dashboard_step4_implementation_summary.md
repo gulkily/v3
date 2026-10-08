@@ -53,3 +53,17 @@
   - `git diff --check` — passed.
 - Notes:
   - The trend positions bars against UTC period time, preserving visible gaps where no aggregate bucket was recorded.
+
+## Stage 5 - End-to-end privacy and route verification
+
+- Changes:
+  - Added end-to-end coverage that proves verified-session requests increment the authenticated aggregate, while identity-hint-only requests increment the anonymous aggregate and remain forbidden from viewing statistics.
+  - Refined the period control to submit immediately on selection and simplified the primary metric captions to Eligible, Anonymous, and Authenticated.
+- Verification:
+  - `php -l templates/pages/visitor_statistics.php` and `php -l tests/VisitorStatisticsPageTest.php` — passed.
+  - `php tests/run.php VisitorStatisticsStoreTest VisitorStatisticsPageTest VisitorStatisticsObserverTest LocalAppSmokeTest::testApplicationRendersCoreRoutes` — 9 passed.
+  - `php tests/run.php` — 824 passed; 3 pre-existing Offline Reading diagnostic failures, each reported as failing for 7 runs.
+  - `php scripts/check_static_artifacts.php` — failed on existing stale fingerprint references across generated public HTML; this feature adds no static Visitor Statistics artifact, and focused static-artifact coverage passed in the full suite.
+  - `git diff --check` — passed.
+- Notes:
+  - The static-artifact checker failure is outside this feature's changed surface and was not modified.

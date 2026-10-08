@@ -14,20 +14,19 @@
 <?php $buckets = $dashboard['buckets']; ?>
     <form class="visitor-statistics-period" action="/tools/visitor-statistics/" method="get">
       <label for="visitor-statistics-period">Period</label>
-      <select id="visitor-statistics-period" name="period">
+      <select id="visitor-statistics-period" name="period" onchange="this.form.submit()">
 <?php foreach ($periodOptions as $key => $option): ?>
         <option value="<?= $e($key) ?>"<?= $key === $periodKey ? ' selected' : '' ?>><?= $e($option['label']) ?></option>
 <?php endforeach; ?>
       </select>
-      <button type="submit">Apply</button>
     </form>
 <?php if ($dashboard['status'] === 'partial'): ?>
     <p class="feedback feedback-warning">Hourly collection began <?= $e($dashboard['collection_started_at']) ?>, so this period is incomplete.</p>
 <?php endif; ?>
     <dl class="visitor-statistics-tiles">
-      <div><dt>Eligible requests</dt><dd><?= $e(number_format($totals['visits'])) ?></dd></div>
-      <div><dt>Anonymous requests</dt><dd><?= $e(number_format($totals['anonymous_visits'])) ?></dd></div>
-      <div><dt>Server-authenticated requests</dt><dd><?= $e(number_format($totals['authenticated_visits'])) ?></dd></div>
+      <div><dt>Eligible</dt><dd><?= $e(number_format($totals['visits'])) ?></dd></div>
+      <div><dt>Anonymous</dt><dd><?= $e(number_format($totals['anonymous_visits'])) ?></dd></div>
+      <div><dt>Authenticated</dt><dd><?= $e(number_format($totals['authenticated_visits'])) ?></dd></div>
       <div><dt>Estimated clients</dt><dd><?= $e(number_format($totals['clients'])) ?></dd></div>
       <div><dt>Authenticated users</dt><dd><?= $e(number_format($totals['authenticated_users'])) ?></dd></div>
     </dl>
@@ -58,7 +57,7 @@
       </svg>
     </figure>
     <table class="visitor-statistics-table">
-      <thead><tr><th><?= $periodKey === '24h' ? 'UTC hour' : 'UTC day' ?></th><th>Eligible requests</th><th>Anonymous</th><th>Server-authenticated</th><th>Estimated clients</th><th>Authenticated users</th></tr></thead>
+      <thead><tr><th><?= $periodKey === '24h' ? 'UTC hour' : 'UTC day' ?></th><th>Eligible</th><th>Anonymous</th><th>Authenticated</th><th>Estimated clients</th><th>Authenticated users</th></tr></thead>
       <tbody>
 <?php foreach ($buckets as $bucket): ?>
         <tr><th scope="row"><?= $e($bucket['bucket_start']) ?></th><td><?= $e(number_format($bucket['visits'])) ?></td><td><?= $e(number_format($bucket['anonymous_visits'])) ?></td><td><?= $e(number_format($bucket['authenticated_visits'])) ?></td><td><?= $e(number_format($bucket['clients'])) ?></td><td><?= $e(number_format($bucket['authenticated_users'])) ?></td></tr>

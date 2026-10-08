@@ -37,8 +37,11 @@ try {
     ob_start();
     $application->handle('GET', '/tools/visitor-statistics/');
     $allowed = (string) ob_get_clean();
-    if (!str_contains($allowed, 'Eligible requests')
-        || !str_contains($allowed, 'Server-authenticated requests')
+    if (!str_contains($allowed, '<dt>Eligible</dt>')
+        || !str_contains($allowed, '<dt>Authenticated</dt>')
+        || !str_contains($allowed, '<dt>Authenticated</dt><dd>2</dd>')
+        || !str_contains($allowed, 'onchange="this.form.submit()"')
+        || str_contains($allowed, '>Apply</button>')
         || !str_contains($allowed, '<option value="30d" selected>Last 30 days</option>')
         || !str_contains($allowed, 'role="img"')
         || !str_contains($allowed, 'How this is counted')) {
@@ -67,10 +70,19 @@ try {
     $_COOKIE = ['identity_hint' => 'guest'];
     $application = new Application($argv[1], $argv[2], $databasePath);
     ob_start();
+    $application->handle('GET', '/threads/');
+    ob_end_clean();
+    ob_start();
     $application->handle('GET', '/tools/visitor-statistics/');
     $denied = (string) ob_get_clean();
     if (!str_contains($denied, 'server-authenticated root-approved identity')) {
         throw new RuntimeException('Identity-hint-only request was not denied.');
+    }
+
+    $split = (new VisitorStatisticsStore(new PDO('sqlite:' . $statsPath)))
+        ->summaryForHours(new DateTimeImmutable('now'), 24)['totals'];
+    if ($split['anonymous_visits'] !== 1 || $split['authenticated_visits'] !== 2) {
+        throw new RuntimeException('Visitor statistics did not distinguish anonymous and server-authenticated requests.');
     }
 } finally {
     if (session_status() === PHP_SESSION_ACTIVE) {
