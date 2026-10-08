@@ -9,14 +9,14 @@ use DateTimeZone;
 use PDO;
 
 /**
- * Retains daily counters and cardinality bitmaps only. It never persists
+ * Retains hourly counters and cardinality bitmaps only. It never persists
  * client keys, authenticated identities, request paths, or request headers.
  */
 final class VisitorStatisticsStore
 {
     private const BITMAP_BITS = 4096;
     private const BITMAP_BYTES = self::BITMAP_BITS / 8;
-    private const RETENTION_DAYS = 32;
+    private const RETENTION_HOURS = 24 * 90;
 
     public function __construct(private readonly PDO $pdo)
     {
@@ -26,11 +26,11 @@ final class VisitorStatisticsStore
 
     public function recordVisit(DateTimeImmutable $occurredAt, string $clientKey, ?string $authenticatedUserKey = null): void
     {
-        $day = $occurredAt->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d');
+        $hour = $this->hourStart($occurredAt);
         $this->pdo->beginTransaction();
 
         try {
-            $row = $this->rowForDay($day);
+            $row = $this->rowForHour($hour);
             $clientBitmap = $this->addToBitmap((string) ($row['client_bitmap'] ?? $this->emptyBitmap()), $clientKey);
             $userBitmap = (string) ($row['authenticated_user_bitmap'] ?? $this->emptyBitmap());
             if ($authenticatedUserKey !== null && $authenticatedUserKey !== '') {
@@ -38,19 +38,19 @@ final class VisitorStatisticsStore
             }
 
             $statement = $this->pdo->prepare(
-                'INSERT INTO visitor_statistics_daily (bucket_date, visit_count, client_bitmap, authenticated_user_bitmap)
-                 VALUES (:bucket_date, 1, :client_bitmap, :authenticated_user_bitmap)
-                 ON CONFLICT(bucket_date) DO UPDATE SET
-                    visit_count = visitor_statistics_daily.visit_count + 1,
+                'INSERT INTO visitor_statistics_hourly (bucket_start, visit_count, client_bitmap, authenticated_user_bitmap)
+                 VALUES (:bucket_start, 1, :client_bitmap, :authenticated_user_bitmap)
+                 ON CONFLICT(bucket_start) DO UPDATE SET
+                    visit_count = visitor_statistics_hourly.visit_count + 1,
                     client_bitmap = excluded.client_bitmap,
                     authenticated_user_bitmap = excluded.authenticated_user_bitmap'
             );
             $statement->execute([
-                'bucket_date' => $day,
+                'bucket_start' => $hour,
                 'client_bitmap' => $clientBitmap,
                 'authenticated_user_bitmap' => $userBitmap,
             ]);
-            $this->deleteExpired($day);
+            $this->deleteExpired($hour);
             $this->pdo->commit();
         } catch (\Throwable $exception) {
             if ($this->pdo->inTransaction()) {
@@ -64,22 +64,17 @@ final class VisitorStatisticsStore
     public function summary(DateTimeImmutable $asOf, array $windows = [1, 7, 30]): array
     {
         $asOf = $asOf->setTimezone(new DateTimeZone('UTC'));
-        $oldest = $asOf->modify('-' . (max($windows) - 1) . ' days')->format('Y-m-d');
-        $statement = $this->pdo->prepare(
-            'SELECT bucket_date, visit_count, client_bitmap, authenticated_user_bitmap
-             FROM visitor_statistics_daily WHERE bucket_date >= :oldest ORDER BY bucket_date ASC'
-        );
-        $statement->execute(['oldest' => $oldest]);
-        $rows = $statement->fetchAll();
+        $oldest = $asOf->modify('-' . (max($windows) - 1) . ' days')->format('Y-m-d\T00:00:00\Z');
+        $rows = $this->hourlyRowsFrom($oldest);
         $result = [];
 
         foreach ($windows as $window) {
-            $start = $asOf->modify('-' . ($window - 1) . ' days')->format('Y-m-d');
+            $start = $asOf->modify('-' . ($window - 1) . ' days')->format('Y-m-d\T00:00:00\Z');
             $visits = 0;
             $clients = $this->emptyBitmap();
             $users = $this->emptyBitmap();
             foreach ($rows as $row) {
-                if ((string) $row['bucket_date'] < $start) {
+                if ((string) $row['bucket_start'] < $start) {
                     continue;
                 }
                 $visits += (int) $row['visit_count'];
@@ -96,24 +91,87 @@ final class VisitorStatisticsStore
         return ['status' => $rows === [] ? 'initializing' : 'available', 'windows' => $result];
     }
 
+    /**
+     * @return array{
+     *   status:string,
+     *   collection_started_at:?string,
+     *   period_start:string,
+     *   period_end:string,
+     *   totals:array{visits:int,clients:int,authenticated_users:int},
+     *   buckets:list<array{bucket_start:string,visits:int,clients:int,authenticated_users:int}>
+     * }
+     */
+    public function summaryForHours(DateTimeImmutable $asOf, int $hours): array
+    {
+        if ($hours < 1 || $hours > self::RETENTION_HOURS) {
+            throw new \InvalidArgumentException('Visitor-statistics period must fit retained hourly aggregates.');
+        }
+
+        $asOf = $asOf->setTimezone(new DateTimeZone('UTC'));
+        $periodStart = $asOf->modify('-' . $hours . ' hours')->format('Y-m-d\TH:00:00\Z');
+        $rows = $this->hourlyRowsFrom($periodStart);
+        $allRows = $this->hourlyRowsFrom('0000-01-01T00:00:00Z');
+        $clients = $this->emptyBitmap();
+        $users = $this->emptyBitmap();
+        $visits = 0;
+        $buckets = [];
+
+        foreach ($rows as $row) {
+            $visits += (int) $row['visit_count'];
+            $clients = $this->mergeBitmaps($clients, (string) $row['client_bitmap']);
+            $users = $this->mergeBitmaps($users, (string) $row['authenticated_user_bitmap']);
+            $buckets[] = [
+                'bucket_start' => (string) $row['bucket_start'],
+                'visits' => (int) $row['visit_count'],
+                'clients' => $this->estimateCardinality((string) $row['client_bitmap']),
+                'authenticated_users' => $this->estimateCardinality((string) $row['authenticated_user_bitmap']),
+            ];
+        }
+
+        return [
+            'status' => $allRows === [] ? 'initializing' : 'available',
+            'collection_started_at' => $allRows === [] ? null : (string) $allRows[0]['bucket_start'],
+            'period_start' => $periodStart,
+            'period_end' => $asOf->format('Y-m-d\TH:i:s\Z'),
+            'totals' => [
+                'visits' => $visits,
+                'clients' => $this->estimateCardinality($clients),
+                'authenticated_users' => $this->estimateCardinality($users),
+            ],
+            'buckets' => $buckets,
+        ];
+    }
+
     /** @return array<string, mixed>|null */
-    private function rowForDay(string $day): ?array
+    private function rowForHour(string $hour): ?array
     {
         $statement = $this->pdo->prepare(
-            'SELECT client_bitmap, authenticated_user_bitmap FROM visitor_statistics_daily WHERE bucket_date = :bucket_date'
+            'SELECT client_bitmap, authenticated_user_bitmap FROM visitor_statistics_hourly WHERE bucket_start = :bucket_start'
         );
-        $statement->execute(['bucket_date' => $day]);
+        $statement->execute(['bucket_start' => $hour]);
         $row = $statement->fetch();
 
         return is_array($row) ? $row : null;
     }
 
-    private function deleteExpired(string $day): void
+    /** @return list<array<string, mixed>> */
+    private function hourlyRowsFrom(string $start): array
     {
-        $cutoff = (new DateTimeImmutable($day, new DateTimeZone('UTC')))
-            ->modify('-' . self::RETENTION_DAYS . ' days')
-            ->format('Y-m-d');
-        $statement = $this->pdo->prepare('DELETE FROM visitor_statistics_daily WHERE bucket_date < :cutoff');
+        $statement = $this->pdo->prepare(
+            'SELECT bucket_start, visit_count, client_bitmap, authenticated_user_bitmap
+             FROM visitor_statistics_hourly WHERE bucket_start >= :start ORDER BY bucket_start ASC'
+        );
+        $statement->execute(['start' => $start]);
+
+        return $statement->fetchAll();
+    }
+
+    private function deleteExpired(string $hour): void
+    {
+        $cutoff = (new DateTimeImmutable($hour, new DateTimeZone('UTC')))
+            ->modify('-' . self::RETENTION_HOURS . ' hours')
+            ->format('Y-m-d\TH:00:00\Z');
+        $statement = $this->pdo->prepare('DELETE FROM visitor_statistics_hourly WHERE bucket_start < :cutoff');
         $statement->execute(['cutoff' => $cutoff]);
     }
 
@@ -153,12 +211,17 @@ final class VisitorStatisticsStore
     private function ensureSchema(): void
     {
         $this->pdo->exec(
-            'CREATE TABLE IF NOT EXISTS visitor_statistics_daily (
-                bucket_date TEXT PRIMARY KEY,
+            'CREATE TABLE IF NOT EXISTS visitor_statistics_hourly (
+                bucket_start TEXT PRIMARY KEY,
                 visit_count INTEGER NOT NULL,
                 client_bitmap BLOB NOT NULL,
                 authenticated_user_bitmap BLOB NOT NULL
             )'
         );
+    }
+
+    private function hourStart(DateTimeImmutable $occurredAt): string
+    {
+        return $occurredAt->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:00:00\Z');
     }
 }
