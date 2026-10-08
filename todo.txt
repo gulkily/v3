@@ -77,7 +77,4 @@ redesign the offline mode indicator to not take up extra vertical space (probabl
 plan/features for dealing with duplicate related items
 	how to merge duplicate threads, posts, and comments
 
-stack forte panes vertically for mobile
-
-allow offline content for unauthenticated users
 
