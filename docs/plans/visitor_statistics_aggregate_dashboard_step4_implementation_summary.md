@@ -39,3 +39,17 @@
   - `php tests/run.php VisitorStatisticsStoreTest VisitorStatisticsPageTest VisitorStatisticsObserverTest LocalAppSmokeTest::testApplicationRendersCoreRoutes` — 8 passed.
 - Notes:
   - The selector and its rendered selected-state coverage land with the dashboard markup in Stage 4; unauthorized requests are rejected before either summary is read.
+
+## Stage 4 - Accessible aggregate dashboard
+
+- Changes:
+  - Replaced the three-row statistics table with period controls, formatted aggregate tiles, a server-rendered SVG trend, and a detailed accessible fallback table.
+  - Rendered anonymous and server-authenticated requests as stacked aggregate bars; ranges longer than 24 hours are compacted into daily display buckets.
+  - Added explicit partial-history and no-activity states, a collapsible counting/privacy explanation, and scoped theme-variable-based styling without a chart framework or external asset.
+- Verification:
+  - `php -l templates/pages/visitor_statistics.php` — passed.
+  - `php -l src/ForumRewrite/Statistics/VisitorStatisticsStore.php` — passed.
+  - `php tests/run.php VisitorStatisticsStoreTest VisitorStatisticsPageTest VisitorStatisticsObserverTest LocalAppSmokeTest::testApplicationRendersCoreRoutes` — 9 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - The trend positions bars against UTC period time, preserving visible gaps where no aggregate bucket was recorded.

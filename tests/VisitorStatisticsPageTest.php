@@ -37,8 +37,26 @@ try {
     ob_start();
     $application->handle('GET', '/tools/visitor-statistics/');
     $allowed = (string) ob_get_clean();
-    if (!str_contains($allowed, 'Last 30 days') || !str_contains($allowed, 'Estimated clients') || !str_contains($allowed, '>2</td>')) {
+    if (!str_contains($allowed, 'Eligible requests')
+        || !str_contains($allowed, 'Server-authenticated requests')
+        || !str_contains($allowed, '<option value="30d" selected>Last 30 days</option>')
+        || !str_contains($allowed, 'role="img"')
+        || !str_contains($allowed, 'How this is counted')) {
         throw new RuntimeException('Root-authenticated statistics page did not render its summary.');
+    }
+
+    ob_start();
+    $application->handle('GET', '/tools/visitor-statistics/?period=90d');
+    $ninetyDays = (string) ob_get_clean();
+    if (!str_contains($ninetyDays, '<option value="90d" selected>Last 90 days</option>')) {
+        throw new RuntimeException('Visitor-statistics period selection did not render its selected state.');
+    }
+
+    ob_start();
+    $application->handle('GET', '/tools/visitor-statistics/?period=invalid');
+    $invalidPeriod = (string) ob_get_clean();
+    if (!str_contains($invalidPeriod, '<option value="30d" selected>Last 30 days</option>')) {
+        throw new RuntimeException('Invalid visitor-statistics period did not fall back safely.');
     }
 
     if (session_status() === PHP_SESSION_ACTIVE) {

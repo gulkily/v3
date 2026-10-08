@@ -103,4 +103,20 @@ final class VisitorStatisticsStoreTest
         assertSame(1, $summary['totals']['authenticated_visits']);
         assertSame(['anonymous_visit_count' => 1, 'authenticated_visit_count' => 1], $row);
     }
+
+    public function testUsesDailyDisplayBucketsForPeriodsLongerThanTwentyFourHours(): void
+    {
+        $store = new VisitorStatisticsStore(new PDO('sqlite::memory:'));
+        $asOf = new \DateTimeImmutable('2026-10-07T12:30:00Z');
+
+        $store->recordVisit($asOf->modify('-25 hours'), 'client-a');
+        $store->recordVisit($asOf->modify('-24 hours'), 'client-b', 'user-b');
+        $store->recordVisit($asOf->modify('-1 hour'), 'client-c');
+        $summary = $store->summaryForHours($asOf, 24 * 7);
+
+        assertSame('partial', $summary['status']);
+        assertSame(2, count($summary['buckets']));
+        assertSame(2, $summary['buckets'][0]['visits']);
+        assertSame(1, $summary['buckets'][0]['authenticated_visits']);
+    }
 }

@@ -126,12 +126,10 @@ final class VisitorStatisticsStore
         $authenticatedVisits = 0;
         $buckets = [];
 
-        foreach ($rows as $row) {
+        foreach ($this->displayBuckets($rows, $hours) as $row) {
             $visits += (int) $row['visit_count'];
             $anonymousVisits += (int) $row['anonymous_visit_count'];
             $authenticatedVisits += (int) $row['authenticated_visit_count'];
-            $clients = $this->mergeBitmaps($clients, (string) $row['client_bitmap']);
-            $users = $this->mergeBitmaps($users, (string) $row['authenticated_user_bitmap']);
             $buckets[] = [
                 'bucket_start' => (string) $row['bucket_start'],
                 'visits' => (int) $row['visit_count'],
@@ -142,8 +140,13 @@ final class VisitorStatisticsStore
             ];
         }
 
+        foreach ($rows as $row) {
+            $clients = $this->mergeBitmaps($clients, (string) $row['client_bitmap']);
+            $users = $this->mergeBitmaps($users, (string) $row['authenticated_user_bitmap']);
+        }
+
         return [
-            'status' => $allRows === [] ? 'initializing' : 'available',
+            'status' => $allRows === [] ? 'initializing' : ((string) $allRows[0]['bucket_start'] > $periodStart ? 'partial' : 'available'),
             'collection_started_at' => $allRows === [] ? null : (string) $allRows[0]['bucket_start'],
             'period_start' => $periodStart,
             'period_end' => $asOf->format('Y-m-d\TH:i:s\Z'),
@@ -189,6 +192,45 @@ final class VisitorStatisticsStore
             ->format('Y-m-d\TH:00:00\Z');
         $statement = $this->pdo->prepare('DELETE FROM visitor_statistics_hourly WHERE bucket_start < :cutoff');
         $statement->execute(['cutoff' => $cutoff]);
+    }
+
+    /**
+     * @param list<array<string, mixed>> $rows
+     * @return list<array<string, mixed>>
+     */
+    private function displayBuckets(array $rows, int $hours): array
+    {
+        if ($hours <= 24) {
+            return $rows;
+        }
+
+        $days = [];
+        foreach ($rows as $row) {
+            $bucketStart = substr((string) $row['bucket_start'], 0, 10) . 'T00:00:00Z';
+            if (!isset($days[$bucketStart])) {
+                $days[$bucketStart] = [
+                    'bucket_start' => $bucketStart,
+                    'visit_count' => 0,
+                    'anonymous_visit_count' => 0,
+                    'authenticated_visit_count' => 0,
+                    'client_bitmap' => $this->emptyBitmap(),
+                    'authenticated_user_bitmap' => $this->emptyBitmap(),
+                ];
+            }
+            $days[$bucketStart]['visit_count'] += (int) $row['visit_count'];
+            $days[$bucketStart]['anonymous_visit_count'] += (int) $row['anonymous_visit_count'];
+            $days[$bucketStart]['authenticated_visit_count'] += (int) $row['authenticated_visit_count'];
+            $days[$bucketStart]['client_bitmap'] = $this->mergeBitmaps(
+                $days[$bucketStart]['client_bitmap'],
+                (string) $row['client_bitmap'],
+            );
+            $days[$bucketStart]['authenticated_user_bitmap'] = $this->mergeBitmaps(
+                $days[$bucketStart]['authenticated_user_bitmap'],
+                (string) $row['authenticated_user_bitmap'],
+            );
+        }
+
+        return array_values($days);
     }
 
     private function addToBitmap(string $bitmap, string $key): string

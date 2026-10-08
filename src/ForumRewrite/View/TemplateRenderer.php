@@ -42,6 +42,7 @@ final class TemplateRenderer
         'tag.php' => ['/assets/thread-list.css'],
         'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/compose.css'],
         'tools.php' => ['/assets/tools.css'],
+        'visitor_statistics.php' => ['/assets/visitor_statistics.css'],
         'sqlite_viewer.php' => ['/assets/sqlite.css'],
         'users_pending.php' => ['/assets/pending-approvals.css'],
     ];
