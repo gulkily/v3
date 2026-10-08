@@ -197,6 +197,21 @@ final class AgentReplyGenerationTest
         assertSame(null, $second);
     }
 
+    public function testStoreClaimsRequestedRowForExactTargetOnlyOnce(): void
+    {
+        $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));
+        $store->requestForTarget($this->context(), ['requested_by_identity_id' => 'openpgp:requester']);
+
+        $wrongHash = $store->claimRequestedForTarget('root-001', 'other-hash');
+        $claimed = $store->claimRequestedForTarget('root-001', 'hash-001');
+        $second = $store->claimRequestedForTarget('root-001', 'hash-001');
+
+        assertSame(null, $wrongHash);
+        assertSame('pending', $claimed['status']);
+        assertSame(true, $claimed['claimed']);
+        assertSame(null, $second);
+    }
+
     public function testStoreMarksRequestedRowSkipped(): void
     {
         $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));

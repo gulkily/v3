@@ -6,6 +6,8 @@ require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
 use ForumRewrite\Llm\LlmExchangeRecorder;
+use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
+use ForumRewrite\Application;
 use ForumRewrite\Offline\OfflineSnapshotPublisher;
 use ForumRewrite\Scoring\FastScoreContextFactory;
 use ForumRewrite\Scoring\FastScoreDatabaseConfig;
@@ -21,6 +23,7 @@ use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\PresentationPathResolver;
 use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\TaskQueue\ReadModelRebuildTaskHandler;
+use ForumRewrite\TaskQueue\AgentReplyTask;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 use ForumRewrite\TaskQueue\TaskQueueWorker;
@@ -240,6 +243,23 @@ try {
                     }
 
                     (new OfflineSnapshotPublisher($staticHtmlRoot))->publish($databasePath);
+                },
+                static function (array $task) use ($projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot): void {
+                    $target = AgentReplyTask::targetFromDeduplicationKey((string) ($task['deduplication_key'] ?? ''));
+                    $replyStore = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+                    $request = $replyStore->claimRequestedForTarget($target['post_id'], $target['content_hash']);
+                    if ($request === null) {
+                        return;
+                    }
+
+                    (new Application(
+                        $projectRoot,
+                        $repositoryRoot,
+                        $databasePath,
+                        getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'),
+                        $staticHtmlRoot,
+                    ))
+                        ->fulfillAgentReplyRequest($request);
                 },
             );
             $taskStartedAt = [];

@@ -12,3 +12,15 @@
   - `git diff --check` for Stage 1 files — passed.
 - Notes:
   - Task identity is domain-neutral queue metadata; reply lifecycle data remains in the generated-response store.
+
+## Stage 2 - Fulfill agent-reply tasks through the unified worker
+- Changes:
+  - Added exact target claiming for requested agent-reply rows.
+  - Extended the task worker with configured agent-reply fulfillment, terminal invalid-task handling, and retryable execution failure handling.
+  - Wired task-queue execution to claim and fulfill the matching agent-reply request through the existing application lifecycle.
+- Verification:
+  - `php tests/run.php AgentReplyGenerationTest TaskQueueWorkerTest TaskQueueCommandTest` — 34 passed.
+  - `php -l scripts/task_queue.php` — passed.
+  - `git diff --check` for Stage 2 files — passed.
+- Notes:
+  - Reply publication, gate decisions, and domain failure records remain delegated to the established fulfillment service; the queue owns worker execution and retry state.

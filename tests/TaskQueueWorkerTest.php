@@ -170,6 +170,50 @@ final class TaskQueueWorkerTest
         assertSame('offline_snapshot_publication_failed', $stored['failure_code']);
     }
 
+    public function testWorkerCompletesAgentReplyTaskThroughConfiguredHandler(): void
+    {
+        $store = $this->store();
+        $task = $store->enqueue(SqliteTaskQueueStore::AGENT_REPLY, 'post-001@content-001');
+        $received = null;
+        $worker = new TaskQueueWorker(
+            $store,
+            static function (): void {
+            },
+            null,
+            null,
+            static function (array $claimedTask) use (&$received): void {
+                $received = $claimedTask['deduplication_key'];
+            },
+        );
+
+        $summary = $worker->run();
+
+        assertSame('post-001@content-001', $received);
+        assertSame(1, $summary['completed']);
+        assertSame('completed', $store->findById($task['id'])['status']);
+    }
+
+    public function testWorkerDoesNotRetryInvalidAgentReplyTask(): void
+    {
+        $store = $this->store();
+        $task = $store->enqueue(SqliteTaskQueueStore::AGENT_REPLY, 'malformed');
+        $worker = new TaskQueueWorker(
+            $store,
+            static function (): void {
+            },
+            null,
+            null,
+            static function (): void {
+                throw new InvalidArgumentException('Invalid task.');
+            },
+        );
+
+        $summary = $worker->run();
+
+        assertSame(1, $summary['failed']);
+        assertSame('agent_reply_task_invalid', $store->findById($task['id'])['failure_code']);
+    }
+
     private function store(): SqliteTaskQueueStore
     {
         return new SqliteTaskQueueStore(new PDO('sqlite::memory:'));
