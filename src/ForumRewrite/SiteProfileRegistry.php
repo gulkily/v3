@@ -52,6 +52,17 @@ final class SiteProfileRegistry
                 'composerPrompt' => 'Submit a quote...',
                 'presentationSlots' => ['navigation' => 'qdb', 'boardCard' => 'quote', 'compose' => 'qdb', 'about' => 'default', 'editorial' => 'qdb', 'brandedStylesheet' => 'qdb'],
             ],
+            'mitrapclub' => [
+                'name' => 'mitrapclub',
+                'displayName' => 'MIT Rap Club',
+                'defaultTheme' => 'mitrapclub',
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'mitrapclub'],
+                'browserNamespace' => 'mitrapclub',
+                'editorialContentKey' => 'mitrapclub',
+                'enabledExperienceKeys' => ['forum'],
+                'composerPrompt' => 'Drop a verse, a cypher clip, or an announcement...',
+                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'mitrapclub'],
+            ],
         ];
 
         self::validate($profiles);

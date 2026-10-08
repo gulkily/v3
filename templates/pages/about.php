@@ -17,20 +17,41 @@
       <p>Bring an idea, make a fork, or add a small feature: the site is a shared foundation, not a finished product.</p>
     </section>
 <?php endif; ?>
+<?php if ($aboutContent['socialLinks'] !== []): ?>
+    <section class="about-section" data-about-section="social-links">
+      <h2>Find us</h2>
+      <ul class="about-social-links">
+<?php foreach ($aboutContent['socialLinks'] as $socialLink): ?>
+        <li><a href="<?= $e($socialLink['url']) ?>"><?= $e($socialLink['label']) ?></a></li>
+<?php endforeach; ?>
+      </ul>
+    </section>
+<?php endif; ?>
+<?php
+// graph/participation/portable paragraphs below are rendered without $e()
+// because they carry trusted inline <a> markup (links to /users/,
+// /activity/, /tools/backup/, /api/, /llms.txt). This is safe only
+// because ProfilePresentationContent::EDITORIAL is a private PHP const
+// with no runtime/user write path - never feed user input through these
+// fields.
+?>
     <section class="about-section" data-about-section="graph">
-      <h2>A continuous social graph</h2>
-      <p>Membership grows through a continuous social graph. Every new participant is invited or approved by someone already trusted by the community, so there is always a visible path of accountability back into the group.</p>
-      <p>That does not make one person the gatekeeper. It makes trust legible: people can see how the community expands, who vouched for whom, and where responsibility lives.</p>
+      <h2><?= $e($aboutContent['graphHeading']) ?></h2>
+<?php foreach ($aboutContent['graphParagraphs'] as $paragraph): ?>
+      <p><?= $paragraph ?></p>
+<?php endforeach; ?>
     </section>
     <section class="about-section" data-about-section="participation">
-      <h2>How participation works</h2>
-      <p>Anyone can read the public board. Posting uses a browser-held identity key, and the site helps set that up when someone first contributes.</p>
-      <p>Approved identities help the community distinguish trusted participation from the wider public record. The <a href="/users/">Users</a> and <a href="/activity/">Activity</a> pages expose that social layer directly.</p>
+      <h2><?= $e($aboutContent['participationHeading']) ?></h2>
+<?php foreach ($aboutContent['participationParagraphs'] as $paragraph): ?>
+      <p><?= $paragraph ?></p>
+<?php endforeach; ?>
     </section>
     <section class="about-section" data-about-section="portable">
-      <h2>Portable by design</h2>
-      <p>The forum data is designed to be backed up, audited, and reconstructed. The <a href="/tools/backup/">Backup</a> page provides downloadable snapshots of the content repository and read-model database.</p>
-      <p>For technical users and agents, the <a href="/api/">plain-text API</a> and <a href="/llms.txt">llms.txt</a> describe machine-readable entry points.</p>
+      <h2><?= $e($aboutContent['portableHeading']) ?></h2>
+<?php foreach ($aboutContent['portableParagraphs'] as $paragraph): ?>
+      <p><?= $paragraph ?></p>
+<?php endforeach; ?>
     </section>
   </article>
 </section>

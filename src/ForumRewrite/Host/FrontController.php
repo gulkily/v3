@@ -469,7 +469,7 @@ final class FrontController
         return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
             . '<title>Configuration Error</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
             . '<div class="shell"><header class="site-header"><p class="eyebrow">'
-            . htmlspecialchars(SiteConfig::siteName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+            . htmlspecialchars(SiteConfig::displayName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
             . '</p></header>'
             . '<main class="main"><section class="stack"><h1>Configuration Error</h1>'
             . '<article class="card"><p>The PHP host configuration is incomplete or invalid.</p><p>'
@@ -488,7 +488,7 @@ final class FrontController
         return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
             . '<title>Site Update</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
             . '<div class="shell"><header class="site-header"><p class="eyebrow">'
-            . htmlspecialchars(SiteConfig::siteName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+            . htmlspecialchars(SiteConfig::displayName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
             . '</p></header>'
             . '<main class="main"><section class="stack"><h1>Site Update</h1>'
             . '<article class="card"><p>' . $message . '</p></article></section></main></div></body></html>';
@@ -499,7 +499,7 @@ final class FrontController
         return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
             . '<title>Temporarily Unavailable</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
             . '<div class="shell"><header class="site-header"><p class="eyebrow">'
-            . htmlspecialchars(SiteConfig::siteName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+            . htmlspecialchars(SiteConfig::displayName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
             . '</p></header>'
             . '<main class="main"><section class="stack"><h1>Temporarily Unavailable</h1>'
             . '<article class="card"><p>The site is temporarily unavailable. Please try again later.</p>'
@@ -513,7 +513,7 @@ final class FrontController
         return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
             . '<title>' . htmlspecialchars($busyContent['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
             . '<div class="shell"><header class="site-header"><p class="eyebrow">'
-            . htmlspecialchars(SiteConfig::siteName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+            . htmlspecialchars(SiteConfig::displayName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
             . '</p></header>'
             . '<main class="main"><section class="stack"><h1>' . htmlspecialchars($busyContent['heading'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</h1>'
             . '<article class="card"><p>' . htmlspecialchars($busyContent['message'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'

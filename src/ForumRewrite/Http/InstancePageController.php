@@ -43,7 +43,7 @@ final class InstancePageController
         return $this->routeServices->renderPageTemplate(
             'instance.php',
             [
-                'siteName' => SiteConfig::siteName(),
+                'siteName' => SiteConfig::displayName(),
                 'admins' => ToolsPageSupport::fetchSeedApprovedUsers($this->routeServices->pdo()),
                 'toolNavOptions' => ToolsPageSupport::navOptions('backup'),
                 'backupSnapshot' => $this->fetchBackupSnapshot(),

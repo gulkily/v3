@@ -14,6 +14,16 @@ final class SiteConfig
         return SiteProfileRegistry::active()['name'];
     }
 
+    /**
+     * The profile's human-readable display label. Use this for anything a
+     * reader sees (page headers, titles); keep siteName() for identifier
+     * and filename usages, which rely on the plain lowercase slug.
+     */
+    public static function displayName(): string
+    {
+        return SiteProfileRegistry::active()['displayName'];
+    }
+
     public static function unicodeAuthoredTextEnabled(): bool
     {
         return self::featureFlags()->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);

@@ -54,7 +54,7 @@ final class CodebaseStateController
             [
                 'state' => $this->collectState(),
                 'toolNavOptions' => ToolsPageSupport::navOptions('codebase'),
-                'siteName' => SiteConfig::siteName(),
+                'siteName' => SiteConfig::displayName(),
                 'admins' => ProfileRepository::approvedDirectoryUsers($this->routeServices->pdo()),
             ],
             'System State',
