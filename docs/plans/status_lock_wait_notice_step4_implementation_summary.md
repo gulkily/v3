@@ -12,3 +12,16 @@
   - Deployment, migration, and external-service checks are not applicable: this is a local CLI output change.
 - Notes:
   - The notice intentionally describes only the observed shared-lock state; it does not infer the holder, operation type, or duration.
+
+## Stage 2 - Live contention regression coverage
+
+- Changes:
+  - Added command-level coverage that runs a separate process holding both the shared execution lock and an exclusive SQLite transaction.
+  - The test observes the waiting notice while `./v3 status` is still running, releases the holder, then verifies the ready report and unlocked final lock state.
+- Verification:
+  - `php -l tests/StatusCommandTest.php` — no syntax errors.
+  - `./v3 test StatusCommandTest` — 5 passed, 0 failed.
+  - `./v3 test` — 859 passed, 1 failed: `WriteApiSmokeTest::testTaskQueueProcessesQueuedAgentReplyOnce` expected `type=agent_reply`; the runner reports it as failing for 4 runs since 2026-10-08, and it is outside this feature's changed files.
+  - Deployment, migration, and external-service checks are not applicable: this is a local CLI behavior change.
+- Notes:
+  - The test proves output arrives before the contended command completes, rather than merely asserting completed-process output.
