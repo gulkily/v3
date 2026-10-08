@@ -160,9 +160,9 @@ It refuses recovery while the lock or an open file holder is detected.
 ./v3 task-queue cron [--log=<application-private-log-path>]
 ```
 
-A small SQLite-backed job queue (`scripts/task_queue.php`), currently used to
-serialize read-model rebuild requests and Fastmod sweeps so concurrent
-triggers coalesce into one job instead of racing. `docs/runbooks/production_deploy.md` and
+A small SQLite-backed job queue (`scripts/task_queue.php`) serializes
+read-model rebuilds, Fastmod sweeps, offline publication, and requested
+agent replies so concurrent triggers coalesce instead of racing. `docs/runbooks/production_deploy.md` and
 `docs/runbooks/operator_recovery.md` reference this command and depend on it
 being installed via cron.
 
@@ -189,6 +189,8 @@ being installed via cron.
   tasks claimed. `--verbose` reports each Fastmod result and provider request
   as it happens. `--quiet` suppresses all worker progress output, including
   verbose output when both options are supplied.
+- Agent replies are enqueued automatically when an approved user requests one;
+  they are processed by `run` and do not have a separate worker command.
 - `status` — prints queued/running/completed/failed counts plus the
   `--limit` (default 25) most recent tasks with attempt counts, failure codes,
   and the latest private rebuild checkpoint when available. Terminal task and
@@ -352,34 +354,6 @@ fallbacks, but new writes use `LLM_*` names.
 - `--api-key-stdin` — read the API key from stdin instead of an argument, so it never lands in shell history: `printf '%s\n' "$LLM_API_KEY" | ./v3 private-config --api-key-stdin`
 - `--path=...` — write to a specific file instead of the default `../forum-private/secrets.php` (relative to this checkout)
 
-## Print the agent-reply cron install reference
-
-```
-./v3 agent-reply cron [--log=/var/log/forum-agent-replies.log]
-```
-
-Prints a ready-to-install crontab line (running
-`scripts/run_agent_reply_requests.php --quiet --limit=10` once a minute) plus
-pre/post-install checks to run and the log file to tail. This is a reference
-printer, not the worker itself — see "Run the queued agent-reply worker"
-below for that.
-
-- `--log=...` — log file path to bake into the printed crontab line
-
-## Run the queued agent-reply worker
-
-```
-./v3 agent-reply cron run [--limit=10] [--dry-run] [--quiet] [--post-id=<id>]
-```
-
-Runs the queued agent-reply worker directly (what the cron line above
-invokes).
-
-- `--limit=...` — maximum number of queued requests to process
-- `--dry-run` — report the queued request count without generating replies
-- `--quiet` — suppress progress output
-- `--post-id=...` — restrict processing to one post
-
 ## Show agent-reply diagnostics
 
 ```
@@ -411,8 +385,7 @@ the API key and model/service reachability.
 
 Runs the local (non-live) agent-reply test suite: `AgentReplyGenerationTest`,
 `AgentReplyCommandTest`, and targeted `LocalAppSmokeTest` /
-`WriteApiSmokeTest` cases covering the cron reference command, status
-command, and queued-request processing.
+`WriteApiSmokeTest` cases covering status and task-queue fulfillment.
 
 - no parameters
 

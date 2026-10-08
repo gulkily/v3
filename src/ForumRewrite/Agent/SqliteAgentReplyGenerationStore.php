@@ -257,6 +257,77 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
         return $claimed[0] ?? null;
     }
 
+    public function claimRequestedForTarget(string $postId, string $contentHash): ?array
+    {
+        return $this->withImmediateTransaction(function () use ($postId, $contentHash): ?array {
+            $update = $this->pdo->prepare(
+                'UPDATE post_generated_responses
+                 SET status = :pending
+                 WHERE target_post_id = :target_post_id
+                   AND target_content_hash = :target_content_hash
+                   AND status = :requested'
+            );
+            $update->execute([
+                'pending' => 'pending',
+                'target_post_id' => $postId,
+                'target_content_hash' => $contentHash,
+                'requested' => 'requested',
+            ]);
+            if ($update->rowCount() < 1) {
+                return null;
+            }
+
+            $claimed = $this->findByTarget($postId, $contentHash);
+            if ($claimed === null) {
+                return null;
+            }
+
+            $claimed['claimed'] = true;
+            return $claimed;
+        });
+    }
+
+    public function claimOrResumeRequestedForTarget(string $postId, string $contentHash): ?array
+    {
+        $claimed = $this->claimRequestedForTarget($postId, $contentHash);
+        if ($claimed !== null) {
+            return $claimed;
+        }
+
+        $existing = $this->findByTarget($postId, $contentHash);
+        if ($existing === null
+            || ($existing['status'] ?? null) !== 'pending'
+            || !is_array($existing['request_context']['agent_reply_request'] ?? null)
+        ) {
+            return null;
+        }
+
+        $existing['resumed'] = true;
+        return $existing;
+    }
+
+    public function requestedTargets(int $limit = 100): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT target_post_id, target_content_hash
+             FROM post_generated_responses
+             WHERE status = :status
+             ORDER BY requested_at ASC, id ASC
+             LIMIT :limit'
+        );
+        $stmt->bindValue('status', 'requested');
+        $stmt->bindValue('limit', max(1, $limit), PDO::PARAM_INT);
+        $stmt->execute();
+
+        return array_map(
+            static fn (array $row): array => [
+                'target_post_id' => (string) $row['target_post_id'],
+                'target_content_hash' => (string) $row['target_content_hash'],
+            ],
+            $stmt->fetchAll(),
+        );
+    }
+
     public function reservePosting(string $postId, string $contentHash): ?array
     {
         $stmt = $this->pdo->prepare(

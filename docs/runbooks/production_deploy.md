@@ -334,41 +334,25 @@ OpenAI-compatible providers are called at `LLM_API_BASE_URL + /v1/chat/completio
 
 ## Agent Reply Requests
 
-Approved users can request a `reply-agent` response from eligible post cards. The button records a durable request in SQLite and returns quickly; it does not wait for provider analysis or canonical posting.
+Approved users can request a `reply-agent` response from eligible post cards. The button records a durable request and one general-purpose `agent_reply` task, then returns without waiting for provider analysis or canonical posting.
 
-Fulfillment is handled by a periodic PHP command. A typical cron entry is:
-
-```cron
-* * * * * cd /srv/forum-rewrite/app && php scripts/run_agent_reply_requests.php --quiet --limit=10 >> /var/log/forum-agent-replies.log 2>&1
-```
-
-The deployed checkout can also print the current-path reference:
-
-```bash
-./v3 agent-reply cron
-```
-
-The command uses the same repository, database, private LLM config, `reply-agent` key directory, and artifact paths as the web app. It exits successfully if another fulfillment run is already active, and queued-row claims prevent duplicate `reply-agent` posts for the same requested post content.
-
-Without `--quiet`, the command prints repository/database/artifact paths, queue counts before and after the run, claimed-row count, one processing/result line per request, reason totals, and elapsed time. `--quiet` suppresses successful STDOUT for cron while preserving STDERR errors.
+The task-queue worker fulfills the task with the same repository, database, private LLM config, `reply-agent` key directory, and artifact paths as the web app. Its exclusive lock, per-reply task identity, and reply publication reservation prevent duplicate posts. A worker run also reconciles durable requested rows that lack an active task.
 
 Useful manual commands:
 
 ```bash
 ./v3 agent-reply test
 ./v3 agent-reply test-local
-php scripts/run_agent_reply_requests.php --dry-run
-php scripts/run_agent_reply_requests.php --limit=10
-php scripts/run_agent_reply_requests.php --post-id=<post-id>
 ./v3 agent-reply status <post-id>
 ./v3 agent-reply status --limit=25
-./v3 agent-reply cron run --limit=10
-./v3 agent-reply cron run --dry-run
+./v3 task-queue status
+./v3 task-queue run --dry-run
+./v3 task-queue run --limit=1
 ```
 
 ## Internal Task Queue
 
-The internal task queue handles allowlisted maintenance work outside visitor requests, including read-model rebuild/recovery, Fastmod sweeps, and public offline-snapshot publication. It does not run user-supplied commands and is separate from the agent-reply and Codex-handoff queues.
+The internal task queue handles allowlisted maintenance work outside visitor requests, including requested agent replies, read-model rebuild/recovery, Fastmod sweeps, and public offline-snapshot publication. It does not run user-supplied commands and remains separate from the Codex-handoff queue.
 
 Install the cron worker with the current-path reference:
 
@@ -376,7 +360,7 @@ Install the cron worker with the current-path reference:
 ./v3 task-queue cron
 ```
 
-Install the line printed by the command. The worker processes one task per minute and exits successfully when another queue worker is active. The default cron-output path is application-private (`state/private/task_queue_cron.log`), so ensure its directory is writable by the cron user before installing the line. Successful site updates enqueue the deduplicated offline-snapshot task. Useful operator commands are:
+Remove any legacy agent-reply cron entry, then install only the line printed by this command. The worker processes one task per minute and exits successfully when another queue worker is active. The default cron-output path is application-private (`state/private/task_queue_cron.log`), so ensure its directory is writable by the cron user before installing the line. Successful site updates enqueue the deduplicated offline-snapshot task. Useful operator commands are:
 
 ```bash
 ./v3 task-queue enqueue-rebuild

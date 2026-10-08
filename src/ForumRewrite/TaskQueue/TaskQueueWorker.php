@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\TaskQueue;
 
+use InvalidArgumentException;
 use Throwable;
 
 final class TaskQueueWorker
@@ -14,21 +15,26 @@ final class TaskQueueWorker
     private $runFastScoreSweep;
     /** @var (callable():void)|null */
     private $publishOfflineSnapshot;
+    /** @var (callable(array<string, mixed>):void)|null */
+    private $fulfillAgentReply;
 
     /**
      * @param callable(int):void $rebuildReadModel
      * @param (callable():array<string, mixed>)|null $runFastScoreSweep
      * @param (callable():void)|null $publishOfflineSnapshot
+     * @param (callable(array<string, mixed>):void)|null $fulfillAgentReply
      */
     public function __construct(
         private readonly SqliteTaskQueueStore $store,
         callable $rebuildReadModel,
         ?callable $runFastScoreSweep = null,
         ?callable $publishOfflineSnapshot = null,
+        ?callable $fulfillAgentReply = null,
     ) {
         $this->rebuildReadModel = $rebuildReadModel;
         $this->runFastScoreSweep = $runFastScoreSweep;
         $this->publishOfflineSnapshot = $publishOfflineSnapshot;
+        $this->fulfillAgentReply = $fulfillAgentReply;
     }
 
     /**
@@ -86,6 +92,7 @@ final class TaskQueueWorker
             SqliteTaskQueueStore::REBUILD_READ_MODEL => $this->runReadModelRebuild($id),
             SqliteTaskQueueStore::FAST_SCORE_SWEEP => $this->runFastScoreSweep($id),
             SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT => $this->runOfflineSnapshotPublication($id),
+            SqliteTaskQueueStore::AGENT_REPLY => $this->runAgentReply($id, $task),
             default => $this->store->markFailed($id, 'unsupported_task_type', 'The worker does not support this task type.', false),
         };
     }
@@ -138,6 +145,27 @@ final class TaskQueueWorker
             ($this->publishOfflineSnapshot)();
         } catch (Throwable $throwable) {
             return $this->store->markFailed($id, 'offline_snapshot_publication_failed', $throwable->getMessage(), true);
+        }
+
+        return $this->store->markCompleted($id);
+    }
+
+    /**
+     * @param array<string, mixed> $task
+     * @return array<string, mixed>
+     */
+    private function runAgentReply(int $id, array $task): array
+    {
+        if ($this->fulfillAgentReply === null) {
+            return $this->store->markFailed($id, 'agent_reply_unavailable', 'Agent-reply fulfillment is not configured for this worker.', false);
+        }
+
+        try {
+            ($this->fulfillAgentReply)($task);
+        } catch (InvalidArgumentException $exception) {
+            return $this->store->markFailed($id, 'agent_reply_task_invalid', $exception->getMessage(), false);
+        } catch (Throwable $throwable) {
+            return $this->store->markFailed($id, 'agent_reply_fulfillment_failed', $throwable->getMessage(), true);
         }
 
         return $this->store->markCompleted($id);

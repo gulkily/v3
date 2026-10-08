@@ -8,6 +8,7 @@ $testFiles = [
     __DIR__ . '/AgentReplyCommandTest.php',
     __DIR__ . '/AgentIdentityServiceTest.php',
     __DIR__ . '/AgentReplyGenerationTest.php',
+    __DIR__ . '/AgentReplyTaskTest.php',
     __DIR__ . '/AgentResponseGeneratorTest.php',
     __DIR__ . '/AgentResponseTaskTest.php',
     __DIR__ . '/ApplicationServerTimingTest.php',

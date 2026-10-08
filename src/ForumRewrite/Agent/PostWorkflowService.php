@@ -17,6 +17,9 @@ use ForumRewrite\ReadModel\ThreadRowSupport;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\PrivateConfig;
+use ForumRewrite\TaskQueue\AgentReplyTask;
+use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
+use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 use ForumRewrite\Write\LocalWriteService;
 use PDO;
 use RuntimeException;
@@ -718,6 +721,9 @@ final class PostWorkflowService
             'requested_by_username' => (string) ($viewerProfile['username'] ?? ''),
             'agent_response_task' => AgentResponseTask::forPost($context, $responseMode),
         ]);
+        if (($row['status'] ?? null) === 'requested') {
+            $this->enqueueAgentReplyTask($row);
+        }
 
         return $this->agentReplyResponseForStoredRequest($row, $postId);
     }
@@ -833,6 +839,25 @@ final class PostWorkflowService
             fn (array $post): array => $this->postAnalysisContext($post),
             fn (array $post, array $analysis): ?array => $this->agentReplyGateFailure($post, $analysis),
             $this->agentResponseGenerator(),
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $requestRow
+     */
+    private function enqueueAgentReplyTask(array $requestRow): void
+    {
+        $postId = (string) ($requestRow['target_post_id'] ?? '');
+        $contentHash = (string) ($requestRow['target_content_hash'] ?? '');
+        $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+        $queueDirectory = dirname($queuePath);
+        if (!is_dir($queueDirectory) && !mkdir($queueDirectory, 0777, true) && !is_dir($queueDirectory)) {
+            throw new RuntimeException('Task queue directory is not writable.');
+        }
+
+        (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(
+            SqliteTaskQueueStore::AGENT_REPLY,
+            AgentReplyTask::deduplicationKey($postId, $contentHash),
         );
     }
 

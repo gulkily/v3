@@ -172,16 +172,11 @@ Open the private config with `$VISUAL`, `$EDITOR`, or `vi`:
 ./v3 private-config edit
 ```
 
-Print a concise reference for installing the queued agent reply cron job:
+Install and run the unified background worker for queued agent replies and maintenance work:
 
 ```bash
-./v3 agent-reply cron
-```
-
-Run the queued agent reply worker directly:
-
-```bash
-./v3 agent-reply cron run --limit=10
+./v3 task-queue cron
+./v3 task-queue run --limit=1
 ```
 
 Validate the configured agent reply LLM provider/API key with one live plain-text task prompt:
