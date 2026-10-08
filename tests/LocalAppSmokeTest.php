@@ -2017,6 +2017,8 @@ PHP;
 
         assertStringContains('<a class="post-card-permalink" href="/posts/cont-merge-r1"', $thread);
         assertStringContains('<a class="post-card-permalink" href="/posts/cont-merge-r2"', $thread);
+        assertStringNotContains('post-card-actions-toggle', $thread);
+        assertStringNotContains('>Actions</button>', $thread);
 
         assertTrue(
             preg_match('/<article id="post-cont-merge-root"[^>]*>.*?<\/article>/s', $thread, $rootBlockMatch) === 1,
@@ -2192,6 +2194,58 @@ PHP;
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $featureFlags);
         assertStringContains('data-role="feature-flag-source">site</span>', $featureFlags);
         assertStringContains('badge-overridden', $featureFlags);
+    }
+
+    public function testAutomaticGuestKeypairFlagRendersBrowserRuntimeOption(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-guest-keypair-flag-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED: true\n"
+        );
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-guest-keypair-flag-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+        $board = $this->render($application, '/');
+        $accountKey = $this->render($application, '/account/key/');
+        $featureFlags = $this->render($application, '/tools/feature-flags/');
+
+        assertStringContains('automaticGuestKeypairEnabled: true', $board);
+        assertFingerprintedAsset($board, 'openpgp_loader.js');
+        assertFingerprintedAsset($board, 'browser_signing.js');
+        assertStringContains('data-role="automatic-guest-publication"', $accountKey);
+        assertStringContains("Off by default: the public key stays on this browser until your first signed action.", $accountKey);
+        assertStringContains('FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED', $featureFlags);
+        assertStringContains('Automatic guest keypair', $featureFlags);
+    }
+
+    public function testAutomaticGuestKeypairFlagIsIncludedInStaticBoardArtifact(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-guest-keypair-static-repository-' . bin2hex(random_bytes(6));
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-guest-keypair-static-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-guest-keypair-static-artifacts-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        mkdir($artifactRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED: true\n"
+        );
+
+        try {
+            (new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot))->build();
+            $index = (string) file_get_contents($artifactRoot . '/index.html');
+
+            assertStringContains('automaticGuestKeypairEnabled: true', $index);
+            assertFingerprintedAsset($index, 'openpgp_loader.js');
+            assertFingerprintedAsset($index, 'browser_signing.js');
+        } finally {
+            $this->deleteTree($repositoryRoot);
+            $this->deleteTree($artifactRoot);
+            @unlink($databasePath);
+        }
     }
 
     public function testFeatureFlagsPageReportsInvalidSiteRecordWithoutBreakingSite(): void

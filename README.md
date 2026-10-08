@@ -129,6 +129,8 @@ FORUM_APP_VERSION_NOTIFICATION=false ./v3 start
 
 Registered site feature flags are visible at `/tools/feature-flags/`. Root-approved users can change mutable site flags there; those changes are written to `records/instance/feature-flags.txt` in the content repository and committed to git.
 
+`FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED` is off by default. Enable it from that Feature Flags page (or set it to `true` in the deployment environment) to prepare a browser-local `guest` keypair for new visitors before their first signed action. The private key never leaves the browser. Each visitor can choose on Account Key whether the public key publishes immediately or, by default, on the first signed action. Disabling the flag stops future automatic preparation but does not remove a keypair already saved in a browser.
+
 To lock an instance to approved members, enable `FORUM_APPROVED_MEMBERS_ONLY=true` in its feature-flags record or deployment environment. A saved browser keypair is automatically published from the Lobby before authentication; unapproved visitors can access only the Lobby, Account, and their own profile. All other pages, feeds, APIs, downloads, backups, and content artifacts are blocked. The flag is independent of `FORUM_SITE_ID` and theme selection.
 
 Local site profiles share the instance's repository and read-model database. The site selector changes presentation but not approval-command state:

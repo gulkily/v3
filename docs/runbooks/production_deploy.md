@@ -428,6 +428,20 @@ Rollback options:
 
 If production serves prebuilt static HTML artifacts, rebuild artifacts after changing flags outside the web write path. Private instances do not serve those content artifacts; every content request reaches the application access gate first.
 
+### Automatic guest keypairs
+
+`FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED` defaults to `false`. When enabled through `/tools/feature-flags/`, the instance feature-flags record, or a deployment environment override, a fresh browser receives a browser-local `guest` keypair before its first signed action. The server receives only public-key publication requests; it never receives the private key.
+
+The browser-level Account Key setting controls publication timing. Its default is first signed use, which avoids creating public identities for visitors who never interact. A visitor may explicitly switch it to immediate publication. Existing browser keypairs are retained and are not replaced by this feature.
+
+For a deployment-level enablement:
+
+```bash
+FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED=true ./v3 start
+```
+
+To roll back, disable the flag on `/tools/feature-flags/` or remove/set the environment override to `false`; this stops new automatic generation but intentionally does not delete keypairs already stored in visitors' browsers. Rebuild static artifacts after changing the site-record value outside the web write path.
+
 ### Redeemable board invitations
 
 Approved, authenticated members can use **Invite** from any board page to

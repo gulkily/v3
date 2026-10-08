@@ -96,6 +96,9 @@
 <?php endif; ?>
   <script>
     window.__forumAssetPaths = <?= json_encode($browserRuntimeAssetPaths, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) ?>;
+    window.forumBrowserIdentityOptions = {
+      automaticGuestKeypairEnabled: <?= $automaticGuestKeypairEnabled ? 'true' : 'false' ?>
+    };
   </script>
   <style data-role="critical-css"><?= $criticalCss ?></style>
   <link rel="preload" href="<?= $e($siteCssPath) ?>" as="style" fetchpriority="high">

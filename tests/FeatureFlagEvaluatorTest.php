@@ -24,6 +24,7 @@ final class FeatureFlagEvaluatorTest
             $conversationRecording = $evaluator->evaluate(FeatureFlagRegistry::LLM_CONVERSATION_RECORDING_ENABLED);
             $conversationUi = $evaluator->evaluate(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED);
             $approvedMembersOnly = $evaluator->evaluate(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
+            $automaticGuestKeypair = $evaluator->evaluate(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED);
             $fastScoring = $evaluator->evaluate(FeatureFlagRegistry::FAST_SCORING_ENABLED);
             $fastScoringAutomaticEnqueue = $evaluator->evaluate(FeatureFlagRegistry::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED);
 
@@ -51,6 +52,8 @@ final class FeatureFlagEvaluatorTest
             assertSame('default', $conversationUi->source);
             assertSame(false, $approvedMembersOnly->effectiveValue);
             assertSame('default', $approvedMembersOnly->source);
+            assertSame(false, $automaticGuestKeypair->effectiveValue);
+            assertSame('default', $automaticGuestKeypair->source);
             assertSame(false, $fastScoring->effectiveValue);
             assertSame('default', $fastScoring->source);
             assertSame(false, $fastScoringAutomaticEnqueue->effectiveValue);
@@ -98,6 +101,7 @@ final class FeatureFlagEvaluatorTest
 
         assertSame([
             FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
+            FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,
             FeatureFlagRegistry::EMOJI_AUTHORED_TEXT,
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
@@ -341,6 +345,7 @@ PHP);
     {
         $keys = [
             FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
+            FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,
             FeatureFlagRegistry::EMOJI_AUTHORED_TEXT,
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
