@@ -27,7 +27,7 @@
      for the classic-qdb experience.) Needs a decision before implementing.
 
 2. figure out how to do quote number headers
-   - RESOLVED (docs/plans/qdb_quote_numbering_step1_solution_assessment.md
+   - RESOLVED (docs/plans/qdb_quote_numbering/qdb_quote_numbering_step1_solution_assessment.md
      through step4_implementation_summary.md). New qdb submissions now
      mint a `thread-<timestamp>-qdb-<N>` ID (N = one past the highest
      qdb-numbered quote so far, imported or live) from both real

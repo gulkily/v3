@@ -44,6 +44,6 @@ Cons:
 
 **Option C, starting with Option B's route-asset contracts and the About pilot.** The companion inventory identifies the complete current source-level opportunity set; use measurements to select the first small implementation feature, beginning with shared per-page CSS support and `about.css`.
 
-Inventory: [non-minification performance inventory](page_asset_performance_inventory.md).
+Inventory: [non-minification performance inventory](../page_asset_performance_inventory.md).
 
 Reply **Approved Step 1** to proceed to the feature description.
