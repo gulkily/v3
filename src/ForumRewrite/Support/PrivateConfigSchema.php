@@ -150,7 +150,7 @@ final class PrivateConfigSchema
     /** @param array<string, mixed> $fileValues */
     public static function additionalFileValues(array $fileValues): array
     {
-        $additional = array_values(array_diff(array_keys($fileValues), self::environmentKeys()));
+        $additional = array_values(array_diff(array_keys($fileValues), array_keys(self::templateDefaults())));
         sort($additional);
 
         return $additional;

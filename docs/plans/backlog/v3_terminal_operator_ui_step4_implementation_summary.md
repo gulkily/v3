@@ -13,3 +13,17 @@
   - `./v3 test PrivateConfigSchemaTest PrivateConfigCommandTest LlmProviderConfigTest` — 14 passed.
 - Notes:
   - No database, deployment, or TUI verification is applicable to this internal configuration-contract stage.
+
+## Stage 2 - Private-config schema migration
+
+- Changes:
+  - Replaced private-config's duplicated defaults, legacy resolution, effective-value/source rendering, redaction, and known-key handling with the shared schema.
+  - Preserved existing generated-file format, permissions, atomic replacement path, and legacy values as additional file values.
+  - Added command coverage for environment override precedence without secret disclosure.
+- Verification:
+  - `php -l scripts/write_private_config.php`
+  - `php -l src/ForumRewrite/Support/PrivateConfigSchema.php`
+  - `php -l tests/PrivateConfigCommandTest.php`
+  - `./v3 test PrivateConfigSchemaTest PrivateConfigCommandTest LlmProviderConfigTest` — 15 passed.
+- Notes:
+  - No database, deployment, or TUI verification is applicable to this command-contract migration stage.

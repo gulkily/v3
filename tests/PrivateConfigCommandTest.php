@@ -61,6 +61,29 @@ final class PrivateConfigCommandTest
         }
     }
 
+    public function testPrivateConfigViewUsesEnvironmentOverridesFromSharedSchema(): void
+    {
+        $secretsPath = sys_get_temp_dir() . '/forum-rewrite-private-config-' . bin2hex(random_bytes(6)) . '/secrets.php';
+        mkdir(dirname($secretsPath), 0700, true);
+        file_put_contents($secretsPath, "<?php\n\nreturn ['LLM_MODEL' => 'file-model', 'LLM_API_KEY' => 'file-secret'];\n");
+
+        try {
+            $output = $this->runCommand(
+                dirname(__DIR__),
+                'FORUM_SECRETS_PATH=' . escapeshellarg($secretsPath)
+                    . ' LLM_MODEL=environment-model LLM_API_KEY=environment-secret ./v3 private-config view'
+            );
+
+            assertStringContains("LLM_MODEL = 'environment-model' (environment override)", $output);
+            assertStringContains('LLM_API_KEY = <set> (environment override)', $output);
+            assertStringNotContains('environment-secret', $output);
+            assertStringNotContains('file-secret', $output);
+        } finally {
+            @unlink($secretsPath);
+            @rmdir(dirname($secretsPath));
+        }
+    }
+
     public function testPrivateConfigRefreshTemplatePreservesValuesAndAddsComments(): void
     {
         $secretsPath = sys_get_temp_dir() . '/forum-rewrite-private-config-' . bin2hex(random_bytes(6)) . '/secrets.php';

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 $projectRoot = dirname(__DIR__);
+require $projectRoot . '/autoload.php';
 $defaultPath = getenv('FORUM_SECRETS_PATH') ?: (dirname($projectRoot) . '/forum-private/secrets.php');
 
 $options = [
@@ -108,25 +109,7 @@ if ($options['edit']) {
     exit(0);
 }
 
-$defaults = [
-    'LLM_PROVIDER' => '',
-    'LLM_API_KEY' => 'replace-with-real-key',
-    'LLM_API_BASE_URL' => '',
-    'LLM_MODEL' => '',
-    'LLM_TIMEOUT_SECONDS' => 60,
-    'LLM_EXTRA_HEADERS' => [],
-    'LLM_POST_ANALYSIS_PROMPT_PATH' => 'prompts/dedalus_post_analysis_system.txt',
-    'FAST_SCORING_ENABLED' => false,
-    'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED' => false,
-    'FAST_SCORING_LLM_MODEL' => 'openai/gpt-5-nano',
-    'FAST_SCORING_PROMPT_PATH' => 'prompts/fast_post_scoring_system.txt',
-    'FAST_SCORING_DATABASE_PATH' => '',
-    'DEDALUS_AGENT_REPLIES_ENABLED' => true,
-    'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED' => false,
-    'AGENT_RESPONSE_REQUESTS_ENABLED' => true,
-    'LLM_CONVERSATION_RECORDING_ENABLED' => true,
-    'LLM_CONVERSATION_UI_ENABLED' => true,
-];
+$defaults = \ForumRewrite\Support\PrivateConfigSchema::templateDefaults();
 
 $existing = [];
 if (is_file($path)) {
@@ -134,13 +117,12 @@ if (is_file($path)) {
 }
 
 if ($options['view']) {
-    printConfigView($path, $defaults, $existing);
+    printConfigView($path, $existing);
     printUpdateReminder($path);
     exit(0);
 }
 
-$config = array_merge($defaults, $existing);
-$config = applyLegacyLlmFallbacks($config, $existing);
+$config = resolvedTemplateConfig($existing);
 if ($options['api_key_stdin']) {
     $apiKey = trim((string) fgets(STDIN));
     if ($apiKey === '') {
@@ -166,7 +148,7 @@ if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)
     exit(1);
 }
 
-$contents = renderPrivateConfigFile($config, $defaults, $existing, true);
+$contents = renderPrivateConfigFile($config, $existing, true);
 
 $temporaryPath = $path . '.tmp-' . bin2hex(random_bytes(4));
 if (file_put_contents($temporaryPath, $contents, LOCK_EX) === false) {
@@ -213,43 +195,22 @@ function loadConfigFile(string $path): array
     return $config;
 }
 
-/**
- * @param array<string, mixed> $config
- * @param array<string, mixed> $existing
- * @return array<string, mixed>
- */
-function applyLegacyLlmFallbacks(array $config, array $existing): array
+/** @param array<string, mixed> $existing */
+function resolvedTemplateConfig(array $existing): array
 {
-    foreach ([
-        'LLM_API_KEY' => 'DEDALUS_API_KEY',
-        'LLM_API_BASE_URL' => 'DEDALUS_API_BASE_URL',
-        'LLM_MODEL' => 'DEDALUS_MODEL',
-        'LLM_TIMEOUT_SECONDS' => 'DEDALUS_TIMEOUT_SECONDS',
-        'LLM_POST_ANALYSIS_PROMPT_PATH' => 'DEDALUS_POST_ANALYSIS_PROMPT_PATH',
-    ] as $neutral => $legacy) {
-        if (array_key_exists($neutral, $existing) || !array_key_exists($legacy, $existing)) {
-            continue;
-        }
-
-        $legacyValue = $existing[$legacy];
-        if (trim((string) $legacyValue) !== '') {
-            $config[$neutral] = $legacyValue;
-        }
-    }
-
-    if (!array_key_exists('LLM_PROVIDER', $existing)
-        && strtolower(trim((string) ($existing['DEDALUS_ANALYSIS_MODE'] ?? ''))) === 'stub') {
-        $config['LLM_PROVIDER'] = 'stub';
+    $config = [];
+    $resolved = \ForumRewrite\Support\PrivateConfigSchema::resolve($existing, []);
+    foreach (\ForumRewrite\Support\PrivateConfigSchema::templateDefaults() as $key => $_default) {
+        $config[$key] = $resolved[$key]['value'];
     }
 
     return $config;
 }
 
 /**
- * @param array<string, mixed> $defaults
  * @param array<string, mixed> $config
  */
-function printConfigView(string $path, array $defaults, array $config): void
+function printConfigView(string $path, array $config): void
 {
     fwrite(STDOUT, "Private config path: {$path}\n");
     if (!is_file($path)) {
@@ -260,36 +221,12 @@ function printConfigView(string $path, array $defaults, array $config): void
 
     fwrite(STDOUT, "Status: present\n");
     fwrite(STDOUT, "Values:\n");
-    foreach (array_keys($defaults) as $key) {
-        $hasFileValue = array_key_exists($key, $config);
-        $value = $hasFileValue ? $config[$key] : $defaults[$key];
-        $source = $hasFileValue ? 'file' : 'default';
-        if (!$hasFileValue) {
-            $legacyKey = legacyFallbackKey($key);
-            if ($legacyKey !== null && array_key_exists($legacyKey, $config)) {
-                $legacyValue = $config[$legacyKey];
-                if (trim((string) $legacyValue) !== '') {
-                    $value = $legacyValue;
-                    $source = 'legacy ' . $legacyKey;
-                }
-            }
-
-            if ($key === 'LLM_PROVIDER'
-                && strtolower(trim((string) ($config['DEDALUS_ANALYSIS_MODE'] ?? ''))) === 'stub') {
-                $value = 'stub';
-                $source = 'legacy DEDALUS_ANALYSIS_MODE';
-            }
-        }
-        $env = getenv($key);
-        if ($env !== false) {
-            $value = $env;
-            $source = 'environment override';
-        }
-
-        fwrite(STDOUT, '  ' . $key . ' = ' . formatConfigValue($key, $value) . ' (' . $source . ")\n");
+    $resolved = \ForumRewrite\Support\PrivateConfigSchema::resolve($config);
+    foreach (\ForumRewrite\Support\PrivateConfigSchema::templateDefaults() as $key => $_default) {
+        fwrite(STDOUT, '  ' . $key . ' = ' . formatConfigValue($key, $resolved[$key]['value']) . ' (' . $resolved[$key]['source'] . ")\n");
     }
 
-    $extraKeys = array_values(array_diff(array_keys($config), array_keys($defaults)));
+    $extraKeys = \ForumRewrite\Support\PrivateConfigSchema::additionalFileValues($config);
     if ($extraKeys !== []) {
         sort($extraKeys);
         fwrite(STDOUT, "Additional file values:\n");
@@ -299,54 +236,18 @@ function printConfigView(string $path, array $defaults, array $config): void
     }
 }
 
-function legacyFallbackKey(string $key): ?string
-{
-    return match ($key) {
-        'LLM_API_KEY' => 'DEDALUS_API_KEY',
-        'LLM_API_BASE_URL' => 'DEDALUS_API_BASE_URL',
-        'LLM_MODEL' => 'DEDALUS_MODEL',
-        'LLM_TIMEOUT_SECONDS' => 'DEDALUS_TIMEOUT_SECONDS',
-        'LLM_POST_ANALYSIS_PROMPT_PATH' => 'DEDALUS_POST_ANALYSIS_PROMPT_PATH',
-        default => null,
-    };
-}
-
 function formatConfigValue(string $key, mixed $value): string
 {
-    if ($key === 'LLM_EXTRA_HEADERS' && is_array($value)) {
-        $redacted = [];
-        foreach ($value as $header => $headerValue) {
-            $redacted[$header] = trim((string) $headerValue) === '' ? '<empty>' : '<set>';
-        }
-
-        return var_export($redacted, true);
-    }
-
-    if (preg_match('/(API_KEY|SECRET|TOKEN|PASSWORD|PRIVATE_KEY)/i', $key) === 1) {
-        $stringValue = trim((string) $value);
-        if ($stringValue === '') {
-            return '<empty>';
-        }
-        if ($stringValue === 'replace-with-real-key') {
-            return '<placeholder>';
-        }
-
-        return '<set>';
-    }
-
-    return var_export($value, true);
+    return \ForumRewrite\Support\PrivateConfigSchema::formatValue($key, $value);
 }
 
 /**
  * @param array<string, mixed> $config
- * @param array<string, mixed> $defaults
  * @param array<string, mixed> $existing
  */
-function renderPrivateConfigFile(array $config, array $defaults, array $existing, bool $includeComments): string
+function renderPrivateConfigFile(array $config, array $existing, bool $includeComments): string
 {
-    $knownKeys = array_keys($defaults);
-    $additionalKeys = array_values(array_diff(array_keys($existing), $knownKeys));
-    sort($additionalKeys);
+    $additionalKeys = \ForumRewrite\Support\PrivateConfigSchema::additionalFileValues($existing);
 
     $contents = "<?php\n\n"
         . "declare(strict_types=1);\n\n";
