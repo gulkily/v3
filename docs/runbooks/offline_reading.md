@@ -42,6 +42,12 @@ obtain a new release, reconnect and reload a public page.
 
 ## Publishing a fresh snapshot
 
+The standard initial public read-model rebuild automatically creates the first
+offline snapshot when none is served. It reports an error after model promotion
+if that required publication fails; correct the error and use `offline publish`
+as the recovery command. Approved-members-only instances intentionally skip
+public snapshot publication.
+
 The configured internal task queue requests this publication after successful
 public read-model updates. After the normal
 ingest or read-model rebuild has completed, an operator can also publish the

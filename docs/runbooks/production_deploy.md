@@ -538,7 +538,9 @@ This directory must not be under `public/` and should be readable only by the de
 4. Create the writable state directory.
 5. Configure Apache to serve `public/`.
 6. Set the production environment variables.
-7. Run the initial read-model rebuild.
+7. Run the initial read-model rebuild. On a public instance, it automatically
+   publishes the first offline snapshot when one is not already served; treat a
+   reported snapshot-readiness failure as a launch blocker.
 8. Optionally build sibling static HTML artifacts.
 
 Example commands:
@@ -547,6 +549,16 @@ Example commands:
 php scripts/rebuild_read_model.php /srv/forum-rewrite/repository /srv/forum-rewrite/state/cache/post_index.sqlite3
 php scripts/build_static_artifacts.php /srv/forum-rewrite/repository /srv/forum-rewrite/state/cache/post_index.sqlite3 /srv/forum-rewrite/app/public
 ```
+
+For a public instance, before launch verify the anonymous endpoint from an
+operator machine:
+
+```bash
+./v3 offline diagnose --url=https://your-public-domain
+```
+
+The command must report a successful public snapshot response. In
+approved-members-only mode, public snapshots are intentionally unavailable.
 
 ## Pre-Launch Checklist
 
@@ -559,6 +571,8 @@ php scripts/build_static_artifacts.php /srv/forum-rewrite/repository /srv/forum-
 - the web user can write the read-model database and lock files
 - the web user can invalidate `public/*.html` artifacts if sibling artifacts are enabled
 - `/api/read_model_status` returns `status=ready`
+- on public instances, `./v3 offline diagnose --url=https://your-public-domain`
+  reports a successful public snapshot response
 - HTTP requests to `/account/key/`, `/compose/thread`, and `/assets/openpgp_loader.js` return app/asset responses, not forced HTTPS redirects
 - default responses do not emit `Strict-Transport-Security`
 
@@ -568,6 +582,8 @@ Before launch, verify:
 
 - board route loads
 - thread route loads
+- anonymous `/offline/snapshot.sqlite3` returns a successful response on public
+  instances
 - profile route loads
 - account route loads
 - compose thread/reply routes load
@@ -584,7 +600,7 @@ Before launch, verify:
 1. deploy application code
 2. verify Apache config
 3. verify writable repository/config paths
-4. rebuild read model
+4. rebuild read model and resolve any offline snapshot-readiness failure
 5. build static artifacts
 6. open `/api/read_model_status`
 7. smoke-test core read routes

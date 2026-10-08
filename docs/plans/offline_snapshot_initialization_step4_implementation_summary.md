@@ -34,3 +34,23 @@
 - Notes:
   - The normal update-driven task queue is unchanged; an existing served
     snapshot is detected before any bootstrap publication is attempted.
+
+## Stage 3 - Document and validate the first-time flow
+
+- Changes:
+  - Registered the bootstrap unit and rebuild-command tests in the standard
+    test runner.
+  - Updated first-time setup, pre-launch, launch-sequence, and offline-reading
+    guidance to make automatic rebuild bootstrap canonical and manual publish
+    recovery-only.
+- Verification:
+  - Ran `php tests/run.php OfflineSnapshotBootstrapTest
+    OfflineSnapshotBootstrapCommandTest TaskQueueWorkerTest TaskQueueCommandTest`:
+    26 passed, 0 failed.
+  - Ran `git diff --check` and reviewed the plan-navigation links and changed
+    runbook commands.
+  - Live public-endpoint verification is not applicable in this local checkout;
+    the runbook now requires it before a public launch.
+- Notes:
+  - Approved-members-only mode remains explicitly exempt from public snapshot
+    readiness and endpoint expectations.
