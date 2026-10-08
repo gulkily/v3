@@ -713,6 +713,21 @@ body.paned-reader-body {
     flex: 1 1 auto;
     width: auto;
   }
+
+  /* Board and Activity have fixed metadata columns. Preserve a readable
+     primary column on phones by scrolling their complete aligned row inside
+     its pane, the same contained-overflow pattern Users already uses. */
+  [data-paned-board-list-pane],
+  [data-paned-activity-list-pane] {
+    overflow-x: auto;
+  }
+
+  [data-paned-board-list-pane] .paned-list-head,
+  [data-paned-board-list-pane] .paned-list-row,
+  [data-paned-activity-list-pane] .paned-list-head,
+  [data-paned-activity-list-pane] .paned-list-row {
+    min-width: 34rem;
+  }
 }
 
 .paned-new-thread-dialog {
