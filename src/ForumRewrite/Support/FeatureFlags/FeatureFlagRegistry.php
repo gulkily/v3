@@ -10,6 +10,7 @@ final class FeatureFlagRegistry
     public const EMOJI_AUTHORED_TEXT = 'FORUM_EMOJI_AUTHORED_TEXT';
     public const APP_VERSION_NOTIFICATION = 'FORUM_APP_VERSION_NOTIFICATION';
     public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
+    public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
     public const STATIC_DETAIL_PAGES_ENABLED = 'FORUM_STATIC_DETAIL_PAGES_ENABLED';
     public const DEDALUS_AGENT_REPLIES_ENABLED = 'DEDALUS_AGENT_REPLIES_ENABLED';
     public const DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED = 'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED';
@@ -74,6 +75,14 @@ final class FeatureFlagRegistry
                 'Show the Comfortable/Compact thread density menu in the board/tag header. Off by default: the menu has known bugs and crowds the header on mobile.',
                 false,
                 self::THREAD_DENSITY_TOGGLE_ENABLED,
+                siteMutable: true,
+            ),
+            new FeatureFlagDefinition(
+                self::MEDIA_EMBEDS_ENABLED,
+                'Media embed cards',
+                'Render a small local card for a recognized YouTube/Instagram URL in a post body, instead of a bare link. Off by default; enable per site once ready.',
+                false,
+                self::MEDIA_EMBEDS_ENABLED,
                 siteMutable: true,
             ),
             new FeatureFlagDefinition(
