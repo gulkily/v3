@@ -13,3 +13,15 @@
   - `./v3 test FeatureFlagEvaluatorTest LocalAppSmokeTest::testAutomaticGuestKeypairFlagRendersBrowserRuntimeOption` — 15 passed.
 - Notes:
   - The flag is site-record and environment overridable; no browser behavior changes until Stage 2 consumes the option.
+
+## Stage 2 - Automatic browser-local guest preparation
+
+- Changes:
+  - Load the existing OpenPGP/browser-signing runtime on normal pages only when the operator flag is enabled.
+  - Added a no-prompt automatic `guest` preparation path that defaults to deferred public-key publication.
+  - Made first use finish required publication after any in-progress background preparation, preserving one keypair and one coordinator.
+- Verification:
+  - `php -l` passed for the changed renderer and tests.
+  - `./v3 test BrowserSigningNormalizationTest::testAutomaticGuestIdentityDefersPublicationUntilFirstSignedAction BrowserSigningNormalizationTest::testAutomaticGuestIdentityPreservesExistingBrowserKeypair BrowserSigningNormalizationTest::testIdentityPrewarmDoesNotGenerateOrLinkIdentity LocalAppSmokeTest::testAutomaticGuestKeypairFlagRendersBrowserRuntimeOption` — 4 passed.
+- Notes:
+  - Background setup failures are intentionally silent; a subsequent signed action or Account Key page uses the established recovery path.

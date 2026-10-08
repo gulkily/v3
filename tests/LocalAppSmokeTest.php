@@ -2229,6 +2229,8 @@ PHP;
         $featureFlags = $this->render($application, '/tools/feature-flags/');
 
         assertStringContains('automaticGuestKeypairEnabled: true', $board);
+        assertFingerprintedAsset($board, 'openpgp_loader.js');
+        assertFingerprintedAsset($board, 'browser_signing.js');
         assertStringContains('FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED', $featureFlags);
         assertStringContains('Automatic guest keypair', $featureFlags);
     }

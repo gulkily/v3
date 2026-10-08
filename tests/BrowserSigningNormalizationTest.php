@@ -6947,6 +6947,138 @@ NODE;
         assertSame('true', $result['finalAriaPressed']);
     }
 
+    public function testAutomaticGuestIdentityDefersPublicationUntilFirstSignedAction(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const storage = {};
+const fingerprint = '0123456789ABCDEF0123456789ABCDEF01234567';
+let promptCount = 0;
+let generationCount = 0;
+const fetchUrls = [];
+
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(storage, key) ? storage[key] : ''; },
+  setItem(key, value) { storage[key] = String(value); },
+  removeItem(key) { delete storage[key]; }
+};
+global.window = {
+  forumBrowserIdentityOptions: { automaticGuestKeypairEnabled: true },
+  prompt() { promptCount += 1; return 'named-user'; },
+  __forumOpenPgpLoader: { load: async () => global.window.openpgp },
+  openpgp: {
+    async generateKey() {
+      generationCount += 1;
+      return { publicKey: 'public-key', privateKey: 'private-key' };
+    },
+    async readKey() {
+      return { getFingerprint() { return fingerprint; } };
+    }
+  }
+};
+global.openpgp = global.window.openpgp;
+global.fetch = async function(url) {
+  fetchUrls.push(String(url));
+  if (String(url).indexOf('/api/get_profile?') === 0) {
+    return { ok: true, async text() { return ''; } };
+  }
+  return { ok: true, async text() { return ''; } };
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') handler();
+  },
+  querySelector() { return null; },
+  querySelectorAll() { return []; },
+  createElement() { return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+(async function () {
+  for (let i = 0; i < 20 && !storage.forum_pki_fingerprint; i += 1) {
+    await Promise.resolve();
+  }
+  const afterAutomaticPreparation = { fetchUrls: fetchUrls.slice(), published: storage.forum_pki_published_fingerprint || '' };
+  await window.__forumBrowserIdentity.ensureActionIdentity(null, null);
+  process.stdout.write(JSON.stringify({
+    promptCount,
+    generationCount,
+    username: storage.forum_pki_username,
+    afterAutomaticPreparation,
+    finalFetchUrls: fetchUrls,
+    published: storage.forum_pki_published_fingerprint || ''
+  }));
+})().catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(0, $result['promptCount']);
+        assertSame(1, $result['generationCount']);
+        assertSame('guest', $result['username']);
+        assertSame('', $result['afterAutomaticPreparation']['published']);
+        assertSame(false, in_array('/api/prepare_identity', $result['afterAutomaticPreparation']['fetchUrls'], true));
+        assertStringContains('/api/get_profile?profile_slug=openpgp-0123456789abcdef0123456789abcdef01234567', implode("\n", $result['finalFetchUrls']));
+        assertSame('0123456789ABCDEF0123456789ABCDEF01234567', $result['published']);
+    }
+
+    public function testAutomaticGuestIdentityPreservesExistingBrowserKeypair(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const storage = {
+  forum_pki_public_key: 'existing-public',
+  forum_pki_private_key: 'existing-private',
+  forum_pki_fingerprint: 'ABC123',
+  forum_pki_username: 'resident'
+};
+let generationCount = 0;
+let promptCount = 0;
+
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(storage, key) ? storage[key] : ''; },
+  setItem(key, value) { storage[key] = String(value); },
+  removeItem(key) { delete storage[key]; }
+};
+global.window = {
+  forumBrowserIdentityOptions: { automaticGuestKeypairEnabled: true },
+  prompt() { promptCount += 1; return 'replacement'; },
+  openpgp: {
+    async generateKey() { generationCount += 1; throw new Error('must not generate'); }
+  }
+};
+global.document = {
+  addEventListener(type, handler) { if (type === 'DOMContentLoaded') handler(); },
+  querySelector() { return null; },
+  querySelectorAll() { return []; },
+  createElement() { return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+Promise.resolve().then(() => {
+  process.stdout.write(JSON.stringify({ generationCount, promptCount, storage }));
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(0, $result['generationCount']);
+        assertSame(0, $result['promptCount']);
+        assertSame('existing-public', $result['storage']['forum_pki_public_key']);
+        assertSame('resident', $result['storage']['forum_pki_username']);
+    }
+
     public function testIdentityPrewarmDoesNotGenerateOrLinkIdentity(): void
     {
         $script = <<<'NODE'

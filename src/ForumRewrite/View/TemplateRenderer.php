@@ -111,6 +111,13 @@ final class TemplateRenderer
         bool $publicAuthenticationResume = false,
         array $pageStylesheetPaths = [],
     ): string {
+        if ($this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED)) {
+            $scriptPaths = array_merge($scriptPaths, [
+                '/assets/openpgp_loader.js',
+                '/assets/browser_signing.js',
+            ]);
+        }
+
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)
             && $viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1

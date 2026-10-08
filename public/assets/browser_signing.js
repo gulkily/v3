@@ -5,6 +5,7 @@
     privateKey: "forum_pki_private_key",
     fingerprint: "forum_pki_fingerprint",
     publishedFingerprint: "forum_pki_published_fingerprint",
+    automaticGuestPublication: "forum_pki_automatic_guest_publication",
     composePromptCancelled: "forum_pki_compose_prompt_cancelled",
     composeDraftPrefix: "forum_compose_draft",
     recentlyClearedComposeDraft: "forum_recently_cleared_compose_draft",
@@ -16,6 +17,7 @@
   const pendingReplyOperations = new Set();
   const pendingThreadOperations = new Set();
   let identityPrewarmStarted = false;
+  let automaticGuestIdentityStarted = false;
 
   function browserPerformance() {
     return typeof window !== "undefined" && window.performance && typeof window.performance.mark === "function"
@@ -1754,6 +1756,15 @@
     );
   }
 
+  function automaticGuestKeypairEnabled() {
+    const options = window.forumBrowserIdentityOptions || {};
+    return options.automaticGuestKeypairEnabled === true;
+  }
+
+  function automaticGuestPublicationIsImmediate() {
+    return localStorage.getItem(storageKeys.automaticGuestPublication) === "immediate";
+  }
+
   function storedFingerprint() {
     return (localStorage.getItem(storageKeys.fingerprint) || "")
       .trim()
@@ -2024,6 +2035,24 @@
         timing.errorKind = error instanceof Error && error.name ? error.name : "error";
         completeActionTiming(timing, "error");
       }
+    });
+
+    return true;
+  }
+
+  function scheduleAutomaticGuestIdentity(root) {
+    if (automaticGuestIdentityStarted || !automaticGuestKeypairEnabled() || hasBrowserKeypair()) {
+      return false;
+    }
+
+    automaticGuestIdentityStarted = true;
+    void ensureReadyIdentity(root, null, {
+      promptForUsername: async function () { return "guest"; },
+      publishPublicKey: automaticGuestPublicationIsImmediate(),
+      verifyPublishedIdentity: automaticGuestPublicationIsImmediate(),
+    }).catch(function () {
+      // A later signed action or the Account Key page retains the existing
+      // recovery path. Do not surface background setup errors unprompted.
     });
 
     return true;
@@ -2352,11 +2381,13 @@
   }
 
   async function ensureReadyIdentity(root, statusNode, options) {
+    const config = options || {};
     if (identityPreparationPromise !== null) {
-      return identityPreparationPromise;
+      await identityPreparationPromise;
+      return finishReadyIdentity(root, statusNode, config);
     }
 
-    const pending = prepareReadyIdentity(root, statusNode, options);
+    const pending = prepareReadyIdentity(root, statusNode, config);
     identityPreparationPromise = pending;
     try {
       return await pending;
@@ -2373,10 +2404,6 @@
     const promptForUsername = typeof config.promptForUsername === "function"
       ? config.promptForUsername
       : promptForComposeUsername;
-    const verifyPublishedIdentity = config.verifyPublishedIdentity !== false;
-    const publishedFingerprint = (localStorage.getItem(storageKeys.publishedFingerprint) || "")
-      .trim()
-      .toUpperCase();
 
     if (!hasBrowserKeypair()) {
       await ensureOpenPgpApi(["generateKey", "readKey"]);
@@ -2388,7 +2415,24 @@
       await generateBrowserKey(root, username, timing);
     }
 
+    await finishReadyIdentity(root, statusNode, config);
+  }
+
+  async function finishReadyIdentity(root, statusNode, options) {
+    const config = options || {};
+    const timing = config.timing || null;
+    const verifyPublishedIdentity = config.verifyPublishedIdentity !== false;
+    const publishPublicKey = config.publishPublicKey !== false;
+    const publishedFingerprint = (localStorage.getItem(storageKeys.publishedFingerprint) || "")
+      .trim()
+      .toUpperCase();
+
     const fingerprint = String(await ensureStoredFingerprint()).trim().toUpperCase();
+    if (!publishPublicKey) {
+      void syncIdentityHint(preferredIdentityHint(), timing).catch(function () {});
+      return;
+    }
+
     if (fingerprint === "" || publishedFingerprint !== fingerprint) {
       setStatus(statusNode, "Publishing your public key in the background...", "info");
       await publishPublicKeyWithRetry(root, timing);
@@ -2442,6 +2486,7 @@
       pageHasSignedActionSurfaces: pageHasSignedActionSurfaces,
       renderIdentityPreparationState: renderIdentityPreparationState,
       scheduleIdentityPrewarm: scheduleIdentityPrewarm,
+      scheduleAutomaticGuestIdentity: scheduleAutomaticGuestIdentity,
       classifyIdentityBootstrapFailure: classifyIdentityBootstrapFailure,
       statusFromError: statusFromError,
       ensureOpenPgpApi: ensureOpenPgpApi,
@@ -3305,6 +3350,7 @@
   function initBrowserSigning(root) {
     const scope = root && typeof root.querySelector === "function" ? root : document;
     scheduleIdentityPrewarm(scope);
+    scheduleAutomaticGuestIdentity(scope);
 
     const accountRoot = scope.matches && scope.matches("[data-account-key-root]")
       ? scope
