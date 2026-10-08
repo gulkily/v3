@@ -25,3 +25,14 @@
   - `./v3 test PrivateConfigSchemaTest PrivateConfigCommandTest` — 10 passed.
 - Notes:
   - The request is deliberately standard-input-only; no database, deployment, or terminal UI verification applies at this stage.
+
+## Stage 3 - Guided terminal input
+
+- Changes:
+  - Added an LLM editor route with provider presets, editable connection fields, masked API-key input, and cancellation-safe prompts.
+  - Routes the completed request through a mode-0600 temporary file into the stdin-only save contract, never through command arguments.
+- Verification:
+  - `bash -n scripts/terminal_operator_ui.sh`
+  - `./v3 test PrivateConfigSchemaTest PrivateConfigCommandTest TerminalOperatorUiCommandTest TerminalOperatorUiDashboardTest` — 14 passed.
+- Notes:
+  - Environment-lock messaging and complete fake-terminal editor interaction coverage remain part of final release verification.
