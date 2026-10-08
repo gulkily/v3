@@ -135,7 +135,6 @@ if (!is_array($postAnalysisLabels)) {
 $postLlmExchangesByPostId = is_array($llmExchangesByPostId ?? null) ? $llmExchangesByPostId : [];
 $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null) ? $postLlmExchangesByPostId[$post['post_id']] : [];
 ?>
-  <button type="button" class="post-card-actions-toggle thread-reaction-button" aria-label="Show actions for this post">Actions</button>
 <?php if ($agentReplyIsUnfinished): ?>
   <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"><?= $e($agentReplyFeedbackText) ?></p>
 <?php endif; ?>

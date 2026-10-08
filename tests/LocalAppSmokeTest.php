@@ -2036,6 +2036,8 @@ PHP;
 
         assertStringContains('<a class="post-card-permalink" href="/posts/cont-merge-r1"', $thread);
         assertStringContains('<a class="post-card-permalink" href="/posts/cont-merge-r2"', $thread);
+        assertStringNotContains('post-card-actions-toggle', $thread);
+        assertStringNotContains('>Actions</button>', $thread);
 
         assertTrue(
             preg_match('/<article id="post-cont-merge-root"[^>]*>.*?<\/article>/s', $thread, $rootBlockMatch) === 1,
