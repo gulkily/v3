@@ -58,6 +58,7 @@ final class TemplateRenderer
         private readonly string $templateRoot,
         private readonly string $appVersion = 'unknown',
         private readonly FeatureFlagEvaluator $featureFlags = new FeatureFlagEvaluator(),
+        private readonly MediaEmbedRenderer $mediaEmbedRenderer = new MediaEmbedRenderer(),
     ) {
     }
 
@@ -373,7 +374,8 @@ final class TemplateRenderer
         ], $data);
 
         $e = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $br = static fn (mixed $value): string => nl2br(htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+        $mediaEmbedsEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED);
+        $br = fn (mixed $value): string => $this->mediaEmbedRenderer->render((string) $value, $mediaEmbedsEnabled);
         $friendlyTimestamp = fn (?string $timestamp): string => $this->formatFriendlyTimestamp($timestamp);
         $timestamp = fn (?string $timestamp): string => $this->renderTimestampHtml($timestamp, $e);
         $relativeTimestamp = fn (?string $timestamp): string => $this->renderRelativeTimestampHtml($timestamp, $e);
