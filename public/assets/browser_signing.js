@@ -2424,7 +2424,36 @@
       await generateBrowserKey(root, username, timing);
     }
 
-    await finishReadyIdentity(root, statusNode, config);
+    // Keep the normal action path flat: compose/reaction flows intentionally
+    // begin signing as soon as their existing identity is ready. The separate
+    // finish helper below is only needed when an action joins background guest
+    // preparation already in flight.
+    const verifyPublishedIdentity = config.verifyPublishedIdentity !== false;
+    const publishPublicKey = config.publishPublicKey !== false;
+    const publishedFingerprint = (localStorage.getItem(storageKeys.publishedFingerprint) || "")
+      .trim()
+      .toUpperCase();
+    const fingerprint = String(await ensureStoredFingerprint()).trim().toUpperCase();
+
+    if (!publishPublicKey) {
+      void syncIdentityHint(preferredIdentityHint(), timing).catch(function () {});
+      return;
+    }
+
+    if (fingerprint === "" || publishedFingerprint !== fingerprint) {
+      setStatus(statusNode, "Publishing your public key in the background...", "info");
+      await publishPublicKeyWithRetry(root, timing);
+    } else if (verifyPublishedIdentity && !(await serverKnowsCurrentIdentity(fingerprint))) {
+      setStatus(statusNode, "Finishing browser identity setup...", "info");
+      await publishPublicKeyWithRetry(root, timing);
+    } else {
+      const sync = syncIdentityHint(preferredIdentityHint(), timing);
+      if (verifyPublishedIdentity) {
+        await sync;
+      } else {
+        void sync.catch(function () {});
+      }
+    }
   }
 
   async function finishReadyIdentity(root, statusNode, options) {

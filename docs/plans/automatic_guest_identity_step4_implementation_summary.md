@@ -37,3 +37,18 @@
   - `./v3 test BrowserSigningNormalizationTest::testAutomaticGuestIdentityDefersPublicationUntilFirstSignedAction BrowserSigningNormalizationTest::testAutomaticGuestIdentityPreservesExistingBrowserKeypair BrowserSigningNormalizationTest::testAutomaticGuestIdentityPublishesImmediatelyWhenBrowserPreferenceIsSet BrowserSigningNormalizationTest::testAccountGuestPublicationPreferencePersistsAndPublishesCurrentKey LocalAppSmokeTest::testAutomaticGuestKeypairFlagRendersBrowserRuntimeOption` — 5 passed.
 - Notes:
   - The control is deliberately on Account Key, not the operator Feature Flags page, because it governs only the local browser identity.
+
+## Stage 4 - Release verification and operations guidance
+
+- Changes:
+  - Documented Feature Flags enablement, browser-local/private-key boundary, publication choices, static-artifact rebuild, and rollback in the README and production runbook.
+  - Added static-board-artifact coverage for the enabled runtime setting and identity assets.
+  - Restored the flat normal signed-action readiness path after the broader suite identified an added promise boundary that delayed existing duplicate-submit flows.
+- Verification:
+  - `php -l tests/LocalAppSmokeTest.php` passed.
+  - `./v3 test LocalAppSmokeTest::testAutomaticGuestKeypairFlagIsIncludedInStaticBoardArtifact` — 1 passed.
+  - `./v3 test FeatureFlagEvaluatorTest BrowserSigningNormalizationTest LocalAppSmokeTest` — 212 passed, 0 failed.
+  - `git diff --check` passed; all four plan-navigation targets exist.
+- Notes:
+  - The full-suite static-artifact health-check test intentionally logs its simulated missing-asset diagnostic while passing.
+  - Rollback disables future automatic preparation only; it does not and cannot delete browser-local keypairs.

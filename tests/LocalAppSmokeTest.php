@@ -2238,6 +2238,33 @@ PHP;
         assertStringContains('Automatic guest keypair', $featureFlags);
     }
 
+    public function testAutomaticGuestKeypairFlagIsIncludedInStaticBoardArtifact(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-guest-keypair-static-repository-' . bin2hex(random_bytes(6));
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-guest-keypair-static-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-guest-keypair-static-artifacts-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        mkdir($artifactRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED: true\n"
+        );
+
+        try {
+            (new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot))->build();
+            $index = (string) file_get_contents($artifactRoot . '/index.html');
+
+            assertStringContains('automaticGuestKeypairEnabled: true', $index);
+            assertFingerprintedAsset($index, 'openpgp_loader.js');
+            assertFingerprintedAsset($index, 'browser_signing.js');
+        } finally {
+            $this->deleteTree($repositoryRoot);
+            $this->deleteTree($artifactRoot);
+            @unlink($databasePath);
+        }
+    }
+
     public function testFeatureFlagsPageReportsInvalidSiteRecordWithoutBreakingSite(): void
     {
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-flags-invalid-' . bin2hex(random_bytes(6));
