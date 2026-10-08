@@ -244,7 +244,7 @@ LLM exchange records are private runtime data. Keep `LLM_EXCHANGE_DATABASE_PATH`
 
 Internal task-queue records are also private runtime data. Keep `FORUM_TASK_QUEUE_DATABASE_PATH` outside `public/`, the canonical repository, and the published read-model database. The queue is deliberately separate from the rebuildable read model so a rebuild task retains its state and final outcome. Its executor history, detached-launch outcomes, and rebuild checkpoints live in that same private database; terminal history is bounded while active work and automatic-recovery circuit state are retained.
 
-Visitor statistics are private runtime data. Keep `VISITOR_STATISTICS_DATABASE_PATH` outside `public/`, the canonical repository, and published artifacts. It retains only short-lived daily aggregates and its protected page reports only server-observed eligible traffic; direct edge/static delivery outside PHP is not included.
+Visitor statistics are private runtime data. Keep `VISITOR_STATISTICS_DATABASE_PATH` outside `public/`, the canonical repository, and published artifacts. It retains only bounded UTC hourly aggregates for up to 90 days: eligible-request counters, anonymous/server-authenticated request counters, and mergeable client/authenticated-user cardinality sketches. It never retains raw visitor, session, key, identity, route, referrer, header, or network records. A deployment begins a new hourly collection epoch; legacy daily aggregates are not converted into hourly history. Its protected page reports only server-observed eligible traffic; direct edge/static delivery outside PHP is not included.
 
 ## Site Profile
 

@@ -67,3 +67,13 @@
   - `git diff --check` — passed.
 - Notes:
   - The static-artifact checker failure is outside this feature's changed surface and was not modified.
+
+## Stage 6 - Operations documentation
+
+- Changes:
+  - Updated the production deployment runbook with the 90-day UTC-hourly aggregate lifecycle, retained field categories, hourly collection-epoch boundary, and PHP/static coverage limit.
+- Verification:
+  - Reviewed the runbook statement against `VisitorStatisticsStore` fields and expiry behavior.
+  - Verified the plan-navigation links resolve to all four local feature artifacts.
+- Notes:
+  - Runtime, UI, and deployment-host verification are recorded in prior stages; no deployment configuration value or public artifact is changed by this documentation update.
