@@ -12,8 +12,8 @@ final class PresentationSlotRegistry
         'boardCard' => ['fallback' => 'thread', 'choices' => ['thread', 'quote']],
         'compose' => ['fallback' => 'thread', 'choices' => ['thread', 'qdb']],
         'about' => ['fallback' => 'default', 'choices' => ['default', 'chouse']],
-        'editorial' => ['fallback' => 'zenmemes', 'choices' => ['zenmemes', 'boston', 'qdb']],
-        'brandedStylesheet' => ['fallback' => 'site', 'choices' => ['site', 'chouse', 'qdb']],
+        'editorial' => ['fallback' => 'zenmemes', 'choices' => ['zenmemes', 'boston', 'qdb', 'mitrapclub']],
+        'brandedStylesheet' => ['fallback' => 'site', 'choices' => ['site', 'chouse', 'qdb', 'mitrapclub']],
     ];
 
     /** @return array<string, array{fallback:string, choices:list<string>}> */
