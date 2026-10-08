@@ -70,6 +70,9 @@ final class CodebaseStateController
 
         return 'status=' . $readModel['status'] . "\n"
             . 'schema_version=' . $readModel['schema_version'] . "\n"
+            . 'expected_schema_version=' . $readModel['expected_schema_version'] . "\n"
+            . 'schema_fingerprint=' . $readModel['schema_fingerprint'] . "\n"
+            . 'expected_schema_fingerprint=' . $readModel['expected_schema_fingerprint'] . "\n"
             . 'repository_root=' . $readModel['repository_root'] . "\n"
             . 'repository_head=' . $readModel['repository_head'] . "\n"
             . 'current_repository_head=' . $readModel['current_repository_head'] . "\n"
@@ -132,7 +135,9 @@ final class CodebaseStateController
                 'database_exists' => $readModel['database_exists'] ? 'yes' : 'no',
                 'metadata_status' => $readModel['metadata_readable'] ? 'readable' : 'unreadable',
                 'schema_version' => $readModel['schema_version'],
-                'expected_schema_version' => ReadModelMetadata::SCHEMA_VERSION,
+                'expected_schema_version' => $readModel['expected_schema_version'],
+                'schema_fingerprint' => $readModel['schema_fingerprint'],
+                'expected_schema_fingerprint' => $readModel['expected_schema_fingerprint'],
                 'repository_root' => $readModel['repository_root'],
                 'repository_head' => $readModel['repository_head'],
                 'current_repository_head' => $readModel['current_repository_head'],

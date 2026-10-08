@@ -6,6 +6,7 @@ require_once __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 
 final class StatusCommandTest
@@ -57,6 +58,8 @@ final class StatusCommandTest
             [$queuedCode, $queuedOutput, $queuedError] = $this->statusCommand($databasePath, $queuePath);
             assertSame(0, $queuedCode);
             assertStringContains('Read model: ready', $queuedOutput);
+            assertStringContains('Schema version: ' . ReadModelMetadata::SCHEMA_VERSION, $queuedOutput);
+            assertStringContains('Schema fingerprint: ' . ReadModelMetadata::expectedSchemaIdentity()['schema_fingerprint'], $queuedOutput);
             assertStringContains('Read-model rebuild task: queued', $queuedOutput);
             assertStringContains('A rebuild is queued', $queuedOutput);
             assertSame('', $queuedError);

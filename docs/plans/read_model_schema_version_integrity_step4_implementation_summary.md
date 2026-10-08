@@ -28,3 +28,18 @@
   - `git diff --check`
 - Notes:
   - A missing fingerprint is intentionally an identity mismatch, so databases built before this change take the existing recovery path.
+
+## Stage 3 - Operator schema identity diagnostics
+
+- Changes:
+  - Extended the shared operator-status payload with stored and expected schema version and fingerprint values, and made status freshness use the paired identity contract.
+  - Added both identifiers to the read-model status API, codebase-state page, and CLI status command.
+  - Updated the read-model schema reference and diagnostics coverage.
+- Verification:
+  - `php -l` passed for changed production, template, CLI, and test files.
+  - `php tests/run.php OperatorStatusCollectorTest StatusCommandTest` — 10 passed.
+  - `php tests/run.php LocalAppSmokeTest::testApplicationRendersTextApisAndRss` — 1 passed.
+  - `php tests/run.php LocalAppSmokeTest::testApplicationRendersCoreRoutes` — 1 passed.
+  - `git diff --check`
+- Notes:
+  - The API and CLI make the expected fingerprint explicit, allowing an operator to distinguish missing or mismatched legacy metadata from a current read model.
