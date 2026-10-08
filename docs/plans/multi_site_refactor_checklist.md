@@ -25,7 +25,7 @@ Use this checklist to refactor Zenmemes, Chouse, and QDB into explicit site comp
 
 ## P2 — Profile browser and offline identity
 
-> **Completed (2026-10-06):** [P2 browser/offline Step 4](./multi_site_refactor_p2_browser_offline_identity_step4_implementation_summary.md) verifies isolated browser preferences and offline/PWA runtime identity for Zenmemes, Chouse, and QDB. A shared origin supports one active root-scope worker at a time while preserving the existing logged-in session and browser-held identity.
+> **Completed (2026-10-06):** [P2 browser/offline Step 4](multi_site_refactor_p2_browser_offline_identity/multi_site_refactor_p2_browser_offline_identity_step4_implementation_summary.md) verifies isolated browser preferences and offline/PWA runtime identity for Zenmemes, Chouse, and QDB. A shared origin supports one active root-scope worker at a time while preserving the existing logged-in session and browser-held identity.
 
 - [x] Replace Zenmemes-only theme/density storage keys with profile-derived keys, including a one-time Zenmemes legacy-preference fallback.
 - [x] Make worker cache names, cache discovery/cleanup, bootstrap validation, offline-health diagnostics, and PWA identity profile-derived.

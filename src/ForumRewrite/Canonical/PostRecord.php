@@ -28,6 +28,9 @@ final class PostRecord
         public readonly string $body,
         public readonly ?int $importedScoreSeed = null,
         public readonly ?int $importedVoteCountSeed = null,
+        public readonly ?string $eventDate = null,
+        public readonly ?string $eventLocation = null,
+        public readonly ?string $eventLink = null,
     ) {
     }
 

@@ -841,9 +841,9 @@ class IncrementalReadModelUpdater
     {
         $stmt = $pdo->prepare(
             'INSERT INTO threads (
-                root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total
+                root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, event_date, event_location, event_link
              ) VALUES (
-                :root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total
+                :root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :event_date, :event_location, :event_link
              )'
         );
         $stmt->execute([
@@ -857,6 +857,9 @@ class IncrementalReadModelUpdater
             'board_tags_json' => $boardTagsJson,
             'thread_labels_json' => '[]',
             'score_total' => 0,
+            'event_date' => $record->eventDate,
+            'event_location' => $record->eventLocation,
+            'event_link' => $record->eventLink,
         ]);
     }
 

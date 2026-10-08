@@ -2,7 +2,7 @@
 
 ## Original Query
 
-Please review docs/plans/identity_bootstrap_signature_verification_investigation.md and write Step 1 of docs/fdp/FEATURE_DEVELOPMENT_PROCESS.md.
+Please review docs/plans/identity_bootstrap_signature_verification/identity_bootstrap_signature_verification_investigation.md and write Step 1 of docs/fdp/FEATURE_DEVELOPMENT_PROCESS.md.
 
 ## Problem statement
 
