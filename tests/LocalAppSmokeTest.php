@@ -61,6 +61,34 @@ final class LocalAppSmokeTest
         assertStringContains('[3/3] Read model promoted.', $text);
     }
 
+    public function testRequestRebuildsReadModelMissingSchemaFingerprint(): void
+    {
+        $directory = sys_get_temp_dir() . '/forum-rewrite-schema-fingerprint-' . bin2hex(random_bytes(6));
+        $databasePath = $directory . '/read-model.sqlite3';
+        mkdir($directory, 0700, true);
+
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $storedVersion = $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn();
+            $pdo->exec("DELETE FROM metadata WHERE key = 'schema_fingerprint'");
+
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
+            $response = $this->render($application, '/threads/root-001');
+            $metadata = ReadModelMetadata::readMetadata(new PDO('sqlite:' . $databasePath));
+
+            assertStringContains('Hello world', $response);
+            assertSame($storedVersion, $metadata['schema_version']);
+            assertSame(true, ReadModelMetadata::hasExpectedSchemaIdentity($metadata));
+            assertSame('schema_identity_mismatch', $metadata['rebuild_reason']);
+        } finally {
+            @unlink($databasePath);
+            @unlink($databasePath . '-journal');
+            @unlink($directory . '/read_model_stale.json');
+            @rmdir($directory);
+        }
+    }
+
     public function testRebuildCommandExplainsSqliteSidecarPromotionFailure(): void
     {
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-rebuild-sidecar-' . bin2hex(random_bytes(6)) . '.sqlite3';

@@ -43,3 +43,18 @@
   - `git diff --check`
 - Notes:
   - The API and CLI make the expected fingerprint explicit, allowing an operator to distinguish missing or mismatched legacy metadata from a current read model.
+
+## Stage 4 - Request-time recovery verification
+
+- Changes:
+  - Added an end-to-end request-path regression test for a database that retains its readable schema version but lacks `schema_fingerprint`.
+  - The test verifies a normal thread request rebuilds the model, restores the expected paired identity, and records `schema_identity_mismatch` as the rebuild reason.
+- Verification:
+  - `php -l tests/LocalAppSmokeTest.php`
+  - `php tests/run.php LocalAppSmokeTest::testRequestRebuildsReadModelMissingSchemaFingerprint` — 1 passed.
+  - `php tests/run.php` — 849 passed; 2 unrelated task-queue/agent-reply tests failed in the full-run order.
+  - `php tests/run.php TaskQueueCommandTest::testFastScoreWorkerCapturesRepositoryForFeatureFlagEvaluation WriteApiSmokeTest::testTaskQueueProcessesQueuedAgentReplyOnce` — task-queue command test passed; the agent-reply queue assertion remained failing (`type=agent_reply` absent).
+  - `git diff --check`
+- Notes:
+  - The focused recovery, schema, metadata, candidate, status, and application smoke coverage all pass.
+  - The remaining full-suite failure is outside this feature's changed read-model, diagnostics, and test paths.
