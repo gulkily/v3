@@ -20,7 +20,7 @@ falls back to showing the raw internal post ID
 unlike original qdb.us, where every accepted submission was immediately
 assigned the next number and shown with it. This gap was already flagged
 as deferred work in `qdb_todo.txt` item 2, pending the importer landing
-(it has: `docs/plans/qdb_archive_importer_step4_implementation_summary.md`).
+(it has: `docs/plans/qdb_archive_importer/qdb_archive_importer_step4_implementation_summary.md`).
 
 ## Context found
 

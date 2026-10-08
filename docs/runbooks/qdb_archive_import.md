@@ -2,7 +2,7 @@
 
 One-shot historical backfill that imports qdb.us's quote archive into a qdb
 instance. Already run against local dev's `state/local_repository_qdb` (see
-`docs/plans/qdb_archive_importer_step4_implementation_summary.md` for that
+`docs/plans/qdb_archive_importer/qdb_archive_importer_step4_implementation_summary.md` for that
 run's full verification record). This runbook covers running it against a
 real production vhost.
 
@@ -12,7 +12,7 @@ real production vhost.
   MariaDB is not a prod dependency and shouldn't become one for a one-time
   historical backfill.
 - Extraction and normalization (Stages 2-3 of
-  `docs/plans/qdb_archive_importer_step3_development_plan.md`) already ran
+  `docs/plans/qdb_archive_importer/qdb_archive_importer_step3_development_plan.md`) already ran
   locally against a scratch MySQL database loaded from
   `~/qdb_database/backup.sql`, producing one intermediate file:
   `state/qdb_archive_import/normalized_quotes.jsonl` (9.8MB - small enough
@@ -83,7 +83,7 @@ traffic is still the safer choice.
 
 ## Related
 
-- `docs/plans/qdb_archive_importer_step1_solution_assessment.md` through
+- `docs/plans/qdb_archive_importer/qdb_archive_importer_step1_solution_assessment.md` through
   `step4_implementation_summary.md` - the full design and implementation
   record for this feature.
 - `docs/runbooks/production_deploy.md` - the general production deployment

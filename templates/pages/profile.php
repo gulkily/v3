@@ -12,7 +12,7 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
 <section class="stack">
   <article class="card">
     <h1><?= $e($headingLabel) ?></h1>
-    <p class="meta">Profile <?= $e($profileSlug) ?></p>
+    <p class="meta"><?= $e($profileSlug) ?></p>
 <?php if ($isReplyAgentProfile): ?>
     <p class="meta"><span class="agent-label">Automated reply agent</span></p>
 <?php endif; ?>

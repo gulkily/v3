@@ -197,6 +197,48 @@ final class AgentReplyGenerationTest
         assertSame(null, $second);
     }
 
+    public function testStoreClaimsRequestedRowForExactTargetOnlyOnce(): void
+    {
+        $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));
+        $store->requestForTarget($this->context(), ['requested_by_identity_id' => 'openpgp:requester']);
+
+        $wrongHash = $store->claimRequestedForTarget('root-001', 'other-hash');
+        $claimed = $store->claimRequestedForTarget('root-001', 'hash-001');
+        $second = $store->claimRequestedForTarget('root-001', 'hash-001');
+
+        assertSame(null, $wrongHash);
+        assertSame('pending', $claimed['status']);
+        assertSame(true, $claimed['claimed']);
+        assertSame(null, $second);
+    }
+
+    public function testStoreListsOutstandingRequestedTargets(): void
+    {
+        $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));
+        $store->requestForTarget($this->context(), ['requested_by_identity_id' => 'openpgp:requester']);
+        $completed = $this->context();
+        $completed['post_id'] = 'root-002';
+        $completed['content_hash'] = 'hash-002';
+        $store->saveComplete($completed, ['response_text' => 'Already complete.']);
+
+        assertSame(
+            [['target_post_id' => 'root-001', 'target_content_hash' => 'hash-001']],
+            $store->requestedTargets(),
+        );
+    }
+
+    public function testStoreResumesAnInterruptedClaimedRequestForItsExactTarget(): void
+    {
+        $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));
+        $store->requestForTarget($this->context(), ['requested_by_identity_id' => 'openpgp:requester']);
+        $store->claimRequestedForTarget('root-001', 'hash-001');
+
+        $resumed = $store->claimOrResumeRequestedForTarget('root-001', 'hash-001');
+
+        assertSame('pending', $resumed['status']);
+        assertSame(true, $resumed['resumed']);
+    }
+
     public function testStoreMarksRequestedRowSkipped(): void
     {
         $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));

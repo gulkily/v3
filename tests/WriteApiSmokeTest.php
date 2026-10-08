@@ -19,6 +19,8 @@ use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\Scoring\FastScoreContextFactory;
 use ForumRewrite\Scoring\SqliteFastScoreStore;
+use ForumRewrite\TaskQueue\AgentReplyTask;
+use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
@@ -425,6 +427,9 @@ final class WriteApiSmokeTest
     public function testGenerateAgentReplyRequiresApprovedViewerAndRecordsRequest(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $queuePath = sys_get_temp_dir() . '/forum-rewrite-agent-reply-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previousQueuePath = getenv('FORUM_TASK_QUEUE_DATABASE_PATH');
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
         putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED=true');
 
         try {
@@ -442,23 +447,36 @@ final class WriteApiSmokeTest
             $forbidden = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = ['identity_hint' => 'guest'];
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $duplicate = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
             $pdo = new PDO('sqlite:' . $databasePath);
             $stmt = $pdo->prepare('SELECT status, request_context_json FROM post_generated_responses WHERE target_post_id = :post_id');
             $stmt->execute(['post_id' => $postId]);
             $row = $stmt->fetch();
             $requestContext = json_decode((string) $row['request_context_json'], true);
+            $tasks = array_values(array_filter(
+                (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->recent(10),
+                static fn (array $task): bool => $task['type'] === SqliteTaskQueueStore::AGENT_REPLY,
+            ));
 
             assertStringContains('data-agent-reply-work="analyze"', $threadPage);
             assertSame('error', $forbidden['status']);
             assertSame('forbidden', $forbidden['error']);
             assertSame('ok', $response['status']);
             assertSame('requested', $response['generation_status']);
+            assertSame('requested', $duplicate['generation_status']);
             assertSame($postCountBefore, $postCountAfter);
             assertSame('requested', $row['status']);
             assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $requestContext['agent_reply_request']['requested_by_identity_id']);
             assertSame('default_text_reply', $requestContext['agent_reply_request']['agent_response_task']['type']);
+            assertSame(1, count($tasks));
+            assertSame(SqliteTaskQueueStore::AGENT_REPLY, $tasks[0]['type']);
+            assertSame($postId, AgentReplyTask::targetFromDeduplicationKey($tasks[0]['deduplication_key'])['post_id']);
         } finally {
+            $previousQueuePath === false
+                ? putenv('FORUM_TASK_QUEUE_DATABASE_PATH')
+                : putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $previousQueuePath);
+            @unlink($queuePath);
             putenv('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED');
             $_COOKIE = [];
         }
@@ -1144,11 +1162,13 @@ PHP);
         }
     }
 
-    public function testAgentReplyRequestCommandProcessesQueuedRequestOnce(): void
+    public function testTaskQueueProcessesQueuedAgentReplyOnce(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $queuePath = sys_get_temp_dir() . '/forum-rewrite-agent-reply-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';
         $previousLlmProviderEnv = $this->useStubLlmProvider();
         putenv('FORUM_PUBLIC_ARTIFACT_ROOT=' . $artifactRoot);
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -1162,9 +1182,10 @@ PHP);
             $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = [];
 
-            $baseCommand = 'php scripts/run_agent_reply_requests.php --limit=1'
+            $baseCommand = 'php scripts/task_queue.php run --limit=2'
                 . ' --repository-root=' . escapeshellarg($repositoryRoot)
-                . ' --database-path=' . escapeshellarg($databasePath);
+                . ' --database-path=' . escapeshellarg($databasePath)
+                . ' --queue-database-path=' . escapeshellarg($queuePath);
             $dryRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --dry-run');
             $firstRun = $this->runCommand(dirname(__DIR__), $baseCommand);
             $secondRun = $this->runCommand(dirname(__DIR__), $baseCommand);
@@ -1177,7 +1198,7 @@ PHP);
             $_COOKIE = ['identity_hint' => 'guest'];
             $secondRequest = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($secondPostId)), true);
             $_COOKIE = [];
-            $quietRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --quiet --post-id=' . escapeshellarg($secondPostId));
+            $quietRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --quiet');
             $pdo = new PDO('sqlite:' . $databasePath);
             $statement = $pdo->prepare('SELECT status, agent_post_id FROM post_generated_responses WHERE target_post_id = :post_id');
             $statement->execute(['post_id' => $postId]);
@@ -1187,17 +1208,12 @@ PHP);
 
             assertSame('requested', $request['generation_status']);
             assertSame('requested', $secondRequest['generation_status']);
-            assertStringContains('Queued requests: 1', $dryRun);
-            assertStringContains('Artifact root: ' . $artifactRoot, $dryRun);
-            assertStringContains('Queued before claim: 1', $firstRun);
-            assertStringContains('Claimed rows: 1', $firstRun);
-            assertStringContains('Processing request id=', $firstRun);
-            assertStringContains('target_post_id=' . $postId, $firstRun);
-            assertStringContains('Result: request_id=', $firstRun);
-            assertStringContains('status=generated', $firstRun);
-            assertStringContains('Claimed: 1, generated: 1', $firstRun);
-            assertStringContains('Queued after run: 0', $firstRun);
-            assertStringContains('Claimed: 0, generated: 0', $secondRun);
+            assertStringContains('Task queue dry run', $dryRun);
+            assertStringContains('Queue database: ' . $queuePath, $dryRun);
+            assertStringContains('Task queue worker starting', $firstRun);
+            assertStringContains('type=agent_reply', $firstRun);
+            assertStringContains('Task queue run complete:', $firstRun);
+            assertStringNotContains('type=agent_reply', $secondRun);
             assertSame('', $quietRun);
             assertSame('posted', $row['status']);
             assertSame(true, is_string($row['agent_post_id']) && $row['agent_post_id'] !== '');
@@ -1206,6 +1222,8 @@ PHP);
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             putenv('FORUM_PUBLIC_ARTIFACT_ROOT');
+            putenv('FORUM_TASK_QUEUE_DATABASE_PATH');
+            @unlink($queuePath);
             $_COOKIE = [];
         }
     }

@@ -131,17 +131,6 @@
   overflow: visible;
   opacity: 1;
 }
-.post-card-actions-toggle {
-  display: none;
-}
-
-@media (hover: none) {
-  .post-card:has(+ .continuation) > .post-card-actions-toggle {
-    display: inline-block;
-    margin-top: 0.5rem;
-  }
-}
-
 @media (max-width: 640px) {
   .agent-response-mode-menu {
     width: min(20rem, calc(100vw - 1rem));

@@ -30,7 +30,7 @@ no short `/3` URL that resolves to that same quote today.
 - `ThreadRepository::byId()` matches `threads.root_post_id` exactly, so a
   bare numeric path like `/3` does not match anything today — it has to
   be resolved to the full ID first (same numeric-suffix lookup pattern
-  used by `docs/plans/qdb_quote_numbering_step1_solution_assessment.md`'s
+  used by `docs/plans/qdb_quote_numbering/qdb_quote_numbering_step1_solution_assessment.md`'s
   already-verified query, just as an equality check instead of `MAX`).
 - Scope boundary: the destination page at `/threads/<id>` today renders
   the generic `thread_root_card.php` (not `quote_card.php`), which is a

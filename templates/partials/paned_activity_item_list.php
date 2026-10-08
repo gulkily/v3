@@ -21,7 +21,7 @@ $tabStopAssigned = false;
 $kindHeaderLabel = $selectedView === 'commits' ? 'Hash' : 'Kind';
 $labelHeaderLabel = $selectedView === 'commits' ? 'Subject' : 'Label';
 ?>
-<div class="paned-list-pane">
+<div class="paned-list-pane" data-paned-activity-list-pane>
   <div class="paned-list-head" data-paned-sort-head>
     <span class="paned-list-from-head" aria-sort="<?= $e($sortHeaderLinks['kind']['ariaSort'] ?? 'none') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="kind" data-paned-sort-href="<?= $e($sortHeaderLinks['kind']['href'] ?? '') ?>"><?= $e($kindHeaderLabel) ?></button></span>
     <span class="paned-list-subject-head" aria-sort="<?= $e($sortHeaderLinks['label']['ariaSort'] ?? 'none') ?>"><button type="button" class="paned-sort-button" data-paned-sort-column="label" data-paned-sort-href="<?= $e($sortHeaderLinks['label']['href'] ?? '') ?>"><?= $e($labelHeaderLabel) ?></button></span>
