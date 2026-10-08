@@ -68,8 +68,11 @@ class LocalWriteService
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
             $authorIdentityId = $this->resolveAuthorIdentityId($input);
             $createdAt = $this->canonicalTimestampNow();
+            $eventDate = $this->normalizeEventDate((string) ($input['event_date'] ?? ''));
+            $eventLocation = $this->normalizeAuthoredLine((string) ($input['event_location'] ?? ''), 'event_location');
+            $eventLink = $this->normalizeAuthoredLine((string) ($input['event_link'] ?? ''), 'event_link');
 
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId);
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink);
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -351,13 +354,19 @@ class LocalWriteService
         string $boardTags,
         string $subject,
         string $body,
-        ?string $authorIdentityId
+        ?string $authorIdentityId,
+        string $eventDate = '',
+        string $eventLocation = '',
+        string $eventLink = ''
     ): string {
         return "Post-ID: {$postId}\n"
             . "Created-At: {$createdAt}\n"
             . "Board-Tags: {$boardTags}\n"
             . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
             . ($subject !== '' ? "Subject: {$subject}\n" : '')
+            . ($eventDate !== '' ? "Event-Date: {$eventDate}\n" : '')
+            . ($eventLocation !== '' ? "Event-Location: {$eventLocation}\n" : '')
+            . ($eventLink !== '' ? "Event-Link: {$eventLink}\n" : '')
             . "\n{$body}";
     }
 
@@ -2384,6 +2393,30 @@ class LocalWriteService
         $normalized = trim($normalized);
 
         return $normalized !== '' ? $normalized : 'general';
+    }
+
+    private function normalizeEventDate(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) !== 1) {
+            throw new RuntimeException('event_date must use the format YYYY-MM-DD like 2026-11-01.');
+        }
+
+        try {
+            $date = new \DateTimeImmutable($value);
+        } catch (\Exception) {
+            throw new RuntimeException('event_date must be a valid calendar date.');
+        }
+
+        if ($date->format('Y-m-d') !== $value) {
+            throw new RuntimeException('event_date must be a valid calendar date.');
+        }
+
+        return $value;
     }
 
     private function normalizeAsciiLine(string $value, string $field): string

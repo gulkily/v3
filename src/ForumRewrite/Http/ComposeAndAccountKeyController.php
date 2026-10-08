@@ -51,7 +51,12 @@ final class ComposeAndAccountKeyController
         return $this->renderComposeThreadPage(
             (string) ($query['board_tags'] ?? 'general'),
             (string) ($query['subject'] ?? ''),
-            (string) ($query['body'] ?? '')
+            (string) ($query['body'] ?? ''),
+            null,
+            null,
+            (string) ($query['event_date'] ?? ''),
+            (string) ($query['event_location'] ?? ''),
+            (string) ($query['event_link'] ?? '')
         );
     }
 
@@ -120,7 +125,10 @@ final class ComposeAndAccountKeyController
                     (string) ($input['subject'] ?? ''),
                     (string) ($input['body'] ?? ''),
                     null,
-                    $exception->getMessage()
+                    $exception->getMessage(),
+                    (string) ($input['event_date'] ?? ''),
+                    (string) ($input['event_location'] ?? ''),
+                    (string) ($input['event_link'] ?? '')
                 ),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
@@ -250,7 +258,10 @@ final class ComposeAndAccountKeyController
         string $subject = '',
         string $body = '',
         ?string $notice = null,
-        ?string $error = null
+        ?string $error = null,
+        string $eventDate = '',
+        string $eventLocation = '',
+        string $eventLink = ''
     ): string {
         return $this->routeServices->renderPageTemplate('compose_thread.php', [
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
@@ -258,6 +269,9 @@ final class ComposeAndAccountKeyController
             'body' => $body,
             'notice' => $notice,
             'error' => $error,
+            'eventDate' => $eventDate,
+            'eventLocation' => $eventLocation,
+            'eventLink' => $eventLink,
         ], 'Compose Thread', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js']));
     }
 
