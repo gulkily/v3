@@ -27,3 +27,15 @@
   - `php tests/run.php VisitorStatisticsStoreTest VisitorStatisticsPageTest VisitorStatisticsObserverTest` — 7 passed.
 - Notes:
   - Anonymous and authenticated figures are request counts. They do not claim additive distinct-client counts when a visitor changes authentication state.
+
+## Stage 3 - Protected period summaries
+
+- Changes:
+  - Added validated `24h`, `7d`, `30d`, and `90d` period selection to the protected Visitor Statistics route, defaulting safely to 30 days.
+  - Passed selected hourly aggregate summaries and period metadata to the existing page controller/template boundary while preserving the current page during the presentation stage.
+- Verification:
+  - `php -l src/ForumRewrite/Http/VisitorStatisticsController.php` — passed.
+  - `php -l src/ForumRewrite/Application.php` — passed.
+  - `php tests/run.php VisitorStatisticsStoreTest VisitorStatisticsPageTest VisitorStatisticsObserverTest LocalAppSmokeTest::testApplicationRendersCoreRoutes` — 8 passed.
+- Notes:
+  - The selector and its rendered selected-state coverage land with the dashboard markup in Stage 4; unauthorized requests are rejected before either summary is read.

@@ -515,7 +515,7 @@ final class Application
         }
 
         if ($path === '/tools/visitor-statistics/' || $path === '/tools/visitor-statistics') {
-            $this->visitorStatisticsController()->render();
+            $this->visitorStatisticsController()->render($query);
             return;
         }
 
@@ -998,6 +998,7 @@ final class Application
             $this->routeServices(),
             $this->viewerCanInspectVisitorStatistics(...),
             $this->visitorStatisticsSummary(...),
+            $this->visitorStatisticsHourlySummary(...),
         );
     }
 
@@ -1503,6 +1504,12 @@ final class Application
     private function visitorStatisticsSummary(): array
     {
         return $this->visitorStatisticsStore()->summary(new \DateTimeImmutable('now'));
+    }
+
+    /** @return array<string, mixed> */
+    private function visitorStatisticsHourlySummary(int $hours): array
+    {
+        return $this->visitorStatisticsStore()->summaryForHours(new \DateTimeImmutable('now'), $hours);
     }
 
     private function visitorStatisticsStore(): VisitorStatisticsStore
