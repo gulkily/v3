@@ -3401,6 +3401,31 @@ PHP;
         }
     }
 
+    public function testFrontControllerBootstrapsMissingPublicOfflineSnapshotForHeadAndGet(): void
+    {
+        @unlink($this->databasePath);
+        (new ReadModelBuilder($this->repositoryRoot, $this->databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+
+        try {
+            http_response_code(200);
+            $headResponse = $this->renderFrontController($controller, 'HEAD', '/offline/snapshot.sqlite3', []);
+
+            assertSame('', $headResponse);
+            assertSame(200, http_response_code());
+            assertSame("SQLite format 3\000", file_get_contents($staticHtmlRoot . '/offline/snapshot.sqlite3', false, null, 0, 16));
+
+            @unlink($staticHtmlRoot . '/offline/snapshot.sqlite3');
+            $getResponse = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3', []);
+
+            assertStringContains('SQLite format 3', $getResponse);
+            assertSame("SQLite format 3\000", file_get_contents($staticHtmlRoot . '/offline/snapshot.sqlite3', false, null, 0, 16));
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
     public function testFrontControllerDerivesManifestAndWorkerFromTheActiveProfile(): void
     {
         $previousProfile = getenv('FORUM_SITE_ID');

@@ -64,3 +64,21 @@
 - A live public endpoint was not available in this checkout; operators must run
   the documented `./v3 offline diagnose --url=https://your-public-domain`
   check before launch.
+
+## Stage 4 - Repair a missing snapshot on request
+
+- Changes:
+  - The public snapshot route now uses the existing bootstrap service under a
+    short exclusive lock when no valid snapshot is served.
+  - Both eligible anonymous `GET` and `HEAD` requests can create the first
+    snapshot; approved-members-only handling and all other route eligibility
+    rules are unchanged.
+- Verification:
+  - Ran `php tests/run.php
+    LocalAppSmokeTest::testFrontControllerBootstrapsMissingPublicOfflineSnapshotForHeadAndGet
+    OfflineSnapshotBootstrapTest OfflineSnapshotBootstrapCommandTest`: 7 passed,
+    0 failed.
+  - Ran PHP syntax checks for the controller and smoke test.
+- Notes:
+  - Full-tree `git diff --check` still reports the pre-existing trailing blank
+    line in `todo.txt`; scoped checks for this stage pass.
