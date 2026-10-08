@@ -61,7 +61,7 @@ final class SiteProfileRegistry
                 'editorialContentKey' => 'mitrapclub',
                 'enabledExperienceKeys' => ['forum'],
                 'composerPrompt' => 'Drop a verse, a cypher clip, or an announcement...',
-                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'mitrapclub', 'toolsNav' => 'hidden'],
+                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'mitrapclub', 'toolsNav' => 'hidden', 'favicon' => 'mitrapclub'],
             ],
         ];
 

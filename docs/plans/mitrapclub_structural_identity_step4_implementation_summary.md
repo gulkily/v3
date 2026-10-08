@@ -26,3 +26,17 @@
 - Notes:
   - The mechanism is real and wired end-to-end but deliberately unexercised until Stage 3, so this stage's correctness is proven by the absence of change, not the presence of one.
   - Kept the favicon path unfingerprinted (not routed through `TemplateRenderer::assetPath()`) per Step 3's Key Risks, matching today's existing convention for this one asset.
+
+## Stage 3 - Exercise the favicon override for mitrapclub
+- Changes:
+  - New binary asset `public/assets/favicon-mitrapclub.ico`: an exact byte-copy of `public/favicon.ico` (`cmp` confirms identical bytes) — no new artwork ships, per Step 2's scope.
+  - `src/ForumRewrite/SiteProfileRegistry.php`: added `'favicon' => 'mitrapclub'` to `mitrapclub`'s `presentationSlots` only.
+  - `src/ForumRewrite/Host/StaticArtifactBuilder.php` (`copyOfflineRuntimeFiles()`): the favicon copy loop now also copies the active profile's `FaviconRegistry::resolve()` path (deduplicated against the two existing hardcoded defaults), so a static export references a file that was actually copied into the artifact.
+- Verification:
+  - `./v3 test` — full suite: 817 run, 817 passed, 0 failed.
+  - Rendered `/` and `/manifest.webmanifest` for all four profiles via `FrontController` directly: `zenmemes`/`chouse`/`qdb` unchanged (`/favicon.ico`); `mitrapclub` now resolves both to `/assets/favicon-mitrapclub.ico`.
+  - `cmp public/favicon.ico public/assets/favicon-mitrapclub.ico` — identical, confirming zero visual regression.
+  - Built a static export of `mitrapclub` via `StaticArtifactBuilder` directly (fixture repo + the same read-model sqlite): confirmed `assets/favicon-mitrapclub.ico` is present in the exported artifact root. Built a static export of `zenmemes` the same way: confirmed no `favicon-mitrapclub.ico` appears anywhere under its artifact root (unaffected).
+- Notes:
+  - Closes the Step 3 high-risk item (static-export copy loop previously only knew about the two default files) with an explicit before/after check rather than an assumption.
+  - Feature complete per the Step 3 Completion Contract: `mitrapclub`'s nav omits `Tools` (reachable by direct URL); theme breadth is unchanged by deliberate decision (no code needed); the favicon/icon override mechanism is real, live-wired, and exercised for `mitrapclub` with zero new art; `zenmemes`/`chouse`/`qdb` are provably unchanged throughout.

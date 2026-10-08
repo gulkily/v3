@@ -14,6 +14,7 @@ use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
+use ForumRewrite\View\FaviconRegistry;
 use PDO;
 use RuntimeException;
 
@@ -214,7 +215,8 @@ final class StaticArtifactBuilder
             }
         }
 
-        foreach (['/favicon.ico', '/favicon.gif'] as $requestPath) {
+        $faviconPaths = array_unique(['/favicon.ico', '/favicon.gif', FaviconRegistry::resolve($profile)]);
+        foreach ($faviconPaths as $requestPath) {
             $sourcePath = $this->projectRoot . '/public' . $requestPath;
             if (!is_file($sourcePath)) {
                 continue;
