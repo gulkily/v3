@@ -996,25 +996,6 @@ PHP;
         }
     }
 
-    public function testAgentReplyCronReferenceCommandShowsInstallInstructions(): void
-    {
-        $output = $this->runCommand(
-            dirname(__DIR__),
-            './v3 agent-reply cron --log=/tmp/forum-agent-replies-test.log'
-        );
-
-        assertStringContains('Agent reply request cron reference', $output);
-        assertStringContains('crontab -e', $output);
-        assertStringContains('cd ' . escapeshellarg(dirname(__DIR__)), $output);
-        assertStringContains('php scripts/run_agent_reply_requests.php --quiet --limit=10', $output);
-        assertStringContains('/tmp/forum-agent-replies-test.log', $output);
-        assertStringContains('./v3 private-config view', $output);
-        assertStringContains('./v3 agent-reply test', $output);
-        assertStringContains('./v3 agent-reply test-local', $output);
-        assertStringContains('php scripts/run_agent_reply_requests.php --dry-run', $output);
-        assertStringContains('worker exits cleanly if a previous run is still active', $output);
-    }
-
     public function testAgentReplyStatusCommandShowsSkippedReasonAndAnalysisFailure(): void
     {
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-agent-status-' . bin2hex(random_bytes(6)) . '.sqlite3';

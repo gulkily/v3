@@ -36,3 +36,15 @@
   - `git diff --check` for Stage 3 files — passed.
 - Notes:
   - The task queue is now the durable execution owner; reply records remain the source of truth for target identity and publication state.
+
+## Stage 4 - Retire the separate agent-reply worker
+- Changes:
+  - Removed the independent agent-reply worker and cron-reference scripts.
+  - Retired `./v3 agent-reply cron`; retained `agent-reply status`, provider testing, and the local agent-reply suite.
+  - Moved the queued-reply command smoke flow to `scripts/task_queue.php run`.
+- Verification:
+  - `php tests/run.php AgentReplyCommandTest TaskQueueCommandTest TaskQueueWorkerTest WriteApiSmokeTest::testTaskQueueProcessesQueuedAgentReplyOnce LocalAppSmokeTest::testAgentReplyStatusCommandShowsSkippedReasonAndAnalysisFailure` — 29 passed.
+  - `./v3 agent-reply test-local` — 21 passed.
+  - `git diff --check` for Stage 4 files — passed.
+- Notes:
+  - Agent-reply queue state is visible in normal task-queue status by type, while `agent-reply status` continues to expose reply-specific failure and skip details.
