@@ -90,7 +90,7 @@
   <meta name="app-version" content="<?= $e($appVersion) ?>">
   <meta name="app-version-endpoint" content="/api/version">
 <?php endif; ?>
-  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="<?= $e($faviconPath) ?>" sizes="32x32">
 <?php if (!$approvedMembersOnlyEnabled): ?>
   <link rel="manifest" href="/manifest.webmanifest">
 <?php endif; ?>
