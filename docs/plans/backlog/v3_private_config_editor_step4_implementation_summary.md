@@ -36,3 +36,15 @@
   - `./v3 test PrivateConfigSchemaTest PrivateConfigCommandTest TerminalOperatorUiCommandTest TerminalOperatorUiDashboardTest` — 14 passed.
 - Notes:
   - Environment-lock messaging and complete fake-terminal editor interaction coverage remain part of final release verification.
+
+## Stage 4 - Review, save, and lock recovery
+
+- Changes:
+  - Added explicit redacted review before save and a post-save output view.
+  - Refuse the LLM editor when any target setting has an environment override, directing the operator to deployment configuration and restart instead.
+- Verification:
+  - `bash -n scripts/terminal_operator_ui.sh`
+  - `php -l scripts/write_private_config.php`
+  - `./v3 test PrivateConfigSchemaTest PrivateConfigCommandTest TerminalOperatorUiCommandTest TerminalOperatorUiDashboardTest` — 14 passed.
+- Notes:
+  - Cancellation occurs before the stdin request is written; invalid/save failures are shown without persisting partial configuration.

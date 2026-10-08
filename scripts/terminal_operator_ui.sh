@@ -51,6 +51,14 @@ json_escape() { local value="$1"; value=${value//\\/\\\\}; value=${value//\"/\\\
 
 edit_llm_connection() {
   local provider base_url model timeout api_key preset request
+  local key
+  for key in LLM_PROVIDER LLM_API_KEY LLM_API_BASE_URL LLM_MODEL LLM_TIMEOUT_SECONDS; do
+    if [[ -v "${key}" ]]; then
+      "${whiptail_bin}" --title 'LLM connection locked' --msgbox \
+        "${key} is set by the environment. Change deployment configuration and restart; this editor will not save partial LLM updates." 10 78 || true
+      return 0
+    fi
+  done
   preset="$("${whiptail_bin}" --title 'LLM provider' --menu 'Select a provider preset.' 16 78 5 openai OpenAI openrouter OpenRouter anthropic Anthropic stub 'Offline stub' custom 'Custom compatible provider' 3>&1 1>&2 2>&3)" || return 0
   case "${preset}" in
     openai) provider=openai; base_url=https://api.openai.com; model=gpt-5-nano ;;
@@ -140,7 +148,7 @@ fi
 
 while true; do
   choice="$("${whiptail_bin}" --title 'v3 terminal operator' --menu \
-    'Read-only operator dashboard' 18 78 5 \
+    'Read-only operator dashboard' 18 78 6 \
     'status' 'View current operator status' \
     'config' 'View redacted effective private configuration' \
     'edit-llm' 'Edit LLM connection settings' \
