@@ -48,3 +48,14 @@
   - `./v3 test PrivateConfigSchemaTest PrivateConfigCommandTest TerminalOperatorUiCommandTest TerminalOperatorUiDashboardTest` — 14 passed.
 - Notes:
   - Cancellation occurs before the stdin request is written; invalid/save failures are shown without persisting partial configuration.
+
+## Stage 5 - Release verification and documentation
+
+- Changes:
+  - Documented the LLM-only editor scope, presets, masked/redacted save flow, and environment-lock recovery in the CLI reference.
+- Verification:
+  - `bash -n scripts/terminal_operator_ui.sh`
+  - `php -l scripts/write_private_config.php`
+  - `./v3 test PrivateConfigSchemaTest PrivateConfigCommandTest TerminalOperatorUiCommandTest TerminalOperatorUiDashboardTest` — 14 passed.
+- Notes:
+  - No database migration or deployment is required. Fastmod, agent, recording, web feature flags, arbitrary PHP, and destructive workflows remain out of scope.

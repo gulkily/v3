@@ -142,6 +142,11 @@ private config, modify feature flags, enqueue work, or offer destructive
 workflows. The private-config editor and guided destructive workflows remain
 separate follow-up work.
 
+The LLM connection editor offers OpenAI, OpenRouter, Anthropic, stub, and
+custom-provider presets. It masks API-key entry, shows a redacted review before
+an atomic save, and refuses partial editing when any LLM connection setting is
+set through the environment; change that deployment setting and restart instead.
+
 `whiptail` and interactive stdin, stdout, and stderr are required. If either
 is unavailable, `./v3 tui` makes no change and directs the operator to:
 
