@@ -757,8 +757,8 @@ final class Application
                 $currentRepositoryHead = ReadModelMetadata::repositoryHead($this->repositoryRoot);
                 if (($metadata['repository_root'] ?? null) !== $this->repositoryRoot) {
                     $rebuildReason = 'repository_root_mismatch';
-                } elseif (($metadata['schema_version'] ?? null) !== ReadModelMetadata::SCHEMA_VERSION) {
-                    $rebuildReason = 'schema_version_mismatch';
+                } elseif (!ReadModelMetadata::hasExpectedSchemaIdentity($metadata)) {
+                    $rebuildReason = 'schema_identity_mismatch';
                 } elseif (($metadata['repository_head'] ?? null) !== $currentRepositoryHead) {
                     $rebuildReason = 'repository_head_mismatch';
                 } else {
@@ -777,7 +777,7 @@ final class Application
                     $currentRepositoryHead = ReadModelMetadata::repositoryHead($this->repositoryRoot);
                     if (!$this->staleMarker()->exists()
                         && ($metadata['repository_root'] ?? null) === $this->repositoryRoot
-                        && ($metadata['schema_version'] ?? null) === ReadModelMetadata::SCHEMA_VERSION
+                        && ReadModelMetadata::hasExpectedSchemaIdentity($metadata)
                         && ($metadata['repository_head'] ?? null) === $currentRepositoryHead) {
                         return;
                     }

@@ -27,7 +27,7 @@ final class OperatorStatusCollector
 
     /**
      * @return array{
-     *   read_model:array{status:string,freshness_status:string,database_exists:bool,metadata_readable:bool,schema_version:string,repository_root:string,repository_head:string,current_repository_head:string,rebuilt_at:string,rebuild_reason:string,lock_status:string,stale_marker:string,stale_reason:string,stale_commit_sha:string,commits_capability:string},
+     *   read_model:array{status:string,freshness_status:string,database_exists:bool,metadata_readable:bool,schema_version:string,expected_schema_version:string,schema_fingerprint:string,expected_schema_fingerprint:string,repository_root:string,repository_head:string,current_repository_head:string,rebuilt_at:string,rebuild_reason:string,lock_status:string,stale_marker:string,stale_reason:string,stale_commit_sha:string,commits_capability:string},
      *   task_queue:array{status:string,queued:int,running:int,completed:int,failed:int,rebuild_task_status:string,executor_status:string,executor_last_completed_at:string,automatic_recovery_status:string,automatic_recovery_launch_status:string}
      * }
      */
@@ -50,11 +50,12 @@ final class OperatorStatusCollector
         }
 
         $currentRepositoryHead = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+        $expectedSchemaIdentity = ReadModelMetadata::expectedSchemaIdentity();
         $staleMarker = $this->staleMarker->read();
         $freshnessStatus = !$databaseExists || !$metadataReadable
             ? 'unavailable'
             : ((($metadata['repository_root'] ?? null) === $this->repositoryRoot)
-                && (($metadata['schema_version'] ?? null) === ReadModelMetadata::SCHEMA_VERSION)
+                && ReadModelMetadata::hasExpectedSchemaIdentity($metadata)
                 && (($metadata['repository_head'] ?? null) === $currentRepositoryHead)
                 && $staleMarker === null
                 ? 'ready'
@@ -70,6 +71,9 @@ final class OperatorStatusCollector
                 'database_exists' => $databaseExists,
                 'metadata_readable' => $metadataReadable,
                 'schema_version' => $metadata['schema_version'] ?? 'missing',
+                'expected_schema_version' => $expectedSchemaIdentity['schema_version'],
+                'schema_fingerprint' => $metadata['schema_fingerprint'] ?? 'missing',
+                'expected_schema_fingerprint' => $expectedSchemaIdentity['schema_fingerprint'],
                 'repository_root' => $metadata['repository_root'] ?? 'missing',
                 'repository_head' => $metadata['repository_head'] ?? 'missing',
                 'current_repository_head' => $currentRepositoryHead,

@@ -24,11 +24,17 @@ try {
         $projectRoot,
         isset($options['queue-database-path']) ? (string) $options['queue-database-path'] : null,
     );
+    $executionLock = new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock');
+    if ($executionLock->isLocked()) {
+        fwrite(STDOUT, "Waiting for shared lock before collecting status...\n");
+        fflush(STDOUT);
+    }
+
     $status = (new OperatorStatusCollector(
         $repositoryRoot,
         $databasePath,
         $queuePath,
-        new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock'),
+        $executionLock,
         new ReadModelStaleMarker($databasePath),
         static fn (): PDO => (new ReadModelConnection($databasePath))->open(),
     ))->collect();
@@ -75,7 +81,7 @@ function parseStatusOptions(array $arguments): array
 
 /**
  * @param array{
- *   read_model:array{status:string,freshness_status:string,database_exists:bool,metadata_readable:bool,schema_version:string,repository_root:string,repository_head:string,current_repository_head:string,rebuilt_at:string,rebuild_reason:string,lock_status:string,stale_marker:string,stale_reason:string,stale_commit_sha:string,commits_capability:string},
+ *   read_model:array{status:string,freshness_status:string,database_exists:bool,metadata_readable:bool,schema_version:string,expected_schema_version:string,schema_fingerprint:string,expected_schema_fingerprint:string,repository_root:string,repository_head:string,current_repository_head:string,rebuilt_at:string,rebuild_reason:string,lock_status:string,stale_marker:string,stale_reason:string,stale_commit_sha:string,commits_capability:string},
  *   task_queue:array{status:string,queued:int,running:int,completed:int,failed:int,rebuild_task_status:string,executor_status:string,executor_last_completed_at:string,automatic_recovery_status:string,automatic_recovery_launch_status:string}
  * } $status
  */
@@ -90,6 +96,8 @@ function printStatus(array $status, string $repositoryRoot, string $databasePath
     fwrite(STDOUT, "Read-model database: {$databasePath}\n");
     fwrite(STDOUT, 'Read model: ' . $readModel['status'] . "\n");
     fwrite(STDOUT, 'Read-model freshness: ' . $readModel['freshness_status'] . "\n");
+    fwrite(STDOUT, 'Schema version: ' . $readModel['schema_version'] . ' (expected: ' . $readModel['expected_schema_version'] . ")\n");
+    fwrite(STDOUT, 'Schema fingerprint: ' . $readModel['schema_fingerprint'] . ' (expected: ' . $readModel['expected_schema_fingerprint'] . ")\n");
     fwrite(STDOUT, 'Stale marker: ' . $readModel['stale_marker'] . ' (' . $readModel['stale_reason'] . ")\n");
     fwrite(STDOUT, 'Shared lock: ' . $readModel['lock_status'] . " (general protected activity)\n");
     fwrite(STDOUT, "Task queue: {$queuePath}\n");
