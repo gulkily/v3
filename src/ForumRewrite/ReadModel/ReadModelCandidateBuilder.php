@@ -50,7 +50,7 @@ final class ReadModelCandidateBuilder
         $pdo = (new ReadModelConnection($candidatePath))->open();
         $metadata = $pdo->query('SELECT key, value FROM metadata')->fetchAll(PDO::FETCH_KEY_PAIR);
         $expectedHead = ReadModelMetadata::repositoryHead($repositoryRoot);
-        if (($metadata['schema_version'] ?? null) !== ReadModelMetadata::SCHEMA_VERSION
+        if (!ReadModelMetadata::hasExpectedSchemaIdentity($metadata)
             || ($metadata['repository_root'] ?? null) !== $repositoryRoot
             || ($metadata['repository_head'] ?? null) !== $expectedHead) {
             throw new RuntimeException('Read-model candidate metadata does not match the current repository.');

@@ -29,6 +29,7 @@ final class ReadModelCandidateBuilderTest
 
             $candidate = new PDO('sqlite:' . $candidatePath);
             assertSame(ReadModelMetadata::SCHEMA_VERSION, $candidate->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
+            assertSame(ReadModelMetadata::expectedSchemaIdentity()['schema_fingerprint'], $candidate->query("SELECT value FROM metadata WHERE key = 'schema_fingerprint'")->fetchColumn());
             assertSame(true, (int) $candidate->query('SELECT COUNT(*) FROM posts')->fetchColumn() > 0);
             @unlink($candidatePath);
         } finally {

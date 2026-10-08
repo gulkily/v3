@@ -871,14 +871,13 @@ final class ReadModelBuilder
     private function writeMetadata(PDO $pdo): void
     {
         $stmt = $pdo->prepare('INSERT INTO metadata (key, value) VALUES (:key, :value)');
-        $metadata = [
-            'schema_version' => ReadModelMetadata::SCHEMA_VERSION,
+        $metadata = array_merge(ReadModelMetadata::expectedSchemaIdentity(), [
             'repository_root' => $this->repositoryRoot,
             'repository_head' => ReadModelMetadata::repositoryHead($this->repositoryRoot),
             'rebuilt_at' => gmdate('c'),
             'rebuild_reason' => $this->rebuildReason,
             'thread_label_invalid_count' => (string) $this->invalidThreadLabelRecordCount,
-        ];
+        ]);
 
         foreach ($metadata as $key => $value) {
             $stmt->execute([

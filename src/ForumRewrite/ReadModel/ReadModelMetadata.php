@@ -10,6 +10,29 @@ final class ReadModelMetadata
 {
     public const SCHEMA_VERSION = '14';
 
+    /**
+     * @return array{schema_version:string,schema_fingerprint:string}
+     */
+    public static function expectedSchemaIdentity(): array
+    {
+        return [
+            'schema_version' => self::SCHEMA_VERSION,
+            'schema_fingerprint' => ReadModelSchema::fingerprint(),
+        ];
+    }
+
+    /** @param array<string, mixed> $metadata */
+    public static function hasExpectedSchemaIdentity(array $metadata): bool
+    {
+        foreach (self::expectedSchemaIdentity() as $key => $expectedValue) {
+            if (($metadata[$key] ?? null) !== $expectedValue) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public static function repositoryHead(string $repositoryRoot): string
     {
         if (!is_dir($repositoryRoot . '/.git')) {

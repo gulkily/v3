@@ -14,3 +14,17 @@
   - `git diff --check`
 - Notes:
   - The readable schema generation remains unchanged at this stage; later stages add the fingerprint to the metadata identity contract.
+
+## Stage 2 - Paired metadata identity
+
+- Changes:
+  - Added shared expected-identity and identity-matching helpers that require both the readable schema version and DDL fingerprint.
+  - Wrote the paired identity in full rebuild and incremental-update metadata.
+  - Applied the shared freshness check to candidate validation, request-time rebuild decisions, and local-write safety checks.
+  - Added metadata-contract coverage, including incremental metadata writing and absent/mismatched identity cases.
+- Verification:
+  - `php -l` passed for changed read-model, application, write-service, and test files.
+  - `php tests/run.php ReadModelMetadataTest ReadModelCandidateBuilderTest ReadModelSchemaTest` — 7 passed.
+  - `git diff --check`
+- Notes:
+  - A missing fingerprint is intentionally an identity mismatch, so databases built before this change take the existing recovery path.
