@@ -20,6 +20,12 @@ final class PostRecordParser
         'Task-Sources',
     ];
 
+    private const EVENT_HEADERS = [
+        'Event-Date',
+        'Event-Location',
+        'Event-Link',
+    ];
+
     public function __construct(
         private readonly GenericTextRecordParser $parser = new GenericTextRecordParser(),
     ) {
@@ -67,6 +73,12 @@ final class PostRecordParser
                     throw new CanonicalRecordParseException('Replies must not include typed root header: ' . $header);
                 }
             }
+
+            foreach (self::EVENT_HEADERS as $header) {
+                if (isset($record->headers[$header])) {
+                    throw new CanonicalRecordParseException('Replies must not include typed root header: ' . $header);
+                }
+            }
         }
 
         if ($authorIdentityId !== null && preg_match('/[^A-Za-z0-9._:-]/', $authorIdentityId)) {
@@ -106,6 +118,10 @@ final class PostRecordParser
             $taskSources = $this->splitSemicolonSeparated($record->headers['Task-Sources'] ?? '');
         }
 
+        $eventDate = isset($record->headers['Event-Date']) ? $this->parseEventDate($record->headers['Event-Date']) : null;
+        $eventLocation = $record->headers['Event-Location'] ?? null;
+        $eventLink = $record->headers['Event-Link'] ?? null;
+
         return new PostRecord(
             $record->headers['Post-ID'],
             $createdAt,
@@ -123,6 +139,9 @@ final class PostRecordParser
             $record->body,
             $importedScoreSeed,
             $importedVoteCountSeed,
+            $eventDate,
+            $eventLocation,
+            $eventLink,
         );
     }
 
@@ -164,6 +183,25 @@ final class PostRecordParser
 
         if ($timestamp->format('Y-m-d\TH:i:s\Z') !== $value) {
             throw new CanonicalRecordParseException('Created-At must be a valid UTC timestamp.');
+        }
+
+        return $value;
+    }
+
+    private function parseEventDate(string $value): string
+    {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) !== 1) {
+            throw new CanonicalRecordParseException('Event-Date must use the format YYYY-MM-DD like 2026-11-01.');
+        }
+
+        try {
+            $date = new \DateTimeImmutable($value);
+        } catch (\Exception) {
+            throw new CanonicalRecordParseException('Event-Date must be a valid calendar date.');
+        }
+
+        if ($date->format('Y-m-d') !== $value) {
+            throw new CanonicalRecordParseException('Event-Date must be a valid calendar date.');
         }
 
         return $value;
