@@ -16,3 +16,21 @@
 - Notes:
   - The bootstrap uses the existing locator and atomic publisher; public-mode
     eligibility is supplied by the caller in Stage 2.
+
+## Stage 2 - Integrate bootstrap into rebuild
+
+- Changes:
+  - Extended the canonical read-model rebuild to ensure a first snapshot after
+    promotion, reporting published, existing, or intentionally unavailable.
+  - Made an eligible bootstrap failure exit clearly after promotion and direct
+    recovery to `./v3 offline publish`.
+  - Added rebuild-command coverage for public publication, approved-members-only
+    skip behavior, and post-promotion failure reporting.
+- Verification:
+  - Ran all three `OfflineSnapshotBootstrapCommandTest` cases through the local
+    test harness; all passed.
+  - Ran PHP syntax checks for the rebuild script and command test, plus
+    `git diff --check`.
+- Notes:
+  - The normal update-driven task queue is unchanged; an existing served
+    snapshot is detected before any bootstrap publication is attempted.
