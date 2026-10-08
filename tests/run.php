@@ -96,6 +96,7 @@ $testFiles = [
     __DIR__ . '/ThemeRegistryTest.php',
     __DIR__ . '/TestRunnerBehaviorTest.php',
     __DIR__ . '/TagScoreTest.php',
+    __DIR__ . '/TerminalOperatorUiCommandTest.php',
     __DIR__ . '/TaskQueueStoreTest.php',
     __DIR__ . '/TaskQueueCommandTest.php',
     __DIR__ . '/TaskQueueWorkerTest.php',

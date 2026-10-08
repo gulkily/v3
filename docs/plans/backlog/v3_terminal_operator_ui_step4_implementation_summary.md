@@ -27,3 +27,18 @@
   - `./v3 test PrivateConfigSchemaTest PrivateConfigCommandTest LlmProviderConfigTest` — 15 passed.
 - Notes:
   - No database, deployment, or TUI verification is applicable to this command-contract migration stage.
+
+## Stage 3 - TUI entry boundary
+
+- Changes:
+  - Added `./v3 tui` and a terminal launcher that validates `whiptail` plus interactive stdin/stdout/stderr before opening any UI.
+  - Added clear `./v3 status` and `./v3 private-config view` fallbacks for missing dependencies or non-interactive use.
+  - Added command tests for help, non-interactive execution, and unavailable `whiptail`.
+- Verification:
+  - `bash -n scripts/terminal_operator_ui.sh`
+  - `bash -n v3`
+  - `php -l tests/TerminalOperatorUiCommandTest.php`
+  - `./v3 test TerminalOperatorUiCommandTest StatusCommandTest PrivateConfigCommandTest` — 12 passed.
+  - Direct pseudo-terminal check rendered the `whiptail` dialog; the harness could not send its close key, so the isolated no-op dialog was terminated.
+- Notes:
+  - The entry path starts no operational command before its terminal/dependency checks pass. Dashboard interaction and launcher cancellation coverage follow in later stages.
