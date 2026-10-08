@@ -33,20 +33,28 @@ final class VisitorStatisticsStore
             $row = $this->rowForHour($hour);
             $clientBitmap = $this->addToBitmap((string) ($row['client_bitmap'] ?? $this->emptyBitmap()), $clientKey);
             $userBitmap = (string) ($row['authenticated_user_bitmap'] ?? $this->emptyBitmap());
-            if ($authenticatedUserKey !== null && $authenticatedUserKey !== '') {
+            $isAuthenticated = $authenticatedUserKey !== null && $authenticatedUserKey !== '';
+            if ($isAuthenticated) {
                 $userBitmap = $this->addToBitmap($userBitmap, $authenticatedUserKey);
             }
 
             $statement = $this->pdo->prepare(
-                'INSERT INTO visitor_statistics_hourly (bucket_start, visit_count, client_bitmap, authenticated_user_bitmap)
-                 VALUES (:bucket_start, 1, :client_bitmap, :authenticated_user_bitmap)
+                'INSERT INTO visitor_statistics_hourly (
+                    bucket_start, visit_count, anonymous_visit_count, authenticated_visit_count, client_bitmap, authenticated_user_bitmap
+                 ) VALUES (
+                    :bucket_start, 1, :anonymous_visit_count, :authenticated_visit_count, :client_bitmap, :authenticated_user_bitmap
+                 )
                  ON CONFLICT(bucket_start) DO UPDATE SET
                     visit_count = visitor_statistics_hourly.visit_count + 1,
+                    anonymous_visit_count = visitor_statistics_hourly.anonymous_visit_count + excluded.anonymous_visit_count,
+                    authenticated_visit_count = visitor_statistics_hourly.authenticated_visit_count + excluded.authenticated_visit_count,
                     client_bitmap = excluded.client_bitmap,
                     authenticated_user_bitmap = excluded.authenticated_user_bitmap'
             );
             $statement->execute([
                 'bucket_start' => $hour,
+                'anonymous_visit_count' => $isAuthenticated ? 0 : 1,
+                'authenticated_visit_count' => $isAuthenticated ? 1 : 0,
                 'client_bitmap' => $clientBitmap,
                 'authenticated_user_bitmap' => $userBitmap,
             ]);
@@ -97,8 +105,8 @@ final class VisitorStatisticsStore
      *   collection_started_at:?string,
      *   period_start:string,
      *   period_end:string,
-     *   totals:array{visits:int,clients:int,authenticated_users:int},
-     *   buckets:list<array{bucket_start:string,visits:int,clients:int,authenticated_users:int}>
+     *   totals:array{visits:int,anonymous_visits:int,authenticated_visits:int,clients:int,authenticated_users:int},
+     *   buckets:list<array{bucket_start:string,visits:int,anonymous_visits:int,authenticated_visits:int,clients:int,authenticated_users:int}>
      * }
      */
     public function summaryForHours(DateTimeImmutable $asOf, int $hours): array
@@ -114,15 +122,21 @@ final class VisitorStatisticsStore
         $clients = $this->emptyBitmap();
         $users = $this->emptyBitmap();
         $visits = 0;
+        $anonymousVisits = 0;
+        $authenticatedVisits = 0;
         $buckets = [];
 
         foreach ($rows as $row) {
             $visits += (int) $row['visit_count'];
+            $anonymousVisits += (int) $row['anonymous_visit_count'];
+            $authenticatedVisits += (int) $row['authenticated_visit_count'];
             $clients = $this->mergeBitmaps($clients, (string) $row['client_bitmap']);
             $users = $this->mergeBitmaps($users, (string) $row['authenticated_user_bitmap']);
             $buckets[] = [
                 'bucket_start' => (string) $row['bucket_start'],
                 'visits' => (int) $row['visit_count'],
+                'anonymous_visits' => (int) $row['anonymous_visit_count'],
+                'authenticated_visits' => (int) $row['authenticated_visit_count'],
                 'clients' => $this->estimateCardinality((string) $row['client_bitmap']),
                 'authenticated_users' => $this->estimateCardinality((string) $row['authenticated_user_bitmap']),
             ];
@@ -135,6 +149,8 @@ final class VisitorStatisticsStore
             'period_end' => $asOf->format('Y-m-d\TH:i:s\Z'),
             'totals' => [
                 'visits' => $visits,
+                'anonymous_visits' => $anonymousVisits,
+                'authenticated_visits' => $authenticatedVisits,
                 'clients' => $this->estimateCardinality($clients),
                 'authenticated_users' => $this->estimateCardinality($users),
             ],
@@ -158,7 +174,7 @@ final class VisitorStatisticsStore
     private function hourlyRowsFrom(string $start): array
     {
         $statement = $this->pdo->prepare(
-            'SELECT bucket_start, visit_count, client_bitmap, authenticated_user_bitmap
+            'SELECT bucket_start, visit_count, anonymous_visit_count, authenticated_visit_count, client_bitmap, authenticated_user_bitmap
              FROM visitor_statistics_hourly WHERE bucket_start >= :start ORDER BY bucket_start ASC'
         );
         $statement->execute(['start' => $start]);
@@ -214,10 +230,22 @@ final class VisitorStatisticsStore
             'CREATE TABLE IF NOT EXISTS visitor_statistics_hourly (
                 bucket_start TEXT PRIMARY KEY,
                 visit_count INTEGER NOT NULL,
+                anonymous_visit_count INTEGER NOT NULL DEFAULT 0,
+                authenticated_visit_count INTEGER NOT NULL DEFAULT 0,
                 client_bitmap BLOB NOT NULL,
                 authenticated_user_bitmap BLOB NOT NULL
             )'
         );
+        $this->ensureHourlyCounterColumn('anonymous_visit_count');
+        $this->ensureHourlyCounterColumn('authenticated_visit_count');
+    }
+
+    private function ensureHourlyCounterColumn(string $column): void
+    {
+        $columns = $this->pdo->query('PRAGMA table_info(visitor_statistics_hourly)')->fetchAll(PDO::FETCH_COLUMN, 1);
+        if (!in_array($column, $columns, true)) {
+            $this->pdo->exec('ALTER TABLE visitor_statistics_hourly ADD COLUMN ' . $column . ' INTEGER NOT NULL DEFAULT 0');
+        }
     }
 
     private function hourStart(DateTimeImmutable $occurredAt): string

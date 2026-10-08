@@ -25,7 +25,14 @@ final class VisitorStatisticsStoreTest
         assertSame(3, $summary['windows'][1]['visits']);
         assertSame(2, $summary['windows'][1]['clients']);
         assertSame(1, $summary['windows'][1]['authenticated_users']);
-        assertSame(['bucket_start', 'visit_count', 'client_bitmap', 'authenticated_user_bitmap'], $columns);
+        assertSame([
+            'bucket_start',
+            'visit_count',
+            'anonymous_visit_count',
+            'authenticated_visit_count',
+            'client_bitmap',
+            'authenticated_user_bitmap',
+        ], $columns);
     }
 
     public function testMergesWindowsExpiresOldBucketsAndSignalsInitialization(): void
@@ -76,5 +83,24 @@ final class VisitorStatisticsStoreTest
         assertSame(1, $summary['totals']['clients']);
         assertSame(1, $summary['totals']['authenticated_users']);
         assertSame(1, count($summary['buckets']));
+    }
+
+    public function testSeparatesAnonymousAndServerAuthenticatedVisitsWithoutStoringIdentity(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $store = new VisitorStatisticsStore($pdo);
+        $asOf = new \DateTimeImmutable('2026-10-07T12:30:00Z');
+
+        $store->recordVisit($asOf, 'client-a');
+        $store->recordVisit($asOf, 'client-a', 'openpgp:verified-user');
+        $summary = $store->summaryForHours($asOf, 24);
+        $row = $pdo->query(
+            'SELECT anonymous_visit_count, authenticated_visit_count FROM visitor_statistics_hourly'
+        )->fetch();
+
+        assertSame(2, $summary['totals']['visits']);
+        assertSame(1, $summary['totals']['anonymous_visits']);
+        assertSame(1, $summary['totals']['authenticated_visits']);
+        assertSame(['anonymous_visit_count' => 1, 'authenticated_visit_count' => 1], $row);
     }
 }
