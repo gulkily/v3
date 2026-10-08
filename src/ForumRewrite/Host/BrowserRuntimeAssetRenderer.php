@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Host;
 
 use ForumRewrite\BrowserRuntimeProfile;
+use ForumRewrite\View\FaviconRegistry;
 use RuntimeException;
 
 final class BrowserRuntimeAssetRenderer
@@ -23,7 +24,7 @@ final class BrowserRuntimeAssetRenderer
             'display' => 'standalone',
             'background_color' => '#f4f1e8',
             'theme_color' => '#f4f1e8',
-            'icons' => [['src' => '/favicon.ico', 'sizes' => '32x32', 'type' => 'image/x-icon']],
+            'icons' => [['src' => FaviconRegistry::resolve($profile), 'sizes' => '32x32', 'type' => 'image/x-icon']],
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
     }
 

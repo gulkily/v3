@@ -172,6 +172,7 @@ final class TemplateRenderer
             'appVersion' => $this->appVersion,
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
             'siteCssPath' => $this->assetPath('/assets/site.css'),
+            'faviconPath' => FaviconRegistry::resolve($profile),
             'browserRuntimeAssetPaths' => [
                 'openpgpV6' => $this->assetPath('/assets/openpgp.min.js'),
                 'openpgpV5' => $this->assetPath('/assets/openpgp.v5.11.3.min.js'),
@@ -256,7 +257,9 @@ final class TemplateRenderer
             return $items;
         }
 
-        $isQdbNavigation = PresentationSlotRegistry::resolve(SiteProfileRegistry::active(), 'navigation') === 'qdb';
+        $activeProfile = SiteProfileRegistry::active();
+        $isQdbNavigation = PresentationSlotRegistry::resolve($activeProfile, 'navigation') === 'qdb';
+        $hideToolsNav = PresentationSlotRegistry::resolve($activeProfile, 'toolsNav') === 'hidden';
         $items = $isQdbNavigation
             ? QdbPresentation::navigation()
             : [
@@ -266,6 +269,15 @@ final class TemplateRenderer
                 ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],
                 ['href' => '/account/key/', 'label' => 'Account', 'section' => 'account'],
             ];
+
+        // Tools stays reachable by direct URL even when hidden from the nav,
+        // same precedent qdb already sets for Account/Invite below.
+        if (!$isQdbNavigation && $hideToolsNav) {
+            $items = array_values(array_filter(
+                $items,
+                static fn (array $item): bool => $item['section'] !== 'tools',
+            ));
+        }
 
         // Account/Invite are deliberately left out of the qdb profile's nav
         // (operator's call) - both routes remain reachable by direct URL.
@@ -318,12 +330,15 @@ final class TemplateRenderer
             $assetAdditionalCssPaths[] = $this->assetPath($additionalCssPath);
         }
 
+        $profile = SiteProfileRegistry::active();
+
         return $this->renderFile('standalone_layout.php', [
             'title' => $title,
             'content' => $content,
             'bodyClass' => $bodyClass,
             'scriptPaths' => $assetScriptPaths,
             'siteCssPath' => $this->assetPath('/assets/site.css'),
+            'faviconPath' => FaviconRegistry::resolve($profile),
             'additionalCssPaths' => $assetAdditionalCssPaths,
             'browserRuntimeAssetPaths' => [
                 'openpgpV6' => $this->assetPath('/assets/openpgp.min.js'),
