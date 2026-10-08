@@ -2213,6 +2213,26 @@ PHP;
         assertStringContains('badge-overridden', $featureFlags);
     }
 
+    public function testAutomaticGuestKeypairFlagRendersBrowserRuntimeOption(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-guest-keypair-flag-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED: true\n"
+        );
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-guest-keypair-flag-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+
+        $board = $this->render($application, '/');
+        $featureFlags = $this->render($application, '/tools/feature-flags/');
+
+        assertStringContains('automaticGuestKeypairEnabled: true', $board);
+        assertStringContains('FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED', $featureFlags);
+        assertStringContains('Automatic guest keypair', $featureFlags);
+    }
+
     public function testFeatureFlagsPageReportsInvalidSiteRecordWithoutBreakingSite(): void
     {
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-flags-invalid-' . bin2hex(random_bytes(6));

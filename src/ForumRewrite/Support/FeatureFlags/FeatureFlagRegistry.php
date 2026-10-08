@@ -17,6 +17,7 @@ final class FeatureFlagRegistry
     public const LLM_CONVERSATION_RECORDING_ENABLED = 'LLM_CONVERSATION_RECORDING_ENABLED';
     public const LLM_CONVERSATION_UI_ENABLED = 'LLM_CONVERSATION_UI_ENABLED';
     public const APPROVED_MEMBERS_ONLY = 'FORUM_APPROVED_MEMBERS_ONLY';
+    public const AUTOMATIC_GUEST_KEYPAIR_ENABLED = 'FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED';
     public const FAST_SCORING_ENABLED = 'FAST_SCORING_ENABLED';
     public const FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED = 'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED';
 
@@ -32,6 +33,14 @@ final class FeatureFlagRegistry
                 'Restrict the site to approved members and provide a lobby for unapproved users.',
                 false,
                 self::APPROVED_MEMBERS_ONLY,
+                siteMutable: true,
+            ),
+            new FeatureFlagDefinition(
+                self::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
+                'Automatic guest keypair',
+                'Prepare a browser-local guest keypair for new visitors before their first signed action. Each browser controls whether its public key is published immediately or on first use.',
+                false,
+                self::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
                 siteMutable: true,
             ),
             new FeatureFlagDefinition(

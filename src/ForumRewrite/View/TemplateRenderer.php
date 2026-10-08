@@ -194,6 +194,7 @@ final class TemplateRenderer
             'initialThemeStylesheetPath' => $themeStylesheetPaths[$initialTheme],
             'themeHintCookieName' => ThemeRegistry::THEME_HINT_COOKIE,
             'approvedMembersOnlyEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
+            'automaticGuestKeypairEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED),
             'publicAuthenticationResume' => $publicAuthenticationResume,
             'navItems' => $this->navItems($viewerProfile),
         ]);
