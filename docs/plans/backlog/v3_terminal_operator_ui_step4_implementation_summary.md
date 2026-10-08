@@ -68,3 +68,17 @@
   - `./v3 test TerminalOperatorUiCommandTest TerminalOperatorUiDashboardTest PrivateConfigCommandTest StatusCommandTest` — 13 passed.
 - Notes:
   - The catalog is a fixed read-only allowlist: it accepts no operator-supplied arguments and omits all destructive, enqueue, and configuration-write commands.
+
+## Stage 6 - Release verification and documentation
+
+- Changes:
+  - Documented `./v3 tui` entry requirements, read-only dashboard/launcher boundary, feature-flags handoff, fallback commands, and deferred editor/destructive workflows in the CLI reference.
+- Verification:
+  - `bash -n v3 && bash -n scripts/terminal_operator_ui.sh`
+  - `php -l` passed for the touched configuration, command, and TUI test files.
+  - `./v3 test PrivateConfigSchemaTest PrivateConfigCommandTest LlmProviderConfigTest TerminalOperatorUiCommandTest TerminalOperatorUiDashboardTest StatusCommandTest` — 23 passed.
+  - `./v3 tui --help` printed the documented entry and fallback commands.
+  - `V3_TUI_WHIPTAIL=missing-whiptail ./v3 tui` exited without work and printed the documented fallback.
+  - `./v3 test` — 852 passed; 2 failed: `LocalAppSmokeTest::testFeatureFlagsPageShowsLockedBadgeWithReasonForNonMutableFlags` and `WriteApiSmokeTest::testTaskQueueProcessesQueuedAgentReplyOnce`. Both reproduce in isolation and concern surfaces outside this feature's changed files.
+- Notes:
+  - No database migration or deployment is required. The fake-`whiptail` pseudo-terminal test exercises dashboard rendering, command review, cancellation-safe menu exits, and delegated read-only output without invoking operational work.
