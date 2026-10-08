@@ -35,6 +35,7 @@ use ForumRewrite\Http\TagApiController;
 use ForumRewrite\Http\TagsPageController;
 use ForumRewrite\Http\ThreadAndPostPageController;
 use ForumRewrite\Http\ToolsPageController;
+use ForumRewrite\Http\VisitorStatisticsController;
 use ForumRewrite\Http\WritePostAndIdentityApiController;
 use ForumRewrite\ReadModel\AuthoredContentRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
@@ -64,6 +65,9 @@ use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
+use ForumRewrite\Statistics\VisitorStatisticsObserver;
+use ForumRewrite\Statistics\VisitorStatisticsDatabaseConfig;
+use ForumRewrite\Statistics\VisitorStatisticsStore;
 use ForumRewrite\Tools\ToolsPageSupport;
 use PDO;
 use RuntimeException;
@@ -83,6 +87,8 @@ final class Application
     private ?SqliteTaskQueueStore $taskQueueStore = null;
     private bool $taskQueueStoreInitialized = false;
     private ?QdbExperience $qdbExperience = null;
+    private ?VisitorStatisticsObserver $visitorStatisticsObserver = null;
+    private ?VisitorStatisticsStore $visitorStatisticsStore = null;
 
     public function __construct(
         private readonly string $projectRoot,
@@ -126,6 +132,7 @@ final class Application
         }
 
         $this->ensureReadModel();
+        $this->observeVisitorPageRequest($method, $path);
 
         if ($this->approvedMembersOnlyEnabled() && $this->membersOnlyLobbyRedirect($method, $path, $query)) {
             $this->logLobbyGateDiagnostics('lobby_redirect', $method, $path);
@@ -504,6 +511,11 @@ final class Application
 
         if ($path === '/tools/codebase/' || $path === '/tools/codebase') {
             $this->sendHtml($this->codebaseStateController()->render(), 200);
+            return;
+        }
+
+        if ($path === '/tools/visitor-statistics/' || $path === '/tools/visitor-statistics') {
+            $this->visitorStatisticsController()->render($query);
             return;
         }
 
@@ -977,6 +989,16 @@ final class Application
             $this->featureFlags(),
             $this->resolveViewerProfileFromIdentityHint(...),
             $this->invalidateFeatureFlagsCache(...),
+        );
+    }
+
+    private function visitorStatisticsController(): VisitorStatisticsController
+    {
+        return new VisitorStatisticsController(
+            $this->routeServices(),
+            $this->viewerCanInspectVisitorStatistics(...),
+            $this->visitorStatisticsSummary(...),
+            $this->visitorStatisticsHourlySummary(...),
         );
     }
 
@@ -1457,6 +1479,54 @@ final class Application
         return $this->featureFlags()->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
     }
 
+    private function observeVisitorPageRequest(string $method, string $path): void
+    {
+        $profile = $this->authenticatedViewerProfile();
+        $identityId = $profile === null ? null : (string) ($profile['identity_id'] ?? '');
+        $this->visitorStatisticsObserver()->record($method, $path, $identityId);
+    }
+
+    private function visitorStatisticsObserver(): VisitorStatisticsObserver
+    {
+        return $this->visitorStatisticsObserver ??= new VisitorStatisticsObserver($this->projectRoot);
+    }
+
+    private function viewerCanInspectVisitorStatistics(): bool
+    {
+        $profile = $this->authenticatedViewerProfile();
+
+        return $profile !== null
+            && ((int) ($profile['is_approved'] ?? 0)) === 1
+            && (string) ($profile['approved_by_label'] ?? '') === 'root';
+    }
+
+    /** @return array{status:string,windows:array<int, array{visits:int,clients:int,authenticated_users:int}>} */
+    private function visitorStatisticsSummary(): array
+    {
+        return $this->visitorStatisticsStore()->summary(new \DateTimeImmutable('now'));
+    }
+
+    /** @return array<string, mixed> */
+    private function visitorStatisticsHourlySummary(int $hours): array
+    {
+        return $this->visitorStatisticsStore()->summaryForHours(new \DateTimeImmutable('now'), $hours);
+    }
+
+    private function visitorStatisticsStore(): VisitorStatisticsStore
+    {
+        if ($this->visitorStatisticsStore !== null) {
+            return $this->visitorStatisticsStore;
+        }
+
+        $path = VisitorStatisticsDatabaseConfig::path($this->projectRoot, PrivateConfig::load($this->projectRoot));
+        $directory = dirname($path);
+        if ($directory !== '' && !is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
+            throw new RuntimeException('Visitor statistics database directory is not writable: ' . $directory);
+        }
+
+        return $this->visitorStatisticsStore = new VisitorStatisticsStore(new PDO('sqlite:' . $path));
+    }
+
     private function authenticatedViewerProfile(): ?array
     {
         $identityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
@@ -1557,6 +1627,7 @@ final class Application
             '/tags', '/tags/',
             '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
+            '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',
             '/account/key', '/account/key/', '/invites', '/invites/',
             '/api', '/api/', '/api/version', '/api/list_index',

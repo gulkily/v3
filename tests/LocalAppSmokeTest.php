@@ -1458,6 +1458,7 @@ PHP;
         $tools = $this->render($application, '/tools/');
         $codebase = $this->render($application, '/tools/codebase/');
         $featureFlags = $this->render($application, '/tools/feature-flags/');
+        $visitorStatistics = $this->render($application, '/tools/visitor-statistics/');
         $profile = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         $username = $this->render($application, '/user/guest');
         $_COOKIE = ['identity_hint' => 'guest'];
@@ -1631,6 +1632,8 @@ PHP;
         assertStringContains('Current application version, repository head, and read-model health.', $tools);
         assertStringContains('/tools/feature-flags/', $tools);
         assertStringContains('Registered site feature flags, defaults, effective values, and override sources.', $tools);
+        assertStringContains('/tools/visitor-statistics/', $tools);
+        assertStringContains('Privacy-preserving recent aggregate visits, client estimates, and authenticated-user counts.', $tools);
         assertStringContains('/forte', $tools);
         assertStringContains('Classic three-pane newsreader view of the whole board - folders, thread list, and preview.', $tools);
         assertStringNotContains('tool-launcher-button" href="/account/key/"', $tools);
@@ -1673,6 +1676,8 @@ PHP;
         assertStringContains('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $featureFlags);
         assertStringContains('data-role="feature-flag-source">default</span>', $featureFlags);
         assertStringContains('feature-flag-row', $featureFlags);
+        assertStringContains('Visitor Statistics', $visitorStatistics);
+        assertStringContains('server-authenticated root-approved identity', $visitorStatistics);
         assertStringContains('role="switch"', $featureFlags);
         assertStringContains('About zenmemes', $about);
         assertStringContains('extraordinary people', $about);
@@ -3395,6 +3400,31 @@ PHP;
             assertStringContains('SQLite format 3', $response);
             assertStringContains('offline fixture', $response);
             assertSame($response, $bootstrapResponse);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
+    public function testFrontControllerBootstrapsMissingPublicOfflineSnapshotForHeadAndGet(): void
+    {
+        @unlink($this->databasePath);
+        (new ReadModelBuilder($this->repositoryRoot, $this->databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+
+        try {
+            http_response_code(200);
+            $headResponse = $this->renderFrontController($controller, 'HEAD', '/offline/snapshot.sqlite3', []);
+
+            assertSame('', $headResponse);
+            assertSame(200, http_response_code());
+            assertSame("SQLite format 3\000", file_get_contents($staticHtmlRoot . '/offline/snapshot.sqlite3', false, null, 0, 16));
+
+            @unlink($staticHtmlRoot . '/offline/snapshot.sqlite3');
+            $getResponse = $this->renderFrontController($controller, 'GET', '/offline/snapshot.sqlite3', []);
+
+            assertStringContains('SQLite format 3', $getResponse);
+            assertSame("SQLite format 3\000", file_get_contents($staticHtmlRoot . '/offline/snapshot.sqlite3', false, null, 0, 16));
         } finally {
             $this->deleteTree($staticHtmlRoot);
             $this->deleteTree($publicRoot);

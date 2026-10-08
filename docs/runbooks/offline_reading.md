@@ -42,6 +42,17 @@ obtain a new release, reconnect and reload a public page.
 
 ## Publishing a fresh snapshot
 
+The standard initial public read-model rebuild automatically creates the first
+offline snapshot when none is served. It reports an error after model promotion
+if that required publication fails; correct the error and use `offline publish`
+as the recovery command. Approved-members-only instances intentionally skip
+public snapshot publication.
+
+On an eligible public instance, the PHP snapshot route also repairs a missing
+snapshot when it receives its normal anonymous `GET` or `HEAD` request. It uses
+the same atomic publisher and a short lock, so concurrent first requests reuse
+one publication rather than competing builds.
+
 The configured internal task queue requests this publication after successful
 public read-model updates. After the normal
 ingest or read-model rebuild has completed, an operator can also publish the

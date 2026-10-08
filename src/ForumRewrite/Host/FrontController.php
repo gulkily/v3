@@ -7,12 +7,15 @@ namespace ForumRewrite\Host;
 use ForumRewrite\Application;
 use ForumRewrite\BrowserRuntimeProfile;
 use ForumRewrite\Docs\PlatformDocsCatalog;
+use ForumRewrite\Offline\OfflineSnapshotBootstrap;
 use ForumRewrite\Offline\OfflineSnapshotLocator;
 use ForumRewrite\ProfilePresentationContent;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\SiteProfileRegistry;
+use ForumRewrite\Statistics\VisitorStatisticsObserver;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
+use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\TaskQueue\DetachedTaskQueueLauncher;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
@@ -83,6 +86,7 @@ final class FrontController
 
         $staticArtifact = $approvedMembersOnly ? null : $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
         if ($staticArtifact !== null && is_file($staticArtifact)) {
+            (new VisitorStatisticsObserver($this->projectRoot))->record($method, parse_url($requestUri, PHP_URL_PATH) ?: '/');
             $contents = file_get_contents($staticArtifact);
             if ($contents === false) {
                 throw new RuntimeException('Unable to read static HTML artifact: ' . $staticArtifact);
@@ -399,7 +403,24 @@ final class FrontController
             return null;
         }
 
-        return (new OfflineSnapshotLocator())->servedSnapshotPath($this->staticHtmlRoot);
+        $locator = new OfflineSnapshotLocator();
+        $snapshotPath = $locator->servedSnapshotPath($this->staticHtmlRoot);
+        if ($snapshotPath !== null) {
+            return $snapshotPath;
+        }
+
+        return (new ExecutionLock($this->staticHtmlRoot . '/offline/snapshot-bootstrap.lock'))->withExclusiveLock(
+            function () use ($locator): ?string {
+                $currentSnapshot = $locator->servedSnapshotPath($this->staticHtmlRoot);
+                if ($currentSnapshot !== null) {
+                    return $currentSnapshot;
+                }
+
+                (new OfflineSnapshotBootstrap($this->staticHtmlRoot))->ensure($this->databasePath, true);
+
+                return $locator->servedSnapshotPath($this->staticHtmlRoot);
+            },
+        );
     }
 
     private function isOfflineSnapshotQuery(string $query): bool

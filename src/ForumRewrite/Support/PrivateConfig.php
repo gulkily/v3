@@ -59,6 +59,7 @@ final class PrivateConfig
             'LLM_CONVERSATION_RECORDING_ENABLED',
             'LLM_CONVERSATION_UI_ENABLED',
             'LLM_EXCHANGE_DATABASE_PATH',
+            'VISITOR_STATISTICS_DATABASE_PATH',
         ] as $key) {
             $value = getenv($key);
             if ($value !== false) {

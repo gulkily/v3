@@ -7,6 +7,11 @@ require dirname(__DIR__) . '/autoload.php';
 use ForumRewrite\ReadModel\ReadModelCandidateBuilder;
 use ForumRewrite\ReadModel\ReadModelCandidatePromoter;
 use ForumRewrite\ReadModel\ReadModelRecovery;
+use ForumRewrite\Offline\OfflineSnapshotBootstrap;
+use ForumRewrite\PresentationPathResolver;
+use ForumRewrite\SiteProfileRegistry;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 $projectRoot = dirname(__DIR__);
@@ -52,6 +57,7 @@ $sourceCounts = null;
 $readModelCounts = null;
 $phase = 'scanning source record counts';
 $failure = null;
+$readModelPromoted = false;
 try {
     fwrite(STDOUT, "[1/3] Scanning source record counts...\n");
     $sourceCounts = [
@@ -88,6 +94,7 @@ try {
         },
     ))->promote($candidatePath);
     fwrite(STDOUT, "[3/3] Read model promoted.\n");
+    $readModelPromoted = true;
     $phase = 'reading rebuilt model counts';
     $pdo = new PDO('sqlite:' . $databasePath);
     $readModelCounts = [
@@ -96,6 +103,20 @@ try {
         'profiles' => (int) $pdo->query('SELECT COUNT(*) FROM profiles')->fetchColumn(),
         'activity' => (int) $pdo->query('SELECT COUNT(*) FROM activity')->fetchColumn(),
     ];
+
+    $phase = 'ensuring the initial offline snapshot';
+    $profile = SiteProfileRegistry::active();
+    $staticHtmlRoot = (string) (getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, $profile));
+    $approvedMembersOnly = FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)
+        ->evaluate(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)
+        ->effectiveValue;
+    $snapshot = (new OfflineSnapshotBootstrap($staticHtmlRoot))->ensure($databasePath, !$approvedMembersOnly);
+    $snapshotMessage = match ($snapshot['status']) {
+        'published' => 'published at ' . $snapshot['path'],
+        'already_available' => 'already available at ' . $snapshot['path'],
+        'unavailable' => 'intentionally unavailable while approved-members-only is enabled',
+    };
+    fwrite(STDOUT, "Offline snapshot bootstrap: {$snapshotMessage}\n");
 } catch (Throwable $throwable) {
     $failure = $throwable;
 } finally {
@@ -111,6 +132,9 @@ if ($failure !== null) {
         microtime(true) - $startedAt,
     ));
     fwrite(STDERR, $failure->getMessage() . "\n");
+    if ($readModelPromoted) {
+        fwrite(STDERR, "The read model was promoted, but offline snapshot readiness failed. Retry with ./v3 offline publish after correcting the error.\n");
+    }
     exit(1);
 }
 

@@ -61,6 +61,7 @@ Optional runtime setting:
 - `LLM_CONVERSATION_RECORDING_ENABLED`: controls private exact-prompt/response capture. The default is enabled.
 - `LLM_CONVERSATION_UI_ENABLED`: controls approved-user/operator web visibility of captured exchanges. The default is enabled.
 - `LLM_EXCHANGE_DATABASE_PATH`: optional private SQLite path; defaults to `<application-root>/state/private/llm_exchanges.sqlite3`.
+- `VISITOR_STATISTICS_DATABASE_PATH`: optional private SQLite path for aggregate visitor statistics; defaults to `<application-root>/state/private/visitor_statistics.sqlite3`.
 - `FORUM_TASK_QUEUE_DATABASE_PATH`: optional private SQLite path for queued internal maintenance; defaults to `<application-root>/state/private/internal_tasks.sqlite3`.
 - `FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED`: optional `true` enables one detached, allowlisted queue-worker launch when a classified schema recovery finds no fresh executor heartbeat. Leave it unset on hosts that prohibit child processes.
 - `FAST_SCORING_DATABASE_PATH`: optional private SQLite score-state path; defaults to `<application-root>/state/private/fast_scores.sqlite3`.
@@ -76,6 +77,7 @@ The web user must be able to write:
 - `FORUM_STATIC_HTML_ROOT` and its `releases/` directory
 - `state/private/agent-reply/` under the application root if agent reply fulfillment is enabled
 - the parent directory of `LLM_EXCHANGE_DATABASE_PATH` if LLM conversation recording is enabled
+- the parent directory of `VISITOR_STATISTICS_DATABASE_PATH` when visitor statistics are in use
 - the parent directory of `FORUM_TASK_QUEUE_DATABASE_PATH` when the internal task queue is enabled
 - the parent directory of `FAST_SCORING_DATABASE_PATH` when Fastmod sweeps are enabled
 Static HTML is derived state. A write removes the `current` release pointer, so
@@ -241,6 +243,8 @@ restored session plus its existing browser signature verification.
 LLM exchange records are private runtime data. Keep `LLM_EXCHANGE_DATABASE_PATH` outside `public/`, the canonical repository, and the published read-model database; restrict the file to the deployment/web users. The exchange UI is available only to approved viewers and can be disabled independently with `LLM_CONVERSATION_UI_ENABLED=false`.
 
 Internal task-queue records are also private runtime data. Keep `FORUM_TASK_QUEUE_DATABASE_PATH` outside `public/`, the canonical repository, and the published read-model database. The queue is deliberately separate from the rebuildable read model so a rebuild task retains its state and final outcome. Its executor history, detached-launch outcomes, and rebuild checkpoints live in that same private database; terminal history is bounded while active work and automatic-recovery circuit state are retained.
+
+Visitor statistics are private runtime data. Keep `VISITOR_STATISTICS_DATABASE_PATH` outside `public/`, the canonical repository, and published artifacts. It retains only bounded UTC hourly aggregates for up to 90 days: eligible-request counters, anonymous/server-authenticated request counters, and mergeable client/authenticated-user cardinality sketches. It never retains raw visitor, session, key, identity, route, referrer, header, or network records. A deployment begins a new hourly collection epoch; legacy daily aggregates are not converted into hourly history. Its protected page reports only server-observed eligible traffic; direct edge/static delivery outside PHP is not included.
 
 ## Site Profile
 
@@ -538,7 +542,9 @@ This directory must not be under `public/` and should be readable only by the de
 4. Create the writable state directory.
 5. Configure Apache to serve `public/`.
 6. Set the production environment variables.
-7. Run the initial read-model rebuild.
+7. Run the initial read-model rebuild. On a public instance, it automatically
+   publishes the first offline snapshot when one is not already served; treat a
+   reported snapshot-readiness failure as a launch blocker.
 8. Optionally build sibling static HTML artifacts.
 
 Example commands:
@@ -547,6 +553,16 @@ Example commands:
 php scripts/rebuild_read_model.php /srv/forum-rewrite/repository /srv/forum-rewrite/state/cache/post_index.sqlite3
 php scripts/build_static_artifacts.php /srv/forum-rewrite/repository /srv/forum-rewrite/state/cache/post_index.sqlite3 /srv/forum-rewrite/app/public
 ```
+
+For a public instance, before launch verify the anonymous endpoint from an
+operator machine:
+
+```bash
+./v3 offline diagnose --url=https://your-public-domain
+```
+
+The command must report a successful public snapshot response. In
+approved-members-only mode, public snapshots are intentionally unavailable.
 
 ## Pre-Launch Checklist
 
@@ -559,6 +575,8 @@ php scripts/build_static_artifacts.php /srv/forum-rewrite/repository /srv/forum-
 - the web user can write the read-model database and lock files
 - the web user can invalidate `public/*.html` artifacts if sibling artifacts are enabled
 - `/api/read_model_status` returns `status=ready`
+- on public instances, `./v3 offline diagnose --url=https://your-public-domain`
+  reports a successful public snapshot response
 - HTTP requests to `/account/key/`, `/compose/thread`, and `/assets/openpgp_loader.js` return app/asset responses, not forced HTTPS redirects
 - default responses do not emit `Strict-Transport-Security`
 
@@ -568,6 +586,8 @@ Before launch, verify:
 
 - board route loads
 - thread route loads
+- anonymous `/offline/snapshot.sqlite3` returns a successful response on public
+  instances
 - profile route loads
 - account route loads
 - compose thread/reply routes load
@@ -584,7 +604,7 @@ Before launch, verify:
 1. deploy application code
 2. verify Apache config
 3. verify writable repository/config paths
-4. rebuild read model
+4. rebuild read model and resolve any offline snapshot-readiness failure
 5. build static artifacts
 6. open `/api/read_model_status`
 7. smoke-test core read routes
