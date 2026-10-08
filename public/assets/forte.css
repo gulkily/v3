@@ -685,6 +685,36 @@ body.paned-reader-body {
   min-width: 26rem;
 }
 
+/* On a phone, the reader's desktop columns leave the list and content panes
+   too narrow to use. Keep the same three panes and their order, but turn the
+   shared Board/Activity/Users shell into a bounded vertical workspace. */
+@media (max-width: 48rem) {
+  .paned-toolbar {
+    overflow-x: auto;
+  }
+
+  .paned-toolbar-identity {
+    margin-left: 0;
+  }
+
+  .paned-board-layout {
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  .paned-folder-tree {
+    width: auto;
+    flex: 0 0 8rem;
+    margin: 0.5rem 0.5rem 0;
+  }
+
+  .paned-board-main {
+    min-width: 0;
+    flex: 1 1 auto;
+    width: auto;
+  }
+}
+
 .paned-new-thread-dialog {
   padding: 0;
   margin: auto;
