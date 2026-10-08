@@ -54,3 +54,13 @@
 - Notes:
   - Approved-members-only mode remains explicitly exempt from public snapshot
     readiness and endpoint expectations.
+
+## Final Verification
+
+- `./v3 test` completed with 823 passing tests, including the new bootstrap
+  service and rebuild-command coverage.
+- `git diff --check` passes; only the pre-existing `qdb_todo.txt` and `todo.txt`
+  working-tree edits remain outside these commits.
+- A live public endpoint was not available in this checkout; operators must run
+  the documented `./v3 offline diagnose --url=https://your-public-domain`
+  check before launch.
