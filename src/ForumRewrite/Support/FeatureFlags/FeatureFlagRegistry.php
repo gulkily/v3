@@ -11,6 +11,7 @@ final class FeatureFlagRegistry
     public const APP_VERSION_NOTIFICATION = 'FORUM_APP_VERSION_NOTIFICATION';
     public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
+    public const MEDIA_EMBEDS_INLINE_PLAYER_ENABLED = 'FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED';
     public const STATIC_DETAIL_PAGES_ENABLED = 'FORUM_STATIC_DETAIL_PAGES_ENABLED';
     public const DEDALUS_AGENT_REPLIES_ENABLED = 'DEDALUS_AGENT_REPLIES_ENABLED';
     public const DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED = 'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED';
@@ -84,6 +85,15 @@ final class FeatureFlagRegistry
                 false,
                 self::MEDIA_EMBEDS_ENABLED,
                 siteMutable: true,
+            ),
+            new FeatureFlagDefinition(
+                self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
+                'Media embed inline player',
+                'Play a recognized YouTube link inline behind a collapsed expando, and show a cached thumbnail/title preview for a recognized Instagram link, instead of Media embed cards\' plain link card. Off by default; requires Media embed cards enabled too.',
+                false,
+                self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
+                siteMutable: true,
+                requiresEnabledFlag: self::MEDIA_EMBEDS_ENABLED,
             ),
             new FeatureFlagDefinition(
                 self::STATIC_DETAIL_PAGES_ENABLED,
