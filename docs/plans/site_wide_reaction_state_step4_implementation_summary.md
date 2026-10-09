@@ -33,3 +33,24 @@
 - Notes:
   - The cache remains inert until Stage 3 wires it into reaction controls;
     cache data cannot authorize a server write.
+
+## Stage 3 - Exact cross-site reaction hydration
+
+- Changes:
+  - Hydrated remembered markers on page load and after successful or accepted
+    thread/post writes; matching controls become disabled and use their existing
+    applied label.
+  - Preserved target-kind/tag separation and derived the current identity from
+    the established helper or its validated saved OpenPGP fingerprint.
+  - Added browser coverage for site, identity, target, and tag isolation, and
+    corrected the QDB server-state regression to assert both dynamic captions.
+- Verification:
+  - `./v3 test BrowserSigningNormalizationTest` — 72 passed.
+  - `./v3 test BrowserSigningNormalizationTest WriteApiSmokeTest
+    QuoteCardDisplayNumberTest` — reaction/QDB coverage passed; pre-existing
+    `WriteApiSmokeTest::testTaskQueueProcessesQueuedAgentReplyOnce` failed.
+  - `node --check public/assets/thread_reactions.js`
+  - `git diff --check`
+- Notes:
+  - The cache only changes presentation after a server `status=ok` response;
+    QDB pair-wide interpretation remains isolated to Stage 4.

@@ -283,11 +283,16 @@
   function currentReactionIdentityId() {
     try {
       const helper = typeof window !== "undefined" ? window.__forumBrowserIdentity : null;
-      if (!helper || typeof helper.currentAuthorIdentityId !== "function") {
-        return "";
+      if (helper && typeof helper.currentAuthorIdentityId === "function") {
+        const helperIdentityId = reactionIdentityId(helper.currentAuthorIdentityId());
+        if (helperIdentityId !== "") {
+          return helperIdentityId;
+        }
       }
 
-      return reactionIdentityId(helper.currentAuthorIdentityId());
+      const storage = reactionStorage();
+      const fingerprint = storage ? String(storage.getItem("forum_pki_fingerprint") || "").trim().toLowerCase() : "";
+      return /^[a-f0-9]{40}$/.test(fingerprint) ? `openpgp:${fingerprint}` : "";
     } catch (error) {
       return "";
     }
@@ -365,6 +370,50 @@
     } catch (error) {
       return false;
     }
+  }
+
+  function reactionButtonTargetId(button, kind) {
+    if (!button || typeof button.getAttribute !== "function") {
+      return "";
+    }
+
+    if (kind === "post") {
+      const buttonPostId = button.getAttribute("data-post-id") || "";
+      if (buttonPostId !== "") {
+        return buttonPostId;
+      }
+
+      const postRoot = typeof button.closest === "function" ? button.closest(".post-card[data-post-id]") : null;
+      return postRoot ? (postRoot.getAttribute("data-post-id") || "") : "";
+    }
+
+    const threadRoot = typeof button.closest === "function" ? button.closest("[data-thread-reactions-root]") : null;
+    return threadRoot ? (threadRoot.getAttribute("data-thread-id") || "") : "";
+  }
+
+  function hydrateReactionMarker(marker, root) {
+    const target = root || (typeof document !== "undefined" ? document : null);
+    if (!target || typeof target.querySelectorAll !== "function") {
+      return;
+    }
+
+    const action = marker.kind === "thread" ? "apply-thread-tag" : "apply-post-tag";
+    Array.from(target.querySelectorAll(`[data-action="${action}"]`)).forEach(function (button) {
+      if (!(button instanceof HTMLButtonElement)
+        || button.getAttribute("data-tag") !== marker.tag
+        || reactionButtonTargetId(button, marker.kind) !== marker.id) {
+        return;
+      }
+
+      button.disabled = true;
+      setConfirmedReactionButton(button, button.getAttribute("data-applied-label") || "Applied");
+    });
+  }
+
+  function hydrateRememberedReactions(root) {
+    reactionMarkersForIdentity(currentReactionIdentityId()).forEach(function (marker) {
+      hydrateReactionMarker(marker, root);
+    });
   }
 
   function parseResponseValue(text, key) {
@@ -718,10 +767,16 @@
         const voteCount = parseResponseValue(text, "vote_count");
         const wroteRecord = parseResponseValue(text, "wrote_record") === "yes";
         const viewerIsApproved = parseResponseValue(text, "viewer_is_approved") === "yes";
+        const viewerIdentityId = reactionIdentityId(parseResponseValue(text, "viewer_identity_id")) || currentReactionIdentityId();
 
         setThreadScore(scoreNode, scoreTotal, voteCount);
 
         setConfirmedReactionButton(button, appliedLabel);
+        const marker = reactionMarker("thread", threadId, tag);
+        if (marker) {
+          rememberReactionMarker(marker.kind, marker.id, marker.tag, viewerIdentityId);
+          hydrateReactionMarker(marker);
+        }
         notifyReactionApplied();
 
         markActionTiming(timing, "forum_reconcile_complete");
@@ -806,8 +861,14 @@
 
         const wroteRecord = parseResponseValue(text, "wrote_record") === "yes";
         const isHidden = parseResponseValue(text, "is_hidden") === "yes";
+        const viewerIdentityId = reactionIdentityId(parseResponseValue(text, "viewer_identity_id")) || currentReactionIdentityId();
 
         setConfirmedReactionButton(button, appliedLabel);
+        const marker = reactionMarker("post", postId, tag);
+        if (marker) {
+          rememberReactionMarker(marker.kind, marker.id, marker.tag, viewerIdentityId);
+          hydrateReactionMarker(marker);
+        }
         notifyReactionApplied();
 
         if (isHidden) {
@@ -863,10 +924,11 @@
   }
 
   if (typeof window !== "undefined") {
-    window.ForumThreadReactions = { bindWithin: bindWithin };
+    window.ForumThreadReactions = { bindWithin: bindWithin, hydrateRememberedReactions: hydrateRememberedReactions };
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    hydrateRememberedReactions(document);
     bindWithin(document);
   });
 })();

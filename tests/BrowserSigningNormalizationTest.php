@@ -5911,6 +5911,75 @@ NODE;
         assertSame(false, $result['missing']['buttonDisabled']);
     }
 
+    public function testReactionCacheHydratesOnlyTheMatchingSiteIdentityAndAction(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const identity = 'openpgp:0123456789abcdef0123456789abcdef01234567';
+const storage = {
+  forum_pki_fingerprint: '0123456789ABCDEF0123456789ABCDEF01234567',
+  'forum-reaction-state-v1:qdb:openpgp%3A0123456789abcdef0123456789abcdef01234567': JSON.stringify({
+    version: 1,
+    markers: [{ kind: 'thread', id: 'thread-001', tag: 'like' }]
+  })
+};
+
+class HTMLButtonElement {
+  constructor(action, tag) {
+    this.disabled = false;
+    this.textContent = action === 'apply-thread-tag' ? 'Like' : 'Flag';
+    this.attributes = { 'data-action': action, 'data-tag': tag, 'data-applied-label': action === 'apply-thread-tag' ? 'Liked' : 'Flagged' };
+  }
+  getAttribute(name) { return this.attributes[name] || null; }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  closest(selector) {
+    if (selector === '[data-thread-reactions-root]' || selector === '.post-card[data-post-id]') return root;
+    return null;
+  }
+}
+
+const root = { getAttribute(name) { return name === 'data-thread-id' || name === 'data-post-id' ? 'thread-001' : ''; } };
+const like = new HTMLButtonElement('apply-thread-tag', 'like');
+const flag = new HTMLButtonElement('apply-post-tag', 'flag');
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = {
+  forumBrowserRuntime: { namespace: 'zenmemes' },
+  localStorage: { getItem(key) { return Object.prototype.hasOwnProperty.call(storage, key) ? storage[key] : null; }, setItem() {} }
+};
+global.localStorage = window.localStorage;
+global.document = {
+  addEventListener(type, handler) { if (type === 'DOMContentLoaded') handler(); },
+  querySelectorAll(selector) {
+    if (selector === '[data-action="apply-thread-tag"]') return [like];
+    if (selector === '[data-action="apply-post-tag"]') return [flag];
+    return [];
+  }
+};
+
+vm.runInThisContext(source);
+const otherSite = { likeDisabled: like.disabled, flagDisabled: flag.disabled };
+window.forumBrowserRuntime.namespace = 'qdb';
+window.ForumThreadReactions.hydrateRememberedReactions();
+process.stdout.write(JSON.stringify({
+  identity,
+  otherSite,
+  qdb: { likeDisabled: like.disabled, likeText: like.textContent, likePressed: like.attributes['aria-pressed'], flagDisabled: flag.disabled }
+}));
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame(false, $result['otherSite']['likeDisabled']);
+        assertSame(false, $result['otherSite']['flagDisabled']);
+        assertSame(true, $result['qdb']['likeDisabled']);
+        assertSame('Liked', $result['qdb']['likeText']);
+        assertSame('true', $result['qdb']['likePressed']);
+        assertSame(false, $result['qdb']['flagDisabled']);
+    }
+
     public function testQdbReactionStatusReplacesThePreviousVoteOrFlagStatus(): void
     {
         $script = <<<'NODE'
