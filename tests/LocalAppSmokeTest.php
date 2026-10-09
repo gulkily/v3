@@ -20,6 +20,7 @@ use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
@@ -2224,6 +2225,32 @@ PHP;
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $featureFlags);
         assertStringContains('data-role="feature-flag-source">site</span>', $featureFlags);
         assertStringContains('badge-overridden', $featureFlags);
+    }
+
+    public function testFeatureFlagsPageOrganizesEveryRegisteredFlagOnce(): void
+    {
+        $application = new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath);
+        $featureFlags = $this->render($application, '/tools/feature-flags/');
+
+        foreach ([
+            'Access and identity',
+            'Authored content',
+            'Forum experience',
+            'Site rendering',
+            'Agent replies',
+            'LLM exchanges',
+            'Fastmod',
+        ] as $groupLabel) {
+            assertSame(1, substr_count($featureFlags, 'class="feature-flag-group-heading">' . $groupLabel . '</h2>'));
+        }
+
+        foreach ((new FeatureFlagRegistry())->all() as $definition) {
+            assertSame(1, substr_count($featureFlags, 'data-flag-key="' . $definition->key . '"'));
+        }
+
+        assertStringContains('role="switch"', $featureFlags);
+        assertStringContains('badge-locked', $featureFlags);
+        assertStringContains('requires Unicode authored text', $featureFlags);
     }
 
     public function testAutomaticGuestKeypairFlagRendersBrowserRuntimeOption(): void

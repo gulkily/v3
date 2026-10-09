@@ -303,23 +303,38 @@ PHP);
         });
     }
 
-    public function testGroupKeyFallsBackToPrefixAndRegistryLabelsKnownGroups(): void
+    public function testRegistryOrganizesFlagsByOperatorFacingGroup(): void
     {
         $registry = new FeatureFlagRegistry();
 
+        $approvedMembers = $registry->get(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
+        $guestKeypair = $registry->get(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED);
         $unicode = $registry->get(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
+        $emoji = $registry->get(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT);
+        $versionNotification = $registry->get(FeatureFlagRegistry::APP_VERSION_NOTIFICATION);
+        $threadDensity = $registry->get(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED);
+        $staticDetails = $registry->get(FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED);
         $agentReplies = $registry->get(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED);
         $conversationUi = $registry->get(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED);
         $fastScoring = $registry->get(FeatureFlagRegistry::FAST_SCORING_ENABLED);
 
-        assertSame('FORUM', $unicode->groupKey());
+        assertSame('ACCESS', $approvedMembers->groupKey());
+        assertSame('ACCESS', $guestKeypair->groupKey());
+        assertSame('AUTHORING', $unicode->groupKey());
+        assertSame('AUTHORING', $emoji->groupKey());
+        assertSame('EXPERIENCE', $versionNotification->groupKey());
+        assertSame('EXPERIENCE', $threadDensity->groupKey());
+        assertSame('RENDERING', $staticDetails->groupKey());
         assertSame('DEDALUS', $agentReplies->groupKey());
         assertSame('LLM', $conversationUi->groupKey());
         // FAST_SCORING_ENABLED's key prefix alone would be "FAST" - this
         // confirms the explicit `group` override on the definition, not the
         // prefix fallback, is what's actually used.
         assertSame('FASTMOD', $fastScoring->groupKey());
-        assertSame('Forum', $registry->groupLabel($unicode->groupKey()));
+        assertSame('Access and identity', $registry->groupLabel($approvedMembers->groupKey()));
+        assertSame('Authored content', $registry->groupLabel($unicode->groupKey()));
+        assertSame('Forum experience', $registry->groupLabel($versionNotification->groupKey()));
+        assertSame('Site rendering', $registry->groupLabel($staticDetails->groupKey()));
         assertSame('Agent replies', $registry->groupLabel($agentReplies->groupKey()));
         assertSame('LLM exchanges', $registry->groupLabel($conversationUi->groupKey()));
         assertSame('Fastmod', $registry->groupLabel($fastScoring->groupKey()));
