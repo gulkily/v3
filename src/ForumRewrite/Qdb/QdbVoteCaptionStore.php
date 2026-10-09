@@ -130,4 +130,57 @@ final class QdbVoteCaptionStore
             'score' => (int) $row['score'],
         ], $rows);
     }
+
+    /** @return list<array{caption_set_id:int, positive:array{tag:string,label:string,score:int}, negative:array{tag:string,label:string,score:int}}> */
+    public function activePairs(): array
+    {
+        $pairs = [];
+        foreach ($this->members() as $member) {
+            if ($member['active'] !== 1) {
+                continue;
+            }
+
+            $setId = $member['caption_set_id'];
+            $pairs[$setId] ??= ['caption_set_id' => $setId, 'positive' => null, 'negative' => null];
+            $caption = ['tag' => $member['tag'], 'label' => $member['label'], 'score' => $member['score']];
+            if ($member['direction'] === 1) {
+                $pairs[$setId]['positive'] = $caption;
+            } else {
+                $pairs[$setId]['negative'] = $caption;
+            }
+        }
+
+        return array_values(array_map(
+            static fn (array $pair): array => [
+                'caption_set_id' => $pair['caption_set_id'],
+                'positive' => $pair['positive'],
+                'negative' => $pair['negative'],
+            ],
+            array_filter($pairs, static fn (array $pair): bool => is_array($pair['positive']) && is_array($pair['negative']))
+        ));
+    }
+
+    /** @return array{tag:string,label:string,score:int}|null */
+    public function caption(string $tag): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT tag, label, score FROM qdb_vote_captions WHERE tag = :tag');
+        $stmt->execute(['tag' => $tag]);
+        $row = $stmt->fetch();
+        if ($row === false) {
+            return null;
+        }
+
+        return ['tag' => (string) $row['tag'], 'label' => (string) $row['label'], 'score' => (int) $row['score']];
+    }
+
+    public function isActiveTag(string $tag): bool
+    {
+        foreach ($this->activePairs() as $pair) {
+            if ($pair['positive']['tag'] === $tag || $pair['negative']['tag'] === $tag) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

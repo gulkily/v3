@@ -15,3 +15,17 @@
 - Notes:
   - This stage intentionally adds storage and seed data only; selection,
     scoring, writes, and presentation arrive in later stages.
+
+## Stage 2 - Catalog policy
+
+- Changes:
+  - Added a catalog facade for page-pair selection, known-tag score lookup, and
+    active-tag validation.
+  - Selection accepts only complete active pairs; archived inactive tags remain
+    resolvable for historical scoring.
+- Verification:
+  - `./v3 test QdbVoteCaptionStoreTest` — passed.
+  - `git diff --check` — passed.
+- Notes:
+  - Catalog values are constrained to `+1`/`-1`; activation controls what new
+    pages may render and write, not whether existing tag history can be read.

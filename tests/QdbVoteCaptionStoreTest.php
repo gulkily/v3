@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Qdb\QdbVoteCaptionDatabaseConfig;
+use ForumRewrite\Qdb\QdbVoteCaptionCatalog;
 use ForumRewrite\Qdb\QdbVoteCaptionStore;
 
 final class QdbVoteCaptionStoreTest
@@ -38,6 +39,27 @@ final class QdbVoteCaptionStoreTest
     {
         putenv('FORUM_QDB_VOTE_CAPTIONS_DATABASE_PATH');
         assertSame('/var/state/qdb_vote_captions.sqlite3', QdbVoteCaptionDatabaseConfig::path('/var/state/forum.sqlite3'));
+    }
+
+    public function testCatalogSelectsOnlyCompleteActivePairsAndRetainsRetiredTags(): void
+    {
+        $path = sys_get_temp_dir() . '/qdb-vote-caption-catalog-' . bin2hex(random_bytes(8)) . '.sqlite3';
+        try {
+            $store = QdbVoteCaptionStore::open($path);
+            $store->bootstrap();
+            $catalog = new QdbVoteCaptionCatalog($store);
+
+            assertSame(9, count($catalog->activePairs()));
+            assertSame(true, $catalog->isActiveTag('good'));
+            assertSame(false, $catalog->isActiveTag('not'));
+            assertSame(true, $catalog->isKnownTag('not'));
+            assertSame(-1, $catalog->scoreForTag('not'));
+
+            $pair = $catalog->selectActivePair();
+            assertSame(true, $pair['positive']['score'] === 1 && $pair['negative']['score'] === -1);
+        } finally {
+            @unlink($path);
+        }
     }
 }
 
