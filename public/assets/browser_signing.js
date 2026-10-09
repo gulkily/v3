@@ -1813,6 +1813,13 @@
     ));
   }
 
+  function pageHasVoteSurfaces(root) {
+    const scope = root || document;
+    return Boolean(scope && typeof scope.querySelector === "function" && scope.querySelector(
+      "[data-thread-reactions-root], .post-card[data-post-id]"
+    ));
+  }
+
   function identityStatusNodes(root) {
     const scope = root || document;
     if (!scope || typeof scope.querySelectorAll !== "function") {
@@ -2027,7 +2034,9 @@
         }
         markActionTiming(timing, "forum_openpgp_ready");
 
-        if (hasBrowserKeypair()) {
+        if (pageHasVoteSurfaces(root)) {
+          await ensureStoredIdentityReady(root, timing);
+        } else if (hasBrowserKeypair()) {
           if (storedFingerprint() === "") {
             await ensureStoredFingerprint();
           }
@@ -2047,6 +2056,18 @@
     });
 
     return true;
+  }
+
+  async function ensureStoredIdentityReady(root, timing) {
+    if (!hasBrowserKeypair()) {
+      return false;
+    }
+
+    return ensureReadyIdentity(root, null, {
+      existingIdentityOnly: true,
+      verifyPublishedIdentity: true,
+      timing: timing,
+    });
   }
 
   function scheduleAutomaticGuestIdentity(root) {
@@ -2415,6 +2436,9 @@
       : promptForComposeUsername;
 
     if (!hasBrowserKeypair()) {
+      if (config.existingIdentityOnly === true) {
+        return false;
+      }
       await ensureOpenPgpApi(["generateKey", "readKey"]);
       setStatus(statusNode, "Choose a username to prepare your browser keypair...", "info");
       markActionTiming(timing, "forum_username_prompt_start");
@@ -2461,6 +2485,9 @@
     const timing = config.timing || null;
     const verifyPublishedIdentity = config.verifyPublishedIdentity !== false;
     const publishPublicKey = config.publishPublicKey !== false;
+    if (config.existingIdentityOnly === true && !hasBrowserKeypair()) {
+      return false;
+    }
     const publishedFingerprint = (localStorage.getItem(storageKeys.publishedFingerprint) || "")
       .trim()
       .toUpperCase();
@@ -2519,9 +2546,11 @@
       currentAuthorIdentityId: currentAuthorIdentityId,
       ensureActionIdentity: ensureActionIdentity,
       ensureReadyIdentity: ensureReadyIdentity,
+      ensureStoredIdentityReady: ensureStoredIdentityReady,
       hasBrowserKeypair: hasBrowserKeypair,
       identityPreparationState: identityPreparationState,
       pageHasSignedActionSurfaces: pageHasSignedActionSurfaces,
+      pageHasVoteSurfaces: pageHasVoteSurfaces,
       renderIdentityPreparationState: renderIdentityPreparationState,
       scheduleIdentityPrewarm: scheduleIdentityPrewarm,
       scheduleAutomaticGuestIdentity: scheduleAutomaticGuestIdentity,
