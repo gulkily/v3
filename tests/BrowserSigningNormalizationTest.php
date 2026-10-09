@@ -2956,6 +2956,40 @@ NODE;
         assertSame(14.25, $result['result']['serverTiming']['total']);
     }
 
+    public function testQuoteThreadTransportSelectsQuoteCreateAndPrepareEndpoints(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const form = { dataset: { composeKind: 'thread', authoringOperation: 'quote' } };
+
+global.window = {};
+global.localStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.sessionStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener() {}, querySelector() { return null; },
+  createElement() { return { setAttribute(){}, style:{}, addEventListener(){}, appendChild(){}, select(){} }; },
+  createTextNode(text) { return { textContent: text }; }, body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+const helper = window.__forumComposeNormalization;
+process.stdout.write(JSON.stringify({
+  isQuote: helper.isQuoteComposeForm(form),
+  createPath: helper.threadCreateApiPath(form),
+  preparePath: helper.threadPrepareApiPath(form)
+}));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(true, $result['isQuote']);
+        assertSame('/api/create_quote', $result['createPath']);
+        assertSame('/api/prepare_quote', $result['preparePath']);
+    }
+
     public function testSignedThreadSubmitPreparesSignsAndFinalizes(): void
     {
         $script = <<<'NODE'

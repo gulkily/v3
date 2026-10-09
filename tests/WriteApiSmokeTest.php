@@ -2140,6 +2140,24 @@ NODE;
         }
     }
 
+    public function testQdbAddAndComposeThreadFormsSelectDifferentIdTypes(): void
+    {
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+            $quoteResponse = $this->renderMethod($application, 'POST', '/add?body=Form%20quote');
+            $threadResponse = $this->renderMethod($application, 'POST', '/compose/thread?subject=Regular&body=Form%20thread');
+
+            assertTrue(preg_match('/Created thread (thread-\d{14}-qdb-1)\./', $quoteResponse) === 1);
+            assertTrue(preg_match('/Created thread (thread-\d{14}-[0-9a-f]{8})\./', $threadResponse, $threadMatches) === 1);
+            assertStringNotContains('-qdb-', $threadMatches[1]);
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+    }
+
     public function testQuoteApiRejectsNonQdbSiteProfiles(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

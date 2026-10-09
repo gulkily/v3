@@ -603,6 +603,18 @@
     return Boolean(form && form.dataset && form.dataset.composeKind === "thread");
   }
 
+  function isQuoteComposeForm(form) {
+    return Boolean(form && form.dataset && form.dataset.authoringOperation === "quote");
+  }
+
+  function threadCreateApiPath(form) {
+    return isQuoteComposeForm(form) ? "/api/create_quote" : "/api/create_thread";
+  }
+
+  function threadPrepareApiPath(form) {
+    return isQuoteComposeForm(form) ? "/api/prepare_quote" : "/api/prepare_thread";
+  }
+
   function composeFormFieldValue(form, name) {
     const field = form.querySelector(`[name="${name}"]`);
     return field ? field.value : "";
@@ -1007,7 +1019,7 @@
 
   async function prepareThreadFormForSigning(form) {
     await ensureCurrentComposeAuthorIdentity(form);
-    const result = await submitUrlEncoded("/api/prepare_thread", collectThreadSubmitFields(form));
+    const result = await submitUrlEncoded(threadPrepareApiPath(form), collectThreadSubmitFields(form));
     return parsePreparedPostJsonResponse(result.text, result.serverTiming, "Unable to prepare thread for signing.");
   }
 
@@ -1270,7 +1282,7 @@
   }
 
   async function submitUnsignedThreadFormToApi(form) {
-    const response = await fetch("/api/create_thread", {
+    const response = await fetch(threadCreateApiPath(form), {
       method: "POST",
       credentials: "same-origin",
       headers: {
@@ -1300,6 +1312,7 @@
       insertPendingReplyCard: insertPendingReplyCard,
       insertPendingThreadShell: insertPendingThreadShell,
       isInlineReplyComposer: isInlineReplyComposer,
+      isQuoteComposeForm: isQuoteComposeForm,
       isReplyComposeForm: isReplyComposeForm,
       isThreadComposeForm: isThreadComposeForm,
       normalizeComposeAscii: normalizeComposeAscii,
@@ -1317,6 +1330,8 @@
       submitSignedThreadFormToApi: submitSignedThreadFormToApi,
       submitUnsignedReplyFormToApi: submitUnsignedReplyFormToApi,
       submitUnsignedThreadFormToApi: submitUnsignedThreadFormToApi,
+      threadCreateApiPath: threadCreateApiPath,
+      threadPrepareApiPath: threadPrepareApiPath,
     };
   }
 

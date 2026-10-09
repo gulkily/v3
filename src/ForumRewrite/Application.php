@@ -324,6 +324,11 @@ final class Application
             return;
         }
 
+        if ($path === '/add' && $method === 'POST') {
+            $this->composeAndAccountKeyController()->submitComposeQuote($query);
+            return;
+        }
+
         if ($path === '/compose/reply' && $method === 'POST') {
             $this->composeAndAccountKeyController()->submitComposeReply($query);
             return;
