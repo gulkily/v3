@@ -86,6 +86,21 @@ final class ThemeRegistryTest
             assertSame(false, str_contains((string) $baseStyles, 'data-theme-option="' . $name . '"'));
         }
     }
+
+    public function testQdbQuoteHeaderActionsHaveThemeNeutralCompactLayout(): void
+    {
+        $styles = file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+
+        assertSame(true, $styles !== false);
+        assertSame(1, preg_match(
+            '/\\.quote-card-header-actions\\s*\\{[^}]*display:\\s*inline-flex;[^}]*flex-wrap:\\s*wrap;[^}]*max-width:\\s*100%;[^}]*\\}/s',
+            (string) $styles,
+        ));
+        assertSame(1, preg_match(
+            '/\\.quote-card-header-actions \\.thread-reaction-button\\s*\\{[^}]*width:\\s*auto;[^}]*margin-top:\\s*0;[^}]*\\}/s',
+            (string) $styles,
+        ));
+    }
 }
 
 if (!function_exists('assertSame')) {
