@@ -2095,6 +2095,50 @@ NODE;
         assertSame(count($preparedPostsBefore), count($preparedPostsAfter));
     }
 
+    public function testPrepareThreadWithEventFieldsRoundTripsThroughFinalizeAndReadModel(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: true\n"
+        );
+        $signingKey = $this->createSigningKey('event-thread-signer');
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $_POST = ['public_key' => $signingKey['public_key']];
+        $linkResponse = $this->renderMethod($application, 'POST', '/api/link_identity');
+        $_POST = [];
+        $identityId = $this->extractValue($linkResponse, 'identity_id');
+
+        $prepared = json_decode($this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_thread?board_tags=general&subject=Cypher%20Night&body=' . rawurlencode('Doors open sharp.')
+            . '&author_identity_id=' . rawurlencode($identityId)
+            . '&event_date=2026-11-14&event_time=19%3A30'
+            . '&event_location=' . rawurlencode('MIT Media Lab, E14')
+            . '&event_link=' . rawurlencode('https://example.test/cypher-night')
+        ), true, 512, JSON_THROW_ON_ERROR);
+
+        $signature = $this->signCanonicalRecord($signingKey['home'], $prepared['canonical_record']);
+        $_POST = [
+            'prepare_token' => $prepared['prepare_token'],
+            'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'],
+            'author_identity_id' => $identityId,
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $signature,
+        ];
+        $finalized = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_post'), true, 512, JSON_THROW_ON_ERROR);
+        $_POST = [];
+
+        assertSame('ok', $finalized['status']);
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode((string) $prepared['thread_id']));
+        assertStringContains('event-block__date">📅 2026-11-14 at 19:30', $threadPage);
+        assertStringContains('MIT Media Lab, E14', $threadPage);
+        assertStringContains('https://example.test/cypher-night', $threadPage);
+    }
+
     public function testQdbSiteAssignsSequentialQuoteNumbersAcrossDigitBoundary(): void
     {
         putenv('FORUM_SITE_ID=qdb');

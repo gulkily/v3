@@ -2856,6 +2856,10 @@ NODE;
                 'board_tags' => 'general updates',
                 'subject' => 'Thread subject',
                 'body' => 'Thread body',
+                'event_date' => '',
+                'event_time' => '',
+                'event_location' => '',
+                'event_link' => '',
             ],
             $result['fields']
         );
@@ -2866,6 +2870,75 @@ NODE;
         assertSame(22.4, $result['success']['serverTiming']['total']);
         assertSame(false, $result['failure']['ok']);
         assertSame('Subject is required.', $result['failure']['error']);
+    }
+
+    public function testThreadSubmitTransportHelperCollectsEventFieldsWhenPresent(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+
+function field(name, value) {
+  return { name, value };
+}
+
+const fields = [
+  field('author_identity_id', 'openpgp:def456'),
+  field('board_tags', 'general'),
+  field('subject', 'Cypher Night'),
+  field('body', 'Doors open sharp.'),
+  field('event_date', '2026-11-14'),
+  field('event_time', '19:30'),
+  field('event_location', 'MIT Media Lab, E14'),
+  field('event_link', 'https://example.test/cypher-night')
+];
+const form = {
+  dataset: { composeKind: 'thread' },
+  querySelector(selector) {
+    const match = selector.match(/^\[name="([^"]+)"\]$/);
+    if (!match) {
+      return null;
+    }
+
+    return fields.find((item) => item.name === match[1]) || null;
+  }
+};
+
+global.window = {};
+global.localStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.sessionStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener() {},
+  querySelector() { return null; },
+  createElement() { return { setAttribute(){}, style:{}, addEventListener(){}, appendChild(){}, select(){} }; },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+const helper = window.__forumComposeNormalization;
+process.stdout.write(JSON.stringify({
+  fields: helper.collectThreadSubmitFields(form)
+}));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(
+            [
+                'author_identity_id' => 'openpgp:def456',
+                'board_tags' => 'general',
+                'subject' => 'Cypher Night',
+                'body' => 'Doors open sharp.',
+                'event_date' => '2026-11-14',
+                'event_time' => '19:30',
+                'event_location' => 'MIT Media Lab, E14',
+                'event_link' => 'https://example.test/cypher-night',
+            ],
+            $result['fields']
+        );
     }
 
     public function testThreadSubmitTransportPostsUrlEncodedPayload(): void

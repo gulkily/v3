@@ -20,5 +20,15 @@
 ## Stage 2 - Client-side fix and end-to-end verification
 
 - Changes:
+  - `public/assets/browser_signing.js`, `collectThreadSubmitFields()`: added `event_date`, `event_time`, `event_location`, `event_link`, using the existing `composeFormFieldValue()` helper exactly as the other fields already do.
+  - `tests/BrowserSigningNormalizationTest.php`:
+    - Updated `testThreadSubmitTransportHelpersCollectFieldsAndParseResponses`'s expected `fields` object to include the four new keys (each `''`, since that fake form doesn't set them — matching every other optional field's default-empty behavior).
+    - Added `testThreadSubmitTransportHelperCollectsEventFieldsWhenPresent`: same Node-VM harness, form now includes all four event fields; asserts `collectThreadSubmitFields()` returns their exact values.
+  - `tests/WriteApiSmokeTest.php`: added `testPrepareThreadWithEventFieldsRoundTripsThroughFinalizeAndReadModel`, modeled on `testFinalizePreparedApprovalVerifiesSignatureBeforeCreatingApproval` — generates a real local GPG key (`createSigningKey()`), links it as an identity, calls `/api/prepare_thread` with all four event fields, signs the returned canonical record (`signCanonicalRecord()`), finalizes via `/api/create_prepared_post`, then asserts the rendered thread page's event block shows the correct date, time, location, and link.
 - Verification:
+  - Ran the new/updated tests individually: all pass, including the full signed round trip.
+  - `php tests/run.php` full suite: 955 run (2 more than Stage 1), 951 passed, same 4 pre-existing failures, no new ones.
+  - Confirmed live on the user's running dev server (`:8002`, same working tree): `/compose/thread`'s rendered page still has all four event inputs, and the live `/assets/browser_signing.js` response already reflects the fixed `collectThreadSubmitFields()` (opcache validates timestamps, so the fix is live without a server restart).
 - Notes:
+  - Completion Contract met: a signed-in member's event fields now survive the full prepare → sign → finalize path, rendering identically to the already-correct anonymous path; malformed input still fails closed (Stage 1); the anonymous-submit path and `createThread()`'s own tests are untouched and still pass.
+  - Final confirmation is the user retrying their original scenario (the "friday meet" thread, or a fresh one) in their own browser now that the fix is live.
