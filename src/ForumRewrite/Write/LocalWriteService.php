@@ -6,6 +6,7 @@ namespace ForumRewrite\Write;
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\CanonicalPathResolver;
+use ForumRewrite\Canonical\FeatureFlagChangeRecordParser;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\InvitationRecordParser;
 use ForumRewrite\Canonical\PostRecord;
@@ -1444,6 +1445,138 @@ class LocalWriteService
     }
 
     /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function prepareFeatureFlagChange(array $input, string $operatorIdentityId): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
+            $this->assertWritableRepository();
+            $operatorIdentityId = $this->requireOpenPgpIdentityId($operatorIdentityId, 'operator_identity_id');
+            if (!$this->isApprovedIdentity($operatorIdentityId)) {
+                throw new RuntimeException('Feature flag changes require an approved operator identity.');
+            }
+            $key = $this->requireFeatureFlagKey((string) ($input['key'] ?? ''));
+            $requestedValue = $this->requireBooleanValue($input['value'] ?? null, 'value');
+            $currentState = $this->featureFlags->evaluate($key);
+            if ($currentState->environmentValue !== null) {
+                throw new RuntimeException('feature flag is currently overridden by environment: ' . $key);
+            }
+            if ($currentState->siteError !== null) {
+                throw new RuntimeException('feature flags record is invalid: ' . $currentState->siteError);
+            }
+
+            $record = $this->canonicalRepository->loadFeatureFlags(CanonicalPathResolver::featureFlags());
+            if (array_key_exists($key, $record->values) && $record->values[$key] === $requestedValue) {
+                return [
+                    'status' => 'ok', 'wrote_record' => 'no', 'key' => $key,
+                    'site_value' => $requestedValue ? 'true' : 'false',
+                    'effective_value' => $currentState->effectiveValue ? 'true' : 'false', 'source' => $currentState->source,
+                ];
+            }
+
+            $recordId = $this->generateRecordId('feature-flag-change');
+            $createdAt = $this->canonicalTimestampNow();
+            $canonicalRecord = $this->buildFeatureFlagChangeRecord($recordId, $createdAt, $key, $requestedValue, $operatorIdentityId);
+            $recordPath = CanonicalPathResolver::featureFlagChange($recordId);
+            $prepared = $this->storePreparedPost($recordPath, $canonicalRecord, [
+                'kind' => 'feature-flag-change', 'record_id' => $recordId, 'flag_key' => $key,
+                'value' => $requestedValue ? 'true' : 'false', 'operator_identity_id' => $operatorIdentityId,
+            ]);
+
+            return array_merge($prepared, [
+                'status' => 'ok', 'wrote_record' => 'yes', 'record_id' => $recordId,
+                'record_path' => $recordPath, 'canonical_record' => $canonicalRecord,
+            ]);
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function finalizePreparedFeatureFlagChange(array $input, string $operatorIdentityId): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
+            $this->assertWritableRepository();
+            $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($prepareToken);
+            if (($prepared['kind'] ?? '') !== 'feature-flag-change') {
+                throw new RuntimeException('Prepared record is not a feature-flag change.');
+            }
+            if (strtotime((string) ($prepared['expires_at'] ?? '')) < time()) {
+                throw new RuntimeException('Prepared feature-flag change has expired.');
+            }
+
+            $operatorIdentityId = $this->requireOpenPgpIdentityId($operatorIdentityId, 'operator_identity_id');
+            if ($operatorIdentityId !== (string) ($prepared['operator_identity_id'] ?? '')) {
+                throw new RuntimeException('Prepared feature-flag change operator identity mismatch.');
+            }
+            if (!$this->isApprovedIdentity($operatorIdentityId)) {
+                throw new RuntimeException('Feature flag changes require an approved operator identity.');
+            }
+            $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+            if ($canonicalRecord === '' || hash('sha256', $canonicalRecord) !== (string) ($prepared['canonical_sha256'] ?? '')) {
+                throw new RuntimeException('Prepared feature-flag change canonical record mismatch.');
+            }
+            $recordPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $recordId = $this->requirePreparedMatch($input, $prepared, 'record_id');
+            $action = (new FeatureFlagChangeRecordParser())->parse($canonicalRecord);
+            if ($action->recordId !== $recordId
+                || CanonicalPathResolver::featureFlagChange($action->recordId) !== $recordPath
+                || $action->operatorIdentityId !== $operatorIdentityId
+                || $action->flagKey !== (string) ($prepared['flag_key'] ?? '')
+                || ($action->value ? 'true' : 'false') !== (string) ($prepared['value'] ?? '')) {
+                throw new RuntimeException('Prepared feature-flag change does not match its canonical action record.');
+            }
+            if (is_file($this->repositoryRoot . '/' . $recordPath) || is_file($this->repositoryRoot . '/' . $recordPath . '.asc')) {
+                throw new RuntimeException('Feature-flag change record already exists.');
+            }
+
+            $currentState = $this->featureFlags->evaluate($action->flagKey);
+            if ($currentState->environmentValue !== null) {
+                throw new RuntimeException('feature flag is currently overridden by environment: ' . $action->flagKey);
+            }
+            if ($currentState->siteError !== null) {
+                throw new RuntimeException('feature flags record is invalid: ' . $currentState->siteError);
+            }
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($operatorIdentityId);
+            $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
+            if (!$verification['ok']) {
+                throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+            }
+
+            $featureFlagsRecord = $this->canonicalRepository->loadFeatureFlags(CanonicalPathResolver::featureFlags());
+            $values = $featureFlagsRecord->values;
+            $values[$action->flagKey] = $action->value;
+            $snapshot = $this->buildFeatureFlagsRecord($values);
+            $snapshotPath = CanonicalPathResolver::featureFlags();
+            $this->writeFile($recordPath, $canonicalRecord);
+            $this->writeFile($recordPath . '.asc', $signature);
+            $this->writeFile($snapshotPath, $snapshot);
+            $commitResult = $this->commitCanonicalWrite(
+                [$snapshotPath, $recordPath, $recordPath . '.asc'],
+                'Set feature flag ' . $action->flagKey . '=' . ($action->value ? 'true' : 'false') . ' by ' . $operatorIdentityId
+            );
+            $commitSha = $commitResult['commit_sha'];
+            $this->syncReadModelAfterFeatureFlagWrite($action->flagKey, $action->value, $snapshotPath, $commitSha);
+            $this->invalidator()->invalidateFeatureFlags();
+            $this->deletePreparedPost($prepareToken);
+            $updatedState = FeatureFlagEvaluator::forRepository($this->repositoryRoot)->evaluate($action->flagKey);
+
+            return [
+                'status' => 'ok', 'key' => $action->flagKey,
+                'site_value' => $action->value ? 'true' : 'false',
+                'effective_value' => $updatedState->effectiveValue ? 'true' : 'false', 'source' => $updatedState->source,
+                'wrote_record' => 'yes', 'record_id' => $recordId, 'record_path' => $recordPath,
+                'signature_path' => $recordPath . '.asc', 'operator_identity_id' => $operatorIdentityId,
+                'commit_sha' => $commitSha, 'timings' => $commitResult['timings'],
+            ];
+        });
+    }
+
+    /**
      * @return array<string, float>
      */
     protected function rebuildReadModel(): array
@@ -2382,6 +2515,18 @@ class LocalWriteService
         }
 
         (new SiteFeatureFlagsRecordParser())->parse($contents);
+
+        return $contents;
+    }
+
+    private function buildFeatureFlagChangeRecord(string $recordId, string $createdAt, string $flagKey, bool $value, string $operatorIdentityId): string
+    {
+        $contents = "Record-ID: {$recordId}\n"
+            . "Created-At: {$createdAt}\n"
+            . "Flag-Key: {$flagKey}\n"
+            . 'Value: ' . ($value ? 'true' : 'false') . "\n"
+            . "Operator-Identity-ID: {$operatorIdentityId}\n\n";
+        (new FeatureFlagChangeRecordParser())->parse($contents);
 
         return $contents;
     }

@@ -2448,6 +2448,64 @@ NODE;
         assertFalse(is_file($artifactRoot . '/tools/feature-flags.html'));
     }
 
+    public function testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $signingKey = $this->createSigningKey('feature-flag-signer');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $_POST = ['public_key' => $signingKey['public_key']];
+            $identityResponse = $this->renderMethod($application, 'POST', '/api/link_identity');
+            $_POST = [];
+            $identityId = $this->extractValue($identityResponse, 'identity_id');
+            $this->seedApprovedIdentity($repositoryRoot, $identityId);
+            $this->renderMethod($application, 'GET', '/');
+
+            $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+            $prepared = $service->prepareFeatureFlagChange([
+                'key' => 'FORUM_APP_VERSION_NOTIFICATION',
+                'value' => 'false',
+            ], $identityId);
+            $snapshotPath = $repositoryRoot . '/records/instance/feature-flags.txt';
+            $snapshotBefore = is_file($snapshotPath) ? (string) file_get_contents($snapshotPath) : null;
+
+            assertThrowsRuntime(
+                static fn () => $service->finalizePreparedFeatureFlagChange([
+                    'prepare_token' => $prepared['prepare_token'],
+                    'record_id' => $prepared['record_id'],
+                    'record_path' => $prepared['record_path'],
+                    'canonical_record' => $prepared['canonical_record'],
+                    'detached_signature' => 'invalid detached signature',
+                ], $identityId),
+                'Detached signature verification failed: invalid_signature'
+            );
+            assertSame($snapshotBefore, is_file($snapshotPath) ? (string) file_get_contents($snapshotPath) : null);
+            assertFalse(is_file($repositoryRoot . '/' . $prepared['record_path']));
+
+            $signature = $this->signCanonicalRecord($signingKey['home'], $prepared['canonical_record']);
+            $result = $service->finalizePreparedFeatureFlagChange([
+                'prepare_token' => $prepared['prepare_token'],
+                'record_id' => $prepared['record_id'],
+                'record_path' => $prepared['record_path'],
+                'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $signature,
+            ], $identityId);
+
+            assertSame('ok', $result['status']);
+            assertSame($identityId, $result['operator_identity_id']);
+            assertSame($signature, (string) file_get_contents($repositoryRoot . '/' . $prepared['record_path'] . '.asc'));
+            assertStringContains('FORUM_APP_VERSION_NOTIFICATION: false', (string) file_get_contents($repositoryRoot . '/records/instance/feature-flags.txt'));
+            $committedFiles = $this->gitOutput($repositoryRoot, 'show --name-only --format= ' . escapeshellarg($result['commit_sha']));
+            assertStringContains('records/instance/feature-flags.txt', $committedFiles);
+            assertStringContains($prepared['record_path'], $committedFiles);
+            assertStringContains($prepared['record_path'] . '.asc', $committedFiles);
+        } finally {
+            $_POST = [];
+            $this->deleteTree($signingKey['home']);
+        }
+    }
+
     public function testSetFeatureFlagAcceptsDisplayedEnabledDisabledValues(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

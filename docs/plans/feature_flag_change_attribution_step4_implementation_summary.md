@@ -11,3 +11,14 @@
   - UI, browser, deployment, migration, and release checks are not applicable to this canonical-contract stage.
 - Notes:
   - The contract is deliberately separate from the mutable feature-flags snapshot so later writes can retain historical attribution.
+
+## Stage 2 - Signed prepare and finalize lifecycle
+- Changes:
+  - Added prepared feature-flag action creation and finalization to `LocalWriteService`, binding the prepared record, approved operator identity, detached signature, snapshot update, and one git commit.
+  - Invalid signatures leave the prepared request available for a corrected retry and do not create snapshot or action files.
+- Verification:
+  - `php -l src/ForumRewrite/Write/LocalWriteService.php` — passed.
+  - `php tests/run.php WriteApiSmokeTest` — new signed-change coverage passed; 128/129 passed overall, with the pre-existing `testTaskQueueProcessesQueuedAgentReplyOnce` failure.
+  - UI, browser, deployment, migration, and release checks are not applicable until later stages.
+- Notes:
+  - Controller authorization and browser entry points remain for Stage 3; activity attribution remains for Stage 4.
