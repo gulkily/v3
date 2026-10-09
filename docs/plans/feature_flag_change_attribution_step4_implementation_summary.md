@@ -33,3 +33,15 @@
   - Browser manual, deployment, migration, and release checks remain for the final stage.
 - Notes:
   - A direct form submission gives clear signing guidance rather than silently falling back to an unsigned change.
+
+## Stage 4 - Attributed audit history and source evidence
+- Changes:
+  - Signed action records now produce `site_feature_flag` activity with their verified operator, action-record source path, and adjacent signature; incremental writes and full rebuilds use the same evidence.
+  - Legacy snapshot-only history remains as unattributed `site configuration` activity without duplicating signed commits.
+  - Commit manifests classify feature-flag action records and resolve their signer/public-key evidence.
+- Verification:
+  - `php -l src/ForumRewrite/Write/LocalWriteService.php` and `php -l src/ForumRewrite/ReadModel/ReadModelBuilder.php` — passed.
+  - `php tests/run.php WriteApiSmokeTest` — 128/129 passed; the sole `testTaskQueueProcessesQueuedAgentReplyOnce` failure is pre-existing. The signed-change test verifies warm activity plus a full rebuild, record, signature, and signer evidence.
+  - Browser manual, deployment, migration, and release checks remain for the final stage.
+- Notes:
+  - Legacy direct service calls remain only for existing internal compatibility coverage; public endpoints reject unsigned writes.

@@ -1560,7 +1560,15 @@ class LocalWriteService
                 'Set feature flag ' . $action->flagKey . '=' . ($action->value ? 'true' : 'false') . ' by ' . $operatorIdentityId
             );
             $commitSha = $commitResult['commit_sha'];
-            $this->syncReadModelAfterFeatureFlagWrite($action->flagKey, $action->value, $snapshotPath, $commitSha);
+            $this->syncReadModelAfterFeatureFlagWrite(
+                $action->flagKey,
+                $action->value,
+                $snapshotPath,
+                $commitSha,
+                $operatorIdentityId,
+                $recordPath,
+                $action->createdAt,
+            );
             $this->invalidator()->invalidateFeatureFlags();
             $this->deletePreparedPost($prepareToken);
             $updatedState = FeatureFlagEvaluator::forRepository($this->repositoryRoot)->evaluate($action->flagKey);
@@ -1994,7 +2002,15 @@ class LocalWriteService
         return (new ReadModelConnection($this->databasePath))->open();
     }
 
-    private function syncReadModelAfterFeatureFlagWrite(string $key, bool $value, string $recordPath, string $commitSha): void
+    private function syncReadModelAfterFeatureFlagWrite(
+        string $key,
+        bool $value,
+        string $recordPath,
+        string $commitSha,
+        ?string $operatorIdentityId = null,
+        ?string $actionPath = null,
+        ?string $createdAt = null,
+    ): void
     {
         if (!$this->canIncrementallyUpdateReadModel()) {
             // A rebuild replays feature-flag activity from git history too (see
@@ -2017,20 +2033,24 @@ class LocalWriteService
                     source_path, source_commit_sha
                  ) VALUES (
                     :created_at, :kind, :record_family, :action_key, NULL, NULL, :label, :board_tags_json,
-                    NULL, NULL, NULL, :author_label, :author_is_approved,
+                    :author_identity_id, :author_profile_slug, :author_username_token, :author_label, :author_is_approved,
                     :source_path, :source_commit_sha
                  )'
             );
+            $author = $this->featureFlagActivityAuthor($operatorIdentityId);
             $stmt->execute([
-                'created_at' => $this->canonicalTimestampNow(),
+                'created_at' => $createdAt ?? $this->canonicalTimestampNow(),
                 'kind' => 'site_feature_flag',
                 'record_family' => 'instance_feature_flags',
-                'action_key' => $recordPath . '@' . $commitSha,
+                'action_key' => ($actionPath ?? $recordPath) . '@' . $commitSha,
                 'label' => 'Set feature flag ' . $key . '=' . ($value ? 'true' : 'false'),
                 'board_tags_json' => '["site"]',
-                'author_label' => 'site configuration',
-                'author_is_approved' => 1,
-                'source_path' => $recordPath,
+                'author_identity_id' => $operatorIdentityId,
+                'author_profile_slug' => $author['profile_slug'],
+                'author_username_token' => $author['username_token'],
+                'author_label' => $author['label'],
+                'author_is_approved' => $author['is_approved'],
+                'source_path' => $actionPath ?? $recordPath,
                 'source_commit_sha' => $commitSha,
             ]);
 
@@ -2045,6 +2065,29 @@ class LocalWriteService
         }
 
         $this->staleMarker()->clear();
+    }
+
+    /** @return array{profile_slug:?string,username_token:?string,label:string,is_approved:int} */
+    private function featureFlagActivityAuthor(?string $identityId): array
+    {
+        if ($identityId === null) {
+            return ['profile_slug' => null, 'username_token' => null, 'label' => 'site configuration', 'is_approved' => 1];
+        }
+        $stmt = $this->readModelPdo()->prepare(
+            'SELECT profile_slug, username_token, username, is_approved FROM profiles WHERE identity_id = :identity_id'
+        );
+        $stmt->execute(['identity_id' => $identityId]);
+        $row = $stmt->fetch();
+        if (!is_array($row)) {
+            return ['profile_slug' => null, 'username_token' => null, 'label' => $identityId, 'is_approved' => 0];
+        }
+
+        return [
+            'profile_slug' => $row['profile_slug'] !== null ? (string) $row['profile_slug'] : null,
+            'username_token' => $row['username_token'] !== null ? (string) $row['username_token'] : null,
+            'label' => (string) $row['username'],
+            'is_approved' => (int) $row['is_approved'],
+        ];
     }
 
     /**

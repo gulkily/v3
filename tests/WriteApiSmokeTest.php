@@ -2500,6 +2500,16 @@ NODE;
             assertStringContains('records/instance/feature-flags.txt', $committedFiles);
             assertStringContains($prepared['record_path'], $committedFiles);
             assertStringContains($prepared['record_path'] . '.asc', $committedFiles);
+            $activity = $this->renderMethod($application, 'GET', '/activity/');
+            assertStringContains($identityId, $activity);
+            assertStringContains($prepared['record_path'], $activity);
+            assertStringContains($prepared['record_path'] . '.asc', $activity);
+
+            $rebuiltDatabasePath = dirname($databasePath) . '/rebuilt-' . basename($databasePath);
+            $rebuiltApplication = new Application(dirname(__DIR__), $repositoryRoot, $rebuiltDatabasePath, $artifactRoot);
+            $rebuiltActivity = $this->renderMethod($rebuiltApplication, 'GET', '/activity/');
+            assertStringContains($identityId, $rebuiltActivity);
+            assertStringContains($prepared['record_path'], $rebuiltActivity);
         } finally {
             $_POST = [];
             $this->deleteTree($signingKey['home']);
