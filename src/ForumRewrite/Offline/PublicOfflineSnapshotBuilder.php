@@ -14,12 +14,12 @@ use RuntimeException;
  */
 final class PublicOfflineSnapshotBuilder
 {
-    public const SNAPSHOT_VERSION = '2';
-    public const DEFAULT_THREAD_LIMIT = 50;
-    public const DEFAULT_MAX_BYTES = 25 * 1024 * 1024;
+    public const SNAPSHOT_VERSION = '3';
+    public const DEFAULT_THREAD_LIMIT = 200;
+    public const DEFAULT_MAX_BYTES = 100 * 1024 * 1024;
 
     /**
-     * @return array{generated_at:string,thread_count:int,post_count:int,size_bytes:int}
+     * @return array{generated_at:string,thread_count:int,post_count:int,public_key_count:int,size_bytes:int}
      */
     public function build(
         string $sourcePath,
@@ -58,6 +58,7 @@ final class PublicOfflineSnapshotBuilder
 
             $threadCount = 0;
             $postCount = 0;
+            $selectedAuthorIdentityIds = [];
             foreach ($snapshotThreads as $thread) {
 
                 $posts = $this->visiblePostsForThread($source, (string) $thread['root_post_id']);
@@ -70,6 +71,9 @@ final class PublicOfflineSnapshotBuilder
                     $this->insertThread($snapshot, $thread, $posts);
                     foreach ($posts as $post) {
                         $this->insertPost($snapshot, $post);
+                        if (($post['author_identity_id'] ?? null) !== null) {
+                            $selectedAuthorIdentityIds[(string) $post['author_identity_id']] = true;
+                        }
                     }
                     $snapshot->commit();
                 } catch (\Throwable $throwable) {
@@ -90,9 +94,12 @@ final class PublicOfflineSnapshotBuilder
                 $postCount += count($posts);
             }
 
+            $publicKeyCount = $this->insertPublicKeys($snapshot, $source, array_keys($selectedAuthorIdentityIds));
+
             $this->writeMetadata($snapshot, [
                 'thread_count' => (string) $threadCount,
                 'post_count' => (string) $postCount,
+                'public_key_count' => (string) $publicKeyCount,
             ]);
             $snapshot = null;
 
@@ -109,6 +116,7 @@ final class PublicOfflineSnapshotBuilder
                 'generated_at' => $generatedAt,
                 'thread_count' => $threadCount,
                 'post_count' => $postCount,
+                'public_key_count' => $publicKeyCount,
                 'size_bytes' => $size,
             ];
         } finally {
@@ -149,6 +157,12 @@ final class PublicOfflineSnapshotBuilder
             author_label TEXT NOT NULL,
             author_profile_slug TEXT NULL,
             sequence_number INTEGER NOT NULL
+        )');
+        $pdo->exec('CREATE TABLE public_keys (
+            identity_id TEXT PRIMARY KEY,
+            signer_fingerprint TEXT NOT NULL,
+            armored_key TEXT NOT NULL,
+            is_approved INTEGER NOT NULL
         )');
         $pdo->exec('CREATE INDEX posts_thread_sequence_idx ON posts (thread_id, sequence_number, post_id)');
         $pdo->exec('PRAGMA max_page_count = ' . intdiv($maxBytes, 4096));
@@ -246,7 +260,7 @@ final class PublicOfflineSnapshotBuilder
     {
         $statement = $source->prepare(
             'SELECT post_id, created_at, thread_id, parent_id, subject, body, board_tags_json,
-                    thread_type, author_label, author_profile_slug, sequence_number
+                    thread_type, author_identity_id, author_label, author_profile_slug, sequence_number
              FROM posts
              WHERE thread_id = :thread_id AND is_hidden = 0
              ORDER BY sequence_number ASC, post_id ASC'
@@ -258,6 +272,41 @@ final class PublicOfflineSnapshotBuilder
             $rows,
             static fn (array $row): bool => !ThreadRowSupport::isHiddenBootstrapBoardTagsJson((string) $row['board_tags_json'])
         ));
+    }
+
+    /**
+     * @param list<string> $selectedAuthorIdentityIds
+     */
+    private function insertPublicKeys(PDO $snapshot, PDO $source, array $selectedAuthorIdentityIds): int
+    {
+        $placeholders = implode(', ', array_fill(0, count($selectedAuthorIdentityIds), '?'));
+        $where = 'is_approved = 1';
+        if ($placeholders !== '') {
+            $where .= ' OR identity_id IN (' . $placeholders . ')';
+        }
+
+        $statement = $source->prepare(
+            'SELECT identity_id, signer_fingerprint, public_key, is_approved
+             FROM profiles
+             WHERE ' . $where . '
+             ORDER BY identity_id ASC'
+        );
+        $statement->execute($selectedAuthorIdentityIds);
+        $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
+        $insert = $snapshot->prepare(
+            'INSERT INTO public_keys (identity_id, signer_fingerprint, armored_key, is_approved)
+             VALUES (:identity_id, :signer_fingerprint, :armored_key, :is_approved)'
+        );
+        foreach ($rows as $row) {
+            $insert->execute([
+                'identity_id' => $row['identity_id'],
+                'signer_fingerprint' => $row['signer_fingerprint'],
+                'armored_key' => $row['public_key'],
+                'is_approved' => $row['is_approved'],
+            ]);
+        }
+
+        return count($rows);
     }
 
     /** @param array<string, mixed> $thread @param list<array<string, mixed>> $posts */
@@ -303,6 +352,7 @@ final class PublicOfflineSnapshotBuilder
                 :thread_type, :author_label, :author_profile_slug, :sequence_number
             )'
         );
+        unset($post['author_identity_id']);
         $statement->execute($post);
     }
 
