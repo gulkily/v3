@@ -391,6 +391,53 @@
     return threadRoot ? (threadRoot.getAttribute("data-thread-id") || "") : "";
   }
 
+  function qdbVoteTagsForRoot(root) {
+    if (!root || typeof root.querySelector !== "function") {
+      return new Set();
+    }
+
+    const pair = root.querySelector("[data-qdb-vote-pair]");
+    const encodedTags = pair && typeof pair.getAttribute === "function" ? pair.getAttribute("data-qdb-vote-tags") : "";
+    try {
+      const tags = JSON.parse(encodedTags || "[]");
+      return new Set(Array.isArray(tags) ? tags.filter(function (tag) {
+        return typeof tag === "string" && tag !== "";
+      }) : []);
+    } catch (error) {
+      return new Set();
+    }
+  }
+
+  function isQdbVoteMarkerForRoot(marker, root) {
+    return marker.kind === "thread" && qdbVoteTagsForRoot(root).has(marker.tag);
+  }
+
+  function hydrateQdbVoteMarker(marker, target) {
+    if (!marker || marker.kind !== "thread") {
+      return;
+    }
+
+    matchingRoots(target || (typeof document !== "undefined" ? document : null), "[data-thread-reactions-root]").forEach(function (root) {
+      if ((root.getAttribute("data-thread-id") || "") !== marker.id || !isQdbVoteMarkerForRoot(marker, root)) {
+        return;
+      }
+
+      const pair = root.querySelector("[data-qdb-vote-pair]");
+      if (!pair || typeof pair.querySelectorAll !== "function") {
+        return;
+      }
+
+      Array.from(pair.querySelectorAll('[data-action="apply-thread-tag"]')).forEach(function (button) {
+        if (!(button instanceof HTMLButtonElement)) {
+          return;
+        }
+
+        button.disabled = true;
+        button.setAttribute("aria-pressed", "true");
+      });
+    });
+  }
+
   function hydrateReactionMarker(marker, root) {
     const target = root || (typeof document !== "undefined" ? document : null);
     if (!target || typeof target.querySelectorAll !== "function") {
@@ -399,9 +446,13 @@
 
     const action = marker.kind === "thread" ? "apply-thread-tag" : "apply-post-tag";
     Array.from(target.querySelectorAll(`[data-action="${action}"]`)).forEach(function (button) {
+      const reactionRoot = marker.kind === "thread"
+        ? (typeof button.closest === "function" ? button.closest("[data-thread-reactions-root]") : null)
+        : (typeof button.closest === "function" ? button.closest(".post-card[data-post-id]") : null);
       if (!(button instanceof HTMLButtonElement)
         || button.getAttribute("data-tag") !== marker.tag
-        || reactionButtonTargetId(button, marker.kind) !== marker.id) {
+        || reactionButtonTargetId(button, marker.kind) !== marker.id
+        || isQdbVoteMarkerForRoot(marker, reactionRoot)) {
         return;
       }
 
@@ -412,6 +463,7 @@
 
   function hydrateRememberedReactions(root) {
     reactionMarkersForIdentity(currentReactionIdentityId()).forEach(function (marker) {
+      hydrateQdbVoteMarker(marker, root);
       hydrateReactionMarker(marker, root);
     });
   }
@@ -775,6 +827,7 @@
         const marker = reactionMarker("thread", threadId, tag);
         if (marker) {
           rememberReactionMarker(marker.kind, marker.id, marker.tag, viewerIdentityId);
+          hydrateQdbVoteMarker(marker);
           hydrateReactionMarker(marker);
         }
         notifyReactionApplied();

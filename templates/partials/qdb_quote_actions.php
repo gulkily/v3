@@ -2,10 +2,11 @@
 $quotePostId = (string) ($quotePostId ?? '');
 $upvote = is_array($upvote ?? null) ? $upvote : ['tag' => 'upvote', 'label' => '+'];
 $downvote = is_array($downvote ?? null) ? $downvote : ['tag' => 'downvote', 'label' => '-'];
+$qdbVoteTags = is_array($qdbVoteTags ?? null) ? $qdbVoteTags : ['upvote', 'downvote'];
 $viewerHasVoted = (bool) ($viewerHasVoted ?? false);
 $viewerHasFlagged = (bool) ($viewerHasFlagged ?? false);
 ?>
-<span class="quote-card-header-actions">
+<span class="quote-card-header-actions" data-qdb-vote-pair data-qdb-vote-tags="<?= $e(json_encode($qdbVoteTags, JSON_THROW_ON_ERROR)) ?>">
   <button
     type="button"
     class="thread-reaction-button quote-card-vote-button"

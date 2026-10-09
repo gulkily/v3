@@ -54,3 +54,21 @@
 - Notes:
   - The cache only changes presentation after a server `status=ok` response;
     QDB pair-wide interpretation remains isolated to Stage 4.
+
+## Stage 4 - QDB one-vote cache adapter
+
+- Changes:
+  - Published each QDB page's legacy and historical caption tags as action-pair
+    metadata, including static markup.
+  - Adapted a matching cached QDB marker into pair-wide disabled/pressed state
+    while leaving the independent flag action available.
+  - Reused the same complete tag set for authoritative server rendering.
+- Verification:
+  - `./v3 test BrowserSigningNormalizationTest QuoteCardDisplayNumberTest
+    QdbBoardPolicyTest` — 100 passed.
+  - PHP lint for changed controllers/policy and `node --check
+    public/assets/thread_reactions.js`.
+  - `git diff --check`
+- Notes:
+  - The adapter preserves the rendered caption text on later-page hydration;
+    cache markers remain advisory and cannot alter server write eligibility.

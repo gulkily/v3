@@ -90,6 +90,7 @@ final class ThreadAndPostPageController
             && $this->viewerHasThreadTag($threadId, 'like', (string) $viewerProfile['identity_id']);
         $viewerHasVoted = false;
         $voteCaptionPair = null;
+        $qdbVoteTags = [];
         if ($viewerProfile !== null && \ForumRewrite\SiteConfig::siteName() === 'qdb') {
             $viewerIdentityId = (string) $viewerProfile['identity_id'];
             $viewerHasVoted = isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'upvote', $viewerIdentityId)[$threadId])
@@ -98,8 +99,9 @@ final class ThreadAndPostPageController
         if (\ForumRewrite\SiteConfig::siteName() === 'qdb') {
             $catalog = QdbVoteCaptionCatalog::forReadModel($this->routeServices->databasePath());
             $voteCaptionPair = $catalog->selectActivePair();
+            $qdbVoteTags = array_values(array_unique(['upvote', 'downvote', ...$catalog->knownTags()]));
             if ($viewerProfile !== null) {
-                foreach ($catalog->knownTags() as $tag) {
+                foreach ($qdbVoteTags as $tag) {
                     $viewerHasVoted = $viewerHasVoted || isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], $tag, (string) $viewerProfile['identity_id'])[$threadId]);
                 }
             }
@@ -131,6 +133,7 @@ final class ThreadAndPostPageController
                 'viewerHasLiked' => $viewerHasLiked,
                 'viewerHasVoted' => $viewerHasVoted,
                 'voteCaptionPair' => $voteCaptionPair,
+                'qdbVoteTags' => $qdbVoteTags,
                 'viewerPostFlags' => $viewerPostFlags,
                 'viewerPostLikes' => $viewerPostLikes,
                 'createdPostId' => $createdPostId,

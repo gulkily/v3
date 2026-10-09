@@ -47,6 +47,7 @@ final class BoardPageController
         $pagination = $qdbPresentation['pagination'] ?? null;
         $viewerReactionState = $qdbPolicy?->viewerReactionState($threads) ?? ['voted' => [], 'flagged' => []];
         $voteCaptionPair = $qdbPolicy?->selectCaptionPair();
+        $qdbVoteTags = $qdbPolicy?->voteTags() ?? [];
         $boardCardSlot = PresentationSlotRegistry::resolve(\ForumRewrite\SiteProfileRegistry::active(), 'boardCard');
 
         return $this->routeServices->renderPageTemplate(
@@ -65,10 +66,12 @@ final class BoardPageController
                     'viewerVotedThreadIds' => $viewerReactionState['voted'],
                     'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
                     'voteCaptionPair' => $voteCaptionPair,
+                    'qdbVoteTags' => $qdbVoteTags,
                 ] : ['showPinnedMarker' => true],
                 'boardFooterPartial' => $qdbPolicy === null ? null : 'partials/qdb_footer.php',
                 'viewerVotedThreadIds' => $viewerReactionState['voted'],
                 'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
+                'qdbVoteTags' => $qdbVoteTags,
                 'qdbQuoteCount' => $qdbQuoteCount,
                 'pagination' => $pagination,
             ],
@@ -120,6 +123,7 @@ final class BoardPageController
                 'threads' => $threads,
                 'viewerVotedThreadIds' => $viewerReactionState['voted'],
                 'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
+                'qdbVoteTags' => ['upvote', 'downvote'],
             ],
             'Random',
             'random',
@@ -147,6 +151,7 @@ final class BoardPageController
                 'term' => $term,
                 'viewerVotedThreadIds' => $viewerReactionState['voted'],
                 'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
+                'qdbVoteTags' => ['upvote', 'downvote'],
             ],
             'Search',
             'search',

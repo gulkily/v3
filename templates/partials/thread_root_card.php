@@ -67,6 +67,7 @@ $quoteRootScoreSignClass = $quoteRootScoreTotal > 0 ? 'quote-card-score-positive
 $quoteRootScoreValueClass = 'quote-card-score-value' . ($quoteRootScoreSignClass === '' ? '' : ' ' . $quoteRootScoreSignClass);
 $viewerHasVoted = (bool) ($viewerHasVoted ?? false);
 $voteCaptionPair = is_array($voteCaptionPair ?? null) ? $voteCaptionPair : null;
+$qdbVoteTags = is_array($qdbVoteTags ?? null) ? $qdbVoteTags : ['upvote', 'downvote'];
 $upvote = is_array($voteCaptionPair['positive'] ?? null) ? $voteCaptionPair['positive'] : ['tag' => 'upvote', 'label' => '+'];
 $downvote = is_array($voteCaptionPair['negative'] ?? null) ? $voteCaptionPair['negative'] : ['tag' => 'downvote', 'label' => '-'];
 $metaVisible = (bool) ($metaVisible ?? true);
@@ -88,6 +89,7 @@ if (!$metaVisible) {
     'quotePostId' => $post['post_id'],
     'upvote' => $upvote,
     'downvote' => $downvote,
+    'qdbVoteTags' => $qdbVoteTags,
     'viewerHasVoted' => $viewerHasVoted,
     'viewerHasFlagged' => $viewerHasFlaggedPost,
 ]) ?>

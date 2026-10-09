@@ -222,6 +222,7 @@ final class QdbExperience
         return $this->routeServices->renderPageTemplate($template, $data + [
             'viewerVotedThreadIds' => $reactions['voted'], 'viewerFlaggedPostIds' => $reactions['flagged'],
             'voteCaptionPair' => $voteCaptionPair,
+            'qdbVoteTags' => $this->boardPolicy->voteTags(),
         ], $title, $section, [
             '/assets/lazy_compose_signing.js',
             '/assets/thread_reactions.js',

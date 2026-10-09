@@ -17,6 +17,7 @@
     'viewerVotedThreadIds' => $viewerVotedThreadIds ?? [],
     'viewerFlaggedPostIds' => $viewerFlaggedPostIds ?? [],
     'voteCaptionPair' => $voteCaptionPair ?? null,
+    'qdbVoteTags' => $qdbVoteTags ?? [],
 ]), 1) ?>
 <?php endforeach; ?>
 <?php if (!empty($pagination)): ?>

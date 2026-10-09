@@ -32,6 +32,16 @@ final class QdbBoardPolicy
         return $this->captionCatalog->selectActivePair();
     }
 
+    /** @return list<string> */
+    public function voteTags(): array
+    {
+        return array_values(array_unique([
+            'upvote',
+            'downvote',
+            ...($this->captionCatalog?->knownTags() ?? []),
+        ]));
+    }
+
     /**
      * @param array<int, array<string, mixed>> $threads
      * @return array{threads: array<int, array<string, mixed>>, pagination: array<int, array<string, mixed>>|null}
@@ -66,9 +76,8 @@ final class QdbBoardPolicy
         $viewerIdentityId = (string) $viewerProfile['identity_id'];
         $rootPostIds = array_column($threads, 'root_post_id');
 
-        $voted = ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'upvote', $viewerIdentityId);
-        $voted += ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'downvote', $viewerIdentityId);
-        foreach ($this->captionCatalog?->knownTags() ?? [] as $tag) {
+        $voted = [];
+        foreach ($this->voteTags() as $tag) {
             $voted += ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, $tag, $viewerIdentityId);
         }
 
