@@ -25,9 +25,12 @@ use ForumRewrite\Http\IdentityHintController;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\LlmExchangesController;
 use ForumRewrite\Http\LobbyController;
+use ForumRewrite\Http\MediaEmbedPreviewController;
 use ForumRewrite\Http\OfflineReaderController;
 use ForumRewrite\Http\PostWorkflowApiController;
 use ForumRewrite\Http\PlatformDocsController;
+use ForumRewrite\Http\PrivateMessageApiController;
+use ForumRewrite\Http\PrivateMessagePageController;
 use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Http\SourceFileController;
@@ -56,12 +59,16 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\Support\ResumeTarget;
 use ForumRewrite\Support\ThreadTitle;
+use ForumRewrite\View\MediaEmbedPreviewCacheStore;
+use ForumRewrite\View\MediaEmbedRenderer;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
 use ForumRewrite\Write\IdentityBootstrapTimingException;
 use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
 use ForumRewrite\Llm\LlmExchangeRecorder;
 use ForumRewrite\Llm\SqliteLlmExchangeStore;
+use ForumRewrite\Messaging\PrivateMessageDatabaseConfig;
+use ForumRewrite\Messaging\PrivateMessageStore;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 use ForumRewrite\Security\OpenPgpKeyInspector;
@@ -90,6 +97,7 @@ final class Application
     private ?QdbExperience $qdbExperience = null;
     private ?VisitorStatisticsObserver $visitorStatisticsObserver = null;
     private ?VisitorStatisticsStore $visitorStatisticsStore = null;
+    private ?PrivateMessageStore $privateMessageStore = null;
 
     public function __construct(
         private readonly string $projectRoot,
@@ -116,7 +124,7 @@ final class Application
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
         if ($this->approvedMembersOnlyEnabled()
-            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity'], true)
+            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
         ) {
             $this->startViewerSession();
         } elseif ($this->shouldResumeViewerSession($method, $path, $query)) {
@@ -129,6 +137,11 @@ final class Application
                 'Pragma: no-cache',
                 'Expires: 0',
             ]);
+            return;
+        }
+
+        if ($path === '/internal/media-embeds/warm-preview') {
+            $this->mediaEmbedPreviewController()->warmPreview($method, $query);
             return;
         }
 
@@ -186,6 +199,36 @@ final class Application
 
         if ($path === '/api/auth_status') {
             $this->authApiController()->authenticationStatus($method);
+            return;
+        }
+
+        if ($path === '/api/private_messages') {
+            $this->privateMessageApiController()->send($method, $query);
+            return;
+        }
+
+        if ($path === '/api/private_messages/inbox') {
+            $this->privateMessageApiController()->inbox($method, $query);
+            return;
+        }
+
+        if ($path === '/api/private_messages/sent') {
+            $this->privateMessageApiController()->sent($method, $query);
+            return;
+        }
+
+        if ($path === '/api/private_messages/recipient_keys') {
+            $this->privateMessageApiController()->recipientKeys($method, $query);
+            return;
+        }
+
+        if ($path === '/messages/inbox') {
+            $this->privateMessagePageController()->inbox($method);
+            return;
+        }
+
+        if ($path === '/messages/sent') {
+            $this->privateMessagePageController()->sent($method);
             return;
         }
 
@@ -868,7 +911,9 @@ final class Application
         return ThreadTitle::displayTitle(
             (string) ($thread['subject'] ?? ''),
             (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
-            (string) ($thread['root_post_id'] ?? $thread['thread_id'] ?? $thread['post_id'] ?? '')
+            (string) ($thread['root_post_id'] ?? $thread['thread_id'] ?? $thread['post_id'] ?? ''),
+            80,
+            $this->featureFlags()->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED)
         );
     }
 
@@ -884,6 +929,12 @@ final class Application
             && ((int) $viewerProfile['is_approved']) === 1
             && ((int) $profile['is_approved']) !== 1
             && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id']);
+        $canPrivateMessage = $viewerProfile !== null
+            && ((int) $viewerProfile['is_approved']) === 1
+            && ((int) $profile['is_approved']) === 1
+            && (string) ($viewerProfile['username_token'] ?? '') !== ''
+            && (string) ($profile['username_token'] ?? '') !== ''
+            && (string) $viewerProfile['username_token'] !== (string) $profile['username_token'];
         $pageTitleLabel = trim((string) ($profile['username'] ?? ''));
         if ($pageTitleLabel === '') {
             $pageTitleLabel = trim((string) ($profile['fallback_label'] ?? ''));
@@ -903,10 +954,15 @@ final class Application
                 'viewerProfile' => $viewerProfile,
                 'isOwnProfile' => $isOwnProfile,
                 'canApprove' => $canApprove,
+                'canPrivateMessage' => $canPrivateMessage,
             ],
             $pageTitleLabel . ' - Profile',
             'profiles',
-            $canApprove ? $this->identityScripts(['/assets/pending_approvals.js']) : [],
+            $canApprove
+                ? $this->identityScripts(['/assets/pending_approvals.js'])
+                : ($canPrivateMessage
+                    ? $this->identityScripts(['/assets/private_messages.js', '/assets/private_message_compose.js'])
+                    : []),
         );
     }
 
@@ -1106,7 +1162,12 @@ final class Application
 
     private function renderer(): TemplateRenderer
     {
-        return new TemplateRenderer($this->projectRoot . '/templates', $this->appVersion(), $this->featureFlags());
+        return new TemplateRenderer(
+            $this->projectRoot . '/templates',
+            $this->appVersion(),
+            $this->featureFlags(),
+            new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot)),
+        );
     }
 
     private function featureFlags(): FeatureFlagEvaluator
@@ -1533,6 +1594,21 @@ final class Application
         return $this->visitorStatisticsStore = new VisitorStatisticsStore(new PDO('sqlite:' . $path));
     }
 
+    private function privateMessageStore(): PrivateMessageStore
+    {
+        if ($this->privateMessageStore !== null) {
+            return $this->privateMessageStore;
+        }
+
+        $path = PrivateMessageDatabaseConfig::path($this->projectRoot, PrivateConfig::load($this->projectRoot));
+        $directory = dirname($path);
+        if ($directory !== '' && !is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
+            throw new RuntimeException('Private message database directory is not writable: ' . $directory);
+        }
+
+        return $this->privateMessageStore = new PrivateMessageStore(new PDO('sqlite:' . $path));
+    }
+
     private function authenticatedViewerProfile(): ?array
     {
         $identityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
@@ -1635,6 +1711,7 @@ final class Application
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',
+            '/messages/inbox', '/messages/sent',
             '/account/key', '/account/key/', '/invites', '/invites/',
             '/api', '/api/', '/api/version', '/api/list_index',
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username_claim_cta',
@@ -1829,11 +1906,34 @@ final class Application
         return new IdentityHintController($this->routeServices());
     }
 
+    private function mediaEmbedPreviewController(): MediaEmbedPreviewController
+    {
+        return new MediaEmbedPreviewController($this->routeServices(), $this->projectRoot);
+    }
+
     private function authApiController(): AuthApiController
     {
         return new AuthApiController(
             $this->routeServices(),
             $this->authenticatedViewerProfile(...),
+        );
+    }
+
+    private function privateMessageApiController(): PrivateMessageApiController
+    {
+        return new PrivateMessageApiController(
+            $this->routeServices(),
+            $this->authenticatedViewerProfile(...),
+            $this->privateMessageStore(...),
+        );
+    }
+
+    private function privateMessagePageController(): PrivateMessagePageController
+    {
+        return new PrivateMessagePageController(
+            $this->routeServices(),
+            $this->authenticatedViewerProfile(...),
+            $this->privateMessageStore(...),
         );
     }
 

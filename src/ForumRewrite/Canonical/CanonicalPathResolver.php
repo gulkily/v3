@@ -55,6 +55,11 @@ final class CanonicalPathResolver
         return 'records/thread-labels/' . $recordId . '.txt';
     }
 
+    public static function threadSubject(string $recordId): string
+    {
+        return 'records/thread-subjects/' . $recordId . '.txt';
+    }
+
     public static function postReaction(string $recordId): string
     {
         return 'records/post-reactions/' . $recordId . '.txt';

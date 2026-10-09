@@ -8,9 +8,11 @@ final class FeatureFlagRegistry
 {
     public const UNICODE_AUTHORED_TEXT = 'FORUM_UNICODE_AUTHORED_TEXT';
     public const EMOJI_AUTHORED_TEXT = 'FORUM_EMOJI_AUTHORED_TEXT';
+    public const EVENT_SUPPORT_ENABLED = 'FORUM_EVENT_SUPPORT_ENABLED';
     public const APP_VERSION_NOTIFICATION = 'FORUM_APP_VERSION_NOTIFICATION';
     public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
+    public const MEDIA_EMBEDS_INLINE_PLAYER_ENABLED = 'FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED';
     public const STATIC_DETAIL_PAGES_ENABLED = 'FORUM_STATIC_DETAIL_PAGES_ENABLED';
     public const DEDALUS_AGENT_REPLIES_ENABLED = 'DEDALUS_AGENT_REPLIES_ENABLED';
     public const DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED = 'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED';
@@ -66,6 +68,15 @@ final class FeatureFlagRegistry
                 group: 'AUTHORING',
             ),
             new FeatureFlagDefinition(
+                self::EVENT_SUPPORT_ENABLED,
+                'Event support',
+                'Allow threads to include and display optional event date, location, and link details.',
+                false,
+                self::EVENT_SUPPORT_ENABLED,
+                siteMutable: true,
+                group: 'AUTHORING',
+            ),
+            new FeatureFlagDefinition(
                 self::APP_VERSION_NOTIFICATION,
                 'App version notification',
                 'Show browser-side app version polling and the reload notification banner.',
@@ -90,6 +101,15 @@ final class FeatureFlagRegistry
                 false,
                 self::MEDIA_EMBEDS_ENABLED,
                 siteMutable: true,
+            ),
+            new FeatureFlagDefinition(
+                self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
+                'Media embed inline player',
+                'Play a recognized YouTube link inline behind a collapsed expando, and show a cached thumbnail/title preview for a recognized Instagram link, instead of Media embed cards\' plain link card. Off by default; requires Media embed cards enabled too.',
+                false,
+                self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
+                siteMutable: true,
+                requiresEnabledFlag: self::MEDIA_EMBEDS_ENABLED,
             ),
             new FeatureFlagDefinition(
                 self::STATIC_DETAIL_PAGES_ENABLED,

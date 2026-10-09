@@ -8,7 +8,7 @@ $eventLink = (string) ($thread['event_link'] ?? '');
 // escaped text instead of a clickable anchor.
 $eventLinkIsHttp = $eventLink !== '' && preg_match('#^https?://#i', $eventLink) === 1;
 ?>
-<?php if ($eventDate !== ''): ?>
+<?php if ($eventSupportEnabled && $eventDate !== ''): ?>
 <p class="event-block" data-event-block>
   <span class="event-block__date">📅 <?= $e($eventDate) ?></span>
 <?php if ($eventLocation !== ''): ?>

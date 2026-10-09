@@ -19,12 +19,65 @@ use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\Scoring\FastScoreContextFactory;
 use ForumRewrite\Scoring\SqliteFastScoreStore;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\TaskQueue\AgentReplyTask;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
 {
+    public function testEventFieldsRequireEventSupportBeforeWriting(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $disabledService = new LocalWriteService(
+            $repositoryRoot,
+            $databasePath,
+            $artifactRoot,
+            new CanonicalRecordRepository($repositoryRoot),
+            featureFlags: new FeatureFlagEvaluator(siteValues: [FeatureFlagRegistry::EVENT_SUPPORT_ENABLED => false]),
+        );
+        $initialPostCount = $this->countCanonicalPostFiles($repositoryRoot);
+        $eventInput = [
+            'board_tags' => 'general',
+            'subject' => 'Event thread',
+            'body' => 'Event body',
+            'event_date' => '2026-11-01',
+            'event_location' => 'Cambridge',
+            'event_link' => 'https://example.test/rsvp',
+        ];
+
+        try {
+            $disabledService->createThread($eventInput);
+            throw new RuntimeException('Expected event-support validation failure.');
+        } catch (RuntimeException $exception) {
+            assertSame('Event support is disabled for this site.', $exception->getMessage());
+        }
+        assertSame($initialPostCount, $this->countCanonicalPostFiles($repositoryRoot));
+
+        $normalThread = $disabledService->createThread([
+            'board_tags' => 'general',
+            'subject' => 'Ordinary thread',
+            'body' => 'Ordinary body',
+        ]);
+        assertSame($initialPostCount + 1, $this->countCanonicalPostFiles($repositoryRoot));
+        assertStringNotContains('Event-Date:', (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $normalThread['thread_id'])));
+
+        $enabledService = new LocalWriteService(
+            $repositoryRoot,
+            $databasePath,
+            $artifactRoot,
+            new CanonicalRecordRepository($repositoryRoot),
+            featureFlags: new FeatureFlagEvaluator(siteValues: [FeatureFlagRegistry::EVENT_SUPPORT_ENABLED => true]),
+        );
+        $eventThread = $enabledService->createThread($eventInput);
+        $record = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $eventThread['thread_id']));
+
+        assertStringContains('Event-Date: 2026-11-01', $record);
+        assertStringContains('Event-Location: Cambridge', $record);
+        assertStringContains('Event-Link: https://example.test/rsvp', $record);
+    }
+
     public function testTitlelessThreadDisplaysBodyExcerptTitle(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

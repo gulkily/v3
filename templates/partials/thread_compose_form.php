@@ -35,9 +35,11 @@ $threadComposeAction = (string) ($action ?? '/compose/thread');
     >Remove unsupported characters</button>
   </p>
   <label>Body<textarea name="body" data-compose-field-label="Body" rows="<?= $e($threadComposeBodyRows) ?>" placeholder="<?= $e($threadComposeBodyPlaceholder) ?>"><?= $e($body) ?></textarea></label>
+<?php if ($eventSupportEnabled): ?>
   <label>Event date (optional)<input type="text" name="event_date" placeholder="YYYY-MM-DD" value="<?= $e($eventDate ?? '') ?>"></label>
   <label>Event location (optional)<input type="text" name="event_location" value="<?= $e($eventLocation ?? '') ?>"></label>
   <label>Event link (optional)<input type="text" name="event_link" value="<?= $e($eventLink ?? '') ?>"></label>
+<?php endif; ?>
 <?php endif; ?>
   <p class="meta compose-normalization-inline" data-role="compose-field-normalization-status" data-compose-field-status-for="body" hidden>
     <span data-role="compose-field-normalization-message"></span>

@@ -66,6 +66,7 @@ Optional runtime setting:
 - `FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED`: optional `true` enables one detached, allowlisted queue-worker launch when a classified schema recovery finds no fresh executor heartbeat. Leave it unset on hosts that prohibit child processes.
 - `FAST_SCORING_DATABASE_PATH`: optional private SQLite score-state path; defaults to `<application-root>/state/private/fast_scores.sqlite3`.
 - `FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED`: when `true` alongside `FAST_SCORING_ENABLED`, creates private score work for newly published posts only; defaults to `false`.
+- `PRIVATE_MESSAGE_DATABASE_PATH`: optional private SQLite mailbox path; defaults to `<application-root>/state/private/messages.sqlite3`.
 
 ## Writable Paths
 
@@ -80,6 +81,7 @@ The web user must be able to write:
 - the parent directory of `VISITOR_STATISTICS_DATABASE_PATH` when visitor statistics are in use
 - the parent directory of `FORUM_TASK_QUEUE_DATABASE_PATH` when the internal task queue is enabled
 - the parent directory of `FAST_SCORING_DATABASE_PATH` when Fastmod sweeps are enabled
+- the parent directory of `PRIVATE_MESSAGE_DATABASE_PATH` when private messaging is enabled
 Static HTML is derived state. A write removes the `current` release pointer, so
 subsequent public requests use PHP until a fresh complete release is published.
 Old release directories are retained and are never edited in place.
@@ -279,6 +281,41 @@ Post analysis and agent reply drafting use provider-neutral `LLM_*` private conf
 ```
 
 Use `refresh-template` after upgrades to rewrite the private config with current comments and provider examples while preserving existing effective values.
+
+## Private Message Mailbox Operations
+
+`PRIVATE_MESSAGE_DATABASE_PATH` holds encrypted message envelopes and routing
+metadata. It is authoritative runtime state: unlike the read model and static
+artifacts, it cannot be rebuilt from the canonical repository. It must remain
+outside the document root, canonical repository, static release root, and
+offline snapshot tree.
+
+Use a dedicated directory readable only by the deployment and web-service
+users (for example, directory mode `0700` and SQLite database/sidecar mode
+`0600`). Check the database plus any `-wal` and `-shm` sidecars after deploys
+or ownership changes. The application does not retain browser private keys;
+backing up this database preserves envelopes, not users' ability to decrypt a
+lost browser key.
+
+Back up the mailbox with SQLite's consistent backup mechanism, not a raw copy
+made while the database is active. For example, on a host with `sqlite3`:
+
+```bash
+sqlite3 "$PRIVATE_MESSAGE_DATABASE_PATH" ".backup '/secure/backups/messages-$(date +%F).sqlite3'"
+sqlite3 "/secure/backups/messages-$(date +%F).sqlite3" 'PRAGMA integrity_check;'
+```
+
+Test restoration in a non-production path before relying on a backup. Stop
+mailbox writes or take the application out of service for the restore, replace
+the mailbox database with the verified backup, restore owner and restrictive
+permissions, then reopen the application and check both an Inbox and Sent
+list. Do not place a mailbox backup under `public/` or in a static release.
+
+There is no automatic message deletion in this release. Set and document a
+local retention period appropriate to the forum's low-value-content policy;
+take and validate a backup before a reviewed, targeted retention purge. Keep
+the retention tooling separate from public artifact publication so purging
+mailboxes cannot affect posts, profiles, or offline snapshots.
 
 Dedalus Labs, the OpenAI-compatible endpoint previously used as the default for existing installs, has been discontinued. Installs still configured with `LLM_PROVIDER => 'dedalus'` (or with no `LLM_PROVIDER` set at all) must pick one of the providers below — there is no default.
 

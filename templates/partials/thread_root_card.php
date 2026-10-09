@@ -56,6 +56,19 @@ $postBodyFirstLine = trim($postBodyFirstLineSegments[0] ?? '');
 $postBodyDisplay = ($postBodyFirstLine !== '' && $postBodyFirstLine === trim($title))
     ? preg_replace('/^(?:\r\n|\r|\n)+/', '', $postBodyFirstLineSegments[1] ?? '')
     : $postBody;
+$bareMediaEmbedWarmBeacon = '';
+if (($mediaEmbedsEnabled ?? false) && $title === 'Untitled') {
+    $bareMediaEmbedMatch = \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch(
+        (string) ($thread['subject'] ?? ''),
+        $postBody
+    );
+    if ($bareMediaEmbedMatch !== null) {
+        $bareMediaEmbedWarmBeaconUrl = '/internal/media-embeds/warm-preview?provider=' . rawurlencode($bareMediaEmbedMatch['provider'])
+            . '&url=' . rawurlencode($bareMediaEmbedMatch['url'])
+            . '&thread_id=' . rawurlencode((string) $thread['root_post_id']);
+        $bareMediaEmbedWarmBeacon = '<img class="media-embed-card__warm-beacon" data-media-embed-warm-beacon src="' . $e($bareMediaEmbedWarmBeaconUrl) . '" alt="" width="0" height="0" style="display:none" loading="eager">';
+    }
+}
 $isQdbQuoteRoot = \ForumRewrite\SiteConfig::siteName() === 'qdb';
 $quoteRootId = (string) $thread['root_post_id'];
 $quoteRootHasNumber = preg_match('/-qdb-(\d+)$/', $quoteRootId, $quoteRootNumberMatch) === 1;
@@ -97,6 +110,7 @@ if (!$metaVisible) {
   <p class="quote-card-body"><?= $br($postBody) ?></p>
 <?php else: ?>
   <h1><?= $e($title) ?></h1>
+<?= $bareMediaEmbedWarmBeacon ?>
   <div class="body"><?= $br($postBodyDisplay) ?></div>
 <?php endif; ?>
 <?= $partial('partials/event_block.php') ?>

@@ -372,6 +372,32 @@ final class QuoteCardDisplayNumberTest
         assertStringContains('class="nav-link is-active" href="/leetness">1337</a>', $leetness);
     }
 
+    public function testQdbListingsOmitGenericBoardControlsWhileForumBoardsKeepThem(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            foreach (['/latest' => 'Latest', '/top' => 'Top', '/leetness' => '1337'] as $path => $label) {
+                $listing = $this->render($application, $path);
+
+                assertStringNotContains('class="nav board-controls-nav"', $listing);
+                assertStringContains('class="nav-link is-active" href="' . $path . '">' . $label . '</a>', $listing);
+            }
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        $forumBoard = $this->render(
+            new Application(dirname(__DIR__), $repositoryRoot, $databasePath),
+            '/?view=all&sort=newest',
+        );
+
+        assertStringContains('class="nav board-controls-nav"', $forumBoard);
+    }
+
     public function testNonQdbBoardDoesNotLoadTheVoteButtonScript(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();

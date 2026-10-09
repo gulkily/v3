@@ -8,6 +8,7 @@ use ForumRewrite\PresentationSlotRegistry;
 use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\ReadModel\ViewerTagLookup;
 use ForumRewrite\Qdb\QdbBoardPolicy;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\ThreadTitle;
 
 /**
@@ -322,7 +323,9 @@ final class BoardPageController
         return ThreadTitle::displayTitle(
             (string) ($thread['subject'] ?? ''),
             (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
-            (string) ($thread['root_post_id'] ?? $thread['thread_id'] ?? $thread['post_id'] ?? '')
+            (string) ($thread['root_post_id'] ?? $thread['thread_id'] ?? $thread['post_id'] ?? ''),
+            80,
+            $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED)
         );
     }
 }
