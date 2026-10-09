@@ -25,3 +25,16 @@
   - `./v3 test LazyComposeSigningTest` — 3 passed.
 - Notes:
   - Pages without a stored keypair do not load signing assets until existing compose intent or reaction-click behavior requests them.
+
+## Stage 3 - Join readiness at vote time
+
+- Changes:
+  - Added explicit stored-vote-identity readiness states for idle work, including ready and failed states.
+  - A ready identity now bypasses `Preparing identity...`; an in-flight or absent identity keeps existing progress feedback, and a failed prewarm requests visible verification/retry before writing a reaction.
+- Verification:
+  - `node --check public/assets/browser_signing.js`
+  - `node --check public/assets/thread_reactions.js`
+  - `php -l tests/BrowserSigningNormalizationTest.php`
+  - `./v3 test BrowserSigningNormalizationTest::testIdentityPrewarmFullyReadiesStoredVoteIdentity BrowserSigningNormalizationTest::testIdentityPrewarmWithoutStoredKeypairDoesNotCreateOrPublishIdentity BrowserSigningNormalizationTest::testPostReactionAppliesOptimisticStateBeforeFetchResolvesAndHidesAfterResponse BrowserSigningNormalizationTest::testPostReactionServerFailureRollsBackOptimisticState` — 4 passed.
+- Notes:
+  - Reaction writes and their existing pending/rollback behavior remain unchanged; readiness affects only the prerequisite and feedback timing.

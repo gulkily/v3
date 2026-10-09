@@ -6962,7 +6962,12 @@ class HTMLButtonElement {
 }
 
 const button = new HTMLButtonElement();
-const feedbackNode = { textContent: '', hidden: true, setAttribute(name, value) { this[name] = value; } };
+const feedbackHistory = [];
+const feedbackNode = { hidden: true, setAttribute(name, value) { this[name] = value; } };
+Object.defineProperty(feedbackNode, 'textContent', {
+  get() { return this.value || ''; },
+  set(value) { this.value = String(value); feedbackHistory.push(String(value)); }
+});
 const root = {
   hidden: false,
   getAttribute(name) {
@@ -6983,6 +6988,7 @@ global.Element = HTMLButtonElement;
 global.HTMLButtonElement = HTMLButtonElement;
 global.window = {
   __forumBrowserIdentity: {
+    storedVoteIdentityReadinessState() { return 'ready'; },
     async ensureReadyIdentity() {}
   }
 };
@@ -7033,6 +7039,7 @@ vm.runInThisContext(source);
   await clickPromise;
   process.stdout.write(JSON.stringify({
     optimistic,
+    feedbackHistory,
     finalButtonText: button.textContent,
     finalAriaPressed: button.attributes['aria-pressed'] || '',
     finalRootHidden: root.hidden
@@ -7047,6 +7054,7 @@ NODE;
 
         assertSame(1, $result['optimistic']['fetchCount']);
         assertSame('Saving tag...', $result['optimistic']['feedback']);
+        assertSame(false, in_array('Preparing identity...', $result['feedbackHistory'], true));
         assertSame(true, $result['optimistic']['buttonDisabled']);
         assertSame('Flagged', $result['optimistic']['buttonText']);
         assertSame('true', $result['optimistic']['ariaPressed']);

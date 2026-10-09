@@ -17,6 +17,7 @@
   const pendingReplyOperations = new Set();
   const pendingThreadOperations = new Set();
   let identityPrewarmStarted = false;
+  let storedVoteIdentityReadiness = "idle";
   let automaticGuestIdentityStarted = false;
 
   function browserPerformance() {
@@ -2035,7 +2036,9 @@
         markActionTiming(timing, "forum_openpgp_ready");
 
         if (pageHasVoteSurfaces(root)) {
-          await ensureStoredIdentityReady(root, timing);
+          storedVoteIdentityReadiness = hasBrowserKeypair() ? "in_flight" : "not_applicable";
+          const ready = await ensureStoredIdentityReady(root, timing);
+          storedVoteIdentityReadiness = ready ? "ready" : "not_applicable";
         } else if (hasBrowserKeypair()) {
           if (storedFingerprint() === "") {
             await ensureStoredFingerprint();
@@ -2049,6 +2052,9 @@
 
         completeActionTiming(timing, "ok");
       } catch (error) {
+        if (pageHasVoteSurfaces(root)) {
+          storedVoteIdentityReadiness = "failed";
+        }
         markActionTiming(timing, "forum_openpgp_failed");
         timing.errorKind = error instanceof Error && error.name ? error.name : "error";
         completeActionTiming(timing, "error");
@@ -2068,6 +2074,10 @@
       verifyPublishedIdentity: true,
       timing: timing,
     });
+  }
+
+  function storedVoteIdentityReadinessState() {
+    return storedVoteIdentityReadiness;
   }
 
   function scheduleAutomaticGuestIdentity(root) {
@@ -2547,6 +2557,7 @@
       ensureActionIdentity: ensureActionIdentity,
       ensureReadyIdentity: ensureReadyIdentity,
       ensureStoredIdentityReady: ensureStoredIdentityReady,
+      storedVoteIdentityReadinessState: storedVoteIdentityReadinessState,
       hasBrowserKeypair: hasBrowserKeypair,
       identityPreparationState: identityPreparationState,
       pageHasSignedActionSurfaces: pageHasSignedActionSurfaces,

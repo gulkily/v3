@@ -734,9 +734,14 @@
     }
 
     markActionTiming(timing, "forum_identity_start");
-    setFeedback(feedbackNode, "Preparing identity...", "ok");
+    const readinessState = typeof helper.storedVoteIdentityReadinessState === "function"
+      ? helper.storedVoteIdentityReadinessState()
+      : "";
+    if (readinessState !== "ready") {
+      setFeedback(feedbackNode, "Preparing identity...", "ok");
+    }
     await readiness().call(helper, root, feedbackNode, {
-      verifyPublishedIdentity: false,
+      verifyPublishedIdentity: readinessState === "failed",
       timing: timing,
     });
     markActionTiming(timing, "forum_identity_ready");
