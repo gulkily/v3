@@ -47,3 +47,15 @@
   - `git diff --check` — passed.
 - Notes:
   - The reader still reads the existing private key from `localStorage`; it does not write plaintext or verification results to persistent storage.
+
+## Stage 5 - Validate private-message release boundaries
+
+- Changes:
+  - Completed focused regression and release-isolation validation; no additional product changes were needed.
+- Verification:
+  - `php tests/run.php PrivateMessageApiRoutingTest PrivateMessageComposerTest PrivateMessageDatabaseConfigTest PrivateMessageEnvelopeTest PrivateMessageMailboxServiceTest PrivateMessagePageControllerTest PrivateMessageReaderTest PrivateMessageReleaseIsolationTest PrivateMessageStoreTest` — 18 passed.
+  - `node --check public/assets/private_message_reader.js` — passed.
+  - `git diff --check` — passed.
+  - Searched application sources/tests for removed reader controls and persistent-storage writes; only negative test assertions and the existing private-key read remain.
+- Notes:
+  - Deployment verification is not applicable: this change adds no migration, configuration, or external-service dependency.
