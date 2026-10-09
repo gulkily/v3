@@ -48,3 +48,6 @@
   - `git diff --check` passed; the working tree contained only Stage 3 files.
 - Notes:
   - No API, caption catalog, score, or moderation behavior changed.
+  - Post-release visual verification remains: inspect one collection and one
+    numeric permalink with a long caption pair at a narrow viewport. Deployment
+    access is outside this local implementation scope.
