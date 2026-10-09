@@ -50,6 +50,7 @@ final class SourcePathValidator
             || preg_match('#^records/thread-labels/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/thread-subjects/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/post-reactions/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
+            || preg_match('#^records/feature-flag-changes/feature-flag-change-[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/identity/identity-openpgp-[A-Fa-f0-9]{40}\.txt$#', $relativePath) === 1
             || preg_match('#^records/approval-seeds/openpgp-[A-Fa-f0-9]{40}\.txt$#', $relativePath) === 1
             || preg_match('#^records/public-keys/openpgp-[A-Fa-f0-9]{40}\.asc$#', $relativePath) === 1;

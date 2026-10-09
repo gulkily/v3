@@ -18,14 +18,17 @@ final class FeatureFlagsBehaviorTest
         }
     }
 
-    public function testFeatureFlagsScriptCapturesFormDataBeforeDisablingControls(): void
+    public function testFeatureFlagsScriptSignsPreparedChangesAfterCapturingFormData(): void
     {
         $script = (string) file_get_contents(__DIR__ . '/../public/assets/feature_flags.js');
-        $bodyOffset = strpos($script, 'var body = new URLSearchParams(new FormData(form)).toString();');
+        $fieldsOffset = strpos($script, 'var fields = Object.fromEntries(new FormData(form).entries());');
         $pendingOffset = strpos($script, 'setPending(form, true);');
 
-        assertSame(true, $bodyOffset !== false);
+        assertSame(true, $fieldsOffset !== false);
         assertSame(true, $pendingOffset !== false);
-        assertSame(true, $bodyOffset < $pendingOffset);
+        assertSame(true, $fieldsOffset < $pendingOffset);
+        assertSame(true, str_contains($script, '"/api/prepare_feature_flag_change"'));
+        assertSame(true, str_contains($script, '"/api/finalize_feature_flag_change"'));
+        assertSame(true, str_contains($script, 'window.ForumBrowserSigning.signCanonicalRecord'));
     }
 }

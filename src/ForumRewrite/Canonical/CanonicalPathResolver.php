@@ -65,6 +65,11 @@ final class CanonicalPathResolver
         return 'records/post-reactions/' . $recordId . '.txt';
     }
 
+    public static function featureFlagChange(string $recordId): string
+    {
+        return 'records/feature-flag-changes/' . $recordId . '.txt';
+    }
+
     public static function instancePublic(): string
     {
         return 'records/instance/public.txt';

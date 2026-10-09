@@ -31,6 +31,22 @@ final class WritePostAndIdentityApiController
      */
     public function createThread(string $method, array $query): void
     {
+        $this->createThreadForAuthoringMode($method, $query, false);
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    public function createQuote(string $method, array $query): void
+    {
+        $this->createThreadForAuthoringMode($method, $query, true);
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function createThreadForAuthoringMode(string $method, array $query, bool $isQdbQuote): void
+    {
         $totalStartedAt = hrtime(true);
         $timings = [];
         if ($method !== 'POST') {
@@ -42,7 +58,9 @@ final class WritePostAndIdentityApiController
         $input = $this->routeServices->requestData($query);
         $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
         try {
-            $result = $this->routeServices->writer()->createThread($input);
+            $result = $isQdbQuote
+                ? $this->routeServices->writer()->createQuote($input)
+                : $this->routeServices->writer()->createThread($input);
             $this->enqueueFastScore($result);
             $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
             $this->routeServices->sendText(
@@ -97,7 +115,15 @@ final class WritePostAndIdentityApiController
      */
     public function prepareThread(string $method, array $query): void
     {
-        $this->preparePost($method, $query, 'thread');
+        $this->preparePost($method, $query, 'thread', false);
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    public function prepareQuote(string $method, array $query): void
+    {
+        $this->preparePost($method, $query, 'thread', true);
     }
 
     /**
@@ -111,7 +137,7 @@ final class WritePostAndIdentityApiController
     /**
      * @param array<string, mixed> $query
      */
-    private function preparePost(string $method, array $query, string $kind): void
+    private function preparePost(string $method, array $query, string $kind, bool $isQdbQuote = false): void
     {
         $totalStartedAt = hrtime(true);
         $timings = [];
@@ -127,7 +153,9 @@ final class WritePostAndIdentityApiController
         try {
             $result = $kind === 'reply'
                 ? $this->routeServices->writer()->prepareReply($input)
-                : $this->routeServices->writer()->prepareThread($input);
+                : ($isQdbQuote
+                    ? $this->routeServices->writer()->prepareQuote($input)
+                    : $this->routeServices->writer()->prepareThread($input));
             $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
             $headers = $this->routeServices->serverTimingHeaders($result);
             unset($result['timings']);

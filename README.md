@@ -31,6 +31,7 @@ that stays accurate even as implementation details move around:
 - [Thread Label Record](docs/specs/thread_label_record_v1.md)
 - [Post Reaction Record](docs/specs/post_reaction_record_v1.md)
 - [Site Feature Flags Record](docs/specs/site_feature_flags_record_v1.md)
+- [Feature Flag Change Record](docs/specs/feature_flag_change_record_v1.md)
 - [User Approval Seed Record](docs/specs/user_approval_seed_record_v1.md)
 - [Agent Reply One-Step Analyze/Publish Contract](docs/specs/agent_reply_one_step_analyze_publish_contract_v1.md)
 - [Asset Fingerprinting and CSS Splitting](docs/specs/asset_fingerprinting_and_css_split_v1.md)
@@ -127,7 +128,7 @@ The browser-side app version polling and reload banner are enabled by default. T
 FORUM_APP_VERSION_NOTIFICATION=false ./v3 start
 ```
 
-Registered site feature flags are visible at `/tools/feature-flags/`. Root-approved users can change mutable site flags there; those changes are written to `records/instance/feature-flags.txt` in the content repository and committed to git.
+Registered site feature flags are visible at `/tools/feature-flags/`. A root-approved operator changes a mutable flag by signing the server-prepared action with their browser key. A successful action writes the current snapshot to `records/instance/feature-flags.txt` and commits an immutable signed record under `records/feature-flag-changes/`.
 
 `FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED` is off by default. Enable it from that Feature Flags page (or set it to `true` in the deployment environment) to prepare a browser-local `guest` keypair for new visitors before their first signed action. The private key never leaves the browser. Each visitor can choose on Account Key whether the public key publishes immediately or, by default, on the first signed action. Disabling the flag stops future automatic preparation but does not remove a keypair already saved in a browser.
 
@@ -152,6 +153,7 @@ Use environment variables as operator overrides when a flag must be pinned outsi
 ```bash
 git log -- records/instance/feature-flags.txt
 git show <commit>:records/instance/feature-flags.txt
+git log -- records/feature-flag-changes
 ```
 
 Create or update the local private config for LLM post analysis:

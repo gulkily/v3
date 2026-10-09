@@ -256,7 +256,10 @@ final class QuoteCardDisplayNumberTest
         }
 
         assertSame(200, http_response_code());
+        assertStringContains('<h1>Hello world</h1>', $legacyThread);
         assertStringContains('Hello world', $legacyThread);
+        assertStringNotContains('quote-card-permalink', $legacyThread);
+        assertStringNotContains('quote-card-header-actions', $legacyThread);
     }
 
     public function testGenericBoardStillListsLegacyAndQuoteRoots(): void
@@ -312,12 +315,17 @@ final class QuoteCardDisplayNumberTest
         assertTrue(is_file($artifactRoot . '/top/index.html'));
         assertTrue(is_file($artifactRoot . '/leetness.html'));
         assertTrue(is_file($artifactRoot . '/leetness/index.html'));
+        assertTrue(is_file($artifactRoot . '/threads/root-001.html'));
         assertTrue(is_file($artifactRoot . '/threads/thread-20030613104735-qdb-42.html'));
         assertTrue(is_file($artifactRoot . '/qdb/quotes/42.html'));
+        $regularThreadDetail = (string) file_get_contents($artifactRoot . '/threads/root-001.html');
         assertSame(
             (string) file_get_contents($artifactRoot . '/threads/thread-20030613104735-qdb-42.html'),
             (string) file_get_contents($artifactRoot . '/qdb/quotes/42.html')
         );
+        assertStringContains('<h1>Hello world</h1>', $regularThreadDetail);
+        assertStringNotContains('quote-card-permalink', $regularThreadDetail);
+        assertStringNotContains('quote-card-header-actions', $regularThreadDetail);
     }
 
     public function testQdbStaticReleaseCanSkipIndividualDetailPages(): void

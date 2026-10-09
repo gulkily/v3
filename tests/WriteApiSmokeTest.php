@@ -2018,7 +2018,7 @@ NODE;
         assertFalse(is_file($repositoryRoot . '/' . $payload['record_path']));
     }
 
-    public function testQdbSiteAssignsSequentialQuoteNumbersAcrossDigitBoundary(): void
+    public function testQdbQuoteApiAssignsSequentialQuoteNumbersAcrossDigitBoundary(): void
     {
         putenv('FORUM_SITE_ID=qdb');
         try {
@@ -2029,7 +2029,7 @@ NODE;
                 $response = $this->renderMethod(
                     $application,
                     'POST',
-                    '/api/create_thread?board_tags=general&subject=&body=' . rawurlencode('Quote ' . $expectedNumber)
+                    '/api/create_quote?board_tags=general&subject=&body=' . rawurlencode('Quote ' . $expectedNumber)
                 );
                 $threadId = $this->extractValue($response, 'thread_id');
 
@@ -2044,7 +2044,7 @@ NODE;
         }
     }
 
-    public function testQdbSiteStartsQuoteNumberingAtOneWithNoExistingQuotes(): void
+    public function testQdbQuoteApiStartsQuoteNumberingAtOneWithNoExistingQuotes(): void
     {
         putenv('FORUM_SITE_ID=qdb');
         try {
@@ -2054,7 +2054,7 @@ NODE;
             $response = $this->renderMethod(
                 $application,
                 'POST',
-                '/api/create_thread?board_tags=general&subject=&body=First%20quote'
+                '/api/create_quote?board_tags=general&subject=&body=First%20quote'
             );
             $threadId = $this->extractValue($response, 'thread_id');
 
@@ -2064,7 +2064,7 @@ NODE;
         }
     }
 
-    public function testQdbPrepareThreadContinuesSameQuoteNumberSequenceAsCreateThread(): void
+    public function testQdbPrepareQuoteContinuesSameQuoteNumberSequenceAsCreateQuote(): void
     {
         putenv('FORUM_SITE_ID=qdb');
         try {
@@ -2075,14 +2075,14 @@ NODE;
             $createResponse = $this->renderMethod(
                 $application,
                 'POST',
-                '/api/create_thread?board_tags=general&subject=&body=First%20quote'
+                '/api/create_quote?board_tags=general&subject=&body=First%20quote'
             );
             $createdThreadId = $this->extractValue($createResponse, 'thread_id');
 
             $prepareResponse = $this->renderMethod(
                 $application,
                 'POST',
-                '/api/prepare_thread?board_tags=general&subject=&body=Second%20quote&author_identity_id=' . rawurlencode($identityId)
+                '/api/prepare_quote?board_tags=general&subject=&body=Second%20quote&author_identity_id=' . rawurlencode($identityId)
             );
             $prepared = json_decode($prepareResponse, true, 512, JSON_THROW_ON_ERROR);
 
@@ -2107,6 +2107,69 @@ NODE;
 
         assertTrue(preg_match('/^thread-\d{14}-[0-9a-f]{8}$/', $threadId) === 1, 'Unexpected thread ID shape: ' . $threadId);
         assertStringNotContains('-qdb-', $threadId);
+    }
+
+    public function testQdbGenericCreateAndPrepareThreadUseRegularIds(): void
+    {
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $identityId = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+
+            $createResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Regular&body=Regular%20thread'
+            );
+            $threadId = $this->extractValue($createResponse, 'thread_id');
+
+            $prepareResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/prepare_thread?board_tags=general&subject=Prepared&body=Regular%20thread&author_identity_id=' . rawurlencode($identityId)
+            );
+            $prepared = json_decode($prepareResponse, true, 512, JSON_THROW_ON_ERROR);
+
+            assertTrue(preg_match('/^thread-\d{14}-[0-9a-f]{8}$/', $threadId) === 1, 'Unexpected QDB regular thread ID: ' . $threadId);
+            assertStringNotContains('-qdb-', $threadId);
+            assertTrue(preg_match('/^thread-\d{14}-[0-9a-f]{8}$/', (string) $prepared['thread_id']) === 1);
+            assertStringNotContains('-qdb-', (string) $prepared['thread_id']);
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+    }
+
+    public function testQdbAddAndComposeThreadFormsSelectDifferentIdTypes(): void
+    {
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+            $quoteResponse = $this->renderMethod($application, 'POST', '/add?body=Form%20quote');
+            $threadResponse = $this->renderMethod($application, 'POST', '/compose/thread?subject=Regular&body=Form%20thread');
+
+            assertTrue(preg_match('/Created thread (thread-\d{14}-qdb-1)\./', $quoteResponse) === 1);
+            assertTrue(preg_match('/Created thread (thread-\d{14}-[0-9a-f]{8})\./', $threadResponse, $threadMatches) === 1);
+            assertStringNotContains('-qdb-', $threadMatches[1]);
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+    }
+
+    public function testQuoteApiRejectsNonQdbSiteProfiles(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_quote?board_tags=general&subject=&body=Not%20a%20quote'
+        );
+
+        assertStringContains('QDB quote authoring is available only on the QDB site.', $response);
     }
 
     public function testPrepareReplyReturnsCanonicalRecordWithoutCommittingPost(): void
@@ -2448,6 +2511,75 @@ NODE;
         assertFalse(is_file($artifactRoot . '/tools/feature-flags.html'));
     }
 
+    public function testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $signingKey = $this->createSigningKey('feature-flag-signer');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $_POST = ['public_key' => $signingKey['public_key']];
+            $identityResponse = $this->renderMethod($application, 'POST', '/api/link_identity');
+            $_POST = [];
+            $identityId = $this->extractValue($identityResponse, 'identity_id');
+            $this->seedApprovedIdentity($repositoryRoot, $identityId);
+            $this->renderMethod($application, 'GET', '/');
+
+            $_COOKIE = ['identity_hint' => $identityId];
+            $prepared = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/prepare_feature_flag_change?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
+            ), true, 512, JSON_THROW_ON_ERROR);
+            $snapshotPath = $repositoryRoot . '/records/instance/feature-flags.txt';
+            $snapshotBefore = is_file($snapshotPath) ? (string) file_get_contents($snapshotPath) : null;
+
+            $_POST = [
+                'prepare_token' => $prepared['prepare_token'], 'record_id' => $prepared['record_id'],
+                'record_path' => $prepared['record_path'], 'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => 'invalid detached signature',
+            ];
+            $invalid = json_decode($this->renderMethod($application, 'POST', '/api/finalize_feature_flag_change'), true, 512, JSON_THROW_ON_ERROR);
+            $_POST = [];
+            assertSame('error', $invalid['status']);
+            assertSame('Detached signature verification failed: invalid_signature', $invalid['error']);
+            assertSame($snapshotBefore, is_file($snapshotPath) ? (string) file_get_contents($snapshotPath) : null);
+            assertFalse(is_file($repositoryRoot . '/' . $prepared['record_path']));
+
+            $signature = $this->signCanonicalRecord($signingKey['home'], $prepared['canonical_record']);
+            $_POST = [
+                'prepare_token' => $prepared['prepare_token'], 'record_id' => $prepared['record_id'],
+                'record_path' => $prepared['record_path'], 'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $signature,
+            ];
+            $result = json_decode($this->renderMethod($application, 'POST', '/api/finalize_feature_flag_change'), true, 512, JSON_THROW_ON_ERROR);
+            $_POST = [];
+
+            assertSame('ok', $result['status']);
+            assertSame($identityId, $result['operator_identity_id']);
+            assertSame($signature, (string) file_get_contents($repositoryRoot . '/' . $prepared['record_path'] . '.asc'));
+            assertStringContains('FORUM_APP_VERSION_NOTIFICATION: false', (string) file_get_contents($repositoryRoot . '/records/instance/feature-flags.txt'));
+            $committedFiles = $this->gitOutput($repositoryRoot, 'show --name-only --format= ' . escapeshellarg($result['commit_sha']));
+            assertStringContains('records/instance/feature-flags.txt', $committedFiles);
+            assertStringContains($prepared['record_path'], $committedFiles);
+            assertStringContains($prepared['record_path'] . '.asc', $committedFiles);
+            $activity = $this->renderMethod($application, 'GET', '/activity/');
+            assertStringContains($identityId, $activity);
+            assertStringContains($prepared['record_path'], $activity);
+            assertStringContains($prepared['record_path'] . '.asc', $activity);
+
+            $rebuiltDatabasePath = dirname($databasePath) . '/rebuilt-' . basename($databasePath);
+            $rebuiltApplication = new Application(dirname(__DIR__), $repositoryRoot, $rebuiltDatabasePath, $artifactRoot);
+            $rebuiltActivity = $this->renderMethod($rebuiltApplication, 'GET', '/activity/');
+            assertStringContains($identityId, $rebuiltActivity);
+            assertStringContains($prepared['record_path'], $rebuiltActivity);
+        } finally {
+            $_POST = [];
+            $_COOKIE = [];
+            $this->deleteTree($signingKey['home']);
+        }
+    }
+
     public function testSetFeatureFlagAcceptsDisplayedEnabledDisabledValues(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -2494,7 +2626,7 @@ NODE;
         }
     }
 
-    public function testSetFeatureFlagApiRequiresRootApprovedIdentityAndCommits(): void
+    public function testFeatureFlagApisRequireRootApprovalAndBrowserSignature(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -2505,20 +2637,24 @@ NODE;
             '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
         );
         $_COOKIE = ['identity_hint' => 'guest'];
-        $authorized = $this->renderMethod(
+        $unsigned = $this->renderMethod(
             $application,
             'POST',
             '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
         );
+        $prepared = json_decode($this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_feature_flag_change?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
+        ), true, 512, JSON_THROW_ON_ERROR);
         $_COOKIE = [];
 
         assertStringContains('error=Feature flag changes require a root-approved identity.', $unauthorized);
-        assertStringContains('status=ok', $authorized);
-        assertStringContains('key=FORUM_APP_VERSION_NOTIFICATION', $authorized);
-        assertStringContains('site_value=false', $authorized);
-        assertStringContains('source=site', $authorized);
-        assertStringContains('commit_sha=', $authorized);
-        assertStringContains('FORUM_APP_VERSION_NOTIFICATION: false', (string) file_get_contents($repositoryRoot . '/records/instance/feature-flags.txt'));
+        assertStringContains('error=Feature flag changes require a browser signature.', $unsigned);
+        assertSame('ok', $prepared['status']);
+        assertSame('yes', $prepared['wrote_record']);
+        assertStringContains('Operator-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $prepared['canonical_record']);
+        assertFalse(is_file($repositoryRoot . '/records/instance/feature-flags.txt'));
     }
 
     public function testSetFeatureFlagAddsActivityForWarmReadModel(): void
@@ -2527,19 +2663,11 @@ NODE;
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         $this->renderMethod($application, 'GET', '/');
 
-        $_COOKIE = ['identity_hint' => 'guest'];
-        try {
-            $response = $this->renderMethod(
-                $application,
-                'POST',
-                '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
-            );
-            $activity = $this->renderMethod($application, 'GET', '/activity/');
-        } finally {
-            $_COOKIE = [];
-        }
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $response = $service->setFeatureFlag(['key' => 'FORUM_APP_VERSION_NOTIFICATION', 'value' => 'false']);
+        $activity = $this->renderMethod($application, 'GET', '/activity/');
 
-        $commitSha = $this->extractValue($response, 'commit_sha');
+        $commitSha = $response['commit_sha'];
         assertStringContains('site_feature_flag', $activity);
         assertStringContains('Set feature flag FORUM_APP_VERSION_NOTIFICATION=false', $activity);
         assertStringContains('records/instance/feature-flags.txt', $activity);
@@ -2591,9 +2719,9 @@ NODE;
         assertStringContains('method="post" action="/tools/feature-flags/"', $form);
         assertStringContains('data-feature-flag-form', $form);
         assertStringContains('Feature flag changes require a root-approved identity.', $unauthorized);
-        assertStringContains('Feature flag updated. Commit:', $redirect);
+        assertStringContains('Feature flag changes require a browser signature.', $redirect);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $updated);
-        assertStringContains('data-role="feature-flag-source">site</span>', $updated);
+        assertStringContains('data-role="feature-flag-source">default</span>', $updated);
     }
 
     public function testFeatureFlagFormSubmitAcceptsDisplayedEnabledDisabledValues(): void
@@ -2613,8 +2741,8 @@ NODE;
             $_POST = [];
         }
 
-        assertStringContains('Feature flag updated. Commit:', $redirect);
-        assertStringContains('FORUM_APP_VERSION_NOTIFICATION: false', (string) file_get_contents($repositoryRoot . '/records/instance/feature-flags.txt'));
+        assertStringContains('Feature flag changes require a browser signature.', $redirect);
+        assertFalse(is_file($repositoryRoot . '/records/instance/feature-flags.txt'));
     }
 
     public function testFeatureFlagWriteSyncsRepositoryHeadMetadataImmediately(): void
@@ -2623,16 +2751,8 @@ NODE;
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         $this->renderMethod($application, 'GET', '/');
 
-        $_COOKIE = ['identity_hint' => 'guest'];
-        try {
-            $this->renderMethod(
-                $application,
-                'POST',
-                '/tools/feature-flags/?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
-            );
-        } finally {
-            $_COOKIE = [];
-        }
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $service->setFeatureFlag(['key' => 'FORUM_APP_VERSION_NOTIFICATION', 'value' => 'false']);
 
         $currentHead = ReadModelMetadata::repositoryHead($repositoryRoot);
         $pdo = new PDO('sqlite:' . $databasePath);
@@ -2669,18 +2789,8 @@ NODE;
         ]);
         assertTrue($staleMarker->exists());
 
-        $_COOKIE = ['identity_hint' => 'guest'];
-        try {
-            $redirect = $this->renderMethod(
-                $application,
-                'POST',
-                '/tools/feature-flags/?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
-            );
-        } finally {
-            $_COOKIE = [];
-        }
-
-        assertStringContains('Feature flag updated. Commit:', $redirect);
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $service->setFeatureFlag(['key' => 'FORUM_APP_VERSION_NOTIFICATION', 'value' => 'false']);
         $this->assertReadModelHealthy($databasePath);
 
         $pdo = new PDO('sqlite:' . $databasePath);

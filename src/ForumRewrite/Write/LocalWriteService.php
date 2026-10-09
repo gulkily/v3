@@ -6,6 +6,7 @@ namespace ForumRewrite\Write;
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\CanonicalPathResolver;
+use ForumRewrite\Canonical\FeatureFlagChangeRecordParser;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\InvitationRecordParser;
 use ForumRewrite\Canonical\PostRecord;
@@ -62,12 +63,33 @@ class LocalWriteService
      */
     public function createThread(array $input): array
     {
-        return $this->withTimedWriteLock(function () use ($input): array {
+        return $this->createThreadForAuthoringMode($input, false);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, string>
+     */
+    public function createQuote(array $input): array
+    {
+        return $this->createThreadForAuthoringMode($input, true);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, string>
+     */
+    private function createThreadForAuthoringMode(array $input, bool $isQdbQuote): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $isQdbQuote): array {
             $this->assertWritableRepository();
+            if ($isQdbQuote) {
+                $this->assertQdbQuoteAuthoring();
+            }
             $this->assertEventSupportAllowsInput($input);
             $timings = [];
             $totalStartedAt = hrtime(true);
-            $postId = $this->mintThreadPostId();
+            $postId = $this->mintThreadPostId($isQdbQuote);
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $subject = $this->normalizeAuthoredLine((string) ($input['subject'] ?? ''), 'subject');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
@@ -177,11 +199,32 @@ class LocalWriteService
      */
     public function prepareThread(array $input): array
     {
-        return $this->withTimedWriteLock(function () use ($input): array {
+        return $this->prepareThreadForAuthoringMode($input, false);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function prepareQuote(array $input): array
+    {
+        return $this->prepareThreadForAuthoringMode($input, true);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    private function prepareThreadForAuthoringMode(array $input, bool $isQdbQuote): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $isQdbQuote): array {
             $this->assertWritableRepository();
+            if ($isQdbQuote) {
+                $this->assertQdbQuoteAuthoring();
+            }
             $timings = [];
             $totalStartedAt = hrtime(true);
-            $postId = $this->mintThreadPostId();
+            $postId = $this->mintThreadPostId($isQdbQuote);
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $subject = $this->normalizeAuthoredLine((string) ($input['subject'] ?? ''), 'subject');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
@@ -1444,6 +1487,146 @@ class LocalWriteService
     }
 
     /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function prepareFeatureFlagChange(array $input, string $operatorIdentityId): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
+            $this->assertWritableRepository();
+            $operatorIdentityId = $this->requireOpenPgpIdentityId($operatorIdentityId, 'operator_identity_id');
+            if (!$this->isApprovedIdentity($operatorIdentityId)) {
+                throw new RuntimeException('Feature flag changes require an approved operator identity.');
+            }
+            $key = $this->requireFeatureFlagKey((string) ($input['key'] ?? ''));
+            $requestedValue = $this->requireBooleanValue($input['value'] ?? null, 'value');
+            $currentState = $this->featureFlags->evaluate($key);
+            if ($currentState->environmentValue !== null) {
+                throw new RuntimeException('feature flag is currently overridden by environment: ' . $key);
+            }
+            if ($currentState->siteError !== null) {
+                throw new RuntimeException('feature flags record is invalid: ' . $currentState->siteError);
+            }
+
+            $record = $this->canonicalRepository->loadFeatureFlags(CanonicalPathResolver::featureFlags());
+            if (array_key_exists($key, $record->values) && $record->values[$key] === $requestedValue) {
+                return [
+                    'status' => 'ok', 'wrote_record' => 'no', 'key' => $key,
+                    'site_value' => $requestedValue ? 'true' : 'false',
+                    'effective_value' => $currentState->effectiveValue ? 'true' : 'false', 'source' => $currentState->source,
+                ];
+            }
+
+            $recordId = $this->generateRecordId('feature-flag-change');
+            $createdAt = $this->canonicalTimestampNow();
+            $canonicalRecord = $this->buildFeatureFlagChangeRecord($recordId, $createdAt, $key, $requestedValue, $operatorIdentityId);
+            $recordPath = CanonicalPathResolver::featureFlagChange($recordId);
+            $prepared = $this->storePreparedPost($recordPath, $canonicalRecord, [
+                'kind' => 'feature-flag-change', 'record_id' => $recordId, 'flag_key' => $key,
+                'value' => $requestedValue ? 'true' : 'false', 'operator_identity_id' => $operatorIdentityId,
+            ]);
+
+            return array_merge($prepared, [
+                'status' => 'ok', 'wrote_record' => 'yes', 'record_id' => $recordId,
+                'record_path' => $recordPath, 'canonical_record' => $canonicalRecord,
+            ]);
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function finalizePreparedFeatureFlagChange(array $input, string $operatorIdentityId): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
+            $this->assertWritableRepository();
+            $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($prepareToken);
+            if (($prepared['kind'] ?? '') !== 'feature-flag-change') {
+                throw new RuntimeException('Prepared record is not a feature-flag change.');
+            }
+            if (strtotime((string) ($prepared['expires_at'] ?? '')) < time()) {
+                throw new RuntimeException('Prepared feature-flag change has expired.');
+            }
+
+            $operatorIdentityId = $this->requireOpenPgpIdentityId($operatorIdentityId, 'operator_identity_id');
+            if ($operatorIdentityId !== (string) ($prepared['operator_identity_id'] ?? '')) {
+                throw new RuntimeException('Prepared feature-flag change operator identity mismatch.');
+            }
+            if (!$this->isApprovedIdentity($operatorIdentityId)) {
+                throw new RuntimeException('Feature flag changes require an approved operator identity.');
+            }
+            $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+            if ($canonicalRecord === '' || hash('sha256', $canonicalRecord) !== (string) ($prepared['canonical_sha256'] ?? '')) {
+                throw new RuntimeException('Prepared feature-flag change canonical record mismatch.');
+            }
+            $recordPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $recordId = $this->requirePreparedMatch($input, $prepared, 'record_id');
+            $action = (new FeatureFlagChangeRecordParser())->parse($canonicalRecord);
+            if ($action->recordId !== $recordId
+                || CanonicalPathResolver::featureFlagChange($action->recordId) !== $recordPath
+                || $action->operatorIdentityId !== $operatorIdentityId
+                || $action->flagKey !== (string) ($prepared['flag_key'] ?? '')
+                || ($action->value ? 'true' : 'false') !== (string) ($prepared['value'] ?? '')) {
+                throw new RuntimeException('Prepared feature-flag change does not match its canonical action record.');
+            }
+            if (is_file($this->repositoryRoot . '/' . $recordPath) || is_file($this->repositoryRoot . '/' . $recordPath . '.asc')) {
+                throw new RuntimeException('Feature-flag change record already exists.');
+            }
+
+            $currentState = $this->featureFlags->evaluate($action->flagKey);
+            if ($currentState->environmentValue !== null) {
+                throw new RuntimeException('feature flag is currently overridden by environment: ' . $action->flagKey);
+            }
+            if ($currentState->siteError !== null) {
+                throw new RuntimeException('feature flags record is invalid: ' . $currentState->siteError);
+            }
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($operatorIdentityId);
+            $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
+            if (!$verification['ok']) {
+                throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+            }
+
+            $featureFlagsRecord = $this->canonicalRepository->loadFeatureFlags(CanonicalPathResolver::featureFlags());
+            $values = $featureFlagsRecord->values;
+            $values[$action->flagKey] = $action->value;
+            $snapshot = $this->buildFeatureFlagsRecord($values);
+            $snapshotPath = CanonicalPathResolver::featureFlags();
+            $this->writeFile($recordPath, $canonicalRecord);
+            $this->writeFile($recordPath . '.asc', $signature);
+            $this->writeFile($snapshotPath, $snapshot);
+            $commitResult = $this->commitCanonicalWrite(
+                [$snapshotPath, $recordPath, $recordPath . '.asc'],
+                'Set feature flag ' . $action->flagKey . '=' . ($action->value ? 'true' : 'false') . ' by ' . $operatorIdentityId
+            );
+            $commitSha = $commitResult['commit_sha'];
+            $this->syncReadModelAfterFeatureFlagWrite(
+                $action->flagKey,
+                $action->value,
+                $snapshotPath,
+                $commitSha,
+                $operatorIdentityId,
+                $recordPath,
+                $action->createdAt,
+            );
+            $this->invalidator()->invalidateFeatureFlags();
+            $this->deletePreparedPost($prepareToken);
+            $updatedState = FeatureFlagEvaluator::forRepository($this->repositoryRoot)->evaluate($action->flagKey);
+
+            return [
+                'status' => 'ok', 'key' => $action->flagKey,
+                'site_value' => $action->value ? 'true' : 'false',
+                'effective_value' => $updatedState->effectiveValue ? 'true' : 'false', 'source' => $updatedState->source,
+                'wrote_record' => 'yes', 'record_id' => $recordId, 'record_path' => $recordPath,
+                'signature_path' => $recordPath . '.asc', 'operator_identity_id' => $operatorIdentityId,
+                'commit_sha' => $commitSha, 'timings' => $commitResult['timings'],
+            ];
+        });
+    }
+
+    /**
      * @return array<string, float>
      */
     protected function rebuildReadModel(): array
@@ -1861,7 +2044,15 @@ class LocalWriteService
         return (new ReadModelConnection($this->databasePath))->open();
     }
 
-    private function syncReadModelAfterFeatureFlagWrite(string $key, bool $value, string $recordPath, string $commitSha): void
+    private function syncReadModelAfterFeatureFlagWrite(
+        string $key,
+        bool $value,
+        string $recordPath,
+        string $commitSha,
+        ?string $operatorIdentityId = null,
+        ?string $actionPath = null,
+        ?string $createdAt = null,
+    ): void
     {
         if (!$this->canIncrementallyUpdateReadModel()) {
             // A rebuild replays feature-flag activity from git history too (see
@@ -1884,20 +2075,24 @@ class LocalWriteService
                     source_path, source_commit_sha
                  ) VALUES (
                     :created_at, :kind, :record_family, :action_key, NULL, NULL, :label, :board_tags_json,
-                    NULL, NULL, NULL, :author_label, :author_is_approved,
+                    :author_identity_id, :author_profile_slug, :author_username_token, :author_label, :author_is_approved,
                     :source_path, :source_commit_sha
                  )'
             );
+            $author = $this->featureFlagActivityAuthor($operatorIdentityId);
             $stmt->execute([
-                'created_at' => $this->canonicalTimestampNow(),
+                'created_at' => $createdAt ?? $this->canonicalTimestampNow(),
                 'kind' => 'site_feature_flag',
                 'record_family' => 'instance_feature_flags',
-                'action_key' => $recordPath . '@' . $commitSha,
+                'action_key' => ($actionPath ?? $recordPath) . '@' . $commitSha,
                 'label' => 'Set feature flag ' . $key . '=' . ($value ? 'true' : 'false'),
                 'board_tags_json' => '["site"]',
-                'author_label' => 'site configuration',
-                'author_is_approved' => 1,
-                'source_path' => $recordPath,
+                'author_identity_id' => $operatorIdentityId,
+                'author_profile_slug' => $author['profile_slug'],
+                'author_username_token' => $author['username_token'],
+                'author_label' => $author['label'],
+                'author_is_approved' => $author['is_approved'],
+                'source_path' => $actionPath ?? $recordPath,
                 'source_commit_sha' => $commitSha,
             ]);
 
@@ -1912,6 +2107,29 @@ class LocalWriteService
         }
 
         $this->staleMarker()->clear();
+    }
+
+    /** @return array{profile_slug:?string,username_token:?string,label:string,is_approved:int} */
+    private function featureFlagActivityAuthor(?string $identityId): array
+    {
+        if ($identityId === null) {
+            return ['profile_slug' => null, 'username_token' => null, 'label' => 'site configuration', 'is_approved' => 1];
+        }
+        $stmt = $this->readModelPdo()->prepare(
+            'SELECT profile_slug, username_token, username, is_approved FROM profiles WHERE identity_id = :identity_id'
+        );
+        $stmt->execute(['identity_id' => $identityId]);
+        $row = $stmt->fetch();
+        if (!is_array($row)) {
+            return ['profile_slug' => null, 'username_token' => null, 'label' => $identityId, 'is_approved' => 0];
+        }
+
+        return [
+            'profile_slug' => $row['profile_slug'] !== null ? (string) $row['profile_slug'] : null,
+            'username_token' => $row['username_token'] !== null ? (string) $row['username_token'] : null,
+            'label' => (string) $row['username'],
+            'is_approved' => (int) $row['is_approved'],
+        ];
     }
 
     /**
@@ -2174,13 +2392,20 @@ class LocalWriteService
         return sprintf('%s-%s-%s', $prefix, gmdate('YmdHis'), substr(bin2hex(random_bytes(4)), 0, 8));
     }
 
-    private function mintThreadPostId(): string
+    private function mintThreadPostId(bool $isQdbQuote): string
     {
-        if (SiteProfileRegistry::active()['name'] !== 'qdb') {
+        if (!$isQdbQuote) {
             return $this->generateRecordId('thread');
         }
 
         return QdbQuoteNumbers::mint(gmdate('YmdHis'), QdbQuoteNumbers::nextAvailable($this->readModelPdo()));
+    }
+
+    private function assertQdbQuoteAuthoring(): void
+    {
+        if (SiteProfileRegistry::active()['name'] !== 'qdb') {
+            throw new RuntimeException('QDB quote authoring is available only on the QDB site.');
+        }
     }
 
     private function canonicalTimestampNow(): string
@@ -2382,6 +2607,18 @@ class LocalWriteService
         }
 
         (new SiteFeatureFlagsRecordParser())->parse($contents);
+
+        return $contents;
+    }
+
+    private function buildFeatureFlagChangeRecord(string $recordId, string $createdAt, string $flagKey, bool $value, string $operatorIdentityId): string
+    {
+        $contents = "Record-ID: {$recordId}\n"
+            . "Created-At: {$createdAt}\n"
+            . "Flag-Key: {$flagKey}\n"
+            . 'Value: ' . ($value ? 'true' : 'false') . "\n"
+            . "Operator-Identity-ID: {$operatorIdentityId}\n\n";
+        (new FeatureFlagChangeRecordParser())->parse($contents);
 
         return $contents;
     }
