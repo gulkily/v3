@@ -12,3 +12,12 @@
   - `php tests/run.php OfflineSnapshotPresentationTest LocalAppSmokeTest::testOfflineReaderFallbackRouteUsesLocalSnapshotShell` — 8 run, 8 passed.
 - Notes:
   - Visual layout change is Stage 2; until then the bar still renders full width.
+
+## Stage 2 - Fixed corner badge
+- Changes:
+  - Replaced the full-width bar styles in `public/assets/site.css` with a compact fixed top-right badge (z-index below the sticky app-version banner); removed the now-unused indicator and narrow-screen rules.
+- Verification:
+  - `php tests/run.php OfflineSnapshotPresentationTest LocalAppSmokeTest` — only `testApplicationRendersCoreRoutes`, `testFeatureFlagsPageShowsLockedBadgeWithReasonForNonMutableFlags` (and a rebuild-recovery test) fail; all three also fail on the pre-feature commit `b8b36b53`, so they are unrelated.
+  - Browser check at 360px / desktop: not performed in this environment; still needs a manual look (see Notes).
+- Notes:
+  - Fixed positioning removes the bar from page flow, so no vertical space is used; header overlap at phone width is unverified.
