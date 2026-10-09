@@ -100,6 +100,7 @@ $testFiles = [
     __DIR__ . '/ReadModelMetadataTest.php',
     __DIR__ . '/ReadModelSchemaTest.php',
     __DIR__ . '/ReadModelThreadLabelsTest.php',
+    __DIR__ . '/ReadModelThreadSubjectsTest.php',
     __DIR__ . '/ResumeTargetTest.php',
     __DIR__ . '/SiteProfileRegistryTest.php',
     __DIR__ . '/ThemeRegistryTest.php',

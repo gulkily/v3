@@ -11,6 +11,7 @@ use ForumRewrite\Canonical\IdentityBootstrapRecord;
 use ForumRewrite\Canonical\PostReactionRecord;
 use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\ThreadLabelRecord;
+use ForumRewrite\Canonical\ThreadSubjectRecord;
 use ForumRewrite\TagScore;
 use PDO;
 use RuntimeException;
@@ -152,6 +153,40 @@ class IncrementalReadModelUpdater
                 'refresh_thread_label_activity',
                 fn (): mixed => $this->refreshThreadLabelActivity($pdo, $thread, $labelState['activity_events'], $commitSha)
             );
+            $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
+            $pdo->commit();
+
+            return $timings;
+        } catch (\Throwable $throwable) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $throwable;
+        }
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    public function applyThreadSubjectWrite(string $threadId, string $commitSha): array
+    {
+        $timings = [];
+        $pdo = (new ReadModelConnection($this->databasePath))->open();
+        $pdo->beginTransaction();
+
+        try {
+            $currentSubject = $this->measure($timings, 'load_thread_subject', fn (): ?string => $this->loadThreadSubjectColumn($pdo, $threadId));
+            $records = $this->measure($timings, 'load_thread_subject_records', fn (): array => $this->loadThreadSubjectRecords($threadId));
+            $resolvedSubject = $this->measure(
+                $timings,
+                'derive_thread_subject_state',
+                fn (): ?string => $this->deriveThreadSubjectState($currentSubject, $records)
+            );
+
+            if ($resolvedSubject !== null) {
+                $this->measure($timings, 'update_thread_subject', fn (): mixed => $this->updateThreadSubject($pdo, $threadId, $resolvedSubject));
+            }
             $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
             $pdo->commit();
 
@@ -1240,6 +1275,81 @@ class IncrementalReadModelUpdater
         });
 
         return $records;
+    }
+
+    private function loadThreadSubjectColumn(PDO $pdo, string $threadId): ?string
+    {
+        $stmt = $pdo->prepare('SELECT subject FROM threads WHERE root_post_id = :thread_id');
+        $stmt->execute(['thread_id' => $threadId]);
+        $row = $stmt->fetch();
+        if (!is_array($row)) {
+            throw new RuntimeException('Incremental thread-subject update could not resolve target thread.');
+        }
+
+        return $row['subject'];
+    }
+
+    /**
+     * @return list<ThreadSubjectRecord>
+     */
+    private function loadThreadSubjectRecords(string $threadId): array
+    {
+        $repository = new CanonicalRecordRepository($this->repositoryRoot);
+        $records = [];
+        foreach (glob($this->repositoryRoot . '/records/thread-subjects/*.txt') ?: [] as $path) {
+            try {
+                $record = $repository->loadThreadSubject('records/thread-subjects/' . basename($path));
+            } catch (CanonicalRecordParseException) {
+                continue;
+            }
+
+            if ($record->threadId !== $threadId) {
+                continue;
+            }
+
+            $records[] = $record;
+        }
+
+        usort($records, static function (ThreadSubjectRecord $left, ThreadSubjectRecord $right): int {
+            if ($left->createdAt !== $right->createdAt) {
+                return $left->createdAt <=> $right->createdAt;
+            }
+
+            return $left->recordId <=> $right->recordId;
+        });
+
+        return $records;
+    }
+
+    /**
+     * @param list<ThreadSubjectRecord> $records
+     */
+    private function deriveThreadSubjectState(?string $currentSubject, array $records): ?string
+    {
+        if ($currentSubject !== null && trim($currentSubject) !== '') {
+            return null;
+        }
+
+        if ($records === []) {
+            return null;
+        }
+
+        return $records[0]->subject;
+    }
+
+    private function updateThreadSubject(PDO $pdo, string $threadId, string $subject): void
+    {
+        $updateThread = $pdo->prepare('UPDATE threads SET subject = :subject WHERE root_post_id = :thread_id');
+        $updateThread->execute([
+            'subject' => $subject,
+            'thread_id' => $threadId,
+        ]);
+
+        $updatePost = $pdo->prepare('UPDATE posts SET subject = :subject WHERE post_id = :post_id');
+        $updatePost->execute([
+            'subject' => $subject,
+            'post_id' => $threadId,
+        ]);
     }
 
     /**
