@@ -45,3 +45,14 @@
   - Browser manual, deployment, migration, and release checks remain for the final stage.
 - Notes:
   - Legacy direct service calls remain only for existing internal compatibility coverage; public endpoints reject unsigned writes.
+
+## Stage 5 - Documentation and release verification
+- Changes:
+  - Added the signed action-record specification to the documentation index and documented signed Feature Flags changes plus their audit-history path.
+- Verification:
+  - `git diff --check` — passed.
+  - Focused canonical, feature-flag, write, activity, and browser-script checks passed except for the existing task-queue test noted below.
+  - `php tests/run.php LocalAppSmokeTest` — the feature-flag static-artifact invalidation coverage passed after moving its internal setup off the intentionally rejected unsigned public endpoint; unrelated pre-existing suite failures remain.
+  - Browser manual and deployed-environment smoke tests were not run in this non-browser workspace; automated server, signature, and page-script coverage is recorded above. No migration is required.
+- Notes:
+  - Operators can inspect both the current snapshot and the immutable signed action history with git.
