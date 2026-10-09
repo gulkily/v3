@@ -12,3 +12,15 @@
   - Migration and deployment checks — not applicable; no schema or deployment configuration changed.
 - Notes:
   - Classification reuses `QdbQuoteNumbers`; existing quote-only listing policy remains unchanged.
+
+## Stage 2 - Static detail regression coverage
+
+- Changes:
+  - Extended the QDB static-release contract to require a generated regular-thread detail page with its title and no quote controls.
+  - Retained the numbered quote's generated detail page and numeric alias equivalence checks.
+- Verification:
+  - `php -l tests/QuoteCardDisplayNumberTest.php` — passed.
+  - `php tests/run.php QuoteCardDisplayNumberTest::testQdbStaticReleaseIncludesPublicListingsAndNumericQuoteAlias QuoteCardDisplayNumberTest::testQdbDirectLegacyThreadPermalinkRemainsAvailable QuoteCardDisplayNumberTest::testQdbPermalinkRootCardMatchesListingCardWithoutLike QdbQuoteNumbersTest` — 6 passed, 0 failed.
+  - Migration and deployment checks — not applicable; no schema or deployment configuration changed.
+- Notes:
+  - Static detail pages reuse the corrected root-card template; no static-builder change was needed.
