@@ -17,3 +17,27 @@
   - QDB header navigation, routes, quote ordering, pagination, reactions, and
     footer were not changed. Deployment verification is pending Stage 2's
     focused markup assertions.
+
+## Stage 2 - Lock in QDB-only navigation coverage
+
+- Changes:
+  - Added a route-rendering regression test for QDB Latest, Top, and 1337;
+    each asserts the generic controls markup is absent and the matching header
+    link is active.
+  - Added the paired default-profile assertion that generic board controls
+    remain present outside QDB.
+- Verification:
+  - `php -l templates/pages/board.php` and
+    `php -l tests/QuoteCardDisplayNumberTest.php` — passed.
+  - `php tests/run.php QuoteCardDisplayNumberTest QdbExperienceRoutingTest PresentationProfileMatrixTest` — 27 passed.
+  - `php tests/run.php` — 881 passed; 2 long-standing, unrelated failures:
+    `WriteApiSmokeTest::testQdbPermalinkShowsViewersExistingUpvoteAsPressedAndDisabled`
+    (five consecutive failures since 2026-10-09) and
+    `WriteApiSmokeTest::testTaskQueueProcessesQueuedAgentReplyOnce` (ten
+    consecutive failures since 2026-10-08).
+  - `git diff --check` — passed.
+- Notes:
+  - The test asserts the controls element's exact class rather than the raw
+    `board-controls-nav` token, which legitimately remains in bundled CSS.
+  - Deployment verification remains the approved post-deploy route inspection;
+    no deployment configuration changed in this feature.
