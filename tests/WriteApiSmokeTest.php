@@ -2018,7 +2018,7 @@ NODE;
         assertFalse(is_file($repositoryRoot . '/' . $payload['record_path']));
     }
 
-    public function testQdbSiteAssignsSequentialQuoteNumbersAcrossDigitBoundary(): void
+    public function testQdbQuoteApiAssignsSequentialQuoteNumbersAcrossDigitBoundary(): void
     {
         putenv('FORUM_SITE_ID=qdb');
         try {
@@ -2029,7 +2029,7 @@ NODE;
                 $response = $this->renderMethod(
                     $application,
                     'POST',
-                    '/api/create_thread?board_tags=general&subject=&body=' . rawurlencode('Quote ' . $expectedNumber)
+                    '/api/create_quote?board_tags=general&subject=&body=' . rawurlencode('Quote ' . $expectedNumber)
                 );
                 $threadId = $this->extractValue($response, 'thread_id');
 
@@ -2044,7 +2044,7 @@ NODE;
         }
     }
 
-    public function testQdbSiteStartsQuoteNumberingAtOneWithNoExistingQuotes(): void
+    public function testQdbQuoteApiStartsQuoteNumberingAtOneWithNoExistingQuotes(): void
     {
         putenv('FORUM_SITE_ID=qdb');
         try {
@@ -2054,7 +2054,7 @@ NODE;
             $response = $this->renderMethod(
                 $application,
                 'POST',
-                '/api/create_thread?board_tags=general&subject=&body=First%20quote'
+                '/api/create_quote?board_tags=general&subject=&body=First%20quote'
             );
             $threadId = $this->extractValue($response, 'thread_id');
 
@@ -2064,7 +2064,7 @@ NODE;
         }
     }
 
-    public function testQdbPrepareThreadContinuesSameQuoteNumberSequenceAsCreateThread(): void
+    public function testQdbPrepareQuoteContinuesSameQuoteNumberSequenceAsCreateQuote(): void
     {
         putenv('FORUM_SITE_ID=qdb');
         try {
@@ -2075,14 +2075,14 @@ NODE;
             $createResponse = $this->renderMethod(
                 $application,
                 'POST',
-                '/api/create_thread?board_tags=general&subject=&body=First%20quote'
+                '/api/create_quote?board_tags=general&subject=&body=First%20quote'
             );
             $createdThreadId = $this->extractValue($createResponse, 'thread_id');
 
             $prepareResponse = $this->renderMethod(
                 $application,
                 'POST',
-                '/api/prepare_thread?board_tags=general&subject=&body=Second%20quote&author_identity_id=' . rawurlencode($identityId)
+                '/api/prepare_quote?board_tags=general&subject=&body=Second%20quote&author_identity_id=' . rawurlencode($identityId)
             );
             $prepared = json_decode($prepareResponse, true, 512, JSON_THROW_ON_ERROR);
 
@@ -2107,6 +2107,51 @@ NODE;
 
         assertTrue(preg_match('/^thread-\d{14}-[0-9a-f]{8}$/', $threadId) === 1, 'Unexpected thread ID shape: ' . $threadId);
         assertStringNotContains('-qdb-', $threadId);
+    }
+
+    public function testQdbGenericCreateAndPrepareThreadUseRegularIds(): void
+    {
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $identityId = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+
+            $createResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/create_thread?board_tags=general&subject=Regular&body=Regular%20thread'
+            );
+            $threadId = $this->extractValue($createResponse, 'thread_id');
+
+            $prepareResponse = $this->renderMethod(
+                $application,
+                'POST',
+                '/api/prepare_thread?board_tags=general&subject=Prepared&body=Regular%20thread&author_identity_id=' . rawurlencode($identityId)
+            );
+            $prepared = json_decode($prepareResponse, true, 512, JSON_THROW_ON_ERROR);
+
+            assertTrue(preg_match('/^thread-\d{14}-[0-9a-f]{8}$/', $threadId) === 1, 'Unexpected QDB regular thread ID: ' . $threadId);
+            assertStringNotContains('-qdb-', $threadId);
+            assertTrue(preg_match('/^thread-\d{14}-[0-9a-f]{8}$/', (string) $prepared['thread_id']) === 1);
+            assertStringNotContains('-qdb-', (string) $prepared['thread_id']);
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+    }
+
+    public function testQuoteApiRejectsNonQdbSiteProfiles(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_quote?board_tags=general&subject=&body=Not%20a%20quote'
+        );
+
+        assertStringContains('QDB quote authoring is available only on the QDB site.', $response);
     }
 
     public function testPrepareReplyReturnsCanonicalRecordWithoutCommittingPost(): void

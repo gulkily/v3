@@ -61,12 +61,33 @@ class LocalWriteService
      */
     public function createThread(array $input): array
     {
-        return $this->withTimedWriteLock(function () use ($input): array {
+        return $this->createThreadForAuthoringMode($input, false);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, string>
+     */
+    public function createQuote(array $input): array
+    {
+        return $this->createThreadForAuthoringMode($input, true);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, string>
+     */
+    private function createThreadForAuthoringMode(array $input, bool $isQdbQuote): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $isQdbQuote): array {
             $this->assertWritableRepository();
+            if ($isQdbQuote) {
+                $this->assertQdbQuoteAuthoring();
+            }
             $this->assertEventSupportAllowsInput($input);
             $timings = [];
             $totalStartedAt = hrtime(true);
-            $postId = $this->mintThreadPostId();
+            $postId = $this->mintThreadPostId($isQdbQuote);
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $subject = $this->normalizeAuthoredLine((string) ($input['subject'] ?? ''), 'subject');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
@@ -176,11 +197,32 @@ class LocalWriteService
      */
     public function prepareThread(array $input): array
     {
-        return $this->withTimedWriteLock(function () use ($input): array {
+        return $this->prepareThreadForAuthoringMode($input, false);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function prepareQuote(array $input): array
+    {
+        return $this->prepareThreadForAuthoringMode($input, true);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    private function prepareThreadForAuthoringMode(array $input, bool $isQdbQuote): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $isQdbQuote): array {
             $this->assertWritableRepository();
+            if ($isQdbQuote) {
+                $this->assertQdbQuoteAuthoring();
+            }
             $timings = [];
             $totalStartedAt = hrtime(true);
-            $postId = $this->mintThreadPostId();
+            $postId = $this->mintThreadPostId($isQdbQuote);
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $subject = $this->normalizeAuthoredLine((string) ($input['subject'] ?? ''), 'subject');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
@@ -2105,13 +2147,20 @@ class LocalWriteService
         return sprintf('%s-%s-%s', $prefix, gmdate('YmdHis'), substr(bin2hex(random_bytes(4)), 0, 8));
     }
 
-    private function mintThreadPostId(): string
+    private function mintThreadPostId(bool $isQdbQuote): string
     {
-        if (SiteProfileRegistry::active()['name'] !== 'qdb') {
+        if (!$isQdbQuote) {
             return $this->generateRecordId('thread');
         }
 
         return QdbQuoteNumbers::mint(gmdate('YmdHis'), QdbQuoteNumbers::nextAvailable($this->readModelPdo()));
+    }
+
+    private function assertQdbQuoteAuthoring(): void
+    {
+        if (SiteProfileRegistry::active()['name'] !== 'qdb') {
+            throw new RuntimeException('QDB quote authoring is available only on the QDB site.');
+        }
     }
 
     private function canonicalTimestampNow(): string
