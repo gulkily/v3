@@ -34,3 +34,16 @@
   - `git diff --check` — passed.
 - Notes:
   - The error target supports the approved recovery path without restoring the removed generic status UI.
+
+## Stage 4 - Automatically read rendered cards
+
+- Changes:
+  - Replaced button-driven reads with one automatic local decrypt-and-verify attempt per rendered card.
+  - Reused one in-memory mailbox request per page, showed “Signature verified” only after successful verification, and kept failure feedback card-local.
+  - Added automatic-reader coverage for mixed verified/invalid-signature cards, one shared request, and zero persistent-storage writes.
+- Verification:
+  - `php tests/run.php PrivateMessageReaderTest` — 2 passed.
+  - `node --check public/assets/private_message_reader.js` — passed.
+  - `git diff --check` — passed.
+- Notes:
+  - The reader still reads the existing private key from `localStorage`; it does not write plaintext or verification results to persistent storage.
