@@ -69,13 +69,7 @@ final class ComposeAndAccountKeyController
      */
     public function composeThreadCompact(array $query): string
     {
-        return $this->routeServices->renderPageTemplate('qdb_add.php', [
-            'boardTags' => 'general',
-            'subject' => '',
-            'body' => (string) ($query['body'] ?? ''),
-            'notice' => null,
-            'error' => null,
-        ], 'Add Quote', 'compose', $this->identityScripts());
+        return $this->renderComposeQuotePage((string) ($query['body'] ?? ''));
     }
 
     /**
@@ -99,13 +93,31 @@ final class ComposeAndAccountKeyController
      */
     public function submitComposeThread(array $query): void
     {
+        $this->submitComposeThreadForAuthoringMode($query, false);
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    public function submitComposeQuote(array $query): void
+    {
+        $this->submitComposeThreadForAuthoringMode($query, true);
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function submitComposeThreadForAuthoringMode(array $query, bool $isQdbQuote): void
+    {
         $totalStartedAt = hrtime(true);
         $timings = [];
         $phaseStartedAt = hrtime(true);
         $input = $this->routeServices->requestData($query);
         $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
         try {
-            $result = $this->routeServices->writer()->createThread($input);
+            $result = $isQdbQuote
+                ? $this->routeServices->writer()->createQuote($input)
+                : $this->routeServices->writer()->createThread($input);
             $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
             $this->queueComposeDraftClear($this->composeDraftStorageKey('thread'));
             $returnTo = $this->resolveComposeThreadReturnTo((string) ($input['return_to'] ?? ''), (string) $result['thread_id']);
@@ -120,16 +132,18 @@ final class ComposeAndAccountKeyController
             );
         } catch (RuntimeException $exception) {
             $this->routeServices->sendHtml(
-                $this->renderComposeThreadPage(
-                    (string) ($input['board_tags'] ?? 'general'),
-                    (string) ($input['subject'] ?? ''),
-                    (string) ($input['body'] ?? ''),
-                    null,
-                    $exception->getMessage(),
-                    (string) ($input['event_date'] ?? ''),
-                    (string) ($input['event_location'] ?? ''),
-                    (string) ($input['event_link'] ?? '')
-                ),
+                $isQdbQuote
+                    ? $this->renderComposeQuotePage((string) ($input['body'] ?? ''), $exception->getMessage())
+                    : $this->renderComposeThreadPage(
+                        (string) ($input['board_tags'] ?? 'general'),
+                        (string) ($input['subject'] ?? ''),
+                        (string) ($input['body'] ?? ''),
+                        null,
+                        $exception->getMessage(),
+                        (string) ($input['event_date'] ?? ''),
+                        (string) ($input['event_location'] ?? ''),
+                        (string) ($input['event_link'] ?? '')
+                    ),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
             );
@@ -273,6 +287,17 @@ final class ComposeAndAccountKeyController
             'eventLocation' => $eventLocation,
             'eventLink' => $eventLink,
         ], 'Compose Thread', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js']));
+    }
+
+    private function renderComposeQuotePage(string $body, ?string $error = null): string
+    {
+        return $this->routeServices->renderPageTemplate('qdb_add.php', [
+            'boardTags' => 'general',
+            'subject' => '',
+            'body' => $body,
+            'notice' => null,
+            'error' => $error,
+        ], 'Add Quote', 'compose', $this->identityScripts());
     }
 
     private function renderComposeReplyPage(

@@ -46,8 +46,9 @@ final class BoardPageController
         $qdbPresentation = $qdbPolicy?->paginate($threads, $activeSection, $page);
         $threads = $qdbPresentation['threads'] ?? $threads;
         $pagination = $qdbPresentation['pagination'] ?? null;
-        $viewerReactionState = $qdbPolicy?->viewerReactionState($threads) ?? ['upvoted' => [], 'downvoted' => [], 'flagged' => []];
+        $viewerReactionState = $qdbPolicy?->viewerReactionState($threads) ?? ['voted' => [], 'flagged' => []];
         $voteCaptionPair = $qdbPolicy?->selectCaptionPair();
+        $qdbVoteTags = $qdbPolicy?->voteTags() ?? [];
         $boardCardSlot = PresentationSlotRegistry::resolve(\ForumRewrite\SiteProfileRegistry::active(), 'boardCard');
 
         return $this->routeServices->renderPageTemplate(
@@ -63,15 +64,15 @@ final class BoardPageController
                 'isQdbInstance' => $qdbPolicy !== null,
                 'boardCardPartial' => $boardCardSlot === 'quote' ? 'partials/quote_card.php' : 'partials/thread_card.php',
                 'boardCardData' => $boardCardSlot === 'quote' ? [
-                    'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
-                    'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
+                    'viewerVotedThreadIds' => $viewerReactionState['voted'],
                     'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
                     'voteCaptionPair' => $voteCaptionPair,
+                    'qdbVoteTags' => $qdbVoteTags,
                 ] : ['showPinnedMarker' => true],
                 'boardFooterPartial' => $qdbPolicy === null ? null : 'partials/qdb_footer.php',
-                'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
-                'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
+                'viewerVotedThreadIds' => $viewerReactionState['voted'],
                 'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
+                'qdbVoteTags' => $qdbVoteTags,
                 'qdbQuoteCount' => $qdbQuoteCount,
                 'pagination' => $pagination,
             ],
@@ -121,9 +122,9 @@ final class BoardPageController
             'qdb_random.php',
             [
                 'threads' => $threads,
-                'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
-                'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
+                'viewerVotedThreadIds' => $viewerReactionState['voted'],
                 'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
+                'qdbVoteTags' => ['upvote', 'downvote'],
             ],
             'Random',
             'random',
@@ -149,9 +150,9 @@ final class BoardPageController
             [
                 'threads' => $threads,
                 'term' => $term,
-                'viewerUpvotedThreadIds' => $viewerReactionState['upvoted'],
-                'viewerDownvotedThreadIds' => $viewerReactionState['downvoted'],
+                'viewerVotedThreadIds' => $viewerReactionState['voted'],
                 'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
+                'qdbVoteTags' => ['upvote', 'downvote'],
             ],
             'Search',
             'search',
@@ -161,11 +162,11 @@ final class BoardPageController
 
     /**
      * @param array<int, array<string, mixed>> $threads
-     * @return array{upvoted: array<string, true>, downvoted: array<string, true>, flagged: array<string, true>}
+     * @return array{voted: array<string, true>, flagged: array<string, true>}
      */
     private function viewerReactionStateForThreads(array $threads, bool $isQdbInstance): array
     {
-        $empty = ['upvoted' => [], 'downvoted' => [], 'flagged' => []];
+        $empty = ['voted' => [], 'flagged' => []];
         if (!$isQdbInstance) {
             return $empty;
         }
@@ -178,9 +179,11 @@ final class BoardPageController
         $viewerIdentityId = (string) $viewerProfile['identity_id'];
         $rootPostIds = array_column($threads, 'root_post_id');
 
+        $voted = ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'upvote', $viewerIdentityId);
+        $voted += ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'downvote', $viewerIdentityId);
+
         return [
-            'upvoted' => ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'upvote', $viewerIdentityId),
-            'downvoted' => ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'downvote', $viewerIdentityId),
+            'voted' => $voted,
             'flagged' => ViewerTagLookup::postTags($this->repositoryRoot, $rootPostIds, 'flag', $viewerIdentityId),
         ];
     }

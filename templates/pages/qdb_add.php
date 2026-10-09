@@ -4,6 +4,8 @@
     <p class="meta" data-role="compose-identity-status" hidden></p>
 <?= $indent($partial('partials/thread_compose_form.php', [
     'compact' => true,
+    'action' => '/add',
+    'authoringOperation' => 'quote',
     'boardTags' => $boardTags,
     'subject' => $subject,
     'body' => $body,

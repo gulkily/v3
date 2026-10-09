@@ -88,20 +88,21 @@ final class ThreadAndPostPageController
         $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
         $viewerHasLiked = $viewerProfile !== null
             && $this->viewerHasThreadTag($threadId, 'like', (string) $viewerProfile['identity_id']);
-        $viewerHasUpvoted = false;
-        $viewerHasDownvoted = false;
+        $viewerHasVoted = false;
         $voteCaptionPair = null;
+        $qdbVoteTags = [];
         if ($viewerProfile !== null && \ForumRewrite\SiteConfig::siteName() === 'qdb') {
             $viewerIdentityId = (string) $viewerProfile['identity_id'];
-            $viewerHasUpvoted = isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'upvote', $viewerIdentityId)[$threadId]);
-            $viewerHasDownvoted = isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'downvote', $viewerIdentityId)[$threadId]);
+            $viewerHasVoted = isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'upvote', $viewerIdentityId)[$threadId])
+                || isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'downvote', $viewerIdentityId)[$threadId]);
         }
         if (\ForumRewrite\SiteConfig::siteName() === 'qdb') {
             $catalog = QdbVoteCaptionCatalog::forReadModel($this->routeServices->databasePath());
             $voteCaptionPair = $catalog->selectActivePair();
+            $qdbVoteTags = array_values(array_unique(['upvote', 'downvote', ...$catalog->knownTags()]));
             if ($viewerProfile !== null) {
-                foreach ($catalog->knownTags() as $tag) {
-                    $viewerHasUpvoted = $viewerHasUpvoted || isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], $tag, (string) $viewerProfile['identity_id'])[$threadId]);
+                foreach ($qdbVoteTags as $tag) {
+                    $viewerHasVoted = $viewerHasVoted || isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], $tag, (string) $viewerProfile['identity_id'])[$threadId]);
                 }
             }
         }
@@ -130,9 +131,9 @@ final class ThreadAndPostPageController
                 'title' => $title,
                 'viewerProfile' => $viewerProfile,
                 'viewerHasLiked' => $viewerHasLiked,
-                'viewerHasUpvoted' => $viewerHasUpvoted,
-                'viewerHasDownvoted' => $viewerHasDownvoted,
+                'viewerHasVoted' => $viewerHasVoted,
                 'voteCaptionPair' => $voteCaptionPair,
+                'qdbVoteTags' => $qdbVoteTags,
                 'viewerPostFlags' => $viewerPostFlags,
                 'viewerPostLikes' => $viewerPostLikes,
                 'createdPostId' => $createdPostId,
