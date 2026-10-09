@@ -63,6 +63,7 @@ class LocalWriteService
     {
         return $this->withTimedWriteLock(function () use ($input): array {
             $this->assertWritableRepository();
+            $this->assertEventSupportAllowsInput($input);
             $timings = [];
             $totalStartedAt = hrtime(true);
             $postId = $this->mintThreadPostId();
@@ -371,6 +372,22 @@ class LocalWriteService
             . ($eventLocation !== '' ? "Event-Location: {$eventLocation}\n" : '')
             . ($eventLink !== '' ? "Event-Link: {$eventLink}\n" : '')
             . "\n{$body}";
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     */
+    private function assertEventSupportAllowsInput(array $input): void
+    {
+        if ($this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED)) {
+            return;
+        }
+
+        foreach (['event_date', 'event_location', 'event_link'] as $field) {
+            if (trim((string) ($input[$field] ?? '')) !== '') {
+                throw new RuntimeException('Event support is disabled for this site.');
+            }
+        }
     }
 
     private function buildReplyPostRecord(

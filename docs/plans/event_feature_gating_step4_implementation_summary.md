@@ -23,3 +23,15 @@
   - Deployment and external verification: not applicable; UI behavior is covered by local application renders.
 - Notes:
   - The compact QDB composer remains unchanged and event-free.
+
+## Stage 3 - Enforce event support on writes
+
+- Changes:
+  - Added a pre-write thread-creation guard that rejects non-empty event fields when the site flag is disabled.
+  - Added direct write coverage proving disabled event input writes no record, ordinary threads still work, and enabled event input retains all three headers.
+- Verification:
+  - `php -l src/ForumRewrite/Write/LocalWriteService.php` and `php -l tests/WriteApiSmokeTest.php` — no syntax errors.
+  - `./v3 test WriteApiSmokeTest::testEventFieldsRequireEventSupportBeforeWriting` — 1 run, 1 passed.
+  - Deployment and external verification: not applicable; the server-side write contract is covered locally.
+- Notes:
+  - The compose controller already routes write errors through its standard 400 re-render path, so no new error surface was introduced.
