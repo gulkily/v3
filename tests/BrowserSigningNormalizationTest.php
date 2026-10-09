@@ -2956,7 +2956,41 @@ NODE;
         assertSame(14.25, $result['result']['serverTiming']['total']);
     }
 
-    public function testSignedThreadSubmitPreparesSignsAndFinalizes(): void
+    public function testQuoteThreadTransportSelectsQuoteCreateAndPrepareEndpoints(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const form = { dataset: { composeKind: 'thread', authoringOperation: 'quote' } };
+
+global.window = {};
+global.localStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.sessionStorage = { getItem(){ return null; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener() {}, querySelector() { return null; },
+  createElement() { return { setAttribute(){}, style:{}, addEventListener(){}, appendChild(){}, select(){} }; },
+  createTextNode(text) { return { textContent: text }; }, body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+const helper = window.__forumComposeNormalization;
+process.stdout.write(JSON.stringify({
+  isQuote: helper.isQuoteComposeForm(form),
+  createPath: helper.threadCreateApiPath(form),
+  preparePath: helper.threadPrepareApiPath(form)
+}));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(true, $result['isQuote']);
+        assertSame('/api/create_quote', $result['createPath']);
+        assertSame('/api/prepare_quote', $result['preparePath']);
+    }
+
+    public function testSignedQuoteSubmitPreparesSignsAndFinalizes(): void
     {
         $script = <<<'NODE'
 const fs = require('fs');
@@ -2984,7 +3018,7 @@ const fields = [
   field('body', 'Thread body')
 ];
 const form = {
-  dataset: { composeKind: 'thread' },
+  dataset: { composeKind: 'thread', authoringOperation: 'quote' },
   querySelector(selector) {
     const match = selector.match(/^\[name="([^"]+)"\]$/);
     if (!match) {
@@ -3032,17 +3066,17 @@ global.navigator = {};
 global.fetch = async function(url, options) {
   const body = options && options.body ? String(options.body) : '';
   state.fetchCalls.push({ url: String(url), body });
-  if (String(url) === '/api/prepare_thread') {
+  if (String(url) === '/api/prepare_quote') {
     return {
       headers: { get(name) { return name === 'Server-Timing' ? 'prepare;dur=2.5' : ''; } },
       async text() {
         return JSON.stringify({
           status: 'ok',
           prepare_token: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-          post_id: 'thread-123',
-          thread_id: 'thread-123',
-          record_path: 'records/posts/thread-123.txt',
-          canonical_record: 'Post-ID: thread-123\n\nThread body\n',
+          post_id: 'thread-123-qdb-1',
+          thread_id: 'thread-123-qdb-1',
+          record_path: 'records/posts/thread-123-qdb-1.txt',
+          canonical_record: 'Post-ID: thread-123-qdb-1\n\nThread body\n',
           canonical_sha256: 'hash123'
         });
       }
@@ -3054,10 +3088,10 @@ global.fetch = async function(url, options) {
       async text() {
         return JSON.stringify({
           status: 'ok',
-          post_id: 'thread-123',
-          thread_id: 'thread-123',
-          record_path: 'records/posts/thread-123.txt',
-          signature_path: 'records/posts/thread-123.txt.asc',
+          post_id: 'thread-123-qdb-1',
+          thread_id: 'thread-123-qdb-1',
+          record_path: 'records/posts/thread-123-qdb-1.txt',
+          signature_path: 'records/posts/thread-123-qdb-1.txt.asc',
           commit_sha: 'def999'
         });
       }
@@ -3088,20 +3122,20 @@ NODE;
 
         $result = $this->runScript($script);
 
-        assertSame(['/api/prepare_thread', '/api/create_prepared_post'], $result['urls']);
+        assertSame(['/api/prepare_quote', '/api/create_prepared_post'], $result['urls']);
         assertSame('Thread subject', $result['prepareBody']['subject']);
         assertSame('Thread body', $result['prepareBody']['body']);
-        assertSame('Post-ID: thread-123' . "\n\n" . 'Thread body' . "\n", $result['signedText']);
+        assertSame('Post-ID: thread-123-qdb-1' . "\n\n" . 'Thread body' . "\n", $result['signedText']);
         assertSame(true, $result['detached']);
         assertStringContains('PRIVATE KEY BLOCK', $result['privateKeyArmored']);
         assertSame('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', $result['finalizeBody']['prepare_token']);
-        assertSame('thread-123', $result['finalizeBody']['post_id']);
-        assertSame('records/posts/thread-123.txt', $result['finalizeBody']['record_path']);
+        assertSame('thread-123-qdb-1', $result['finalizeBody']['post_id']);
+        assertSame('records/posts/thread-123-qdb-1.txt', $result['finalizeBody']['record_path']);
         assertSame('openpgp:def456', $result['finalizeBody']['author_identity_id']);
         assertSame($result['signedText'], $result['finalizeBody']['canonical_record']);
         assertStringContains('BEGIN PGP SIGNATURE', $result['finalizeBody']['detached_signature']);
         assertSame(true, $result['result']['ok']);
-        assertSame('thread-123', $result['result']['postId']);
+        assertSame('thread-123-qdb-1', $result['result']['postId']);
         assertSame('def999', $result['result']['commitSha']);
         assertSame(9.5, $result['result']['serverTiming']['total']);
     }

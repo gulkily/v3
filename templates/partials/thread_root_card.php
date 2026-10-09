@@ -69,11 +69,11 @@ if (($mediaEmbedsEnabled ?? false) && $title === 'Untitled') {
         $bareMediaEmbedWarmBeacon = '<img class="media-embed-card__warm-beacon" data-media-embed-warm-beacon src="' . $e($bareMediaEmbedWarmBeaconUrl) . '" alt="" width="0" height="0" style="display:none" loading="eager">';
     }
 }
-$isQdbQuoteRoot = \ForumRewrite\SiteConfig::siteName() === 'qdb';
 $quoteRootId = (string) $thread['root_post_id'];
-$quoteRootHasNumber = preg_match('/-qdb-(\d+)$/', $quoteRootId, $quoteRootNumberMatch) === 1;
-$quoteRootDisplayNumber = $quoteRootHasNumber ? $quoteRootNumberMatch[1] : $quoteRootId;
-$quoteRootPermalinkHref = $quoteRootHasNumber ? '/' . $quoteRootDisplayNumber : '/threads/' . $quoteRootId;
+$quoteRootNumber = \ForumRewrite\Qdb\QdbQuoteNumbers::fromThreadId($quoteRootId);
+$isQdbQuoteRoot = \ForumRewrite\SiteConfig::siteName() === 'qdb' && $quoteRootNumber !== null;
+$quoteRootDisplayNumber = $quoteRootNumber ?? $quoteRootId;
+$quoteRootPermalinkHref = $quoteRootNumber !== null ? '/' . $quoteRootDisplayNumber : '/threads/' . $quoteRootId;
 $quoteRootScoreTotal = (int) ($thread['score_total'] ?? 0);
 $quoteRootVoteCount = (int) ($thread['vote_count'] ?? 0);
 $quoteRootScoreSignClass = $quoteRootScoreTotal > 0 ? 'quote-card-score-positive' : ($quoteRootScoreTotal < 0 ? 'quote-card-score-negative' : '');

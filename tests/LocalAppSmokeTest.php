@@ -3147,6 +3147,7 @@ PHP;
         assertStringContains('data-role="offline-reader-indicator"', $reader);
         assertStringNotContains('data-role="offline-reader-details"', $reader);
         assertStringContains('offline mode', $reader);
+        assertStringContains('class="offline-mode-bar__offline" href="/offline/">Offline</a>', $reader);
         assertStringContains('class="offline-mode-bar__outbox" href="/tools/outbox/">Outbox</a>', $reader);
         assertStringContains('/assets/sql-wasm.', $reader);
         assertStringMatches('#data-runtime-url="/assets/sql-wasm\.[a-f0-9]{12}\.wasm"#', $reader);

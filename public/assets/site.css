@@ -153,52 +153,35 @@ pre {
 }
 
 .offline-mode-bar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 15;
   border: 1px solid var(--line);
+  border-top: 0;
+  border-right: 0;
   background: var(--panel);
   color: var(--muted);
   font-family: var(--ui-font);
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
   line-height: 1;
-  padding: 0.3rem 0.55rem;
+  padding: 0 0.6rem;
   text-transform: uppercase;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.6rem;
 }
 
-.offline-mode-bar__indicators {
-  display: flex;
+.offline-mode-bar a {
+  display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  margin-left: auto;
-  min-width: 0;
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
-  text-transform: none;
+  min-height: 2.75rem;
+  padding: 0 0.3rem;
 }
 
-.offline-mode-bar__indicator {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.offline-mode-bar__indicator + .offline-mode-bar__indicator {
-  border-left: 1px solid var(--line);
-  padding-left: 0.45rem;
-}
-
-@media (max-width: 420px) {
-  .offline-mode-bar {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .offline-mode-bar__indicators {
-    width: 100%;
-    margin-left: 0;
-  }
+.offline-mode-bar[hidden] {
+  display: none;
 }
 
 .eyebrow {
