@@ -524,6 +524,7 @@
     var readerIndicator = root.querySelector('[data-role="offline-reader-indicator"]');
     var content = root.querySelector('[data-role="offline-reader-content"]');
     var snapshotUrl = root.getAttribute("data-snapshot-url") || "/offline/snapshot.sqlite3";
+    var updateUrl = root.getAttribute("data-update-url") || "/offline/update.sqlite3";
     var runtimeUrl = root.getAttribute("data-runtime-url") || "/assets/sql-wasm.wasm";
 
     function setStatus(message, state) {
@@ -707,6 +708,29 @@
           }
         });
         var database = new SQL.Database(bytes);
+        try {
+          var updateResponse = await window.fetch(updateUrl, { credentials: "omit" });
+          if (updateResponse.ok) {
+            var update = new SQL.Database(new Uint8Array(await updateResponse.arrayBuffer()));
+            ["threads", "posts", "public_keys"].forEach(function (table) {
+              var result = update.exec("SELECT * FROM " + table)[0];
+              if (!result) return;
+              result.values.forEach(function (row) {
+                database.run("INSERT OR REPLACE INTO " + table + " VALUES (" + row.map(function () { return "?"; }).join(",") + ")", row);
+              });
+            });
+            var generated = metadataValue(update, "generated_at");
+            if (generated) database.run("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)", ["last_update_at", generated]);
+            update.close();
+            var runtime = window.forumBrowserRuntime || {};
+            if (window.caches && runtime.offlineCacheName) {
+              var cache = await window.caches.open(runtime.offlineCacheName);
+              await cache.put(new URL(snapshotUrl, window.location.origin).href, new Response(database.export()));
+            }
+          }
+        } catch (error) {
+          // A missing or invalid update must not prevent reading the saved base.
+        }
         var generatedAt = metadataValue(database, "generated_at");
         setStatus("Offline snapshot is ready.", "ok");
         root.dispatchEvent(new CustomEvent("forum-offline-reader-ready", {

@@ -40,3 +40,17 @@
 - Notes:
   - The single existing queue task still coalesces bursts; the compact artifact
     is now available before the full-base publication completes.
+
+## Stage 4 - Apply updates to one saved client database
+
+- Changes:
+  - Cached and anonymously served the compact update alongside the base.
+  - Applied update rows with idempotent upserts in the existing reader, then
+    atomically replaced the cached SQLite bytes while preserving the base on
+    update failure.
+- Verification:
+  - `node --check public/service_worker.js` and `node --check public/assets/offline_reader.js` passed.
+  - `php tests/run.php OfflineNavigationWorkerTest OfflineSnapshotPresentationTest OfflineSnapshotThreadPresentationTest` passed: 18 run, 18 passed.
+- Notes:
+  - Legacy snapshots without the update table remain readable because a failed
+    optional update is ignored.
