@@ -112,3 +112,7 @@ the request agent response dropdown does not always fully display in-page
 	it should go up and above the link if below is not enough viewport space
 	other ways of mitigating it?
 	it should scroll along with its parent button
+
+explore server-cooperative content deletion
+
+explore private messages
