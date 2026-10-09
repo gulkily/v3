@@ -73,3 +73,18 @@
 - Notes:
   - Pair selection happens above templates, preserving one consistent pair per
     rendered multi-card page.
+
+## Stage 6 - Captioned permalinks and static pages
+
+- Changes:
+  - QDB quote permalinks now select and render a catalog caption pair using the
+    same arrow-plus-caption controls and prior-vote recognition as listings.
+  - Static rendering receives its pair through the normal page path; refreshed
+    tests now assert the stable quote outcome rather than two random renders
+    being byte-identical.
+- Verification:
+  - `./v3 test QuoteCardDisplayNumberTest QdbExperienceRoutingTest` — 23 passed.
+  - `php -l` on changed controller/template paths and `git diff --check` — passed.
+- Notes:
+  - A generated page keeps its build-time pair; a later inactive tag is safely
+    rejected by Stage 4's server-side validation.

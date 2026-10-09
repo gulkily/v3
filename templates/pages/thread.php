@@ -58,7 +58,7 @@ foreach ($replyContinuationFlags as $flagIndex => $flag) {
 $rootMetaVisible = $rootRunTailIndex === -1;
 ?>
 <?php if ($rootPost !== null): ?>
-<?= $indent($partial('partials/thread_root_card.php', ['post' => $rootPost, 'trueReplyCount' => $trueReplyCount, 'metaVisible' => $rootMetaVisible]), 1) ?>
+<?= $indent($partial('partials/thread_root_card.php', ['post' => $rootPost, 'trueReplyCount' => $trueReplyCount, 'metaVisible' => $rootMetaVisible, 'voteCaptionPair' => $voteCaptionPair ?? null]), 1) ?>
 <?php else: ?>
   <article class="card" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>">
     <h1><?= $e($title) ?></h1>

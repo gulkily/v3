@@ -66,6 +66,9 @@ $quoteRootVoteCount = (int) ($thread['vote_count'] ?? 0);
 $quoteRootScoreSignClass = $quoteRootScoreTotal > 0 ? 'quote-card-score-positive' : ($quoteRootScoreTotal < 0 ? 'quote-card-score-negative' : '');
 $viewerHasUpvoted = (bool) ($viewerHasUpvoted ?? false);
 $viewerHasDownvoted = (bool) ($viewerHasDownvoted ?? false);
+$voteCaptionPair = is_array($voteCaptionPair ?? null) ? $voteCaptionPair : null;
+$upvote = is_array($voteCaptionPair['positive'] ?? null) ? $voteCaptionPair['positive'] : ['tag' => 'upvote', 'label' => '+'];
+$downvote = is_array($voteCaptionPair['negative'] ?? null) ? $voteCaptionPair['negative'] : ['tag' => 'downvote', 'label' => '-'];
 $metaVisible = (bool) ($metaVisible ?? true);
 $rootTimeLabel = '';
 if (!$metaVisible) {
@@ -148,22 +151,22 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
       type="button"
       class="thread-reaction-button quote-card-vote-button"
       data-action="apply-thread-tag"
-      data-tag="upvote"
-      data-applied-label="+"
-      aria-label="Upvote this quote"
+      data-tag="<?= $e($upvote['tag']) ?>"
+      data-applied-label="<?= $e($upvote['label']) ?>"
+      aria-label="Upvote this quote: <?= $e($upvote['label']) ?>"
       aria-pressed="<?= $viewerHasUpvoted ? 'true' : 'false' ?>"
 <?= $viewerHasUpvoted ? ' disabled="disabled"' : '' ?>
-    >+</button>
+    >↑ <?= $e($upvote['label']) ?></button>
     <button
       type="button"
       class="thread-reaction-button quote-card-vote-button"
       data-action="apply-thread-tag"
-      data-tag="downvote"
-      data-applied-label="-"
-      aria-label="Downvote this quote"
+      data-tag="<?= $e($downvote['tag']) ?>"
+      data-applied-label="<?= $e($downvote['label']) ?>"
+      aria-label="Downvote this quote: <?= $e($downvote['label']) ?>"
       aria-pressed="<?= $viewerHasDownvoted ? 'true' : 'false' ?>"
 <?= $viewerHasDownvoted ? ' disabled="disabled"' : '' ?>
-    >-</button>
+    >↓ <?= $e($downvote['label']) ?></button>
     <button
       type="button"
       class="thread-reaction-button quote-card-vote-button"

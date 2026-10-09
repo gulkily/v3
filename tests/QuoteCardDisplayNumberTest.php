@@ -227,7 +227,7 @@ final class QuoteCardDisplayNumberTest
         assertStringContains('thread-20030613104735-qdb-42', $board);
     }
 
-    public function testFollowingTheShortNumericPermalinkReachesTheUnchangedQuotePage(): void
+    public function testFollowingTheShortNumericPermalinkReachesTheQuotePage(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
         $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
@@ -245,7 +245,8 @@ final class QuoteCardDisplayNumberTest
 
         assertSame(302, $shortLinkStatus);
         assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $viaShortLink);
-        assertSame($directThreadPage, $resolvedPage);
+        assertStringContains('class="quote-card-permalink" href="/42">#42</a>', $directThreadPage);
+        assertStringContains('class="quote-card-permalink" href="/42">#42</a>', $resolvedPage);
     }
 
     public function testQdbStaticReleaseIncludesPublicListingsAndNumericQuoteAlias(): void
@@ -363,8 +364,8 @@ final class QuoteCardDisplayNumberTest
         assertStringContains('<p class="quote-card-body">The quoted body.<br />', $permalink);
         assertStringNotContains('<p class="meta">', $permalink);
         assertStringNotContains('>Reply</a>', $permalink);
-        assertStringContains('data-tag="upvote"', $permalink);
-        assertStringContains('data-tag="downvote"', $permalink);
+        assertTrue(preg_match('/data-tag="[a-z-]+"[^>]*aria-label="Upvote this quote: [^"]+"/', $permalink) === 1);
+        assertTrue(preg_match('/data-tag="[a-z-]+"[^>]*aria-label="Downvote this quote: [^"]+"/', $permalink) === 1);
         assertStringContains('data-tag="flag"', $permalink);
         assertStringNotContains('data-tag="like"', $permalink);
     }
