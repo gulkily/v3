@@ -51,6 +51,12 @@ final class QdbVoteCaptionCatalog
         return $this->store->isActiveTag($tag);
     }
 
+    /** @return list<string> */
+    public function knownTags(): array
+    {
+        return $this->store->knownTags();
+    }
+
     public function scoreForTag(string $tag): int
     {
         return $this->captionForTag($tag)['score'] ?? 0;

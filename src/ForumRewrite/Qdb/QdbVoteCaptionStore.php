@@ -183,4 +183,13 @@ final class QdbVoteCaptionStore
 
         return false;
     }
+
+    /** @return list<string> */
+    public function knownTags(): array
+    {
+        return array_values(array_unique(array_map(
+            static fn (array $member): string => $member['tag'],
+            $this->members(),
+        )));
+    }
 }

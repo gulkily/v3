@@ -18,7 +18,18 @@ final class QdbBoardPolicy
     public function __construct(
         private readonly string $repositoryRoot,
         private readonly \Closure $resolveViewerProfile,
+        private readonly ?QdbVoteCaptionCatalog $captionCatalog = null,
     ) {
+    }
+
+    /** @return array{caption_set_id:int, positive:array{tag:string,label:string,score:int}, negative:array{tag:string,label:string,score:int}} */
+    public function selectCaptionPair(): array
+    {
+        if ($this->captionCatalog === null) {
+            throw new \LogicException('QDB vote-caption catalog is unavailable.');
+        }
+
+        return $this->captionCatalog->selectActivePair();
     }
 
     /**
@@ -55,8 +66,13 @@ final class QdbBoardPolicy
         $viewerIdentityId = (string) $viewerProfile['identity_id'];
         $rootPostIds = array_column($threads, 'root_post_id');
 
+        $upvoted = ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'upvote', $viewerIdentityId);
+        foreach ($this->captionCatalog?->knownTags() ?? [] as $tag) {
+            $upvoted += ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, $tag, $viewerIdentityId);
+        }
+
         return [
-            'upvoted' => ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'upvote', $viewerIdentityId),
+            'upvoted' => $upvoted,
             'downvoted' => ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'downvote', $viewerIdentityId),
             'flagged' => ViewerTagLookup::postTags($this->repositoryRoot, $rootPostIds, 'flag', $viewerIdentityId),
         ];

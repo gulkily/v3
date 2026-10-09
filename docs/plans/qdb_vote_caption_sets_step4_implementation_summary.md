@@ -59,3 +59,17 @@
 - Notes:
   - Direct API enforcement is in the writer, so client markup cannot bypass
     the active-tag, quote-root, or duplicate-vote checks.
+
+## Stage 5 - Captioned quote listings
+
+- Changes:
+  - QDB page controllers select one catalog pair and pass it to every listing,
+    random, and search quote card.
+  - Quote cards render up/down arrows with caption labels and send their
+    canonical caption tag; catalog-wide prior-vote lookup disables later pairs.
+- Verification:
+  - `./v3 test QdbVoteCaptionStoreTest QdbBoardPolicyTest QdbExperienceRoutingTest` — 11 passed.
+  - `php -l` on changed PHP paths and `git diff --check` — passed.
+- Notes:
+  - Pair selection happens above templates, preserving one consistent pair per
+    rendered multi-card page.

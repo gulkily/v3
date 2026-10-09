@@ -218,8 +218,10 @@ final class QdbExperience
     private function renderQuotePage(string $template, array $data, string $title, string $section, array $threads): string
     {
         $reactions = $this->boardPolicy->viewerReactionState($threads);
+        $voteCaptionPair = $this->boardPolicy->selectCaptionPair();
         return $this->routeServices->renderPageTemplate($template, $data + [
             'viewerUpvotedThreadIds' => $reactions['upvoted'], 'viewerDownvotedThreadIds' => $reactions['downvoted'], 'viewerFlaggedPostIds' => $reactions['flagged'],
+            'voteCaptionPair' => $voteCaptionPair,
         ], $title, $section, [
             '/assets/lazy_compose_signing.js',
             '/assets/thread_reactions.js',

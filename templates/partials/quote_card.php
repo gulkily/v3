@@ -9,6 +9,9 @@ $viewerHasFlagged = isset($viewerFlaggedPostIds[$quoteId]);
 $scoreTotal = (int) ($thread['score_total'] ?? 0);
 $voteCount = (int) ($thread['vote_count'] ?? 0);
 $scoreSignClass = $scoreTotal > 0 ? 'quote-card-score-positive' : ($scoreTotal < 0 ? 'quote-card-score-negative' : '');
+$voteCaptionPair = is_array($voteCaptionPair ?? null) ? $voteCaptionPair : null;
+$upvote = is_array($voteCaptionPair['positive'] ?? null) ? $voteCaptionPair['positive'] : ['tag' => 'upvote', 'label' => '+'];
+$downvote = is_array($voteCaptionPair['negative'] ?? null) ? $voteCaptionPair['negative'] : ['tag' => 'downvote', 'label' => '-'];
 ?>
 <article class="card post-card quote-card" data-thread-reactions-root data-thread-id="<?= $e($quoteId) ?>" data-post-id="<?= $e($quoteId) ?>">
   <p class="quote-card-header">
@@ -21,22 +24,22 @@ $scoreSignClass = $scoreTotal > 0 ? 'quote-card-score-positive' : ($scoreTotal <
       type="button"
       class="thread-reaction-button quote-card-vote-button"
       data-action="apply-thread-tag"
-      data-tag="upvote"
-      data-applied-label="+"
-      aria-label="Upvote this quote"
+      data-tag="<?= $e($upvote['tag']) ?>"
+      data-applied-label="<?= $e($upvote['label']) ?>"
+      aria-label="Upvote this quote: <?= $e($upvote['label']) ?>"
       aria-pressed="<?= $viewerHasUpvoted ? 'true' : 'false' ?>"
 <?= $viewerHasUpvoted ? ' disabled="disabled"' : '' ?>
-    >+</button>
+    >↑ <?= $e($upvote['label']) ?></button>
     <button
       type="button"
       class="thread-reaction-button quote-card-vote-button"
       data-action="apply-thread-tag"
-      data-tag="downvote"
-      data-applied-label="-"
-      aria-label="Downvote this quote"
+      data-tag="<?= $e($downvote['tag']) ?>"
+      data-applied-label="<?= $e($downvote['label']) ?>"
+      aria-label="Downvote this quote: <?= $e($downvote['label']) ?>"
       aria-pressed="<?= $viewerHasDownvoted ? 'true' : 'false' ?>"
 <?= $viewerHasDownvoted ? ' disabled="disabled"' : '' ?>
-    >-</button>
+    >↓ <?= $e($downvote['label']) ?></button>
     <button
       type="button"
       class="thread-reaction-button quote-card-vote-button"
