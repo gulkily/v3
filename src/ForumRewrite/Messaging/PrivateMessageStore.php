@@ -8,6 +8,8 @@ use PDO;
 
 final class PrivateMessageStore
 {
+    public const MAILBOX_PAGE_SIZE = 25;
+
     public function __construct(
         private readonly PDO $pdo,
     ) {
@@ -56,6 +58,26 @@ final class PrivateMessageStore
     }
 
     /** @return list<array<string, string>> */
+    public function conversationFor(string $viewerUsernameToken, string $counterpartUsernameToken): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT message_id, created_at, sender_username_token, recipient_username_token,
+                    sender_identity_id, encrypted_envelope
+             FROM private_messages
+             WHERE (sender_username_token = :viewer AND recipient_username_token = :counterpart)
+                OR (sender_username_token = :counterpart AND recipient_username_token = :viewer)
+             ORDER BY created_at DESC, message_id DESC
+             LIMIT ' . self::MAILBOX_PAGE_SIZE
+        );
+        $stmt->execute([
+            'viewer' => strtolower(trim($viewerUsernameToken)),
+            'counterpart' => strtolower(trim($counterpartUsernameToken)),
+        ]);
+
+        return array_reverse($stmt->fetchAll());
+    }
+
+    /** @return list<array<string, string>> */
     private function mailbox(string $column, string $usernameToken): array
     {
         $stmt = $this->pdo->prepare(
@@ -63,7 +85,8 @@ final class PrivateMessageStore
                     sender_identity_id, encrypted_envelope
              FROM private_messages
              WHERE ' . $column . ' = :username_token
-             ORDER BY created_at DESC, message_id DESC'
+             ORDER BY created_at DESC, message_id DESC
+             LIMIT ' . self::MAILBOX_PAGE_SIZE
         );
         $stmt->execute(['username_token' => strtolower(trim($usernameToken))]);
 

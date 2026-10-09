@@ -72,6 +72,24 @@ final class PrivateMessageMailboxService
         return $this->store->sentBy((string) $this->approvedViewer($viewer)['username_token']);
     }
 
+    /** @param array<string, mixed> $viewer @return list<array<string, string>> */
+    public function conversation(array $viewer, string $counterpartUsernameToken): array
+    {
+        $viewer = $this->approvedViewer($viewer);
+        $counterpartUsernameToken = strtolower(trim($counterpartUsernameToken));
+        if (preg_match('/^[a-z0-9][a-z0-9._-]{0,63}$/', $counterpartUsernameToken) !== 1) {
+            throw new InvalidArgumentException('Conversation counterpart is invalid.');
+        }
+        if ($counterpartUsernameToken === (string) $viewer['username_token']) {
+            throw new InvalidArgumentException('A conversation counterpart must be another user.');
+        }
+        if ($this->keyResolver->keysForUsernameToken($this->readPdo, $counterpartUsernameToken) === []) {
+            throw new InvalidArgumentException('Conversation counterpart has no approved profile keys.');
+        }
+
+        return $this->store->conversationFor((string) $viewer['username_token'], $counterpartUsernameToken);
+    }
+
     /** @param array<string, mixed> $viewer @return list<array{identity_id:string,profile_slug:string,public_key:string}> */
     public function recipientKeys(array $viewer, string $usernameToken): array
     {

@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+require __DIR__ . '/../autoload.php';
+
+use ForumRewrite\Http\ProfilePageController;
+use ForumRewrite\Http\RouteServices;
+use ForumRewrite\ReadModel\ReadModelSchema;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\View\TemplateRenderer;
 
 final class PrivateMessageComposerTest
@@ -31,6 +37,7 @@ const source = fs.readFileSync(process.argv[1], 'utf8');
 const values = new Map();
 const calls = [];
 let shouldFail = true;
+let redirect = '';
 const inputListeners = {};
 const formListeners = {};
 const textarea = { value: 'private prose', addEventListener(name, callback) { inputListeners[name] = callback; } };
@@ -41,12 +48,13 @@ const form = {
 };
 const feedback = { textContent: '', className: '', hidden: true };
 const root = {
-  dataset: { recipientUsernameToken: 'ilyag', senderUsernameToken: 'alice', recipientLabel: 'ilyag' },
+  dataset: { recipientUsernameToken: 'ilyag', senderUsernameToken: 'alice', recipientLabel: 'ilyag', privateMessageSuccessUrl: '/messages/conversation/ilyag' },
   querySelector(selector) { return selector === '[data-private-message-form]' ? form : selector === '[data-role="private-message-feedback"]' ? feedback : null; }
 };
 global.window = {
   localStorage: { getItem(key) { return values.has(key) ? values.get(key) : null; }, setItem(key, value) { values.set(key, value); }, removeItem(key) { values.delete(key); } },
   crypto: { randomUUID() { return 'fixed-id'; } },
+  location: { assign(url) { redirect = url; } },
   __forumBrowserIdentity: { async ensureActionIdentity() {} },
   ForumPrivateMessages: { async prepareEnvelope(input) { return { encryptedEnvelope: '-----BEGIN PGP MESSAGE-----\\nCIPHERTEXT\\n-----END PGP MESSAGE-----', received: input }; } }
 };
@@ -63,7 +71,7 @@ const event = { preventDefault() {} };
   const failedDraft = values.get('forum_private_message_draft:ilyag');
   shouldFail = false;
   await formListeners.submit(event);
-  process.stdout.write(JSON.stringify({ calls, failedDraft, finalDraft: values.get('forum_private_message_draft:ilyag') || null, textarea: textarea.value, feedback: feedback.textContent }));
+  process.stdout.write(JSON.stringify({ calls, failedDraft, finalDraft: values.get('forum_private_message_draft:ilyag') || null, textarea: textarea.value, feedback: feedback.textContent, redirect }));
 })().catch((error) => { process.stderr.write(error.stack || String(error)); process.exit(1); });
 NODE;
 
@@ -79,6 +87,7 @@ NODE;
         assertSame(null, $result['finalDraft']);
         assertSame('', $result['textarea']);
         assertSame('Private message sent.', $result['feedback']);
+        assertSame('/messages/conversation/ilyag', $result['redirect']);
     }
 
     public function testProfileRendersComposerOnlyForApprovedOtherUser(): void
@@ -122,9 +131,94 @@ NODE;
         assertStringContains('data-sender-username-token="alice"', $html);
         assertStringContains('Encrypted to every approved key associated with this username.', $html);
         assertStringContains('/assets/private_message_compose.', $html);
+        assertStringNotContains('data-private-message-success-url', $html);
 
         $pageData['canPrivateMessage'] = false;
         $withoutComposer = $renderer->renderPageTemplate('profile.php', $pageData, 'ilyag - Profile', 'profiles');
         assertStringNotContains('data-private-message-composer', $withoutComposer);
+    }
+
+    public function testUsernameRendersTheSameComposerOnlyForEligibleViewer(): void
+    {
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-message-composer-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            $pdo = new \PDO('sqlite:' . $databasePath);
+            foreach (ReadModelSchema::statements() as $statement) {
+                $pdo->exec($statement);
+            }
+            $this->addProfile($pdo, 'openpgp:ilyag-one', 'openpgp-ilyag-one', 'ilyag', 1);
+            $this->addProfile($pdo, 'openpgp:ilyag-two', 'openpgp-ilyag-two', 'ilyag', 1);
+            $this->addProfile($pdo, 'openpgp:ilyag-pending', 'openpgp-ilyag-pending', 'ilyag', 0);
+            $this->addProfile($pdo, 'openpgp:pending', 'openpgp-pending', 'pending', 0);
+
+            $eligible = $this->renderUsername($databasePath, ['identity_id' => 'openpgp:alice', 'username_token' => 'alice', 'is_approved' => 1], 'ilyag');
+            assertStringContains('data-private-message-composer', $eligible);
+            assertStringContains('data-recipient-username-token="ilyag"', $eligible);
+            assertStringContains('data-sender-username-token="alice"', $eligible);
+            assertStringContains('/assets/private_message_compose.', $eligible);
+
+            $self = $this->renderUsername($databasePath, ['identity_id' => 'openpgp:ilyag-one', 'username_token' => 'ilyag', 'is_approved' => 1], 'ilyag');
+            $unapproved = $this->renderUsername($databasePath, ['identity_id' => 'openpgp:mallory', 'username_token' => 'mallory', 'is_approved' => 0], 'ilyag');
+            $pendingOnly = $this->renderUsername($databasePath, ['identity_id' => 'openpgp:alice', 'username_token' => 'alice', 'is_approved' => 1], 'pending');
+            foreach ([$self, $unapproved, $pendingOnly] as $html) {
+                assertStringNotContains('data-private-message-composer', $html);
+                assertStringNotContains('/assets/private_message_compose.', $html);
+            }
+        } finally {
+            @unlink($databasePath);
+            @unlink($databasePath . '-journal');
+        }
+    }
+
+    /** @param array<string, mixed>|null $viewer */
+    private function renderUsername(string $databasePath, ?array $viewer, string $username): string
+    {
+        $services = new RouteServices(
+            $databasePath,
+            new TemplateRenderer(__DIR__ . '/../templates', 'test'),
+            'test',
+            false,
+            static fn (): ?array => $viewer,
+            __DIR__ . '/fixtures/parity_minimal_v1',
+            dirname(__DIR__),
+            null,
+            null,
+            FeatureFlagEvaluator::forApplication(__DIR__ . '/fixtures/parity_minimal_v1', dirname(__DIR__)),
+            static fn (): ?array => $viewer,
+        );
+        $controller = new ProfilePageController(
+            $services,
+            static fn (): ?array => $viewer,
+            static function (array $profile, bool $self, ?string $notice, ?string $error): string {
+                return '';
+            },
+        );
+
+        return (string) $controller->username($username);
+    }
+
+    private function addProfile(\PDO $pdo, string $identityId, string $profileSlug, string $username, int $approved): void
+    {
+        $stmt = $pdo->prepare(
+            'INSERT INTO profiles (
+                identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint,
+                bootstrap_post_id, bootstrap_thread_id, public_key, is_approved
+             ) VALUES (
+                :identity_id, :profile_slug, :username, :username_token, :fallback_label, :signer_fingerprint,
+                :bootstrap_post_id, :bootstrap_thread_id, :public_key, :is_approved
+             )'
+        );
+        $stmt->execute([
+            'identity_id' => $identityId,
+            'profile_slug' => $profileSlug,
+            'username' => $username,
+            'username_token' => $username,
+            'fallback_label' => $username,
+            'signer_fingerprint' => str_repeat('A', 40),
+            'bootstrap_post_id' => 'identity-' . $profileSlug,
+            'bootstrap_thread_id' => 'thread-' . $profileSlug,
+            'public_key' => 'PUBLIC KEY ' . $profileSlug,
+            'is_approved' => $approved,
+        ]);
     }
 }

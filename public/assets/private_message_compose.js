@@ -189,6 +189,10 @@
         plaintextField.value = "";
         messageId = newMessageId();
         setFeedback(feedback, "Private message sent.", "ok");
+        const successUrl = String(root.dataset.privateMessageSuccessUrl || "");
+        if (successUrl !== "" && window.location && typeof window.location.assign === "function") {
+          window.location.assign(successUrl);
+        }
       } catch (error) {
         setFeedback(feedback, error instanceof Error ? error.message : "Unable to send the private message.", "error");
       } finally {
