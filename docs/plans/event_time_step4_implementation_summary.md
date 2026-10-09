@@ -21,8 +21,19 @@
 ## Stage 2 - Write-path validation and compose form
 
 - Changes:
+  - `src/ForumRewrite/Write/LocalWriteService.php`:
+    - Added `normalizeEventTime()`, mirroring `normalizeEventDate()` (optional, strict `HH:MM` regex + `DateTimeImmutable::createFromFormat('!H:i', ...)` round-trip).
+    - `assertEventSupportAllowsInput()` now also gates `event_time` (not just `event_date`/`event_location`/`event_link`) when event support is disabled.
+    - `createThread()` reads, normalizes, and forwards `event_time` to `buildThreadPostRecord()`.
+    - `buildThreadPostRecord()` emits `Event-Time:` immediately after `Event-Date:`, only when non-empty.
+  - `templates/partials/thread_compose_form.php`: swapped the event-date input from `type="text"` to native `type="date"` (dropped the now-redundant placeholder); added a new native `type="time"` input for `event_time`, both optional.
+  - `src/ForumRewrite/Http/ComposeAndAccountKeyController.php`: threaded `event_time` through `composeThread()` (GET-prefill), `submitComposeThread()`'s validation-error re-render, and `renderComposeThreadPage()` (signature + `eventTime` template var) — identical shape to the existing `event_date` handling at each site.
 - Verification:
+  - `php tests/run.php` full suite: 946/950 passed, same 4 pre-existing failures, no new ones.
+  - Direct `LocalWriteService::createThread()` calls against a scratch repository: date+time both filled → wrote a record with both headers; date-only → wrote a record with just `Event-Date`; malformed time (`99:99`) → threw `RuntimeException: event_time must be a valid 24-hour time.` and confirmed (via a repository file scan) zero files were written for that attempt.
+  - Started the dev server and fetched `/compose/thread?event_date=2026-11-14&event_time=19:00`: confirmed the rendered page's native `type="date"`/`type="time"` inputs both carry the correct prefilled values.
 - Notes:
+  - Caught and fixed one gap vs. the Step 3 plan while implementing: `assertEventSupportAllowsInput()` only checked the original three fields, so `event_time` alone would have bypassed the event-support gate when the flag is off. Added it to that check in this stage rather than deferring, since it's part of making Stage 2's gate correct, not separate scope.
 
 ## Stage 3 - Read model
 

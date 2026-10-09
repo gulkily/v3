@@ -36,7 +36,8 @@ $threadComposeAction = (string) ($action ?? '/compose/thread');
   </p>
   <label>Body<textarea name="body" data-compose-field-label="Body" rows="<?= $e($threadComposeBodyRows) ?>" placeholder="<?= $e($threadComposeBodyPlaceholder) ?>"><?= $e($body) ?></textarea></label>
 <?php if ($eventSupportEnabled): ?>
-  <label>Event date (optional)<input type="text" name="event_date" placeholder="YYYY-MM-DD" value="<?= $e($eventDate ?? '') ?>"></label>
+  <label>Event date (optional)<input type="date" name="event_date" value="<?= $e($eventDate ?? '') ?>"></label>
+  <label>Event time (optional)<input type="time" name="event_time" value="<?= $e($eventTime ?? '') ?>"></label>
   <label>Event location (optional)<input type="text" name="event_location" value="<?= $e($eventLocation ?? '') ?>"></label>
   <label>Event link (optional)<input type="text" name="event_link" value="<?= $e($eventLink ?? '') ?>"></label>
 <?php endif; ?>

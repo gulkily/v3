@@ -76,8 +76,9 @@ class LocalWriteService
             $eventDate = $this->normalizeEventDate((string) ($input['event_date'] ?? ''));
             $eventLocation = $this->normalizeAuthoredLine((string) ($input['event_location'] ?? ''), 'event_location');
             $eventLink = $this->normalizeAuthoredLine((string) ($input['event_link'] ?? ''), 'event_link');
+            $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
 
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink);
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime);
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -362,7 +363,8 @@ class LocalWriteService
         ?string $authorIdentityId,
         string $eventDate = '',
         string $eventLocation = '',
-        string $eventLink = ''
+        string $eventLink = '',
+        string $eventTime = ''
     ): string {
         return "Post-ID: {$postId}\n"
             . "Created-At: {$createdAt}\n"
@@ -370,6 +372,7 @@ class LocalWriteService
             . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
             . ($subject !== '' ? "Subject: {$subject}\n" : '')
             . ($eventDate !== '' ? "Event-Date: {$eventDate}\n" : '')
+            . ($eventTime !== '' ? "Event-Time: {$eventTime}\n" : '')
             . ($eventLocation !== '' ? "Event-Location: {$eventLocation}\n" : '')
             . ($eventLink !== '' ? "Event-Link: {$eventLink}\n" : '')
             . "\n{$body}";
@@ -384,7 +387,7 @@ class LocalWriteService
             return;
         }
 
-        foreach (['event_date', 'event_location', 'event_link'] as $field) {
+        foreach (['event_date', 'event_location', 'event_link', 'event_time'] as $field) {
             if (trim((string) ($input[$field] ?? '')) !== '') {
                 throw new RuntimeException('Event support is disabled for this site.');
             }
@@ -2567,6 +2570,25 @@ class LocalWriteService
 
         if ($date->format('Y-m-d') !== $value) {
             throw new RuntimeException('event_date must be a valid calendar date.');
+        }
+
+        return $value;
+    }
+
+    private function normalizeEventTime(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        if (preg_match('/^\d{2}:\d{2}$/', $value) !== 1) {
+            throw new RuntimeException('event_time must use 24-hour HH:MM format like 19:00.');
+        }
+
+        $time = \DateTimeImmutable::createFromFormat('!H:i', $value);
+        if ($time === false || $time->format('H:i') !== $value) {
+            throw new RuntimeException('event_time must be a valid 24-hour time.');
         }
 
         return $value;
