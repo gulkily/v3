@@ -4,28 +4,28 @@
 
 ## Completion Contract
 
-- Normal entry: an authenticated member selects Message on another composite identity's profile.
-- End-to-end outcome: all active sender/recipient keys receive the envelope; Sender reads Sent and recipient decrypts Inbox.
+- Normal entry: an authenticated member selects Message on another composite user's profile.
+- End-to-end outcome: all approved sender/recipient username-group keys receive the envelope; Sender reads Sent and recipient decrypts Inbox.
 - Required recovery: failed send retains the local draft; no plaintext reaches the server.
 - Deployment/external verification: back up the private database and inspect every public output for message absence.
 - Release condition: identity scoping, multi-key delivery, recovery, focused tests, and full suite pass.
 
 ## Key Risks
 
-- **High risk: incomplete active key set.** Early validation: multi-key fixture. Mitigation: establish the authoritative key resolver before mailbox work.
+- **High risk: incomplete approved username-group key set.** Early validation: several-profile fixture. Mitigation: establish the user-key resolver before mailbox work.
 - **High risk: public output leaks message data.** Early validation: output inspection after send. Mitigation: isolate mailbox storage from public data paths.
 - **High risk: cross-mailbox access.** Early validation: cross-identity API test. Mitigation: scope every query to the authenticated identity.
 
 ## Stage 1
-- Goal: Resolve a composite identity's active encryption keys.
+- Goal: Resolve a composite user's approved profile keys.
 - Dependencies: Approved Step 2.
-- Expected changes: Add `activeRecipientKeys(identityId)` and multi-key fixtures; block if no authoritative source exists.
-- Verification approach: Test active-key inclusion and retired-key exclusion.
+- Expected changes: Add `keysForUsernameToken(usernameToken)` and several-profile fixtures using the existing username/approval contract.
+- Verification approach: Test approved-key inclusion and pending-profile exclusion.
 - Risks or open questions:
   - Impact: A device cannot read its envelope.
   - Early warning / validation: Fixture-key decryption fails.
   - Mitigation: Use one resolver everywhere.
-- Canonical components/API contracts touched: profile/public-key discovery; new `activeRecipientKeys(identityId)` contract.
+- Canonical components/API contracts touched: `/user/<username>` aggregation; `ProfileRepository::byUsernameToken()`; new user-key resolver.
 
 ## Stage 2
 - Goal: Persist encrypted envelopes privately.

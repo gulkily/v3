@@ -6,6 +6,7 @@ require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
     __DIR__ . '/AgentReplyCommandTest.php',
+    __DIR__ . '/ApprovedUserKeyResolverTest.php',
     __DIR__ . '/AgentIdentityServiceTest.php',
     __DIR__ . '/AgentReplyGenerationTest.php',
     __DIR__ . '/AgentReplyTaskTest.php',

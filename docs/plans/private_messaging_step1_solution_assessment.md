@@ -61,6 +61,6 @@ Cons:
 
 ## Recommendation
 
-Recommend Option B. Use OpenPGP envelope encryption, not a user-chosen password: generate a fresh per-message content key and encrypt it for every active recipient key and every active sender key, so each party can read its copy. Sign with the sender's browser key.
+Recommend Option B. Use OpenPGP envelope encryption, not a user-chosen password: generate a fresh per-message content key and encrypt it for every approved profile key in the recipient's and sender's username group, so each composite user can read its copy. Sign with the sending key.
 
-This is the smallest viable vertical slice and reuses browser OpenPGP, public-key lookup, challenge-signature authentication, and the private-SQLite boundary. Step 2 should define active-key discovery and retirement, conversation scope, retention, sender copies, and the privacy statement: private from public readers, not from the operator or metadata observers.
+This is the smallest viable vertical slice and reuses browser OpenPGP, approved username-group key lookup, challenge-signature authentication, and the private-SQLite boundary. Step 2 should define conversation scope, retention, sender copies, and the privacy statement: private from public readers, not from the operator or metadata observers.
