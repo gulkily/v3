@@ -311,6 +311,34 @@
     return `Score: ${scoreTotal}`;
   }
 
+  function threadScoreParts(scoreNode) {
+    if (!scoreNode || typeof scoreNode.querySelector !== "function") {
+      return null;
+    }
+
+    const scoreValueNode = scoreNode.querySelector('[data-role="thread-score-value"]');
+    const voteCountNode = scoreNode.querySelector('[data-role="thread-vote-count"]');
+    if (!scoreValueNode || !voteCountNode) {
+      return null;
+    }
+
+    return { scoreValueNode, voteCountNode };
+  }
+
+  function setScoreSignClass(scoreValueNode, scoreTotal) {
+    if (!scoreValueNode || !scoreValueNode.classList) {
+      return;
+    }
+
+    scoreValueNode.classList.remove("quote-card-score-positive", "quote-card-score-negative");
+    const numericScore = Number(scoreTotal);
+    if (numericScore > 0) {
+      scoreValueNode.classList.add("quote-card-score-positive");
+    } else if (numericScore < 0) {
+      scoreValueNode.classList.add("quote-card-score-negative");
+    }
+  }
+
   function parsedThreadScore(scoreNode) {
     if (!scoreNode) {
       return null;
@@ -328,6 +356,15 @@
 
   function setThreadScore(scoreNode, scoreTotal, voteCount) {
     if (scoreNode && scoreTotal !== "") {
+      const parts = threadScoreParts(scoreNode);
+      if (parts) {
+        parts.scoreValueNode.textContent = String(scoreTotal);
+        if (voteCount !== undefined && voteCount !== "") {
+          parts.voteCountNode.textContent = String(voteCount);
+        }
+        setScoreSignClass(parts.scoreValueNode, scoreTotal);
+        return;
+      }
       scoreNode.textContent = formatThreadScoreText(scoreNode, scoreTotal, voteCount);
     }
   }
@@ -346,15 +383,25 @@
   }
 
   function captureThreadReactionState(button, scoreNode) {
+    const parts = threadScoreParts(scoreNode);
     return {
       button: captureButtonState(button),
       scoreText: scoreNode ? scoreNode.textContent : null,
+      scoreValueText: parts ? parts.scoreValueNode.textContent : null,
+      voteCountText: parts ? parts.voteCountNode.textContent : null,
     };
   }
 
   function restoreThreadReactionState(button, scoreNode, state) {
     restoreButtonState(button, state.button);
     if (scoreNode && state.scoreText !== null) {
+      const parts = threadScoreParts(scoreNode);
+      if (parts && state.scoreValueText !== null && state.voteCountText !== null) {
+        parts.scoreValueNode.textContent = state.scoreValueText;
+        parts.voteCountNode.textContent = state.voteCountText;
+        setScoreSignClass(parts.scoreValueNode, state.scoreValueText);
+        return;
+      }
       scoreNode.textContent = state.scoreText;
     }
   }

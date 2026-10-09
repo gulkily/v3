@@ -20,3 +20,18 @@
 - Notes:
   - The existing outer score node remains the canonical reaction binding;
     Stage 2 will update its child targets without replacing the ratio.
+
+## Stage 2 - Preserve structured score refreshes
+
+- Changes:
+  - Updated thread-reaction score refreshes to change QDB score and vote-count
+    targets in place.
+  - Recalculate the QDB score sign class after an update or rollback.
+  - Retained whole-text score updates for score nodes without the QDB targets.
+- Verification:
+  - `node --check public/assets/thread_reactions.js` passed.
+  - `php tests/run.php BrowserSigningNormalizationTest` passed (69/69).
+  - `git diff --check` passed.
+- Notes:
+  - Dedicated structured-QDB refresh coverage remains Stage 3 work; existing
+    generic reaction behavior passed unchanged.
