@@ -1,4 +1,5 @@
 <section class="stack thread-list">
+<?php if (!$isQdbInstance): ?>
   <article class="card">
     <div class="nav board-controls-nav">
       <a class="nav-link" href="/tags/">Tags</a>
@@ -13,6 +14,7 @@
       <a class="nav-link" href="/compose/thread">New Post</a>
     </div>
   </article>
+<?php endif; ?>
 <?php if (!empty($pagination)): ?>
 <?= $indent($partial('partials/board_pagination_nav.php', ['pagination' => $pagination]), 0) ?>
 <?php endif; ?>
