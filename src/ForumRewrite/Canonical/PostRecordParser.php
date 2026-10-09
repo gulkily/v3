@@ -24,6 +24,7 @@ final class PostRecordParser
         'Event-Date',
         'Event-Location',
         'Event-Link',
+        'Event-Time',
     ];
 
     public function __construct(
@@ -121,6 +122,7 @@ final class PostRecordParser
         $eventDate = isset($record->headers['Event-Date']) ? $this->parseEventDate($record->headers['Event-Date']) : null;
         $eventLocation = $record->headers['Event-Location'] ?? null;
         $eventLink = $record->headers['Event-Link'] ?? null;
+        $eventTime = isset($record->headers['Event-Time']) ? $this->parseEventTime($record->headers['Event-Time']) : null;
 
         return new PostRecord(
             $record->headers['Post-ID'],
@@ -142,6 +144,7 @@ final class PostRecordParser
             $eventDate,
             $eventLocation,
             $eventLink,
+            $eventTime,
         );
     }
 
@@ -202,6 +205,20 @@ final class PostRecordParser
 
         if ($date->format('Y-m-d') !== $value) {
             throw new CanonicalRecordParseException('Event-Date must be a valid calendar date.');
+        }
+
+        return $value;
+    }
+
+    private function parseEventTime(string $value): string
+    {
+        if (preg_match('/^\d{2}:\d{2}$/', $value) !== 1) {
+            throw new CanonicalRecordParseException('Event-Time must use 24-hour HH:MM format like 19:00.');
+        }
+
+        $time = \DateTimeImmutable::createFromFormat('!H:i', $value);
+        if ($time === false || $time->format('H:i') !== $value) {
+            throw new CanonicalRecordParseException('Event-Time must be a valid 24-hour time.');
         }
 
         return $value;
