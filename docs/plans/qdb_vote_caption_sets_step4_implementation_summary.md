@@ -29,3 +29,17 @@
 - Notes:
   - Catalog values are constrained to `+1`/`-1`; activation controls what new
     pages may render and write, not whether existing tag history can be read.
+
+## Stage 3 - Derived QDB vote scoring
+
+- Changes:
+  - Added the catalog-backed QDB scoring policy and connected it to full and
+    incremental thread-label derivation.
+  - Caption tags now score at their configured polarity and count as votes;
+    QDB deduplicates caption and legacy vote forms per identity while generic
+    profiles retain the static score matrix.
+- Verification:
+  - `./v3 test QdbVoteCaptionStoreTest TagScoreTest` — 11 passed.
+  - `php -l` on the new policy and both read-model paths; `git diff --check` — passed.
+- Notes:
+  - Post-reaction scoring is deliberately unchanged: captions are thread votes.

@@ -9,6 +9,8 @@ use ForumRewrite\Canonical\CanonicalRecordParseException;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\PostReactionRecord;
 use ForumRewrite\Canonical\ThreadLabelRecord;
+use ForumRewrite\Qdb\QdbVoteScoringPolicy;
+use ForumRewrite\SiteConfig;
 use ForumRewrite\TagScore;
 use PDO;
 use RecursiveDirectoryIterator;
@@ -27,6 +29,7 @@ final class ReadModelBuilder
     private array $postReactionActivityEvents = [];
     /** @var array<string, ?string> */
     private array $sourceCommitShaByPath = [];
+    private ?QdbVoteScoringPolicy $qdbVoteScoringPolicy = null;
 
     public function __construct(
         private readonly string $repositoryRoot,
@@ -84,6 +87,35 @@ final class ReadModelBuilder
     public function timings(): array
     {
         return $this->timings;
+    }
+
+    private function qdbVoteScoringPolicy(): ?QdbVoteScoringPolicy
+    {
+        if (SiteConfig::siteName() !== 'qdb') {
+            return null;
+        }
+
+        return $this->qdbVoteScoringPolicy ??= QdbVoteScoringPolicy::forReadModel($this->databasePath);
+    }
+
+    private function countsThreadLabelTowardVoteTotal(string $tag): bool
+    {
+        return $this->qdbVoteScoringPolicy()?->countsTowardVoteTotal($tag) ?? TagScore::countsTowardVoteTotal($tag);
+    }
+
+    private function isScoredThreadLabel(string $tag): bool
+    {
+        return $this->qdbVoteScoringPolicy()?->isScoredTag($tag) ?? TagScore::isScoredTag($tag);
+    }
+
+    private function threadLabelScoreValue(string $tag): int
+    {
+        return $this->qdbVoteScoringPolicy()?->scoreValueForTag($tag) ?? TagScore::scoreValueForTag($tag);
+    }
+
+    private function threadVoteDedupeKey(string $identityId, string $tag): string
+    {
+        return $this->qdbVoteScoringPolicy()?->isVoteTag($tag) ? $identityId : $identityId . ':' . $tag;
     }
 
     private function dropSchema(PDO $pdo): void
@@ -291,25 +323,25 @@ final class ReadModelBuilder
                     $labelsAdded[] = $label;
                 }
 
-                if ($record->authorIdentityId !== null && TagScore::countsTowardVoteTotal($label)) {
-                    $voteDedupeKey = $record->authorIdentityId . ':' . $label;
+                if ($record->authorIdentityId !== null && $this->countsThreadLabelTowardVoteTotal($label)) {
+                    $voteDedupeKey = $this->threadVoteDedupeKey($record->authorIdentityId, $label);
                     if (!isset($countedVoteTagsByThread[$record->threadId][$voteDedupeKey])) {
                         $countedVoteTagsByThread[$record->threadId][$voteDedupeKey] = true;
                         $voteCountByThread[$record->threadId]++;
                     }
                 }
 
-                if ($record->authorIdentityId === null || !isset($approvalState[$record->authorIdentityId]) || !TagScore::isScoredTag($label)) {
+                if ($record->authorIdentityId === null || !isset($approvalState[$record->authorIdentityId]) || !$this->isScoredThreadLabel($label)) {
                     continue;
                 }
 
-                $dedupeKey = $record->authorIdentityId . ':' . $label;
+                $dedupeKey = $this->threadVoteDedupeKey($record->authorIdentityId, $label);
                 if (isset($countedApprovedScoredTagsByThread[$record->threadId][$dedupeKey])) {
                     continue;
                 }
 
                 $countedApprovedScoredTagsByThread[$record->threadId][$dedupeKey] = true;
-                $scoreByThread[$record->threadId] += TagScore::scoreValueForTag($label);
+                $scoreByThread[$record->threadId] += $this->threadLabelScoreValue($label);
             }
 
             if ($labelsAdded !== []) {

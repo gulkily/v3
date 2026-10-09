@@ -7,6 +7,7 @@ require __DIR__ . '/../autoload.php';
 use ForumRewrite\Qdb\QdbVoteCaptionDatabaseConfig;
 use ForumRewrite\Qdb\QdbVoteCaptionCatalog;
 use ForumRewrite\Qdb\QdbVoteCaptionStore;
+use ForumRewrite\Qdb\QdbVoteScoringPolicy;
 
 final class QdbVoteCaptionStoreTest
 {
@@ -57,6 +58,25 @@ final class QdbVoteCaptionStoreTest
 
             $pair = $catalog->selectActivePair();
             assertSame(true, $pair['positive']['score'] === 1 && $pair['negative']['score'] === -1);
+        } finally {
+            @unlink($path);
+        }
+    }
+
+    public function testScoringPolicyRetainsLegacyAndArchivedCaptionScores(): void
+    {
+        $path = sys_get_temp_dir() . '/qdb-vote-caption-scoring-' . bin2hex(random_bytes(8)) . '.sqlite3';
+        try {
+            $store = QdbVoteCaptionStore::open($path);
+            $store->bootstrap();
+            $policy = new QdbVoteScoringPolicy(new QdbVoteCaptionCatalog($store));
+
+            assertSame(1, $policy->scoreValueForTag('good'));
+            assertSame(-1, $policy->scoreValueForTag('trash-it'));
+            assertSame(true, $policy->countsTowardVoteTotal('not'));
+            assertSame(true, $policy->isVoteTag('upvote'));
+            assertSame(true, $policy->isVoteTag('good'));
+            assertSame(false, $policy->isScoredTag('not-a-real-tag'));
         } finally {
             @unlink($path);
         }

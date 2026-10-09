@@ -11,6 +11,8 @@ use ForumRewrite\Canonical\IdentityBootstrapRecord;
 use ForumRewrite\Canonical\PostReactionRecord;
 use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\ThreadLabelRecord;
+use ForumRewrite\Qdb\QdbVoteScoringPolicy;
+use ForumRewrite\SiteConfig;
 use ForumRewrite\TagScore;
 use PDO;
 use RuntimeException;
@@ -18,11 +20,41 @@ use RuntimeException;
 class IncrementalReadModelUpdater
 {
     private const HIDDEN_BOOTSTRAP_TAG = 'identity';
+    private ?QdbVoteScoringPolicy $qdbVoteScoringPolicy = null;
 
     public function __construct(
         private readonly string $databasePath,
         private readonly string $repositoryRoot,
     ) {
+    }
+
+    private function qdbVoteScoringPolicy(): ?QdbVoteScoringPolicy
+    {
+        if (SiteConfig::siteName() !== 'qdb') {
+            return null;
+        }
+
+        return $this->qdbVoteScoringPolicy ??= QdbVoteScoringPolicy::forReadModel($this->databasePath);
+    }
+
+    private function countsThreadLabelTowardVoteTotal(string $tag): bool
+    {
+        return $this->qdbVoteScoringPolicy()?->countsTowardVoteTotal($tag) ?? TagScore::countsTowardVoteTotal($tag);
+    }
+
+    private function isScoredThreadLabel(string $tag): bool
+    {
+        return $this->qdbVoteScoringPolicy()?->isScoredTag($tag) ?? TagScore::isScoredTag($tag);
+    }
+
+    private function threadLabelScoreValue(string $tag): int
+    {
+        return $this->qdbVoteScoringPolicy()?->scoreValueForTag($tag) ?? TagScore::scoreValueForTag($tag);
+    }
+
+    private function threadVoteDedupeKey(string $identityId, string $tag): string
+    {
+        return $this->qdbVoteScoringPolicy()?->isVoteTag($tag) ? $identityId : $identityId . ':' . $tag;
     }
 
     /**
@@ -1475,8 +1507,8 @@ class IncrementalReadModelUpdater
                     $labelsAdded[] = $label;
                 }
 
-                if ($record->authorIdentityId !== null && TagScore::countsTowardVoteTotal($label)) {
-                    $voteDedupeKey = $record->authorIdentityId . ':' . $label;
+                if ($record->authorIdentityId !== null && $this->countsThreadLabelTowardVoteTotal($label)) {
+                    $voteDedupeKey = $this->threadVoteDedupeKey($record->authorIdentityId, $label);
                     if (!isset($countedVoteTags[$voteDedupeKey])) {
                         $countedVoteTags[$voteDedupeKey] = true;
                         $voteCount++;
@@ -1485,17 +1517,17 @@ class IncrementalReadModelUpdater
 
                 if ($record->authorIdentityId === null
                     || !isset($approvedIdentityIds[$record->authorIdentityId])
-                    || !TagScore::isScoredTag($label)) {
+                    || !$this->isScoredThreadLabel($label)) {
                     continue;
                 }
 
-                $dedupeKey = $record->authorIdentityId . ':' . $label;
+                $dedupeKey = $this->threadVoteDedupeKey($record->authorIdentityId, $label);
                 if (isset($countedApprovedScoredTags[$dedupeKey])) {
                     continue;
                 }
 
                 $countedApprovedScoredTags[$dedupeKey] = true;
-                $scoreTotal += TagScore::scoreValueForTag($label);
+                $scoreTotal += $this->threadLabelScoreValue($label);
             }
 
             if ($labelsAdded !== []) {
