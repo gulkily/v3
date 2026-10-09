@@ -32,3 +32,11 @@
   - Deployment, migration, and external-system checks: not applicable (CSS/template/JS only).
 - Notes:
   - Freshness values are hover-only on the badge; the health page remains reachable from `/offline/`.
+
+## Follow-up - Larger tap targets
+- Changes:
+  - Raised badge font to 0.8rem and gave the `/offline/` and Outbox links a 2.75rem minimum height with horizontal padding for mobile taps.
+- Verification:
+  - CSS-only change; not visually checked in a browser here (still needs a 360px manual check).
+- Notes:
+  - Badge height is now about 44px, so it may cover more of the top-right corner; confirm against header controls.
