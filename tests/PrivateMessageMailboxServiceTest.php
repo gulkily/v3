@@ -85,6 +85,28 @@ final class PrivateMessageMailboxServiceTest
         );
     }
 
+    public function testLimitsServiceMailboxesToTwentyFiveMessages(): void
+    {
+        $readPdo = $this->profilesDatabase();
+        $this->addProfile($readPdo, 'openpgp:alice', 'openpgp-alice', 'alice', 'PUBLIC KEY ALICE', 1);
+        $this->addProfile($readPdo, 'openpgp:ilyag', 'openpgp-ilyag', 'ilyag', 'PUBLIC KEY ILYAG', 1);
+        $store = new PrivateMessageStore(new \PDO('sqlite::memory:'));
+        for ($index = 1; $index <= 26; $index++) {
+            $store->storeEnvelope(
+                sprintf('message-%02d', $index),
+                sprintf('2026-10-09T12:%02d:00Z', $index),
+                'alice',
+                'ilyag',
+                'openpgp:alice',
+                $this->envelope(),
+            );
+        }
+        $service = new PrivateMessageMailboxService($store, $readPdo);
+
+        assertSame(25, count($service->inbox($this->viewer('openpgp:ilyag', 'ilyag'))));
+        assertSame(25, count($service->sent($this->viewer('openpgp:alice', 'alice'))));
+    }
+
     /** @return array<string, mixed> */
     private function viewer(string $identityId, string $usernameToken): array
     {

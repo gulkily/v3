@@ -8,6 +8,8 @@ use PDO;
 
 final class PrivateMessageStore
 {
+    public const MAILBOX_PAGE_SIZE = 25;
+
     public function __construct(
         private readonly PDO $pdo,
     ) {
@@ -63,7 +65,8 @@ final class PrivateMessageStore
                     sender_identity_id, encrypted_envelope
              FROM private_messages
              WHERE ' . $column . ' = :username_token
-             ORDER BY created_at DESC, message_id DESC'
+             ORDER BY created_at DESC, message_id DESC
+             LIMIT ' . self::MAILBOX_PAGE_SIZE
         );
         $stmt->execute(['username_token' => strtolower(trim($usernameToken))]);
 

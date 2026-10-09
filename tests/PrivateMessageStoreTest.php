@@ -38,4 +38,24 @@ final class PrivateMessageStoreTest
 
         assertSame(['message-002', 'message-001'], array_column($store->inboxFor('ilyag'), 'message_id'));
     }
+
+    public function testLimitsEachMailboxToItsNewestTwentyFiveMessages(): void
+    {
+        $store = new PrivateMessageStore(new PDO('sqlite::memory:'));
+        for ($index = 1; $index <= 26; $index++) {
+            $store->storeEnvelope(
+                sprintf('message-%02d', $index),
+                sprintf('2026-10-09T12:%02d:00Z', $index),
+                'alice',
+                'ilyag',
+                'openpgp:alice',
+                'ciphertext-' . $index,
+            );
+        }
+
+        assertSame(25, count($store->inboxFor('ilyag')));
+        assertSame(25, count($store->sentBy('alice')));
+        assertSame('message-26', $store->inboxFor('ilyag')[0]['message_id']);
+        assertSame('message-02', $store->inboxFor('ilyag')[24]['message_id']);
+    }
 }
