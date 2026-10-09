@@ -16,3 +16,18 @@
   - Deployment, external-service, migration, and UI rendering checks — not applicable to this metadata-and-unit-test stage; Stage 2 owns page rendering verification.
 - Notes:
   - Display grouping remains separate from evaluation category, dependencies, mutability, and persisted flag values.
+
+## Stage 2 - Verify the grouped page
+
+- Changes:
+  - Added a rendered-page smoke test for all seven group headings.
+  - Asserted that every registered flag renders exactly once and retained representative switch, lock, and dependency markup.
+  - Reused the existing feature-flags template, JavaScript, and save endpoint without changes.
+- Verification:
+  - `php -l tests/LocalAppSmokeTest.php` — passed.
+  - `php tests/run.php FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest LocalAppSmokeTest::testFeatureFlagsPageOrganizesEveryRegisteredFlagOnce` — 17 run, 17 passed.
+  - The smoke test rendered `/tools/feature-flags/` through the normal application and confirmed all seven headings and 14 one-time flag rows.
+  - `git diff --check` — passed.
+  - External-service, migration, and deployment-configuration checks — not applicable; this change has no external integration, schema, or deployment changes.
+- Notes:
+  - The display order remains the registry order within each new group.
