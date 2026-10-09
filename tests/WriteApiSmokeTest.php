@@ -2552,7 +2552,7 @@ NODE;
         }
     }
 
-    public function testSetFeatureFlagApiRequiresRootApprovedIdentityAndCommits(): void
+    public function testFeatureFlagApisRequireRootApprovalAndBrowserSignature(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -2563,20 +2563,24 @@ NODE;
             '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
         );
         $_COOKIE = ['identity_hint' => 'guest'];
-        $authorized = $this->renderMethod(
+        $unsigned = $this->renderMethod(
             $application,
             'POST',
             '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
         );
+        $prepared = json_decode($this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_feature_flag_change?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
+        ), true, 512, JSON_THROW_ON_ERROR);
         $_COOKIE = [];
 
         assertStringContains('error=Feature flag changes require a root-approved identity.', $unauthorized);
-        assertStringContains('status=ok', $authorized);
-        assertStringContains('key=FORUM_APP_VERSION_NOTIFICATION', $authorized);
-        assertStringContains('site_value=false', $authorized);
-        assertStringContains('source=site', $authorized);
-        assertStringContains('commit_sha=', $authorized);
-        assertStringContains('FORUM_APP_VERSION_NOTIFICATION: false', (string) file_get_contents($repositoryRoot . '/records/instance/feature-flags.txt'));
+        assertStringContains('error=Feature flag changes require a browser signature.', $unsigned);
+        assertSame('ok', $prepared['status']);
+        assertSame('yes', $prepared['wrote_record']);
+        assertStringContains('Operator-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $prepared['canonical_record']);
+        assertFalse(is_file($repositoryRoot . '/records/instance/feature-flags.txt'));
     }
 
     public function testSetFeatureFlagAddsActivityForWarmReadModel(): void
@@ -2585,19 +2589,11 @@ NODE;
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         $this->renderMethod($application, 'GET', '/');
 
-        $_COOKIE = ['identity_hint' => 'guest'];
-        try {
-            $response = $this->renderMethod(
-                $application,
-                'POST',
-                '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
-            );
-            $activity = $this->renderMethod($application, 'GET', '/activity/');
-        } finally {
-            $_COOKIE = [];
-        }
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $response = $service->setFeatureFlag(['key' => 'FORUM_APP_VERSION_NOTIFICATION', 'value' => 'false']);
+        $activity = $this->renderMethod($application, 'GET', '/activity/');
 
-        $commitSha = $this->extractValue($response, 'commit_sha');
+        $commitSha = $response['commit_sha'];
         assertStringContains('site_feature_flag', $activity);
         assertStringContains('Set feature flag FORUM_APP_VERSION_NOTIFICATION=false', $activity);
         assertStringContains('records/instance/feature-flags.txt', $activity);
@@ -2649,9 +2645,9 @@ NODE;
         assertStringContains('method="post" action="/tools/feature-flags/"', $form);
         assertStringContains('data-feature-flag-form', $form);
         assertStringContains('Feature flag changes require a root-approved identity.', $unauthorized);
-        assertStringContains('Feature flag updated. Commit:', $redirect);
+        assertStringContains('Feature flag changes require a browser signature.', $redirect);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $updated);
-        assertStringContains('data-role="feature-flag-source">site</span>', $updated);
+        assertStringContains('data-role="feature-flag-source">default</span>', $updated);
     }
 
     public function testFeatureFlagFormSubmitAcceptsDisplayedEnabledDisabledValues(): void
@@ -2671,8 +2667,8 @@ NODE;
             $_POST = [];
         }
 
-        assertStringContains('Feature flag updated. Commit:', $redirect);
-        assertStringContains('FORUM_APP_VERSION_NOTIFICATION: false', (string) file_get_contents($repositoryRoot . '/records/instance/feature-flags.txt'));
+        assertStringContains('Feature flag changes require a browser signature.', $redirect);
+        assertFalse(is_file($repositoryRoot . '/records/instance/feature-flags.txt'));
     }
 
     public function testFeatureFlagWriteSyncsRepositoryHeadMetadataImmediately(): void
@@ -2681,16 +2677,8 @@ NODE;
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         $this->renderMethod($application, 'GET', '/');
 
-        $_COOKIE = ['identity_hint' => 'guest'];
-        try {
-            $this->renderMethod(
-                $application,
-                'POST',
-                '/tools/feature-flags/?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
-            );
-        } finally {
-            $_COOKIE = [];
-        }
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $service->setFeatureFlag(['key' => 'FORUM_APP_VERSION_NOTIFICATION', 'value' => 'false']);
 
         $currentHead = ReadModelMetadata::repositoryHead($repositoryRoot);
         $pdo = new PDO('sqlite:' . $databasePath);
@@ -2727,18 +2715,8 @@ NODE;
         ]);
         assertTrue($staleMarker->exists());
 
-        $_COOKIE = ['identity_hint' => 'guest'];
-        try {
-            $redirect = $this->renderMethod(
-                $application,
-                'POST',
-                '/tools/feature-flags/?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
-            );
-        } finally {
-            $_COOKIE = [];
-        }
-
-        assertStringContains('Feature flag updated. Commit:', $redirect);
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $service->setFeatureFlag(['key' => 'FORUM_APP_VERSION_NOTIFICATION', 'value' => 'false']);
         $this->assertReadModelHealthy($databasePath);
 
         $pdo = new PDO('sqlite:' . $databasePath);

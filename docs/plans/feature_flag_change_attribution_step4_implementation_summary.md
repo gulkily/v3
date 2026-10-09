@@ -22,3 +22,14 @@
   - UI, browser, deployment, migration, and release checks are not applicable until later stages.
 - Notes:
   - Controller authorization and browser entry points remain for Stage 3; activity attribution remains for Stage 4.
+
+## Stage 3 - Root-authorized signed page flow
+- Changes:
+  - Added no-store prepare/finalize APIs bound to the resolved root-approved identity; legacy API and form submissions now reject unsigned mutations.
+  - Loaded the existing OpenPGP/browser-signing assets on Feature Flags and changed its controls to prepare, sign, and finalize before rendering success.
+- Verification:
+  - `php -l src/ForumRewrite/Http/ToolsPageController.php` and `php -l src/ForumRewrite/Application.php` — passed.
+  - `php tests/run.php FeatureFlagsBehaviorTest WriteApiSmokeTest` — 130/131 passed; the sole `testTaskQueueProcessesQueuedAgentReplyOnce` failure is pre-existing.
+  - Browser manual, deployment, migration, and release checks remain for the final stage.
+- Notes:
+  - A direct form submission gives clear signing guidance rather than silently falling back to an unsigned change.

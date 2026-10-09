@@ -312,6 +312,16 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_feature_flag_change') {
+            $this->toolsPageController()->prepareFeatureFlagChangeApi($method, $query);
+            return;
+        }
+
+        if ($path === '/api/finalize_feature_flag_change') {
+            $this->toolsPageController()->finalizeFeatureFlagChangeApi($method, $query);
+            return;
+        }
+
         if ($path === '/api/link_identity') {
             $this->composeAndAccountKeyController()->linkIdentityApi($method, $query);
             return;
@@ -1722,7 +1732,7 @@ final class Application
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
-            '/api/set_feature_flag', '/api/link_identity', '/api/approve_user',
+            '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
             '/latest', '/top', '/leetness', '/add', '/random', '/search',
         ], true)) {

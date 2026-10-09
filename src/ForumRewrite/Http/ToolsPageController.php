@@ -168,8 +168,24 @@ final class ToolsPageController
             ],
             'Feature Flags',
             'tools',
-            ['/assets/feature_flags.js'],
+            ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/feature_flags.js'],
         );
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    public function prepareFeatureFlagChangeApi(string $method, array $query): void
+    {
+        $this->handlePreparedFeatureFlagChange($method, $query, false);
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    public function finalizeFeatureFlagChangeApi(string $method, array $query): void
+    {
+        $this->handlePreparedFeatureFlagChange($method, $query, true);
     }
 
     /**
@@ -188,23 +204,7 @@ final class ToolsPageController
             return;
         }
 
-        try {
-            $result = $this->routeServices->writer()->setFeatureFlag($this->routeServices->requestData($query));
-            ($this->invalidateFeatureFlagsCache)();
-            $response = "status=ok\n"
-                . "key={$result['key']}\n"
-                . "site_value={$result['site_value']}\n"
-                . "effective_value={$result['effective_value']}\n"
-                . "source={$result['source']}\n"
-                . "wrote_record={$result['wrote_record']}\n";
-            if (isset($result['commit_sha'])) {
-                $response .= "commit_sha={$result['commit_sha']}\n";
-            }
-
-            $this->routeServices->sendText($response, 200, $this->routeServices->serverTimingHeaders($result));
-        } catch (RuntimeException $exception) {
-            $this->routeServices->sendText("error=" . $exception->getMessage() . "\n", 400);
-        }
+        $this->routeServices->sendText("error=Feature flag changes require a browser signature.\n", 400);
     }
 
     /**
@@ -226,25 +226,43 @@ final class ToolsPageController
             return;
         }
 
-        try {
-            $result = $this->routeServices->writer()->setFeatureFlag($this->routeServices->requestData($query));
-            ($this->invalidateFeatureFlagsCache)();
-            $message = 'Feature flag updated.';
-            if (isset($result['commit_sha'])) {
-                $message .= ' Commit: ' . $result['commit_sha'];
-            }
+        $this->routeServices->sendHtml(
+            $this->routeServices->renderMessagePage(
+                'Feature Flag Signature Required',
+                'Feature Flag Signature Required',
+                'Feature flag changes require a browser signature. Enable JavaScript and use a root-approved browser identity.',
+                'tools'
+            ),
+            400
+        );
+    }
 
-            $this->routeServices->sendRedirect('/tools/feature-flags/', $message, activeSection: 'tools');
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function handlePreparedFeatureFlagChange(string $method, array $query, bool $finalize): void
+    {
+        if ($method !== 'POST') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
+        if (!$this->viewerCanManageFeatureFlags($viewerProfile)) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Feature flag changes require a root-approved identity.'], 403, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        try {
+            $operatorIdentityId = (string) ($viewerProfile['identity_id'] ?? '');
+            $input = $this->routeServices->requestData($query);
+            $result = $finalize
+                ? $this->routeServices->writer()->finalizePreparedFeatureFlagChange($input, $operatorIdentityId)
+                : $this->routeServices->writer()->prepareFeatureFlagChange($input, $operatorIdentityId);
+            if ($finalize && ($result['wrote_record'] ?? '') === 'yes') {
+                ($this->invalidateFeatureFlagsCache)();
+            }
+            $this->routeServices->sendJson($result, 200, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $exception) {
-            $this->routeServices->sendHtml(
-                $this->routeServices->renderMessagePage(
-                    'Feature Flag Error',
-                    'Feature Flag Error',
-                    $exception->getMessage(),
-                    'tools'
-                ),
-                400
-            );
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->routeServices->noStoreHeaders());
         }
     }
 
