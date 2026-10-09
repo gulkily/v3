@@ -4,8 +4,8 @@
       <div class="qdb-welcome-intro">
         <p><strong>Welcome!</strong> Browse away to your amusement, and
         feel free to add some quotes yourself.</p>
-        <p class="instructions qdb-welcome-instructions">Use the + / -
-        buttons on any quote to vote, and [X] to flag something that
+        <p class="instructions qdb-welcome-instructions">Use the vote
+        buttons on any quote to vote, and ⚑ Flag something that
         doesn't belong.</p>
         <ul>
           <li><a href="/latest">Latest quotes</a></li>

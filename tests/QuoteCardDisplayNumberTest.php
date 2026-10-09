@@ -29,6 +29,16 @@ final class QuoteCardDisplayNumberTest
             'data-role="thread-score" data-score-format="bare-ratio">(<span class="quote-card-score-value quote-card-score-positive" data-role="thread-score-value">5</span>/<span data-role="thread-vote-count">7</span>)</span>',
             $board,
         );
+        assertStringContains('class="quote-card-header-actions"', $board);
+        assertStringContains('>⚑ Flag</button>', $board);
+        assertTrue(
+            strpos($board, 'data-role="thread-score"')
+            < strpos($board, 'class="quote-card-header-actions"'),
+        );
+        assertTrue(
+            strpos($board, 'class="quote-card-header-actions"')
+            < strpos($board, '<p class="quote-card-body">'),
+        );
         assertStringNotContains('>#thread-20030613104735-qdb-42</a>', $board);
     }
 
@@ -167,6 +177,8 @@ final class QuoteCardDisplayNumberTest
         }
 
         assertStringContains('<h2>Site News</h2>', $welcome);
+        assertStringContains('⚑ Flag something that', $welcome);
+        assertStringNotContains('[X] to flag', $welcome);
         assertStringNotContains('Recent activity', $welcome);
         assertSame(3, substr_count($welcome, 'href="/threads/news-'));
         assertStringContains('href="/threads/news-newest">Newest news</a>', $welcome);
@@ -385,6 +397,8 @@ final class QuoteCardDisplayNumberTest
 
         assertStringContains('class="quote-card-permalink" href="/42">#42</a>', $permalink);
         assertStringContains('data-role="thread-score" data-score-format="bare-ratio">(<span class="quote-card-score-value quote-card-score-positive" data-role="thread-score-value">5</span>/<span data-role="thread-vote-count">7</span>)</span>', $permalink);
+        assertStringContains('class="quote-card-header-actions"', $permalink);
+        assertStringContains('>⚑ Flag</button>', $permalink);
         assertStringContains('<p class="quote-card-body">The quoted body.<br />', $permalink);
         assertStringNotContains('<p class="meta">', $permalink);
         assertStringNotContains('>Reply</a>', $permalink);
@@ -392,6 +406,14 @@ final class QuoteCardDisplayNumberTest
         assertTrue(preg_match('/data-tag="[a-z-]+"[^>]*aria-label="Downvote this quote: [^"]+"/', $permalink) === 1);
         assertStringContains('data-tag="flag"', $permalink);
         assertStringNotContains('data-tag="like"', $permalink);
+        assertTrue(
+            strpos($permalink, 'data-role="thread-score"')
+            < strpos($permalink, 'class="quote-card-header-actions"'),
+        );
+        assertTrue(
+            strpos($permalink, 'class="quote-card-header-actions"')
+            < strpos($permalink, '<p class="quote-card-body">'),
+        );
     }
 
     public function testNonQdbPermalinkRootCardKeepsLikeAndHasNoQuoteHeader(): void

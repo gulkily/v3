@@ -85,7 +85,17 @@ if (!$metaVisible) {
   <p class="quote-card-header">
     <a class="quote-card-permalink" href="<?= $e($quoteRootPermalinkHref) ?>">#<?= $e($quoteRootDisplayNumber) ?></a>
     <span class="meta quote-card-score" data-role="thread-score" data-score-format="bare-ratio">(<span class="<?= $e($quoteRootScoreValueClass) ?>" data-role="thread-score-value"><?= $quoteRootScoreTotal ?></span>/<span data-role="thread-vote-count"><?= $quoteRootVoteCount ?></span>)</span>
+<?= $partial('partials/qdb_quote_actions.php', [
+    'quotePostId' => $post['post_id'],
+    'upvote' => $upvote,
+    'downvote' => $downvote,
+    'viewerHasUpvoted' => $viewerHasUpvoted,
+    'viewerHasDownvoted' => $viewerHasDownvoted,
+    'viewerHasFlagged' => $viewerHasFlaggedPost,
+]) ?>
   </p>
+  <p class="meta quote-card-reaction-feedback" data-role="thread-reaction-feedback" hidden></p>
+  <p class="meta quote-card-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
   <p class="quote-card-body"><?= $br($postBody) ?></p>
 <?php else: ?>
   <h1><?= $e($title) ?></h1>
@@ -147,39 +157,7 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
 <?php if (!$isQdbQuoteRoot): ?>
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
 <?php endif; ?>
-<?php if ($isQdbQuoteRoot): ?>
-    <button
-      type="button"
-      class="thread-reaction-button quote-card-vote-button"
-      data-action="apply-thread-tag"
-      data-tag="<?= $e($upvote['tag']) ?>"
-      data-applied-label="<?= $e($upvote['label']) ?>"
-      aria-label="Upvote this quote: <?= $e($upvote['label']) ?>"
-      aria-pressed="<?= $viewerHasUpvoted ? 'true' : 'false' ?>"
-<?= $viewerHasUpvoted ? ' disabled="disabled"' : '' ?>
-    >↑ <?= $e($upvote['label']) ?></button>
-    <button
-      type="button"
-      class="thread-reaction-button quote-card-vote-button"
-      data-action="apply-thread-tag"
-      data-tag="<?= $e($downvote['tag']) ?>"
-      data-applied-label="<?= $e($downvote['label']) ?>"
-      aria-label="Downvote this quote: <?= $e($downvote['label']) ?>"
-      aria-pressed="<?= $viewerHasDownvoted ? 'true' : 'false' ?>"
-<?= $viewerHasDownvoted ? ' disabled="disabled"' : '' ?>
-    >↓ <?= $e($downvote['label']) ?></button>
-    <button
-      type="button"
-      class="thread-reaction-button quote-card-vote-button"
-      data-action="apply-post-tag"
-      data-post-id="<?= $e($post['post_id']) ?>"
-      data-tag="flag"
-      data-applied-label="[X]"
-      aria-label="Flag this quote for review"
-      aria-pressed="<?= $viewerHasFlaggedPost ? 'true' : 'false' ?>"
-<?= $viewerHasFlaggedPost ? ' disabled="disabled"' : '' ?>
-    >[X]</button>
-<?php else: ?>
+<?php if (!$isQdbQuoteRoot): ?>
     <button
       type="button"
       class="thread-reaction-button"
@@ -219,8 +197,10 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
 <?php if ($postLlmExchanges !== []): ?>
     <span class="meta">LLM exchanges: <?php foreach ($postLlmExchanges as $index => $exchange): ?><?php if ($index > 0): ?>, <?php endif; ?><a href="/tools/llm-exchanges/<?= (int) $exchange['id'] ?>">#<?= (int) $exchange['id'] ?></a><?php endforeach; ?></span>
 <?php endif; ?>
+<?php if (!$isQdbQuoteRoot): ?>
     <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
     <p class="meta thread-reaction-feedback" data-role="thread-reaction-feedback" hidden></p>
+<?php endif; ?>
 <?php if (!$agentReplyIsUnfinished): ?>
     <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"<?= $agentReplyFeedbackText === '' ? ' hidden' : '' ?>><?= $e($agentReplyFeedbackText) ?><?php if ($agentReplyPostedId !== ''): ?> <a href="/posts/<?= $e($agentReplyPostedId) ?>">View agent reply.</a><?php endif; ?></p>
 <?php endif; ?>
