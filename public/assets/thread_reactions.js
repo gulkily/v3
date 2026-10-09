@@ -3,6 +3,8 @@
   const pendingReactionOperations = new Set();
   const boundThreadRoots = new WeakSet();
   const boundPostRoots = new WeakSet();
+  const reactionStateVersion = 1;
+  const reactionMarkerLimit = 1000;
 
   function browserPerformance() {
     return typeof window !== "undefined" && window.performance && typeof window.performance.mark === "function"
@@ -226,6 +228,244 @@
     node.setAttribute("data-kind", kind);
     node.hidden = false;
     renderTechnicalFeedback(node, technicalDetails);
+  }
+
+  function qdbFeedbackNode(root) {
+    return root.querySelector('[data-role="qdb-reaction-feedback"]');
+  }
+
+  function reactionFeedbackTarget(root, legacyRole) {
+    const sharedNode = qdbFeedbackNode(root);
+
+    return {
+      node: sharedNode || root.querySelector(`[data-role="${legacyRole}"]`),
+      isSharedQdbStatus: sharedNode !== null,
+    };
+  }
+
+  function clearQdbFeedback(node, isSharedQdbStatus) {
+    if (!node || !isSharedQdbStatus) {
+      return;
+    }
+
+    node.textContent = "";
+    node.removeAttribute("data-kind");
+    node.hidden = true;
+  }
+
+  function reactionStorage() {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        return window.localStorage;
+      }
+      if (typeof localStorage !== "undefined") {
+        return localStorage;
+      }
+    } catch (error) {
+    }
+
+    return null;
+  }
+
+  function reactionSiteNamespace() {
+    const runtime = typeof window !== "undefined" ? window.forumBrowserRuntime : null;
+    const namespace = runtime && typeof runtime.namespace === "string" ? runtime.namespace : "";
+
+    return /^[a-z][a-z0-9-]*$/.test(namespace) ? namespace : "";
+  }
+
+  function reactionIdentityId(candidate) {
+    const identityId = String(candidate || "").trim().toLowerCase();
+
+    return identityId === "" ? "" : identityId;
+  }
+
+  function currentReactionIdentityId() {
+    try {
+      const helper = typeof window !== "undefined" ? window.__forumBrowserIdentity : null;
+      if (helper && typeof helper.currentAuthorIdentityId === "function") {
+        const helperIdentityId = reactionIdentityId(helper.currentAuthorIdentityId());
+        if (helperIdentityId !== "") {
+          return helperIdentityId;
+        }
+      }
+
+      const storage = reactionStorage();
+      const fingerprint = storage ? String(storage.getItem("forum_pki_fingerprint") || "").trim().toLowerCase() : "";
+      return /^[a-f0-9]{40}$/.test(fingerprint) ? `openpgp:${fingerprint}` : "";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function reactionStorageKey(namespace, identityId) {
+    return `forum-reaction-state-v${reactionStateVersion}:${namespace}:${encodeURIComponent(identityId)}`;
+  }
+
+  function reactionMarker(kind, id, tag) {
+    const targetKind = String(kind || "");
+    const targetId = String(id || "");
+    const reactionTag = String(tag || "");
+
+    if (!/^(thread|post)$/.test(targetKind) || targetId === "" || reactionTag === "") {
+      return null;
+    }
+
+    return { kind: targetKind, id: targetId, tag: reactionTag };
+  }
+
+  function reactionMarkerKey(marker) {
+    return JSON.stringify([marker.kind, marker.id, marker.tag]);
+  }
+
+  function reactionMarkersForIdentity(identityId) {
+    const namespace = reactionSiteNamespace();
+    const normalizedIdentityId = reactionIdentityId(identityId);
+    const storage = reactionStorage();
+    if (namespace === "" || normalizedIdentityId === "" || !storage) {
+      return [];
+    }
+
+    try {
+      const value = storage.getItem(reactionStorageKey(namespace, normalizedIdentityId));
+      const parsed = JSON.parse(value || "null");
+      if (!parsed || parsed.version !== reactionStateVersion || !Array.isArray(parsed.markers)) {
+        return [];
+      }
+
+      const uniqueMarkers = new Map();
+      parsed.markers.slice(-reactionMarkerLimit).forEach(function (rawMarker) {
+        const marker = rawMarker && reactionMarker(rawMarker.kind, rawMarker.id, rawMarker.tag);
+        if (marker) {
+          uniqueMarkers.set(reactionMarkerKey(marker), marker);
+        }
+      });
+
+      return Array.from(uniqueMarkers.values());
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function rememberReactionMarker(kind, id, tag, identityId) {
+    const marker = reactionMarker(kind, id, tag);
+    const namespace = reactionSiteNamespace();
+    const normalizedIdentityId = reactionIdentityId(identityId || currentReactionIdentityId());
+    const storage = reactionStorage();
+    if (!marker || namespace === "" || normalizedIdentityId === "" || !storage) {
+      return false;
+    }
+
+    try {
+      const markers = reactionMarkersForIdentity(normalizedIdentityId);
+      const uniqueMarkers = new Map(markers.map(function (existingMarker) {
+        return [reactionMarkerKey(existingMarker), existingMarker];
+      }));
+      uniqueMarkers.set(reactionMarkerKey(marker), marker);
+      storage.setItem(reactionStorageKey(namespace, normalizedIdentityId), JSON.stringify({
+        version: reactionStateVersion,
+        markers: Array.from(uniqueMarkers.values()).slice(-reactionMarkerLimit),
+      }));
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function reactionButtonTargetId(button, kind) {
+    if (!button || typeof button.getAttribute !== "function") {
+      return "";
+    }
+
+    if (kind === "post") {
+      const buttonPostId = button.getAttribute("data-post-id") || "";
+      if (buttonPostId !== "") {
+        return buttonPostId;
+      }
+
+      const postRoot = typeof button.closest === "function" ? button.closest(".post-card[data-post-id]") : null;
+      return postRoot ? (postRoot.getAttribute("data-post-id") || "") : "";
+    }
+
+    const threadRoot = typeof button.closest === "function" ? button.closest("[data-thread-reactions-root]") : null;
+    return threadRoot ? (threadRoot.getAttribute("data-thread-id") || "") : "";
+  }
+
+  function qdbVoteTagsForRoot(root) {
+    if (!root || typeof root.querySelector !== "function") {
+      return new Set();
+    }
+
+    const pair = root.querySelector("[data-qdb-vote-pair]");
+    const encodedTags = pair && typeof pair.getAttribute === "function" ? pair.getAttribute("data-qdb-vote-tags") : "";
+    try {
+      const tags = JSON.parse(encodedTags || "[]");
+      return new Set(Array.isArray(tags) ? tags.filter(function (tag) {
+        return typeof tag === "string" && tag !== "";
+      }) : []);
+    } catch (error) {
+      return new Set();
+    }
+  }
+
+  function isQdbVoteMarkerForRoot(marker, root) {
+    return marker.kind === "thread" && qdbVoteTagsForRoot(root).has(marker.tag);
+  }
+
+  function hydrateQdbVoteMarker(marker, target) {
+    if (!marker || marker.kind !== "thread") {
+      return;
+    }
+
+    matchingRoots(target || (typeof document !== "undefined" ? document : null), "[data-thread-reactions-root]").forEach(function (root) {
+      if ((root.getAttribute("data-thread-id") || "") !== marker.id || !isQdbVoteMarkerForRoot(marker, root)) {
+        return;
+      }
+
+      const pair = root.querySelector("[data-qdb-vote-pair]");
+      if (!pair || typeof pair.querySelectorAll !== "function") {
+        return;
+      }
+
+      Array.from(pair.querySelectorAll('[data-action="apply-thread-tag"]')).forEach(function (button) {
+        if (!(button instanceof HTMLButtonElement)) {
+          return;
+        }
+
+        button.disabled = true;
+        button.setAttribute("aria-pressed", "true");
+      });
+    });
+  }
+
+  function hydrateReactionMarker(marker, root) {
+    const target = root || (typeof document !== "undefined" ? document : null);
+    if (!target || typeof target.querySelectorAll !== "function") {
+      return;
+    }
+
+    const action = marker.kind === "thread" ? "apply-thread-tag" : "apply-post-tag";
+    Array.from(target.querySelectorAll(`[data-action="${action}"]`)).forEach(function (button) {
+      const reactionRoot = marker.kind === "thread"
+        ? (typeof button.closest === "function" ? button.closest("[data-thread-reactions-root]") : null)
+        : (typeof button.closest === "function" ? button.closest(".post-card[data-post-id]") : null);
+      if (!(button instanceof HTMLButtonElement)
+        || button.getAttribute("data-tag") !== marker.tag
+        || reactionButtonTargetId(button, marker.kind) !== marker.id
+        || isQdbVoteMarkerForRoot(marker, reactionRoot)) {
+        return;
+      }
+
+      button.disabled = true;
+      setConfirmedReactionButton(button, button.getAttribute("data-applied-label") || "Applied");
+    });
+  }
+
+  function hydrateRememberedReactions(root) {
+    reactionMarkersForIdentity(currentReactionIdentityId()).forEach(function (marker) {
+      hydrateQdbVoteMarker(marker, root);
+      hydrateReactionMarker(marker, root);
+    });
   }
 
   function parseResponseValue(text, key) {
@@ -494,9 +734,14 @@
     }
 
     markActionTiming(timing, "forum_identity_start");
-    setFeedback(feedbackNode, "Preparing identity...", "ok");
+    const readinessState = typeof helper.storedVoteIdentityReadinessState === "function"
+      ? helper.storedVoteIdentityReadinessState()
+      : "";
+    if (readinessState !== "ready") {
+      setFeedback(feedbackNode, "Preparing identity...", "ok");
+    }
     await readiness().call(helper, root, feedbackNode, {
-      verifyPublishedIdentity: false,
+      verifyPublishedIdentity: readinessState === "failed",
       timing: timing,
     });
     markActionTiming(timing, "forum_identity_ready");
@@ -529,7 +774,8 @@
     boundThreadRoots.add(root);
     const threadId = root.getAttribute("data-thread-id") || "";
     const scoreNode = root.querySelector('[data-role="thread-score"]');
-    const feedbackNode = root.querySelector('[data-role="thread-reaction-feedback"]');
+    const feedbackTarget = reactionFeedbackTarget(root, "thread-reaction-feedback");
+    const feedbackNode = feedbackTarget.node;
 
     root.addEventListener("click", async (event) => {
       const button = event.target instanceof Element
@@ -552,6 +798,8 @@
         completeActionTiming(timing, "ignored_pending");
         return;
       }
+
+      clearQdbFeedback(feedbackNode, feedbackTarget.isSharedQdbStatus);
 
       const previousState = captureThreadReactionState(button, scoreNode);
 
@@ -576,10 +824,17 @@
         const voteCount = parseResponseValue(text, "vote_count");
         const wroteRecord = parseResponseValue(text, "wrote_record") === "yes";
         const viewerIsApproved = parseResponseValue(text, "viewer_is_approved") === "yes";
+        const viewerIdentityId = reactionIdentityId(parseResponseValue(text, "viewer_identity_id")) || currentReactionIdentityId();
 
         setThreadScore(scoreNode, scoreTotal, voteCount);
 
         setConfirmedReactionButton(button, appliedLabel);
+        const marker = reactionMarker("thread", threadId, tag);
+        if (marker) {
+          rememberReactionMarker(marker.kind, marker.id, marker.tag, viewerIdentityId);
+          hydrateQdbVoteMarker(marker);
+          hydrateReactionMarker(marker);
+        }
         notifyReactionApplied();
 
         markActionTiming(timing, "forum_reconcile_complete");
@@ -616,7 +871,8 @@
     }
     boundPostRoots.add(root);
     const postId = root.getAttribute("data-post-id") || "";
-    const feedbackNode = root.querySelector('[data-role="post-reaction-feedback"]');
+    const feedbackTarget = reactionFeedbackTarget(root, "post-reaction-feedback");
+    const feedbackNode = feedbackTarget.node;
 
     root.addEventListener("click", async (event) => {
       const button = event.target instanceof Element
@@ -640,6 +896,8 @@
         return;
       }
 
+      clearQdbFeedback(feedbackNode, feedbackTarget.isSharedQdbStatus);
+
       const previousState = capturePostReactionState(root, button);
 
       button.disabled = true;
@@ -661,8 +919,14 @@
 
         const wroteRecord = parseResponseValue(text, "wrote_record") === "yes";
         const isHidden = parseResponseValue(text, "is_hidden") === "yes";
+        const viewerIdentityId = reactionIdentityId(parseResponseValue(text, "viewer_identity_id")) || currentReactionIdentityId();
 
         setConfirmedReactionButton(button, appliedLabel);
+        const marker = reactionMarker("post", postId, tag);
+        if (marker) {
+          rememberReactionMarker(marker.kind, marker.id, marker.tag, viewerIdentityId);
+          hydrateReactionMarker(marker);
+        }
         notifyReactionApplied();
 
         if (isHidden) {
@@ -718,10 +982,11 @@
   }
 
   if (typeof window !== "undefined") {
-    window.ForumThreadReactions = { bindWithin: bindWithin };
+    window.ForumThreadReactions = { bindWithin: bindWithin, hydrateRememberedReactions: hydrateRememberedReactions };
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    hydrateRememberedReactions(document);
     bindWithin(document);
   });
 })();

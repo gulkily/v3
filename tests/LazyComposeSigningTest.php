@@ -52,7 +52,7 @@ const vm = require('vm');
     ForumBrowserSigning: {
       init(rootArg) {
         this.initCalled = true;
-        this.initRootMatched = rootArg === root;
+        this.initRootMatched = rootArg === global.document;
       }
     }
   };
@@ -87,6 +87,8 @@ const vm = require('vm');
   appended[0].onload();
   await Promise.resolve();
   appended[1].onload();
+  await window.ForumLazyComposeSigning.load();
+  await Promise.resolve();
   await Promise.resolve();
   await Promise.resolve();
   await Promise.resolve();
@@ -154,6 +156,7 @@ const vm = require('vm');
   };
 
   vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+  const beforeExplicitLoad = appended.length;
   const loading = window.ForumLazyComposeSigning.load();
   appended[0].onload();
   await Promise.resolve();
@@ -162,6 +165,7 @@ const vm = require('vm');
 
   process.stdout.write(JSON.stringify({
     hasLoader: typeof window.ForumLazyComposeSigning.load === 'function',
+    beforeExplicitLoad,
     appended: appended.map((script) => script.src)
   }));
 })().catch((error) => {
@@ -173,9 +177,77 @@ NODE;
         $result = $this->runScript($script);
 
         assertSame(true, $result['hasLoader']);
+        assertSame(0, $result['beforeExplicitLoad']);
         assertSame([
             '/assets/openpgp_loader.fingerprint.js',
             '/assets/browser_signing.fingerprint.js',
         ], $result['appended']);
+    }
+
+    public function testStoredIdentityOnReactionPagePreloadsAndInitializesSigning(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+
+(async function () {
+  const appended = [];
+  let idleCallback = null;
+  global.window = {
+    localStorage: {
+      getItem(key) {
+        return key === 'forum_pki_public_key' || key === 'forum_pki_private_key' ? 'stored-key' : '';
+      }
+    },
+    requestIdleCallback(callback) { idleCallback = callback; },
+    __forumAssetPaths: {
+      openpgpLoader: '/assets/openpgp_loader.fingerprint.js',
+      browserSigning: '/assets/browser_signing.fingerprint.js'
+    },
+    ForumBrowserSigning: {
+      init(rootArg) { this.initRootMatched = rootArg === global.document; }
+    }
+  };
+  global.document = {
+    querySelectorAll() { return []; },
+    querySelector(selector) {
+      if (selector === '[data-thread-reactions-root], .post-card[data-post-id]') return {};
+      if (selector.startsWith('script[src*=')) {
+        return appended.find((entry) => entry.src.includes(selector.slice(13, -2))) || null;
+      }
+      return null;
+    },
+    createElement(tagName) { return { tagName, src: '', defer: false, onload: null, onerror: null }; },
+    head: { appendChild(script) { appended.push(script); } }
+  };
+
+  vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+  const beforeIdle = appended.length;
+  idleCallback();
+  await Promise.resolve();
+  appended[0].onload();
+  await Promise.resolve();
+  appended[1].onload();
+  await window.ForumLazyComposeSigning.load();
+
+  process.stdout.write(JSON.stringify({
+    beforeIdle,
+    appended: appended.map((script) => script.src),
+    initialized: window.ForumBrowserSigning.initRootMatched === true
+  }));
+})().catch((error) => {
+  console.error(error && error.stack ? error.stack : error);
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(0, $result['beforeIdle']);
+        assertSame([
+            '/assets/openpgp_loader.fingerprint.js',
+            '/assets/browser_signing.fingerprint.js',
+        ], $result['appended']);
+        assertSame(true, $result['initialized']);
     }
 }

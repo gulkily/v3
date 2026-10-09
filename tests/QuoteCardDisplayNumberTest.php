@@ -31,6 +31,7 @@ final class QuoteCardDisplayNumberTest
         );
         assertStringContains('class="quote-card-header-actions"', $board);
         assertStringContains('>⚑ Flag</button>', $board);
+        assertStringContains('data-role="qdb-reaction-feedback" aria-live="polite" hidden></span>', $board);
         assertTrue(
             strpos($board, 'data-role="thread-score"')
             < strpos($board, 'class="quote-card-header-actions"'),
@@ -248,7 +249,10 @@ final class QuoteCardDisplayNumberTest
         }
 
         assertSame(200, http_response_code());
+        assertStringContains('<h1>Hello world</h1>', $legacyThread);
         assertStringContains('Hello world', $legacyThread);
+        assertStringNotContains('quote-card-permalink', $legacyThread);
+        assertStringNotContains('quote-card-header-actions', $legacyThread);
     }
 
     public function testGenericBoardStillListsLegacyAndQuoteRoots(): void
@@ -304,12 +308,17 @@ final class QuoteCardDisplayNumberTest
         assertTrue(is_file($artifactRoot . '/top/index.html'));
         assertTrue(is_file($artifactRoot . '/leetness.html'));
         assertTrue(is_file($artifactRoot . '/leetness/index.html'));
+        assertTrue(is_file($artifactRoot . '/threads/root-001.html'));
         assertTrue(is_file($artifactRoot . '/threads/thread-20030613104735-qdb-42.html'));
         assertTrue(is_file($artifactRoot . '/qdb/quotes/42.html'));
+        $regularThreadDetail = (string) file_get_contents($artifactRoot . '/threads/root-001.html');
         assertSame(
             (string) file_get_contents($artifactRoot . '/threads/thread-20030613104735-qdb-42.html'),
             (string) file_get_contents($artifactRoot . '/qdb/quotes/42.html')
         );
+        assertStringContains('<h1>Hello world</h1>', $regularThreadDetail);
+        assertStringNotContains('quote-card-permalink', $regularThreadDetail);
+        assertStringNotContains('quote-card-header-actions', $regularThreadDetail);
     }
 
     public function testQdbStaticReleaseCanSkipIndividualDetailPages(): void
@@ -425,6 +434,7 @@ final class QuoteCardDisplayNumberTest
         assertStringContains('data-role="thread-score" data-score-format="bare-ratio">(<span class="quote-card-score-value quote-card-score-positive" data-role="thread-score-value">5</span>/<span data-role="thread-vote-count">7</span>)</span>', $permalink);
         assertStringContains('class="quote-card-header-actions"', $permalink);
         assertStringContains('>⚑ Flag</button>', $permalink);
+        assertStringContains('data-role="qdb-reaction-feedback" aria-live="polite" hidden></span>', $permalink);
         assertStringContains('<p class="quote-card-body">The quoted body.<br />', $permalink);
         assertStringNotContains('<p class="meta">', $permalink);
         assertStringNotContains('>Reply</a>', $permalink);

@@ -237,8 +237,18 @@ final class Application
             return;
         }
 
+        if ($path === '/api/create_quote') {
+            $this->writePostAndIdentityApiController()->createQuote($method, $query);
+            return;
+        }
+
         if ($path === '/api/prepare_thread') {
             $this->writePostAndIdentityApiController()->prepareThread($method, $query);
+            return;
+        }
+
+        if ($path === '/api/prepare_quote') {
+            $this->writePostAndIdentityApiController()->prepareQuote($method, $query);
             return;
         }
 
@@ -354,6 +364,11 @@ final class Application
 
         if ($path === '/compose/thread' && $method === 'POST') {
             $this->composeAndAccountKeyController()->submitComposeThread($query);
+            return;
+        }
+
+        if ($path === '/add' && $method === 'POST') {
+            $this->composeAndAccountKeyController()->submitComposeQuote($query);
             return;
         }
 
@@ -1716,8 +1731,8 @@ final class Application
             '/api', '/api/', '/api/version', '/api/list_index',
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username_claim_cta',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
-            '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread',
-            '/api/prepare_thread', '/api/prepare_identity', '/api/create_reply',
+            '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
+            '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',
             '/api/prepare_reply', '/api/create_prepared_post', '/api/create_identity',
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
