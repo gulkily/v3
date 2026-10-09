@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
+use ForumRewrite\Host\FrontController;
 use ForumRewrite\Host\StaticArtifactBuilder;
 
 final class QuoteCardDisplayNumberTest
@@ -298,6 +299,7 @@ final class QuoteCardDisplayNumberTest
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
         $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
         $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-qdb-static-' . bin2hex(random_bytes(6));
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-qdb-static-route-' . bin2hex(random_bytes(6));
 
         putenv('FORUM_SITE_ID=qdb');
         try {
@@ -323,6 +325,19 @@ final class QuoteCardDisplayNumberTest
         assertStringContains('<h1>Hello world</h1>', $regularThreadDetail);
         assertStringNotContains('quote-card-permalink', $regularThreadDetail);
         assertStringNotContains('quote-card-header-actions', $regularThreadDetail);
+
+        $generalTag = (string) file_get_contents($artifactRoot . '/tags/general.html');
+        assertStringContains('href="/threads/root-001"', $generalTag);
+        assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $generalTag);
+
+        mkdir($staticHtmlRoot, 0777, true);
+        symlink($artifactRoot, $staticHtmlRoot . '/current');
+        $controller = new FrontController(dirname(__DIR__), $repositoryRoot, $databasePath, $staticHtmlRoot, $artifactRoot);
+        $response = $this->renderFrontController($controller, '/tags/general');
+
+        assertStringContains('route-source: static-html', $response);
+        assertStringContains('href="/threads/root-001"', $response);
+        assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $response);
     }
 
     public function testQdbStaticReleaseCanSkipIndividualDetailPages(): void
@@ -519,6 +534,14 @@ final class QuoteCardDisplayNumberTest
     {
         ob_start();
         $application->handle('GET', $path);
+
+        return (string) ob_get_clean();
+    }
+
+    private function renderFrontController(FrontController $controller, string $path): string
+    {
+        ob_start();
+        $controller->handle('GET', $path);
 
         return (string) ob_get_clean();
     }
