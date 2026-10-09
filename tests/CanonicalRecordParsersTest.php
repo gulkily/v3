@@ -5,6 +5,7 @@ declare(strict_types=1);
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordParseException;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\FeatureFlagChangeRecordParser;
 use ForumRewrite\Canonical\ApprovalSeedRecordParser;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\InstancePublicRecordParser;
@@ -415,6 +416,35 @@ final class CanonicalRecordParsersTest
         ], $record->values);
     }
 
+    public function testParsesFeatureFlagChangeRecord(): void
+    {
+        $contents = "Record-ID: feature-flag-change-20261009120000-ab12cd34\nCreated-At: 2026-10-09T12:00:00Z\nFlag-Key: FORUM_APP_VERSION_NOTIFICATION\nValue: false\nOperator-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n";
+
+        $record = (new FeatureFlagChangeRecordParser())->parse($contents);
+
+        assertSame('feature-flag-change-20261009120000-ab12cd34', $record->recordId);
+        assertSame('2026-10-09T12:00:00Z', $record->createdAt);
+        assertSame('FORUM_APP_VERSION_NOTIFICATION', $record->flagKey);
+        assertFalse($record->value);
+        assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $record->operatorIdentityId);
+    }
+
+    public function testRejectsMalformedFeatureFlagChangeRecord(): void
+    {
+        assertThrows(
+            static fn () => (new FeatureFlagChangeRecordParser())->parse("Record-ID: change-001\nCreated-At: 2026-10-09T12:00:00Z\nFlag-Key: FORUM_APP_VERSION_NOTIFICATION\nValue: false\nOperator-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n"),
+            'Feature-flag change Record-ID is invalid.'
+        );
+        assertThrows(
+            static fn () => (new FeatureFlagChangeRecordParser())->parse("Record-ID: feature-flag-change-001\nCreated-At: 2026-10-09T12:00:00Z\nFlag-Key: forum_lower\nValue: false\nOperator-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n"),
+            'Feature-flag change Flag-Key is invalid.'
+        );
+        assertThrows(
+            static fn () => (new FeatureFlagChangeRecordParser())->parse("Record-ID: feature-flag-change-001\nCreated-At: 2026-10-09T12:00:00Z\nFlag-Key: FORUM_APP_VERSION_NOTIFICATION\nValue: no\nOperator-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n"),
+            'Feature-flag change Value must be true or false.'
+        );
+    }
+
     public function testRejectsMalformedSiteFeatureFlagsRecord(): void
     {
         assertThrows(
@@ -443,6 +473,7 @@ final class CanonicalRecordParsersTest
     {
         $tempRoot = $this->createTempFixtureRoot();
         mkdir($tempRoot . '/records/post-reactions');
+        mkdir($tempRoot . '/records/feature-flag-changes');
         file_put_contents(
             $tempRoot . '/records/post-reactions/post-reaction-20260415153000-ab12cd34.txt',
             "Record-ID: post-reaction-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nPost-ID: reply-001\nOperation: add\nTags: flag\n\n"
@@ -450,6 +481,10 @@ final class CanonicalRecordParsersTest
         file_put_contents(
             $tempRoot . '/records/instance/feature-flags.txt',
             "Schema: site-feature-flags-v1\n\nFORUM_APP_VERSION_NOTIFICATION: false\n"
+        );
+        file_put_contents(
+            $tempRoot . '/records/feature-flag-changes/feature-flag-change-20261009120000-ab12cd34.txt',
+            "Record-ID: feature-flag-change-20261009120000-ab12cd34\nCreated-At: 2026-10-09T12:00:00Z\nFlag-Key: FORUM_APP_VERSION_NOTIFICATION\nValue: false\nOperator-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n"
         );
         $repository = new CanonicalRecordRepository($tempRoot);
 
@@ -462,6 +497,7 @@ final class CanonicalRecordParsersTest
         $instance = $repository->loadInstancePublic('records/instance/public.txt');
         $featureFlags = $repository->loadFeatureFlags('records/instance/feature-flags.txt');
         $postReaction = $repository->loadPostReaction('records/post-reactions/post-reaction-20260415153000-ab12cd34.txt');
+        $featureFlagChange = $repository->loadFeatureFlagChange('records/feature-flag-changes/feature-flag-change-20261009120000-ab12cd34.txt');
 
         assertSame('root-001', $post->postId);
         assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $identity->identityId);
@@ -472,6 +508,7 @@ final class CanonicalRecordParsersTest
         assertSame(['flag'], $postReaction->tags);
         assertSame('zenmemes', $instance->headers['Instance-Name']);
         assertSame(['FORUM_APP_VERSION_NOTIFICATION' => false], $featureFlags->values);
+        assertSame('FORUM_APP_VERSION_NOTIFICATION', $featureFlagChange->flagKey);
     }
 
     public function testRepositoryReturnsEmptyFeatureFlagsWhenRecordIsAbsent(): void
@@ -630,6 +667,10 @@ final class CanonicalRecordParsersTest
         assertSame(
             'records/post-reactions/post-reaction-20260415153000-ab12cd34.txt',
             CanonicalPathResolver::postReaction('post-reaction-20260415153000-ab12cd34')
+        );
+        assertSame(
+            'records/feature-flag-changes/feature-flag-change-20261009120000-ab12cd34.txt',
+            CanonicalPathResolver::featureFlagChange('feature-flag-change-20261009120000-ab12cd34')
         );
         assertSame('records/instance/public.txt', CanonicalPathResolver::instancePublic());
         assertSame('records/instance/feature-flags.txt', CanonicalPathResolver::featureFlags());

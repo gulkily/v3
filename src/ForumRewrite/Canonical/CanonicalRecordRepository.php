@@ -18,6 +18,7 @@ final class CanonicalRecordRepository
         private readonly ThreadLabelRecordParser $threadLabelParser = new ThreadLabelRecordParser(),
         private readonly ThreadSubjectRecordParser $threadSubjectParser = new ThreadSubjectRecordParser(),
         private readonly PostReactionRecordParser $postReactionParser = new PostReactionRecordParser(),
+        private readonly FeatureFlagChangeRecordParser $featureFlagChangeParser = new FeatureFlagChangeRecordParser(),
         private readonly InstancePublicRecordParser $instanceParser = new InstancePublicRecordParser(),
         private readonly SiteFeatureFlagsRecordParser $featureFlagsParser = new SiteFeatureFlagsRecordParser(),
     ) {
@@ -222,6 +223,18 @@ final class CanonicalRecordRepository
         $expectedPath = CanonicalPathResolver::postReaction($record->recordId);
         if ($relativePath !== $expectedPath) {
             throw new CanonicalRecordParseException('Post-reaction record path must match Record-ID.');
+        }
+
+        return $record;
+    }
+
+    public function loadFeatureFlagChange(string $relativePath): FeatureFlagChangeRecord
+    {
+        $this->assertPathIsWithinFamily($relativePath, 'records/feature-flag-changes/');
+        $record = $this->featureFlagChangeParser->parse($this->read($relativePath));
+
+        if ($relativePath !== CanonicalPathResolver::featureFlagChange($record->recordId)) {
+            throw new CanonicalRecordParseException('Feature-flag change record path must match Record-ID.');
         }
 
         return $record;
