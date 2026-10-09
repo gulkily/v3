@@ -54,3 +54,16 @@
 - Notes:
   - Legacy snapshots without the update table remain readable because a failed
     optional update is ignored.
+
+## Stage 5 - Surface state and verify the vertical slice
+
+- Changes:
+  - Added saved public-key count to Offline Reading health diagnostics.
+  - Documented the enlarged import's approved-key guarantee, optional
+    content-associated unapproved keys, and cache-retention boundary.
+- Verification:
+  - Focused JavaScript/navigation checks completed in Stage 4; documentation
+    changes were checked with `git diff --check`.
+- Notes:
+  - Production deployment verification remains an operator release step:
+    publish, reconnect online, then confirm supported offline navigation.
