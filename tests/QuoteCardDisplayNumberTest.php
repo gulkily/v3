@@ -25,7 +25,31 @@ final class QuoteCardDisplayNumberTest
         }
 
         assertStringContains('>#42</a>', $board);
+        assertStringContains(
+            'data-role="thread-score" data-score-format="bare-ratio">(<span class="quote-card-score-value quote-card-score-positive" data-role="thread-score-value">5</span>/<span data-role="thread-vote-count">7</span>)</span>',
+            $board,
+        );
         assertStringNotContains('>#thread-20030613104735-qdb-42</a>', $board);
+    }
+
+    public function testQdbScoreMarkupHandlesPositiveNegativeAndNeutralScores(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'Positive quote.', 5, 7);
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104736-qdb-43', 'Negative quote.', -5, 7);
+        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104737-qdb-44', 'Neutral quote.', 0, 7);
+
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $board = $this->render($application, '/latest');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertStringContains('class="quote-card-score-value quote-card-score-positive" data-role="thread-score-value">5</span>', $board);
+        assertStringContains('class="quote-card-score-value quote-card-score-negative" data-role="thread-score-value">-5</span>', $board);
+        assertStringContains('class="quote-card-score-value" data-role="thread-score-value">0</span>', $board);
     }
 
     public function testNonQdbInstanceStillShowsTheFullPostIdUnchanged(): void
@@ -360,7 +384,7 @@ final class QuoteCardDisplayNumberTest
         }
 
         assertStringContains('class="quote-card-permalink" href="/42">#42</a>', $permalink);
-        assertStringContains('data-role="thread-score" data-score-format="bare-ratio">(5/7)</span>', $permalink);
+        assertStringContains('data-role="thread-score" data-score-format="bare-ratio">(<span class="quote-card-score-value quote-card-score-positive" data-role="thread-score-value">5</span>/<span data-role="thread-vote-count">7</span>)</span>', $permalink);
         assertStringContains('<p class="quote-card-body">The quoted body.<br />', $permalink);
         assertStringNotContains('<p class="meta">', $permalink);
         assertStringNotContains('>Reply</a>', $permalink);
@@ -437,15 +461,21 @@ final class QuoteCardDisplayNumberTest
         return (string) ob_get_clean();
     }
 
-    private function writeImportedQuote(string $repositoryRoot, string $postId, string $body): void
+    private function writeImportedQuote(
+        string $repositoryRoot,
+        string $postId,
+        string $body,
+        int $scoreSeed = 5,
+        int $voteCountSeed = 7,
+    ): void
     {
         file_put_contents(
             $repositoryRoot . '/records/posts/' . $postId . '.txt',
             "Post-ID: {$postId}\n"
             . "Created-At: 2003-06-13T10:47:35Z\n"
             . "Board-Tags: general\n"
-            . "Imported-Score-Seed: 5\n"
-            . "Imported-Vote-Count-Seed: 7\n"
+            . "Imported-Score-Seed: {$scoreSeed}\n"
+            . "Imported-Vote-Count-Seed: {$voteCountSeed}\n"
             . "\n{$body}\n"
         );
         $this->runCommand($repositoryRoot, 'git add .');

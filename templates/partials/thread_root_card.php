@@ -64,6 +64,7 @@ $quoteRootPermalinkHref = $quoteRootHasNumber ? '/' . $quoteRootDisplayNumber : 
 $quoteRootScoreTotal = (int) ($thread['score_total'] ?? 0);
 $quoteRootVoteCount = (int) ($thread['vote_count'] ?? 0);
 $quoteRootScoreSignClass = $quoteRootScoreTotal > 0 ? 'quote-card-score-positive' : ($quoteRootScoreTotal < 0 ? 'quote-card-score-negative' : '');
+$quoteRootScoreValueClass = 'quote-card-score-value' . ($quoteRootScoreSignClass === '' ? '' : ' ' . $quoteRootScoreSignClass);
 $viewerHasUpvoted = (bool) ($viewerHasUpvoted ?? false);
 $viewerHasDownvoted = (bool) ($viewerHasDownvoted ?? false);
 $voteCaptionPair = is_array($voteCaptionPair ?? null) ? $voteCaptionPair : null;
@@ -83,7 +84,7 @@ if (!$metaVisible) {
 <?php if ($isQdbQuoteRoot): ?>
   <p class="quote-card-header">
     <a class="quote-card-permalink" href="<?= $e($quoteRootPermalinkHref) ?>">#<?= $e($quoteRootDisplayNumber) ?></a>
-    <span class="meta quote-card-score <?= $e($quoteRootScoreSignClass) ?>" data-role="thread-score" data-score-format="bare-ratio">(<?= $quoteRootScoreTotal ?>/<?= $quoteRootVoteCount ?>)</span>
+    <span class="meta quote-card-score" data-role="thread-score" data-score-format="bare-ratio">(<span class="<?= $e($quoteRootScoreValueClass) ?>" data-role="thread-score-value"><?= $quoteRootScoreTotal ?></span>/<span data-role="thread-vote-count"><?= $quoteRootVoteCount ?></span>)</span>
   </p>
   <p class="quote-card-body"><?= $br($postBody) ?></p>
 <?php else: ?>

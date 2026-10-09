@@ -69,12 +69,25 @@ add search/filter toolbar (search input + status chips: All/Enabled/Overridden/L
 to /tools/feature-flags/ — deferred from the layout/badges/grouping redesign,
 see docs/plans/feature_flags_redesign_step2/3_*.md
 
-merge agent reply queue into task queue
-
 redesign the offline mode indicator to not take up extra vertical space (probably top corner?)
 	also, make it link to userful pages like /offline/
 
 plan/features for dealing with duplicate related items
 	how to merge duplicate threads, posts, and comments
 
+general URL canonicalization
+=============================
+beyond the narrow per-provider tracking-param strip shipped for mitrapclub
+media-embed cards (docs/plans/mitrapclub_media_embeds_step2/3_*.md), a
+general-purpose "canonicalize any URL" cleanup is its own open-ended feature:
+	strip tracking params for arbitrary/unknown providers, not just a fixed
+		per-provider allowlist
+	follow redirects to their final destination
+	apply wherever URLs are displayed, not just inside media-embed cards
+	needs its own Step 1 given the redirect-following/unknown-provider
+		design questions
+
+stack forte panes vertically for mobile
+
+allow offline content for unauthenticated users
 

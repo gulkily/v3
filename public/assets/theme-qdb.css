@@ -92,11 +92,15 @@
   font-size: 0.8rem;
 }
 
-:root[data-theme="qdb"] .quote-card-score-positive {
+:root[data-theme="qdb"] .quote-card-score-value {
+  font-weight: 700;
+}
+
+:root[data-theme="qdb"] .quote-card-score-value.quote-card-score-positive {
   color: var(--status-ok);
 }
 
-:root[data-theme="qdb"] .quote-card-score-negative {
+:root[data-theme="qdb"] .quote-card-score-value.quote-card-score-negative {
   color: var(--status-error);
 }
 
