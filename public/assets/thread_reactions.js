@@ -3,6 +3,8 @@
   const pendingReactionOperations = new Set();
   const boundThreadRoots = new WeakSet();
   const boundPostRoots = new WeakSet();
+  const reactionStateVersion = 1;
+  const reactionMarkerLimit = 1000;
 
   function browserPerformance() {
     return typeof window !== "undefined" && window.performance && typeof window.performance.mark === "function"
@@ -249,6 +251,120 @@
     node.textContent = "";
     node.removeAttribute("data-kind");
     node.hidden = true;
+  }
+
+  function reactionStorage() {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        return window.localStorage;
+      }
+      if (typeof localStorage !== "undefined") {
+        return localStorage;
+      }
+    } catch (error) {
+    }
+
+    return null;
+  }
+
+  function reactionSiteNamespace() {
+    const runtime = typeof window !== "undefined" ? window.forumBrowserRuntime : null;
+    const namespace = runtime && typeof runtime.namespace === "string" ? runtime.namespace : "";
+
+    return /^[a-z][a-z0-9-]*$/.test(namespace) ? namespace : "";
+  }
+
+  function reactionIdentityId(candidate) {
+    const identityId = String(candidate || "").trim().toLowerCase();
+
+    return identityId === "" ? "" : identityId;
+  }
+
+  function currentReactionIdentityId() {
+    try {
+      const helper = typeof window !== "undefined" ? window.__forumBrowserIdentity : null;
+      if (!helper || typeof helper.currentAuthorIdentityId !== "function") {
+        return "";
+      }
+
+      return reactionIdentityId(helper.currentAuthorIdentityId());
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function reactionStorageKey(namespace, identityId) {
+    return `forum-reaction-state-v${reactionStateVersion}:${namespace}:${encodeURIComponent(identityId)}`;
+  }
+
+  function reactionMarker(kind, id, tag) {
+    const targetKind = String(kind || "");
+    const targetId = String(id || "");
+    const reactionTag = String(tag || "");
+
+    if (!/^(thread|post)$/.test(targetKind) || targetId === "" || reactionTag === "") {
+      return null;
+    }
+
+    return { kind: targetKind, id: targetId, tag: reactionTag };
+  }
+
+  function reactionMarkerKey(marker) {
+    return JSON.stringify([marker.kind, marker.id, marker.tag]);
+  }
+
+  function reactionMarkersForIdentity(identityId) {
+    const namespace = reactionSiteNamespace();
+    const normalizedIdentityId = reactionIdentityId(identityId);
+    const storage = reactionStorage();
+    if (namespace === "" || normalizedIdentityId === "" || !storage) {
+      return [];
+    }
+
+    try {
+      const value = storage.getItem(reactionStorageKey(namespace, normalizedIdentityId));
+      const parsed = JSON.parse(value || "null");
+      if (!parsed || parsed.version !== reactionStateVersion || !Array.isArray(parsed.markers)) {
+        return [];
+      }
+
+      const uniqueMarkers = new Map();
+      parsed.markers.slice(-reactionMarkerLimit).forEach(function (rawMarker) {
+        const marker = rawMarker && reactionMarker(rawMarker.kind, rawMarker.id, rawMarker.tag);
+        if (marker) {
+          uniqueMarkers.set(reactionMarkerKey(marker), marker);
+        }
+      });
+
+      return Array.from(uniqueMarkers.values());
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function rememberReactionMarker(kind, id, tag, identityId) {
+    const marker = reactionMarker(kind, id, tag);
+    const namespace = reactionSiteNamespace();
+    const normalizedIdentityId = reactionIdentityId(identityId || currentReactionIdentityId());
+    const storage = reactionStorage();
+    if (!marker || namespace === "" || normalizedIdentityId === "" || !storage) {
+      return false;
+    }
+
+    try {
+      const markers = reactionMarkersForIdentity(normalizedIdentityId);
+      const uniqueMarkers = new Map(markers.map(function (existingMarker) {
+        return [reactionMarkerKey(existingMarker), existingMarker];
+      }));
+      uniqueMarkers.set(reactionMarkerKey(marker), marker);
+      storage.setItem(reactionStorageKey(namespace, normalizedIdentityId), JSON.stringify({
+        version: reactionStateVersion,
+        markers: Array.from(uniqueMarkers.values()).slice(-reactionMarkerLimit),
+      }));
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   function parseResponseValue(text, key) {
