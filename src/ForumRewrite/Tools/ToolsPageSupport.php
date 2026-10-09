@@ -23,8 +23,7 @@ final class ToolsPageSupport
      * array. `standalone` marks pages that render as full-page views with
      * no sub-nav of their own (Activity, Forte) - they still appear in the
      * index and (set apart) in the sub-nav, but never receive
-     * `toolNavOptions`. Account is intentionally absent: it lives in the
-     * main top nav already.
+     * `toolNavOptions`.
      *
      * @return list<array{key:string,label:string,href:string,description:string,standalone:bool}>
      */
@@ -57,6 +56,13 @@ final class ToolsPageSupport
                 'label' => 'Platform Docs',
                 'href' => '/docs/',
                 'description' => 'How the site is built, operated, and extended, with repository source paths.',
+                'standalone' => true,
+            ],
+            [
+                'key' => 'account',
+                'label' => 'Account',
+                'href' => '/account/key/',
+                'description' => 'Manage this browser\'s keypair, username, and identity.',
                 'standalone' => true,
             ],
             [
