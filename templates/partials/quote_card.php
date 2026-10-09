@@ -9,11 +9,15 @@ $viewerHasFlagged = isset($viewerFlaggedPostIds[$quoteId]);
 $scoreTotal = (int) ($thread['score_total'] ?? 0);
 $voteCount = (int) ($thread['vote_count'] ?? 0);
 $scoreSignClass = $scoreTotal > 0 ? 'quote-card-score-positive' : ($scoreTotal < 0 ? 'quote-card-score-negative' : '');
+$voteCaptionPair = is_array($voteCaptionPair ?? null) ? $voteCaptionPair : null;
+$upvote = is_array($voteCaptionPair['positive'] ?? null) ? $voteCaptionPair['positive'] : ['tag' => 'upvote', 'label' => '+'];
+$downvote = is_array($voteCaptionPair['negative'] ?? null) ? $voteCaptionPair['negative'] : ['tag' => 'downvote', 'label' => '-'];
+$scoreValueClass = 'quote-card-score-value' . ($scoreSignClass === '' ? '' : ' ' . $scoreSignClass);
 ?>
 <article class="card post-card quote-card" data-thread-reactions-root data-thread-id="<?= $e($quoteId) ?>" data-post-id="<?= $e($quoteId) ?>">
   <p class="quote-card-header">
     <a class="quote-card-permalink" href="<?= $e($permalinkHref) ?>">#<?= $e($displayNumber) ?></a>
-    <span class="meta quote-card-score <?= $e($scoreSignClass) ?>" data-role="thread-score" data-score-format="bare-ratio">(<?= $scoreTotal ?>/<?= $voteCount ?>)</span>
+    <span class="meta quote-card-score" data-role="thread-score" data-score-format="bare-ratio">(<span class="<?= $e($scoreValueClass) ?>" data-role="thread-score-value"><?= $scoreTotal ?></span>/<span data-role="thread-vote-count"><?= $voteCount ?></span>)</span>
   </p>
   <p class="quote-card-body"><?= $br($thread['root_post_body']) ?></p>
   <div class="button-row button-row-natural quote-card-actions">
@@ -21,22 +25,22 @@ $scoreSignClass = $scoreTotal > 0 ? 'quote-card-score-positive' : ($scoreTotal <
       type="button"
       class="thread-reaction-button quote-card-vote-button"
       data-action="apply-thread-tag"
-      data-tag="upvote"
-      data-applied-label="+"
-      aria-label="Upvote this quote"
+      data-tag="<?= $e($upvote['tag']) ?>"
+      data-applied-label="<?= $e($upvote['label']) ?>"
+      aria-label="Upvote this quote: <?= $e($upvote['label']) ?>"
       aria-pressed="<?= $viewerHasUpvoted ? 'true' : 'false' ?>"
 <?= $viewerHasUpvoted ? ' disabled="disabled"' : '' ?>
-    >+</button>
+    >↑ <?= $e($upvote['label']) ?></button>
     <button
       type="button"
       class="thread-reaction-button quote-card-vote-button"
       data-action="apply-thread-tag"
-      data-tag="downvote"
-      data-applied-label="-"
-      aria-label="Downvote this quote"
+      data-tag="<?= $e($downvote['tag']) ?>"
+      data-applied-label="<?= $e($downvote['label']) ?>"
+      aria-label="Downvote this quote: <?= $e($downvote['label']) ?>"
       aria-pressed="<?= $viewerHasDownvoted ? 'true' : 'false' ?>"
 <?= $viewerHasDownvoted ? ' disabled="disabled"' : '' ?>
-    >-</button>
+    >↓ <?= $e($downvote['label']) ?></button>
     <button
       type="button"
       class="thread-reaction-button quote-card-vote-button"

@@ -7,6 +7,7 @@ namespace ForumRewrite\Http;
 use ForumRewrite\Agent\AgentResponseTask;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ViewerTagLookup;
+use ForumRewrite\Qdb\QdbVoteCaptionCatalog;
 use ForumRewrite\Support\ThreadTitle;
 
 /**
@@ -89,10 +90,20 @@ final class ThreadAndPostPageController
             && $this->viewerHasThreadTag($threadId, 'like', (string) $viewerProfile['identity_id']);
         $viewerHasUpvoted = false;
         $viewerHasDownvoted = false;
+        $voteCaptionPair = null;
         if ($viewerProfile !== null && \ForumRewrite\SiteConfig::siteName() === 'qdb') {
             $viewerIdentityId = (string) $viewerProfile['identity_id'];
             $viewerHasUpvoted = isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'upvote', $viewerIdentityId)[$threadId]);
             $viewerHasDownvoted = isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'downvote', $viewerIdentityId)[$threadId]);
+        }
+        if (\ForumRewrite\SiteConfig::siteName() === 'qdb') {
+            $catalog = QdbVoteCaptionCatalog::forReadModel($this->routeServices->databasePath());
+            $voteCaptionPair = $catalog->selectActivePair();
+            if ($viewerProfile !== null) {
+                foreach ($catalog->knownTags() as $tag) {
+                    $viewerHasUpvoted = $viewerHasUpvoted || isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], $tag, (string) $viewerProfile['identity_id'])[$threadId]);
+                }
+            }
         }
         $posts = ($this->fetchThreadPosts)($threadId);
         $viewerPostFlags = $viewerProfile !== null
@@ -121,6 +132,7 @@ final class ThreadAndPostPageController
                 'viewerHasLiked' => $viewerHasLiked,
                 'viewerHasUpvoted' => $viewerHasUpvoted,
                 'viewerHasDownvoted' => $viewerHasDownvoted,
+                'voteCaptionPair' => $voteCaptionPair,
                 'viewerPostFlags' => $viewerPostFlags,
                 'viewerPostLikes' => $viewerPostLikes,
                 'createdPostId' => $createdPostId,

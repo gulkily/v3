@@ -64,8 +64,12 @@ $quoteRootPermalinkHref = $quoteRootHasNumber ? '/' . $quoteRootDisplayNumber : 
 $quoteRootScoreTotal = (int) ($thread['score_total'] ?? 0);
 $quoteRootVoteCount = (int) ($thread['vote_count'] ?? 0);
 $quoteRootScoreSignClass = $quoteRootScoreTotal > 0 ? 'quote-card-score-positive' : ($quoteRootScoreTotal < 0 ? 'quote-card-score-negative' : '');
+$quoteRootScoreValueClass = 'quote-card-score-value' . ($quoteRootScoreSignClass === '' ? '' : ' ' . $quoteRootScoreSignClass);
 $viewerHasUpvoted = (bool) ($viewerHasUpvoted ?? false);
 $viewerHasDownvoted = (bool) ($viewerHasDownvoted ?? false);
+$voteCaptionPair = is_array($voteCaptionPair ?? null) ? $voteCaptionPair : null;
+$upvote = is_array($voteCaptionPair['positive'] ?? null) ? $voteCaptionPair['positive'] : ['tag' => 'upvote', 'label' => '+'];
+$downvote = is_array($voteCaptionPair['negative'] ?? null) ? $voteCaptionPair['negative'] : ['tag' => 'downvote', 'label' => '-'];
 $metaVisible = (bool) ($metaVisible ?? true);
 $rootTimeLabel = '';
 if (!$metaVisible) {
@@ -80,7 +84,7 @@ if (!$metaVisible) {
 <?php if ($isQdbQuoteRoot): ?>
   <p class="quote-card-header">
     <a class="quote-card-permalink" href="<?= $e($quoteRootPermalinkHref) ?>">#<?= $e($quoteRootDisplayNumber) ?></a>
-    <span class="meta quote-card-score <?= $e($quoteRootScoreSignClass) ?>" data-role="thread-score" data-score-format="bare-ratio">(<?= $quoteRootScoreTotal ?>/<?= $quoteRootVoteCount ?>)</span>
+    <span class="meta quote-card-score" data-role="thread-score" data-score-format="bare-ratio">(<span class="<?= $e($quoteRootScoreValueClass) ?>" data-role="thread-score-value"><?= $quoteRootScoreTotal ?></span>/<span data-role="thread-vote-count"><?= $quoteRootVoteCount ?></span>)</span>
   </p>
   <p class="quote-card-body"><?= $br($postBody) ?></p>
 <?php else: ?>
@@ -148,22 +152,22 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
       type="button"
       class="thread-reaction-button quote-card-vote-button"
       data-action="apply-thread-tag"
-      data-tag="upvote"
-      data-applied-label="+"
-      aria-label="Upvote this quote"
+      data-tag="<?= $e($upvote['tag']) ?>"
+      data-applied-label="<?= $e($upvote['label']) ?>"
+      aria-label="Upvote this quote: <?= $e($upvote['label']) ?>"
       aria-pressed="<?= $viewerHasUpvoted ? 'true' : 'false' ?>"
 <?= $viewerHasUpvoted ? ' disabled="disabled"' : '' ?>
-    >+</button>
+    >↑ <?= $e($upvote['label']) ?></button>
     <button
       type="button"
       class="thread-reaction-button quote-card-vote-button"
       data-action="apply-thread-tag"
-      data-tag="downvote"
-      data-applied-label="-"
-      aria-label="Downvote this quote"
+      data-tag="<?= $e($downvote['tag']) ?>"
+      data-applied-label="<?= $e($downvote['label']) ?>"
+      aria-label="Downvote this quote: <?= $e($downvote['label']) ?>"
       aria-pressed="<?= $viewerHasDownvoted ? 'true' : 'false' ?>"
 <?= $viewerHasDownvoted ? ' disabled="disabled"' : '' ?>
-    >-</button>
+    >↓ <?= $e($downvote['label']) ?></button>
     <button
       type="button"
       class="thread-reaction-button quote-card-vote-button"

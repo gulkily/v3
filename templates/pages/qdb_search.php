@@ -17,6 +17,7 @@
     'viewerUpvotedThreadIds' => $viewerUpvotedThreadIds ?? [],
     'viewerDownvotedThreadIds' => $viewerDownvotedThreadIds ?? [],
     'viewerFlaggedPostIds' => $viewerFlaggedPostIds ?? [],
+    'voteCaptionPair' => $voteCaptionPair ?? null,
 ]), 1) ?>
 <?php endforeach; ?>
 <?php if (!empty($pagination)): ?>

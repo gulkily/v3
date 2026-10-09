@@ -80,6 +80,11 @@ final class RouteServices
         return (new ReadModelConnection($this->databasePath))->open();
     }
 
+    public function databasePath(): string
+    {
+        return $this->databasePath;
+    }
+
     /**
      * Memoized per request (unlike pdo()/writer()) since ActivityService
      * owns request-scoped caches (activityCommitManifestCache,

@@ -6004,6 +6004,95 @@ NODE;
         assertSame('Upvoted', $result['buttonText']);
     }
 
+    public function testThreadReactionRefreshesStructuredQdbScoreWithoutReplacingTheRatio(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+let clickHandler = null;
+
+class TokenList {
+  constructor(tokens) { this.tokens = new Set(tokens); }
+  add(token) { this.tokens.add(token); }
+  remove(...tokens) { tokens.forEach((token) => this.tokens.delete(token)); }
+  values() { return Array.from(this.tokens).sort(); }
+}
+
+class HTMLButtonElement {
+  constructor() {
+    this.disabled = false;
+    this.textContent = 'Upvote';
+    this.attributes = {};
+  }
+  getAttribute(name) {
+    if (name === 'data-tag') return 'upvote';
+    if (name === 'data-applied-label') return 'Upvoted';
+    return this.attributes[name] || null;
+  }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  closest(selector) { return selector === '[data-action="apply-thread-tag"]' ? this : null; }
+}
+
+const button = new HTMLButtonElement();
+const scoreValueNode = { textContent: '1', classList: new TokenList(['quote-card-score-positive']) };
+const voteCountNode = { textContent: '7' };
+const scoreNode = {
+  get textContent() { return `(${scoreValueNode.textContent}/${voteCountNode.textContent})`; },
+  set textContent(value) { this.replacedText = value; },
+  getAttribute(name) { return name === 'data-score-format' ? 'bare-ratio' : ''; },
+  querySelector(selector) {
+    if (selector === '[data-role="thread-score-value"]') return scoreValueNode;
+    if (selector === '[data-role="thread-vote-count"]') return voteCountNode;
+    return null;
+  }
+};
+const feedbackNode = { textContent: '', hidden: true, setAttribute(name, value) { this[name] = value; } };
+const root = {
+  getAttribute(name) { return name === 'data-thread-id' ? 'root-001' : ''; },
+  querySelector(selector) {
+    if (selector === '[data-role="thread-score"]') return scoreNode;
+    if (selector === '[data-role="thread-reaction-feedback"]') return feedbackNode;
+    return null;
+  },
+  addEventListener(type, handler) { if (type === 'click') clickHandler = handler; }
+};
+
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = { __forumBrowserIdentity: { async ensureActionIdentity() {} } };
+global.fetch = async function() {
+  return {
+    headers: { get() { return ''; } },
+    async text() { return 'status=ok\nscore_total=-1\nvote_count=8\nwrote_record=yes\nviewer_is_approved=yes\n'; }
+  };
+};
+global.document = {
+  addEventListener(type, handler) { if (type === 'DOMContentLoaded') handler(); },
+  querySelector(selector) { return selector === '[data-thread-reactions-root]' ? root : null; }
+};
+
+vm.runInThisContext(source);
+clickHandler({ target: button, preventDefault() {} }).then(() => {
+  process.stdout.write(JSON.stringify({
+    score: scoreNode.textContent,
+    scoreValue: scoreValueNode.textContent,
+    voteCount: voteCountNode.textContent,
+    classes: scoreValueNode.classList.values(),
+    replacedText: scoreNode.replacedText || ''
+  }));
+});
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame('(-1/8)', $result['score']);
+        assertSame('-1', $result['scoreValue']);
+        assertSame('8', $result['voteCount']);
+        assertSame(['quote-card-score-negative'], $result['classes']);
+        assertSame('', $result['replacedText']);
+    }
+
     public function testThreadReactionAppliesOptimisticStateBeforeFetchResolves(): void
     {
         $script = <<<'NODE'
