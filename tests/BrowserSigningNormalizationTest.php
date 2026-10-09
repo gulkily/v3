@@ -7652,6 +7652,7 @@ setTimeout(() => {
     generateCalled,
     fingerprint: storage.forum_pki_fingerprint || '',
     published: storage.forum_pki_published_fingerprint || '',
+    readiness: window.__forumBrowserIdentity.storedVoteIdentityReadinessState(),
     fetchUrls
   }));
 }, 0);
@@ -7666,6 +7667,7 @@ NODE;
         assertSame(false, $result['generateCalled']);
         assertSame('ABC123', $result['fingerprint']);
         assertSame('ABC123', $result['published']);
+        assertSame('ready', $result['readiness']);
         assertSame(
             [
                 '/api/get_profile?profile_slug=openpgp-abc123',

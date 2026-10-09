@@ -2069,11 +2069,12 @@
       return false;
     }
 
-    return ensureReadyIdentity(root, null, {
+    await ensureReadyIdentity(root, null, {
       existingIdentityOnly: true,
       verifyPublishedIdentity: true,
       timing: timing,
     });
+    return true;
   }
 
   function storedVoteIdentityReadinessState() {

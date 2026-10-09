@@ -38,3 +38,16 @@
   - `./v3 test BrowserSigningNormalizationTest::testIdentityPrewarmFullyReadiesStoredVoteIdentity BrowserSigningNormalizationTest::testIdentityPrewarmWithoutStoredKeypairDoesNotCreateOrPublishIdentity BrowserSigningNormalizationTest::testPostReactionAppliesOptimisticStateBeforeFetchResolvesAndHidesAfterResponse BrowserSigningNormalizationTest::testPostReactionServerFailureRollsBackOptimisticState` — 4 passed.
 - Notes:
   - Reaction writes and their existing pending/rollback behavior remain unchanged; readiness affects only the prerequisite and feedback timing.
+
+## Stage 4 - Release verification and recovery regression
+
+- Changes:
+  - Corrected successful existing-identity prewarm to report the ready state consumed by reaction feedback.
+  - Added regression coverage for that ready-state handoff.
+- Verification:
+  - `node --check public/assets/browser_signing.js public/assets/thread_reactions.js public/assets/lazy_compose_signing.js`
+  - `php -l tests/BrowserSigningNormalizationTest.php && php -l tests/LazyComposeSigningTest.php`
+  - `./v3 test BrowserSigningNormalizationTest LazyComposeSigningTest LocalAppSmokeTest::testAssetFingerprintPathsUseContentHashFilenames LocalAppSmokeTest::testApplicationRendersCoreRoutes QuoteCardDisplayNumberTest::testQdbListingPagesLoadTheVoteButtonAndIdentityLoaderScripts` — 80 passed.
+  - A full `./v3 test` run was started twice, but this environment ends long-running child commands without returning a terminal result; the focused suite above covers the changed browser logic, lazy asset loading, and application asset rendering.
+- Notes:
+  - No database, endpoint, template, or no-JavaScript behavior changed.
