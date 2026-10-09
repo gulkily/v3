@@ -1,0 +1,25 @@
+<?php
+$isInbox = $mailbox === 'inbox';
+$counterpartLabel = $isInbox ? 'From' : 'To';
+?>
+<section class="stack">
+  <article class="card">
+    <h1><?= $isInbox ? 'Inbox' : 'Sent Messages' ?></h1>
+    <p><a href="/messages/inbox"<?= $isInbox ? ' aria-current="page"' : '' ?>>Inbox</a> · <a href="/messages/sent"<?= !$isInbox ? ' aria-current="page"' : '' ?>>Sent</a></p>
+  </article>
+
+<?php if ($messages === []): ?>
+  <article class="card">
+    <p><?= $isInbox ? 'No private messages received.' : 'No private messages sent.' ?></p>
+  </article>
+<?php else: ?>
+<?php foreach ($messages as $message): ?>
+<?php $counterpart = $isInbox ? (string) $message['sender_username_token'] : (string) $message['recipient_username_token']; ?>
+  <article class="card" data-private-message-id="<?= $e($message['message_id']) ?>">
+    <p><strong><?= $counterpartLabel ?>:</strong> <a href="/user/<?= $e($counterpart) ?>"><?= $e($counterpart) ?></a></p>
+    <p><strong>Sent:</strong> <?= $e($message['created_at']) ?></p>
+    <p class="meta">Encrypted message <?= $e($message['message_id']) ?></p>
+  </article>
+<?php endforeach; ?>
+<?php endif; ?>
+</section>

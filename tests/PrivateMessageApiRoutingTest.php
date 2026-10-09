@@ -16,5 +16,9 @@ final class PrivateMessageApiRoutingTest
         assertStringContains('privateMessageApiController()->inbox($method, $query)', $source);
         assertStringContains('privateMessageApiController()->sent($method, $query)', $source);
         assertStringContains('privateMessageApiController()->recipientKeys($method, $query)', $source);
+        assertStringContains("'/messages/inbox'", $source);
+        assertStringContains("'/messages/sent'", $source);
+        assertStringContains('privateMessagePageController()->inbox($method)', $source);
+        assertStringContains('privateMessagePageController()->sent($method)', $source);
     }
 }

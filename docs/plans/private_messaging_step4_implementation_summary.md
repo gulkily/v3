@@ -86,3 +86,20 @@
 - Notes:
   - The composer targets the approved username group represented by the viewed profile, so all of that composite user's approved keys receive the envelope.
   - Stage 6 has not started. Per user direction, implementation stops here for review.
+
+## Stage 6 - List Inbox and Sent
+
+- Changes:
+  - Added authenticated, no-store Inbox and Sent routes at `/messages/inbox` and `/messages/sent`.
+  - Added authenticated Messages navigation and mailbox presentation that exposes only counterpart username, timestamp, and message ID; envelopes are not rendered into HTML.
+  - Reused the ownership-scoped mailbox service and existing authenticated list APIs for the mailbox contract.
+- Verification:
+  - `php -l src/ForumRewrite/Application.php`
+  - `php -l src/ForumRewrite/Http/PrivateMessagePageController.php`
+  - `php -l templates/pages/private_messages.php`
+  - `php -l tests/PrivateMessagePageControllerTest.php`
+  - `php tests/run.php PrivateMessagePageControllerTest PrivateMessageMailboxServiceTest PrivateMessageApiRoutingTest PrivateMessageComposerTest` — 7 passed.
+  - The page-controller test confirms recipient Inbox and sender Sent views see the fixture metadata, a third approved user sees neither, and ciphertext does not render.
+- Notes:
+  - Message bodies remain intentionally unreadable at this stage; Stage 7 adds local envelope decryption and signature verification.
+  - Stage 7 has not started. Per user direction, implementation stops here for review.

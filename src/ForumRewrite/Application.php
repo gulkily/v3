@@ -29,6 +29,7 @@ use ForumRewrite\Http\OfflineReaderController;
 use ForumRewrite\Http\PostWorkflowApiController;
 use ForumRewrite\Http\PlatformDocsController;
 use ForumRewrite\Http\PrivateMessageApiController;
+use ForumRewrite\Http\PrivateMessagePageController;
 use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Http\SourceFileController;
@@ -120,7 +121,7 @@ final class Application
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
         if ($this->approvedMembersOnlyEnabled()
-            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys'], true)
+            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
         ) {
             $this->startViewerSession();
         } elseif ($this->shouldResumeViewerSession($method, $path, $query)) {
@@ -210,6 +211,16 @@ final class Application
 
         if ($path === '/api/private_messages/recipient_keys') {
             $this->privateMessageApiController()->recipientKeys($method, $query);
+            return;
+        }
+
+        if ($path === '/messages/inbox') {
+            $this->privateMessagePageController()->inbox($method);
+            return;
+        }
+
+        if ($path === '/messages/sent') {
+            $this->privateMessagePageController()->sent($method);
             return;
         }
 
@@ -1685,6 +1696,7 @@ final class Application
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',
+            '/messages/inbox', '/messages/sent',
             '/account/key', '/account/key/', '/invites', '/invites/',
             '/api', '/api/', '/api/version', '/api/list_index',
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username_claim_cta',
@@ -1890,6 +1902,15 @@ final class Application
     private function privateMessageApiController(): PrivateMessageApiController
     {
         return new PrivateMessageApiController(
+            $this->routeServices(),
+            $this->authenticatedViewerProfile(...),
+            $this->privateMessageStore(...),
+        );
+    }
+
+    private function privateMessagePageController(): PrivateMessagePageController
+    {
+        return new PrivateMessagePageController(
             $this->routeServices(),
             $this->authenticatedViewerProfile(...),
             $this->privateMessageStore(...),
