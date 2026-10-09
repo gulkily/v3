@@ -20,6 +20,17 @@ final class MediaEmbedPreviewCacheStore
         $this->ensureSchema();
     }
 
+    public static function openAt(string $projectRoot): self
+    {
+        $path = MediaEmbedPreviewDatabaseConfig::path($projectRoot);
+        $directory = dirname($path);
+        if ($directory !== '' && !is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
+            throw new \RuntimeException('Media embed preview database directory is not writable: ' . $directory);
+        }
+
+        return new self(new PDO('sqlite:' . $path));
+    }
+
     /**
      * @return ?array{title: ?string, thumbnailUrl: ?string, fetchedAt: string}
      */

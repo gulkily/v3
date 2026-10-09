@@ -46,3 +46,18 @@
   - `php tests/run.php` (full suite) — 890 run, 888 passed; same two pre-existing failures as every prior stage, no new ones.
 - Notes:
   - The endpoint is deliberately unauthenticated (any viewer's browser is expected to hit it via a beacon) but bounded: the fetch target always comes from a URL `MediaEmbedDetector` itself validated, never an arbitrary one, and repeat hits on the same ID cost a cheap cache lookup, not a repeated fetch.
+
+## Stage 5 - Card renderer: expando/iframe and preview-or-beacon
+
+- Changes:
+  - `MediaEmbedRenderer` gained an `?MediaEmbedPreviewCacheStore $previewCacheStore = null` constructor dependency and a third `render()` parameter, `bool $inlinePlayerEnabled = false` (default preserves Cycle 5 behavior exactly for any caller that hasn't been updated).
+  - YouTube match + inline-player enabled: renders a collapsed `<details>/<summary>Watch on YouTube</summary>` wrapping an `<iframe>` with `src=""` and the real target in `data-embed-src` (`https://www.youtube-nocookie.com/embed/{embedId}`), plus hardcoded `sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"`, `referrerpolicy="strict-origin-when-cross-origin"`, and `loading="lazy"`.
+  - Instagram match + inline-player enabled: reads `previewCacheStore` (read-only, never fetches). A warm cache entry (title + thumbnail both present) renders a linked thumbnail/title preview card. A cold cache, or no cache store at all, falls back to Cycle 5's plain card; a cold cache (store present but no row yet) additionally emits a hidden, eager-loading `<img>` beacon pointing at Stage 4's warm endpoint with the match's tracking-stripped `displayUrl`.
+  - Added `public/assets/media_embed_inline_player.js` (~15 lines): a capture-phase `toggle` listener on `document` that, only when a `<details>` opens, copies its iframe's `data-embed-src` into `src` if not already set — the mechanism that makes "nothing loads until expanded" actually true, since a closed `<details>` alone doesn't reliably stop an iframe from loading across all browsers.
+  - Extended `tests/MediaEmbedRendererTest.php` with 5 new cases (inline-player-off byte-identical to the plain-card path; YouTube expando markup; Instagram with no store; Instagram cold cache + beacon; Instagram warm cache + no beacon). Added `tests/MediaEmbedInlinePlayerScriptTest.php` (`node --check` syntax test, mirroring the existing `feature_flags.js` test, plus a content-contains check for the key mechanics).
+- Verification:
+  - `php tests/run.php MediaEmbedRendererTest MediaEmbedInlinePlayerScriptTest MediaEmbedPreviewControllerTest` — 17 run, 17 passed.
+  - `php tests/run.php` (full suite) — 897 run, 895 passed; same two pre-existing failures as every prior stage, no new ones.
+- Notes:
+  - No CSS was added — same minimal posture as Cycle 5 (and `event_block.php` before it), relying on native `<details>`/`<img>`/`<a>` rendering.
+  - Also promoted the mkdir+PDO-open logic duplicated between Stage 4's controller and this stage's renderer into a single `MediaEmbedPreviewCacheStore::openAt(string $projectRoot): self` static factory, used by both — a small dedup, not a behavior change.

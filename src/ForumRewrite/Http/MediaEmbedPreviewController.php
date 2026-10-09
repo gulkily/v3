@@ -9,9 +9,6 @@ use Exception;
 use ForumRewrite\View\InstagramPagePreviewFetcher;
 use ForumRewrite\View\MediaEmbedDetector;
 use ForumRewrite\View\MediaEmbedPreviewCacheStore;
-use ForumRewrite\View\MediaEmbedPreviewDatabaseConfig;
-use PDO;
-use RuntimeException;
 
 /**
  * Backs the client-triggered beacon that warms the Instagram preview cache
@@ -92,16 +89,6 @@ final class MediaEmbedPreviewController
 
     private function cacheStore(): MediaEmbedPreviewCacheStore
     {
-        if ($this->cacheStore !== null) {
-            return $this->cacheStore;
-        }
-
-        $path = MediaEmbedPreviewDatabaseConfig::path($this->projectRoot);
-        $directory = dirname($path);
-        if ($directory !== '' && !is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
-            throw new RuntimeException('Media embed preview database directory is not writable: ' . $directory);
-        }
-
-        return $this->cacheStore = new MediaEmbedPreviewCacheStore(new PDO('sqlite:' . $path));
+        return $this->cacheStore ??= MediaEmbedPreviewCacheStore::openAt($this->projectRoot);
     }
 }
