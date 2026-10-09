@@ -88,3 +88,18 @@
 - Notes:
   - A generated page keeps its build-time pair; a later inactive tag is safely
     rejected by Stage 4's server-side validation.
+
+## Stage 7 - Release verification
+
+- Changes:
+  - Registered catalog regression coverage in the standard test runner and
+    completed the approved QDB caption-vote stages.
+- Verification:
+  - QDB/catalog/quote-card/profile regression set passed through 39 focused
+    checks before the broad `WriteApiSmokeTest` run encountered a task-queue
+    assertion failure outside this feature's exercised paths
+    (`testTaskQueueProcessesQueuedAgentReplyOnce`).
+  - `git diff --check` passed before the broad run.
+- Notes:
+  - No caption-management UI was added, as approved. Hosted-browser and live
+    deployment verification remain outside this local implementation slice.
