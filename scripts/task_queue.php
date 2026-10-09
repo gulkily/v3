@@ -246,7 +246,9 @@ try {
                         throw new RuntimeException('Offline snapshot publication is unavailable while approved-members-only is enabled.');
                     }
 
-                    (new OfflineSnapshotPublisher($staticHtmlRoot))->publish($databasePath);
+                    $publisher = new OfflineSnapshotPublisher($staticHtmlRoot);
+                    $publisher->publishUpdate($databasePath);
+                    $publisher->publish($databasePath);
                 },
                 static function (array $task) use ($projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot): void {
                     $target = AgentReplyTask::targetFromDeduplicationKey((string) ($task['deduplication_key'] ?? ''));

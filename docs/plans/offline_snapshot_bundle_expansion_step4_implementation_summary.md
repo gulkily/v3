@@ -27,3 +27,16 @@
   - `php tests/run.php OfflineSnapshotPublisherTest PublicOfflineSnapshotManifestTest PublicOfflineSnapshotBuilderTest` passed: 5 run, 5 passed.
 - Notes:
   - Queue priority, public serving, and client import remain staged work.
+
+## Stage 3 - Prioritize fresh updates and coalesce base work
+
+- Changes:
+  - Made the existing deduplicated publication task publish the compact update
+    before rebuilding the larger base, preserving write-time asynchrony.
+- Verification:
+  - `php tests/run.php TaskQueueCommandTest TaskQueueWorkerTest` passed the
+    offline publication case and 20 of 22 focused checks; two existing default
+    queue-state checks fail outside this feature's isolated fixture path.
+- Notes:
+  - The single existing queue task still coalesces bursts; the compact artifact
+    is now available before the full-base publication completes.
