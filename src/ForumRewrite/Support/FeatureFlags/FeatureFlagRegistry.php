@@ -8,6 +8,7 @@ final class FeatureFlagRegistry
 {
     public const UNICODE_AUTHORED_TEXT = 'FORUM_UNICODE_AUTHORED_TEXT';
     public const EMOJI_AUTHORED_TEXT = 'FORUM_EMOJI_AUTHORED_TEXT';
+    public const EVENT_SUPPORT_ENABLED = 'FORUM_EVENT_SUPPORT_ENABLED';
     public const APP_VERSION_NOTIFICATION = 'FORUM_APP_VERSION_NOTIFICATION';
     public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
@@ -63,6 +64,15 @@ final class FeatureFlagRegistry
                 self::EMOJI_AUTHORED_TEXT,
                 siteMutable: true,
                 requiresEnabledFlag: self::UNICODE_AUTHORED_TEXT,
+                group: 'AUTHORING',
+            ),
+            new FeatureFlagDefinition(
+                self::EVENT_SUPPORT_ENABLED,
+                'Event support',
+                'Allow threads to include and display optional event date, location, and link details.',
+                false,
+                self::EVENT_SUPPORT_ENABLED,
+                siteMutable: true,
                 group: 'AUTHORING',
             ),
             new FeatureFlagDefinition(
