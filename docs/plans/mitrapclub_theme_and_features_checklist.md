@@ -14,11 +14,14 @@ checked in the current code, not a guess.
       (`feature/mitrapclub-branding-fixes`): added `SiteConfig::displayName()`
       and switched the 6 pure-display call sites to it, leaving the 6
       identifier/filename call sites on `siteName()`.
-- [ ] `permittedThemes` still offers all 13 generic app themes (light, dark,
+- [x] `permittedThemes` still offers all 13 generic app themes (light, dark,
       console, lcd, chicago, vapor, forge, sticker, arena, thermal,
       whitehot, word97, auto) alongside `mitrapclub` — decide whether
       visitors should be able to switch away from the club's own look at
-      all (qdb keeps the same breadth; chouse does too).
+      all (qdb keeps the same breadth; chouse does too). **Resolved in
+      Cycle 3** (`feature/mitrapclub-structural-identity`, merged to
+      `main`) as a no-op: kept full breadth, matching `qdb`/`chouse`
+      precedent.
 - [x] About page's "A continuous social graph" and "How participation
       works" sections are hardcoded, identical on every profile, and
       describe the app's OpenPGP identity/vouching system in infra-level
@@ -104,6 +107,19 @@ checked in the current code, not a guess.
       URL. Shipped behind a new feature flag (`FORUM_MEDIA_EMBEDS_ENABLED`)
       defaulted off everywhere; still needs a manual operator enable on the
       production `mitrapclub` instance before it's visible there.
+      **Extended in Cycle 6** (`feature/mitrapclub-media-embeds-inline-player`,
+      `mitrapclub_media_embeds_inline_player_*`): the card's "no embedded
+      video" limitation was raised directly by the user after this shipped.
+      YouTube now plays inline behind a collapsed, click-to-load expando
+      (a sandboxed `youtube-nocookie.com` iframe, zero new outbound network
+      dependency); Instagram gets a cached thumbnail/title preview instead
+      of staying a bare link, fetched by parsing the public post page's
+      `og:title`/`og:image` tags (Instagram's oEmbed API dropped those
+      fields in late 2025) via a client-triggered beacon so no page render
+      ever blocks on it. Gated behind a second flag
+      (`FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED`, depends on
+      `FORUM_MEDIA_EMBEDS_ENABLED`), defaulted off; also needs a manual
+      operator enable before it's visible anywhere.
 - [ ] Media-embed provider list beyond YouTube/Instagram — unscheduled,
       flagged during Cycle 5's Step 2 for a future iteration. Suggested
       platforms, prioritized by fit for the club's actual (rap/hip-hop)
@@ -133,14 +149,14 @@ uncertainty each has:
 
 1. **Branding fixes** — `displayName` vs `name` in the header, busy-page
    copy. Small, low-uncertainty; skipped Step 1, went straight to Step 2.
-   **Done** on `feature/mitrapclub-branding-fixes` (not yet merged to
-   `main`). Per-profile favicon/manifest icon moved to Cycle 3 (no icon
+   **Done** on `feature/mitrapclub-branding-fixes`, merged to `main`.
+   Per-profile favicon/manifest icon moved to Cycle 3 (no icon
    asset available yet); the Facebook link swap is unscheduled until the
    club's real page URL is known.
 2. **De-genericize copy** — gate/rewrite the about page's social-graph,
    participation, and portable sections plus the fixed intro sentence;
    expand the Code Cypher/CMS/W paragraph. Low-uncertainty, mostly content.
-   **Done** on `feature/mitrapclub-about-copy` (not yet merged to `main`),
+   **Done** on `feature/mitrapclub-about-copy`, merged to `main`,
    except the Code Cypher/CMS/W paragraph expansion, which stayed out of
    scope (`communityParagraphs` untouched) and remains open below.
 3. **Visual identity extension** — hero/banner, display typeface, nav
@@ -148,8 +164,8 @@ uncertainty each has:
    Step 1 first. Split via that Step 1 into a structural half (done) and a
    creative half (deferred):
    - Structural half — nav trim, theme-freedom decision, favicon/icon
-     override mechanism. **Done** on `feature/mitrapclub-structural-identity`
-     (not yet merged to `main`). Theme-freedom resolved as a no-op: kept
+     override mechanism. **Done** on `feature/mitrapclub-structural-identity`,
+     merged to `main`. Theme-freedom resolved as a no-op: kept
      full `permittedThemes` breadth, matching `qdb`/`chouse` precedent.
    - Creative half — hero/banner treatment, display typeface. **Unscheduled**;
      deserves its own Step 1 once there's room to actually design it, per
@@ -157,7 +173,7 @@ uncertainty each has:
 4. **Events experience** — structured event posts (date/location), a
    "what's next" callout. This is Option B deferred from the original
    feature's Step 1; give it a fresh Step 1. **Done** on
-   `feature/mitrapclub-events-experience` (not yet merged to `main`): a
+   `feature/mitrapclub-events-experience`, merged to `main`: a
    thread's root post can carry an optional event date/location/link
    (canonical record headers → write-path validation → read model →
    a structured event block on the board card and thread page, for any
@@ -166,12 +182,45 @@ uncertainty each has:
 5. **Media embeds** — YouTube/Instagram embedding in threads. Independent
    of events; has real technical options (oEmbed fetch vs. link preview
    vs. iframe); give it a Step 1. **Done** on
-   `feature/mitrapclub-media-embeds` (not yet merged to `main`): Step 1
-   picked the link-preview card (no raw third-party HTML); shipped a
-   YouTube/Instagram URL detector, a card-aware body renderer (byte-identical
-   output when disabled), wired into the one shared body-rendering closure
-   used by all 8 post/reply render call sites, behind a new
-   `FORUM_MEDIA_EMBEDS_ENABLED` flag defaulted off everywhere. A broader
-   provider list (SoundCloud, TikTok, Spotify, Bandcamp, etc.) and
-   general-purpose URL canonicalization both stayed out of scope — see the
-   open item above and `todo.txt`.
+   `feature/mitrapclub-media-embeds`, merged to `main`: Step 1 picked the
+   link-preview card (no raw third-party HTML); shipped a YouTube/Instagram
+   URL detector, a card-aware body renderer (byte-identical output when
+   disabled), wired into the one shared body-rendering closure used by all
+   8 post/reply render call sites, behind a new `FORUM_MEDIA_EMBEDS_ENABLED`
+   flag defaulted off everywhere. A broader provider list (SoundCloud,
+   TikTok, Spotify, Bandcamp, etc.) and general-purpose URL canonicalization
+   both stayed out of scope — see the open item above and `todo.txt`.
+   **Extended in Cycle 6** on `feature/mitrapclub-media-embeds-inline-player`,
+   merged to `main`, prompted directly by the user noticing the
+   card never actually played anything: Step 1 picked a sandboxed
+   `youtube-nocookie.com` iframe behind a collapsed expando for YouTube
+   (zero new outbound dependency) paired with a cached thumbnail/title
+   preview for Instagram. Mid-Step-1, Instagram's oEmbed turned out to have
+   dropped the thumbnail/title fields it would have needed (changed in late
+   2025), so the approved mechanism became parsing the public post page's
+   `og:title`/`og:image` tags instead — triggered by a client-side beacon
+   hitting a new, deliberately unauthenticated but abuse-bounded internal
+   endpoint, so no page render ever blocks on the fetch. Gated behind a
+   second flag, `FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED` (depends on
+   `FORUM_MEDIA_EMBEDS_ENABLED`), defaulted off everywhere.
+   **Extended in Cycle 7** on `feature/mitrapclub-media-embeds-fetched-titles`,
+   merged to `main`, prompted by a bug report: a thread with no
+   subject whose body is a bare recognized media URL showed the raw URL as
+   its "title" and silently lost its embed to unrelated title/body
+   duplicate-content suppression. Rather than patch that collision at
+   render time, the fix fetches the linked content's real title (YouTube's
+   keyless oEmbed; Instagram's existing page-scraper) and stores it as the
+   thread's own `subject` via a new append-only `ThreadSubjectRecord`
+   (mirroring `ThreadLabelRecord`'s proven shape) and a narrow,
+   system-only `LocalWriteService::setThreadSubjectIfEmpty()` write path —
+   never overwriting an existing subject, human-provided or otherwise, so
+   it stays congruent with a possible future manual-retitle feature without
+   building anything that feature doesn't need yet. Until the fetch
+   succeeds, such a thread shows the literal string `"Untitled"` instead of
+   the raw link, closing the race/collision window completely. Reuses
+   Cycle 6's `MediaEmbedPreviewCacheStore`/warm-cache beacon endpoint
+   unchanged in shape, extended for a `youtube` provider and an optional
+   `thread_id` to trigger the subject write-back. Gated behind the
+   existing `FORUM_MEDIA_EMBEDS_ENABLED` flag alone (not the inline-player
+   flag), since this is a thread-title concern independent of how the
+   embed itself renders.

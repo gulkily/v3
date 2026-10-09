@@ -91,3 +91,33 @@ stack forte panes vertically for mobile
 
 allow offline content for unauthenticated users
 
+improve event experience
+	date field should have a picker
+	there should be a time selector
+	what else?
+
+qdb should only add quote id when using the add quote form
+	otherwise, should create a regular thread (e.g. when using /compose/thread)
+
+we need to record who changed a feature flag and sign the request
+
+emulate the classic qdb.us voting buttons more closely
+	voting... label while submitting
+	voted when done
+	button becomes disabled, but otherwise does not change
+	status display should be on the same line
+	what else?
+
+the request agent response dropdown does not always fully display in-page
+	it should go up and above the link if below is not enough viewport space
+	other ways of mitigating it?
+	it should scroll along with its parent button
+
+explore server-cooperative content deletion
+
+explore private messages
+
+youtube embeds
+	should be full width of the container module
+	should remove border from iframe
+	what else?

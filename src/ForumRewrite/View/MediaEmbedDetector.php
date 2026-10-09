@@ -14,7 +14,7 @@ final class MediaEmbedDetector
     ];
 
     /**
-     * @return list<array{provider: string, url: string, displayUrl: string, offset: int, length: int}>
+     * @return list<array{provider: string, url: string, displayUrl: string, embedId: string, offset: int, length: int}>
      */
     public function detect(string $body): array
     {
@@ -27,16 +27,17 @@ final class MediaEmbedDetector
         foreach ($found[0] as $found0) {
             [$rawUrl, $offset] = $found0;
             $url = rtrim((string) $rawUrl, ".,;:!?)'\"]");
-            $provider = $this->classify($url);
+            $classified = $this->classify($url);
 
-            if ($provider === null) {
+            if ($classified === null) {
                 continue;
             }
 
             $matches[] = [
-                'provider' => $provider,
+                'provider' => $classified['provider'],
                 'url' => $url,
                 'displayUrl' => $this->stripTrackingParams($url),
+                'embedId' => $classified['embedId'],
                 'offset' => (int) $offset,
                 'length' => strlen($url),
             ];
@@ -45,18 +46,26 @@ final class MediaEmbedDetector
         return $matches;
     }
 
-    private function classify(string $url): ?string
+    /**
+     * Classifies a single already-isolated URL, independent of {@see detect()}'s
+     * body-scanning. Exposed so callers that already hold a candidate URL (e.g.
+     * the media-embed preview warm endpoint) can validate and extract its embed
+     * identifier through the exact same rules, rather than re-implementing them.
+     *
+     * @return ?array{provider: string, embedId: string}
+     */
+    public function classify(string $url): ?array
     {
-        if (preg_match('#^https?://(?:www\.)?youtube\.com/watch\?(?:[^\s&]*&)*v=[A-Za-z0-9_-]{6,}#i', $url) === 1) {
-            return 'youtube';
+        if (preg_match('#^https?://(?:www\.)?youtube\.com/watch\?(?:[^\s&]*&)*v=([A-Za-z0-9_-]{6,})#i', $url, $matches) === 1) {
+            return ['provider' => 'youtube', 'embedId' => $matches[1]];
         }
 
-        if (preg_match('#^https?://youtu\.be/[A-Za-z0-9_-]{6,}#i', $url) === 1) {
-            return 'youtube';
+        if (preg_match('#^https?://youtu\.be/([A-Za-z0-9_-]{6,})#i', $url, $matches) === 1) {
+            return ['provider' => 'youtube', 'embedId' => $matches[1]];
         }
 
-        if (preg_match('#^https?://(?:www\.)?instagram\.com/(?:p|reel)/[A-Za-z0-9_-]+/?#i', $url) === 1) {
-            return 'instagram';
+        if (preg_match('#^https?://(?:www\.)?instagram\.com/(?:p|reel)/([A-Za-z0-9_-]+)/?#i', $url, $matches) === 1) {
+            return ['provider' => 'instagram', 'embedId' => $matches[1]];
         }
 
         return null;

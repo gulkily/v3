@@ -16,6 +16,7 @@ final class FeatureFlagEvaluatorTest
 
             $unicode = $evaluator->evaluate(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
             $emoji = $evaluator->evaluate(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT);
+            $eventSupport = $evaluator->evaluate(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED);
             $notification = $evaluator->evaluate(FeatureFlagRegistry::APP_VERSION_NOTIFICATION);
             $staticDetailPages = $evaluator->evaluate(FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED);
             $agentReplies = $evaluator->evaluate(FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED);
@@ -34,6 +35,9 @@ final class FeatureFlagEvaluatorTest
             assertSame(false, $emoji->effectiveValue);
             assertSame('default', $emoji->source);
             assertSame(true, $emoji->isDefault());
+            assertSame(false, $eventSupport->effectiveValue);
+            assertSame('default', $eventSupport->source);
+            assertSame(true, $eventSupport->isDefault());
             assertSame(true, $notification->effectiveValue);
             assertSame('default', $notification->source);
             assertSame(true, $notification->isDefault());
@@ -104,9 +108,11 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,
             FeatureFlagRegistry::EMOJI_AUTHORED_TEXT,
+            FeatureFlagRegistry::EVENT_SUPPORT_ENABLED,
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
             FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED,
             FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED,
+            FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
             FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
@@ -167,6 +173,7 @@ PHP);
 
             $unicode = $evaluator->evaluate(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
             $emoji = $evaluator->evaluate(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT);
+            $eventSupport = $evaluator->evaluate(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED);
             $notification = $evaluator->evaluate(FeatureFlagRegistry::APP_VERSION_NOTIFICATION);
 
             assertSame(true, $unicode->effectiveValue);
@@ -178,6 +185,17 @@ PHP);
             assertSame(false, $notification->effectiveValue);
             assertSame('site', $notification->source);
             assertSame(false, $notification->siteValue);
+            assertSame(false, $eventSupport->effectiveValue);
+            assertSame('default', $eventSupport->source);
+        });
+
+        $this->withEnvironment([], function (): void {
+            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: true\n");
+            $eventSupport = FeatureFlagEvaluator::forRepository($repositoryRoot)->evaluate(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED);
+
+            assertSame(true, $eventSupport->effectiveValue);
+            assertSame('site', $eventSupport->source);
+            assertSame(true, $eventSupport->siteValue);
         });
 
         $this->withEnvironment([
@@ -201,6 +219,18 @@ PHP);
             assertSame(false, $emoji->effectiveValue);
             assertSame('dependency', $emoji->source);
             assertSame(true, $emoji->siteValue);
+        });
+    }
+
+    public function testMediaEmbedsInlinePlayerDependsOnMediaEmbedsEnabled(): void
+    {
+        $this->withEnvironment([], function (): void {
+            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\nFORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED: true\nFORUM_MEDIA_EMBEDS_ENABLED: false\n");
+            $inlinePlayer = FeatureFlagEvaluator::forRepository($repositoryRoot)->evaluate(FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED);
+
+            assertSame(false, $inlinePlayer->effectiveValue);
+            assertSame('dependency', $inlinePlayer->source);
+            assertSame(true, $inlinePlayer->siteValue);
         });
     }
 
@@ -311,6 +341,7 @@ PHP);
         $guestKeypair = $registry->get(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED);
         $unicode = $registry->get(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
         $emoji = $registry->get(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT);
+        $eventSupport = $registry->get(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED);
         $versionNotification = $registry->get(FeatureFlagRegistry::APP_VERSION_NOTIFICATION);
         $threadDensity = $registry->get(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED);
         $staticDetails = $registry->get(FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED);
@@ -322,6 +353,7 @@ PHP);
         assertSame('ACCESS', $guestKeypair->groupKey());
         assertSame('AUTHORING', $unicode->groupKey());
         assertSame('AUTHORING', $emoji->groupKey());
+        assertSame('AUTHORING', $eventSupport->groupKey());
         assertSame('EXPERIENCE', $versionNotification->groupKey());
         assertSame('EXPERIENCE', $threadDensity->groupKey());
         assertSame('RENDERING', $staticDetails->groupKey());
@@ -364,9 +396,11 @@ PHP);
             FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,
             FeatureFlagRegistry::EMOJI_AUTHORED_TEXT,
+            FeatureFlagRegistry::EVENT_SUPPORT_ENABLED,
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
             FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED,
             FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED,
+            FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
             FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,

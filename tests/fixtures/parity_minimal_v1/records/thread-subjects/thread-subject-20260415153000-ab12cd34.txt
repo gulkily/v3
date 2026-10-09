@@ -1,0 +1,7 @@
+Record-ID: thread-subject-20260415153000-ab12cd34
+Created-At: 2026-04-15T15:30:00Z
+Thread-ID: root-001
+Operation: set
+Subject: Fetched Video Title
+Reason: Fetched title for bare media-embed URL
+
