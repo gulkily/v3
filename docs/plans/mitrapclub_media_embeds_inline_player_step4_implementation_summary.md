@@ -61,3 +61,16 @@
 - Notes:
   - No CSS was added — same minimal posture as Cycle 5 (and `event_block.php` before it), relying on native `<details>`/`<img>`/`<a>` rendering.
   - Also promoted the mkdir+PDO-open logic duplicated between Stage 4's controller and this stage's renderer into a single `MediaEmbedPreviewCacheStore::openAt(string $projectRoot): self` static factory, used by both — a small dedup, not a behavior change.
+
+## Stage 6 - Wire both flags and the real cache store into the live app
+
+- Changes:
+  - `TemplateRenderer::renderFile()`'s `$br` closure now also reads `FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED` and passes it as `MediaEmbedRenderer::render()`'s third argument, alongside Cycle 5's existing flag.
+  - `Application::renderer()` now constructs its `MediaEmbedRenderer` with a real `MediaEmbedPreviewCacheStore::openAt($this->projectRoot)` instead of the no-op-safe default, so the live app actually reads/writes the real `state/cache/media_embed_previews.sqlite3`.
+  - **Scope-correction found during this stage:** Step 3's text only described wiring the shared `$br` closure (the `renderLayout()`/`renderPageTemplate()` path). While implementing the script-inclusion half of this stage, found that `/forte` renders through a *different* method, `renderStandalonePage()`, which builds its own `$scriptPaths` independently and would have silently never loaded `media_embed_inline_player.js` — meaning the YouTube expando's toggle-to-play behavior would have been broken specifically on the paned/Forte view, the one place `paned_thread_reply_tree.php`/`paned_board_content_article.php` render media cards. Added the same flag-gated script inclusion to `renderStandalonePage()` as well. No change to the Completion Contract — this is completing the already-approved "the script loads wherever a card can render" requirement correctly, not new scope.
+  - Added `tests/TemplateRendererMediaEmbedsScriptTest.php` covering both `renderLayout()` and `renderStandalonePage()`, flag on/off.
+- Verification:
+  - `php tests/run.php TemplateRendererMediaEmbedsScriptTest` — 2 run, 2 passed (first failed on a too-strict literal-filename assertion against the real, fingerprinted asset path — e.g. `media_embed_inline_player.16392926ee6c.js` — fixed by asserting on the stable substring instead; this confirmed the wiring itself was correct all along).
+  - `php tests/run.php` (full suite) — 899 run, 897 passed; same two pre-existing failures as every prior stage, no new ones.
+- Notes:
+  - Manually confirmed via `renderFragment()`/`renderLayout()`/`renderStandalonePage()` that the fingerprinted script path appears only when both flags are on.

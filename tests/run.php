@@ -31,6 +31,7 @@ $testFiles = [
     __DIR__ . '/InstagramPagePreviewFetcherTest.php',
     __DIR__ . '/MediaEmbedPreviewControllerTest.php',
     __DIR__ . '/MediaEmbedInlinePlayerScriptTest.php',
+    __DIR__ . '/TemplateRendererMediaEmbedsScriptTest.php',
     __DIR__ . '/FastScoringConfigTest.php',
     __DIR__ . '/FastScoreContextFactoryTest.php',
     __DIR__ . '/FdpSyncCommandTest.php',

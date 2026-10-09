@@ -56,6 +56,8 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\Support\ResumeTarget;
 use ForumRewrite\Support\ThreadTitle;
+use ForumRewrite\View\MediaEmbedPreviewCacheStore;
+use ForumRewrite\View\MediaEmbedRenderer;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\Write\LocalWriteService;
 use ForumRewrite\Write\IdentityBootstrapTimingException;
@@ -1107,7 +1109,12 @@ final class Application
 
     private function renderer(): TemplateRenderer
     {
-        return new TemplateRenderer($this->projectRoot . '/templates', $this->appVersion(), $this->featureFlags());
+        return new TemplateRenderer(
+            $this->projectRoot . '/templates',
+            $this->appVersion(),
+            $this->featureFlags(),
+            new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot)),
+        );
     }
 
     private function featureFlags(): FeatureFlagEvaluator
