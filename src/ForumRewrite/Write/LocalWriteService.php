@@ -1739,7 +1739,7 @@ class LocalWriteService
                 $metadata[(string) $row['key']] = (string) $row['value'];
             }
 
-            return ($metadata['schema_version'] ?? null) === ReadModelMetadata::SCHEMA_VERSION
+            return ReadModelMetadata::hasExpectedSchemaIdentity($metadata)
                 && ($metadata['repository_root'] ?? null) === $this->repositoryRoot;
         } catch (\Throwable) {
             return false;

@@ -7,6 +7,7 @@ require_once __DIR__ . '/../autoload.php';
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelConnection;
+use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\OperatorStatusCollector;
@@ -22,6 +23,9 @@ final class OperatorStatusCollectorTest
 
             assertSame('ready', $status['read_model']['status']);
             assertSame('ready', $status['read_model']['freshness_status']);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $status['read_model']['schema_version']);
+            assertSame(ReadModelMetadata::expectedSchemaIdentity()['schema_fingerprint'], $status['read_model']['schema_fingerprint']);
+            assertSame($status['read_model']['schema_fingerprint'], $status['read_model']['expected_schema_fingerprint']);
             assertSame('unlocked', $status['read_model']['lock_status']);
             assertSame('not_initialized', $status['task_queue']['status']);
             assertSame('absent', $status['task_queue']['rebuild_task_status']);

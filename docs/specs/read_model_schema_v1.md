@@ -40,7 +40,7 @@ Single-row-per-key bookkeeping about the last rebuild.
 
 | Column | Type | Notes |
 | --- | --- | --- |
-| `key` | TEXT PK | e.g. `schema_version`, `repository_root`, `repository_head`, `rebuilt_at`, `rebuild_reason`, `thread_label_invalid_count` |
+| `key` | TEXT PK | e.g. `schema_version`, `schema_fingerprint`, `repository_root`, `repository_head`, `rebuilt_at`, `rebuild_reason`, `thread_label_invalid_count` |
 | `value` | TEXT | |
 
 ### `posts`

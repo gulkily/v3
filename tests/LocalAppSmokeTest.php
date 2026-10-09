@@ -61,6 +61,34 @@ final class LocalAppSmokeTest
         assertStringContains('[3/3] Read model promoted.', $text);
     }
 
+    public function testRequestRebuildsReadModelMissingSchemaFingerprint(): void
+    {
+        $directory = sys_get_temp_dir() . '/forum-rewrite-schema-fingerprint-' . bin2hex(random_bytes(6));
+        $databasePath = $directory . '/read-model.sqlite3';
+        mkdir($directory, 0700, true);
+
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $storedVersion = $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn();
+            $pdo->exec("DELETE FROM metadata WHERE key = 'schema_fingerprint'");
+
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
+            $response = $this->render($application, '/threads/root-001');
+            $metadata = ReadModelMetadata::readMetadata(new PDO('sqlite:' . $databasePath));
+
+            assertStringContains('Hello world', $response);
+            assertSame($storedVersion, $metadata['schema_version']);
+            assertSame(true, ReadModelMetadata::hasExpectedSchemaIdentity($metadata));
+            assertSame('schema_identity_mismatch', $metadata['rebuild_reason']);
+        } finally {
+            @unlink($databasePath);
+            @unlink($databasePath . '-journal');
+            @unlink($directory . '/read_model_stale.json');
+            @rmdir($directory);
+        }
+    }
+
     public function testRebuildCommandExplainsSqliteSidecarPromotionFailure(): void
     {
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-rebuild-sidecar-' . bin2hex(random_bytes(6)) . '.sqlite3';
@@ -1632,10 +1660,12 @@ PHP;
         assertStringContains('Repository head', $codebase);
         assertStringContains('Read model', $codebase);
         assertStringContains('Schema version', $codebase);
+        assertStringContains('Schema fingerprint', $codebase);
         assertStringContains('Lock status', $codebase);
         assertStringContains('Read-model rows', $codebase);
         assertStringContains('git -C state/local_repository rev-parse HEAD', $codebase);
         assertStringContains("SELECT value FROM metadata WHERE key = &#039;schema_version&#039;;", $codebase);
+        assertStringContains("SELECT value FROM metadata WHERE key = &#039;schema_fingerprint&#039;;", $codebase);
         assertStringContains('flock -n state/cache/forum-rewrite.lock -c true', $codebase);
         assertStringContains('SELECT COUNT(*) FROM posts;', $codebase);
         assertStringContains('/downloads/repository.tar.gz', $codebase);
@@ -2383,6 +2413,7 @@ PHP;
         assertStringContains('lock_status=unlocked', $readModelStatus);
         assertStringContains('stale_marker=absent', $readModelStatus);
         assertStringContains('schema_version=' . ReadModelMetadata::SCHEMA_VERSION, $readModelStatus);
+        assertStringContains('schema_fingerprint=' . ReadModelMetadata::expectedSchemaIdentity()['schema_fingerprint'], $readModelStatus);
         assertStringContains('<rss version="2.0">', $boardRss);
         assertStringContains('<title>Hello world</title>', $threadRss);
         assertStringContains('<pubDate>Fri, 10 Apr 2026 12:05:00 +0000</pubDate>', $threadRss);
@@ -3027,13 +3058,13 @@ PHP;
         assertStringContains('networkFirstNavigation', $serviceWorker);
         assertStringContains('offlineCachePrefix', $serviceWorker);
         assertStringContains('zenmemes-offline-reader-v14', $serviceWorker);
-        assertStringContains('[offline reading] worker install started', $serviceWorker);
         assertStringContains('[offline reading] fetch failed', $serviceWorker);
         assertStringContains('offline reader shell', $serviceWorker);
         assertStringContains('__offline_bootstrap', $serviceWorker);
         assertStringContains('cache.match(cacheKey(url), { ignoreVary: true })', $serviceWorker);
         assertStringContains('cache.put(cacheKey(url), response.clone())', $serviceWorker);
-        assertStringContains('[offline reading] cache refresh stored', $serviceWorker);
+        assertStringNotContains('[offline reading] worker install started', $serviceWorker);
+        assertStringNotContains('[offline reading] cache refresh stored', $serviceWorker);
         assertStringContains('const OFFLINE_HEALTH_URL = "/offline/"', $serviceWorker);
         assertStringContains('const OFFLINE_READER_URL = "/offline/reader/"', $serviceWorker);
         assertStringContains('data-runtime-url', $serviceWorker);
@@ -3043,8 +3074,8 @@ PHP;
         assertStringContains('navigator.serviceWorker.register("/service_worker.js", { scope: "/" })', $registration);
         assertStringContains('registration.update()', $registration);
         assertStringContains('!registration.installing && !registration.waiting', $registration);
-        assertStringContains('logOfflineState("update check completed"', $registration);
-        assertStringContains('offlineCaches', $registration);
+        assertStringNotContains('logOfflineState', $registration);
+        assertStringNotContains('offlineCaches', $registration);
         assertStringContains('registration.unregister()', $registration);
         assertStringNotContains('querySelectorAll(\'link[href], script[src]\')', $registration);
         assertStringNotContains('urls: cacheUrls()', $registration);

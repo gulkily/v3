@@ -1,43 +1,8 @@
 (function () {
   "use strict";
   var runtime = window.forumBrowserRuntime || null;
-  if (!runtime || !runtime.offlineDiagnosticKey || !runtime.offlineCachePrefix) return;
+  if (!runtime || !runtime.offlineDiagnosticKey) return;
   var diagnosticKey = runtime.offlineDiagnosticKey;
-  var registrationScriptUrl = document.currentScript && document.currentScript.src
-    ? document.currentScript.src
-    : "(unknown)";
-
-  function cacheNames() {
-    if (!window.caches || typeof window.caches.keys !== "function") return Promise.resolve(["(Cache Storage unavailable)"]);
-    return window.caches.keys().catch(function (error) {
-      return ["(unable to list caches: " + String(error && error.message || error) + ")"];
-    });
-  }
-
-  function workerDetails(worker) {
-    if (!worker) return null;
-    return { scriptURL: worker.scriptURL, state: worker.state };
-  }
-
-  function logOfflineState(event, registration, error) {
-    return cacheNames().then(function (names) {
-      var versionMeta = document.querySelector('meta[name="app-version"]');
-      console.info("[offline reading] " + event, {
-        pageUrl: window.location.href,
-        appVersion: versionMeta ? versionMeta.getAttribute("content") : "(not rendered)",
-        pwaRegistrationScript: registrationScriptUrl,
-        online: navigator.onLine,
-        secureContext: window.isSecureContext,
-        registrationScope: registration ? registration.scope : null,
-        activeWorker: workerDetails(registration && registration.active),
-        installingWorker: workerDetails(registration && registration.installing),
-        waitingWorker: workerDetails(registration && registration.waiting),
-        pageController: workerDetails(navigator.serviceWorker && navigator.serviceWorker.controller),
-        offlineCaches: names.filter(function (name) { return name.indexOf(runtime.offlineCachePrefix) === 0; }),
-        error: error ? { name: error.name || "Error", message: error.message || String(error) } : null
-      });
-    });
-  }
 
   function saveRegistrationError(error) {
     try {
@@ -61,7 +26,6 @@
     return;
   }
   window.addEventListener("load", function () {
-    logOfflineState("page loaded", null);
     navigator.serviceWorker.getRegistrations().then(function (registrations) {
       return Promise.all(registrations.map(function (registration) {
         return registration.scope === window.location.origin + "/offline/"
@@ -72,26 +36,17 @@
       return navigator.serviceWorker.register("/service_worker.js", { scope: "/" });
     })
       .then(function (registration) {
-        return logOfflineState("registered", registration).then(function () { return registration; });
-      })
-      .then(function (registration) {
         if (!navigator.onLine) return registration;
-        return registration.update().then(function () {
-          return logOfflineState("update check completed", registration).then(function () { return registration; });
-        });
+        return registration.update().then(function () { return registration; });
       })
       .then(function (registration) {
         clearRegistrationError();
         if (navigator.onLine && registration.active && !registration.installing && !registration.waiting) {
           registration.active.postMessage({ type: "refresh-offline-reader" });
-          logOfflineState("requested reader refresh", registration);
-        } else {
-          logOfflineState("reader refresh deferred", registration);
         }
       })
       .catch(function (error) {
         saveRegistrationError(error);
-        logOfflineState("registration failed", null, error);
       });
   });
 })();

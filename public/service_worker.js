@@ -13,11 +13,9 @@ const BOOTSTRAP_QUERY_PARAMETER = "__offline_bootstrap";
 const REVISION_KEY = "/__offline_reader_revision__";
 
 self.addEventListener("install", (event) => event.waitUntil((async () => {
-  console.info("[offline reading] worker install started", workerDetails());
   try {
     await refreshOfflineReader([]);
     await self.skipWaiting();
-    console.info("[offline reading] worker install completed", workerDetails());
   } catch (error) {
     console.error("[offline reading] worker install failed", Object.assign(workerDetails(), errorDetails(error)));
     throw error;
@@ -27,7 +25,6 @@ self.addEventListener("activate", (event) => event.waitUntil((async () => {
   const names = await caches.keys();
   await Promise.all(names.filter((name) => isOwnedCacheName(name) && name !== CACHE_NAME).map((name) => caches.delete(name)));
   await self.clients.claim();
-  console.info("[offline reading] worker activated", Object.assign(workerDetails(), { caches: await caches.keys() }));
 })()));
 
 function workerDetails() {
@@ -100,9 +97,6 @@ async function refreshResources(urls, alreadyFetched = []) {
   for (const [url, response] of [...alreadyFetched, ...responses]) {
     await cache.put(cacheKey(url), response.clone());
   }
-  console.info("[offline reading] cache refresh stored", Object.assign(workerDetails(), {
-    cacheKeys: (await cache.keys()).map((request) => request.url)
-  }));
 }
 
 async function refreshOfflineReader(extraUrls) {
@@ -137,7 +131,7 @@ async function refreshSnapshot() {
     const response = await fetchOfflineResource(SNAPSHOT_URL, "offline snapshot");
     await (await caches.open(CACHE_NAME)).put(cacheKey(SNAPSHOT_URL), response.clone());
   } catch (error) {
-    console.info("[offline reading] snapshot unavailable; reader shell and assets remain cached", Object.assign(workerDetails(), errorDetails(error)));
+    // A snapshot is optional: retain the cached reader shell and assets when it is unavailable.
   }
 }
 
@@ -208,7 +202,6 @@ self.addEventListener("message", (event) => {
           return;
         }
         await refreshOfflineReader(Array.isArray(event.data.urls) ? event.data.urls : []);
-        console.info("[offline reading] reader refresh completed", workerDetails());
         if (event.ports[0]) event.ports[0].postMessage({ type: "offline-reader-refreshed", status: "ready", cacheName: CACHE_NAME });
       } catch (error) {
         console.error("[offline reading] reader refresh failed", Object.assign(workerDetails(), errorDetails(error)));

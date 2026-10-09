@@ -19,6 +19,7 @@ $readModelRows = [
     ['label' => 'Database exists', 'value' => $state['read_model']['database_exists'], 'source' => 'test -f state/cache/post_index.sqlite3'],
     ['label' => 'Metadata', 'value' => $state['read_model']['metadata_status'], 'source' => 'SELECT key, value FROM metadata;'],
     ['label' => 'Schema version', 'value' => $state['read_model']['schema_version'] . ' / expected ' . $state['read_model']['expected_schema_version'], 'source' => "SELECT value FROM metadata WHERE key = 'schema_version';"],
+    ['label' => 'Schema fingerprint', 'value' => $state['read_model']['schema_fingerprint'] . ' / expected ' . $state['read_model']['expected_schema_fingerprint'], 'source' => "SELECT value FROM metadata WHERE key = 'schema_fingerprint';"],
     ['label' => 'Repository head', 'value' => $state['read_model']['repository_head'], 'source' => "SELECT value FROM metadata WHERE key = 'repository_head';"],
     ['label' => 'Current repository head', 'value' => $state['read_model']['current_repository_head'], 'source' => 'git -C state/local_repository rev-parse HEAD'],
     ['label' => 'Rebuilt at', 'value' => $state['read_model']['rebuilt_at'], 'source' => "SELECT value FROM metadata WHERE key = 'rebuilt_at';"],

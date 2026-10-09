@@ -1037,13 +1037,12 @@ class IncrementalReadModelUpdater
     public function writeMetadata(PDO $pdo, string $commitSha): void
     {
         $stmt = $pdo->prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (:key, :value)');
-        $metadata = [
-            'schema_version' => ReadModelMetadata::SCHEMA_VERSION,
+        $metadata = array_merge(ReadModelMetadata::expectedSchemaIdentity(), [
             'repository_root' => $this->repositoryRoot,
             'repository_head' => $commitSha,
             'rebuilt_at' => gmdate('c'),
             'rebuild_reason' => 'write_incremental',
-        ];
+        ]);
 
         foreach ($metadata as $key => $value) {
             $stmt->execute([

@@ -121,6 +121,7 @@ Usage:
   ./v3 start [--listen-all|host:port] [--verbose|--quiet] [--log-file=/path/dev.log]
   ./v3 test
   ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+  ./v3 tui
   ./v3 fdp sync [--repository-root=/path/repository] [--remote-url=https://github.com/gulkily/fdp.git]
   ./v3 rebuild [repository_root] [database_path]
   ./v3 rebuild diagnose [repository_root] [database_path]
@@ -189,6 +190,10 @@ case "${COMMAND}" in
   status)
     shift
     php "${ROOT}/scripts/status.php" "$@"
+    ;;
+  tui)
+    shift
+    exec bash "${ROOT}/scripts/terminal_operator_ui.sh" "$@"
     ;;
   fdp)
     shift
