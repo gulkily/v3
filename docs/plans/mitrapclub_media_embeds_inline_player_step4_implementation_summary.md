@@ -74,3 +74,16 @@
   - `php tests/run.php` (full suite) — 899 run, 897 passed; same two pre-existing failures as every prior stage, no new ones.
 - Notes:
   - Manually confirmed via `renderFragment()`/`renderLayout()`/`renderStandalonePage()` that the fingerprinted script path appears only when both flags are on.
+
+## Stage 7 - End-to-end verification and checklist close-out
+
+- Changes:
+  - None in source — verification only.
+  - Updated `mitrapclub_theme_and_features_checklist.md`: marked the media-embeds checklist item's Cycle 6 extension, corrected a stale "not yet merged" note on Cycle 5 (it is merged to `main`), and added a Cycle 6 entry to the "Cycle split" section.
+- Verification:
+  - `php tests/run.php` (full suite, final run) — 899 run, 897 passed; same two pre-existing failures as every prior stage in this cycle, no new ones.
+  - Direct `renderFragment()` checks across three render call sites with both flags on: `thread_card.php` (board listing) — YouTube match produces the collapsed `<details>` with `data-embed-src="https://www.youtube-nocookie.com/embed/{id}"`; `post_card.php` (a reply) with no cache store wired — Instagram match falls back to the plain card with no beacon (confirms the `?->` null-safe guard); `thread_root_card.php` (thread root) with a real cache store wired — an Instagram match with a cold cache shows the plain card plus a beacon, and after seeding the store, the same match shows the thumbnail/title card with no beacon.
+  - Abuse-bound spot check against the real warm-cache endpoint through actual `Application` routing (a temp fixture repo, but the real project's cache path, matching how `Application::renderer()` always resolves it): an invalid provider and a non-Instagram URL both write zero cache rows (rejected before any fetch); a valid Instagram URL writes a row on the first hit (title/thumbnail `null` since outbound network access to Instagram isn't available in this sandbox — itself a live demonstration of the "fetch failure still degrades gracefully" path) and a second hit against the same URL doesn't crash and doesn't require network access again, confirming the backoff short-circuit holds end-to-end, not just in the mocked controller test. Cleaned up only the specific test rows added, leaving any other accumulated cache data untouched.
+- Notes:
+  - Per Step 2/3, this feature's own rollout does not enable either flag anywhere — enabling `FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED` (and `FORUM_MEDIA_EMBEDS_ENABLED`, if not already on) on the production `mitrapclub` instance remains a manual operator action.
+  - Real-network Instagram fetch behavior (whether the page-scraping approach actually works against Instagram's live markup today) could not be verified in this sandbox, which has no outbound internet access. The code path that handles a fetch failure was exercised for real (not mocked) by this sandbox's own lack of connectivity, which is some indirect evidence the failure path is robust, but the success path (real `og:title`/`og:image` parsing against Instagram's actual current markup) has only been verified against synthetic HTML in `InstagramPagePreviewFetcherTest`. Worth a real check once this is deployed somewhere with outbound access.
