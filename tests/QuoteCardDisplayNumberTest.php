@@ -133,7 +133,7 @@ final class QuoteCardDisplayNumberTest
         assertStringContains('1 quote', $board);
     }
 
-    public function testQdbCollectionSurfacesExcludeThreadsWithoutQuoteIds(): void
+    public function testQdbTagPagesKeepAllTaggedThreadsWhileCollectionSurfacesExcludeNonQuotes(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
         $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
@@ -141,6 +141,7 @@ final class QuoteCardDisplayNumberTest
         putenv('FORUM_SITE_ID=qdb');
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $tag = $this->render($application, '/tags/general');
             $surfaces = [
                 $this->render($application, '/latest'),
                 $this->render($application, '/top'),
@@ -152,6 +153,9 @@ final class QuoteCardDisplayNumberTest
         } finally {
             putenv('FORUM_SITE_ID');
         }
+
+        assertStringContains('href="/threads/root-001"', $tag);
+        assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $tag);
 
         foreach ($surfaces as $surface) {
             assertStringContains('42', $surface);
