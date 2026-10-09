@@ -56,3 +56,11 @@
   - Browser manual and deployed-environment smoke tests were not run in this non-browser workspace; automated server, signature, and page-script coverage is recorded above. No migration is required.
 - Notes:
   - Operators can inspect both the current snapshot and the immutable signed action history with git.
+
+## Stage 6 - Signed API end-to-end verification
+- Changes:
+  - Moved the signed-change regression through the root-authorized prepare/finalize APIs, rather than calling the writer directly.
+- Verification:
+  - `php tests/run.php WriteApiSmokeTest` — the signed prepare, invalid-signature recovery, valid finalize, committed evidence, warm activity, and rebuilt activity coverage passed; the only known failure is the pre-existing task-queue test.
+- Notes:
+  - This exercises the normal server flow used by the Feature Flags page; a manual browser smoke remains environment-dependent as recorded in Stage 5.

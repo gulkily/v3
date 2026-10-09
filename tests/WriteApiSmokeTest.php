@@ -2462,35 +2462,35 @@ NODE;
             $this->seedApprovedIdentity($repositoryRoot, $identityId);
             $this->renderMethod($application, 'GET', '/');
 
-            $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
-            $prepared = $service->prepareFeatureFlagChange([
-                'key' => 'FORUM_APP_VERSION_NOTIFICATION',
-                'value' => 'false',
-            ], $identityId);
+            $_COOKIE = ['identity_hint' => $identityId];
+            $prepared = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/prepare_feature_flag_change?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
+            ), true, 512, JSON_THROW_ON_ERROR);
             $snapshotPath = $repositoryRoot . '/records/instance/feature-flags.txt';
             $snapshotBefore = is_file($snapshotPath) ? (string) file_get_contents($snapshotPath) : null;
 
-            assertThrowsRuntime(
-                static fn () => $service->finalizePreparedFeatureFlagChange([
-                    'prepare_token' => $prepared['prepare_token'],
-                    'record_id' => $prepared['record_id'],
-                    'record_path' => $prepared['record_path'],
-                    'canonical_record' => $prepared['canonical_record'],
-                    'detached_signature' => 'invalid detached signature',
-                ], $identityId),
-                'Detached signature verification failed: invalid_signature'
-            );
+            $_POST = [
+                'prepare_token' => $prepared['prepare_token'], 'record_id' => $prepared['record_id'],
+                'record_path' => $prepared['record_path'], 'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => 'invalid detached signature',
+            ];
+            $invalid = json_decode($this->renderMethod($application, 'POST', '/api/finalize_feature_flag_change'), true, 512, JSON_THROW_ON_ERROR);
+            $_POST = [];
+            assertSame('error', $invalid['status']);
+            assertSame('Detached signature verification failed: invalid_signature', $invalid['error']);
             assertSame($snapshotBefore, is_file($snapshotPath) ? (string) file_get_contents($snapshotPath) : null);
             assertFalse(is_file($repositoryRoot . '/' . $prepared['record_path']));
 
             $signature = $this->signCanonicalRecord($signingKey['home'], $prepared['canonical_record']);
-            $result = $service->finalizePreparedFeatureFlagChange([
-                'prepare_token' => $prepared['prepare_token'],
-                'record_id' => $prepared['record_id'],
-                'record_path' => $prepared['record_path'],
-                'canonical_record' => $prepared['canonical_record'],
+            $_POST = [
+                'prepare_token' => $prepared['prepare_token'], 'record_id' => $prepared['record_id'],
+                'record_path' => $prepared['record_path'], 'canonical_record' => $prepared['canonical_record'],
                 'detached_signature' => $signature,
-            ], $identityId);
+            ];
+            $result = json_decode($this->renderMethod($application, 'POST', '/api/finalize_feature_flag_change'), true, 512, JSON_THROW_ON_ERROR);
+            $_POST = [];
 
             assertSame('ok', $result['status']);
             assertSame($identityId, $result['operator_identity_id']);
@@ -2512,6 +2512,7 @@ NODE;
             assertStringContains($prepared['record_path'], $rebuiltActivity);
         } finally {
             $_POST = [];
+            $_COOKIE = [];
             $this->deleteTree($signingKey['home']);
         }
     }
