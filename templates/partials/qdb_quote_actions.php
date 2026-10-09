@@ -2,8 +2,7 @@
 $quotePostId = (string) ($quotePostId ?? '');
 $upvote = is_array($upvote ?? null) ? $upvote : ['tag' => 'upvote', 'label' => '+'];
 $downvote = is_array($downvote ?? null) ? $downvote : ['tag' => 'downvote', 'label' => '-'];
-$viewerHasUpvoted = (bool) ($viewerHasUpvoted ?? false);
-$viewerHasDownvoted = (bool) ($viewerHasDownvoted ?? false);
+$viewerHasVoted = (bool) ($viewerHasVoted ?? false);
 $viewerHasFlagged = (bool) ($viewerHasFlagged ?? false);
 ?>
 <span class="quote-card-header-actions">
@@ -14,8 +13,8 @@ $viewerHasFlagged = (bool) ($viewerHasFlagged ?? false);
     data-tag="<?= $e($upvote['tag']) ?>"
     data-applied-label="<?= $e($upvote['label']) ?>"
     aria-label="Upvote this quote: <?= $e($upvote['label']) ?>"
-    aria-pressed="<?= $viewerHasUpvoted ? 'true' : 'false' ?>"
-<?= $viewerHasUpvoted ? ' disabled="disabled"' : '' ?>
+    aria-pressed="<?= $viewerHasVoted ? 'true' : 'false' ?>"
+<?= $viewerHasVoted ? ' disabled="disabled"' : '' ?>
   >↑ <?= $e($upvote['label']) ?></button>
   <button
     type="button"
@@ -24,8 +23,8 @@ $viewerHasFlagged = (bool) ($viewerHasFlagged ?? false);
     data-tag="<?= $e($downvote['tag']) ?>"
     data-applied-label="<?= $e($downvote['label']) ?>"
     aria-label="Downvote this quote: <?= $e($downvote['label']) ?>"
-    aria-pressed="<?= $viewerHasDownvoted ? 'true' : 'false' ?>"
-<?= $viewerHasDownvoted ? ' disabled="disabled"' : '' ?>
+    aria-pressed="<?= $viewerHasVoted ? 'true' : 'false' ?>"
+<?= $viewerHasVoted ? ' disabled="disabled"' : '' ?>
   >↓ <?= $e($downvote['label']) ?></button>
   <button
     type="button"

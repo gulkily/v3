@@ -2,8 +2,7 @@
 <?php foreach ($threads as $thread): ?>
 <?= $indent($partial('partials/quote_card.php', [
     'thread' => $thread,
-    'viewerUpvotedThreadIds' => $viewerUpvotedThreadIds ?? [],
-    'viewerDownvotedThreadIds' => $viewerDownvotedThreadIds ?? [],
+    'viewerVotedThreadIds' => $viewerVotedThreadIds ?? [],
     'viewerFlaggedPostIds' => $viewerFlaggedPostIds ?? [],
     'voteCaptionPair' => $voteCaptionPair ?? null,
 ]), 1) ?>

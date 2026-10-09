@@ -3,8 +3,7 @@ $quoteId = (string) $thread['root_post_id'];
 $permalink = \ForumRewrite\Qdb\QdbQuoteNumbers::displayPermalink($quoteId);
 $displayNumber = $permalink['displayNumber'];
 $permalinkHref = $permalink['permalinkHref'];
-$viewerHasUpvoted = isset($viewerUpvotedThreadIds[$quoteId]);
-$viewerHasDownvoted = isset($viewerDownvotedThreadIds[$quoteId]);
+$viewerHasVoted = isset($viewerVotedThreadIds[$quoteId]);
 $viewerHasFlagged = isset($viewerFlaggedPostIds[$quoteId]);
 $scoreTotal = (int) ($thread['score_total'] ?? 0);
 $voteCount = (int) ($thread['vote_count'] ?? 0);
@@ -22,8 +21,7 @@ $scoreValueClass = 'quote-card-score-value' . ($scoreSignClass === '' ? '' : ' '
     'quotePostId' => $quoteId,
     'upvote' => $upvote,
     'downvote' => $downvote,
-    'viewerHasUpvoted' => $viewerHasUpvoted,
-    'viewerHasDownvoted' => $viewerHasDownvoted,
+    'viewerHasVoted' => $viewerHasVoted,
     'viewerHasFlagged' => $viewerHasFlagged,
 ]) ?>
   </p>

@@ -220,7 +220,7 @@ final class QdbExperience
         $reactions = $this->boardPolicy->viewerReactionState($threads);
         $voteCaptionPair = $this->boardPolicy->selectCaptionPair();
         return $this->routeServices->renderPageTemplate($template, $data + [
-            'viewerUpvotedThreadIds' => $reactions['upvoted'], 'viewerDownvotedThreadIds' => $reactions['downvoted'], 'viewerFlaggedPostIds' => $reactions['flagged'],
+            'viewerVotedThreadIds' => $reactions['voted'], 'viewerFlaggedPostIds' => $reactions['flagged'],
             'voteCaptionPair' => $voteCaptionPair,
         ], $title, $section, [
             '/assets/lazy_compose_signing.js',

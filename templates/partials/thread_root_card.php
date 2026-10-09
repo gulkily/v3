@@ -65,8 +65,7 @@ $quoteRootScoreTotal = (int) ($thread['score_total'] ?? 0);
 $quoteRootVoteCount = (int) ($thread['vote_count'] ?? 0);
 $quoteRootScoreSignClass = $quoteRootScoreTotal > 0 ? 'quote-card-score-positive' : ($quoteRootScoreTotal < 0 ? 'quote-card-score-negative' : '');
 $quoteRootScoreValueClass = 'quote-card-score-value' . ($quoteRootScoreSignClass === '' ? '' : ' ' . $quoteRootScoreSignClass);
-$viewerHasUpvoted = (bool) ($viewerHasUpvoted ?? false);
-$viewerHasDownvoted = (bool) ($viewerHasDownvoted ?? false);
+$viewerHasVoted = (bool) ($viewerHasVoted ?? false);
 $voteCaptionPair = is_array($voteCaptionPair ?? null) ? $voteCaptionPair : null;
 $upvote = is_array($voteCaptionPair['positive'] ?? null) ? $voteCaptionPair['positive'] : ['tag' => 'upvote', 'label' => '+'];
 $downvote = is_array($voteCaptionPair['negative'] ?? null) ? $voteCaptionPair['negative'] : ['tag' => 'downvote', 'label' => '-'];
@@ -89,8 +88,7 @@ if (!$metaVisible) {
     'quotePostId' => $post['post_id'],
     'upvote' => $upvote,
     'downvote' => $downvote,
-    'viewerHasUpvoted' => $viewerHasUpvoted,
-    'viewerHasDownvoted' => $viewerHasDownvoted,
+    'viewerHasVoted' => $viewerHasVoted,
     'viewerHasFlagged' => $viewerHasFlaggedPost,
 ]) ?>
   </p>
