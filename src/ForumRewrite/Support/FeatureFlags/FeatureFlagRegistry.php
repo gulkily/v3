@@ -34,6 +34,7 @@ final class FeatureFlagRegistry
                 false,
                 self::APPROVED_MEMBERS_ONLY,
                 siteMutable: true,
+                group: 'ACCESS',
             ),
             new FeatureFlagDefinition(
                 self::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
@@ -42,6 +43,7 @@ final class FeatureFlagRegistry
                 false,
                 self::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
                 siteMutable: true,
+                group: 'ACCESS',
             ),
             new FeatureFlagDefinition(
                 self::UNICODE_AUTHORED_TEXT,
@@ -50,6 +52,7 @@ final class FeatureFlagRegistry
                 false,
                 self::UNICODE_AUTHORED_TEXT,
                 siteMutable: true,
+                group: 'AUTHORING',
             ),
             new FeatureFlagDefinition(
                 self::EMOJI_AUTHORED_TEXT,
@@ -59,6 +62,7 @@ final class FeatureFlagRegistry
                 self::EMOJI_AUTHORED_TEXT,
                 siteMutable: true,
                 requiresEnabledFlag: self::UNICODE_AUTHORED_TEXT,
+                group: 'AUTHORING',
             ),
             new FeatureFlagDefinition(
                 self::APP_VERSION_NOTIFICATION,
@@ -67,6 +71,7 @@ final class FeatureFlagRegistry
                 true,
                 self::APP_VERSION_NOTIFICATION,
                 siteMutable: true,
+                group: 'EXPERIENCE',
             ),
             new FeatureFlagDefinition(
                 self::THREAD_DENSITY_TOGGLE_ENABLED,
@@ -75,6 +80,7 @@ final class FeatureFlagRegistry
                 false,
                 self::THREAD_DENSITY_TOGGLE_ENABLED,
                 siteMutable: true,
+                group: 'EXPERIENCE',
             ),
             new FeatureFlagDefinition(
                 self::STATIC_DETAIL_PAGES_ENABLED,
@@ -83,6 +89,7 @@ final class FeatureFlagRegistry
                 true,
                 self::STATIC_DETAIL_PAGES_ENABLED,
                 siteMutable: true,
+                group: 'RENDERING',
             ),
             new FeatureFlagDefinition(
                 self::DEDALUS_AGENT_REPLIES_ENABLED,
@@ -159,7 +166,10 @@ final class FeatureFlagRegistry
     }
 
     private const GROUP_LABELS = [
-        'FORUM' => 'Forum',
+        'ACCESS' => 'Access and identity',
+        'AUTHORING' => 'Authored content',
+        'EXPERIENCE' => 'Forum experience',
+        'RENDERING' => 'Site rendering',
         'DEDALUS' => 'Agent replies',
         'LLM' => 'LLM exchanges',
         'FASTMOD' => 'Fastmod',
