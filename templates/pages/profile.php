@@ -24,6 +24,26 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
     <p class="meta">Your current browser identity matches this profile.</p>
   </article>
 <?php endif; ?>
+<?php if ($canPrivateMessage): ?>
+  <article
+    class="card"
+    data-private-message-composer
+    data-recipient-username-token="<?= $e($profile['username_token']) ?>"
+    data-sender-username-token="<?= $e($viewerProfile['username_token']) ?>"
+    data-recipient-label="<?= $e($headingLabel) ?>"
+  >
+    <h2>Message <?= $e($headingLabel) ?></h2>
+    <p class="meta">Encrypted to every approved key associated with this username.</p>
+    <form class="stack" data-private-message-form>
+      <label>
+        Message
+        <textarea name="plaintext" rows="6" maxlength="65536" required></textarea>
+      </label>
+      <button type="submit">Send private message</button>
+    </form>
+    <p class="meta" data-role="private-message-feedback" hidden></p>
+  </article>
+<?php endif; ?>
 <?php if ($self): ?>
   <article class="card">
     <p class="meta">Self profile mode</p>

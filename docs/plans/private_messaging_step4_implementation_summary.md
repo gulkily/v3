@@ -69,3 +69,20 @@
 - Notes:
   - This helper only prepares an encrypted envelope; it does not submit or render messages. The profile composer integration is Stage 5.
   - Stage 5 has not started. Per user direction, implementation stops here for review.
+
+## Stage 5 - Compose and send from a profile
+
+- Changes:
+  - Added a private-message composer to approved users' profile pages when the authenticated viewer is approved and belongs to a different username group.
+  - Added browser submission behavior that verifies the browser identity, prepares the Stage 4 envelope, and sends only the armored envelope and routing fields to the private-message API.
+  - Added per-recipient local drafts containing a stable message ID; drafts survive encryption or network failures and clear only after a successful response.
+- Verification:
+  - `node --check public/assets/private_message_compose.js`
+  - `php -l src/ForumRewrite/Application.php`
+  - `php -l templates/pages/profile.php`
+  - `php -l tests/PrivateMessageComposerTest.php`
+  - `php tests/run.php PrivateMessageComposerTest PrivateMessageEnvelopeTest PrivateMessageMailboxServiceTest PrivateMessageApiRoutingTest` — 7 passed.
+  - The composer test verifies a failed request retains the draft and submission ID, a successful retry clears it, and neither request body contains plaintext.
+- Notes:
+  - The composer targets the approved username group represented by the viewed profile, so all of that composite user's approved keys receive the envelope.
+  - Stage 6 has not started. Per user direction, implementation stops here for review.

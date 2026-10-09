@@ -908,6 +908,12 @@ final class Application
             && ((int) $viewerProfile['is_approved']) === 1
             && ((int) $profile['is_approved']) !== 1
             && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id']);
+        $canPrivateMessage = $viewerProfile !== null
+            && ((int) $viewerProfile['is_approved']) === 1
+            && ((int) $profile['is_approved']) === 1
+            && (string) ($viewerProfile['username_token'] ?? '') !== ''
+            && (string) ($profile['username_token'] ?? '') !== ''
+            && (string) $viewerProfile['username_token'] !== (string) $profile['username_token'];
         $pageTitleLabel = trim((string) ($profile['username'] ?? ''));
         if ($pageTitleLabel === '') {
             $pageTitleLabel = trim((string) ($profile['fallback_label'] ?? ''));
@@ -927,10 +933,15 @@ final class Application
                 'viewerProfile' => $viewerProfile,
                 'isOwnProfile' => $isOwnProfile,
                 'canApprove' => $canApprove,
+                'canPrivateMessage' => $canPrivateMessage,
             ],
             $pageTitleLabel . ' - Profile',
             'profiles',
-            $canApprove ? $this->identityScripts(['/assets/pending_approvals.js']) : [],
+            $canApprove
+                ? $this->identityScripts(['/assets/pending_approvals.js'])
+                : ($canPrivateMessage
+                    ? $this->identityScripts(['/assets/private_messages.js', '/assets/private_message_compose.js'])
+                    : []),
         );
     }
 

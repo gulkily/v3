@@ -59,6 +59,7 @@ $testFiles = [
     __DIR__ . '/PlatformDocsStaticTest.php',
     __DIR__ . '/PrivateMessageDatabaseConfigTest.php',
     __DIR__ . '/PrivateMessageApiRoutingTest.php',
+    __DIR__ . '/PrivateMessageComposerTest.php',
     __DIR__ . '/PrivateMessageEnvelopeTest.php',
     __DIR__ . '/PrivateMessageMailboxServiceTest.php',
     __DIR__ . '/PrivateMessageStoreTest.php',
