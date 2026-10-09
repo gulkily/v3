@@ -47,9 +47,14 @@ final class MediaEmbedDetector
     }
 
     /**
+     * Classifies a single already-isolated URL, independent of {@see detect()}'s
+     * body-scanning. Exposed so callers that already hold a candidate URL (e.g.
+     * the media-embed preview warm endpoint) can validate and extract its embed
+     * identifier through the exact same rules, rather than re-implementing them.
+     *
      * @return ?array{provider: string, embedId: string}
      */
-    private function classify(string $url): ?array
+    public function classify(string $url): ?array
     {
         if (preg_match('#^https?://(?:www\.)?youtube\.com/watch\?(?:[^\s&]*&)*v=([A-Za-z0-9_-]{6,})#i', $url, $matches) === 1) {
             return ['provider' => 'youtube', 'embedId' => $matches[1]];

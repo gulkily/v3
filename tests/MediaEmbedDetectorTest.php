@@ -76,6 +76,22 @@ final class MediaEmbedDetectorTest
         assertSame(strlen('https://youtu.be/dQw4w9WgXcQ'), $matches[0]['length']);
     }
 
+    public function testClassifyValidatesAndExtractsFromAStandaloneUrl(): void
+    {
+        $detector = new MediaEmbedDetector();
+
+        assertSame(
+            ['provider' => 'instagram', 'embedId' => 'Cabc123XYZ'],
+            $detector->classify('https://www.instagram.com/p/Cabc123XYZ/')
+        );
+        assertSame(
+            ['provider' => 'youtube', 'embedId' => 'dQw4w9WgXcQ'],
+            $detector->classify('https://youtu.be/dQw4w9WgXcQ')
+        );
+        assertSame(null, $detector->classify('https://vimeo.com/12345678'));
+        assertSame(null, $detector->classify('javascript:alert(1)'));
+    }
+
     public function testDisplayUrlStripsKnownTrackingParamsOnly(): void
     {
         $detector = new MediaEmbedDetector();
