@@ -25,6 +25,7 @@ use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\View\TemplateRenderer;
+use ForumRewrite\Write\LocalWriteService;
 use ForumRewrite\Write\StaticArtifactInvalidator;
 
 final class LocalAppSmokeTest
@@ -2783,6 +2784,7 @@ PHP;
         $word97Css = (string) file_get_contents(__DIR__ . '/../public/assets/theme-word97.css');
         assertStringContains(':root[data-theme="word97"] .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $word97Css);
         assertStringContains(':root[data-theme="word97"] .tool-launcher-button[href="/forte"]::before', $word97Css);
+        assertStringContains(':root[data-theme="word97"] .tool-launcher-button[href="/account/key/"]::before', $word97Css);
         assertStringContains(':root[data-theme="word97"] .tool-launcher-button[href="/tools/sqlite/"]::before', $word97Css);
         assertStringContains(':root[data-theme="word97"] .tool-launcher-button[href="/tools/llm-exchanges/"]::before', $word97Css);
         assertStringContains('value="Saved Title"', $prefilledCompose);
@@ -3047,6 +3049,7 @@ PHP;
         assertStringNotContains('data-offline-reader', $health);
         assertStringContains('href="/offline/"', $tools);
         assertStringContains('Offline Reading', $tools);
+        assertStringContains('href="/account/key/"', $tools);
         assertStringContains('method: "HEAD"', $healthScript);
         assertStringContains('Not checked while offline', $healthScript);
         assertStringContains('window.caches.keys()', $healthScript);
@@ -3144,6 +3147,7 @@ PHP;
         assertStringContains('data-role="offline-reader-indicator"', $reader);
         assertStringNotContains('data-role="offline-reader-details"', $reader);
         assertStringContains('offline mode', $reader);
+        assertStringContains('class="offline-mode-bar__offline" href="/offline/">Offline</a>', $reader);
         assertStringContains('class="offline-mode-bar__outbox" href="/tools/outbox/">Outbox</a>', $reader);
         assertStringContains('/assets/sql-wasm.', $reader);
         assertStringMatches('#data-runtime-url="/assets/sql-wasm\.[a-f0-9]{12}\.wasm"#', $reader);
@@ -4248,20 +4252,16 @@ PHP;
             $publicRoot,
         );
 
-        $_COOKIE = ['identity_hint' => 'guest'];
-        try {
-            $writeResponse = $this->renderFrontController(
-                $controller,
-                'POST',
-                '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false',
-                ['identity_hint' => 'guest']
-            );
-        } finally {
-            $_COOKIE = [];
-        }
+        $writeResult = (new LocalWriteService(
+            $repositoryRoot,
+            $databasePath,
+            $publicRoot,
+            new CanonicalRecordRepository($repositoryRoot),
+            additionalArtifactRoots: [$staticHtmlRoot],
+        ))->setFeatureFlag(['key' => 'FORUM_APP_VERSION_NOTIFICATION', 'value' => 'false']);
         $activityResponse = $this->renderFrontController($controller, 'GET', '/activity/', []);
 
-        assertStringContains('status=ok', $writeResponse);
+        assertSame('ok', $writeResult['status']);
         assertFalse(is_link($staticHtmlRoot . '/current'));
         assertStringContains('site_feature_flag', $activityResponse);
         assertStringContains('Set feature flag FORUM_APP_VERSION_NOTIFICATION=false', $activityResponse);

@@ -553,6 +553,9 @@
         readerIndicator.textContent = snapshotPresentation.compactReaderIndicator(revision);
         readerIndicator.title = revision;
       }
+      if (modeBar) {
+        modeBar.title = "archive " + (generatedAt || "unknown") + " · reader " + revision;
+      }
     }
 
     function metadataValue(database, key) {

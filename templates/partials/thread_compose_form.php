@@ -7,8 +7,9 @@ $threadComposeBodyPlaceholder = $isCompactThreadCompose ? 'What do you want to d
 $threadComposeSubmitLabel = $isCompactThreadCompose ? 'Post' : 'Create thread';
 $threadComposeAnonymousLabel = $isCompactThreadCompose ? 'Post anonymously' : 'Create thread anonymously';
 $threadComposeAction = (string) ($action ?? '/compose/thread');
+$threadComposeAuthoringOperation = (string) ($authoringOperation ?? 'thread');
 ?>
-<form method="post"<?= $threadComposeAction !== '' ? ' action="' . $e($threadComposeAction) . '"' : '' ?> class="<?= $e($threadComposeFormClass) ?>" data-compose-form data-compose-kind="thread">
+<form method="post"<?= $threadComposeAction !== '' ? ' action="' . $e($threadComposeAction) . '"' : '' ?> class="<?= $e($threadComposeFormClass) ?>" data-compose-form data-compose-kind="thread" data-authoring-operation="<?= $e($threadComposeAuthoringOperation) ?>">
 <?php if ($isCompactThreadCompose): ?>
   <textarea name="body" data-compose-field-label="Body" rows="<?= $e($threadComposeBodyRows) ?>" placeholder="<?= $e($threadComposeBodyPlaceholder) ?>" aria-label="Body"><?= $e($body) ?></textarea>
 <?php else: ?>

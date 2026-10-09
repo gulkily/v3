@@ -69,18 +69,18 @@ if (($mediaEmbedsEnabled ?? false) && $title === 'Untitled') {
         $bareMediaEmbedWarmBeacon = '<img class="media-embed-card__warm-beacon" data-media-embed-warm-beacon src="' . $e($bareMediaEmbedWarmBeaconUrl) . '" alt="" width="0" height="0" style="display:none" loading="eager">';
     }
 }
-$isQdbQuoteRoot = \ForumRewrite\SiteConfig::siteName() === 'qdb';
 $quoteRootId = (string) $thread['root_post_id'];
-$quoteRootHasNumber = preg_match('/-qdb-(\d+)$/', $quoteRootId, $quoteRootNumberMatch) === 1;
-$quoteRootDisplayNumber = $quoteRootHasNumber ? $quoteRootNumberMatch[1] : $quoteRootId;
-$quoteRootPermalinkHref = $quoteRootHasNumber ? '/' . $quoteRootDisplayNumber : '/threads/' . $quoteRootId;
+$quoteRootNumber = \ForumRewrite\Qdb\QdbQuoteNumbers::fromThreadId($quoteRootId);
+$isQdbQuoteRoot = \ForumRewrite\SiteConfig::siteName() === 'qdb' && $quoteRootNumber !== null;
+$quoteRootDisplayNumber = $quoteRootNumber ?? $quoteRootId;
+$quoteRootPermalinkHref = $quoteRootNumber !== null ? '/' . $quoteRootDisplayNumber : '/threads/' . $quoteRootId;
 $quoteRootScoreTotal = (int) ($thread['score_total'] ?? 0);
 $quoteRootVoteCount = (int) ($thread['vote_count'] ?? 0);
 $quoteRootScoreSignClass = $quoteRootScoreTotal > 0 ? 'quote-card-score-positive' : ($quoteRootScoreTotal < 0 ? 'quote-card-score-negative' : '');
 $quoteRootScoreValueClass = 'quote-card-score-value' . ($quoteRootScoreSignClass === '' ? '' : ' ' . $quoteRootScoreSignClass);
-$viewerHasUpvoted = (bool) ($viewerHasUpvoted ?? false);
-$viewerHasDownvoted = (bool) ($viewerHasDownvoted ?? false);
+$viewerHasVoted = (bool) ($viewerHasVoted ?? false);
 $voteCaptionPair = is_array($voteCaptionPair ?? null) ? $voteCaptionPair : null;
+$qdbVoteTags = is_array($qdbVoteTags ?? null) ? $qdbVoteTags : ['upvote', 'downvote'];
 $upvote = is_array($voteCaptionPair['positive'] ?? null) ? $voteCaptionPair['positive'] : ['tag' => 'upvote', 'label' => '+'];
 $downvote = is_array($voteCaptionPair['negative'] ?? null) ? $voteCaptionPair['negative'] : ['tag' => 'downvote', 'label' => '-'];
 $metaVisible = (bool) ($metaVisible ?? true);
@@ -102,13 +102,11 @@ if (!$metaVisible) {
     'quotePostId' => $post['post_id'],
     'upvote' => $upvote,
     'downvote' => $downvote,
-    'viewerHasUpvoted' => $viewerHasUpvoted,
-    'viewerHasDownvoted' => $viewerHasDownvoted,
+    'qdbVoteTags' => $qdbVoteTags,
+    'viewerHasVoted' => $viewerHasVoted,
     'viewerHasFlagged' => $viewerHasFlaggedPost,
 ]) ?>
   </p>
-  <p class="meta quote-card-reaction-feedback" data-role="thread-reaction-feedback" hidden></p>
-  <p class="meta quote-card-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
   <p class="quote-card-body"><?= $br($postBody) ?></p>
 <?php else: ?>
   <h1><?= $e($title) ?></h1>

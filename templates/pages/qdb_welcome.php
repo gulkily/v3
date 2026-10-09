@@ -20,11 +20,15 @@
 <?php if ($newsThreads === []): ?>
         <p class="meta">No site news yet.</p>
 <?php else: ?>
-        <ul>
 <?php foreach ($newsThreads as $thread): ?>
-          <li><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($threadTitle($thread)) ?></a> <span class="meta"><?= $contentMeta($thread, 'root_post_created_at', '') ?></span></li>
+        <div class="qdb-news-item">
+          <span class="qdb-news-date"><?= $e(substr((string) $thread['root_post_created_at'], 0, 10)) ?></span>
+<?php if (trim((string) ($thread['subject'] ?? '')) !== ''): ?>
+          <strong class="qdb-news-title"><?= $e(trim((string) $thread['subject'])) ?></strong>
+<?php endif; ?>
+          <span class="qdb-news-body"><?= $br($thread['root_post_body']) ?></span>
+        </div>
 <?php endforeach; ?>
-        </ul>
 <?php if ($hasMoreNews): ?>
         <p class="meta"><a href="/tags/news">All news</a></p>
 <?php endif; ?>

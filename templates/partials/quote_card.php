@@ -3,13 +3,13 @@ $quoteId = (string) $thread['root_post_id'];
 $permalink = \ForumRewrite\Qdb\QdbQuoteNumbers::displayPermalink($quoteId);
 $displayNumber = $permalink['displayNumber'];
 $permalinkHref = $permalink['permalinkHref'];
-$viewerHasUpvoted = isset($viewerUpvotedThreadIds[$quoteId]);
-$viewerHasDownvoted = isset($viewerDownvotedThreadIds[$quoteId]);
+$viewerHasVoted = isset($viewerVotedThreadIds[$quoteId]);
 $viewerHasFlagged = isset($viewerFlaggedPostIds[$quoteId]);
 $scoreTotal = (int) ($thread['score_total'] ?? 0);
 $voteCount = (int) ($thread['vote_count'] ?? 0);
 $scoreSignClass = $scoreTotal > 0 ? 'quote-card-score-positive' : ($scoreTotal < 0 ? 'quote-card-score-negative' : '');
 $voteCaptionPair = is_array($voteCaptionPair ?? null) ? $voteCaptionPair : null;
+$qdbVoteTags = is_array($qdbVoteTags ?? null) ? $qdbVoteTags : ['upvote', 'downvote'];
 $upvote = is_array($voteCaptionPair['positive'] ?? null) ? $voteCaptionPair['positive'] : ['tag' => 'upvote', 'label' => '+'];
 $downvote = is_array($voteCaptionPair['negative'] ?? null) ? $voteCaptionPair['negative'] : ['tag' => 'downvote', 'label' => '-'];
 $scoreValueClass = 'quote-card-score-value' . ($scoreSignClass === '' ? '' : ' ' . $scoreSignClass);
@@ -22,12 +22,10 @@ $scoreValueClass = 'quote-card-score-value' . ($scoreSignClass === '' ? '' : ' '
     'quotePostId' => $quoteId,
     'upvote' => $upvote,
     'downvote' => $downvote,
-    'viewerHasUpvoted' => $viewerHasUpvoted,
-    'viewerHasDownvoted' => $viewerHasDownvoted,
+    'qdbVoteTags' => $qdbVoteTags,
+    'viewerHasVoted' => $viewerHasVoted,
     'viewerHasFlagged' => $viewerHasFlagged,
 ]) ?>
   </p>
-  <p class="meta quote-card-reaction-feedback" data-role="thread-reaction-feedback" hidden></p>
-  <p class="meta quote-card-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
   <p class="quote-card-body"><?= $br($thread['root_post_body']) ?></p>
 </article>

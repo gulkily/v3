@@ -29,6 +29,8 @@ use ForumRewrite\Http\MediaEmbedPreviewController;
 use ForumRewrite\Http\OfflineReaderController;
 use ForumRewrite\Http\PostWorkflowApiController;
 use ForumRewrite\Http\PlatformDocsController;
+use ForumRewrite\Http\PrivateMessageApiController;
+use ForumRewrite\Http\PrivateMessagePageController;
 use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Http\SourceFileController;
@@ -65,6 +67,8 @@ use ForumRewrite\Write\IdentityBootstrapTimingException;
 use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
 use ForumRewrite\Llm\LlmExchangeRecorder;
 use ForumRewrite\Llm\SqliteLlmExchangeStore;
+use ForumRewrite\Messaging\PrivateMessageDatabaseConfig;
+use ForumRewrite\Messaging\PrivateMessageStore;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 use ForumRewrite\Security\OpenPgpKeyInspector;
@@ -93,6 +97,7 @@ final class Application
     private ?QdbExperience $qdbExperience = null;
     private ?VisitorStatisticsObserver $visitorStatisticsObserver = null;
     private ?VisitorStatisticsStore $visitorStatisticsStore = null;
+    private ?PrivateMessageStore $privateMessageStore = null;
 
     public function __construct(
         private readonly string $projectRoot,
@@ -119,7 +124,9 @@ final class Application
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
         if ($this->approvedMembersOnlyEnabled()
-            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity'], true)
+            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
+            || $path === '/api/private_messages/conversation'
+            || str_starts_with($path, '/messages/conversation/')
         ) {
             $this->startViewerSession();
         } elseif ($this->shouldResumeViewerSession($method, $path, $query)) {
@@ -197,13 +204,63 @@ final class Application
             return;
         }
 
+        if ($path === '/api/private_messages') {
+            $this->privateMessageApiController()->send($method, $query);
+            return;
+        }
+
+        if ($path === '/api/private_messages/inbox') {
+            $this->privateMessageApiController()->inbox($method, $query);
+            return;
+        }
+
+        if ($path === '/api/private_messages/sent') {
+            $this->privateMessageApiController()->sent($method, $query);
+            return;
+        }
+
+        if ($path === '/api/private_messages/conversation') {
+            $this->privateMessageApiController()->conversation($method, $query);
+            return;
+        }
+
+        if ($path === '/api/private_messages/recipient_keys') {
+            $this->privateMessageApiController()->recipientKeys($method, $query);
+            return;
+        }
+
+        if ($path === '/messages/inbox') {
+            $this->privateMessagePageController()->inbox($method);
+            return;
+        }
+
+        if ($path === '/messages/sent') {
+            $this->privateMessagePageController()->sent($method);
+            return;
+        }
+
+        if (preg_match('#^/messages/conversation/([^/]+)/?$#', $path, $matches) === 1) {
+            $this->privateMessagePageController()->conversation($method, $matches[1]);
+            return;
+        }
+
         if ($path === '/api/create_thread') {
             $this->writePostAndIdentityApiController()->createThread($method, $query);
             return;
         }
 
+        if ($path === '/api/create_quote') {
+            $this->writePostAndIdentityApiController()->createQuote($method, $query);
+            return;
+        }
+
         if ($path === '/api/prepare_thread') {
             $this->writePostAndIdentityApiController()->prepareThread($method, $query);
+            return;
+        }
+
+        if ($path === '/api/prepare_quote') {
+            $this->writePostAndIdentityApiController()->prepareQuote($method, $query);
             return;
         }
 
@@ -277,6 +334,16 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_feature_flag_change') {
+            $this->toolsPageController()->prepareFeatureFlagChangeApi($method, $query);
+            return;
+        }
+
+        if ($path === '/api/finalize_feature_flag_change') {
+            $this->toolsPageController()->finalizeFeatureFlagChangeApi($method, $query);
+            return;
+        }
+
         if ($path === '/api/link_identity') {
             $this->composeAndAccountKeyController()->linkIdentityApi($method, $query);
             return;
@@ -319,6 +386,11 @@ final class Application
 
         if ($path === '/compose/thread' && $method === 'POST') {
             $this->composeAndAccountKeyController()->submitComposeThread($query);
+            return;
+        }
+
+        if ($path === '/add' && $method === 'POST') {
+            $this->composeAndAccountKeyController()->submitComposeQuote($query);
             return;
         }
 
@@ -894,6 +966,12 @@ final class Application
             && ((int) $viewerProfile['is_approved']) === 1
             && ((int) $profile['is_approved']) !== 1
             && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id']);
+        $canPrivateMessage = $viewerProfile !== null
+            && ((int) $viewerProfile['is_approved']) === 1
+            && ((int) $profile['is_approved']) === 1
+            && (string) ($viewerProfile['username_token'] ?? '') !== ''
+            && (string) ($profile['username_token'] ?? '') !== ''
+            && (string) $viewerProfile['username_token'] !== (string) $profile['username_token'];
         $pageTitleLabel = trim((string) ($profile['username'] ?? ''));
         if ($pageTitleLabel === '') {
             $pageTitleLabel = trim((string) ($profile['fallback_label'] ?? ''));
@@ -913,10 +991,15 @@ final class Application
                 'viewerProfile' => $viewerProfile,
                 'isOwnProfile' => $isOwnProfile,
                 'canApprove' => $canApprove,
+                'canPrivateMessage' => $canPrivateMessage,
             ],
             $pageTitleLabel . ' - Profile',
             'profiles',
-            $canApprove ? $this->identityScripts(['/assets/pending_approvals.js']) : [],
+            $canApprove
+                ? $this->identityScripts(['/assets/pending_approvals.js'])
+                : ($canPrivateMessage
+                    ? $this->identityScripts(['/assets/private_messages.js', '/assets/private_message_compose.js'])
+                    : []),
         );
     }
 
@@ -1548,6 +1631,21 @@ final class Application
         return $this->visitorStatisticsStore = new VisitorStatisticsStore(new PDO('sqlite:' . $path));
     }
 
+    private function privateMessageStore(): PrivateMessageStore
+    {
+        if ($this->privateMessageStore !== null) {
+            return $this->privateMessageStore;
+        }
+
+        $path = PrivateMessageDatabaseConfig::path($this->projectRoot, PrivateConfig::load($this->projectRoot));
+        $directory = dirname($path);
+        if ($directory !== '' && !is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
+            throw new RuntimeException('Private message database directory is not writable: ' . $directory);
+        }
+
+        return $this->privateMessageStore = new PrivateMessageStore(new PDO('sqlite:' . $path));
+    }
+
     private function authenticatedViewerProfile(): ?array
     {
         $identityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
@@ -1626,6 +1724,10 @@ final class Application
 
     private function isApplicationRoute(string $path): bool
     {
+        if (str_starts_with($path, '/messages/conversation/')) {
+            return true;
+        }
+
         if ($this->isForteApplicationRoute($path)) {
             return true;
         }
@@ -1650,17 +1752,18 @@ final class Application
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',
+            '/messages/inbox', '/messages/sent', '/api/private_messages/conversation',
             '/account/key', '/account/key/', '/invites', '/invites/',
             '/api', '/api/', '/api/version', '/api/list_index',
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username_claim_cta',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
-            '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread',
-            '/api/prepare_thread', '/api/prepare_identity', '/api/create_reply',
+            '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
+            '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',
             '/api/prepare_reply', '/api/create_prepared_post', '/api/create_identity',
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
-            '/api/set_feature_flag', '/api/link_identity', '/api/approve_user',
+            '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
             '/latest', '/top', '/leetness', '/add', '/random', '/search',
         ], true)) {
@@ -1854,6 +1957,24 @@ final class Application
         return new AuthApiController(
             $this->routeServices(),
             $this->authenticatedViewerProfile(...),
+        );
+    }
+
+    private function privateMessageApiController(): PrivateMessageApiController
+    {
+        return new PrivateMessageApiController(
+            $this->routeServices(),
+            $this->authenticatedViewerProfile(...),
+            $this->privateMessageStore(...),
+        );
+    }
+
+    private function privateMessagePageController(): PrivateMessagePageController
+    {
+        return new PrivateMessagePageController(
+            $this->routeServices(),
+            $this->authenticatedViewerProfile(...),
+            $this->privateMessageStore(...),
         );
     }
 

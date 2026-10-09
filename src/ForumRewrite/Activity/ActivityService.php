@@ -870,6 +870,7 @@ final class ActivityService
             str_starts_with($path, 'records/posts/') => 'post record',
             str_starts_with($path, 'records/thread-labels/') => 'thread label record',
             str_starts_with($path, 'records/post-reactions/') => 'post reaction record',
+            str_starts_with($path, 'records/feature-flag-changes/') => 'feature flag change record',
             str_starts_with($path, 'records/identity/') => 'identity record',
             str_starts_with($path, 'records/approval-seeds/') => 'approval seed record',
             str_starts_with($path, 'records/public-keys/') => 'public key',
@@ -958,6 +959,9 @@ final class ActivityService
             }
             if (str_starts_with($recordPath, 'records/post-reactions/')) {
                 return $repository->loadPostReaction($recordPath)->authorIdentityId;
+            }
+            if (str_starts_with($recordPath, 'records/feature-flag-changes/')) {
+                return $repository->loadFeatureFlagChange($recordPath)->operatorIdentityId;
             }
         } catch (RuntimeException) {
             return null;

@@ -6,6 +6,7 @@ require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
     __DIR__ . '/AgentReplyCommandTest.php',
+    __DIR__ . '/ApprovedUserKeyResolverTest.php',
     __DIR__ . '/AgentIdentityServiceTest.php',
     __DIR__ . '/AgentReplyGenerationTest.php',
     __DIR__ . '/AgentReplyTaskTest.php',
@@ -63,6 +64,15 @@ $testFiles = [
     __DIR__ . '/PlatformDocsCatalogTest.php',
     __DIR__ . '/PlatformDocsPageTest.php',
     __DIR__ . '/PlatformDocsStaticTest.php',
+    __DIR__ . '/PrivateMessageDatabaseConfigTest.php',
+    __DIR__ . '/PrivateMessageApiRoutingTest.php',
+    __DIR__ . '/PrivateMessageComposerTest.php',
+    __DIR__ . '/PrivateMessageEnvelopeTest.php',
+    __DIR__ . '/PrivateMessageMailboxServiceTest.php',
+    __DIR__ . '/PrivateMessagePageControllerTest.php',
+    __DIR__ . '/PrivateMessageReaderTest.php',
+    __DIR__ . '/PrivateMessageReleaseIsolationTest.php',
+    __DIR__ . '/PrivateMessageStoreTest.php',
     __DIR__ . '/OfflineReadingDiagnosticCommandTest.php',
     __DIR__ . '/OfflineNavigationWorkerTest.php',
     __DIR__ . '/OfflineOutboxStateTest.php',

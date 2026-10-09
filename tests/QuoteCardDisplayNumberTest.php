@@ -31,6 +31,7 @@ final class QuoteCardDisplayNumberTest
         );
         assertStringContains('class="quote-card-header-actions"', $board);
         assertStringContains('>⚑ Flag</button>', $board);
+        assertStringContains('data-role="qdb-reaction-feedback" aria-live="polite" hidden></span>', $board);
         assertTrue(
             strpos($board, 'data-role="thread-score"')
             < strpos($board, 'class="quote-card-header-actions"'),
@@ -164,7 +165,7 @@ final class QuoteCardDisplayNumberTest
         $this->writeNews($repositoryRoot, [
             ['news-oldest', '2026-10-01T12:00:00Z', 'Oldest news', 'Oldest body.'],
             ['news-older', '2026-10-02T12:00:00Z', 'Older news', 'Older body.'],
-            ['news-titleless', '2026-10-03T12:00:00Z', '', "Titleless news headline\nMore detail."],
+            ['news-titleless', '2026-10-03T12:00:00Z', '', "Titleless news headline\nMore detail. <b>&"],
             ['news-newest', '2026-10-04T12:00:00Z', 'Newest news', 'Newest body.'],
         ]);
 
@@ -176,16 +177,23 @@ final class QuoteCardDisplayNumberTest
             putenv('FORUM_SITE_ID');
         }
 
+        assertStringNotContains('<b>&', $welcome);
         assertStringContains('<h2>Site News</h2>', $welcome);
         assertStringContains('⚑ Flag something that', $welcome);
         assertStringNotContains('[X] to flag', $welcome);
         assertStringNotContains('Recent activity', $welcome);
-        assertSame(3, substr_count($welcome, 'href="/threads/news-'));
-        assertStringContains('href="/threads/news-newest">Newest news</a>', $welcome);
-        assertStringContains('href="/threads/news-titleless">Titleless news headline</a>', $welcome);
-        assertStringContains('href="/threads/news-older">Older news</a>', $welcome);
-        assertStringNotContains('news-oldest', $welcome);
-        assertStringContains('<time datetime="2026-10-04T12:00:00Z">Oct 4, 2026 at 12:00 UTC</time>', $welcome);
+        assertSame(3, substr_count($welcome, 'class="qdb-news-item"'));
+        assertStringContains('<span class="qdb-news-date">2026-10-04</span>', $welcome);
+        assertStringContains('<strong class="qdb-news-title">Newest news</strong>', $welcome);
+        assertStringContains('Newest body.', $welcome);
+        assertStringContains('<strong class="qdb-news-title">Older news</strong>', $welcome);
+        assertStringContains('Older body.', $welcome);
+        assertStringContains('Titleless news headline', $welcome);
+        assertStringContains('More detail. &lt;b&gt;&amp;', $welcome);
+        assertSame(2, substr_count($welcome, 'class="qdb-news-title"'));
+        assertStringNotContains('Oldest', $welcome);
+        assertStringNotContains('Oct 4, 2026', $welcome);
+        assertStringNotContains('href="/threads/news-', $welcome);
         assertStringContains('href="/tags/news">All news</a>', $welcome);
         assertTrue(
             strpos($welcome, 'Newest news') < strpos($welcome, 'Titleless news headline')
@@ -248,7 +256,10 @@ final class QuoteCardDisplayNumberTest
         }
 
         assertSame(200, http_response_code());
+        assertStringContains('<h1>Hello world</h1>', $legacyThread);
         assertStringContains('Hello world', $legacyThread);
+        assertStringNotContains('quote-card-permalink', $legacyThread);
+        assertStringNotContains('quote-card-header-actions', $legacyThread);
     }
 
     public function testGenericBoardStillListsLegacyAndQuoteRoots(): void
@@ -304,12 +315,17 @@ final class QuoteCardDisplayNumberTest
         assertTrue(is_file($artifactRoot . '/top/index.html'));
         assertTrue(is_file($artifactRoot . '/leetness.html'));
         assertTrue(is_file($artifactRoot . '/leetness/index.html'));
+        assertTrue(is_file($artifactRoot . '/threads/root-001.html'));
         assertTrue(is_file($artifactRoot . '/threads/thread-20030613104735-qdb-42.html'));
         assertTrue(is_file($artifactRoot . '/qdb/quotes/42.html'));
+        $regularThreadDetail = (string) file_get_contents($artifactRoot . '/threads/root-001.html');
         assertSame(
             (string) file_get_contents($artifactRoot . '/threads/thread-20030613104735-qdb-42.html'),
             (string) file_get_contents($artifactRoot . '/qdb/quotes/42.html')
         );
+        assertStringContains('<h1>Hello world</h1>', $regularThreadDetail);
+        assertStringNotContains('quote-card-permalink', $regularThreadDetail);
+        assertStringNotContains('quote-card-header-actions', $regularThreadDetail);
     }
 
     public function testQdbStaticReleaseCanSkipIndividualDetailPages(): void
@@ -425,6 +441,7 @@ final class QuoteCardDisplayNumberTest
         assertStringContains('data-role="thread-score" data-score-format="bare-ratio">(<span class="quote-card-score-value quote-card-score-positive" data-role="thread-score-value">5</span>/<span data-role="thread-vote-count">7</span>)</span>', $permalink);
         assertStringContains('class="quote-card-header-actions"', $permalink);
         assertStringContains('>⚑ Flag</button>', $permalink);
+        assertStringContains('data-role="qdb-reaction-feedback" aria-live="polite" hidden></span>', $permalink);
         assertStringContains('<p class="quote-card-body">The quoted body.<br />', $permalink);
         assertStringNotContains('<p class="meta">', $permalink);
         assertStringNotContains('>Reply</a>', $permalink);

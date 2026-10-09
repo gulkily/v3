@@ -294,6 +294,12 @@ final class TemplateRenderer
             ));
         }
 
+        if ($viewerProfile !== null
+            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
+            && (($viewerProfile['_authenticated_identity'] ?? true) === true)) {
+            $items[] = ['href' => '/messages/inbox', 'label' => 'Messages', 'section' => 'messages'];
+        }
+
         // Account/Invite are deliberately left out of the qdb profile's nav
         // (operator's call) - both routes remain reachable by direct URL.
         if (!$isQdbNavigation

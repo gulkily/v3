@@ -32,6 +32,16 @@ final class QdbBoardPolicy
         return $this->captionCatalog->selectActivePair();
     }
 
+    /** @return list<string> */
+    public function voteTags(): array
+    {
+        return array_values(array_unique([
+            'upvote',
+            'downvote',
+            ...($this->captionCatalog?->knownTags() ?? []),
+        ]));
+    }
+
     /**
      * @param array<int, array<string, mixed>> $threads
      * @return array{threads: array<int, array<string, mixed>>, pagination: array<int, array<string, mixed>>|null}
@@ -53,11 +63,11 @@ final class QdbBoardPolicy
 
     /**
      * @param array<int, array<string, mixed>> $threads
-     * @return array{upvoted: array<string, true>, downvoted: array<string, true>, flagged: array<string, true>}
+     * @return array{voted: array<string, true>, flagged: array<string, true>}
      */
     public function viewerReactionState(array $threads): array
     {
-        $empty = ['upvoted' => [], 'downvoted' => [], 'flagged' => []];
+        $empty = ['voted' => [], 'flagged' => []];
         $viewerProfile = ($this->resolveViewerProfile)();
         if ($viewerProfile === null) {
             return $empty;
@@ -66,14 +76,13 @@ final class QdbBoardPolicy
         $viewerIdentityId = (string) $viewerProfile['identity_id'];
         $rootPostIds = array_column($threads, 'root_post_id');
 
-        $upvoted = ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'upvote', $viewerIdentityId);
-        foreach ($this->captionCatalog?->knownTags() ?? [] as $tag) {
-            $upvoted += ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, $tag, $viewerIdentityId);
+        $voted = [];
+        foreach ($this->voteTags() as $tag) {
+            $voted += ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, $tag, $viewerIdentityId);
         }
 
         return [
-            'upvoted' => $upvoted,
-            'downvoted' => ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'downvote', $viewerIdentityId),
+            'voted' => $voted,
             'flagged' => ViewerTagLookup::postTags($this->repositoryRoot, $rootPostIds, 'flag', $viewerIdentityId),
         ];
     }

@@ -24,6 +24,13 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
     <p class="meta">Your current browser identity matches this profile.</p>
   </article>
 <?php endif; ?>
+<?php if ($canPrivateMessage): ?>
+<?= $indent($partial('partials/private_message_composer.php', [
+    'recipientUsernameToken' => (string) $profile['username_token'],
+    'senderUsernameToken' => (string) $viewerProfile['username_token'],
+    'recipientLabel' => $headingLabel,
+]), 2) ?>
+<?php endif; ?>
 <?php if ($self): ?>
   <article class="card">
     <p class="meta">Self profile mode</p>

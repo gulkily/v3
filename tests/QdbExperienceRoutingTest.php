@@ -33,6 +33,19 @@ final class QdbExperienceRoutingTest
         ProfileRegressionFixture::withFourthProfile(fn (): mixed => $this->testRegisteredProfilesHonorTheSelectedExperienceRoutes());
     }
 
+    public function testQdbAddFormUsesTheQuoteAuthoringOperation(): void
+    {
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $page = $this->render($this->application(), '/add');
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+
+        assertStringContains('action="/add"', $page);
+        assertStringContains('data-authoring-operation="quote"', $page);
+    }
+
     private function application(): Application
     {
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-qdb-routes-repo-' . bin2hex(random_bytes(6));
