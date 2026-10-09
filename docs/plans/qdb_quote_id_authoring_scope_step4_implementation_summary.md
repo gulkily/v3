@@ -25,3 +25,15 @@
   - Migration and deployment checks — not applicable; no schema or deployment configuration changed.
 - Notes:
   - The shared compose form is extended by configuration rather than duplicated; the quote-only listing policy remains unchanged.
+
+## Stage 3 - Regression contract and release verification
+
+- Changes:
+  - Extended signed-browser coverage so a quote form prepares through `/api/prepare_quote` and finalizes its numbered quote record through the established signed-post endpoint.
+  - Retained generic signed-thread retry coverage and existing quote-number, collection, permalink, and non-QDB behavior coverage.
+- Verification:
+  - Focused QDB/write/browser suite — 36 passed, with one pre-existing QDB Welcome assertion failure unrelated to authoring (`QuoteCardDisplayNumberTest::testQdbWelcomeDisplaysThreeNewestNewsItemsAndLinksToAllNews`).
+  - `php tests/run.php` — 888 run, 885 passed, 3 failed; all failures are classified by the runner as long-standing: the QDB Welcome assertion above, `WriteApiSmokeTest::testTaskQueueProcessesQueuedAgentReplyOnce`, and `WriteApiSmokeTest::testQdbPermalinkShowsViewersExistingUpvoteAsPressedAndDisabled`.
+  - Migration, static-artifact, and deployment configuration checks — not applicable; this changes neither schema nor rendering/static-build contracts.
+- Notes:
+  - `git diff --check` passes. Existing numbered records remain parsed and filtered by the unchanged QDB policy.
