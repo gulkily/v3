@@ -23,3 +23,14 @@
   - `git diff --check` — passed.
 - Notes:
   - No controller change was needed because both existing controllers already consume `PrivateMessageMailboxService` results.
+
+## Stage 3 - Simplify mailbox-card presentation
+
+- Changes:
+  - Removed the encrypted-message identifier, manual decrypt-and-verify control, and former reader-status line.
+  - Added hidden counterpart-adjacent verification and dedicated reader-error targets; retained the hidden plaintext target.
+- Verification:
+  - `php tests/run.php PrivateMessagePageControllerTest` — 2 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - The error target supports the approved recovery path without restoring the removed generic status UI.
