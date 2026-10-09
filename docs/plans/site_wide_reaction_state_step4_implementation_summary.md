@@ -72,3 +72,24 @@
 - Notes:
   - The adapter preserves the rendered caption text on later-page hydration;
     cache markers remain advisory and cannot alter server write eligibility.
+
+## Stage 5 - Release regression checks
+
+- Changes:
+  - Completed profile, browser-runtime, QDB rendering, and static-artifact
+    regression checks; no additional production changes were required.
+- Verification:
+  - `./v3 test BrowserSigningNormalizationTest QuoteCardDisplayNumberTest
+    QdbBoardPolicyTest` — 100 passed.
+  - `./v3 test` — 881 passed; two unrelated existing failures remain:
+    `LocalAppSmokeTest::testFeatureFlagsPageShowsLockedBadgeWithReasonForNonMutableFlags`
+    (failing since 2026-10-08) and
+    `WriteApiSmokeTest::testTaskQueueProcessesQueuedAgentReplyOnce` (failing
+    since 2026-10-09 before this branch's implementation).
+  - `git diff --check`; PHP lint for changed PHP files; `node --check
+    public/assets/thread_reactions.js`.
+- Notes:
+  - No migration, new service, deployment action, or hosted-browser check is
+    required for this client-advisory presentation feature. Server rendering
+    and write validation provide the recovery path when client storage is
+    unavailable or stale.
