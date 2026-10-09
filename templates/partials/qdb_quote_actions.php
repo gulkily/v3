@@ -38,4 +38,5 @@ $viewerHasFlagged = (bool) ($viewerHasFlagged ?? false);
     aria-pressed="<?= $viewerHasFlagged ? 'true' : 'false' ?>"
 <?= $viewerHasFlagged ? ' disabled="disabled"' : '' ?>
   >⚑ Flag</button>
+  <span class="meta quote-card-reaction-feedback" data-role="qdb-reaction-feedback" aria-live="polite" hidden></span>
 </span>

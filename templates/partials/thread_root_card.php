@@ -94,8 +94,6 @@ if (!$metaVisible) {
     'viewerHasFlagged' => $viewerHasFlaggedPost,
 ]) ?>
   </p>
-  <p class="meta quote-card-reaction-feedback" data-role="thread-reaction-feedback" hidden></p>
-  <p class="meta quote-card-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
   <p class="quote-card-body"><?= $br($postBody) ?></p>
 <?php else: ?>
   <h1><?= $e($title) ?></h1>

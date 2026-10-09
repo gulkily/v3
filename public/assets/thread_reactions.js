@@ -228,6 +228,29 @@
     renderTechnicalFeedback(node, technicalDetails);
   }
 
+  function qdbFeedbackNode(root) {
+    return root.querySelector('[data-role="qdb-reaction-feedback"]');
+  }
+
+  function reactionFeedbackTarget(root, legacyRole) {
+    const sharedNode = qdbFeedbackNode(root);
+
+    return {
+      node: sharedNode || root.querySelector(`[data-role="${legacyRole}"]`),
+      isSharedQdbStatus: sharedNode !== null,
+    };
+  }
+
+  function clearQdbFeedback(node, isSharedQdbStatus) {
+    if (!node || !isSharedQdbStatus) {
+      return;
+    }
+
+    node.textContent = "";
+    node.removeAttribute("data-kind");
+    node.hidden = true;
+  }
+
   function parseResponseValue(text, key) {
     const prefix = `${key}=`;
     const line = String(text)
@@ -529,7 +552,8 @@
     boundThreadRoots.add(root);
     const threadId = root.getAttribute("data-thread-id") || "";
     const scoreNode = root.querySelector('[data-role="thread-score"]');
-    const feedbackNode = root.querySelector('[data-role="thread-reaction-feedback"]');
+    const feedbackTarget = reactionFeedbackTarget(root, "thread-reaction-feedback");
+    const feedbackNode = feedbackTarget.node;
 
     root.addEventListener("click", async (event) => {
       const button = event.target instanceof Element
@@ -552,6 +576,8 @@
         completeActionTiming(timing, "ignored_pending");
         return;
       }
+
+      clearQdbFeedback(feedbackNode, feedbackTarget.isSharedQdbStatus);
 
       const previousState = captureThreadReactionState(button, scoreNode);
 
@@ -616,7 +642,8 @@
     }
     boundPostRoots.add(root);
     const postId = root.getAttribute("data-post-id") || "";
-    const feedbackNode = root.querySelector('[data-role="post-reaction-feedback"]');
+    const feedbackTarget = reactionFeedbackTarget(root, "post-reaction-feedback");
+    const feedbackNode = feedbackTarget.node;
 
     root.addEventListener("click", async (event) => {
       const button = event.target instanceof Element
@@ -639,6 +666,8 @@
         completeActionTiming(timing, "ignored_pending");
         return;
       }
+
+      clearQdbFeedback(feedbackNode, feedbackTarget.isSharedQdbStatus);
 
       const previousState = capturePostReactionState(root, button);
 
