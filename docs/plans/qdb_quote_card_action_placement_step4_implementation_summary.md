@@ -17,3 +17,21 @@
 - Notes:
   - The existing tag, score, disabled-state, and reaction data attributes are
     retained; only flag's displayed and applied labels now include its symbol.
+
+## Stage 2 - Permalink header parity
+
+- Changes:
+  - Replaced numeric QDB permalink's duplicated controls with the shared
+    header component.
+  - Moved its thread/post reaction feedback targets outside the header and
+    retained non-QDB thread actions unchanged.
+  - Added permalink coverage for score, controls, and body ordering plus
+    `⚑ Flag`.
+- Verification:
+  - `php -l templates/partials/thread_root_card.php` passed.
+  - `php tests/run.php QuoteCardDisplayNumberTest BrowserSigningNormalizationTest`
+    passed (92/92).
+  - `git diff --check` passed.
+- Notes:
+  - The shared component continues to provide the original `apply-thread-tag`
+    and `apply-post-tag` data contracts.
