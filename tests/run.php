@@ -29,6 +29,7 @@ $testFiles = [
     __DIR__ . '/MediaEmbedRendererTest.php',
     __DIR__ . '/MediaEmbedPreviewCacheStoreTest.php',
     __DIR__ . '/InstagramPagePreviewFetcherTest.php',
+    __DIR__ . '/YoutubeOembedTitleFetcherTest.php',
     __DIR__ . '/MediaEmbedPreviewControllerTest.php',
     __DIR__ . '/MediaEmbedInlinePlayerScriptTest.php',
     __DIR__ . '/TemplateRendererMediaEmbedsScriptTest.php',
