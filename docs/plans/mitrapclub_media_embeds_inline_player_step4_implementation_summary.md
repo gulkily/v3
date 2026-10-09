@@ -10,3 +10,14 @@
   - `php tests/run.php FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest` — 17 run, 17 passed.
 - Notes:
   - Same mechanism already proven by the `EMOJI_AUTHORED_TEXT`/`UNICODE_AUTHORED_TEXT` pair — no new flag-evaluation logic needed.
+
+## Stage 2 - Expose embed identifier
+
+- Changes:
+  - `MediaEmbedDetector::classify()` now captures and returns the raw embed identifier (YouTube video ID / Instagram shortcode) alongside the provider, via a regex capture group instead of a non-capturing match.
+  - `detect()`'s return shape gained an `embedId` field per match.
+  - Extended `tests/MediaEmbedDetectorTest.php` with `embedId` assertions for every known YouTube/Instagram shape already covered.
+- Verification:
+  - `php tests/run.php MediaEmbedDetectorTest MediaEmbedRendererTest` — 10 run, 10 passed. `MediaEmbedRendererTest` (Cycle 5, untouched) still passes, confirming the additive field doesn't disturb Cycle 5's existing consumer.
+- Notes:
+  - Purely additive to an already pure, already-tested function — no behavior change for any existing caller.

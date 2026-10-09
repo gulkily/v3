@@ -24,6 +24,7 @@ final class MediaEmbedDetectorTest
             assertSame(1, count($matches));
             assertSame('youtube', $matches[0]['provider']);
             assertSame($url, $matches[0]['url']);
+            assertSame('dQw4w9WgXcQ', $matches[0]['embedId']);
         }
     }
 
@@ -42,6 +43,7 @@ final class MediaEmbedDetectorTest
             assertSame(1, count($matches));
             assertSame('instagram', $matches[0]['provider']);
             assertSame($url, $matches[0]['url']);
+            assertSame('Cabc123XYZ', $matches[0]['embedId']);
         }
     }
 
