@@ -28,6 +28,7 @@ use ForumRewrite\Http\LobbyController;
 use ForumRewrite\Http\OfflineReaderController;
 use ForumRewrite\Http\PostWorkflowApiController;
 use ForumRewrite\Http\PlatformDocsController;
+use ForumRewrite\Http\PrivateMessageApiController;
 use ForumRewrite\Http\ProfilePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Http\SourceFileController;
@@ -62,6 +63,8 @@ use ForumRewrite\Write\IdentityBootstrapTimingException;
 use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
 use ForumRewrite\Llm\LlmExchangeRecorder;
 use ForumRewrite\Llm\SqliteLlmExchangeStore;
+use ForumRewrite\Messaging\PrivateMessageDatabaseConfig;
+use ForumRewrite\Messaging\PrivateMessageStore;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 use ForumRewrite\Security\OpenPgpKeyInspector;
@@ -90,6 +93,7 @@ final class Application
     private ?QdbExperience $qdbExperience = null;
     private ?VisitorStatisticsObserver $visitorStatisticsObserver = null;
     private ?VisitorStatisticsStore $visitorStatisticsStore = null;
+    private ?PrivateMessageStore $privateMessageStore = null;
 
     public function __construct(
         private readonly string $projectRoot,
@@ -116,7 +120,7 @@ final class Application
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
         if ($this->approvedMembersOnlyEnabled()
-            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity'], true)
+            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent'], true)
         ) {
             $this->startViewerSession();
         } elseif ($this->shouldResumeViewerSession($method, $path, $query)) {
@@ -186,6 +190,21 @@ final class Application
 
         if ($path === '/api/auth_status') {
             $this->authApiController()->authenticationStatus($method);
+            return;
+        }
+
+        if ($path === '/api/private_messages') {
+            $this->privateMessageApiController()->send($method, $query);
+            return;
+        }
+
+        if ($path === '/api/private_messages/inbox') {
+            $this->privateMessageApiController()->inbox($method, $query);
+            return;
+        }
+
+        if ($path === '/api/private_messages/sent') {
+            $this->privateMessageApiController()->sent($method, $query);
             return;
         }
 
@@ -1533,6 +1552,21 @@ final class Application
         return $this->visitorStatisticsStore = new VisitorStatisticsStore(new PDO('sqlite:' . $path));
     }
 
+    private function privateMessageStore(): PrivateMessageStore
+    {
+        if ($this->privateMessageStore !== null) {
+            return $this->privateMessageStore;
+        }
+
+        $path = PrivateMessageDatabaseConfig::path($this->projectRoot, PrivateConfig::load($this->projectRoot));
+        $directory = dirname($path);
+        if ($directory !== '' && !is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
+            throw new RuntimeException('Private message database directory is not writable: ' . $directory);
+        }
+
+        return $this->privateMessageStore = new PrivateMessageStore(new PDO('sqlite:' . $path));
+    }
+
     private function authenticatedViewerProfile(): ?array
     {
         $identityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
@@ -1834,6 +1868,15 @@ final class Application
         return new AuthApiController(
             $this->routeServices(),
             $this->authenticatedViewerProfile(...),
+        );
+    }
+
+    private function privateMessageApiController(): PrivateMessageApiController
+    {
+        return new PrivateMessageApiController(
+            $this->routeServices(),
+            $this->authenticatedViewerProfile(...),
+            $this->privateMessageStore(...),
         );
     }
 

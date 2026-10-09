@@ -33,3 +33,21 @@
   - Public-output inspection is not applicable yet: this stage has no application route, canonical write, read-model, static, or offline integration. Stage 8 owns that end-to-end check.
 - Notes:
   - Stage 3 has not started. Per user direction, implementation stops here for review.
+
+## Stage 3 - Add authenticated mailbox APIs
+
+- Changes:
+  - Added authenticated send, Inbox, and Sent API routes with no-store responses.
+  - Added a mailbox service that derives sender and mailbox ownership solely from the approved session profile; client identity fields are not accepted.
+  - Added recipient eligibility and armored-envelope validation, plus private-message path support in private configuration.
+- Verification:
+  - `php -l src/ForumRewrite/Messaging/PrivateMessageMailboxService.php`
+  - `php -l src/ForumRewrite/Http/PrivateMessageApiController.php`
+  - `php -l src/ForumRewrite/Application.php`
+  - `php -l tests/PrivateMessageMailboxServiceTest.php`
+  - `php -l tests/PrivateMessageApiRoutingTest.php`
+  - `php tests/run.php PrivateMessageMailboxServiceTest PrivateMessageApiRoutingTest PrivateMessageDatabaseConfigTest PrivateMessageStoreTest PrivateConfigSchemaTest` — 11 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - The API retains ciphertext and routing metadata only; browser encryption/signing and recipient-key coverage remain Stage 4.
+  - Stage 4 has not started. Per user direction, implementation stops here for review.
