@@ -69,8 +69,6 @@ add search/filter toolbar (search input + status chips: All/Enabled/Overridden/L
 to /tools/feature-flags/ — deferred from the layout/badges/grouping redesign,
 see docs/plans/feature_flags_redesign_step2/3_*.md
 
-merge agent reply queue into task queue
-
 redesign the offline mode indicator to not take up extra vertical space (probably top corner?)
 	also, make it link to userful pages like /offline/
 

@@ -532,9 +532,25 @@
     const menu = document.createElement("div");
     menu.className = "agent-response-mode-menu";
     menu.id = "agent-response-mode-menu";
-    menu.setAttribute("role", "menu");
-    menu.setAttribute("aria-label", "Choose an agent response");
+    menu.setAttribute("role", "dialog");
+    menu.setAttribute("aria-labelledby", "agent-response-mode-menu-title");
     menu.hidden = true;
+
+    const header = document.createElement("div");
+    header.className = "agent-response-mode-menu-header";
+    const title = document.createElement("strong");
+    title.className = "agent-response-mode-menu-title";
+    title.id = "agent-response-mode-menu-title";
+    title.textContent = "Request agent response";
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.className = "agent-response-mode-menu-close";
+    closeButton.textContent = "Close";
+    closeButton.addEventListener("click", function () {
+      closeAgentResponseModeMenu(true);
+    });
+    header.appendChild(title);
+    header.appendChild(closeButton);
 
     const choices = document.createElement("div");
     choices.className = "agent-response-mode-choices";
@@ -542,11 +558,8 @@
       const choice = document.createElement("button");
       choice.type = "button";
       choice.className = "agent-response-mode-choice";
-      choice.setAttribute("role", "menuitem");
       choice.setAttribute("data-response-mode", mode.type);
-      const label = document.createElement("strong");
-      label.textContent = mode.label;
-      choice.appendChild(label);
+      choice.textContent = mode.label;
       choice.addEventListener("click", function () {
         const trigger = agentResponseModeTrigger;
         closeAgentResponseModeMenu(false);
@@ -556,6 +569,7 @@
       });
       choices.appendChild(choice);
     });
+    menu.appendChild(header);
     menu.appendChild(choices);
 
     document.body.appendChild(menu);
@@ -578,6 +592,18 @@
     return menu;
   }
 
+  function positionAgentResponseModeMenu(menu, button) {
+    const gutter = 8;
+    const bounds = button.getBoundingClientRect();
+    const left = Math.max(gutter, Math.min(bounds.left, window.innerWidth - menu.offsetWidth - gutter));
+    let top = bounds.bottom + 6;
+    if (top + menu.offsetHeight > window.innerHeight - gutter) {
+      top = Math.max(gutter, bounds.top - menu.offsetHeight - 6);
+    }
+    menu.style.left = left + "px";
+    menu.style.top = top + "px";
+  }
+
   function openAgentResponseModeMenu(button) {
     const modes = agentResponseModes();
     const postId = button.getAttribute("data-post-id") || "";
@@ -587,13 +613,15 @@
     }
 
     const menu = ensureAgentResponseModeMenu();
+    if (!menu.hidden && agentResponseModeTrigger === button) {
+      closeAgentResponseModeMenu(false);
+      return;
+    }
     closeAgentResponseModeMenu(false);
     agentResponseModeTrigger = button;
     button.setAttribute("aria-expanded", "true");
-    const bounds = button.getBoundingClientRect();
-    menu.style.left = Math.max(8, Math.min(bounds.left, window.innerWidth - 328)) + "px";
-    menu.style.top = Math.min(bounds.bottom + 6, window.innerHeight - 120) + "px";
     menu.hidden = false;
+    positionAgentResponseModeMenu(menu, button);
     const firstChoice = menu.querySelector('[data-response-mode]');
     if (firstChoice) {
       firstChoice.focus();
