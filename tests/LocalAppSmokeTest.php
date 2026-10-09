@@ -2883,6 +2883,55 @@ PHP;
         }
     }
 
+    public function testEventSupportTogglePreservesExistingEventData(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-event-toggle-' . bin2hex(random_bytes(6));
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-event-toggle-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        $eventPath = $repositoryRoot . '/records/posts/event-001.txt';
+        $eventContents = "Post-ID: event-001\nCreated-At: 2026-10-09T12:00:00Z\nBoard-Tags: general\nSubject: Event thread\nEvent-Date: 2026-11-01\nEvent-Location: Cambridge\nEvent-Link: https://example.test/rsvp\n\nEvent body.\n";
+        file_put_contents($eventPath, $eventContents);
+
+        try {
+            $disabled = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            assertStringNotContains('data-event-block', $this->render($disabled, '/?view=all'));
+
+            file_put_contents(
+                $repositoryRoot . '/records/instance/feature-flags.txt',
+                "Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: true\n"
+            );
+            $enabled = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            assertStringContains('data-event-block', $this->render($enabled, '/?view=all'));
+
+            file_put_contents(
+                $repositoryRoot . '/records/instance/feature-flags.txt',
+                "Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: false\n"
+            );
+            $disabledAgain = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            assertStringNotContains('data-event-block', $this->render($disabledAgain, '/?view=all'));
+
+            file_put_contents(
+                $repositoryRoot . '/records/instance/feature-flags.txt',
+                "Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: true\n"
+            );
+            $reenabled = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            assertStringContains('data-event-block', $this->render($reenabled, '/?view=all'));
+            assertSame($eventContents, (string) file_get_contents($eventPath));
+
+            $eventRow = (new PDO('sqlite:' . $databasePath))
+                ->query("SELECT event_date, event_location, event_link FROM threads WHERE root_post_id = 'event-001'")
+                ->fetch();
+            assertSame('2026-11-01', $eventRow['event_date']);
+            assertSame('Cambridge', $eventRow['event_location']);
+            assertSame('https://example.test/rsvp', $eventRow['event_link']);
+        } finally {
+            @unlink($databasePath);
+            @unlink($databasePath . '-journal');
+            $this->deleteTree($repositoryRoot);
+        }
+    }
+
     public function testComposeThreadSubmitErrorPreservesEnteredValues(): void
     {
         @unlink($this->databasePath);

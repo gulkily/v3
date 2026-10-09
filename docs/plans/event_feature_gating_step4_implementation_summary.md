@@ -35,3 +35,17 @@
   - Deployment and external verification: not applicable; the server-side write contract is covered locally.
 - Notes:
   - The compose controller already routes write errors through its standard 400 re-render path, so no new error surface was introduced.
+
+## Stage 4 - Verify safe flag transitions
+
+- Changes:
+  - Added a site-record toggle regression test for default-disabled → enabled → disabled → re-enabled event rendering.
+  - Asserted that both the canonical event record and its read-model values remain unchanged across transitions.
+- Verification:
+  - `php -l tests/LocalAppSmokeTest.php` — no syntax errors.
+  - `./v3 test LocalAppSmokeTest::testEventSupportTogglePreservesExistingEventData` — 1 run, 1 passed.
+  - `./v3 test` — 882 run, 880 passed, 2 failed: the known unrelated `WriteApiSmokeTest::testTaskQueueProcessesQueuedAgentReplyOnce` and `::testQdbPermalinkShowsViewersExistingUpvoteAsPressedAndDisabled` failures.
+  - Reran those two failures directly: 2 run, 0 passed; test history classifies them as long-standing since 2026-10-08 and 2026-10-09 respectively.
+  - Deployment and external verification: not applicable; this feature has no deployment or external-service dependency.
+- Notes:
+  - The test changes only the temporary site's feature-flags record, mirroring an operator toggle without mutating event data.
