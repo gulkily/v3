@@ -151,8 +151,8 @@ final class ReadModelBuilder
              VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :author_identity_id, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
-            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link)
-             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link)'
+            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time)
+             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time)'
         );
 
         $paths = $this->findRelativePaths('records/posts');
@@ -189,6 +189,7 @@ final class ReadModelBuilder
                 'event_date' => $record->eventDate,
                 'event_location' => $record->eventLocation,
                 'event_link' => $record->eventLink,
+                'event_time' => $record->eventTime,
                 'source_path' => $relativePath,
                 'source_commit_sha' => $this->sourceCommitShaForPath($relativePath),
                 'source_order' => $index + 1,
@@ -246,6 +247,7 @@ final class ReadModelBuilder
                     'event_date' => $post['event_date'],
                     'event_location' => $post['event_location'],
                     'event_link' => $post['event_link'],
+                    'event_time' => $post['event_time'],
                 ];
             }
 

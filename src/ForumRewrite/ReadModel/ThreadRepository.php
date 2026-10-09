@@ -26,7 +26,7 @@ final class ThreadRepository
                     threads.reply_count, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
                     posts.body AS root_post_body,
                     posts.post_score_total AS root_post_score_total,
-                    threads.event_date, threads.event_location, threads.event_link,
+                    threads.event_date, threads.event_location, threads.event_link, threads.event_time,
                     profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
@@ -58,7 +58,7 @@ final class ThreadRepository
                     threads.reply_count, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
                     posts.body AS root_post_body,
                     posts.post_score_total AS root_post_score_total,
-                    threads.event_date, threads.event_location, threads.event_link,
+                    threads.event_date, threads.event_location, threads.event_link, threads.event_time,
                     profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id

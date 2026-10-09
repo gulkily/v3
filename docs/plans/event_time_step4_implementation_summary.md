@@ -38,8 +38,17 @@
 ## Stage 3 - Read model
 
 - Changes:
+  - `src/ForumRewrite/ReadModel/ReadModelSchema.php`: `threads` table gains one nullable `TEXT` column, `event_time`.
+  - `src/ForumRewrite/ReadModel/ReadModelMetadata.php`: `SCHEMA_VERSION` bumped `'14'` → `'15'` to trigger the existing full-rebuild path.
+  - `src/ForumRewrite/ReadModel/ReadModelBuilder.php`: `INSERT INTO threads` column list/bindings, the parsed-post array, and the in-memory thread-summary array all gain `event_time`.
+  - `src/ForumRewrite/ReadModel/IncrementalReadModelUpdater.php`: `insertThread()`'s `INSERT INTO threads` column list/bindings gain `event_time`.
+  - `src/ForumRewrite/ReadModel/ThreadRepository.php` (`fetchThreads()` and `byId()`) and `src/ForumRewrite/Application.php` (`fetchThread()`): all three explicit `SELECT` column lists gain `threads.event_time`.
 - Verification:
+  - `php tests/run.php` full suite: 946/950 passed, same 4 pre-existing failures, no new ones.
+  - Against a scratch repository: created one thread with date+time and one with date-only via `LocalWriteService::createThread()` (incremental path). Queried both via `ThreadRepository::fetchThreads()` and `::byId()` immediately (no rebuild): the time-bearing thread's `event_time` was `'19:00'` on both; the date-only thread's was `NULL` on both.
+  - Then deleted the database and ran a full `ReadModelBuilder::rebuild()` from the same canonical records. Re-queried via `fetchThreads()`, `byId()`, and a raw SQL statement mirroring `Application::fetchThread()`'s column list: all three returned `event_time === '19:00'` for the time-bearing thread, confirming the full-rebuild path and all three read sites agree with the incremental path.
 - Notes:
+  - All grep-confirmed read/write sites for `event_date` (schema + 2 write paths + 3 read call sites) now have a parallel `event_time` entry — no site missed.
 
 ## Stage 4 - Render and end-to-end verification
 

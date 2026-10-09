@@ -49,7 +49,8 @@ final class ReadModelSchema
                 vote_count INTEGER NOT NULL DEFAULT 0,
                 event_date TEXT NULL,
                 event_location TEXT NULL,
-                event_link TEXT NULL
+                event_link TEXT NULL,
+                event_time TEXT NULL
             )',
             'CREATE TABLE profiles (
                 identity_id TEXT PRIMARY KEY,
