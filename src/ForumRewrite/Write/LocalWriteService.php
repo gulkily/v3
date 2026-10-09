@@ -180,6 +180,7 @@ class LocalWriteService
     {
         return $this->withTimedWriteLock(function () use ($input): array {
             $this->assertWritableRepository();
+            $this->assertEventSupportAllowsInput($input);
             $timings = [];
             $totalStartedAt = hrtime(true);
             $postId = $this->mintThreadPostId();
@@ -188,7 +189,11 @@ class LocalWriteService
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
             $authorIdentityId = $this->requirePreparedAuthorIdentityId($input);
             $createdAt = $this->canonicalTimestampNow();
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId);
+            $eventDate = $this->normalizeEventDate((string) ($input['event_date'] ?? ''));
+            $eventLocation = $this->normalizeAuthoredLine((string) ($input['event_location'] ?? ''), 'event_location');
+            $eventLink = $this->normalizeAuthoredLine((string) ($input['event_link'] ?? ''), 'event_link');
+            $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime);
 
             (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);

@@ -2018,6 +2018,83 @@ NODE;
         assertFalse(is_file($repositoryRoot . '/' . $payload['record_path']));
     }
 
+    public function testPrepareThreadIncludesEventFieldsInCanonicalRecord(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: true\n"
+        );
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $identityId = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_thread?board_tags=general&subject=Prepared%20Event&body=Prepared%20body'
+            . '&author_identity_id=' . rawurlencode($identityId)
+            . '&event_date=2026-11-01&event_time=19%3A00&event_location=Cambridge&event_link=' . rawurlencode('https://example.test/rsvp')
+        );
+        $payload = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame('ok', $payload['status']);
+        assertStringContains("Event-Date: 2026-11-01\n", $payload['canonical_record']);
+        assertStringContains("Event-Time: 19:00\n", $payload['canonical_record']);
+        assertStringContains("Event-Location: Cambridge\n", $payload['canonical_record']);
+        assertStringContains("Event-Link: https://example.test/rsvp\n", $payload['canonical_record']);
+    }
+
+    public function testPrepareThreadRejectsEventFieldsWhenEventSupportDisabled(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $service = new LocalWriteService(
+            $repositoryRoot,
+            $databasePath,
+            $artifactRoot,
+            new CanonicalRecordRepository($repositoryRoot),
+            featureFlags: new FeatureFlagEvaluator(siteValues: [FeatureFlagRegistry::EVENT_SUPPORT_ENABLED => false]),
+        );
+
+        try {
+            $service->prepareThread([
+                'board_tags' => 'general',
+                'subject' => 'Event thread',
+                'body' => 'Event body',
+                'author_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+                'event_date' => '2026-11-01',
+            ]);
+            throw new RuntimeException('Expected event-support validation failure.');
+        } catch (RuntimeException $exception) {
+            assertSame('Event support is disabled for this site.', $exception->getMessage());
+        }
+    }
+
+    public function testPrepareThreadRejectsMalformedEventTimeBeforeIssuingToken(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: true\n"
+        );
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $identityId = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+        $preparedPostsBefore = glob(dirname($databasePath) . '/prepared-posts/*.json') ?: [];
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_thread?board_tags=general&subject=Bad%20Time&body=body'
+            . '&author_identity_id=' . rawurlencode($identityId)
+            . '&event_date=2026-11-01&event_time=99%3A99'
+        );
+        $payload = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+        $preparedPostsAfter = glob(dirname($databasePath) . '/prepared-posts/*.json') ?: [];
+
+        assertSame('error', $payload['status']);
+        assertStringContains('event_time must be a valid 24-hour time.', $payload['error']);
+        assertSame(count($preparedPostsBefore), count($preparedPostsAfter));
+    }
+
     public function testQdbSiteAssignsSequentialQuoteNumbersAcrossDigitBoundary(): void
     {
         putenv('FORUM_SITE_ID=qdb');
