@@ -29,6 +29,16 @@ final class QuoteCardDisplayNumberTest
             'data-role="thread-score" data-score-format="bare-ratio">(<span class="quote-card-score-value quote-card-score-positive" data-role="thread-score-value">5</span>/<span data-role="thread-vote-count">7</span>)</span>',
             $board,
         );
+        assertStringContains('class="quote-card-header-actions"', $board);
+        assertStringContains('>⚑ Flag</button>', $board);
+        assertTrue(
+            strpos($board, 'data-role="thread-score"')
+            < strpos($board, 'class="quote-card-header-actions"'),
+        );
+        assertTrue(
+            strpos($board, 'class="quote-card-header-actions"')
+            < strpos($board, '<p class="quote-card-body">'),
+        );
         assertStringNotContains('>#thread-20030613104735-qdb-42</a>', $board);
     }
 
@@ -167,6 +177,8 @@ final class QuoteCardDisplayNumberTest
         }
 
         assertStringContains('<h2>Site News</h2>', $welcome);
+        assertStringContains('⚑ Flag something that', $welcome);
+        assertStringNotContains('[X] to flag', $welcome);
         assertStringNotContains('Recent activity', $welcome);
         assertSame(3, substr_count($welcome, 'href="/threads/news-'));
         assertStringContains('href="/threads/news-newest">Newest news</a>', $welcome);

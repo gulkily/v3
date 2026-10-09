@@ -35,3 +35,16 @@
 - Notes:
   - The shared component continues to provide the original `apply-thread-tag`
     and `apply-post-tag` data contracts.
+
+## Stage 3 - Guidance and regression coverage
+
+- Changes:
+  - Updated QDB welcome guidance to name `⚑ Flag` rather than `[X]`.
+  - Added listing ordering and flag-label coverage, plus welcome-copy coverage.
+- Verification:
+  - PHP syntax checks passed for the changed QDB templates and focused test.
+  - `php tests/run.php QuoteCardDisplayNumberTest BrowserSigningNormalizationTest`
+    passed (92/92).
+  - `git diff --check` passed; the working tree contained only Stage 3 files.
+- Notes:
+  - No API, caption catalog, score, or moderation behavior changed.
