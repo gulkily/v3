@@ -35,3 +35,25 @@
 - Notes:
   - Dedicated structured-QDB refresh coverage remains Stage 3 work; existing
     generic reaction behavior passed unchanged.
+
+## Stage 3 - Verify rendered and live score behavior
+
+- Changes:
+  - Added QDB listing coverage for positive, negative, and neutral score
+    presentation targets.
+  - Updated permalink coverage for the structured `(score/votes)` markup.
+  - Added browser coverage proving a confirmed QDB refresh updates the score,
+    vote count, and sign class without replacing the ratio node.
+- Verification:
+  - PHP syntax checks passed for changed templates and test files; JavaScript
+    syntax check passed for `thread_reactions.js`.
+  - `php tests/run.php QuoteCardDisplayNumberTest BrowserSigningNormalizationTest` passed (92/92).
+  - `./v3 test` reported one unrelated, long-standing failure:
+    `LocalAppSmokeTest::testFeatureFlagsPageShowsLockedBadgeWithReasonForNonMutableFlags`.
+    Its isolated rerun failed identically and the test runner records it as
+    failing since 2026-10-08; it is outside this feature's files.
+  - `git diff --check` passed.
+- Notes:
+  - No database, migration, deployment, or external-service verification is
+    applicable. The normal asset fingerprinting path covers the changed CSS
+    and JavaScript at publish time.
