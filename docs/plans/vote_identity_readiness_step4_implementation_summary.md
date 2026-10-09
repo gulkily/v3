@@ -13,3 +13,15 @@
   - `./v3 test BrowserSigningNormalizationTest::testIdentityPrewarmFullyReadiesStoredVoteIdentity BrowserSigningNormalizationTest::testIdentityPrewarmWithoutStoredKeypairDoesNotCreateOrPublishIdentity` — 2 passed.
 - Notes:
   - Full background readiness is restricted to vote surfaces; compose-only pages keep their prior lightweight prewarm behavior.
+
+## Stage 2 - Wire all reaction-page entry points
+
+- Changes:
+  - Extended the canonical lazy signing loader to detect stored local keypairs on reaction-only pages and load signing assets during idle time.
+  - Initialization now targets the full document, allowing the existing browser-signing initializer to discover reaction roots after lazy loading.
+- Verification:
+  - `node --check public/assets/lazy_compose_signing.js`
+  - `php -l tests/LazyComposeSigningTest.php`
+  - `./v3 test LazyComposeSigningTest` — 3 passed.
+- Notes:
+  - Pages without a stored keypair do not load signing assets until existing compose intent or reaction-click behavior requests them.
