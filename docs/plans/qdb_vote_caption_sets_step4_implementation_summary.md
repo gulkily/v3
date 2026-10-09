@@ -43,3 +43,19 @@
   - `php -l` on the new policy and both read-model paths; `git diff --check` — passed.
 - Notes:
   - Post-reaction scoring is deliberately unchanged: captions are thread votes.
+
+## Stage 4 - Server-side caption writes
+
+- Changes:
+  - The thread-tag writer accepts only active QDB caption tags, only for QDB
+    quote roots, and rejects a second caption vote after any caption or legacy
+    QDB vote by that identity.
+  - Existing signed API and response contracts remain unchanged; post tags do
+    not accept caption votes.
+- Verification:
+  - `php -l src/ForumRewrite/Write/LocalWriteService.php` — passed.
+  - `./v3 test QdbVoteCaptionStoreTest TagScoreTest` — 11 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - Direct API enforcement is in the writer, so client markup cannot bypass
+    the active-tag, quote-root, or duplicate-vote checks.

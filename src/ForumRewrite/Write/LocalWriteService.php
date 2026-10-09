@@ -14,6 +14,9 @@ use ForumRewrite\Canonical\PostReactionRecordParser;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
 use ForumRewrite\Qdb\QdbQuoteNumbers;
+use ForumRewrite\Qdb\QdbVoteCaptionCatalog;
+use ForumRewrite\Qdb\QdbVoteScoringPolicy;
+use ForumRewrite\SiteConfig;
 use ForumRewrite\TagScore;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
 use ForumRewrite\ReadModel\ReadModelBuilder;
@@ -422,7 +425,7 @@ class LocalWriteService
             $timings = [];
             $totalStartedAt = hrtime(true);
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
-            $tag = $this->normalizeThreadTag((string) ($input['tag'] ?? ''));
+            $tag = $this->normalizeThreadTag((string) ($input['tag'] ?? ''), $this->isQdbInstance());
             $authorIdentityId = $this->requireOpenPgpIdentityId((string) ($input['author_identity_id'] ?? ''), 'author_identity_id');
             $createdAt = $this->canonicalTimestampNow();
             $actionAt = $this->optionalOfflineActionAt($input);
@@ -433,8 +436,14 @@ class LocalWriteService
                 throw new RuntimeException('thread_id must refer to a root thread.');
             }
 
+            $isQdbCaptionVote = $this->isQdbCaptionTag($tag);
+            if ($isQdbCaptionVote && QdbQuoteNumbers::fromThreadId($threadId) === null) {
+                throw new RuntimeException('QDB caption tags may be applied only to QDB quotes.');
+            }
+
             $viewerIsApproved = $this->isApprovedIdentity($authorIdentityId) ? 'yes' : 'no';
-            if ($this->hasThreadTagFromIdentity($threadId, $tag, $authorIdentityId)) {
+            if (($isQdbCaptionVote && $this->hasQdbVoteFromIdentity($threadId, $authorIdentityId))
+                || $this->hasThreadTagFromIdentity($threadId, $tag, $authorIdentityId)) {
                 return [
                     'status' => 'ok',
                     'thread_id' => $threadId,
@@ -494,7 +503,7 @@ class LocalWriteService
             $timings = [];
             $totalStartedAt = hrtime(true);
             $postId = $this->requireAsciiToken((string) ($input['post_id'] ?? ''), 'post_id');
-            $tag = $this->normalizeThreadTag((string) ($input['tag'] ?? ''));
+            $tag = $this->normalizeThreadTag((string) ($input['tag'] ?? ''), false);
             $authorIdentityId = $this->requireOpenPgpIdentityId((string) ($input['author_identity_id'] ?? ''), 'author_identity_id');
             $createdAt = $this->canonicalTimestampNow();
             $actionAt = $this->optionalOfflineActionAt($input);
@@ -2168,14 +2177,49 @@ class LocalWriteService
         ];
     }
 
-    private function normalizeThreadTag(string $value): string
+    private function normalizeThreadTag(string $value, bool $allowQdbCaptionTag = false): string
     {
         $tag = strtolower(trim($value));
-        if (!TagScore::isScoredTag($tag)) {
+        if (!TagScore::isScoredTag($tag)
+            && !($allowQdbCaptionTag && $this->qdbVoteCaptionCatalog()->isActiveTag($tag))) {
             throw new RuntimeException('tag must be one of: ' . implode(', ', array_keys(TagScore::scoredTags())));
         }
 
         return $tag;
+    }
+
+    private function isQdbInstance(): bool
+    {
+        return SiteConfig::siteName() === 'qdb';
+    }
+
+    private function qdbVoteCaptionCatalog(): QdbVoteCaptionCatalog
+    {
+        return QdbVoteCaptionCatalog::forReadModel($this->databasePath);
+    }
+
+    private function isQdbCaptionTag(string $tag): bool
+    {
+        return $this->isQdbInstance() && $this->qdbVoteCaptionCatalog()->isKnownTag($tag);
+    }
+
+    private function hasQdbVoteFromIdentity(string $threadId, string $identityId): bool
+    {
+        $policy = new QdbVoteScoringPolicy($this->qdbVoteCaptionCatalog());
+        foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
+            $record = $this->canonicalRepository->loadThreadLabel('records/thread-labels/' . basename($path));
+            if ($record->threadId !== $threadId || $record->authorIdentityId !== $identityId) {
+                continue;
+            }
+
+            foreach ($record->labels as $label) {
+                if ($policy->isVoteTag($label)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private function requireFeatureFlagKey(string $key): string
