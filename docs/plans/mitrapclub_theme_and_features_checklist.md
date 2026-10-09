@@ -104,6 +104,19 @@ checked in the current code, not a guess.
       URL. Shipped behind a new feature flag (`FORUM_MEDIA_EMBEDS_ENABLED`)
       defaulted off everywhere; still needs a manual operator enable on the
       production `mitrapclub` instance before it's visible there.
+      **Extended in Cycle 6** (`feature/mitrapclub-media-embeds-inline-player`,
+      `mitrapclub_media_embeds_inline_player_*`): the card's "no embedded
+      video" limitation was raised directly by the user after this shipped.
+      YouTube now plays inline behind a collapsed, click-to-load expando
+      (a sandboxed `youtube-nocookie.com` iframe, zero new outbound network
+      dependency); Instagram gets a cached thumbnail/title preview instead
+      of staying a bare link, fetched by parsing the public post page's
+      `og:title`/`og:image` tags (Instagram's oEmbed API dropped those
+      fields in late 2025) via a client-triggered beacon so no page render
+      ever blocks on it. Gated behind a second flag
+      (`FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED`, depends on
+      `FORUM_MEDIA_EMBEDS_ENABLED`), defaulted off; also needs a manual
+      operator enable before it's visible anywhere.
 - [ ] Media-embed provider list beyond YouTube/Instagram — unscheduled,
       flagged during Cycle 5's Step 2 for a future iteration. Suggested
       platforms, prioritized by fit for the club's actual (rap/hip-hop)
@@ -166,12 +179,24 @@ uncertainty each has:
 5. **Media embeds** — YouTube/Instagram embedding in threads. Independent
    of events; has real technical options (oEmbed fetch vs. link preview
    vs. iframe); give it a Step 1. **Done** on
-   `feature/mitrapclub-media-embeds` (not yet merged to `main`): Step 1
-   picked the link-preview card (no raw third-party HTML); shipped a
-   YouTube/Instagram URL detector, a card-aware body renderer (byte-identical
-   output when disabled), wired into the one shared body-rendering closure
-   used by all 8 post/reply render call sites, behind a new
-   `FORUM_MEDIA_EMBEDS_ENABLED` flag defaulted off everywhere. A broader
-   provider list (SoundCloud, TikTok, Spotify, Bandcamp, etc.) and
-   general-purpose URL canonicalization both stayed out of scope — see the
-   open item above and `todo.txt`.
+   `feature/mitrapclub-media-embeds`, merged to `main`: Step 1 picked the
+   link-preview card (no raw third-party HTML); shipped a YouTube/Instagram
+   URL detector, a card-aware body renderer (byte-identical output when
+   disabled), wired into the one shared body-rendering closure used by all
+   8 post/reply render call sites, behind a new `FORUM_MEDIA_EMBEDS_ENABLED`
+   flag defaulted off everywhere. A broader provider list (SoundCloud,
+   TikTok, Spotify, Bandcamp, etc.) and general-purpose URL canonicalization
+   both stayed out of scope — see the open item above and `todo.txt`.
+   **Extended in Cycle 6** on `feature/mitrapclub-media-embeds-inline-player`
+   (not yet merged to `main`), prompted directly by the user noticing the
+   card never actually played anything: Step 1 picked a sandboxed
+   `youtube-nocookie.com` iframe behind a collapsed expando for YouTube
+   (zero new outbound dependency) paired with a cached thumbnail/title
+   preview for Instagram. Mid-Step-1, Instagram's oEmbed turned out to have
+   dropped the thumbnail/title fields it would have needed (changed in late
+   2025), so the approved mechanism became parsing the public post page's
+   `og:title`/`og:image` tags instead — triggered by a client-side beacon
+   hitting a new, deliberately unauthenticated but abuse-bounded internal
+   endpoint, so no page render ever blocks on the fetch. Gated behind a
+   second flag, `FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED` (depends on
+   `FORUM_MEDIA_EMBEDS_ENABLED`), defaulted off everywhere.

@@ -140,6 +140,12 @@ final class TemplateRenderer
             ]);
         }
 
+        if ($this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED)) {
+            $scriptPaths = array_merge($scriptPaths, [
+                '/assets/media_embed_inline_player.js',
+            ]);
+        }
+
         $scriptPaths = array_values(array_unique($scriptPaths));
         $assetScriptPaths = [];
         foreach ($scriptPaths as $scriptPath) {
@@ -330,8 +336,13 @@ final class TemplateRenderer
         array $additionalCssPaths = [],
     ): string {
         $content = $this->renderFile('pages/' . $pageTemplate, $pageData);
+        if ($this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED)) {
+            $scriptPaths = array_merge($scriptPaths, [
+                '/assets/media_embed_inline_player.js',
+            ]);
+        }
         $assetScriptPaths = [];
-        foreach ($scriptPaths as $scriptPath) {
+        foreach (array_values(array_unique($scriptPaths)) as $scriptPath) {
             $assetScriptPaths[] = $this->assetPath($scriptPath);
         }
         $assetAdditionalCssPaths = [];
@@ -376,7 +387,8 @@ final class TemplateRenderer
 
         $e = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $mediaEmbedsEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED);
-        $br = fn (mixed $value): string => $this->mediaEmbedRenderer->render((string) $value, $mediaEmbedsEnabled);
+        $mediaEmbedsInlinePlayerEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED);
+        $br = fn (mixed $value): string => $this->mediaEmbedRenderer->render((string) $value, $mediaEmbedsEnabled, $mediaEmbedsInlinePlayerEnabled);
         $friendlyTimestamp = fn (?string $timestamp): string => $this->formatFriendlyTimestamp($timestamp);
         $timestamp = fn (?string $timestamp): string => $this->renderTimestampHtml($timestamp, $e);
         $relativeTimestamp = fn (?string $timestamp): string => $this->renderRelativeTimestampHtml($timestamp, $e);
