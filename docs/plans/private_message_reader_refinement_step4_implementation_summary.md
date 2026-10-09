@@ -12,3 +12,14 @@
   - `git diff --check` — passed.
 - Notes:
   - The existing page and API both reuse the capped service results; Stage 2 will verify their rendered and API contracts.
+
+## Stage 2 - Verify bounded mailbox surfaces
+
+- Changes:
+  - Added an authenticated 26-message integration test covering the canonical Inbox page and Inbox API.
+  - Confirmed both surfaces reuse the shared newest-25 retrieval contract and the rendered page excludes ciphertext.
+- Verification:
+  - `php tests/run.php PrivateMessagePageControllerTest PrivateMessageApiRoutingTest` — 3 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - No controller change was needed because both existing controllers already consume `PrivateMessageMailboxService` results.
