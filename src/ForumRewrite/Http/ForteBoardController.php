@@ -7,6 +7,7 @@ namespace ForumRewrite\Http;
 use ForumRewrite\ReadModel\TagGrouping;
 use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\ReadModel\ViewerTagLookup;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\ThreadTitle;
 
 /**
@@ -271,6 +272,8 @@ final class ForteBoardController
                 (string) ($thread['subject'] ?? ''),
                 (string) ($thread['body_preview'] ?? ''),
                 (string) $thread['root_post_id'],
+                80,
+                $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED)
             )),
             'from' => mb_strtolower(trim((string) ($thread['author_label'] ?? '')) ?: 'guest'),
             'date' => (string) ($thread['root_post_created_at'] ?? ''),

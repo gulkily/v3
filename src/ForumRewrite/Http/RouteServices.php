@@ -80,6 +80,11 @@ final class RouteServices
         return (new ReadModelConnection($this->databasePath))->open();
     }
 
+    public function featureFlags(): FeatureFlagEvaluator
+    {
+        return $this->featureFlags;
+    }
+
     /**
      * Memoized per request (unlike pdo()/writer()) since ActivityService
      * owns request-scoped caches (activityCommitManifestCache,
