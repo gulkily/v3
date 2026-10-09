@@ -6,6 +6,7 @@ namespace ForumRewrite\Http;
 
 use ForumRewrite\ReadModel\AuthoredContentRepository;
 use ForumRewrite\ReadModel\ProfileRepository;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\ThreadTitle;
 
 /**
@@ -74,6 +75,8 @@ final class ForteContentAndUserDetailApiController
                 (string) ($post['subject'] ?? ''),
                 (string) ($post['body'] ?? ''),
                 (string) $post['post_id'],
+                80,
+                $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED)
             ),
             'author_label' => (string) ($post['author_label'] ?? ''),
             'created_at' => (string) ($post['created_at'] ?? ''),

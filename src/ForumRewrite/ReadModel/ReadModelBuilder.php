@@ -9,6 +9,7 @@ use ForumRewrite\Canonical\CanonicalRecordParseException;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\PostReactionRecord;
 use ForumRewrite\Canonical\ThreadLabelRecord;
+use ForumRewrite\Canonical\ThreadSubjectRecord;
 use ForumRewrite\Qdb\QdbVoteScoringPolicy;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\TagScore;
@@ -23,6 +24,7 @@ final class ReadModelBuilder
     /** @var array<string, float> */
     private array $timings = [];
     private int $invalidThreadLabelRecordCount = 0;
+    private int $invalidThreadSubjectRecordCount = 0;
     /** @var array<int, array{created_at:string,thread_id:string,author_identity_id:?string,labels_added:list<string>,source_path:string,source_commit_sha:?string}> */
     private array $threadLabelActivityEvents = [];
     /** @var array<int, array{created_at:string,post_id:string,thread_id:string,author_identity_id:?string,tags:list<string>,board_tags_json:string,source_path:string,source_commit_sha:?string}> */
@@ -52,6 +54,7 @@ final class ReadModelBuilder
 
         $this->timings = [];
         $this->invalidThreadLabelRecordCount = 0;
+        $this->invalidThreadSubjectRecordCount = 0;
         $this->threadLabelActivityEvents = [];
         $this->postReactionActivityEvents = [];
         $this->sourceCommitShaByPath = [];
@@ -64,6 +67,7 @@ final class ReadModelBuilder
             $profiles = $this->measure('index_profiles', fn (): array => $this->indexProfiles($pdo));
             $approvalState = $this->measure('derive_approval_state', fn (): array => $this->deriveApprovalState($profiles, $posts));
             $this->measure('index_thread_labels', fn (): mixed => $this->indexThreadLabels($pdo, $approvalState));
+            $this->measure('index_thread_subjects', fn (): mixed => $this->indexThreadSubjects($pdo));
             $profileCounts = $this->measure('derive_profile_counts', fn (): array => $this->deriveProfileCounts($profiles, $posts));
             $this->measure('link_post_authors', fn (): mixed => $this->linkPostAuthors($pdo, $profiles, $approvalState, $profileCounts));
             $this->measure('index_post_reactions', fn (): mixed => $this->indexPostReactions($pdo, $approvalState));
@@ -373,6 +377,74 @@ final class ReadModelBuilder
                 'score_total' => $scoreByThread[$threadId] ?? ($seedScoreByThread[$threadId] ?? 0),
                 'vote_count' => $voteCountByThread[$threadId] ?? ($seedVoteCountByThread[$threadId] ?? 0),
                 'root_post_id' => $threadId,
+            ]);
+        }
+    }
+
+    private function indexThreadSubjects(PDO $pdo): void
+    {
+        $rootThreadRows = $pdo->query('SELECT root_post_id, subject FROM threads')->fetchAll();
+        $knownRootThreads = [];
+        $currentSubjectByThread = [];
+        foreach ($rootThreadRows as $row) {
+            $rootPostId = (string) $row['root_post_id'];
+            $knownRootThreads[$rootPostId] = true;
+            $currentSubjectByThread[$rootPostId] = $row['subject'];
+        }
+
+        $records = [];
+        $paths = $this->findRelativePaths('records/thread-subjects');
+        $this->reportBatchStart('Read model: parsing thread-subject records', count($paths));
+        foreach ($paths as $index => $relativePath) {
+            try {
+                $records[] = $this->canonicalRepository->loadThreadSubject($relativePath);
+            } catch (CanonicalRecordParseException) {
+                $this->invalidThreadSubjectRecordCount++;
+            }
+            $this->reportBatchProgress('Read model: parsing thread-subject records', $index + 1, count($paths));
+        }
+
+        usort($records, static function (ThreadSubjectRecord $left, ThreadSubjectRecord $right): int {
+            if ($left->createdAt !== $right->createdAt) {
+                return $left->createdAt <=> $right->createdAt;
+            }
+
+            return $left->recordId <=> $right->recordId;
+        });
+
+        $resolvedSubjectByThread = [];
+        foreach ($records as $record) {
+            if (!isset($knownRootThreads[$record->threadId])) {
+                $this->invalidThreadSubjectRecordCount++;
+                continue;
+            }
+
+            $currentSubject = $currentSubjectByThread[$record->threadId];
+            if ($currentSubject !== null && trim((string) $currentSubject) !== '') {
+                continue;
+            }
+
+            if (isset($resolvedSubjectByThread[$record->threadId])) {
+                continue;
+            }
+
+            $resolvedSubjectByThread[$record->threadId] = $record->subject;
+        }
+
+        if ($resolvedSubjectByThread === []) {
+            return;
+        }
+
+        $updateThread = $pdo->prepare('UPDATE threads SET subject = :subject WHERE root_post_id = :root_post_id');
+        $updatePost = $pdo->prepare('UPDATE posts SET subject = :subject WHERE post_id = :post_id');
+        foreach ($resolvedSubjectByThread as $threadId => $subject) {
+            $updateThread->execute([
+                'subject' => $subject,
+                'root_post_id' => $threadId,
+            ]);
+            $updatePost->execute([
+                'subject' => $subject,
+                'post_id' => $threadId,
             ]);
         }
     }
@@ -909,6 +981,7 @@ final class ReadModelBuilder
             'rebuilt_at' => gmdate('c'),
             'rebuild_reason' => $this->rebuildReason,
             'thread_label_invalid_count' => (string) $this->invalidThreadLabelRecordCount,
+            'thread_subject_invalid_count' => (string) $this->invalidThreadSubjectRecordCount,
         ]);
 
         foreach ($metadata as $key => $value) {

@@ -200,3 +200,24 @@ uncertainty each has:
    endpoint, so no page render ever blocks on the fetch. Gated behind a
    second flag, `FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED` (depends on
    `FORUM_MEDIA_EMBEDS_ENABLED`), defaulted off everywhere.
+   **Extended in Cycle 7** on `feature/mitrapclub-media-embeds-fetched-titles`
+   (not yet merged to `main`), prompted by a bug report: a thread with no
+   subject whose body is a bare recognized media URL showed the raw URL as
+   its "title" and silently lost its embed to unrelated title/body
+   duplicate-content suppression. Rather than patch that collision at
+   render time, the fix fetches the linked content's real title (YouTube's
+   keyless oEmbed; Instagram's existing page-scraper) and stores it as the
+   thread's own `subject` via a new append-only `ThreadSubjectRecord`
+   (mirroring `ThreadLabelRecord`'s proven shape) and a narrow,
+   system-only `LocalWriteService::setThreadSubjectIfEmpty()` write path —
+   never overwriting an existing subject, human-provided or otherwise, so
+   it stays congruent with a possible future manual-retitle feature without
+   building anything that feature doesn't need yet. Until the fetch
+   succeeds, such a thread shows the literal string `"Untitled"` instead of
+   the raw link, closing the race/collision window completely. Reuses
+   Cycle 6's `MediaEmbedPreviewCacheStore`/warm-cache beacon endpoint
+   unchanged in shape, extended for a `youtube` provider and an optional
+   `thread_id` to trigger the subject write-back. Gated behind the
+   existing `FORUM_MEDIA_EMBEDS_ENABLED` flag alone (not the inline-player
+   flag), since this is a thread-title concern independent of how the
+   embed itself renders.

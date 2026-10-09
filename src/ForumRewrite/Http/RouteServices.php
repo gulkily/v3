@@ -85,6 +85,11 @@ final class RouteServices
         return $this->databasePath;
     }
 
+    public function featureFlags(): FeatureFlagEvaluator
+    {
+        return $this->featureFlags;
+    }
+
     /**
      * Memoized per request (unlike pdo()/writer()) since ActivityService
      * owns request-scoped caches (activityCommitManifestCache,

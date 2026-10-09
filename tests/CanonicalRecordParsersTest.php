@@ -14,6 +14,7 @@ use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PublicKeyRecordParser;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
+use ForumRewrite\Canonical\ThreadSubjectRecordParser;
 use ForumRewrite\Invitation\InvitationLedger;
 use ForumRewrite\Invitation\InvitationToken;
 use ForumRewrite\Write\LocalWriteService;
@@ -247,6 +248,59 @@ final class CanonicalRecordParsersTest
         );
     }
 
+    public function testParsesThreadSubjectFixture(): void
+    {
+        $record = (new ThreadSubjectRecordParser())->parse(
+            $this->readFixture('thread-subjects/thread-subject-20260415153000-ab12cd34.txt')
+        );
+
+        assertSame('thread-subject-20260415153000-ab12cd34', $record->recordId);
+        assertSame('2026-04-15T15:30:00Z', $record->createdAt);
+        assertSame('root-001', $record->threadId);
+        assertSame('set', $record->operation);
+        assertSame('Fetched Video Title', $record->subject);
+        assertNullValue($record->authorIdentityId);
+        assertSame('Fetched title for bare media-embed URL', $record->reason);
+        assertSame('', $record->body);
+    }
+
+    public function testRejectsThreadSubjectWithUnsupportedOperation(): void
+    {
+        $contents = "Record-ID: thread-subject-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nThread-ID: root-001\nOperation: clear\nSubject: Fetched Video Title\n\n";
+
+        assertThrows(
+            static fn () => (new ThreadSubjectRecordParser())->parse($contents),
+            'Thread-subject Operation must be set in V1.'
+        );
+    }
+
+    public function testRejectsThreadSubjectWithMissingRequiredHeaders(): void
+    {
+        $headers = [
+            'Record-ID' => 'thread-subject-20260415153000-ab12cd34',
+            'Created-At' => '2026-04-15T15:30:00Z',
+            'Thread-ID' => 'root-001',
+            'Operation' => 'set',
+            'Subject' => 'Fetched Video Title',
+        ];
+
+        foreach (array_keys($headers) as $missing) {
+            $remaining = $headers;
+            unset($remaining[$missing]);
+
+            $contents = '';
+            foreach ($remaining as $name => $value) {
+                $contents .= "{$name}: {$value}\n";
+            }
+            $contents .= "\n";
+
+            assertThrows(
+                static fn () => (new ThreadSubjectRecordParser())->parse($contents),
+                'Missing required thread-subject header: ' . $missing
+            );
+        }
+    }
+
     public function testParsesPostReactionRecord(): void
     {
         $contents = "Record-ID: post-reaction-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nPost-ID: reply-001\nOperation: add\nTags: flag flag\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\nReason: Flagged reply-agent content\n\n";
@@ -404,6 +458,7 @@ final class CanonicalRecordParsersTest
         $publicKey = $repository->loadPublicKey('records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc');
         $approvalSeed = $repository->loadApprovalSeed('records/approval-seeds/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt');
         $threadLabel = $repository->loadThreadLabel('records/thread-labels/thread-label-20260415153000-ab12cd34.txt');
+        $threadSubject = $repository->loadThreadSubject('records/thread-subjects/thread-subject-20260415153000-ab12cd34.txt');
         $instance = $repository->loadInstancePublic('records/instance/public.txt');
         $featureFlags = $repository->loadFeatureFlags('records/instance/feature-flags.txt');
         $postReaction = $repository->loadPostReaction('records/post-reactions/post-reaction-20260415153000-ab12cd34.txt');
@@ -413,6 +468,7 @@ final class CanonicalRecordParsersTest
         assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $publicKey->fingerprint);
         assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $approvalSeed->approvedIdentityId);
         assertSame(['bug', 'needs-review'], $threadLabel->labels);
+        assertSame('Fetched Video Title', $threadSubject->subject);
         assertSame(['flag'], $postReaction->tags);
         assertSame('zenmemes', $instance->headers['Instance-Name']);
         assertSame(['FORUM_APP_VERSION_NOTIFICATION' => false], $featureFlags->values);
@@ -517,6 +573,21 @@ final class CanonicalRecordParsersTest
         );
     }
 
+    public function testRepositoryRejectsThreadSubjectPathMismatch(): void
+    {
+        $tempRoot = $this->createTempFixtureRoot();
+        rename(
+            $tempRoot . '/records/thread-subjects/thread-subject-20260415153000-ab12cd34.txt',
+            $tempRoot . '/records/thread-subjects/not-the-record-id.txt'
+        );
+        $repository = new CanonicalRecordRepository($tempRoot);
+
+        assertThrows(
+            static fn () => $repository->loadThreadSubject('records/thread-subjects/not-the-record-id.txt'),
+            'Thread-subject record path must match Record-ID.'
+        );
+    }
+
     public function testRepositoryRejectsPostReactionPathMismatch(): void
     {
         $tempRoot = $this->createTempFixtureRoot();
@@ -551,6 +622,10 @@ final class CanonicalRecordParsersTest
         assertSame(
             'records/thread-labels/thread-label-20260415153000-ab12cd34.txt',
             CanonicalPathResolver::threadLabel('thread-label-20260415153000-ab12cd34')
+        );
+        assertSame(
+            'records/thread-subjects/thread-subject-20260415153000-ab12cd34.txt',
+            CanonicalPathResolver::threadSubject('thread-subject-20260415153000-ab12cd34')
         );
         assertSame(
             'records/post-reactions/post-reaction-20260415153000-ab12cd34.txt',
