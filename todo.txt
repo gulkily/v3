@@ -87,8 +87,6 @@ general-purpose "canonicalize any URL" cleanup is its own open-ended feature:
 	needs its own Step 1 given the redirect-following/unknown-provider
 		design questions
 
-stack forte panes vertically for mobile
-
 allow offline content for unauthenticated users
 
 improve event experience
