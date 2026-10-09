@@ -53,5 +53,11 @@
 ## Stage 4 - Render and end-to-end verification
 
 - Changes:
+  - `templates/partials/event_block.php`: extracts `event_time`; when present, appends `" at {time}"` to the existing `event-block__date` span, right after the date; renders exactly as before when absent.
 - Verification:
+  - `php tests/run.php` full suite: 946/950 passed, same 4 pre-existing failures, no new ones.
+  - Started the dev server (`FORUM_SITE_ID=mitrapclub`) and created a live event thread with date+time+location+link via `LocalWriteService::createThread()` (wired with `FeatureFlagEvaluator::forApplication()`, matching how the real app constructs it). Screenshotted the thread page and the board page: both show `📅 2026-11-20 at 19:30 · MIT Media Lab, E14 · https://example.com/cypher-night-2`, confirming the time renders correctly on both surfaces (closing the two-surfaces risk from Key Risks).
+  - Re-fetched the Cycle 8 fixture event thread (date + location + link, no time): `event-block__date` still renders as plain `📅 2026-11-14` with no `" at ..."` suffix — zero regression for an existing date-only event thread.
+  - Started a second dev server instance with `FORUM_SITE_ID=qdb` and confirmed the board page returns 200 with zero `event-block` markup present (qdb's board uses the `quote` card presentation slot, not `thread_card`/`event_block`) — confirms no crash or stray markup on a profile that doesn't surface events via this card type.
 - Notes:
+  - Completion Contract met: a thread with an event time renders it next to the date on both the board card and the thread page, for any profile with event support enabled; a thread without one is byte-identical to before this feature; malformed input fails closed at write time (Stage 2); no deployment step needed beyond the schema-version-triggered rebuild (Stage 3).
