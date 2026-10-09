@@ -5945,6 +5945,260 @@ NODE;
         assertSame(false, $result['missing']['buttonDisabled']);
     }
 
+    public function testReactionCacheHydratesOnlyTheMatchingSiteIdentityAndAction(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const identity = 'openpgp:0123456789abcdef0123456789abcdef01234567';
+const storage = {
+  forum_pki_fingerprint: '0123456789ABCDEF0123456789ABCDEF01234567',
+  'forum-reaction-state-v1:qdb:openpgp%3A0123456789abcdef0123456789abcdef01234567': JSON.stringify({
+    version: 1,
+    markers: [{ kind: 'thread', id: 'thread-001', tag: 'like' }]
+  })
+};
+
+class HTMLButtonElement {
+  constructor(action, tag) {
+    this.disabled = false;
+    this.textContent = action === 'apply-thread-tag' ? 'Like' : 'Flag';
+    this.attributes = { 'data-action': action, 'data-tag': tag, 'data-applied-label': action === 'apply-thread-tag' ? 'Liked' : 'Flagged' };
+  }
+  getAttribute(name) { return this.attributes[name] || null; }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  closest(selector) {
+    if (selector === '[data-thread-reactions-root]' || selector === '.post-card[data-post-id]') return root;
+    return null;
+  }
+}
+
+const root = { getAttribute(name) { return name === 'data-thread-id' || name === 'data-post-id' ? 'thread-001' : ''; } };
+const like = new HTMLButtonElement('apply-thread-tag', 'like');
+const flag = new HTMLButtonElement('apply-post-tag', 'flag');
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = {
+  forumBrowserRuntime: { namespace: 'zenmemes' },
+  localStorage: { getItem(key) { return Object.prototype.hasOwnProperty.call(storage, key) ? storage[key] : null; }, setItem() {} }
+};
+global.localStorage = window.localStorage;
+global.document = {
+  addEventListener(type, handler) { if (type === 'DOMContentLoaded') handler(); },
+  querySelectorAll(selector) {
+    if (selector === '[data-action="apply-thread-tag"]') return [like];
+    if (selector === '[data-action="apply-post-tag"]') return [flag];
+    return [];
+  }
+};
+
+vm.runInThisContext(source);
+const otherSite = { likeDisabled: like.disabled, flagDisabled: flag.disabled };
+window.forumBrowserRuntime.namespace = 'qdb';
+window.ForumThreadReactions.hydrateRememberedReactions();
+process.stdout.write(JSON.stringify({
+  identity,
+  otherSite,
+  qdb: { likeDisabled: like.disabled, likeText: like.textContent, likePressed: like.attributes['aria-pressed'], flagDisabled: flag.disabled }
+}));
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame(false, $result['otherSite']['likeDisabled']);
+        assertSame(false, $result['otherSite']['flagDisabled']);
+        assertSame(true, $result['qdb']['likeDisabled']);
+        assertSame('Liked', $result['qdb']['likeText']);
+        assertSame('true', $result['qdb']['likePressed']);
+        assertSame(false, $result['qdb']['flagDisabled']);
+    }
+
+    public function testQdbVoteCacheDisablesBothCaptionsButNotTheFlag(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const identity = 'openpgp:0123456789abcdef0123456789abcdef01234567';
+const storage = {
+  forum_pki_fingerprint: '0123456789ABCDEF0123456789ABCDEF01234567',
+  'forum-reaction-state-v1:qdb:openpgp%3A0123456789abcdef0123456789abcdef01234567': JSON.stringify({
+    version: 1,
+    markers: [{ kind: 'thread', id: 'quote-001', tag: 'retired-caption' }]
+  })
+};
+
+class HTMLButtonElement {
+  constructor(action, tag, text) {
+    this.disabled = false;
+    this.textContent = text;
+    this.attributes = { 'data-action': action, 'data-tag': tag, 'data-applied-label': text.slice(2) };
+  }
+  getAttribute(name) { return this.attributes[name] || null; }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  closest(selector) {
+    if (selector === '[data-thread-reactions-root]' || selector === '.post-card[data-post-id]') return root;
+    return null;
+  }
+}
+
+const up = new HTMLButtonElement('apply-thread-tag', 'good', '↑ Good');
+const down = new HTMLButtonElement('apply-thread-tag', 'bad', '↓ Bad');
+const flag = new HTMLButtonElement('apply-post-tag', 'flag', '⚑ Flag');
+const pair = {
+  getAttribute(name) { return name === 'data-qdb-vote-tags' ? JSON.stringify(['upvote', 'downvote', 'good', 'bad', 'retired-caption']) : null; },
+  querySelectorAll(selector) { return selector === '[data-action="apply-thread-tag"]' ? [up, down] : []; }
+};
+const root = {
+  getAttribute(name) { return name === 'data-thread-id' || name === 'data-post-id' ? 'quote-001' : ''; },
+  querySelector(selector) { return selector === '[data-qdb-vote-pair]' ? pair : null; },
+  addEventListener() {}
+};
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = {
+  forumBrowserRuntime: { namespace: 'qdb' },
+  localStorage: { getItem(key) { return Object.prototype.hasOwnProperty.call(storage, key) ? storage[key] : null; }, setItem() {} }
+};
+global.localStorage = window.localStorage;
+global.document = {
+  addEventListener(type, handler) { if (type === 'DOMContentLoaded') handler(); },
+  querySelectorAll(selector) {
+    if (selector === '[data-thread-reactions-root]') return [root];
+    if (selector === '[data-action="apply-thread-tag"]') return [up, down];
+    if (selector === '[data-action="apply-post-tag"]') return [flag];
+    return [];
+  }
+};
+
+vm.runInThisContext(source);
+process.stdout.write(JSON.stringify({
+  up: { disabled: up.disabled, text: up.textContent, pressed: up.attributes['aria-pressed'] || '' },
+  down: { disabled: down.disabled, text: down.textContent, pressed: down.attributes['aria-pressed'] || '' },
+  flag: { disabled: flag.disabled, text: flag.textContent }
+}));
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame(true, $result['up']['disabled']);
+        assertSame('↑ Good', $result['up']['text']);
+        assertSame('true', $result['up']['pressed']);
+        assertSame(true, $result['down']['disabled']);
+        assertSame('↓ Bad', $result['down']['text']);
+        assertSame('true', $result['down']['pressed']);
+        assertSame(false, $result['flag']['disabled']);
+        assertSame('⚑ Flag', $result['flag']['text']);
+    }
+
+    public function testQdbReactionStatusReplacesThePreviousVoteOrFlagStatus(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const clickHandlers = [];
+let fetchCount = 0;
+
+class HTMLButtonElement {
+  constructor(action, tag, label, text) {
+    this.action = action;
+    this.disabled = false;
+    this.textContent = text;
+    this.attributes = {
+      'data-tag': tag,
+      'data-applied-label': label,
+      'aria-pressed': 'false',
+    };
+  }
+  getAttribute(name) { return this.attributes[name] || null; }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  removeAttribute(name) { delete this.attributes[name]; }
+  closest(selector) { return selector === `[data-action="${this.action}"]` ? this : null; }
+}
+
+const sharedFeedback = {
+  _text: 'Older vote.',
+  history: [],
+  hidden: false,
+  attributes: { 'data-kind': 'ok' },
+  get textContent() { return this._text; },
+  set textContent(value) { this.history.push(String(value)); this._text = String(value); },
+  setAttribute(name, value) { this.attributes[name] = String(value); },
+  removeAttribute(name) { delete this.attributes[name]; },
+  querySelector() { return null; },
+};
+const voteButton = new HTMLButtonElement('apply-thread-tag', 'good', 'Good', '↑ Good');
+const flagButton = new HTMLButtonElement('apply-post-tag', 'flag', '⚑ Flagged', '⚑ Flag');
+const scoreNode = { textContent: 'Score: 0' };
+const root = {
+  hidden: false,
+  getAttribute(name) {
+    if (name === 'data-thread-id') return 'quote-001';
+    if (name === 'data-post-id') return 'quote-001';
+    return '';
+  },
+  querySelector(selector) {
+    if (selector === '[data-role="qdb-reaction-feedback"]') return sharedFeedback;
+    if (selector === '[data-role="thread-score"]') return scoreNode;
+    return null;
+  },
+  addEventListener(type, handler) {
+    if (type === 'click') clickHandlers.push(handler);
+  },
+};
+
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = { __forumBrowserIdentity: { async ensureActionIdentity() {} } };
+global.fetch = async function() {
+  fetchCount += 1;
+  const text = fetchCount === 1
+    ? 'status=ok\nscore_total=1\nvote_count=1\nwrote_record=yes\nviewer_is_approved=yes\n'
+    : 'status=ok\nwrote_record=yes\nis_hidden=no\n';
+  return { headers: { get() { return ''; } }, async text() { return text; } };
+};
+global.document = {
+  addEventListener(type, handler) { if (type === 'DOMContentLoaded') handler(); },
+  querySelector(selector) {
+    return selector === '[data-thread-reactions-root]' || selector === '.post-card[data-post-id]'
+      ? root
+      : null;
+  },
+};
+
+vm.runInThisContext(source);
+async function dispatch(button) {
+  for (const handler of clickHandlers) {
+    await handler({ target: button, preventDefault() {} });
+  }
+}
+(async function () {
+  await dispatch(voteButton);
+  const afterVote = sharedFeedback.textContent;
+  await dispatch(flagButton);
+  process.stdout.write(JSON.stringify({
+    fetchCount,
+    afterVote,
+    finalStatus: sharedFeedback.textContent,
+    clearCount: sharedFeedback.history.filter((value) => value === '').length,
+    hidden: sharedFeedback.hidden,
+    kind: sharedFeedback.attributes['data-kind'] || '',
+  }));
+})().catch((error) => { process.stderr.write(error.stack || String(error)); process.exit(1); });
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame(2, $result['fetchCount']);
+        assertSame('Good.', $result['afterVote']);
+        assertSame('⚑ Flagged.', $result['finalStatus']);
+        assertSame(2, $result['clearCount']);
+        assertSame(false, $result['hidden']);
+        assertSame('ok', $result['kind']);
+    }
+
     public function testThreadReactionFeedbackCopyFollowsAppliedLabelForNonLikeTags(): void
     {
         $script = <<<'NODE'
@@ -6742,7 +6996,12 @@ class HTMLButtonElement {
 }
 
 const button = new HTMLButtonElement();
-const feedbackNode = { textContent: '', hidden: true, setAttribute(name, value) { this[name] = value; } };
+const feedbackHistory = [];
+const feedbackNode = { hidden: true, setAttribute(name, value) { this[name] = value; } };
+Object.defineProperty(feedbackNode, 'textContent', {
+  get() { return this.value || ''; },
+  set(value) { this.value = String(value); feedbackHistory.push(String(value)); }
+});
 const root = {
   hidden: false,
   getAttribute(name) {
@@ -6763,6 +7022,7 @@ global.Element = HTMLButtonElement;
 global.HTMLButtonElement = HTMLButtonElement;
 global.window = {
   __forumBrowserIdentity: {
+    storedVoteIdentityReadinessState() { return 'ready'; },
     async ensureReadyIdentity() {}
   }
 };
@@ -6813,6 +7073,7 @@ vm.runInThisContext(source);
   await clickPromise;
   process.stdout.write(JSON.stringify({
     optimistic,
+    feedbackHistory,
     finalButtonText: button.textContent,
     finalAriaPressed: button.attributes['aria-pressed'] || '',
     finalRootHidden: root.hidden
@@ -6827,6 +7088,7 @@ NODE;
 
         assertSame(1, $result['optimistic']['fetchCount']);
         assertSame('Saving tag...', $result['optimistic']['feedback']);
+        assertSame(false, in_array('Preparing identity...', $result['feedbackHistory'], true));
         assertSame(true, $result['optimistic']['buttonDisabled']);
         assertSame('Flagged', $result['optimistic']['buttonText']);
         assertSame('true', $result['optimistic']['ariaPressed']);
@@ -7343,7 +7605,7 @@ NODE;
         assertStringContains('/api/get_profile?profile_slug=openpgp-fedcba9876543210fedcba9876543210fedcba98', implode("\n", $result['fetchUrls']));
     }
 
-    public function testIdentityPrewarmDoesNotGenerateOrLinkIdentity(): void
+    public function testIdentityPrewarmFullyReadiesStoredVoteIdentity(): void
     {
         $script = <<<'NODE'
 const fs = require('fs');
@@ -7352,10 +7614,11 @@ const source = fs.readFileSync(process.argv[1], 'utf8');
 const storage = {
   forum_pki_public_key: 'public-key',
   forum_pki_private_key: 'private-key',
-  forum_pki_username: 'guest'
+  forum_pki_username: 'guest',
+  forum_pki_fingerprint: 'ABC123'
 };
 let generateCalled = false;
-let fetchUrls = [];
+const fetchUrls = [];
 
 global.localStorage = {
   getItem(key) { return Object.prototype.hasOwnProperty.call(storage, key) ? storage[key] : ''; },
@@ -7372,12 +7635,30 @@ global.window = {
     },
     async readKey() {
       return { getFingerprint() { return 'ABC123'; } };
+    },
+    async readPrivateKey() {
+      return { getFingerprint() { return 'ABC123'; } };
+    },
+    async createMessage() {
+      return {};
+    },
+    async sign() {
+      return 'signature';
     }
   }
 };
 global.openpgp = global.window.openpgp;
 global.fetch = async function(url) {
   fetchUrls.push(String(url));
+  if (String(url).indexOf('/api/get_profile?') === 0) {
+    return { ok: false, async text() { return ''; } };
+  }
+  if (String(url) === '/api/prepare_identity') {
+    return { ok: true, async text() { return JSON.stringify({ status: 'ok', prepare_token: 'token', canonical_record: 'record' }); } };
+  }
+  if (String(url) === '/api/create_identity') {
+    return { ok: true, async text() { return JSON.stringify({ status: 'ok' }); } };
+  }
   return { ok: true, async text() { return 'ok'; } };
 };
 global.document = {
@@ -7387,7 +7668,7 @@ global.document = {
     }
   },
   querySelector(selector) {
-    return selector === '[data-compose-root], [data-thread-reactions-root], .post-card[data-post-id]' ? {} : null;
+    return selector.indexOf('[data-thread-reactions-root]') !== -1 ? {} : null;
   },
   querySelectorAll() {
     return [];
@@ -7404,6 +7685,8 @@ setTimeout(() => {
   process.stdout.write(JSON.stringify({
     generateCalled,
     fingerprint: storage.forum_pki_fingerprint || '',
+    published: storage.forum_pki_published_fingerprint || '',
+    readiness: window.__forumBrowserIdentity.storedVoteIdentityReadinessState(),
     fetchUrls
   }));
 }, 0);
@@ -7417,7 +7700,68 @@ NODE;
 
         assertSame(false, $result['generateCalled']);
         assertSame('ABC123', $result['fingerprint']);
-        assertSame(['/api/set_identity_hint?identity_hint=openpgp%3Aabc123'], $result['fetchUrls']);
+        assertSame('ABC123', $result['published']);
+        assertSame('ready', $result['readiness']);
+        assertSame(
+            [
+                '/api/get_profile?profile_slug=openpgp-abc123',
+                '/api/prepare_identity',
+                '/api/create_identity',
+                '/api/set_identity_hint?identity_hint=openpgp%3Aabc123',
+            ],
+            $result['fetchUrls'],
+        );
+    }
+
+    public function testIdentityPrewarmWithoutStoredKeypairDoesNotCreateOrPublishIdentity(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const storage = {};
+let generateCalled = false;
+const fetchUrls = [];
+
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(storage, key) ? storage[key] : ''; },
+  setItem(key, value) { storage[key] = String(value); },
+  removeItem(key) { delete storage[key]; }
+};
+global.window = {
+  setTimeout(callback) { callback(); },
+  __forumOpenPgpLoader: { ready: Promise.resolve({}) },
+  openpgp: {
+    generateKey() {
+      generateCalled = true;
+      throw new Error('generateKey must not run during prewarm');
+    }
+  }
+};
+global.openpgp = global.window.openpgp;
+global.fetch = async function(url) {
+  fetchUrls.push(String(url));
+  return { ok: true, async text() { return 'ok'; } };
+};
+global.document = {
+  addEventListener(type, handler) { if (type === 'DOMContentLoaded') handler(); },
+  querySelector(selector) { return selector.indexOf('[data-thread-reactions-root]') !== -1 ? {} : null; },
+  querySelectorAll() { return []; },
+  createElement() { return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+setTimeout(() => {
+  process.stdout.write(JSON.stringify({ generateCalled, fetchUrls }));
+}, 0);
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(false, $result['generateCalled']);
+        assertSame([], $result['fetchUrls']);
     }
 
     public function testClearPendingComposeArtifactsRemovesOptimisticNodesAndFormKeys(): void

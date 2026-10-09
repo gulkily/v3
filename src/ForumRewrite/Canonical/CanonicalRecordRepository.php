@@ -16,6 +16,7 @@ final class CanonicalRecordRepository
         private readonly PublicKeyRecordParser $publicKeyParser = new PublicKeyRecordParser(),
         private readonly ApprovalSeedRecordParser $approvalSeedParser = new ApprovalSeedRecordParser(),
         private readonly ThreadLabelRecordParser $threadLabelParser = new ThreadLabelRecordParser(),
+        private readonly ThreadSubjectRecordParser $threadSubjectParser = new ThreadSubjectRecordParser(),
         private readonly PostReactionRecordParser $postReactionParser = new PostReactionRecordParser(),
         private readonly InstancePublicRecordParser $instanceParser = new InstancePublicRecordParser(),
         private readonly SiteFeatureFlagsRecordParser $featureFlagsParser = new SiteFeatureFlagsRecordParser(),
@@ -195,6 +196,19 @@ final class CanonicalRecordRepository
         $expectedPath = CanonicalPathResolver::threadLabel($record->recordId);
         if ($relativePath !== $expectedPath) {
             throw new CanonicalRecordParseException('Thread-label record path must match Record-ID.');
+        }
+
+        return $record;
+    }
+
+    public function loadThreadSubject(string $relativePath): ThreadSubjectRecord
+    {
+        $this->assertPathIsWithinFamily($relativePath, 'records/thread-subjects/');
+        $record = $this->threadSubjectParser->parse($this->read($relativePath));
+
+        $expectedPath = CanonicalPathResolver::threadSubject($record->recordId);
+        if ($relativePath !== $expectedPath) {
+            throw new CanonicalRecordParseException('Thread-subject record path must match Record-ID.');
         }
 
         return $record;

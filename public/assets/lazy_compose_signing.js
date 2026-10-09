@@ -1,6 +1,7 @@
 (function () {
   const composeRoots = Array.from(document.querySelectorAll("[data-compose-root]"));
   const intentSelector = 'textarea[name="body"], input[name="subject"]';
+  const reactionSelector = "[data-thread-reactions-root], .post-card[data-post-id]";
   let loadPromise = null;
 
   function scriptAlreadyPresent(path) {
@@ -29,10 +30,43 @@
 
   function initializeSigning() {
     if (window.ForumBrowserSigning && typeof window.ForumBrowserSigning.init === "function") {
-      composeRoots.forEach(function (composeRoot) {
-        window.ForumBrowserSigning.init(composeRoot);
-      });
+      window.ForumBrowserSigning.init(document);
     }
+  }
+
+  function hasStoredBrowserKeypair() {
+    try {
+      return Boolean(
+        window.localStorage
+        && window.localStorage.getItem("forum_pki_public_key")
+        && window.localStorage.getItem("forum_pki_private_key")
+      );
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function pageHasReactionSurfaces() {
+    return Boolean(document.querySelector(reactionSelector));
+  }
+
+  function requestIdle(callback) {
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(callback, { timeout: 2000 });
+      return;
+    }
+
+    window.setTimeout(callback, 0);
+  }
+
+  function scheduleStoredReactionIdentityPrewarm() {
+    if (!pageHasReactionSurfaces() || !hasStoredBrowserKeypair()) {
+      return;
+    }
+
+    requestIdle(function () {
+      void loadSigningAssets().catch(function () {});
+    });
   }
 
   function loadSigningAssets() {
@@ -83,4 +117,6 @@
   window.ForumLazyComposeSigning = {
     load: loadSigningAssets,
   };
+
+  scheduleStoredReactionIdentityPrewarm();
 })();

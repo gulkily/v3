@@ -13,6 +13,7 @@ use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
+use ForumRewrite\Canonical\ThreadSubjectRecordParser;
 use ForumRewrite\Qdb\QdbQuoteNumbers;
 use ForumRewrite\Qdb\QdbVoteCaptionCatalog;
 use ForumRewrite\Qdb\QdbVoteScoringPolicy;
@@ -549,6 +550,45 @@ class LocalWriteService
                 'timings' => $timings,
             ];
         });
+    }
+
+    /**
+     * System-only write path: sets a thread's subject when it is currently
+     * empty. Never overwrites an existing subject, human-provided or
+     * otherwise. No public API endpoint calls this directly - callers are
+     * trusted internal code (the media-embed title-fetch beacon), not
+     * request input.
+     */
+    public function setThreadSubjectIfEmpty(string $threadId, string $subject): bool
+    {
+        $this->assertWritableRepository();
+
+        $pdo = $this->readModelPdo();
+        $stmt = $pdo->prepare('SELECT subject FROM threads WHERE root_post_id = :thread_id');
+        $stmt->execute(['thread_id' => $threadId]);
+        $row = $stmt->fetch();
+        $stmt->closeCursor();
+        unset($stmt, $pdo);
+        if (!is_array($row)) {
+            return false;
+        }
+
+        $currentSubject = $row['subject'];
+        if ($currentSubject !== null && trim((string) $currentSubject) !== '') {
+            return false;
+        }
+
+        $createdAt = $this->canonicalTimestampNow();
+        [$recordPath, $contents] = $this->buildThreadSubjectRecord($threadId, $subject, $createdAt);
+        $this->writeFile($recordPath, $contents);
+
+        $commitResult = $this->commitCanonicalWrite([$recordPath], 'Set fetched title for thread ' . $threadId);
+        $commitSha = $commitResult['commit_sha'];
+
+        $this->synchronizeThreadSubjectDerivedState($threadId, $commitSha);
+        $this->invalidator()->invalidateBoardThread($threadId);
+
+        return true;
     }
 
     /**
@@ -1614,6 +1654,35 @@ class LocalWriteService
         return $timings;
     }
 
+    private function synchronizeThreadSubjectDerivedState(string $threadId, string $commitSha): void
+    {
+        if (!$this->canIncrementallyUpdateReadModel()) {
+            $this->refreshDerivedStateAfterCommit($commitSha);
+
+            return;
+        }
+
+        try {
+            $this->incrementalReadModelUpdater()->applyThreadSubjectWrite($threadId, $commitSha);
+            $this->staleMarker()->clear();
+        } catch (\Throwable $throwable) {
+            try {
+                $this->refreshDerivedStateAfterCommit($commitSha);
+            } catch (\Throwable $fallbackThrowable) {
+                $this->staleMarker()->mark([
+                    'reason' => 'write_refresh_failed',
+                    'commit_sha' => $commitSha,
+                    'failed_at' => gmdate('c'),
+                    'message' => 'incremental=' . $throwable->getMessage() . '; fallback=' . $fallbackThrowable->getMessage(),
+                ]);
+
+                throw new RuntimeException(
+                    'Canonical write committed at ' . $commitSha . ' but incremental thread-subject update and rebuild fallback both failed. Derived state marked stale.'
+                );
+            }
+        }
+    }
+
     /**
      * @return array<string, float>
      */
@@ -2218,6 +2287,29 @@ class LocalWriteService
 
         return [
             CanonicalPathResolver::threadLabel($recordId),
+            $contents,
+        ];
+    }
+
+    /**
+     * @return array{string,string}
+     */
+    private function buildThreadSubjectRecord(string $threadId, string $subject, string $createdAt): array
+    {
+        $recordId = $this->generateRecordId('thread-subject');
+        $subject = trim(str_replace(["\r\n", "\r", "\n"], ' ', $subject));
+        $contents = "Record-ID: {$recordId}\n"
+            . "Created-At: {$createdAt}\n"
+            . "Thread-ID: {$threadId}\n"
+            . "Operation: set\n"
+            . "Subject: {$subject}\n"
+            . "Reason: Fetched title for bare media-embed URL\n"
+            . "\n";
+
+        (new ThreadSubjectRecordParser())->parse($contents);
+
+        return [
+            CanonicalPathResolver::threadSubject($recordId),
             $contents,
         ];
     }

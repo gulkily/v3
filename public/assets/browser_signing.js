@@ -17,6 +17,7 @@
   const pendingReplyOperations = new Set();
   const pendingThreadOperations = new Set();
   let identityPrewarmStarted = false;
+  let storedVoteIdentityReadiness = "idle";
   let automaticGuestIdentityStarted = false;
 
   function browserPerformance() {
@@ -1828,6 +1829,13 @@
     ));
   }
 
+  function pageHasVoteSurfaces(root) {
+    const scope = root || document;
+    return Boolean(scope && typeof scope.querySelector === "function" && scope.querySelector(
+      "[data-thread-reactions-root], .post-card[data-post-id]"
+    ));
+  }
+
   function identityStatusNodes(root) {
     const scope = root || document;
     if (!scope || typeof scope.querySelectorAll !== "function") {
@@ -2042,7 +2050,11 @@
         }
         markActionTiming(timing, "forum_openpgp_ready");
 
-        if (hasBrowserKeypair()) {
+        if (pageHasVoteSurfaces(root)) {
+          storedVoteIdentityReadiness = hasBrowserKeypair() ? "in_flight" : "not_applicable";
+          const ready = await ensureStoredIdentityReady(root, timing);
+          storedVoteIdentityReadiness = ready ? "ready" : "not_applicable";
+        } else if (hasBrowserKeypair()) {
           if (storedFingerprint() === "") {
             await ensureStoredFingerprint();
           }
@@ -2055,6 +2067,9 @@
 
         completeActionTiming(timing, "ok");
       } catch (error) {
+        if (pageHasVoteSurfaces(root)) {
+          storedVoteIdentityReadiness = "failed";
+        }
         markActionTiming(timing, "forum_openpgp_failed");
         timing.errorKind = error instanceof Error && error.name ? error.name : "error";
         completeActionTiming(timing, "error");
@@ -2062,6 +2077,23 @@
     });
 
     return true;
+  }
+
+  async function ensureStoredIdentityReady(root, timing) {
+    if (!hasBrowserKeypair()) {
+      return false;
+    }
+
+    await ensureReadyIdentity(root, null, {
+      existingIdentityOnly: true,
+      verifyPublishedIdentity: true,
+      timing: timing,
+    });
+    return true;
+  }
+
+  function storedVoteIdentityReadinessState() {
+    return storedVoteIdentityReadiness;
   }
 
   function scheduleAutomaticGuestIdentity(root) {
@@ -2430,6 +2462,9 @@
       : promptForComposeUsername;
 
     if (!hasBrowserKeypair()) {
+      if (config.existingIdentityOnly === true) {
+        return false;
+      }
       await ensureOpenPgpApi(["generateKey", "readKey"]);
       setStatus(statusNode, "Choose a username to prepare your browser keypair...", "info");
       markActionTiming(timing, "forum_username_prompt_start");
@@ -2476,6 +2511,9 @@
     const timing = config.timing || null;
     const verifyPublishedIdentity = config.verifyPublishedIdentity !== false;
     const publishPublicKey = config.publishPublicKey !== false;
+    if (config.existingIdentityOnly === true && !hasBrowserKeypair()) {
+      return false;
+    }
     const publishedFingerprint = (localStorage.getItem(storageKeys.publishedFingerprint) || "")
       .trim()
       .toUpperCase();
@@ -2534,9 +2572,12 @@
       currentAuthorIdentityId: currentAuthorIdentityId,
       ensureActionIdentity: ensureActionIdentity,
       ensureReadyIdentity: ensureReadyIdentity,
+      ensureStoredIdentityReady: ensureStoredIdentityReady,
+      storedVoteIdentityReadinessState: storedVoteIdentityReadinessState,
       hasBrowserKeypair: hasBrowserKeypair,
       identityPreparationState: identityPreparationState,
       pageHasSignedActionSurfaces: pageHasSignedActionSurfaces,
+      pageHasVoteSurfaces: pageHasVoteSurfaces,
       renderIdentityPreparationState: renderIdentityPreparationState,
       scheduleIdentityPrewarm: scheduleIdentityPrewarm,
       scheduleAutomaticGuestIdentity: scheduleAutomaticGuestIdentity,

@@ -3068,7 +3068,7 @@ NODE;
         assertStringContains('Pending Liked Thread', $boardLiked);
     }
 
-    public function testQdbPermalinkShowsViewersExistingUpvoteAsPressedAndDisabled(): void
+    public function testQdbPermalinkDisablesBothVoteCaptionsAfterAnExistingUpvote(): void
     {
         putenv('FORUM_SITE_ID=qdb');
         try {
@@ -3092,9 +3092,9 @@ NODE;
             putenv('FORUM_SITE_ID');
         }
 
-        assertTrue(preg_match('/data-tag="upvote"[^>]*aria-pressed="true"[^>]*disabled="disabled"/', $votedPage) === 1);
-        assertTrue(preg_match('/data-tag="upvote"[^>]*aria-pressed="false"/', $anonymousPage) === 1);
-        assertFalse(preg_match('/data-tag="upvote"[^>]*disabled="disabled"/', $anonymousPage) === 1);
+        assertSame(2, preg_match_all('/data-action="apply-thread-tag"[^>]*aria-pressed="true"[^>]*disabled="disabled"/', $votedPage));
+        assertSame(2, preg_match_all('/data-action="apply-thread-tag"[^>]*aria-pressed="false"/', $anonymousPage));
+        assertSame(0, preg_match_all('/data-action="apply-thread-tag"[^>]*disabled="disabled"/', $anonymousPage));
     }
 
     public function testQdbLegacyLikeCountsTowardVoteTotalOnIncrementalAndRebuildPaths(): void

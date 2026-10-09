@@ -112,6 +112,7 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
             FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED,
             FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED,
+            FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
             FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
@@ -218,6 +219,18 @@ PHP);
             assertSame(false, $emoji->effectiveValue);
             assertSame('dependency', $emoji->source);
             assertSame(true, $emoji->siteValue);
+        });
+    }
+
+    public function testMediaEmbedsInlinePlayerDependsOnMediaEmbedsEnabled(): void
+    {
+        $this->withEnvironment([], function (): void {
+            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\nFORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED: true\nFORUM_MEDIA_EMBEDS_ENABLED: false\n");
+            $inlinePlayer = FeatureFlagEvaluator::forRepository($repositoryRoot)->evaluate(FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED);
+
+            assertSame(false, $inlinePlayer->effectiveValue);
+            assertSame('dependency', $inlinePlayer->source);
+            assertSame(true, $inlinePlayer->siteValue);
         });
     }
 
@@ -387,6 +400,7 @@ PHP);
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
             FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED,
             FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED,
+            FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
             FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
