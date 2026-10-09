@@ -59,6 +59,29 @@ final class PrivateMessageApiController
     }
 
     /** @param array<string, mixed> $query */
+    public function conversation(string $method, array $query): void
+    {
+        if ($method !== 'GET') {
+            $this->methodNotAllowed();
+            return;
+        }
+
+        $viewer = $this->viewer();
+        if ($viewer === null) {
+            return;
+        }
+
+        try {
+            $messages = $this->service()->conversation($viewer, (string) ($query['username_token'] ?? ''));
+            $this->routeServices->sendJson(['status' => 'ok', 'messages' => $messages], 200, $this->routeServices->noStoreHeaders());
+        } catch (InvalidArgumentException $exception) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->routeServices->noStoreHeaders());
+        } catch (RuntimeException $exception) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 403, $this->routeServices->noStoreHeaders());
+        }
+    }
+
+    /** @param array<string, mixed> $query */
     public function recipientKeys(string $method, array $query): void
     {
         if ($method !== 'GET') {

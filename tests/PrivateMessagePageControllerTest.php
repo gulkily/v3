@@ -42,7 +42,7 @@ final class PrivateMessagePageControllerTest
             $thirdParty = $this->renderMailbox($databasePath, $store, $this->viewer('openpgp:mallory', 'mallory'), 'inbox');
 
             assertStringContains('<h1>Inbox</h1>', $inbox);
-            assertStringContains('<strong>From:</strong> <a href="/user/alice">alice</a>', $inbox);
+            assertStringContains('<strong>From:</strong> <a href="/messages/conversation/alice">alice</a>', $inbox);
             assertStringContains('data-private-message-id="message-001"', $inbox);
             assertStringContains('data-role="private-message-verification"', $inbox);
             assertStringContains('title="Siganture verified"', $inbox);
@@ -53,7 +53,7 @@ final class PrivateMessagePageControllerTest
             assertStringContains('/assets/private_message_reader.', $inbox);
             assertStringNotContains('Ciphertext should not render', $inbox);
             assertStringContains('<h1>Sent Messages</h1>', $sent);
-            assertStringContains('<strong>To:</strong> <a href="/user/ilyag">ilyag</a>', $sent);
+            assertStringContains('<strong>To:</strong> <a href="/messages/conversation/ilyag">ilyag</a>', $sent);
             assertStringContains('data-role="private-message-verification"', $sent);
             assertStringNotContains('Ciphertext should not render', $sent);
             assertStringContains('No private messages received.', $thirdParty);

@@ -7,6 +7,7 @@ namespace ForumRewrite\Http;
 use ForumRewrite\Messaging\ApprovedUserKeyResolver;
 use ForumRewrite\Messaging\PrivateMessageMailboxService;
 use ForumRewrite\Messaging\PrivateMessageStore;
+use InvalidArgumentException;
 use RuntimeException;
 
 final class PrivateMessagePageController
@@ -30,6 +31,26 @@ final class PrivateMessagePageController
     public function sent(string $method): void
     {
         $this->mailbox($method, 'sent');
+    }
+
+    public function conversation(string $method, string $counterpartUsernameToken): void
+    {
+        if ($method !== 'GET') {
+            $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported for private-message conversations.', 'messages'), 405, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $viewer = ($this->authenticatedViewerProfile)();
+        if ($viewer === null) {
+            $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Authentication Required', 'Authentication Required', 'Authenticate an approved browser identity to view private messages.', 'messages'), 401, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        try {
+            $messages = $this->service()->conversation($viewer, $counterpartUsernameToken);
+        } catch (InvalidArgumentException|RuntimeException $exception) {
+            $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Conversation Unavailable', 'Conversation Unavailable', $exception->getMessage(), 'messages'), 404, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('private_message_conversation.php', ['counterpartUsernameToken' => strtolower($counterpartUsernameToken), 'messages' => $messages, 'viewerProfile' => $viewer], 'Conversation with ' . strtolower($counterpartUsernameToken), 'messages', ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_messages.js', '/assets/private_message_reader.js']), 200, $this->routeServices->noStoreHeaders());
     }
 
     private function mailbox(string $method, string $kind): void

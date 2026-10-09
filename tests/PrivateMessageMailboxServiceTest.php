@@ -107,6 +107,28 @@ final class PrivateMessageMailboxServiceTest
         assertSame(25, count($service->sent($this->viewer('openpgp:alice', 'alice'))));
     }
 
+    public function testConversationReturnsNewestTwoWayMessagesInChronologicalOrder(): void
+    {
+        $readPdo = $this->profilesDatabase();
+        $this->addProfile($readPdo, 'openpgp:alice', 'openpgp-alice', 'alice', 'PUBLIC KEY ALICE', 1);
+        $this->addProfile($readPdo, 'openpgp:ilyag', 'openpgp-ilyag', 'ilyag', 'PUBLIC KEY ILYAG', 1);
+        $this->addProfile($readPdo, 'openpgp:mallory', 'openpgp-mallory', 'mallory', 'PUBLIC KEY MALLORY', 1);
+        $store = new PrivateMessageStore(new \PDO('sqlite::memory:'));
+        for ($index = 1; $index <= 27; $index++) {
+            $store->storeEnvelope(sprintf('message-%02d', $index), sprintf('2026-10-09T12:%02d:00Z', $index), $index % 2 === 0 ? 'alice' : 'ilyag', $index % 2 === 0 ? 'ilyag' : 'alice', 'openpgp:alice', $this->envelope());
+        }
+        $store->storeEnvelope('mallory-message', '2026-10-09T13:00:00Z', 'mallory', 'alice', 'openpgp:mallory', $this->envelope());
+        $service = new PrivateMessageMailboxService($store, $readPdo);
+
+        $messages = $service->conversation($this->viewer('openpgp:alice', 'alice'), 'ilyag');
+
+        assertSame(25, count($messages));
+        assertSame('message-03', $messages[0]['message_id']);
+        assertSame('message-27', $messages[24]['message_id']);
+        assertSame(false, in_array('mallory-message', array_column($messages, 'message_id'), true));
+        assertThrowsPrivateMessage(fn (): array => $service->conversation($this->viewer('openpgp:alice', 'alice'), 'alice'), \InvalidArgumentException::class, 'A conversation counterpart must be another user.');
+    }
+
     /** @return array<string, mixed> */
     private function viewer(string $identityId, string $usernameToken): array
     {

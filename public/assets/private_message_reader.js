@@ -66,10 +66,15 @@
     return { kind: "verified", plaintext: String(decrypted.data || "") };
   }
 
-  async function mailboxMessages(mailbox) {
-    if (!mailboxRequests.has(mailbox)) {
-      mailboxRequests.set(mailbox, (async function () {
-        const response = await fetch("/api/private_messages/" + encodeURIComponent(mailbox), {
+  async function mailboxMessages(mailbox, counterpartUsernameToken) {
+    const conversation = mailbox === "conversation";
+    const requestKey = conversation ? mailbox + ":" + counterpartUsernameToken : mailbox;
+    if (!mailboxRequests.has(requestKey)) {
+      mailboxRequests.set(requestKey, (async function () {
+        const path = conversation
+          ? "/api/private_messages/conversation?username_token=" + encodeURIComponent(counterpartUsernameToken)
+          : "/api/private_messages/" + encodeURIComponent(mailbox);
+        const response = await fetch(path, {
           credentials: "same-origin",
           headers: { Accept: "application/json" },
         });
@@ -83,15 +88,15 @@
     }
 
     try {
-      return await mailboxRequests.get(mailbox);
+      return await mailboxRequests.get(requestKey);
     } catch (error) {
-      mailboxRequests.delete(mailbox);
+      mailboxRequests.delete(requestKey);
       throw error;
     }
   }
 
-  async function mailboxMessage(mailbox, messageId) {
-    const messages = await mailboxMessages(mailbox);
+  async function mailboxMessage(mailbox, messageId, counterpartUsernameToken) {
+    const messages = await mailboxMessages(mailbox, counterpartUsernameToken);
     const message = messages.find(function (candidate) {
       return String(candidate && candidate.message_id || "") === messageId;
     });
@@ -122,7 +127,7 @@
     plaintextNode.hidden = false;
   }
 
-  async function readCard(mailbox, card) {
+  async function readCard(mailbox, card, counterpartUsernameToken) {
     const verification = card && card.querySelector('[data-role="private-message-verification"]');
     const error = card && card.querySelector('[data-role="private-message-reader-error"]');
     const plaintext = card && card.querySelector('[data-role="private-message-plaintext"]');
@@ -137,7 +142,7 @@
 
     let result;
     try {
-      const message = await mailboxMessage(mailbox, messageId);
+      const message = await mailboxMessage(mailbox, messageId, counterpartUsernameToken);
       const messaging = window.ForumPrivateMessages;
       if (!messaging || typeof messaging.recipientKeys !== "function") {
         throw new Error("Sender key lookup is unavailable.");
@@ -161,13 +166,18 @@
     }
 
     const mailbox = String(root.dataset.mailbox || "");
-    if (mailbox !== "inbox" && mailbox !== "sent") {
+    if (mailbox !== "inbox" && mailbox !== "sent" && mailbox !== "conversation") {
+      return false;
+    }
+
+    const counterpartUsernameToken = String(root.dataset.counterpartUsernameToken || "");
+    if (mailbox === "conversation" && counterpartUsernameToken === "") {
       return false;
     }
 
     root.dataset.privateMessageReaderBound = "1";
     Array.from(root.querySelectorAll("[data-private-message-id]")).forEach(function (card) {
-      readCard(mailbox, card);
+      readCard(mailbox, card, counterpartUsernameToken);
     });
 
     return true;

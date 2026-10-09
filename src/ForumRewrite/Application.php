@@ -125,6 +125,8 @@ final class Application
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
         if ($this->approvedMembersOnlyEnabled()
             || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
+            || $path === '/api/private_messages/conversation'
+            || str_starts_with($path, '/messages/conversation/')
         ) {
             $this->startViewerSession();
         } elseif ($this->shouldResumeViewerSession($method, $path, $query)) {
@@ -217,6 +219,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/private_messages/conversation') {
+            $this->privateMessageApiController()->conversation($method, $query);
+            return;
+        }
+
         if ($path === '/api/private_messages/recipient_keys') {
             $this->privateMessageApiController()->recipientKeys($method, $query);
             return;
@@ -229,6 +236,11 @@ final class Application
 
         if ($path === '/messages/sent') {
             $this->privateMessagePageController()->sent($method);
+            return;
+        }
+
+        if (preg_match('#^/messages/conversation/([^/]+)/?$#', $path, $matches) === 1) {
+            $this->privateMessagePageController()->conversation($method, $matches[1]);
             return;
         }
 
@@ -1687,6 +1699,10 @@ final class Application
 
     private function isApplicationRoute(string $path): bool
     {
+        if (str_starts_with($path, '/messages/conversation/')) {
+            return true;
+        }
+
         if ($this->isForteApplicationRoute($path)) {
             return true;
         }
@@ -1711,7 +1727,7 @@ final class Application
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',
-            '/messages/inbox', '/messages/sent',
+            '/messages/inbox', '/messages/sent', '/api/private_messages/conversation',
             '/account/key', '/account/key/', '/invites', '/invites/',
             '/api', '/api/', '/api/version', '/api/list_index',
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username_claim_cta',
