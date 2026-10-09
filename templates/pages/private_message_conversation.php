@@ -16,4 +16,10 @@
   </article>
 <?php endforeach; ?>
 <?php endif; ?>
+<?= $indent($partial('partials/private_message_composer.php', [
+    'recipientUsernameToken' => $counterpartUsernameToken,
+    'senderUsernameToken' => (string) $viewerProfile['username_token'],
+    'recipientLabel' => $counterpartUsernameToken,
+    'successUrl' => '/messages/conversation/' . rawurlencode($counterpartUsernameToken),
+]), 2) ?>
 </section>

@@ -4,6 +4,9 @@
   data-recipient-username-token="<?= $e($recipientUsernameToken) ?>"
   data-sender-username-token="<?= $e($senderUsernameToken) ?>"
   data-recipient-label="<?= $e($recipientLabel) ?>"
+<?php if (($successUrl ?? '') !== ''): ?>
+  data-private-message-success-url="<?= $e($successUrl) ?>"
+<?php endif; ?>
 >
   <h2>Message <?= $e($recipientLabel) ?></h2>
   <p class="meta">Encrypted to every approved key associated with this username.</p>

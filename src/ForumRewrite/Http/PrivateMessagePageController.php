@@ -50,7 +50,7 @@ final class PrivateMessagePageController
             $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Conversation Unavailable', 'Conversation Unavailable', $exception->getMessage(), 'messages'), 404, $this->routeServices->noStoreHeaders());
             return;
         }
-        $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('private_message_conversation.php', ['counterpartUsernameToken' => strtolower($counterpartUsernameToken), 'messages' => $messages, 'viewerProfile' => $viewer], 'Conversation with ' . strtolower($counterpartUsernameToken), 'messages', ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_messages.js', '/assets/private_message_reader.js']), 200, $this->routeServices->noStoreHeaders());
+        $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('private_message_conversation.php', ['counterpartUsernameToken' => strtolower($counterpartUsernameToken), 'messages' => $messages, 'viewerProfile' => $viewer], 'Conversation with ' . strtolower($counterpartUsernameToken), 'messages', ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_messages.js', '/assets/private_message_compose.js', '/assets/private_message_reader.js']), 200, $this->routeServices->noStoreHeaders());
     }
 
     private function mailbox(string $method, string $kind): void

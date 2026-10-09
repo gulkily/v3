@@ -15,3 +15,16 @@
   - `PrivateMessageReleaseIsolationTest` passed: static releases and offline snapshots exclude private mailbox assets. No deployment, schema migration, or external-service change was required.
 - Notes:
   - Message envelopes and the existing encryption/signing contracts are unchanged. Stage 2 adds the in-context reply form and refresh behavior.
+
+## Stage 2 - Reply from the conversation context
+
+- Changes:
+  - Added the shared private-message composer to conversation pages, pre-targeted to the selected counterpart.
+  - Added an optional composer success target; conversation sends refresh their transcript only after a successful encrypted submission, while profile and aggregate-user composers retain their prior behavior.
+- Verification:
+  - `php tests/run.php PrivateMessageComposerTest PrivateMessageEnvelopeTest ApprovedUserKeyResolverTest PrivateMessageMailboxServiceTest PrivateMessageApiRoutingTest PrivateMessagePageControllerTest PrivateMessageReaderTest PrivateMessageReleaseIsolationTest` — 18 passed.
+  - `PrivateMessageComposerTest` confirms a failed send keeps the stable counterpart draft and a successful send redirects to the configured conversation URL without including plaintext in either request.
+  - `php -l` passed for changed PHP/templates/tests; `node --check public/assets/private_message_compose.js` and `git diff --check` passed.
+  - `PrivateMessageReleaseIsolationTest` passed; no deployment, migration, or external-service change was required.
+- Notes:
+  - Reply encryption continues to use the existing recipient-key resolver and browser envelope helper, so every approved recipient key remains covered.

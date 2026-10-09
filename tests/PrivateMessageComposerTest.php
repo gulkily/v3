@@ -37,6 +37,7 @@ const source = fs.readFileSync(process.argv[1], 'utf8');
 const values = new Map();
 const calls = [];
 let shouldFail = true;
+let redirect = '';
 const inputListeners = {};
 const formListeners = {};
 const textarea = { value: 'private prose', addEventListener(name, callback) { inputListeners[name] = callback; } };
@@ -47,12 +48,13 @@ const form = {
 };
 const feedback = { textContent: '', className: '', hidden: true };
 const root = {
-  dataset: { recipientUsernameToken: 'ilyag', senderUsernameToken: 'alice', recipientLabel: 'ilyag' },
+  dataset: { recipientUsernameToken: 'ilyag', senderUsernameToken: 'alice', recipientLabel: 'ilyag', privateMessageSuccessUrl: '/messages/conversation/ilyag' },
   querySelector(selector) { return selector === '[data-private-message-form]' ? form : selector === '[data-role="private-message-feedback"]' ? feedback : null; }
 };
 global.window = {
   localStorage: { getItem(key) { return values.has(key) ? values.get(key) : null; }, setItem(key, value) { values.set(key, value); }, removeItem(key) { values.delete(key); } },
   crypto: { randomUUID() { return 'fixed-id'; } },
+  location: { assign(url) { redirect = url; } },
   __forumBrowserIdentity: { async ensureActionIdentity() {} },
   ForumPrivateMessages: { async prepareEnvelope(input) { return { encryptedEnvelope: '-----BEGIN PGP MESSAGE-----\\nCIPHERTEXT\\n-----END PGP MESSAGE-----', received: input }; } }
 };
@@ -69,7 +71,7 @@ const event = { preventDefault() {} };
   const failedDraft = values.get('forum_private_message_draft:ilyag');
   shouldFail = false;
   await formListeners.submit(event);
-  process.stdout.write(JSON.stringify({ calls, failedDraft, finalDraft: values.get('forum_private_message_draft:ilyag') || null, textarea: textarea.value, feedback: feedback.textContent }));
+  process.stdout.write(JSON.stringify({ calls, failedDraft, finalDraft: values.get('forum_private_message_draft:ilyag') || null, textarea: textarea.value, feedback: feedback.textContent, redirect }));
 })().catch((error) => { process.stderr.write(error.stack || String(error)); process.exit(1); });
 NODE;
 
@@ -85,6 +87,7 @@ NODE;
         assertSame(null, $result['finalDraft']);
         assertSame('', $result['textarea']);
         assertSame('Private message sent.', $result['feedback']);
+        assertSame('/messages/conversation/ilyag', $result['redirect']);
     }
 
     public function testProfileRendersComposerOnlyForApprovedOtherUser(): void
@@ -128,6 +131,7 @@ NODE;
         assertStringContains('data-sender-username-token="alice"', $html);
         assertStringContains('Encrypted to every approved key associated with this username.', $html);
         assertStringContains('/assets/private_message_compose.', $html);
+        assertStringNotContains('data-private-message-success-url', $html);
 
         $pageData['canPrivateMessage'] = false;
         $withoutComposer = $renderer->renderPageTemplate('profile.php', $pageData, 'ilyag - Profile', 'profiles');
