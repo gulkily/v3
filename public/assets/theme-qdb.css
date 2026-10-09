@@ -88,8 +88,12 @@
   font-size: 0.85rem;
 }
 
-:root[data-theme="qdb"] .quote-card-actions {
-  font-size: 0.8rem;
+:root[data-theme="qdb"] .quote-card-header-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  margin-left: 0.35rem;
+  vertical-align: baseline;
 }
 
 :root[data-theme="qdb"] .quote-card-score-value {
@@ -139,16 +143,13 @@
   margin-top: 0.6rem;
 }
 
-/* Routine vote status ("Saving tag...", identity progress) sits on the button line,
-   right after the buttons, and truncates instead of wrapping so the card keeps its
-   size. Errors (data-kind="error") keep normal wrapping so their full text shows. */
-:root[data-theme="qdb"] .quote-card-actions > .thread-reaction-feedback[data-kind="ok"] {
-  flex: 1 1 0;
-  min-width: 0;
+/* Routine vote status ("Saving tag...", identity progress) truncates instead of
+   wrapping so a compact quote card keeps its size. Errors (data-kind="error")
+   keep normal wrapping so their full text shows. */
+:root[data-theme="qdb"] .quote-card-reaction-feedback[data-kind="ok"] {
   margin: 0;
   font-size: inherit;
   line-height: inherit;
-  align-self: center;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;

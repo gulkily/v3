@@ -1,0 +1,19 @@
+# QDB Quote Card Action Placement — Step 4: Implementation Summary
+
+> **Feature plan:** [Step 1](./qdb_quote_card_action_placement_step1_solution_assessment.md) · [Step 2](./qdb_quote_card_action_placement_step2_feature_description.md) · [Step 3](./qdb_quote_card_action_placement_step3_development_plan.md) · [Step 4](./qdb_quote_card_action_placement_step4_implementation_summary.md)
+
+## Stage 1 - Shared listing header actions
+
+- Changes:
+  - Added the shared QDB caption-vote and flag control presentation.
+  - Moved listing controls directly after the score and changed the flag
+    presentation to `⚑ Flag`.
+  - Kept thread/post reaction feedback outside the compact header.
+- Verification:
+  - `php -l templates/partials/qdb_quote_actions.php` and
+    `php -l templates/partials/quote_card.php` passed.
+  - `php tests/run.php QuoteCardDisplayNumberTest` passed (22/22).
+  - `git diff --check` passed.
+- Notes:
+  - The existing tag, score, disabled-state, and reaction data attributes are
+    retained; only flag's displayed and applied labels now include its symbol.

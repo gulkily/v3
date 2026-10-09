@@ -18,41 +18,16 @@ $scoreValueClass = 'quote-card-score-value' . ($scoreSignClass === '' ? '' : ' '
   <p class="quote-card-header">
     <a class="quote-card-permalink" href="<?= $e($permalinkHref) ?>">#<?= $e($displayNumber) ?></a>
     <span class="meta quote-card-score" data-role="thread-score" data-score-format="bare-ratio">(<span class="<?= $e($scoreValueClass) ?>" data-role="thread-score-value"><?= $scoreTotal ?></span>/<span data-role="thread-vote-count"><?= $voteCount ?></span>)</span>
+<?= $partial('partials/qdb_quote_actions.php', [
+    'quotePostId' => $quoteId,
+    'upvote' => $upvote,
+    'downvote' => $downvote,
+    'viewerHasUpvoted' => $viewerHasUpvoted,
+    'viewerHasDownvoted' => $viewerHasDownvoted,
+    'viewerHasFlagged' => $viewerHasFlagged,
+]) ?>
   </p>
+  <p class="meta quote-card-reaction-feedback" data-role="thread-reaction-feedback" hidden></p>
+  <p class="meta quote-card-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
   <p class="quote-card-body"><?= $br($thread['root_post_body']) ?></p>
-  <div class="button-row button-row-natural quote-card-actions">
-    <button
-      type="button"
-      class="thread-reaction-button quote-card-vote-button"
-      data-action="apply-thread-tag"
-      data-tag="<?= $e($upvote['tag']) ?>"
-      data-applied-label="<?= $e($upvote['label']) ?>"
-      aria-label="Upvote this quote: <?= $e($upvote['label']) ?>"
-      aria-pressed="<?= $viewerHasUpvoted ? 'true' : 'false' ?>"
-<?= $viewerHasUpvoted ? ' disabled="disabled"' : '' ?>
-    >↑ <?= $e($upvote['label']) ?></button>
-    <button
-      type="button"
-      class="thread-reaction-button quote-card-vote-button"
-      data-action="apply-thread-tag"
-      data-tag="<?= $e($downvote['tag']) ?>"
-      data-applied-label="<?= $e($downvote['label']) ?>"
-      aria-label="Downvote this quote: <?= $e($downvote['label']) ?>"
-      aria-pressed="<?= $viewerHasDownvoted ? 'true' : 'false' ?>"
-<?= $viewerHasDownvoted ? ' disabled="disabled"' : '' ?>
-    >↓ <?= $e($downvote['label']) ?></button>
-    <button
-      type="button"
-      class="thread-reaction-button quote-card-vote-button"
-      data-action="apply-post-tag"
-      data-post-id="<?= $e($quoteId) ?>"
-      data-tag="flag"
-      data-applied-label="[X]"
-      aria-label="Flag this quote for review"
-      aria-pressed="<?= $viewerHasFlagged ? 'true' : 'false' ?>"
-<?= $viewerHasFlagged ? ' disabled="disabled"' : '' ?>
-    >[X]</button>
-    <p class="meta thread-reaction-feedback" data-role="thread-reaction-feedback" hidden></p>
-    <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
-  </div>
 </article>
