@@ -51,3 +51,21 @@
 - Notes:
   - The API retains ciphertext and routing metadata only; browser encryption/signing and recipient-key coverage remain Stage 4.
   - Stage 4 has not started. Per user direction, implementation stops here for review.
+
+## Stage 4 - Encrypt and sign envelopes in the browser
+
+- Changes:
+  - Added an authenticated recipient-key endpoint that resolves every approved, distinct profile key for a composite username group.
+  - Added `ForumPrivateMessages.prepareEnvelope`, which obtains the sender and recipient groups' public keys, encrypts to their union, and signs with the browser's matching local private key.
+  - Added browser-helper coverage for recipient-key requests, all-key encryption coverage, armored output, and sender signing.
+- Verification:
+  - `node --check public/assets/private_messages.js`
+  - `php -l src/ForumRewrite/Messaging/PrivateMessageMailboxService.php`
+  - `php -l src/ForumRewrite/Http/PrivateMessageApiController.php`
+  - `php -l tests/PrivateMessageEnvelopeTest.php`
+  - `php -l tests/PrivateMessageMailboxServiceTest.php`
+  - `php tests/run.php PrivateMessageEnvelopeTest PrivateMessageMailboxServiceTest PrivateMessageApiRoutingTest PrivateMessageDatabaseConfigTest PrivateMessageStoreTest PrivateConfigSchemaTest` — 13 passed.
+  - `git diff --check` — passed.
+- Notes:
+  - This helper only prepares an encrypted envelope; it does not submit or render messages. The profile composer integration is Stage 5.
+  - Stage 5 has not started. Per user direction, implementation stops here for review.

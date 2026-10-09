@@ -120,7 +120,7 @@ final class Application
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
         if ($this->approvedMembersOnlyEnabled()
-            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent'], true)
+            || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys'], true)
         ) {
             $this->startViewerSession();
         } elseif ($this->shouldResumeViewerSession($method, $path, $query)) {
@@ -205,6 +205,11 @@ final class Application
 
         if ($path === '/api/private_messages/sent') {
             $this->privateMessageApiController()->sent($method, $query);
+            return;
+        }
+
+        if ($path === '/api/private_messages/recipient_keys') {
+            $this->privateMessageApiController()->recipientKeys($method, $query);
             return;
         }
 

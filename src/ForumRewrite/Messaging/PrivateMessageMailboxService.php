@@ -72,6 +72,23 @@ final class PrivateMessageMailboxService
         return $this->store->sentBy((string) $this->approvedViewer($viewer)['username_token']);
     }
 
+    /** @param array<string, mixed> $viewer @return list<array{identity_id:string,profile_slug:string,public_key:string}> */
+    public function recipientKeys(array $viewer, string $usernameToken): array
+    {
+        $this->approvedViewer($viewer);
+        $usernameToken = strtolower(trim($usernameToken));
+        if (preg_match('/^[a-z0-9][a-z0-9._-]{0,63}$/', $usernameToken) !== 1) {
+            throw new InvalidArgumentException('Recipient username is invalid.');
+        }
+
+        $keys = $this->keyResolver->keysForUsernameToken($this->readPdo, $usernameToken);
+        if ($keys === []) {
+            throw new InvalidArgumentException('Recipient has no approved profile keys.');
+        }
+
+        return $keys;
+    }
+
     /** @param array<string, mixed> $viewer @return array<string, mixed> */
     private function approvedViewer(array $viewer): array
     {

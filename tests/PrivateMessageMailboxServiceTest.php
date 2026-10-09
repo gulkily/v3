@@ -70,6 +70,21 @@ final class PrivateMessageMailboxServiceTest
         );
     }
 
+    public function testReturnsEveryApprovedProfileKeyForAnAuthenticatedViewer(): void
+    {
+        $readPdo = $this->profilesDatabase();
+        $this->addProfile($readPdo, 'openpgp:alice', 'openpgp-alice', 'alice', 'PUBLIC KEY ALICE', 1);
+        $this->addProfile($readPdo, 'openpgp:ilyag-one', 'openpgp-ilyag-one', 'ilyag', 'PUBLIC KEY ILYAG ONE', 1);
+        $this->addProfile($readPdo, 'openpgp:ilyag-two', 'openpgp-ilyag-two', 'ilyag', 'PUBLIC KEY ILYAG TWO', 1);
+        $this->addProfile($readPdo, 'openpgp:ilyag-pending', 'openpgp-ilyag-pending', 'ilyag', 'PUBLIC KEY ILYAG PENDING', 0);
+        $service = new PrivateMessageMailboxService(new PrivateMessageStore(new \PDO('sqlite::memory:')), $readPdo);
+
+        assertSame(
+            ['PUBLIC KEY ILYAG ONE', 'PUBLIC KEY ILYAG TWO'],
+            array_column($service->recipientKeys($this->viewer('openpgp:alice', 'alice'), 'ilyag'), 'public_key'),
+        );
+    }
+
     /** @return array<string, mixed> */
     private function viewer(string $identityId, string $usernameToken): array
     {

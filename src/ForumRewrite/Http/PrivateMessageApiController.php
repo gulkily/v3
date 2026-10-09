@@ -59,6 +59,29 @@ final class PrivateMessageApiController
     }
 
     /** @param array<string, mixed> $query */
+    public function recipientKeys(string $method, array $query): void
+    {
+        if ($method !== 'GET') {
+            $this->methodNotAllowed();
+            return;
+        }
+
+        $viewer = $this->viewer();
+        if ($viewer === null) {
+            return;
+        }
+
+        try {
+            $keys = $this->service()->recipientKeys($viewer, (string) ($query['username_token'] ?? ''));
+            $this->routeServices->sendJson(['status' => 'ok', 'keys' => $keys], 200, $this->routeServices->noStoreHeaders());
+        } catch (InvalidArgumentException $exception) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->routeServices->noStoreHeaders());
+        } catch (RuntimeException $exception) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 403, $this->routeServices->noStoreHeaders());
+        }
+    }
+
+    /** @param array<string, mixed> $query */
     private function listMailbox(string $method, array $query, string $kind): void
     {
         if ($method !== 'GET') {
