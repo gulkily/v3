@@ -21,3 +21,14 @@
   - Browser check at 360px / desktop: not performed in this environment; still needs a manual look (see Notes).
 - Notes:
   - Fixed positioning removes the bar from page flow, so no vertical space is used; header overlap at phone width is unverified.
+
+## Stage 3 - Full verification
+- Changes:
+  - None beyond summary update.
+- Verification:
+  - Ran each `tests/Offline*Test.php` class individually: all passed (0 failures).
+  - `LocalAppSmokeTest`: the only failures are the 3 that also fail on pre-feature commit `b8b36b53`.
+  - Offline browser walk-through (badge placement, 360px width, header overlap, link taps): not performed here; needs manual confirmation before release.
+  - Deployment, migration, and external-system checks: not applicable (CSS/template/JS only).
+- Notes:
+  - Freshness values are hover-only on the badge; the health page remains reachable from `/offline/`.
