@@ -382,6 +382,7 @@ final class TemplateRenderer
             'unicodeAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
             'emojiAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT),
             'composerPrompt' => SiteProfileRegistry::active()['composerPrompt'],
+            'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
         ], $data);
 
         $e = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
