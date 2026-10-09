@@ -120,3 +120,16 @@
 - Notes:
   - Decrypted plaintext remains in the current browser DOM only; it is not posted back, persisted in the private store, or included in server-rendered HTML.
   - Stage 8 has not started. Per user direction, implementation stops here for review.
+
+## Stage 8 - Verify release isolation and operations
+
+- Changes:
+  - Added a static-release regression test confirming mailbox routes, mailbox artifacts, and private-message reader assets are absent from static releases and offline snapshots.
+  - Documented the private mailbox path, restrictive deployment permissions, consistent SQLite backup/restore procedure, browser-key recovery boundary, and retention guidance in the production runbook.
+- Verification:
+  - `php -l tests/PrivateMessageReleaseIsolationTest.php`
+  - `php tests/run.php PrivateMessageReleaseIsolationTest PrivateMessageReaderTest PrivateMessagePageControllerTest PrivateMessageMailboxServiceTest PrivateMessageEnvelopeTest PrivateMessageComposerTest PrivateMessageApiRoutingTest PrivateMessageDatabaseConfigTest PrivateConfigSchemaTest` — 16 passed.
+  - `php tests/run.php` — 896 run; 893 passed; all private-message tests passed. Three unrelated failures remain: `LocalAppSmokeTest::testFeatureFlagsPageShowsLockedBadgeWithReasonForNonMutableFlags` (long-standing), `WriteApiSmokeTest::testTaskQueueProcessesQueuedAgentReplyOnce` (long-standing), and `WriteApiSmokeTest::testQdbPermalinkShowsViewersExistingUpvoteAsPressedAndDisabled` (newly recorded by this run).
+  - `git diff --check` — passed.
+- Notes:
+  - The implementation stages are complete. Per user direction, implementation stops here for final review.
