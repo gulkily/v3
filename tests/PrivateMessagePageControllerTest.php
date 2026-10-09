@@ -45,6 +45,7 @@ final class PrivateMessagePageControllerTest
             assertStringContains('<strong>From:</strong> <a href="/user/alice">alice</a>', $inbox);
             assertStringContains('data-private-message-id="message-001"', $inbox);
             assertStringContains('data-role="private-message-verification"', $inbox);
+            assertStringContains('title="Siganture verified"', $inbox);
             assertStringContains('data-role="private-message-reader-error"', $inbox);
             assertStringNotContains('data-action="read-private-message"', $inbox);
             assertStringNotContains('private-message-reader-feedback', $inbox);

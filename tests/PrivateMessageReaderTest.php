@@ -154,7 +154,7 @@ NODE;
         assertSame(1, $result['fetchCount']);
         assertSame(0, $result['storageWrites']);
         assertSame(false, $result['first']['verification']['hidden']);
-        assertSame('Signature verified', $result['first']['verification']['textContent']);
+        assertSame('✓', $result['first']['verification']['textContent']);
         assertSame('plain one', $result['first']['plaintext']['textContent']);
         assertSame(false, $result['second']['verification']['hidden']);
         assertSame('plain two', $result['second']['plaintext']['textContent']);

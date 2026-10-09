@@ -116,7 +116,7 @@
       return;
     }
 
-    verificationNode.textContent = "Signature verified";
+    verificationNode.textContent = "✓";
     verificationNode.hidden = false;
     plaintextNode.textContent = result.plaintext;
     plaintextNode.hidden = false;
