@@ -5911,6 +5911,113 @@ NODE;
         assertSame(false, $result['missing']['buttonDisabled']);
     }
 
+    public function testQdbReactionStatusReplacesThePreviousVoteOrFlagStatus(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const clickHandlers = [];
+let fetchCount = 0;
+
+class HTMLButtonElement {
+  constructor(action, tag, label, text) {
+    this.action = action;
+    this.disabled = false;
+    this.textContent = text;
+    this.attributes = {
+      'data-tag': tag,
+      'data-applied-label': label,
+      'aria-pressed': 'false',
+    };
+  }
+  getAttribute(name) { return this.attributes[name] || null; }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  removeAttribute(name) { delete this.attributes[name]; }
+  closest(selector) { return selector === `[data-action="${this.action}"]` ? this : null; }
+}
+
+const sharedFeedback = {
+  _text: 'Older vote.',
+  history: [],
+  hidden: false,
+  attributes: { 'data-kind': 'ok' },
+  get textContent() { return this._text; },
+  set textContent(value) { this.history.push(String(value)); this._text = String(value); },
+  setAttribute(name, value) { this.attributes[name] = String(value); },
+  removeAttribute(name) { delete this.attributes[name]; },
+  querySelector() { return null; },
+};
+const voteButton = new HTMLButtonElement('apply-thread-tag', 'good', 'Good', '↑ Good');
+const flagButton = new HTMLButtonElement('apply-post-tag', 'flag', '⚑ Flagged', '⚑ Flag');
+const scoreNode = { textContent: 'Score: 0' };
+const root = {
+  hidden: false,
+  getAttribute(name) {
+    if (name === 'data-thread-id') return 'quote-001';
+    if (name === 'data-post-id') return 'quote-001';
+    return '';
+  },
+  querySelector(selector) {
+    if (selector === '[data-role="qdb-reaction-feedback"]') return sharedFeedback;
+    if (selector === '[data-role="thread-score"]') return scoreNode;
+    return null;
+  },
+  addEventListener(type, handler) {
+    if (type === 'click') clickHandlers.push(handler);
+  },
+};
+
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = { __forumBrowserIdentity: { async ensureActionIdentity() {} } };
+global.fetch = async function() {
+  fetchCount += 1;
+  const text = fetchCount === 1
+    ? 'status=ok\nscore_total=1\nvote_count=1\nwrote_record=yes\nviewer_is_approved=yes\n'
+    : 'status=ok\nwrote_record=yes\nis_hidden=no\n';
+  return { headers: { get() { return ''; } }, async text() { return text; } };
+};
+global.document = {
+  addEventListener(type, handler) { if (type === 'DOMContentLoaded') handler(); },
+  querySelector(selector) {
+    return selector === '[data-thread-reactions-root]' || selector === '.post-card[data-post-id]'
+      ? root
+      : null;
+  },
+};
+
+vm.runInThisContext(source);
+async function dispatch(button) {
+  for (const handler of clickHandlers) {
+    await handler({ target: button, preventDefault() {} });
+  }
+}
+(async function () {
+  await dispatch(voteButton);
+  const afterVote = sharedFeedback.textContent;
+  await dispatch(flagButton);
+  process.stdout.write(JSON.stringify({
+    fetchCount,
+    afterVote,
+    finalStatus: sharedFeedback.textContent,
+    clearCount: sharedFeedback.history.filter((value) => value === '').length,
+    hidden: sharedFeedback.hidden,
+    kind: sharedFeedback.attributes['data-kind'] || '',
+  }));
+})().catch((error) => { process.stderr.write(error.stack || String(error)); process.exit(1); });
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame(2, $result['fetchCount']);
+        assertSame('Good.', $result['afterVote']);
+        assertSame('⚑ Flagged.', $result['finalStatus']);
+        assertSame(2, $result['clearCount']);
+        assertSame(false, $result['hidden']);
+        assertSame('ok', $result['kind']);
+    }
+
     public function testThreadReactionFeedbackCopyFollowsAppliedLabelForNonLikeTags(): void
     {
         $script = <<<'NODE'

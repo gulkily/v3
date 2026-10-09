@@ -31,6 +31,7 @@ final class QuoteCardDisplayNumberTest
         );
         assertStringContains('class="quote-card-header-actions"', $board);
         assertStringContains('>⚑ Flag</button>', $board);
+        assertStringContains('data-role="qdb-reaction-feedback" aria-live="polite" hidden></span>', $board);
         assertTrue(
             strpos($board, 'data-role="thread-score"')
             < strpos($board, 'class="quote-card-header-actions"'),
@@ -399,6 +400,7 @@ final class QuoteCardDisplayNumberTest
         assertStringContains('data-role="thread-score" data-score-format="bare-ratio">(<span class="quote-card-score-value quote-card-score-positive" data-role="thread-score-value">5</span>/<span data-role="thread-vote-count">7</span>)</span>', $permalink);
         assertStringContains('class="quote-card-header-actions"', $permalink);
         assertStringContains('>⚑ Flag</button>', $permalink);
+        assertStringContains('data-role="qdb-reaction-feedback" aria-live="polite" hidden></span>', $permalink);
         assertStringContains('<p class="quote-card-body">The quoted body.<br />', $permalink);
         assertStringNotContains('<p class="meta">', $permalink);
         assertStringNotContains('>Reply</a>', $permalink);

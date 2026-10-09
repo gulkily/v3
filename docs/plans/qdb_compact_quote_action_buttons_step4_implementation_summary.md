@@ -19,3 +19,19 @@
 - Notes:
   - Reaction API, scoring, caption, and non-QDB feedback contracts are
     unchanged.
+
+## Stage 2 - Compact-status regression coverage
+
+- Changes:
+  - Added listing and permalink assertions for the one polite QDB status.
+  - Added a stylesheet assertion for compact QDB action metrics.
+  - Added browser coverage proving a later flag replaces a prior vote status
+    through the same node.
+- Verification:
+  - PHP syntax checks passed for the changed focused tests.
+  - `php tests/run.php BrowserSigningNormalizationTest
+    QuoteCardDisplayNumberTest ThemeRegistryTest` passed (101/101).
+  - `git diff --check` passed.
+- Notes:
+  - The remaining release check is visual: inspect Word97 and Sticker at
+    desktop and narrow widths, including a vote followed by a flag.

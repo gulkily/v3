@@ -100,6 +100,10 @@ final class ThemeRegistryTest
             '/\\.quote-card-header-actions \\.thread-reaction-button\\s*\\{[^}]*width:\\s*auto;[^}]*margin-top:\\s*0;[^}]*\\}/s',
             (string) $styles,
         ));
+        assertSame(1, preg_match(
+            '/\\.quote-card-header-actions \\.thread-reaction-button\\.quote-card-vote-button\\[data-action\\]\\s*\\{[^}]*padding:\\s*0 0\\.25rem;[^}]*line-height:\\s*inherit;[^}]*\\}/s',
+            (string) $styles,
+        ));
     }
 }
 
