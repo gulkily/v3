@@ -25,6 +25,7 @@ use ForumRewrite\Http\IdentityHintController;
 use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\LlmExchangesController;
 use ForumRewrite\Http\LobbyController;
+use ForumRewrite\Http\MediaEmbedPreviewController;
 use ForumRewrite\Http\OfflineReaderController;
 use ForumRewrite\Http\PostWorkflowApiController;
 use ForumRewrite\Http\PlatformDocsController;
@@ -128,6 +129,11 @@ final class Application
                 'Pragma: no-cache',
                 'Expires: 0',
             ]);
+            return;
+        }
+
+        if ($path === '/internal/media-embeds/warm-preview') {
+            $this->mediaEmbedPreviewController()->warmPreview($method, $query);
             return;
         }
 
@@ -1822,6 +1828,11 @@ final class Application
     private function identityHintController(): IdentityHintController
     {
         return new IdentityHintController($this->routeServices());
+    }
+
+    private function mediaEmbedPreviewController(): MediaEmbedPreviewController
+    {
+        return new MediaEmbedPreviewController($this->routeServices(), $this->projectRoot);
     }
 
     private function authApiController(): AuthApiController

@@ -34,3 +34,15 @@
   - `php tests/run.php MediaEmbedPreviewCacheStoreTest InstagramPagePreviewFetcherTest MediaEmbedDetectorTest` — 22 run, 22 passed. Covers: cache miss/hit/overwrite/no-collision; fetcher success-parse, both meta-tag attribute orders, entity decoding, transport failure, missing tags, partial tags; `classify()` validating/rejecting a standalone URL.
 - Notes:
   - Hit a PHP 8.1 compatibility snag in the fetcher test (`false` as a standalone closure return type is PHP 8.2+); fixed by dropping the explicit return type on that one test closure.
+
+## Stage 4 - Warm-cache endpoint
+
+- Changes:
+  - Added `ForumRewrite\Http\MediaEmbedPreviewController::warmPreview(string $method, array $query)`. Rejects non-GET (405) and anything where `provider !== 'instagram'` or `MediaEmbedDetector::classify($url)` doesn't return an `instagram` match — all before any cache read or fetch. On a cache hit (successful or a recent failed attempt within a 1-hour backoff), returns 204 without fetching. Otherwise calls `InstagramPagePreviewFetcher::fetch()` and writes the result (success or failure) to `MediaEmbedPreviewCacheStore`, then returns 204.
+  - Wired into `Application.php`: new route `GET /internal/media-embeds/warm-preview`, dispatched early (alongside `/api/version`, before `ensureReadModel()` — this endpoint needs neither the read model nor a viewer session) via a new `mediaEmbedPreviewController()` lazy-getter, matching the existing `tagApiController()`/`identityHintController()` pattern.
+  - Added `tests/MediaEmbedPreviewControllerTest.php`, constructing `RouteServices` directly (mirroring the existing direct-construction pattern already used in `tests/LocalAppSmokeTest.php` for `InstancePageController`), with an injected `InstagramPagePreviewFetcher` transport to spy on whether a fetch was attempted.
+- Verification:
+  - `php tests/run.php MediaEmbedPreviewControllerTest` — 5 run, 5 passed: cold cache triggers exactly one fetch and writes the cache; a non-Instagram provider and a URL `classify()` rejects both skip the fetch entirely; a warm cache short-circuits; a recent failure short-circuits but an attempt older than the 1-hour backoff retries.
+  - `php tests/run.php` (full suite) — 890 run, 888 passed; same two pre-existing failures as every prior stage, no new ones.
+- Notes:
+  - The endpoint is deliberately unauthenticated (any viewer's browser is expected to hit it via a beacon) but bounded: the fetch target always comes from a URL `MediaEmbedDetector` itself validated, never an arbitrary one, and repeat hits on the same ID cost a cheap cache lookup, not a repeated fetch.
