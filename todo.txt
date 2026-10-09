@@ -91,3 +91,12 @@ stack forte panes vertically for mobile
 
 allow offline content for unauthenticated users
 
+improve event experience
+	date field should have a picker
+	there should be a time selector
+	what else?
+
+qdb should only add quote id when using the add quote form
+	otherwise, should create a regular thread (e.g. when using /compose/thread)
+
+we need to record who changed a feature flag and sign the request
