@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+require __DIR__ . '/../autoload.php';
+
+use ForumRewrite\Http\ProfilePageController;
+use ForumRewrite\Http\RouteServices;
+use ForumRewrite\ReadModel\ReadModelSchema;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\View\TemplateRenderer;
 
 final class PrivateMessageComposerTest
@@ -126,5 +132,89 @@ NODE;
         $pageData['canPrivateMessage'] = false;
         $withoutComposer = $renderer->renderPageTemplate('profile.php', $pageData, 'ilyag - Profile', 'profiles');
         assertStringNotContains('data-private-message-composer', $withoutComposer);
+    }
+
+    public function testUsernameRendersTheSameComposerOnlyForEligibleViewer(): void
+    {
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-message-composer-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            $pdo = new \PDO('sqlite:' . $databasePath);
+            foreach (ReadModelSchema::statements() as $statement) {
+                $pdo->exec($statement);
+            }
+            $this->addProfile($pdo, 'openpgp:ilyag-one', 'openpgp-ilyag-one', 'ilyag', 1);
+            $this->addProfile($pdo, 'openpgp:ilyag-two', 'openpgp-ilyag-two', 'ilyag', 1);
+            $this->addProfile($pdo, 'openpgp:ilyag-pending', 'openpgp-ilyag-pending', 'ilyag', 0);
+            $this->addProfile($pdo, 'openpgp:pending', 'openpgp-pending', 'pending', 0);
+
+            $eligible = $this->renderUsername($databasePath, ['identity_id' => 'openpgp:alice', 'username_token' => 'alice', 'is_approved' => 1], 'ilyag');
+            assertStringContains('data-private-message-composer', $eligible);
+            assertStringContains('data-recipient-username-token="ilyag"', $eligible);
+            assertStringContains('data-sender-username-token="alice"', $eligible);
+            assertStringContains('/assets/private_message_compose.', $eligible);
+
+            $self = $this->renderUsername($databasePath, ['identity_id' => 'openpgp:ilyag-one', 'username_token' => 'ilyag', 'is_approved' => 1], 'ilyag');
+            $unapproved = $this->renderUsername($databasePath, ['identity_id' => 'openpgp:mallory', 'username_token' => 'mallory', 'is_approved' => 0], 'ilyag');
+            $pendingOnly = $this->renderUsername($databasePath, ['identity_id' => 'openpgp:alice', 'username_token' => 'alice', 'is_approved' => 1], 'pending');
+            foreach ([$self, $unapproved, $pendingOnly] as $html) {
+                assertStringNotContains('data-private-message-composer', $html);
+                assertStringNotContains('/assets/private_message_compose.', $html);
+            }
+        } finally {
+            @unlink($databasePath);
+            @unlink($databasePath . '-journal');
+        }
+    }
+
+    /** @param array<string, mixed>|null $viewer */
+    private function renderUsername(string $databasePath, ?array $viewer, string $username): string
+    {
+        $services = new RouteServices(
+            $databasePath,
+            new TemplateRenderer(__DIR__ . '/../templates', 'test'),
+            'test',
+            false,
+            static fn (): ?array => $viewer,
+            __DIR__ . '/fixtures/parity_minimal_v1',
+            dirname(__DIR__),
+            null,
+            null,
+            FeatureFlagEvaluator::forApplication(__DIR__ . '/fixtures/parity_minimal_v1', dirname(__DIR__)),
+            static fn (): ?array => $viewer,
+        );
+        $controller = new ProfilePageController(
+            $services,
+            static fn (): ?array => $viewer,
+            static function (array $profile, bool $self, ?string $notice, ?string $error): string {
+                return '';
+            },
+        );
+
+        return (string) $controller->username($username);
+    }
+
+    private function addProfile(\PDO $pdo, string $identityId, string $profileSlug, string $username, int $approved): void
+    {
+        $stmt = $pdo->prepare(
+            'INSERT INTO profiles (
+                identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint,
+                bootstrap_post_id, bootstrap_thread_id, public_key, is_approved
+             ) VALUES (
+                :identity_id, :profile_slug, :username, :username_token, :fallback_label, :signer_fingerprint,
+                :bootstrap_post_id, :bootstrap_thread_id, :public_key, :is_approved
+             )'
+        );
+        $stmt->execute([
+            'identity_id' => $identityId,
+            'profile_slug' => $profileSlug,
+            'username' => $username,
+            'username_token' => $username,
+            'fallback_label' => $username,
+            'signer_fingerprint' => str_repeat('A', 40),
+            'bootstrap_post_id' => 'identity-' . $profileSlug,
+            'bootstrap_thread_id' => 'thread-' . $profileSlug,
+            'public_key' => 'PUBLIC KEY ' . $profileSlug,
+            'is_approved' => $approved,
+        ]);
     }
 }

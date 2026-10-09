@@ -22,6 +22,14 @@
 <?php endif; ?>
   </article>
 
+<?php if ($canPrivateMessage): ?>
+<?= $indent($partial('partials/private_message_composer.php', [
+    'recipientUsernameToken' => $usernameToken,
+    'senderUsernameToken' => (string) $viewerProfile['username_token'],
+    'recipientLabel' => $usernameToken,
+]), 2) ?>
+<?php endif; ?>
+
   <article class="card">
     <h2>Threads</h2>
 <?php if ($approvedThreads === []): ?>

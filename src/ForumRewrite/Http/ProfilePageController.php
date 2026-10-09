@@ -72,6 +72,12 @@ final class ProfilePageController
             static fn (array $profile): string => (string) $profile['identity_id'],
             $profiles
         ));
+        $viewerProfile = ($this->resolveViewerProfile)();
+        $canPrivateMessage = $viewerProfile !== null
+            && ((int) $viewerProfile['is_approved']) === 1
+            && $approvedProfiles !== []
+            && (string) ($viewerProfile['username_token'] ?? '') !== ''
+            && (string) $viewerProfile['username_token'] !== $usernameToken;
 
         return $this->routeServices->renderPageTemplate(
             'username.php',
@@ -84,9 +90,14 @@ final class ProfilePageController
                 'approvedPostCount' => AuthoredContentRepository::countVisible($pdo, $approvedIdentityIds, false),
                 'approvedThreads' => AuthoredContentRepository::visibleThreads($pdo, $approvedIdentityIds),
                 'approvedPosts' => AuthoredContentRepository::visiblePosts($pdo, $approvedIdentityIds),
+                'viewerProfile' => $viewerProfile,
+                'canPrivateMessage' => $canPrivateMessage,
             ],
             'User ' . $usernameToken,
             'profiles',
+            $canPrivateMessage
+                ? $this->identityScripts(['/assets/private_messages.js', '/assets/private_message_compose.js'])
+                : [],
         );
     }
 
