@@ -46,6 +46,23 @@ final class OfflineSnapshotPublisherTest
         }
     }
 
+    public function testPublishesCompactUpdateAlongsideBase(): void
+    {
+        [$root, $source] = $this->createPaths();
+        try {
+            $this->createSource($source);
+            $result = (new OfflineSnapshotPublisher($root))->publishUpdate($source);
+
+            assertSame($root . '/offline/update.sqlite3', $result['path']);
+            assertTrue(is_file($result['path']));
+            assertTrue(is_file($root . '/offline/update.sqlite3.manifest.json'));
+            assertSame("SQLite format 3\000", file_get_contents($result['path'], false, null, 0, 16));
+        } finally {
+            $this->removeTree($root);
+            @unlink($source);
+        }
+    }
+
     /** @return array{0:string,1:string} */
     private function createPaths(): array
     {

@@ -127,6 +127,17 @@ final class PublicOfflineSnapshotBuilder
         }
     }
 
+    /**
+     * Builds the small, newest-first import applied by a browser before its
+     * next complete base replacement.
+     *
+     * @return array{generated_at:string,thread_count:int,post_count:int,public_key_count:int,size_bytes:int}
+     */
+    public function buildUpdate(string $sourcePath, string $targetPath): array
+    {
+        return $this->build($sourcePath, $targetPath, 20, 8 * 1024 * 1024);
+    }
+
     private function createSchema(PDO $pdo, int $maxBytes): void
     {
         $pdo->exec('PRAGMA page_size = 4096');
@@ -174,7 +185,10 @@ final class PublicOfflineSnapshotBuilder
      */
     private function writeManifest(string $snapshotPath, string $generatedAt, int $size): void
     {
-        $manifestPath = dirname($snapshotPath) . '/manifest.json';
+        $manifestName = basename($snapshotPath) === 'snapshot.sqlite3'
+            ? 'manifest.json'
+            : basename($snapshotPath) . '.manifest.json';
+        $manifestPath = dirname($snapshotPath) . '/' . $manifestName;
         $temporaryPath = $manifestPath . '.tmp-' . bin2hex(random_bytes(8));
         $manifest = json_encode([
             'snapshot_version' => self::SNAPSHOT_VERSION,

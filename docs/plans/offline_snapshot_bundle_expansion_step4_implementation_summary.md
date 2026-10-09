@@ -15,3 +15,15 @@
 - Notes:
   - The full-base publisher remains backward-compatible at its existing entry
     point; compact update publication follows in Stage 2.
+
+## Stage 2 - Publish the base and compact update safely
+
+- Changes:
+  - Added a bounded 20-thread, 8 MiB compact update builder and independent
+    atomic `offline/update.sqlite3` publication with its own manifest.
+  - Kept the existing full-base snapshot path and manifest unchanged.
+- Verification:
+  - `php -l` passed for the builder and publisher.
+  - `php tests/run.php OfflineSnapshotPublisherTest PublicOfflineSnapshotManifestTest PublicOfflineSnapshotBuilderTest` passed: 5 run, 5 passed.
+- Notes:
+  - Queue priority, public serving, and client import remain staged work.
