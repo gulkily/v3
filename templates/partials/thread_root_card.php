@@ -56,11 +56,11 @@ $postBodyFirstLine = trim($postBodyFirstLineSegments[0] ?? '');
 $postBodyDisplay = ($postBodyFirstLine !== '' && $postBodyFirstLine === trim($title))
     ? preg_replace('/^(?:\r\n|\r|\n)+/', '', $postBodyFirstLineSegments[1] ?? '')
     : $postBody;
-$isQdbQuoteRoot = \ForumRewrite\SiteConfig::siteName() === 'qdb';
 $quoteRootId = (string) $thread['root_post_id'];
-$quoteRootHasNumber = preg_match('/-qdb-(\d+)$/', $quoteRootId, $quoteRootNumberMatch) === 1;
-$quoteRootDisplayNumber = $quoteRootHasNumber ? $quoteRootNumberMatch[1] : $quoteRootId;
-$quoteRootPermalinkHref = $quoteRootHasNumber ? '/' . $quoteRootDisplayNumber : '/threads/' . $quoteRootId;
+$quoteRootNumber = \ForumRewrite\Qdb\QdbQuoteNumbers::fromThreadId($quoteRootId);
+$isQdbQuoteRoot = \ForumRewrite\SiteConfig::siteName() === 'qdb' && $quoteRootNumber !== null;
+$quoteRootDisplayNumber = $quoteRootNumber ?? $quoteRootId;
+$quoteRootPermalinkHref = $quoteRootNumber !== null ? '/' . $quoteRootDisplayNumber : '/threads/' . $quoteRootId;
 $quoteRootScoreTotal = (int) ($thread['score_total'] ?? 0);
 $quoteRootVoteCount = (int) ($thread['vote_count'] ?? 0);
 $quoteRootScoreSignClass = $quoteRootScoreTotal > 0 ? 'quote-card-score-positive' : ($quoteRootScoreTotal < 0 ? 'quote-card-score-negative' : '');

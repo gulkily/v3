@@ -248,7 +248,10 @@ final class QuoteCardDisplayNumberTest
         }
 
         assertSame(200, http_response_code());
+        assertStringContains('<h1>Hello world</h1>', $legacyThread);
         assertStringContains('Hello world', $legacyThread);
+        assertStringNotContains('quote-card-permalink', $legacyThread);
+        assertStringNotContains('quote-card-header-actions', $legacyThread);
     }
 
     public function testGenericBoardStillListsLegacyAndQuoteRoots(): void
