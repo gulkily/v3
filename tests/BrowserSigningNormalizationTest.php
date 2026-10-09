@@ -6962,7 +6962,12 @@ class HTMLButtonElement {
 }
 
 const button = new HTMLButtonElement();
-const feedbackNode = { textContent: '', hidden: true, setAttribute(name, value) { this[name] = value; } };
+const feedbackHistory = [];
+const feedbackNode = { hidden: true, setAttribute(name, value) { this[name] = value; } };
+Object.defineProperty(feedbackNode, 'textContent', {
+  get() { return this.value || ''; },
+  set(value) { this.value = String(value); feedbackHistory.push(String(value)); }
+});
 const root = {
   hidden: false,
   getAttribute(name) {
@@ -6983,6 +6988,7 @@ global.Element = HTMLButtonElement;
 global.HTMLButtonElement = HTMLButtonElement;
 global.window = {
   __forumBrowserIdentity: {
+    storedVoteIdentityReadinessState() { return 'ready'; },
     async ensureReadyIdentity() {}
   }
 };
@@ -7033,6 +7039,7 @@ vm.runInThisContext(source);
   await clickPromise;
   process.stdout.write(JSON.stringify({
     optimistic,
+    feedbackHistory,
     finalButtonText: button.textContent,
     finalAriaPressed: button.attributes['aria-pressed'] || '',
     finalRootHidden: root.hidden
@@ -7047,6 +7054,7 @@ NODE;
 
         assertSame(1, $result['optimistic']['fetchCount']);
         assertSame('Saving tag...', $result['optimistic']['feedback']);
+        assertSame(false, in_array('Preparing identity...', $result['feedbackHistory'], true));
         assertSame(true, $result['optimistic']['buttonDisabled']);
         assertSame('Flagged', $result['optimistic']['buttonText']);
         assertSame('true', $result['optimistic']['ariaPressed']);
@@ -7563,7 +7571,7 @@ NODE;
         assertStringContains('/api/get_profile?profile_slug=openpgp-fedcba9876543210fedcba9876543210fedcba98', implode("\n", $result['fetchUrls']));
     }
 
-    public function testIdentityPrewarmDoesNotGenerateOrLinkIdentity(): void
+    public function testIdentityPrewarmFullyReadiesStoredVoteIdentity(): void
     {
         $script = <<<'NODE'
 const fs = require('fs');
@@ -7572,10 +7580,11 @@ const source = fs.readFileSync(process.argv[1], 'utf8');
 const storage = {
   forum_pki_public_key: 'public-key',
   forum_pki_private_key: 'private-key',
-  forum_pki_username: 'guest'
+  forum_pki_username: 'guest',
+  forum_pki_fingerprint: 'ABC123'
 };
 let generateCalled = false;
-let fetchUrls = [];
+const fetchUrls = [];
 
 global.localStorage = {
   getItem(key) { return Object.prototype.hasOwnProperty.call(storage, key) ? storage[key] : ''; },
@@ -7592,12 +7601,30 @@ global.window = {
     },
     async readKey() {
       return { getFingerprint() { return 'ABC123'; } };
+    },
+    async readPrivateKey() {
+      return { getFingerprint() { return 'ABC123'; } };
+    },
+    async createMessage() {
+      return {};
+    },
+    async sign() {
+      return 'signature';
     }
   }
 };
 global.openpgp = global.window.openpgp;
 global.fetch = async function(url) {
   fetchUrls.push(String(url));
+  if (String(url).indexOf('/api/get_profile?') === 0) {
+    return { ok: false, async text() { return ''; } };
+  }
+  if (String(url) === '/api/prepare_identity') {
+    return { ok: true, async text() { return JSON.stringify({ status: 'ok', prepare_token: 'token', canonical_record: 'record' }); } };
+  }
+  if (String(url) === '/api/create_identity') {
+    return { ok: true, async text() { return JSON.stringify({ status: 'ok' }); } };
+  }
   return { ok: true, async text() { return 'ok'; } };
 };
 global.document = {
@@ -7607,7 +7634,7 @@ global.document = {
     }
   },
   querySelector(selector) {
-    return selector === '[data-compose-root], [data-thread-reactions-root], .post-card[data-post-id]' ? {} : null;
+    return selector.indexOf('[data-thread-reactions-root]') !== -1 ? {} : null;
   },
   querySelectorAll() {
     return [];
@@ -7624,6 +7651,8 @@ setTimeout(() => {
   process.stdout.write(JSON.stringify({
     generateCalled,
     fingerprint: storage.forum_pki_fingerprint || '',
+    published: storage.forum_pki_published_fingerprint || '',
+    readiness: window.__forumBrowserIdentity.storedVoteIdentityReadinessState(),
     fetchUrls
   }));
 }, 0);
@@ -7637,7 +7666,68 @@ NODE;
 
         assertSame(false, $result['generateCalled']);
         assertSame('ABC123', $result['fingerprint']);
-        assertSame(['/api/set_identity_hint?identity_hint=openpgp%3Aabc123'], $result['fetchUrls']);
+        assertSame('ABC123', $result['published']);
+        assertSame('ready', $result['readiness']);
+        assertSame(
+            [
+                '/api/get_profile?profile_slug=openpgp-abc123',
+                '/api/prepare_identity',
+                '/api/create_identity',
+                '/api/set_identity_hint?identity_hint=openpgp%3Aabc123',
+            ],
+            $result['fetchUrls'],
+        );
+    }
+
+    public function testIdentityPrewarmWithoutStoredKeypairDoesNotCreateOrPublishIdentity(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const storage = {};
+let generateCalled = false;
+const fetchUrls = [];
+
+global.localStorage = {
+  getItem(key) { return Object.prototype.hasOwnProperty.call(storage, key) ? storage[key] : ''; },
+  setItem(key, value) { storage[key] = String(value); },
+  removeItem(key) { delete storage[key]; }
+};
+global.window = {
+  setTimeout(callback) { callback(); },
+  __forumOpenPgpLoader: { ready: Promise.resolve({}) },
+  openpgp: {
+    generateKey() {
+      generateCalled = true;
+      throw new Error('generateKey must not run during prewarm');
+    }
+  }
+};
+global.openpgp = global.window.openpgp;
+global.fetch = async function(url) {
+  fetchUrls.push(String(url));
+  return { ok: true, async text() { return 'ok'; } };
+};
+global.document = {
+  addEventListener(type, handler) { if (type === 'DOMContentLoaded') handler(); },
+  querySelector(selector) { return selector.indexOf('[data-thread-reactions-root]') !== -1 ? {} : null; },
+  querySelectorAll() { return []; },
+  createElement() { return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+setTimeout(() => {
+  process.stdout.write(JSON.stringify({ generateCalled, fetchUrls }));
+}, 0);
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame(false, $result['generateCalled']);
+        assertSame([], $result['fetchUrls']);
     }
 
     public function testClearPendingComposeArtifactsRemovesOptimisticNodesAndFormKeys(): void
