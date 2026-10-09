@@ -2833,6 +2833,56 @@ PHP;
         assertStringContains('hidden', $reply);
     }
 
+    public function testEventSupportUiIsHiddenByDefaultAndShownWhenEnabled(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-event-support-' . bin2hex(random_bytes(6));
+        $disabledDatabasePath = sys_get_temp_dir() . '/forum-rewrite-event-support-disabled-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $enabledDatabasePath = sys_get_temp_dir() . '/forum-rewrite-event-support-enabled-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previousFlag = getenv(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED);
+        mkdir($repositoryRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        file_put_contents($repositoryRoot . '/records/posts/event-001.txt', "Post-ID: event-001\nCreated-At: 2026-10-09T12:00:00Z\nBoard-Tags: general\nSubject: Event thread\nEvent-Date: 2026-11-01\nEvent-Location: Cambridge\nEvent-Link: https://example.test/rsvp\n\nEvent body.\n");
+
+        try {
+            putenv(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED);
+            $disabled = new Application(dirname(__DIR__), $repositoryRoot, $disabledDatabasePath);
+
+            $disabledCompose = $this->render($disabled, '/compose/thread');
+            $disabledBoard = $this->render($disabled, '/?view=all');
+            $disabledThread = $this->render($disabled, '/threads/event-001');
+            $disabledForte = $this->render($disabled, '/forte');
+
+            assertStringNotContains('name="event_date"', $disabledCompose);
+            assertStringNotContains('data-event-block', $disabledBoard);
+            assertStringNotContains('data-event-block', $disabledThread);
+            assertStringNotContains('name="event_date"', $disabledForte);
+
+            putenv(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED . '=true');
+            $enabled = new Application(dirname(__DIR__), $repositoryRoot, $enabledDatabasePath);
+
+            $enabledCompose = $this->render($enabled, '/compose/thread');
+            $enabledBoard = $this->render($enabled, '/?view=all');
+            $enabledThread = $this->render($enabled, '/threads/event-001');
+            $enabledForte = $this->render($enabled, '/forte');
+
+            assertStringContains('name="event_date"', $enabledCompose);
+            assertStringContains('data-event-block', $enabledBoard);
+            assertStringContains('data-event-block', $enabledThread);
+            assertStringContains('name="event_date"', $enabledForte);
+        } finally {
+            if ($previousFlag === false) {
+                putenv(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED);
+            } else {
+                putenv(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED . '=' . $previousFlag);
+            }
+            @unlink($disabledDatabasePath);
+            @unlink($disabledDatabasePath . '-journal');
+            @unlink($enabledDatabasePath);
+            @unlink($enabledDatabasePath . '-journal');
+            $this->deleteTree($repositoryRoot);
+        }
+    }
+
     public function testComposeThreadSubmitErrorPreservesEnteredValues(): void
     {
         @unlink($this->databasePath);
