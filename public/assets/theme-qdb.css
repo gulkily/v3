@@ -108,7 +108,7 @@
   color: var(--status-error);
 }
 
-:root[data-theme="qdb"] .thread-list > .card:not(.quote-card) {
+:root[data-theme="qdb"] .thread-list > .card.compact-thread-compose {
   display: none;
 }
 

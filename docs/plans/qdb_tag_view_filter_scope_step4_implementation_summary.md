@@ -24,3 +24,16 @@
   - `php tests/run.php QuoteCardDisplayNumberTest QdbBoardPolicyTest` — 27 passed; the same long-standing, unrelated QDB welcome-copy assertion failed.
 - Notes:
   - The test uses the existing `current` release-link layout, confirming the front controller serves the generated all-content tag artifact rather than dynamically applying a quote filter.
+
+## Stage 3 - Visible shared tag cards on QDB
+
+- Changes:
+  - Narrowed the QDB theme’s hidden-card rule to the generic inline board composer, so shared tag-page headers and thread cards are no longer hidden.
+  - Added a stylesheet contract preventing the broad non-quote-card selector from returning.
+- Verification:
+  - `php -l tests/ThemeRegistryTest.php` — passed.
+  - `php tests/run.php ThemeRegistryTest QuoteCardDisplayNumberTest::testQdbTagPagesKeepAllTaggedThreadsWhileCollectionSurfacesExcludeNonQuotes QuoteCardDisplayNumberTest::testQdbStaticReleaseIncludesPublicListingsAndNumericQuoteAlias` — 11 passed.
+  - `php tests/run.php ThemeRegistryTest QuoteCardDisplayNumberTest QdbBoardPolicyTest` — 36 passed; the same long-standing, unrelated QDB welcome-copy assertion failed.
+  - Live development server: the regenerated QDB theme asset contains only the targeted composer selector.
+- Notes:
+  - The fix preserves the original rule’s purpose—hide generic composer chrome on QDB quote listings—without affecting shared tag or offline thread cards.
