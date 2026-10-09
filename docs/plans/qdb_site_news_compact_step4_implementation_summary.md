@@ -13,3 +13,14 @@
 - Notes:
   - The stale flag assertion is out of scope and left untouched.
   - `BoardPageController::welcome()` has no callers; unchanged.
+
+## Stage 2 - Compact styling and release check
+
+- Changes:
+  - `theme-qdb.css`: added QDB-scoped `.qdb-news-item`, `.qdb-news-date`, and `.qdb-news-title` rules (small type, tight spacing, muted date, title inherits body size, long text wraps).
+- Verification:
+  - `php tests/run.php` — 973 run, 969 passed, 4 failed. The same 4 failures occur on unmodified `main` (`testApplicationRendersCoreRoutes`, `testFeatureFlagsPageShowsLockedBadgeWithReasonForNonMutableFlags`, the stale `⚑ Flag something that` assertion, `testTaskQueueProcessesQueuedAgentReplyOnce`).
+  - `testQdbStaticWelcomeAndAllNewsArtifactsAreGenerated` passes, so the static build still works.
+  - Visual check at desktop and mobile widths: not performed in this environment (no browser run); selectors are scoped under the QDB theme and no existing rules changed.
+- Notes:
+  - The CSS reuses the existing `--muted` variable and adds no layout rules to the welcome columns.

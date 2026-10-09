@@ -188,6 +188,21 @@
   padding-left: 1.2rem;
 }
 
+:root[data-theme="qdb"] .qdb-news-item {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+:root[data-theme="qdb"] .qdb-news-date {
+  color: var(--muted);
+}
+
+:root[data-theme="qdb"] .qdb-news-title {
+  font-size: inherit;
+}
+
 :root[data-theme="qdb"] .qdb-add-page .compact-thread-compose-actions {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
