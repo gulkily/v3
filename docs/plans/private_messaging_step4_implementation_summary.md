@@ -103,3 +103,20 @@
 - Notes:
   - Message bodies remain intentionally unreadable at this stage; Stage 7 adds local envelope decryption and signature verification.
   - Stage 7 has not started. Per user direction, implementation stops here for review.
+
+## Stage 7 - Decrypt selected messages locally
+
+- Changes:
+  - Added a mailbox reader that fetches an authenticated encrypted envelope only after selection, obtains the sender group's approved public keys, and decrypts in the browser with the saved private key.
+  - Plaintext is inserted only after every OpenPGP signature-verification promise resolves; the reader exposes unavailable-key, bad-signature, and decryption-failed states without plaintext.
+  - Added per-message reader controls to Inbox and Sent while retaining ciphertext-free server-rendered mailbox HTML.
+- Verification:
+  - `node --check public/assets/private_message_reader.js`
+  - `php -l src/ForumRewrite/Http/PrivateMessagePageController.php`
+  - `php -l templates/pages/private_messages.php`
+  - `php -l tests/PrivateMessageReaderTest.php`
+  - `php tests/run.php PrivateMessageReaderTest PrivateMessagePageControllerTest PrivateMessageEnvelopeTest PrivateMessageMailboxServiceTest PrivateMessageApiRoutingTest` — 7 passed.
+  - The real OpenPGP v6 test encrypts one signed message to both sender and recipient keys and verifies both copies decrypt. It also verifies unavailable-key, mismatched-signer, wrong-private-key, and altered-envelope paths do not return plaintext.
+- Notes:
+  - Decrypted plaintext remains in the current browser DOM only; it is not posted back, persisted in the private store, or included in server-rendered HTML.
+  - Stage 8 has not started. Per user direction, implementation stops here for review.

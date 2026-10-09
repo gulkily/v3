@@ -43,6 +43,8 @@ final class PrivateMessagePageControllerTest
             assertStringContains('<h1>Inbox</h1>', $inbox);
             assertStringContains('<strong>From:</strong> <a href="/user/alice">alice</a>', $inbox);
             assertStringContains('data-private-message-id="message-001"', $inbox);
+            assertStringContains('data-action="read-private-message"', $inbox);
+            assertStringContains('/assets/private_message_reader.', $inbox);
             assertStringNotContains('Ciphertext should not render', $inbox);
             assertStringContains('<h1>Sent Messages</h1>', $sent);
             assertStringContains('<strong>To:</strong> <a href="/user/ilyag">ilyag</a>', $sent);

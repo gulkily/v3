@@ -86,6 +86,12 @@ final class PrivateMessagePageController
                 ],
                 $kind === 'inbox' ? 'Inbox' : 'Sent Messages',
                 'messages',
+                [
+                    '/assets/openpgp_loader.js',
+                    '/assets/browser_signing.js',
+                    '/assets/private_messages.js',
+                    '/assets/private_message_reader.js',
+                ],
             ),
             200,
             $this->routeServices->noStoreHeaders(),
