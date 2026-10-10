@@ -49,3 +49,15 @@
   - Live development server: `/tags/general` contains four thread cards and no tag summary markup.
 - Notes:
   - The broader `LocalAppSmokeTest` has two pre-existing failures unrelated to this change and reached them before the aggregate result completed.
+
+## Stage 5 - Scoped tag-summary removal
+
+- Changes:
+  - Restored the tag heading, retained removal of only the “Tag” label and thread count, and moved the back links below the matching thread cards.
+  - Extended generic and QDB tag regressions to preserve the requested result-before-navigation ordering.
+- Verification:
+  - `php -l templates/pages/tag.php` and `php -l tests/QuoteCardDisplayNumberTest.php` — passed.
+  - `php tests/run.php QuoteCardDisplayNumberTest::testQdbTagPagesKeepAllTaggedThreadsWhileCollectionSurfacesExcludeNonQuotes` — 1 passed.
+  - Live development server: `/tags/general` renders `#general`, then its thread cards, then the back links, without the removed label or count.
+- Notes:
+  - This corrects Stage 4’s over-broad summary-card removal to match the requested scope.
