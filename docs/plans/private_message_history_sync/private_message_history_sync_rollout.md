@@ -1,6 +1,33 @@
-# Private message history sync: API and operations
+# Private message history sync: how it works and how to operate it
 
 Related: [requirements](./private_message_history_sync_step2_feature_description.md) · [plan](./private_message_history_sync_step3_development_plan.md) · [implementation and evidence](./private_message_history_sync_step4_implementation_summary.md) · [storage findings](./private_message_history_sync_storage_findings.md).
+
+## What the feature does
+
+Private message history sync helps an approved new device read older messages by obtaining encrypted access from another device belonging to the same account. It covers sent and received messages and runs automatically during authenticated visits, without a sync banner or a separate sharing prompt. It is implemented and merged into local `main`; deployment is a separate step.
+
+For example, Alice's laptop can read her old conversations, but her newly approved phone cannot. Alice visits the site on the laptop, then later opens Messages on the phone. The laptop leaves encrypted recovery material for the phone, allowing the phone to read and verify the original messages. The two devices do not need to be online together.
+
+## How recovery happens
+
+1. **A key is approved for the account.** The application treats currently approved keys sharing the normalized username as that account's keys. All those keys are authorized for its history, including keys approved before this feature existed.
+2. **A device with access visits the site.** It can contribute from an ordinary authenticated page; opening Messages on that device is unnecessary. The browser checks a bounded portion of history and verifies messages it can already decrypt.
+3. **The browser prepares encrypted access.** Each original message has a session key that unlocks its encrypted contents. The contributing browser signs a bundle of these keys and encrypts it specifically for an approved target device. The bundle identifies the account, source and target keys, and the exact original messages.
+4. **The server retains the encrypted bundle.** This is private recovery data, separate from conversations. It creates no chat messages and does not mark messages read. Original encrypted messages remain unchanged.
+5. **The target reads the originals.** Its browser decrypts the bundle with its own private key, checks the donor and message bindings, then decrypts each original message and verifies the original sender's signature before displaying trusted text. A donor's signature alone is insufficient.
+
+Transfers stay available after successful recovery, so reloading the target does not require another donor visit. Multiple devices can supply different parts of history, and a recovered device can help later approved devices. Large histories progress across bounded visits and visible returns; recovery is not guaranteed to finish in one visit. Existing per-message unavailable states and reading retries remain available.
+
+## What is protected, and what remains limited
+
+- Private identity keys stay in their browsers. Message plaintext and unwrapped session keys are not sent to the server or added to persistent recovery caches.
+- The server stores encrypted messages, encrypted recovery bundles and synchronization metadata. It can see account, key and message relationships; this does not hide that metadata from the operator.
+- Only currently approved same-account keys participate. Removing approval prevents future eligible transfer use, but cannot retract secrets a device already received.
+- Recovery requires an eligible device with suitable access or a retained eligible transfer. If neither exists, approval alone cannot restore history. Original messages must also still exist on the server.
+- This release does **not** recover history from the other person's devices. Sender-assisted recovery is a separate proposal.
+- Messages/unread data and recovery data use separate private databases. A sync-store outage can interrupt historical recovery while ordinary sending and direct reading continue. Both stores need coordinated private backups; neither belongs in public downloads or offline snapshots.
+
+The remaining sections document the API, exact limits, deployment, backup and rollback for technical readers and operators.
 
 ## Storage and deployment
 

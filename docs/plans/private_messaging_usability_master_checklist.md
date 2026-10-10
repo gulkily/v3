@@ -8,7 +8,7 @@ Use this checklist to track coverage across the releases and the
 implement each release.
 
 This is a coordination checklist. Individual FDP requirements, development plans,
-and implementation approvals remain separate. Cycles 1–5 are complete on `main`; historical-message synchronization has Steps 1–3 approval and is implemented on `feature/private-message-history-sync`, pending review and merge.
+and implementation approvals remain separate. Cycles 1–5 are complete on `main`; historical-message synchronization is also complete and merged into local `main` at `ed36a069`, including the requested removal of global sync messaging.
 Check items off when their acceptance criteria are verified, and link the relevant
 FDP artifacts and verification evidence here as each cycle progresses.
 
@@ -21,7 +21,7 @@ FDP artifacts and verification evidence here as each cycle progresses.
 | 3 | Retrieve messages older than the initial history window | [Plan](./private_message_history_step3_development_plan.md) · [Implementation and verification](./private_message_history_step4_implementation_summary.md); Step 1 skipped | Complete; merged into local `main` at `95ac3114`; not pushed |
 | 4 | See reliable unread indicators and counts | [Plan](./private_message_unread/private_message_unread_step3_development_plan.md) · [Implementation](./private_message_unread/private_message_unread_step4_implementation_summary.md) | Complete; merged into local `main` at `34b48f40`; not pushed |
 | 5 | Read past unavailable messages without repeated large error widgets | [Plan](./private_message_unavailable/private_message_unavailable_step3_development_plan.md) · [Implementation](./private_message_unavailable/private_message_unavailable_step4_implementation_summary.md) | Complete with Options B and C combined; merged into `main` at `68a5a3fd` |
-| 6 | Restore recoverable history on a newly approved device automatically | [Step 1 assessment](./private_message_history_sync/private_message_history_sync_step1_solution_assessment.md) · [Step 2 description](./private_message_history_sync/private_message_history_sync_step2_feature_description.md) · [Step 3 plan](./private_message_history_sync/private_message_history_sync_step3_development_plan.md) · [Storage findings](./private_message_history_sync/private_message_history_sync_storage_findings.md) | Implemented; [verification](./private_message_history_sync/private_message_history_sync_step4_implementation_summary.md) · [rollout](./private_message_history_sync/private_message_history_sync_rollout.md); not merged or deployed |
+| 6 | Restore recoverable history on a newly approved device automatically | [Step 1 assessment](./private_message_history_sync/private_message_history_sync_step1_solution_assessment.md) · [Step 2 description](./private_message_history_sync/private_message_history_sync_step2_feature_description.md) · [Step 3 plan](./private_message_history_sync/private_message_history_sync_step3_development_plan.md) · [Storage findings](./private_message_history_sync/private_message_history_sync_storage_findings.md) | Implemented; [verification](./private_message_history_sync/private_message_history_sync_step4_implementation_summary.md) · [rollout](./private_message_history_sync/private_message_history_sync_rollout.md); merged into local `main` at `ed36a069`; not pushed or deployed |
 
 Follow this order and reuse the components and contracts established in earlier
 cycles. Unread indicators are deliberately deferred from cycle 1 to cycle 4;
@@ -221,4 +221,4 @@ Evidence: [implementation summary](./private_message_unavailable/private_message
 - [x] Confirm focused automated checks and browser checks cover the changed
   behavior, encryption and authorization boundaries, accessibility, and recovery.
 
-Next action: review Cycle 6's [implementation and evidence](./private_message_history_sync/private_message_history_sync_step4_implementation_summary.md) and [operational guide](./private_message_history_sync/private_message_history_sync_rollout.md). Cycles 1–5 are merged into `main`; Cycle 6 is on its feature branch and has not been merged, pushed or deployed.
+Next action: review Cycle 6's [implementation and evidence](./private_message_history_sync/private_message_history_sync_step4_implementation_summary.md) and [operational guide](./private_message_history_sync/private_message_history_sync_rollout.md). Cycles 1–6 are merged into local `main`. Cycle 6 has not been pushed or deployed; its guide now includes a shareable explanation of how recovery works.

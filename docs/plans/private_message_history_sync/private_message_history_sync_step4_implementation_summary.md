@@ -2,7 +2,7 @@
 
 > **Feature plan:** [Step 1](./private_message_history_sync_step1_solution_assessment.md) · [Step 2](./private_message_history_sync_step2_feature_description.md) · [Step 3](./private_message_history_sync_step3_development_plan.md) · [Step 4](./private_message_history_sync_step4_implementation_summary.md)
 
-Branch: `feature/private-message-history-sync`. Planning-only commit: `d7e89582`. All eight implementation stages are complete; no merge, push, or deployment.
+Branch: `feature/private-message-history-sync`. Planning-only commit: `d7e89582`. All eight implementation stages and the UI review adjustment are complete. Merged into local `main` by fast-forward at `ed36a069`; not pushed or deployed.
 
 ## Stage 1 - Cryptographic protocol validation
 
@@ -65,3 +65,9 @@ Branch: `feature/private-message-history-sync`. Planning-only commit: `d7e89582`
 
 - User request: remove the visit-level verified/waiting text, the explanatory paragraph and the Retry history button. Removed the shared status partial, its client asset and associated retry-only listeners from Messages and conversations. Automatic contribution/recovery and existing per-message verification/retry continue unchanged. Updated requirements and operations guidance to reflect this presentation decision.
 - Verification: nine focused crypto/reader/list/release tests pass. Both browser journeys pass with explicit checks that the global notice/button are absent: automatic partial-donor recovery, reload/forwarding and sync outage (`/tmp/history-sync-browser-qYvtAu`); complete messaging regressions, mobile, draft/focus, history, unread and unavailable-group recovery (`/tmp/private-message-browser-GwQ292`). Static-release assertions now identify actual history asset URLs so ordinary documentation links cannot cause false positives. Syntax and whitespace checks pass.
+
+## Integration and shareable documentation
+
+- At the user's request, fast-forwarded local `main` to `ed36a069`, including the UI review adjustment; no merge conflicts or source changes were introduced by integration. No push or deployment.
+- Added a standalone plain-language introduction to the [feature guide](./private_message_history_sync_rollout.md), covering the device journey, session-key transfers, original-signature verification, privacy boundaries and recovery limits before the technical API/operations reference. Updated current integration status in the checklist and portability assessment. The separate sender-assisted Step 1 proposal remains uncommitted.
+- Verification: documentation links and whitespace pass; feature commit is an ancestor of `main`; sender-assisted draft contents are unchanged. Existing passing focused checks and both browser journeys apply to the identical merged source.
