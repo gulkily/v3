@@ -21,6 +21,26 @@ The original [architecture assessment](../plans/private_messaging_step1_solution
 
 ## Identity and key coverage
 
+The diagram shows how both usernames' approved keys, plus the local sender key, feed one envelope.
+
+```mermaid
+flowchart TB
+  subgraph Rcpt["Recipient username"]
+    direction TB
+    R1["Approved profile keys"] ~~~ X["Pending or keyless<br/>profiles: excluded"]
+  end
+  subgraph Send["Sender username"]
+    direction TB
+    S1["Approved profile keys"] ~~~ S2["Local sender key<br/>(also signs)"]
+  end
+  subgraph Out["One message"]
+    direction LR
+    K["Deduplicated<br/>key set"] --> E["One OpenPGP envelope<br/>encrypted to all keys"] --> V["Serves incoming<br/>and sent views"]
+  end
+  Rcpt --> Out
+  Send --> Out
+```
+
 A normalized username token identifies a mailbox and a conversation participant. Multiple approved profiles can belong to that username, each with its own OpenPGP identity. Pending profiles and profiles without public keys are excluded from the recipient key set; duplicate public keys are removed.
 
 When preparing a message, the browser obtains the current approved public keys for both username groups. It encrypts one OpenPGP envelope to their combined key set, also including the local sender public key, and signs with the matching local private key. OpenPGP handles the per-message content key and its encryption for the recipients; users do not choose a separate message password. A single stored envelope supplies both the incoming and sent views.

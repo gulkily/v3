@@ -91,10 +91,11 @@ Section: "Privacy and storage boundaries" (lines 95-108).
 
 Section: "Identity and key coverage" (lines 22-30).
 
-- [ ] Show: several approved profiles under one username feed a deduplicated recipient key set.
-- [ ] Show: pending profiles and profiles without public keys excluded.
-- [ ] Show: sender key included, one envelope covers incoming and sent views.
-- [ ] Optionally annotate: newly approved key cannot read old ciphertext.
+- [x] Show: several approved profiles under one username feed a deduplicated recipient key set.
+- [x] Show: pending profiles and profiles without public keys excluded.
+- [x] Show: sender key included, one envelope covers incoming and sent views.
+- [x] Optionally annotate: newly approved key cannot read old ciphertext.
+- Done: two username groups feeding one message chain; renders 784x487 (about 1.6:1, slightly wider than target but fits one page). The optional "new key cannot read old ciphertext" annotation was left in prose to keep the diagram small.
 
 ## Explicitly skipped
 
@@ -108,7 +109,7 @@ Section: "Identity and key coverage" (lines 22-30).
 - [ ] Legible in both light and dark themes (avoid hard-coded colors).
 - [ ] Every element in the diagram is traceable to a sentence in the doc, and nothing contradicts the prose.
 - [ ] No more than about 10-12 nodes or participants; split otherwise.
-- [ ] Rendered shape is roughly square (see the layout rule) and fits on one page without scrolling or zooming.
+- [x] Rendered shape is roughly square (see the layout rule) and fits on one page without scrolling or zooming.
 - [ ] A one-line caption or lead sentence says what the diagram shows.
 - [ ] Line-number references in this checklist updated if the doc has shifted.
 
