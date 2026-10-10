@@ -11,6 +11,7 @@ On Users Awaiting Approval, each user's most recent action appears after their A
 ## Core Requirements
 
 - On mobile and desktop, present each user as one clearly bounded group in the reading order: user details, most recent action, Approve.
+- User-requested refinement: use User, Recent activity, and Approve columns. User contains the linked username with `openpgp-` plus the first ten key characters and `...` beneath it; Recent activity contains the latest activity and timestamp.
 - Keep visual and assistive reading order aligned, with usable keyboard navigation.
 - Preserve existing profile links, activity text, post links, timestamps, and the no-activity fallback.
 - Preserve approval permissions, signing, progress feedback, and failure recovery; successful approval removes the complete correct user group and shows the empty state when appropriate.

@@ -13,11 +13,11 @@
   text-overflow: ellipsis;
   vertical-align: bottom;
 }
-.pending-approvals-profile-cell {
+.pending-approvals-activity-cell {
   min-width: 0;
 }
-.pending-approvals-profile-link {
-  display: inline-block;
+.pending-approvals-user-cell .pending-approvals-profile-link {
+  display: block;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;

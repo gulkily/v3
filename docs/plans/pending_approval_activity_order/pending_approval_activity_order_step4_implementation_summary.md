@@ -19,3 +19,9 @@
   - Feature-specific checks passed. The two unrelated smoke failures above remain outside this presentation change.
   - No database, API contract, external service, or deployment configuration changes were needed. Production deployment was not performed.
   - Planning commit: `179e3b6c`; this summary accompanies the single implementation-stage commit on `feature/pending-approval-activity-order`.
+
+## Stage 1 follow-up - User-requested column refinement
+
+- Changes: Grouped the linked username and shortened profile identifier in User; renamed the second column Recent activity and kept the latest action/timestamp there. The identifier shows `openpgp-` followed by ten key characters and `...`, with the complete identifier available on hover and in the accessible link label. Approval remains the third column and last in mobile reading order.
+- Verification: PHP lint and `git diff --check` passed. The existing directory-access and activity/fallback smoke tests both passed. Repeated Chromium checks passed at 360, 520, 521, and 1280px for layout, overflow, keyboard/source order, approval failure/retry, first/middle/last-user removal, empty state, and shared profile approval. Visually reviewed refreshed mobile and desktop screenshots.
+- Notes: This refinement was explicitly requested after implementation review. The full smoke suite was not repeated; its previously documented unrelated failures remain. No deployment performed.

@@ -4116,7 +4116,7 @@ NODE;
         assertStringContains('title="' . $pendingTarget['profile_slug'] . '"', $pendingUsers);
         assertStringContains('aria-label="' . $pendingTarget['profile_slug'] . '"', $pendingUsers);
         assertStringContains(
-            substr($pendingTarget['profile_slug'], 0, 18) . '...' . substr($pendingTarget['profile_slug'], -10),
+            substr($pendingTarget['profile_slug'], 0, 17) . '...',
             $pendingUsers
         );
         assertStringNotContains('>' . $pendingTarget['profile_slug'] . '</a>', $pendingUsers);
