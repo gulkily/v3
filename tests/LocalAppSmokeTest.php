@@ -1447,6 +1447,25 @@ PHP;
         }
     }
 
+    public function testBackupPagesDescribePortabilityScope(): void
+    {
+        $application = new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath);
+
+        foreach (['/instance/', '/backup/', '/tools/backup/'] as $path) {
+            $backupPage = $this->render($application, $path);
+            assertStringContains('canonical public content and its history', $backupPage);
+            assertStringContains('They are not a complete instance backup.', $backupPage);
+            assertStringContains('Private messages and separately stored operational data, browser-local keys and drafts', $backupPage);
+            assertStringContains('application software, deployment configuration and secrets, and externally hosted media are not included', $backupPage);
+            assertStringContains('public identity and governance records', $backupPage);
+            assertStringContains('may also contain supplemental workflow records', $backupPage);
+            assertStringContains('not guaranteed to represent the same instant', $backupPage);
+            assertStringNotContains('complete snapshots of the forum data', $backupPage);
+            assertStringNotContains('save everything', $backupPage);
+            assertStringNotContains("board's full state", $backupPage);
+        }
+    }
+
     public function testApplicationRendersCoreRoutes(): void
     {
         @unlink($this->databasePath);
@@ -1624,11 +1643,8 @@ PHP;
         assertStringContains('/downloads/repository.tar.gz', $instance);
         assertStringContains('/downloads/repository.zip', $instance);
         assertStringContains('/downloads/read_model.sqlite3', $instance);
-        assertStringContains('complete snapshots of the forum data', $instance);
-        assertStringContains('insurance policy of sorts', $instance);
-        assertStringContains('backup copy of the whole forum', $instance);
-        assertStringContains('sufficient to reconstruct the board', $instance);
-        assertStringContains('reduce trust requirements', $instance);
+        assertStringContains('canonical public content and its history', $instance);
+        assertStringContains('They are not a complete instance backup.', $instance);
         assertStringNotContains('Contact:', $instance);
         assertStringNotContains('Retention:', $instance);
         assertStringNotContains('Installed:', $instance);

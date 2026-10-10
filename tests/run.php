@@ -5,6 +5,13 @@ declare(strict_types=1);
 require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
+    __DIR__ . '/LegacyTimestampImportTest.php',
+    __DIR__ . '/InstanceSourceResolverTest.php',
+    __DIR__ . '/ImportInstanceCommandTest.php',
+    __DIR__ . '/ImportedContentPublicationTest.php',
+    __DIR__ . '/ContentImportRecoveryTest.php',
+    __DIR__ . '/RepositoryArchiveValidationTest.php',
+    __DIR__ . '/ContentImportPlannerTest.php',
     __DIR__ . '/AgentReplyCommandTest.php',
     __DIR__ . '/ApprovalAuditCommandTest.php',
     __DIR__ . '/ApprovedUserKeyResolverTest.php',
@@ -69,6 +76,8 @@ $testFiles = [
     __DIR__ . '/PrivateMessageApiRoutingTest.php',
     __DIR__ . '/PrivateMessageComposerTest.php',
     __DIR__ . '/PrivateMessageEnvelopeTest.php',
+    __DIR__ . '/PrivateMessageHistoryCryptoTest.php',
+    __DIR__ . '/PrivateMessageHistorySyncTest.php',
     __DIR__ . '/PrivateMessageMailboxServiceTest.php',
     __DIR__ . '/PrivateMessageListTest.php',
     __DIR__ . '/PrivateMessagePageControllerTest.php',

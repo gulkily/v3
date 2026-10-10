@@ -25,17 +25,26 @@ final class ReadModelCandidatePromoter
 
         $this->reportProgress('Waiting for the exclusive read-model lock...');
         (new ExecutionLock($liveDirectory . '/forum-rewrite.lock'))->withExclusiveLock(function () use ($candidatePath): void {
-            $this->reportProgress('Validating candidate before promotion...');
-            ReadModelCandidateBuilder::assertValid($this->repositoryRoot, $candidatePath);
-            $this->reportProgress('Replacing the live read model...');
-            $this->assertNoSqliteSidecars();
-            if (!rename($candidatePath, $this->liveDatabasePath)) {
-                throw new RuntimeException('Unable to promote read-model candidate.');
-            }
-
-            (new ReadModelStaleMarker($this->liveDatabasePath))->clear();
-            $this->reportProgress('Read-model promotion complete.');
+            $this->promoteWhileLocked($candidatePath);
         });
+    }
+
+    /** Caller must already hold the exclusive forum-rewrite.lock for the live database. */
+    public function promoteWhileLocked(string $candidatePath): void
+    {
+        if (dirname($candidatePath) !== dirname($this->liveDatabasePath) || !is_file($candidatePath)) {
+            throw new RuntimeException('Read-model candidate must be an existing file beside the live database.');
+        }
+        $this->reportProgress('Validating candidate before promotion...');
+        ReadModelCandidateBuilder::assertValid($this->repositoryRoot, $candidatePath);
+        $this->reportProgress('Replacing the live read model...');
+        $this->assertNoSqliteSidecars();
+        if (!rename($candidatePath, $this->liveDatabasePath)) {
+            throw new RuntimeException('Unable to promote read-model candidate.');
+        }
+
+        (new ReadModelStaleMarker($this->liveDatabasePath))->clear();
+        $this->reportProgress('Read-model promotion complete.');
     }
 
     private function reportProgress(string $message): void

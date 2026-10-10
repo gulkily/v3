@@ -54,8 +54,27 @@
     let cursor = root.dataset.pageCursor;
     let loading = false;
     const senderKeys = new Map();
+    const previewMessages = new Map();
+    const previewRequests = new Map();
+    function refreshHistory(event) {
+      rendered.forEach(function (row) {
+        if (!['decryption-failed', 'unavailable', 'load-failed'].includes(row.dataset.previewState)) return;
+        if (event.detail && event.detail.messageId && event.detail.messageId !== row.dataset.messageId) return;
+        const message = previewMessages.get(row.dataset.messageId);
+        if (message) preview(row, message);
+      });
+    }
+    document.addEventListener('private-message-history-restored', refreshHistory);
 
-    async function preview(row, message) {
+    function preview(row, message) {
+      if (previewRequests.has(message.message_id)) return previewRequests.get(message.message_id);
+      previewMessages.set(message.message_id, message);
+      const request = readPreview(row, message).finally(function () { previewRequests.delete(message.message_id); });
+      previewRequests.set(message.message_id, request);
+      return request;
+    }
+
+    async function readPreview(row, message) {
       const text = row.querySelector('[data-role="preview"]');
       const verified = row.querySelector('[data-role="verification"]');
       const retryPreview = row.querySelector('[data-action="retry-preview"]');
@@ -71,6 +90,7 @@
           request.catch(function () { senderKeys.delete(message.sender_username_token); });
         }
         result = await window.ForumPrivateMessageReader.decryptEnvelope({
+          messageId: message.message_id,
           encryptedEnvelope: message.encrypted_envelope,
           senderPublicKeyArmors: await senderKeys.get(message.sender_username_token),
         });
@@ -78,6 +98,7 @@
         result = { kind: 'load-failed', message: 'Preview unavailable. Sender keys could not be loaded. Try again.' };
       }
       if (row.dataset.messageId !== message.message_id) return;
+      row.dataset.previewState = result.kind;
       if (result.kind === 'verified') {
         const prefix = message.sender_username_token === root.dataset.viewer ? 'You: ' : '';
         text.textContent = prefix + result.plaintext.replace(/\s+/gu, ' ').trim().slice(0, 200);

@@ -1,0 +1,132 @@
+{
+  "methodology": {
+    "location": "isolated temporary databases; no application or production changes",
+    "environment": {
+      "sqlite": "3.37.2",
+      "journal": "delete",
+      "busy_timeout_ms": 60000,
+      "synchronous": 2
+    },
+    "repetitions": 2,
+    "seed_messages": 1000,
+    "foreground": "one process: 150 real PrivateMessageStore sends and seen updates; another: 150 unread and history reads; 10ms pacing",
+    "sync": "three concurrent processes, each 80 synthetic transactions: one 8 KiB placeholder bundle, 25 indexed items, one checkpoint; 10ms pacing",
+    "layouts": "no-sync baseline; same database; separate database; both DELETE and WAL",
+    "limitations": [
+      "Synthetic proposed storage shape, not implemented sync API or browser protocol",
+      "No source/target authorization or crypto cost measured",
+      "Small local sample with shared disk and process scheduling noise",
+      "Foreground samples include both overlapping and post-sync operations",
+      "60-second implicit local PDO busy timeout; zero errors is not a latency guarantee",
+      "No production journal/timeout policy changed"
+    ]
+  },
+  "ranges": [
+    {
+      "journal": "DELETE",
+      "layout": "baseline",
+      "send_p99_ms": [
+        5.684,
+        6.035
+      ],
+      "history_p99_ms": [
+        9.407,
+        9.727
+      ],
+      "errors": 0
+    },
+    {
+      "journal": "DELETE",
+      "layout": "shared",
+      "send_p99_ms": [
+        106.173,
+        106.194
+      ],
+      "history_p99_ms": [
+        104.887,
+        105.355
+      ],
+      "errors": 0
+    },
+    {
+      "journal": "DELETE",
+      "layout": "split",
+      "send_p99_ms": [
+        22.866,
+        29.824
+      ],
+      "history_p99_ms": [
+        19.863,
+        55.758
+      ],
+      "errors": 0
+    },
+    {
+      "journal": "WAL",
+      "layout": "baseline",
+      "send_p99_ms": [
+        4.109,
+        18.115
+      ],
+      "history_p99_ms": [
+        1.21,
+        1.525
+      ],
+      "errors": 0
+    },
+    {
+      "journal": "WAL",
+      "layout": "shared",
+      "send_p99_ms": [
+        10.551,
+        54.671
+      ],
+      "history_p99_ms": [
+        1.236,
+        1.238
+      ],
+      "errors": 0
+    },
+    {
+      "journal": "WAL",
+      "layout": "split",
+      "send_p99_ms": [
+        4.389,
+        5.332
+      ],
+      "history_p99_ms": [
+        1.112,
+        1.441
+      ],
+      "errors": 0
+    }
+  ],
+  "counterexamples": {
+    "scope": "Abstract counterexample model, not implementation or crypto validation",
+    "restart_each_visit": {
+      "visits": 6,
+      "restored": 0,
+      "recoverable": 25
+    },
+    "checkpointed_scan": {
+      "visits": 3,
+      "restored": 25,
+      "later_access_revisited": true
+    },
+    "bad_candidate_does_not_suppress_good_donor": true,
+    "receipt_without_retained_grant_does_not_close_gap": true,
+    "checked_in_application_modified": false
+  },
+  "planning_conclusions": [
+    "Derive demand from current membership and account history; no durable request queue or approval ledger.",
+    "Retain encrypted transfers and indexes as authoritative private data.",
+    "Persist target-reported successful coverage to avoid redoing full history scans; it is a discardable scheduling hint, not proof of current readability.",
+    "Coverage must reference an available eligible grant or verified direct access; lost grants reopen gaps.",
+    "Retain a small resettable scan checkpoint per donor/account, including fair target/message traversal; restart-at-zero can starve later pages.",
+    "Permit bounded alternate candidates; an unverified upload never closes a gap.",
+    "Derive status counts; no durable counters, permanent failure claims, work leases, or general job queue.",
+    "Use dedicated tables in the configured private-message database unless representative concurrency verification fails.",
+    "Reuse approved-key resolver, identity/authentication, loader and original reader; chat envelope preparation automatically targets whole usernames and is unsuitable unchanged.",
+    "Gate donor enablement on measured foreground behavior, short transactions and an explicit supported journal/timeout policy."
+  ]
+}

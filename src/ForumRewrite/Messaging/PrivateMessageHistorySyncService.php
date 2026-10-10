@@ -1,0 +1,168 @@
+<?php
+declare(strict_types=1);
+namespace ForumRewrite\Messaging;
+use PDO;
+use RuntimeException;
+use InvalidArgumentException;
+final class PrivateMessageHistorySyncService
+{
+    public const BATCH_SIZE = 10;
+    public function __construct(private readonly PrivateMessageStore $messages, private readonly PrivateMessageHistorySyncStore $sync, private readonly PDO $profiles) {}
+    private function context(array $viewer): array
+    {
+        $account=strtolower(trim((string)($viewer['username_token']??'')));
+        $source=strtolower(substr((string)($viewer['identity_id']??''),8));
+        $keys=$this->keys($account);
+        if (($viewer['is_approved']??0)!=1 || !str_starts_with((string)($viewer['identity_id']??''),'openpgp:') || !isset($keys[$source])) throw new RuntimeException('An approved authenticated account key is required.');
+        return [$account,$source,$keys];
+    }
+    private function keys(string $account): array
+    {
+        $keys=[];
+        foreach ((new ApprovedUserKeyResolver())->keysForUsernameToken($this->profiles,$account) as $key) {
+            $fp=strtolower(substr($key['identity_id'],8));
+            if (str_starts_with($key['identity_id'],'openpgp:') && preg_match('/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/D',$fp)) $keys[$fp]=$key['public_key'];
+        }
+        ksort($keys);
+        return $keys;
+    }
+    // Derive authorization from the original, never from donor-supplied account claims.
+    private function eligibleSource(array $message, string $destinationAccount, string $sourceFingerprint): ?array
+    {
+        if (!in_array($destinationAccount, [$message['sender_username_token'], $message['recipient_username_token']], true)) return null;
+        $accounts=[$destinationAccount];
+        if ($message['recipient_username_token']===$destinationAccount) $accounts[]=$message['sender_username_token'];
+        foreach (array_unique($accounts) as $account) {
+            $keys=$this->keys($account);
+            if (isset($keys[$sourceFingerprint])) return ['source_account'=>$account, 'source_key'=>$keys[$sourceFingerprint]];
+        }
+        return null;
+    }
+    public function work(array $viewer, mixed $mode = 'account'): array
+    {
+        if(!in_array($mode,['account','sender'],true)) throw new InvalidArgumentException('Invalid history work mode.');
+        if($mode==='sender') return $this->senderWork($viewer);
+        [$account,$source,$keys]=$this->context($viewer);
+        $position=$this->sync->checkpoint($account,$source);
+        $targets=array_keys($keys);
+        $target=isset($keys[$position['target']])?$position['target']:$targets[0];
+        $after=$target===$position['target']?$position['after_id']:'';
+        if ($after!=='' && $this->messages->historySyncMessage($account,$after)===null) $after='';
+        $page=$this->messages->historySyncPage($account,$after,self::BATCH_SIZE);
+        $next=$page['more']?['target'=>$target,'after_id'=>$page['last']]:['target'=>$targets[(array_search($target,$targets,true)+1)%count($targets)],'after_id'=>''];
+        $messages=$page['messages'];
+        $senderKeys=[];
+        foreach ($messages as &$message) {
+            $sender=$message['sender_username_token'];
+            $senderKeys[$sender]??=array_values($this->keys($sender));
+            $message['sender_keys']=$senderKeys[$sender];
+            $message['digest']=hash('sha256',$message['encrypted_envelope']);
+            $receipt=$this->sync->receipt($account,$target,$message['message_id'],$message['digest']);
+            $message['covered']=$receipt!==null && ($receipt['transfer_id']==='' || $this->eligibleSource($message,$account,$receipt['source']??'')!==null);
+        }
+        unset($message);
+        return ['account'=>$account,'source'=>$source,'target'=>$target,'target_key'=>$keys[$target], 'messages'=>array_values(array_filter($messages,static fn($row)=>!$row['covered'])),
+            'checkpoint'=>$next,'cycle_end'=>!$page['more'] && $next['target']===$targets[0], 'total'=>$this->messages->historySyncCount($account)];
+    }
+    private function senderWork(array $viewer): array
+    {
+        [$account,$source,$keys]=$this->context($viewer);
+        $position=$this->sync->checkpoint($account,$source,true);
+        $anchor=$position['after_id']===''?null:$this->messages->historySyncMessage($account,$position['after_id']);
+        if($position['after_id']!=='' && (!$anchor || $anchor['sender_username_token']!==$account)) $position=['target'=>'','after_id'=>''];
+        $page=$this->messages->historySyncSentPage($account,$position['after_id'],self::BATCH_SIZE);
+        $destination=$page['messages'][0]['recipient_username_token']??'';
+        $targetKeys=$destination===''?[]:$this->keys($destination);
+        $targets=array_keys($targetKeys);
+        $target=isset($targetKeys[$position['target']])?$position['target']:($targets[0]??'');
+        $messages=[];
+        foreach($page['messages'] as $message) {
+            // A bundle has exactly one recipient account; all keys get a turn before advancing history.
+            if($message['recipient_username_token']!==$destination) break;
+            $message['sender_keys']=array_values($keys);
+            $message['digest']=hash('sha256',$message['encrypted_envelope']);
+            $messages[]=$message;
+        }
+        $last=$messages===[]?'':$messages[count($messages)-1]['message_id'];
+        $nextKey=$target===''?null:($targets[array_search($target,$targets,true)+1]??null);
+        $end=$nextKey===null && !$page['more'] && $last===$page['last'];
+        $next=$nextKey!==null?['target'=>$nextKey,'after_id'=>$position['after_id']]:['target'=>'','after_id'=>$end?'':$last];
+        // Never consult recipient coverage: sender work must not reveal recovery or read activity.
+        return ['mode'=>'sender','source_account'=>$account,'account'=>$destination,'source'=>$source,'target'=>$target,
+            'target_key'=>$targetKeys[$target]??null,'messages'=>$target===''?[]:$messages,'checkpoint'=>$next,'cycle_end'=>$end];
+    }
+    private function items(string $account, mixed $items): array
+    {
+        if(!is_array($items) || !array_is_list($items) || count($items)>self::BATCH_SIZE) throw new InvalidArgumentException('Invalid history batch.');
+        $seen=[];
+        foreach($items as &$item) {
+            if(!is_array($item) || !is_string($item['message_id']??null) || !is_string($item['digest']??null) || isset($seen[$item['message_id']])) throw new InvalidArgumentException('Invalid history item.');
+            $row=$this->messages->historySyncMessage($account,$item['message_id']);
+            if(!$row || !hash_equals(hash('sha256',$row['encrypted_envelope']),$item['digest'])) throw new InvalidArgumentException('History changed. Retry synchronization.');
+            $seen[$item['message_id']]=true;
+            $item=['message_id'=>$item['message_id'],'digest'=>$item['digest'],'transfer_id'=>$item['transfer_id']??''];
+            if(!is_string($item['transfer_id'])) throw new InvalidArgumentException('Invalid transfer reference.');
+        }
+        unset($item);return $items;
+    }
+    public function upload(array $viewer, array $input): array
+    {
+        [$account,$source,$keys]=$this->context($viewer);
+        $destination=$input['account']??$account;
+        if(!is_string($destination)) throw new InvalidArgumentException('Invalid destination account.');
+        $destinationKeys=$destination===$account?$keys:$this->keys($destination);
+        $target=$input['target']??null;$ciphertext=$input['ciphertext']??null;
+        if(!is_string($target) || !isset($destinationKeys[$target]) || $target===$source) throw new InvalidArgumentException('Target must be another approved account key.');
+        if(!is_string($ciphertext) || strlen($ciphertext)>65536 || !str_starts_with($ciphertext,'-----BEGIN PGP MESSAGE-----') || !str_contains($ciphertext,'-----END PGP MESSAGE-----')) throw new InvalidArgumentException('Invalid encrypted history transfer.');
+        $items=$this->items($destination,$input['items']??null);
+        foreach($items as $item) {
+            $message=$this->messages->historySyncMessage($destination,$item['message_id']);
+            $eligible=$this->eligibleSource($message,$destination,$source);
+            if(!$eligible || $eligible['source_account']!==$account) throw new InvalidArgumentException('Source is not eligible for this original recipient.');
+        }
+        if($items===[]) throw new InvalidArgumentException('Transfer is empty.');
+        $items=array_map(static fn($item)=>['message_id'=>$item['message_id'],'digest'=>$item['digest']],$items);
+        return ['transfer_id'=>$this->sync->upload($destination,$source,$target,$ciphertext,$items)];
+    }
+    public function transfers(array $viewer, array $query): array
+    {
+        [$account,$target,$keys]=$this->context($viewer);
+        $id=$query['message_id']??null;$after=$query['after']??'';
+        if(!is_string($id) || strlen($id)>128 || !is_string($after) || ($after!=='' && !preg_match('/^[a-f0-9]{64}$/D',$after))) throw new InvalidArgumentException('Invalid transfer query.');
+        $row=$this->messages->historySyncMessage($account,$id);
+        if(!$row) throw new InvalidArgumentException('History message unavailable.');
+        $digest=hash('sha256',$row['encrypted_envelope']);
+        $rows=$this->sync->candidates($account,$target,$id,$digest,$after);
+        $more=count($rows)>10;$rows=array_slice($rows,0,10);
+        $next=$more?$rows[count($rows)-1]['transfer_id']:null;
+        $rows=array_values(array_filter($rows,fn($r)=>$this->eligibleSource($row,$account,$r['source'])!==null));
+        foreach($rows as &$r) $r+=$this->eligibleSource($row,$account,$r['source']);
+        unset($r);
+        return ['account'=>$account,'target'=>$target,'message_id'=>$id,'digest'=>$digest,'transfers'=>$rows,'next'=>$next];
+    }
+    public function acknowledge(array $viewer, array $input): array
+    {
+        [$account,$source,$keys]=$this->context($viewer);
+        $items=$this->items($account,$input['items']??[]);
+        foreach($items as $item) {
+            if($item['transfer_id']==='') continue; // authenticated target reports verified direct access
+            $candidate=$this->sync->candidate($account,$source,$item['message_id'],$item['digest'],$item['transfer_id']);
+            if(!$candidate || $this->eligibleSource($this->messages->historySyncMessage($account,$item['message_id']),$account,$candidate['source'])===null) throw new InvalidArgumentException('Transfer is no longer eligible.');
+        }
+        $checkpoint=$input['checkpoint']??null;
+        $mode=$input['mode']??'account';
+        if(!in_array($mode,['account','sender'],true)) throw new InvalidArgumentException('Invalid history work mode.');
+        if($checkpoint!==null) {
+            if(!is_array($checkpoint) || !is_string($checkpoint['target']??null) || !is_string($checkpoint['after_id']??null) || strlen($checkpoint['after_id'])>128) throw new InvalidArgumentException('Invalid scan checkpoint.');
+            if($mode==='account' && !isset($keys[$checkpoint['target']])) throw new InvalidArgumentException('Invalid scan target.');
+            if($mode==='sender') {
+                if($checkpoint['target']!=='' && !preg_match('/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/D',$checkpoint['target'])) throw new InvalidArgumentException('Invalid scan target.');
+                $anchor=$checkpoint['after_id']===''?null:$this->messages->historySyncMessage($account,$checkpoint['after_id']);
+                if($checkpoint['after_id']!=='' && (!$anchor || $anchor['sender_username_token']!==$account)) throw new InvalidArgumentException('Invalid outgoing scan anchor.');
+            }
+        }
+        if($items!==[]) $this->sync->acknowledge($account,$source,$items);
+        if($checkpoint!==null) $this->sync->advance($account,$source,$checkpoint['target'],$checkpoint['after_id'],$mode==='sender');
+        return ['confirmed'=>count($items)];
+    }
+}

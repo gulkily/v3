@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "mode": "sender-assisted",
+  "messages": 31,
+  "checks": [
+    "no global history-sync notice or retry button",
+    "real signed approvals",
+    "recipient donors absent",
+    "restored sender contribution",
+    "separate donor visits",
+    "partial donors",
+    "three-plus batches",
+    "retained reload",
+    "restored-device forwarding",
+    "mobile",
+    "draft preservation",
+    "no-store/auth/origin",
+    "original ciphertext unchanged",
+    "private paired backup/restore",
+    "sync outage with normal send",
+    "no plaintext/key logging"
+  ],
+  "syncRequests": 992,
+  "local_artifacts": "/tmp/history-sync-browser-DzauTs"
+}

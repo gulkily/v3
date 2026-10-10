@@ -150,7 +150,11 @@ final class TemplateRenderer
 
         $navItems = $this->navItems($viewerProfile);
         if (array_filter($navItems, static fn (array $item): bool => $item['section'] === 'messages')) {
-            $scriptPaths[] = '/assets/private_message_unread.js';
+            $scriptPaths = array_merge($scriptPaths, [
+                '/assets/openpgp_loader.js', '/assets/browser_signing.js',
+                '/assets/private_message_unread.js', '/assets/private_message_history_crypto.js',
+                '/assets/private_message_history_sync.js',
+            ]);
         }
         $scriptPaths = array_values(array_unique($scriptPaths));
         $assetScriptPaths = [];

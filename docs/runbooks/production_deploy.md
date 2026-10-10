@@ -67,6 +67,7 @@ Optional runtime setting:
 - `FAST_SCORING_DATABASE_PATH`: optional private SQLite score-state path; defaults to `<application-root>/state/private/fast_scores.sqlite3`.
 - `FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED`: when `true` alongside `FAST_SCORING_ENABLED`, creates private score work for newly published posts only; defaults to `false`.
 - `PRIVATE_MESSAGE_DATABASE_PATH`: optional private SQLite mailbox path; defaults to `<application-root>/state/private/messages.sqlite3`.
+- `PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH`: separate private history-transfer SQLite path; defaults to `<application-root>/state/private/message_history_sync.sqlite3`. Must resolve to a different file from the mailbox.
 
 ## Writable Paths
 
@@ -81,7 +82,7 @@ The web user must be able to write:
 - the parent directory of `VISITOR_STATISTICS_DATABASE_PATH` when visitor statistics are in use
 - the parent directory of `FORUM_TASK_QUEUE_DATABASE_PATH` when the internal task queue is enabled
 - the parent directory of `FAST_SCORING_DATABASE_PATH` when Fastmod sweeps are enabled
-- the parent directory of `PRIVATE_MESSAGE_DATABASE_PATH` when private messaging is enabled
+- the parent directories of `PRIVATE_MESSAGE_DATABASE_PATH` and `PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH` when private messaging is enabled
 Static HTML is derived state. A write removes the `current` release pointer, so
 subsequent public requests use PHP until a fresh complete release is published.
 Old release directories are retained and are never edited in place.
@@ -288,28 +289,39 @@ Use `refresh-template` after upgrades to rewrite the private config with current
 metadata. It is authoritative runtime state: unlike the read model and static
 artifacts, it cannot be rebuilt from the canonical repository. It must remain
 outside the document root, canonical repository, static release root, and
-offline snapshot tree.
+offline snapshot tree. Encrypted history transfers and sync checkpoints/receipts
+live separately in `PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH`. Preserve both
+stores: losing retained transfers can remove a newer device's historical access
+when no donor remains. The sync store initializes lazily and can fail without
+blocking ordinary messaging. See the [history-sync API and operations guide](../plans/private_message_history_sync/private_message_history_sync_rollout.md).
 
 Use a dedicated directory readable only by the deployment and web-service
 users (for example, directory mode `0700` and SQLite database/sidecar mode
-`0600`). Check the database plus any `-wal` and `-shm` sidecars after deploys
+`0600`). Check both databases plus any `-journal`, `-wal` and `-shm` sidecars after deploys
 or ownership changes. The application does not retain browser private keys;
 backing up this database preserves envelopes, not users' ability to decrypt a
 lost browser key.
 
-Back up the mailbox with SQLite's consistent backup mechanism, not a raw copy
-made while the database is active. For example, on a host with `sqlite3`:
+Quiesce message and sync writes and drain requests across both captures for a
+common backup point. Resolve both configured paths first. Use SQLite's consistent
+backup mechanism, not a live raw file copy. For example, with writes stopped:
 
 ```bash
 sqlite3 "$PRIVATE_MESSAGE_DATABASE_PATH" ".backup '/secure/backups/messages-$(date +%F).sqlite3'"
 sqlite3 "/secure/backups/messages-$(date +%F).sqlite3" 'PRAGMA integrity_check;'
+sqlite3 "$PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH" ".backup '/secure/backups/message-history-sync-$(date +%F).sqlite3'"
+sqlite3 "/secure/backups/message-history-sync-$(date +%F).sqlite3" 'PRAGMA integrity_check;'
 ```
 
 Test restoration in a non-production path before relying on a backup. Stop
-mailbox writes or take the application out of service for the restore, replace
-the mailbox database with the verified backup, restore owner and restrictive
-permissions, then reopen the application and check both an Inbox and Sent
-list. Do not place a mailbox backup under `public/` or in a static release.
+message/sync writes or take the application out of service for the restore,
+replace both files with their verified matching backups and compatible approval
+state, restore owner and restrictive permissions, then reopen Messages and
+verify sent/received history, reload and donor-assisted recovery. Mismatched
+captures reject changed/orphaned bindings and reopen missing coverage; lost
+transfers can still require a returning donor. On code rollback retain both files;
+prior code ignores sync storage and re-upgrade resumes it. Do not place private
+backups under `public/`, the canonical repository, or a static release.
 
 There is no automatic message deletion in this release. Set and document a
 local retention period appropriate to the forum's low-value-content policy;
@@ -650,3 +662,13 @@ Before launch, verify:
 - [operator_recovery.md](operator_recovery.md)
 - [apache_vhost.conf](../examples/apache_vhost.conf)
 - [env.production.example](../examples/env.production.example)
+
+## On-demand content import
+
+After deployment, operators can use `./v3 import-instance` to download and merge
+public forum content from another instance. No migration or cron setup is needed.
+Use the running instance's repository/database/static-root configuration and
+validate a disposable import with the target host's PHP, SQLite, zlib/OpenSSL,
+Git, and gzip tooling first. Follow the
+[import deployment check](instance_content_import.md#requirements-limits-and-deployment-check)
+for preview, coverage review, served-view verification, and repeat-run checks.

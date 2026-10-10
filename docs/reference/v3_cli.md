@@ -4,8 +4,9 @@
 below can also be invoked directly as `php scripts/<script>.php ...`; the `./v3`
 form is the shorthand used elsewhere in this repo's docs.
 
-Run `./v3` with no arguments to print the same command list from the script
-itself (useful if this document drifts from `v3`).
+Run `./v3 help`, `./v3 --help`, or `./v3 -h` to print the command list.
+Running `./v3` with no arguments also prints it (with exit code 1).
+Use `./v3 import-instance --help` for remote-import options and recovery.
 
 ## CLI error-handling contract
 
@@ -251,6 +252,46 @@ work from historical backfill, and shows batch progress and reservation state.
 Use `--verbose` for recent individual work rows. See
 [Fastmod](fast_post_scoring.md) for pricing configuration, retention, and the
 controlled operator workflow.
+
+## Import content from a remote instance
+
+```
+./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
+./v3 import-instance --resume [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
+```
+
+Downloads the source's public repository archive, merges supported public forum
+content while preserving destination settings/approval authority, and publishes
+local views. Hostnames use HTTPS; short names require a JSON object mapping names
+to URLs in `--sources`. URLs may include an instance base path. Conflicts retain
+local records. Legacy creation dates are recovered from isolated source history
+and retained as hash-bound metadata without changing signed post bytes. See the
+[import runbook](../runbooks/instance_content_import.md) for limits and recovery.
+
+- `--dry-run` — download and validate the archive, then report proposed imports,
+  duplicates, conflicts, and exclusions without changing destination records,
+  commits, the read model, or published views. Temporary downloads and lock files
+  may be created. Cannot be combined with `--resume`.
+- `--verbose` — list every rejected/excluded file and dependency root cause.
+  The default output groups review causes and summarizes intentional exclusions.
+
+Preview an import:
+
+```bash
+./v3 import-instance https://forum.example --dry-run
+```
+
+Remove `--dry-run` to perform the import.
+
+Exit codes are 0 for complete supported-content results, 2 for partial results
+requiring review, and 1 for failures. Reports group exclusions and rejected
+records; `--verbose` includes per-file details. `--resume` recovers a saved interrupted run without another download;
+use the original destination options and site profile. The destination must be
+initialized with a clean Git checkout. Scheduling, authenticated sources, and
+web controls are deferred.
+
+See [Instance Content Import](../runbooks/instance_content_import.md) for coverage,
+alias examples, fixed transfer/archive limits, publication, and recovery.
 
 ## Import a repository archive
 

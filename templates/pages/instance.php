@@ -55,11 +55,12 @@
 <?php endforeach; ?>
     </ul>
     <h3>Why this matters</h3>
-    <p>These downloads are complete snapshots of the forum data, not partial exports. They preserve the full board as it exists at that moment, which makes them an insurance policy of sorts: if the board is changed in ways the community did not choose or consent to, the data needed to restore, migrate, or independently preserve it still exists.</p>
+    <p>These downloads preserve the forum's canonical public content and its history, together with a searchable index. With the application software and a new deployment, they support independent restoration, migration, or forking of the public board if the original service changes or disappears.</p>
+    <p>They are not a complete instance backup. Private messages and separately stored operational data, browser-local keys and drafts, application software, deployment configuration and secrets, and externally hosted media are not included.</p>
     <h3>Explain it like I'm five</h3>
-    <p>Think of these downloads like a backup copy of the whole forum. They do not just save a few pieces, they save everything needed to keep the board alive somewhere else. If someone changes the board in a way the community did not agree to, this gives people a way to put it back, move it, or preserve it.</p>
+    <p>Think of these downloads as a copy of the public forum's records, not a copy of everything on the server or in your browser. Someone can use those records to rebuild the public board elsewhere, but private conversations and other excluded data need separate backups. A saved link to a video does not save the video itself.</p>
     <h3>For technical users</h3>
-    <p>The downloadable artifacts are sufficient to reconstruct the board in a self-hosted or independently archived form. The repository archive preserves the canonical content and its history, while the SQLite read-model provides a ready-made local index for query and inspection. Together, they make the forum portable, auditable, and resilient against unilateral platform or administrator actions.</p>
-    <p>In other words, these files reduce trust requirements. Users do not have to rely on a live server remaining benevolent, stable, or even available in order to retain access to the board's full state. If governance fails or the service is modified without community consent, the data needed to verify, migrate, and continue the forum remains available outside that control surface.</p>
+    <p>The repository archive preserves the canonical content and its Git history, including public identity and governance records. The canonical index can be rebuilt from those records. The SQLite download serves the current database file, which may also contain supplemental workflow records; it is not a curated export of selected tables. The application software and deployment setup must be obtained separately.</p>
+    <p>The repository and index are downloaded separately and are not guaranteed to represent the same instant; the index may lag behind the repository. These files reduce dependence on the original operator for preserving and verifying the public record, but they do not preserve the instance's full private and operational state.</p>
   </article>
 </section>
