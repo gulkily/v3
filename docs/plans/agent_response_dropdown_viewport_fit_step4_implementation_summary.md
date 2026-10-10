@@ -11,3 +11,13 @@
   - Manual browser check not yet run in this environment; to be covered in Stage 3.
 - Notes:
   - No CSS change was needed; the inline style takes precedence over the static rule.
+
+## Stage 2 - Scroll/resize anchoring and auto-close
+- Changes:
+  - Added `syncAgentResponseModeMenu` in `public/assets/post_analysis.js`: repositions the open menu and closes it when the trigger is fully outside the viewport.
+  - Scroll (capture, so nested scroll containers count) and resize listeners are added on open and removed in `closeAgentResponseModeMenu`; `addEventListener` with the same function reference prevents stacking.
+- Verification:
+  - `node --check public/assets/post_analysis.js` passes.
+  - Manual browser scroll/resize check not yet run in this environment; to be covered in Stage 3.
+- Notes:
+  - Existing close paths (Escape, outside click, close button, re-click) all go through the same close function, so listeners are always removed.

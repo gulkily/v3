@@ -509,11 +509,26 @@
     }
   }
 
+  function syncAgentResponseModeMenu() {
+    if (!agentResponseModeMenu || agentResponseModeMenu.hidden || !agentResponseModeTrigger) {
+      return;
+    }
+    const bounds = agentResponseModeTrigger.getBoundingClientRect();
+    if (bounds.bottom <= 0 || bounds.top >= window.innerHeight
+      || bounds.right <= 0 || bounds.left >= window.innerWidth) {
+      closeAgentResponseModeMenu(false);
+      return;
+    }
+    positionAgentResponseModeMenu(agentResponseModeMenu, agentResponseModeTrigger);
+  }
+
   function closeAgentResponseModeMenu(restoreFocus) {
     if (!agentResponseModeMenu || agentResponseModeMenu.hidden) {
       return;
     }
     const trigger = agentResponseModeTrigger;
+    window.removeEventListener("scroll", syncAgentResponseModeMenu, true);
+    window.removeEventListener("resize", syncAgentResponseModeMenu);
     agentResponseModeMenu.hidden = true;
     if (trigger) {
       trigger.setAttribute("aria-expanded", "false");
@@ -629,6 +644,8 @@
     button.setAttribute("aria-expanded", "true");
     menu.hidden = false;
     positionAgentResponseModeMenu(menu, button);
+    window.addEventListener("scroll", syncAgentResponseModeMenu, true);
+    window.addEventListener("resize", syncAgentResponseModeMenu);
     const firstChoice = menu.querySelector('[data-response-mode]');
     if (firstChoice) {
       firstChoice.focus();
