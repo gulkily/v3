@@ -44,7 +44,7 @@ async function main() {
   assert.equal(reload.field.value, 'newer draft');
   await reload.send();
   assert.equal(calls.length, 1, 'edited draft must not replace unresolved attempt');
-  request = async () => ({ ok: true, async json() { return { status: 'ok', message: { message_id: calls.at(-1).message_id } }; } });
+  request = async () => ({ ok: true, async json() { return { status: 'ok', message: { message_id: calls.at(-1).message_id, sender_username_token: 'alice', recipient_username_token: 'bob', created_at: '2026-10-09T12:00:00Z' } }; } });
   await reload.check();
   assert.deepEqual(calls[1], calls[0]);
   assert.equal(preparations, 1);
@@ -69,6 +69,12 @@ async function main() {
   assert.match(unavailable.feedback.textContent, /recovery is unavailable/);
   await unavailable.send();
   assert.match(unavailable.feedback.textContent, /cannot be saved/);
+  const malformed = composer('alice', true);
+  malformed.type('retain on malformed acknowledgment');
+  request = async () => ({ ok: true, async json() { return { status: 'ok', message: { message_id: 'wrong' } }; } });
+  await malformed.send();
+  assert.equal(malformed.field.value, 'retain on malformed acknowledgment');
+  assert.match(malformed.feedback.textContent, /did not match/);
   process.stdout.write('draft recovery checks passed\n');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

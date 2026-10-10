@@ -30,6 +30,26 @@
     if (!root || root.dataset.conversationBound) return;
     root.dataset.conversationBound = '1';
     format(root);
+    root.addEventListener('private-message-sent', function (event) {
+      event.preventDefault();
+      const detail = event.detail;
+      const message = detail.message;
+      const transcript = root.querySelector('[data-role="private-message-transcript"]');
+      if (Array.from(transcript.querySelectorAll('[data-private-message-id]')).some(card => card.dataset.privateMessageId === message.message_id)) return;
+      root.dispatchEvent(new CustomEvent('private-message-before-append'));
+      const card = root.querySelector('[data-role="private-message-template"]').content.firstElementChild.cloneNode(true);
+      card.dataset.privateMessageId = message.message_id;
+      card.dataset.sender = message.sender_username_token;
+      card.dataset.createdAt = message.created_at;
+      const later = Array.from(transcript.querySelectorAll('[data-private-message-id]')).find(item => item.dataset.createdAt > message.created_at);
+      transcript.insertBefore(card, later || null);
+      root.querySelector('[data-role="private-message-empty"]').hidden = true;
+      format(root);
+      window.ForumPrivateMessageReader.readCard('conversation', card, root.dataset.counterpartUsernameToken,
+        Object.assign({}, message, { encrypted_envelope: detail.encryptedEnvelope })).then(function () {
+        root.dispatchEvent(new CustomEvent('private-message-appended', { detail: { card: card } }));
+      });
+    });
   }
   window.ForumPrivateMessageConversation = { bind: bind, format: format };
   document.addEventListener('DOMContentLoaded', function () {

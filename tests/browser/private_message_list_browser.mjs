@@ -111,6 +111,10 @@ try {
   await page.getByLabel('Username', { exact: true }).fill('bob');
   await page.getByRole('button', { name: 'Open conversation' }).click();
   await page.waitForURL('**/messages/conversation/bob');
+  await page.evaluate(() => {
+    window.chatDocumentMarker = 'same-document';
+    document.addEventListener('private-message-sent', event => { window.lastChatConfirmation = event.detail; });
+  });
   await page.locator('textarea[name="plaintext"]').fill('Browser first message');
   let failSend = true;
   await page.route('**/api/private_messages', route => failSend ? route.fulfill({ status: 503, json: { status: 'error', error: 'Test delivery failure' } }) : route.continue());
@@ -123,6 +127,9 @@ try {
   await page.locator('textarea').fill('Browser follow-up');
   await page.getByRole('button', { name: 'Send private message' }).click();
   await page.locator('[data-role="private-message-plaintext"]').filter({ hasText: 'Browser follow-up' }).waitFor();
+  assert.equal(await page.evaluate(() => window.chatDocumentMarker), 'same-document', 'Successful sends must not reload');
+  await page.evaluate(() => document.querySelector('[data-private-message-composer]').dispatchEvent(new CustomEvent('private-message-sent', { bubbles: true, cancelable: true, detail: window.lastChatConfirmation })));
+  assert.equal(await page.locator('[data-private-message-id]').count(), 2, 'Repeated confirmation must not append twice');
   if (process.env.PRIVATE_MESSAGE_DENSITY_BASELINE === '1') {
     const density = await page.locator('[data-private-message-id]').evaluateAll(cards => {
       for (const card of cards) card.querySelector('[data-role="private-message-plaintext"]').textContent = 'A representative short message.';

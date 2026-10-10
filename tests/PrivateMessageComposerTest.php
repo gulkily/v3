@@ -67,7 +67,7 @@ global.window = {
 };
 global.fetch = async function(url, options) {
   calls.push({ url, body: String(options.body) });
-  return { ok: !shouldFail, async json() { return shouldFail ? { status: 'error', error: 'Temporary failure.' } : { status: 'ok', message: { message_id: 'private-fixed-id' } }; } };
+  return { ok: !shouldFail, async json() { return shouldFail ? { status: 'error', error: 'Temporary failure.' } : { status: 'ok', message: { message_id: 'private-fixed-id', sender_username_token: 'alice', recipient_username_token: 'ilyag', created_at: '2026-10-09T12:00:00Z' } }; } };
 };
 global.document = { addEventListener() {}, querySelectorAll() { return []; } };
 vm.runInThisContext(source);

@@ -69,7 +69,11 @@
     });
     const payload = await response.json();
     if (!response.ok || !payload || payload.status !== "ok") throw new Error(String(payload && payload.error || "Unable to confirm the private message."));
-    return payload.message || {};
+    const message = payload.message;
+    if (!message || message.message_id !== attempt.messageId || message.sender_username_token !== token(root, "senderUsernameToken") || message.recipient_username_token !== token(root, "recipientUsernameToken") || !message.created_at || Number.isNaN(new Date(message.created_at).getTime())) {
+      throw new Error("The delivery confirmation did not match this attempt.");
+    }
+    return message;
   }
   function bind(root) {
     if (!root || !root.dataset || root.dataset.privateMessageComposerBound === "1") return false;
@@ -123,18 +127,22 @@
       persist();
       setFeedback(feedback, pending ? "Checking previous delivery..." : "Encrypting and sending private message...", "ok");
       try {
-        await submit(root, messageId, plaintext, function (attempt) {
+        const message = await submit(root, messageId, plaintext, function (attempt) {
           pending = Object.assign(attempt, { snapshotVersion: snapshotVersion });
           persist();
           recovery();
         });
+        const encryptedEnvelope = pending.encryptedEnvelope;
         pending = null;
         attempts.delete(root);
         if (version === snapshotVersion) { field.value = ""; version = newMessageId(); }
         persist();
         setFeedback(feedback, saved ? "Private message sent." : "Private message sent. Your newer draft cannot be saved; keep this page open.", saved ? "ok" : "error");
         const successUrl = String(root.dataset.privateMessageSuccessUrl || "");
-        if (successUrl && saved && window.location && window.location.assign) window.location.assign(successUrl);
+        const handled = root.dispatchEvent && !root.dispatchEvent(new CustomEvent('private-message-sent', {
+          bubbles: true, cancelable: true, detail: { message: message, encryptedEnvelope: encryptedEnvelope },
+        }));
+        if (!handled && successUrl && saved && window.location && window.location.assign) window.location.assign(successUrl);
       } catch (error) {
         setFeedback(feedback, (error instanceof Error ? error.message : "Unable to confirm delivery.") + (pending ? " Delivery is unconfirmed; check the previous send before sending another." : "") + (!saved ? " Recovery cannot be saved; keep this page open." : ""), "error");
       } finally {
