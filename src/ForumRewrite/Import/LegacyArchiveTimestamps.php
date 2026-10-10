@@ -7,11 +7,16 @@ namespace ForumRewrite\Import;
 use ForumRewrite\Canonical\CanonicalRecordParseException;
 use ForumRewrite\Canonical\LegacyPostTimestamp;
 use ForumRewrite\Canonical\PostRecordParser;
+use Closure;
 use RuntimeException;
 
 /** Reads source history only in a private, reconstructed bare repository. */
 final class LegacyArchiveTimestamps
 {
+    public function __construct(private readonly ?Closure $progress = null)
+    {
+    }
+
     public static function isHistoryPath(string $path): bool
     {
         return in_array($path, ['.git/HEAD', '.git/packed-refs'], true)
@@ -20,15 +25,21 @@ final class LegacyArchiveTimestamps
 
     public function recover(string $root): int
     {
+        $progress = new ImportProgress($this->progress);
+        $progress->start('Legacy timestamps: inspecting source history...');
         $history = $root . '/.import-history';
         $headFile = $history . '/HEAD';
         if (!is_file($headFile) || filesize($headFile) > 4096) {
+            $progress->update('Legacy timestamps: no usable source history; skipping recovery', true);
             return 0;
         }
         $head = trim((string) file_get_contents($headFile));
         if (preg_match('#^ref: (refs/heads/[A-Za-z0-9._/-]+)$#D', $head, $match)) {
             $ref = $match[1];
-            if (array_intersect(explode('/', $ref), ['', '.', '..']) !== []) { return 0; }
+            if (array_intersect(explode('/', $ref), ['', '.', '..']) !== []) {
+                $progress->update('Legacy timestamps: unusable source history reference; skipping recovery', true);
+                return 0;
+            }
             $head = '';
             if (is_file($history . '/' . $ref) && filesize($history . '/' . $ref) <= 4096) {
                 $head = trim((string) file_get_contents($history . '/' . $ref));
@@ -38,7 +49,10 @@ final class LegacyArchiveTimestamps
                 }
             }
         }
-        if (preg_match('/^[a-f0-9]{40}$/D', $head) !== 1) { return 0; }
+        if (preg_match('/^[a-f0-9]{40}$/D', $head) !== 1) {
+            $progress->update('Legacy timestamps: no usable source history tip; skipping recovery', true);
+            return 0;
+        }
         // No source configuration, hooks, replacements, grafts, alternates, or index.
         file_put_contents($headFile, $head . "\n");
         file_put_contents($history . '/config', "[core]\nrepositoryformatversion = 0\nbare = true\n");
@@ -47,7 +61,11 @@ final class LegacyArchiveTimestamps
         }
         $deadline = microtime(true) + 120;
         $count = 0;
-        foreach (ContentImportPlanner::files($root) as $path) {
+        $candidates = [];
+        $paths = ContentImportPlanner::files($root);
+        $progress->start('Legacy timestamps: scanning record files...');
+        foreach ($paths as $index => $path) {
+            $progress->update(sprintf('Legacy timestamps: scanned %d/%d record files; %d posts need dates', $index, count($paths), count($candidates)));
             if (!str_starts_with($path, 'records/posts/') || !str_ends_with($path, '.txt')
                 || !ArchiveRecordCatalog::isRecordPath($path) || filesize($root . '/' . $path) > 16 * 1024 * 1024) { continue; }
             $id = basename($path, '.txt');
@@ -60,10 +78,21 @@ final class LegacyArchiveTimestamps
             } catch (CanonicalRecordParseException $error) {
                 if ($error->getMessage() !== 'Missing required post header: Created-At') { continue; }
             }
+            $candidates[] = $path;
+        }
+        $progress->update(sprintf('Legacy timestamp scan complete: %d record files; %d posts need dates', count($paths), count($candidates)), true);
+        $progress->start(sprintf('Legacy timestamp recovery: 0/%d posts checked', count($candidates)));
+        foreach ($candidates as $index => $path) {
+            $id = basename($path, '.txt');
+            $metadata = $root . '/' . LegacyPostTimestamp::path($id);
+            if (file_exists($metadata)) { continue; }
+            $contents = (string) file_get_contents($root . '/' . $path);
+            $message = sprintf('Legacy timestamp recovery: checking post %d/%d; %d dates recovered', $index + 1, count($candidates), $count);
+            $progress->update($message);
             // Only assign history dates when the downloaded bytes match the tracked tip.
-            $blob = trim($this->git($history, ['rev-parse', '--verify', $head . ':' . $path], $deadline) ?? '');
+            $blob = trim($this->git($history, ['rev-parse', '--verify', $head . ':' . $path], $deadline, $progress, $message) ?? '');
             if ($blob !== sha1('blob ' . strlen($contents) . "\0" . $contents)) { continue; }
-            $log = $this->git($history, ['log', '--no-ext-diff', '--no-textconv', '--diff-filter=A', '--follow', '--format=%aI', $head, '--', $path], $deadline);
+            $log = $this->git($history, ['log', '--no-ext-diff', '--no-textconv', '--diff-filter=A', '--follow', '--format=%aI', $head, '--', $path], $deadline, $progress, $message);
             if ($log === null || trim($log) === '') { continue; }
             $dates = explode("\n", trim($log));
             $raw = end($dates);
@@ -75,10 +104,11 @@ final class LegacyArchiveTimestamps
             }
             $count++;
         }
+        $progress->update(sprintf('Legacy timestamp recovery complete: %d/%d posts checked; %d dates recovered', count($candidates), count($candidates), $count), true);
         return $count;
     }
 
-    private function git(string $directory, array $arguments, float $deadline): ?string
+    private function git(string $directory, array $arguments, float $deadline, ImportProgress $progress, string $message): ?string
     {
         // A fresh environment also blocks caller-provided Git configuration/objects.
         $env = ['PATH' => '/usr/bin:/bin', 'GIT_CONFIG_NOSYSTEM' => '1', 'GIT_CONFIG_GLOBAL' => '/dev/null',
@@ -100,6 +130,7 @@ final class LegacyArchiveTimestamps
                     $output .= stream_get_contents($pipes[1]);
                     return $status['exitcode'] === 0 ? $output : null;
                 }
+                $progress->update($message);
                 usleep(10000);
             } while (true);
         } finally {

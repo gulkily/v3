@@ -46,6 +46,12 @@ implicitly identify a remote server. Explicit destination overrides are:
   --static-html-root=/srv/forum-state/static_html
 ```
 
+Archive preparation reports separate validation, gzip integrity, extraction,
+and legacy timestamp phases. Longer phases update roughly once per second with
+elapsed time, checked entries or files, processed MiB, and recovered-date counts
+where applicable. Extraction totals include temporary history files used for
+legacy dates; they are not counts of records that will be imported.
+
 The defaults are the existing `FORUM_REPOSITORY_ROOT`, `FORUM_DATABASE_PATH`,
 and `FORUM_STATIC_HTML_ROOT` environment settings, or the application's local
 repository/cache and active profile's static root. The command prints resolved

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Import;
 
+use Closure;
 use RuntimeException;
 
 /** Bounded tar.gz reader. Validates every entry before extracting records plus isolated objects for legacy date recovery. */
@@ -13,6 +14,7 @@ final class RepositoryArchive
         private readonly int $maxCompressedBytes = 268435456,
         private readonly int $maxExpandedBytes = 1073741824,
         private readonly int $maxEntries = 100000,
+        private readonly ?Closure $progress = null,
     ) {
     }
 
@@ -25,6 +27,8 @@ final class RepositoryArchive
         if ($stream === false) {
             throw new RuntimeException('Unable to open gzip archive.');
         }
+        $progress = new ImportProgress($this->progress);
+        $progress->start('Archive validation: scanning entries...');
         $offset = 0;
         $entries = [];
         $roots = [];
@@ -44,6 +48,7 @@ final class RepositoryArchive
                         }
                         $offset += strlen($tail);
                         $this->checkSize($offset);
+                        $progress->update(sprintf('Archive validation: %d entries, %.1f MiB checked', count($entries), $offset / 1048576));
                     }
                     break;
                 }
@@ -91,6 +96,7 @@ final class RepositoryArchive
                     $length = min(65536, $remaining);
                     $this->read($stream, $length, $offset);
                     $remaining -= $length;
+                    $progress->update(sprintf('Archive validation: %d entries, %.1f MiB checked', count($entries), $offset / 1048576));
                 }
             }
         } finally {
@@ -99,16 +105,32 @@ final class RepositoryArchive
         if ($longName !== null || count($roots) !== 1) {
             throw new RuntimeException('Archive must contain one unambiguous records/ root.');
         }
+        $progress->update(sprintf('Archive validation complete: %d entries, %.1f MiB checked', count($entries), $offset / 1048576), true);
+        $progress->start('Archive integrity: checking gzip checksum...');
         // gzip verifies the trailer/CRC; the preceding pass already bounded decompression.
         $process = proc_open(['gzip', '-t', '--', $archive], [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['pipe', 'w']], $pipes);
         if (!is_resource($process)) {
             throw new RuntimeException('Unable to validate gzip archive.');
         }
-        $error = stream_get_contents($pipes[2]);
-        fclose($pipes[2]);
-        if (proc_close($process) !== 0) {
+        stream_set_blocking($pipes[2], false);
+        $error = '';
+        try {
+            do {
+                $error .= stream_get_contents($pipes[2]);
+                $status = proc_get_status($process);
+                if (!$status['running']) { break; }
+                $progress->update('Archive integrity: checking gzip checksum...');
+                usleep(100000);
+            } while (true);
+            $error .= stream_get_contents($pipes[2]);
+        } finally {
+            fclose($pipes[2]);
+            proc_close($process);
+        }
+        if ($status['exitcode'] !== 0) {
             throw new RuntimeException('Invalid gzip archive: ' . trim($error));
         }
+        $progress->update('Archive integrity check complete', true);
         if (file_exists($directory) || is_link($directory)) {
             throw new RuntimeException('Extraction directory must not already exist.');
         }
@@ -118,6 +140,18 @@ final class RepositoryArchive
         $prefix = (string) array_key_first($roots);
         $prefix = $prefix === '' ? '' : $prefix . '/';
         $excluded = [];
+        $totalFiles = 0;
+        $totalBytes = 0;
+        foreach ($entries as $path => $entry) {
+            if (!$entry['directory'] && str_starts_with($path, $prefix)
+                && (str_starts_with($path, $prefix . 'records/') || LegacyArchiveTimestamps::isHistoryPath(substr($path, strlen($prefix))))) {
+                $totalFiles++;
+                $totalBytes += $entry['size'];
+            }
+        }
+        $copiedFiles = 0;
+        $copiedBytes = 0;
+        $progress->start(sprintf('Archive extraction: 0/%d files, 0.0/%.1f MiB', $totalFiles, $totalBytes / 1048576));
         $stream = gzopen($archive, 'rb');
         try {
             foreach ($entries as $path => $entry) {
@@ -151,16 +185,21 @@ final class RepositoryArchive
                         if (fwrite($output, $chunk) !== strlen($chunk)) {
                             throw new RuntimeException('Unable to write extracted record.');
                         }
+                        $copiedBytes += strlen($chunk);
+                        $progress->update(sprintf('Archive extraction: %d/%d files, %.1f/%.1f MiB', $copiedFiles, $totalFiles, $copiedBytes / 1048576, $totalBytes / 1048576));
                     }
                 } finally {
                     fclose($output);
                 }
+                $copiedFiles++;
+                $progress->update(sprintf('Archive extraction: %d/%d files, %.1f/%.1f MiB', $copiedFiles, $totalFiles, $copiedBytes / 1048576, $totalBytes / 1048576));
             }
         } finally {
             gzclose($stream);
         }
+        $progress->update(sprintf('Archive extraction complete: %d/%d files, %.1f MiB', $copiedFiles, $totalFiles, $copiedBytes / 1048576), true);
         return ['root' => $directory, 'excluded_archive_categories' => $excluded,
-            'recovered_legacy_timestamps' => (new LegacyArchiveTimestamps())->recover($directory)];
+            'recovered_legacy_timestamps' => (new LegacyArchiveTimestamps($this->progress))->recover($directory)];
     }
 
     private function read($stream, int $length, int &$offset): string

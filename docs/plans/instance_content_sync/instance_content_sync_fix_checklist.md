@@ -35,4 +35,14 @@ this checklist with its validation results.
   further record depends on conflicting `root-001`. Default output groups these
   causes; `--verbose` retains per-file detail. No destination content was changed.
 
+- [x] 4. Show archive preparation progress. Report validation entry/byte counts,
+  gzip integrity heartbeats, extraction file/byte totals, and legacy timestamp
+  scan/recovery counts with per-phase elapsed time. Throttle intermediate output
+  to roughly once per second, including during individual history queries.
+  Validation: 13/13 focused archive, legacy, and CLI tests passed (including
+  closed-pipe handling); PHP lint and diff checks passed. The live preview kept
+  the same counts and produced no PHP warnings. Validation/integrity/extraction
+  took about 2.5 seconds; legacy history lookup took 33.6 seconds for 59 dates,
+  with visible progress throughout. No destination content was changed.
+
 Scheduling, web UI, and importing source authority remain outside this work.

@@ -63,7 +63,7 @@ try {
         $progress('Downloading repository archive...');
         $bytes = (new InstanceArchiveDownloader(progress: $progress))->download($source, $archive);
         $progress('Downloaded ' . $bytes . ' bytes; validating and extracting archive...');
-        $extracted = (new RepositoryArchive())->extract($archive, $workspace . '/source');
+        $extracted = (new RepositoryArchive(progress: $progress))->extract($archive, $workspace . '/source');
         $root = $extracted['root'];
         $progress('Recovered legacy creation timestamps: ' . $extracted['recovered_legacy_timestamps']);
         $excluded = $extracted['excluded_archive_categories'];
