@@ -645,3 +645,16 @@ pre {
   height: auto;
   border: 0;
 }
+
+.media-embed-card--inline-player {
+  display: block;
+  max-width: 100%;
+}
+
+.media-embed-card--inline-player > summary {
+  cursor: pointer;
+}
+
+.media-embed-card--inline-player[open] > .media-embed-card__iframe {
+  margin-top: 0.5rem;
+}

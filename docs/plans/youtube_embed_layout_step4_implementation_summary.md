@@ -8,3 +8,13 @@
   - `php tests/run.php`: 9 failures with the change and 9 without it (stashed baseline), none in media-embed tests (LocalAppSmoke x2, OfflineSnapshot x4, QuoteCardDisplayNumber, WriteApiSmoke x2); no regression.
 - Notes:
   - Visual browser check is pending and is covered with the theme pass in Stage 3.
+
+## Stage 2 - Expando polish and overflow safety
+- Changes:
+  - Added scoped rules to `public/assets/site.css` for `.media-embed-card--inline-player`: block display with `max-width: 100%`, pointer cursor on the summary, and top margin on the iframe in the `[open]` state only.
+- Verification:
+  - Selector review: all new rules are scoped to the inline-player card classes; collapsed-state spacing is untouched, and the plain and Instagram cards are not selected.
+  - `php tests/run.php --filter MediaEmbed` is not available; the full suite is unchanged from Stage 1 (9 pre-existing unrelated failures), and the media-embed tests pass.
+  - 360px and desktop browser check: pending, covered with the theme pass in Stage 3.
+- Notes:
+  - The iframe's `width: 100%` and the card's `max-width: 100%` together prevent horizontal overflow.
