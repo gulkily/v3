@@ -23,7 +23,7 @@ final class OfflineReaderController
                 'readerRevision' => $this->routeServices->assetPath('/assets/offline_reader.js'),
                 'snapshotRevision' => (new OfflineSnapshotLocator())->manifestRevision($this->staticHtmlRoot),
             ],
-            'Offline Reading',
+            'Offline Reader',
             'board',
             [
                 '/assets/sql-wasm.js',
@@ -43,7 +43,7 @@ final class OfflineReaderController
         return $this->routeServices->renderPageTemplate(
             'offline_health.php',
             ['runtimeUrl' => $this->routeServices->assetPath('/assets/sql-wasm.wasm')],
-            'Offline Reading',
+            'Offline Reading Status',
             'tools',
             ['/assets/sql-wasm.js', '/assets/offline_health.js'],
         );

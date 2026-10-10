@@ -38,26 +38,23 @@ final class PrivateMessageMailboxService
         if (!$this->isArmoredMessage($encryptedEnvelope)) {
             throw new InvalidArgumentException('Encrypted message envelope is invalid.');
         }
+        $attempt = [
+            'message_id' => $messageId,
+            'created_at' => gmdate('Y-m-d\TH:i:s\Z'),
+            'sender_username_token' => (string) $viewer['username_token'],
+            'recipient_username_token' => $recipientUsernameToken,
+            'sender_identity_id' => (string) $viewer['identity_id'],
+            'encrypted_envelope' => $encryptedEnvelope,
+        ];
+        $accepted = $this->store->acceptedEnvelope($attempt);
+        if ($accepted !== null) {
+            return $accepted;
+        }
         if ($this->keyResolver->keysForUsernameToken($this->readPdo, $recipientUsernameToken) === []) {
             throw new InvalidArgumentException('Recipient has no approved profile keys.');
         }
 
-        $createdAt = gmdate('Y-m-d\TH:i:s\Z');
-        $this->store->storeEnvelope(
-            $messageId,
-            $createdAt,
-            (string) $viewer['username_token'],
-            $recipientUsernameToken,
-            (string) $viewer['identity_id'],
-            $encryptedEnvelope,
-        );
-
-        return [
-            'message_id' => $messageId,
-            'created_at' => $createdAt,
-            'sender_username_token' => (string) $viewer['username_token'],
-            'recipient_username_token' => $recipientUsernameToken,
-        ];
+        return $this->store->acceptEnvelope($attempt);
     }
 
     /** @param array<string, mixed> $viewer @return list<array<string, string>> */
@@ -72,8 +69,20 @@ final class PrivateMessageMailboxService
         return $this->store->sentBy((string) $this->approvedViewer($viewer)['username_token']);
     }
 
+    /** @param array<string, mixed> $viewer @return array<string, mixed> */
+    public function conversations(array $viewer, ?string $cursor = null): array
+    {
+        return $this->store->conversationsFor((string) $this->approvedViewer($viewer)['username_token'], $cursor);
+    }
+
     /** @param array<string, mixed> $viewer @return list<array<string, string>> */
     public function conversation(array $viewer, string $counterpartUsernameToken): array
+    {
+        return $this->conversationPage($viewer, $counterpartUsernameToken)['messages'];
+    }
+
+    /** @param array<string, mixed> $viewer @return array<string, mixed> */
+    public function conversationPage(array $viewer, string $counterpartUsernameToken, ?string $cursor = null): array
     {
         $viewer = $this->approvedViewer($viewer);
         $counterpartUsernameToken = strtolower(trim($counterpartUsernameToken));
@@ -87,7 +96,23 @@ final class PrivateMessageMailboxService
             throw new InvalidArgumentException('Conversation counterpart has no approved profile keys.');
         }
 
-        return $this->store->conversationFor((string) $viewer['username_token'], $counterpartUsernameToken);
+        $page = $this->store->conversationPageFor((string) $viewer['username_token'], $counterpartUsernameToken, $cursor);
+        $page['read_token'] = $cursor === null ? $this->store->readTokenFor((string) $viewer['username_token'], $counterpartUsernameToken, $page['page_cursor']) : null;
+        return $page;
+    }
+
+    public function unreadState(array $viewer, array $counterparts = []): array
+    {
+        return $this->store->unreadStateFor((string) $this->approvedViewer($viewer)['username_token'], $counterparts);
+    }
+
+    public function acknowledge(array $viewer, string $counterpart, string $readToken): array
+    {
+        $viewer = $this->approvedViewer($viewer);
+        $counterpart = strtolower(trim($counterpart));
+        $this->recipientKeys($viewer, $counterpart);
+        $this->store->acknowledgeRead((string) $viewer['username_token'], $counterpart, $readToken);
+        return $this->unreadState($viewer, [$counterpart]);
     }
 
     /** @param array<string, mixed> $viewer @return list<array{identity_id:string,profile_slug:string,public_key:string}> */

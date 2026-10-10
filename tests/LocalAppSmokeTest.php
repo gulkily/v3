@@ -2784,12 +2784,12 @@ PHP;
         assertStringContains('data-bookmarklet-kind="tweet"', $bookmarklets);
         assertStringContains('window.getSelection().toString().trim()', $bookmarkletAsset);
         assertStringContains('tweetComposeUrl', $bookmarkletAsset);
-        $word97Css = (string) file_get_contents(__DIR__ . '/../public/assets/theme-word97.css');
-        assertStringContains(':root[data-theme="word97"] .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $word97Css);
-        assertStringContains(':root[data-theme="word97"] .tool-launcher-button[href="/forte"]::before', $word97Css);
-        assertStringContains(':root[data-theme="word97"] .tool-launcher-button[href="/account/key/"]::before', $word97Css);
-        assertStringContains(':root[data-theme="word97"] .tool-launcher-button[href="/tools/sqlite/"]::before', $word97Css);
-        assertStringContains(':root[data-theme="word97"] .tool-launcher-button[href="/tools/llm-exchanges/"]::before', $word97Css);
+        $navIconsCss = (string) file_get_contents(__DIR__ . '/../public/assets/theme-nav-icons.css');
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/forte"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/account/key/"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/tools/sqlite/"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/tools/llm-exchanges/"]::before', $navIconsCss);
         assertStringContains('value="Saved Title"', $prefilledCompose);
         assertStringContains('>Saved Body</textarea>', $prefilledCompose);
     }

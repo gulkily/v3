@@ -28,8 +28,17 @@ final class PrivateMessageReleaseIsolationTest
             foreach ($this->htmlFiles($artifactRoot) as $path) {
                 $html = (string) file_get_contents($path);
                 assertStringNotContains('private_message_reader', $html);
+                assertStringNotContains('private_message_list', $html);
+                assertStringNotContains('private_message_conversation', $html);
+                assertStringNotContains('private_message_unread', $html);
+                assertStringNotContains('private_message_seen', $html);
+                assertStringNotContains('data-private-message-unread', $html);
+                assertStringNotContains('data-private-message-composer', $html);
+                assertStringNotContains('private-message-unavailable-details', $html);
+                assertStringNotContains('unavailable-group', $html);
+                assertStringNotContains('message_time', $html);
                 assertStringNotContains('private_messages.js', $html);
-                assertStringNotContains('/messages/inbox', $html);
+                assertStringNotContains('href="/messages', $html);
             }
         } finally {
             @unlink($databasePath);
