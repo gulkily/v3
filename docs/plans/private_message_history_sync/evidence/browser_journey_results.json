@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "messages": 31,
+  "checks": [
+    "real signed approvals",
+    "separate donor visits",
+    "partial donors",
+    "three-plus batches",
+    "retained reload",
+    "restored-device forwarding",
+    "mobile",
+    "draft preservation",
+    "no-store/auth/origin",
+    "original ciphertext unchanged",
+    "private paired backup/restore",
+    "sync outage with normal send",
+    "no plaintext/key logging"
+  ],
+  "syncRequests": 771,
+  "rollback_probe": {
+    "baseline": "50e2c640",
+    "passed": true,
+    "checks": [
+      "pre-feature message store reopened existing database",
+      "old code sent with separate sync file retained",
+      "old code read unread state",
+      "re-upgrade discovered rollback message and retained transfers"
+    ]
+  }
+}

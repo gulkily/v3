@@ -30,7 +30,7 @@ Newly approved keys cannot read older private messages whose envelopes exclude t
 
 ## Risks
 
-- **Cryptographic incompatibility could block recovery or weaken trust.** First blocking validation: session-key round trips and original-signature checks with both bundled OpenPGP versions. Reject unverifiable results and revisit scope if unsupported; the complete protocol remains unvalidated.
+- **Cryptographic incompatibility could block recovery or weaken trust.** First blocking validation: session-key round trips and original-signature checks with both bundled OpenPGP versions. Reject unverifiable results and revisit scope if unsupported; the completed protocol checks are recorded in the Step 4 summary.
 - **Membership changes or substituted transfers could disclose history.** Earliest validation: approval/authorization review and cross-account, revoked-key, and tampered-transfer checks. Mitigation: current membership and authenticated account/key/message binding gate dependent work.
 - **Partial coverage could falsely report completion or starve older history.** An abstract scan model reproduced starvation. Validate interrupted transfers, stale-key sends, and overlapping donors; use resettable checkpoints, retained transfers, and target-confirmed coverage with retryable gaps.
 - **Contention or mismatched restores could delay messaging or lose access.** Local probes found measurable contention. Early validation must cover concurrent use, unavailable sync storage, and mismatched snapshots; use short bounded work, independent failure handling, stable message bindings, and backup/reconciliation checks.
@@ -51,4 +51,4 @@ Newly approved keys cannot read older private messages whose envelopes exclude t
 
 Restore sent/received history across three batches with devices visiting separately, including partial donors, stale-key sends, existing targets, checkpoint reset, and later-key forwarding. Verify reload without the donor and rejection of bad transfers. Preserve warnings, retry, unread/draft/order behavior, and privacy. Concurrent use, sync-store failure, mismatched restores, and rollback must preserve ordinary messaging and reopen invalid coverage without implying recovery.
 
-Steps 1–2 approved 2026-10-10; the user's subsequent direction selects separate sync storage and authorizes these planning updates. [Step 3](./private_message_history_sync_step3_development_plan.md) still awaits approval; implementation has not started.
+Steps 1–2 approved 2026-10-10; the user's subsequent direction selects separate sync storage and authorizes these planning updates. [Step 3](./private_message_history_sync_step3_development_plan.md) was subsequently approved. Implementation and verification are recorded in [Step 4](./private_message_history_sync_step4_implementation_summary.md); operational behavior is documented in the [rollout guide](./private_message_history_sync_rollout.md).
