@@ -22,8 +22,12 @@ checklist in the same commit as the stage it records.
       `:root:is([data-theme="word97"], [data-theme="chicago"])`, linked from
       `templates/layout.php`; icon selector tests repointed; full suite shows
       only the same 5 failures as `main`)
-- [ ] Stage 2 — Draw icons for navigation buttons that have none in Word 97
-      (they then appear in both themes via the shared file)
+- [x] Stage 2 — Draw icons for navigation buttons that have none in Word 97
+      (they then appear in both themes via the shared file): Lobby, Profile
+      (`/profiles/*`), Messages (`/messages/*`), Tags, Latest, Top, 1337,
+      Random, Add Quote, Search; tools-nav links reuse the launcher icons.
+      Pagination links (page numbers, variable hrefs) deliberately left
+      without icons.
 - [ ] Stage 3 — Verify Chicago has every icon and fill any gaps / spacing
       differences
 

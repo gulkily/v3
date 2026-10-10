@@ -105,6 +105,24 @@ NODE);
         assertStringContains("fill='%23008000'", $styles);
     }
 
+    public function testSharedNavIconsCoverEveryNavigationDestinationForBothThemes(): void
+    {
+        $styles = (string) file_get_contents(__DIR__ . '/../public/assets/theme-nav-icons.css');
+        $scope = ':root:is([data-theme="word97"], [data-theme="chicago"])';
+
+        $navSelectors = [
+            '[href="/lobby/"]', '[href^="/profiles/"]', '[href^="/messages/"]', '[href="/tags/"]',
+            '[href="/latest"]', '[href="/top"]', '[href="/leetness"]', '[href="/random"]',
+            '[href="/add"]', '[href="/search"]',
+        ];
+        foreach ($navSelectors as $selector) {
+            assertStringContains($scope . ' .nav-link' . $selector . '::before', $styles);
+        }
+        foreach (['/activity/', '/forte', '/offline/', '/docs/', '/tools/outbox/', '/tools/feature-flags/'] as $href) {
+            assertStringContains($scope . ' .tools-nav .nav-link[href="' . $href . '"]::before', $styles);
+        }
+    }
+
     public function testDestinationSuggestionsIncludeCuratedAndValidSourceLocations(): void
     {
         $result = $this->runScript(<<<'NODE'
