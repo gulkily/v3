@@ -18,3 +18,13 @@
   - 360px and desktop browser check: pending, covered with the theme pass in Stage 3.
 - Notes:
   - The iframe's `width: 100%` and the card's `max-width: 100%` together prevent horizontal overflow.
+
+## Stage 3 - Theme check
+- Changes:
+  - None. No theme override was needed.
+- Verification:
+  - Static review: `grep` of every file in `public/assets/` for `iframe`, `details` and `summary` selectors found none that can match the embed card (all are scoped to other components such as account-key, invitations, private-message and sqlite pages), and no `theme-*.css` file styles `iframe` at all.
+  - Full test suite: unchanged at the 9 pre-existing unrelated failures; all 50 media-embed test checks pass.
+  - Visual check in a browser across themes and at 360px: not performed in this session; it is the remaining release-condition item for the reviewer.
+- Notes:
+  - Because the rules are class-scoped and no theme restyles iframes, theme drift is unlikely, but it has not been confirmed visually.
