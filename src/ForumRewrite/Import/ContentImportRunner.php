@@ -106,7 +106,7 @@ final class ContentImportRunner
                                 if (!is_file($saved) || hash_file('sha256', $saved) !== $hash) {
                                     throw new RuntimeException('Recovery payload is missing or changed: ' . $path);
                                 }
-                                $this->directory(dirname($target));
+                                $this->directory(dirname($target), 0777);
                                 $temporary = $this->stateRoot . '/copy.tmp';
                                 if (!copy($saved, $temporary) || !rename($temporary, $target)) {
                                     throw new RuntimeException('Unable to install import record: ' . $path);
@@ -209,9 +209,9 @@ final class ContentImportRunner
         return $output;
     }
 
-    private function directory(string $path): void
+    private function directory(string $path, int $mode = 0700): void
     {
-        if (!is_dir($path) && !mkdir($path, 0700, true)) {
+        if (!is_dir($path) && !mkdir($path, $mode, true)) {
             throw new RuntimeException('Unable to create import directory.');
         }
     }

@@ -98,6 +98,9 @@ final class ContentImportPlanner
                     $parent = $entries[$entry['record']] ?? null;
                     if ($parent === null || !in_array($parent['state'], ['import', 'duplicate'], true)) {
                         $reason = 'Signature record is unavailable or rejected';
+                    } elseif ($parent['state'] === 'duplicate' && $entry['state'] === 'import'
+                        && !is_file($destination . '/' . $entry['record'])) {
+                        $reason = 'Duplicate record uses a different path; signature requires manual association';
                     }
                 } else {
                     foreach (['.asc', '.sig'] as $suffix) {
@@ -130,6 +133,9 @@ final class ContentImportPlanner
         if (!ArchiveRecordCatalog::isRecordPath($path)) {
             return [...$entry, 'state' => 'unsupported', 'reason' => 'Unsupported record family or path'];
         }
+        if (is_file($root . '/' . $path) && filesize($root . '/' . $path) > 16 * 1024 * 1024) {
+            return [...$entry, 'state' => 'invalid', 'reason' => 'Record exceeds 16 MiB parser limit'];
+        }
         try {
             $repository = new CanonicalRecordRepository($root);
             if (str_starts_with($path, 'records/posts/')) {
@@ -137,8 +143,9 @@ final class ContentImportPlanner
                 $contents = file_get_contents($root . '/' . $path);
                 $post = (new PostRecordParser())->parse($contents === false ? '' : $contents);
                 $repository->loadPost($path); // Includes canonical path validation.
-                if (array_intersect($post->boardTags, ['approval', 'invitation', 'private', 'private-message', 'pm']) !== []) {
-                    return [...$entry, 'state' => 'excluded', 'reason' => 'Authority or private post'];
+                if ((in_array('identity', $post->boardTags, true) && in_array('approval', $post->boardTags, true))
+                    || in_array('invitation', $post->boardTags, true)) {
+                    return [...$entry, 'state' => 'excluded', 'reason' => 'Approval or invitation authority post'];
                 }
                 foreach ([$post->threadId, $post->parentId] as $id) {
                     if ($id !== null) {

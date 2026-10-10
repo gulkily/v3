@@ -252,6 +252,29 @@ Use `--verbose` for recent individual work rows. See
 [Fastmod](fast_post_scoring.md) for pricing configuration, retention, and the
 controlled operator workflow.
 
+## Import content from a remote instance
+
+```
+./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
+./v3 import-instance --resume [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
+```
+
+Downloads the source's public repository archive, merges supported public forum
+content while preserving destination settings/approval authority, and publishes
+local views. Hostnames use HTTPS; short names require a JSON object mapping names
+to URLs in `--sources`. URLs may include an instance base path. `--dry-run`
+previews without changing destination content. Conflicts retain local records.
+
+Exit codes are 0 for complete supported-content results, 2 for partial results
+requiring review, and 1 for failures. Reports enumerate exclusions and unsupported
+records. `--resume` recovers a saved interrupted run without another download;
+use the original destination options and site profile. The destination must be
+initialized with a clean Git checkout. Scheduling, authenticated sources, and
+web controls are deferred.
+
+See [Instance Content Import](../runbooks/instance_content_import.md) for coverage,
+alias examples, fixed transfer/archive limits, publication, and recovery.
+
 ## Import a repository archive
 
 ```

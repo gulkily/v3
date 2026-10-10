@@ -16,6 +16,7 @@ Operational how-tos for running and maintaining a deployment:
 - [Offline Reading Runbook](docs/runbooks/offline_reading.md) — public snapshot limits, refresh, and browser-cache recovery
 - [Theme Development Guide](docs/runbooks/theme_development_guide.md) — how to add or modify a theme
 - [Contributor Guide](CONTRIBUTING.md) — project-wide development requirements
+- [Instance Content Import](docs/runbooks/instance_content_import.md) — on-demand remote content import, names/URLs, preview, and recovery
 - [QDB Archive Import Runbook](docs/runbooks/qdb_archive_import.md) — running the one-shot qdb.us quote backfill against a production vhost
 
 ### Specs (`docs/specs/`)

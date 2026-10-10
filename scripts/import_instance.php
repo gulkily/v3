@@ -129,7 +129,7 @@ Download and merge public forum content, preserving local settings and authority
 Preview does not change destination content. Conflicts retain the local version.
 Names require an explicit JSON mapping: {"community": "https://forum.example/base"}
 Hostnames default to HTTPS; use an explicit http:// URL when needed.
-Limits: 256 MiB download, 1 GiB expanded, 100,000 entries, 120 seconds, 5 redirects.
+Limits: 256 MiB download, 1 GiB expanded, 16 MiB per record, 100,000 entries, 120 seconds, 5 redirects.
 Excludes private data, authority, instance settings, source history, and derived databases.
 Legacy posts without explicit timestamps and unsupported records are reported, not rewritten.
 Resume requires the original repository/database/static-root/site-profile configuration.

@@ -73,7 +73,7 @@ final class InstanceArchiveDownloader
                         }
                         $next = $this->redirectUrl($url, $values['location']);
                         $nextParts = self::validateUrl($next);
-                        if (parse_url($url, PHP_URL_SCHEME) === 'https' && $nextParts['scheme'] !== 'https') {
+                        if (strtolower((string) parse_url($url, PHP_URL_SCHEME)) === 'https' && strtolower($nextParts['scheme']) !== 'https') {
                             throw new RuntimeException('Refusing HTTPS-to-HTTP archive redirect.');
                         }
                         $url = $next;
@@ -97,6 +97,10 @@ final class InstanceArchiveDownloader
                     $count = 0;
                     $lastProgress = 0;
                     while (!feof($input)) {
+                        $remaining = $deadline - microtime(true);
+                        if ($remaining <= 0) { throw new RuntimeException('Archive download timed out.'); }
+                        $wait = min(20.0, $remaining);
+                        stream_set_timeout($input, (int) $wait, (int) (($wait - (int) $wait) * 1000000));
                         $chunk = fread($input, 65536);
                         $metadata = stream_get_meta_data($input);
                         if ($chunk === false || ($metadata['timed_out'] ?? false) || microtime(true) > $deadline) {

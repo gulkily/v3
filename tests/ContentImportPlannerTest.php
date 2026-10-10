@@ -16,7 +16,9 @@ final class ContentImportPlannerTest
         $target = $w->repository('target');
         $w->put($source . '/records/posts/authority.txt', str_replace('Board-Tags: general', 'Board-Tags: identity approval', $w->post('authority')));
         $w->put($source . '/records/posts/invite.txt', str_replace('Board-Tags: general', 'Board-Tags: invitation', $w->post('invite')));
+        $w->put($source . '/records/posts/topic.txt', str_replace('Board-Tags: general', 'Board-Tags: general approval private', $w->post('topic')));
         $plan = (new ContentImportPlanner())->plan($source, $target);
+        assertSame('import', $plan['records/posts/topic.txt']['state']);
         assertSame('import', $plan['records/posts/root-001.txt']['state']);
         assertSame('import', $plan['records/thread-subjects/thread-subject-20260415153000-ab12cd34.txt']['state']);
         assertSame('excluded', $plan['records/posts/authority.txt']['state']);
@@ -42,6 +44,33 @@ final class ContentImportPlannerTest
         assertSame('invalid', $plan['records/posts/root.txt.sig']['state']);
         assertSame('invalid', $plan['records/posts/reply.txt']['state']);
         assertStringContains('Local version', file_get_contents($target . '/records/posts/root.txt'));
+    }
+
+    public function testSignatureCannotBeOrphanedByCanonicalDuplicateAtAnotherPath(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source');
+        $target = $w->repository('target');
+        $w->put($source . '/records/posts/2026/04/10/root.txt', $w->post('root'));
+        $w->put($source . '/records/posts/2026/04/10/root.txt.sig', 'detached signature');
+        $w->put($target . '/records/posts/root.txt', $w->post('root'));
+        $plan = (new ContentImportPlanner())->plan($source, $target);
+        assertSame('invalid', $plan['records/posts/2026/04/10/root.txt.sig']['state']);
+        assertStringContains('manual association', $plan['records/posts/2026/04/10/root.txt.sig']['reason']);
+    }
+
+    public function testOversizedRecordIsReportedWithoutParsing(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source');
+        $target = $w->repository('target');
+        $w->put($source . '/records/posts/oversized.txt', '');
+        $file = fopen($source . '/records/posts/oversized.txt', 'wb');
+        ftruncate($file, 16 * 1024 * 1024 + 1);
+        fclose($file);
+        $plan = (new ContentImportPlanner())->plan($source, $target);
+        assertSame('invalid', $plan['records/posts/oversized.txt']['state']);
+        assertStringContains('16 MiB', $plan['records/posts/oversized.txt']['reason']);
     }
 
     public function testRepeatIsDuplicateAndMissingDependenciesAreReported(): void

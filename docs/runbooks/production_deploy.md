@@ -650,3 +650,13 @@ Before launch, verify:
 - [operator_recovery.md](operator_recovery.md)
 - [apache_vhost.conf](../examples/apache_vhost.conf)
 - [env.production.example](../examples/env.production.example)
+
+## On-demand content import
+
+After deployment, operators can use `./v3 import-instance` to download and merge
+public forum content from another instance. No migration or cron setup is needed.
+Use the running instance's repository/database/static-root configuration and
+validate a disposable import with the target host's PHP, SQLite, zlib/OpenSSL,
+Git, and gzip tooling first. Follow the
+[import deployment check](instance_content_import.md#requirements-limits-and-deployment-check)
+for preview, coverage review, served-view verification, and repeat-run checks.
