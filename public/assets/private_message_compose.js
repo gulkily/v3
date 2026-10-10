@@ -2,6 +2,7 @@
   "use strict";
 
   const draftPrefix = "forum_private_message_draft:";
+  const attempts = new WeakMap();
 
   function storage() {
     try {
@@ -116,11 +117,19 @@
     const recipientUsernameToken = recipientToken(root);
     const senderUsernameToken = senderToken(root);
     await ensureIdentity();
-    const prepared = await messaging.prepareEnvelope({
-      plaintext: plaintext,
-      senderUsernameToken: senderUsernameToken,
-      recipientUsernameToken: recipientUsernameToken,
-    });
+    let attempt = attempts.get(root);
+    if (attempt && attempt.messageId === messageId && attempt.plaintext !== plaintext) {
+      throw new Error("Retry the original attempt before sending changed text.");
+    }
+    if (!attempt || attempt.messageId !== messageId) {
+      const prepared = await messaging.prepareEnvelope({
+        plaintext: plaintext,
+        senderUsernameToken: senderUsernameToken,
+        recipientUsernameToken: recipientUsernameToken,
+      });
+      attempt = { messageId: messageId, plaintext: plaintext, encryptedEnvelope: prepared.encryptedEnvelope };
+      attempts.set(root, attempt);
+    }
     const response = await fetch("/api/private_messages", {
       method: "POST",
       credentials: "same-origin",
@@ -128,7 +137,7 @@
       body: JSON.stringify({
         message_id: messageId,
         recipient_username_token: recipientUsernameToken,
-        encrypted_envelope: prepared.encryptedEnvelope,
+        encrypted_envelope: attempt.encryptedEnvelope,
       }),
     });
     const payload = await response.json();

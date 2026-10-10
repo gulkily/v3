@@ -10,6 +10,32 @@ use ForumRewrite\Messaging\PrivateMessageStore;
 
 final class PrivateMessageMailboxServiceTest
 {
+    public function testRetryReturnsOriginalAcceptanceAndRejectsConflicts(): void
+    {
+        $profiles = $this->profilesDatabase();
+        $this->addProfile($profiles, 'openpgp:ilyag', 'ilyag', 'ilyag', 'KEY', 1);
+        $pdo = new \PDO('sqlite::memory:');
+        $store = new PrivateMessageStore($pdo);
+        $service = new PrivateMessageMailboxService($store, $profiles);
+        $viewer = $this->viewer('openpgp:alice', 'alice');
+        $input = ['message_id' => 'retry', 'recipient_username_token' => 'ilyag', 'encrypted_envelope' => $this->envelope()];
+        $first = $service->send($viewer, $input);
+        $profiles->exec('UPDATE profiles SET is_approved = 0');
+        assertSame($first, $service->send($viewer, $input));
+        foreach ([
+            [$viewer, array_replace($input, ['encrypted_envelope' => str_replace('Ciphertext', 'Different', $this->envelope())])],
+            [$viewer, array_replace($input, ['recipient_username_token' => 'other'])],
+            [$this->viewer('openpgp:other', 'alice'), $input],
+            [$this->viewer('openpgp:mallory', 'mallory'), $input],
+        ] as [$actor, $conflict]) {
+            assertThrowsPrivateMessage(fn () => $service->send($actor, $conflict), \InvalidArgumentException::class, 'This send attempt conflicts with an existing message.');
+        }
+        $attempt = $pdo->query('SELECT * FROM private_messages')->fetch(\PDO::FETCH_ASSOC);
+        $attempt['created_at'] = '2099-01-01T00:00:00Z';
+        assertSame($first, $store->acceptEnvelope($attempt));
+        assertSame(1, (int) $pdo->query('SELECT COUNT(*) FROM private_messages')->fetchColumn());
+    }
+
     public function testApprovedUsersCanSendAndReadOnlyTheirCompositeMailboxes(): void
     {
         $readPdo = $this->profilesDatabase();

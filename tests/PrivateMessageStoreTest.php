@@ -8,6 +8,40 @@ use ForumRewrite\Messaging\PrivateMessageStore;
 
 final class PrivateMessageStoreTest
 {
+    public function testConcurrentAcceptanceKeepsOneOriginalEnvelope(): void
+    {
+        if (!function_exists('pcntl_fork')) {
+            throw new RuntimeException('Concurrent acceptance test requires pcntl.');
+        }
+        $path = tempnam(sys_get_temp_dir(), 'private-message-race-');
+        $attempt = ['message_id' => 'race', 'created_at' => '2026-10-09T12:00:00Z',
+            'sender_username_token' => 'alice', 'recipient_username_token' => 'bob',
+            'sender_identity_id' => 'alice-key', 'encrypted_envelope' => 'cipher'];
+        $store = new PrivateMessageStore(new PDO('sqlite:' . $path));
+        $children = [];
+        try {
+            for ($i = 0; $i < 4; $i++) {
+                $pid = pcntl_fork();
+                if ($pid === -1) {
+                    throw new RuntimeException('Unable to fork race fixture.');
+                }
+                if ($pid === 0) {
+                    $child = new PrivateMessageStore(new PDO('sqlite:' . $path));
+                    $result = $child->acceptEnvelope($attempt);
+                    exit($result['message_id'] === 'race' ? 0 : 1);
+                }
+                $children[] = $pid;
+            }
+            foreach ($children as $pid) {
+                pcntl_waitpid($pid, $status);
+                assertSame(0, pcntl_wexitstatus($status));
+            }
+            assertSame(1, count($store->sentBy('alice')));
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function testStoresOnlyEncryptedEnvelopeAndListsBothMailboxes(): void
     {
         $pdo = new PDO('sqlite::memory:');

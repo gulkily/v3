@@ -37,6 +37,7 @@ const source = fs.readFileSync(process.argv[1], 'utf8');
 const values = new Map();
 const calls = [];
 let shouldFail = true;
+let preparations = 0;
 let redirect = '';
 const inputListeners = {};
 const formListeners = {};
@@ -56,7 +57,7 @@ global.window = {
   crypto: { randomUUID() { return 'fixed-id'; } },
   location: { assign(url) { redirect = url; } },
   __forumBrowserIdentity: { async ensureActionIdentity() {} },
-  ForumPrivateMessages: { async prepareEnvelope(input) { return { encryptedEnvelope: '-----BEGIN PGP MESSAGE-----\\nCIPHERTEXT\\n-----END PGP MESSAGE-----', received: input }; } }
+  ForumPrivateMessages: { async prepareEnvelope(input) { preparations++; return { encryptedEnvelope: '-----BEGIN PGP MESSAGE-----\\nCIPHERTEXT' + preparations + '\\n-----END PGP MESSAGE-----', received: input }; } }
 };
 global.fetch = async function(url, options) {
   calls.push({ url, body: String(options.body) });
@@ -79,6 +80,7 @@ NODE;
 
         assertSame('/api/private_messages', $result['calls'][0]['url']);
         assertSame('/api/private_messages', $result['calls'][1]['url']);
+        assertSame($result['calls'][0]['body'], $result['calls'][1]['body']);
         assertStringContains('"message_id":"private-fixed-id"', $result['calls'][0]['body']);
         assertStringContains('"message_id":"private-fixed-id"', $result['calls'][1]['body']);
         assertStringNotContains('private prose', $result['calls'][0]['body']);

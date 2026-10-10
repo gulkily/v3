@@ -46,6 +46,38 @@ final class PrivateMessageStore
         ]);
     }
 
+    /** Return an existing acknowledgment only for the exact authenticated attempt.
+     * @param array<string, string> $attempt
+     * @return array<string, string>|null
+     */
+    public function acceptedEnvelope(array $attempt): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM private_messages WHERE message_id = :id');
+        $stmt->execute(['id' => $attempt['message_id']]);
+        $row = $stmt->fetch();
+        if ($row === false) {
+            return null;
+        }
+        foreach (['sender_username_token', 'sender_identity_id', 'recipient_username_token', 'encrypted_envelope'] as $field) {
+            if (!hash_equals((string) $row[$field], $attempt[$field])) {
+                throw new InvalidArgumentException('This send attempt conflicts with an existing message.');
+            }
+        }
+        return array_intersect_key($row, array_flip(['message_id', 'created_at', 'sender_username_token', 'recipient_username_token']));
+    }
+
+    /** @param array<string, string> $attempt @return array<string, string> */
+    public function acceptEnvelope(array $attempt): array
+    {
+        // The unique key arbitrates concurrent requests; never overwrite the first envelope.
+        $stmt = $this->pdo->prepare('INSERT INTO private_messages
+            (message_id, created_at, sender_username_token, recipient_username_token, sender_identity_id, encrypted_envelope)
+            VALUES (:message_id, :created_at, :sender_username_token, :recipient_username_token, :sender_identity_id, :encrypted_envelope)
+            ON CONFLICT(message_id) DO NOTHING');
+        $stmt->execute($attempt);
+        return $this->acceptedEnvelope($attempt) ?? throw new \RuntimeException('Unable to confirm private message.');
+    }
+
     /** @return list<array<string, string>> */
     public function inboxFor(string $recipientUsernameToken): array
     {

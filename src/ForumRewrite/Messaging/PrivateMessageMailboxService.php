@@ -38,26 +38,23 @@ final class PrivateMessageMailboxService
         if (!$this->isArmoredMessage($encryptedEnvelope)) {
             throw new InvalidArgumentException('Encrypted message envelope is invalid.');
         }
+        $attempt = [
+            'message_id' => $messageId,
+            'created_at' => gmdate('Y-m-d\TH:i:s\Z'),
+            'sender_username_token' => (string) $viewer['username_token'],
+            'recipient_username_token' => $recipientUsernameToken,
+            'sender_identity_id' => (string) $viewer['identity_id'],
+            'encrypted_envelope' => $encryptedEnvelope,
+        ];
+        $accepted = $this->store->acceptedEnvelope($attempt);
+        if ($accepted !== null) {
+            return $accepted;
+        }
         if ($this->keyResolver->keysForUsernameToken($this->readPdo, $recipientUsernameToken) === []) {
             throw new InvalidArgumentException('Recipient has no approved profile keys.');
         }
 
-        $createdAt = gmdate('Y-m-d\TH:i:s\Z');
-        $this->store->storeEnvelope(
-            $messageId,
-            $createdAt,
-            (string) $viewer['username_token'],
-            $recipientUsernameToken,
-            (string) $viewer['identity_id'],
-            $encryptedEnvelope,
-        );
-
-        return [
-            'message_id' => $messageId,
-            'created_at' => $createdAt,
-            'sender_username_token' => (string) $viewer['username_token'],
-            'recipient_username_token' => $recipientUsernameToken,
-        ];
+        return $this->store->acceptEnvelope($attempt);
     }
 
     /** @param array<string, mixed> $viewer @return list<array<string, string>> */
