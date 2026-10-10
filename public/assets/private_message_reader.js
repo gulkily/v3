@@ -273,7 +273,6 @@
       });
     }
     document.addEventListener('private-message-history-restored', retryHistory);
-    document.addEventListener('private-message-history-retry-readers', retryHistory);
     Promise.allSettled(Array.from(root.querySelectorAll("[data-private-message-id]")).map(function (card) {
       cardCursors.set(card, root.dataset.historyPageCursor || '');
       return readCard(mailbox, card, counterpartUsernameToken);

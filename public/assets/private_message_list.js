@@ -65,7 +65,6 @@
       });
     }
     document.addEventListener('private-message-history-restored', refreshHistory);
-    document.addEventListener('private-message-history-retry-readers', refreshHistory);
 
     function preview(row, message) {
       if (previewRequests.has(message.message_id)) return previewRequests.get(message.message_id);

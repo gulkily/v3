@@ -97,3 +97,5 @@
 - Canonical components/API contracts touched: PHP/browser harness, API reference, release isolation, FDP artifacts.
 
 Steps 1–2 approved 2026-10-10; separate sync storage selected by the user's subsequent direction. The user explicitly approved Step 3 with **Approved Step 3**; proceed with Step 4 on the feature branch.
+
+Review adjustment: the user subsequently requested removal of Stage 7's global history-sync notice, visit counts and Retry history button. Automatic contributions/recovery and existing per-message states/retry remain; this supersedes that presentation portion of Stage 7.

@@ -4,7 +4,6 @@
     <h1>Conversation with <a href="/user/<?= $e(rawurlencode($counterpartUsernameToken)) ?>"><?= $e($counterpartUsernameToken) ?></a></h1>
     <p><a href="/messages">Back to Messages</a></p>
   </article>
-<?= $indent($partial('partials/private_message_history_status.php'), 2) ?>
   <div class="private-message-history-controls" data-role="history-controls">
     <button type="button" data-role="history-load"<?= empty($historyPage['next_cursor']) ? ' hidden' : '' ?>>Load older</button>
     <button type="button" data-role="history-restart" hidden>Restart history</button>

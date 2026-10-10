@@ -158,18 +158,18 @@ try {
     await page.screenshot({ path: join(root, 'chat-before.png'), fullPage: true });
     console.log('Chat baseline:', JSON.stringify(density));
   }
+  assert.equal(await page.locator('[data-private-message-history-status]').count(), 0);
+  assert.equal(await page.getByRole('button', { name: 'Retry history', exact: true }).count(), 0);
   await page.route('**/api/private_messages/history_sync/**', route => route.fulfill({ status: 503, json: { status: 'error' } }));
+  await page.locator('textarea').fill('Draft survives background history retry');
+  await page.locator('textarea').focus();
   await page.evaluate(() => window.ForumPrivateMessageHistorySync.refresh());
-  await page.locator('[data-role="sync-status"]').filter({ hasText: 'History check could not finish' }).waitFor();
-  await page.locator('textarea').fill('Draft survives history retry');
+  assert.equal(await page.evaluate(() => window.ForumPrivateMessageHistorySync.state().state), 'error');
+  assert.equal(await page.locator('textarea').inputValue(), 'Draft survives background history retry');
+  assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('textarea')), true);
   await page.setViewportSize({ width: 375, height: 800 });
-  await page.getByRole('button', { name: 'Retry history', exact: true }).focus();
-  await page.keyboard.press('Enter');
-  await page.waitForFunction(() => document.querySelector('[data-action="retry-history-sync"]').getAttribute('aria-disabled') === 'false');
-  assert.equal(await page.locator('textarea').inputValue(), 'Draft survives history retry');
-  assert.equal(await page.evaluate(() => document.activeElement.dataset.action), 'retry-history-sync');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-  await page.screenshot({ path: join(root, 'history-sync-retry-mobile.png'), fullPage: true });
+  await page.screenshot({ path: join(root, 'history-sync-silent-mobile.png'), fullPage: true });
   await page.unroute('**/api/private_messages/history_sync/**');
   await page.locator('textarea').fill('');
   await page.setViewportSize({ width: 1100, height: 800 });

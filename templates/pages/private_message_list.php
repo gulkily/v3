@@ -20,7 +20,6 @@
       </form>
     </details>
   </article>
-<?= $indent($partial('partials/private_message_history_status.php'), 2) ?>
   <div data-role="empty"<?= $page['conversations'] !== [] ? ' hidden' : '' ?>>
     <p>No messages yet</p>
     <button type="button" data-action="new-message">New message</button>

@@ -105,10 +105,11 @@ try {
  assert.ok(await partial.locator('[data-reader-state="verified"]').count()>0);
  assert.ok(await partial.locator('[data-reader-state="decryption-failed"]').count()>0);
  await partial.locator('textarea').fill('Draft during partial recovery');
- console.log('Donor B supplies the remaining history; target retries in place');
+ console.log('Donor B supplies remaining history; automatic recovery updates the target in place');
  await visit(b);await b.close();await partial.bringToFront();
- await partial.evaluate(()=>window.ForumPrivateMessageHistorySync.refresh());
- await partial.getByRole('button',{name:'Retry history',exact:true}).click();
+ for(let n=0;n<3;n++) await partial.evaluate(()=>window.ForumPrivateMessageHistorySync.refresh());
+ assert.equal(await partial.locator('[data-private-message-history-status]').count(),0);
+ assert.equal(await partial.getByRole('button',{name:'Retry history',exact:true}).count(),0);
  await partial.waitForFunction(()=>document.querySelectorAll('[data-private-message-id][data-reader-state="verified"]').length===25);
  assert.equal(await partial.locator('textarea').inputValue(),'Draft during partial recovery');
  await partial.locator('textarea').fill('');await partial.close();
@@ -127,7 +128,9 @@ try {
  await copyFile(messagePath,messagePath+'.backup');await copyFile(syncPath,syncPath+'.backup');
  await rename(syncPath,syncPath+'.held');await mkdir(syncPath);
  const restored=await device(target);page=await restored.newPage();await page.goto(base+'/messages/conversation/bob');
- await page.locator('[data-role="sync-status"]').filter({hasText:'History check could not finish'}).waitFor();
+ await page.evaluate(()=>window.ForumPrivateMessageHistorySync.refresh());
+ assert.equal(await page.evaluate(()=>window.ForumPrivateMessageHistorySync.state().state),'error');
+ assert.equal(await page.locator('[data-private-message-history-status]').count(),0);
  await page.locator('textarea').fill('Ordinary send during sync outage');await page.getByRole('button',{name:'Send private message',exact:true}).click();
  await page.getByText('Ordinary send during sync outage',{exact:true}).waitFor();
  await restored.close();await rmdir(syncPath);await rename(syncPath+'.held',syncPath);
@@ -138,7 +141,7 @@ try {
  assert.deepEqual(errors,[]);
  for(const body of syncBodies) {assert(!body.includes('History secret'));assert(!body.includes('PRIVATE KEY BLOCK'));}
  assert(!log.includes('History secret'));assert(!log.includes('PRIVATE KEY BLOCK'));
- await writeFile(join(root,'report.json'),JSON.stringify({passed:true,messages:31,checks:['real signed approvals','separate donor visits','partial donors','three-plus batches','retained reload','restored-device forwarding','mobile','draft preservation','no-store/auth/origin','original ciphertext unchanged','private paired backup/restore','sync outage with normal send','no plaintext/key logging'],syncRequests:syncBodies.length},null,2));
+ await writeFile(join(root,'report.json'),JSON.stringify({passed:true,messages:31,checks:['no global history-sync notice or retry button','real signed approvals','separate donor visits','partial donors','three-plus batches','retained reload','restored-device forwarding','mobile','draft preservation','no-store/auth/origin','original ciphertext unchanged','private paired backup/restore','sync outage with normal send','no plaintext/key logging'],syncRequests:syncBodies.length},null,2));
  console.log('History sync browser checks passed. Artifacts: '+root);
 } catch(error) {console.error('Browser artifacts: '+root);console.error(error);process.exitCode=1;}
 finally {if(browser)await browser.close();server.kill();await writeFile(join(root,'server.log'),log);}

@@ -29,9 +29,9 @@ Version 1's signed, target-encrypted JSON is `{version:1,account,source,target,e
 
 ## Browser behavior and limits
 
-An authenticated live visit can contribute without opening Messages. A visit scans at most eight batches for approximately ten seconds, with a fifteen-second cancellation deadline; individual HTTP requests time out after five seconds and retry once, with at most three sync requests in flight. Focus/visible return continues work (five-second throttle); hidden tabs, navigation and identity changes cancel stale work. Explicit Retry history starts another bounded pass and rereads unavailable visible content. There is no continuous polling, job queue, lease service, permanent failure row or persistent secret cache.
+An authenticated live visit can contribute without opening Messages. A visit scans at most eight batches for approximately ten seconds, with a fifteen-second cancellation deadline; individual HTTP requests time out after five seconds and retry once, with at most three sync requests in flight. Focus/visible return continues work (five-second throttle); hidden tabs, navigation and identity changes cancel stale work. Synchronization runs without a global notice or Retry history button; existing per-message reading retries remain available. There is no continuous polling, job queue, lease service, permanent failure row or persistent secret cache.
 
-Devices need not be online together. Retained bundles permit reading after reload and allow a restored device to help later approved keys. Recovery depends on at least one eligible device retaining access; a status check does not prove every historical message is recoverable. Visit-local verified counts exclude mere uploads. Normal message ordering, drafts, sending, signature warnings, compact unavailable groups and unread/seen boundaries remain controlled by their existing components. Revocation prevents future eligible transfer use, but cannot retract already delivered secrets.
+Devices need not be online together. Retained bundles permit reading after reload and allow a restored device to help later approved keys. Recovery depends on at least one eligible device retaining access; a status check does not prove every historical message is recoverable. Only successful original-message verification establishes readable content; uploads alone do not. Normal message ordering, drafts, sending, signature warnings, compact unavailable groups and unread/seen boundaries remain controlled by their existing components. Revocation prevents future eligible transfer use, but cannot retract already delivered secrets.
 
 ## Coordinated private backup and restore
 
@@ -47,7 +47,7 @@ Rollback code and assets together to the preceding version while **retaining bot
 
 In a controlled environment, publish and approve a new same-account key through the normal signed approval path. Verify pending access is denied, an authenticated donor visit on a non-Messages page contributes, and the target later reads sent/received originals across at least three batches with the donor closed. Exercise partial donors, retry, reload, mobile/keyboard, and restored-device forwarding. Confirm originals are unchanged and uploads alone do not clear unavailable state or unread counts.
 
-Temporarily make only the sync store unavailable: sync should report a retryable error while ordinary sends/direct reads remain usable. Restore it and verify retained recovery. Rehearse paired and mismatched restore plus rollback, inspect no-store/auth/origin checks, and scan logs/public artifacts for private data. Run:
+Temporarily make only the sync store unavailable: sync APIs should return a retryable error while ordinary sends/direct reads remain usable, without a global sync banner. Restore it and verify retained recovery. Rehearse paired and mismatched restore plus rollback, inspect no-store/auth/origin checks, and scan logs/public artifacts for private data. Run:
 
 ```sh
 php tests/run.php PrivateMessageHistoryCryptoTest PrivateMessageHistorySyncTest PrivateMessageReaderTest PrivateMessageListTest PrivateMessageReleaseIsolationTest

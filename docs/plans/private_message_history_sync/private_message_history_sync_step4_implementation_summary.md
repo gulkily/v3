@@ -60,3 +60,8 @@ Branch: `feature/private-message-history-sync`. Planning-only commit: `d7e89582`
 - [Storage findings](./private_message_history_sync_storage_findings.md), [lock probe](./evidence/lock_probe_results.json), [storage challenge](./evidence/storage_challenge_assessment.json)
 - [API, rollout, backup/restore and rollback](./private_message_history_sync_rollout.md), [production runbook](../../runbooks/production_deploy.md#private-message-mailbox-operations)
 - [Real approval journey results](./evidence/browser_journey_results.json), [release verification results](./evidence/release_verification_results.json), [master checklist](../private_messaging_usability_master_checklist.md)
+
+## Review follow-up - Remove global synchronization messaging
+
+- User request: remove the visit-level verified/waiting text, the explanatory paragraph and the Retry history button. Removed the shared status partial, its client asset and associated retry-only listeners from Messages and conversations. Automatic contribution/recovery and existing per-message verification/retry continue unchanged. Updated requirements and operations guidance to reflect this presentation decision.
+- Verification: nine focused crypto/reader/list/release tests pass. Both browser journeys pass with explicit checks that the global notice/button are absent: automatic partial-donor recovery, reload/forwarding and sync outage (`/tmp/history-sync-browser-qYvtAu`); complete messaging regressions, mobile, draft/focus, history, unread and unavailable-group recovery (`/tmp/private-message-browser-GwQ292`). Static-release assertions now identify actual history asset URLs so ordinary documentation links cannot cause false positives. Syntax and whitespace checks pass.
