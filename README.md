@@ -7,6 +7,11 @@ Minimal local test slice for the rewrite spec.
 An index of everything under `docs/` plus the project-level notes at the
 repo root.
 
+### Architecture (`docs/architecture/`)
+
+- [Public Architecture and Trust Model](docs/architecture/public_architecture_and_trust.md) — public records, browser identities, and operator trust
+- [Private Messaging Architecture and Features](docs/architecture/private_messaging.md) — consolidated encryption, storage, conversation features, unread semantics, recovery, and operational limits
+
 ### Runbooks (`docs/runbooks/`)
 
 Operational how-tos for running and maintaining a deployment:
@@ -16,6 +21,7 @@ Operational how-tos for running and maintaining a deployment:
 - [Offline Reading Runbook](docs/runbooks/offline_reading.md) — public snapshot limits, refresh, and browser-cache recovery
 - [Theme Development Guide](docs/runbooks/theme_development_guide.md) — how to add or modify a theme
 - [Contributor Guide](CONTRIBUTING.md) — project-wide development requirements
+- [Instance Content Import](docs/runbooks/instance_content_import.md) — on-demand remote content import, names/URLs, preview, and recovery
 - [QDB Archive Import Runbook](docs/runbooks/qdb_archive_import.md) — running the one-shot qdb.us quote backfill against a production vhost
 
 ### Specs (`docs/specs/`)
@@ -60,11 +66,10 @@ that stays accurate even as implementation details move around:
 
 ### Planning Docs (`docs/plans/`)
 
-A flat, mostly-uncatalogued directory of in-flight and historical planning
-documents, one or more per feature (`{feature}_stepN_*.md` for FDP-tracked
-work, or a looser `{feature}_plan_v1.md`/`{feature}_slices_v1.md` shape for
-smaller efforts). Not indexed file-by-file here — there are well over a
-hundred — but two are worth knowing about:
+The [planning index](docs/plans/README.md) lists feature folders for in-flight
+and historical planning documents. Features with four or more related artifacts
+have their own folders; smaller efforts and standalone plans remain at the root.
+Two cross-cutting plans are worth knowing about:
 
 - [Codebase Cleanup Audit Plan](docs/plans/codebase_cleanup_audit_plan_v1.md) — the plan behind the `Application.php` decomposition into per-domain namespaces
 - [Documentation Audit Findings & Checklist](docs/plans/docs_audit_findings_and_checklist_v1.md) — the review that produced this Documentation section
@@ -274,7 +279,26 @@ Approval helper examples:
 ./v3 start
 ./v3 approval seed openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954
 ./v3 approval approve openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954 openpgp-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+./v3 approval audit
+./v3 approval audit --summary
+./v3 approval audit --review-only
+./v3 approval audit --repository-root=/path/repository --database-path=/path/read-model.sqlite3 --json
 ```
+
+The approval audit reads existing state without rebuilding or changing approvals.
+It reports currently approved keys and their attributed approver, including grants
+derived from invitations. Root-seeded, operator-approved, same-username, and
+cross-username grants are separated. Cross-username grants on accounts with multiple
+approved keys, plus unknown attribution, are review candidates. They are not proven
+violations: the audit does not reconstruct which key was first or operator/flag
+state at approval time, enumerate every historical approval, or reverify signatures.
+Operator classification uses canonical root seeds, not display labels. Warnings
+identify stale or unverifiable read-model metadata. `--review-only` filters rows;
+summary counts remain totals for the whole audit. `--summary` shows totals,
+warnings, and limitations without individual key rows. It also works with `--json`,
+omitting the `rows` field; combining it with `--review-only` leaves totals unchanged.
+Exit status is 0 for a completed
+audit, including findings, or 1 for an error.
 
 ## Tests
 

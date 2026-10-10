@@ -158,7 +158,24 @@ try {
     await page.screenshot({ path: join(root, 'chat-before.png'), fullPage: true });
     console.log('Chat baseline:', JSON.stringify(density));
   }
+  assert.equal(await page.locator('[data-private-message-history-status]').count(), 0);
+  assert.equal(await page.getByRole('button', { name: 'Retry history', exact: true }).count(), 0);
+  await page.route('**/api/private_messages/history_sync/**', route => route.fulfill({ status: 503, json: { status: 'error' } }));
+  await page.locator('textarea').fill('Draft survives background history retry');
+  await page.locator('textarea').focus();
+  await page.evaluate(() => window.ForumPrivateMessageHistorySync.refresh());
+  assert.equal(await page.evaluate(() => window.ForumPrivateMessageHistorySync.state().state), 'error');
+  assert.equal(await page.locator('textarea').inputValue(), 'Draft survives background history retry');
+  assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('textarea')), true);
+  await page.setViewportSize({ width: 375, height: 800 });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await page.screenshot({ path: join(root, 'history-sync-silent-mobile.png'), fullPage: true });
+  await page.unroute('**/api/private_messages/history_sync/**');
+  await page.locator('textarea').fill('');
+  await page.setViewportSize({ width: 1100, height: 800 });
+  console.log('Checking checkChatLayout');
   await checkChatLayout(page, root);
+  console.log('Checking checkChatRecovery');
   await checkChatRecovery(page, context, base, root, seed, {
     valid: incoming,
     long: await encrypt(bob, 'Long incoming line\n' + 'longword'.repeat(100)),
@@ -166,6 +183,7 @@ try {
     unsigned: await openpgp.encrypt({ message: await openpgp.createMessage({ text: 'Unsigned chat secret' }), encryptionKeys: [alice.public, bob.public], format: 'armored' }),
   });
   await page.getByRole('link', { name: 'Back to Messages' }).click();
+  await page.waitForURL('**/messages');
   await page.waitForFunction(() => document.querySelector('[data-role="list-status"]').textContent === '25 conversations loaded.');
   assert.equal(await list.first().getAttribute('data-counterpart'), 'bob');
   assert.match(await list.first().innerText(), /Browser follow-up/);
@@ -183,6 +201,7 @@ try {
   await page.goto(base + '/messages/conversation/user-60');
   await page.getByRole('heading', { name: 'Conversation Unavailable' }).waitFor();
   await page.getByRole('link', { name: 'Back to Messages' }).click();
+  await page.waitForURL('**/messages');
   const unavailableRow = page.locator('[data-role="rows"] [data-counterpart="user-60"]');
   await unavailableRow.waitFor({ state: 'visible' });
   // A revoked recipient's old outgoing message can still verify against Alice's key.
@@ -215,10 +234,12 @@ try {
   const outsiderContext = await browser.newContext();
   await authenticate(outsiderContext, outsider);
   assert.equal((await (await outsiderContext.request.get(base + '/api/private_messages/conversations')).json()).conversations.length, 0);
+  console.log('Checking checkHistory');
   await checkHistory(page, context, base, root, seed, incoming, {
     long: await encrypt(bob, 'Older long message\n' + 'A long history line.\n'.repeat(30)),
     invalid: await encrypt(outsider, 'Unverified older secret'),
   });
+  console.log('Checking checkHistoryRecovery');
   await checkHistoryRecovery(page);
   for (const path of ['/user/bob', '/profiles/openpgp-' + bob.fingerprint]) {
     await page.goto(base + path);
@@ -228,8 +249,11 @@ try {
     assert.equal(new URL(page.url()).pathname, path);
     assert.equal(await page.locator('[data-private-message-composer] textarea').inputValue(), '');
   }
+  console.log('Checking checkUnreadApi');
   await checkUnreadApi(context, outsiderContext, base, seed, incoming);
+  console.log('Checking checkUnreadIndicators');
   await checkUnreadIndicators(page, context, base, root);
+  console.log('Checking checkSeenWindows');
   await checkSeenWindows(page, context, base, seed, incoming, await encrypt(outsider, 'Unverified seen secret'));
   const deviceContext = await browser.newContext({ viewport: { width: 1100, height: 800 }, serviceWorkers: 'block' });
   await authenticate(deviceContext, alice);
@@ -237,13 +261,17 @@ try {
     for (const [key, value] of Object.entries({ username: 'alice', public_key: publicKey, private_key: privateKey,
       fingerprint: fingerprint.toUpperCase(), published_fingerprint: fingerprint.toUpperCase() })) localStorage.setItem('forum_pki_' + key, value);
   }, { publicKey: alice.publicKey, privateKey: alice.privateKey, fingerprint: alice.fingerprint });
+  console.log('Checking checkSeenRecovery');
   await checkSeenRecovery(page, context, deviceContext, base, seed, incoming);
   await deviceContext.close();
   const unavailable = await openpgp.encrypt({ message: await openpgp.createMessage({ text: 'Unavailable fixture secret' }), encryptionKeys: [outsider.public], signingKeys: bob.private, format: 'armored' });
   const unavailableLayout = await checkUnavailable(page, context, base, root, seed, unavailable, await encrypt(outsider, 'Unverified group secret'));
+  console.log('Checking checkUnavailableRecovery');
   await checkUnavailableRecovery(page, base, outsider.privateKey);
+  console.log('Checking checkUnavailableSeen');
   await checkUnavailableSeen(context, base, seed, unavailable);
   await page.bringToFront();
+  console.log('Checking checkUnavailableBoundaries');
   await checkUnavailableBoundaries(page, base, seed, unavailable, incoming);
   assert.deepEqual(errors, []);
   await writeFile(join(root, 'report.json'), JSON.stringify({ passed: true, checks: 'normal entry, inline encrypted replies, lost send acknowledgment/newer draft, isolated read recovery, invalid/missing signatures, delayed decryption/navigation, keyboard/zoom/scroll, shared composers, list/history snapshots, exact history coverage and anchoring within 5px, history restart/concurrent send, unread counts beyond 25 rows, signed read receipts, visible-window acknowledgment, unread 2-to-1 transition, hidden tabs/early navigation, backdated arrivals, lost read acknowledgment with pending send/newer draft, two-device convergence, reversed refreshes, identity changes, back navigation, authorization/no-store; compact unavailable groups, twenty-to-one collapse, sixty-message history joins, details/retry, real decryption recovery and split/merge/focus, grouped seen boundaries and recovery', unavailableLayout, screenshots: ['messages-desktop.png', 'messages-mobile.png', 'chat-desktop.png', 'chat-mobile.png', 'chat-recovery-mobile.png', 'history-loaded.png', 'history-mobile.png', 'unread-mobile.png', 'unavailable-mobile.png', 'unavailable-details-mobile.png'] }, null, 2));

@@ -509,11 +509,26 @@
     }
   }
 
+  function syncAgentResponseModeMenu() {
+    if (!agentResponseModeMenu || agentResponseModeMenu.hidden || !agentResponseModeTrigger) {
+      return;
+    }
+    const bounds = agentResponseModeTrigger.getBoundingClientRect();
+    if (bounds.bottom <= 0 || bounds.top >= window.innerHeight
+      || bounds.right <= 0 || bounds.left >= window.innerWidth) {
+      closeAgentResponseModeMenu(false);
+      return;
+    }
+    positionAgentResponseModeMenu(agentResponseModeMenu, agentResponseModeTrigger);
+  }
+
   function closeAgentResponseModeMenu(restoreFocus) {
     if (!agentResponseModeMenu || agentResponseModeMenu.hidden) {
       return;
     }
     const trigger = agentResponseModeTrigger;
+    window.removeEventListener("scroll", syncAgentResponseModeMenu, true);
+    window.removeEventListener("resize", syncAgentResponseModeMenu);
     agentResponseModeMenu.hidden = true;
     if (trigger) {
       trigger.setAttribute("aria-expanded", "false");
@@ -593,13 +608,20 @@
   }
 
   function positionAgentResponseModeMenu(menu, button) {
+    const gap = 6;
     const gutter = 8;
+    const minHeight = 120;
     const bounds = button.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - bounds.bottom - gap - gutter;
+    const spaceAbove = bounds.top - gap - gutter;
+    const placeBelow = spaceBelow >= menu.scrollHeight || spaceBelow >= spaceAbove;
+    const available = Math.max(minHeight, placeBelow ? spaceBelow : spaceAbove);
+
+    menu.style.maxHeight = available + "px";
+    const height = Math.min(menu.scrollHeight, available);
+    let top = placeBelow ? bounds.bottom + gap : bounds.top - gap - height;
+    top = Math.max(gutter, Math.min(top, window.innerHeight - height - gutter));
     const left = Math.max(gutter, Math.min(bounds.left, window.innerWidth - menu.offsetWidth - gutter));
-    let top = bounds.bottom + 6;
-    if (top + menu.offsetHeight > window.innerHeight - gutter) {
-      top = Math.max(gutter, bounds.top - menu.offsetHeight - 6);
-    }
     menu.style.left = left + "px";
     menu.style.top = top + "px";
   }
@@ -622,6 +644,8 @@
     button.setAttribute("aria-expanded", "true");
     menu.hidden = false;
     positionAgentResponseModeMenu(menu, button);
+    window.addEventListener("scroll", syncAgentResponseModeMenu, true);
+    window.addEventListener("resize", syncAgentResponseModeMenu);
     const firstChoice = menu.querySelector('[data-response-mode]');
     if (firstChoice) {
       firstChoice.focus();

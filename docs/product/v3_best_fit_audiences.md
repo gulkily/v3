@@ -23,7 +23,7 @@ The initial pitch should therefore be concrete: **give the group's recurring dis
 | Developer communities and small technical projects | Discuss decisions and build tools around their own record | Plain-text APIs, RSS, SQLite access, signed records, and self-hosting | Search, notifications, and integrations; v3 does not supply a full issue-tracking workflow |
 | Student and alumni clubs with continuity across cohorts | Transfer knowledge when leadership changes | Repository exports, rebuild tools, discussions around events, and membership history | A named successor must inherit hosting and backups; casual members need smoother onboarding |
 
-Existing site profiles demonstrate relevant implementation choices; they do not establish that these segments are already successful customers. See [site presentation](../../src/ForumRewrite/ProfilePresentationContent.php), [event support](../plans/mitrapclub_events_experience_step4_implementation_summary.md), and the [QDB import runbook](../runbooks/qdb_archive_import.md).
+Existing site profiles demonstrate relevant implementation choices; they do not establish that these segments are already successful customers. See [site presentation](../../src/ForumRewrite/ProfilePresentationContent.php), [event support](../plans/mitrapclub_events_experience/mitrapclub_events_experience_step4_implementation_summary.md), and the [QDB import runbook](../runbooks/qdb_archive_import.md).
 
 ## Individuals who are especially likely to value it
 

@@ -115,7 +115,7 @@ fdp_sync() {
   echo "Repaired legacy FDP subtree metadata and synchronized docs/fdp."
 }
 
-if [[ -z "${COMMAND}" ]]; then
+if [[ -z "${COMMAND}" || "${COMMAND}" == "help" || "${COMMAND}" == "--help" || "${COMMAND}" == "-h" ]]; then
   cat <<'EOF'
 Usage:
   ./v3 start [--listen-all|host:port] [--verbose|--quiet] [--log-file=/path/dev.log]
@@ -126,6 +126,8 @@ Usage:
   ./v3 rebuild [repository_root] [database_path]
   ./v3 rebuild diagnose [repository_root] [database_path]
   ./v3 rebuild recover --confirm [repository_root] [database_path]
+  ./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
+  ./v3 import-instance --resume [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
   ./v3 import-repository <archive.tar.gz> [repository_root] [database_path] [artifact_root] [--dry-run] [--no-commit]
   ./v3 thread-attributes <thread_id_or_record> [repository_root] [database_path]
   ./v3 delete-record <record_path_or_id> [repository_root] [database_path] [artifact_root]
@@ -153,8 +155,17 @@ Usage:
   ./v3 task-queue cron [--log=/var/log/forum-task-queue.log]
   ./v3 approve <identity_id> [seed_reason] [repository_root] [database_path]
   ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
+  ./v3 approval audit [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--review-only] [--summary] [--json]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
+
+Import content from another instance:
+  ./v3 import-instance https://forum.example --dry-run
+  ./v3 import-instance https://forum.example
+  Run ./v3 import-instance --help for name aliases, options, and recovery.
 EOF
+  if [[ -n "${COMMAND}" ]]; then
+    exit 0
+  fi
   exit 1
 fi
 
@@ -227,6 +238,10 @@ case "${COMMAND}" in
         php "${ROOT}/scripts/rebuild_read_model.php" "$@"
         ;;
     esac
+    ;;
+  import-instance)
+    shift
+    php "${ROOT}/scripts/import_instance.php" "$@"
     ;;
   import-repository)
     shift
@@ -399,7 +414,12 @@ EOF
     ;;
   approval)
     shift
-    php "${ROOT}/scripts/inject_approval.php" "$@"
+    if [[ "${1:-}" == "audit" ]]; then
+      shift
+      php "${ROOT}/scripts/audit_approvals.php" "$@"
+    else
+      php "${ROOT}/scripts/inject_approval.php" "$@"
+    fi
     ;;
   approve)
     shift

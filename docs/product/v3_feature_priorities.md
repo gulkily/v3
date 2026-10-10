@@ -88,7 +88,7 @@ The design must reconcile two real promises: a durable record and a humane respo
 
 ## 6 Finish the existing private-message conversation
 
-**Current behavior.** Encryption, local decryption, signatures, conversation views, replies, and local compose drafts already exist. `PrivateMessageStore` limits Inbox, Sent, and a conversation to the newest 25 messages, with no cursor or older-page parameter in those methods. There is no message read state in its schema. [Conversation implementation](../plans/private_message_conversations_step4_implementation_summary.md) and [store](../../src/ForumRewrite/Messaging/PrivateMessageStore.php)
+**Current behavior.** Encryption, local decryption, signatures, conversation views, replies, and local compose drafts already exist. `PrivateMessageStore` limits Inbox, Sent, and a conversation to the newest 25 messages, with no cursor or older-page parameter in those methods. There is no message read state in its schema. [Conversation implementation](../plans/private_message_conversations/private_message_conversations_step4_implementation_summary.md) and [store](../../src/ForumRewrite/Messaging/PrivateMessageStore.php)
 
 **Smallest useful release.** Add cursor pagination, “load earlier,” unread state, and reliable refresh after incoming messages. Distinguish saved locally, accepted by the server, and successfully decrypted; do not imply that server acceptance means the recipient read the message. Define backup of the private ciphertext store separately from public repository backup.
 

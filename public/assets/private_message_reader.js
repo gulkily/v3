@@ -36,7 +36,8 @@
       return { kind: "bad-signature", message: "The sender's approved public keys are unavailable, so this message cannot be verified." };
     }
 
-    let openpgp, verificationKeys, decryptionKey, message, decrypted;
+    let openpgp, verificationKeys, decryptionKey, message, decrypted, restoredTransfer = '';
+    const history = window.ForumPrivateMessageHistorySync;
     try {
       openpgp = await openPgpApi();
     } catch (error) {
@@ -63,7 +64,18 @@
         format: "utf8",
       });
     } catch (error) {
-      return { kind: "decryption-failed", message: "This encrypted message could not be decrypted." };
+      if (history && options.messageId) {
+        try {
+          for (const candidate of await history.candidates(options.messageId, String(options.encryptedEnvelope || ''))) {
+            try {
+              decrypted = await openpgp.decrypt({message: await openpgp.readMessage({armoredMessage: String(options.encryptedEnvelope || '')}), sessionKeys: candidate.keys, verificationKeys: verificationKeys, format: 'utf8'});
+              restoredTransfer = candidate.transfer_id;
+              break;
+            } catch (_) { /* Try another authenticated donor candidate. */ }
+          }
+        } catch (_) { return {kind:'load-failed', message:'History synchronization could not be loaded. Retry reading this message.'}; }
+      }
+      if (!decrypted) return { kind: "decryption-failed", message: "This encrypted message could not be decrypted." };
     }
 
     if (!Array.isArray(decrypted.signatures) || decrypted.signatures.length === 0) {
@@ -78,6 +90,8 @@
       return { kind: "bad-signature", message: "The sender signature could not be verified." };
     }
 
+    if (privateKeyArmor !== armoredPrivateKey()) return {kind:'read-failed',message:'Browser identity changed. Reload Messages.'};
+    if (history && options.messageId) history.confirm(options.messageId, String(options.encryptedEnvelope || ''), restoredTransfer);
     return { kind: "verified", plaintext: String(decrypted.data || "") };
   }
 
@@ -158,7 +172,7 @@
         card.querySelector('[data-role="private-message-reader-error"]').hidden = true;
         explanation.textContent = message + (state === 'decryption-failed'
           ? ' This can happen if you started using this device or browser after the message was sent.' : '') +
-          ' Try opening this message on a device or browser you used before it was sent—it may still have the key needed to read it. If you have a saved copy of that private key, restoring it in this browser may also help.';
+          ' Visit this site on a device that can still read the message, then retry history here. If no device has access, a saved copy of the original private key may help.';
       }
       (compact ? details : card).appendChild(retry);
     }
@@ -210,6 +224,7 @@
       }
       const senderPublicKeyArmors = await messaging.recipientKeys(String(message.sender_username_token || ""));
       result = await decryptEnvelope({
+        messageId: message.message_id,
         encryptedEnvelope: message.encrypted_envelope,
         senderPublicKeyArmors: senderPublicKeyArmors,
       });
@@ -249,6 +264,15 @@
     }
 
     root.dataset.privateMessageReaderBound = "1";
+    function retryHistory(event) {
+      Array.from(root.querySelectorAll('[data-private-message-id]')).forEach(function (card) {
+        const state = card.dataset.readerState;
+        if (!['decryption-failed', 'unavailable', 'load-failed'].includes(state)) return;
+        if (event.detail && event.detail.messageId && event.detail.messageId !== card.dataset.privateMessageId) return;
+        readCard(mailbox, card, counterpartUsernameToken);
+      });
+    }
+    document.addEventListener('private-message-history-restored', retryHistory);
     Promise.allSettled(Array.from(root.querySelectorAll("[data-private-message-id]")).map(function (card) {
       cardCursors.set(card, root.dataset.historyPageCursor || '');
       return readCard(mailbox, card, counterpartUsernameToken);

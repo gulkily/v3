@@ -126,6 +126,7 @@ final class Application
         if ($this->approvedMembersOnlyEnabled()
             || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
             || in_array($path, ['/messages', '/messages/', '/api/private_messages/conversations', '/api/private_messages/conversation', '/api/private_messages/unread', '/api/private_messages/read'], true)
+            || str_starts_with($path, '/api/private_messages/history_sync/')
             || str_starts_with($path, '/messages/conversation/')
         ) {
             $this->startViewerSession();
@@ -201,6 +202,15 @@ final class Application
 
         if ($path === '/api/auth_status') {
             $this->authApiController()->authenticationStatus($method);
+            return;
+        }
+
+        if (str_starts_with($path, '/api/private_messages/history_sync/')) {
+            (new \ForumRewrite\Http\PrivateMessageHistorySyncController($this->routeServices(), $this->authenticatedViewerProfile(...), function () {
+                $config=PrivateConfig::load($this->projectRoot);
+                $pdo=\ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot,$config);
+                return new \ForumRewrite\Messaging\PrivateMessageHistorySyncService($this->privateMessageStore(),new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore($pdo),$this->routeServices()->pdo());
+            }))->handle($method, substr($path,strlen('/api/private_messages/history_sync/')),$query);
             return;
         }
 

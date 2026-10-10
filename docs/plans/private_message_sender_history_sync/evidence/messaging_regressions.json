@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "checks": "normal entry, inline encrypted replies, lost send acknowledgment/newer draft, isolated read recovery, invalid/missing signatures, delayed decryption/navigation, keyboard/zoom/scroll, shared composers, list/history snapshots, exact history coverage and anchoring within 5px, history restart/concurrent send, unread counts beyond 25 rows, signed read receipts, visible-window acknowledgment, unread 2-to-1 transition, hidden tabs/early navigation, backdated arrivals, lost read acknowledgment with pending send/newer draft, two-device convergence, reversed refreshes, identity changes, back navigation, authorization/no-store; compact unavailable groups, twenty-to-one collapse, sixty-message history joins, details/retry, real decryption recovery and split/merge/focus, grouped seen boundaries and recovery",
+  "unavailableLayout": {
+    "baseline": "reconstructed legacy error/retry presentation, identical twenty-message fixture and theme",
+    "legacyHeight": 2732.96875,
+    "collapsedHeight": 50.78125
+  },
+  "screenshots": [
+    "messages-desktop.png",
+    "messages-mobile.png",
+    "chat-desktop.png",
+    "chat-mobile.png",
+    "chat-recovery-mobile.png",
+    "history-loaded.png",
+    "history-mobile.png",
+    "unread-mobile.png",
+    "unavailable-mobile.png",
+    "unavailable-details-mobile.png"
+  ],
+  "local_artifacts": "/tmp/private-message-browser-erqE3n"
+}

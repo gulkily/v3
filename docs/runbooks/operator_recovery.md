@@ -203,3 +203,12 @@ php scripts/build_static_artifacts.php "$FORUM_REPOSITORY_ROOT" "$FORUM_DATABASE
 ./v3 task-queue run --limit=1 --score-limit=25
 ./v3 status
 ```
+
+## Interrupted remote content import
+
+Use `./v3 import-instance --resume` with the failed run's repository, database,
+static-root, and site-profile settings. It uses saved payloads and retries
+publication without redownloading or duplicating an already-created commit.
+Preserve `.git/instance-import/pending.json` and the referenced run directory;
+resolve reported local divergence before retrying. See the
+[instance content import recovery procedure](instance_content_import.md#recovery).
