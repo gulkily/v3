@@ -48,6 +48,8 @@ or standalone plans remain at this level until they reach that threshold.
 - [Platform docs](platform_docs/)
 - [Private message conversation list](private_message_conversation_list/)
 - [Private message chat refinement](private_message_chat_refinement/)
+- [Private message history synchronization](private_message_history_sync/)
+- [Sender-assisted private message history synchronization](private_message_sender_history_sync/)
 - [Private message unread state](private_message_unread/)
 - [Compact unavailable private messages](private_message_unavailable/)
 - [Private-window lobby fallback](private_window_lobby_fallback/)

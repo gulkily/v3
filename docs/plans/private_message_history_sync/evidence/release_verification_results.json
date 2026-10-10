@@ -1,0 +1,41 @@
+{
+  "full": {
+    "summary": "1028 run, 1020 passed, 8 failed",
+    "failures": [
+      "LocalAppSmokeTest::testApplicationRendersCoreRoutes - Failed asserting that output does not contain: tool-launcher-button\" href=\"/account/key/\"",
+      "OfflineSnapshotBootstrapTest::testPublishesWhenNoSnapshotIsServed - SQLSTATE[HY000]: General error: 1 no such column: author_identity_id",
+      "OfflineSnapshotBootstrapTest::testRetainsAnExistingServedSnapshot - SQLSTATE[HY000]: General error: 1 no such column: author_identity_id",
+      "OfflineSnapshotPublishCommandTest::testPublishBuildsOnlyIndependentOfflineSnapshot - Failed asserting that values are identical. Expected 0 but got 1.",
+      "OfflineSnapshotPublishCommandTest::testPublishReportsSelectedProfileWithoutChangingExplicitRootPrecedence - Failed asserting that values are identical. Expected 0 but got 1.",
+      "QuoteCardDisplayNumberTest::testQdbWelcomeDisplaysThreeNewestNewsItemsAndLinksToAllNews - Failed asserting that output contains: \u2691 Flag something that",
+      "WriteApiSmokeTest::testTaskQueueProcessesQueuedAgentReplyOnce - Failed asserting that output contains: type=agent_reply",
+      "WriteApiSmokeTest::testQdbPermalinkDisablesBothVoteCaptionsAfterAnExistingUpvote - Failed asserting that values are identical. Expected 2 but got 0."
+    ]
+  },
+  "baseline": {
+    "summary": "299 run, 292 passed, 7 failed",
+    "failures": [
+      "LocalAppSmokeTest::testApplicationRendersCoreRoutes - Failed asserting that output does not contain: tool-launcher-button\" href=\"/account/key/\"",
+      "OfflineSnapshotBootstrapTest::testPublishesWhenNoSnapshotIsServed - SQLSTATE[HY000]: General error: 1 no such column: author_identity_id",
+      "OfflineSnapshotBootstrapTest::testRetainsAnExistingServedSnapshot - SQLSTATE[HY000]: General error: 1 no such column: author_identity_id",
+      "OfflineSnapshotPublishCommandTest::testPublishBuildsOnlyIndependentOfflineSnapshot - Failed asserting that values are identical. Expected 0 but got 1.",
+      "OfflineSnapshotPublishCommandTest::testPublishReportsSelectedProfileWithoutChangingExplicitRootPrecedence - Failed asserting that values are identical. Expected 0 but got 1.",
+      "QuoteCardDisplayNumberTest::testQdbWelcomeDisplaysThreeNewestNewsItemsAndLinksToAllNews - Failed asserting that output contains: \u2691 Flag something that",
+      "WriteApiSmokeTest::testQdbPermalinkDisablesBothVoteCaptionsAfterAnExistingUpvote - Failed asserting that values are identical. Expected 2 but got 0."
+    ]
+  },
+  "focused": {
+    "summary": "18 run, 18 passed, 0 failed",
+    "failures": []
+  },
+  "routing": {
+    "summary": "16 run, 16 passed, 0 failed",
+    "failures": []
+  },
+  "notes": [
+    "Seven full-suite failures reproduced on pre-feature commit 50e2c640 in a separate worktree.",
+    "Task queue failure did not reproduce in that clean baseline environment; local test history records it failing since 2026-10-08, and its isolated recheck still fails.",
+    "Both complete browser journeys passed; existing messaging artifacts /tmp/private-message-browser-PSedOt, history sync artifacts /tmp/history-sync-browser-Rfnuxj.",
+    "No production deployment, merge, or push."
+  ]
+}

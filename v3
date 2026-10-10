@@ -155,6 +155,7 @@ Usage:
   ./v3 task-queue cron [--log=/var/log/forum-task-queue.log]
   ./v3 approve <identity_id> [seed_reason] [repository_root] [database_path]
   ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
+  ./v3 approval audit [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--review-only] [--summary] [--json]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
 
 Import content from another instance:
@@ -413,7 +414,12 @@ EOF
     ;;
   approval)
     shift
-    php "${ROOT}/scripts/inject_approval.php" "$@"
+    if [[ "${1:-}" == "audit" ]]; then
+      shift
+      php "${ROOT}/scripts/audit_approvals.php" "$@"
+    else
+      php "${ROOT}/scripts/inject_approval.php" "$@"
+    fi
     ;;
   approve)
     shift

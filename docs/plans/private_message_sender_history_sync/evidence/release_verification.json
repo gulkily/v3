@@ -1,0 +1,29 @@
+{
+  "full_suite": "1034 run, 1026 passed, 8 failed",
+  "failures": [
+    "LocalAppSmokeTest::testApplicationRendersCoreRoutes - Failed asserting that output does not contain: tool-launcher-button\" href=\"/account/key/\"",
+    "OfflineSnapshotBootstrapTest::testPublishesWhenNoSnapshotIsServed - SQLSTATE[HY000]: General error: 1 no such column: author_identity_id",
+    "OfflineSnapshotBootstrapTest::testRetainsAnExistingServedSnapshot - SQLSTATE[HY000]: General error: 1 no such column: author_identity_id",
+    "OfflineSnapshotPublishCommandTest::testPublishBuildsOnlyIndependentOfflineSnapshot - Failed asserting that values are identical. Expected 0 but got 1.",
+    "OfflineSnapshotPublishCommandTest::testPublishReportsSelectedProfileWithoutChangingExplicitRootPrecedence - Failed asserting that values are identical. Expected 0 but got 1.",
+    "QuoteCardDisplayNumberTest::testQdbWelcomeDisplaysThreeNewestNewsItemsAndLinksToAllNews - Failed asserting that output contains: ⚑ Flag something that",
+    "WriteApiSmokeTest::testTaskQueueProcessesQueuedAgentReplyOnce - Failed asserting that output contains: type=agent_reply",
+    "WriteApiSmokeTest::testQdbPermalinkDisablesBothVoteCaptionsAfterAnExistingUpvote - Failed asserting that values are identical. Expected 2 but got 0."
+  ],
+  "matches_previously_recorded_failure_set": true,
+  "previous_evidence": "../../private_message_history_sync/evidence/release_verification_results.json",
+  "full_log": "/tmp/sender-history-full-suite.log",
+  "rollback": {
+    "legacy_commit": "cdb1de0e",
+    "php_rehearsal": "/tmp/sender-history-rollback-3e21bm08",
+    "browser_artifacts": "/tmp/history-sync-browser-8OQb3O",
+    "checks": [
+      "legacy PHP excludes foreign donors, reads same-account candidates and preserves retained transfers on upgraded storage",
+      "legacy browser rejects sender-only v2 history and reads 31 forwarded v1 originals"
+    ]
+  },
+  "limits": [
+    "Local Chromium and PHP verification, no production deployment or capacity claim",
+    "Physical mobile keyboards and other browser engines remain manual follow-ups"
+  ]
+}

@@ -314,6 +314,9 @@
   function bind(root) {
     if (!root || root.dataset.conversationBound) return;
     root.dataset.conversationBound = '1';
+    // This conversation restores position after decryption; native reload restoration
+    // can otherwise override navigation while asynchronous content changes height.
+    if (window.history && 'scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
     format(root);
     bindHistory(root);
     bindReadReconciliation(root);

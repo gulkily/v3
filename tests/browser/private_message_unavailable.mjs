@@ -49,8 +49,8 @@ export async function checkUnavailable(page, context, base, artifacts, seed, una
   await first.locator('summary').click();
   await first.getByRole('button', { name: 'Retry reading message' }).waitFor();
   assert.match(await first.innerText(), /This can happen if you started using this device or browser after the message was sent/);
-  assert.match(await first.innerText(), /Try opening this message on a device or browser you used before it was sent/);
-  assert.match(await first.innerText(), /If you have a saved copy of that private key, restoring it in this browser may also help/);
+  assert.match(await first.innerText(), /Visit this site on a device that can still read the message, then retry history here/);
+  assert.match(await first.innerText(), /If no device has access, a saved copy of the original private key may help/);
   await button.click();
   assert.equal(await button.getAttribute('aria-expanded'), 'false');
   await page.setViewportSize({ width: 375, height: 812 });

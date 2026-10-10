@@ -277,6 +277,41 @@ final class PrivateMessageStore
         return $stmt->fetchAll();
     }
 
+    /** Bounded account-wide enumeration; durable references use IDs, not rowids. */
+    public function historySyncPage(string $account, string $after, int $limit): array
+    {
+        $q=$this->pdo->prepare('SELECT * FROM private_messages WHERE (sender_username_token=:account OR recipient_username_token=:account) AND message_id>:after ORDER BY message_id LIMIT ' . (min(10,max(1,$limit))+1));
+        $q->execute(['account'=>$account,'after'=>$after]);
+        return $this->boundedHistoryPage($q->fetchAll(),$limit);
+    }
+    /** Outgoing-only discovery; targets are approved keys of each original recipient. */
+    public function historySyncSentPage(string $sender, string $after, int $limit): array
+    {
+        $q=$this->pdo->prepare('SELECT * FROM private_messages WHERE sender_username_token=? AND recipient_username_token!=sender_username_token AND message_id>? ORDER BY message_id LIMIT '.(min(10,max(1,$limit))+1));
+        $q->execute([$sender,$after]);
+        return $this->boundedHistoryPage($q->fetchAll(),$limit);
+    }
+    private function boundedHistoryPage(array $rows, int $limit): array
+    {
+        $messages=[]; $bytes=0;
+        foreach ($rows as $row) {
+            if (count($messages)>=$limit || ($messages!==[] && $bytes+strlen($row['encrypted_envelope'])>2097152)) break;
+            $messages[]=$row; $bytes+=strlen($row['encrypted_envelope']);
+        }
+        return ['messages'=>$messages,'more'=>count($rows)>count($messages),'last'=>$messages===[]?'':$messages[count($messages)-1]['message_id']];
+    }
+    public function historySyncMessage(string $account, string $id): ?array
+    {
+        $q=$this->pdo->prepare('SELECT * FROM private_messages WHERE message_id=? AND (sender_username_token=? OR recipient_username_token=?)');
+        $q->execute([$id,$account,$account]);
+        return $q->fetch() ?: null;
+    }
+    public function historySyncCount(string $account): int
+    {
+        $q=$this->pdo->prepare('SELECT COUNT(*) FROM private_messages WHERE sender_username_token=? OR recipient_username_token=?');
+        $q->execute([$account,$account]); return (int)$q->fetchColumn();
+    }
+
     private function ensureSchema(): void
     {
         $this->pdo->exec(
