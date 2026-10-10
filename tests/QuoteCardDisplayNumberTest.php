@@ -155,6 +155,9 @@ final class QuoteCardDisplayNumberTest
             putenv('FORUM_SITE_ID');
         }
 
+        assertStringNotContains('<p class="eyebrow">Tag</p>', $tag);
+        assertStringNotContains('<h1>#general</h1>', $tag);
+        assertStringNotContains('>2 threads</p>', $tag);
         assertStringContains('href="/threads/root-001"', $tag);
         assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $tag);
 

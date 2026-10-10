@@ -37,3 +37,15 @@
   - Live development server: the regenerated QDB theme asset contains only the targeted composer selector.
 - Notes:
   - The fix preserves the original rule’s purpose—hide generic composer chrome on QDB quote listings—without affecting shared tag or offline thread cards.
+
+## Stage 4 - Direct tag-result list
+
+- Changes:
+  - Removed the tag-page summary card, including its label, tag name, thread count, and back links, so a tag route begins directly with matching thread cards.
+  - Extended generic and QDB tag regressions to reject the removed summary markup while retaining visible result links.
+- Verification:
+  - `php -l templates/pages/tag.php` and `php -l tests/QuoteCardDisplayNumberTest.php` — passed.
+  - `php tests/run.php QuoteCardDisplayNumberTest::testQdbTagPagesKeepAllTaggedThreadsWhileCollectionSurfacesExcludeNonQuotes` — 1 passed.
+  - Live development server: `/tags/general` contains four thread cards and no tag summary markup.
+- Notes:
+  - The broader `LocalAppSmokeTest` has two pre-existing failures unrelated to this change and reached them before the aggregate result completed.
