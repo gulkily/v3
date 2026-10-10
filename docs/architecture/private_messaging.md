@@ -94,6 +94,26 @@ Failed loads can retry the same cursor. Invalid or expired history positions off
 
 ### Unread conversations
 
+The diagram shows the acknowledgment handshake; previews, older pages and replies never move the boundary.
+
+```mermaid
+flowchart TB
+  subgraph Open["1. Open conversation"]
+    direction LR
+    A["Browser requests<br/>fresh window"] --> B["Server returns envelopes<br/>+ HMAC receipt for boundary"]
+  end
+  subgraph Ack["2. Browser acknowledges"]
+    direction LR
+    C["Reads settled,<br/>page visible and focused,<br/>latest message in view"] --> D["POST read<br/>with receipt"]
+  end
+  subgraph Rec["3. Server records"]
+    direction LR
+    E["Verify receipt and<br/>same-origin JSON"] --> F[("Move seen position<br/>forward only")]
+  end
+  Open -- "receipt kept by page" --> Ack
+  Ack --> Rec
+```
+
 The navigation badge counts **conversations**, not individual messages. Each list row can show whether that counterpart has received messages beyond the viewer's saved position. The server calculates this from private metadata without fetching or decrypting bodies.
 
 Automatic acknowledgment occurs after the current conversation window's reading attempts have settled, the document is visible and focused, and the latest message or its compact group is visible. It acknowledges received history through the window's captured boundary, including displayed failures. Consequently, seen means that the conversation window was presented; it does not prove that every message was individually viewed, decrypted, verified, or understood. No sender-facing read receipts are provided.

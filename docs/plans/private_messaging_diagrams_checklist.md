@@ -55,13 +55,14 @@ Section: "Sending and reading a message" (lines 32-43).
 
 Section: "Unread conversations" (lines 75-85).
 
-- [ ] Actors: reader browser, server, private metadata (tracking and seen tables).
-- [ ] Show: fresh conversation window returns an HMAC receipt bound to viewer, counterpart and boundary.
-- [ ] Show: ack conditions met (reads settled, visible and focused, latest message visible), then `POST /api/private_messages/read` with the receipt.
-- [ ] Show: progress only moves forward; retry reuses the same receipt.
-- [ ] Note that list previews, loading older pages and sending do not move the boundary.
-- [ ] Verify against the receipt and race rules in the prose.
-- [ ] Layout: keep to the receipt handshake only; put the "do not move the boundary" cases in prose or a caption so the diagram stays short.
+- [x] Actors: reader browser, server, private metadata (tracking and seen tables).
+- [x] Show: fresh conversation window returns an HMAC receipt bound to viewer, counterpart and boundary.
+- [x] Show: ack conditions met (reads settled, visible and focused, latest message visible), then `POST /api/private_messages/read` with the receipt.
+- [x] Show: progress only moves forward; retry reuses the same receipt.
+- [x] Note that list previews, loading older pages and sending do not move the boundary.
+- [x] Verify against the receipt and race rules in the prose.
+- [x] Layout: keep to the receipt handshake only; put the "do not move the boundary" cases in prose or a caption so the diagram stays short.
+- Done: three stacked steps (open, acknowledge, record); renders 609x658 (about 0.93:1). Non-advancing cases kept in the lead sentence, not the diagram.
 
 ### 3. Draft and uncertain delivery (state diagram)
 
