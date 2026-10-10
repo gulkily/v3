@@ -7,6 +7,11 @@ Minimal local test slice for the rewrite spec.
 An index of everything under `docs/` plus the project-level notes at the
 repo root.
 
+### Architecture (`docs/architecture/`)
+
+- [Public Architecture and Trust Model](docs/architecture/public_architecture_and_trust.md) — public records, browser identities, and operator trust
+- [Private Messaging Architecture and Features](docs/architecture/private_messaging.md) — consolidated encryption, storage, conversation features, unread semantics, recovery, and operational limits
+
 ### Runbooks (`docs/runbooks/`)
 
 Operational how-tos for running and maintaining a deployment:
