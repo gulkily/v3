@@ -35,3 +35,9 @@ if($action==='inspect') {
         'transfers'=>(int)$sync->query('SELECT COUNT(*) FROM history_sync_transfers')->fetchColumn(),
         'coverage'=>(int)$sync->query('SELECT COUNT(*) FROM history_sync_coverage')->fetchColumn()]);
 }
+
+if($action==='contributions') {
+    $sync=new PDO('sqlite:'.$root.'/state/private/message_history_sync.sqlite3');
+    $q=$sync->prepare('SELECT COUNT(DISTINCT message_id) FROM history_sync_items WHERE source=? AND target=?');
+    $q->execute([$input['source'],$input['target']]);echo $q->fetchColumn();
+}

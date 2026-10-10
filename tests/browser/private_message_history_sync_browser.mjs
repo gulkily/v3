@@ -56,9 +56,18 @@ async function device(who) {
  ctx.on('request',request=>{if(request.url().includes('/history_sync/')) syncBodies.push(request.postData()||'');});
  return ctx;
 }
-async function visit(ctx) {
+async function visit(ctx, contribution=null) {
  const page=await ctx.newPage();await page.goto(base+'/');
- for(let n=0;n<3;n++) await page.evaluate(()=>window.ForumPrivateMessageHistorySync.refresh());
+ // The product bounds each visit; drive additional visible returns when testing full convergence.
+ let contributed=0;
+ for(let n=0;n<(contribution?12:3);n++) {
+   await page.evaluate(()=>window.ForumPrivateMessageHistorySync.refresh());
+   if(contribution) {
+     contributed=Number(fixture({action:'contributions',...contribution}));
+     if(contributed>=contribution.count)break;
+   }
+ }
+ if(contribution)assert.equal(contributed,contribution.count,'Donor must converge across bounded visits');
  await page.close();
 }
 async function readAll(ctx,expected) {
@@ -135,12 +144,16 @@ try {
  assert.equal(await partial.locator('textarea').inputValue(),'Draft during partial recovery');
  await partial.locator('textarea').fill('');await partial.close();
  let page=await readAll(t,31);
+ if(senderAssisted) {
+   const forwarded=await json(await t.request.get(base+'/api/private_messages/history_sync/transfers?message_id=history-01'));
+   assert(forwarded.transfers.some(row=>row.source===oldB.fingerprint && row.source_account==='bob'),'A restored sender key must also be able to contribute');
+ }
  await page.setViewportSize({width:375,height:812});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await page.screenshot({path:join(root,'restored-mobile.png'),fullPage:true});
  await page.reload();await page.waitForFunction(()=>document.querySelectorAll('[data-reader-state="verified"]').length===25);await page.close();
  assert.deepEqual(JSON.parse(fixture({action:'inspect'})).originals,before,'Synchronization must leave original ciphertext unchanged');
  console.log('Restored target approves and supplies a later device, with original donors closed');
- await approve(t,target,later);await visit(t);await t.close();
+ await approve(t,target,later);await visit(t,{source:target.fingerprint,target:later.fingerprint,count:31});await t.close();
  const l=await device(later);page=await readAll(l,31);await page.close();
  const candidate=await json(await l.request.get(base+'/api/private_messages/history_sync/transfers?message_id=history-01'));
  assert.ok(candidate.transfers.some(row=>row.source===target.fingerprint));
@@ -162,7 +175,7 @@ try {
  assert.deepEqual(errors,[]);
  for(const body of syncBodies) {assert(!body.includes('History secret'));assert(!body.includes('PRIVATE KEY BLOCK'));}
  assert(!log.includes('History secret'));assert(!log.includes('PRIVATE KEY BLOCK'));
- await writeFile(join(root,'report.json'),JSON.stringify({passed:true,messages:31,checks:['no global history-sync notice or retry button','real signed approvals','separate donor visits','partial donors','three-plus batches','retained reload','restored-device forwarding','mobile','draft preservation','no-store/auth/origin','original ciphertext unchanged','private paired backup/restore','sync outage with normal send','no plaintext/key logging'],syncRequests:syncBodies.length},null,2));
+ await writeFile(join(root,'report.json'),JSON.stringify({passed:true,mode:senderAssisted?'sender-assisted':'same-account',messages:31,checks:['no global history-sync notice or retry button','real signed approvals',...(senderAssisted?['recipient donors absent','restored sender contribution']:[]),'separate donor visits','partial donors','three-plus batches','retained reload','restored-device forwarding','mobile','draft preservation','no-store/auth/origin','original ciphertext unchanged','private paired backup/restore','sync outage with normal send','no plaintext/key logging'],syncRequests:syncBodies.length},null,2));
  console.log('History sync browser checks passed. Artifacts: '+root);
  }
 } catch(error) {console.error('Browser artifacts: '+root);console.error(error);process.exitCode=1;}
