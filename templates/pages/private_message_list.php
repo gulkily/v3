@@ -1,6 +1,7 @@
 <section class="stack" data-conversation-list data-page-cursor="<?= $e($page['page_cursor']) ?>" data-next-cursor="<?= $e($page['next_cursor'] ?? '') ?>" data-viewer="<?= $e($viewerProfile['username_token']) ?>">
   <article class="card">
     <h1>Messages</h1>
+    <button type="button" data-role="unread-retry" hidden>Retry unread status</button>
     <details data-role="new-message">
       <summary>New message</summary>
       <form class="stack" data-role="recipient-form" action="/messages" method="get">

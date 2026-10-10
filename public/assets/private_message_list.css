@@ -37,6 +37,7 @@
 }
 [data-action="retry-preview"] {
   margin: 0 0.9rem 0.9rem;
+  width: calc(100% - 1.8rem);
 }
 [data-conversation-list] summary {
   cursor: pointer;

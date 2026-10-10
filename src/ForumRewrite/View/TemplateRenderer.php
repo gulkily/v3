@@ -148,6 +148,10 @@ final class TemplateRenderer
             ]);
         }
 
+        $navItems = $this->navItems($viewerProfile);
+        if (array_filter($navItems, static fn (array $item): bool => $item['section'] === 'messages')) {
+            $scriptPaths[] = '/assets/private_message_unread.js';
+        }
         $scriptPaths = array_values(array_unique($scriptPaths));
         $assetScriptPaths = [];
         foreach ($scriptPaths as $scriptPath) {
@@ -213,7 +217,7 @@ final class TemplateRenderer
             'approvedMembersOnlyEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
             'automaticGuestKeypairEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED),
             'publicAuthenticationResume' => $publicAuthenticationResume,
-            'navItems' => $this->navItems($viewerProfile),
+            'navItems' => $navItems,
         ]);
     }
 
@@ -299,7 +303,7 @@ final class TemplateRenderer
         if ($viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
             && (($viewerProfile['_authenticated_identity'] ?? true) === true)) {
-            $items[] = ['href' => '/messages', 'label' => 'Messages', 'section' => 'messages'];
+            $items[] = ['href' => '/messages', 'label' => 'Messages', 'section' => 'messages', 'viewer' => $viewerProfile['username_token'] ?? ''];
         }
 
         // Account/Invite are deliberately left out of the qdb profile's nav

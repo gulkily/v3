@@ -129,6 +129,7 @@
           throw new Error(String(payload && payload.error || 'Unable to load conversations. Try again.'));
         }
         await Promise.all(payload.conversations.map(render));
+        if (document.dispatchEvent) document.dispatchEvent(new CustomEvent('private-message-rows-changed'));
         cursor = payload.next_cursor;
         more.hidden = cursor === null;
         empty.hidden = rendered.size !== 0;
