@@ -84,8 +84,6 @@ general-purpose "canonicalize any URL" cleanup is its own open-ended feature:
 	needs its own Step 1 given the redirect-following/unknown-provider
 		design questions
 
-allow offline content for unauthenticated users
-
 the request agent response dropdown does not always fully display in-page
 	it should go up and above the link if below is not enough viewport space
 	other ways of mitigating it?
@@ -104,3 +102,32 @@ make it easy to import/sync content from another instance
 gate pm feature behind a feature flag
 
 qdb pages need better titles
+
+how to bring a new keypair up to date on private conversations
+	1. collect all the message ids and their passphrases
+	2. encrypt them all for the new keypair and send as private message
+	3. ???
+	4. profit
+	what triggers this though? how do we figure out we need to do this?
+		basically when a new keypair is approved, we need to check if:
+			- there are already other keypairs approved for the same user
+			- there are private messages that were sent to the user with the old keypair
+			- anything else?
+
+
+add more authentication modes
+	- top idea is that approval is allowed ONLY by admin or same-username
+	- second idea is completely open authentication (for low-risk platforms)
+
+identify targets for "ephemeral testing"
+	see https://zenmemes.com/threads/thread-20261006122804-184a64b6 
+
+now that we have a private messages feature, it becomes more relevant for users to back up their keys
+	consider how they can be backed up and how to encourage users to do it
+		backup options:
+			text file
+			image file
+			zip file
+			what else?
+		arguments for:
+			???
