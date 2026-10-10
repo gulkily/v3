@@ -16,6 +16,8 @@ vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_crypt
  const binding={account:'alice',source:donor.fp,target:target.fp};
  const ciphertext=await c.wrapHistoryKeys({...binding,privateKey:donor.privateKey,targetKey:target.publicKey,entries:[entry]});
  const input={...binding,privateKey:target.privateKey,sourceKey:donor.publicKey,ciphertext};
+ const v1=JSON.parse((await openpgp.decrypt({message:await openpgp.readMessage({armoredMessage:ciphertext}),decryptionKeys:await openpgp.readPrivateKey({armoredKey:target.privateKey}),format:'utf8'})).data);
+ assert.equal(v1.version,1);assert(!('source_account' in v1));
  const restored=await c.unwrapHistoryKeys(input);
  assert.equal(restored[0].digest,c.digest(envelope));
  assert.equal(await c.readOriginal(envelope,restored[0].keys,[sender.publicKey]),'original secret');

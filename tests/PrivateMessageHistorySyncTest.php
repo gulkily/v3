@@ -97,6 +97,31 @@ final class PrivateMessageHistorySyncTest
         assertSame('mallory',$service->work($this->viewer(),'sender')['account']);
         try {$service->work($this->viewer(),[]);throw new Exception('Invalid mode accepted');} catch(InvalidArgumentException $expected) {}
     }
+    public function testSenderRecoverySurvivesBadCandidatesRestoreAndRevocation(): void
+    {
+        [$profiles,$messages,$sync,$service,$db,$syncDb]=$this->fixture();
+        $input=array_replace($this->uploadInput('bad'),['account'=>'bob','target'=>str_repeat('c',40)]);
+        $service->upload($this->viewer(),$input);
+        $input['ciphertext']=$this->uploadInput('good')['ciphertext'];
+        $good=$service->upload($this->viewer(),$input);
+        assertSame($good['transfer_id'],$service->transfers($this->viewer('c','bob'),['message_id'=>'m01'])['transfers'][0]['transfer_id']);
+        $service->acknowledge($this->viewer('c','bob'),['items'=>[$input['items'][0]+$good]]);
+        $work=$service->work($this->viewer('c','bob'));
+        assertSame(false,in_array('m01',array_column($work['messages'],'message_id'),true));
+        $profiles->exec("UPDATE profiles SET is_approved=0 WHERE public_key='KEY-a'");
+        assertSame(true,in_array('m01',array_column($service->work($this->viewer('c','bob'))['messages'],'message_id'),true));
+        try {$service->upload($this->viewer(),$input);throw new Exception('Revoked source uploaded');} catch(RuntimeException $expected) {}
+        $profiles->exec("UPDATE profiles SET is_approved=1 WHERE public_key='KEY-a'");
+        $syncDb->exec('DELETE FROM history_sync_transfers');
+        assertSame(true,in_array('m01',array_column($service->work($this->viewer('c','bob'))['messages'],'message_id'),true));
+        $fresh=$service->upload($this->viewer(),$input);
+        assertSame($fresh['transfer_id'],$service->transfers($this->viewer('c','bob'),['message_id'=>'m01'])['transfers'][0]['transfer_id']);
+        $db->exec("UPDATE private_messages SET encrypted_envelope='different capture' WHERE message_id='m01'");
+        assertSame([],$service->transfers($this->viewer('c','bob'),['message_id'=>'m01'])['transfers']);
+        try {$service->acknowledge($this->viewer('c','bob'),['items'=>[$input['items'][0]+$fresh]]);throw new Exception('Changed original acknowledged');} catch(InvalidArgumentException $expected) {}
+        $db->exec("DELETE FROM private_messages WHERE message_id='m01'");
+        try {$service->transfers($this->viewer('c','bob'),['message_id'=>'m01']);throw new Exception('Missing original exposed');} catch(InvalidArgumentException $expected) {}
+    }
     public function testBoundedDiscoveryFindsExistingAndNewlyApprovedKeysWithoutQueue(): void
     {
         [$profiles,$messages,$sync,$service]=$this->fixture();
