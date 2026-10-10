@@ -63,7 +63,7 @@
         format: "utf8",
       });
     } catch (error) {
-      return { kind: "decryption-failed", message: "This encrypted message could not be decrypted. The cause could not be determined." };
+      return { kind: "decryption-failed", message: "This encrypted message could not be decrypted." };
     }
 
     if (!Array.isArray(decrypted.signatures) || decrypted.signatures.length === 0) {
@@ -156,7 +156,9 @@
       details.hidden = !compact;
       if (compact) {
         card.querySelector('[data-role="private-message-reader-error"]').hidden = true;
-        explanation.textContent = message + ' Retrying unchanged ciphertext with an unsuitable key cannot recover it. Adding a new key does not make older messages readable automatically.';
+        explanation.textContent = message + (state === 'decryption-failed'
+          ? ' This can happen if you added a new key to your account after the message was sent.' : '') +
+          ' If you still have the private key you used at the time, restoring it in this browser may let you read the message.';
       }
       (compact ? details : card).appendChild(retry);
     }

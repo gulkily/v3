@@ -132,6 +132,7 @@ NODE;
         assertSame('verified private prose', $result['bobCopy']['plaintext']);
         assertSame('unavailable', $result['unavailable']['kind']);
         assertSame('decryption-failed', $result['undecryptable']['kind']);
+        assertSame('This encrypted message could not be decrypted.', $result['undecryptable']['message']);
         assertSame('decryption-failed', $result['tampered']['kind']);
         assertSame('bad-signature', $result['badSignature']['kind']);
         assertSame('bad-signature', $result['unsigned']['kind']);
