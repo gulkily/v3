@@ -133,3 +133,20 @@ Author-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954
 
 Approve-Identity-ID: openpgp:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ```
+
+## Portable timestamps for legacy imports
+
+Legacy posts without a `Created-At` header may have a companion file at
+`records/post-timestamps/<Post-ID>.json`. It has exactly three string fields:
+`post_id`, `record_sha256` (lowercase SHA-256 of the unchanged post bytes), and
+`created_at` (RFC 3339 UTC, `YYYY-MM-DDTHH:MM:SSZ`). The metadata is at most 4 KiB.
+The filename must match `post_id`, and the checksum must match the post.
+
+The repository reader uses valid companion metadata before its legacy Git/mtime
+fallback. Invalid companion metadata is an error. An explicit `Created-At` header
+remains authoritative. The instance importer requires companion metadata for
+legacy posts, recovering it from isolated source Git history when possible; it
+never uses extraction mtime or the destination import commit date. Metadata and
+its legacy post are imported together and participate in conflict/recovery checks.
+The original post and detached signatures are not rewritten. These dates carry
+source provenance, not a new cryptographic attestation.

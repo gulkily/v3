@@ -65,6 +65,7 @@ try {
         $progress('Downloaded ' . $bytes . ' bytes; validating and extracting archive...');
         $extracted = (new RepositoryArchive())->extract($archive, $workspace . '/source');
         $root = $extracted['root'];
+        $progress('Recovered legacy creation timestamps: ' . $extracted['recovered_legacy_timestamps']);
         $excluded = $extracted['excluded_archive_categories'];
     }
     $publisher = new ImportedContentPublisher($projectRoot, $repository, $database, $static, $progress);
@@ -148,7 +149,8 @@ Names require an explicit JSON mapping: {"community": "https://forum.example/bas
 Hostnames default to HTTPS; use an explicit http:// URL when needed.
 Limits: 256 MiB download, 1 GiB expanded, 16 MiB per record, 100,000 entries, 120 seconds, 5 redirects.
 Excludes private data, authority, instance settings, source history, and derived databases.
-Legacy posts without explicit timestamps and unsupported records are reported, not rewritten.
+Legacy dates are recovered from isolated history and retained as hash-bound metadata.
+Posts without recoverable dates and unsupported records are reported, not rewritten.
 Resume requires the original repository/database/static-root/site-profile configuration.
 Exit codes: 0 complete supported-content merge (or preview), 2 partial/review required, 1 failed.
 

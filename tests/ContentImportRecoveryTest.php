@@ -16,7 +16,9 @@ final class ContentImportRecoveryTest
             $source = $w->repository('source');
             $target = $w->repository('target');
             $w->git($target);
-            $w->put($source . '/records/posts/root.txt', $w->post('root'));
+            $bytes = str_replace("Created-At: 2026-04-10T12:00:00Z\n", '', $w->post('root'));
+            $w->put($source . '/records/posts/root.txt', $bytes);
+            $w->put($source . '/records/post-timestamps/root.json', \ForumRewrite\Canonical\LegacyPostTimestamp::encode('root', $bytes, '2026-04-10T12:00:00Z'));
             $database = $w->root . '/cache/index.sqlite3';
             $runner = new ContentImportRunner($target, $database, static function ($phase) use ($failurePhase): void {
                 if ($phase === $failurePhase) {
@@ -29,8 +31,10 @@ final class ContentImportRecoveryTest
             } catch (RuntimeException $error) {
                 assertSame('Injected interruption', $error->getMessage());
             }
+            $w->command(['rm', '-rf', '--', $source]);
             $calls = 0;
             $result = (new ContentImportRunner($target, $database))->run(null, static function () use (&$calls): void { $calls++; });
+            assertSame('2026-04-10T12:00:00Z', (new \ForumRewrite\Canonical\CanonicalRecordRepository($target))->loadPost('records/posts/root.txt')->createdAt);
             assertSame(1, $calls);
             assertSame('complete', $result['status']);
             assertSame('2', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));

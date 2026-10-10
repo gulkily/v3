@@ -9,12 +9,16 @@ this checklist with its validation results.
   Verified with a subprocess whose stdout reader closes early: import and
   publication finish, recovery journal clears, and stderr stays empty.
   `php tests/run.php ImportInstanceCommandTest`: 6/6 passed.
-- [ ] 2. Preserve legacy creation timestamps without rewriting record or
+- [x] 2. Preserve legacy creation timestamps without rewriting record or
   signature bytes. Recover dates from isolated source history, retain validated
   timestamp metadata in the destination, and use it on subsequent rebuilds and
   imports. Never install source Git settings or history in the destination.
   Verify legacy bootstrap dependencies, publication, repeat import, recovery,
   and rejection when reliable timestamp metadata is unavailable.
+  Validation: 87/87 focused import, canonical reader, publication, read-model,
+  private-site, and offline tests passed. Live preview recovered all 59 legacy
+  dates; invalid entries fell from 893 to 15, with 922 importable files and four
+  local conflicts exposed. No destination content was changed.
 - [ ] 3. Report dependency root causes clearly. Distinguish absent dependencies
   from rejected or intentionally excluded records, group cascading failures,
   and retain per-record detail for review. Verify missing, excluded, invalid,

@@ -68,8 +68,18 @@ The following are explicitly excluded: instance configuration/feature flags,
 approval seeds, approval/invitation actions (including actions stored as posts),
 private data, source Git history, and derived databases. Records from unsupported
 families, invalid records, and missing/rejected dependencies are reported.
-Legacy posts without explicit `Created-At` are reported instead of having their
-signed bytes changed or their creation time inferred from foreign history.
+For legacy posts without `Created-At`, the importer recovers the original Git
+addition date (following renames) only when archived bytes match the source
+history tip. It reads a temporary, isolated object store; source configuration,
+hooks, alternates, replacements, and history are never installed in the destination.
+History lookup has a separate 120-second budget and 1 MiB output limit per query.
+Recovered dates are committed as `records/post-timestamps/<post-id>.json`, bound
+to the exact post bytes by SHA-256. Rebuilds and subsequent imports use these
+portable dates before local Git history. Post and signature bytes stay unchanged.
+Missing/unusable history leaves legacy posts invalid; filesystem timestamps and
+the new import commit date are never substituted. Conflicting metadata or local
+creation dates require review. The source's date is provenance, not independent
+proof of when an author wrote a post.
 Detached signatures are copied with their records; import is not a new signed
 submission and does not independently authenticate a source's authorship claims.
 When a duplicate record exists at another path and a new signature cannot be

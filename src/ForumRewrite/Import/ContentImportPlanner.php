@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace ForumRewrite\Import;
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\LegacyPostTimestamp;
+use ForumRewrite\Canonical\CanonicalRecordParseException;
 use ForumRewrite\Canonical\PostRecordParser;
 use FilesystemIterator;
 use RecursiveDirectoryIterator;
@@ -58,6 +60,16 @@ final class ContentImportPlanner
                             $entry['state'] = 'conflict';
                             $entry['reason'] = 'Existing path or canonical identity has different bytes';
                             break;
+                        }
+                    }
+                }
+                if (str_starts_with($key, 'post-timestamp:')) {
+                    $metadata = LegacyPostTimestamp::read($source . '/' . $path);
+                    foreach ($target['post:' . $metadata['post_id']] ?? [] as $postPath) {
+                        $local = (new CanonicalRecordRepository($destination))->loadPost($postPath);
+                        if ($local->createdAt !== $metadata['created_at']) {
+                            $entry['state'] = 'conflict';
+                            $entry['reason'] = 'Existing post has a different creation timestamp';
                         }
                     }
                 }
@@ -137,12 +149,16 @@ final class ContentImportPlanner
             return [...$entry, 'state' => 'invalid', 'reason' => 'Record exceeds 16 MiB parser limit'];
         }
         try {
-            $repository = new CanonicalRecordRepository($root);
+            $repository = new CanonicalRecordRepository($root, requireLegacyTimestampMetadata: true);
             if (str_starts_with($path, 'records/posts/')) {
-                // Do not synthesize Created-At from foreign Git history or rewrite signed bytes.
-                $contents = file_get_contents($root . '/' . $path);
-                $post = (new PostRecordParser())->parse($contents === false ? '' : $contents);
-                $repository->loadPost($path); // Includes canonical path validation.
+                $contents = (string) file_get_contents($root . '/' . $path);
+                $post = $repository->loadPost($path); // Includes path and timestamp metadata validation.
+                try {
+                    (new PostRecordParser())->parse($contents);
+                } catch (CanonicalRecordParseException $error) {
+                    if ($error->getMessage() !== 'Missing required post header: Created-At') { throw $error; }
+                    $entry['dependencies'][] = 'post-timestamp:' . $post->postId;
+                }
                 if ((in_array('identity', $post->boardTags, true) && in_array('approval', $post->boardTags, true))
                     || in_array('invitation', $post->boardTags, true)) {
                     return [...$entry, 'state' => 'excluded', 'reason' => 'Approval or invitation authority post'];
@@ -153,6 +169,9 @@ final class ContentImportPlanner
                     }
                 }
                 $author = $post->authorIdentityId;
+            } elseif (str_starts_with($path, 'records/post-timestamps/')) {
+                $metadata = LegacyPostTimestamp::read($root . '/' . $path);
+                $entry['dependencies'][] = 'post:' . $metadata['post_id'];
             } elseif (str_starts_with($path, 'records/identity/')) {
                 $record = $repository->loadIdentity($path);
                 $entry['dependencies'] = ['post:' . $record->bootstrapByPost, 'post:' . $record->bootstrapByThread];

@@ -6,7 +6,7 @@ namespace ForumRewrite\Import;
 
 use RuntimeException;
 
-/** Bounded tar.gz reader. Validates every entry before extracting regular record files only. */
+/** Bounded tar.gz reader. Validates every entry before extracting records plus isolated objects for legacy date recovery. */
 final class RepositoryArchive
 {
     public function __construct(
@@ -127,10 +127,13 @@ final class RepositoryArchive
                 if (!str_starts_with($path, $prefix . 'records/')) {
                     $category = str_starts_with($path, $prefix) ? explode('/', substr($path, strlen($prefix)))[0] : 'outside-repository';
                     $excluded[$category] = ($excluded[$category] ?? 0) + 1;
-                    continue;
+                    if (!str_starts_with($path, $prefix) || !LegacyArchiveTimestamps::isHistoryPath(substr($path, strlen($prefix)))) {
+                        continue;
+                    }
                 }
                 $relative = substr($path, strlen($prefix));
-                $target = $directory . '/' . $relative;
+                $target = $directory . '/' . (str_starts_with($relative, '.git/')
+                    ? '.import-history/' . substr($relative, 5) : $relative);
                 if (!is_dir(dirname($target)) && !mkdir(dirname($target), 0700, true)) {
                     throw new RuntimeException('Unable to create extracted directory.');
                 }
@@ -156,7 +159,8 @@ final class RepositoryArchive
         } finally {
             gzclose($stream);
         }
-        return ['root' => $directory, 'excluded_archive_categories' => $excluded];
+        return ['root' => $directory, 'excluded_archive_categories' => $excluded,
+            'recovered_legacy_timestamps' => (new LegacyArchiveTimestamps())->recover($directory)];
     }
 
     private function read($stream, int $length, int &$offset): string

@@ -21,6 +21,7 @@ final class CanonicalRecordRepository
         private readonly FeatureFlagChangeRecordParser $featureFlagChangeParser = new FeatureFlagChangeRecordParser(),
         private readonly InstancePublicRecordParser $instanceParser = new InstancePublicRecordParser(),
         private readonly SiteFeatureFlagsRecordParser $featureFlagsParser = new SiteFeatureFlagsRecordParser(),
+        private readonly bool $requireLegacyTimestampMetadata = false,
     ) {
     }
 
@@ -37,7 +38,10 @@ final class CanonicalRecordRepository
                 throw $exception;
             }
 
-            $legacyCreatedAt = $this->resolveLegacyPostCreatedAt($relativePath);
+            $legacyCreatedAt = LegacyPostTimestamp::resolve($this->repositoryRoot, $relativePath, $contents);
+            if ($legacyCreatedAt === null && !$this->requireLegacyTimestampMetadata) {
+                $legacyCreatedAt = $this->resolveLegacyPostCreatedAt($relativePath);
+            }
             if ($legacyCreatedAt === null) {
                 throw $exception;
             }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Import;
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\LegacyPostTimestamp;
 use Throwable;
 
 final class ArchiveRecordCatalog
@@ -18,6 +19,7 @@ final class ArchiveRecordCatalog
         return $relativePath === 'records/instance/public.txt'
             || $relativePath === 'records/instance/feature-flags.txt'
             || preg_match('#^records/posts/(?:\d{4}/\d{2}/\d{2}/)?[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
+            || preg_match('#^records/post-timestamps/[A-Za-z0-9][A-Za-z0-9._-]*\.json$#', $relativePath) === 1
             || preg_match('#^records/thread-subjects/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/thread-labels/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/post-reactions/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
@@ -50,6 +52,9 @@ final class ArchiveRecordCatalog
         $repository = new CanonicalRecordRepository($repositoryRoot);
 
         try {
+            if (str_starts_with($relativePath, 'records/post-timestamps/')) {
+                return 'post-timestamp:' . LegacyPostTimestamp::read($repositoryRoot . '/' . $relativePath)['post_id'];
+            }
             if (str_starts_with($relativePath, 'records/posts/')) {
                 return 'post:' . $repository->loadPost($relativePath)->postId;
             }

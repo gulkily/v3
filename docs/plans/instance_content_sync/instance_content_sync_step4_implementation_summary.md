@@ -47,3 +47,11 @@
 ## Follow-up - Explicit dry-run documentation
 - Changes: Added a dedicated `--dry-run` option explanation and example to the CLI reference and command help; clarified unchanged destination data, temporary/lock files, and incompatibility with `--resume` in the runbook.
 - Verification: Command help returns 0 and includes the dry-run description, example, and resume restriction; PHP lint and `git diff --check` passed. Runtime import behavior is unchanged.
+
+## Follow-up: legacy archive compatibility
+
+The original explicit-timestamp restriction is superseded by isolated history
+lookup and portable `records/post-timestamps/` metadata. Source Git configuration
+and history remain excluded from the destination. Signed records stay unchanged;
+rebuilds, subsequent imports, and recovery use the saved hash-bound dates. See
+[the fix checklist](instance_content_sync_fix_checklist.md) for validation.

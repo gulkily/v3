@@ -264,7 +264,9 @@ Downloads the source's public repository archive, merges supported public forum
 content while preserving destination settings/approval authority, and publishes
 local views. Hostnames use HTTPS; short names require a JSON object mapping names
 to URLs in `--sources`. URLs may include an instance base path. Conflicts retain
-local records.
+local records. Legacy creation dates are recovered from isolated source history
+and retained as hash-bound metadata without changing signed post bytes. See the
+[import runbook](../runbooks/instance_content_import.md) for limits and recovery.
 
 - `--dry-run` — download and validate the archive, then report proposed imports,
   duplicates, conflicts, and exclusions without changing destination records,
