@@ -21,6 +21,41 @@
         (message.sender_username_token === other && message.recipient_username_token === viewer);
     });
   }
+  function preserveReadingPosition(root) {
+    const transcript = root.querySelector('[data-role="private-message-transcript"]');
+    const viewport = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const anchor = Array.from(transcript.querySelectorAll('[data-private-message-id]')).find(function (card) {
+      const rect = card.getBoundingClientRect();
+      return rect.bottom > 0 && rect.top < viewport;
+    });
+    if (!anchor) return { correct() {}, finish() {} };
+    const offset = anchor.getBoundingClientRect().top;
+    const priorAnchoring = document.documentElement.style.overflowAnchor;
+    document.documentElement.style.overflowAnchor = 'none';
+    let active = true;
+    function correct() {
+      if (!active || !anchor.isConnected) return;
+      const shift = anchor.getBoundingClientRect().top - offset;
+      if (Math.abs(shift) > .5) window.scrollBy({ top: shift, behavior: 'instant' });
+    }
+    const observer = window.ResizeObserver ? new ResizeObserver(correct) : null;
+    if (observer) observer.observe(transcript);
+    function stop() {
+      if (!active) return;
+      active = false;
+      if (observer) observer.disconnect();
+      document.documentElement.style.overflowAnchor = priorAnchoring;
+      ['wheel', 'touchstart', 'pointerdown', 'keydown', 'resize'].forEach(type => window.removeEventListener(type, navigate));
+      root.removeEventListener('private-message-reveal-latest', stop);
+    }
+    function navigate(event) {
+      if (event.type === 'keydown' && !['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', 'Tab', ' '].includes(event.key)) return;
+      stop();
+    }
+    ['wheel', 'touchstart', 'pointerdown', 'keydown', 'resize'].forEach(type => window.addEventListener(type, navigate, { passive: true }));
+    root.addEventListener('private-message-reveal-latest', stop);
+    return { correct: correct, finish() { correct(); stop(); } };
+  }
   function bindHistory(root) {
     const load = root.querySelector('[data-role="history-load"]');
     const status = root.querySelector('[data-role="history-status"]');
@@ -30,11 +65,13 @@
     let loading = false;
     load.addEventListener('click', async function () {
       if (loading || !cursor) return;
+      let readingPosition = preserveReadingPosition(root);
       loading = true;
       root.dataset.historyLoading = '1';
       load.disabled = true;
       status.className = 'meta';
       status.textContent = 'Loading older messages...';
+      readingPosition.correct();
       try {
         const response = await fetch('/api/private_messages/conversation?username_token=' + encodeURIComponent(root.dataset.counterpartUsernameToken) + '&cursor=' + encodeURIComponent(cursor), {
           credentials: 'same-origin', headers: { Accept: 'application/json' },
@@ -50,11 +87,14 @@
           fragment.appendChild(card);
           added.push({ card: card, message: message });
         });
+        readingPosition.finish();
+        readingPosition = preserveReadingPosition(root);
         transcript.insertBefore(fragment, transcript.querySelector('[data-private-message-id]'));
         format(root);
+        readingPosition.correct();
         cursor = page.next_cursor;
         root.dataset.historyNextCursor = cursor || '';
-        await Promise.allSettled(added.map(item => window.ForumPrivateMessageReader.readCard('conversation', item.card, root.dataset.counterpartUsernameToken, item.message)));
+        await Promise.allSettled(added.map(item => window.ForumPrivateMessageReader.readCard('conversation', item.card, root.dataset.counterpartUsernameToken, item.message).finally(readingPosition.correct)));
         status.textContent = cursor ? added.length + ' older messages loaded.' : 'All history loaded.';
         load.hidden = !cursor;
         load.textContent = 'Load older';
@@ -66,6 +106,7 @@
         loading = false;
         root.dataset.historyLoading = '0';
         load.disabled = false;
+        if (readingPosition) readingPosition.finish();
       }
     });
   }
@@ -118,6 +159,7 @@
       root.classList.toggle('composer-inline', height < 420 || keyboard || zoomed || composer.getBoundingClientRect().height > height * .45);
     }
     function revealLatest() {
+      root.dispatchEvent(new CustomEvent('private-message-reveal-latest'));
       const last = transcript.querySelector('[data-private-message-id]:last-child') || transcript;
       const obstruction = root.classList.contains('composer-inline') ? 0 : composer.getBoundingClientRect().height;
       window.scrollBy({ top: last.getBoundingClientRect().bottom - viewportHeight() + obstruction + 24, behavior: 'instant' });

@@ -196,7 +196,10 @@ try {
   const outsiderContext = await browser.newContext();
   await authenticate(outsiderContext, outsider);
   assert.equal((await (await outsiderContext.request.get(base + '/api/private_messages/conversations')).json()).conversations.length, 0);
-  await checkHistory(page, context, base, root, seed, incoming);
+  await checkHistory(page, context, base, root, seed, incoming, {
+    long: await encrypt(bob, 'Older long message\n' + 'A long history line.\n'.repeat(30)),
+    invalid: await encrypt(outsider, 'Unverified older secret'),
+  });
   for (const path of ['/user/bob', '/profiles/openpgp-' + bob.fingerprint]) {
     await page.goto(base + path);
     await page.locator('[data-private-message-composer] textarea').fill('Shared composer compatibility');
