@@ -1,6 +1,6 @@
 # Private message history synchronization Step 2 feature description
 
-> **Feature plan:** [Step 1](./private_message_history_sync_step1_solution_assessment.md) · [Step 2](./private_message_history_sync_step2_feature_description.md) · [Step 3](./private_message_history_sync_step3_development_plan.md) · Step 4 pending
+> **Feature plan:** [Step 1](./private_message_history_sync_step1_solution_assessment.md) · [Step 2](./private_message_history_sync_step2_feature_description.md) · [Step 3](./private_message_history_sync_step3_development_plan.md) · [Step 4](./private_message_history_sync_step4_implementation_summary.md)
 
 [Storage and synchronization findings](./private_message_history_sync_storage_findings.md) record the infrastructure review and local lock probe.
 

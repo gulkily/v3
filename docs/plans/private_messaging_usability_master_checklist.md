@@ -8,7 +8,7 @@ Use this checklist to track coverage across the releases and the
 implement each release.
 
 This is a coordination checklist. Individual FDP requirements, development plans,
-and implementation approvals remain separate. Cycles 1–5 are complete on `main`; historical-message synchronization is now at Step 1 assessment.
+and implementation approvals remain separate. Cycles 1–5 are complete on `main`; historical-message synchronization has Steps 1–2 approval and awaits Step 3 approval.
 Check items off when their acceptance criteria are verified, and link the relevant
 FDP artifacts and verification evidence here as each cycle progresses.
 
@@ -21,7 +21,7 @@ FDP artifacts and verification evidence here as each cycle progresses.
 | 3 | Retrieve messages older than the initial history window | [Plan](./private_message_history_step3_development_plan.md) · [Implementation and verification](./private_message_history_step4_implementation_summary.md); Step 1 skipped | Complete; merged into local `main` at `95ac3114`; not pushed |
 | 4 | See reliable unread indicators and counts | [Plan](./private_message_unread/private_message_unread_step3_development_plan.md) · [Implementation](./private_message_unread/private_message_unread_step4_implementation_summary.md) | Complete; merged into local `main` at `34b48f40`; not pushed |
 | 5 | Read past unavailable messages without repeated large error widgets | [Plan](./private_message_unavailable/private_message_unavailable_step3_development_plan.md) · [Implementation](./private_message_unavailable/private_message_unavailable_step4_implementation_summary.md) | Complete with Options B and C combined; merged into `main` at `68a5a3fd` |
-| 6 proposed | Restore recoverable history on a newly approved device automatically | [Step 1 assessment](./private_message_history_sync_step1_solution_assessment.md) | Authorization policy settled; Step 1 awaiting approval; implementation not started |
+| 6 proposed | Restore recoverable history on a newly approved device automatically | [Step 1 assessment](./private_message_history_sync/private_message_history_sync_step1_solution_assessment.md) · [Step 2 description](./private_message_history_sync/private_message_history_sync_step2_feature_description.md) · [Step 3 plan](./private_message_history_sync/private_message_history_sync_step3_development_plan.md) · [Storage findings](./private_message_history_sync/private_message_history_sync_storage_findings.md) | Steps 1–2 approved; Step 3 awaiting approval; implementation not started |
 
 Follow this order and reuse the components and contracts established in earlier
 cycles. Unread indicators are deliberately deferred from cycle 1 to cycle 4;
@@ -207,7 +207,7 @@ Evidence: [implementation summary](./private_message_unavailable/private_message
   mismatch. The generic error alone does not establish the cause for any specific
   message. Consider recovery using retained older keys or a future authorized
   mechanism, without promising automatic recovery or weakening verification.
-  Now assessed in [history synchronization Step 1](./private_message_history_sync_step1_solution_assessment.md).
+  Now assessed in [history synchronization Step 1](./private_message_history_sync/private_message_history_sync_step1_solution_assessment.md).
   The user confirmed that every approved same-account key is authorized for all
   history without another sharing prompt, but authorization does not guarantee
   recoverability. Automatic transfer from available existing devices is proposed;
@@ -223,4 +223,4 @@ Evidence: [implementation summary](./private_message_unavailable/private_message
 - [x] Confirm focused automated checks and browser checks cover the changed
   behavior, encryption and authorization boundaries, accessibility, and recovery.
 
-Next action: review history synchronization Step 1; its new-chat handoff preserves the agreed policies and next approval gate. Cycles 1–5 are merged into `main`. History synchronization remains unimplemented; continue to Step 2 only after `Approved Step 1`.
+Next action: review history synchronization [Step 3](./private_message_history_sync/private_message_history_sync_step3_development_plan.md). Steps 1–2 are approved; the Step 1 handoff preserves the agreed policies. Cycles 1–5 are merged into `main`. History synchronization remains unimplemented; create the implementation branch and begin Step 4 only after `Approved Step 3`.

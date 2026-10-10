@@ -2,7 +2,7 @@
 
 The current downloads preserve the canonical public forum record and the current SQLite index database, not the entire running instance. That database can also contain supplemental workflow records. Most additional server-held data is technically straightforward to back up privately. Preserving private conversations through a community fork without the original operator's cooperation is a different, harder problem: it requires access to the encrypted history as well as suitable decryption keys, without accidentally publishing the conversation graph.
 
-This assessment catalogs current exclusions and possible future work. It does not approve an export protocol or expand the scope of the [private message history synchronization proposal](./private_message_history_sync_step1_solution_assessment.md). Feasibility ratings describe relative implementation difficulty, not delivery estimates.
+This assessment catalogs current exclusions and possible future work. It does not approve an export protocol or expand the scope of the [private message history synchronization proposal](./private_message_history_sync/private_message_history_sync_step1_solution_assessment.md). Feasibility ratings describe relative implementation difficulty, not delivery estimates.
 
 ## Three portability goals
 
