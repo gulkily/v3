@@ -1,6 +1,7 @@
 (function () {
   'use strict';
   const base='/api/private_messages/history_sync/';
+  let nextMode='account';
   let nav, account='', original='', generation=0, active=null, aborter=null, lastRun=0;
   const stats={state:'waiting',verified:0,contributed:0,unavailable:0};
   const verifiedIds=new Set(), candidateRequests=new Map();
@@ -105,9 +106,15 @@
       if(!privateKey) { publish('waiting'); return; }
       const pgp=await window.__forumBrowserIdentity.ensureOpenPgpApi(['readPrivateKey']);
       const fingerprint=(await pgp.readPrivateKey({armoredKey:privateKey})).getFingerprint().toLowerCase();
+      const finished={account:false,sender:false};
       for(let batch=0;batch<8 && Date.now()<deadline;batch++) {
-        const work=await request('work',null,current);
-        if(work.account!==account || work.source!==fingerprint) throw Error('Saved key does not match authenticated identity.');
+        const mode=finished[nextMode]?(nextMode==='account'?'sender':'account'):nextMode;
+        nextMode=mode==='account'?'sender':'account';
+        // Persist only scheduling preference, never recovered key material; survive short visits/reloads.
+        try {sessionStorage.setItem('forum_history_sync_next_mode:'+account,nextMode);} catch (_) {}
+        const work=await request(mode==='sender'?'work?mode=sender':'work',null,current);
+        if(mode==='sender' && work.mode!=='sender') {finished.sender=true;if(finished.account)break;continue;} // Older server during rollout.
+        if((mode==='sender'?work.source_account:work.account)!==account || work.source!==fingerprint) throw Error('Saved key does not match authenticated identity.');
         const entries=[], receipts=[];
         let checkpoint=work.checkpoint;
         for(const row of work.messages) {
@@ -117,19 +124,20 @@
             receipts.push({message_id:row.message_id,digest:row.digest,transfer_id:result.transfer_id});
             if(result.transfer_id) document.dispatchEvent(new CustomEvent('private-message-history-restored',{detail:{messageId:row.message_id}}));
             if(!verifiedIds.has(row.message_id+':'+row.digest)) {verifiedIds.add(row.message_id+':'+row.digest);stats.verified++;}
-            if(work.target!==fingerprint) entries.push({message_id:row.message_id,digest:row.digest,keys:result.keys});
+            if(work.target && (mode==='sender' || work.target!==fingerprint)) entries.push({message_id:row.message_id,digest:row.digest,keys:result.keys});
           } catch (_) { stats.unavailable++; }
-          if(Date.now()>=deadline) { checkpoint={target:work.target,after_id:row.message_id};break; }
+          if(Date.now()>=deadline) { checkpoint=mode==='sender'?null:{target:work.target,after_id:row.message_id};break; }
         }
         if(entries.length) {
-          const ciphertext=await crypto.wrapHistoryKeys({account,source:fingerprint,target:work.target,privateKey,targetKey:work.target_key,entries});
-          await request('transfers',{target:work.target,ciphertext,items:entries.map(({message_id,digest})=>({message_id,digest}))},current);
+          const ciphertext=await crypto.wrapHistoryKeys({account:work.account,source_account:account,source:fingerprint,target:work.target,privateKey,targetKey:work.target_key,entries});
+          await request('transfers',{account:work.account,target:work.target,ciphertext,items:entries.map(({message_id,digest})=>({message_id,digest}))},current);
           stats.contributed+=entries.length;
         }
         // Confirm our own verified access even while contributing to another target.
-        await request('acknowledge',{items:receipts,checkpoint},current);
+        await request('acknowledge',{items:receipts,checkpoint,mode},current);
         publish('working');
-        if(work.cycle_end) break;
+        if(work.cycle_end && checkpoint) finished[mode]=true;
+        if(finished.account && finished.sender) break;
       }
       publish(stats.unavailable?'waiting':'ready');
     } catch (_) { if(valid(current)) publish('error'); }
@@ -150,6 +158,7 @@
     nav=document.querySelector('[data-private-message-unread]');
     if(!nav) return;
     account=nav.dataset.viewer;original=identity();
+    try {if(sessionStorage.getItem('forum_history_sync_next_mode:'+account)==='sender')nextMode='sender';} catch (_) {}
     window.addEventListener('pagehide',()=>{generation++;if(aborter)aborter.abort();});
     window.addEventListener('pageshow',()=>refresh());
     window.addEventListener('focus',()=>refresh());
