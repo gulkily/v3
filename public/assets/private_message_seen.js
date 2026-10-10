@@ -57,7 +57,7 @@
         if (!root.isConnected || current !== generation || !window.ForumPrivateMessageUnread.sameIdentity()) return;
         failed = candidate;
         feedback.hidden = false;
-        text.textContent = error.reopen ? 'Seen status could not be confirmed. Reopen this conversation to get a fresh read position; your draft is saved.'
+        text.textContent = error.reopen ? 'Seen status could not be confirmed. Reopen for a fresh read position. Copy your draft first as a precaution.'
           : 'Seen status could not be confirmed. Retry to check it; your messages and draft are unchanged.';
         reopen.hidden = !error.reopen;
         retry.hidden = !!error.reopen;

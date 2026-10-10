@@ -8,7 +8,7 @@ Use this checklist to track coverage across the releases and the
 implement each release.
 
 This is a coordination checklist. Individual FDP requirements, development plans,
-and implementation approvals remain separate. Cycles 1–3 are complete on local `main`; Cycle 4 is in implementation.
+and implementation approvals remain separate. Cycles 1–3 are complete on local `main`; Cycle 4 is complete on its feature branch pending review.
 Check items off when their acceptance criteria are verified, and link the relevant
 FDP artifacts and verification evidence here as each cycle progresses.
 
@@ -19,7 +19,7 @@ FDP artifacts and verification evidence here as each cycle progresses.
 | 1 | Find a conversation or start one from Messages | [Plan](./private_message_conversation_list/private_message_conversation_list_step3_development_plan.md) · [Implementation and verification](./private_message_conversation_list/private_message_conversation_list_step4_implementation_summary.md) | Complete |
 | 2 | Read and reply comfortably without reloading | [Plan](./private_message_chat_refinement/private_message_chat_refinement_step3_development_plan.md) · [Implementation and verification](./private_message_chat_refinement/private_message_chat_refinement_step4_implementation_summary.md) | Complete; merged into local `main` with Cycle 3 |
 | 3 | Retrieve messages older than the initial history window | [Plan](./private_message_history_step3_development_plan.md) · [Implementation and verification](./private_message_history_step4_implementation_summary.md); Step 1 skipped | Complete; merged into local `main` at `95ac3114`; not pushed |
-| 4 | See reliable unread indicators and counts | [Plan](./private_message_unread/private_message_unread_step3_development_plan.md) · [Implementation](./private_message_unread/private_message_unread_step4_implementation_summary.md) | Step 3 approved; implementation in progress |
+| 4 | See reliable unread indicators and counts | [Plan](./private_message_unread/private_message_unread_step3_development_plan.md) · [Implementation](./private_message_unread/private_message_unread_step4_implementation_summary.md) | Complete on `feature/private-message-unread`; awaiting merge review |
 
 Follow this order and reuse the components and contracts established in earlier
 cycles. Unread indicators are deliberately deferred from cycle 1 to cycle 4;
@@ -33,21 +33,21 @@ The [message store](../../src/ForumRewrite/Messaging/PrivateMessageStore.php)
 limits each legacy mailbox and initial conversation window to the newest 25 messages.
 Cycle 3 adds bounded Load older retrieval for conversation history. Message bodies are encrypted on the
 server, and the [reader](../../public/assets/private_message_reader.js) decrypts
-and verifies them in the browser. The message schema has no read-tracking fields.
+and verifies them in the browser. Cycle 4 adds separate private baseline/seen metadata without changing message envelopes or columns.
 
 - [x] Establish a baseline for successful sending, failed sending, draft recovery,
   decryption failure, and missing or invalid signatures using controlled test data.
   The original usability review did not exercise these paths. Cycle 1's focused
   suites and isolated browser journey provide the baseline.
-- [ ] Preserve browser encryption, signing, approved-key coverage, and authorization
+- [x] Preserve browser encryption, signing, approved-key coverage, and authorization
   boundaries. Keep preview plaintext and verification results out of server
   storage, logs, and persistent browser caches.
-- [ ] Reuse shared message rendering, timestamp formatting, reader, and composer
+- [x] Reuse shared message rendering, timestamp formatting, reader, and composer
   behavior across list, conversation, profile, and aggregate-user entry points.
-- [ ] Verify keyboard access, accessible names, readable warning states, and mobile
+- [x] Verify keyboard access, accessible names, readable warning states, and mobile
   layouts for each changed flow. Direction and verification must remain
   understandable without color alone.
-- [ ] Preserve private-message exclusion from static releases and offline snapshots.
+- [x] Preserve private-message exclusion from static releases and offline snapshots.
 
 ## Cycle 1 Find and start conversations
 
@@ -152,21 +152,23 @@ explicit recovery restart opens a fresh snapshot; this is not live polling.
 Outcome: conversation indicators and the navigation count consistently tell the
 viewer what needs attention.
 
-- [ ] Decide whether the navigation badge counts messages or conversations, when
+Evidence: [Cycle 4 implementation summary](./private_message_unread/private_message_unread_step4_implementation_summary.md) and [rollout/rollback notes](./private_message_unread/private_message_unread_rollout.md). Counts track conversations; presented current windows acknowledge their received boundary, including displayed failures, without claiming verification. State is shared per username and refreshed on navigation/visible return; existing history starts seen once. Two-device automation passed; physical mobile keyboards and other browser engines remain manual follow-ups.
+
+- [x] Decide whether the navigation badge counts messages or conversations, when
   received messages become read, and how previewing, decryption failures, and
   background tabs affect read state. Record these semantics before implementation.
-- [ ] Assess persistence and ownership of read positions, including multiple
+- [x] Assess persistence and ownership of read positions, including multiple
   browser identities for a username, multiple devices, and initial treatment of
   existing messages. Prefer existing storage where appropriate; justify any
   schema change in the FDP assessment.
-- [ ] Implement authenticated read-state retrieval and updates scoped to the
+- [x] Implement authenticated read-state retrieval and updates scoped to the
   viewer. Prevent stale updates from moving the read position backward or marking
   messages arriving after the viewed boundary as read.
-- [ ] Add unread indicators to conversation rows and the agreed count to the
+- [x] Add unread indicators to conversation rows and the agreed count to the
   top-navigation Messages item, with accessible text and a clear zero state.
-- [ ] Keep list, conversation, and navigation state consistent after reading;
+- [x] Keep list, conversation, and navigation state consistent after reading;
   define how updates become visible across pages, tabs, and devices.
-- [ ] Verify new arrivals, own sent messages, refresh persistence, concurrent
+- [x] Verify new arrivals, own sent messages, refresh persistence, concurrent
   arrivals and reads, multiple browsers, failed updates, and unauthorized access.
 
 Completion: indicators and counts agree with the approved semantics and remain
@@ -180,7 +182,7 @@ correct across refreshes and supported browser or device transitions.
   especially when repeated across history. Explore compact unavailable-message
   placeholders with optional details and a retry only where useful; retain clear
   security warnings for invalid or missing signatures. Verify with many unreadable
-  messages on desktop and mobile. Deferred by request, not part of Cycle 3.
+  messages on desktop and mobile. Deferred by request, outside Cycles 3–4.
 - [ ] Separately assess historical-message access after adding or changing keys.
   Approving a new key does not retroactively encrypt existing envelopes to it;
   retrying unchanged ciphertext with the same unsuitable key cannot resolve that
@@ -191,12 +193,12 @@ correct across refreshes and supported browser or device transitions.
 
 ## Final acceptance
 
-- [ ] Link each completed cycle's FDP artifacts and verification evidence here.
-- [ ] Reconcile every request in the original proposal with a completed item or
+- [x] Link each completed cycle's FDP artifacts and verification evidence here.
+- [x] Reconcile every request in the original proposal with a completed item or
   an explicitly agreed deferral; do not mark deferred work complete.
-- [ ] Exercise the complete flow: Messages, New message, send, return to list,
+- [x] Exercise the complete flow: Messages, New message, send, return to list,
   open conversation, reply, load older history, and observe unread updates.
-- [ ] Confirm focused automated checks and browser checks cover the changed
+- [x] Confirm focused automated checks and browser checks cover the changed
   behavior, encryption and authorization boundaries, accessibility, and recovery.
 
-Next action: complete Cycle 4's approved [plan](./private_message_unread/private_message_unread_step3_development_plan.md) on its feature branch. Cycles 2 and 3 are merged into local `main`; nothing has been pushed. The decryption-widget and historical-key follow-ups remain deferred.
+Next action: review completed Cycle 4 for merge, including its one-time private metadata initialization and rollback notes. Cycles 2 and 3 are merged into local `main`; Cycle 4 is not merged or pushed. The decryption-widget and historical-key follow-ups remain deferred and unchecked.

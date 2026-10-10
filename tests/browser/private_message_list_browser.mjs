@@ -70,6 +70,11 @@ try {
   const deniedHistory = await context.request.get(base + '/api/private_messages/conversation?username_token=bob');
   assert.equal(deniedHistory.status(), 401);
   assert.match(deniedHistory.headers()['cache-control'], /no-store/);
+  for (const method of ['unread', 'read']) {
+    const denied = await context.request[method === 'read' ? 'post' : 'get'](base + '/api/private_messages/' + method);
+    assert.equal(denied.status(), 401);
+    assert.match(denied.headers()['cache-control'], /no-store/);
+  }
   async function authenticate(ctx, who) {
     const challenge = (await (await ctx.request.get(base + '/api/auth_challenge')).text()).match(/challenge=(\w+)/)[1];
     const signature = await openpgp.sign({ message: await openpgp.createMessage({ text: challenge }), signingKeys: who.private, detached: true });
@@ -233,7 +238,7 @@ try {
   await checkSeenRecovery(page, context, deviceContext, base, seed, incoming);
   await deviceContext.close();
   assert.deepEqual(errors, []);
-  await writeFile(join(root, 'report.json'), JSON.stringify({ passed: true, checks: 'normal entry, inline encrypted replies, lost acknowledgment with reload/new draft, isolated read recovery, invalid/missing signatures, delayed decryption/navigation, keyboard/zoom/scroll, shared composers, list and history snapshots, three-page exact history coverage, concurrent/backdated arrivals, history anchoring within 5px, history retry/restart with concurrent send and newer draft, obsolete response isolation, authorization, no-store', screenshots: ['messages-desktop.png', 'messages-mobile.png', 'chat-desktop.png', 'chat-mobile.png', 'chat-recovery-mobile.png', 'history-loaded.png', 'history-mobile.png'] }, null, 2));
+  await writeFile(join(root, 'report.json'), JSON.stringify({ passed: true, checks: 'normal entry, inline encrypted replies, lost send acknowledgment/newer draft, isolated read recovery, invalid/missing signatures, delayed decryption/navigation, keyboard/zoom/scroll, shared composers, list/history snapshots, exact history coverage and anchoring within 5px, history restart/concurrent send, unread counts beyond 25 rows, signed read receipts, visible-window acknowledgment, unread 2-to-1 transition, hidden tabs/early navigation, backdated arrivals, lost read acknowledgment with pending send/newer draft, two-device convergence, reversed refreshes, identity changes, back navigation, authorization/no-store', screenshots: ['messages-desktop.png', 'messages-mobile.png', 'chat-desktop.png', 'chat-mobile.png', 'chat-recovery-mobile.png', 'history-loaded.png', 'history-mobile.png', 'unread-mobile.png'] }, null, 2));
   console.log(`Browser checks passed. Artifacts: ${root}`);
 } catch (error) {
   console.error(`Browser artifacts: ${root}`);

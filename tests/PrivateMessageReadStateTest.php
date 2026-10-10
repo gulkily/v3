@@ -96,6 +96,18 @@ final class PrivateMessageReadStateTest
         } finally { @unlink($path); }
     }
 
+    public function testInvalidSeenAnchorFailsWithoutReset(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $store = new PrivateMessageStore($pdo);
+        $store->storeEnvelope('received', '2026-10-10', 'bob', 'alice', 'key', 'cipher');
+        $store->markSeenThrough('alice', 'bob', 'received');
+        $pdo->exec("UPDATE private_message_seen SET seen_id = 'missing'");
+        try { $store->unreadStateFor('alice'); throw new LogicException('Invalid seen anchor accepted'); }
+        catch (RuntimeException $expected) { assertStringContains('seen position needs repair', $expected->getMessage()); }
+        assertSame('missing', $pdo->query('SELECT seen_id FROM private_message_seen')->fetchColumn());
+    }
+
     private function race(string $script, array $arguments = ['', '', '', '']): void
     {
         $processes = [];

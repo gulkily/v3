@@ -253,7 +253,7 @@ final class TemplateRenderer
 
     /**
      * @param array<string, mixed>|null $viewerProfile
-     * @return list<array{href:string,label:string,section:string}>
+     * @return list<array{href:string,label:string,section:string,viewer?:string}>
      */
     private function navItems(?array $viewerProfile): array
     {
