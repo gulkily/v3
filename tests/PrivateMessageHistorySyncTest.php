@@ -59,6 +59,44 @@ final class PrivateMessageHistorySyncTest
         try {$service->upload($this->viewer('b'),$input);throw new Exception('Revoked target accepted');} catch(InvalidArgumentException $expected) {}
         assertSame('cipher-1',$messages->historySyncMessage('alice','m01')['encrypted_envelope']);
     }
+    public function testSenderDiscoveryIsBoundedFairAndIndependentOfRecipientReceipts(): void
+    {
+        [$profiles,$messages,$sync,$service]=$this->fixture();
+        $profiles->exec("INSERT INTO profiles (identity_id,username_token,public_key,is_approved) VALUES ('openpgp:".str_repeat('e',40)."','bob','KEY-e',1)");
+        $messages->storeEnvelope('m04x','now','alice','mallory','source','other-recipient');
+        $seen=[];$first=$service->work($this->viewer(),'sender');
+        assertSame('bob',$first['account']);assertSame('alice',$first['source_account']);
+        assertSame(false,array_key_exists('total',$first));
+        $input=array_replace($this->uploadInput(),['account'=>'bob','target'=>str_repeat('c',40)]);
+        $transfer=$service->upload($this->viewer(),$input);
+        $service->acknowledge($this->viewer('c','bob'),['items'=>[$input['items'][0]+$transfer]]);
+        assertSame($first,$service->work($this->viewer(),'sender'),'Recipient confirmation must not affect donor work');
+        assertSame($transfer,$service->upload($this->viewer(),$input),'Upload response must not reveal confirmation');
+        for($n=0;$n<100;$n++) {
+            $work=$service->work($this->viewer(),'sender');
+            assertSame(true,count($work['messages'])<=10);
+            foreach($work['messages'] as $row) {
+                assertSame('alice',$row['sender_username_token']);
+                assertSame($work['account'],$row['recipient_username_token']);
+                assertSame(false,array_key_exists('covered',$row));
+                $seen[$row['message_id']][$work['target']]=true;
+            }
+            $service->acknowledge($this->viewer(),['mode'=>'sender','checkpoint'=>$work['checkpoint']]);
+            if($work['cycle_end']) break;
+        }
+        assertSame(17,count($seen));assertSame(2,count($seen['m01']));assertSame(2,count($seen['m31']));
+        assertSame([str_repeat('d',40)],array_keys($seen['m04x']));
+        assertSame(['target'=>'','after_id'=>''],$sync->checkpoint('alice',str_repeat('a',40)),'Account scan remains isolated');
+        $messages->storeEnvelope('m00','now','alice','bob','old-key','stale-key-cipher');
+        assertSame('m00',$service->work($this->viewer(),'sender')['messages'][0]['message_id']);
+        $sync->advance('alice',str_repeat('a',40),'','missing-after-restore',true);
+        assertSame('m00',$service->work($this->viewer(),'sender')['messages'][0]['message_id']);
+        $profiles->exec("UPDATE profiles SET is_approved=0 WHERE username_token='bob'");
+        $empty=$service->work($this->viewer(),'sender');assertSame([],$empty['messages']);
+        $service->acknowledge($this->viewer(),['mode'=>'sender','checkpoint'=>$empty['checkpoint']]);
+        assertSame('mallory',$service->work($this->viewer(),'sender')['account']);
+        try {$service->work($this->viewer(),[]);throw new Exception('Invalid mode accepted');} catch(InvalidArgumentException $expected) {}
+    }
     public function testBoundedDiscoveryFindsExistingAndNewlyApprovedKeysWithoutQueue(): void
     {
         [$profiles,$messages,$sync,$service]=$this->fixture();

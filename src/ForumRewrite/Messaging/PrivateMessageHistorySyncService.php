@@ -38,8 +38,10 @@ final class PrivateMessageHistorySyncService
         }
         return null;
     }
-    public function work(array $viewer): array
+    public function work(array $viewer, mixed $mode = 'account'): array
     {
+        if(!in_array($mode,['account','sender'],true)) throw new InvalidArgumentException('Invalid history work mode.');
+        if($mode==='sender') return $this->senderWork($viewer);
         [$account,$source,$keys]=$this->context($viewer);
         $position=$this->sync->checkpoint($account,$source);
         $targets=array_keys($keys);
@@ -61,6 +63,33 @@ final class PrivateMessageHistorySyncService
         unset($message);
         return ['account'=>$account,'source'=>$source,'target'=>$target,'target_key'=>$keys[$target], 'messages'=>array_values(array_filter($messages,static fn($row)=>!$row['covered'])),
             'checkpoint'=>$next,'cycle_end'=>!$page['more'] && $next['target']===$targets[0], 'total'=>$this->messages->historySyncCount($account)];
+    }
+    private function senderWork(array $viewer): array
+    {
+        [$account,$source,$keys]=$this->context($viewer);
+        $position=$this->sync->checkpoint($account,$source,true);
+        $anchor=$position['after_id']===''?null:$this->messages->historySyncMessage($account,$position['after_id']);
+        if($position['after_id']!=='' && (!$anchor || $anchor['sender_username_token']!==$account)) $position=['target'=>'','after_id'=>''];
+        $page=$this->messages->historySyncSentPage($account,$position['after_id'],self::BATCH_SIZE);
+        $destination=$page['messages'][0]['recipient_username_token']??'';
+        $targetKeys=$destination===''?[]:$this->keys($destination);
+        $targets=array_keys($targetKeys);
+        $target=isset($targetKeys[$position['target']])?$position['target']:($targets[0]??'');
+        $messages=[];
+        foreach($page['messages'] as $message) {
+            // A bundle has exactly one recipient account; all keys get a turn before advancing history.
+            if($message['recipient_username_token']!==$destination) break;
+            $message['sender_keys']=array_values($keys);
+            $message['digest']=hash('sha256',$message['encrypted_envelope']);
+            $messages[]=$message;
+        }
+        $last=$messages===[]?'':$messages[count($messages)-1]['message_id'];
+        $nextKey=$target===''?null:($targets[array_search($target,$targets,true)+1]??null);
+        $end=$nextKey===null && !$page['more'] && $last===$page['last'];
+        $next=$nextKey!==null?['target'=>$nextKey,'after_id'=>$position['after_id']]:['target'=>'','after_id'=>$end?'':$last];
+        // Never consult recipient coverage: sender work must not reveal recovery or read activity.
+        return ['mode'=>'sender','source_account'=>$account,'account'=>$destination,'source'=>$source,'target'=>$target,
+            'target_key'=>$targetKeys[$target]??null,'messages'=>$target===''?[]:$messages,'checkpoint'=>$next,'cycle_end'=>$end];
     }
     private function items(string $account, mixed $items): array
     {
@@ -121,9 +150,19 @@ final class PrivateMessageHistorySyncService
             if(!$candidate || $this->eligibleSource($this->messages->historySyncMessage($account,$item['message_id']),$account,$candidate['source'])===null) throw new InvalidArgumentException('Transfer is no longer eligible.');
         }
         $checkpoint=$input['checkpoint']??null;
-        if($checkpoint!==null && (!is_array($checkpoint) || !is_string($checkpoint['target']??null) || !isset($keys[$checkpoint['target']]) || !is_string($checkpoint['after_id']??null) || strlen($checkpoint['after_id'])>128)) throw new InvalidArgumentException('Invalid scan checkpoint.');
+        $mode=$input['mode']??'account';
+        if(!in_array($mode,['account','sender'],true)) throw new InvalidArgumentException('Invalid history work mode.');
+        if($checkpoint!==null) {
+            if(!is_array($checkpoint) || !is_string($checkpoint['target']??null) || !is_string($checkpoint['after_id']??null) || strlen($checkpoint['after_id'])>128) throw new InvalidArgumentException('Invalid scan checkpoint.');
+            if($mode==='account' && !isset($keys[$checkpoint['target']])) throw new InvalidArgumentException('Invalid scan target.');
+            if($mode==='sender') {
+                if($checkpoint['target']!=='' && !preg_match('/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/D',$checkpoint['target'])) throw new InvalidArgumentException('Invalid scan target.');
+                $anchor=$checkpoint['after_id']===''?null:$this->messages->historySyncMessage($account,$checkpoint['after_id']);
+                if($checkpoint['after_id']!=='' && (!$anchor || $anchor['sender_username_token']!==$account)) throw new InvalidArgumentException('Invalid outgoing scan anchor.');
+            }
+        }
         if($items!==[]) $this->sync->acknowledge($account,$source,$items);
-        if($checkpoint!==null) $this->sync->advance($account,$source,$checkpoint['target'],$checkpoint['after_id']);
+        if($checkpoint!==null) $this->sync->advance($account,$source,$checkpoint['target'],$checkpoint['after_id'],$mode==='sender');
         return ['confirmed'=>count($items)];
     }
 }

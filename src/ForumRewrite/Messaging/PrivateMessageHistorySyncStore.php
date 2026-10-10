@@ -15,17 +15,20 @@ final class PrivateMessageHistorySyncStore
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_coverage (account TEXT NOT NULL, target TEXT NOT NULL, message_id TEXT NOT NULL, digest TEXT NOT NULL, transfer_id TEXT NOT NULL, PRIMARY KEY(account,target,message_id))');
         $pdo->exec('CREATE INDEX IF NOT EXISTS history_sync_coverage_transfer ON history_sync_coverage(transfer_id)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_scan (account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, after_id TEXT NOT NULL, PRIMARY KEY(account,source))');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_sender_scan (account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, after_id TEXT NOT NULL, PRIMARY KEY(account,source))');
     }
-    public function checkpoint(string $account, string $source): array
+    public function checkpoint(string $account, string $source, bool $sender = false): array
     {
-        $q=$this->pdo->prepare('SELECT target,after_id FROM history_sync_scan WHERE account=? AND source=?');
+        $table=$sender?'history_sync_sender_scan':'history_sync_scan';
+        $q=$this->pdo->prepare('SELECT target,after_id FROM '.$table.' WHERE account=? AND source=?');
         $q->execute([$account,$source]);
         return $q->fetch() ?: ['target'=>'','after_id'=>''];
     }
-    public function advance(string $account, string $source, string $target, string $after): void
+    public function advance(string $account, string $source, string $target, string $after, bool $sender = false): void
     {
-        if($this->checkpoint($account,$source)===['target'=>$target,'after_id'=>$after]) return;
-        $q=$this->pdo->prepare('INSERT INTO history_sync_scan VALUES (?,?,?,?) ON CONFLICT(account,source) DO UPDATE SET target=excluded.target,after_id=excluded.after_id WHERE target!=excluded.target OR after_id!=excluded.after_id');
+        if($this->checkpoint($account,$source,$sender)===['target'=>$target,'after_id'=>$after]) return;
+        $table=$sender?'history_sync_sender_scan':'history_sync_scan';
+        $q=$this->pdo->prepare('INSERT INTO '.$table.' VALUES (?,?,?,?) ON CONFLICT(account,source) DO UPDATE SET target=excluded.target,after_id=excluded.after_id WHERE target!=excluded.target OR after_id!=excluded.after_id');
         $q->execute([$account,$source,$target,$after]);
     }
     public function candidates(string $account, string $target, string $id, string $digest, string $after = ''): array

@@ -32,7 +32,7 @@ final class PrivateMessageHistorySyncController
                 if(!is_array($input) || array_is_list($input)) throw new InvalidArgumentException('Invalid history request.');
             }
             $result=match([$method,$action]) {
-                ['GET','work']=>$service->work($viewer),
+                ['GET','work']=>$service->work($viewer,$query['mode']??'account'),
                 ['GET','transfers']=>$service->transfers($viewer,$input),
                 ['POST','transfers']=>$service->upload($viewer,$input),
                 ['POST','acknowledge']=>$service->acknowledge($viewer,$input),

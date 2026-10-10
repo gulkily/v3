@@ -282,7 +282,18 @@ final class PrivateMessageStore
     {
         $q=$this->pdo->prepare('SELECT * FROM private_messages WHERE (sender_username_token=:account OR recipient_username_token=:account) AND message_id>:after ORDER BY message_id LIMIT ' . (min(10,max(1,$limit))+1));
         $q->execute(['account'=>$account,'after'=>$after]);
-        $rows=$q->fetchAll(); $messages=[]; $bytes=0;
+        return $this->boundedHistoryPage($q->fetchAll(),$limit);
+    }
+    /** Outgoing-only discovery; targets are approved keys of each original recipient. */
+    public function historySyncSentPage(string $sender, string $after, int $limit): array
+    {
+        $q=$this->pdo->prepare('SELECT * FROM private_messages WHERE sender_username_token=? AND recipient_username_token!=sender_username_token AND message_id>? ORDER BY message_id LIMIT '.(min(10,max(1,$limit))+1));
+        $q->execute([$sender,$after]);
+        return $this->boundedHistoryPage($q->fetchAll(),$limit);
+    }
+    private function boundedHistoryPage(array $rows, int $limit): array
+    {
+        $messages=[]; $bytes=0;
         foreach ($rows as $row) {
             if (count($messages)>=$limit || ($messages!==[] && $bytes+strlen($row['encrypted_envelope'])>2097152)) break;
             $messages[]=$row; $bytes+=strlen($row['encrypted_envelope']);
