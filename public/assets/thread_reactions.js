@@ -434,6 +434,9 @@
 
         button.disabled = true;
         button.setAttribute("aria-pressed", "true");
+        if (button.getAttribute("data-tag") === marker.tag) {
+          button.setAttribute("data-vote-chosen", "true");
+        }
       });
     });
   }
@@ -823,7 +826,6 @@
         const scoreTotal = parseResponseValue(text, "score_total");
         const voteCount = parseResponseValue(text, "vote_count");
         const wroteRecord = parseResponseValue(text, "wrote_record") === "yes";
-        const viewerIsApproved = parseResponseValue(text, "viewer_is_approved") === "yes";
         const viewerIdentityId = reactionIdentityId(parseResponseValue(text, "viewer_identity_id")) || currentReactionIdentityId();
 
         setThreadScore(scoreNode, scoreTotal, voteCount);
@@ -839,14 +841,15 @@
 
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
-        const confirmationMessage = wroteRecord
-          ? `${appliedLabel}.`
-          : `Already ${appliedLabel.toLowerCase()}.`;
-        if (viewerIsApproved) {
-          setFeedback(feedbackNode, confirmationMessage, "ok");
+        if (feedbackTarget.isSharedQdbStatus) {
+          // The applied button label already confirms the vote.
+          clearQdbFeedback(feedbackNode, true);
           return;
         }
 
+        const confirmationMessage = wroteRecord
+          ? `${appliedLabel}.`
+          : `Already ${appliedLabel.toLowerCase()}.`;
         setFeedback(feedbackNode, confirmationMessage, "ok");
       } catch (error) {
         restoreThreadReactionState(button, scoreNode, previousState);

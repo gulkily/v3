@@ -135,6 +135,16 @@
   font-weight: 700;
 }
 
+:root[data-theme="qdb"] .quote-card-vote-button[disabled] {
+  color: #666666;
+  opacity: 1;
+  cursor: default;
+}
+
+:root[data-theme="qdb"] .quote-card-vote-button[disabled][data-vote-chosen] {
+  text-decoration: underline;
+}
+
 :root[data-theme="qdb"] .quote-card {
   border: none;
   background: transparent;

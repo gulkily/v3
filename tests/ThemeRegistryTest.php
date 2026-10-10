@@ -106,6 +106,21 @@ final class ThemeRegistryTest
         ));
     }
 
+    public function testQdbDisabledVoteButtonsAreGrayAndOnlyTheChosenOneIsUnderlined(): void
+    {
+        $styles = file_get_contents(dirname(__DIR__) . '/public/assets/theme-qdb.css');
+
+        assertSame(true, $styles !== false);
+        assertSame(1, preg_match(
+            '/:root\\[data-theme="qdb"\\] \\.quote-card-vote-button\\[disabled\\]\\s*\\{[^}]*color:\\s*#666666;[^}]*opacity:\\s*1;[^}]*\\}/s',
+            (string) $styles,
+        ));
+        assertSame(1, preg_match(
+            '/:root\\[data-theme="qdb"\\] \\.quote-card-vote-button\\[disabled\\]\\[data-vote-chosen\\]\\s*\\{[^}]*text-decoration:\\s*underline;[^}]*\\}/s',
+            (string) $styles,
+        ));
+    }
+
     public function testQdbThemeHidesOnlyTheGenericBoardComposer(): void
     {
         $styles = file_get_contents(dirname(__DIR__) . '/public/assets/theme-qdb.css');

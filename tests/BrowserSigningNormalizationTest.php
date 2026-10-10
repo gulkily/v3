@@ -6165,6 +6165,80 @@ NODE;
         assertSame('⚑ Flag', $result['flag']['text']);
     }
 
+    public function testQdbVoteCacheMarksOnlyTheChosenCaption(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const identity = 'openpgp:0123456789abcdef0123456789abcdef01234567';
+const storage = {
+  forum_pki_fingerprint: '0123456789ABCDEF0123456789ABCDEF01234567',
+  'forum-reaction-state-v1:qdb:openpgp%3A0123456789abcdef0123456789abcdef01234567': JSON.stringify({
+    version: 1,
+    markers: [{ kind: 'thread', id: 'quote-001', tag: 'good' }]
+  })
+};
+
+class HTMLButtonElement {
+  constructor(action, tag, text) {
+    this.disabled = false;
+    this.textContent = text;
+    this.attributes = { 'data-action': action, 'data-tag': tag, 'data-applied-label': text.slice(2) };
+  }
+  getAttribute(name) { return this.attributes[name] || null; }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  closest(selector) {
+    if (selector === '[data-thread-reactions-root]' || selector === '.post-card[data-post-id]') return root;
+    return null;
+  }
+}
+
+const up = new HTMLButtonElement('apply-thread-tag', 'good', '↑ Good');
+const down = new HTMLButtonElement('apply-thread-tag', 'bad', '↓ Bad');
+const flag = new HTMLButtonElement('apply-post-tag', 'flag', '⚑ Flag');
+const pair = {
+  getAttribute(name) { return name === 'data-qdb-vote-tags' ? JSON.stringify(['upvote', 'downvote', 'good', 'bad', 'retired-caption']) : null; },
+  querySelectorAll(selector) { return selector === '[data-action="apply-thread-tag"]' ? [up, down] : []; }
+};
+const root = {
+  getAttribute(name) { return name === 'data-thread-id' || name === 'data-post-id' ? 'quote-001' : ''; },
+  querySelector(selector) { return selector === '[data-qdb-vote-pair]' ? pair : null; },
+  addEventListener() {}
+};
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = {
+  forumBrowserRuntime: { namespace: 'qdb' },
+  localStorage: { getItem(key) { return Object.prototype.hasOwnProperty.call(storage, key) ? storage[key] : null; }, setItem() {} }
+};
+global.localStorage = window.localStorage;
+global.document = {
+  addEventListener(type, handler) { if (type === 'DOMContentLoaded') handler(); },
+  querySelectorAll(selector) {
+    if (selector === '[data-thread-reactions-root]') return [root];
+    if (selector === '[data-action="apply-thread-tag"]') return [up, down];
+    if (selector === '[data-action="apply-post-tag"]') return [flag];
+    return [];
+  }
+};
+
+vm.runInThisContext(source);
+process.stdout.write(JSON.stringify({
+  up: { chosen: up.attributes['data-vote-chosen'] || '', disabled: up.disabled, text: up.textContent, pressed: up.attributes['aria-pressed'] || '' },
+  down: { chosen: down.attributes['data-vote-chosen'] || '', disabled: down.disabled, text: down.textContent, pressed: down.attributes['aria-pressed'] || '' },
+  flag: { disabled: flag.disabled, text: flag.textContent }
+}));
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame('true', $result['up']['chosen']);
+        assertSame('', $result['down']['chosen']);
+        assertSame(true, $result['up']['disabled']);
+        assertSame(true, $result['down']['disabled']);
+    }
+
     public function testQdbReactionStatusReplacesThePreviousVoteOrFlagStatus(): void
     {
         $script = <<<'NODE'
@@ -6265,9 +6339,9 @@ NODE;
         $result = $this->runThreadReactionScript($script);
 
         assertSame(2, $result['fetchCount']);
-        assertSame('Good.', $result['afterVote']);
+        assertSame('', $result['afterVote']);
         assertSame('⚑ Flagged.', $result['finalStatus']);
-        assertSame(2, $result['clearCount']);
+        assertSame(3, $result['clearCount']);
         assertSame(false, $result['hidden']);
         assertSame('ok', $result['kind']);
     }
