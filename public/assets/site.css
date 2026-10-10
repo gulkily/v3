@@ -637,3 +637,11 @@ pre {
   width: auto;
   align-self: flex-start;
 }
+
+.media-embed-card__iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border: 0;
+}
