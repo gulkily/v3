@@ -61,7 +61,9 @@ vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
   const tamperedEnvelope = envelope.replace(/\n\n([A-Za-z0-9+/])/, (_match, character) => '\n\n' + (character === 'A' ? 'B' : 'A'));
   const tampered = await read({ encryptedEnvelope: tamperedEnvelope, senderPublicKeyArmors: [bob.publicKey] });
   const badSignature = await read({ encryptedEnvelope: envelope, senderPublicKeyArmors: [mallory.publicKey] });
-  process.stdout.write(JSON.stringify({ aliceCopy, bobCopy, unavailable, undecryptable, tampered, badSignature }));
+  const unsignedEnvelope = await openpgp.encrypt({ message: await openpgp.createMessage({ text: 'unsigned' }), encryptionKeys: [alicePublic], format: 'armored' });
+  const unsigned = await read({ encryptedEnvelope: unsignedEnvelope, senderPublicKeyArmors: [bob.publicKey] });
+  process.stdout.write(JSON.stringify({ aliceCopy, bobCopy, unavailable, undecryptable, tampered, badSignature, unsigned }));
 })().catch((error) => { process.stderr.write(error.stack || String(error)); process.exit(1); });
 NODE;
 
@@ -75,6 +77,7 @@ NODE;
         assertSame('decryption-failed', $result['undecryptable']['kind']);
         assertSame('decryption-failed', $result['tampered']['kind']);
         assertSame('bad-signature', $result['badSignature']['kind']);
+        assertSame('bad-signature', $result['unsigned']['kind']);
         assertSame(false, array_key_exists('plaintext', $result['unavailable']));
         assertSame(false, array_key_exists('plaintext', $result['undecryptable']));
         assertSame(false, array_key_exists('plaintext', $result['tampered']));
@@ -88,17 +91,19 @@ const fs = require('fs');
 const vm = require('vm');
 let fetchCount = 0;
 let storageWrites = 0;
+let restored = false;
 const verification = () => ({ hidden: true, textContent: '', className: '' });
 const error = () => ({ hidden: true, textContent: '', className: '' });
 const plaintext = () => ({ hidden: true, textContent: '', className: '' });
 const cards = ['message-001', 'message-002', 'message-003'].map((id) => {
-  const nodes = { verification: verification(), error: error(), plaintext: plaintext() };
+  const nodes = { verification: verification(), error: error(), plaintext: plaintext(), retry: { dataset: {}, addEventListener(name, callback) { this[name] = callback; } } };
   return {
     dataset: { privateMessageId: id },
     nodes,
     querySelector(selector) {
       if (selector.includes('verification')) return nodes.verification;
       if (selector.includes('reader-error')) return nodes.error;
+      if (selector.includes('read-retry')) return nodes.retry;
       return nodes.plaintext;
     }
   };
@@ -125,7 +130,7 @@ global.window = {
       async decrypt({ message }) {
         return {
           data: 'plain ' + message,
-          signatures: [{ verified: message === 'three' ? Promise.reject(new Error('bad signature')) : Promise.resolve() }]
+          signatures: [{ verified: message === 'three' && !restored ? Promise.reject(new Error('bad signature')) : Promise.resolve() }]
         };
       }
     };
@@ -137,13 +142,23 @@ vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
 (async () => {
   window.ForumPrivateMessageReader.bindMailbox(root);
   await new Promise((resolve) => setTimeout(resolve, 0));
+  const thirdBefore = JSON.parse(JSON.stringify(cards[2].nodes));
+  restored = true;
+  const retryOne = window.ForumPrivateMessageReader.readCard('inbox', cards[2], '');
+  const retryTwo = window.ForumPrivateMessageReader.readCard('inbox', cards[2], '');
+  const sameRequest = retryOne === retryTwo;
+  await retryOne;
+  await window.ForumPrivateMessageReader.readCard('inbox', cards[1], '', { message_id: 'message-002', sender_username_token: 'bob', encrypted_envelope: 'appended' });
   process.stdout.write(JSON.stringify({
     bound: root.dataset.privateMessageReaderBound,
     fetchCount,
     storageWrites,
     first: cards[0].nodes,
     second: cards[1].nodes,
-    third: cards[2].nodes
+    third: thirdBefore,
+    recovered: cards[2].nodes,
+    settled: root.dataset.privateMessageReaderSettled,
+    sameRequest
   }));
 })().catch((error) => { process.stderr.write(error.stack || String(error)); process.exit(1); });
 NODE;
@@ -157,10 +172,14 @@ NODE;
         assertSame('✓', $result['first']['verification']['textContent']);
         assertSame('plain one', $result['first']['plaintext']['textContent']);
         assertSame(false, $result['second']['verification']['hidden']);
-        assertSame('plain two', $result['second']['plaintext']['textContent']);
+        assertSame('plain appended', $result['second']['plaintext']['textContent']);
         assertSame(true, $result['third']['verification']['hidden']);
         assertSame(true, $result['third']['plaintext']['hidden']);
         assertSame(false, $result['third']['error']['hidden']);
         assertSame('The sender signature could not be verified.', $result['third']['error']['textContent']);
+        assertSame('plain three', $result['recovered']['plaintext']['textContent']);
+        assertSame(true, $result['recovered']['retry']['hidden']);
+        assertSame(true, $result['sameRequest']);
+        assertSame('1', $result['settled']);
     }
 }

@@ -3,6 +3,8 @@
 
   const privateKeyStorageKey = "forum_pki_private_key";
   const mailboxRequests = new Map();
+  const cardMessages = new WeakMap();
+  const cardRequests = new WeakMap();
 
   function armoredPrivateKey() {
     try {
@@ -127,7 +129,7 @@
     plaintextNode.hidden = false;
   }
 
-  async function readCard(mailbox, card, counterpartUsernameToken) {
+  async function readCardOnce(mailbox, card, counterpartUsernameToken, suppliedMessage) {
     const verification = card && card.querySelector('[data-role="private-message-verification"]');
     const error = card && card.querySelector('[data-role="private-message-reader-error"]');
     const plaintext = card && card.querySelector('[data-role="private-message-plaintext"]');
@@ -140,9 +142,29 @@
       return;
     }
 
+    verification.hidden = true;
+    verification.title = "Signature verified";
+    if (verification.setAttribute) verification.setAttribute("aria-label", "Signature verified");
+    plaintext.hidden = true;
+    plaintext.textContent = "";
+    error.hidden = false;
+    error.textContent = "Decrypting and verifying message...";
+    error.className = "meta";
+    const retry = card.querySelector('[data-role="private-message-read-retry"]');
+    if (retry && retry.addEventListener) {
+      retry.hidden = true;
+      retry.disabled = true;
+      if (!retry.dataset.bound) {
+        retry.dataset.bound = "1";
+        retry.addEventListener("click", function () { readCard(mailbox, card, counterpartUsernameToken); });
+      }
+    }
+
     let result;
     try {
-      const message = await mailboxMessage(mailbox, messageId, counterpartUsernameToken);
+      const message = suppliedMessage || cardMessages.get(card) || await mailboxMessage(mailbox, messageId, counterpartUsernameToken);
+      if (String(message.message_id) !== messageId) throw new Error("Message identity mismatch.");
+      cardMessages.set(card, message);
       const messaging = window.ForumPrivateMessages;
       if (!messaging || typeof messaging.recipientKeys !== "function") {
         throw new Error("Sender key lookup is unavailable.");
@@ -153,11 +175,21 @@
         senderPublicKeyArmors: senderPublicKeyArmors,
       });
     } catch (error) {
+      if (!cardMessages.has(card)) mailboxRequests.delete(mailbox === "conversation" ? mailbox + ":" + counterpartUsernameToken : mailbox);
       result = { kind: "decryption-failed", message: "This encrypted message could not be loaded or decrypted." };
     }
 
     setReaderResult(verification, error, plaintext, result);
+    if (retry && retry.addEventListener) { retry.hidden = result.kind === "verified"; retry.disabled = false; }
     return result;
+  }
+
+  function readCard(mailbox, card, counterpartUsernameToken, suppliedMessage) {
+    if (!card) return Promise.resolve();
+    if (cardRequests.has(card)) return cardRequests.get(card);
+    const request = readCardOnce(mailbox, card, counterpartUsernameToken, suppliedMessage).finally(function () { cardRequests.delete(card); });
+    cardRequests.set(card, request);
+    return request;
   }
 
   function bindMailbox(root) {
@@ -176,8 +208,11 @@
     }
 
     root.dataset.privateMessageReaderBound = "1";
-    Array.from(root.querySelectorAll("[data-private-message-id]")).forEach(function (card) {
-      readCard(mailbox, card, counterpartUsernameToken);
+    Promise.allSettled(Array.from(root.querySelectorAll("[data-private-message-id]")).map(function (card) {
+      return readCard(mailbox, card, counterpartUsernameToken);
+    })).then(function () {
+      root.dataset.privateMessageReaderSettled = "1";
+      if (root.dispatchEvent) root.dispatchEvent(new CustomEvent("private-message-reader-settled"));
     });
 
     return true;

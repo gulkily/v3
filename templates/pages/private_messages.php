@@ -16,9 +16,10 @@ $counterpartLabel = $isInbox ? 'From' : 'To';
 <?php foreach ($messages as $message): ?>
 <?php $counterpart = $isInbox ? (string) $message['sender_username_token'] : (string) $message['recipient_username_token']; ?>
   <article class="card" data-private-message-id="<?= $e($message['message_id']) ?>">
-    <p><strong><?= $counterpartLabel ?>:</strong> <a href="/messages/conversation/<?= $e($counterpart) ?>"><?= $e($counterpart) ?></a> <span class="meta" data-role="private-message-verification" title="Siganture verified" aria-label="Siganture verified" hidden>✓</span></p>
+    <p><strong><?= $counterpartLabel ?>:</strong> <a href="/messages/conversation/<?= $e($counterpart) ?>"><?= $e($counterpart) ?></a> <span class="meta" data-role="private-message-verification" title="Signature verified" aria-label="Signature verified" hidden>✓</span></p>
     <p><strong>Sent:</strong> <?= $e($message['created_at']) ?></p>
     <p class="feedback" data-role="private-message-reader-error" hidden></p>
+    <button type="button" data-role="private-message-read-retry" hidden>Retry reading message</button>
     <pre data-role="private-message-plaintext" hidden></pre>
   </article>
 <?php endforeach; ?>
