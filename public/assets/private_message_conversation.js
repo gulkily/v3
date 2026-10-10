@@ -147,6 +147,12 @@
         load.hidden = !cursor;
         load.textContent = 'Load older';
         restart.hidden = true;
+        if (fresh) {
+          root.querySelector('[data-role="private-message-read-token"]').value = page.read_token || '';
+          root.dispatchEvent(new CustomEvent('private-message-window-settled', { detail: {
+            readToken: page.read_token, latestId: page.messages.length ? page.messages[page.messages.length - 1].message_id : '',
+          } }));
+        }
       } catch (error) {
         if (!isCurrent()) return;
         status.className = 'feedback feedback-error';
