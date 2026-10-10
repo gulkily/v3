@@ -1,6 +1,6 @@
 # Private message unread state Step 1 solution assessment
 
-> **Feature plan:** [Step 1](./private_message_unread_step1_solution_assessment.md) · [Step 2](./private_message_unread_step2_feature_description.md) · [Step 3](./private_message_unread_step3_development_plan.md)
+> **Feature plan:** [Step 1](./private_message_unread_step1_solution_assessment.md) · [Step 2](./private_message_unread_step2_feature_description.md) · [Step 3](./private_message_unread_step3_development_plan.md) · [Step 4](./private_message_unread_step4_implementation_summary.md)
 
 ## Original Query
 
@@ -8,11 +8,11 @@ Looks good. Please merge to main and start the next one.
 
 ## Understood Intent
 
-Cycles 2 and 3 are merged into local `main`. Assess Cycle 4 of the [master checklist](./private_messaging_usability_master_checklist.md): unread indicators and a Messages navigation count. Decryption-widget and historical-key follow-ups remain deferred.
+Cycles 2 and 3 are merged into local `main`. Assess Cycle 4 of the [master checklist](../private_messaging_usability_master_checklist.md): unread indicators and a Messages navigation count. Decryption-widget and historical-key follow-ups remain deferred.
 
 ## Problem Statement
 
-The [private message store](../../src/ForumRewrite/Messaging/PrivateMessageStore.php) has no read-state fields; reliable unread indicators require agreed semantics and persistence.
+The [private message store](../../../src/ForumRewrite/Messaging/PrivateMessageStore.php) has no read-state fields; reliable unread indicators require agreed semantics and persistence.
 
 ## Option A Browser local seen state
 

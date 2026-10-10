@@ -10,6 +10,7 @@ use InvalidArgumentException;
 final class PrivateMessageStore
 {
     public const MAILBOX_PAGE_SIZE = 25;
+    private readonly PrivateMessageReadState $readState;
 
     public function __construct(
         private readonly PDO $pdo,
@@ -17,6 +18,17 @@ final class PrivateMessageStore
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         $this->ensureSchema();
+        $this->readState = new PrivateMessageReadState($this->pdo);
+    }
+
+    public function unreadStateFor(string $viewer, array $counterparts = []): array
+    {
+        return $this->readState->state($viewer, $counterparts);
+    }
+
+    public function markSeenThrough(string $viewer, string $counterpart, string $messageId): void
+    {
+        $this->readState->mark($viewer, $counterpart, $messageId);
     }
 
     public function storeEnvelope(

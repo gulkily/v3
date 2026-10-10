@@ -8,7 +8,7 @@ Use this checklist to track coverage across the releases and the
 implement each release.
 
 This is a coordination checklist. Individual FDP requirements, development plans,
-and implementation approvals remain separate. Cycles 1–3 are complete; Cycle 4 is pending.
+and implementation approvals remain separate. Cycles 1–3 are complete on local `main`; Cycle 4 is in implementation.
 Check items off when their acceptance criteria are verified, and link the relevant
 FDP artifacts and verification evidence here as each cycle progresses.
 
@@ -17,9 +17,9 @@ FDP artifacts and verification evidence here as each cycle progresses.
 | Cycle | User outcome | Starting point | Status |
 | --- | --- | --- | --- |
 | 1 | Find a conversation or start one from Messages | [Plan](./private_message_conversation_list/private_message_conversation_list_step3_development_plan.md) · [Implementation and verification](./private_message_conversation_list/private_message_conversation_list_step4_implementation_summary.md) | Complete |
-| 2 | Read and reply comfortably without reloading | [Plan](./private_message_chat_refinement/private_message_chat_refinement_step3_development_plan.md) · [Implementation and verification](./private_message_chat_refinement/private_message_chat_refinement_step4_implementation_summary.md) | Complete on feature branch; awaiting merge review |
-| 3 | Retrieve messages older than the initial history window | [Plan](./private_message_history_step3_development_plan.md) · [Implementation and verification](./private_message_history_step4_implementation_summary.md); Step 1 skipped | Complete on `feature/private-message-history`, including unmerged Cycle 2; awaiting merge review |
-| 4 | See reliable unread indicators and counts | Step 1 to settle read semantics and persistence | Pending |
+| 2 | Read and reply comfortably without reloading | [Plan](./private_message_chat_refinement/private_message_chat_refinement_step3_development_plan.md) · [Implementation and verification](./private_message_chat_refinement/private_message_chat_refinement_step4_implementation_summary.md) | Complete; merged into local `main` with Cycle 3 |
+| 3 | Retrieve messages older than the initial history window | [Plan](./private_message_history_step3_development_plan.md) · [Implementation and verification](./private_message_history_step4_implementation_summary.md); Step 1 skipped | Complete; merged into local `main` at `95ac3114`; not pushed |
+| 4 | See reliable unread indicators and counts | [Plan](./private_message_unread/private_message_unread_step3_development_plan.md) · [Implementation](./private_message_unread/private_message_unread_step4_implementation_summary.md) | Step 3 approved; implementation in progress |
 
 Follow this order and reuse the components and contracts established in earlier
 cycles. Unread indicators are deliberately deferred from cycle 1 to cycle 4;
@@ -199,4 +199,4 @@ correct across refreshes and supported browser or device transitions.
 - [ ] Confirm focused automated checks and browser checks cover the changed
   behavior, encryption and authorization boundaries, accessibility, and recovery.
 
-Next action: review completed Cycle 3 for merge, then assess Cycle 4's unread semantics in FDP Step 1 when requested. Cycle 3 includes unmerged Cycle 2; neither has been pushed or merged into main here. The decryption-widget and historical-key follow-ups remain deferred.
+Next action: complete Cycle 4's approved [plan](./private_message_unread/private_message_unread_step3_development_plan.md) on its feature branch. Cycles 2 and 3 are merged into local `main`; nothing has been pushed. The decryption-widget and historical-key follow-ups remain deferred.
