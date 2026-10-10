@@ -56,7 +56,7 @@ Some groups want visitors to read their discussions before joining. Others want 
 
 v3 supports both public instances and an approved-members-only mode. In the latter, unapproved visitors are limited to the Lobby, Account, and their own profile; the access gate covers content routes, feeds, APIs, downloads, and generated artifacts. This is a choice for the whole instance. [Access configuration](../../README.md#local-run)
 
-Approved users can also exchange private messages. The browser signs and encrypts the message, and the server stores an encrypted envelope plus routing metadata separately from the public record. [Private messaging](../plans/private_messaging_step4_implementation_summary.md)
+Approved users can also exchange private messages. The browser signs and encrypts the message, and the server stores an encrypted envelope plus routing metadata separately from the public record. [Private messaging](../plans/private_messaging/private_messaging_step4_implementation_summary.md)
 
 These mechanisms serve different purposes. A members-only board is access-controlled, while private-message bodies are encrypted in the browser. Private-message recipients currently include all approved keys grouped under the same username, making careful key approval essential. This is a useful community messaging feature with a specific trust model, rather than a blanket confidentiality guarantee.
 

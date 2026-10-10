@@ -17,7 +17,7 @@ The implementation includes a unified Messages list, recipient discovery, conver
 | Durable unread positions | Private metadata records progress per username and counterpart. Server-authenticated receipts limit acknowledgments to a captured received-message boundary. |
 | Shared presentation and recovery | List, conversation, profile, and aggregate-user entry points reuse the composer, reader, message templates, and time formatter. |
 
-The original [architecture assessment](../plans/private_messaging_step1_solution_assessment.md) compares the storage alternatives. The [profile read contract](../specs/profile_read_contract_v1.md) defines composite users.
+The original [architecture assessment](../plans/private_messaging/private_messaging_step1_solution_assessment.md) compares the storage alternatives. The [profile read contract](../specs/profile_read_contract_v1.md) defines composite users.
 
 ## Identity and key coverage
 
@@ -148,7 +148,7 @@ Automated coverage includes real OpenPGP encryption and signature rejection, app
 
 The latest compact-message implementation record reports **62 focused tests passing** and the encrypted Chromium browser journey passing. Its documented manual follow-ups are physical mobile keyboards, assistive-technology announcements, and other browser engines. Those recorded results are implementation evidence, not a production deployment certification.
 
-- [Core encrypted messaging implementation](../plans/private_messaging_step4_implementation_summary.md)
+- [Core encrypted messaging implementation](../plans/private_messaging/private_messaging_step4_implementation_summary.md)
 - [Conversation list implementation](../plans/private_message_conversation_list/private_message_conversation_list_step4_implementation_summary.md)
 - [Chat refinement implementation](../plans/private_message_chat_refinement/private_message_chat_refinement_step4_implementation_summary.md)
 - [Older history implementation](../plans/private_message_history_step4_implementation_summary.md)

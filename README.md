@@ -65,11 +65,10 @@ that stays accurate even as implementation details move around:
 
 ### Planning Docs (`docs/plans/`)
 
-A flat, mostly-uncatalogued directory of in-flight and historical planning
-documents, one or more per feature (`{feature}_stepN_*.md` for FDP-tracked
-work, or a looser `{feature}_plan_v1.md`/`{feature}_slices_v1.md` shape for
-smaller efforts). Not indexed file-by-file here — there are well over a
-hundred — but two are worth knowing about:
+The [planning index](docs/plans/README.md) lists feature folders for in-flight
+and historical planning documents. Features with four or more related artifacts
+have their own folders; smaller efforts and standalone plans remain at the root.
+Two cross-cutting plans are worth knowing about:
 
 - [Codebase Cleanup Audit Plan](docs/plans/codebase_cleanup_audit_plan_v1.md) — the plan behind the `Application.php` decomposition into per-domain namespaces
 - [Documentation Audit Findings & Checklist](docs/plans/docs_audit_findings_and_checklist_v1.md) — the review that produced this Documentation section
