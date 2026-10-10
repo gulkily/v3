@@ -1,4 +1,7 @@
 .private-conversation { min-width: 0; }
+.private-message-history-controls { text-align: center; }
+.private-message-history-controls button { width: auto; min-height: 44px; }
+.private-message-history-controls p { margin: .35rem 0; }
 .private-conversation .private-message {
   width: fit-content;
   max-width: 85%;

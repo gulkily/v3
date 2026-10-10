@@ -10,6 +10,7 @@ import { once } from 'node:events';
 import { chromium } from 'playwright-core';
 import { checkChatLayout } from './private_message_chat_layout.mjs';
 import { checkChatRecovery } from './private_message_chat_recovery.mjs';
+import { checkHistory } from './private_message_history.mjs';
 
 const project = resolve(new URL('../..', import.meta.url).pathname);
 runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
@@ -195,6 +196,7 @@ try {
   const outsiderContext = await browser.newContext();
   await authenticate(outsiderContext, outsider);
   assert.equal((await (await outsiderContext.request.get(base + '/api/private_messages/conversations')).json()).conversations.length, 0);
+  await checkHistory(page, context, base, root, seed, incoming);
   for (const path of ['/user/bob', '/profiles/openpgp-' + bob.fingerprint]) {
     await page.goto(base + path);
     await page.locator('[data-private-message-composer] textarea').fill('Shared composer compatibility');
