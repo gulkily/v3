@@ -28,8 +28,12 @@ checklist in the same commit as the stage it records.
       Random, Add Quote, Search; tools-nav links reuse the launcher icons.
       Pagination links (page numbers, variable hrefs) deliberately left
       without icons.
-- [ ] Stage 3 — Verify Chicago has every icon and fill any gaps / spacing
-      differences
+- [x] Stage 3 — Verify Chicago has every icon and fill any gaps / spacing
+      differences. Rendered /tools/ and the board in Chicago: nav, tools nav
+      and launchers all show icons. Gap found and filled: the board/tags
+      view and sort links (All, Liked, Newest, Oldest, Top) have no distinct
+      hrefs, so they now carry `data-nav-key` and get heart/list/arrow/
+      trophy icons in both themes.
 
 ## Inventory
 
