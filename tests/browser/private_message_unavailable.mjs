@@ -48,8 +48,9 @@ export async function checkUnavailable(page, context, base, artifacts, seed, una
   const first = page.locator('[data-private-message-id="unavailable-00"]');
   await first.locator('summary').click();
   await first.getByRole('button', { name: 'Retry reading message' }).waitFor();
-  assert.match(await first.innerText(), /This can happen if you added a new key to your account after the message was sent/);
-  assert.match(await first.innerText(), /restoring it in this browser may let you read the message/);
+  assert.match(await first.innerText(), /This can happen if you started using this device or browser after the message was sent/);
+  assert.match(await first.innerText(), /Try opening this message on a device or browser you used before it was sent/);
+  assert.match(await first.innerText(), /If you have a saved copy of that private key, restoring it in this browser may also help/);
   await button.click();
   assert.equal(await button.getAttribute('aria-expanded'), 'false');
   await page.setViewportSize({ width: 375, height: 812 });

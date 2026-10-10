@@ -157,8 +157,8 @@
       if (compact) {
         card.querySelector('[data-role="private-message-reader-error"]').hidden = true;
         explanation.textContent = message + (state === 'decryption-failed'
-          ? ' This can happen if you added a new key to your account after the message was sent.' : '') +
-          ' If you still have the private key you used at the time, restoring it in this browser may let you read the message.';
+          ? ' This can happen if you started using this device or browser after the message was sent.' : '') +
+          ' Try opening this message on a device or browser you used before it was sent—it may still have the key needed to read it. If you have a saved copy of that private key, restoring it in this browser may also help.';
       }
       (compact ? details : card).appendChild(retry);
     }
