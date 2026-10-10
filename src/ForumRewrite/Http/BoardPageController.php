@@ -76,7 +76,12 @@ final class BoardPageController
                 'qdbQuoteCount' => $qdbQuoteCount,
                 'pagination' => $pagination,
             ],
-            'Board',
+            $qdbPolicy !== null ? match ($activeSection) {
+                'latest' => 'Latest Quotes',
+                'top' => 'Top Quotes',
+                'leetness' => '1337 Quotes',
+                default => 'Quotes',
+            } : 'Board',
             $activeSection,
             array_merge([
                 '/assets/inline_reply_form.js',

@@ -46,6 +46,14 @@ final class PlatformDocsController
             return null;
         }
 
+        $documentTitle = substr($sourcePath, strlen('docs/'));
+        foreach (PlatformDocsCatalog::entries() as $entry) {
+            if ($entry['path'] === $sourcePath) {
+                $documentTitle = $entry['title'];
+                break;
+            }
+        }
+
         return $this->routeServices->renderPageTemplate(
             'platform_docs_document.php',
             [
@@ -53,7 +61,7 @@ final class PlatformDocsController
                 'documentHtml' => PublicMarkdownRenderer::render($markdown),
                 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active()),
             ],
-            'Platform Docs',
+            $documentTitle . ' - Platform Docs',
             'docs',
         );
     }
