@@ -86,15 +86,6 @@ general-purpose "canonicalize any URL" cleanup is its own open-ended feature:
 
 allow offline content for unauthenticated users
 
-we need to record who changed a feature flag and sign the request
-
-emulate the classic qdb.us voting buttons more closely
-	voting... label while submitting
-	voted when done
-	button becomes disabled, but otherwise does not change
-	status display should be on the same line
-	what else?
-
 the request agent response dropdown does not always fully display in-page
 	it should go up and above the link if below is not enough viewport space
 	other ways of mitigating it?
