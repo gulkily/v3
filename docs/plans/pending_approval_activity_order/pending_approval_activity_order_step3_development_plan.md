@@ -22,4 +22,4 @@
 - **Canonical components/API contracts touched:** `templates/pages/users_pending.php`, `public/assets/pending-approvals.css`, `public/assets/pending_approvals.js`, and existing `tests/WriteApiSmokeTest.php` coverage. Reuse the current directory data, browser signing helper, and approval APIs without contract changes.
 - **Completion/commit:** Record changes and verification in Step 4 and commit this stage with its summary. Minimum implementation history: one planning commit plus one completed-stage commit.
 
-**Review:** Awaiting **Approved Step 3** before branching or implementation.
+**Review:** Approved Step 3 received; implementation authorized.

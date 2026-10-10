@@ -4121,9 +4121,13 @@ NODE;
         );
         assertStringNotContains('>' . $pendingTarget['profile_slug'] . '</a>', $pendingUsers);
         assertStringContains('<table ', $pendingUsers);
-        assertStringContains('data-role="pending-approval-activity-row"', $pendingUsers);
-        assertStringContains('colspan="2"', $pendingUsers);
-        assertStringContains('rowspan="2"', $pendingUsers);
+        assertStringMatches(
+            '#<tr[^>]+data-username="bob"[^>]*>(?:(?!</tr>).)*href="/posts/'
+            . preg_quote($pendingTarget['bootstrap_post_id'], '#')
+            . '"(?:(?!</tr>).)*data-action="approve-user"[^>]+data-profile-slug="'
+            . preg_quote($pendingTarget['profile_slug'], '#') . '"(?:(?!</tr>).)*</tr>#s',
+            $pendingUsers
+        );
         assertStringContains('account bootstrap', $pendingUsers);
         assertStringContains('href="/posts/' . $pendingTarget['bootstrap_post_id'] . '"', $pendingUsers);
         assertStringContains('<time datetime="', $pendingUsers);
