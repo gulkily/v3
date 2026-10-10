@@ -16,6 +16,29 @@ export async function checkUnavailable(page, context, base, artifacts, seed, una
   assert.match(await button.innerText(), /20 messages unavailable · user-56/);
   assert.equal(await button.getAttribute('aria-expanded'), 'false');
   assert.equal(await page.locator('[data-reader-state="decryption-failed"][hidden]').count(), 20);
+  const comparison = await page.evaluate(() => {
+    const root = document.querySelector('.private-conversation');
+    const legacy = document.createElement('div');
+    legacy.className = 'private-conversation';
+    Object.assign(legacy.style, { position: 'absolute', left: '-10000px', visibility: 'hidden', width: root.getBoundingClientRect().width + 'px' });
+    root.querySelectorAll('[data-reader-state="decryption-failed"]').forEach(card => {
+      const clone = card.cloneNode(true);
+      clone.hidden = false;
+      clone.querySelector('details').hidden = true;
+      const error = clone.querySelector('[data-role="private-message-reader-error"]');
+      error.hidden = false;
+      error.textContent = 'This encrypted message could not be decrypted with the saved private key.';
+      const retry = clone.querySelector('[data-role="private-message-read-retry"]');
+      retry.hidden = false; clone.appendChild(retry);
+      legacy.appendChild(clone);
+    });
+    document.body.appendChild(legacy);
+    const legacyHeight = legacy.getBoundingClientRect().height;
+    const collapsedHeight = root.querySelector('[data-role="unavailable-group"]').getBoundingClientRect().height;
+    legacy.remove();
+    return { baseline: 'reconstructed legacy error/retry presentation, identical twenty-message fixture and theme', legacyHeight, collapsedHeight };
+  });
+  assert.ok(comparison.legacyHeight > comparison.collapsedHeight * 10, 'Collapsed history must materially reduce repeated-error height');
   await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.readState === 'acknowledged');
   await button.focus();
   await button.press('Enter');
@@ -32,6 +55,17 @@ export async function checkUnavailable(page, context, base, artifacts, seed, una
   await page.getByRole('button', { name: 'Latest message', exact: true }).click();
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.screenshot({ path: join(artifacts, 'unavailable-mobile.png') });
+  await button.click();
+  await first.evaluate(node => window.scrollBy({ top: node.getBoundingClientRect().top - 24, behavior: 'instant' }));
+  assert.ok(await first.getByRole('button', { name: 'Retry reading message' }).evaluate(node => node.getBoundingClientRect().bottom < document.querySelector('[data-private-message-composer]').getBoundingClientRect().top));
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await page.screenshot({ path: join(artifacts, 'unavailable-details-mobile.png') });
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor: 2 });
+  await page.waitForFunction(() => document.querySelector('.private-conversation').classList.contains('composer-inline'));
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor: 1 });
+  await cdp.detach();
   await page.setViewportSize({ width: 1100, height: 800 });
 
   seed({ action: 'chat', messages: Array.from({ length: 7 }, (_, i) => ({
@@ -88,6 +122,7 @@ export async function checkUnavailable(page, context, base, artifacts, seed, una
   assert.match(await groups.innerText(), /25 messages unavailable/);
   assert.equal(await page.locator('textarea').inputValue(), 'Draft while expanding history');
   await page.locator('textarea').fill('');
+  return comparison;
 }
 
 export async function checkUnavailableRecovery(page, base, recoveryKey) {
@@ -148,4 +183,48 @@ export async function checkUnavailableRecovery(page, base, recoveryKey) {
   assert.equal(await groups.getByRole('button').getAttribute('aria-expanded'), 'true');
   assert.equal(await page.locator('[data-private-message-id]').count(), 50);
   await page.unroute('**/api/private_messages/recipient_keys?username_token=user-54', delayed);
+}
+
+export async function checkUnavailableBoundaries(page, base, seed, unavailable, incoming) {
+  seed({ action: 'chat', messages: Array.from({ length: 7 }, (_, i) => ({
+    id: 'group-boundary-' + i, time: `2046-06-01T12:0${i}:00Z`, sender: i === 2 || i === 3 ? 'alice' : 'user-52',
+    recipient: i === 2 || i === 3 ? 'user-52' : 'alice', envelope: i === 4 ? incoming : unavailable,
+  })) });
+  await page.goto(base + '/messages/conversation/user-52');
+  const settled = () => page.waitForFunction(() => document.querySelector('.private-conversation').dataset.privateMessageReaderSettled === '1');
+  await settled();
+  const groups = page.locator('[data-role="unavailable-group"]');
+  assert.equal(await groups.count(), 3, 'Sender changes and readable messages break groups');
+  assert.match(await groups.nth(1).innerText(), /2 messages unavailable · You/);
+  const readable = page.locator('[data-private-message-id="group-boundary-4"]');
+  assert.equal(await readable.getAttribute('hidden'), null);
+  assert.match(await readable.innerText(), /Incoming fixture preview/);
+  const deny = route => route.abort();
+  await page.route('**/api/private_messages/recipient_keys?username_token=user-52', deny);
+  await page.reload();
+  await settled();
+  assert.equal(await groups.count(), 1, 'Loading failures must not enter groups');
+  assert.equal(await page.locator('[data-reader-state="load-failed"]:not([hidden])').count(), 5);
+  await readable.getByRole('button', { name: 'Retry reading message' }).waitFor();
+  await page.unroute('**/api/private_messages/recipient_keys?username_token=user-52', deny);
+  await readable.getByRole('button', { name: 'Retry reading message' }).click();
+  await readable.getByText('Incoming fixture preview', { exact: true }).waitFor();
+  const privateKey = await page.evaluate(() => localStorage.getItem('forum_pki_private_key'));
+  await page.evaluate(() => localStorage.setItem('forum_pki_private_key', 'invalid private key'));
+  await page.reload();
+  await settled();
+  assert.equal(await groups.count(), 0, 'An unreadable saved key is an actionable visible failure');
+  assert.ok(await page.locator('[data-reader-state="read-failed"]:not([hidden])').count() >= 7);
+  await page.evaluate(() => localStorage.removeItem('forum_pki_private_key'));
+  // Reload would restore the harness key: exercise the retained cards instead.
+  await page.evaluate(async () => {
+    const root = document.querySelector('.private-conversation');
+    for (const card of root.querySelectorAll('[data-private-message-id]')) await window.ForumPrivateMessageReader.readCard('conversation', card, 'user-52');
+  });
+  assert.equal(await groups.count(), 3, 'Missing-key placeholders can group, preserving direction changes');
+  await page.evaluate(key => localStorage.setItem('forum_pki_private_key', key), privateKey);
+  await page.evaluate(async () => {
+    await Promise.all(['group-boundary-0', 'group-boundary-1'].map(id => window.ForumPrivateMessageReader.readCard('conversation', document.querySelector(`[data-private-message-id="${id}"]`), 'user-52')));
+  });
+  assert.equal(await page.evaluate(() => document.documentElement.style.overflowAnchor), '', 'Concurrent retry anchors must restore native scrolling');
 }

@@ -156,7 +156,7 @@
       details.hidden = !compact;
       if (compact) {
         card.querySelector('[data-role="private-message-reader-error"]').hidden = true;
-        explanation.textContent = message + ' Retrying unchanged ciphertext with an unsuitable key cannot recover it. A different key is not proof that older messages can be read.';
+        explanation.textContent = message + ' Retrying unchanged ciphertext with an unsuitable key cannot recover it. Adding a new key does not make older messages readable automatically.';
       }
       (compact ? details : card).appendChild(retry);
     }

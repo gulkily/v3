@@ -8,7 +8,7 @@ Use this checklist to track coverage across the releases and the
 implement each release.
 
 This is a coordination checklist. Individual FDP requirements, development plans,
-and implementation approvals remain separate. Cycles 1–4 are complete on local `main`; Cycle 5 implementation is underway on `feature/private-message-unavailable`.
+and implementation approvals remain separate. Cycles 1–4 are complete on local `main`; Cycle 5 is complete on `feature/private-message-unavailable`, pending review.
 Check items off when their acceptance criteria are verified, and link the relevant
 FDP artifacts and verification evidence here as each cycle progresses.
 
@@ -20,7 +20,7 @@ FDP artifacts and verification evidence here as each cycle progresses.
 | 2 | Read and reply comfortably without reloading | [Plan](./private_message_chat_refinement/private_message_chat_refinement_step3_development_plan.md) · [Implementation and verification](./private_message_chat_refinement/private_message_chat_refinement_step4_implementation_summary.md) | Complete; merged into local `main` with Cycle 3 |
 | 3 | Retrieve messages older than the initial history window | [Plan](./private_message_history_step3_development_plan.md) · [Implementation and verification](./private_message_history_step4_implementation_summary.md); Step 1 skipped | Complete; merged into local `main` at `95ac3114`; not pushed |
 | 4 | See reliable unread indicators and counts | [Plan](./private_message_unread/private_message_unread_step3_development_plan.md) · [Implementation](./private_message_unread/private_message_unread_step4_implementation_summary.md) | Complete; merged into local `main` at `34b48f40`; not pushed |
-| 5 | Read past unavailable messages without repeated large error widgets | [Plan](./private_message_unavailable/private_message_unavailable_step3_development_plan.md) · [Implementation](./private_message_unavailable/private_message_unavailable_step4_implementation_summary.md) | Steps 1–3 approved with Options B and C combined; implementation underway |
+| 5 | Read past unavailable messages without repeated large error widgets | [Plan](./private_message_unavailable/private_message_unavailable_step3_development_plan.md) · [Implementation](./private_message_unavailable/private_message_unavailable_step4_implementation_summary.md) | Complete with Options B and C combined; awaiting review; not merged or pushed |
 
 Follow this order and reuse the components and contracts established in earlier
 cycles. Unread indicators are deliberately deferred from cycle 1 to cycle 4;
@@ -175,18 +175,31 @@ Evidence: [Cycle 4 implementation summary](./private_message_unread/private_mess
 Completion: indicators and counts agree with the approved semantics and remain
 correct across refreshes and supported browser or device transitions.
 
-## Deferred follow-ups
+## Cycle 5 Compact unavailable messages
 
-- [ ] Reduce the size and prominence of the per-message decryption-error/retry
+Outcome: unavailable history stays compact, with expandable per-message details and manual retry; signature warnings and recoverable loading failures remain visible.
+
+Evidence: [implementation summary](./private_message_unavailable/private_message_unavailable_step4_implementation_summary.md) and [rollout/rollback notes](./private_message_unavailable/private_message_unavailable_rollout.md). Grouping preserves sender/date boundaries, original message identities, and Cycle 4's received-window semantics.
+
+- [x] Reduce the size and prominence of the per-message decryption-error/retry
   widget. The user reports that “This encrypted message could not be decrypted
   with the saved private key” plus “Retry reading message” is large and distracting,
   especially when repeated across history. Explore compact unavailable-message
   placeholders with optional details and a retry only where useful; retain clear
   security warnings for invalid or missing signatures. Verify with many unreadable
-  messages on desktop and mobile. Outside Cycles 3–4; Cycle 5 combines compact
-  placeholders and expandable groups, with [Step 1](./private_message_unavailable/private_message_unavailable_step1_solution_assessment.md),
-  [Step 2](./private_message_unavailable/private_message_unavailable_step2_feature_description.md), and
-  [Step 3](./private_message_unavailable/private_message_unavailable_step3_development_plan.md) approved; implementation underway.
+  messages on desktop and mobile. Cycle 5 combines compact placeholders and
+  expandable groups, as approved in Steps 1–3.
+- [x] Collapse consecutive settled unavailable messages from the same sender and
+  date; expose count/time summaries and accessible individual details/retry.
+- [x] Keep loading/support/key-reading failures and signature warnings visible;
+  never display unverified plaintext or diagnose key mismatch from a generic error.
+- [x] Preserve cross-page expansion, reading position, focus, drafts, and concurrent
+  sends; verified recovery restores the message and updates surrounding groups.
+- [x] Preserve signed read boundaries and visibility/identity gates across grouped
+  latest messages, lost acknowledgments, later arrivals, and older-history loading.
+
+## Deferred follow-ups
+
 - [ ] Separately assess historical-message access after adding or changing keys.
   Approving a new key does not retroactively encrypt existing envelopes to it;
   retrying unchanged ciphertext with the same unsuitable key cannot resolve that
@@ -205,4 +218,4 @@ correct across refreshes and supported browser or device transitions.
 - [x] Confirm focused automated checks and browser checks cover the changed
   behavior, encryption and authorization boundaries, accessibility, and recovery.
 
-Next action: complete and verify Cycle 5's approved stages. Cycles 1–4 are merged into local `main`; no push was performed. The decryption-widget item remains unchecked until implemented and verified; historical-key recovery remains deferred.
+Next action: review completed Cycle 5 and its rollout notes. Cycles 1–4 are merged into local `main`; Cycle 5 is not merged or pushed. Historical-key recovery remains deferred.

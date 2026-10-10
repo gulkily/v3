@@ -34,6 +34,8 @@ final class PrivateMessageReleaseIsolationTest
                 assertStringNotContains('private_message_seen', $html);
                 assertStringNotContains('data-private-message-unread', $html);
                 assertStringNotContains('data-private-message-composer', $html);
+                assertStringNotContains('private-message-unavailable-details', $html);
+                assertStringNotContains('unavailable-group', $html);
                 assertStringNotContains('message_time', $html);
                 assertStringNotContains('private_messages.js', $html);
                 assertStringNotContains('href="/messages', $html);

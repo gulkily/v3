@@ -19,7 +19,7 @@ $input = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR)
 if (($input['action'] ?? '') === 'chat') {
     $store = new PrivateMessageStore(new PDO('sqlite:' . $root . '/state/private/messages.sqlite3'));
     foreach ($input['messages'] as $message) {
-        $store->storeEnvelope($message['id'], $message['time'], $message['sender'], 'alice', 'fixture-sender', $message['envelope']);
+        $store->storeEnvelope($message['id'], $message['time'], $message['sender'], $message['recipient'] ?? 'alice', 'fixture-sender', $message['envelope']);
     }
     exit;
 }

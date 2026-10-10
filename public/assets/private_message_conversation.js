@@ -1,6 +1,7 @@
 (function () {
   "use strict";
   const presentations = new WeakMap(), groupStates = new WeakMap(), expanded = new WeakMap();
+  let anchoringCount = 0, nativeAnchoring = '';
   function presentationFor(root, card) {
     const group = card && presentations.get(card);
     return group && group.node.isConnected && card.hidden ? group.node : card;
@@ -101,7 +102,7 @@
     if (!anchor) return { correct() {}, finish() {} };
     const representation = () => (summary && presentations.get(anchor)?.node) || presentationFor(root, anchor);
     const offset = representation().getBoundingClientRect().top;
-    const priorAnchoring = document.documentElement.style.overflowAnchor;
+    if (anchoringCount++ === 0) nativeAnchoring = document.documentElement.style.overflowAnchor;
     document.documentElement.style.overflowAnchor = 'none';
     let active = true;
     function correct() {
@@ -115,7 +116,7 @@
       if (!active) return;
       active = false;
       if (observer) observer.disconnect();
-      document.documentElement.style.overflowAnchor = priorAnchoring;
+      if (--anchoringCount === 0) document.documentElement.style.overflowAnchor = nativeAnchoring;
       ['wheel', 'touchstart', 'pointerdown', 'keydown', 'resize'].forEach(type => window.removeEventListener(type, navigate));
       root.removeEventListener('private-message-reveal-latest', stop);
     }
