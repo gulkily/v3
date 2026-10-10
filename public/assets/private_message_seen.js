@@ -20,7 +20,7 @@
       root.dataset.readState = token === acknowledged ? 'acknowledged' : 'waiting';
     }
     function visible() {
-      if (document.hidden || !document.hasFocus() || !latest || !latest.isConnected || root.dataset.historyLoading === '1') return false;
+      if (document.hidden || !document.hasFocus() || !latest || !latest.isConnected || latest.dataset.readerState === 'loading' || root.dataset.historyLoading === '1') return false;
       const presentation = window.ForumPrivateMessageConversation.presentationFor(root, latest);
       const rect = presentation.getBoundingClientRect();
       let bottom = window.visualViewport ? window.visualViewport.height : window.innerHeight;
@@ -73,6 +73,7 @@
       scheduled = requestAnimationFrame(function () { scheduled = 0; acknowledge(false); });
     }
     root.addEventListener('private-message-reader-settled', function () { settled = true; schedule(); });
+    root.addEventListener('private-message-read-state-changed', schedule);
     root.addEventListener('private-message-window-settled', function (event) {
       invalidate();
       token = event.detail.readToken || '';

@@ -17,6 +17,7 @@ import { checkUnreadIndicators } from './private_message_unread_ui.mjs';
 import { checkSeenWindows } from './private_message_seen_windows.mjs';
 import { checkSeenRecovery } from './private_message_seen_recovery.mjs';
 import { checkUnavailable, checkUnavailableRecovery } from './private_message_unavailable.mjs';
+import { checkUnavailableSeen } from './private_message_unavailable_seen.mjs';
 
 const project = resolve(new URL('../..', import.meta.url).pathname);
 runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
@@ -241,6 +242,7 @@ try {
   const unavailable = await openpgp.encrypt({ message: await openpgp.createMessage({ text: 'Unavailable fixture secret' }), encryptionKeys: [outsider.public], signingKeys: bob.private, format: 'armored' });
   await checkUnavailable(page, context, base, root, seed, unavailable, await encrypt(outsider, 'Unverified group secret'));
   await checkUnavailableRecovery(page, base, outsider.privateKey);
+  await checkUnavailableSeen(context, base, seed, unavailable);
   assert.deepEqual(errors, []);
   await writeFile(join(root, 'report.json'), JSON.stringify({ passed: true, checks: 'normal entry, inline encrypted replies, lost send acknowledgment/newer draft, isolated read recovery, invalid/missing signatures, delayed decryption/navigation, keyboard/zoom/scroll, shared composers, list/history snapshots, exact history coverage and anchoring within 5px, history restart/concurrent send, unread counts beyond 25 rows, signed read receipts, visible-window acknowledgment, unread 2-to-1 transition, hidden tabs/early navigation, backdated arrivals, lost read acknowledgment with pending send/newer draft, two-device convergence, reversed refreshes, identity changes, back navigation, authorization/no-store', screenshots: ['messages-desktop.png', 'messages-mobile.png', 'chat-desktop.png', 'chat-mobile.png', 'chat-recovery-mobile.png', 'history-loaded.png', 'history-mobile.png', 'unread-mobile.png'] }, null, 2));
   console.log(`Browser checks passed. Artifacts: ${root}`);
