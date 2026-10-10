@@ -28,10 +28,14 @@ under `docs/plans/`. Move completed feature cycles to `docs/plans/archive/`.
 - [New User Profile Creation Notice](new_user_profile_creation_notice_step1_solution_assessment.md)
 - [Offline Support Roadmap](offline_support_roadmap.md)
 - [Product Mention Links](product_mention_links_step1_solution_assessment.md)
+- [Server Cooperative Content Deletion Discussion](server_cooperative_content_deletion_discussion.md)
 - [Undo Accidental Flag](undo_accidental_flag_step1_solution_assessment.md)
 
 ## Identity and approvals
 
+- [Account Key Approval Policy Findings and Recommendations](account_key_approval_policy_findings_and_recommendations.md)
+- [Account Key Approval Policy FDP Checklist](account_key_approval_policy_fdp_checklist.md)
+- [Account Key Approval Visibility and Safety Checklist](account_key_approval_visibility_and_safety_checklist.md)
 - [Approved Members Identity Publication Debug Handoff](approved_members_identity_publication_debug_handoff.md)
 - [Identity Rename Option](identity_rename_option_step1_solution_assessment.md)
 - [`v3` Approval Seed Shortcut](v3_approval_seed_shortcut_step1_solution_assessment.md)

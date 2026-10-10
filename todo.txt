@@ -84,14 +84,14 @@ general-purpose "canonicalize any URL" cleanup is its own open-ended feature:
 	needs its own Step 1 given the redirect-following/unknown-provider
 		design questions
 
-allow offline content for unauthenticated users
-
 the request agent response dropdown does not always fully display in-page
 	it should go up and above the link if below is not enough viewport space
 	other ways of mitigating it?
 	it should scroll along with its parent button
 
 explore server-cooperative content deletion
+	Discussion: docs/plans/backlog/server_cooperative_content_deletion_discussion.md
+	Initial scope: users retract their own posts with server help; cross-instance cooperation is a future possibility.
 
 youtube embeds
 	should be full width of the container module
@@ -123,3 +123,20 @@ add more authentication modes
 
 identify targets for "ephemeral testing"
 	see https://zenmemes.com/threads/thread-20261006122804-184a64b6 
+
+now that we have a private messages feature, it becomes more relevant for users to back up their keys
+	consider how they can be backed up and how to encourage users to do it
+		backup options:
+			text file
+			image file
+			zip file
+			what else?
+		arguments for:
+			???
+
+make it easier to copy the bookmarklets as a one-liner js
+	this is what i need to add/bind bookmarklets in qutebrowser
+
+add another analysis type: scripture-oriented analysis
+
+continue with docs/plans/backlog/account_key_approval_visibility_and_safety_checklist.md;
