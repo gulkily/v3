@@ -41,6 +41,7 @@ or standalone plans remain at this level until they reach that threshold.
 - [Offline snapshot freshness automation](offline_snapshot_freshness_automation/)
 - [Offline snapshot initialization](offline_snapshot_initialization/)
 - [Offline snapshot publish](offline_snapshot_publish/)
+- [Pending approval activity order](pending_approval_activity_order/)
 - [Pending user latest activity](pending_user_latest_activity/)
 - [Platform docs](platform_docs/)
 - [Private message conversation list](private_message_conversation_list/)

@@ -63,15 +63,16 @@ final class PublicOfflineSnapshotManifestTest
         $pdo->exec('CREATE TABLE posts (
             post_id TEXT PRIMARY KEY, created_at TEXT, thread_id TEXT, parent_id TEXT,
             subject TEXT, body TEXT, board_tags_json TEXT, thread_type TEXT,
-            author_label TEXT, author_profile_slug TEXT, sequence_number INTEGER, is_hidden INTEGER
+            author_identity_id TEXT, author_label TEXT, author_profile_slug TEXT, sequence_number INTEGER, is_hidden INTEGER
         )');
+        $pdo->exec('CREATE TABLE profiles (identity_id TEXT PRIMARY KEY, signer_fingerprint TEXT, public_key TEXT, is_approved INTEGER)');
         $thread = $pdo->prepare('INSERT INTO threads VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $post = $pdo->prepare('INSERT INTO posts VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $post = $pdo->prepare('INSERT INTO posts VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         for ($number = 1; $number <= $threadCount; $number++) {
             $id = sprintf('thread-%03d', $number);
             $time = sprintf('2026-01-%02dT00:00:00Z', $number);
             $thread->execute([$id, $time, $time, 'Subject ' . $number, 'Preview', 0, $id, '[]', '[]', 0]);
-            $post->execute([$id, $time, $id, null, 'Subject ' . $number, 'Body ' . $number, '[]', 'thread', 'Anon', null, 1, 0]);
+            $post->execute([$id, $time, $id, null, 'Subject ' . $number, 'Body ' . $number, '[]', 'thread', null, 'Anon', null, 1, 0]);
         }
     }
 }

@@ -4116,14 +4116,18 @@ NODE;
         assertStringContains('title="' . $pendingTarget['profile_slug'] . '"', $pendingUsers);
         assertStringContains('aria-label="' . $pendingTarget['profile_slug'] . '"', $pendingUsers);
         assertStringContains(
-            substr($pendingTarget['profile_slug'], 0, 18) . '...' . substr($pendingTarget['profile_slug'], -10),
+            substr($pendingTarget['profile_slug'], 0, 17) . '...',
             $pendingUsers
         );
         assertStringNotContains('>' . $pendingTarget['profile_slug'] . '</a>', $pendingUsers);
         assertStringContains('<table ', $pendingUsers);
-        assertStringContains('data-role="pending-approval-activity-row"', $pendingUsers);
-        assertStringContains('colspan="2"', $pendingUsers);
-        assertStringContains('rowspan="2"', $pendingUsers);
+        assertStringMatches(
+            '#<tr[^>]+data-username="bob"[^>]*>(?:(?!</tr>).)*href="/posts/'
+            . preg_quote($pendingTarget['bootstrap_post_id'], '#')
+            . '"(?:(?!</tr>).)*data-action="approve-user"[^>]+data-profile-slug="'
+            . preg_quote($pendingTarget['profile_slug'], '#') . '"(?:(?!</tr>).)*</tr>#s',
+            $pendingUsers
+        );
         assertStringContains('account bootstrap', $pendingUsers);
         assertStringContains('href="/posts/' . $pendingTarget['bootstrap_post_id'] . '"', $pendingUsers);
         assertStringContains('<time datetime="', $pendingUsers);

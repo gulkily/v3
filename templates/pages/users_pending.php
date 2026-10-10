@@ -1,10 +1,10 @@
 <?php
 $shortenProfileSlug = static function (string $slug): string {
-    if (strlen($slug) <= 34) {
+    if (strlen($slug) <= 17) {
         return $slug;
     }
 
-    return substr($slug, 0, 18) . '...' . substr($slug, -10);
+    return substr($slug, 0, 17) . '...';
 };
 ?>
 <section class="stack" data-pending-approvals-root>
@@ -21,7 +21,7 @@ $shortenProfileSlug = static function (string $slug): string {
       <thead>
         <tr>
           <th class="pending-approvals-user-cell">User</th>
-          <th class="pending-approvals-profile-cell">Profile</th>
+          <th class="pending-approvals-activity-cell">Recent activity</th>
           <th class="pending-approvals-action-cell">Approve</th>
         </tr>
       </thead>
@@ -35,8 +35,6 @@ $latestActivityPostId = trim((string) ($profile['latest_activity_post_id'] ?? ''
         <tr data-role="pending-approval-row" data-profile-slug="<?= $e($profile['profile_slug']) ?>" data-username="<?= $e($profile['username']) ?>">
           <td class="pending-approvals-user-cell" data-label="User">
             <a href="/profiles/<?= $e($profile['profile_slug']) ?>"><?= $e($profile['username']) ?></a>
-          </td>
-          <td class="pending-approvals-profile-cell" data-label="Profile">
             <a
               class="pending-approvals-profile-link"
               href="/profiles/<?= $e($profile['profile_slug']) ?>"
@@ -44,14 +42,8 @@ $latestActivityPostId = trim((string) ($profile['latest_activity_post_id'] ?? ''
               aria-label="<?= $e($profile['profile_slug']) ?>"
             ><?= $e($shortenProfileSlug($profile['profile_slug'])) ?></a>
           </td>
-          <td class="pending-approvals-action-cell" data-label="Approve" rowspan="2">
-            <button type="button" class="pending-approvals-action-button" data-action="approve-user" data-profile-slug="<?= $e($profile['profile_slug']) ?>">
-              Approve
-            </button>
-          </td>
-        </tr>
-        <tr class="pending-approvals-activity-row" data-role="pending-approval-activity-row" data-profile-slug="<?= $e($profile['profile_slug']) ?>">
-          <td class="pending-approvals-activity-cell" colspan="2">
+          <td class="pending-approvals-activity-cell" data-label="Recent activity">
+            <div class="pending-approvals-activity">
 <?php if ($latestActivityLabel !== '' && $latestActivityPostId !== ''): ?>
             <a href="/posts/<?= $e($latestActivityPostId) ?>"><?= $e($latestActivityLabel) ?></a>
 <?php else: ?>
@@ -60,6 +52,12 @@ $latestActivityPostId = trim((string) ($profile['latest_activity_post_id'] ?? ''
 <?php if ($latestActivityAt !== ''): ?>
             <span class="meta">&mdash; <?= $relativeTimestamp($latestActivityAt) ?></span>
 <?php endif; ?>
+            </div>
+          </td>
+          <td class="pending-approvals-action-cell" data-label="Approve">
+            <button type="button" class="pending-approvals-action-button" data-action="approve-user" data-profile-slug="<?= $e($profile['profile_slug']) ?>">
+              Approve
+            </button>
           </td>
         </tr>
 <?php endforeach; ?>

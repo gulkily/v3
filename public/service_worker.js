@@ -6,6 +6,7 @@ const RUNTIME = self.__forumBrowserRuntime || {
 const CACHE_NAME = RUNTIME.offlineCacheName;
 const CACHE_PREFIX = RUNTIME.offlineCachePrefix;
 const SNAPSHOT_URL = "/offline/snapshot.sqlite3";
+const UPDATE_URL = "/offline/update.sqlite3";
 const OFFLINE_HEALTH_URL = "/offline/";
 const OFFLINE_READER_URL = "/offline/reader/";
 const OFFLINE_OUTBOX_URL = "/tools/outbox/";
@@ -128,6 +129,12 @@ async function refreshOfflineReader(extraUrls) {
 
 async function refreshSnapshot() {
   try {
+    const update = await fetchOfflineResource(UPDATE_URL, "offline update");
+    await (await caches.open(CACHE_NAME)).put(cacheKey(UPDATE_URL), update.clone());
+  } catch (error) {
+    // A compact update is optional; retain the last saved database.
+  }
+  try {
     const response = await fetchOfflineResource(SNAPSHOT_URL, "offline snapshot");
     await (await caches.open(CACHE_NAME)).put(cacheKey(SNAPSHOT_URL), response.clone());
   } catch (error) {
@@ -163,7 +170,7 @@ function cacheableRequest(request) {
   if (request.method !== "GET") return false;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || url.search) return false;
-  return url.pathname === OFFLINE_HEALTH_URL || url.pathname === OFFLINE_READER_URL || url.pathname === SNAPSHOT_URL
+  return url.pathname === OFFLINE_HEALTH_URL || url.pathname === OFFLINE_READER_URL || url.pathname === SNAPSHOT_URL || url.pathname === UPDATE_URL
     || url.pathname === OFFLINE_OUTBOX_URL
     || url.pathname === "/manifest.webmanifest" || url.pathname === "/favicon.ico"
     || url.pathname.startsWith("/assets/");

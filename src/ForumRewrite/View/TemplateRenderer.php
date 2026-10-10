@@ -192,6 +192,7 @@ final class TemplateRenderer
             'appVersion' => $this->appVersion,
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
             'siteCssPath' => $this->assetPath('/assets/site.css'),
+            'navIconsCssPath' => $this->assetPath('/assets/theme-nav-icons.css'),
             'faviconPath' => FaviconRegistry::resolve($profile),
             'browserRuntimeAssetPaths' => [
                 'openpgpV6' => $this->assetPath('/assets/openpgp.min.js'),

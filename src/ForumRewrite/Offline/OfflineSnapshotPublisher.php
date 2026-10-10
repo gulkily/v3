@@ -29,6 +29,15 @@ final class OfflineSnapshotPublisher
         return [...$result, 'path' => $path];
     }
 
+    /** @return array{generated_at:string,thread_count:int,post_count:int,public_key_count:int,size_bytes:int,path:string} */
+    public function publishUpdate(string $databasePath): array
+    {
+        $path = $this->updatePath();
+        $result = $this->builder->buildUpdate($databasePath, $path);
+
+        return [...$result, 'path' => $path];
+    }
+
     public function snapshotPath(): string
     {
         $root = rtrim($this->staticHtmlRoot, '/');
@@ -37,5 +46,15 @@ final class OfflineSnapshotPublisher
         }
 
         return $root . '/offline/snapshot.sqlite3';
+    }
+
+    public function updatePath(): string
+    {
+        $root = rtrim($this->staticHtmlRoot, '/');
+        if ($root === '') {
+            throw new RuntimeException('Offline snapshot publication requires a static HTML root.');
+        }
+
+        return $root . '/offline/update.sqlite3';
     }
 }
