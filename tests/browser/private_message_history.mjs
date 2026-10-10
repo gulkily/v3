@@ -14,10 +14,14 @@ export async function checkHistory(page, context, base, artifacts, seed, incomin
   let cursor = initialCursor, expected = [];
   do {
     const response = await context.request.get(base + '/api/private_messages/conversation?username_token=bob&cursor=' + encodeURIComponent(cursor));
+    assert.match(response.headers()['cache-control'], /no-store/);
     const result = await response.json();
     expected = result.messages.map(message => message.message_id).concat(expected);
     cursor = result.next_cursor;
   } while (cursor);
+  const foreign = await context.request.get(base + '/api/private_messages/conversation?username_token=user-58&cursor=' + encodeURIComponent(initialCursor));
+  assert.equal(foreign.status(), 400);
+  assert.equal((await foreign.json()).restart, true);
   assert.ok(expected.length >= 63);
   assert.equal(await page.locator('[data-private-message-id]').count(), 25);
   seed({ action: 'chat', messages: [{ id: 'history-interleaved', time: '2026-10-06T12:00:00Z', sender: 'bob', envelope: incoming }] });
@@ -45,6 +49,7 @@ export async function checkHistory(page, context, base, artifacts, seed, incomin
   assert.deepEqual(ids, expected);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(ids.includes('history-interleaved'), false);
+  assert.equal(await page.getByText('Unverified older secret', { exact: true }).count(), 0);
   assert.equal(await page.locator('textarea').inputValue(), 'Draft while reading history');
   await page.getByText('All history loaded.', { exact: true }).waitFor();
   const oldest = page.locator('[data-private-message-id="older-01"]');

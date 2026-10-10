@@ -8,7 +8,7 @@ Use this checklist to track coverage across the releases and the
 implement each release.
 
 This is a coordination checklist. Individual FDP requirements, development plans,
-and implementation approvals remain separate. Cycles 1–2 are complete; Cycles 3–4 are pending.
+and implementation approvals remain separate. Cycles 1–3 are complete; Cycle 4 is pending.
 Check items off when their acceptance criteria are verified, and link the relevant
 FDP artifacts and verification evidence here as each cycle progresses.
 
@@ -18,7 +18,7 @@ FDP artifacts and verification evidence here as each cycle progresses.
 | --- | --- | --- | --- |
 | 1 | Find a conversation or start one from Messages | [Plan](./private_message_conversation_list/private_message_conversation_list_step3_development_plan.md) · [Implementation and verification](./private_message_conversation_list/private_message_conversation_list_step4_implementation_summary.md) | Complete |
 | 2 | Read and reply comfortably without reloading | [Plan](./private_message_chat_refinement/private_message_chat_refinement_step3_development_plan.md) · [Implementation and verification](./private_message_chat_refinement/private_message_chat_refinement_step4_implementation_summary.md) | Complete on feature branch; awaiting merge review |
-| 3 | Retrieve messages older than the initial history window | Step 2 unless pagination choices need Step 1 | Pending |
+| 3 | Retrieve messages older than the initial history window | [Plan](./private_message_history_step3_development_plan.md) · [Implementation and verification](./private_message_history_step4_implementation_summary.md); Step 1 skipped | Complete on `feature/private-message-history`, including unmerged Cycle 2; awaiting merge review |
 | 4 | See reliable unread indicators and counts | Step 1 to settle read semantics and persistence | Pending |
 
 Follow this order and reuse the components and contracts established in earlier
@@ -30,8 +30,8 @@ planning. Add links only when the corresponding artifacts exist.
 ## Baseline and shared requirements
 
 The [message store](../../src/ForumRewrite/Messaging/PrivateMessageStore.php)
-already limits each mailbox and conversation to the newest 25 messages. Older
-history currently has no retrieval control. Message bodies are encrypted on the
+limits each legacy mailbox and initial conversation window to the newest 25 messages.
+Cycle 3 adds bounded Load older retrieval for conversation history. Message bodies are encrypted on the
 server, and the [reader](../../public/assets/private_message_reader.js) decrypts
 and verifies them in the browser. The message schema has no read-tracking fields.
 
@@ -129,20 +129,23 @@ a successful-send reload, and can understand and recover from relevant failures.
 
 Outcome: users can read beyond the newest 25 messages without losing their place.
 
-- [ ] Add bounded cursor pagination for authorized conversation history, retaining
+Evidence: [Cycle 3 implementation summary](./private_message_history_step4_implementation_summary.md). Isolated browser checks cover real encrypted history, delayed decryption/navigation, mobile/zoom, retry/restart, and concurrent sends. Physical-device keyboard testing remains a manual follow-up.
+
+- [x] Add bounded cursor pagination for authorized conversation history, retaining
   chronological display and a deterministic tie-breaker for equal timestamps.
-- [ ] Add Load older with loading, exhausted-history, error, and retry states.
-- [ ] Prepend older messages while preserving the visible reading position after
+- [x] Add Load older with loading, exhausted-history, error, and retry states.
+- [x] Prepend older messages while preserving the visible reading position after
   decryption and layout changes. Keep sender groups and date separators correct
   across page boundaries.
-- [ ] Reuse the reader for newly loaded messages and preserve per-message
+- [x] Reuse the reader for newly loaded messages and preserve per-message
   verification, error, and retry behavior.
-- [ ] Verify at least three pages of history, equal timestamps, arrivals between
+- [x] Verify at least three pages of history, equal timestamps, arrivals between
   page requests, failure and retry, no skipped or duplicate messages, and exclusion
   of another user's conversations.
 
-Completion: all stored history in an authorized conversation is reachable with
-bounded requests and stable reading position.
+Completion: all stored history in the authorized conversation's opening snapshot
+is reachable with bounded requests and stable reading position. Refreshing or an
+explicit recovery restart opens a fresh snapshot; this is not live polling.
 
 ## Cycle 4 Track unread conversations
 
@@ -169,6 +172,23 @@ viewer what needs attention.
 Completion: indicators and counts agree with the approved semantics and remain
 correct across refreshes and supported browser or device transitions.
 
+## Deferred follow-ups
+
+- [ ] Reduce the size and prominence of the per-message decryption-error/retry
+  widget. The user reports that “This encrypted message could not be decrypted
+  with the saved private key” plus “Retry reading message” is large and distracting,
+  especially when repeated across history. Explore compact unavailable-message
+  placeholders with optional details and a retry only where useful; retain clear
+  security warnings for invalid or missing signatures. Verify with many unreadable
+  messages on desktop and mobile. Deferred by request, not part of Cycle 3.
+- [ ] Separately assess historical-message access after adding or changing keys.
+  Approving a new key does not retroactively encrypt existing envelopes to it;
+  retrying unchanged ciphertext with the same unsuitable key cannot resolve that
+  mismatch. The generic error alone does not establish the cause for any specific
+  message. Consider recovery using retained older keys or a future authorized
+  mechanism, without promising automatic recovery or weakening verification.
+  Plan this explicitly later; no key-management redesign is approved here.
+
 ## Final acceptance
 
 - [ ] Link each completed cycle's FDP artifacts and verification evidence here.
@@ -179,4 +199,4 @@ correct across refreshes and supported browser or device transitions.
 - [ ] Confirm focused automated checks and browser checks cover the changed
   behavior, encryption and authorization boundaries, accessibility, and recovery.
 
-Next action: review Cycle 2's [implementation and verification](./private_message_chat_refinement/private_message_chat_refinement_step4_implementation_summary.md) for merge. Then begin Cycle 3's FDP planning for older-history retrieval; do not mark that deferred work complete.
+Next action: review completed Cycle 3 for merge, then assess Cycle 4's unread semantics in FDP Step 1 when requested. Cycle 3 includes unmerged Cycle 2; neither has been pushed or merged into main here. The decryption-widget and historical-key follow-ups remain deferred.

@@ -93,12 +93,13 @@
         const response = await fetch('/api/private_messages/conversation?username_token=' + encodeURIComponent(root.dataset.counterpartUsernameToken) + (fresh ? '' : '&cursor=' + encodeURIComponent(cursor)), {
           credentials: 'same-origin', headers: { Accept: 'application/json' }, signal: request.signal,
         });
-        const page = await response.json();
+        const page = await response.json().catch(() => null);
         if (!isCurrent()) return;
         if (!response.ok) {
           const error = new Error('Unable to load history.');
           error.restart = response.status === 400 && page && page.restart === true;
           error.authorization = response.status === 401 || response.status === 403;
+          error.detail = response.status === 400 && page && typeof page.error === 'string' ? page.error : '';
           throw error;
         }
         if (!validHistoryPage(root, page) || (!fresh && page.page_cursor !== cursor) ||
@@ -153,7 +154,7 @@
           ? 'This history position is no longer usable. Restart history to load a fresh recent window. Your conversation and draft are unchanged until it succeeds.'
           : error.authorization
             ? 'History access is unavailable. Check your sign-in and messaging eligibility, then retry. Your loaded conversation and draft are unchanged.'
-            : 'Unable to ' + (fresh ? 'restart history' : 'load older messages') + '. Your conversation and draft are unchanged.';
+            : (error.detail || 'Unable to ' + (fresh ? 'restart history' : 'load older messages') + '.') + ' Your conversation and draft are unchanged.';
         restart.hidden = !(fresh || error.restart);
         load.hidden = fresh || error.restart || !cursor;
         load.textContent = 'Retry loading older';

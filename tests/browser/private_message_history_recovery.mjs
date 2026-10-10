@@ -17,6 +17,7 @@ export async function checkHistoryRecovery(page) {
     if (mode === 'malformed') return route.fulfill({ status: 200, body: '{not json' });
     if (mode === 'shape') return route.fulfill({ status: 200, json: { status: 'ok', messages: [], page_cursor: 'foreign', next_cursor: null } });
     if (mode === 'auth') return route.fulfill({ status: 403, json: { status: 'error', error: 'Not eligible' } });
+    if (mode === 'eligibility') return route.fulfill({ status: 400, json: { status: 'error', error: 'Conversation counterpart has no approved profile keys.' } });
     if (mode === 'stale') return route.fulfill({ status: 400, json: { status: 'error', restart: true } });
     if (mode === 'hold') {
       const response = await route.fetch();
@@ -28,7 +29,7 @@ export async function checkHistoryRecovery(page) {
   };
   await page.route('**/api/private_messages/conversation?*', intercept);
   const settled = () => page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]').dataset.historyLoading === '0');
-  for (const failure of ['abort', 'malformed', 'shape', 'auth', 'stale']) {
+  for (const failure of ['abort', 'malformed', 'shape', 'auth', 'eligibility', 'stale']) {
     mode = failure;
     await page.locator('[data-role="history-load"]').click();
     await settled();
@@ -36,6 +37,7 @@ export async function checkHistoryRecovery(page) {
     assert.equal(await field.inputValue(), 'Keep this history recovery draft');
     assert.equal(new URL(urls.at(-1)).searchParams.get('cursor'), cursor, 'Retry must reuse the exact cursor');
     if (failure === 'auth') assert.match(await page.locator('[data-role="history-status"]').innerText(), /sign-in and messaging eligibility/);
+    if (failure === 'eligibility') assert.match(await page.locator('[data-role="history-status"]').innerText(), /no approved profile keys/);
   }
   await page.getByRole('button', { name: 'Restart history', exact: true }).waitFor();
   mode = 'abort';
