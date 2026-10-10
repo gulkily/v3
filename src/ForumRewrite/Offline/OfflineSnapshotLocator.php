@@ -31,6 +31,26 @@ final class OfflineSnapshotLocator
         return null;
     }
 
+    public function servedUpdatePath(string $staticHtmlRoot): ?string
+    {
+        if ($staticHtmlRoot === '') {
+            return null;
+        }
+
+        $candidates = [rtrim($staticHtmlRoot, '/') . '/offline/update.sqlite3'];
+        $releaseRoot = $this->activeStaticReleaseRoot($staticHtmlRoot);
+        if ($releaseRoot !== null) {
+            $candidates[] = $releaseRoot . '/offline/update.sqlite3';
+        }
+        foreach ($candidates as $path) {
+            if ($this->isSqliteFile($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
     /** SHA-256 from the manifest beside the served snapshot, or '' when unavailable. */
     public function manifestRevision(string $staticHtmlRoot): string
     {

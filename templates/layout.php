@@ -104,6 +104,7 @@
   <link rel="preload" href="<?= $e($siteCssPath) ?>" as="style" fetchpriority="high">
   <link rel="stylesheet" href="<?= $e($siteCssPath) ?>" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="<?= $e($siteCssPath) ?>"></noscript>
+  <link rel="stylesheet" href="<?= $e($navIconsCssPath) ?>">
 <?php foreach ($pageStylesheetPaths as $pageStylesheetPath): ?>
   <link rel="stylesheet" href="<?= $e($pageStylesheetPath) ?>">
 <?php endforeach; ?>

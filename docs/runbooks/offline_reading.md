@@ -19,8 +19,11 @@ visible replies, subject to a 25 MiB file limit. Pinned threads are selected
 first; if the file limit is reached,
 the oldest whole non-pinned threads are omitted. The thin `offline mode` bar
 identifies snapshot-backed reading.
-Hidden records, identity/bootstrap records, profiles, account data, workflow
-state, and LLM/operational tables are not included.
+Hidden records, identity/bootstrap records, profile data other than imported
+public keys, account data, workflow state, and LLM/operational tables are not
+included. Every approved public key is imported; an unapproved key is included
+only when it accompanies saved public discussion. Keys already downloaded to a
+browser are subject to the same no-remote-revocation boundary as saved posts.
 
 When the network is unavailable, normal Board URLs (including All/Liked and
 Newest/Oldest/Top controls), the Tags index, saved tag-result URLs, and normal

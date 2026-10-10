@@ -105,6 +105,21 @@ final class ThemeRegistryTest
             (string) $styles,
         ));
     }
+
+    public function testQdbThemeHidesOnlyTheGenericBoardComposer(): void
+    {
+        $styles = file_get_contents(dirname(__DIR__) . '/public/assets/theme-qdb.css');
+
+        assertSame(true, $styles !== false);
+        assertSame(true, str_contains(
+            (string) $styles,
+            ':root[data-theme="qdb"] .thread-list > .card.compact-thread-compose {'
+        ));
+        assertSame(false, str_contains(
+            (string) $styles,
+            ':root[data-theme="qdb"] .thread-list > .card:not(.quote-card) {'
+        ));
+    }
 }
 
 if (!function_exists('assertSame')) {
