@@ -35,6 +35,30 @@ final class PrivateMessageHistorySyncTest
         $profiles->exec("UPDATE profiles SET is_approved=0 WHERE public_key='KEY-b'");
         assertSame(null,$eligible->invoke($service,$sent,'bob',str_repeat('b',40)));
     }
+    public function testSenderTransferRecoveryRechecksEveryOriginalAndMembership(): void
+    {
+        [$profiles,$messages,$sync,$service,$db]=$this->fixture();
+        $input=array_replace($this->uploadInput(),['account'=>'bob','target'=>str_repeat('c',40)]);
+        $transfer=$service->upload($this->viewer('b'),$input);
+        $page=$service->transfers($this->viewer('c','bob'),['message_id'=>'m01']);
+        assertSame('alice',$page['transfers'][0]['source_account']);
+        assertSame('KEY-b',$page['transfers'][0]['source_key']);
+        assertSame(null,$sync->receipt('bob',str_repeat('c',40),'m01',$input['items'][0]['digest']));
+        $receipt=$input['items'][0]+$transfer;
+        $service->acknowledge($this->viewer('c','bob'),['items'=>[$receipt]]);
+        assertSame($transfer['transfer_id'],$service->transfers($this->viewer('c','bob'),['message_id'=>'m01'])['transfers'][0]['transfer_id']);
+        $bad=$input;$bad['items'][]=['message_id'=>'m02','digest'=>hash('sha256','cipher-2')];
+        foreach([$bad,array_replace($input,['account'=>'mallory','target'=>str_repeat('d',40)])] as $attempt) {
+            try {$service->upload($this->viewer('b'),$attempt);throw new Exception('Invalid direction/recipient accepted');} catch(InvalidArgumentException $expected) {}
+        }
+        $profiles->exec("UPDATE profiles SET is_approved=0 WHERE public_key='KEY-b'");
+        assertSame([],$service->transfers($this->viewer('c','bob'),['message_id'=>'m01'])['transfers']);
+        try {$service->acknowledge($this->viewer('c','bob'),['items'=>[$receipt]]);throw new Exception('Revoked donor acknowledged');} catch(InvalidArgumentException $expected) {}
+        $profiles->exec("UPDATE profiles SET is_approved=1 WHERE public_key='KEY-b'");
+        $profiles->exec("UPDATE profiles SET is_approved=0 WHERE public_key='KEY-c'");
+        try {$service->upload($this->viewer('b'),$input);throw new Exception('Revoked target accepted');} catch(InvalidArgumentException $expected) {}
+        assertSame('cipher-1',$messages->historySyncMessage('alice','m01')['encrypted_envelope']);
+    }
     public function testBoundedDiscoveryFindsExistingAndNewlyApprovedKeysWithoutQueue(): void
     {
         [$profiles,$messages,$sync,$service]=$this->fixture();

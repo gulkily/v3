@@ -57,7 +57,7 @@
         for(const transfer of page.transfers) {
           try {
             if(transfer.account!==account || transfer.target!==target) continue;
-            const entries=await crypto.unwrapHistoryKeys({account,source:transfer.source,target,privateKey,sourceKey:transfer.source_key,ciphertext:transfer.ciphertext});
+            const entries=await crypto.unwrapHistoryKeys({account,source_account:transfer.source_account,source:transfer.source,target,privateKey,sourceKey:transfer.source_key,ciphertext:transfer.ciphertext});
             const entry=entries.find(row=>row.message_id===messageId && row.digest===digest);
             if(entry) result.push({keys:entry.keys,transfer_id:transfer.transfer_id});
           } catch (_) { /* One invalid donor must not block another candidate. */ }

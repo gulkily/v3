@@ -8,3 +8,8 @@ Planning commit: `95d1dfa8`. Branch: `feature/private-message-sender-history-syn
 - Changes: central original-direction/current-membership eligibility; signed v2 sender-account bindings, with unchanged v1 same-account output and decoding. Grouped four planning artifacts and updated navigation.
 - Verification: `php tests/run.php PrivateMessageHistorySyncTest PrivateMessageHistoryCryptoTest` — 13 passed; `git diff --check` passed.
 - Notes: cross-account upload remains disabled until Stage 2. Negative tests cover unrelated accounts, recipient-to-sender direction, membership revocation, changed account/purpose/key bindings and original signatures on both bundled OpenPGP versions.
+
+## Stage 2 - Sender transfer to canonical reading
+- Changes: recipient-scoped uploads with per-item direction checks; retrieval, receipts and coverage recheck current donor membership. Canonical candidate decoding supplies the server-derived source account to signed v2 validation. Recipient confirmations remain separate from donor confirmations.
+- Verification: focused PHP/crypto suite — 14 passed. `node tests/browser/private_message_history_sync_browser.mjs --sender --direct` passed with real signed recipient approval, sender upload, canonical preview/read and reload after sender closure; artifacts `/tmp/history-sync-browser-dYJZ56`. Original ciphertext unchanged. `git diff --check` passed.
+- Notes: mixed-direction batches, unrelated recipients and revoked donors/targets rejected; malformed candidates and unsigned originals remain untrusted. Automatic sender discovery not yet enabled.

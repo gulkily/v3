@@ -9,6 +9,7 @@ import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { chromium } from 'playwright-core';
 
+const senderAssisted=process.argv.includes('--sender'), direct=process.argv.includes('--direct');
 const project=resolve(new URL('../..',import.meta.url).pathname);
 runInThisContext(readFileSync(join(project,'public/assets/openpgp.min.js'),'utf8'));
 const pgp=globalThis.openpgp,root=await mkdtemp(join(tmpdir(),'history-sync-browser-'));
@@ -22,7 +23,7 @@ async function key(name) {
  const publicKey=await pgp.readKey({armoredKey:pair.publicKey});
  return {...pair,name,fingerprint:publicKey.getFingerprint(),public:publicKey,private:await pgp.readPrivateKey({armoredKey:pair.privateKey})};
 }
-const [oldA,oldB,bob,target,later]=await Promise.all(['alice','alice','bob','alice','alice'].map(key));
+const [oldA,oldB,bob,target,later]=await Promise.all((senderAssisted?['bob','bob','alice','alice','alice']:['alice','alice','bob','alice','alice']).map(key));
 const socket=createServer().listen(0,'127.0.0.1');await once(socket,'listening');const port=socket.address().port;await new Promise(resolve=>socket.close(resolve));
 const base=`http://127.0.0.1:${port}`,syncPath=join(root,'state/private/message_history_sync.sqlite3'),messagePath=join(root,'state/private/messages.sqlite3');
 const server=spawn('php',['-d',`session.save_path=${root}/sessions`,'-S',`127.0.0.1:${port}`,join(project,'tests/Support/private_message_browser_router.php')],{env:{...process.env,PRIVATE_MESSAGE_TEST_ROOT:root,FORUM_SECRETS_PATH:join(root,'unused.php'),PRIVATE_MESSAGE_DATABASE_PATH:messagePath,PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH:syncPath,VISITOR_STATISTICS_DATABASE_PATH:join(root,'visitors.sqlite3')},stdio:['ignore','ignore','pipe']});
@@ -83,14 +84,15 @@ try {
  const a=await device(oldA),b=await device(oldB),t=await device(target);
  assert.equal((await t.request.get(base+'/api/private_messages/history_sync/work')).status(),403);
  const messages=[];
- for(let n=1;n<=31;n++) {
-   const donor=n<=20?oldA:oldB,sender=n%2?bob:donor;
+ for(let n=1;n<=(direct?1:31);n++) {
+   const donor=n<=20?oldA:oldB,sender=senderAssisted?donor:(n%2?bob:donor);
    const envelope=await pgp.encrypt({message:await pgp.createMessage({text:'History secret '+n}),encryptionKeys:[donor.public,bob.public],signingKeys:sender.private,format:'armored'});
-   messages.push({id:'history-'+String(n).padStart(2,'0'),time:`2026-10-09T12:${String(n).padStart(2,'0')}:00Z`,sender:sender.name,recipient:sender===bob?'alice':'bob',fingerprint:sender.fingerprint,envelope});
+   messages.push({id:'history-'+String(n).padStart(2,'0'),time:`2026-10-09T12:${String(n).padStart(2,'0')}:00Z`,sender:sender.name,recipient:senderAssisted?'alice':(sender===bob?'alice':'bob'),fingerprint:sender.fingerprint,envelope});
  }
  fixture({action:'messages',messages});
  console.log('Approving target through signed canonical approval APIs');
- await approve(a,oldA,target);
+ if(senderAssisted) {const approver=await device(bob);await approve(approver,bob,target);await approver.close();}
+ else await approve(a,oldA,target);
  const before=messages.map(row=>({message_id:row.id,encrypted_envelope:row.envelope}));
  assert.equal((await t.request.post(base+'/api/private_messages/history_sync/acknowledge',{data:{items:[]}})).status(),403);
  assert.equal((await t.request.post(base+'/api/private_messages/history_sync/acknowledge',{headers:{...headers,'Sec-Fetch-Site':'cross-site'},data:{items:[]}})).status(),403);
@@ -98,6 +100,25 @@ try {
  const pendingPage=await t.newPage();await pendingPage.goto(base+'/messages');
  await pendingPage.waitForFunction(()=>document.querySelector('[data-conversation-row]')?.dataset.previewState==='decryption-failed');
  await pendingPage.close();
+ if(direct) {
+   const donorPage=await a.newPage();await donorPage.goto(base+'/');
+   await donorPage.evaluate(async ({message,targetKey,targetFp})=>{
+     const c=window.ForumPrivateMessageHistoryCrypto,privateKey=localStorage.getItem('forum_pki_private_key');
+     const keys=await c.extractKeys(message.envelope,privateKey);
+     const entries=[{message_id:message.id,digest:c.digest(message.envelope),keys}];
+     const ciphertext=await c.wrapHistoryKeys({account:'alice',source_account:'bob',source:message.fingerprint,target:targetFp,privateKey,targetKey,entries});
+     const response=await fetch('/api/private_messages/history_sync/transfers',{method:'POST',headers:{'Content-Type':'application/json','X-Requested-With':'ForumPrivateMessages'},body:JSON.stringify({account:'alice',target:targetFp,ciphertext,items:entries.map(({message_id,digest})=>({message_id,digest}))})});
+     if(!response.ok) throw Error(await response.text());
+   },{message:messages[0],targetKey:target.publicKey,targetFp:target.fingerprint});
+   await a.close();await b.close();
+   let page=await readAll(t,1);
+   assert.equal(await page.locator('[data-private-message-history-status]').count(),0);
+   await page.reload();await page.waitForFunction(()=>document.querySelectorAll('[data-reader-state="verified"]').length===1);
+   await t.close();
+   assert.deepEqual(JSON.parse(fixture({action:'inspect'})).originals,before);
+   assert.deepEqual(errors,[]);
+   console.log('Single sender transfer → canonical preview/read → retained reload passed. Artifacts: '+root);
+ } else {
  console.log('Donor A visits a non-Messages page; target returns after donor closes');
  await visit(a);await a.close();
  const partial=await t.newPage();await partial.goto(base+'/messages/conversation/bob');
@@ -143,5 +164,6 @@ try {
  assert(!log.includes('History secret'));assert(!log.includes('PRIVATE KEY BLOCK'));
  await writeFile(join(root,'report.json'),JSON.stringify({passed:true,messages:31,checks:['no global history-sync notice or retry button','real signed approvals','separate donor visits','partial donors','three-plus batches','retained reload','restored-device forwarding','mobile','draft preservation','no-store/auth/origin','original ciphertext unchanged','private paired backup/restore','sync outage with normal send','no plaintext/key logging'],syncRequests:syncBodies.length},null,2));
  console.log('History sync browser checks passed. Artifacts: '+root);
+ }
 } catch(error) {console.error('Browser artifacts: '+root);console.error(error);process.exitCode=1;}
 finally {if(browser)await browser.close();server.kill();await writeFile(join(root,'server.log'),log);}

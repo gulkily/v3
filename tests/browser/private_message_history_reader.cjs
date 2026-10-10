@@ -14,7 +14,7 @@ vm.runInThisContext(fs.readFileSync('public/assets/openpgp.min.js','utf8'));
  for(const id of ['signed','unsigned']) {
    envelopes[id]=await openpgp.encrypt({message:await openpgp.createMessage({text:id+' historical secret'}),encryptionKeys:await openpgp.readKey({armoredKey:donor.publicKey}),...(id==='signed'?{signingKeys:await openpgp.readPrivateKey({armoredKey:sender.privateKey})}:{}),format:'armored'});
    const keys=await c.extractKeys(envelopes[id],donor.privateKey);
-   transfers[id]=await c.wrapHistoryKeys({account:'alice',source:donor.fp,target:target.fp,privateKey:donor.privateKey,targetKey:target.publicKey,entries:[{message_id:id,digest:c.digest(envelopes[id]),keys}]});
+   transfers[id]=await c.wrapHistoryKeys({account:'alice',source_account:'bob',source:donor.fp,target:target.fp,privateKey:donor.privateKey,targetKey:target.publicKey,entries:[{message_id:id,digest:c.digest(envelopes[id]),keys}]});
  }
  const receipts=[];let retrievals=0;
  global.fetch=async(url,options)=>{
@@ -23,8 +23,8 @@ vm.runInThisContext(fs.readFileSync('public/assets/openpgp.min.js','utf8'));
    else if(url.includes('/transfers?')) {
      retrievals++;const id=new URL('http://local'+url).searchParams.get('message_id');
      Object.assign(result,{account:'alice',target:target.fp,message_id:id,digest:c.digest(envelopes[id]),next:null,transfers:[
-       {account:'alice',source:donor.fp,target:target.fp,source_key:donor.publicKey,transfer_id:'bad',ciphertext:'invalid'},
-       {account:'alice',source:donor.fp,target:target.fp,source_key:donor.publicKey,transfer_id:id,ciphertext:transfers[id]}
+       {account:'alice',source_account:'bob',source:donor.fp,target:target.fp,source_key:donor.publicKey,transfer_id:'bad',ciphertext:'invalid'},
+       {account:'alice',source_account:'bob',source:donor.fp,target:target.fp,source_key:donor.publicKey,transfer_id:id,ciphertext:transfers[id]}
      ]});
    } else if(url.endsWith('/acknowledge')) receipts.push(JSON.parse(options.body));
    return {ok:true,json:async()=>result};
