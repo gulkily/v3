@@ -78,6 +78,12 @@ final class PrivateMessageMailboxService
     /** @param array<string, mixed> $viewer @return list<array<string, string>> */
     public function conversation(array $viewer, string $counterpartUsernameToken): array
     {
+        return $this->conversationPage($viewer, $counterpartUsernameToken)['messages'];
+    }
+
+    /** @param array<string, mixed> $viewer @return array<string, mixed> */
+    public function conversationPage(array $viewer, string $counterpartUsernameToken, ?string $cursor = null): array
+    {
         $viewer = $this->approvedViewer($viewer);
         $counterpartUsernameToken = strtolower(trim($counterpartUsernameToken));
         if (preg_match('/^[a-z0-9][a-z0-9._-]{0,63}$/', $counterpartUsernameToken) !== 1) {
@@ -90,7 +96,7 @@ final class PrivateMessageMailboxService
             throw new InvalidArgumentException('Conversation counterpart has no approved profile keys.');
         }
 
-        return $this->store->conversationFor((string) $viewer['username_token'], $counterpartUsernameToken);
+        return $this->store->conversationPageFor((string) $viewer['username_token'], $counterpartUsernameToken, $cursor);
     }
 
     /** @param array<string, mixed> $viewer @return list<array{identity_id:string,profile_slug:string,public_key:string}> */

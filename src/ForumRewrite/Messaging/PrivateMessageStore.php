@@ -165,21 +165,76 @@ final class PrivateMessageStore
     /** @return list<array<string, string>> */
     public function conversationFor(string $viewerUsernameToken, string $counterpartUsernameToken): array
     {
-        $stmt = $this->pdo->prepare(
-            'SELECT message_id, created_at, sender_username_token, recipient_username_token,
-                    sender_identity_id, encrypted_envelope
-             FROM private_messages
-             WHERE (sender_username_token = :viewer AND recipient_username_token = :counterpart)
-                OR (sender_username_token = :counterpart AND recipient_username_token = :viewer)
-             ORDER BY created_at DESC, rowid DESC
-             LIMIT ' . self::MAILBOX_PAGE_SIZE
-        );
-        $stmt->execute([
-            'viewer' => strtolower(trim($viewerUsernameToken)),
-            'counterpart' => strtolower(trim($counterpartUsernameToken)),
-        ]);
+        return $this->conversationPageFor($viewerUsernameToken, $counterpartUsernameToken)['messages'];
+    }
 
-        return array_reverse($stmt->fetchAll());
+    /** @return array{messages:list<array<string, string>>,page_cursor:string,next_cursor:?string} */
+    public function conversationPageFor(string $viewer, string $counterpart, ?string $cursor = null): array
+    {
+        $viewer = strtolower(trim($viewer));
+        $counterpart = strtolower(trim($counterpart));
+        $scope = '((sender_username_token = :viewer AND recipient_username_token = :counterpart)
+            OR (sender_username_token = :counterpart AND recipient_username_token = :viewer))';
+        $params = ['viewer' => $viewer, 'counterpart' => $counterpart];
+        if ($cursor === null) {
+            $boundary = $this->pdo->prepare('SELECT rowid, message_id FROM private_messages WHERE ' . $scope . ' ORDER BY rowid DESC LIMIT 1');
+            $boundary->execute($params);
+            $latest = $boundary->fetch();
+            $position = ['version' => 1, 'viewer' => $viewer, 'counterpart' => $counterpart,
+                'snapshot' => (int) ($latest['rowid'] ?? 0), 'anchor' => (string) ($latest['message_id'] ?? ''),
+                'before_row' => 0, 'before_id' => '', 'before_time' => ''];
+        } else {
+            $decoded = strlen($cursor) <= 2048 ? base64_decode(strtr($cursor, '-_', '+/'), true) : false;
+            $position = $decoded === false ? null : json_decode($decoded, true);
+            if (!is_array($position) || ($position['version'] ?? null) !== 1
+                || ($position['viewer'] ?? null) !== $viewer || ($position['counterpart'] ?? null) !== $counterpart
+                || !is_int($position['snapshot'] ?? null) || $position['snapshot'] < 0
+                || !is_string($position['anchor'] ?? null) || !is_string($position['before_id'] ?? null)
+                || !is_string($position['before_time'] ?? null) || !is_int($position['before_row'] ?? null)
+                || $position['before_row'] < 0 || $position['before_row'] > $position['snapshot']
+                || (($position['before_row'] === 0) !== ($position['before_time'] === ''))
+                || (($position['before_row'] === 0) !== ($position['before_id'] === ''))
+                || (($position['snapshot'] === 0) !== ($position['anchor'] === ''))) {
+                throw new InvalidHistoryCursor();
+            }
+            $check = $this->pdo->prepare('SELECT message_id, created_at FROM private_messages WHERE rowid = :row AND ' . $scope);
+            if ($position['snapshot'] !== 0) {
+                $check->execute($params + ['row' => $position['snapshot']]);
+                if ($check->fetchColumn() !== $position['anchor']) throw new InvalidHistoryCursor();
+            }
+            if ($position['before_row'] !== 0) {
+                $check->execute($params + ['row' => $position['before_row']]);
+                $prior = $check->fetch();
+                if (!$prior || $prior['message_id'] !== $position['before_id'] || $prior['created_at'] !== $position['before_time']) {
+                    throw new InvalidHistoryCursor();
+                }
+            }
+        }
+        $encode = static fn (array $value): string => rtrim(strtr(base64_encode(json_encode($value, JSON_THROW_ON_ERROR)), '+/', '-_'), '=');
+        $pageCursor = $encode($position);
+        $stmt = $this->pdo->prepare(
+            'SELECT rowid AS history_row, message_id, created_at, sender_username_token, recipient_username_token,
+                    sender_identity_id, encrypted_envelope
+             FROM private_messages WHERE ' . $scope . '
+                AND rowid <= :snapshot AND (:before_time = \'\' OR created_at < :before_time
+                    OR (created_at = :before_time AND rowid < :before_row))
+             ORDER BY created_at DESC, rowid DESC LIMIT ' . (self::MAILBOX_PAGE_SIZE + 1)
+        );
+        $stmt->execute($params + [
+            'snapshot' => $position['snapshot'], 'before_row' => $position['before_row'], 'before_time' => $position['before_time'],
+        ]);
+        $rows = $stmt->fetchAll();
+        $hasMore = count($rows) > self::MAILBOX_PAGE_SIZE;
+        $rows = array_slice($rows, 0, self::MAILBOX_PAGE_SIZE);
+        if ($rows !== []) {
+            $last = $rows[count($rows) - 1];
+            $position['before_row'] = (int) $last['history_row'];
+            $position['before_id'] = $last['message_id'];
+            $position['before_time'] = $last['created_at'];
+        }
+        foreach ($rows as &$row) unset($row['history_row']);
+        unset($row);
+        return ['messages' => array_reverse($rows), 'page_cursor' => $pageCursor, 'next_cursor' => $hasMore ? $encode($position) : null];
     }
 
     /** @return list<array<string, string>> */

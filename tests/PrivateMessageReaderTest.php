@@ -4,6 +4,33 @@ declare(strict_types=1);
 
 final class PrivateMessageReaderTest
 {
+    public function testInitialReaderFetchesTheRenderedSnapshot(): void
+    {
+        $result = $this->runScript(<<<'NODE'
+const fs = require('fs'), vm = require('vm');
+const requests = [];
+global.window = { localStorage: { getItem() { return ''; } }, ForumPrivateMessages: { async recipientKeys() { return ['key']; } } };
+global.document = { addEventListener() {} };
+global.fetch = async url => { requests.push(url); return { ok: true, async json() { return { status: 'ok', messages: [{ message_id: 'old', sender_username_token: 'bob', encrypted_envelope: 'cipher' }] }; } }; };
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+const roots = ['snapshot-one', 'snapshot-two'].map(cursor => {
+  const nodes = new Map();
+  const card = { dataset: { privateMessageId: 'old' }, querySelector(selector) { if (!nodes.has(selector)) nodes.set(selector, {}); return nodes.get(selector); } };
+  return { dataset: { mailbox: 'conversation', counterpartUsernameToken: 'bob', historyPageCursor: cursor }, querySelectorAll() { return [card]; } };
+});
+(async () => {
+  roots.forEach(window.ForumPrivateMessageReader.bindMailbox);
+  await new Promise(resolve => setTimeout(resolve, 0));
+  process.stdout.write(JSON.stringify({ requests, settled: roots.map(root => root.dataset.privateMessageReaderSettled) }));
+})().catch(error => { console.error(error); process.exit(1); });
+NODE);
+        assertSame([
+            '/api/private_messages/conversation?username_token=bob&cursor=snapshot-one',
+            '/api/private_messages/conversation?username_token=bob&cursor=snapshot-two',
+        ], $result['requests']);
+        assertSame(['1', '1'], $result['settled']);
+    }
+
     /** @return array<string, mixed> */
     private function runScript(string $script): array
     {

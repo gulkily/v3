@@ -5,6 +5,7 @@
   const mailboxRequests = new Map();
   const cardMessages = new WeakMap();
   const cardRequests = new WeakMap();
+  const cardCursors = new WeakMap();
 
   function armoredPrivateKey() {
     try {
@@ -68,13 +69,17 @@
     return { kind: "verified", plaintext: String(decrypted.data || "") };
   }
 
-  async function mailboxMessages(mailbox, counterpartUsernameToken) {
+  function requestKey(mailbox, counterpartUsernameToken, cursor) {
+    return mailbox === 'conversation' ? mailbox + ':' + counterpartUsernameToken + ':' + (cursor || '') : mailbox;
+  }
+
+  async function mailboxMessages(mailbox, counterpartUsernameToken, cursor) {
     const conversation = mailbox === "conversation";
-    const requestKey = conversation ? mailbox + ":" + counterpartUsernameToken : mailbox;
-    if (!mailboxRequests.has(requestKey)) {
-      mailboxRequests.set(requestKey, (async function () {
+    const key = requestKey(mailbox, counterpartUsernameToken, cursor);
+    if (!mailboxRequests.has(key)) {
+      mailboxRequests.set(key, (async function () {
         const path = conversation
-          ? "/api/private_messages/conversation?username_token=" + encodeURIComponent(counterpartUsernameToken)
+          ? "/api/private_messages/conversation?username_token=" + encodeURIComponent(counterpartUsernameToken) + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '')
           : "/api/private_messages/" + encodeURIComponent(mailbox);
         const response = await fetch(path, {
           credentials: "same-origin",
@@ -90,15 +95,15 @@
     }
 
     try {
-      return await mailboxRequests.get(requestKey);
+      return await mailboxRequests.get(key);
     } catch (error) {
-      mailboxRequests.delete(requestKey);
+      mailboxRequests.delete(key);
       throw error;
     }
   }
 
-  async function mailboxMessage(mailbox, messageId, counterpartUsernameToken) {
-    const messages = await mailboxMessages(mailbox, counterpartUsernameToken);
+  async function mailboxMessage(mailbox, messageId, counterpartUsernameToken, cursor) {
+    const messages = await mailboxMessages(mailbox, counterpartUsernameToken, cursor);
     const message = messages.find(function (candidate) {
       return String(candidate && candidate.message_id || "") === messageId;
     });
@@ -162,7 +167,7 @@
 
     let result;
     try {
-      const message = suppliedMessage || cardMessages.get(card) || await mailboxMessage(mailbox, messageId, counterpartUsernameToken);
+      const message = suppliedMessage || cardMessages.get(card) || await mailboxMessage(mailbox, messageId, counterpartUsernameToken, cardCursors.get(card));
       if (String(message.message_id) !== messageId) throw new Error("Message identity mismatch.");
       cardMessages.set(card, message);
       const messaging = window.ForumPrivateMessages;
@@ -175,7 +180,7 @@
         senderPublicKeyArmors: senderPublicKeyArmors,
       });
     } catch (error) {
-      if (!cardMessages.has(card)) mailboxRequests.delete(mailbox === "conversation" ? mailbox + ":" + counterpartUsernameToken : mailbox);
+      if (!cardMessages.has(card)) mailboxRequests.delete(requestKey(mailbox, counterpartUsernameToken, cardCursors.get(card)));
       result = { kind: "decryption-failed", message: "This encrypted message could not be loaded or decrypted." };
     }
 
@@ -209,6 +214,7 @@
 
     root.dataset.privateMessageReaderBound = "1";
     Promise.allSettled(Array.from(root.querySelectorAll("[data-private-message-id]")).map(function (card) {
+      cardCursors.set(card, root.dataset.historyPageCursor || '');
       return readCard(mailbox, card, counterpartUsernameToken);
     })).then(function () {
       root.dataset.privateMessageReaderSettled = "1";

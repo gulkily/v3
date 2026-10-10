@@ -7,6 +7,7 @@ namespace ForumRewrite\Http;
 use ForumRewrite\Messaging\ApprovedUserKeyResolver;
 use ForumRewrite\Messaging\PrivateMessageMailboxService;
 use ForumRewrite\Messaging\PrivateMessageStore;
+use ForumRewrite\Messaging\InvalidHistoryCursor;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -96,8 +97,12 @@ final class PrivateMessageApiController
         }
 
         try {
-            $messages = $this->service()->conversation($viewer, (string) ($query['username_token'] ?? ''));
-            $this->routeServices->sendJson(['status' => 'ok', 'messages' => $messages], 200, $this->routeServices->noStoreHeaders());
+            if (isset($query['cursor']) && !is_string($query['cursor'])) throw new InvalidHistoryCursor();
+            if (isset($query['username_token']) && !is_string($query['username_token'])) throw new InvalidArgumentException('Conversation counterpart is invalid.');
+            $page = $this->service()->conversationPage($viewer, (string) ($query['username_token'] ?? ''), $query['cursor'] ?? null);
+            $this->routeServices->sendJson(['status' => 'ok'] + $page, 200, $this->routeServices->noStoreHeaders());
+        } catch (InvalidHistoryCursor $exception) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage(), 'restart' => true], 400, $this->routeServices->noStoreHeaders());
         } catch (InvalidArgumentException $exception) {
             $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $exception) {

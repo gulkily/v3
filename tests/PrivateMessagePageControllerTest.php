@@ -124,6 +124,17 @@ final class PrivateMessagePageControllerTest
             assertStringContains('href="/user/bob"', $conversation);
             assertStringContains('Back to Messages', $conversation);
             assertStringContains('data-role="private-message-template"', $conversation);
+            preg_match('/data-history-page-cursor="([^"]+)"/', $conversation, $cursorMatch);
+            assertSame(true, isset($cursorMatch[1]));
+            $snapshot = $store->conversationPageFor('alice', 'bob', html_entity_decode($cursorMatch[1]));
+            assertSame(['list-1', 'list-2'], array_column($snapshot['messages'], 'message_id'));
+            $history = $this->apiMailbox($databasePath, $store, $viewer, 'conversation', ['username_token' => 'bob', 'cursor' => $cursorMatch[1]]);
+            assertSame($snapshot['messages'], $history['messages']);
+            assertSame($snapshot['page_cursor'], $history['page_cursor']);
+            assertSame(null, $history['next_cursor']);
+            $invalid = $this->apiMailbox($databasePath, $store, $viewer, 'conversation', ['username_token' => 'bob', 'cursor' => ['invalid']]);
+            assertSame(true, $invalid['restart']);
+            assertSame('error', $invalid['status']);
             assertStringContains('data-sender="alice"', $conversation);
             assertStringContains('datetime="2026-10-09T12:00:00Z"', $conversation);
             assertStringContains('/assets/private_message_conversation.', $conversation);
@@ -164,7 +175,7 @@ final class PrivateMessagePageControllerTest
     }
 
     /** @param array<string, mixed> $viewer @return array<string, mixed> */
-    private function apiMailbox(string $databasePath, PrivateMessageStore $store, array $viewer, string $kind): array
+    private function apiMailbox(string $databasePath, PrivateMessageStore $store, array $viewer, string $kind, array $query = []): array
     {
         $services = new RouteServices(
             $databasePath,
@@ -182,7 +193,7 @@ final class PrivateMessagePageControllerTest
         $controller = new PrivateMessageApiController($services, static fn (): array => $viewer, static fn (): PrivateMessageStore => $store);
 
         ob_start();
-        $controller->$kind('GET', []);
+        $controller->$kind('GET', $query);
         return json_decode((string) ob_get_clean(), true, 512, JSON_THROW_ON_ERROR);
     }
 

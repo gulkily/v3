@@ -8,6 +8,70 @@ use ForumRewrite\Messaging\PrivateMessageStore;
 
 final class PrivateMessageStoreTest
 {
+    public function testHistorySnapshotTraversesTiesAndIgnoresInterleavedArrivals(): void
+    {
+        $store = new PrivateMessageStore(new PDO('sqlite::memory:'));
+        for ($i = 1; $i <= 63; $i++) {
+            $store->storeEnvelope(sprintf('history-%02d', $i), '2026-10-09T12:00:00Z',
+                $i % 2 ? 'alice' : 'bob', $i % 2 ? 'bob' : 'alice', 'key', 'envelope-' . $i);
+        }
+        $store->storeEnvelope('unrelated', '2026-10-09T14:00:00Z', 'mallory', 'bob', 'key', 'private');
+        $first = $store->conversationPageFor('alice', 'bob');
+        assertSame(25, count($first['messages']));
+        assertSame('history-39', $first['messages'][0]['message_id']);
+        assertSame($first['messages'], $store->conversationFor('alice', 'bob'));
+        $store->storeEnvelope('late', '2026-10-09T13:00:00Z', 'bob', 'alice', 'key', 'new');
+        $store->storeEnvelope('backdated', '2026-10-08T12:00:00Z', 'alice', 'bob', 'key', 'new');
+        assertSame($first, $store->conversationPageFor('alice', 'bob', $first['page_cursor']));
+        $second = $store->conversationPageFor('alice', 'bob', $first['next_cursor']);
+        assertSame($second, $store->conversationPageFor('alice', 'bob', $first['next_cursor']));
+        $third = $store->conversationPageFor('alice', 'bob', $second['next_cursor']);
+        assertSame(25, count($second['messages']));
+        assertSame(13, count($third['messages']));
+        assertSame(null, $third['next_cursor']);
+        $ids = array_column(array_merge($third['messages'], $second['messages'], $first['messages']), 'message_id');
+        assertSame(array_map(static fn (int $i): string => sprintf('history-%02d', $i), range(1, 63)), $ids);
+        assertSame('late', $store->conversationPageFor('alice', 'bob')['messages'][24]['message_id']);
+    }
+
+    public function testHistoryEmptyAndExactBoundaries(): void
+    {
+        foreach ([0, 1, 25, 26, 50] as $count) {
+            $store = new PrivateMessageStore(new PDO('sqlite::memory:'));
+            $empty = $store->conversationPageFor('alice', 'bob');
+            for ($i = 1; $i <= $count; $i++) $store->storeEnvelope('message-' . $i, '2026-10-09T12:00:00Z', 'alice', 'bob', 'key', 'envelope');
+            assertSame($empty, $store->conversationPageFor('alice', 'bob', $empty['page_cursor']));
+            $page = $store->conversationPageFor('alice', 'bob');
+            assertSame(min(25, $count), count($page['messages']));
+            assertSame($count > 25, $page['next_cursor'] !== null);
+            if ($page['next_cursor'] !== null) assertSame(null, $store->conversationPageFor('alice', 'bob', $page['next_cursor'])['next_cursor']);
+        }
+    }
+
+    public function testHistoryRejectsForeignMalformedAndStalePositions(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $store = new PrivateMessageStore($pdo);
+        for ($i = 1; $i <= 30; $i++) $store->storeEnvelope('message-' . $i, '2026-10-09T12:00:00Z', 'alice', 'bob', 'key', 'envelope');
+        $page = $store->conversationPageFor('alice', 'bob');
+        $decode = static fn (string $cursor): array => json_decode(base64_decode(strtr($cursor, '-_', '+/')), true);
+        $encode = static fn (array $value): string => base64_encode(json_encode($value));
+        $position = $decode($page['next_cursor']);
+        $bad = ['', 'broken', str_repeat('a', 2049), $encode(array_replace($position, ['before_time' => 'wrong'])),
+            $encode(array_replace($position, ['snapshot' => '30'])), $encode(array_replace($position, ['anchor' => 'other']))];
+        foreach ($bad as $cursor) {
+            try { $store->conversationPageFor('alice', 'bob', $cursor); throw new RuntimeException('Invalid cursor accepted'); }
+            catch (\ForumRewrite\Messaging\InvalidHistoryCursor $error) { assertStringContains('Restart history', $error->getMessage()); }
+        }
+        foreach ([['mallory', 'bob'], ['alice', 'eve'], ['bob', 'alice']] as [$viewer, $counterpart]) {
+            try { $store->conversationPageFor($viewer, $counterpart, $page['next_cursor']); throw new RuntimeException('Foreign cursor accepted'); }
+            catch (\ForumRewrite\Messaging\InvalidHistoryCursor $error) { /* Expected. */ }
+        }
+        $pdo->exec("DELETE FROM private_messages WHERE message_id = 'message-30'");
+        try { $store->conversationPageFor('alice', 'bob', $page['page_cursor']); throw new RuntimeException('Stale cursor accepted'); }
+        catch (\ForumRewrite\Messaging\InvalidHistoryCursor $error) { /* Expected. */ }
+    }
+
     public function testConversationTiesFollowInsertionOrder(): void
     {
         $store = new PrivateMessageStore(new PDO('sqlite::memory:'));
