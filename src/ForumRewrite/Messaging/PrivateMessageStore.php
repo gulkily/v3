@@ -70,15 +70,16 @@ final class PrivateMessageStore
         $boundary->execute(['viewer' => $viewer]);
         $latest = $boundary->fetch();
         $position = ['viewer' => $viewer, 'snapshot' => (int) ($latest['rowid'] ?? 0),
-            'anchor' => (string) ($latest['message_id'] ?? ''), 'after_time' => '', 'after_id' => ''];
+            'anchor' => (string) ($latest['message_id'] ?? ''), 'after_time' => '', 'after_row' => 0];
         if ($cursor !== null) {
             $decoded = strlen($cursor) <= 2048 ? base64_decode(strtr($cursor, '-_', '+/'), true) : false;
             $position = $decoded === false ? null : json_decode($decoded, true);
             if (!is_array($position) || ($position['viewer'] ?? null) !== $viewer
                 || !is_int($position['snapshot'] ?? null) || $position['snapshot'] < 0
                 || !is_string($position['anchor'] ?? null)
-                || !is_string($position['after_time'] ?? null) || !is_string($position['after_id'] ?? null)
-                || (($position['after_time'] === '') !== ($position['after_id'] === ''))) {
+                || !is_string($position['after_time'] ?? null) || !is_int($position['after_row'] ?? null)
+                || $position['after_row'] < 0 || $position['after_row'] > $position['snapshot']
+                || (($position['after_time'] === '') !== ($position['after_row'] === 0))) {
                 throw new InvalidArgumentException('This message list has expired. Reload Messages to start again.');
             }
             $anchor = $this->pdo->prepare(
@@ -95,33 +96,37 @@ final class PrivateMessageStore
         $pageCursor = $encode($position);
         $stmt = $this->pdo->prepare(
             'WITH scoped AS (
-                SELECT message_id, created_at,
+                SELECT rowid AS activity_rowid, message_id, created_at,
                     CASE WHEN sender_username_token = :viewer THEN recipient_username_token ELSE sender_username_token END AS counterpart,
                     ROW_NUMBER() OVER (
                         PARTITION BY CASE WHEN sender_username_token = :viewer THEN recipient_username_token ELSE sender_username_token END
-                        ORDER BY created_at DESC, message_id DESC
+                        ORDER BY created_at DESC, rowid DESC
                     ) AS position
                 FROM private_messages WHERE rowid <= :snapshot
                     AND (sender_username_token = :viewer OR recipient_username_token = :viewer)
              )
-             SELECT scoped.counterpart, message.message_id, message.created_at, message.sender_username_token,
+             SELECT scoped.counterpart, scoped.activity_rowid, message.message_id, message.created_at, message.sender_username_token,
                     message.recipient_username_token, message.sender_identity_id, message.encrypted_envelope
              FROM scoped JOIN private_messages AS message ON message.message_id = scoped.message_id
              WHERE scoped.position = 1
                 AND (:after_time = \'\' OR scoped.created_at < :after_time
-                    OR (scoped.created_at = :after_time AND scoped.message_id < :after_id))
-             ORDER BY scoped.created_at DESC, scoped.message_id DESC LIMIT ' . (self::MAILBOX_PAGE_SIZE + 1)
+                    OR (scoped.created_at = :after_time AND scoped.activity_rowid < :after_row))
+             ORDER BY scoped.created_at DESC, scoped.activity_rowid DESC LIMIT ' . (self::MAILBOX_PAGE_SIZE + 1)
         );
         $stmt->execute(['viewer' => $viewer, 'snapshot' => $position['snapshot'],
-            'after_time' => $position['after_time'], 'after_id' => $position['after_id']]);
+            'after_time' => $position['after_time'], 'after_row' => $position['after_row']]);
         $rows = $stmt->fetchAll();
         $hasMore = count($rows) > self::MAILBOX_PAGE_SIZE;
         $rows = array_slice($rows, 0, self::MAILBOX_PAGE_SIZE);
         $last = $rows[count($rows) - 1] ?? null;
         if ($last !== null) {
             $position['after_time'] = $last['created_at'];
-            $position['after_id'] = $last['message_id'];
+            $position['after_row'] = (int) $last['activity_rowid'];
         }
+        foreach ($rows as &$row) {
+            unset($row['activity_rowid']);
+        }
+        unset($row);
         return ['conversations' => $rows, 'page_cursor' => $pageCursor, 'next_cursor' => $hasMore ? $encode($position) : null];
     }
 

@@ -8,7 +8,7 @@ Please go ahead. Thank you.
 
 ## Understood Intent
 
-Begin Cycle 1 of the [master checklist](./private_messaging_usability_master_checklist.md): assess how users will find and start conversations from Messages, including encrypted previews, list pagination, and navigation. Later cycles cover chat refinements, older conversation history, and unread tracking.
+Begin Cycle 1 of the [master checklist](../private_messaging_usability_master_checklist.md): assess how users will find and start conversations from Messages, including encrypted previews, list pagination, and navigation. Later cycles cover chat refinements, older conversation history, and unread tracking.
 
 ## Problem Statement
 

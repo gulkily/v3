@@ -28,6 +28,8 @@ final class PrivateMessageReleaseIsolationTest
             foreach ($this->htmlFiles($artifactRoot) as $path) {
                 $html = (string) file_get_contents($path);
                 assertStringNotContains('private_message_reader', $html);
+                assertStringNotContains('private_message_list', $html);
+                assertStringNotContains('message_time', $html);
                 assertStringNotContains('private_messages.js', $html);
                 assertStringNotContains('href="/messages', $html);
             }

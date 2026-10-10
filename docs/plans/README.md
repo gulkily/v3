@@ -43,6 +43,7 @@ or standalone plans remain at this level until they reach that threshold.
 - [Offline snapshot publish](offline_snapshot_publish/)
 - [Pending user latest activity](pending_user_latest_activity/)
 - [Platform docs](platform_docs/)
+- [Private message conversation list](private_message_conversation_list/)
 - [Private-window lobby fallback](private_window_lobby_fallback/)
 - [QDB archive importer](qdb_archive_importer/)
 - [QDB numeric permalinks](qdb_numeric_permalinks/)

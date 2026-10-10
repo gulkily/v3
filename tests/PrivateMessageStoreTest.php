@@ -88,7 +88,7 @@ final class PrivateMessageStoreTest
         $rows = array_merge($first['conversations'], $second['conversations'], $third['conversations']);
         assertSame(60, count(array_unique(array_column($rows, 'counterpart'))));
         assertSame('message-01', $rows[59]['message_id']);
-        assertSame('new-unseen', $store->conversationsFor('alice')['conversations'][0]['message_id']);
+        assertSame('new-seen', $store->conversationsFor('alice')['conversations'][0]['message_id']);
         assertSame([], $store->conversationsFor('nobody')['conversations']);
         foreach (['broken', $first['next_cursor']] as $cursor) {
             try {
@@ -98,5 +98,13 @@ final class PrivateMessageStoreTest
                 assertStringContains('Reload Messages', $exception->getMessage());
             }
         }
+    }
+
+    public function testLatestPreviewUsesInsertionOrderForSameSecondMessages(): void
+    {
+        $store = new PrivateMessageStore(new PDO('sqlite::memory:'));
+        $store->storeEnvelope('z-random-id', '2026-10-09T12:00:00Z', 'alice', 'bob', 'sender', 'first');
+        $store->storeEnvelope('a-random-id', '2026-10-09T12:00:00Z', 'alice', 'bob', 'sender', 'latest');
+        assertSame('latest', $store->conversationsFor('alice')['conversations'][0]['encrypted_envelope']);
     }
 }
