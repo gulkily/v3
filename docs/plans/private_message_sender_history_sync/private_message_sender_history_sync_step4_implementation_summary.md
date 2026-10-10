@@ -1,0 +1,10 @@
+> **Feature plan:** [Step 1](./private_message_sender_history_sync_step1_solution_assessment.md) · [Step 2](./private_message_sender_history_sync_step2_feature_description.md) · [Step 3](./private_message_sender_history_sync_step3_development_plan.md) · [Step 4](./private_message_sender_history_sync_step4_implementation_summary.md)
+
+# Sender-assisted private message history synchronization — Step 4
+
+Planning commit: `95d1dfa8`. Branch: `feature/private-message-sender-history-sync`. No production deployment.
+
+## Stage 1 - Authorization and signed bindings
+- Changes: central original-direction/current-membership eligibility; signed v2 sender-account bindings, with unchanged v1 same-account output and decoding. Grouped four planning artifacts and updated navigation.
+- Verification: `php tests/run.php PrivateMessageHistorySyncTest PrivateMessageHistoryCryptoTest` — 13 passed; `git diff --check` passed.
+- Notes: cross-account upload remains disabled until Stage 2. Negative tests cover unrelated accounts, recipient-to-sender direction, membership revocation, changed account/purpose/key bindings and original signatures on both bundled OpenPGP versions.

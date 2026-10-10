@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  const VERSION = 1, BATCH_SIZE = 10, MAX_TRANSFER_BYTES = 65536;
+  const VERSION = 2, BATCH_SIZE = 10, MAX_TRANSFER_BYTES = 65536;
   async function api() {
     return window.__forumBrowserIdentity.ensureOpenPgpApi(['readKey', 'readPrivateKey', 'readMessage', 'createMessage', 'encrypt', 'decrypt', 'decryptSessionKeys']);
   }
@@ -47,7 +47,9 @@
     if (!input.entries.length || input.entries.length>BATCH_SIZE) throw Error('Invalid transfer size.');
     const entries=input.entries.map(row=>({message_id:row.message_id, digest:row.digest,
       keys:row.keys.map(key=>({algorithm:key.algorithm, data:btoa(String.fromCharCode(...key.data))}))}));
-    const payload={version:VERSION, account:input.account, source:input.source, target:input.target, entries};
+    const crossAccount=input.source_account && input.source_account!==input.account;
+    const payload={version:crossAccount?VERSION:1, account:input.account, source:input.source, target:input.target, entries,
+      ...(crossAccount?{purpose:'sender-history',source_account:input.source_account}:{})};
     const ciphertext=await pgp.encrypt({message:await pgp.createMessage({text:JSON.stringify(payload)}), encryptionKeys:target, signingKeys:source, format:'armored'});
     if (ciphertext.length>MAX_TRANSFER_BYTES) throw Error('Transfer too large.');
     return ciphertext;
@@ -57,7 +59,8 @@
     const pgp=await api(), target=await pgp.readPrivateKey({armoredKey:input.privateKey}), source=await pgp.readKey({armoredKey:input.sourceKey});
     if (target.getFingerprint().toLowerCase()!==input.target || source.getFingerprint().toLowerCase()!==input.source) throw Error('Transfer identity mismatch.');
     const payload=JSON.parse(await verified(await pgp.decrypt({message:await pgp.readMessage({armoredMessage:input.ciphertext}), decryptionKeys:target, verificationKeys:source, format:'utf8'})));
-    if (payload.version!==VERSION || ['account','source','target'].some(k=>payload[k]!==input[k]) || !Array.isArray(payload.entries) || !payload.entries.length || payload.entries.length>BATCH_SIZE) throw Error('Transfer binding mismatch.');
+    const crossAccount=input.source_account && input.source_account!==input.account;
+    if ((crossAccount ? payload.version!==2 || payload.purpose!=='sender-history' || payload.source_account!==input.source_account : payload.version!==1) || ['account','source','target'].some(k=>payload[k]!==input[k]) || !Array.isArray(payload.entries) || !payload.entries.length || payload.entries.length>BATCH_SIZE) throw Error('Transfer binding mismatch.');
     const ids=new Set();
     return payload.entries.map(row=>{
       if (typeof row.message_id!=='string' || !/^[a-f0-9]{64}$/.test(row.digest) || ids.has(row.message_id) || !Array.isArray(row.keys) || !row.keys.length || row.keys.length>4) throw Error('Invalid transfer item.');

@@ -62,4 +62,4 @@
 - Risks or open questions: false readiness; distinguish baseline failures, block new regressions.
 - Canonical components/API contracts touched: history-sync/messaging browser suites, rollout guide, Step 4 summary.
 
-Steps 1–2 approved; Step 3 awaits review. Keep planning documents uncommitted until Approved Step 3.
+Steps 1–3 approved. Implementation proceeds on the feature branch with stage verification and commits.

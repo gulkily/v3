@@ -21,6 +21,20 @@ final class PrivateMessageHistorySyncTest
         return [$profiles,$messages,$sync,new PrivateMessageHistorySyncService($messages,$sync,$profiles),$db,$syncDb];
     }
     private function viewer(string $key='a',string $account='alice'): array { return ['identity_id'=>'openpgp:'.str_repeat($key,40),'username_token'=>$account,'is_approved'=>1]; }
+    public function testEligibilityUsesOriginalDirectionAndCurrentMembership(): void
+    {
+        [$profiles,$messages,$sync,$service]=$this->fixture();
+        $eligible=new ReflectionMethod($service,'eligibleSource');
+        $sent=$messages->historySyncMessage('alice','m01');
+        assertSame('alice',$eligible->invoke($service,$sent,'bob',str_repeat('b',40))['source_account']);
+        assertSame(null,$eligible->invoke($service,$sent,'alice',str_repeat('c',40)));
+        assertSame(null,$eligible->invoke($service,$sent,'mallory',str_repeat('a',40)));
+        assertSame(null,$eligible->invoke($service,$sent,'bob',str_repeat('d',40)));
+        $received=$messages->historySyncMessage('alice','m02');
+        assertSame(null,$eligible->invoke($service,$received,'bob',str_repeat('a',40)));
+        $profiles->exec("UPDATE profiles SET is_approved=0 WHERE public_key='KEY-b'");
+        assertSame(null,$eligible->invoke($service,$sent,'bob',str_repeat('b',40)));
+    }
     public function testBoundedDiscoveryFindsExistingAndNewlyApprovedKeysWithoutQueue(): void
     {
         [$profiles,$messages,$sync,$service]=$this->fixture();

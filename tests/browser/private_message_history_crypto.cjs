@@ -27,5 +27,17 @@ vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_crypt
  const last=await c.unwrapHistoryKeys({account:'alice',source:target.fp,target:later.fp,privateKey:later.privateKey,sourceKey:target.publicKey,ciphertext:forwarded});
  assert.equal(await c.readOriginal(envelope,last[0].keys,[sender.publicKey]),'original secret');
  assert.notEqual(c.digest(envelope+'\n'),last[0].digest);
+ // Cross-account bundles cannot be interpreted as v1 or rebound to another account.
+ const crossBinding={...binding,source_account:'sender-account'};
+ const crossCipher=await c.wrapHistoryKeys({...crossBinding,privateKey:donor.privateKey,targetKey:target.publicKey,entries:[entry]});
+ const crossInput={...input,...crossBinding,ciphertext:crossCipher};
+ const cross=await c.unwrapHistoryKeys(crossInput);
+ assert.equal(await c.readOriginal(envelope,cross[0].keys,[sender.publicKey]),'original secret');
+ for(const bad of [{source_account:'impostor'},{source_account:'alice'},{account:'impostor'},{ciphertext}]) await assert.rejects(()=>c.unwrapHistoryKeys({...crossInput,...bad}));
+ await assert.rejects(()=>c.unwrapHistoryKeys({...input,ciphertext:crossCipher}));
+ const altered=JSON.parse((await openpgp.decrypt({message:await openpgp.readMessage({armoredMessage:crossCipher}),decryptionKeys:await openpgp.readPrivateKey({armoredKey:target.privateKey}),format:'utf8'})).data);
+ altered.purpose='recipient-to-sender';
+ const wrongPurpose=await openpgp.encrypt({message:await openpgp.createMessage({text:JSON.stringify(altered)}),encryptionKeys:await openpgp.readKey({armoredKey:target.publicKey}),signingKeys:await openpgp.readPrivateKey({armoredKey:donor.privateKey}),format:'armored'});
+ await assert.rejects(()=>c.unwrapHistoryKeys({...crossInput,ciphertext:wrongPurpose}));
  console.log(bundle+': real-key round trip, forwarding, binding/signature rejection, SHA-256 vectors passed');
 })().catch(e=>{console.error(e);process.exit(1)});

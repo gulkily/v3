@@ -26,6 +26,18 @@ final class PrivateMessageHistorySyncService
         ksort($keys);
         return $keys;
     }
+    // Derive authorization from the original, never from donor-supplied account claims.
+    private function eligibleSource(array $message, string $destinationAccount, string $sourceFingerprint): ?array
+    {
+        if (!in_array($destinationAccount, [$message['sender_username_token'], $message['recipient_username_token']], true)) return null;
+        $accounts=[$destinationAccount];
+        if ($message['recipient_username_token']===$destinationAccount) $accounts[]=$message['sender_username_token'];
+        foreach (array_unique($accounts) as $account) {
+            $keys=$this->keys($account);
+            if (isset($keys[$sourceFingerprint])) return ['source_account'=>$account, 'source_key'=>$keys[$sourceFingerprint]];
+        }
+        return null;
+    }
     public function work(array $viewer): array
     {
         [$account,$source,$keys]=$this->context($viewer);
