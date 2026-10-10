@@ -64,6 +64,7 @@ export async function checkHistory(page, context, base, artifacts, seed, incomin
     localStorage.setItem('forum_pki_private_key', key);
   });
   const beforeRetry = requests;
+  await oldest.locator('summary').click();
   await oldest.getByRole('button', { name: 'Retry reading message' }).click();
   await oldest.getByText('Incoming fixture preview', { exact: true }).waitFor();
   assert.equal(requests, beforeRetry);

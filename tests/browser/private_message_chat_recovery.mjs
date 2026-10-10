@@ -59,7 +59,8 @@ export async function checkChatRecovery(page, context, base, artifacts, seed, en
     localStorage.removeItem('forum_pki_private_key');
     await window.ForumPrivateMessageReader.readCard('conversation', document.querySelector('[data-private-message-id="chat-valid"]'), 'bob');
   });
-  await valid.getByText('This browser has no private key for this message.').waitFor();
+  await valid.locator('summary').click();
+  await valid.locator('[data-role="private-message-unavailable-explanation"]').filter({ hasText: 'This browser has no private key' }).waitFor();
   await page.evaluate(() => {
     localStorage.setItem('forum_pki_private_key', window.savedChatPrivateKey);
     delete window.savedChatPrivateKey;

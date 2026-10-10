@@ -1,5 +1,64 @@
 (function () {
   "use strict";
+  const presentations = new WeakMap(), groupStates = new WeakMap(), expanded = new WeakMap();
+  function presentationFor(root, card) {
+    const group = card && presentations.get(card);
+    return group && group.node.isConnected && card.hidden ? group.node : card;
+  }
+  function regroup(root) {
+    const transcript = root.querySelector('[data-role="private-message-transcript"]');
+    const previous = groupStates.get(root) || [];
+    const cards = Array.from(transcript.querySelectorAll('[data-private-message-id]'));
+    const runs = [];
+    let run = [], lastKey = '';
+    cards.forEach(function (card) {
+      presentations.delete(card);
+      card.hidden = false;
+      const date = new Date(card.dataset.createdAt);
+      const eligible = ['unavailable', 'decryption-failed'].includes(card.dataset.readerState) && !Number.isNaN(date.getTime());
+      const key = eligible ? card.dataset.sender + ':' + date.toDateString() : '';
+      if (!key || key !== lastKey) { run = []; if (key) runs.push(run); }
+      if (key) run.push(card);
+      lastKey = key;
+    });
+    const groups = [];
+    runs.filter(items => items.length >= 2).forEach(function (items) {
+      let group = previous.find(candidate => !groups.includes(candidate) && candidate.cards.some(card => items.includes(card)));
+      if (!group) {
+        const node = document.createElement('div'), button = document.createElement('button');
+        node.dataset.role = 'unavailable-group';
+        button.type = 'button';
+        node.appendChild(button);
+        group = { node: node, button: button, cards: [] };
+        button.addEventListener('click', function () {
+          const open = button.getAttribute('aria-expanded') !== 'true';
+          group.cards.forEach(card => expanded.set(card, open));
+          regroup(root);
+        });
+      }
+      group.cards = items;
+      const open = items.some(card => expanded.get(card) || card.contains(document.activeElement));
+      const first = items[0], last = items[items.length - 1];
+      const sender = first.dataset.sender === root.dataset.viewerUsernameToken ? 'You' : first.dataset.sender;
+      group.node.className = 'private-message unavailable-group' + (sender === 'You' ? ' is-outgoing' : '');
+      group.button.textContent = items.length + ' messages unavailable · ' + sender + ' · ' +
+        new Date(first.dataset.createdAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) + '–' +
+        new Date(last.dataset.createdAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+      group.button.title = new Date(first.dataset.createdAt).toLocaleString() + ' – ' + new Date(last.dataset.createdAt).toLocaleString();
+      group.button.setAttribute('aria-expanded', String(open));
+      items.forEach(function (card) {
+        card.id = 'private-message-' + card.dataset.privateMessageId;
+        card.hidden = !open;
+        expanded.set(card, open);
+        presentations.set(card, group);
+      });
+      group.button.setAttribute('aria-controls', items.map(card => card.id).join(' '));
+      if (group.node.nextSibling !== first) transcript.insertBefore(group.node, first);
+      groups.push(group);
+    });
+    previous.filter(group => !groups.includes(group)).forEach(group => group.node.remove());
+    groupStates.set(root, groups);
+  }
   function messageCard(root, message) {
     const card = root.querySelector('[data-role="private-message-template"]').content.firstElementChild.cloneNode(true);
     card.dataset.privateMessageId = message.message_id;
@@ -203,6 +262,7 @@
       lastDate = day;
       lastSender = sender;
     });
+    regroup(root);
   }
   function bind(root) {
     if (!root || root.dataset.conversationBound) return;
@@ -228,11 +288,11 @@
     }
     function revealLatest() {
       root.dispatchEvent(new CustomEvent('private-message-reveal-latest'));
-      const last = transcript.querySelector('[data-private-message-id]:last-child') || transcript;
+      const last = presentationFor(root, Array.from(transcript.querySelectorAll('[data-private-message-id]')).at(-1)) || transcript;
       const obstruction = root.classList.contains('composer-inline') ? 0 : composer.getBoundingClientRect().height;
       window.scrollBy({ top: last.getBoundingClientRect().bottom - viewportHeight() + obstruction + 24, behavior: 'instant' });
     }
-    function initiallySettled() { layout(); if (!navigated) revealLatest(); }
+    function initiallySettled() { regroup(root); layout(); if (!navigated) revealLatest(); }
     root.addEventListener('private-message-reader-settled', initiallySettled);
     if (root.dataset.privateMessageReaderSettled === '1') initiallySettled();
     latest.addEventListener('click', function () { revealLatest(); });
@@ -264,7 +324,7 @@
       });
     });
   }
-  window.ForumPrivateMessageConversation = { bind: bind, format: format };
+  window.ForumPrivateMessageConversation = { bind: bind, format: format, regroup: regroup, presentationFor: presentationFor };
   document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-mailbox="conversation"]').forEach(bind);
   });

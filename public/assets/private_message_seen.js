@@ -21,11 +21,12 @@
     }
     function visible() {
       if (document.hidden || !document.hasFocus() || !latest || !latest.isConnected || root.dataset.historyLoading === '1') return false;
-      const rect = latest.getBoundingClientRect();
+      const presentation = window.ForumPrivateMessageConversation.presentationFor(root, latest);
+      const rect = presentation.getBoundingClientRect();
       let bottom = window.visualViewport ? window.visualViewport.height : window.innerHeight;
       const composer = root.querySelector('[data-private-message-composer]');
       if (!root.classList.contains('composer-inline')) bottom = Math.min(bottom, composer.getBoundingClientRect().top);
-      return bottom > 0 && rect.bottom > 0 && rect.top < bottom;
+      return rect.height > 0 && bottom > 0 && rect.bottom > 0 && rect.top < bottom;
     }
     async function acknowledge(explicitRetry) {
       if (!root.isConnected || !window.ForumPrivateMessageUnread.sameIdentity()) return;

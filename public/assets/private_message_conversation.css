@@ -44,6 +44,10 @@
 .private-message summary { cursor: pointer; padding: .35rem 0; }
 .private-message [data-role="private-message-unavailable-explanation"] { max-width: 38rem; margin: .3rem 0; }
 .private-message summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.private-conversation .unavailable-group { padding: .15rem .45rem; color: var(--ink-soft); }
+.private-conversation .unavailable-group button { margin: 0; padding: .2rem; font-size: .85rem; text-align: start; color: inherit; background: transparent; border: 0; max-width: 100%; white-space: normal; }
+.unavailable-group button::before { content: '▸ '; }
+.unavailable-group button[aria-expanded="true"]::before { content: '▾ '; }
 .private-conversation [data-private-message-composer] {
   position: sticky;
   bottom: 0;
