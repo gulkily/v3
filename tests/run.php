@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
+    __DIR__ . '/ContentImportRecoveryTest.php',
     __DIR__ . '/RepositoryArchiveValidationTest.php',
     __DIR__ . '/ContentImportPlannerTest.php',
     __DIR__ . '/AgentReplyCommandTest.php',

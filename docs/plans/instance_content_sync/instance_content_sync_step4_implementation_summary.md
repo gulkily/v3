@@ -9,3 +9,8 @@
 - Changes: Added a two-pass tar.gz reader with checksum/CRC validation, bounded compressed/expanded size and entry count, unambiguous repository-root discovery, and rejection of links/special entries/traversal. Only regular records are extracted into private temporary storage; other archive categories are counted.
 - Verification: `php tests/run.php RepositoryArchiveValidationTest` — 3/3 passed (renamed export root, history exclusion, unsafe/ambiguous entries, truncation and size/count limits); PHP lint and diff checks passed.
 - Notes: Accepts regular GNU/ustar archives and GNU long filenames. Unsupported tar extensions fail explicitly rather than bypass validation. Existing local archive command behavior is retained; remote imports use the new bounded reader.
+
+## Stage 3 - Durable merge recovery
+- Changes: Added a shared-write-lock and repository-lock guarded runner with private staged payloads, atomic recovery journal, recorded import ownership, conflict review copies, and commit crash-window detection. Resume preserves divergent/unrelated edits and completes publication even when no new records remain.
+- Verification: `php tests/run.php ContentImportRecoveryTest` — 3/3 passed, covering four injected interruption boundaries, one-commit recovery, divergent edits, preview, duplicate-only repeat, and contention on the normal writer lock. PHP lint/diff checks passed.
+- Notes: `--resume` will recover saved payloads without downloading the source again. Recovery state is under the destination's private `.git/instance-import/`; no application database/schema changes.
