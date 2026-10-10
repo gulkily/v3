@@ -11,6 +11,7 @@ import { chromium } from 'playwright-core';
 import { checkChatLayout } from './private_message_chat_layout.mjs';
 import { checkChatRecovery } from './private_message_chat_recovery.mjs';
 import { checkHistory } from './private_message_history.mjs';
+import { checkHistoryRecovery } from './private_message_history_recovery.mjs';
 
 const project = resolve(new URL('../..', import.meta.url).pathname);
 runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
@@ -200,6 +201,7 @@ try {
     long: await encrypt(bob, 'Older long message\n' + 'A long history line.\n'.repeat(30)),
     invalid: await encrypt(outsider, 'Unverified older secret'),
   });
+  await checkHistoryRecovery(page);
   for (const path of ['/user/bob', '/profiles/openpgp-' + bob.fingerprint]) {
     await page.goto(base + path);
     await page.locator('[data-private-message-composer] textarea').fill('Shared composer compatibility');

@@ -5,6 +5,7 @@
   </article>
   <div class="private-message-history-controls" data-role="history-controls">
     <button type="button" data-role="history-load"<?= empty($historyPage['next_cursor']) ? ' hidden' : '' ?>>Load older</button>
+    <button type="button" data-role="history-restart" hidden>Restart history</button>
     <p class="meta" data-role="history-status" role="status" aria-live="polite"><?= empty($historyPage['next_cursor']) ? 'All history loaded.' : '' ?></p>
   </div>
   <div data-role="private-message-transcript" aria-label="Conversation messages">
