@@ -138,3 +138,5 @@ make it easier to copy the bookmarklets as a one-liner js
 	this is what i need to add/bind bookmarklets in qutebrowser
 
 add another analysis type: scripture-oriented analysis
+
+continue with docs/plans/backlog/account_key_approval_visibility_and_safety_checklist.md;
