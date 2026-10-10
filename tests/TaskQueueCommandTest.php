@@ -341,9 +341,10 @@ final class TaskQueueCommandTest
     {
         $pdo = new PDO('sqlite:' . $path);
         $pdo->exec('CREATE TABLE threads (root_post_id TEXT PRIMARY KEY, root_post_created_at TEXT, last_activity_at TEXT, subject TEXT, body_preview TEXT, board_tags_json TEXT, thread_labels_json TEXT, score_total INTEGER)');
-        $pdo->exec('CREATE TABLE posts (post_id TEXT PRIMARY KEY, created_at TEXT, thread_id TEXT, parent_id TEXT, subject TEXT, body TEXT, board_tags_json TEXT, thread_type TEXT, author_label TEXT, author_profile_slug TEXT, sequence_number INTEGER, is_hidden INTEGER)');
+        $pdo->exec('CREATE TABLE posts (post_id TEXT PRIMARY KEY, created_at TEXT, thread_id TEXT, parent_id TEXT, subject TEXT, body TEXT, board_tags_json TEXT, thread_type TEXT, author_identity_id TEXT, author_label TEXT, author_profile_slug TEXT, sequence_number INTEGER, is_hidden INTEGER)');
+        $pdo->exec('CREATE TABLE profiles (identity_id TEXT PRIMARY KEY, signer_fingerprint TEXT, public_key TEXT, is_approved INTEGER)');
         $pdo->exec("INSERT INTO threads VALUES ('root', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z', 'Subject', 'Preview', '[]', '[]', 0)");
-        $pdo->exec("INSERT INTO posts VALUES ('root', '2026-01-01T00:00:00Z', 'root', NULL, 'Subject', 'Body', '[]', NULL, 'Author', NULL, 1, 0)");
+        $pdo->exec("INSERT INTO posts VALUES ('root', '2026-01-01T00:00:00Z', 'root', NULL, 'Subject', 'Body', '[]', NULL, NULL, 'Author', NULL, 1, 0)");
     }
 
     private function removeTree(string $path): void

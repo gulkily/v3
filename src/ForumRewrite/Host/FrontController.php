@@ -84,6 +84,12 @@ final class FrontController
             return;
         }
 
+        $offlineUpdate = $approvedMembersOnly ? null : $this->resolveOfflineUpdatePath($method, $requestUri, $cookies);
+        if ($offlineUpdate !== null) {
+            $this->sendOfflineSnapshot($offlineUpdate, $method);
+            return;
+        }
+
         $staticArtifact = $approvedMembersOnly ? null : $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
         if ($staticArtifact !== null && is_file($staticArtifact)) {
             (new VisitorStatisticsObserver($this->projectRoot))->record($method, parse_url($requestUri, PHP_URL_PATH) ?: '/');
@@ -429,6 +435,18 @@ final class FrontController
 
         return $query === ''
             || preg_match('/^__offline_bootstrap=' . preg_quote($runtime['offlineCachePrefix'], '/') . 'v[0-9]+$/', $query) === 1;
+    }
+
+    /** @param array<string, string> $cookies */
+    private function resolveOfflineUpdatePath(string $method, string $requestUri, array $cookies): ?string
+    {
+        if (($method !== 'GET' && $method !== 'HEAD') || $cookies !== []
+            || (parse_url($requestUri, PHP_URL_PATH) ?: '/') !== '/offline/update.sqlite3'
+            || !$this->isOfflineSnapshotQuery((string) (parse_url($requestUri, PHP_URL_QUERY) ?? ''))) {
+            return null;
+        }
+
+        return (new OfflineSnapshotLocator())->servedUpdatePath($this->staticHtmlRoot);
     }
 
     /**

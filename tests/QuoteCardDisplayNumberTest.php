@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
+use ForumRewrite\Host\FrontController;
 use ForumRewrite\Host\StaticArtifactBuilder;
 
 final class QuoteCardDisplayNumberTest
@@ -133,7 +134,7 @@ final class QuoteCardDisplayNumberTest
         assertStringContains('1 quote', $board);
     }
 
-    public function testQdbCollectionSurfacesExcludeThreadsWithoutQuoteIds(): void
+    public function testQdbTagPagesKeepAllTaggedThreadsWhileCollectionSurfacesExcludeNonQuotes(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
         $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
@@ -141,6 +142,7 @@ final class QuoteCardDisplayNumberTest
         putenv('FORUM_SITE_ID=qdb');
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $tag = $this->render($application, '/tags/general');
             $surfaces = [
                 $this->render($application, '/latest'),
                 $this->render($application, '/top'),
@@ -152,6 +154,14 @@ final class QuoteCardDisplayNumberTest
         } finally {
             putenv('FORUM_SITE_ID');
         }
+
+        assertStringNotContains('<p class="eyebrow">Tag</p>', $tag);
+        assertStringNotContains('>2 threads</p>', $tag);
+        assertStringContains('<h1>#general</h1>', $tag);
+        assertStringContains('href="/tags/">Back to Tags</a>', $tag);
+        assertStringContains('href="/threads/root-001"', $tag);
+        assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $tag);
+        assertTrue(strpos($tag, '/threads/root-001') < strpos($tag, 'Back to Tags'));
 
         foreach ($surfaces as $surface) {
             assertStringContains('42', $surface);
@@ -301,6 +311,7 @@ final class QuoteCardDisplayNumberTest
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
         $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
         $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-qdb-static-' . bin2hex(random_bytes(6));
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-qdb-static-route-' . bin2hex(random_bytes(6));
 
         putenv('FORUM_SITE_ID=qdb');
         try {
@@ -326,6 +337,19 @@ final class QuoteCardDisplayNumberTest
         assertStringContains('<h1>Hello world</h1>', $regularThreadDetail);
         assertStringNotContains('quote-card-permalink', $regularThreadDetail);
         assertStringNotContains('quote-card-header-actions', $regularThreadDetail);
+
+        $generalTag = (string) file_get_contents($artifactRoot . '/tags/general.html');
+        assertStringContains('href="/threads/root-001"', $generalTag);
+        assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $generalTag);
+
+        mkdir($staticHtmlRoot, 0777, true);
+        symlink($artifactRoot, $staticHtmlRoot . '/current');
+        $controller = new FrontController(dirname(__DIR__), $repositoryRoot, $databasePath, $staticHtmlRoot, $artifactRoot);
+        $response = $this->renderFrontController($controller, '/tags/general');
+
+        assertStringContains('route-source: static-html', $response);
+        assertStringContains('href="/threads/root-001"', $response);
+        assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $response);
     }
 
     public function testQdbStaticReleaseCanSkipIndividualDetailPages(): void
@@ -522,6 +546,14 @@ final class QuoteCardDisplayNumberTest
     {
         ob_start();
         $application->handle('GET', $path);
+
+        return (string) ob_get_clean();
+    }
+
+    private function renderFrontController(FrontController $controller, string $path): string
+    {
+        ob_start();
+        $controller->handle('GET', $path);
 
         return (string) ob_get_clean();
     }

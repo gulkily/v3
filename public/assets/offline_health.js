@@ -119,6 +119,7 @@
       generatedAt: null,
       threadCount: null,
       postCount: null,
+      publicKeyCount: null,
       maxBytes: null,
       error: null,
     };
@@ -145,6 +146,7 @@
         stats.generatedAt = metadataValue(database, "generated_at") || null;
         stats.threadCount = positiveInteger(metadataValue(database, "thread_count"));
         stats.postCount = positiveInteger(metadataValue(database, "post_count"));
+        stats.publicKeyCount = positiveInteger(metadataValue(database, "public_key_count"));
         stats.maxBytes = positiveInteger(metadataValue(database, "max_bytes"));
       } finally {
         database.close();
@@ -358,6 +360,7 @@
       setCheck(archiveChecks, "Saved archive size", archive.available ? "ready" : "missing", archive.available ? formatBytes(archive.sizeBytes) : "Missing", "cached /offline/snapshot.sqlite3 byte length");
       setCheck(archiveChecks, "Archive generated", archive.generatedAt ? "ready" : "missing", archive.generatedAt || "Unknown", "SQLite metadata: generated_at");
       setCheck(archiveChecks, "Archive contents", archive.threadCount !== null && archive.postCount !== null ? "ready" : "missing", archive.threadCount !== null && archive.postCount !== null ? archive.threadCount + " threads; " + archive.postCount + " posts" : "Unknown", "SQLite metadata: thread_count, post_count");
+      setCheck(archiveChecks, "Saved public keys", archive.publicKeyCount !== null ? "ready" : "missing", archive.publicKeyCount !== null ? archive.publicKeyCount + " imported" : "Unknown", "SQLite metadata: public_key_count");
       setCheck(archiveChecks, "Archive capacity", archive.maxBytes !== null ? "ready" : "missing", archive.maxBytes !== null ? formatBytes(archive.maxBytes) + " configured maximum" : "Unknown", "SQLite metadata: max_bytes");
       if (archive.error) setCheck(archiveChecks, "Archive inspection error", "missing", archive.error, "window.initSqlJs(); new SQL.Database(bytes)");
       if (artifacts.error) setCheck(archiveChecks, "Cache inspection error", "missing", artifacts.error, "Cache Storage API");
