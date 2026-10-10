@@ -115,3 +115,11 @@ how to bring a new keypair up to date on private conversations
 			- there are already other keypairs approved for the same user
 			- there are private messages that were sent to the user with the old keypair
 			- anything else?
+
+
+add more authentication modes
+	- top idea is that approval is allowed ONLY by admin or same-username
+	- second idea is completely open authentication (for low-risk platforms)
+
+identify targets for "ephemeral testing"
+	see https://zenmemes.com/threads/thread-20261006122804-184a64b6 
