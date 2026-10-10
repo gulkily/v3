@@ -21,6 +21,26 @@ The original [architecture assessment](../plans/private_messaging_step1_solution
 
 ## Identity and key coverage
 
+The diagram shows how both usernames' approved keys, plus the local sender key, feed one envelope.
+
+```mermaid
+flowchart TB
+  subgraph Rcpt["Recipient username"]
+    direction TB
+    R1["Approved profile keys"] ~~~ X["Pending or keyless<br/>profiles: excluded"]
+  end
+  subgraph Send["Sender username"]
+    direction TB
+    S1["Approved profile keys"] ~~~ S2["Local sender key<br/>(also signs)"]
+  end
+  subgraph Out["One message"]
+    direction LR
+    K["Deduplicated<br/>key set"] --> E["One OpenPGP envelope<br/>encrypted to all keys"] --> V["Serves incoming<br/>and sent views"]
+  end
+  Rcpt --> Out
+  Send --> Out
+```
+
 A normalized username token identifies a mailbox and a conversation participant. Multiple approved profiles can belong to that username, each with its own OpenPGP identity. Pending profiles and profiles without public keys are excluded from the recipient key set; duplicate public keys are removed.
 
 When preparing a message, the browser obtains the current approved public keys for both username groups. It encrypts one OpenPGP envelope to their combined key set, also including the local sender public key, and signs with the matching local private key. OpenPGP handles the per-message content key and its encryption for the recipients; users do not choose a separate message password. A single stored envelope supplies both the incoming and sent views.
@@ -30,6 +50,26 @@ Mailbox authorization and unread state are shared across approved identities wit
 Key resolution is implemented in [ApprovedUserKeyResolver](../../src/ForumRewrite/Messaging/ApprovedUserKeyResolver.php); browser encryption is in [private_messages.js](../../public/assets/private_messages.js).
 
 ## Sending and reading a message
+
+The diagram shows where each step happens; the server stores and relays ciphertext but never decrypts it.
+
+```mermaid
+flowchart TB
+  subgraph Send["Sender browser"]
+    direction LR
+    A["Fetch approved<br/>recipient keys"] --> B["Encrypt to all keys<br/>and sign locally"] --> C["POST armored<br/>envelope"]
+  end
+  subgraph Server["Server (never sees plaintext)"]
+    direction LR
+    D["Validate routing,<br/>eligibility, size"] --> E[("Private SQLite:<br/>store envelope")]
+  end
+  subgraph Read["Recipient browser"]
+    direction LR
+    F["Fetch envelopes<br/>for window"] --> G["Decrypt with<br/>saved private key"] --> H["Verify signature,<br/>then render text"]
+  end
+  Send -- "ciphertext only" --> Server
+  Server -- "authenticated API" --> Read
+```
 
 1. An approved authenticated member opens a conversation through Messages, a profile, or the aggregate user page.
 2. The composer checks the browser identity, retrieves participant keys, and prepares a signed encrypted envelope locally.
@@ -58,6 +98,22 @@ The composer grows with its contents. Ctrl/Cmd+Enter sends, while Enter and Shif
 
 ### Drafts and uncertain delivery
 
+The diagram shows the life of one send attempt; an unresolved earlier send must be checked before an edited draft is sent.
+
+```mermaid
+stateDiagram-v2
+  direction TB
+  [*] --> Draft
+  Draft --> InFlight: send, keep ID and envelope
+  InFlight --> Uncertain: network result unknown
+  Uncertain --> InFlight: check or retry same ID
+  InFlight --> Acknowledged: server confirms
+  InFlight --> Conflict: mismatched reuse rejected
+  Acknowledged --> Cleared: draft unedited
+  Acknowledged --> Draft: edited meanwhile, keep newer text
+  Cleared --> [*]
+```
+
 Drafts are saved in browser `localStorage`, scoped to the sender and recipient username, with a check against the saved sending key. **Draft text is stored locally as plaintext.** An outstanding send also retains its message ID and exact encrypted envelope so it can be checked again after an uncertain network result.
 
 The server accepts a repeated message ID only when the authenticated sender identity, sender username, recipient, and envelope match the original attempt. An exact retry returns the original acknowledgment; a conflicting reuse is rejected. This prevents the supported retry flow from creating duplicate messages or overwriting an accepted envelope.
@@ -73,6 +129,26 @@ Conversation and list pagination use insertion boundaries, timestamp ordering, a
 Failed loads can retry the same cursor. Invalid or expired history positions offer an explicit restart; the existing transcript is replaced only after a valid fresh response, and drafts and concurrent send confirmations are retained. Refreshing or restarting opens a new snapshot. Incoming messages are not delivered through live polling or push.
 
 ### Unread conversations
+
+The diagram shows the acknowledgment handshake; previews, older pages and replies never move the boundary.
+
+```mermaid
+flowchart TB
+  subgraph Open["1. Open conversation"]
+    direction LR
+    A["Browser requests<br/>fresh window"] --> B["Server returns envelopes<br/>+ HMAC receipt for boundary"]
+  end
+  subgraph Ack["2. Browser acknowledges"]
+    direction LR
+    C["Reads settled,<br/>page visible and focused,<br/>latest message in view"] --> D["POST read<br/>with receipt"]
+  end
+  subgraph Rec["3. Server records"]
+    direction LR
+    E["Verify receipt and<br/>same-origin JSON"] --> F[("Move seen position<br/>forward only")]
+  end
+  Open -- "receipt kept by page" --> Ack
+  Ack --> Rec
+```
 
 The navigation badge counts **conversations**, not individual messages. Each list row can show whether that counterpart has received messages beyond the viewer's saved position. The server calculates this from private metadata without fetching or decrypting bodies.
 
@@ -93,6 +169,29 @@ Readable messages, signature warnings, pending reads, support-loading failures, 
 Grouping is a browser presentation feature: it adds no envelope format, schema, or API change. A visible group can represent its latest message for the existing acknowledgment rule. See the [compact-message rollout notes](../plans/private_message_unavailable/private_message_unavailable_rollout.md).
 
 ## Privacy and storage boundaries
+
+The diagram shows which side of each boundary holds plaintext and keys; the table below gives the detail.
+
+```mermaid
+flowchart TB
+  subgraph Browser["Browser"]
+    direction LR
+    K["Private key<br/>(identity storage)"]
+    P["Decrypted text<br/>(memory and DOM only)"]
+    L["Draft text<br/>(localStorage, plaintext)"]
+    K ~~~ P ~~~ L
+  end
+  subgraph Private["Private server state"]
+    direction LR
+    M[("Private SQLite:<br/>envelopes, routing<br/>metadata, unread state")]
+  end
+  subgraph Public["Public outputs"]
+    direction LR
+    G["Git records"] ~~~ R["Read model"] ~~~ S["Static and<br/>offline releases"]
+  end
+  Browser <-- "authenticated API:<br/>ciphertext and routing only" --> Private
+  Private -- "no private data<br/>ever published" --- Public
+```
 
 | Data | Where it lives |
 | --- | --- |
