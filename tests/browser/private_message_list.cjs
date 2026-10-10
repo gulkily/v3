@@ -4,6 +4,7 @@ const vm = require('node:vm');
 
 function node() {
   return { dataset: {}, hidden: false, disabled: false, textContent: '', listeners: {},
+    focus() { this.focused = true; },
     addEventListener(name, fn) { this.listeners[name] = fn; },
     setAttribute(name, value) { this[name] = value; } };
 }
@@ -100,4 +101,32 @@ const reply = (conversations, next_cursor) => ({ ok: true, json: async () => ({ 
   assert.equal(expired.nodes['retry-list'].hidden, true);
   windowListeners.pageshow({ persisted: true });
   assert.equal(window.location.reloaded, true, 'Returning from browser cache must refresh activity');
+  const form = node(), field = node(), submit = node(), feedback = node(), action = node(), details = node();
+  form.querySelector = selector => selector.includes('username') ? field : submit;
+  const recipientRoot = { dataset: { viewer: 'alice' }, querySelector(selector) {
+    return { 'recipient-form': form, 'recipient-feedback': feedback, 'new-message': selector.includes('data-action') ? action : details }[selector.match(/"([^"]+)"/)[1]];
+  } };
+  window.ForumPrivateMessageList.bindRecipient(recipientRoot);
+  action.listeners.click();
+  assert.equal(details.open, true);
+  assert.equal(field.focused, true);
+  const event = { preventDefault() {} };
+  field.value = ' Alice ';
+  await form.listeners.submit(event);
+  assert.match(feedback.textContent, /another user/);
+  assert.equal(field.value, ' Alice ');
+  field.value = 'invalid recipient';
+  await form.listeners.submit(event);
+  assert.match(feedback.textContent, /valid username/);
+  field.value = ' BOB ';
+  keysFail = true;
+  await form.listeners.submit(event);
+  assert.match(feedback.textContent, /keys unavailable/);
+  assert.equal(field.value, ' BOB ');
+  keysFail = false;
+  let redirected;
+  window.location.assign = url => { redirected = url; };
+  await form.listeners.submit(event);
+  assert.equal(redirected, '/messages/conversation/bob');
+  assert.equal(submit.disabled, false);
 })().catch(error => { console.error(error); process.exitCode = 1; });

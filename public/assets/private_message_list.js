@@ -1,9 +1,46 @@
 (function () {
   "use strict";
 
+  function bindRecipient(root) {
+    const form = root.querySelector('[data-role="recipient-form"]');
+    if (!form) return;
+    const field = form.querySelector('[name="username"]');
+    const submit = form.querySelector('button[type="submit"]');
+    const feedback = root.querySelector('[data-role="recipient-feedback"]');
+    let checking = false;
+    root.querySelector('[data-action="new-message"]').addEventListener('click', function () {
+      root.querySelector('[data-role="new-message"]').open = true;
+      field.focus();
+    });
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      if (checking) return;
+      checking = true;
+      submit.disabled = true;
+      feedback.hidden = false;
+      feedback.className = 'feedback';
+      feedback.textContent = 'Checking recipient…';
+      try {
+        const username = field.value.trim().toLowerCase();
+        if (!/^[a-z0-9][a-z0-9._-]{0,63}$/.test(username)) throw new Error('Enter a valid username.');
+        if (username === root.dataset.viewer) throw new Error('Choose another user to start a conversation.');
+        await window.ForumPrivateMessages.recipientKeys(username);
+        window.location.assign('/messages/conversation/' + encodeURIComponent(username));
+      } catch (error) {
+        feedback.className = 'feedback feedback-error';
+        feedback.textContent = error instanceof Error ? error.message : 'Recipient unavailable. Try again.';
+        field.focus();
+      } finally {
+        checking = false;
+        submit.disabled = false;
+      }
+    });
+  }
+
   function bind(root) {
     if (!root || root.dataset.listBound === "1") return null;
     root.dataset.listBound = "1";
+    bindRecipient(root);
     const rows = root.querySelector('[data-role="rows"]');
     const template = root.querySelector('[data-role="row-template"]');
     const more = root.querySelector('[data-action="load-more"]');
@@ -114,7 +151,7 @@
     return { load: load, ready: ready };
   }
 
-  window.ForumPrivateMessageList = { bind: bind };
+  window.ForumPrivateMessageList = { bind: bind, bindRecipient: bindRecipient };
   document.addEventListener('DOMContentLoaded', function () {
     Array.from(document.querySelectorAll('[data-conversation-list]')).forEach(bind);
   });

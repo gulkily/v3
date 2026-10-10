@@ -19,3 +19,9 @@
 - Changes: reused `decryptEnvelope` for one-line list previews and the existing key resolver, with in-memory key-request reuse, verified-only text rendering, visible failure explanations, and per-row retry. Added a reusable local-time formatter retaining exact ISO values and descriptive hover/accessibility text.
 - Verification: `php tests/run.php PrivateMessageListTest PrivateMessageReaderTest PrivateMessagePageControllerTest` — 6 passed. Both changed/new browser scripts passed syntax checks; `git diff --check` passed. Tests cover mixed signatures, failed key lookup/retry, safe text rendering, appended rows, no persistent preview writes, and local-day boundaries.
 - Notes: envelopes come from the same snapshot response as row metadata; failed previews retain conversation navigation. Existing transcript behavior is unchanged. Browser layout verification remains in Stage 6.
+
+## Stage 4 - Start conversations from Messages
+
+- Changes: added New message with labeled username input, directory suggestions, direct entry, approved-key validation, self/invalid-recipient feedback, retained input, and an empty-state action. Eligible usernames route to the existing encrypted conversation composer.
+- Verification: `php tests/run.php PrivateMessageListTest PrivateMessagePageControllerTest PrivateMessageMailboxServiceTest PrivateMessageComposerTest ApprovedUserKeyResolverTest` — 16 passed. JavaScript syntax and `git diff --check` passed. Tests verify suggestions exclude self, selector focus, normalization, invalid/self/key-failure recovery, and successful conversation navigation; existing draft/key-coverage behavior remains covered.
+- Notes: the directory query includes approved users without visible posts, despite its old empty-state copy. Suggestions are not an authorization boundary; the existing conversation/send services validate approved recipient keys again. Full browser sending is checked in Stage 6.

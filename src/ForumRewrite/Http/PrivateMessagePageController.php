@@ -7,6 +7,7 @@ namespace ForumRewrite\Http;
 use ForumRewrite\Messaging\ApprovedUserKeyResolver;
 use ForumRewrite\Messaging\PrivateMessageMailboxService;
 use ForumRewrite\Messaging\PrivateMessageStore;
+use ForumRewrite\ReadModel\ProfileRepository;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -46,7 +47,8 @@ final class PrivateMessagePageController
             return;
         }
         $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('private_message_list.php',
-            ['page' => $page, 'viewerProfile' => $viewer], 'Messages', 'messages', [
+            ['page' => $page, 'viewerProfile' => $viewer,
+                'recipientSuggestions' => ProfileRepository::approvedDirectoryUsers($this->routeServices->pdo())], 'Messages', 'messages', [
                 '/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_messages.js',
                 '/assets/private_message_reader.js', '/assets/message_time.js', '/assets/private_message_list.js',
             ]), 200, $this->routeServices->noStoreHeaders());

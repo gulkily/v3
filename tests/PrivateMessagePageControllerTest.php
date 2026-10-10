@@ -109,12 +109,21 @@ final class PrivateMessagePageControllerTest
     {
         $databasePath = tempnam(sys_get_temp_dir(), 'message-list-');
         try {
+            $readPdo = new \PDO('sqlite:' . $databasePath);
+            foreach (\ForumRewrite\ReadModel\ReadModelSchema::statements() as $statement) {
+                $readPdo->exec($statement);
+            }
+            $this->addProfile($readPdo, 'alice-key', 'alice');
+            $this->addProfile($readPdo, 'bob-key', 'bob');
             $store = new PrivateMessageStore(new \PDO('sqlite::memory:'));
             $store->storeEnvelope('list-1', '2026-10-09T12:00:00Z', 'alice', 'bob', 'sender', 'secret envelope');
             $store->storeEnvelope('list-2', '2026-10-09T13:00:00Z', 'bob', 'alice', 'sender', 'secret envelope');
             $viewer = $this->viewer('alice-key', 'alice');
             $html = $this->renderMailbox($databasePath, $store, $viewer, 'conversations');
             assertStringContains('<h1>Messages</h1>', $html);
+            assertStringContains('data-role="recipient-form"', $html);
+            assertStringContains('<option value="bob">', $html);
+            assertStringNotContains('<option value="alice">', $html);
             assertSame(1, substr_count($html, 'data-counterpart="bob"'));
             assertStringContains('href="/messages/conversation/bob"', $html);
             assertStringNotContains('secret envelope', $html);
