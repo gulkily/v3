@@ -75,7 +75,7 @@
           senderPublicKeyArmors: await senderKeys.get(message.sender_username_token),
         });
       } catch (error) {
-        result = { kind: 'unavailable', message: 'Preview unavailable. Sender keys could not be loaded. Try again.' };
+        result = { kind: 'load-failed', message: 'Preview unavailable. Sender keys could not be loaded. Try again.' };
       }
       if (row.dataset.messageId !== message.message_id) return;
       if (result.kind === 'verified') {

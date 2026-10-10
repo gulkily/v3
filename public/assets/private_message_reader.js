@@ -36,14 +36,26 @@
       return { kind: "bad-signature", message: "The sender's approved public keys are unavailable, so this message cannot be verified." };
     }
 
-    let decrypted;
+    let openpgp, verificationKeys, decryptionKey, message, decrypted;
     try {
-      const openpgp = await openPgpApi();
-      const verificationKeys = await Promise.all(senderPublicKeyArmors.map(function (armoredKey) {
+      openpgp = await openPgpApi();
+    } catch (error) {
+      return { kind: "load-failed", message: "Message reading support could not be loaded. Try again." };
+    }
+    try {
+      verificationKeys = await Promise.all(senderPublicKeyArmors.map(function (armoredKey) {
         return openpgp.readKey({ armoredKey: String(armoredKey) });
       }));
-      const decryptionKey = await openpgp.readPrivateKey({ armoredKey: privateKeyArmor });
-      const message = await openpgp.readMessage({ armoredMessage: String(options.encryptedEnvelope || "") });
+    } catch (error) {
+      return { kind: "bad-signature", message: "The sender's approved public keys could not be read, so this message cannot be verified." };
+    }
+    try {
+      decryptionKey = await openpgp.readPrivateKey({ armoredKey: privateKeyArmor });
+    } catch (error) {
+      return { kind: "read-failed", message: "The saved private key could not be read. Check your browser identity, then retry." };
+    }
+    try {
+      message = await openpgp.readMessage({ armoredMessage: String(options.encryptedEnvelope || "") });
       decrypted = await openpgp.decrypt({
         message: message,
         decryptionKeys: decryptionKey,
@@ -51,7 +63,7 @@
         format: "utf8",
       });
     } catch (error) {
-      return { kind: "decryption-failed", message: "This encrypted message could not be decrypted with the saved private key." };
+      return { kind: "decryption-failed", message: "This encrypted message could not be decrypted. The cause could not be determined." };
     }
 
     if (!Array.isArray(decrypted.signatures) || decrypted.signatures.length === 0) {
@@ -134,6 +146,23 @@
     plaintextNode.hidden = false;
   }
 
+  function presentState(card, state, message) {
+    card.dataset.readerState = state;
+    const details = card.querySelector('[data-role="private-message-unavailable-details"]');
+    const explanation = card.querySelector('[data-role="private-message-unavailable-explanation"]');
+    const retry = card.querySelector('[data-role="private-message-read-retry"]');
+    const compact = state === 'unavailable' || state === 'decryption-failed';
+    if (details && details.appendChild) {
+      details.hidden = !compact;
+      if (compact) {
+        card.querySelector('[data-role="private-message-reader-error"]').hidden = true;
+        explanation.textContent = message + ' Retrying unchanged ciphertext with an unsuitable key cannot recover it. A different key is not proof that older messages can be read.';
+      }
+      (compact ? details : card).appendChild(retry);
+    }
+    if (card.dispatchEvent) card.dispatchEvent(new CustomEvent('private-message-read-state-changed', { bubbles: true }));
+  }
+
   async function readCardOnce(mailbox, card, counterpartUsernameToken, suppliedMessage) {
     const verification = card && card.querySelector('[data-role="private-message-verification"]');
     const error = card && card.querySelector('[data-role="private-message-reader-error"]');
@@ -164,6 +193,7 @@
         retry.addEventListener("click", function () { readCard(mailbox, card, counterpartUsernameToken); });
       }
     }
+    presentState(card, 'loading', '');
 
     let result;
     try {
@@ -181,11 +211,12 @@
       });
     } catch (error) {
       if (!cardMessages.has(card)) mailboxRequests.delete(requestKey(mailbox, counterpartUsernameToken, cardCursors.get(card)));
-      result = { kind: "decryption-failed", message: "This encrypted message could not be loaded or decrypted." };
+      result = { kind: "load-failed", message: "This encrypted message or its sender keys could not be loaded. Try again." };
     }
 
     setReaderResult(verification, error, plaintext, result);
     if (retry && retry.addEventListener) { retry.hidden = result.kind === "verified"; retry.disabled = false; }
+    presentState(card, result.kind, result.message);
     return result;
   }
 

@@ -8,7 +8,7 @@ Use this checklist to track coverage across the releases and the
 implement each release.
 
 This is a coordination checklist. Individual FDP requirements, development plans,
-and implementation approvals remain separate. Cycles 1–3 are complete on local `main`; Cycle 4 is complete on its feature branch pending review.
+and implementation approvals remain separate. Cycles 1–4 are complete on local `main`; Cycle 5 implementation is underway on `feature/private-message-unavailable`.
 Check items off when their acceptance criteria are verified, and link the relevant
 FDP artifacts and verification evidence here as each cycle progresses.
 
@@ -19,7 +19,8 @@ FDP artifacts and verification evidence here as each cycle progresses.
 | 1 | Find a conversation or start one from Messages | [Plan](./private_message_conversation_list/private_message_conversation_list_step3_development_plan.md) · [Implementation and verification](./private_message_conversation_list/private_message_conversation_list_step4_implementation_summary.md) | Complete |
 | 2 | Read and reply comfortably without reloading | [Plan](./private_message_chat_refinement/private_message_chat_refinement_step3_development_plan.md) · [Implementation and verification](./private_message_chat_refinement/private_message_chat_refinement_step4_implementation_summary.md) | Complete; merged into local `main` with Cycle 3 |
 | 3 | Retrieve messages older than the initial history window | [Plan](./private_message_history_step3_development_plan.md) · [Implementation and verification](./private_message_history_step4_implementation_summary.md); Step 1 skipped | Complete; merged into local `main` at `95ac3114`; not pushed |
-| 4 | See reliable unread indicators and counts | [Plan](./private_message_unread/private_message_unread_step3_development_plan.md) · [Implementation](./private_message_unread/private_message_unread_step4_implementation_summary.md) | Complete on `feature/private-message-unread`; awaiting merge review |
+| 4 | See reliable unread indicators and counts | [Plan](./private_message_unread/private_message_unread_step3_development_plan.md) · [Implementation](./private_message_unread/private_message_unread_step4_implementation_summary.md) | Complete; merged into local `main` at `34b48f40`; not pushed |
+| 5 | Read past unavailable messages without repeated large error widgets | [Plan](./private_message_unavailable/private_message_unavailable_step3_development_plan.md) · [Implementation](./private_message_unavailable/private_message_unavailable_step4_implementation_summary.md) | Steps 1–3 approved with Options B and C combined; implementation underway |
 
 Follow this order and reuse the components and contracts established in earlier
 cycles. Unread indicators are deliberately deferred from cycle 1 to cycle 4;
@@ -182,7 +183,10 @@ correct across refreshes and supported browser or device transitions.
   especially when repeated across history. Explore compact unavailable-message
   placeholders with optional details and a retry only where useful; retain clear
   security warnings for invalid or missing signatures. Verify with many unreadable
-  messages on desktop and mobile. Deferred by request, outside Cycles 3–4.
+  messages on desktop and mobile. Outside Cycles 3–4; Cycle 5 combines compact
+  placeholders and expandable groups, with [Step 1](./private_message_unavailable/private_message_unavailable_step1_solution_assessment.md),
+  [Step 2](./private_message_unavailable/private_message_unavailable_step2_feature_description.md), and
+  [Step 3](./private_message_unavailable/private_message_unavailable_step3_development_plan.md) approved; implementation underway.
 - [ ] Separately assess historical-message access after adding or changing keys.
   Approving a new key does not retroactively encrypt existing envelopes to it;
   retrying unchanged ciphertext with the same unsuitable key cannot resolve that
@@ -201,4 +205,4 @@ correct across refreshes and supported browser or device transitions.
 - [x] Confirm focused automated checks and browser checks cover the changed
   behavior, encryption and authorization boundaries, accessibility, and recovery.
 
-Next action: review completed Cycle 4 for merge, including its one-time private metadata initialization and rollback notes. Cycles 2 and 3 are merged into local `main`; Cycle 4 is not merged or pushed. The decryption-widget and historical-key follow-ups remain deferred and unchecked.
+Next action: complete and verify Cycle 5's approved stages. Cycles 1–4 are merged into local `main`; no push was performed. The decryption-widget item remains unchecked until implemented and verified; historical-key recovery remains deferred.

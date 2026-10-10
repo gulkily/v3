@@ -7,5 +7,9 @@
   </header>
   <p class="meta" data-role="private-message-reader-error">Decrypting and verifying message...</p>
   <pre data-role="private-message-plaintext" hidden></pre>
+  <details data-role="private-message-unavailable-details" hidden>
+    <summary>Message unavailable · Details</summary>
+    <p class="meta" data-role="private-message-unavailable-explanation"></p>
+  </details>
   <button type="button" data-role="private-message-read-retry" hidden>Retry reading message</button>
 </article>

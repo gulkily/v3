@@ -46,6 +46,7 @@ or standalone plans remain at this level until they reach that threshold.
 - [Private message conversation list](private_message_conversation_list/)
 - [Private message chat refinement](private_message_chat_refinement/)
 - [Private message unread state](private_message_unread/)
+- [Compact unavailable private messages](private_message_unavailable/)
 - [Private-window lobby fallback](private_window_lobby_fallback/)
 - [QDB archive importer](qdb_archive_importer/)
 - [QDB numeric permalinks](qdb_numeric_permalinks/)

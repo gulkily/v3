@@ -1,6 +1,6 @@
 # Compact unavailable private messages Step 1 solution assessment
 
-> **Feature plan:** [Step 1](./private_message_unavailable_step1_solution_assessment.md) · [Step 2](./private_message_unavailable_step2_feature_description.md) · [Step 3](./private_message_unavailable_step3_development_plan.md) · Step 4 pending
+> **Feature plan:** [Step 1](./private_message_unavailable_step1_solution_assessment.md) · [Step 2](./private_message_unavailable_step2_feature_description.md) · [Step 3](./private_message_unavailable_step3_development_plan.md) · [Step 4](./private_message_unavailable_step4_implementation_summary.md)
 
 ## Original Query
 
@@ -10,11 +10,11 @@ Follow-up: Combine Options B and C, please.
 
 ## Understood Intent
 
-Cycle 4 is merged into local `main`, completing the original four-cycle program. The proposed next cycle addresses the earlier request to reduce the large, distracting decryption-error/retry widget in the [master checklist](./private_messaging_usability_master_checklist.md). Historical-key recovery remains a separate, deferred assessment.
+Cycle 4 is merged into local `main`, completing the original four-cycle program. The proposed next cycle addresses the earlier request to reduce the large, distracting decryption-error/retry widget in the [master checklist](../private_messaging_usability_master_checklist.md). Historical-key recovery remains a separate, deferred assessment.
 
 ## Problem Statement
 
-The [shared reader](../../public/assets/private_message_reader.js) gives every unsuccessful read a visible error and retry button, so repeated unreadable messages overwhelm history even when retrying cannot help.
+The [shared reader](../../../public/assets/private_message_reader.js) gives every unsuccessful read a visible error and retry button, so repeated unreadable messages overwhelm history even when retrying cannot help.
 
 ## Option A Reduce spacing only
 

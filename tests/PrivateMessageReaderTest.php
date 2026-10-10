@@ -4,6 +4,36 @@ declare(strict_types=1);
 
 final class PrivateMessageReaderTest
 {
+    public function testFailureCategoriesStayConservative(): void
+    {
+        $result = $this->runScript(<<<'NODE'
+const fs = require('fs'), vm = require('vm');
+let phase = '';
+const api = {
+  async readKey() { if (phase === 'public') throw Error(); return {}; },
+  async readPrivateKey() { if (phase === 'private') throw Error(); return {}; },
+  async readMessage() { return {}; },
+  async decrypt() { if (phase === 'decrypt') throw Error(); return { data: 'secret', signatures: [] }; }
+};
+global.window = { localStorage: { getItem() { return phase === 'missing' ? '' : 'key'; } },
+  __forumBrowserIdentity: { async ensureOpenPgpApi() { if (phase === 'support') throw Error(); return api; } } };
+global.document = { addEventListener() {} };
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+(async () => {
+ const results = {};
+ for (phase of ['missing', 'support', 'public', 'private', 'decrypt', 'unsigned']) {
+   results[phase] = await window.ForumPrivateMessageReader.decryptEnvelope({ senderPublicKeyArmors: ['key'], encryptedEnvelope: 'cipher' });
+ }
+ process.stdout.write(JSON.stringify(results));
+})().catch(error => { console.error(error); process.exit(1); });
+NODE);
+        foreach (['missing' => 'unavailable', 'support' => 'load-failed', 'public' => 'bad-signature',
+            'private' => 'read-failed', 'decrypt' => 'decryption-failed', 'unsigned' => 'bad-signature'] as $phase => $kind) {
+            assertSame($kind, $result[$phase]['kind']);
+            assertSame(false, array_key_exists('plaintext', $result[$phase]));
+        }
+    }
+
     public function testInitialReaderFetchesTheRenderedSnapshot(): void
     {
         $result = $this->runScript(<<<'NODE'
