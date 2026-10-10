@@ -17,6 +17,8 @@ final class ContentImportRunner
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
         private readonly ?Closure $checkpoint = null,
+        private readonly ?Closure $progress = null,
+        private readonly array $publicationContext = [],
     ) {
         if (!is_dir($repositoryRoot . '/.git') || is_link($repositoryRoot . '/.git')) {
             throw new RuntimeException('Destination must be a Git checkout with a local .git directory.');
@@ -41,7 +43,8 @@ final class ContentImportRunner
                         throw new RuntimeException('An interrupted import needs recovery. Run import-instance --resume with the same destination options first.');
                     }
                     $run = json_decode((string) file_get_contents($pending), true, 512, JSON_THROW_ON_ERROR);
-                    if (($run['repository'] ?? null) !== $this->repositoryRoot || ($run['database'] ?? null) !== $this->databasePath) {
+                    if (($run['repository'] ?? null) !== $this->repositoryRoot || ($run['database'] ?? null) !== $this->databasePath
+                        || ($run['publication_context'] ?? []) !== $this->publicationContext) {
                         throw new RuntimeException('Recovery destination does not match the saved import.');
                     }
                 } else {
@@ -49,6 +52,7 @@ final class ContentImportRunner
                         throw new RuntimeException('No interrupted import to resume.');
                     }
                     $this->assertClean([]);
+                    $this->say('Planning public records, dependencies, and conflicts...');
                     $entries = (new ContentImportPlanner())->plan($source, $this->repositoryRoot);
                     $id = gmdate('YmdTHis') . '-' . bin2hex(random_bytes(6));
                     $directory = $this->stateRoot . '/' . $id;
@@ -69,6 +73,7 @@ final class ContentImportRunner
                     $run = [
                         'id' => $id, 'repository' => $this->repositoryRoot, 'database' => $this->databasePath,
                         'base_head' => trim($this->git(['rev-parse', 'HEAD'])), 'phase' => 'prepared',
+                        'publication_context' => $this->publicationContext,
                         'writes' => $writes, 'report' => $this->report($entries, $sourceLabel, $archiveExclusions),
                     ];
                     $run['report']['review_path'] = $directory;
@@ -87,6 +92,8 @@ final class ContentImportRunner
                         $this->verifyWrites($run['writes']);
                     } else {
                         $this->assertClean($run['writes']);
+                        $copied = 0;
+                        $this->say('Installing ' . count($run['writes']) . ' record file(s)...');
                         foreach ($run['writes'] as $path => $hash) {
                             $target = $this->repositoryRoot . '/' . $path;
                             $this->assertSafeParents($path);
@@ -106,12 +113,14 @@ final class ContentImportRunner
                                 }
                             }
                             $this->at('copied', $path);
+                            if (++$copied % 100 === 0) { $this->say('Installed ' . $copied . ' record files...'); }
                         }
                         foreach (array_chunk(array_keys($run['writes']), 100) as $paths) {
                             $this->git(['add', '--', ...$paths]);
                         }
                         $this->at('staged');
                         if ($run['writes'] !== []) {
+                            $this->say('Committing imported content...');
                             $this->git(['commit', '-m', $message]);
                         }
                         $this->at('committed');
@@ -124,6 +133,7 @@ final class ContentImportRunner
                 $this->verifyWrites($run['writes']);
                 $this->git(['merge-base', '--is-ancestor', $run['commit'], 'HEAD']);
                 // Publication is required even on duplicate-only runs and interrupted retries.
+                $this->say('Publishing read model, static pages, and applicable offline views...');
                 $publisher();
                 $this->at('published');
                 $run['phase'] = 'complete';
@@ -213,6 +223,11 @@ final class ContentImportRunner
             || !rename($temporary, $path)) {
             throw new RuntimeException('Unable to persist import recovery state.');
         }
+    }
+
+    private function say(string $message): void
+    {
+        if ($this->progress !== null) { ($this->progress)($message); }
     }
 
     private function at(string $phase, string $path = ''): void

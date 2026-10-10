@@ -36,10 +36,39 @@ final class ImportInstanceCommandTest
         assertStringContains('Import result: complete', $output);
         assertTrue(is_file($target . '/records/posts/remote-thread.txt'));
         assertStringContains('Imported remote-thread', file_get_contents($w->root . '/target-static/current/tags/general.html'));
+        $w->put($w->root . '/sources.json', json_encode(['remote' => $server->url]));
+        $command[2] = 'remote';
+        $command[] = '--sources=' . $w->root . '/sources.json';
         [$code, $output] = $w->command($command);
         assertSame(0, $code, $output);
         assertStringContains('import: 0', $output);
         assertSame('2', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
+    }
+
+    public function testPartialResultsExplainConflictsAndExclusions(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source', true);
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $original = file_get_contents($target . '/records/posts/root-001.txt');
+        $w->put($source . '/records/posts/root-001.txt', $w->post('root-001', '', 'Conflicting source content'));
+        $w->put($source . '/records/new-family/unknown.txt', 'unsupported');
+        $archive = $w->root . '/source.tar.gz';
+        $w->command(['tar', '-czf', $archive, '-C', $w->root, 'source']);
+        $router = $w->root . '/router.php';
+        $w->put($router, '<?php readfile(__DIR__ . "/source.tar.gz");');
+        $server = new ImportHttpServer($router, $w->root . '/http.log');
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url,
+            '--repository-root=' . $target, '--database-path=' . $w->root . '/cache/index.sqlite3', '--static-html-root=' . $w->root . '/static']);
+        assertSame(2, $code, $output);
+        assertStringContains('Import result: partial', $output);
+        assertStringContains('conflict: records/posts/root-001.txt', $output);
+        assertStringContains('unsupported: records/new-family/unknown.txt', $output);
+        assertStringContains('excluded: records/instance/public.txt', $output);
+        assertStringContains('Review:', $output);
+        assertSame($original, file_get_contents($target . '/records/posts/root-001.txt'));
+        assertSame('1', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
     }
 
     public function testDownloadFailuresAreBoundedAndLeaveNoFile(): void
