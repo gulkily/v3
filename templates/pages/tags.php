@@ -3,10 +3,10 @@
     <div class="nav board-controls-nav">
       <a class="nav-link is-active" href="/tags/">Tags</a>
 <?php foreach ($viewOptions as $option): ?>
-      <a class="nav-link" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
+      <a class="nav-link" href="<?= $e($option['href']) ?>" data-nav-key="<?= $e($option['key']) ?>"><?= $e($option['label']) ?></a>
 <?php endforeach; ?>
 <?php foreach ($sortOptions as $option): ?>
-      <a class="nav-link" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
+      <a class="nav-link" href="<?= $e($option['href']) ?>" data-nav-key="<?= $e($option['key']) ?>"><?= $e($option['label']) ?></a>
 <?php endforeach; ?>
       <a class="nav-link" href="/compose/thread">New Post</a>
     </div>

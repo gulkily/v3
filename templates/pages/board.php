@@ -5,11 +5,11 @@
       <a class="nav-link" href="/tags/">Tags</a>
 <?php foreach ($viewOptions as $option): ?>
 <?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
-      <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
+      <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>" data-nav-key="<?= $e($option['key']) ?>"><?= $e($option['label']) ?></a>
 <?php endforeach; ?>
 <?php foreach ($sortOptions as $option): ?>
 <?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
-      <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
+      <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>" data-nav-key="<?= $e($option['key']) ?>"><?= $e($option['label']) ?></a>
 <?php endforeach; ?>
       <a class="nav-link" href="/compose/thread">New Post</a>
     </div>
