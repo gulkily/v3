@@ -9,6 +9,7 @@
     const transcript = root.querySelector('[data-role="private-message-transcript"]');
     const previous = groupStates.get(root) || [];
     const focused = document.activeElement;
+    const focusedMessage = previous.find(group => group.button === focused)?.cards[0];
     const cards = Array.from(transcript.querySelectorAll('[data-private-message-id]'));
     const runs = [];
     let run = [], lastKey = '';
@@ -60,6 +61,11 @@
     previous.filter(group => !groups.includes(group)).forEach(group => group.node.remove());
     groupStates.set(root, groups);
     if (focused && focused.isConnected && document.activeElement !== focused) focused.focus({ preventScroll: true });
+    else if (focusedMessage && focusedMessage.isConnected && !focused.isConnected) {
+      const replacement = presentations.get(focusedMessage)?.button || focusedMessage;
+      if (replacement === focusedMessage) replacement.tabIndex = -1;
+      replacement.focus({ preventScroll: true });
+    }
   }
   function messageCard(root, message) {
     const card = root.querySelector('[data-role="private-message-template"]').content.firstElementChild.cloneNode(true);
@@ -245,6 +251,38 @@
     load.addEventListener('click', function () { fetchHistory(false); });
     restart.addEventListener('click', function () { fetchHistory(true); });
   }
+  function bindReadReconciliation(root) {
+    const pending = new Map();
+    root.addEventListener('private-message-before-read', function (event) {
+      if (root.dataset.privateMessageReaderSettled !== '1' || root.dataset.historyLoading === '1') return;
+      pending.set(event.target, { position: preserveReadingPosition(root), focused: event.target.contains(document.activeElement) });
+    });
+    root.addEventListener('private-message-read-state-changed', function (event) {
+      const card = event.target, entry = pending.get(card);
+      if (root.dataset.privateMessageReaderSettled !== '1') return;
+      if (root.dataset.historyLoading === '1') {
+        if (entry) { entry.position.finish(); pending.delete(card); }
+        return;
+      }
+      const loading = card.dataset.readerState === 'loading';
+      const restoreFocus = entry && entry.focused && (loading || card.contains(document.activeElement));
+      regroup(root);
+      if (restoreFocus) {
+        const retry = card.querySelector('[data-role="private-message-read-retry"]');
+        const target = !loading && !retry.hidden ? retry : card;
+        if (target === card) card.tabIndex = -1;
+        target.focus({ preventScroll: true });
+      }
+      if (entry) {
+        if (loading) entry.position.correct();
+        else { entry.position.finish(); pending.delete(card); }
+      }
+    });
+    window.addEventListener('pagehide', function () {
+      pending.forEach(entry => entry.position.finish());
+      pending.clear();
+    });
+  }
   function format(root) {
     const transcript = root.querySelector('[data-role="private-message-transcript"]');
     transcript.querySelectorAll('[data-role="message-date"]').forEach(node => node.remove());
@@ -277,6 +315,7 @@
     root.dataset.conversationBound = '1';
     format(root);
     bindHistory(root);
+    bindReadReconciliation(root);
     const composer = root.querySelector('[data-private-message-composer]');
     const transcript = root.querySelector('[data-role="private-message-transcript"]');
     const latest = root.querySelector('[data-role="private-message-latest"]');

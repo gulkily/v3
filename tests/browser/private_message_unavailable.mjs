@@ -89,3 +89,63 @@ export async function checkUnavailable(page, context, base, artifacts, seed, una
   assert.equal(await page.locator('textarea').inputValue(), 'Draft while expanding history');
   await page.locator('textarea').fill('');
 }
+
+export async function checkUnavailableRecovery(page, base, recoveryKey) {
+  await page.goto(base + '/messages/conversation/user-56');
+  await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.privateMessageReaderSettled === '1');
+  const groups = page.locator('[data-role="unavailable-group"]');
+  await groups.getByRole('button').click();
+  const middle = page.locator('[data-private-message-id="unavailable-09"]');
+  await middle.locator('summary').click();
+  const retry = middle.getByRole('button', { name: 'Retry reading message' });
+  await retry.click();
+  await page.waitForFunction(() => document.querySelector('[data-private-message-id="unavailable-09"]').dataset.readerState === 'decryption-failed');
+  assert.equal(await groups.count(), 1, 'Failed retry rejoins its run');
+  assert.equal(await groups.getByRole('button').getAttribute('aria-expanded'), 'true');
+  assert.equal(await retry.evaluate(node => document.activeElement === node), true, 'Failed retry retains keyboard focus');
+  await page.evaluate(key => { window.originalPrivateKey = localStorage.getItem('forum_pki_private_key'); localStorage.setItem('forum_pki_private_key', key); }, recoveryKey);
+  await retry.click();
+  await middle.getByText('Unavailable fixture secret', { exact: true }).waitFor();
+  assert.equal(await groups.count(), 2, 'Recovered middle message splits the group');
+  assert.equal(await middle.evaluate(node => document.activeElement === node), true, 'Recovered message receives focus when retry disappears');
+  assert.equal(await middle.getAttribute('hidden'), null);
+  await page.evaluate(() => { localStorage.setItem('forum_pki_private_key', window.originalPrivateKey); delete window.originalPrivateKey; });
+
+  let accepted, release;
+  const acceptedSend = new Promise(resolve => { accepted = resolve; });
+  const heldSend = new Promise(resolve => { release = resolve; });
+  const sendRoute = async route => { const response = await route.fetch(); assert.equal(response.status(), 201); accepted(); await heldSend; return route.fulfill({ response }); };
+  await page.route('**/api/private_messages', sendRoute);
+  await page.locator('textarea').fill('Reply while unavailable groups are open');
+  await page.getByRole('button', { name: 'Send private message', exact: true }).click();
+  await acceptedSend;
+  await page.locator('textarea').fill('Newer group recovery draft');
+  release();
+  await page.getByText('Reply while unavailable groups are open', { exact: true }).waitFor();
+  assert.equal(await page.locator('textarea').inputValue(), 'Newer group recovery draft');
+  assert.deepEqual(await groups.getByRole('button').evaluateAll(nodes => nodes.map(node => node.getAttribute('aria-expanded'))), ['true', 'true']);
+  await page.unroute('**/api/private_messages', sendRoute);
+
+  // A delayed retry can finish after a history page joins the run.
+  await page.goto(base + '/messages/conversation/user-54');
+  await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.privateMessageReaderSettled === '1');
+  await groups.getByRole('button').click();
+  const pending = page.locator('[data-private-message-id="unavailable-history-45"]');
+  await pending.locator('summary').click();
+  let started, unblock, first = true;
+  const arrived = new Promise(resolve => { started = resolve; });
+  const gate = new Promise(resolve => { unblock = resolve; });
+  const delayed = async route => { if (first) { first = false; started(); await gate; } return route.continue(); };
+  await page.route('**/api/private_messages/recipient_keys?username_token=user-54', delayed);
+  await pending.getByRole('button', { name: 'Retry reading message' }).click();
+  await arrived;
+  await page.getByRole('button', { name: 'Load older', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.historyLoading === '0');
+  unblock();
+  await page.waitForFunction(() => document.querySelector('[data-private-message-id="unavailable-history-45"]').dataset.readerState === 'decryption-failed');
+  assert.equal(await groups.count(), 1);
+  assert.match(await groups.innerText(), /50 messages unavailable/);
+  assert.equal(await groups.getByRole('button').getAttribute('aria-expanded'), 'true');
+  assert.equal(await page.locator('[data-private-message-id]').count(), 50);
+  await page.unroute('**/api/private_messages/recipient_keys?username_token=user-54', delayed);
+}

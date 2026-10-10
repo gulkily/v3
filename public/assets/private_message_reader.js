@@ -175,6 +175,8 @@
     if (!messageId) {
       return;
     }
+    const wasConnected = card.isConnected;
+    if (card.dispatchEvent) card.dispatchEvent(new CustomEvent('private-message-before-read', { bubbles: true }));
 
     verification.hidden = true;
     verification.title = "Signature verified";
@@ -214,6 +216,7 @@
       result = { kind: "load-failed", message: "This encrypted message or its sender keys could not be loaded. Try again." };
     }
 
+    if (wasConnected && !card.isConnected) return result;
     setReaderResult(verification, error, plaintext, result);
     if (retry && retry.addEventListener) { retry.hidden = result.kind === "verified"; retry.disabled = false; }
     presentState(card, result.kind, result.message);
