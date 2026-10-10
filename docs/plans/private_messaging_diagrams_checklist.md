@@ -105,7 +105,7 @@ Section: "Identity and key coverage" (lines 22-30).
 
 ## Per-diagram acceptance
 
-- [ ] Renders correctly in GitHub's preview.
+- [x] Renders correctly in GitHub's preview. (Confirmed by the user on the branch preview before merge.)
 - [ ] Legible in both light and dark themes (avoid hard-coded colors).
 - [ ] Every element in the diagram is traceable to a sentence in the doc, and nothing contradicts the prose.
 - [ ] No more than about 10-12 nodes or participants; split otherwise.
