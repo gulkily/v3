@@ -104,3 +104,14 @@ make it easy to import/sync content from another instance
 gate pm feature behind a feature flag
 
 qdb pages need better titles
+
+how to bring a new keypair up to date on private conversations
+	1. collect all the message ids and their passphrases
+	2. encrypt them all for the new keypair and send as private message
+	3. ???
+	4. profit
+	what triggers this though? how do we figure out we need to do this?
+		basically when a new keypair is approved, we need to check if:
+			- there are already other keypairs approved for the same user
+			- there are private messages that were sent to the user with the old keypair
+			- anything else?
