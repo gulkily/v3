@@ -274,7 +274,22 @@ Approval helper examples:
 ./v3 start
 ./v3 approval seed openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954
 ./v3 approval approve openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954 openpgp-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+./v3 approval audit
+./v3 approval audit --review-only
+./v3 approval audit --repository-root=/path/repository --database-path=/path/read-model.sqlite3 --json
 ```
+
+The approval audit reads existing state without rebuilding or changing approvals.
+It reports currently approved keys and their attributed approver, including grants
+derived from invitations. Root-seeded, operator-approved, same-username, and
+cross-username grants are separated. Cross-username grants on accounts with multiple
+approved keys, plus unknown attribution, are review candidates. They are not proven
+violations: the audit does not reconstruct which key was first or operator/flag
+state at approval time, enumerate every historical approval, or reverify signatures.
+Operator classification uses canonical root seeds, not display labels. Warnings
+identify stale or unverifiable read-model metadata. `--review-only` filters rows;
+summary counts remain totals for the whole audit. Exit status is 0 for a completed
+audit, including findings, or 1 for an error.
 
 ## Tests
 
