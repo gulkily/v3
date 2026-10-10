@@ -2018,6 +2018,127 @@ NODE;
         assertFalse(is_file($repositoryRoot . '/' . $payload['record_path']));
     }
 
+    public function testPrepareThreadIncludesEventFieldsInCanonicalRecord(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: true\n"
+        );
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $identityId = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_thread?board_tags=general&subject=Prepared%20Event&body=Prepared%20body'
+            . '&author_identity_id=' . rawurlencode($identityId)
+            . '&event_date=2026-11-01&event_time=19%3A00&event_location=Cambridge&event_link=' . rawurlencode('https://example.test/rsvp')
+        );
+        $payload = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame('ok', $payload['status']);
+        assertStringContains("Event-Date: 2026-11-01\n", $payload['canonical_record']);
+        assertStringContains("Event-Time: 19:00\n", $payload['canonical_record']);
+        assertStringContains("Event-Location: Cambridge\n", $payload['canonical_record']);
+        assertStringContains("Event-Link: https://example.test/rsvp\n", $payload['canonical_record']);
+    }
+
+    public function testPrepareThreadRejectsEventFieldsWhenEventSupportDisabled(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $service = new LocalWriteService(
+            $repositoryRoot,
+            $databasePath,
+            $artifactRoot,
+            new CanonicalRecordRepository($repositoryRoot),
+            featureFlags: new FeatureFlagEvaluator(siteValues: [FeatureFlagRegistry::EVENT_SUPPORT_ENABLED => false]),
+        );
+
+        try {
+            $service->prepareThread([
+                'board_tags' => 'general',
+                'subject' => 'Event thread',
+                'body' => 'Event body',
+                'author_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+                'event_date' => '2026-11-01',
+            ]);
+            throw new RuntimeException('Expected event-support validation failure.');
+        } catch (RuntimeException $exception) {
+            assertSame('Event support is disabled for this site.', $exception->getMessage());
+        }
+    }
+
+    public function testPrepareThreadRejectsMalformedEventTimeBeforeIssuingToken(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: true\n"
+        );
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $identityId = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+        $preparedPostsBefore = glob(dirname($databasePath) . '/prepared-posts/*.json') ?: [];
+
+        $response = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_thread?board_tags=general&subject=Bad%20Time&body=body'
+            . '&author_identity_id=' . rawurlencode($identityId)
+            . '&event_date=2026-11-01&event_time=99%3A99'
+        );
+        $payload = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+        $preparedPostsAfter = glob(dirname($databasePath) . '/prepared-posts/*.json') ?: [];
+
+        assertSame('error', $payload['status']);
+        assertStringContains('event_time must be a valid 24-hour time.', $payload['error']);
+        assertSame(count($preparedPostsBefore), count($preparedPostsAfter));
+    }
+
+    public function testPrepareThreadWithEventFieldsRoundTripsThroughFinalizeAndReadModel(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: true\n"
+        );
+        $signingKey = $this->createSigningKey('event-thread-signer');
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $_POST = ['public_key' => $signingKey['public_key']];
+        $linkResponse = $this->renderMethod($application, 'POST', '/api/link_identity');
+        $_POST = [];
+        $identityId = $this->extractValue($linkResponse, 'identity_id');
+
+        $prepared = json_decode($this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_thread?board_tags=general&subject=Cypher%20Night&body=' . rawurlencode('Doors open sharp.')
+            . '&author_identity_id=' . rawurlencode($identityId)
+            . '&event_date=2026-11-14&event_time=19%3A30'
+            . '&event_location=' . rawurlencode('MIT Media Lab, E14')
+            . '&event_link=' . rawurlencode('https://example.test/cypher-night')
+        ), true, 512, JSON_THROW_ON_ERROR);
+
+        $signature = $this->signCanonicalRecord($signingKey['home'], $prepared['canonical_record']);
+        $_POST = [
+            'prepare_token' => $prepared['prepare_token'],
+            'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'],
+            'author_identity_id' => $identityId,
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $signature,
+        ];
+        $finalized = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_post'), true, 512, JSON_THROW_ON_ERROR);
+        $_POST = [];
+
+        assertSame('ok', $finalized['status']);
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode((string) $prepared['thread_id']));
+        assertStringContains('event-block__date">📅 2026-11-14 at 19:30', $threadPage);
+        assertStringContains('MIT Media Lab, E14', $threadPage);
+        assertStringContains('https://example.test/cypher-night', $threadPage);
+    }
+
     public function testQdbQuoteApiAssignsSequentialQuoteNumbersAcrossDigitBoundary(): void
     {
         putenv('FORUM_SITE_ID=qdb');
@@ -2511,6 +2632,75 @@ NODE;
         assertFalse(is_file($artifactRoot . '/tools/feature-flags.html'));
     }
 
+    public function testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $signingKey = $this->createSigningKey('feature-flag-signer');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $_POST = ['public_key' => $signingKey['public_key']];
+            $identityResponse = $this->renderMethod($application, 'POST', '/api/link_identity');
+            $_POST = [];
+            $identityId = $this->extractValue($identityResponse, 'identity_id');
+            $this->seedApprovedIdentity($repositoryRoot, $identityId);
+            $this->renderMethod($application, 'GET', '/');
+
+            $_COOKIE = ['identity_hint' => $identityId];
+            $prepared = json_decode($this->renderMethod(
+                $application,
+                'POST',
+                '/api/prepare_feature_flag_change?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
+            ), true, 512, JSON_THROW_ON_ERROR);
+            $snapshotPath = $repositoryRoot . '/records/instance/feature-flags.txt';
+            $snapshotBefore = is_file($snapshotPath) ? (string) file_get_contents($snapshotPath) : null;
+
+            $_POST = [
+                'prepare_token' => $prepared['prepare_token'], 'record_id' => $prepared['record_id'],
+                'record_path' => $prepared['record_path'], 'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => 'invalid detached signature',
+            ];
+            $invalid = json_decode($this->renderMethod($application, 'POST', '/api/finalize_feature_flag_change'), true, 512, JSON_THROW_ON_ERROR);
+            $_POST = [];
+            assertSame('error', $invalid['status']);
+            assertSame('Detached signature verification failed: invalid_signature', $invalid['error']);
+            assertSame($snapshotBefore, is_file($snapshotPath) ? (string) file_get_contents($snapshotPath) : null);
+            assertFalse(is_file($repositoryRoot . '/' . $prepared['record_path']));
+
+            $signature = $this->signCanonicalRecord($signingKey['home'], $prepared['canonical_record']);
+            $_POST = [
+                'prepare_token' => $prepared['prepare_token'], 'record_id' => $prepared['record_id'],
+                'record_path' => $prepared['record_path'], 'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $signature,
+            ];
+            $result = json_decode($this->renderMethod($application, 'POST', '/api/finalize_feature_flag_change'), true, 512, JSON_THROW_ON_ERROR);
+            $_POST = [];
+
+            assertSame('ok', $result['status']);
+            assertSame($identityId, $result['operator_identity_id']);
+            assertSame($signature, (string) file_get_contents($repositoryRoot . '/' . $prepared['record_path'] . '.asc'));
+            assertStringContains('FORUM_APP_VERSION_NOTIFICATION: false', (string) file_get_contents($repositoryRoot . '/records/instance/feature-flags.txt'));
+            $committedFiles = $this->gitOutput($repositoryRoot, 'show --name-only --format= ' . escapeshellarg($result['commit_sha']));
+            assertStringContains('records/instance/feature-flags.txt', $committedFiles);
+            assertStringContains($prepared['record_path'], $committedFiles);
+            assertStringContains($prepared['record_path'] . '.asc', $committedFiles);
+            $activity = $this->renderMethod($application, 'GET', '/activity/');
+            assertStringContains($identityId, $activity);
+            assertStringContains($prepared['record_path'], $activity);
+            assertStringContains($prepared['record_path'] . '.asc', $activity);
+
+            $rebuiltDatabasePath = dirname($databasePath) . '/rebuilt-' . basename($databasePath);
+            $rebuiltApplication = new Application(dirname(__DIR__), $repositoryRoot, $rebuiltDatabasePath, $artifactRoot);
+            $rebuiltActivity = $this->renderMethod($rebuiltApplication, 'GET', '/activity/');
+            assertStringContains($identityId, $rebuiltActivity);
+            assertStringContains($prepared['record_path'], $rebuiltActivity);
+        } finally {
+            $_POST = [];
+            $_COOKIE = [];
+            $this->deleteTree($signingKey['home']);
+        }
+    }
+
     public function testSetFeatureFlagAcceptsDisplayedEnabledDisabledValues(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -2557,7 +2747,7 @@ NODE;
         }
     }
 
-    public function testSetFeatureFlagApiRequiresRootApprovedIdentityAndCommits(): void
+    public function testFeatureFlagApisRequireRootApprovalAndBrowserSignature(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -2568,20 +2758,24 @@ NODE;
             '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
         );
         $_COOKIE = ['identity_hint' => 'guest'];
-        $authorized = $this->renderMethod(
+        $unsigned = $this->renderMethod(
             $application,
             'POST',
             '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
         );
+        $prepared = json_decode($this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_feature_flag_change?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
+        ), true, 512, JSON_THROW_ON_ERROR);
         $_COOKIE = [];
 
         assertStringContains('error=Feature flag changes require a root-approved identity.', $unauthorized);
-        assertStringContains('status=ok', $authorized);
-        assertStringContains('key=FORUM_APP_VERSION_NOTIFICATION', $authorized);
-        assertStringContains('site_value=false', $authorized);
-        assertStringContains('source=site', $authorized);
-        assertStringContains('commit_sha=', $authorized);
-        assertStringContains('FORUM_APP_VERSION_NOTIFICATION: false', (string) file_get_contents($repositoryRoot . '/records/instance/feature-flags.txt'));
+        assertStringContains('error=Feature flag changes require a browser signature.', $unsigned);
+        assertSame('ok', $prepared['status']);
+        assertSame('yes', $prepared['wrote_record']);
+        assertStringContains('Operator-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $prepared['canonical_record']);
+        assertFalse(is_file($repositoryRoot . '/records/instance/feature-flags.txt'));
     }
 
     public function testSetFeatureFlagAddsActivityForWarmReadModel(): void
@@ -2590,19 +2784,11 @@ NODE;
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         $this->renderMethod($application, 'GET', '/');
 
-        $_COOKIE = ['identity_hint' => 'guest'];
-        try {
-            $response = $this->renderMethod(
-                $application,
-                'POST',
-                '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
-            );
-            $activity = $this->renderMethod($application, 'GET', '/activity/');
-        } finally {
-            $_COOKIE = [];
-        }
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $response = $service->setFeatureFlag(['key' => 'FORUM_APP_VERSION_NOTIFICATION', 'value' => 'false']);
+        $activity = $this->renderMethod($application, 'GET', '/activity/');
 
-        $commitSha = $this->extractValue($response, 'commit_sha');
+        $commitSha = $response['commit_sha'];
         assertStringContains('site_feature_flag', $activity);
         assertStringContains('Set feature flag FORUM_APP_VERSION_NOTIFICATION=false', $activity);
         assertStringContains('records/instance/feature-flags.txt', $activity);
@@ -2654,9 +2840,9 @@ NODE;
         assertStringContains('method="post" action="/tools/feature-flags/"', $form);
         assertStringContains('data-feature-flag-form', $form);
         assertStringContains('Feature flag changes require a root-approved identity.', $unauthorized);
-        assertStringContains('Feature flag updated. Commit:', $redirect);
+        assertStringContains('Feature flag changes require a browser signature.', $redirect);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $updated);
-        assertStringContains('data-role="feature-flag-source">site</span>', $updated);
+        assertStringContains('data-role="feature-flag-source">default</span>', $updated);
     }
 
     public function testFeatureFlagFormSubmitAcceptsDisplayedEnabledDisabledValues(): void
@@ -2676,8 +2862,8 @@ NODE;
             $_POST = [];
         }
 
-        assertStringContains('Feature flag updated. Commit:', $redirect);
-        assertStringContains('FORUM_APP_VERSION_NOTIFICATION: false', (string) file_get_contents($repositoryRoot . '/records/instance/feature-flags.txt'));
+        assertStringContains('Feature flag changes require a browser signature.', $redirect);
+        assertFalse(is_file($repositoryRoot . '/records/instance/feature-flags.txt'));
     }
 
     public function testFeatureFlagWriteSyncsRepositoryHeadMetadataImmediately(): void
@@ -2686,16 +2872,8 @@ NODE;
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         $this->renderMethod($application, 'GET', '/');
 
-        $_COOKIE = ['identity_hint' => 'guest'];
-        try {
-            $this->renderMethod(
-                $application,
-                'POST',
-                '/tools/feature-flags/?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
-            );
-        } finally {
-            $_COOKIE = [];
-        }
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $service->setFeatureFlag(['key' => 'FORUM_APP_VERSION_NOTIFICATION', 'value' => 'false']);
 
         $currentHead = ReadModelMetadata::repositoryHead($repositoryRoot);
         $pdo = new PDO('sqlite:' . $databasePath);
@@ -2732,18 +2910,8 @@ NODE;
         ]);
         assertTrue($staleMarker->exists());
 
-        $_COOKIE = ['identity_hint' => 'guest'];
-        try {
-            $redirect = $this->renderMethod(
-                $application,
-                'POST',
-                '/tools/feature-flags/?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
-            );
-        } finally {
-            $_COOKIE = [];
-        }
-
-        assertStringContains('Feature flag updated. Commit:', $redirect);
+        $service = new LocalWriteService($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot));
+        $service->setFeatureFlag(['key' => 'FORUM_APP_VERSION_NOTIFICATION', 'value' => 'false']);
         $this->assertReadModelHealthy($databasePath);
 
         $pdo = new PDO('sqlite:' . $databasePath);
@@ -3948,14 +4116,18 @@ NODE;
         assertStringContains('title="' . $pendingTarget['profile_slug'] . '"', $pendingUsers);
         assertStringContains('aria-label="' . $pendingTarget['profile_slug'] . '"', $pendingUsers);
         assertStringContains(
-            substr($pendingTarget['profile_slug'], 0, 18) . '...' . substr($pendingTarget['profile_slug'], -10),
+            substr($pendingTarget['profile_slug'], 0, 17) . '...',
             $pendingUsers
         );
         assertStringNotContains('>' . $pendingTarget['profile_slug'] . '</a>', $pendingUsers);
         assertStringContains('<table ', $pendingUsers);
-        assertStringContains('data-role="pending-approval-activity-row"', $pendingUsers);
-        assertStringContains('colspan="2"', $pendingUsers);
-        assertStringContains('rowspan="2"', $pendingUsers);
+        assertStringMatches(
+            '#<tr[^>]+data-username="bob"[^>]*>(?:(?!</tr>).)*href="/posts/'
+            . preg_quote($pendingTarget['bootstrap_post_id'], '#')
+            . '"(?:(?!</tr>).)*data-action="approve-user"[^>]+data-profile-slug="'
+            . preg_quote($pendingTarget['profile_slug'], '#') . '"(?:(?!</tr>).)*</tr>#s',
+            $pendingUsers
+        );
         assertStringContains('account bootstrap', $pendingUsers);
         assertStringContains('href="/posts/' . $pendingTarget['bootstrap_post_id'] . '"', $pendingUsers);
         assertStringContains('<time datetime="', $pendingUsers);

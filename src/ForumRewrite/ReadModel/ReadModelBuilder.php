@@ -151,8 +151,8 @@ final class ReadModelBuilder
              VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :author_identity_id, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
-            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link)
-             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link)'
+            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time)
+             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time)'
         );
 
         $paths = $this->findRelativePaths('records/posts');
@@ -189,6 +189,7 @@ final class ReadModelBuilder
                 'event_date' => $record->eventDate,
                 'event_location' => $record->eventLocation,
                 'event_link' => $record->eventLink,
+                'event_time' => $record->eventTime,
                 'source_path' => $relativePath,
                 'source_commit_sha' => $this->sourceCommitShaForPath($relativePath),
                 'source_order' => $index + 1,
@@ -246,6 +247,7 @@ final class ReadModelBuilder
                     'event_date' => $post['event_date'],
                     'event_location' => $post['event_location'],
                     'event_link' => $post['event_link'],
+                    'event_time' => $post['event_time'],
                 ];
             }
 
@@ -793,7 +795,31 @@ final class ReadModelBuilder
             ]);
         }
 
-        foreach ($this->featureFlagActivityEvents() as $event) {
+        $signedFeatureFlagEvents = $this->featureFlagChangeActivityEvents();
+        $signedCommitShas = [];
+        foreach ($signedFeatureFlagEvents as $event) {
+            $signedCommitShas[$event['source_commit_sha']] = true;
+            $author = $this->resolveActivityAuthor($pdo, $event['operator_identity_id']);
+            $stmt->execute([
+                'created_at' => $event['created_at'],
+                'kind' => 'site_feature_flag',
+                'record_family' => 'instance_feature_flags',
+                'action_key' => $event['source_path'] . '@' . $event['source_commit_sha'],
+                'post_id' => null,
+                'thread_id' => null,
+                'label' => 'Set feature flag ' . $event['flag_key'] . '=' . ($event['value'] ? 'true' : 'false'),
+                'board_tags_json' => '["site"]',
+                'author_identity_id' => $event['operator_identity_id'],
+                'author_profile_slug' => $author['author_profile_slug'],
+                'author_username_token' => $author['author_username_token'],
+                'author_label' => $author['author_label'],
+                'author_is_approved' => $author['author_is_approved'],
+                'source_path' => $event['source_path'],
+                'source_commit_sha' => $event['source_commit_sha'],
+            ]);
+        }
+
+        foreach ($this->featureFlagActivityEvents($signedCommitShas) as $event) {
             $stmt->execute([
                 'created_at' => $event['created_at'],
                 'kind' => 'site_feature_flag',
@@ -1120,9 +1146,10 @@ final class ReadModelBuilder
     }
 
     /**
+     * @param array<string, true> $excludedCommitShas
      * @return list<array{created_at:string,label:string,source_commit_sha:string}>
      */
-    private function featureFlagActivityEvents(): array
+    private function featureFlagActivityEvents(array $excludedCommitShas = []): array
     {
         $path = CanonicalPathResolver::featureFlags();
         if (!is_file($this->repositoryRoot . '/' . $path) || !is_dir($this->repositoryRoot . '/.git')) {
@@ -1151,6 +1178,9 @@ final class ReadModelBuilder
             if (count($parts) !== 3 || $parts[0] === '' || $parts[1] === '') {
                 continue;
             }
+            if (isset($excludedCommitShas[$parts[1]])) {
+                continue;
+            }
 
             $subject = trim($parts[2]);
             $events[] = [
@@ -1161,6 +1191,36 @@ final class ReadModelBuilder
         }
 
         return $events;
+    }
+
+    /**
+     * @return list<array{created_at:string,flag_key:string,value:bool,operator_identity_id:string,source_path:string,source_commit_sha:string}>
+     */
+    private function featureFlagChangeActivityEvents(): array
+    {
+        $records = [];
+        foreach ($this->findRelativePaths('records/feature-flag-changes') as $relativePath) {
+            try {
+                $record = $this->canonicalRepository->loadFeatureFlagChange($relativePath);
+            } catch (CanonicalRecordParseException) {
+                continue;
+            }
+            $commitSha = $this->sourceCommitShaForPath($relativePath);
+            if ($commitSha === null) {
+                continue;
+            }
+            $records[] = [
+                'created_at' => $record->createdAt,
+                'flag_key' => $record->flagKey,
+                'value' => $record->value,
+                'operator_identity_id' => $record->operatorIdentityId,
+                'source_path' => CanonicalPathResolver::featureFlagChange($record->recordId),
+                'source_commit_sha' => $commitSha,
+            ];
+        }
+        usort($records, static fn (array $left, array $right): int => [$left['created_at'], $left['source_path']] <=> [$right['created_at'], $right['source_path']]);
+
+        return $records;
     }
 
     /**

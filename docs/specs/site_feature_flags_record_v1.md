@@ -7,6 +7,7 @@ This document defines the canonical site feature flags record used to store site
 - One optional UTF-8 text file stores site-level feature flag values.
 - The file lives at `records/instance/feature-flags.txt`.
 - The record is public site content and is committed to the content repository git history.
+- Browser-initiated mutations also commit a signed immutable companion record; see [Feature Flag Change Record V1](feature_flag_change_record_v1.md).
 - Environment and private configuration overrides may still take precedence at runtime.
 
 ## File Structure

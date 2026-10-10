@@ -175,7 +175,7 @@ final class QuoteCardDisplayNumberTest
         $this->writeNews($repositoryRoot, [
             ['news-oldest', '2026-10-01T12:00:00Z', 'Oldest news', 'Oldest body.'],
             ['news-older', '2026-10-02T12:00:00Z', 'Older news', 'Older body.'],
-            ['news-titleless', '2026-10-03T12:00:00Z', '', "Titleless news headline\nMore detail."],
+            ['news-titleless', '2026-10-03T12:00:00Z', '', "Titleless news headline\nMore detail. <b>&"],
             ['news-newest', '2026-10-04T12:00:00Z', 'Newest news', 'Newest body.'],
         ]);
 
@@ -187,16 +187,23 @@ final class QuoteCardDisplayNumberTest
             putenv('FORUM_SITE_ID');
         }
 
+        assertStringNotContains('<b>&', $welcome);
         assertStringContains('<h2>Site News</h2>', $welcome);
         assertStringContains('⚑ Flag something that', $welcome);
         assertStringNotContains('[X] to flag', $welcome);
         assertStringNotContains('Recent activity', $welcome);
-        assertSame(3, substr_count($welcome, 'href="/threads/news-'));
-        assertStringContains('href="/threads/news-newest">Newest news</a>', $welcome);
-        assertStringContains('href="/threads/news-titleless">Titleless news headline</a>', $welcome);
-        assertStringContains('href="/threads/news-older">Older news</a>', $welcome);
-        assertStringNotContains('news-oldest', $welcome);
-        assertStringContains('<time datetime="2026-10-04T12:00:00Z">Oct 4, 2026 at 12:00 UTC</time>', $welcome);
+        assertSame(3, substr_count($welcome, 'class="qdb-news-item"'));
+        assertStringContains('<span class="qdb-news-date">2026-10-04</span>', $welcome);
+        assertStringContains('<strong class="qdb-news-title">Newest news</strong>', $welcome);
+        assertStringContains('Newest body.', $welcome);
+        assertStringContains('<strong class="qdb-news-title">Older news</strong>', $welcome);
+        assertStringContains('Older body.', $welcome);
+        assertStringContains('Titleless news headline', $welcome);
+        assertStringContains('More detail. &lt;b&gt;&amp;', $welcome);
+        assertSame(2, substr_count($welcome, 'class="qdb-news-title"'));
+        assertStringNotContains('Oldest', $welcome);
+        assertStringNotContains('Oct 4, 2026', $welcome);
+        assertStringNotContains('href="/threads/news-', $welcome);
         assertStringContains('href="/tags/news">All news</a>', $welcome);
         assertTrue(
             strpos($welcome, 'Newest news') < strpos($welcome, 'Titleless news headline')

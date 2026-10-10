@@ -25,6 +25,7 @@ use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\View\TemplateRenderer;
+use ForumRewrite\Write\LocalWriteService;
 use ForumRewrite\Write\StaticArtifactInvalidator;
 
 final class LocalAppSmokeTest
@@ -4254,20 +4255,16 @@ PHP;
             $publicRoot,
         );
 
-        $_COOKIE = ['identity_hint' => 'guest'];
-        try {
-            $writeResponse = $this->renderFrontController(
-                $controller,
-                'POST',
-                '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false',
-                ['identity_hint' => 'guest']
-            );
-        } finally {
-            $_COOKIE = [];
-        }
+        $writeResult = (new LocalWriteService(
+            $repositoryRoot,
+            $databasePath,
+            $publicRoot,
+            new CanonicalRecordRepository($repositoryRoot),
+            additionalArtifactRoots: [$staticHtmlRoot],
+        ))->setFeatureFlag(['key' => 'FORUM_APP_VERSION_NOTIFICATION', 'value' => 'false']);
         $activityResponse = $this->renderFrontController($controller, 'GET', '/activity/', []);
 
-        assertStringContains('status=ok', $writeResponse);
+        assertSame('ok', $writeResult['status']);
         assertFalse(is_link($staticHtmlRoot . '/current'));
         assertStringContains('site_feature_flag', $activityResponse);
         assertStringContains('Set feature flag FORUM_APP_VERSION_NOTIFICATION=false', $activityResponse);

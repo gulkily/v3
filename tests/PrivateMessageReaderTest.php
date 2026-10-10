@@ -80,4 +80,87 @@ NODE;
         assertSame(false, array_key_exists('plaintext', $result['tampered']));
         assertSame(false, array_key_exists('plaintext', $result['badSignature']));
     }
+
+    public function testAutomaticallyReadsRenderedCardsWithoutPersistingPlaintext(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+let fetchCount = 0;
+let storageWrites = 0;
+const verification = () => ({ hidden: true, textContent: '', className: '' });
+const error = () => ({ hidden: true, textContent: '', className: '' });
+const plaintext = () => ({ hidden: true, textContent: '', className: '' });
+const cards = ['message-001', 'message-002', 'message-003'].map((id) => {
+  const nodes = { verification: verification(), error: error(), plaintext: plaintext() };
+  return {
+    dataset: { privateMessageId: id },
+    nodes,
+    querySelector(selector) {
+      if (selector.includes('verification')) return nodes.verification;
+      if (selector.includes('reader-error')) return nodes.error;
+      return nodes.plaintext;
+    }
+  };
+});
+const root = { dataset: { mailbox: 'inbox' }, querySelectorAll() { return cards; } };
+global.fetch = async () => ({
+  ok: true,
+  async json() {
+    fetchCount++;
+    return { status: 'ok', messages: [
+      { message_id: 'message-001', sender_username_token: 'bob', encrypted_envelope: 'one' },
+      { message_id: 'message-002', sender_username_token: 'bob', encrypted_envelope: 'two' },
+      { message_id: 'message-003', sender_username_token: 'bob', encrypted_envelope: 'three' }
+    ] };
+  }
+});
+global.window = {
+  localStorage: { getItem() { return 'private key'; }, setItem() { storageWrites++; } },
+  __forumBrowserIdentity: { async ensureOpenPgpApi() {
+    return {
+      async readKey() { return {}; },
+      async readPrivateKey() { return {}; },
+      async readMessage({ armoredMessage }) { return armoredMessage; },
+      async decrypt({ message }) {
+        return {
+          data: 'plain ' + message,
+          signatures: [{ verified: message === 'three' ? Promise.reject(new Error('bad signature')) : Promise.resolve() }]
+        };
+      }
+    };
+  }},
+  ForumPrivateMessages: { async recipientKeys() { return ['bob public key']; } }
+};
+global.document = { addEventListener() {}, querySelectorAll() { return []; } };
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+(async () => {
+  window.ForumPrivateMessageReader.bindMailbox(root);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  process.stdout.write(JSON.stringify({
+    bound: root.dataset.privateMessageReaderBound,
+    fetchCount,
+    storageWrites,
+    first: cards[0].nodes,
+    second: cards[1].nodes,
+    third: cards[2].nodes
+  }));
+})().catch((error) => { process.stderr.write(error.stack || String(error)); process.exit(1); });
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('1', $result['bound']);
+        assertSame(1, $result['fetchCount']);
+        assertSame(0, $result['storageWrites']);
+        assertSame(false, $result['first']['verification']['hidden']);
+        assertSame('✓', $result['first']['verification']['textContent']);
+        assertSame('plain one', $result['first']['plaintext']['textContent']);
+        assertSame(false, $result['second']['verification']['hidden']);
+        assertSame('plain two', $result['second']['plaintext']['textContent']);
+        assertSame(true, $result['third']['verification']['hidden']);
+        assertSame(true, $result['third']['plaintext']['hidden']);
+        assertSame(false, $result['third']['error']['hidden']);
+        assertSame('The sender signature could not be verified.', $result['third']['error']['textContent']);
+    }
 }

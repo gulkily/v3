@@ -69,9 +69,6 @@ add search/filter toolbar (search input + status chips: All/Enabled/Overridden/L
 to /tools/feature-flags/ — deferred from the layout/badges/grouping redesign,
 see docs/plans/feature_flags_redesign_step2/3_*.md
 
-redesign the offline mode indicator to not take up extra vertical space (probably top corner?)
-	also, make it link to userful pages like /offline/
-
 plan/features for dealing with duplicate related items
 	how to merge duplicate threads, posts, and comments
 
@@ -88,14 +85,6 @@ general-purpose "canonicalize any URL" cleanup is its own open-ended feature:
 		design questions
 
 allow offline content for unauthenticated users
-
-improve event experience
-	date field should have a picker
-	there should be a time selector
-	what else?
-
-qdb should only add quote id when using the add quote form
-	otherwise, should create a regular thread (e.g. when using /compose/thread)
 
 we need to record who changed a feature flag and sign the request
 
@@ -120,3 +109,7 @@ youtube embeds
 
 make it easy to import/sync content from another instance
 	make this schedulable too
+
+gate pm feature behind a feature flag
+
+qdb pages need better titles

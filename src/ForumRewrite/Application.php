@@ -125,6 +125,8 @@ final class Application
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
         if ($this->approvedMembersOnlyEnabled()
             || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
+            || $path === '/api/private_messages/conversation'
+            || str_starts_with($path, '/messages/conversation/')
         ) {
             $this->startViewerSession();
         } elseif ($this->shouldResumeViewerSession($method, $path, $query)) {
@@ -217,6 +219,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/private_messages/conversation') {
+            $this->privateMessageApiController()->conversation($method, $query);
+            return;
+        }
+
         if ($path === '/api/private_messages/recipient_keys') {
             $this->privateMessageApiController()->recipientKeys($method, $query);
             return;
@@ -229,6 +236,11 @@ final class Application
 
         if ($path === '/messages/sent') {
             $this->privateMessagePageController()->sent($method);
+            return;
+        }
+
+        if (preg_match('#^/messages/conversation/([^/]+)/?$#', $path, $matches) === 1) {
+            $this->privateMessagePageController()->conversation($method, $matches[1]);
             return;
         }
 
@@ -319,6 +331,16 @@ final class Application
 
         if ($path === '/api/set_feature_flag') {
             $this->toolsPageController()->submitFeatureFlagApi($method, $query);
+            return;
+        }
+
+        if ($path === '/api/prepare_feature_flag_change') {
+            $this->toolsPageController()->prepareFeatureFlagChangeApi($method, $query);
+            return;
+        }
+
+        if ($path === '/api/finalize_feature_flag_change') {
+            $this->toolsPageController()->finalizeFeatureFlagChangeApi($method, $query);
             return;
         }
 
@@ -1258,7 +1280,7 @@ final class Application
         $stmt = $this->pdo()->prepare(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
                     threads.reply_count, threads.last_post_id, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
-                    threads.event_date, threads.event_location, threads.event_link,
+                    threads.event_date, threads.event_location, threads.event_link, threads.event_time,
                     profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
@@ -1702,6 +1724,10 @@ final class Application
 
     private function isApplicationRoute(string $path): bool
     {
+        if (str_starts_with($path, '/messages/conversation/')) {
+            return true;
+        }
+
         if ($this->isForteApplicationRoute($path)) {
             return true;
         }
@@ -1726,7 +1752,7 @@ final class Application
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',
-            '/messages/inbox', '/messages/sent',
+            '/messages/inbox', '/messages/sent', '/api/private_messages/conversation',
             '/account/key', '/account/key/', '/invites', '/invites/',
             '/api', '/api/', '/api/version', '/api/list_index',
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username_claim_cta',
@@ -1737,7 +1763,7 @@ final class Application
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
-            '/api/set_feature_flag', '/api/link_identity', '/api/approve_user',
+            '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
             '/latest', '/top', '/leetness', '/add', '/random', '/search',
         ], true)) {
