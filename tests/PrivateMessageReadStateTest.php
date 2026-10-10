@@ -47,6 +47,9 @@ final class PrivateMessageReadStateTest
         $store->markSeenThrough('alice', 'bob', 'one');
         assertSame(1, (new PrivateMessageStore($pdo))->unreadStateFor('alice')['unread_count']);
         assertSame(0, $store->unreadStateFor('outsider')['unread_count']);
+        $revision = $store->unreadStateFor('alice')['revision'];
+        $store->storeEnvelope('unrelated-activity', '2026-10-10', 'eve', 'mallory', 'key', 'cipher');
+        assertSame($revision, $store->unreadStateFor('alice')['revision'], 'State revisions must not reveal unrelated mailbox activity');
         try { $store->markSeenThrough('alice', 'bob', 'own'); throw new RuntimeException('Accepted outgoing boundary'); }
         catch (InvalidArgumentException $expected) { assertStringContains('boundary', $expected->getMessage()); }
         for ($i = 0; $i < 30; $i++) $store->storeEnvelope('many-' . $i, '2026-10-10T12:00:00Z', 'user-' . $i, 'alice', 'key', 'cipher');

@@ -10,6 +10,24 @@ use ForumRewrite\Messaging\PrivateMessageStore;
 
 final class PrivateMessageMailboxServiceTest
 {
+    public function testUnreadProgressIsSharedAcrossApprovedIdentitiesOnly(): void
+    {
+        $profiles = $this->profilesDatabase();
+        $this->addProfile($profiles, 'bob-key', 'bob-key', 'bob', 'KEY', 1);
+        $store = new PrivateMessageStore(new \PDO('sqlite::memory:'));
+        $service = new PrivateMessageMailboxService($store, $profiles);
+        $store->storeEnvelope('received', '2026-10-10', 'bob', 'alice', 'bob-key', 'cipher');
+        $first = $this->viewer('alice-one', 'alice');
+        $second = $this->viewer('alice-two', 'alice');
+        $page = $service->conversationPage($first, 'bob');
+        assertSame(1, $service->unreadState($second)['unread_count']);
+        assertSame(0, $service->acknowledge($second, 'bob', $page['read_token'])['unread_count']);
+        assertSame(0, $service->unreadState($first)['unread_count']);
+        assertThrowsPrivateMessage(fn () => $service->unreadState(array_replace($first, ['is_approved' => 0])), \RuntimeException::class, 'An approved authenticated identity is required.');
+        $profiles->exec('UPDATE profiles SET is_approved = 0');
+        assertThrowsPrivateMessage(fn () => $service->acknowledge($first, 'bob', $page['read_token']), \InvalidArgumentException::class, 'Recipient has no approved profile keys.');
+    }
+
     public function testRetryReturnsOriginalAcceptanceAndRejectsConflicts(): void
     {
         $profiles = $this->profilesDatabase();

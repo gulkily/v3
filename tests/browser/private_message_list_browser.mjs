@@ -15,6 +15,7 @@ import { checkHistoryRecovery } from './private_message_history_recovery.mjs';
 import { checkUnreadApi } from './private_message_unread_api.mjs';
 import { checkUnreadIndicators } from './private_message_unread_ui.mjs';
 import { checkSeenWindows } from './private_message_seen_windows.mjs';
+import { checkSeenRecovery } from './private_message_seen_recovery.mjs';
 
 const project = resolve(new URL('../..', import.meta.url).pathname);
 runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
@@ -223,6 +224,14 @@ try {
   await checkUnreadApi(context, outsiderContext, base, seed, incoming);
   await checkUnreadIndicators(page, context, base, root);
   await checkSeenWindows(page, context, base, seed, incoming, await encrypt(outsider, 'Unverified seen secret'));
+  const deviceContext = await browser.newContext({ viewport: { width: 1100, height: 800 }, serviceWorkers: 'block' });
+  await authenticate(deviceContext, alice);
+  await deviceContext.addInitScript(({ publicKey, privateKey, fingerprint }) => {
+    for (const [key, value] of Object.entries({ username: 'alice', public_key: publicKey, private_key: privateKey,
+      fingerprint: fingerprint.toUpperCase(), published_fingerprint: fingerprint.toUpperCase() })) localStorage.setItem('forum_pki_' + key, value);
+  }, { publicKey: alice.publicKey, privateKey: alice.privateKey, fingerprint: alice.fingerprint });
+  await checkSeenRecovery(page, context, deviceContext, base, seed, incoming);
+  await deviceContext.close();
   assert.deepEqual(errors, []);
   await writeFile(join(root, 'report.json'), JSON.stringify({ passed: true, checks: 'normal entry, inline encrypted replies, lost acknowledgment with reload/new draft, isolated read recovery, invalid/missing signatures, delayed decryption/navigation, keyboard/zoom/scroll, shared composers, list and history snapshots, three-page exact history coverage, concurrent/backdated arrivals, history anchoring within 5px, history retry/restart with concurrent send and newer draft, obsolete response isolation, authorization, no-store', screenshots: ['messages-desktop.png', 'messages-mobile.png', 'chat-desktop.png', 'chat-mobile.png', 'chat-recovery-mobile.png', 'history-loaded.png', 'history-mobile.png'] }, null, 2));
   console.log(`Browser checks passed. Artifacts: ${root}`);

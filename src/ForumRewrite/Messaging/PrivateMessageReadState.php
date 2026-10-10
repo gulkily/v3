@@ -56,7 +56,10 @@ final class PrivateMessageReadState
             $unread = array_fill_keys($stmt->fetchAll(PDO::FETCH_COLUMN), true);
             $rows = [];
             foreach ($counterparts as $counterpart) $rows[$counterpart] = isset($unread[$counterpart]);
-            $last = $this->pdo->query('SELECT rowid AS position, message_id FROM private_messages ORDER BY rowid DESC LIMIT 1')->fetch();
+            $activity = $this->pdo->prepare('SELECT rowid AS position, message_id FROM private_messages
+                WHERE sender_username_token = :viewer OR recipient_username_token = :viewer ORDER BY rowid DESC LIMIT 1');
+            $activity->execute(['viewer' => $viewer]);
+            $last = $activity->fetch();
             $progress = $this->pdo->prepare('SELECT counterpart, seen_row, seen_id FROM private_message_seen WHERE viewer = :viewer ORDER BY counterpart');
             $progress->execute(['viewer' => $viewer]);
             $revision = hash('sha256', json_encode([$viewer, $metadata['baseline_id'], $last, $progress->fetchAll()], JSON_THROW_ON_ERROR));

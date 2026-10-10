@@ -1,12 +1,18 @@
 (function () {
   'use strict';
-  let nav, viewer, generation = 0, scheduled;
+  let nav, viewer, originalIdentity, generation = 0, scheduled;
+  function identity() {
+    try { return JSON.stringify([localStorage.getItem('forum_pki_public_key'), localStorage.getItem('forum_pki_username')]); }
+    catch (error) { return ''; }
+  }
+  function sameIdentity() { return originalIdentity === identity(); }
   function rows() { return Array.from(document.querySelectorAll('[data-conversation-row]')); }
   function unavailable(message) {
     nav.querySelector('[data-role="unread-count"]').textContent = '?';
     nav.querySelector('#private-message-unread-status').textContent = message;
     nav.title = message;
     nav.dataset.unreadState = 'unavailable';
+    delete nav.dataset.unreadCount;
     rows().forEach(function (row) {
       const marker = row.querySelector('[data-role="unread-indicator"]');
       marker.textContent = '?'; marker.title = message;
@@ -22,6 +28,7 @@
   async function refresh() {
     if (!nav || !nav.isConnected) return;
     const current = ++generation;
+    if (!sameIdentity()) { unavailable('Identity changed. Reload Messages before checking unread status.'); return; }
     const names = Array.from(new Set(rows().map(row => row.dataset.counterpart).filter(Boolean)));
     try {
       let combined, states;
@@ -34,7 +41,8 @@
           batch.forEach(name => query.append('counterparts[]', name));
           const response = await fetch('/api/private_messages/unread?' + query, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
           const state = await response.json();
-          if (current !== generation) return;
+          if (current !== generation || !nav.isConnected) return;
+          if (!sameIdentity()) throw new Error('Identity changed. Reload Messages before checking unread status.');
           if (!response.ok || !valid(state, batch)) throw new Error('Unread status unavailable. Retry on Messages.');
           if (combined && combined.revision !== state.revision) { changed = true; break; }
           combined = state;
@@ -63,18 +71,28 @@
     }
   }
   function schedule() {
+    generation++;
     clearTimeout(scheduled);
     scheduled = setTimeout(refresh, 0);
   }
-  window.ForumPrivateMessageUnread = { refresh: refresh };
+  window.ForumPrivateMessageUnread = { refresh: refresh, sameIdentity: sameIdentity, acceptsState: valid };
   document.addEventListener('DOMContentLoaded', function () {
     nav = document.querySelector('[data-private-message-unread]');
     if (!nav) return;
     viewer = nav.dataset.viewer;
+    originalIdentity = identity();
     document.querySelectorAll('[data-role="unread-retry"]').forEach(button => button.addEventListener('click', schedule));
     document.addEventListener('private-message-rows-changed', schedule);
     window.addEventListener('focus', schedule);
     window.addEventListener('pageshow', schedule);
+    window.addEventListener('pagehide', function () { generation++; clearTimeout(scheduled); });
+    window.addEventListener('storage', function (event) {
+      if (event.key === null || ['forum_pki_public_key', 'forum_pki_username'].includes(event.key)) {
+        generation++;
+        document.dispatchEvent(new CustomEvent('private-message-identity-invalidated'));
+        schedule();
+      }
+    });
     document.addEventListener('visibilitychange', function () { if (!document.hidden) schedule(); });
     schedule();
   });
