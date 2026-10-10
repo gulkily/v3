@@ -11,9 +11,10 @@ vm.runInThisContext(fs.readFileSync('public/assets/openpgp.min.js','utf8'));
  global.document={hidden:false,querySelector:()=>({dataset:{viewer:'alice'}}),addEventListener:(name,fn)=>{events[name]=fn},dispatchEvent:()=>{}};
  global.window={localStorage,addEventListener:()=>{},__forumBrowserIdentity:{ensureOpenPgpApi:async()=>openpgp}};
  vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_crypto.js','utf8'));
- const c=window.ForumPrivateMessageHistoryCrypto,requests=[];
+ const c=window.ForumPrivateMessageHistoryCrypto,requests=[];let loseReceipt=true;
  global.fetch=async(url,options)=>{
    const body=options.body?JSON.parse(options.body):null;requests.push({url,body});
+   if(url.endsWith('/acknowledge') && loseReceipt) {loseReceipt=false;throw Error('Response lost after commit');}
    return {ok:true,json:async()=>url.endsWith('/work')?{status:'ok',account:'alice',source:donor.fp,target:target.fp,target_key:target.publicKey,messages:[{message_id:'m1',encrypted_envelope:envelope,digest:c.digest(envelope),sender_keys:[sender.publicKey]}],checkpoint:{target:donor.fp,after_id:''},cycle_end:true,total:1}:{status:'ok',transfer_id:'uploaded'}};
  };
  vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_sync.js','utf8'));
@@ -25,6 +26,12 @@ vm.runInThisContext(fs.readFileSync('public/assets/openpgp.min.js','utf8'));
  const recovered=await c.unwrapHistoryKeys({account:'alice',source:donor.fp,target:target.fp,sourceKey:donor.publicKey,privateKey:target.privateKey,ciphertext:uploaded.ciphertext});
  assert.equal(await c.readOriginal(envelope,recovered[0].keys,[sender.publicKey]),'private historical text');
  assert.equal(window.ForumPrivateMessageHistorySync.state().contributed,1);
- assert.equal(requests.filter(r=>r.url.endsWith('/acknowledge')).length,1);
+ assert.equal(requests.filter(r=>r.url.endsWith('/acknowledge')).length,2);
+ // Cancel a response arriving after the saved identity changes: no stale-key upload/receipt.
+ const before=requests.length;
+ global.fetch=async()=>{values.forum_pki_private_key=target.privateKey;return {ok:true,json:async()=>({status:'ok'})};};
+ await window.ForumPrivateMessageHistorySync.refresh();
+ assert.equal(requests.length,before);
+ assert.equal(window.ForumPrivateMessageHistorySync.state().contributed,1);
  console.log('Automatic donor visit produces a target-only transfer; no plaintext/private-key/cache writes.');
 })().catch(e=>{console.error(e);process.exit(1)});

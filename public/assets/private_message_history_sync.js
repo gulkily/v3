@@ -4,6 +4,7 @@
   let nav, account='', original='', generation=0, active=null, aborter=null, lastRun=0;
   const stats={state:'waiting',verified:0,contributed:0,unavailable:0};
   const verifiedIds=new Set(), candidateRequests=new Map();
+  let requestsInFlight=0;const requestWaiters=[];
   function identity() {
     try { return JSON.stringify(['username','public_key','private_key'].map(k=>localStorage.getItem('forum_pki_'+k)||'')); }
     catch (_) { return ''; }
@@ -14,14 +15,30 @@
     document.dispatchEvent(new CustomEvent('private-message-history-sync-state',{detail:{...stats}}));
   }
   async function request(action, input, run) {
-    if (!valid(run)) throw Error('History identity changed.');
-    const response=await fetch(base+action,{credentials:'same-origin',cache:'no-store',signal:aborter.signal,
-      headers:{Accept:'application/json',...(input?{'Content-Type':'application/json','X-Requested-With':'ForumPrivateMessages'}:{})},
-      ...(input?{method:'POST',body:JSON.stringify(input)}:{})});
-    const result=await response.json();
-    if (!valid(run)) throw Error('History identity changed.');
-    if(!response.ok || result.status!=='ok') throw Error('History synchronization unavailable. Retry later.');
-    return result;
+    if(requestsInFlight>=3) await new Promise(resolve=>requestWaiters.push(resolve));
+    else requestsInFlight++;
+    try {
+      for(let attempt=0;attempt<2;attempt++) {
+        if(!valid(run) || !aborter || aborter.signal.aborted) throw Error('History identity changed.');
+        const lifecycle=aborter, controller=new AbortController();
+        const cancel=()=>controller.abort();lifecycle.signal.addEventListener('abort',cancel,{once:true});
+        const timeout=setTimeout(cancel,5000);
+        try {
+          const response=await fetch(base+action,{credentials:'same-origin',cache:'no-store',signal:controller.signal,
+            headers:{Accept:'application/json',...(input?{'Content-Type':'application/json','X-Requested-With':'ForumPrivateMessages'}:{})},
+            ...(input?{method:'POST',body:JSON.stringify(input)}:{})});
+          const result=await response.json();
+          if(!valid(run)) throw Error('History identity changed.');
+          if(!response.ok || result.status!=='ok') {
+            if(response.status===503 && attempt===0) continue;
+            throw Error('History synchronization unavailable. Retry later.');
+          }
+          return result;
+        } catch(error) { if(attempt!==0 || !valid(run) || lifecycle.signal.aborted) throw error; }
+        finally {clearTimeout(timeout);lifecycle.signal.removeEventListener('abort',cancel);}
+      }
+      throw Error('History synchronization unavailable.');
+    } finally {const next=requestWaiters.shift();if(next)next();else requestsInFlight--;}
   }
   async function candidates(messageId, envelope) {
     if(!nav || original!==identity() || document.hidden) return [];
@@ -29,7 +46,7 @@
     const cacheKey=messageId+':'+digest;
     if(candidateRequests.has(cacheKey)) return candidateRequests.get(cacheKey);
     const promise=(async()=>{
-      if(!aborter || aborter.signal.aborted) aborter=new AbortController();
+      if(!aborter || (aborter.signal.aborted && !active)) aborter=new AbortController();
       const privateKey=localStorage.getItem('forum_pki_private_key')||'';
       const pgp=await window.__forumBrowserIdentity.ensureOpenPgpApi(['readPrivateKey']);
       const target=(await pgp.readPrivateKey({armoredKey:privateKey})).getFingerprint().toLowerCase();
@@ -55,7 +72,7 @@
   function confirm(messageId,envelope,transferId='') {
     if(!nav || original!==identity() || document.hidden) return;
     const digest=window.ForumPrivateMessageHistoryCrypto.digest(envelope);
-    if(!aborter || aborter.signal.aborted) aborter=new AbortController();
+    if(!aborter || (aborter.signal.aborted && !active)) aborter=new AbortController();
     request('acknowledge',{items:[{message_id:messageId,digest,transfer_id:transferId}]},generation).then(()=>{
       const key=messageId+':'+digest;
       if(!verifiedIds.has(key)) {verifiedIds.add(key);stats.verified++;publish(stats.state);}
@@ -80,7 +97,8 @@
     if(!crypto || !valid(current)) return;
     aborter=new AbortController();
     const deadline=Date.now()+10000;
-    const timer=setTimeout(()=>aborter.abort(),15000);
+    const lifecycle=aborter;const timer=setTimeout(()=>lifecycle.abort(),15000);
+    stats.unavailable=0;
     publish('working');
     try {
       const privateKey=localStorage.getItem('forum_pki_private_key')||'';
@@ -97,6 +115,7 @@
           try {
             const result=await ownKeys(row,privateKey);
             receipts.push({message_id:row.message_id,digest:row.digest,transfer_id:result.transfer_id});
+            if(result.transfer_id) document.dispatchEvent(new CustomEvent('private-message-history-restored',{detail:{messageId:row.message_id}}));
             if(!verifiedIds.has(row.message_id+':'+row.digest)) {verifiedIds.add(row.message_id+':'+row.digest);stats.verified++;}
             if(work.target!==fingerprint) entries.push({message_id:row.message_id,digest:row.digest,keys:result.keys});
           } catch (_) { stats.unavailable++; }

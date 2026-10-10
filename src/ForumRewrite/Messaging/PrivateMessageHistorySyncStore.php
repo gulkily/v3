@@ -24,6 +24,7 @@ final class PrivateMessageHistorySyncStore
     }
     public function advance(string $account, string $source, string $target, string $after): void
     {
+        if($this->checkpoint($account,$source)===['target'=>$target,'after_id'=>$after]) return;
         $q=$this->pdo->prepare('INSERT INTO history_sync_scan VALUES (?,?,?,?) ON CONFLICT(account,source) DO UPDATE SET target=excluded.target,after_id=excluded.after_id WHERE target!=excluded.target OR after_id!=excluded.after_id');
         $q->execute([$account,$source,$target,$after]);
     }
@@ -50,7 +51,7 @@ final class PrivateMessageHistorySyncStore
                 $q->execute([$account,$source,$target,$item['message_id']]);
                 if($prior=$q->fetchColumn()) $old[]=$prior;
                 // Keep acknowledged ciphertext reachable; unconfirmed bad uploads can be replaced.
-                $q=$this->pdo->prepare("INSERT INTO history_sync_items VALUES (?,?,?,?,?,?) ON CONFLICT(account,source,target,message_id) DO UPDATE SET digest=excluded.digest,transfer_id=excluded.transfer_id WHERE NOT EXISTS(SELECT 1 FROM history_sync_coverage c WHERE c.account=history_sync_items.account AND c.target=history_sync_items.target AND c.message_id=history_sync_items.message_id AND c.digest=history_sync_items.digest AND c.transfer_id=history_sync_items.transfer_id)");
+                $q=$this->pdo->prepare("INSERT INTO history_sync_items VALUES (?,?,?,?,?,?) ON CONFLICT(account,source,target,message_id) DO UPDATE SET digest=excluded.digest,transfer_id=excluded.transfer_id WHERE history_sync_items.digest!=excluded.digest OR NOT EXISTS(SELECT 1 FROM history_sync_coverage c JOIN history_sync_transfers t ON t.transfer_id=c.transfer_id WHERE c.account=history_sync_items.account AND c.target=history_sync_items.target AND c.message_id=history_sync_items.message_id AND c.digest=history_sync_items.digest AND c.transfer_id=history_sync_items.transfer_id)");
                 $q->execute([$account,$source,$target,$item['message_id'],$item['digest'],$id]);
             }
             foreach(array_unique(array_merge($old,[$id])) as $candidate) {

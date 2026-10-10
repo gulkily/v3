@@ -118,6 +118,50 @@ final class PrivateMessageHistorySyncTest
         assertSame(['confirmed'=>1],$service->acknowledge($this->viewer(),$receipt));
         assertSame(false,in_array('m01',array_column($service->work($this->viewer())['messages'],'message_id'),true));
     }
+    public function testMismatchedRestoresReopenCoverageAndAllowFreshDonations(): void
+    {
+        [$profiles,$messages,$sync,$service,$db,$syncDb]=$this->fixture();
+        $input=$this->uploadInput();
+        $transfer=$service->upload($this->viewer(),$input);
+        $service->acknowledge($this->viewer('b'),['items'=>[$input['items'][0]+$transfer]]);
+        // A partial sync restore can leave a receipt/index with no retained ciphertext.
+        $syncDb->exec('DELETE FROM history_sync_transfers');
+        $replacement=$service->upload($this->viewer(),$this->uploadInput('fresh after lost bundle'));
+        assertSame($replacement['transfer_id'],$service->transfers($this->viewer('b'),['message_id'=>'m01'])['transfers'][0]['transfer_id']);
+        $service->acknowledge($this->viewer('b'),['items'=>[$input['items'][0]+$replacement]]);
+        // The other database may be restored to a different envelope under the same stable ID.
+        $db->exec("UPDATE private_messages SET encrypted_envelope='different capture' WHERE message_id='m01'");
+        $changed=$this->uploadInput('fresh after different envelope');
+        $changed['items'][0]['digest']=hash('sha256','different capture');
+        $replacement=$service->upload($this->viewer(),$changed);
+        assertSame($replacement['transfer_id'],$service->transfers($this->viewer('b'),['message_id'=>'m01'])['transfers'][0]['transfer_id']);
+        $db->exec("DELETE FROM private_messages WHERE message_id='m01'");
+        try {$service->transfers($this->viewer('b'),['message_id'=>'m01']);throw new Exception('Orphan exposed');} catch(InvalidArgumentException $expected) {}
+    }
+    public function testPartialDonorsRevisitGapsAndStaleKeyMessagesWithoutPermanentFailures(): void
+    {
+        [$profiles,$messages,$sync,$service]=$this->fixture();
+        $profiles->exec("UPDATE profiles SET username_token='alice' WHERE public_key='KEY-d'");
+        $target=str_repeat('b',40);
+        // Two sources cover disjoint portions; nothing is covered until the target verifies it.
+        foreach(['a'=>[1,3,5],'d'=>[2,4,6]] as $donor=>$ids) foreach($ids as $n) {
+            $input=$this->uploadInput('partial-'.$n);
+            $input['items']=[['message_id'=>sprintf('m%02d',$n),'digest'=>hash('sha256','cipher-'.$n)]];
+            $transfer=$service->upload($this->viewer($donor),$input);
+            $service->acknowledge($this->viewer('b'),['items'=>[$input['items'][0]+$transfer]]);
+        }
+        $sync->advance('alice',str_repeat('a',40),$target,'');
+        assertSame(['m07','m08','m09','m10'],array_column($service->work($this->viewer())['messages'],'message_id'));
+        // New work sorting behind the checkpoint is eventually reached after rotation.
+        $messages->storeEnvelope('m00','later','bob','alice','old-key','stale-key-cipher');
+        $seen=[];
+        for($i=0;$i<13;$i++) {
+            $page=$service->work($this->viewer());
+            if($page['target']===$target) $seen=array_merge($seen,array_column($page['messages'],'message_id'));
+            $service->acknowledge($this->viewer(),['items'=>[],'checkpoint'=>$page['checkpoint']]);
+        }
+        assertSame(true,in_array('m00',$seen,true));assertSame(true,in_array('m31',$seen,true));
+    }
     public function testConcurrentSyncWritesLeaveForegroundMessageStoreResponsive(): void
     {
         $root=sys_get_temp_dir().'/history-concurrent-'.bin2hex(random_bytes(5));mkdir($root,0700);
