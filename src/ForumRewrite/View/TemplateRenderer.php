@@ -154,6 +154,7 @@ final class TemplateRenderer
                 '/assets/openpgp_loader.js', '/assets/browser_signing.js',
                 '/assets/private_message_unread.js', '/assets/private_message_history_crypto.js',
                 '/assets/private_message_history_sync.js',
+                '/assets/private_message_history_status.js',
             ]);
         }
         $scriptPaths = array_values(array_unique($scriptPaths));

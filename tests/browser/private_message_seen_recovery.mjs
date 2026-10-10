@@ -41,7 +41,7 @@ export async function checkSeenRecovery(page, context, device, base, seed, incom
   releaseRead();
   await page.getByRole('button', { name: 'Retry seen status', exact: true }).waitFor();
   await page.getByRole('button', { name: 'Retry seen status', exact: true }).click();
-  await page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]').dataset.readState === 'acknowledged');
+  await page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]')?.dataset.readState === 'acknowledged');
   assert.equal((await unread()).conversations.bob, true, 'Retry cannot clear a later arrival');
   releaseSend();
   await page.getByText('Send pending during seen recovery', { exact: true }).waitFor();
@@ -54,22 +54,22 @@ export async function checkSeenRecovery(page, context, device, base, seed, incom
       json: failure === 'malformed' ? { status: 'ok', viewer: 'alice' } : { status: 'error', reopen: failure === 'reopen' } });
     await page.route('**/api/private_messages/read', block);
     await page.reload();
-    await page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]').dataset.readState === 'failed');
+    await page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]')?.dataset.readState === 'failed');
     assert.equal(await page.locator('textarea').inputValue(), 'Newer draft during seen recovery');
     assert.equal((await unread()).conversations.bob, true);
     await page.unroute('**/api/private_messages/read', block);
   }
   await page.getByRole('link', { name: 'Reopen conversation', exact: true }).click();
-  await page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]').dataset.readState === 'acknowledged');
+  await page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]')?.dataset.readState === 'acknowledged');
   assert.equal(await page.locator('textarea').inputValue(), 'Newer draft during seen recovery');
   assert.equal((await unread()).conversations.bob, false);
   await page.locator('textarea').fill('');
 
   await page.getByRole('link', { name: 'Messages', exact: true }).click();
-  await page.waitForFunction(() => document.querySelector('[data-private-message-unread]').dataset.unreadState === 'ready');
+  await page.waitForFunction(() => document.querySelector('[data-private-message-unread]')?.dataset.unreadState === 'ready');
   const otherPage = await device.newPage();
   await otherPage.goto(base + '/messages');
-  await otherPage.waitForFunction(() => document.querySelector('[data-private-message-unread]').dataset.unreadState === 'ready');
+  await otherPage.waitForFunction(() => document.querySelector('[data-private-message-unread]')?.dataset.unreadState === 'ready');
   add('seen-reversed-refresh');
   let release, arrived, first = true;
   const ready = new Promise(resolve => { arrived = resolve; });
@@ -102,13 +102,13 @@ export async function checkSeenRecovery(page, context, device, base, seed, incom
     localStorage.setItem('forum_pki_public_key', 'changed identity');
     dispatchEvent(new StorageEvent('storage', { key: 'forum_pki_public_key' }));
   });
-  await page.waitForFunction(() => document.querySelector('[data-private-message-unread]').dataset.unreadState === 'unavailable');
+  await page.waitForFunction(() => document.querySelector('[data-private-message-unread]')?.dataset.unreadState === 'unavailable');
   assert.equal(await page.locator('[data-private-message-unread]').getAttribute('data-unread-count'), null);
   await page.evaluate(() => {
     localStorage.setItem('forum_pki_public_key', window.savedUnreadKey);
     dispatchEvent(new StorageEvent('storage', { key: 'forum_pki_public_key' }));
   });
-  await page.waitForFunction(() => document.querySelector('[data-private-message-unread]').dataset.unreadState === 'ready');
+  await page.waitForFunction(() => document.querySelector('[data-private-message-unread]')?.dataset.unreadState === 'ready');
   const wrongViewer = route => route.fulfill({ json: { status: 'ok', viewer: 'outsider', unread_count: 999, conversations: {}, revision: 'wrong' } });
   await page.route('**/api/private_messages/unread?*', wrongViewer);
   await page.evaluate(() => window.ForumPrivateMessageUnread.refresh());

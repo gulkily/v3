@@ -172,7 +172,7 @@
         card.querySelector('[data-role="private-message-reader-error"]').hidden = true;
         explanation.textContent = message + (state === 'decryption-failed'
           ? ' This can happen if you started using this device or browser after the message was sent.' : '') +
-          ' Try opening this message on a device or browser you used before it was sent—it may still have the key needed to read it. If you have a saved copy of that private key, restoring it in this browser may also help.';
+          ' Visit this site on a device that can still read the message, then retry history here. If no device has access, a saved copy of the original private key may help.';
       }
       (compact ? details : card).appendChild(retry);
     }
@@ -264,6 +264,16 @@
     }
 
     root.dataset.privateMessageReaderBound = "1";
+    function retryHistory(event) {
+      Array.from(root.querySelectorAll('[data-private-message-id]')).forEach(function (card) {
+        const state = card.dataset.readerState;
+        if (!['decryption-failed', 'unavailable', 'load-failed'].includes(state)) return;
+        if (event.detail && event.detail.messageId && event.detail.messageId !== card.dataset.privateMessageId) return;
+        readCard(mailbox, card, counterpartUsernameToken);
+      });
+    }
+    document.addEventListener('private-message-history-restored', retryHistory);
+    document.addEventListener('private-message-history-retry-readers', retryHistory);
     Promise.allSettled(Array.from(root.querySelectorAll("[data-private-message-id]")).map(function (card) {
       cardCursors.set(card, root.dataset.historyPageCursor || '');
       return readCard(mailbox, card, counterpartUsernameToken);
