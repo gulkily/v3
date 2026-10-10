@@ -14,3 +14,8 @@
 - Changes: Added a shared-write-lock and repository-lock guarded runner with private staged payloads, atomic recovery journal, recorded import ownership, conflict review copies, and commit crash-window detection. Resume preserves divergent/unrelated edits and completes publication even when no new records remain.
 - Verification: `php tests/run.php ContentImportRecoveryTest` — 3/3 passed, covering four injected interruption boundaries, one-commit recovery, divergent edits, preview, duplicate-only repeat, and contention on the normal writer lock. PHP lint/diff checks passed.
 - Notes: `--resume` will recover saved payloads without downloading the source again. Recovery state is under the destination's private `.git/instance-import/`; no application database/schema changes.
+
+## Stage 4 - Publication and publication recovery
+- Changes: Import publication uses validated read-model candidates, complete static releases, and standalone snapshot/update publishers. Added an explicitly caller-locked candidate promotion path to avoid reacquiring the writer lock. Private destinations publish only the read model.
+- Verification: `php tests/run.php ImportedContentPublicationTest ReadModelCandidateBuilderTest` — 5/5 passed, including five injected publication failures followed by saved-run recovery, actual static tag content, served snapshot selection/content, unchanged commit count, and private-destination exclusion. PHP lint/diff checks passed.
+- Notes: Board default views can filter unliked content; verification uses the ordinary general-tag page and offline content, preserving existing local visibility rules. Failed activation/publication leaves the recovery journal in place until a complete retry succeeds.
