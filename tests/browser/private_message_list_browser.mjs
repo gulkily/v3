@@ -9,6 +9,7 @@ import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { chromium } from 'playwright-core';
 import { checkChatLayout } from './private_message_chat_layout.mjs';
+import { checkChatRecovery } from './private_message_chat_recovery.mjs';
 
 const project = resolve(new URL('../..', import.meta.url).pathname);
 runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
@@ -142,6 +143,12 @@ try {
     console.log('Chat baseline:', JSON.stringify(density));
   }
   await checkChatLayout(page, root);
+  await checkChatRecovery(page, context, base, root, seed, {
+    valid: incoming,
+    long: await encrypt(bob, 'Long incoming line\n' + 'longword'.repeat(100)),
+    invalid: await encrypt(outsider, 'Unverified chat secret'),
+    unsigned: await openpgp.encrypt({ message: await openpgp.createMessage({ text: 'Unsigned chat secret' }), encryptionKeys: [alice.public, bob.public], format: 'armored' }),
+  });
   await page.getByRole('link', { name: 'Back to Messages' }).click();
   await page.waitForFunction(() => document.querySelector('[data-role="list-status"]').textContent === '25 conversations loaded.');
   assert.equal(await list.first().getAttribute('data-counterpart'), 'bob');
@@ -188,8 +195,16 @@ try {
   const outsiderContext = await browser.newContext();
   await authenticate(outsiderContext, outsider);
   assert.equal((await (await outsiderContext.request.get(base + '/api/private_messages/conversations')).json()).conversations.length, 0);
+  for (const path of ['/user/bob', '/profiles/openpgp-' + bob.fingerprint]) {
+    await page.goto(base + path);
+    await page.locator('[data-private-message-composer] textarea').fill('Shared composer compatibility');
+    await page.getByRole('button', { name: 'Send private message', exact: true }).click();
+    await page.getByText('Private message sent.', { exact: true }).waitFor();
+    assert.equal(new URL(page.url()).pathname, path);
+    assert.equal(await page.locator('[data-private-message-composer] textarea').inputValue(), '');
+  }
   assert.deepEqual(errors, []);
-  await writeFile(join(root, 'report.json'), JSON.stringify({ passed: true, checks: 'normal entry, real encrypted first send/reply, recovery, snapshot pagination, signatures, authorization, redirects, mobile', screenshots: ['messages-desktop.png', 'messages-mobile.png'] }, null, 2));
+  await writeFile(join(root, 'report.json'), JSON.stringify({ passed: true, checks: 'normal entry, inline encrypted replies, lost acknowledgment with reload/new draft, isolated read recovery, invalid/missing signatures, delayed decryption/navigation, keyboard/zoom/scroll, shared composers, snapshot pagination, authorization, isolation', screenshots: ['messages-desktop.png', 'messages-mobile.png', 'chat-desktop.png', 'chat-mobile.png', 'chat-recovery-mobile.png'] }, null, 2));
   console.log(`Browser checks passed. Artifacts: ${root}`);
 } catch (error) {
   console.error(`Browser artifacts: ${root}`);

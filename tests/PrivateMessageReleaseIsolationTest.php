@@ -29,6 +29,8 @@ final class PrivateMessageReleaseIsolationTest
                 $html = (string) file_get_contents($path);
                 assertStringNotContains('private_message_reader', $html);
                 assertStringNotContains('private_message_list', $html);
+                assertStringNotContains('private_message_conversation', $html);
+                assertStringNotContains('data-private-message-composer', $html);
                 assertStringNotContains('message_time', $html);
                 assertStringNotContains('private_messages.js', $html);
                 assertStringNotContains('href="/messages', $html);

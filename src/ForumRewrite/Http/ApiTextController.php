@@ -50,7 +50,11 @@ final class ApiTextController
             . "\nPrivate conversation lists require an approved authenticated identity; responses are no-store.\n"
             . "Success: {status: ok, conversations: [...], page_cursor: ..., next_cursor: ...}. Each row contains counterpart and latest message metadata plus encrypted_envelope; decrypt and verify locally.\n"
             . "Pages contain at most 25 counterparts ordered by latest activity (insertion order breaks timestamp ties). Pass next_cursor unchanged to continue; null means complete. page_cursor replays the current page.\n"
-            . "Pagination preserves the opening snapshot. Omit cursor to refresh activity. Invalid cursors return HTTP 400 with restart: true; discard the old list and start again. Authentication failures return 401/403.\n",
+            . "Pagination preserves the opening snapshot. Omit cursor to refresh activity. Invalid cursors return HTTP 400 with restart: true; discard the old list and start again. Authentication failures return 401/403.\n"
+            . "\nPOST /api/private_messages accepts message_id, recipient_username_token, and encrypted_envelope for an approved authenticated sender. Success is HTTP 201 with {status: ok, message: {message_id, created_at, sender_username_token, recipient_username_token}}; responses are no-store.\n"
+            . "Retry an uncertain send with the SAME message ID and exact encrypted envelope under the same sending identity. An already accepted attempt returns its original metadata, even after recipient key eligibility changes. A conflicting identity, recipient, or envelope returns HTTP 400 without replacing the message. New attempts still require approved recipient keys.\n"
+            . "Do not re-encrypt retries: encryption produces different ciphertext. Changed content is a new attempt with a new ID. Delivery confirmation does not establish signature verification; decrypt and verify in the browser.\n"
+            . "The conversation API returns the latest 25 messages in chronological order, with insertion order breaking timestamp ties. Older-history pagination and unread state are not provided.\n",
             200
         );
     }

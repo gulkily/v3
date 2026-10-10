@@ -16,6 +16,13 @@ if (PHP_SAPI !== 'cli') {
 }
 $root = $argv[1];
 $input = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
+if (($input['action'] ?? '') === 'chat') {
+    $store = new PrivateMessageStore(new PDO('sqlite:' . $root . '/state/private/messages.sqlite3'));
+    foreach ($input['messages'] as $message) {
+        $store->storeEnvelope($message['id'], $message['time'], $message['sender'], 'alice', 'fixture-sender', $message['envelope']);
+    }
+    exit;
+}
 if (($input['action'] ?? '') === 'arrive') {
     $store = new PrivateMessageStore(new PDO('sqlite:' . $root . '/state/private/messages.sqlite3'));
     $store->storeEnvelope('arrival', gmdate('Y-m-d\TH:i:s\Z'), 'user-01', 'alice', 'fixture-sender', $input['envelope']);

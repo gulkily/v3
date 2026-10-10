@@ -141,6 +141,7 @@
       if (!pending && plaintext.trim() === "") { setFeedback(feedback, "A private message cannot be empty.", "error"); return; }
       const snapshotVersion = pending ? pending.snapshotVersion : version;
       const messageId = pending ? pending.messageId : newMessageId();
+      const focusedControl = document.activeElement;
       submitting = true;
       if (button) button.disabled = true;
       recovery();
@@ -170,6 +171,10 @@
         submitting = false;
         if (button) button.disabled = false;
         recovery();
+        if ((focusedControl === button || focusedControl === retry) && document.activeElement === document.body) {
+          const target = focusedControl === retry && !pending ? button : focusedControl;
+          if (target && target.focus) target.focus({ preventScroll: true });
+        }
       }
     }
     form.addEventListener("submit", function (event) { return send(event, false); });

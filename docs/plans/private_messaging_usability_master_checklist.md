@@ -8,7 +8,7 @@ Use this checklist to track coverage across the releases and the
 implement each release.
 
 This is a coordination checklist. Individual FDP requirements, development plans,
-and implementation approvals remain separate. Cycle 1 is complete; Cycles 2–4 are pending.
+and implementation approvals remain separate. Cycles 1–2 are complete; Cycles 3–4 are pending.
 Check items off when their acceptance criteria are verified, and link the relevant
 FDP artifacts and verification evidence here as each cycle progresses.
 
@@ -17,7 +17,7 @@ FDP artifacts and verification evidence here as each cycle progresses.
 | Cycle | User outcome | Starting point | Status |
 | --- | --- | --- | --- |
 | 1 | Find a conversation or start one from Messages | [Plan](./private_message_conversation_list/private_message_conversation_list_step3_development_plan.md) · [Implementation and verification](./private_message_conversation_list/private_message_conversation_list_step4_implementation_summary.md) | Complete |
-| 2 | Read and reply comfortably without reloading | Step 2 unless interaction choices need Step 1 | Pending |
+| 2 | Read and reply comfortably without reloading | [Plan](./private_message_chat_refinement/private_message_chat_refinement_step3_development_plan.md) · [Implementation and verification](./private_message_chat_refinement/private_message_chat_refinement_step4_implementation_summary.md) | Complete on feature branch; awaiting merge review |
 | 3 | Retrieve messages older than the initial history window | Step 2 unless pagination choices need Step 1 | Pending |
 | 4 | See reliable unread indicators and counts | Step 1 to settle read semantics and persistence | Pending |
 
@@ -89,34 +89,36 @@ one. No unread badge is promised in this release.
 Outcome: opening a conversation presents recent messages clearly and makes
 replying convenient, with recoverable failures and no successful-send reload.
 
-- [ ] Replace tall cards and repeated To, From, and Sent labels with compact
+Evidence: [Cycle 2 implementation summary](./private_message_chat_refinement/private_message_chat_refinement_step4_implementation_summary.md). Browser checks include constrained mobile viewports and zoom; physical-device keyboard testing remains a manual follow-up.
+
+- [x] Replace tall cards and repeated To, From, and Sent labels with compact
   directional messages using alignment, background, and accessible sender cues.
   Group consecutive messages by sender and add local-date separators.
-- [ ] Show small friendly local timestamps beside messages, retaining exact
+- [x] Show small friendly local timestamps beside messages, retaining exact
   `<time datetime>` values and exact timestamps on hover.
-- [ ] Compare the same representative transcript and viewport before and after;
+- [x] Compare the same representative transcript and viewport before and after;
   aim for roughly three to four times as many short messages per screen while
   preserving legibility and handling long or multiline messages.
-- [ ] Settle scrolling and composer placement in planning. Show the newest message
+- [x] Settle scrolling and composer placement in planning. Show the newest message
   after decryption changes layout, keep replying easy, avoid interrupting someone
   reading earlier messages, and avoid opening the mobile keyboard automatically.
-- [ ] Remove the redundant composer heading and visible Message label in the
+- [x] Remove the redundant composer heading and visible Message label in the
   conversation context while preserving an accessible textarea name. Start at
   two or three rows, grow with content, and show a useful placeholder.
-- [ ] Use Ctrl/Cmd+Enter to send, with Enter and Shift+Enter inserting newlines.
+- [x] Use Ctrl/Cmd+Enter to send, with Enter and Shift+Enter inserting newlines.
   Keep the Send button and account for input-method composition.
-- [ ] Place the encryption explanation on a single muted line beneath the box.
-- [ ] Append a successfully sent message in place using the server-confirmed
+- [x] Place the encryption explanation on a single muted line beneath the box.
+- [x] Append a successfully sent message in place using the server-confirmed
   identity and timestamp; keep drafts recoverable on failure and avoid clearing
   newer text typed while a send is in progress.
-- [ ] Validate retry after a request whose server outcome is uncertain; recover
+- [x] Validate retry after a request whose server outcome is uncertain; recover
   without duplicate messages or a misleading success state.
-- [ ] Correct "Siganture verified" to "Signature verified" in tooltip and
+- [x] Correct "Siganture verified" to "Signature verified" in tooltip and
   accessible text wherever it remains. Keep verified marks quiet and make missing
   or invalid signatures prominent with an explanation.
-- [ ] Show readable per-message decryption errors with a working retry action;
+- [x] Show readable per-message decryption errors with a working retry action;
   a failed message must not prevent other messages from being read.
-- [ ] Verify successful append, failed-send draft recovery, uncertain-send retry,
+- [x] Verify successful append, failed-send draft recovery, uncertain-send retry,
   mixed verification results, decryption retry, mobile scrolling, keyboard use,
   and existing profile and aggregate-user composer behavior.
 
@@ -177,4 +179,4 @@ correct across refreshes and supported browser or device transitions.
 - [ ] Confirm focused automated checks and browser checks cover the changed
   behavior, encryption and authorization boundaries, accessibility, and recovery.
 
-Next action: begin Cycle 2's Step 2 feature description, using Step 1 first if interaction choices need assessment.
+Next action: review Cycle 2's [implementation and verification](./private_message_chat_refinement/private_message_chat_refinement_step4_implementation_summary.md) for merge. Then begin Cycle 3's FDP planning for older-history retrieval; do not mark that deferred work complete.

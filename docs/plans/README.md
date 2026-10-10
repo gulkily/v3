@@ -44,6 +44,7 @@ or standalone plans remain at this level until they reach that threshold.
 - [Pending user latest activity](pending_user_latest_activity/)
 - [Platform docs](platform_docs/)
 - [Private message conversation list](private_message_conversation_list/)
+- [Private message chat refinement](private_message_chat_refinement/)
 - [Private-window lobby fallback](private_window_lobby_fallback/)
 - [QDB archive importer](qdb_archive_importer/)
 - [QDB numeric permalinks](qdb_numeric_permalinks/)

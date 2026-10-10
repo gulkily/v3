@@ -18,31 +18,27 @@ final class PrivateMessageStoreTest
 
     public function testConcurrentAcceptanceKeepsOneOriginalEnvelope(): void
     {
-        if (!function_exists('pcntl_fork')) {
-            throw new RuntimeException('Concurrent acceptance test requires pcntl.');
-        }
         $path = tempnam(sys_get_temp_dir(), 'private-message-race-');
         $attempt = ['message_id' => 'race', 'created_at' => '2026-10-09T12:00:00Z',
             'sender_username_token' => 'alice', 'recipient_username_token' => 'bob',
             'sender_identity_id' => 'alice-key', 'encrypted_envelope' => 'cipher'];
         $store = new PrivateMessageStore(new PDO('sqlite:' . $path));
         $children = [];
+        $script = 'require ' . var_export(__DIR__ . '/../autoload.php', true) . ';'
+            . '$store = new ForumRewrite\\Messaging\\PrivateMessageStore(new PDO(' . var_export('sqlite:' . $path, true) . '));'
+            . '$result = $store->acceptEnvelope(' . var_export($attempt, true) . ');'
+            . 'exit($result["message_id"] === "race" ? 0 : 1);';
         try {
             for ($i = 0; $i < 4; $i++) {
-                $pid = pcntl_fork();
-                if ($pid === -1) {
-                    throw new RuntimeException('Unable to fork race fixture.');
-                }
-                if ($pid === 0) {
-                    $child = new PrivateMessageStore(new PDO('sqlite:' . $path));
-                    $result = $child->acceptEnvelope($attempt);
-                    exit($result['message_id'] === 'race' ? 0 : 1);
-                }
-                $children[] = $pid;
+                $process = proc_open([PHP_BINARY, '-r', $script], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+                if (!is_resource($process)) throw new RuntimeException('Unable to start race fixture.');
+                $children[] = [$process, $pipes];
             }
-            foreach ($children as $pid) {
-                pcntl_waitpid($pid, $status);
-                assertSame(0, pcntl_wexitstatus($status));
+            foreach ($children as [$process, $pipes]) {
+                $output = stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]);
+                fclose($pipes[1]);
+                fclose($pipes[2]);
+                assertSame(0, proc_close($process), $output);
             }
             assertSame(1, count($store->sentBy('alice')));
         } finally {

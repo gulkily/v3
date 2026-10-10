@@ -8,7 +8,7 @@ Looks good, please merge into main and write Step 1 of the next one.
 
 ## Understood Intent
 
-Cycle 1 is merged into local `main`. Assess Cycle 2 of the [master checklist](./private_messaging_usability_master_checklist.md): make existing conversations comfortable to read and reply to, with compact presentation, local timestamps, inline sending, and recoverable failures. Older-history retrieval and unread tracking remain in Cycles 3 and 4.
+Cycle 1 is merged into local `main`. Assess Cycle 2 of the [master checklist](../private_messaging_usability_master_checklist.md): make existing conversations comfortable to read and reply to, with compact presentation, local timestamps, inline sending, and recoverable failures. Older-history retrieval and unread tracking remain in Cycles 3 and 4.
 
 ## Problem Statement
 

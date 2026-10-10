@@ -37,6 +37,7 @@
     function userNavigation(event) {
       if (event.type === 'keydown' && !['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', 'Tab', ' '].includes(event.key)) return;
       navigated = true;
+      followReply = false;
     }
     ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach(type => window.addEventListener(type, userNavigation, { passive: true }));
     function viewportHeight() { return window.visualViewport ? window.visualViewport.height : window.innerHeight; }
