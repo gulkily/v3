@@ -68,11 +68,12 @@ Section: "Unread conversations" (lines 75-85).
 
 Section: "Drafts and uncertain delivery" (lines 59-65).
 
-- [ ] States: draft saved, send in flight, uncertain (network result unknown), acknowledged, conflict (rejected reuse).
-- [ ] Transitions: retry with same message ID and exact envelope; exact retry returns original ack; mismatched reuse is rejected.
-- [ ] Guard: draft cleared on success only if not edited in the meantime.
-- [ ] Show: unresolved earlier send must be checked before an edited draft is sent.
-- [ ] Verify against the idempotency rules (sender identity, username, recipient, envelope must match).
+- [x] States: draft saved, send in flight, uncertain (network result unknown), acknowledged, conflict (rejected reuse).
+- [x] Transitions: retry with same message ID and exact envelope; exact retry returns original ack; mismatched reuse is rejected.
+- [x] Guard: draft cleared on success only if not edited in the meantime.
+- [x] Show: unresolved earlier send must be checked before an edited draft is sent.
+- [x] Verify against the idempotency rules (sender identity, username, recipient, envelope must match).
+- Done: `stateDiagram-v2` with `direction TB`; renders 719x534 (about 1.35:1). `direction LR` came out 784x166 (too wide), so TB was used.
 
 ## Medium value (nice to have)
 

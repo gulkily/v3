@@ -78,6 +78,22 @@ The composer grows with its contents. Ctrl/Cmd+Enter sends, while Enter and Shif
 
 ### Drafts and uncertain delivery
 
+The diagram shows the life of one send attempt; an unresolved earlier send must be checked before an edited draft is sent.
+
+```mermaid
+stateDiagram-v2
+  direction TB
+  [*] --> Draft
+  Draft --> InFlight: send, keep ID and envelope
+  InFlight --> Uncertain: network result unknown
+  Uncertain --> InFlight: check or retry same ID
+  InFlight --> Acknowledged: server confirms
+  InFlight --> Conflict: mismatched reuse rejected
+  Acknowledged --> Cleared: draft unedited
+  Acknowledged --> Draft: edited meanwhile, keep newer text
+  Cleared --> [*]
+```
+
 Drafts are saved in browser `localStorage`, scoped to the sender and recipient username, with a check against the saved sending key. **Draft text is stored locally as plaintext.** An outstanding send also retains its message ID and exact encrypted envelope so it can be checked again after an uncertain network result.
 
 The server accepts a repeated message ID only when the authenticated sender identity, sender username, recipient, and envelope match the original attempt. An exact retry returns the original acknowledgment; a conflicting reuse is rejected. This prevents the supported retry flow from creating duplicate messages or overwriting an accepted envelope.
