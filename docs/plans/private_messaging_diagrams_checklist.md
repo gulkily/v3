@@ -81,10 +81,11 @@ Section: "Drafts and uncertain delivery" (lines 59-65).
 
 Section: "Privacy and storage boundaries" (lines 95-108).
 
-- [ ] Nodes: browser (memory, localStorage, identity storage), private SQLite, public Git repo, public read model, static and offline outputs.
-- [ ] Edges: what flows to the server (ciphertext, metadata) and what never crosses (plaintext, private keys).
-- [ ] Show private data excluded from public repo, read model, static releases, offline snapshots.
-- [ ] Verify against the existing table; keep the table.
+- [x] Nodes: browser (memory, localStorage, identity storage), private SQLite, public Git repo, public read model, static and offline outputs.
+- [x] Edges: what flows to the server (ciphertext, metadata) and what never crosses (plaintext, private keys).
+- [x] Show private data excluded from public repo, read model, static releases, offline snapshots.
+- [x] Verify against the existing table; keep the table.
+- Done: three stacked groups (browser, private server state, public outputs); renders 784x623 (about 1.26:1). Invisible `~~~` links inside rows keep nodes horizontal; without them it rendered 695x966.
 
 ### 5. Identity and key coverage (flowchart)
 

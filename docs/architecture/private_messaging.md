@@ -150,6 +150,29 @@ Grouping is a browser presentation feature: it adds no envelope format, schema, 
 
 ## Privacy and storage boundaries
 
+The diagram shows which side of each boundary holds plaintext and keys; the table below gives the detail.
+
+```mermaid
+flowchart TB
+  subgraph Browser["Browser"]
+    direction LR
+    K["Private key<br/>(identity storage)"]
+    P["Decrypted text<br/>(memory and DOM only)"]
+    L["Draft text<br/>(localStorage, plaintext)"]
+    K ~~~ P ~~~ L
+  end
+  subgraph Private["Private server state"]
+    direction LR
+    M[("Private SQLite:<br/>envelopes, routing<br/>metadata, unread state")]
+  end
+  subgraph Public["Public outputs"]
+    direction LR
+    G["Git records"] ~~~ R["Read model"] ~~~ S["Static and<br/>offline releases"]
+  end
+  Browser <-- "authenticated API:<br/>ciphertext and routing only" --> Private
+  Private -- "no private data<br/>ever published" --- Public
+```
+
 | Data | Where it lives |
 | --- | --- |
 | Encrypted message body | The private SQLite mailbox and authenticated API responses; browser memory while reading or preparing sends. A pending encrypted send can also be retained in local draft storage. |
