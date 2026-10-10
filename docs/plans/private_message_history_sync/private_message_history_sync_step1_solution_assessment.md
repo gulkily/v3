@@ -1,6 +1,8 @@
 # Private message history synchronization Step 1 solution assessment
 
-> **Feature plan:** [Step 1](./private_message_history_sync_step1_solution_assessment.md) · Step 2 pending · Step 3 pending · Step 4 pending
+> **Feature plan:** [Step 1](./private_message_history_sync_step1_solution_assessment.md) · [Step 2](./private_message_history_sync_step2_feature_description.md) · [Step 3](./private_message_history_sync_step3_development_plan.md) · Step 4 pending
+
+[Storage and synchronization findings](./private_message_history_sync_storage_findings.md) record the infrastructure review and local lock probe.
 
 ## Original Query
 
@@ -51,8 +53,8 @@ Choose **Option B**, with these planning constraints:
 
 ## New chat handoff
 
-Cycles 1–5 are merged into `main`, including compact unavailable-message groups. Start with the [master checklist](./private_messaging_usability_master_checklist.md), [approved-key resolver](../../src/ForumRewrite/Messaging/ApprovedUserKeyResolver.php), [composer](../../public/assets/private_messages.js), and [reader](../../public/assets/private_message_reader.js). The resolver currently groups approved profiles by normalized username. The [OpenPGP.js session-key documentation](https://docs.openpgpjs.org/global.html#decryptSessionKeys) supports assessing Option B; its complete application protocol is not yet validated.
+Cycles 1–5 are merged into `main`, including compact unavailable-message groups. Start with the [master checklist](../private_messaging_usability_master_checklist.md), [approved-key resolver](../../../src/ForumRewrite/Messaging/ApprovedUserKeyResolver.php), [composer](../../../public/assets/private_messages.js), and [reader](../../../public/assets/private_message_reader.js). The resolver currently groups approved profiles by normalized username. The [OpenPGP.js session-key documentation](https://docs.openpgpjs.org/global.html#decryptSessionKeys) supports assessing Option B; its complete application protocol is not yet validated.
 
-This assessment awaits **Approved Step 1**; settled policies are not implementation approval. Then follow [FDP](../fdp/FEATURE_DEVELOPMENT_PROCESS.md) Step 2. At the user's explicit request to commit progress before pausing, this Step 1 assessment is included in a checkpoint commit on `main`, an exception to the usual uncommitted Steps 1–3 workflow. This does not approve Step 1 or implementation; create the implementation branch only after **Approved Step 3**. No history-sync implementation has started.
+The user explicitly approved this assessment with **Approved Step 1** on 2026-10-10. Continue with [Step 2](./private_message_history_sync_step2_feature_description.md) under [FDP](../../fdp/FEATURE_DEVELOPMENT_PROCESS.md); implementation is not approved. At the user's earlier explicit request to commit progress before pausing, the original Step 1 assessment was included in a checkpoint commit on `main`, an exception to the usual uncommitted Steps 1–3 workflow. Keep subsequent planning changes uncommitted; create the implementation branch only after **Approved Step 3**. No history-sync implementation has started.
 
-The subsequent [instance portability assessment](./instance_portability_gap_assessment.md) catalogs export gaps and feasibility. The backup-page wording and its regression coverage were updated separately; export protocols and storage changes remain proposals.
+The subsequent [instance portability assessment](../instance_portability_gap_assessment.md) catalogs export gaps and feasibility. The backup-page wording and its regression coverage were updated separately; export protocols and storage changes remain proposals.
