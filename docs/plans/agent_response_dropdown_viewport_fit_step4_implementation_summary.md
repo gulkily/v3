@@ -21,3 +21,13 @@
   - Manual browser scroll/resize check not yet run in this environment; to be covered in Stage 3.
 - Notes:
   - Existing close paths (Escape, outside click, close button, re-click) all go through the same close function, so listeners are always removed.
+
+## Stage 3 - Cross-viewport verification and regression guard
+- Changes:
+  - None; no theme-specific margin or z-index tweak was identified, so the shared placement rule is unchanged.
+- Verification:
+  - Placement math simulated in Node for four cases: room below, near the bottom (flips above), short viewport with a tall menu, and a very short viewport. All stay within an 8px gutter; the menu scrolls internally and never drops below the 120px minimum.
+  - `php tests/LocalAppSmokeTest.php` and `php tests/WriteApiSmokeTest.php` (both reference `post_analysis.js`) exit 0.
+  - Not run: manual in-browser check of scroll-follow, auto-close and each shipped theme (no browser available in this environment).
+- Notes:
+  - Fixed headers in a theme could still overlap the menu; this needs a manual theme pass by a reviewer before release.
