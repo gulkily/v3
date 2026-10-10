@@ -43,12 +43,13 @@ Mermaid cannot link separate diagrams, so use one of these:
 
 Section: "Sending and reading a message" (lines 32-43).
 
-- [ ] Actors: sender browser, server (mailbox service), private SQLite, recipient browser.
-- [ ] Show: recipient key lookup, local encrypt and sign, `POST /api/private_messages`, store envelope, acknowledgment.
-- [ ] Show: recipient fetches envelopes, decrypts, verifies signature, then renders text.
-- [ ] Make explicit that the server never sees plaintext and does not cryptographically validate contents.
-- [ ] Verify against steps 1-6 and the paragraph after them.
-- [ ] Layout: this is the most likely to come out tall. Consider two diagrams (send, then read) or a `flowchart LR` with one subgraph per actor.
+- [x] Actors: sender browser, server (mailbox service), private SQLite, recipient browser.
+- [x] Show: recipient key lookup, local encrypt and sign, `POST /api/private_messages`, store envelope, acknowledgment.
+- [x] Show: recipient fetches envelopes, decrypts, verifies signature, then renders text.
+- [x] Make explicit that the server never sees plaintext and does not cryptographically validate contents.
+- [x] Verify against steps 1-6 and the paragraph after them.
+- [x] Layout: this is the most likely to come out tall. Consider two diagrams (send, then read) or a `flowchart LR` with one subgraph per actor.
+- Done: one flowchart, three stacked subgraphs (send, server, read) joined by two connectors; renders 783x631 (about 1.24:1). Sequence form was dropped in favor of option 1 from "Joining split diagrams".
 
 ### 2. Unread acknowledgment and receipts (sequence diagram)
 

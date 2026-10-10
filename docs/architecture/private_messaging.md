@@ -31,6 +31,26 @@ Key resolution is implemented in [ApprovedUserKeyResolver](../../src/ForumRewrit
 
 ## Sending and reading a message
 
+The diagram shows where each step happens; the server stores and relays ciphertext but never decrypts it.
+
+```mermaid
+flowchart TB
+  subgraph Send["Sender browser"]
+    direction LR
+    A["Fetch approved<br/>recipient keys"] --> B["Encrypt to all keys<br/>and sign locally"] --> C["POST armored<br/>envelope"]
+  end
+  subgraph Server["Server (never sees plaintext)"]
+    direction LR
+    D["Validate routing,<br/>eligibility, size"] --> E[("Private SQLite:<br/>store envelope")]
+  end
+  subgraph Read["Recipient browser"]
+    direction LR
+    F["Fetch envelopes<br/>for window"] --> G["Decrypt with<br/>saved private key"] --> H["Verify signature,<br/>then render text"]
+  end
+  Send -- "ciphertext only" --> Server
+  Server -- "authenticated API" --> Read
+```
+
 1. An approved authenticated member opens a conversation through Messages, a profile, or the aggregate user page.
 2. The composer checks the browser identity, retrieves participant keys, and prepares a signed encrypted envelope locally.
 3. The browser submits a message ID, recipient username, and armored envelope. The service derives the sender username and identity from the session and assigns the acceptance timestamp.
