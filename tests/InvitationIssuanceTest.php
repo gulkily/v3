@@ -98,9 +98,9 @@ NODE);
 
     public function testWord97InviteNavigationUsesAPersonAndPlusIcon(): void
     {
-        $styles = file_get_contents(__DIR__ . '/../public/assets/theme-word97.css');
+        $styles = file_get_contents(__DIR__ . '/../public/assets/theme-nav-icons.css');
 
-        assertStringContains(':root[data-theme="word97"] .nav-link[href="/invites/"]::before', $styles);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .nav-link[href="/invites/"]::before', $styles);
         assertStringContains("width='2' height='1' fill='%23000080'", $styles);
         assertStringContains("fill='%23008000'", $styles);
     }

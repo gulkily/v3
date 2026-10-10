@@ -16,8 +16,12 @@ checklist in the same commit as the stage it records.
 ## Progress
 
 - [x] Stage 0 — Checklist and branch
-- [ ] Stage 1 — Extract existing Word 97 nav/launcher icons into the shared
+- [x] Stage 1 — Extract existing Word 97 nav/launcher icons into the shared
       stylesheet; load it for both themes, so Chicago gets the same icons
+      (`public/assets/theme-nav-icons.css`, scoped with
+      `:root:is([data-theme="word97"], [data-theme="chicago"])`, linked from
+      `templates/layout.php`; icon selector tests repointed; full suite shows
+      only the same 5 failures as `main`)
 - [ ] Stage 2 — Draw icons for navigation buttons that have none in Word 97
       (they then appear in both themes via the shared file)
 - [ ] Stage 3 — Verify Chicago has every icon and fill any gaps / spacing
