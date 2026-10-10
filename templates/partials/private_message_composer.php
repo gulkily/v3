@@ -18,4 +18,5 @@
     <button type="submit">Send private message</button>
   </form>
   <p class="meta" data-role="private-message-feedback" hidden></p>
+  <button type="button" data-role="private-message-send-retry" hidden>Check previous send</button>
 </article>

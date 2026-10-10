@@ -12,6 +12,12 @@ use ForumRewrite\View\TemplateRenderer;
 
 final class PrivateMessageComposerTest
 {
+    public function testPendingEditsReloadRecoveryAndIdentityIsolation(): void
+    {
+        exec('node ' . escapeshellarg(__DIR__ . '/browser/private_message_compose.cjs') . ' ' . escapeshellarg(__DIR__ . '/../public/assets/private_message_compose.js') . ' 2>&1', $output, $code);
+        assertSame(0, $code, implode("\n", $output));
+    }
+
     /** @return array<string, mixed> */
     private function runScript(string $script): array
     {
@@ -69,10 +75,10 @@ window.ForumPrivateMessageComposer.bind(root);
 const event = { preventDefault() {} };
 (async () => {
   await formListeners.submit(event);
-  const failedDraft = values.get('forum_private_message_draft:ilyag');
+  const failedDraft = values.get('forum_private_message_draft:alice:ilyag');
   shouldFail = false;
   await formListeners.submit(event);
-  process.stdout.write(JSON.stringify({ calls, failedDraft, finalDraft: values.get('forum_private_message_draft:ilyag') || null, textarea: textarea.value, feedback: feedback.textContent, redirect }));
+  process.stdout.write(JSON.stringify({ calls, failedDraft, finalDraft: values.get('forum_private_message_draft:alice:ilyag') || null, textarea: textarea.value, feedback: feedback.textContent, redirect }));
 })().catch((error) => { process.stderr.write(error.stack || String(error)); process.exit(1); });
 NODE;
 
