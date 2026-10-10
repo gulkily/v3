@@ -46,7 +46,10 @@ final class PrivateMessagePageController
             return;
         }
         $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('private_message_list.php',
-            ['page' => $page, 'viewerProfile' => $viewer], 'Messages', 'messages', ['/assets/private_message_list.js']), 200, $this->routeServices->noStoreHeaders());
+            ['page' => $page, 'viewerProfile' => $viewer], 'Messages', 'messages', [
+                '/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_messages.js',
+                '/assets/private_message_reader.js', '/assets/message_time.js', '/assets/private_message_list.js',
+            ]), 200, $this->routeServices->noStoreHeaders());
     }
 
     public function sent(string $method): void

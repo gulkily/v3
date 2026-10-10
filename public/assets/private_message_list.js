@@ -16,6 +16,45 @@
     }));
     let cursor = root.dataset.pageCursor;
     let loading = false;
+    const senderKeys = new Map();
+
+    async function preview(row, message) {
+      const text = row.querySelector('[data-role="preview"]');
+      const verified = row.querySelector('[data-role="verification"]');
+      const retryPreview = row.querySelector('[data-action="retry-preview"]');
+      text.textContent = 'Decrypting preview…';
+      text.className = 'message-preview meta';
+      verified.hidden = true;
+      retryPreview.hidden = true;
+      let result;
+      try {
+        if (!senderKeys.has(message.sender_username_token)) {
+          const request = window.ForumPrivateMessages.recipientKeys(message.sender_username_token);
+          senderKeys.set(message.sender_username_token, request);
+          request.catch(function () { senderKeys.delete(message.sender_username_token); });
+        }
+        result = await window.ForumPrivateMessageReader.decryptEnvelope({
+          encryptedEnvelope: message.encrypted_envelope,
+          senderPublicKeyArmors: await senderKeys.get(message.sender_username_token),
+        });
+      } catch (error) {
+        result = { kind: 'unavailable', message: 'Preview unavailable. Sender keys could not be loaded. Try again.' };
+      }
+      if (row.dataset.messageId !== message.message_id) return;
+      if (result.kind === 'verified') {
+        const prefix = message.sender_username_token === root.dataset.viewer ? 'You: ' : '';
+        text.textContent = prefix + result.plaintext.replace(/\s+/gu, ' ').trim().slice(0, 200);
+        verified.hidden = false;
+      } else {
+        text.textContent = result.message || 'This message could not be verified.';
+        text.className = 'message-preview feedback feedback-error';
+        retryPreview.hidden = false;
+      }
+      retryPreview.onclick = function () {
+        senderKeys.delete(message.sender_username_token);
+        return preview(row, message);
+      };
+    }
 
     function render(message) {
       let row = rendered.get(message.counterpart);
@@ -31,6 +70,8 @@
       const time = row.querySelector('[data-role="time"]');
       time.dateTime = message.created_at;
       time.textContent = message.created_at;
+      window.ForumMessageTime.render(time, message.created_at);
+      return preview(row, message);
     }
 
     async function load() {
@@ -50,7 +91,7 @@
           if (payload && payload.restart) restart.hidden = false;
           throw new Error(String(payload && payload.error || 'Unable to load conversations. Try again.'));
         }
-        payload.conversations.forEach(render);
+        await Promise.all(payload.conversations.map(render));
         cursor = payload.next_cursor;
         more.hidden = cursor === null;
         empty.hidden = rendered.size !== 0;
