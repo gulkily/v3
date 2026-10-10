@@ -71,6 +71,7 @@
           request.catch(function () { senderKeys.delete(message.sender_username_token); });
         }
         result = await window.ForumPrivateMessageReader.decryptEnvelope({
+          messageId: message.message_id,
           encryptedEnvelope: message.encrypted_envelope,
           senderPublicKeyArmors: await senderKeys.get(message.sender_username_token),
         });
