@@ -1,7 +1,7 @@
 <section class="stack" data-private-message-mailbox data-mailbox="conversation" data-counterpart-username-token="<?= $e($counterpartUsernameToken) ?>">
   <article class="card">
-    <h1>Conversation with <?= $e($counterpartUsernameToken) ?></h1>
-    <p><a href="/messages/inbox">Inbox</a> · <a href="/messages/sent">Sent</a></p>
+    <h1>Conversation with <a href="/user/<?= $e(rawurlencode($counterpartUsernameToken)) ?>"><?= $e($counterpartUsernameToken) ?></a></h1>
+    <p><a href="/messages">Back to Messages</a></p>
   </article>
 <?php if ($messages === []): ?>
   <article class="card"><p>No private messages with this user yet.</p></article>

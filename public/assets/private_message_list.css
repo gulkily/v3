@@ -1,0 +1,67 @@
+[data-conversation-list] .message-list-row {
+  padding: 0;
+  min-width: 0;
+}
+.message-list-link {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 0.4rem 0.6rem;
+  padding: 0.9rem;
+  color: inherit;
+  text-decoration: none;
+}
+.message-list-link:hover {
+  background: var(--button-alt-bg);
+}
+.message-list-link:focus-visible,
+[data-conversation-list] summary:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.message-list-link strong {
+  overflow-wrap: anywhere;
+}
+.message-list-link time {
+  grid-column: 3;
+}
+.message-list-link [data-role="preview"] {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.message-list-link .feedback-error {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+[data-action="retry-preview"] {
+  margin: 0 0.9rem 0.9rem;
+}
+[data-conversation-list] summary {
+  cursor: pointer;
+  width: fit-content;
+  padding: 0.5rem 0;
+  font-weight: bold;
+}
+[data-role="recipient-form"] {
+  margin-top: 0.75rem;
+  max-width: 30rem;
+}
+[data-role="recipient-form"] input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+[data-conversation-list] button {
+  min-height: 44px;
+}
+@media (max-width: 420px) {
+  .message-list-link {
+    padding: 0.75rem;
+    gap: 0.4rem;
+  }
+  .message-list-link time {
+    font-size: 0.8rem;
+  }
+}

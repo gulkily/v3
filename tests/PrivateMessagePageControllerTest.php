@@ -14,7 +14,7 @@ use ForumRewrite\View\TemplateRenderer;
 
 final class PrivateMessagePageControllerTest
 {
-    public function testEachMailboxShowsOnlyItsOwnMessageMetadata(): void
+    public function testLegacyMailboxPagesRedirectWithoutDisclosingMessages(): void
     {
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-message-pages-' . bin2hex(random_bytes(6)) . '.sqlite3';
         try {
@@ -41,30 +41,17 @@ final class PrivateMessagePageControllerTest
             $sent = $this->renderMailbox($databasePath, $store, $this->viewer('openpgp:alice', 'alice'), 'sent');
             $thirdParty = $this->renderMailbox($databasePath, $store, $this->viewer('openpgp:mallory', 'mallory'), 'inbox');
 
-            assertStringContains('<h1>Inbox</h1>', $inbox);
-            assertStringContains('<strong>From:</strong> <a href="/messages/conversation/alice">alice</a>', $inbox);
-            assertStringContains('data-private-message-id="message-001"', $inbox);
-            assertStringContains('data-role="private-message-verification"', $inbox);
-            assertStringContains('title="Siganture verified"', $inbox);
-            assertStringContains('data-role="private-message-reader-error"', $inbox);
-            assertStringNotContains('data-action="read-private-message"', $inbox);
-            assertStringNotContains('private-message-reader-feedback', $inbox);
-            assertStringNotContains('Encrypted message', $inbox);
-            assertStringContains('/assets/private_message_reader.', $inbox);
-            assertStringNotContains('Ciphertext should not render', $inbox);
-            assertStringContains('<h1>Sent Messages</h1>', $sent);
-            assertStringContains('<strong>To:</strong> <a href="/messages/conversation/ilyag">ilyag</a>', $sent);
-            assertStringContains('data-role="private-message-verification"', $sent);
-            assertStringNotContains('Ciphertext should not render', $sent);
-            assertStringContains('No private messages received.', $thirdParty);
-            assertStringNotContains('message-001', $thirdParty);
-            assertStringNotContains('alice', $thirdParty);
+            foreach ([$inbox, $sent, $thirdParty] as $html) {
+                assertStringContains('href="/messages"', $html);
+                assertStringNotContains('message-001', $html);
+                assertStringNotContains('Ciphertext should not render', $html);
+            }
         } finally {
             @unlink($databasePath);
         }
     }
 
-    public function testMailboxPageAndApiReturnOnlyTheNewestTwentyFiveMessages(): void
+    public function testLegacyMailboxApiRetainsItsNewestTwentyFiveMessageContract(): void
     {
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-message-pages-' . bin2hex(random_bytes(6)) . '.sqlite3';
         try {
@@ -94,9 +81,7 @@ final class PrivateMessagePageControllerTest
             $inbox = $this->renderMailbox($databasePath, $store, $viewer, 'inbox');
             $apiInbox = $this->apiMailbox($databasePath, $store, $viewer, 'inbox');
 
-            assertSame(25, substr_count($inbox, 'data-private-message-id='));
-            assertStringContains('data-private-message-id="message-26"', $inbox);
-            assertStringNotContains('data-private-message-id="message-01"', $inbox);
+            assertStringContains('href="/messages"', $inbox);
             assertSame(25, count($apiInbox['messages']));
             assertSame('message-26', $apiInbox['messages'][0]['message_id']);
             assertSame('message-02', $apiInbox['messages'][24]['message_id']);
@@ -135,6 +120,16 @@ final class PrivateMessagePageControllerTest
             $denied = $this->apiMailbox($databasePath, $store, ['identity_id' => 'pending', 'username_token' => 'alice', 'is_approved' => 0], 'conversations');
             assertSame('error', $denied['status']);
             assertSame(false, isset($denied['conversations']));
+            $conversation = $this->renderMailbox($databasePath, $store, $viewer, 'conversation');
+            assertStringContains('href="/user/bob"', $conversation);
+            assertStringContains('Back to Messages', $conversation);
+            $readPdo->exec("UPDATE profiles SET is_approved = 0 WHERE username_token = 'bob'");
+            $unavailable = $this->renderMailbox($databasePath, $store, $viewer, 'conversation');
+            assertStringContains('Conversation Unavailable', $unavailable);
+            assertStringContains('Back to Messages', $unavailable);
+            assertStringNotContains('data-private-message-composer', $unavailable);
+            $historical = $this->apiMailbox($databasePath, $store, $viewer, 'conversations');
+            assertSame('bob', $historical['conversations'][0]['counterpart']);
         } finally {
             @unlink($databasePath);
         }
@@ -159,7 +154,7 @@ final class PrivateMessagePageControllerTest
         $controller = new PrivateMessagePageController($services, static fn (): array => $viewer, static fn (): PrivateMessageStore => $store);
 
         ob_start();
-        $controller->$kind('GET');
+        $kind === 'conversation' ? $controller->conversation('GET', 'bob') : $controller->$kind('GET');
         return (string) ob_get_clean();
     }
 

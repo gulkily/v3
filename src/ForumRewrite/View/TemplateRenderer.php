@@ -27,6 +27,7 @@ final class TemplateRenderer
         'invites.php' => ['/assets/invitations.css', '/assets/identity.css'],
         'post.php' => ['/assets/identity.css', '/assets/content-interactions.css'],
         'profile.php' => ['/assets/identity.css'],
+        'private_message_list.php' => ['/assets/private_message_list.css'],
         'board.php' => ['/assets/thread-list.css', '/assets/compose.css'],
         'compose_reply.php' => ['/assets/compose.css'],
         'compose_thread.php' => ['/assets/compose.css'],
