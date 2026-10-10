@@ -172,6 +172,48 @@ final class PrivateMessageApiController
         return null;
     }
 
+    public function unread(string $method, array $query): void
+    {
+        if ($method !== 'GET') { $this->methodNotAllowed(); return; }
+        $viewer = $this->viewer();
+        if ($viewer === null) return;
+        try {
+            $counterparts = $query['counterparts'] ?? [];
+            if (!is_array($counterparts)) throw new InvalidArgumentException('Conversation states must be a list.');
+            $state = $this->service()->unreadState($viewer, $counterparts);
+            $this->routeServices->sendJson(['status' => 'ok'] + $state, 200, $this->routeServices->noStoreHeaders());
+        } catch (InvalidArgumentException $error) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage()], 400, $this->routeServices->noStoreHeaders());
+        } catch (RuntimeException $error) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage()], 403, $this->routeServices->noStoreHeaders());
+        }
+    }
+
+    public function read(string $method, array $query): void
+    {
+        if ($method !== 'POST') { $this->methodNotAllowed(); return; }
+        $viewer = $this->viewer();
+        if ($viewer === null) return;
+        try {
+            // A non-simple request plus a private signed receipt prevents cross-site form writes.
+            if (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') !== 'ForumPrivateMessages'
+                || !str_starts_with(strtolower($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json')
+                || in_array($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '', ['cross-site', 'same-site'], true)) {
+                throw new RuntimeException('A same-origin JSON request is required.');
+            }
+            $input = $this->routeServices->requestData($query);
+            if (!is_string($input['counterpart'] ?? null) || !is_string($input['read_token'] ?? null)) {
+                throw new InvalidArgumentException('A counterpart and read token are required.');
+            }
+            $state = $this->service()->acknowledge($viewer, $input['counterpart'], $input['read_token']);
+            $this->routeServices->sendJson(['status' => 'ok'] + $state, 200, $this->routeServices->noStoreHeaders());
+        } catch (InvalidArgumentException $error) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage(), 'reopen' => true], 400, $this->routeServices->noStoreHeaders());
+        } catch (RuntimeException $error) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage()], 403, $this->routeServices->noStoreHeaders());
+        }
+    }
+
     private function service(): PrivateMessageMailboxService
     {
         return new PrivateMessageMailboxService(

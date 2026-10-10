@@ -125,7 +125,7 @@ final class Application
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
         if ($this->approvedMembersOnlyEnabled()
             || in_array($path, ['/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
-            || in_array($path, ['/messages', '/messages/', '/api/private_messages/conversations', '/api/private_messages/conversation'], true)
+            || in_array($path, ['/messages', '/messages/', '/api/private_messages/conversations', '/api/private_messages/conversation', '/api/private_messages/unread', '/api/private_messages/read'], true)
             || str_starts_with($path, '/messages/conversation/')
         ) {
             $this->startViewerSession();
@@ -221,6 +221,15 @@ final class Application
 
         if ($path === '/api/private_messages/conversation') {
             $this->privateMessageApiController()->conversation($method, $query);
+            return;
+        }
+
+        if ($path === '/api/private_messages/unread') {
+            $this->privateMessageApiController()->unread($method, $query);
+            return;
+        }
+        if ($path === '/api/private_messages/read') {
+            $this->privateMessageApiController()->read($method, $query);
             return;
         }
 
@@ -1762,7 +1771,7 @@ final class Application
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',
-            '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations',
+            '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
             '/account/key', '/account/key/', '/invites', '/invites/',
             '/api', '/api/', '/api/version', '/api/list_index',
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username_claim_cta',

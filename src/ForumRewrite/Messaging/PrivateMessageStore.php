@@ -31,6 +31,18 @@ final class PrivateMessageStore
         $this->readState->mark($viewer, $counterpart, $messageId);
     }
 
+    public function readTokenFor(string $viewer, string $counterpart, string $pageCursor): string
+    {
+        $page = $this->conversationPageFor($viewer, $counterpart, $pageCursor);
+        $position = json_decode(base64_decode(strtr($page['page_cursor'], '-_', '+/')), true, 512, JSON_THROW_ON_ERROR);
+        return $this->readState->token(strtolower(trim($viewer)), strtolower(trim($counterpart)), $position['snapshot']);
+    }
+
+    public function acknowledgeRead(string $viewer, string $counterpart, string $readToken): void
+    {
+        $this->readState->acknowledge($viewer, $counterpart, $readToken);
+    }
+
     public function storeEnvelope(
         string $messageId,
         string $createdAt,

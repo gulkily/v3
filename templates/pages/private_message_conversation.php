@@ -1,4 +1,5 @@
 <section class="stack private-conversation" data-private-message-mailbox data-mailbox="conversation" data-counterpart-username-token="<?= $e($counterpartUsernameToken) ?>" data-viewer-username-token="<?= $e($viewerProfile['username_token']) ?>" data-history-page-cursor="<?= $e($historyPage['page_cursor'] ?? '') ?>" data-history-next-cursor="<?= $e($historyPage['next_cursor'] ?? '') ?>">
+  <input type="hidden" data-role="private-message-read-token" value="<?= $e($historyPage['read_token'] ?? '') ?>">
   <article class="card">
     <h1>Conversation with <a href="/user/<?= $e(rawurlencode($counterpartUsernameToken)) ?>"><?= $e($counterpartUsernameToken) ?></a></h1>
     <p><a href="/messages">Back to Messages</a></p>

@@ -38,13 +38,13 @@ final class PrivateMessageReadState
     public function state(string $viewer, array $counterparts = []): array
     {
         $viewer = strtolower(trim($viewer));
-        $counterparts = array_values(array_unique($counterparts));
         if (count($counterparts) > 25) throw new InvalidArgumentException('Request at most 25 conversation states.');
         foreach ($counterparts as $counterpart) {
             if (!is_string($counterpart) || !preg_match('/^[a-z0-9][a-z0-9._-]{0,63}$/', $counterpart)) {
                 throw new InvalidArgumentException('Conversation counterpart is invalid.');
             }
         }
+        $counterparts = array_values(array_unique($counterparts));
         $this->pdo->beginTransaction();
         try {
             $metadata = $this->validatedMetadata($viewer);
@@ -86,6 +86,39 @@ final class PrivateMessageReadState
                 WHERE excluded.seen_row > private_message_seen.seen_row');
             $stmt->execute(['viewer' => $viewer, 'counterpart' => $counterpart, 'row' => $row, 'id' => $messageId]);
         });
+    }
+
+    public function token(string $viewer, string $counterpart, int $snapshot): string
+    {
+        $metadata = $this->validatedMetadata($viewer);
+        $stmt = $this->pdo->prepare('SELECT rowid AS position, message_id FROM private_messages
+            WHERE recipient_username_token = :viewer AND sender_username_token = :counterpart AND rowid <= :snapshot
+            ORDER BY rowid DESC LIMIT 1');
+        $stmt->execute(['viewer' => $viewer, 'counterpart' => $counterpart, 'snapshot' => $snapshot]);
+        $last = $stmt->fetch();
+        $payload = rtrim(strtr(base64_encode(json_encode(['version' => 1, 'viewer' => $viewer, 'counterpart' => $counterpart,
+            'row' => (int) ($last['position'] ?? 0), 'id' => $last['message_id'] ?? ''], JSON_THROW_ON_ERROR)), '+/', '-_'), '=');
+        return $payload . '.' . hash_hmac('sha256', $payload, $metadata['signing_secret']);
+    }
+
+    public function acknowledge(string $viewer, string $counterpart, string $token): void
+    {
+        $metadata = $this->validatedMetadata($viewer);
+        $parts = explode('.', $token);
+        $invalid = static fn () => new InvalidArgumentException('This read position is unusable. Reopen the conversation to continue.');
+        if (strlen($token) > 2048 || count($parts) !== 2 || !hash_equals(hash_hmac('sha256', $parts[0], $metadata['signing_secret']), $parts[1])) throw $invalid();
+        $decoded = base64_decode(strtr($parts[0], '-_', '+/'), true);
+        $value = $decoded === false ? null : json_decode($decoded, true);
+        if (!is_array($value) || ($value['version'] ?? null) !== 1 || ($value['viewer'] ?? null) !== $viewer
+            || ($value['counterpart'] ?? null) !== $counterpart || !is_int($value['row'] ?? null) || $value['row'] < 0
+            || !is_string($value['id'] ?? null) || (($value['row'] === 0) !== ($value['id'] === ''))) throw $invalid();
+        if ($value['row'] !== 0) {
+            $stmt = $this->pdo->prepare('SELECT message_id FROM private_messages WHERE rowid = :row
+                AND recipient_username_token = :viewer AND sender_username_token = :counterpart');
+            $stmt->execute(['row' => $value['row'], 'viewer' => $viewer, 'counterpart' => $counterpart]);
+            if ($stmt->fetchColumn() !== $value['id']) throw $invalid();
+        }
+        $this->mark($viewer, $counterpart, $value['id']);
     }
 
     /** @return array<string, mixed> */

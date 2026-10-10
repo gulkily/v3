@@ -96,7 +96,23 @@ final class PrivateMessageMailboxService
             throw new InvalidArgumentException('Conversation counterpart has no approved profile keys.');
         }
 
-        return $this->store->conversationPageFor((string) $viewer['username_token'], $counterpartUsernameToken, $cursor);
+        $page = $this->store->conversationPageFor((string) $viewer['username_token'], $counterpartUsernameToken, $cursor);
+        $page['read_token'] = $cursor === null ? $this->store->readTokenFor((string) $viewer['username_token'], $counterpartUsernameToken, $page['page_cursor']) : null;
+        return $page;
+    }
+
+    public function unreadState(array $viewer, array $counterparts = []): array
+    {
+        return $this->store->unreadStateFor((string) $this->approvedViewer($viewer)['username_token'], $counterparts);
+    }
+
+    public function acknowledge(array $viewer, string $counterpart, string $readToken): array
+    {
+        $viewer = $this->approvedViewer($viewer);
+        $counterpart = strtolower(trim($counterpart));
+        $this->recipientKeys($viewer, $counterpart);
+        $this->store->acknowledgeRead((string) $viewer['username_token'], $counterpart, $readToken);
+        return $this->unreadState($viewer, [$counterpart]);
     }
 
     /** @param array<string, mixed> $viewer @return list<array{identity_id:string,profile_slug:string,public_key:string}> */

@@ -12,6 +12,7 @@ import { checkChatLayout } from './private_message_chat_layout.mjs';
 import { checkChatRecovery } from './private_message_chat_recovery.mjs';
 import { checkHistory } from './private_message_history.mjs';
 import { checkHistoryRecovery } from './private_message_history_recovery.mjs';
+import { checkUnreadApi } from './private_message_unread_api.mjs';
 
 const project = resolve(new URL('../..', import.meta.url).pathname);
 runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
@@ -218,6 +219,7 @@ try {
     assert.equal(await page.locator('[data-private-message-composer] textarea').inputValue(), '');
   }
   assert.deepEqual(errors, []);
+  await checkUnreadApi(context, outsiderContext, base, seed, incoming);
   await writeFile(join(root, 'report.json'), JSON.stringify({ passed: true, checks: 'normal entry, inline encrypted replies, lost acknowledgment with reload/new draft, isolated read recovery, invalid/missing signatures, delayed decryption/navigation, keyboard/zoom/scroll, shared composers, list and history snapshots, three-page exact history coverage, concurrent/backdated arrivals, history anchoring within 5px, history retry/restart with concurrent send and newer draft, obsolete response isolation, authorization, no-store', screenshots: ['messages-desktop.png', 'messages-mobile.png', 'chat-desktop.png', 'chat-mobile.png', 'chat-recovery-mobile.png', 'history-loaded.png', 'history-mobile.png'] }, null, 2));
   console.log(`Browser checks passed. Artifacts: ${root}`);
 } catch (error) {

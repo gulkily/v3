@@ -7,6 +7,30 @@ use ForumRewrite\Messaging\PrivateMessageStore;
 
 final class PrivateMessageReadStateTest
 {
+    public function testSignedReceiptsCannotBroadenOrChangeOwnership(): void
+    {
+        $store = new PrivateMessageStore(new PDO('sqlite::memory:'));
+        $store->storeEnvelope('first', '2026-10-10', 'bob', 'alice', 'key', 'cipher');
+        $page = $store->conversationPageFor('alice', 'bob');
+        $token = $store->readTokenFor('alice', 'bob', $page['page_cursor']);
+        $store->storeEnvelope('later', '2020-01-01', 'bob', 'alice', 'key', 'cipher');
+        $store->acknowledgeRead('alice', 'bob', $token);
+        $store->acknowledgeRead('alice', 'bob', $token);
+        assertSame(1, $store->unreadStateFor('alice')['unread_count']);
+        foreach ([['alice', 'bob', $token . 'x'], ['eve', 'bob', $token], ['alice', 'carol', $token], ['alice', 'bob', $page['page_cursor']]] as [$viewer, $other, $receipt]) {
+            try { $store->acknowledgeRead($viewer, $other, $receipt); throw new LogicException('Invalid receipt accepted'); }
+            catch (InvalidArgumentException $expected) { assertStringContains('unusable', $expected->getMessage()); }
+        }
+        $fresh = $store->conversationPageFor('alice', 'bob');
+        $store->acknowledgeRead('alice', 'bob', $store->readTokenFor('alice', 'bob', $fresh['page_cursor']));
+        assertSame(0, $store->unreadStateFor('alice')['unread_count']);
+        assertStringNotContains('signing_secret', json_encode($store->unreadStateFor('alice')));
+        foreach ([[['nested']], array_fill(0, 26, 'bob')] as $invalid) {
+            try { $store->unreadStateFor('alice', $invalid); throw new LogicException('Malformed states accepted'); }
+            catch (InvalidArgumentException $expected) { /* Expected. */ }
+        }
+    }
+
     public function testIncomingCountsAreSharedBoundedAndMonotonic(): void
     {
         $pdo = new PDO('sqlite::memory:');
