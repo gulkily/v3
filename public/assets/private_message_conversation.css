@@ -37,6 +37,23 @@
 .private-message [data-role="private-message-reader-error"] { margin: .2rem 0; }
 .private-message-date { text-align: center; margin: 1rem 0 .3rem; }
 .private-message button { width: auto; min-height: 44px; }
+.private-conversation [data-private-message-composer] {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: .5rem;
+  padding: .65rem;
+  background: var(--panel);
+  box-shadow: 0 -3px 8px var(--page-bg);
+}
+.private-conversation.composer-inline [data-private-message-composer] { position: static; }
+.private-conversation [data-private-message-form] { gap: .35rem; }
+.private-conversation [data-private-message-composer] textarea { margin-top: 0; min-height: 3.5rem; resize: vertical; }
+.private-conversation [data-private-message-composer] button { width: auto; min-height: 44px; margin-top: 0; }
+.private-conversation [data-private-message-composer] p { margin: .35rem 0 0; }
+.private-conversation [data-role="private-message-encryption-note"] { font-size: .75rem; }
+.private-conversation .private-message-actions { display: flex; flex-wrap: wrap; gap: .35rem; justify-content: space-between; }
+.private-conversation [data-role="private-message-feedback"].feedback-ok { padding: 0; border: 0; background: transparent; }
 @media (max-width: 480px) {
   .private-conversation .private-message { max-width: 94%; }
 }

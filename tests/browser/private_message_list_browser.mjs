@@ -8,6 +8,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { chromium } from 'playwright-core';
+import { checkChatLayout } from './private_message_chat_layout.mjs';
 
 const project = resolve(new URL('../..', import.meta.url).pathname);
 runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
@@ -111,6 +112,7 @@ try {
   await page.getByLabel('Username', { exact: true }).fill('bob');
   await page.getByRole('button', { name: 'Open conversation' }).click();
   await page.waitForURL('**/messages/conversation/bob');
+  assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('textarea')), false, 'Opening chat must not autofocus');
   await page.evaluate(() => {
     window.chatDocumentMarker = 'same-document';
     document.addEventListener('private-message-sent', event => { window.lastChatConfirmation = event.detail; });
@@ -139,6 +141,7 @@ try {
     await page.screenshot({ path: join(root, 'chat-before.png'), fullPage: true });
     console.log('Chat baseline:', JSON.stringify(density));
   }
+  await checkChatLayout(page, root);
   await page.getByRole('link', { name: 'Back to Messages' }).click();
   await page.waitForFunction(() => document.querySelector('[data-role="list-status"]').textContent === '25 conversations loaded.');
   assert.equal(await list.first().getAttribute('data-counterpart'), 'bob');

@@ -30,6 +30,40 @@
     if (!root || root.dataset.conversationBound) return;
     root.dataset.conversationBound = '1';
     format(root);
+    const composer = root.querySelector('[data-private-message-composer]');
+    const transcript = root.querySelector('[data-role="private-message-transcript"]');
+    const latest = root.querySelector('[data-role="private-message-latest"]');
+    let navigated = false, followReply = false;
+    function userNavigation(event) {
+      if (event.type === 'keydown' && !['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', 'Tab', ' '].includes(event.key)) return;
+      navigated = true;
+    }
+    ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach(type => window.addEventListener(type, userNavigation, { passive: true }));
+    function viewportHeight() { return window.visualViewport ? window.visualViewport.height : window.innerHeight; }
+    function layout() {
+      const height = viewportHeight();
+      const zoomed = window.visualViewport && window.visualViewport.scale > 1.25;
+      const keyboard = height < window.innerHeight * .75;
+      root.classList.toggle('composer-inline', height < 420 || keyboard || zoomed || composer.getBoundingClientRect().height > height * .45);
+    }
+    function revealLatest() {
+      const last = transcript.querySelector('[data-private-message-id]:last-child') || transcript;
+      const obstruction = root.classList.contains('composer-inline') ? 0 : composer.getBoundingClientRect().height;
+      window.scrollBy({ top: last.getBoundingClientRect().bottom - viewportHeight() + obstruction + 24, behavior: 'instant' });
+    }
+    function initiallySettled() { layout(); if (!navigated) revealLatest(); }
+    root.addEventListener('private-message-reader-settled', initiallySettled);
+    if (root.dataset.privateMessageReaderSettled === '1') initiallySettled();
+    latest.addEventListener('click', function () { revealLatest(); });
+    root.addEventListener('private-message-before-append', function () {
+      const obstruction = root.classList.contains('composer-inline') ? 0 : composer.getBoundingClientRect().height;
+      followReply = transcript.getBoundingClientRect().bottom <= viewportHeight() - obstruction + 96;
+    });
+    root.addEventListener('private-message-appended', function () { layout(); if (followReply) revealLatest(); });
+    window.addEventListener('resize', layout);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', layout);
+    if (window.ResizeObserver) new ResizeObserver(layout).observe(composer);
+    layout();
     root.addEventListener('private-message-sent', function (event) {
       event.preventDefault();
       const detail = event.detail;

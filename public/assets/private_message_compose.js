@@ -106,7 +106,27 @@
     function recovery() {
       if (retry) { retry.hidden = !pending; retry.disabled = submitting; }
     }
-    field.addEventListener("input", function () { version = newMessageId(); persist(); });
+    function grow() {
+      if (!field.style) return;
+      const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const cap = Math.max(64, Math.min(180, height * .25));
+      field.style.height = 'auto';
+      field.style.height = Math.min(field.scrollHeight + 2, cap) + 'px';
+      field.style.overflowY = field.scrollHeight > cap ? 'auto' : 'hidden';
+    }
+    field.addEventListener("input", function () { version = newMessageId(); persist(); grow(); });
+    let composing = false;
+    field.addEventListener('compositionstart', function () { composing = true; });
+    field.addEventListener('compositionend', function () { composing = false; });
+    field.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.isComposing && !composing && event.keyCode !== 229) {
+        event.preventDefault();
+        if (!submitting) form.requestSubmit();
+      }
+    });
+    grow();
+    if (window.addEventListener) window.addEventListener('resize', grow);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', grow);
     if (state.legacy) setFeedback(feedback, "An older draft was restored. Check the conversation before sending: its previous delivery cannot be confirmed automatically.", "error");
     if (pending) setFeedback(feedback, "A previous send is unconfirmed. Check it before sending another message; your draft is retained.", "error");
     recovery();
@@ -136,6 +156,7 @@
         pending = null;
         attempts.delete(root);
         if (version === snapshotVersion) { field.value = ""; version = newMessageId(); }
+        grow();
         persist();
         setFeedback(feedback, saved ? "Private message sent." : "Private message sent. Your newer draft cannot be saved; keep this page open.", saved ? "ok" : "error");
         const successUrl = String(root.dataset.privateMessageSuccessUrl || "");

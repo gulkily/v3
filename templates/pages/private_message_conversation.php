@@ -14,6 +14,7 @@
     'recipientUsernameToken' => $counterpartUsernameToken,
     'senderUsernameToken' => (string) $viewerProfile['username_token'],
     'recipientLabel' => $counterpartUsernameToken,
+    'compact' => true,
     'successUrl' => '/messages/conversation/' . rawurlencode($counterpartUsernameToken),
 ]), 2) ?>
 </section>
