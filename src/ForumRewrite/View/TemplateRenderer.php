@@ -27,6 +27,8 @@ final class TemplateRenderer
         'invites.php' => ['/assets/invitations.css', '/assets/identity.css'],
         'post.php' => ['/assets/identity.css', '/assets/content-interactions.css'],
         'profile.php' => ['/assets/identity.css'],
+        'private_message_list.php' => ['/assets/private_message_list.css'],
+        'private_message_conversation.php' => ['/assets/private_message_conversation.css'],
         'board.php' => ['/assets/thread-list.css', '/assets/compose.css'],
         'compose_reply.php' => ['/assets/compose.css'],
         'compose_thread.php' => ['/assets/compose.css'],
@@ -146,6 +148,10 @@ final class TemplateRenderer
             ]);
         }
 
+        $navItems = $this->navItems($viewerProfile);
+        if (array_filter($navItems, static fn (array $item): bool => $item['section'] === 'messages')) {
+            $scriptPaths[] = '/assets/private_message_unread.js';
+        }
         $scriptPaths = array_values(array_unique($scriptPaths));
         $assetScriptPaths = [];
         foreach ($scriptPaths as $scriptPath) {
@@ -212,7 +218,7 @@ final class TemplateRenderer
             'approvedMembersOnlyEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
             'automaticGuestKeypairEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED),
             'publicAuthenticationResume' => $publicAuthenticationResume,
-            'navItems' => $this->navItems($viewerProfile),
+            'navItems' => $navItems,
         ]);
     }
 
@@ -248,7 +254,7 @@ final class TemplateRenderer
 
     /**
      * @param array<string, mixed>|null $viewerProfile
-     * @return list<array{href:string,label:string,section:string}>
+     * @return list<array{href:string,label:string,section:string,viewer?:string}>
      */
     private function navItems(?array $viewerProfile): array
     {
@@ -298,7 +304,7 @@ final class TemplateRenderer
         if ($viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
             && (($viewerProfile['_authenticated_identity'] ?? true) === true)) {
-            $items[] = ['href' => '/messages/inbox', 'label' => 'Messages', 'section' => 'messages'];
+            $items[] = ['href' => '/messages', 'label' => 'Messages', 'section' => 'messages', 'viewer' => $viewerProfile['username_token'] ?? ''];
         }
 
         // Account/Invite are deliberately left out of the qdb profile's nav

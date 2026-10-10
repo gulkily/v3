@@ -78,6 +78,7 @@ $quoteRootScoreTotal = (int) ($thread['score_total'] ?? 0);
 $quoteRootVoteCount = (int) ($thread['vote_count'] ?? 0);
 $quoteRootScoreSignClass = $quoteRootScoreTotal > 0 ? 'quote-card-score-positive' : ($quoteRootScoreTotal < 0 ? 'quote-card-score-negative' : '');
 $quoteRootScoreValueClass = 'quote-card-score-value' . ($quoteRootScoreSignClass === '' ? '' : ' ' . $quoteRootScoreSignClass);
+$viewerHasLiked = (bool) ($viewerHasLiked ?? false);
 $viewerHasVoted = (bool) ($viewerHasVoted ?? false);
 $voteCaptionPair = is_array($voteCaptionPair ?? null) ? $voteCaptionPair : null;
 $qdbVoteTags = is_array($qdbVoteTags ?? null) ? $qdbVoteTags : ['upvote', 'downvote'];

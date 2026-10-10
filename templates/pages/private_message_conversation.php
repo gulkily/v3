@@ -1,25 +1,26 @@
-<section class="stack" data-private-message-mailbox data-mailbox="conversation" data-counterpart-username-token="<?= $e($counterpartUsernameToken) ?>">
+<section class="stack private-conversation" data-private-message-mailbox data-mailbox="conversation" data-counterpart-username-token="<?= $e($counterpartUsernameToken) ?>" data-viewer-username-token="<?= $e($viewerProfile['username_token']) ?>" data-history-page-cursor="<?= $e($historyPage['page_cursor'] ?? '') ?>" data-history-next-cursor="<?= $e($historyPage['next_cursor'] ?? '') ?>">
+  <input type="hidden" data-role="private-message-read-token" value="<?= $e($historyPage['read_token'] ?? '') ?>">
   <article class="card">
-    <h1>Conversation with <?= $e($counterpartUsernameToken) ?></h1>
-    <p><a href="/messages/inbox">Inbox</a> · <a href="/messages/sent">Sent</a></p>
+    <h1>Conversation with <a href="/user/<?= $e(rawurlencode($counterpartUsernameToken)) ?>"><?= $e($counterpartUsernameToken) ?></a></h1>
+    <p><a href="/messages">Back to Messages</a></p>
   </article>
-<?php if ($messages === []): ?>
-  <article class="card"><p>No private messages with this user yet.</p></article>
-<?php else: ?>
+  <div class="private-message-history-controls" data-role="history-controls">
+    <button type="button" data-role="history-load"<?= empty($historyPage['next_cursor']) ? ' hidden' : '' ?>>Load older</button>
+    <button type="button" data-role="history-restart" hidden>Restart history</button>
+    <p class="meta" data-role="history-status" role="status" aria-live="polite"><?= empty($historyPage['next_cursor']) ? 'All history loaded.' : '' ?></p>
+  </div>
+  <div data-role="private-message-transcript" aria-label="Conversation messages">
+  <p data-role="private-message-empty"<?= $messages !== [] ? ' hidden' : '' ?>>No private messages with this user yet.</p>
 <?php foreach ($messages as $message): ?>
-<?php $isOutgoing = (string) $message['sender_username_token'] === (string) $viewerProfile['username_token']; ?>
-  <article class="card" data-private-message-id="<?= $e($message['message_id']) ?>">
-    <p><strong><?= $isOutgoing ? 'To' : 'From' ?>:</strong> <?= $e($counterpartUsernameToken) ?> <span class="meta" data-role="private-message-verification" title="Siganture verified" aria-label="Siganture verified" hidden>✓</span></p>
-    <p><strong>Sent:</strong> <?= $e($message['created_at']) ?></p>
-    <p class="feedback" data-role="private-message-reader-error" hidden></p>
-    <pre data-role="private-message-plaintext" hidden></pre>
-  </article>
+<?= $indent($partial('partials/private_message_item.php', ['message' => $message]), 2) ?>
 <?php endforeach; ?>
-<?php endif; ?>
+  </div>
+  <template data-role="private-message-template"><?= $partial('partials/private_message_item.php', ['message' => []]) ?></template>
 <?= $indent($partial('partials/private_message_composer.php', [
     'recipientUsernameToken' => $counterpartUsernameToken,
     'senderUsernameToken' => (string) $viewerProfile['username_token'],
     'recipientLabel' => $counterpartUsernameToken,
+    'compact' => true,
     'successUrl' => '/messages/conversation/' . rawurlencode($counterpartUsernameToken),
 ]), 2) ?>
 </section>

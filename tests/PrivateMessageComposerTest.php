@@ -12,6 +12,12 @@ use ForumRewrite\View\TemplateRenderer;
 
 final class PrivateMessageComposerTest
 {
+    public function testPendingEditsReloadRecoveryAndIdentityIsolation(): void
+    {
+        exec('node ' . escapeshellarg(__DIR__ . '/browser/private_message_compose.cjs') . ' ' . escapeshellarg(__DIR__ . '/../public/assets/private_message_compose.js') . ' 2>&1', $output, $code);
+        assertSame(0, $code, implode("\n", $output));
+    }
+
     /** @return array<string, mixed> */
     private function runScript(string $script): array
     {
@@ -37,6 +43,7 @@ const source = fs.readFileSync(process.argv[1], 'utf8');
 const values = new Map();
 const calls = [];
 let shouldFail = true;
+let preparations = 0;
 let redirect = '';
 const inputListeners = {};
 const formListeners = {};
@@ -56,11 +63,11 @@ global.window = {
   crypto: { randomUUID() { return 'fixed-id'; } },
   location: { assign(url) { redirect = url; } },
   __forumBrowserIdentity: { async ensureActionIdentity() {} },
-  ForumPrivateMessages: { async prepareEnvelope(input) { return { encryptedEnvelope: '-----BEGIN PGP MESSAGE-----\\nCIPHERTEXT\\n-----END PGP MESSAGE-----', received: input }; } }
+  ForumPrivateMessages: { async prepareEnvelope(input) { preparations++; return { encryptedEnvelope: '-----BEGIN PGP MESSAGE-----\\nCIPHERTEXT' + preparations + '\\n-----END PGP MESSAGE-----', received: input }; } }
 };
 global.fetch = async function(url, options) {
   calls.push({ url, body: String(options.body) });
-  return { ok: !shouldFail, async json() { return shouldFail ? { status: 'error', error: 'Temporary failure.' } : { status: 'ok', message: { message_id: 'private-fixed-id' } }; } };
+  return { ok: !shouldFail, async json() { return shouldFail ? { status: 'error', error: 'Temporary failure.' } : { status: 'ok', message: { message_id: 'private-fixed-id', sender_username_token: 'alice', recipient_username_token: 'ilyag', created_at: '2026-10-09T12:00:00Z' } }; } };
 };
 global.document = { addEventListener() {}, querySelectorAll() { return []; } };
 vm.runInThisContext(source);
@@ -68,10 +75,10 @@ window.ForumPrivateMessageComposer.bind(root);
 const event = { preventDefault() {} };
 (async () => {
   await formListeners.submit(event);
-  const failedDraft = values.get('forum_private_message_draft:ilyag');
+  const failedDraft = values.get('forum_private_message_draft:alice:ilyag');
   shouldFail = false;
   await formListeners.submit(event);
-  process.stdout.write(JSON.stringify({ calls, failedDraft, finalDraft: values.get('forum_private_message_draft:ilyag') || null, textarea: textarea.value, feedback: feedback.textContent, redirect }));
+  process.stdout.write(JSON.stringify({ calls, failedDraft, finalDraft: values.get('forum_private_message_draft:alice:ilyag') || null, textarea: textarea.value, feedback: feedback.textContent, redirect }));
 })().catch((error) => { process.stderr.write(error.stack || String(error)); process.exit(1); });
 NODE;
 
@@ -79,6 +86,7 @@ NODE;
 
         assertSame('/api/private_messages', $result['calls'][0]['url']);
         assertSame('/api/private_messages', $result['calls'][1]['url']);
+        assertSame($result['calls'][0]['body'], $result['calls'][1]['body']);
         assertStringContains('"message_id":"private-fixed-id"', $result['calls'][0]['body']);
         assertStringContains('"message_id":"private-fixed-id"', $result['calls'][1]['body']);
         assertStringNotContains('private prose', $result['calls'][0]['body']);

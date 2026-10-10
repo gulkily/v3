@@ -10,6 +10,50 @@ use ForumRewrite\Messaging\PrivateMessageStore;
 
 final class PrivateMessageMailboxServiceTest
 {
+    public function testUnreadProgressIsSharedAcrossApprovedIdentitiesOnly(): void
+    {
+        $profiles = $this->profilesDatabase();
+        $this->addProfile($profiles, 'bob-key', 'bob-key', 'bob', 'KEY', 1);
+        $store = new PrivateMessageStore(new \PDO('sqlite::memory:'));
+        $service = new PrivateMessageMailboxService($store, $profiles);
+        $store->storeEnvelope('received', '2026-10-10', 'bob', 'alice', 'bob-key', 'cipher');
+        $first = $this->viewer('alice-one', 'alice');
+        $second = $this->viewer('alice-two', 'alice');
+        $page = $service->conversationPage($first, 'bob');
+        assertSame(1, $service->unreadState($second)['unread_count']);
+        assertSame(0, $service->acknowledge($second, 'bob', $page['read_token'])['unread_count']);
+        assertSame(0, $service->unreadState($first)['unread_count']);
+        assertThrowsPrivateMessage(fn () => $service->unreadState(array_replace($first, ['is_approved' => 0])), \RuntimeException::class, 'An approved authenticated identity is required.');
+        $profiles->exec('UPDATE profiles SET is_approved = 0');
+        assertThrowsPrivateMessage(fn () => $service->acknowledge($first, 'bob', $page['read_token']), \InvalidArgumentException::class, 'Recipient has no approved profile keys.');
+    }
+
+    public function testRetryReturnsOriginalAcceptanceAndRejectsConflicts(): void
+    {
+        $profiles = $this->profilesDatabase();
+        $this->addProfile($profiles, 'openpgp:ilyag', 'ilyag', 'ilyag', 'KEY', 1);
+        $pdo = new \PDO('sqlite::memory:');
+        $store = new PrivateMessageStore($pdo);
+        $service = new PrivateMessageMailboxService($store, $profiles);
+        $viewer = $this->viewer('openpgp:alice', 'alice');
+        $input = ['message_id' => 'retry', 'recipient_username_token' => 'ilyag', 'encrypted_envelope' => $this->envelope()];
+        $first = $service->send($viewer, $input);
+        $profiles->exec('UPDATE profiles SET is_approved = 0');
+        assertSame($first, $service->send($viewer, $input));
+        foreach ([
+            [$viewer, array_replace($input, ['encrypted_envelope' => str_replace('Ciphertext', 'Different', $this->envelope())])],
+            [$viewer, array_replace($input, ['recipient_username_token' => 'other'])],
+            [$this->viewer('openpgp:other', 'alice'), $input],
+            [$this->viewer('openpgp:mallory', 'mallory'), $input],
+        ] as [$actor, $conflict]) {
+            assertThrowsPrivateMessage(fn () => $service->send($actor, $conflict), \InvalidArgumentException::class, 'This send attempt conflicts with an existing message.');
+        }
+        $attempt = $pdo->query('SELECT * FROM private_messages')->fetch(\PDO::FETCH_ASSOC);
+        $attempt['created_at'] = '2099-01-01T00:00:00Z';
+        assertSame($first, $store->acceptEnvelope($attempt));
+        assertSame(1, (int) $pdo->query('SELECT COUNT(*) FROM private_messages')->fetchColumn());
+    }
+
     public function testApprovedUsersCanSendAndReadOnlyTheirCompositeMailboxes(): void
     {
         $readPdo = $this->profilesDatabase();
@@ -127,6 +171,18 @@ final class PrivateMessageMailboxServiceTest
         assertSame('message-27', $messages[24]['message_id']);
         assertSame(false, in_array('mallory-message', array_column($messages, 'message_id'), true));
         assertThrowsPrivateMessage(fn (): array => $service->conversation($this->viewer('openpgp:alice', 'alice'), 'alice'), \InvalidArgumentException::class, 'A conversation counterpart must be another user.');
+    }
+
+    public function testConversationListRequiresApprovalAndRetainsUnavailableCounterparts(): void
+    {
+        $store = new PrivateMessageStore(new \PDO('sqlite::memory:'));
+        $store->storeEnvelope('historical', '2026-10-09T12:00:00Z', 'alice', 'unavailable', 'sender', 'encrypted');
+        $service = new PrivateMessageMailboxService($store, $this->profilesDatabase());
+        assertSame('unavailable', $service->conversations($this->viewer('openpgp:alice', 'alice'))['conversations'][0]['counterpart']);
+        assertSame([], $service->conversations($this->viewer('openpgp:mallory', 'mallory'))['conversations']);
+        foreach ([[], ['identity_id' => 'pending', 'username_token' => 'alice', 'is_approved' => 0]] as $viewer) {
+            assertThrowsPrivateMessage(fn (): array => $service->conversations($viewer), \RuntimeException::class, 'An approved authenticated identity is required.');
+        }
     }
 
     /** @return array<string, mixed> */
