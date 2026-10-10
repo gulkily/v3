@@ -43,9 +43,67 @@ final class PrivateMessageHistorySyncService
             $senderKeys[$sender]??=array_values($this->keys($sender));
             $message['sender_keys']=$senderKeys[$sender];
             $message['digest']=hash('sha256',$message['encrypted_envelope']);
+            $receipt=$this->sync->receipt($account,$target,$message['message_id'],$message['digest']);
+            $message['covered']=$receipt!==null && ($receipt['transfer_id']==='' || isset($keys[$receipt['source']??'']));
         }
         unset($message);
-        return ['account'=>$account,'source'=>$source,'target'=>$target,'target_key'=>$keys[$target], 'messages'=>$messages,
+        return ['account'=>$account,'source'=>$source,'target'=>$target,'target_key'=>$keys[$target], 'messages'=>array_values(array_filter($messages,static fn($row)=>!$row['covered'])),
             'checkpoint'=>$next,'cycle_end'=>!$page['more'] && $next['target']===$targets[0], 'total'=>$this->messages->historySyncCount($account)];
+    }
+    private function items(string $account, mixed $items): array
+    {
+        if(!is_array($items) || !array_is_list($items) || count($items)>self::BATCH_SIZE) throw new InvalidArgumentException('Invalid history batch.');
+        $seen=[];
+        foreach($items as &$item) {
+            if(!is_array($item) || !is_string($item['message_id']??null) || !is_string($item['digest']??null) || isset($seen[$item['message_id']])) throw new InvalidArgumentException('Invalid history item.');
+            $row=$this->messages->historySyncMessage($account,$item['message_id']);
+            if(!$row || !hash_equals(hash('sha256',$row['encrypted_envelope']),$item['digest'])) throw new InvalidArgumentException('History changed. Retry synchronization.');
+            $seen[$item['message_id']]=true;
+            $item=['message_id'=>$item['message_id'],'digest'=>$item['digest'],'transfer_id'=>$item['transfer_id']??''];
+            if(!is_string($item['transfer_id'])) throw new InvalidArgumentException('Invalid transfer reference.');
+        }
+        unset($item);return $items;
+    }
+    public function upload(array $viewer, array $input): array
+    {
+        [$account,$source,$keys]=$this->context($viewer);
+        $target=$input['target']??null;$ciphertext=$input['ciphertext']??null;
+        if(!is_string($target) || !isset($keys[$target]) || $target===$source) throw new InvalidArgumentException('Target must be another approved account key.');
+        if(!is_string($ciphertext) || strlen($ciphertext)>65536 || !str_starts_with($ciphertext,'-----BEGIN PGP MESSAGE-----') || !str_contains($ciphertext,'-----END PGP MESSAGE-----')) throw new InvalidArgumentException('Invalid encrypted history transfer.');
+        $items=$this->items($account,$input['items']??null);
+        if($items===[]) throw new InvalidArgumentException('Transfer is empty.');
+        $items=array_map(static fn($item)=>['message_id'=>$item['message_id'],'digest'=>$item['digest']],$items);
+        return ['transfer_id'=>$this->sync->upload($account,$source,$target,$ciphertext,$items)];
+    }
+    public function transfers(array $viewer, array $query): array
+    {
+        [$account,$target,$keys]=$this->context($viewer);
+        $id=$query['message_id']??null;$after=$query['after']??'';
+        if(!is_string($id) || strlen($id)>128 || !is_string($after) || ($after!=='' && !preg_match('/^[a-f0-9]{64}$/D',$after))) throw new InvalidArgumentException('Invalid transfer query.');
+        $row=$this->messages->historySyncMessage($account,$id);
+        if(!$row) throw new InvalidArgumentException('History message unavailable.');
+        $digest=hash('sha256',$row['encrypted_envelope']);
+        $rows=$this->sync->candidates($account,$target,$id,$digest,$after);
+        $more=count($rows)>10;$rows=array_slice($rows,0,10);
+        $next=$more?$rows[count($rows)-1]['transfer_id']:null;
+        $rows=array_values(array_filter($rows,static fn($r)=>isset($keys[$r['source']])));
+        foreach($rows as &$r) $r['source_key']=$keys[$r['source']];
+        unset($r);
+        return ['account'=>$account,'target'=>$target,'message_id'=>$id,'digest'=>$digest,'transfers'=>$rows,'next'=>$next];
+    }
+    public function acknowledge(array $viewer, array $input): array
+    {
+        [$account,$source,$keys]=$this->context($viewer);
+        $items=$this->items($account,$input['items']??[]);
+        foreach($items as $item) {
+            if($item['transfer_id']==='') continue; // authenticated target reports verified direct access
+            $candidate=$this->sync->candidate($account,$source,$item['message_id'],$item['digest'],$item['transfer_id']);
+            if(!$candidate || !isset($keys[$candidate['source']])) throw new InvalidArgumentException('Transfer is no longer eligible.');
+        }
+        $checkpoint=$input['checkpoint']??null;
+        if($checkpoint!==null && (!is_array($checkpoint) || !is_string($checkpoint['target']??null) || !isset($keys[$checkpoint['target']]) || !is_string($checkpoint['after_id']??null) || strlen($checkpoint['after_id'])>128)) throw new InvalidArgumentException('Invalid scan checkpoint.');
+        if($items!==[]) $this->sync->acknowledge($account,$source,$items);
+        if($checkpoint!==null) $this->sync->advance($account,$source,$checkpoint['target'],$checkpoint['after_id']);
+        return ['confirmed'=>count($items)];
     }
 }

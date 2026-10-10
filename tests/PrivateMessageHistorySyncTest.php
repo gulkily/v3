@@ -65,4 +65,81 @@ final class PrivateMessageHistorySyncTest
             assertSame(1000,(int)$pdo->query('PRAGMA busy_timeout')->fetchColumn());
         } finally { foreach(glob($root.'/*') as $file) unlink($file);rmdir($root); }
     }
+    private function uploadInput(string $cipher='one'): array
+    {
+        return ['target'=>str_repeat('b',40),'ciphertext'=>"-----BEGIN PGP MESSAGE-----\n".$cipher."\n-----END PGP MESSAGE-----",
+            'items'=>[['message_id'=>'m01','digest'=>hash('sha256','cipher-1')]]];
+    }
+    public function testTransfersStayRetainedAndUploadsCannotClaimRecovery(): void
+    {
+        [$profiles,$messages,$sync,$service,$db,$syncDb]=$this->fixture();
+        $input=$this->uploadInput();
+        $first=$service->upload($this->viewer(),$input);
+        assertSame($first,$service->upload($this->viewer(),$input));
+        assertSame(null,$sync->receipt('alice',str_repeat('b',40),'m01',hash('sha256','cipher-1')));
+        $page=$service->transfers($this->viewer('b'),['message_id'=>'m01']);
+        assertSame(1,count($page['transfers']));
+        $item=$input['items'][0]+['transfer_id'=>$first['transfer_id']];
+        $service->acknowledge($this->viewer('b'),['items'=>[$item]]);
+        $service->upload($this->viewer(),$this->uploadInput('replacement'));
+        assertSame($first['transfer_id'],$service->transfers($this->viewer('b'),['message_id'=>'m01'])['transfers'][0]['transfer_id']);
+        assertSame(1,(int)$syncDb->query('SELECT COUNT(*) FROM history_sync_transfers')->fetchColumn());
+        $sync->advance('alice',str_repeat('a',40),str_repeat('b',40),'');
+        assertSame(false,in_array('m01',array_column($service->work($this->viewer())['messages'],'message_id'),true));
+        $syncDb->exec('DELETE FROM history_sync_transfers');
+        assertSame(true,in_array('m01',array_column($service->work($this->viewer())['messages'],'message_id'),true));
+        assertSame(31,$messages->historySyncCount('alice'));
+    }
+    public function testRejectsCrossAccountRevokedMalformedAndChangedOriginals(): void
+    {
+        [$profiles,$messages,$sync,$service,$db]=$this->fixture();
+        $input=$this->uploadInput();
+        $bad=[array_replace($input,['target'=>str_repeat('d',40)]),array_replace($input,['ciphertext'=>str_repeat('x',65537)]),array_replace($input,['items'=>[['message_id'=>'foreign','digest'=>hash('sha256','secret')]]]),array_replace($input,['items'=>array_fill(0,11,$input['items'][0])])];
+        foreach($bad as $attempt) { try { $service->upload($this->viewer(),$attempt);throw new Exception('Invalid upload accepted'); } catch(InvalidArgumentException $expected) {} }
+        $transfer=$service->upload($this->viewer(),$input);
+        try { $service->acknowledge($this->viewer(),['items'=>[$input['items'][0]+['transfer_id'=>$transfer['transfer_id']]]]);throw new Exception('Wrong target acknowledged'); } catch(InvalidArgumentException $expected) {}
+        $profiles->exec("UPDATE profiles SET is_approved=0 WHERE public_key='KEY-a'");
+        assertSame([],$service->transfers($this->viewer('b'),['message_id'=>'m01'])['transfers']);
+        try { $service->upload($this->viewer(),$input);throw new Exception('Revoked source accepted'); } catch(RuntimeException $expected) {}
+        $profiles->exec("UPDATE profiles SET is_approved=1 WHERE public_key='KEY-a'");
+        $db->exec("UPDATE private_messages SET encrypted_envelope='restored-different' WHERE message_id='m01'");
+        assertSame([],$service->transfers($this->viewer('b'),['message_id'=>'m01'])['transfers']);
+        try { $service->upload($this->viewer(),$input);throw new Exception('Changed digest accepted'); } catch(InvalidArgumentException $expected) {}
+    }
+    public function testUnconfirmedBadCandidateCanBeReplacedAndDirectReceiptsAreIdempotent(): void
+    {
+        [$profiles,$messages,$sync,$service,$db,$syncDb]=$this->fixture();
+        $service->upload($this->viewer(),$this->uploadInput('bad'));
+        $good=$service->upload($this->viewer(),$this->uploadInput('good'));
+        assertSame($good['transfer_id'],$service->transfers($this->viewer('b'),['message_id'=>'m01'])['transfers'][0]['transfer_id']);
+        assertSame(1,(int)$syncDb->query('SELECT COUNT(*) FROM history_sync_transfers')->fetchColumn());
+        $receipt=['items'=>$this->uploadInput()['items']];
+        assertSame(['confirmed'=>1],$service->acknowledge($this->viewer(),$receipt));
+        assertSame(['confirmed'=>1],$service->acknowledge($this->viewer(),$receipt));
+        assertSame(false,in_array('m01',array_column($service->work($this->viewer())['messages'],'message_id'),true));
+    }
+    public function testConcurrentSyncWritesLeaveForegroundMessageStoreResponsive(): void
+    {
+        $root=sys_get_temp_dir().'/history-concurrent-'.bin2hex(random_bytes(5));mkdir($root,0700);
+        $children=[];
+        try {
+            $syncPath=$root.'/sync.sqlite3';
+            $sync=new PrivateMessageHistorySyncStore(new PDO('sqlite:'.$syncPath));
+            $store=new PrivateMessageStore(new PDO('sqlite:'.$root.'/messages.sqlite3'));
+            $worker='require '.var_export(dirname(__DIR__).'/autoload.php',true).';'
+                .'$pdo=new PDO("sqlite:".$argv[1]);$pdo->exec("PRAGMA busy_timeout=1000");'
+                .'$store=new ForumRewrite\\Messaging\\PrivateMessageHistorySyncStore($pdo);'
+                .'for($i=0;$i<30;$i++){ $store->upload("alice",$argv[2],"target",str_repeat("c",8192).$i,[["message_id"=>"m1","digest"=>str_repeat("a",64)]]);usleep(10000);}';
+            for($i=0;$i<3;$i++) { $proc=proc_open([PHP_BINARY,'-r',$worker,$syncPath,'source'.$i],[1=>['pipe','w'],2=>['pipe','w']],$pipes);$children[]=[$proc,$pipes]; }
+            $latencies=[];
+            for($i=0;$i<60;$i++) {
+                $start=hrtime(true);
+                $store->storeEnvelope('m'.$i,'now','bob','alice','key','cipher');$store->unreadStateFor('alice');
+                $latencies[]=(hrtime(true)-$start)/1e6;usleep(10000);
+            }
+            foreach($children as [$proc,$pipes]) { $out=stream_get_contents($pipes[1]).stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);assertSame(0,proc_close($proc),$out); }
+            sort($latencies);assertSame(true,$latencies[56]<250,'Local foreground p95 exceeded 250 ms: '.$latencies[56]);
+            assertSame(60,$store->historySyncCount('alice'));
+        } finally { foreach(glob($root.'/*') as $file) unlink($file);rmdir($root); }
+    }
 }
