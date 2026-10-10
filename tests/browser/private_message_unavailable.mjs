@@ -44,4 +44,48 @@ export async function checkUnavailable(page, context, base, artifacts, seed, una
   assert.equal(await warning.getAttribute('hidden'), null);
   assert.match(await warning.innerText(), /signature.*not.*verified/i);
   assert.equal(await warning.locator('[data-role="private-message-plaintext"]').innerText(), '');
+
+  // More than two windows form one run, retaining its open choice and scroll anchor.
+  seed({ action: 'chat', messages: Array.from({ length: 60 }, (_, i) => ({
+    id: 'unavailable-history-' + String(i).padStart(2, '0'), time: `2042-06-01T12:${String(i).padStart(2, '0')}:00Z`,
+    sender: 'user-54', envelope: unavailable,
+  })) });
+  await page.goto(base + '/messages/conversation/user-54');
+  await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.privateMessageReaderSettled === '1');
+  assert.match(await groups.innerText(), /25 messages unavailable/);
+  await groups.getByRole('button').click();
+  await page.locator('textarea').fill('Draft while expanding history');
+  const load = page.getByRole('button', { name: 'Load older', exact: true });
+  await load.scrollIntoViewIfNeeded();
+  const anchor = await groups.evaluate(node => node.getBoundingClientRect().top);
+  await load.evaluate(node => node.click());
+  await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.historyLoading === '0');
+  assert.equal(await groups.count(), 1);
+  assert.match(await groups.innerText(), /50 messages unavailable/);
+  assert.equal(await groups.getByRole('button').getAttribute('aria-expanded'), 'true');
+  assert.ok(Math.abs(await groups.evaluate(node => node.getBoundingClientRect().top) - anchor) <= 5, 'Merged summary must retain reading position');
+  await groups.getByRole('button').click();
+  await load.click();
+  await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.historyLoading === '0');
+  assert.match(await groups.innerText(), /60 messages unavailable/);
+  assert.equal(await groups.getByRole('button').getAttribute('aria-expanded'), 'false');
+  const ids = await page.locator('[data-reader-state="decryption-failed"]').evaluateAll(cards => cards.map(card => card.dataset.privateMessageId));
+  assert.deepEqual(ids, Array.from({ length: 60 }, (_, i) => 'unavailable-history-' + String(i).padStart(2, '0')));
+  assert.equal(await page.locator('textarea').inputValue(), 'Draft while expanding history');
+
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.privateMessageReaderSettled === '1');
+  const stale = route => route.fulfill({ status: 400, json: { status: 'error', restart: true } });
+  await page.route('**/api/private_messages/conversation?*', stale);
+  await load.click();
+  await page.getByRole('button', { name: 'Restart history', exact: true }).waitFor();
+  assert.match(await groups.innerText(), /25 messages unavailable/);
+  await page.unroute('**/api/private_messages/conversation?*', stale);
+  await page.getByRole('button', { name: 'Restart history', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.historyLoading === '0');
+  assert.equal(await groups.count(), 1);
+  assert.equal(await page.locator('[data-private-message-id]').count(), 25);
+  assert.match(await groups.innerText(), /25 messages unavailable/);
+  assert.equal(await page.locator('textarea').inputValue(), 'Draft while expanding history');
+  await page.locator('textarea').fill('');
 }

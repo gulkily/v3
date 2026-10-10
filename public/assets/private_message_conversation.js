@@ -8,6 +8,7 @@
   function regroup(root) {
     const transcript = root.querySelector('[data-role="private-message-transcript"]');
     const previous = groupStates.get(root) || [];
+    const focused = document.activeElement;
     const cards = Array.from(transcript.querySelectorAll('[data-private-message-id]'));
     const runs = [];
     let run = [], lastKey = '';
@@ -58,6 +59,7 @@
     });
     previous.filter(group => !groups.includes(group)).forEach(group => group.node.remove());
     groupStates.set(root, groups);
+    if (focused && focused.isConnected && document.activeElement !== focused) focused.focus({ preventScroll: true });
   }
   function messageCard(root, message) {
     const card = root.querySelector('[data-role="private-message-template"]').content.firstElementChild.cloneNode(true);
@@ -83,18 +85,22 @@
   function preserveReadingPosition(root) {
     const transcript = root.querySelector('[data-role="private-message-transcript"]');
     const viewport = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    let summary = false;
+    const visible = node => { const rect = node.getBoundingClientRect(); return rect.height > 0 && rect.bottom > 0 && rect.top < viewport; };
     const anchor = Array.from(transcript.querySelectorAll('[data-private-message-id]')).find(function (card) {
-      const rect = card.getBoundingClientRect();
-      return rect.bottom > 0 && rect.top < viewport;
+      const group = presentations.get(card);
+      if (group && group.cards[0] === card && visible(group.node)) { summary = true; return true; }
+      return visible(presentationFor(root, card));
     });
     if (!anchor) return { correct() {}, finish() {} };
-    const offset = anchor.getBoundingClientRect().top;
+    const representation = () => (summary && presentations.get(anchor)?.node) || presentationFor(root, anchor);
+    const offset = representation().getBoundingClientRect().top;
     const priorAnchoring = document.documentElement.style.overflowAnchor;
     document.documentElement.style.overflowAnchor = 'none';
     let active = true;
     function correct() {
       if (!active || !anchor.isConnected) return;
-      const shift = anchor.getBoundingClientRect().top - offset;
+      const shift = representation().getBoundingClientRect().top - offset;
       if (Math.abs(shift) > .5) window.scrollBy({ top: shift, behavior: 'instant' });
     }
     const observer = window.ResizeObserver ? new ResizeObserver(correct) : null;
@@ -202,6 +208,8 @@
         root.dataset.historyNextCursor = cursor || '';
         await Promise.allSettled(added.map(item => window.ForumPrivateMessageReader.readCard('conversation', item.card, root.dataset.counterpartUsernameToken, item.message).finally(readingPosition.correct)));
         if (!isCurrent()) return;
+        regroup(root);
+        readingPosition.correct();
         status.textContent = cursor ? (fresh ? 'History restarted. Recent messages loaded.' : added.length + ' older messages loaded.') : 'All history loaded.';
         load.hidden = !cursor;
         load.textContent = 'Load older';
