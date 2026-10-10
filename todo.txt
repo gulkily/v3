@@ -84,10 +84,6 @@ general-purpose "canonicalize any URL" cleanup is its own open-ended feature:
 	needs its own Step 1 given the redirect-following/unknown-provider
 		design questions
 
-allow offline content for unauthenticated users
-
-we need to record who changed a feature flag and sign the request
-
 emulate the classic qdb.us voting buttons more closely
 	voting... label while submitting
 	voted when done
