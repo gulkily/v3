@@ -72,6 +72,12 @@ final class PrivateMessageMailboxService
         return $this->store->sentBy((string) $this->approvedViewer($viewer)['username_token']);
     }
 
+    /** @param array<string, mixed> $viewer @return array<string, mixed> */
+    public function conversations(array $viewer, ?string $cursor = null): array
+    {
+        return $this->store->conversationsFor((string) $this->approvedViewer($viewer)['username_token'], $cursor);
+    }
+
     /** @param array<string, mixed> $viewer @return list<array<string, string>> */
     public function conversation(array $viewer, string $counterpartUsernameToken): array
     {

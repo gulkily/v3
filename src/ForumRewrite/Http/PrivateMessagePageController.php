@@ -28,6 +28,27 @@ final class PrivateMessagePageController
         $this->mailbox($method, 'inbox');
     }
 
+    public function conversations(string $method): void
+    {
+        if ($method !== 'GET') {
+            $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported for Messages.', 'messages'), 405, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $viewer = ($this->authenticatedViewerProfile)();
+        if ($viewer === null) {
+            $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Authentication Required', 'Authentication Required', 'Authenticate an approved browser identity to view private messages.', 'messages'), 401, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        try {
+            $page = $this->service()->conversations($viewer);
+        } catch (RuntimeException $exception) {
+            $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Messages Unavailable', 'Messages Unavailable', $exception->getMessage(), 'messages'), 403, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('private_message_list.php',
+            ['page' => $page, 'viewerProfile' => $viewer], 'Messages', 'messages'), 200, $this->routeServices->noStoreHeaders());
+    }
+
     public function sent(string $method): void
     {
         $this->mailbox($method, 'sent');

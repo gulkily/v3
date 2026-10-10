@@ -105,6 +105,32 @@ final class PrivateMessagePageControllerTest
         }
     }
 
+    public function testMessagesListRendersAuthorizedRowsWithoutEnvelopes(): void
+    {
+        $databasePath = tempnam(sys_get_temp_dir(), 'message-list-');
+        try {
+            $store = new PrivateMessageStore(new \PDO('sqlite::memory:'));
+            $store->storeEnvelope('list-1', '2026-10-09T12:00:00Z', 'alice', 'bob', 'sender', 'secret envelope');
+            $store->storeEnvelope('list-2', '2026-10-09T13:00:00Z', 'bob', 'alice', 'sender', 'secret envelope');
+            $viewer = $this->viewer('alice-key', 'alice');
+            $html = $this->renderMailbox($databasePath, $store, $viewer, 'conversations');
+            assertStringContains('<h1>Messages</h1>', $html);
+            assertSame(1, substr_count($html, 'data-counterpart="bob"'));
+            assertStringContains('href="/messages/conversation/bob"', $html);
+            assertStringNotContains('secret envelope', $html);
+            $page = $this->apiMailbox($databasePath, $store, $viewer, 'conversations');
+            assertSame('list-2', $page['conversations'][0]['message_id']);
+            $other = $this->renderMailbox($databasePath, $store, $this->viewer('eve-key', 'eve'), 'conversations');
+            assertStringContains('No messages yet', $other);
+            assertStringNotContains('list-2', $other);
+            $denied = $this->apiMailbox($databasePath, $store, ['identity_id' => 'pending', 'username_token' => 'alice', 'is_approved' => 0], 'conversations');
+            assertSame('error', $denied['status']);
+            assertSame(false, isset($denied['conversations']));
+        } finally {
+            @unlink($databasePath);
+        }
+    }
+
     /** @param array<string, mixed> $viewer */
     private function renderMailbox(string $databasePath, PrivateMessageStore $store, array $viewer, string $kind): string
     {
@@ -124,7 +150,7 @@ final class PrivateMessagePageControllerTest
         $controller = new PrivateMessagePageController($services, static fn (): array => $viewer, static fn (): PrivateMessageStore => $store);
 
         ob_start();
-        $kind === 'inbox' ? $controller->inbox('GET') : $controller->sent('GET');
+        $controller->$kind('GET');
         return (string) ob_get_clean();
     }
 
@@ -147,7 +173,7 @@ final class PrivateMessagePageControllerTest
         $controller = new PrivateMessageApiController($services, static fn (): array => $viewer, static fn (): PrivateMessageStore => $store);
 
         ob_start();
-        $kind === 'inbox' ? $controller->inbox('GET', []) : $controller->sent('GET', []);
+        $controller->$kind('GET', []);
         return json_decode((string) ob_get_clean(), true, 512, JSON_THROW_ON_ERROR);
     }
 

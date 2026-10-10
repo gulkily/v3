@@ -29,7 +29,7 @@ final class PrivateMessageReleaseIsolationTest
                 $html = (string) file_get_contents($path);
                 assertStringNotContains('private_message_reader', $html);
                 assertStringNotContains('private_messages.js', $html);
-                assertStringNotContains('/messages/inbox', $html);
+                assertStringNotContains('href="/messages', $html);
             }
         } finally {
             @unlink($databasePath);

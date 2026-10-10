@@ -59,6 +59,30 @@ final class PrivateMessageApiController
     }
 
     /** @param array<string, mixed> $query */
+    public function conversations(string $method, array $query): void
+    {
+        if ($method !== 'GET') {
+            $this->methodNotAllowed();
+            return;
+        }
+        $viewer = $this->viewer();
+        if ($viewer === null) {
+            return;
+        }
+        try {
+            if (isset($query['cursor']) && !is_string($query['cursor'])) {
+                throw new InvalidArgumentException('This message list has expired. Reload Messages to start again.');
+            }
+            $page = $this->service()->conversations($viewer, $query['cursor'] ?? null);
+            $this->routeServices->sendJson(['status' => 'ok'] + $page, 200, $this->routeServices->noStoreHeaders());
+        } catch (InvalidArgumentException $exception) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage(), 'restart' => true], 400, $this->routeServices->noStoreHeaders());
+        } catch (RuntimeException $exception) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 403, $this->routeServices->noStoreHeaders());
+        }
+    }
+
+    /** @param array<string, mixed> $query */
     public function conversation(string $method, array $query): void
     {
         if ($method !== 'GET') {

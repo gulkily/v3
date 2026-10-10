@@ -129,6 +129,18 @@ final class PrivateMessageMailboxServiceTest
         assertThrowsPrivateMessage(fn (): array => $service->conversation($this->viewer('openpgp:alice', 'alice'), 'alice'), \InvalidArgumentException::class, 'A conversation counterpart must be another user.');
     }
 
+    public function testConversationListRequiresApprovalAndRetainsUnavailableCounterparts(): void
+    {
+        $store = new PrivateMessageStore(new \PDO('sqlite::memory:'));
+        $store->storeEnvelope('historical', '2026-10-09T12:00:00Z', 'alice', 'unavailable', 'sender', 'encrypted');
+        $service = new PrivateMessageMailboxService($store, $this->profilesDatabase());
+        assertSame('unavailable', $service->conversations($this->viewer('openpgp:alice', 'alice'))['conversations'][0]['counterpart']);
+        assertSame([], $service->conversations($this->viewer('openpgp:mallory', 'mallory'))['conversations']);
+        foreach ([[], ['identity_id' => 'pending', 'username_token' => 'alice', 'is_approved' => 0]] as $viewer) {
+            assertThrowsPrivateMessage(fn (): array => $service->conversations($viewer), \RuntimeException::class, 'An approved authenticated identity is required.');
+        }
+    }
+
     /** @return array<string, mixed> */
     private function viewer(string $identityId, string $usernameToken): array
     {

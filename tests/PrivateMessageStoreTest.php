@@ -58,4 +58,45 @@ final class PrivateMessageStoreTest
         assertSame('message-26', $store->inboxFor('ilyag')[0]['message_id']);
         assertSame('message-02', $store->inboxFor('ilyag')[24]['message_id']);
     }
+
+    public function testConversationPagesFreezeArrivalsAndGroupBeforeLimiting(): void
+    {
+        $store = new PrivateMessageStore(new PDO('sqlite::memory:'));
+        for ($i = 1; $i <= 60; $i++) {
+            $other = sprintf('user-%02d', $i);
+            $store->storeEnvelope(sprintf('message-%02d', $i), '2026-10-09T12:00:00Z',
+                $i % 2 ? 'alice' : $other, $i % 2 ? $other : 'alice', 'sender', 'envelope-' . $i);
+        }
+        // Many newer messages with one counterpart must not hide older counterparts.
+        for ($i = 1; $i <= 30; $i++) {
+            $store->storeEnvelope(sprintf('repeat-%02d', $i), '2026-10-09T13:00:00Z', 'alice', 'user-60', 'sender', 'repeat');
+        }
+        $store->storeEnvelope('unrelated', '2026-10-09T15:00:00Z', 'mallory', 'eve', 'sender', 'secret');
+        $first = $store->conversationsFor('alice');
+        assertSame(25, count($first['conversations']));
+        assertSame('repeat-30', $first['conversations'][0]['message_id']);
+        $store->storeEnvelope('new-unseen', '2026-10-09T16:00:00Z', 'user-01', 'alice', 'sender', 'new');
+        $store->storeEnvelope('new-seen', '2026-10-09T16:00:00Z', 'alice', 'user-60', 'sender', 'new');
+        $store->storeEnvelope('new-counterpart', '2026-10-09T12:00:00Z', 'new-user', 'alice', 'sender', 'new');
+        assertSame($first, $store->conversationsFor('alice', $first['page_cursor']));
+        $second = $store->conversationsFor('alice', $first['next_cursor']);
+        assertSame($second, $store->conversationsFor('alice', $first['next_cursor']));
+        $third = $store->conversationsFor('alice', $second['next_cursor']);
+        assertSame(25, count($second['conversations']));
+        assertSame(10, count($third['conversations']));
+        assertSame(null, $third['next_cursor']);
+        $rows = array_merge($first['conversations'], $second['conversations'], $third['conversations']);
+        assertSame(60, count(array_unique(array_column($rows, 'counterpart'))));
+        assertSame('message-01', $rows[59]['message_id']);
+        assertSame('new-unseen', $store->conversationsFor('alice')['conversations'][0]['message_id']);
+        assertSame([], $store->conversationsFor('nobody')['conversations']);
+        foreach (['broken', $first['next_cursor']] as $cursor) {
+            try {
+                $store->conversationsFor('mallory', $cursor);
+                throw new RuntimeException('An invalid or foreign cursor was accepted.');
+            } catch (InvalidArgumentException $exception) {
+                assertStringContains('Reload Messages', $exception->getMessage());
+            }
+        }
+    }
 }
