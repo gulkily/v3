@@ -8,6 +8,14 @@ use ForumRewrite\Messaging\PrivateMessageStore;
 
 final class PrivateMessageStoreTest
 {
+    public function testConversationTiesFollowInsertionOrder(): void
+    {
+        $store = new PrivateMessageStore(new PDO('sqlite::memory:'));
+        $store->storeEnvelope('z', '2026-10-09T12:00:00Z', 'alice', 'bob', 'sender', 'one');
+        $store->storeEnvelope('a', '2026-10-09T12:00:00Z', 'bob', 'alice', 'sender', 'two');
+        assertSame(['z', 'a'], array_column($store->conversationFor('alice', 'bob'), 'message_id'));
+    }
+
     public function testConcurrentAcceptanceKeepsOneOriginalEnvelope(): void
     {
         if (!function_exists('pcntl_fork')) {

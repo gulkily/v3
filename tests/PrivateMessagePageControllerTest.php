@@ -123,6 +123,11 @@ final class PrivateMessagePageControllerTest
             $conversation = $this->renderMailbox($databasePath, $store, $viewer, 'conversation');
             assertStringContains('href="/user/bob"', $conversation);
             assertStringContains('Back to Messages', $conversation);
+            assertStringContains('data-role="private-message-template"', $conversation);
+            assertStringContains('data-sender="alice"', $conversation);
+            assertStringContains('datetime="2026-10-09T12:00:00Z"', $conversation);
+            assertStringContains('/assets/private_message_conversation.', $conversation);
+            assertStringNotContains('secret envelope', $conversation);
             $readPdo->exec("UPDATE profiles SET is_approved = 0 WHERE username_token = 'bob'");
             $unavailable = $this->renderMailbox($databasePath, $store, $viewer, 'conversation');
             assertStringContains('Conversation Unavailable', $unavailable);

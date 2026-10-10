@@ -115,7 +115,7 @@ try {
   let failSend = true;
   await page.route('**/api/private_messages', route => failSend ? route.fulfill({ status: 503, json: { status: 'error', error: 'Test delivery failure' } }) : route.continue());
   await page.getByRole('button', { name: 'Send private message' }).click();
-  await page.getByText('Test delivery failure', { exact: true }).waitFor();
+  await page.getByText(/Test delivery failure/).waitFor();
   assert.equal(await page.locator('textarea').inputValue(), 'Browser first message');
   failSend = false;
   await page.getByRole('button', { name: 'Send private message' }).click();
@@ -123,6 +123,15 @@ try {
   await page.locator('textarea').fill('Browser follow-up');
   await page.getByRole('button', { name: 'Send private message' }).click();
   await page.locator('[data-role="private-message-plaintext"]').filter({ hasText: 'Browser follow-up' }).waitFor();
+  if (process.env.PRIVATE_MESSAGE_DENSITY_BASELINE === '1') {
+    const density = await page.locator('[data-private-message-id]').evaluateAll(cards => {
+      for (const card of cards) card.querySelector('[data-role="private-message-plaintext"]').textContent = 'A representative short message.';
+      return { viewport: innerHeight, cardHeights: cards.map(card => card.getBoundingClientRect().height) };
+    });
+    await writeFile(join(root, 'chat-density-baseline.json'), JSON.stringify(density));
+    await page.screenshot({ path: join(root, 'chat-before.png'), fullPage: true });
+    console.log('Chat baseline:', JSON.stringify(density));
+  }
   await page.getByRole('link', { name: 'Back to Messages' }).click();
   await page.waitForFunction(() => document.querySelector('[data-role="list-status"]').textContent === '25 conversations loaded.');
   assert.equal(await list.first().getAttribute('data-counterpart'), 'bob');

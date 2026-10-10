@@ -171,7 +171,7 @@ final class PrivateMessageStore
              FROM private_messages
              WHERE (sender_username_token = :viewer AND recipient_username_token = :counterpart)
                 OR (sender_username_token = :counterpart AND recipient_username_token = :viewer)
-             ORDER BY created_at DESC, message_id DESC
+             ORDER BY created_at DESC, rowid DESC
              LIMIT ' . self::MAILBOX_PAGE_SIZE
         );
         $stmt->execute([

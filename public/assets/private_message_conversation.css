@@ -1,0 +1,42 @@
+.private-conversation { min-width: 0; }
+.private-conversation .private-message {
+  width: fit-content;
+  max-width: 85%;
+  margin: .6rem auto 0 0;
+  padding: .25rem .65rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: .6rem;
+  overflow-wrap: anywhere;
+}
+.private-conversation .private-message.is-outgoing {
+  margin-left: auto;
+  margin-right: 0;
+  background: var(--button-alt-bg);
+}
+.private-conversation .private-message.is-grouped { margin-top: .2rem; }
+.private-conversation .is-grouped [data-role="message-sender"] { display: none; }
+.private-message .private-message-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  font: .75rem/1.2 var(--ui-font);
+  color: var(--ink-soft);
+}
+.private-message time { margin-left: auto; }
+.private-message [data-role="private-message-plaintext"] {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: 1rem/1.35 var(--body-font);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.private-message [data-role="private-message-reader-error"] { margin: .2rem 0; }
+.private-message-date { text-align: center; margin: 1rem 0 .3rem; }
+.private-message button { width: auto; min-height: 44px; }
+@media (max-width: 480px) {
+  .private-conversation .private-message { max-width: 94%; }
+}
