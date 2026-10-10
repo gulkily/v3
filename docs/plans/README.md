@@ -6,6 +6,8 @@ or standalone plans remain at this level until they reach that threshold.
 
 ## Feature folders
 
+- [Instance content sync](instance_content_sync/)
+
 - [Agent response direct preflight](agent_response_direct_preflight/)
 - [Agent response harness simplification](agent_response_harness_simplification/)
 - [Agent response modes](agent_response_modes/)

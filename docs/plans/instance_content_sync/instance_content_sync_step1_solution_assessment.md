@@ -15,7 +15,7 @@ An instance operator should be able to bring another instance's content into the
 
 ## Problem Statement
 
-Existing [archive import](../../scripts/import_repository_archive.php) and [background queue](../reference/v3_cli.md#manage-the-background-task-queue) capabilities do not yet provide a convenient, repeatable workflow from a remote instance through to visible local content.
+Existing [archive import](../../../scripts/import_repository_archive.php) and [background queue](../../reference/v3_cli.md#manage-the-background-task-queue) capabilities do not yet provide a convenient, repeatable workflow from a remote instance through to visible local content.
 
 ## Option A — Scheduled archive pull and additive import
 
