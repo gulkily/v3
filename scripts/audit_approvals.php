@@ -11,7 +11,7 @@ function approvalAuditUsage(): string
 {
     return <<<'TEXT'
 Usage:
-  ./v3 approval audit [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--review-only] [--json]
+  ./v3 approval audit [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--review-only] [--summary] [--json]
 
 Read-only audit of currently approved keys and their attributed approvers.
 Uses FORUM_REPOSITORY_ROOT / FORUM_DATABASE_PATH or the normal local paths.
@@ -19,6 +19,8 @@ Does not initialize a repository, rebuild a database, or change approvals.
 Review candidates are cross-username approvals on currently multi-key accounts
 and unknown attribution; they are not confirmed historical policy violations.
 --review-only filters rows; summary counts always describe the complete audit.
+--summary omits individual rows, retaining totals, warnings, and limitations.
+With --json, --summary omits the rows field. --review-only does not change totals.
 Exit 0 means the audit ran (even with candidates); exit 1 means an input/error.
 
 TEXT;
@@ -31,7 +33,7 @@ try {
             fwrite(STDOUT, approvalAuditUsage());
             exit(0);
         }
-        if (in_array($argument, ['--json', '--review-only'], true)) {
+        if (in_array($argument, ['--json', '--review-only', '--summary'], true)) {
             $options[substr($argument, 2)] = true;
             continue;
         }
@@ -67,6 +69,9 @@ try {
     if ($report['review_only']) {
         $report['rows'] = array_values(array_filter($report['rows'], static fn (array $row): bool => $row['review_candidate']));
     }
+    if (isset($options['summary'])) {
+        unset($report['rows']);
+    }
     if (isset($options['json'])) {
         fwrite(STDOUT, json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n");
         exit(0);
@@ -84,6 +89,9 @@ try {
     }
     foreach ($report['counts'] as $category => $count) {
         fwrite(STDOUT, $category . ': ' . $count . "\n");
+    }
+    if (isset($options['summary'])) {
+        exit(0);
     }
     $columns = ['category', 'username_token', 'identity_id', 'approved_key_count', 'approver_username', 'approver_identity_id', 'profile_slug', 'reason'];
     fwrite(STDOUT, "\n" . implode("\t", $columns) . "\n");
