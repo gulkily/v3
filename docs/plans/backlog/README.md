@@ -28,6 +28,7 @@ under `docs/plans/`. Move completed feature cycles to `docs/plans/archive/`.
 - [New User Profile Creation Notice](new_user_profile_creation_notice_step1_solution_assessment.md)
 - [Offline Support Roadmap](offline_support_roadmap.md)
 - [Product Mention Links](product_mention_links_step1_solution_assessment.md)
+- [Server Cooperative Content Deletion Discussion](server_cooperative_content_deletion_discussion.md)
 - [Undo Accidental Flag](undo_accidental_flag_step1_solution_assessment.md)
 
 ## Identity and approvals

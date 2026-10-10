@@ -90,6 +90,8 @@ the request agent response dropdown does not always fully display in-page
 	it should scroll along with its parent button
 
 explore server-cooperative content deletion
+	Discussion: docs/plans/backlog/server_cooperative_content_deletion_discussion.md
+	Initial scope: users retract their own posts with server help; cross-instance cooperation is a future possibility.
 
 youtube embeds
 	should be full width of the container module
