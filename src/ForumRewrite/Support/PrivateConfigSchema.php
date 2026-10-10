@@ -45,6 +45,7 @@ final class PrivateConfigSchema
             'LLM_EXCHANGE_DATABASE_PATH' => self::definition(null, 'path'),
             'VISITOR_STATISTICS_DATABASE_PATH' => self::definition(null, 'path'),
             'PRIVATE_MESSAGE_DATABASE_PATH' => self::definition(null, 'path'),
+            'PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH' => self::definition(null, 'path'),
         ];
     }
 
