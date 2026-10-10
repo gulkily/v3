@@ -4,9 +4,11 @@ The `zenmemes.com` preview exposed closed-pipe notices and cascading legacy
 record rejections. Implement each numbered item in its own commit and update
 this checklist with its validation results.
 
-- [ ] 1. Handle closed stdout pipes without PHP notices. Stop further output
+- [x] 1. Handle closed stdout pipes without PHP notices. Stop further output
   when a pager closes, while allowing imports, recovery, and cleanup to finish.
-  Verify with a subprocess whose stdout reader closes early.
+  Verified with a subprocess whose stdout reader closes early: import and
+  publication finish, recovery journal clears, and stderr stays empty.
+  `php tests/run.php ImportInstanceCommandTest`: 6/6 passed.
 - [ ] 2. Preserve legacy creation timestamps without rewriting record or
   signature bytes. Recover dates from isolated source history, retain validated
   timestamp metadata in the destination, and use it on subsequent rebuilds and

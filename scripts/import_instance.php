@@ -35,7 +35,19 @@ try {
     }
     $database = importAbsolutePath($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: $projectRoot . '/state/cache/post_index.sqlite3'));
     $static = importAbsolutePath($options['static-html-root'] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, SiteProfileRegistry::active())));
-    $progress = static function (string $message): void { fwrite(STDOUT, importTerminalText($message) . "\n"); };
+    // A pager may close stdout while an import still needs to finish safely.
+    $outputOpen = true;
+    $progress = static function (string $message) use (&$outputOpen): void {
+        $line = importTerminalText($message) . "\n";
+        while ($outputOpen && $line !== '') {
+            $written = @fwrite(STDOUT, $line);
+            if ($written === false || $written === 0) {
+                $outputOpen = false;
+                return;
+            }
+            $line = substr($line, $written);
+        }
+    };
     $progress('Source: ' . ($source ?? 'saved interrupted import'));
     $progress('Destination: ' . $repository);
     $progress('Database: ' . $database);

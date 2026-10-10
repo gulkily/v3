@@ -124,6 +124,31 @@ final class ImportInstanceCommandTest
         assertSame('2', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
     }
 
+    public function testClosedOutputPipeStillFinishesImportWithoutNotices(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source');
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $w->put($source . '/records/posts/pipe-thread.txt', $w->post('pipe-thread'));
+        $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
+        $w->put($w->root . '/router.php', '<?php readfile(__DIR__ . "/source.tar.gz");');
+        $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        $process = proc_open([__DIR__ . '/../v3', 'import-instance', $server->url,
+            '--repository-root=' . $target, '--database-path=' . $w->root . '/cache/index.sqlite3',
+            '--static-html-root=' . $w->root . '/static'],
+            [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        // Equivalent to quitting less before the command finishes reporting.
+        fclose($pipes[1]);
+        $errors = stream_get_contents($pipes[2]);
+        fclose($pipes[2]);
+        assertSame(0, proc_close($process), $errors);
+        assertSame('', $errors);
+        assertTrue(is_file($target . '/records/posts/pipe-thread.txt'));
+        assertTrue(is_file($w->root . '/static/current/tags/general.html'));
+        assertTrue(!is_file($target . '/.git/instance-import/pending.json'));
+    }
+
     public function testNonArchiveResponseCannotMutateDestination(): void
     {
         $w = new ImportTestWorkspace();
