@@ -39,8 +39,34 @@ final class ArchiveRecordCatalog
         return false;
     }
 
+    /** Identity claimed by a supported filename, including an unreadable/rejected record. */
+    public static function pathIdentityKey(string $path): ?string
+    {
+        if (self::isSignaturePath($path) && !self::isRecordPath($path)) {
+            $parent = self::pathIdentityKey(substr($path, 0, -4));
+            return $parent === null ? null : 'signature:' . $parent . ':' . substr($path, -4);
+        }
+        if (!self::isRecordPath($path)) { return null; }
+        $family = explode('/', $path)[1];
+        $name = pathinfo($path, PATHINFO_FILENAME);
+        return match ($family) {
+            'posts' => 'post:' . $name,
+            'post-timestamps' => 'post-timestamp:' . $name,
+            'identity' => 'identity:openpgp:' . strtolower(substr($name, strlen('identity-openpgp-'))),
+            'public-keys' => 'public-key:openpgp:' . strtolower(substr($name, strlen('openpgp-'))),
+            'approval-seeds' => 'approval-seed:openpgp:' . strtolower(substr($name, strlen('openpgp-'))),
+            'thread-subjects' => 'thread-subject:' . $name,
+            'thread-labels' => 'thread-label:' . $name,
+            'post-reactions' => 'post-reaction:' . $name,
+            'instance' => 'instance:' . $name,
+        };
+    }
+
     public static function identityKey(string $repositoryRoot, string $relativePath): ?string
     {
+        if (!is_file($repositoryRoot . '/' . $relativePath) || is_link($repositoryRoot . '/' . $relativePath)) {
+            return null;
+        }
         if (self::isSignaturePath($relativePath) && !self::isRecordPath($relativePath)) {
             $suffix = str_ends_with($relativePath, '.sig') ? '.sig' : '.asc';
             $recordPath = substr($relativePath, 0, -strlen($suffix));

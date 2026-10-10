@@ -94,8 +94,15 @@ available for local archives with its previous options and policy.
 `--dry-run` downloads and validates the archive and reports the proposed merge. It
 may create temporary files and lock files but does not change destination
 records, commits, the read model, or published views. It cannot be combined with
-`--resume`; remove `--dry-run` to perform the import. Actual runs list category
-counts and every excluded/unsupported/invalid/conflicting record. Private review
+`--resume`; remove `--dry-run` to perform the import. Reports list category counts, grouped review causes, and exclusion counts. A
+blocked record points to its rejected/excluded dependency and root cause;
+"missing dependency" means no matching record exists in the source or destination.
+Timestamp metadata for an intentionally excluded post is also excluded. Replies
+to excluded authority posts remain withheld, since their parent would be absent.
+Use `--verbose` for every excluded/unsupported/invalid/conflicting record, for
+example `./v3 import-instance --dry-run --verbose zenmemes.com | less`.
+Closing a pager stops further stdout output while the command finishes its work
+and cleanup. Exit status continues to describe the import, not the pager. Private review
 reports and conflict copies live below the printed
 `<repository>/.git/instance-import/<run-id>/` directory.
 

@@ -78,9 +78,20 @@ try {
     foreach ($result['excluded_archive_categories'] as $category => $count) {
         $progress('Excluded archive category ' . $category . ': ' . $count);
     }
-    foreach ($result['entries'] as $path => $entry) {
+    foreach ($result['review_causes'] ?? [] as $cause) {
+        $progress('Review cause: ' . $cause['path'] . ' — ' . $cause['state'] . ': ' . $cause['reason']
+            . ' (' . $cause['affected_count'] . ' affected review entries)');
+    }
+    foreach ($result['exclusion_reasons'] ?? [] as $reason => $count) {
+        $progress('Excluded: ' . $reason . ' (' . $count . ' entries)');
+    }
+    if (!isset($options['verbose']) && $result['status'] !== 'complete') {
+        $progress('Use --verbose for per-file details, including blocked dependencies.');
+    }
+    foreach (isset($options['verbose']) || !isset($result['review_causes']) ? $result['entries'] : [] as $path => $entry) {
         if (in_array($entry['state'], ['conflict', 'invalid', 'unsupported', 'excluded'], true)) {
-            $progress($entry['state'] . ': ' . $path . ' — ' . $entry['reason']);
+            $progress($entry['state'] . ': ' . $path . ' — ' . $entry['reason']
+                . (isset($entry['root_cause']) ? '; root cause: ' . $entry['root_cause'] : ''));
         }
     }
     if (isset($result['review_path'])) {
@@ -105,7 +116,7 @@ function importInstanceOptions(array $arguments): array
 {
     $options = [];
     foreach ($arguments as $argument) {
-        if (in_array($argument, ['--help', '-h', '--dry-run', '--resume'], true)) {
+        if (in_array($argument, ['--help', '-h', '--dry-run', '--resume', '--verbose'], true)) {
             $options[$argument === '-h' ? 'help' : substr($argument, 2)] = true;
         } elseif (preg_match('/^--(repository-root|database-path|static-html-root|sources)=(.+)$/D', $argument, $match)) {
             if (isset($options[$match[1]])) { throw new RuntimeException('Duplicate option: --' . $match[1]); }
@@ -133,7 +144,7 @@ function importInstanceUsage(): string
 {
     return <<<'TEXT'
 Usage:
-  ./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run]
+  ./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose]
   ./v3 import-instance --resume
   Options: --repository-root=/path/repository --database-path=/path/index.sqlite3
            --static-html-root=/path/static_html
@@ -143,6 +154,7 @@ Download and merge public forum content, preserving local settings and authority
            conflicts, and exclusions without changing records, commits, the
            read model, or published views. Temporary/lock files may be created.
            Cannot be combined with --resume; omit it to perform the import.
+--verbose: include every rejected/excluded file; the default report groups root causes.
 Example: ./v3 import-instance https://forum.example --dry-run
 Conflicts retain the local version.
 Names require an explicit JSON mapping: {"community": "https://forum.example/base"}

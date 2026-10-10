@@ -55,3 +55,12 @@ lookup and portable `records/post-timestamps/` metadata. Source Git configuratio
 and history remain excluded from the destination. Signed records stay unchanged;
 rebuilds, subsequent imports, and recovery use the saved hash-bound dates. See
 [the fix checklist](instance_content_sync_fix_checklist.md) for validation.
+
+## Follow-up: actionable preview reports
+
+Rejected and intentionally excluded records remain addressable for dependency
+diagnostics. Reports group affected records by root cause; `--verbose` preserves
+per-file detail, and saved JSON reports retain all entries. Orphan signatures
+produce a diagnostic without filesystem warnings. Timestamp companions of
+excluded posts are also excluded; public replies requiring those posts remain
+withheld with an explicit explanation.

@@ -87,7 +87,7 @@ final class ImportInstanceCommandTest
         $router = $w->root . '/router.php';
         $w->put($router, '<?php readfile(__DIR__ . "/source.tar.gz");');
         $server = new ImportHttpServer($router, $w->root . '/http.log');
-        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url,
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url, '--verbose',
             '--repository-root=' . $target, '--database-path=' . $w->root . '/cache/index.sqlite3', '--static-html-root=' . $w->root . '/static']);
         assertSame(2, $code, $output);
         assertStringContains('Import result: partial', $output);
@@ -95,6 +95,14 @@ final class ImportInstanceCommandTest
         assertStringContains('unsupported: records/new-family/unknown.txt', $output);
         assertStringContains('excluded: records/instance/public.txt', $output);
         assertStringContains('Review:', $output);
+        assertStringContains('Review cause: records/posts/root-001.txt', $output);
+        [$previewCode, $previewOutput] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url, '--dry-run',
+            '--repository-root=' . $target, '--database-path=' . $w->root . '/cache/index.sqlite3']);
+        assertSame(2, $previewCode, $previewOutput);
+        assertStringContains('Review cause: records/posts/root-001.txt', $previewOutput);
+        assertStringContains('Use --verbose', $previewOutput);
+        assertTrue(!str_contains($previewOutput, 'conflict: records/posts/'));
+        assertStringContains('Excluded: Instance authority', $previewOutput);
         assertSame($original, file_get_contents($target . '/records/posts/root-001.txt'));
         assertSame('1', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
     }
@@ -118,6 +126,7 @@ final class ImportInstanceCommandTest
         unset($server);
         unlink($static);
         [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', '--resume', ...$options]);
+        if ($code !== 0) { throw new RuntimeException($output); }
         assertSame(0, $code, $output);
         assertStringContains('Import result: complete', $output);
         assertStringContains('Imported resume-thread', file_get_contents($static . '/current/tags/general.html'));

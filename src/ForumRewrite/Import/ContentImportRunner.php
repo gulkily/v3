@@ -150,12 +150,25 @@ final class ContentImportRunner
     private function report(array $entries, string $source, array $excluded, bool $preview = false): array
     {
         $counts = array_fill_keys(['import', 'duplicate', 'conflict', 'invalid', 'unsupported', 'excluded'], 0);
-        foreach ($entries as $entry) {
+        $causes = [];
+        $exclusions = [];
+        foreach ($entries as $path => $entry) {
             $counts[$entry['state']]++;
+            if ($entry['state'] === 'excluded') {
+                $exclusions[$entry['reason']] = ($exclusions[$entry['reason']] ?? 0) + 1;
+            }
+            if (!in_array($entry['state'], ['conflict', 'invalid', 'unsupported'], true)) { continue; }
+            $root = $entry['root_cause'] ?? $path;
+            $cause = $entries[$root] ?? $entry;
+            $causes[$root] ??= ['path' => $root, 'state' => $cause['state'], 'reason' => $cause['reason'], 'affected_count' => 0];
+            $causes[$root]['affected_count']++;
         }
+        ksort($causes);
+        ksort($exclusions);
         return ['source' => $source, 'destination' => $this->repositoryRoot, 'preview' => $preview,
             'status' => $counts['conflict'] + $counts['invalid'] + $counts['unsupported'] > 0 ? 'partial' : 'complete',
-            'counts' => $counts, 'excluded_archive_categories' => $excluded, 'entries' => $entries];
+            'counts' => $counts, 'excluded_archive_categories' => $excluded, 'entries' => $entries,
+            'review_causes' => array_values($causes), 'exclusion_reasons' => $exclusions];
     }
 
     private function assertClean(array $owned): void

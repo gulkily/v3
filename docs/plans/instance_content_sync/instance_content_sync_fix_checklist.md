@@ -19,10 +19,20 @@ this checklist with its validation results.
   private-site, and offline tests passed. Live preview recovered all 59 legacy
   dates; invalid entries fell from 893 to 15, with 922 importable files and four
   local conflicts exposed. No destination content was changed.
-- [ ] 3. Report dependency root causes clearly. Distinguish absent dependencies
+- [x] 3. Report dependency root causes clearly. Distinguish absent dependencies
   from rejected or intentionally excluded records, group cascading failures,
   and retain per-record detail for review. Verify missing, excluded, invalid,
   signature, and transitive cases; repeat the live preview without mutating
   destination content.
+  Validation: 90/90 focused regression checks passed on the final run, PHP lint,
+  shell syntax, and diff whitespace checks passed. One earlier CLI recovery test
+  returned an unexpected partial status, then passed alone and in the full rerun;
+  its failure diagnostic now preserves command output for future investigation.
+  Final live preview: 922 importable files, 1,376 duplicates, four conflicts,
+  three blocked records, zero unsupported files, 158 intentional exclusions,
+  and no PHP notices/warnings. The conflicts concern local `root-001`/`reply-001`
+  content and dates; two replies depend on excluded authority posts, and one
+  further record depends on conflicting `root-001`. Default output groups these
+  causes; `--verbose` retains per-file detail. No destination content was changed.
 
 Scheduling, web UI, and importing source authority remain outside this work.

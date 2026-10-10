@@ -87,6 +87,11 @@ final class ContentImportPlanner
             }
             $entries[$path] = $entry;
         }
+        // Rejected/excluded files still exist: retain their claimed identities so
+        // dependents can explain the actual rejection instead of calling them absent.
+        foreach ($entries as $path => $entry) {
+            if ($entry['key'] !== null) { $byKey[$entry['key']] ??= $path; }
+        }
         // Records and their detached signatures are inseparable on conflicts; then
         // propagate rejected dependencies to a fixed point (bootstrap cycles are valid).
         do {
@@ -96,34 +101,56 @@ final class ContentImportPlanner
                     continue;
                 }
                 $reason = null;
+                $blockedBy = null;
+                $state = 'invalid';
                 foreach ($entry['dependencies'] as $dependency) {
                     $sourcePath = $byKey[$dependency] ?? null;
                     if ($sourcePath !== null) {
                         if (!in_array($entries[$sourcePath]['state'], ['import', 'duplicate'], true)) {
-                            $reason = 'Rejected dependency: ' . $dependency;
+                            $blockedBy = $sourcePath;
+                            $excluded = $entries[$sourcePath]['state'] === 'excluded';
+                            $reason = ($excluded ? 'Excluded dependency: ' : 'Rejected dependency: ') . $dependency . ' (' . $sourcePath . ')';
+                            if ($excluded && str_starts_with($entry['key'], 'post-timestamp:')) {
+                                $state = 'excluded';
+                                $reason = 'Timestamp for excluded post';
+                            }
+                            break;
                         }
                     } elseif (!isset($target[$dependency])) {
                         $reason = 'Missing dependency: ' . $dependency;
+                        break;
                     }
                 }
                 if (isset($entry['record'])) {
                     $parent = $entries[$entry['record']] ?? null;
                     if ($parent === null || !in_array($parent['state'], ['import', 'duplicate'], true)) {
-                        $reason = 'Signature record is unavailable or rejected';
+                        $reason = $parent === null ? 'Signature record is absent' : 'Signature record is rejected';
+                        $blockedBy = $parent === null ? null : $entry['record'];
+                        if (($parent['state'] ?? '') === 'excluded') {
+                            $state = 'excluded';
+                            $reason = 'Signature for excluded record';
+                        }
                     } elseif ($parent['state'] === 'duplicate' && $entry['state'] === 'import'
                         && !is_file($destination . '/' . $entry['record'])) {
                         $reason = 'Duplicate record uses a different path; signature requires manual association';
+                        $blockedBy = null;
                     }
                 } else {
                     foreach (['.asc', '.sig'] as $suffix) {
                         if (isset($entries[$path . $suffix]) && !in_array($entries[$path . $suffix]['state'], ['import', 'duplicate'], true)) {
                             $reason = 'Detached signature is rejected';
+                            $blockedBy = $path . $suffix;
+                            break;
                         }
                     }
                 }
                 if ($reason !== null) {
-                    $entries[$path]['state'] = 'invalid';
+                    $entries[$path]['state'] = $state;
                     $entries[$path]['reason'] = $reason;
+                    if ($blockedBy !== null) {
+                        $entries[$path]['blocked_by'] = $blockedBy;
+                        $entries[$path]['root_cause'] = $entries[$blockedBy]['root_cause'] ?? $blockedBy;
+                    }
                     $changed = true;
                 }
             }
@@ -133,10 +160,17 @@ final class ContentImportPlanner
 
     private function describe(string $root, string $path): array
     {
-        $entry = ['state' => 'import', 'reason' => '', 'key' => null, 'dependencies' => []];
+        $entry = ['state' => 'import', 'reason' => '', 'key' => ArchiveRecordCatalog::pathIdentityKey($path), 'dependencies' => []];
         if (ArchiveRecordCatalog::isSignaturePath($path) && !ArchiveRecordCatalog::isRecordPath($path)) {
             $record = substr($path, 0, -4);
+            if (!is_file($root . '/' . $record)) {
+                return [...$entry, 'state' => 'invalid', 'reason' => 'Signature record is absent: ' . $record, 'record' => $record];
+            }
             $parent = $this->describe($root, $record);
+            if ($parent['state'] !== 'import') {
+                $parent['blocked_by'] = $record;
+                $parent['root_cause'] = $record;
+            }
             return [...$parent, 'key' => $parent['key'] === null ? null : 'signature:' . $parent['key'] . ':' . substr($path, -4), 'record' => $record];
         }
         if (preg_match('#^records/(instance|approval-seeds|feature-flag-changes|private-messages|invitations)/#', $path)) {

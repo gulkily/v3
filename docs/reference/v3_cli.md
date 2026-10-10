@@ -256,7 +256,7 @@ controlled operator workflow.
 ## Import content from a remote instance
 
 ```
-./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
+./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
 ./v3 import-instance --resume [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
 ```
 
@@ -272,6 +272,8 @@ and retained as hash-bound metadata without changing signed post bytes. See the
   duplicates, conflicts, and exclusions without changing destination records,
   commits, the read model, or published views. Temporary downloads and lock files
   may be created. Cannot be combined with `--resume`.
+- `--verbose` — list every rejected/excluded file and dependency root cause.
+  The default output groups review causes and summarizes intentional exclusions.
 
 Preview an import:
 
@@ -282,8 +284,8 @@ Preview an import:
 Remove `--dry-run` to perform the import.
 
 Exit codes are 0 for complete supported-content results, 2 for partial results
-requiring review, and 1 for failures. Reports enumerate exclusions and unsupported
-records. `--resume` recovers a saved interrupted run without another download;
+requiring review, and 1 for failures. Reports group exclusions and rejected
+records; `--verbose` includes per-file details. `--resume` recovers a saved interrupted run without another download;
 use the original destination options and site profile. The destination must be
 initialized with a clean Git checkout. Scheduling, authenticated sources, and
 web controls are deferred.
