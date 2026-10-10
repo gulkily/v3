@@ -123,3 +123,13 @@ add more authentication modes
 
 identify targets for "ephemeral testing"
 	see https://zenmemes.com/threads/thread-20261006122804-184a64b6 
+
+now that we have a private messages feature, it becomes more relevant for users to back up their keys
+	consider how they can be backed up and how to encourage users to do it
+		backup options:
+			text file
+			image file
+			zip file
+			what else?
+		arguments for:
+			???
