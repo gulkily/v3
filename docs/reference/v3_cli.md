@@ -4,8 +4,9 @@
 below can also be invoked directly as `php scripts/<script>.php ...`; the `./v3`
 form is the shorthand used elsewhere in this repo's docs.
 
-Run `./v3` with no arguments to print the same command list from the script
-itself (useful if this document drifts from `v3`).
+Run `./v3 help`, `./v3 --help`, or `./v3 -h` to print the command list.
+Running `./v3` with no arguments also prints it (with exit code 1).
+Use `./v3 import-instance --help` for remote-import options and recovery.
 
 ## CLI error-handling contract
 

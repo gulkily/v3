@@ -39,3 +39,7 @@
 - All seven implementation stages are complete on `feature/instance-content-sync`, following the initial approved-planning commit and one implementation/summary commit per stage.
 - Normal entry: `./v3 import-instance <name|hostname|url>`; preview with `--dry-run`, aliases with `--sources=<JSON file>`, interrupted-run recovery with `--resume`.
 - Operator instructions: [Instance Content Import](../../runbooks/instance_content_import.md).
+
+## Follow-up - Top-level help discovery
+- Changes: Made `./v3 help`, `./v3 --help`, and `./v3 -h` show the existing command list successfully; added remote-import examples, resume usage, and a pointer to detailed import help. Updated the CLI reference.
+- Verification: All four top-level help entry points show identical output containing import, resume, and detailed-help usage; explicit help returns 0 and no-argument usage retains exit 1. Import-specific help, `bash -n v3`, and `git diff --check` passed.
