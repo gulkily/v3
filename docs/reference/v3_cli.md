@@ -263,8 +263,21 @@ controlled operator workflow.
 Downloads the source's public repository archive, merges supported public forum
 content while preserving destination settings/approval authority, and publishes
 local views. Hostnames use HTTPS; short names require a JSON object mapping names
-to URLs in `--sources`. URLs may include an instance base path. `--dry-run`
-previews without changing destination content. Conflicts retain local records.
+to URLs in `--sources`. URLs may include an instance base path. Conflicts retain
+local records.
+
+- `--dry-run` — download and validate the archive, then report proposed imports,
+  duplicates, conflicts, and exclusions without changing destination records,
+  commits, the read model, or published views. Temporary downloads and lock files
+  may be created. Cannot be combined with `--resume`.
+
+Preview an import:
+
+```bash
+./v3 import-instance https://forum.example --dry-run
+```
+
+Remove `--dry-run` to perform the import.
 
 Exit codes are 0 for complete supported-content results, 2 for partial results
 requiring review, and 1 for failures. Reports enumerate exclusions and unsupported

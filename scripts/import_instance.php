@@ -126,7 +126,12 @@ Usage:
            --static-html-root=/path/static_html
 
 Download and merge public forum content, preserving local settings and authority.
-Preview does not change destination content. Conflicts retain the local version.
+--dry-run: download and validate, then report proposed imports, duplicates,
+           conflicts, and exclusions without changing records, commits, the
+           read model, or published views. Temporary/lock files may be created.
+           Cannot be combined with --resume; omit it to perform the import.
+Example: ./v3 import-instance https://forum.example --dry-run
+Conflicts retain the local version.
 Names require an explicit JSON mapping: {"community": "https://forum.example/base"}
 Hostnames default to HTTPS; use an explicit http:// URL when needed.
 Limits: 256 MiB download, 1 GiB expanded, 16 MiB per record, 100,000 entries, 120 seconds, 5 redirects.

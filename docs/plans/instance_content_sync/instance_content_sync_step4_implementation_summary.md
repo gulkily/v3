@@ -43,3 +43,7 @@
 ## Follow-up - Top-level help discovery
 - Changes: Made `./v3 help`, `./v3 --help`, and `./v3 -h` show the existing command list successfully; added remote-import examples, resume usage, and a pointer to detailed import help. Updated the CLI reference.
 - Verification: All four top-level help entry points show identical output containing import, resume, and detailed-help usage; explicit help returns 0 and no-argument usage retains exit 1. Import-specific help, `bash -n v3`, and `git diff --check` passed.
+
+## Follow-up - Explicit dry-run documentation
+- Changes: Added a dedicated `--dry-run` option explanation and example to the CLI reference and command help; clarified unchanged destination data, temporary/lock files, and incompatibility with `--resume` in the runbook.
+- Verification: Command help returns 0 and includes the dry-run description, example, and resume restriction; PHP lint and `git diff --check` passed. Runtime import behavior is unchanged.

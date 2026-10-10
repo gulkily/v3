@@ -81,9 +81,10 @@ never remove local data. Related records/signatures with rejected dependencies
 are withheld together. The existing `import-repository` command remains
 available for local archives with its previous options and policy.
 
-Preview downloads and validates the archive and reports the proposed merge. It
+`--dry-run` downloads and validates the archive and reports the proposed merge. It
 may create temporary files and lock files but does not change destination
-records, commits, the read model, or published views. Actual runs list category
+records, commits, the read model, or published views. It cannot be combined with
+`--resume`; remove `--dry-run` to perform the import. Actual runs list category
 counts and every excluded/unsupported/invalid/conflicting record. Private review
 reports and conflict copies live below the printed
 `<repository>/.git/instance-import/<run-id>/` directory.
