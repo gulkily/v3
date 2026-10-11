@@ -930,3 +930,35 @@ body.paned-reader-body {
 .paned-content-summary-footer a:hover {
   text-decoration: underline;
 }
+
+/* Dark scheme. data-forte-scheme is set before first paint by the standalone
+   layout from the viewer's resolved site theme (see standalone_layout.php).
+   Keeps the classic windowed chrome: light/dark border tokens are tuned as a
+   highlight/shadow pair rather than inverted, so bevels still read as raised
+   or sunken. */
+:root[data-forte-scheme="light"] {
+  color-scheme: light;
+}
+
+:root[data-forte-scheme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-forte-scheme="dark"] body.paned-reader-body {
+  --body-background: #161c28;
+  color-scheme: dark;
+}
+
+:root[data-forte-scheme="dark"] .paned-window {
+  --paned-chrome: #23262e;
+  --paned-chrome-light: #2c303a;
+  --paned-chrome-dark: #1a1d23;
+  --paned-titlebar-start: #1d3566;
+  --paned-ink: #e3e6ec;
+  --paned-ink-soft: #a3a9b6;
+  --paned-content-bg: #15181e;
+  --paned-select-bg: #2b5aa8;
+  --paned-select-text: #ffffff;
+  --paned-border-light: #3e4452;
+  --paned-border-dark: #0a0b0e;
+}

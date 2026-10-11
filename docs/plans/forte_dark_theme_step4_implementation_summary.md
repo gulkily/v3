@@ -12,3 +12,15 @@
 - Notes:
   - The marker has no visual effect yet; Stage 2 consumes it. Stage 2 must also set the root color-scheme from the marker so a Light choice on a dark OS does not get a dark canvas from the new `light dark` meta.
   - Verified under the default profile only; a second-profile check remains for Stage 4.
+
+## Stage 2 - Dark palette for window chrome and main panes
+- Changes:
+  - `public/assets/forte.css`: appended a dark-scheme section keyed to `:root[data-forte-scheme]`. It sets root and body `color-scheme`, a dark body background, and dark values for every `--paned-*` token. Border light/dark tokens are a tuned highlight/shadow pair so bevels still read as raised or sunken.
+  - A `data-forte-scheme="light"` rule pins the root to `color-scheme: light`, resolving the Stage 1 note about the `light dark` meta.
+- Verification:
+  - Chrome headless screenshots of `/forte` on a local dev server: dark OS with Auto → marker `dark`, dark palette; light OS with Auto → `light`, original look; Light stored on a dark OS → `light`, original look.
+  - Contrast ratios of the new tokens: ink on chrome 12.1, ink-soft on chrome 6.4, ink on content 14.2, ink-soft on content 7.5, select text on select background 6.7, white on title bar 12.0 (all above WCAG AA 4.5).
+  - Only the board page with no thread selected was viewed; the other Forte pages and surfaces are Stage 3.
+- Notes:
+  - Light rules are untouched, so the light palette is unchanged by construction.
+  - Hard-coded colors and the `color-scheme: light` declarations on inputs and dialogs remain; Stage 3 handles them.
