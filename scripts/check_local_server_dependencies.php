@@ -96,4 +96,20 @@ if ($execReady) {
     }
 }
 
+$optional = static function (bool $available, string $name, string $guidance) use ($mode, $output): void {
+    if (!$available) {
+        fwrite($output, "WARN: Optional {$name} unavailable. {$guidance}\n");
+    } elseif ($mode === 'report') {
+        fwrite($output, "OK: Optional {$name}\n");
+    }
+};
+$optional(class_exists(Normalizer::class, false), 'intl normalization', 'Unicode remains usable, but combining marks are rejected without normalization support. Install/enable intl for the selected PHP CLI for normalization.');
+$signalFunctions = ['pcntl_async_signals', 'pcntl_signal'];
+$signalsReady = array_filter($signalFunctions, static fn (string $name): bool => !function_exists($name)) === [];
+foreach (['SIGINT', 'SIGTERM', 'SIGWINCH', 'SIG_DFL'] as $constant) {
+    $signalsReady = $signalsReady && defined($constant);
+}
+$optional($signalsReady, 'PCNTL signal support', 'Use plain logging and launcher-managed shutdown; enable PCNTL for the selected CLI only for terminal enhancements.');
+$optional(function_exists('shell_exec'), 'terminal shell execution (shell_exec)', 'Terminal enhancements are disabled; plain logging and shutdown remain available. Review host policy only if these enhancements are wanted.');
+
 exit($failed ? 1 : 0);

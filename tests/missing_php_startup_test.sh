@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FIXTURE="$(mktemp -d)"
 trap 'rm -rf "${FIXTURE}"' EXIT
 mkdir "${FIXTURE}/bin"
-for tool in bash dirname cat git; do
+for tool in bash dirname cat git stty; do
   ln -s "$(command -v "${tool}")" "${FIXTURE}/bin/${tool}"
 done
 fail() { echo "FAIL: $*" >&2; exit 1; }

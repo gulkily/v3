@@ -68,5 +68,10 @@ local_server_dependencies_check() {
   if ! php "${ROOT}/scripts/check_local_server_dependencies.php" "${mode}" "${git_ready}" "${platform}"; then
     failed=1
   fi
+  if ! command -v stty >/dev/null 2>&1; then
+    printf '%s\n' 'WARN: Optional stty is not available on PATH; terminal layout/control uses plain logging. Install terminal utilities only if you want terminal enhancements.' >&"${output_fd}"
+  elif [[ "${mode}" == report ]]; then
+    printf '%s\n' 'OK: Optional stty executable (terminal access depends on the session)'
+  fi
   return "${failed}"
 }

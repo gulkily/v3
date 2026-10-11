@@ -43,7 +43,11 @@ $port = preg_replace('/^.*:(\d+)$/', ':$1', $address) ?? $address;
 $checkout = basename($root);
 $isTty = stream_isatty(STDOUT);
 $color = $isTty && getenv('NO_COLOR') === false;
-$canSignal = function_exists('pcntl_async_signals');
+$canSignal = function_exists('pcntl_async_signals') && function_exists('pcntl_signal')
+    && defined('SIGINT') && defined('SIGTERM') && defined('SIGWINCH') && defined('SIG_DFL');
+$canTerminal = $isTty && $canSignal && function_exists('shell_exec')
+    && trim((string) shell_exec('command -v stty 2>/dev/null')) !== '';
+$controlInput = getenv('V3_DEV_CONTROL') === '1' ? STDIN : null;
 
 $logHandle = $logFile !== null ? fopen($logFile, 'ab') : false;
 if ($logFile !== null && $logHandle === false) {
@@ -54,15 +58,15 @@ if ($logFile !== null && $logHandle === false) {
 // Turn off the ^C echo while the server runs. Ctrl+C then ends the server with a
 // single "stopped" line rather than a stray "^C" on the last log line.
 $savedTty = null;
-if (stream_isatty(STDIN) && function_exists('shell_exec')) {
-    $savedTty = trim((string) shell_exec('stty -g 2>/dev/null'));
+if ($canTerminal) {
+    $savedTty = trim((string) shell_exec('stty -g 2>/dev/null < /dev/tty'));
     if ($savedTty !== '') {
-        shell_exec('stty -echoctl 2>/dev/null');
+        shell_exec('stty -echoctl 2>/dev/null < /dev/tty');
     }
 }
 register_shutdown_function(static function () use (&$savedTty): void {
     if ($savedTty !== null && $savedTty !== '') {
-        shell_exec('stty ' . escapeshellarg($savedTty) . ' 2>/dev/null');
+        shell_exec('stty ' . escapeshellarg($savedTty) . ' 2>/dev/null < /dev/tty');
     }
 });
 
@@ -78,6 +82,25 @@ if (!is_resource($process)) {
     exit(1);
 }
 $serverErrors = $pipes[2];
+$shutdownServer = static function () use (&$process, $serverErrors): void {
+    if (!is_resource($process)) {
+        return;
+    }
+    if (proc_get_status($process)['running']) {
+        proc_terminate($process, 15);
+        $deadline = microtime(true) + 1.0;
+        while (proc_get_status($process)['running'] && microtime(true) < $deadline) {
+            usleep(10000);
+        }
+        if (proc_get_status($process)['running']) {
+            proc_terminate($process, 9);
+        }
+    }
+    fclose($serverErrors);
+    proc_close($process);
+    $process = null;
+};
+register_shutdown_function($shutdownServer);
 
 $stopping = false;
 $resized = false;
@@ -95,7 +118,7 @@ if ($canSignal) {
 
 function terminalRows(): int
 {
-    $size = trim((string) shell_exec('stty size 2>/dev/null'));
+    $size = function_exists('shell_exec') ? trim((string) shell_exec('stty size 2>/dev/null < /dev/tty')) : '';
     $parts = explode(' ', $size);
 
     return isset($parts[0]) && ctype_digit($parts[0]) ? (int) $parts[0] : 24;
@@ -103,7 +126,7 @@ function terminalRows(): int
 
 function terminalColumns(): int
 {
-    $size = trim((string) shell_exec('stty size 2>/dev/null'));
+    $size = function_exists('shell_exec') ? trim((string) shell_exec('stty size 2>/dev/null < /dev/tty')) : '';
     $parts = explode(' ', $size);
 
     return isset($parts[1]) && ctype_digit($parts[1]) ? (int) $parts[1] : 80;
@@ -114,7 +137,7 @@ function terminalColumns(): int
 $headerOn = false;
 $drawHeader = null;
 $applyLayout = null;
-if ($isTty && $canSignal) {
+if ($canTerminal) {
     $drawHeader = static function (int $requests, int $errors) use ($url, $checkout): void {
         $columns = terminalColumns();
         // OSC 8 makes the URL clickable in terminals that support it; others show the text.
@@ -171,6 +194,9 @@ while (!$stopping) {
     }
 
     $readable = [$serverErrors];
+    if ($controlInput !== null) {
+        $readable[] = $controlInput;
+    }
     $write = null;
     $except = null;
     $ready = @stream_select($readable, $write, $except, 0, 200000);
@@ -183,6 +209,11 @@ while (!$stopping) {
             break;
         }
         continue;
+    }
+    if ($controlInput !== null && in_array($controlInput, $readable, true)) {
+        fgets($controlInput);
+        $stopping = true;
+        break;
     }
 
     $line = fgets($serverErrors);
@@ -220,16 +251,11 @@ while (!$stopping) {
     }
 }
 
+$shutdownServer();
 if ($canSignal) {
     pcntl_signal(SIGINT, SIG_DFL);
     pcntl_signal(SIGTERM, SIG_DFL);
 }
-$status = proc_get_status($process);
-if ($status['running']) {
-    proc_terminate($process, SIGTERM);
-}
-fclose($serverErrors);
-proc_close($process);
 
 if ($headerOn) {
     $rows = terminalRows();

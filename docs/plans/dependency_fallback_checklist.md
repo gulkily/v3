@@ -11,8 +11,8 @@ This delivery covers only `./v3 start` and `./v3 check-dependencies`; broader wo
 - [x] Git/PHP executable availability, unusable executables, and supported PHP version in both entry points; preserve manual retry options. PHP 8.1 source compatibility and local bootstrap/write behavior verified.
 - [x] PDO/PDO SQLite and mbstring availability with runtime-specific recovery guidance. Verified missing extensions, disabled mbstring functions, and restored in-memory SQLite opening.
 - [x] Required process execution capabilities, including harmless execution probes and restriction guidance. Verified disabled `proc_open`/`exec` and restored PHP child, shell, and Git execution.
-- [ ] Optional terminal/PCNTL support with plain logging and reliable shutdown.
-- [ ] Optional intl normalization with reduced-behavior guidance.
+- [x] Optional terminal/PCNTL support with plain logging and reliable shutdown. Verified terminal and redirected output plus SIGINT/SIGTERM cleanup without `stty`, PCNTL functions, or `shell_exec`.
+- [x] Optional intl normalization with reduced-behavior guidance. Warnings explain combining-mark rejection; existing Unicode policy/risk tests pass without intl.
 - [ ] End-to-end missing/disabled/restored, state-preservation, unattended, and local read/write verification.
 - [ ] Launcher prerequisites, platform setup instructions, command discovery, and readiness limits documented and verified.
 

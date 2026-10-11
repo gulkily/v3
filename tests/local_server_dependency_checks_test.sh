@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FIXTURE="$(mktemp -d)"
 trap 'rm -rf "${FIXTURE}"' EXIT
 mkdir "${FIXTURE}/bin"
-for tool in bash dirname cat; do
+for tool in bash dirname cat stty; do
   ln -s "$(command -v "${tool}")" "${FIXTURE}/bin/${tool}"
 done
 export V3_TEST_SERVER_MARKER="${FIXTURE}/server"

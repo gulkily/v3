@@ -195,7 +195,8 @@ case "${COMMAND}" in
       fi
       ADDRESS="127.0.0.1:${PORT_NUMBER}"
     fi
-    exec php "${ROOT}/scripts/dev_server.php" "--address=${ADDRESS}" ${DEV_SERVER_ARGS[@]+"${DEV_SERVER_ARGS[@]}"}
+    source "${ROOT}/scripts/local_server_start.sh"
+    local_server_start "--address=${ADDRESS}" ${DEV_SERVER_ARGS[@]+"${DEV_SERVER_ARGS[@]}"}
     ;;
   check-dependencies)
     shift
