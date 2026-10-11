@@ -6,6 +6,7 @@ or standalone plans remain at this level until they reach that threshold.
 
 ## Feature folders
 
+- [Guided PHP setup fallback](guided_php_setup_fallback/)
 - [Immediate approval seed refresh](approval_seed_immediate_refresh/)
 
 - [Agent reply task queue merge](agent_reply_task_queue_merge/)

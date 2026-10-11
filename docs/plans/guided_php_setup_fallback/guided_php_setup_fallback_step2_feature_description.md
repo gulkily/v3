@@ -20,7 +20,7 @@ The existing missing-PHP fallback points to general setup documentation, leaving
 ## Delivery Scope
 
 - **Work type:** Application change with supporting setup documentation and focused verification.
-- Extend the missing-PHP `./v3 start` guidance only. Automatic installation, other platform-specific recipes, runtime validation for existing PHP installations, other launcher commands, and the [dependency checklist](dependency_fallback_checklist.md) are separate future work.
+- Extend the missing-PHP `./v3 start` guidance only. Automatic installation, other platform-specific recipes, runtime validation for existing PHP installations, other launcher commands, and the [dependency checklist](../dependency_fallback_checklist.md) are separate future work.
 
 ## Completion Boundary
 

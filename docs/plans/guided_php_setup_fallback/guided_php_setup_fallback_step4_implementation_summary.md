@@ -1,0 +1,7 @@
+> **Feature plan:** [Step 1](./guided_php_setup_fallback_step1_solution_assessment.md) · [Step 2](./guided_php_setup_fallback_step2_feature_description.md) · [Step 3](./guided_php_setup_fallback_step3_development_plan.md) · [Step 4](./guided_php_setup_fallback_step4_implementation_summary.md)
+
+## Stage 1 - Platform aware manual setup guidance
+
+- Changes: Extended the startup recovery message with PATH-first guidance, bounded Ubuntu 24.04/APT recognition, manual PHP 8.3 CLI/SQLite/mbstring instructions, privilege explanation, and generic fallback. Added an internal Bash helper that parses release fields without executing them; expanded README setup recovery. Grouped the four plans and updated the index.
+- Verification: `bash -n v3 scripts/php_setup_guidance.sh`, existing `bash tests/missing_php_startup_test.sh`, and `git diff --check` passed. Direct `./v3 start </dev/null` on this missing-PHP Ubuntu host returned exit 1 with supported instructions. Supported, older-release, duplicate-ID, and absent-file fixtures selected expected advice. Official Ubuntu package references in Step 3 confirm the recipe family; locally extracted package contents include `pdo_sqlite.so` and `mbstring.so`.
+- Notes: Guidance only prints commands; it does not install, prompt, modify PATH/profiles, or retry. Server source remains unchanged. The separate dependency checklist remains uncommitted and outside feature commits. Deployment, system package installation, and migrations are not applicable to manual guidance.

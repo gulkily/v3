@@ -7,9 +7,27 @@ COMMAND="${1:-}"
 missing_php_startup_guidance() {
   cat >&2 <<EOF
 Cannot start v3: PHP CLI is not available on PATH.
-Install the PHP command-line runtime, or add your existing PHP executable's
-directory to PATH. Check that 'php --version' works in this terminal.
+If PHP is already installed, add its executable's directory to PATH in this
+terminal. Check that 'php --version' works before installing another copy.
+EOF
+  source "${ROOT}/scripts/php_setup_guidance.sh"
+  if [[ "$(php_setup_platform /etc/os-release)" == ubuntu-24.04 ]]; then
+    cat >&2 <<'EOF'
+Ubuntu 24.04 with APT: install PHP CLI, SQLite support, and mbstring manually:
+  sudo apt-get update
+  sudo apt-get install php8.3-cli php8.3-sqlite3 php8.3-mbstring
+These commands require administrator privileges and change system packages.
+In an existing root shell, omit sudo. v3 does not run these commands for you.
+EOF
+  else
+    cat >&2 <<'EOF'
+Install PHP CLI with SQLite/PDO SQLite and mbstring support using your system's
+package manager or PHP installation instructions.
+EOF
+  fi
+  cat >&2 <<EOF
 Setup guide: ${ROOT}/README.md (PHP setup, #php-setup)
+After manual setup, check 'php --version' in this terminal.
 Then retry your ./v3 start command with the same options.
 EOF
 }

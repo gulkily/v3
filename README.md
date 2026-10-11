@@ -102,6 +102,26 @@ Check availability with `php --version`, then retry `./v3 start` with your
 original options. This setup guide is readable directly from the checkout
 without running PHP. Startup reports missing PHP but does not install software.
 
+On Ubuntu 24.04 with APT, install the matching PHP CLI, SQLite/PDO SQLite,
+and mbstring packages manually:
+
+```bash
+sudo apt-get update
+sudo apt-get install php8.3-cli php8.3-sqlite3 php8.3-mbstring
+```
+
+These commands change system packages and require administrator privileges;
+omit `sudo` in an existing root shell. If a command fails, resolve the reported
+package-manager or permission issue before retrying. Then check `php --version`
+and `php -m` for `PDO`, `pdo_sqlite`, and `mbstring` in your launching terminal.
+Run v3 as your usual user after setup.
+
+Startup displays this recipe only when it recognizes Ubuntu 24.04 and finds
+`apt-get`. Other environments receive general manual setup guidance; install
+PHP CLI with PDO SQLite and mbstring support using your platform's instructions.
+Missing or ambiguous platform information also uses the general guidance.
+Startup never prompts, changes PATH or shell profiles, or retries automatically.
+
 ### Start locally
 
 The default local runtime now bootstraps and uses `state/local_repository` automatically. On first run it copies the committed fixture seed into that writable git repo, so thread/reply/bootstrap writes work without setting `FORUM_REPOSITORY_ROOT`.
