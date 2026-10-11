@@ -27,6 +27,7 @@ final class ApprovalSeedCommandTest
                 assertSame('root', $pdo->query('SELECT approved_by_label FROM profiles')->fetchColumn());
                 assertSame('write_incremental', ReadModelMetadata::readMetadata($pdo)['rebuild_reason']);
                 assertSame(ReadModelMetadata::repositoryHead($root), ReadModelMetadata::readMetadata($pdo)['repository_head']);
+                assertSame(0666 & ~umask(), fileperms($root . '/' . $this->seedPath()) & 0777);
                 assertSame('test seed', (new CanonicalRecordRepository($root))->loadApprovalSeed($this->seedPath())->seedReason);
             });
         }
@@ -99,6 +100,153 @@ final class ApprovalSeedCommandTest
         [$code, $out, $err] = $this->process(['git', ...$args], $root);
         if ($code !== 0) { throw new RuntimeException($err); }
         return trim($out);
+    }
+
+    public function testUnreadyModelsAndDirtyRecordsFailBeforeWriting(): void
+    {
+        foreach (['missing', 'stale', 'schema', 'root', 'behind', 'dirty'] as $case) {
+            $this->withFixture(function (string $root, string $db, string $public, string $static) use ($case): void {
+                $pdo = new PDO('sqlite:' . $db);
+                if ($case === 'missing') { unlink($db); }
+                if ($case === 'stale') { file_put_contents(dirname($db) . '/read_model_stale.json', '{"reason":"unrelated"}'); }
+                if ($case === 'schema') { $pdo->exec("UPDATE metadata SET value = 'old' WHERE key = 'schema_version'"); }
+                if ($case === 'root') { $pdo->exec("UPDATE metadata SET value = '/wrong' WHERE key = 'repository_root'"); }
+                if ($case === 'behind') { $this->git($root, ['commit', '--allow-empty', '-m', 'Unindexed head']); }
+                if ($case === 'dirty') { file_put_contents($root . '/records/posts/reply-001.txt', "Changed body.\n", FILE_APPEND); }
+                $head = ReadModelMetadata::repositoryHead($root);
+                [$code, $out, $err] = $this->runSeed($root, $db, $public, $static);
+                assertSame(1, $code);
+                assertSame('', $out);
+                assertStringContains('Approval seed not written.', $err);
+                assertFalse(is_file($root . '/' . $this->seedPath()));
+                assertSame($head, ReadModelMetadata::repositoryHead($root));
+                if ($case === 'missing') { assertFalse(is_file($db)); }
+                if ($case === 'stale') { assertSame('{"reason":"unrelated"}', file_get_contents(dirname($db) . '/read_model_stale.json')); }
+            });
+        }
+    }
+
+    public function testNonGitChangesRequireExplicitRepair(): void
+    {
+        $this->withFixture(function (string $root, string $db, string $public, string $static): void {
+            file_put_contents($root . '/records/posts/reply-001.txt', "Changed body.\n", FILE_APPEND);
+            [$code, , $err] = $this->runSeed($root, $db, $public, $static);
+            assertSame(1, $code);
+            assertStringContains('freshness evidence', $err);
+            assertFalse(is_file($root . '/' . $this->seedPath()));
+            $this->rebuild($root, $db);
+            [$code] = $this->runSeed($root, $db, $public, $static);
+            assertSame(0, $code);
+            $this->assertParity($root, $db);
+        }, false);
+    }
+
+    public function testRefreshFailureRollsBackAndRetryAfterRepairDoesNotDuplicateSeed(): void
+    {
+        $this->withFixture(function (string $root, string $db, string $public, string $static): void {
+            $pdo = new PDO('sqlite:' . $db);
+            $pdo->exec("CREATE TRIGGER fail_seed BEFORE UPDATE ON profiles BEGIN SELECT RAISE(ABORT, 'injected refresh failure'); END");
+            [$code, $out, $err] = $this->runSeed($root, $db, $public, $static);
+            assertSame(1, $code);
+            assertSame('', $out);
+            assertStringContains('persisted and committed', $err);
+            assertStringContains('injected refresh failure', $err);
+            assertSame(0, (int) $pdo->query('SELECT is_approved FROM profiles')->fetchColumn());
+            assertTrue(is_file(dirname($db) . '/read_model_stale.json'));
+            $head = ReadModelMetadata::repositoryHead($root);
+            [$code, , $err] = $this->runSeed($root, $db, $public, $static);
+            assertSame(1, $code);
+            assertStringContains('persisted and committed', $err);
+            // Explicit operator repair, followed by a normal retry.
+            $this->repair($root, $db);
+            [$code] = $this->runSeed($root, $db, $public, $static);
+            assertSame(0, $code);
+            assertSame($head, ReadModelMetadata::repositoryHead($root));
+            $this->assertParity($root, $db);
+        });
+    }
+
+    public function testCommitFailureRetainsSeedAndPreservesUnrelatedStagedWork(): void
+    {
+        $this->withFixture(function (string $root, string $db, string $public, string $static): void {
+            file_put_contents($root . '/operator-notes.txt', 'keep staged');
+            $this->git($root, ['add', 'operator-notes.txt']);
+            file_put_contents($root . '/.git/hooks/pre-commit', "#!/bin/sh\nexit 1\n");
+            chmod($root . '/.git/hooks/pre-commit', 0755);
+            [$code, , $err] = $this->runSeed($root, $db, $public, $static);
+            assertSame(1, $code);
+            assertStringContains('persisted but not committed', $err);
+            assertTrue(is_file($root . '/' . $this->seedPath()));
+            unlink($root . '/.git/hooks/pre-commit');
+            $this->repair($root, $db);
+            [$code, , $err] = $this->runSeed($root, $db, $public, $static);
+            if ($code !== 0) { throw new RuntimeException($err); }
+            assertSame($this->seedPath(), $this->git($root, ['diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD']));
+            assertSame('operator-notes.txt', $this->git($root, ['diff', '--cached', '--name-only']));
+            $this->assertParity($root, $db);
+        });
+    }
+
+    public function testPersistenceFailureLeavesNoPartialSeed(): void
+    {
+        $this->withFixture(function (string $root, string $db, string $public, string $static): void {
+            mkdir($root . '/' . $this->seedPath());
+            [$code, , $err] = $this->runSeed($root, $db, $public, $static);
+            assertSame(1, $code);
+            assertStringContains('Approval seed not written.', $err);
+            assertSame([], glob($root . '/records/approval-seeds/.approval-seed-*'));
+            assertFalse(is_file(dirname($db) . '/read_model_stale.json'));
+        });
+    }
+
+    public function testMatchingRetriesAreIdempotentAndConflictingReasonsFail(): void
+    {
+        $this->withFixture(function (string $root, string $db, string $public, string $static): void {
+            [$code] = $this->runSeed($root, $db, $public, $static);
+            assertSame(0, $code);
+            $head = ReadModelMetadata::repositoryHead($root);
+            [$code] = $this->runSeed($root, $db, $public, $static, ['approval', 'seed']);
+            assertSame(0, $code);
+            [$code, , $err] = $this->runSeed($root, $db, $public, $static, ['approve'], 'different reason');
+            assertSame(1, $code);
+            assertStringContains('different reason', $err);
+            assertSame($head, ReadModelMetadata::repositoryHead($root));
+        });
+    }
+
+    public function testContendingSeedCommandsSerializeWithoutDuplicateCommits(): void
+    {
+        $this->withFixture(function (string $root, string $db, string $public, string $static): void {
+            $lock = fopen(dirname($db) . '/forum-rewrite.lock', 'c+');
+            flock($lock, LOCK_EX);
+            $children = [];
+            $env = array_merge(getenv(), ['FORUM_PUBLIC_ARTIFACT_ROOT' => $public, 'FORUM_STATIC_HTML_ROOT' => $static]);
+            foreach ([['approve'], ['approval', 'seed']] as $command) {
+                $process = proc_open([dirname(__DIR__) . '/v3', ...$command, self::ID, 'test seed', $root, $db], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, dirname(__DIR__), $env);
+                fclose($pipes[0]);
+                $children[] = [$process, $pipes];
+            }
+            usleep(150000);
+            assertFalse(is_file($root . '/' . $this->seedPath()));
+            flock($lock, LOCK_UN);
+            fclose($lock);
+            foreach ($children as [$process, $pipes]) {
+                stream_get_contents($pipes[1]);
+                $err = stream_get_contents($pipes[2]);
+                fclose($pipes[1]);
+                fclose($pipes[2]);
+                $code = proc_close($process);
+                if ($code !== 0) { throw new RuntimeException($err); }
+            }
+            assertSame('2', $this->git($root, ['rev-list', '--count', 'HEAD']));
+            $this->assertParity($root, $db);
+        });
+    }
+
+    private function repair(string $root, string $db): void
+    {
+        $this->rebuild($root, $db);
+        (new \ForumRewrite\ReadModel\ReadModelStaleMarker($db))->clear();
     }
 
     private function seedPath(): string
