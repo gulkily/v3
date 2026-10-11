@@ -9,8 +9,8 @@ Unchecked items represent future work, including improvements to existing error 
 This delivery covers only `./v3 start` and `./v3 check-dependencies`; broader workflow items below remain unchecked when their full scope is not delivered. Evidence and stage results: [implementation summary](local_server_dependency_checks/local_server_dependency_checks_step4_implementation_summary.md).
 
 - [x] Git/PHP executable availability, unusable executables, and supported PHP version in both entry points; preserve manual retry options. PHP 8.1 source compatibility and local bootstrap/write behavior verified.
-- [ ] PDO/PDO SQLite and mbstring availability with runtime-specific recovery guidance.
-- [ ] Required process execution capabilities, including harmless execution probes and restriction guidance.
+- [x] PDO/PDO SQLite and mbstring availability with runtime-specific recovery guidance. Verified missing extensions, disabled mbstring functions, and restored in-memory SQLite opening.
+- [x] Required process execution capabilities, including harmless execution probes and restriction guidance. Verified disabled `proc_open`/`exec` and restored PHP child, shell, and Git execution.
 - [ ] Optional terminal/PCNTL support with plain logging and reliable shutdown.
 - [ ] Optional intl normalization with reduced-behavior guidance.
 - [ ] End-to-end missing/disabled/restored, state-preservation, unattended, and local read/write verification.

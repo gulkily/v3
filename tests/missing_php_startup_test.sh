@@ -90,7 +90,7 @@ cat >"${FIXTURE}/bin/php" <<'EOF'
 #!/usr/bin/env bash
 if [[ "${1:-}" == -r ]]; then
   printf '80300\n8.3.0\n/fake/php\n'
-else
+elif [[ "${1:-}" != */check_local_server_dependencies.php ]]; then
   printf '%s\n' "$@"
 fi
 EOF

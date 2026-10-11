@@ -14,7 +14,7 @@ cat >"${FIXTURE}/bin/php" <<'EOF'
 [[ "${V3_TEST_PHP_BROKEN:-0}" == 0 ]] || exit 99
 if [[ "${1:-}" == -r ]]; then
   printf '%s\n%s\n/fake/php\n' "${V3_TEST_PHP_VERSION:-80300}" 'test-runtime'
-else
+elif [[ "${1:-}" != */check_local_server_dependencies.php ]]; then
   printf '%s\n' "$@" >"${V3_TEST_SERVER_MARKER}"
 fi
 EOF

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Shared, read-only checks for the local PHP development server.
+source "${ROOT}/scripts/php_setup_guidance.sh"
 missing_php_startup_guidance() {
   cat >&2 <<EOF
 Cannot start v3: PHP CLI is not available on PATH.
 If PHP is already installed, add its executable's directory to PATH in this
 terminal. Check that 'php --version' works before installing another copy.
 EOF
-  source "${ROOT}/scripts/php_setup_guidance.sh"
   if [[ "$(php_setup_platform /etc/os-release)" == ubuntu-24.04 ]]; then
     cat >&2 <<'EOF'
 Ubuntu 24.04 with APT: install PHP CLI, SQLite support, and mbstring manually:
@@ -29,15 +29,17 @@ EOF
 }
 
 local_server_dependencies_check() {
-  local mode="$1" failed=0 runtime version_id version binary
+  local mode="$1" failed=0 git_ready=1 runtime version_id version binary platform
   local output_fd=2
   [[ "${mode}" != report ]] || output_fd=1
   if ! command -v git >/dev/null 2>&1; then
     printf '%s\n' 'FAIL: Git is not available on PATH. Install Git or repair PATH, then retry the same command.' >&"${output_fd}"
     failed=1
+    git_ready=0
   elif ! git --version >/dev/null 2>&1; then
     printf '%s\n' 'FAIL: Git is on PATH but cannot run. Check executable permissions and installation; this is not a repository or credential error.' >&"${output_fd}"
     failed=1
+    git_ready=0
   elif [[ "${mode}" == report ]]; then
     printf '%s\n' 'OK: Git executable'
   fi
@@ -61,6 +63,10 @@ local_server_dependencies_check() {
   fi
   if [[ "${mode}" == report ]]; then
     printf 'OK: PHP %s (%s), minimum 8.1\n' "${version}" "${binary}"
+  fi
+  platform="$(php_setup_platform /etc/os-release)"
+  if ! php "${ROOT}/scripts/check_local_server_dependencies.php" "${mode}" "${git_ready}" "${platform}"; then
+    failed=1
   fi
   return "${failed}"
 }
