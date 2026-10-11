@@ -1,0 +1,14 @@
+> **Feature plan:** [Step 1](./forte_dark_theme_step1_solution_assessment.md) · [Step 2](./forte_dark_theme_step2_feature_description.md) · [Step 3](./forte_dark_theme_step3_development_plan.md) · [Step 4](./forte_dark_theme_step4_implementation_summary.md)
+
+## Stage 1 - Resolve Forte color scheme before paint
+- Changes:
+  - `templates/standalone_layout.php`: head script resolves the saved theme (stored choice, else site default, else system preference) and sets `data-forte-scheme="dark|light"` on `<html>`; declared color-scheme is now `light dark`.
+  - `TemplateRenderer::renderStandalonePage` passes the theme storage key, default theme, and theme→mode map to the layout.
+  - `TemplateRenderer`: extracted `explicitThemeNames()` and `defaultThemeName()` helpers, now shared by `renderLayout` and `renderStandalonePage` so both resolve from the same rules.
+- Verification:
+  - Rendered a standalone page and ran its head script in node for seven cases: Auto/dark OS → dark, Auto/light OS → light, Light on dark OS → light, Dark on light OS → dark, Console → dark, Whitehot on dark OS → light, stored `auto` on dark OS → dark.
+  - `php tests/run.php ForteBoardReaderTest ThemeRegistryTest ProfileThemePresentationTest PresentationProfileMatrixTest TemplateRendererMediaEmbedsScriptTest`: 21 run, 21 passed.
+  - Full `tests/run.php` reports 8 failing tests in unrelated areas (feature-flags page, offline snapshot, QDB, agent reply); the run history shows them failing since 2026-10-09/10, before this branch. They were not re-run on a baseline checkout.
+- Notes:
+  - The marker has no visual effect yet; Stage 2 consumes it. Stage 2 must also set the root color-scheme from the marker so a Light choice on a dark OS does not get a dark canvas from the new `light dark` meta.
+  - Verified under the default profile only; a second-profile check remains for Stage 4.
