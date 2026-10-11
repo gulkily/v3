@@ -37,3 +37,18 @@
   - `activity.css` needs no change; it uses `--line` through `color-mix` and renders correctly under dark.
 - Notes:
   - Not exercised visually: media-embed card inside a Forte thread, the content-summary dialog, username page, and reply-composer states. These stay on the Stage 4 walk.
+
+## Stage 4 - Verify and lock behavior with tests
+- Changes:
+  - `tests/ForteBoardReaderTest.php`: added `testStandaloneLayoutResolvesColorSchemeFromSavedThemeOrSystem`, which renders a standalone page, runs its head script in node, and asserts the marker for seven cases (Auto on dark/light system, Light on dark system, Dark on light system, a dark named theme, a light named theme on a dark system, and an unknown stored theme).
+  - No other code changes were needed after the Stage 3 walk.
+- Verification:
+  - `php tests/run.php ForteBoardReaderTest ForteActivityReadModelRecoveryTest ThemeRegistryTest ProfileThemePresentationTest PresentationProfileMatrixTest TemplateRendererMediaEmbedsScriptTest`: 24 run, 24 passed.
+  - Theme matrix on a live local instance (default profile): Auto on dark OS → dark; Auto on light OS → light; Light stored on dark OS → light. Second profile (`FORUM_SITE_ID=mitrapclub`, default theme dark): no stored theme on a light OS → dark; stored Light on dark OS → light; stored Whitehot on dark OS → light.
+  - Script-disabled load on a dark OS renders the original light palette.
+  - First paint: the resolver is an inline script in the document head before any stylesheet, so the marker is set before paint; this was not measured on a throttled connection.
+  - Non-Forte pages: only Forte controllers use the standalone layout, and `layout.php` is unchanged; its theme helpers were refactored and are covered by the theme presentation tests above.
+  - Full `tests/run.php` still lists the 8 unrelated failures noted in Stage 1; they were not re-run on a baseline checkout.
+- Notes:
+  - Not visually exercised in dark: a media-embed card inside a Forte thread, the content-summary dialog, and the username page. They use the same tokens, but they were not inspected.
+  - Release condition met for the surfaces walked (board, thread, new-thread dialog, users, activity, profile); the three above remain a follow-up check.

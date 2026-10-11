@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../autoload.php';
+
+use ForumRewrite\View\TemplateRenderer;
+
 final class ForteBoardReaderTest
 {
     /** @return array<string, mixed> */
@@ -18,6 +22,60 @@ final class ForteBoardReaderTest
         }
 
         return json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    public function testStandaloneLayoutResolvesColorSchemeFromSavedThemeOrSystem(): void
+    {
+        $renderer = new TemplateRenderer(dirname(__DIR__) . '/templates');
+        $html = $renderer->renderStandalonePage('message.php', ['heading' => 'Test', 'message' => 'Test'], 'Title');
+        assertSame(true, str_contains($html, '<meta name="color-scheme" content="light dark">'));
+
+        $htmlPath = tempnam(sys_get_temp_dir(), 'forte-scheme-');
+        file_put_contents($htmlPath, $html);
+        try {
+            $command = sprintf(
+                'node -e %s %s',
+                escapeshellarg(<<<'NODE'
+const fs = require("fs");
+const html = fs.readFileSync(process.argv[1], "utf8");
+const source = html.match(/<script>\s*\(function \(\) \{[\s\S]*?<\/script>/)[0].replace(/<\/?script>/g, "");
+function resolve(stored, osDark) {
+  let scheme = null;
+  global.localStorage = { getItem() { return stored; } };
+  global.window = { matchMedia() { return { matches: osDark }; } };
+  global.document = { documentElement: { setAttribute(name, value) { if (name === "data-forte-scheme") scheme = value; } } };
+  eval(source);
+  return scheme;
+}
+console.log(JSON.stringify({
+  autoDarkSystem: resolve(null, true),
+  autoLightSystem: resolve(null, false),
+  lightOnDarkSystem: resolve("light", true),
+  darkOnLightSystem: resolve("dark", false),
+  darkNamedTheme: resolve("console", false),
+  lightNamedTheme: resolve("whitehot", true),
+  unknownStoredTheme: resolve("not-a-theme", false)
+}));
+NODE),
+                escapeshellarg($htmlPath),
+            );
+            exec($command . ' 2>&1', $output, $exitCode);
+        } finally {
+            unlink($htmlPath);
+        }
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Forte scheme helper failed: ' . implode("\n", $output));
+        }
+
+        assertSame([
+            'autoDarkSystem' => 'dark',
+            'autoLightSystem' => 'light',
+            'lightOnDarkSystem' => 'light',
+            'darkOnLightSystem' => 'dark',
+            'darkNamedTheme' => 'dark',
+            'lightNamedTheme' => 'light',
+            'unknownStoredTheme' => 'light',
+        ], json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR));
     }
 
     public function testSelectingThreadFetchesItsDetailPane(): void
