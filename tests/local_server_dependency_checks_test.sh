@@ -52,6 +52,8 @@ reject_both 'PHP is on PATH but cannot run'
 unset V3_TEST_PHP_BROKEN
 export V3_TEST_PHP_VERSION=80099
 reject_both 'requires PHP 8.1+'
+export V3_TEST_PHP_VERSION=unreadable
+reject_both 'unreadable runtime identity'
 unset V3_TEST_PHP_VERSION
 PATH="${FIXTURE}/bin" "${ROOT}/v3" check-dependencies >"${FIXTURE}/out" 2>"${FIXTURE}/err"
 grep -Fq 'OK: Git executable' "${FIXTURE}/out" || fail 'Git recovery missing'

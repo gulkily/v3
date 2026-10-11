@@ -13,7 +13,7 @@ This delivery covers only `./v3 start` and `./v3 check-dependencies`; broader wo
 - [x] Required process execution capabilities, including harmless execution probes and restriction guidance. Verified disabled `proc_open`/`exec` and restored PHP child, shell, and Git execution.
 - [x] Optional terminal/PCNTL support with plain logging and reliable shutdown. Verified terminal and redirected output plus SIGINT/SIGTERM cleanup without `stty`, PCNTL functions, or `shell_exec`.
 - [x] Optional intl normalization with reduced-behavior guidance. Warnings explain combining-mark rejection; existing Unicode policy/risk tests pass without intl.
-- [ ] End-to-end missing/disabled/restored, state-preservation, unattended, and local read/write verification.
+- [x] End-to-end missing/disabled/restored, state-preservation, unattended, and local read/write verification. Repeatable shell and real-runtime HTTP/terminal tests cover both commands, untouched state, installer sentinels, actual thread/reply writes, and shutdown.
 - [ ] Launcher prerequisites, platform setup instructions, command discovery, and readiness limits documented and verified.
 
 ## Local startup and core runtime

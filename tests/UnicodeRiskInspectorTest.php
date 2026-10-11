@@ -57,12 +57,21 @@ final class UnicodeRiskInspectorTest
         assertSame(true, in_array('zero_width', $body['suspicious_code_points'][0]['labels'], true));
     }
 
-    public function testCombiningMarksSurfaceNormalizationRiskWhenNormalizerIsUnavailable(): void
+    public function testCombiningMarksUseNormalizationWhenAvailableAndSurfaceRiskOtherwise(): void
     {
         $inspection = (new UnicodeRiskInspector())->inspectPost("Cafe\u{0301}", 'Body');
         $subject = $inspection['fields']['subject'];
 
         assertSame(true, in_array('normalization_risk', $subject['risk_labels'], true));
+        if (class_exists(\Normalizer::class)) {
+            assertSame(true, $subject['normalization_available']);
+            assertSame(true, $subject['changed_under_normalization']);
+            assertSame([], $subject['suspicious_code_points']);
+            assertSame(false, $subject['unsafe_rejected']['rejected']);
+            return;
+        }
+        assertSame(false, $subject['normalization_available']);
+        assertSame(null, $subject['changed_under_normalization']);
         assertSame('U+0301', $subject['suspicious_code_points'][0]['code_point']);
         assertSame(true, in_array('combining_mark', $subject['suspicious_code_points'][0]['labels'], true));
     }
