@@ -249,6 +249,148 @@ final class ApprovalSeedCommandTest
         (new \ForumRewrite\ReadModel\ReadModelStaleMarker($db))->clear();
     }
 
+    public function testSeedRetiresCachedPagesAndReleaseBeforeServingUpdatedState(): void
+    {
+        $this->withFixture(function (string $root, string $db, string $public, string $static): void {
+            $target = $this->addApprovalChain($root);
+            $this->rebuild($root, $db);
+            $slug = str_replace(':', '-', $target);
+            $paths = ['/index.html', '/profiles/' . $slug . '.html', '/users/index.html', '/users/pending/index.html', '/threads/root-001.html', '/posts/reply-001.html', '/tags/like.html', '/activity/index.html', '/qdb/quotes/1.html'];
+            foreach ([$public, $static] as $artifactRoot) {
+                foreach ($paths as $path) {
+                    if (!is_dir(dirname($artifactRoot . $path))) { mkdir(dirname($artifactRoot . $path), 0777, true); }
+                    file_put_contents($artifactRoot . $path, 'STALE APPROVAL');
+                }
+                mkdir($artifactRoot . '/offline');
+                file_put_contents($artifactRoot . '/offline/snapshot.sqlite3', 'old snapshot');
+                file_put_contents($artifactRoot . '/offline/update.sqlite3', 'old update');
+            }
+            mkdir($static . '/releases/old/profiles', 0777, true);
+            file_put_contents($static . '/releases/old/profiles/' . $slug . '.html', 'STALE RELEASE');
+            symlink('releases/old', $static . '/current');
+            assertSame('STALE RELEASE', $this->request($root, $db, $public, $static, '/profiles/' . $slug)['body']);
+            [$code, , $err] = $this->runSeed($root, $db, $public, $static);
+            if ($code !== 0) { throw new RuntimeException($err); }
+            foreach ([$public, $static] as $artifactRoot) {
+                foreach ($paths as $path) { assertFalse(file_exists($artifactRoot . $path)); }
+                assertFalse(is_file($artifactRoot . '/offline/snapshot.sqlite3'));
+                assertFalse(is_file($artifactRoot . '/offline/update.sqlite3'));
+            }
+            assertFalse(is_link($static . '/current'));
+            assertTrue(is_file($static . '/releases/old/profiles/' . $slug . '.html'));
+            $profile = $this->request($root, $db, $public, $static, '/api/get_profile?profile_slug=' . $slug);
+            assertSame(200, $profile['status']);
+            assertStringContains('Approved: yes', $profile['body']);
+            $thread = $this->request($root, $db, $public, $static, '/api/get_thread?thread_id=root-001');
+            assertStringContains('Score-Total: 1', $thread['body']);
+            foreach (['/profiles/' . $slug, '/users/', '/users/pending/', '/activity/', '/threads/root-001', '/posts/reply-001', '/tags/like'] as $route) {
+                $response = $this->request($root, $db, $public, $static, $route);
+                assertSame($route === '/users/pending/' ? 403 : 200, $response['status']);
+                assertFalse(str_contains($response['body'], 'STALE'));
+            }
+            $snapshot = $this->request($root, $db, $public, $static, '/offline/snapshot.sqlite3');
+            assertSame(200, $snapshot['status']);
+            assertTrue(str_starts_with($snapshot['body'], 'SQLite format 3'));
+            $copy = new PDO('sqlite:' . $static . '/offline/snapshot.sqlite3');
+            assertSame(1, (int) $copy->query("SELECT score_total FROM threads WHERE root_post_id = 'root-001'")->fetchColumn());
+            assertSame('write_incremental', ReadModelMetadata::readMetadata(new PDO('sqlite:' . $db))['rebuild_reason']);
+        });
+    }
+
+    public function testApprovalIsEffectiveForExistingAuthenticatedMemberOnNextRequest(): void
+    {
+        $this->withFixture(function (string $root, string $db, string $public, string $static): void {
+            $before = $this->request($root, $db, $public, $static, '/', true);
+            assertFalse(str_contains($before['body'], 'href="/invites/"'));
+            [$code] = $this->runSeed($root, $db, $public, $static);
+            assertSame(0, $code);
+            $after = $this->request($root, $db, $public, $static, '/', true);
+            assertSame(200, $after['status']);
+            assertStringContains('href="/invites/"', $after['body']);
+            assertSame(200, $this->request($root, $db, $public, $static, '/users/pending/', true)['status']);
+            $profile = $this->request($root, $db, $public, $static, '/profiles/' . str_replace(':', '-', self::ID), true);
+            assertStringContains('This is your profile.', $profile['body']);
+        });
+    }
+
+    public function testInvalidationFailureIsReportedAndRetryInvalidatesWithoutStateDelta(): void
+    {
+        $this->withFixture(function (string $root, string $db, string $public, string $static): void {
+            // A malformed active-release directory cannot safely be unlinked.
+            mkdir($static . '/current');
+            [$code, $out, $err] = $this->runSeed($root, $db, $public, $static);
+            assertSame(1, $code);
+            assertSame('', $out);
+            assertStringContains('persisted and committed', $err);
+            assertStringContains('Cannot retire static release', $err);
+            assertTrue(is_file(dirname($db) . '/read_model_stale.json'));
+            rmdir($static . '/current');
+            $this->repair($root, $db);
+            file_put_contents($public . '/index.html', 'STALE AFTER REPAIR');
+            [$code] = $this->runSeed($root, $db, $public, $static);
+            assertSame(0, $code);
+            assertFalse(is_file($public . '/index.html'));
+        });
+    }
+
+    public function testUnreadableArtifactDeletionCannotReportSuccess(): void
+    {
+        $this->withFixture(function (string $root, string $db, string $public, string $static): void {
+            file_put_contents($public . '/index.html', 'STALE');
+            chmod($public, 0555);
+            try {
+                [$code, $out, $err] = $this->runSeed($root, $db, $public, $static);
+                assertSame(1, $code);
+                assertSame('', $out);
+                assertStringContains('Unable to invalidate approval artifact', $err);
+                assertStringContains('persisted and committed', $err);
+                assertTrue(is_file($public . '/index.html'));
+            } finally {
+                chmod($public, 0755);
+            }
+            $this->repair($root, $db);
+            [$code] = $this->runSeed($root, $db, $public, $static);
+            assertSame(0, $code);
+            assertFalse(is_file($public . '/index.html'));
+        });
+    }
+
+    private function request(string $root, string $db, string $public, string $static, string $route, bool $member = false): array
+    {
+        $base = dirname($root);
+        foreach (['templates', 'docs'] as $directory) {
+            if (!is_link($base . '/' . $directory)) { symlink(dirname(__DIR__) . '/' . $directory, $base . '/' . $directory); }
+        }
+        if (!is_link($public . '/assets')) { symlink(dirname(__DIR__) . '/public/assets', $public . '/assets'); }
+        $script = <<<'SCRIPT'
+require $argv[1] . '/autoload.php';
+if ($argv[7] === 'member') {
+    if (!is_dir($argv[2] . '/sessions')) { mkdir($argv[2] . '/sessions', 0777, true); }
+    session_save_path($argv[2] . '/sessions');
+    session_id('seed-member');
+    session_start();
+    $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+    session_write_close();
+    $_COOKIE[session_name()] = 'seed-member';
+}
+$_SERVER['REQUEST_METHOD'] = 'GET';
+$_SERVER['REQUEST_URI'] = $argv[6];
+http_response_code(200);
+$controller = new ForumRewrite\Host\FrontController($argv[2], $argv[3], $argv[4], $argv[5], $argv[2] . '/public');
+ob_start();
+$controller->handle('GET', $argv[6], $_COOKIE);
+$body = ob_get_clean();
+echo json_encode(['status' => http_response_code(), 'body' => base64_encode($body)], JSON_THROW_ON_ERROR);
+SCRIPT;
+        [$code, $out, $err] = $this->process([PHP_BINARY, '-r', $script, dirname(__DIR__), $base, $root, $db, $static, $route, $member ? 'member' : 'public'], dirname(__DIR__), array_merge(getenv(), [
+            'FORUM_SITE_ID' => 'zenmemes', 'FORUM_APPROVED_MEMBERS_ONLY' => $member ? 'true' : 'false',
+        ]));
+        if ($code !== 0) { throw new RuntimeException($err); }
+        $result = json_decode($out, true, 512, JSON_THROW_ON_ERROR);
+        $result['body'] = base64_decode($result['body']);
+        return $result;
+    }
+
     private function seedPath(): string
     {
         return 'records/approval-seeds/openpgp-' . substr(self::ID, 8) . '.txt';

@@ -1044,20 +1044,18 @@ class LocalWriteService
                     ], 'Unable to commit approval seed');
                     $commitSha = ReadModelMetadata::repositoryHead($this->repositoryRoot);
                 }
+                $refreshStarted = hrtime(true);
                 $result = $this->incrementalReadModelUpdater()->applyApprovalSeedWrite($commitSha);
-                // Include the target on retries, where there may be no state delta.
-                $identities = array_unique([$identityId, ...$result['changed_identity_ids']]);
-                $query = $this->readModelPdo()->prepare('SELECT profile_slug, bootstrap_thread_id, bootstrap_post_id FROM profiles WHERE identity_id = ?');
-                foreach ($identities as $id) {
-                    $query->execute([$id]);
-                    $profile = $query->fetch();
-                    if (is_array($profile)) {
-                        $this->invalidator()->invalidateIdentityLink($profile['profile_slug'], $profile['bootstrap_thread_id'], $profile['bootstrap_post_id']);
-                    }
-                }
+                $refreshMilliseconds = $this->elapsedMilliseconds($refreshStarted);
+                $invalidationStarted = hrtime(true);
+                $this->invalidator()->invalidateApprovalSeed();
                 return [
                     'identity_id' => $identityId, 'commit_sha' => $commitSha,
-                    'timings' => ['read_model_approval_seed_incremental' => $this->elapsedMilliseconds($started)] + $result['timings'],
+                    'timings' => [
+                        'read_model_approval_seed_incremental' => $refreshMilliseconds,
+                        'artifact_invalidate' => $this->elapsedMilliseconds($invalidationStarted),
+                        'write_total' => $this->elapsedMilliseconds($started),
+                    ] + $result['timings'],
                 ];
             } catch (\Throwable $error) {
                 if ($persisted) {
