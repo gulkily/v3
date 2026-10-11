@@ -117,6 +117,39 @@ final class LegacyTimestampImportTest
         assertStringContains('does not match post bytes', $plan[$path]['reason']);
     }
 
+    public function testParallelAndSerialRecoveryAgreeAcrossMultipleBatchesAndRenames(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source');
+        for ($i = 0; $i < 10; $i++) {
+            $bytes = str_replace("Created-At: 2026-04-10T12:00:00Z\n", '', $w->post('legacy-' . $i));
+            $w->put($source . '/records/posts/legacy-' . $i . '.txt', $bytes);
+        }
+        $w->git($source);
+        $this->dateCommit($w, $source);
+        // Keep the ID and bytes while moving a post into its canonical dated path.
+        mkdir($source . '/records/posts/2026/04/10', 0700, true);
+        rename($source . '/records/posts/legacy-0.txt', $source . '/records/posts/2026/04/10/legacy-0.txt');
+        $w->git($source);
+        $w->put($source . '/records/posts/legacy-9.txt', "Changed, uncommitted bytes\n");
+        $w->put($source . '/records/posts/untracked.txt', str_replace("Created-At: 2026-04-10T12:00:00Z\n", '', $w->post('untracked')));
+        $extracted = $this->archive($w, $source, 'extracted');
+        assertSame(9, $extracted['recovered_legacy_timestamps']);
+        $parallel = [];
+        foreach (glob($extracted['root'] . '/records/post-timestamps/*.json') as $file) {
+            $parallel[basename($file)] = file_get_contents($file);
+            unlink($file);
+        }
+        $serialCount = (new \ForumRewrite\Import\LegacyArchiveTimestamps(maxConcurrentProcesses: 1))->recover($extracted['root']);
+        assertSame(9, $serialCount);
+        foreach ($parallel as $name => $bytes) {
+            assertSame($bytes, file_get_contents($extracted['root'] . '/records/post-timestamps/' . $name));
+        }
+        assertSame('2026-04-10T12:00:00Z', (new CanonicalRecordRepository($extracted['root']))->loadPost('records/posts/2026/04/10/legacy-0.txt')->createdAt);
+        assertTrue(!is_file($extracted['root'] . '/records/post-timestamps/untracked.json'));
+        assertTrue(!is_file($extracted['root'] . '/records/post-timestamps/legacy-9.json'));
+    }
+
     private function dateCommit(ImportTestWorkspace $w, string $source): void
     {
         [$code, $output] = $w->command(['env', 'GIT_AUTHOR_DATE=2026-04-10T12:00:00Z', 'GIT_COMMITTER_DATE=2026-04-10T12:00:00Z',

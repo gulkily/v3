@@ -45,4 +45,18 @@ this checklist with its validation results.
   took about 2.5 seconds; legacy history lookup took 33.6 seconds for 59 dates,
   with visible progress throughout. No destination content was changed.
 
+- [x] 5. Parallelize legacy date recovery with at most four Git processes.
+  Batch verification and rename-following history queries under the same total
+  deadline and per-query output limit. Consume completed output immediately,
+  stop outstanding workers on failure, and apply results in canonical path order.
+  Recheck post hashes before saving metadata. Progress shows completed queries
+  and active workers.
+  Validation: 14/14 focused archive, legacy, and CLI checks passed; the five
+  legacy tests passed again after the final cleanup review. The new regression
+  compares serial/parallel metadata across more than one worker batch, a renamed
+  post, and changed/untracked source files. On the same live archive, four workers
+  recovered 59 dates in 13.8 seconds versus 25.0 seconds serially (about 45% less
+  time), with all metadata bytes identical. This isolated benchmark did not
+  change destination content. PHP lint and diff checks passed.
+
 Scheduling, web UI, and importing source authority remain outside this work.
