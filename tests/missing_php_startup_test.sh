@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FIXTURE="$(mktemp -d)"
 trap 'rm -rf "${FIXTURE}"' EXIT
 mkdir "${FIXTURE}/bin"
-for tool in bash dirname cat; do
+for tool in bash dirname cat git; do
   ln -s "$(command -v "${tool}")" "${FIXTURE}/bin/${tool}"
 done
 fail() { echo "FAIL: $*" >&2; exit 1; }
@@ -88,7 +88,11 @@ grep -Fq 'retry' "${FIXTURE}/err" || fail 'piped recovery guidance missing'
 # Capture each argument on its own line; a log-file path includes spaces.
 cat >"${FIXTURE}/bin/php" <<'EOF'
 #!/usr/bin/env bash
-printf '%s\n' "$@"
+if [[ "${1:-}" == -r ]]; then
+  printf '80300\n8.3.0\n/fake/php\n'
+else
+  printf '%s\n' "$@"
+fi
 EOF
 chmod +x "${FIXTURE}/bin/php"
 check_forwarding() {

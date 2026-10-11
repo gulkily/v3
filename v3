@@ -4,34 +4,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMMAND="${1:-}"
 
-missing_php_startup_guidance() {
-  cat >&2 <<EOF
-Cannot start v3: PHP CLI is not available on PATH.
-If PHP is already installed, add its executable's directory to PATH in this
-terminal. Check that 'php --version' works before installing another copy.
-EOF
-  source "${ROOT}/scripts/php_setup_guidance.sh"
-  if [[ "$(php_setup_platform /etc/os-release)" == ubuntu-24.04 ]]; then
-    cat >&2 <<'EOF'
-Ubuntu 24.04 with APT: install PHP CLI, SQLite support, and mbstring manually:
-  sudo apt-get update
-  sudo apt-get install php8.3-cli php8.3-sqlite3 php8.3-mbstring
-These commands require administrator privileges and change system packages.
-In an existing root shell, omit sudo. v3 does not run these commands for you.
-EOF
-  else
-    cat >&2 <<'EOF'
-Install PHP CLI with SQLite/PDO SQLite and mbstring support using your system's
-package manager or PHP installation instructions.
-EOF
-  fi
-  cat >&2 <<EOF
-Setup guide: ${ROOT}/README.md (PHP setup, #php-setup)
-After manual setup, check 'php --version' in this terminal.
-Then retry your ./v3 start command with the same options.
-EOF
-}
-
 fdp_usage() {
   cat <<'EOF'
 Usage:
@@ -201,10 +173,8 @@ fi
 case "${COMMAND}" in
   start)
     shift
-    if ! command -v php >/dev/null 2>&1; then
-      missing_php_startup_guidance
-      exit 1
-    fi
+    source "${ROOT}/scripts/local_server_dependencies.sh"
+    local_server_dependencies_check startup || exit 1
     ADDRESS_ARGUMENT="127.0.0.1:8000"
     DEV_SERVER_ARGS=()
     for ARGUMENT in "$@"; do
@@ -226,6 +196,15 @@ case "${COMMAND}" in
       ADDRESS="127.0.0.1:${PORT_NUMBER}"
     fi
     exec php "${ROOT}/scripts/dev_server.php" "--address=${ADDRESS}" ${DEV_SERVER_ARGS[@]+"${DEV_SERVER_ARGS[@]}"}
+    ;;
+  check-dependencies)
+    shift
+    if (( $# != 0 )); then
+      echo 'Usage: ./v3 check-dependencies (local-server prerequisites only)' >&2
+      exit 1
+    fi
+    source "${ROOT}/scripts/local_server_dependencies.sh"
+    local_server_dependencies_check report
     ;;
   test)
     shift
