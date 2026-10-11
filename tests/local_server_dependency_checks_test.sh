@@ -46,6 +46,15 @@ reject_both 'Git is on PATH but cannot run'
 unset V3_TEST_GIT_BROKEN
 mv "${FIXTURE}/bin/php" "${FIXTURE}/php"
 reject_both 'PHP CLI is not available on PATH'
+grep -Fq '✓ OK: Bash' "${FIXTURE}/out" || fail 'available marker missing'
+grep -Fq '✗ FAIL: PHP CLI' "${FIXTURE}/out" || fail 'missing marker missing'
+grep -Fq '? SKIP: PDO SQLite driver' "${FIXTURE}/out" || fail 'uncheckable driver missing'
+grep -Fq '✓ OK: Optional stty' "${FIXTURE}/out" || fail 'independent optional check skipped'
+[[ ! -s "${FIXTURE}/err" ]] || fail 'report split across stdout and stderr'
+report="$(cat "${FIXTURE}/out")"
+[[ "${report}" == *'✗ FAIL: PHP CLI'*'? SKIP: PDO SQLite driver'*'Result: NOT READY'*'Recovery guidance'*'PHP CLI is not available on PATH.'* ]] \
+  || fail 'missing-PHP report did not separate statuses, result, and guidance'
+[[ "${report}" != *$'\033'* ]] || fail 'redirected report contained color escapes'
 mv "${FIXTURE}/php" "${FIXTURE}/bin/php"
 export V3_TEST_PHP_BROKEN=1
 reject_both 'PHP is on PATH but cannot run'

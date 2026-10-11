@@ -46,6 +46,34 @@ def request(port, path, method='GET'):
         return response.read().decode()
 
 
+def terminal_report(command, env):
+    master, slave = pty.openpty()
+    process = subprocess.Popen(command, env=env, stdin=subprocess.DEVNULL,
+                               stdout=slave, stderr=slave)
+    os.close(slave)
+    chunks = []
+    deadline = time.monotonic() + 20
+    try:
+        while time.monotonic() < deadline:
+            if select.select([master], [], [], .1)[0]:
+                try:
+                    chunk = os.read(master, 65536)
+                except OSError:
+                    break
+                if not chunk:
+                    break
+                chunks.append(chunk)
+            elif process.poll() is not None:
+                break
+        process.wait(timeout=1)
+        return process.returncode, b''.join(chunks)
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+        os.close(master)
+
+
 def main():
     php = shutil.which('php')
     if not php:
@@ -137,9 +165,41 @@ def main():
                 assert result.returncode == 1 and message in text, (command, message, text)
                 assert str(config) in text and 'Selected PHP CLI:' in text, text
                 assert 'Fatal error' not in text, text
+                if command == 'check-dependencies':
+                    assert '✗ FAIL:' in result.stdout and not result.stderr, text
+                    assert '\x1b' not in text, 'Redirected report should contain no color escapes'
+                    assert text.index('✗ FAIL:') < text.index('Result: NOT READY') < text.index('Recovery guidance'), text
                 assert snapshot(project) == before, 'Failed preflight changed project state'
                 assert not install_marker.exists(), 'Unattended preflight invoked an installer'
             print('PASS: both entry points reject', message, 'without state changes')
+
+        # Both sample failure cases remain scannable; commands stand out on a terminal.
+        configure(omit=('pdo_sqlite', 'mbstring'), disabled='exec')
+        color_env = dict(env)
+        color_env.pop('NO_COLOR', None)
+        code, colored = terminal_report([str(project / 'v3'), 'check-dependencies'], color_env)
+        assert code == 1 and b'\x1b[31m' in colored, colored
+        assert b'\x1b[1;36mphp --ini\x1b[0m' in colored, colored
+        if 'Ubuntu 24.04/APT' in colored.decode() and '✗ FAIL: PDO SQLite driver' in colored.decode():
+            assert b'\x1b[1;36msudo apt-get install php8.3-sqlite3\x1b[0m' in colored, colored
+        code, plain = terminal_report([str(project / 'v3'), 'check-dependencies'], {**color_env, 'NO_COLOR': ''})
+        assert code == 1 and b'\x1b' not in plain, plain
+        assert '✗ FAIL:' in plain.decode() and 'Recovery guidance' in plain.decode(), plain
+        parked_php = fixture / 'parked-php'
+        wrapper.rename(parked_php)
+        try:
+            code, missing = terminal_report([str(project / 'v3'), 'check-dependencies'],
+                                             {**color_env, 'PATH': str(fixture / 'bin')})
+            missing_text = missing.decode()
+            assert code == 1 and '✗ FAIL: PHP CLI' in missing_text, missing_text
+            assert '? SKIP: PDO SQLite driver' in missing_text, missing_text
+            assert missing_text.index('Result: NOT READY') < missing_text.index('Recovery guidance'), missing_text
+            if 'Ubuntu 24.04 with APT' in missing_text:
+                assert b'\x1b[1;36msudo apt-get update\x1b[0m' in missing, missing
+        finally:
+            parked_php.rename(wrapper)
+        assert snapshot(project) == before
+        print('PASS: terminal status colors, highlighted commands, and NO_COLOR fallback')
 
         configure()
         report = run([str(project / 'v3'), 'check-dependencies'], env)

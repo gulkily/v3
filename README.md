@@ -166,6 +166,12 @@ when optional warnings remain; **1** means setup needs repair. It also works
 without PHP and never consumes interactive setup input. Use
 `./v3 check-dependencies --help` for usage without runtime checks.
 
+The report lists **✓ available**, **✗ unavailable**, **! optional limitations**,
+and **? not checked**, followed by a readiness result and separate recovery
+instructions. PHP-dependent checks stay unknown when PHP cannot run. Terminal
+output colors the statuses and highlights setup commands; redirected output
+keeps the symbols and plain text. Set `NO_COLOR=1` to disable color.
+
 `./v3 start` uses the same assessment before loading application code or creating
 logs/state. A passing dependency report does not validate checkout/database
 health, application permissions, configuration, or whether the listening port is

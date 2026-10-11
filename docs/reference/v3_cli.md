@@ -80,6 +80,11 @@ Returns 0 when required capabilities pass (even with warnings), or 1 for missing
 disabled, or unusable required capabilities. `-h`/`--help` returns 0 without
 checking PHP or Git; other arguments are rejected.
 
+Status rows use ✓/✗/!/? for available, unavailable, optional limitations, and
+unchecked capabilities. Runtime details and recovery instructions follow the
+readiness result. Terminals show colored statuses and highlighted setup commands;
+redirected output and `NO_COLOR` use plain text with the same symbols.
+
 Follow manual recovery guidance and retry with the same startup options. This
 command never prompts or installs software, and does not validate repository,
 database, permissions, listening address, other-command, or deployment readiness.
