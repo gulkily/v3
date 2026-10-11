@@ -1,0 +1,8 @@
+> **Feature plan:** [Step 1](./approval_seed_immediate_refresh_step1_solution_assessment.md) · [Step 2](./approval_seed_immediate_refresh_step2_feature_description.md) · [Step 3](./approval_seed_immediate_refresh_step3_development_plan.md) · [Step 4](./approval_seed_immediate_refresh_step4_implementation_summary.md)
+
+## Stage 1 - Resolve Contracts
+
+- Changes: Created isolated, warm CLI fixtures for both spellings, normalized identity input, site overrides, root attribution, and repository-head updates; registered the suite. Moved the four planning artifacts into their feature folder and updated plan navigation/index.
+- Verification: `php tests/run.php ApprovalSeedCommandTest` — 1 passed (both CLI spellings); `git diff --check` and local Markdown target checks passed. No production state used.
+- Notes: Git readiness will require matching pre-write HEAD, matching schema/root, no stale marker, and no unrelated dirty canonical records. Seed-only commits preserve unrelated staged noncanonical work. Non-Git readiness will compare a content fingerprint recorded in metadata by rebuild/seed refresh; older non-Git indexes without evidence must be repaired explicitly. This adds metadata, not a schema migration.
+- Notes: Hold the existing database-directory execution lock across preflight, persistence, refresh, and invalidation. Matching existing seeds are retries; different reasons fail. Report persisted versus committed versus refreshed state separately. A failed refresh retains the seed and stale marker until explicit repair. Artifact roots follow `FORUM_PUBLIC_ARTIFACT_ROOT` and `FORUM_STATIC_HTML_ROOT`, with the existing profile-aware defaults. Retry must invalidate again even when approval values already match.

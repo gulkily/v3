@@ -10,8 +10,8 @@ Both CLI commands currently rebuild the entire read model after seeding approval
 
 ## Current Evidence
 
-- Both commands route to the same seed operation in [v3](../../v3); [the seed script](../../scripts/inject_approval.php) writes the canonical seed, commits it when applicable, and unconditionally rebuilds the read model before reporting success. This is a read-model rebuild, not an application build or deployment.
-- User-to-user approval already has incremental refresh and rebuild recovery in [LocalWriteService](../../src/ForumRewrite/Write/LocalWriteService.php). The [incremental updater](../../src/ForumRewrite/ReadModel/IncrementalReadModelUpdater.php) already reads seeds when deriving approval chains, attribution, activity author state, and affected scores, but its approval entry point requires a new approval reply.
+- Both commands route to the same seed operation in [v3](../../../v3); [the seed script](../../../scripts/inject_approval.php) writes the canonical seed, commits it when applicable, and unconditionally rebuilds the read model before reporting success. This is a read-model rebuild, not an application build or deployment.
+- User-to-user approval already has incremental refresh and rebuild recovery in [LocalWriteService](../../../src/ForumRewrite/Write/LocalWriteService.php). The [incremental updater](../../../src/ForumRewrite/ReadModel/IncrementalReadModelUpdater.php) already reads seeds when deriving approval chains, attribution, activity author state, and affected scores, but its approval entry point requires a new approval reply.
 
 ## Option A: Synchronous Incremental Seed Refresh
 
