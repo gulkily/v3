@@ -1,0 +1,20 @@
+> **Feature plan:** [Step 1](./runtime_detail_pages_step1_solution_assessment.md) · [Step 2](./runtime_detail_pages_step2_feature_description.md) · [Step 3](./runtime_detail_pages_step3_development_plan.md) · [Step 4](./runtime_detail_pages_step4_implementation_summary.md)
+
+## Stage 1 - Runtime default and static opt-in
+
+- Changes: static detail pages default to disabled; existing flag description explains runtime rendering, opt-in, and full rebuild. Static-output tests explicitly enable details and restore the prior environment. Default CLI checks assert skipped batches, absent detail HTML, and retained offline snapshot; flag checks cover instance opt-in and environment precedence.
+- Verification: focused evaluator/QDB/CLI/layout/archive/Unicode tests via `php tests/run.php`: 47 run, 45 passed; layout also passed independently. `git diff --check` passed.
+- Notes: both failures reproduced on the unchanged planning-commit baseline: QDB welcome-copy assertion expects “⚑ Flag something that”; archive test fails because this PHP installation lacks the zip extension. Neither is introduced by the rendering default. No schema/signature changes or deployment performed.
+
+## Stage 2 - Release transition, reader links, and recovery
+
+- Changes: integration tests activate a static-detail release, replace it with the unconfigured runtime-default release, and assert old thread/post/QDB alias artifacts are absent. Verify runtime content, numeric quote redirects, missing-quote 404, hidden reply protection, and candidate cleanup/current-release preservation after an injected rendering failure.
+- Verification: QDB transition, three read-model candidate checks, and two web-routing checks passed; final forum transition/recovery/hidden-content check passed. Private lobby, private offline access, and two imported-publication recovery checks passed. Local HTTP smoke via PHP server and normal `./v3 build-static` passed five requests across zenmemes/QDB (thread, post, and numeric quote link). `git diff --check` passed.
+- Notes: no runtime routing or activation changes were needed. HTTP tests use isolated temporary repositories/releases; live hosting was not changed. Existing shared-only preservation coverage passed in Stage 1.
+
+## Stage 3 - Operator guidance and build timing
+
+- Changes: README and CLI reference explain the disabled default, environment/instance precedence, PHP runtime hosting, static-only opt-in, full-build transition, and recovery. Moved the four plan artifacts into this feature folder and updated the plans index and relative evidence links. Transition-test cleanup restores the shared read-model fixture after the visibility assertion.
+- Verification: all six changed PHP files pass syntax checks; all 19 local links across the four plan files resolve; diff checks pass. Normal CLI/local HTTP coverage is recorded in Stage 2. Full repository suite: `php tests/run.php` ran 1,088 tests, 924 passed and 164 failed. All rendering/default/opt-in/transition checks passed. Of the failures, 146 explicitly report missing Node.js; all remaining 18 reproduced on the unchanged planning-commit baseline (four in earlier focused runs, fourteen in a final baseline run). The fixture-cleanup change also passed its focused transition check.
+- Timing: identical isolated QDB corpus (102 threads, 203 posts), PHP 8.3.6, one serial run per mode using normal full-build CLI. Explicit static mode: 26.661 s, 442 HTML files including 305 thread/post details and 100 quote aliases. Unconfigured runtime mode: 4.432 s, 37 HTML files, zero details/aliases (about 83% less elapsed time). Shared pages and offline snapshots remain generated.
+- Notes: synthetic local corpus, warm filesystem, and concurrent background test suite; these are indicative measurements, not a production benchmark of the reported 618 threads/1,149 posts. No live deployment, migration, new cache, or new routing mode. The full-suite green release gate remains unmet because of existing failures and unavailable Node.js/PHP zip dependencies; no new failing test was identified.

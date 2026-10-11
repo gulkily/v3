@@ -6,6 +6,8 @@ or standalone plans remain at this level until they reach that threshold.
 
 ## Feature folders
 
+- [Runtime detail pages](runtime_detail_pages/)
+
 - [Guided PHP setup fallback](guided_php_setup_fallback/)
 - [Local server dependency checks](local_server_dependency_checks/)
 - [Immediate approval seed refresh](approval_seed_immediate_refresh/)

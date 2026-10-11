@@ -8,75 +8,83 @@ final class ArchiveThreadCommandTest
 {
     public function testArchiveThreadCommandCreatesZipRemovesRecordsAndRefreshesPublicState(): void
     {
-        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createEnvironment();
-        $archivePath = sys_get_temp_dir() . '/forum-rewrite-thread-archive-' . bin2hex(random_bytes(6)) . '.zip';
+        $previousStaticDetails = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+        putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=true');
+        try {
+            [$repositoryRoot, $databasePath, $artifactRoot] = $this->createEnvironment();
+            $archivePath = sys_get_temp_dir() . '/forum-rewrite-thread-archive-' . bin2hex(random_bytes(6)) . '.zip';
 
-        $this->writePostReaction($repositoryRoot);
-        $this->runCommand(sprintf(
-            'php %s %s %s %s',
-            escapeshellarg(__DIR__ . '/../scripts/build_static_artifacts.php'),
-            escapeshellarg($repositoryRoot),
-            escapeshellarg($databasePath),
-            escapeshellarg($artifactRoot),
-        ));
-        assertTrue(is_file($artifactRoot . '/current/threads/root-001.html'));
-        assertTrue(is_file($artifactRoot . '/current/posts/root-001.html'));
-        assertTrue(is_file($artifactRoot . '/current/posts/reply-001.html'));
+            $this->writePostReaction($repositoryRoot);
+            $this->runCommand(sprintf(
+                'php %s %s %s %s',
+                escapeshellarg(__DIR__ . '/../scripts/build_static_artifacts.php'),
+                escapeshellarg($repositoryRoot),
+                escapeshellarg($databasePath),
+                escapeshellarg($artifactRoot),
+            ));
+            assertTrue(is_file($artifactRoot . '/current/threads/root-001.html'));
+            assertTrue(is_file($artifactRoot . '/current/posts/root-001.html'));
+            assertTrue(is_file($artifactRoot . '/current/posts/reply-001.html'));
 
-        [$exitCode, $output] = $this->runCommandAllowFailure(sprintf(
-            'php %s %s %s %s %s %s',
-            escapeshellarg(__DIR__ . '/../scripts/archive_thread.php'),
-            escapeshellarg('root-001'),
-            escapeshellarg($repositoryRoot),
-            escapeshellarg($databasePath),
-            escapeshellarg($artifactRoot),
-            escapeshellarg($archivePath),
-        ));
+            [$exitCode, $output] = $this->runCommandAllowFailure(sprintf(
+                'php %s %s %s %s %s %s',
+                escapeshellarg(__DIR__ . '/../scripts/archive_thread.php'),
+                escapeshellarg('root-001'),
+                escapeshellarg($repositoryRoot),
+                escapeshellarg($databasePath),
+                escapeshellarg($artifactRoot),
+                escapeshellarg($archivePath),
+            ));
 
-        assertSame(0, $exitCode);
-        assertStringContains('Archived thread and removed live canonical records.', $output);
-        assertStringContains('Files archived: 5', $output);
-        assertStringContains('Supporting public keys archived: 1', $output);
-        assertStringContains('Files removed: 4', $output);
-        assertStringContains('Read model and static artifact release refreshed.', $output);
-        assertTrue(is_file($archivePath));
+            assertSame(0, $exitCode);
+            assertStringContains('Archived thread and removed live canonical records.', $output);
+            assertStringContains('Files archived: 5', $output);
+            assertStringContains('Supporting public keys archived: 1', $output);
+            assertStringContains('Files removed: 4', $output);
+            assertStringContains('Read model and static artifact release refreshed.', $output);
+            assertTrue(is_file($archivePath));
 
-        $manifest = $this->readArchiveManifest($archivePath);
-        assertSame('thread_archive', $manifest['kind'] ?? null);
-        assertSame('root-001', $manifest['thread_id'] ?? null);
-        assertTrue(is_string($manifest['source_commit'] ?? null));
+            $manifest = $this->readArchiveManifest($archivePath);
+            assertSame('thread_archive', $manifest['kind'] ?? null);
+            assertSame('root-001', $manifest['thread_id'] ?? null);
+            assertTrue(is_string($manifest['source_commit'] ?? null));
 
-        $archivePaths = $this->archivePaths($archivePath);
-        assertTrue(in_array('manifest.json', $archivePaths, true));
-        assertTrue(in_array('records/posts/root-001.txt', $archivePaths, true));
-        assertTrue(in_array('records/posts/reply-001.txt', $archivePaths, true));
-        assertTrue(in_array('records/thread-labels/thread-label-20260415153000-ab12cd34.txt', $archivePaths, true));
-        assertTrue(in_array('records/post-reactions/post-reaction-archive-test.txt', $archivePaths, true));
-        assertTrue(in_array('records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc', $archivePaths, true));
-        assertSame(
-            ['records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc'],
-            $manifest['supporting_public_key_paths'] ?? null
-        );
+            $archivePaths = $this->archivePaths($archivePath);
+            assertTrue(in_array('manifest.json', $archivePaths, true));
+            assertTrue(in_array('records/posts/root-001.txt', $archivePaths, true));
+            assertTrue(in_array('records/posts/reply-001.txt', $archivePaths, true));
+            assertTrue(in_array('records/thread-labels/thread-label-20260415153000-ab12cd34.txt', $archivePaths, true));
+            assertTrue(in_array('records/post-reactions/post-reaction-archive-test.txt', $archivePaths, true));
+            assertTrue(in_array('records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc', $archivePaths, true));
+            assertSame(
+                ['records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc'],
+                $manifest['supporting_public_key_paths'] ?? null
+            );
 
-        assertFalse(is_file($repositoryRoot . '/records/posts/root-001.txt'));
-        assertFalse(is_file($repositoryRoot . '/records/posts/reply-001.txt'));
-        assertFalse(is_file($repositoryRoot . '/records/thread-labels/thread-label-20260415153000-ab12cd34.txt'));
-        assertFalse(is_file($repositoryRoot . '/records/post-reactions/post-reaction-archive-test.txt'));
-        assertTrue(is_file($repositoryRoot . '/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc'));
+            assertFalse(is_file($repositoryRoot . '/records/posts/root-001.txt'));
+            assertFalse(is_file($repositoryRoot . '/records/posts/reply-001.txt'));
+            assertFalse(is_file($repositoryRoot . '/records/thread-labels/thread-label-20260415153000-ab12cd34.txt'));
+            assertFalse(is_file($repositoryRoot . '/records/post-reactions/post-reaction-archive-test.txt'));
+            assertTrue(is_file($repositoryRoot . '/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc'));
 
-        assertFalse(is_file($artifactRoot . '/current/threads/root-001.html'));
-        assertFalse(is_file($artifactRoot . '/current/posts/root-001.html'));
-        assertFalse(is_file($artifactRoot . '/current/posts/reply-001.html'));
+            assertFalse(is_file($artifactRoot . '/current/threads/root-001.html'));
+            assertFalse(is_file($artifactRoot . '/current/posts/root-001.html'));
+            assertFalse(is_file($artifactRoot . '/current/posts/reply-001.html'));
 
-        $pdo = new PDO('sqlite:' . $databasePath);
-        assertSame(0, (int) $pdo->query("SELECT COUNT(*) FROM threads WHERE root_post_id = 'root-001'")->fetchColumn());
-        assertSame(0, (int) $pdo->query("SELECT COUNT(*) FROM posts WHERE thread_id = 'root-001'")->fetchColumn());
+            $pdo = new PDO('sqlite:' . $databasePath);
+            assertSame(0, (int) $pdo->query("SELECT COUNT(*) FROM threads WHERE root_post_id = 'root-001'")->fetchColumn());
+            assertSame(0, (int) $pdo->query("SELECT COUNT(*) FROM posts WHERE thread_id = 'root-001'")->fetchColumn());
 
-        [$logExitCode, $logOutput] = $this->runCommandAllowFailure(
-            'git -C ' . escapeshellarg($repositoryRoot) . ' log --oneline -1'
-        );
-        assertSame(0, $logExitCode);
-        assertStringContains('Archive thread root-001', $logOutput);
+            [$logExitCode, $logOutput] = $this->runCommandAllowFailure(
+                'git -C ' . escapeshellarg($repositoryRoot) . ' log --oneline -1'
+            );
+            assertSame(0, $logExitCode);
+            assertStringContains('Archive thread root-001', $logOutput);
+        } finally {
+            putenv($previousStaticDetails === false
+                ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED'
+                : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $previousStaticDetails);
+        }
     }
 
     public function testArchiveThreadCommandRejectsMissingThread(): void

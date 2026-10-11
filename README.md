@@ -197,6 +197,12 @@ Build and activate an Apache-friendly static HTML release under `state/static_ht
 php scripts/build_static_artifacts.php
 ```
 
+By default this skips bulk thread/post HTML generation and serves detail pages
+through PHP at runtime. Static-only hosts can opt in with
+`FORUM_STATIC_DETAIL_PAGES_ENABLED=true`. Existing instance/environment overrides
+still apply; run a full build after changing the flag (a shared-only refresh
+retains old detail files). See the [build reference](docs/reference/v3_cli.md#build-static-html-artifacts).
+
 Start the local PHP server:
 
 ```bash
