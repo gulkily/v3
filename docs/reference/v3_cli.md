@@ -399,12 +399,25 @@ normal requests continue using the prior complete state while the command runs.
 - `database_path` — read-model SQLite file to render from
 - `artifact_root` — static release root; defaults to `state/static_html` when not given via argument or `FORUM_STATIC_HTML_ROOT`. The active release is `artifact_root/current`.
 
-`FORUM_STATIC_DETAIL_PAGES_ENABLED` defaults to `true`. Set it to `false`
-through the instance feature-flags page (or as an environment override) to omit
-the individual thread and post HTML files from a full release. Shared pages,
-including QDB's home, Latest, Top, and Leetness pages, are still generated;
-individual quote and thread requests fall back to PHP. Run a full build after
-changing this flag so the active release reflects it.
+`FORUM_STATIC_DETAIL_PAGES_ENABLED` defaults to `false`. Full builds skip
+bulk thread and post rendering; individual thread, post, and numeric quote
+requests use PHP at runtime. Shared pages (including QDB's home, Latest, Top,
+and Leetness), tag/profile pages, and the offline snapshot are still generated.
+
+To pre-build detail HTML for static-only hosting, enable **Static detail pages**
+on the instance feature-flags page or set
+`FORUM_STATIC_DETAIL_PAGES_ENABLED=true` in the build environment. An explicit
+environment value takes precedence over an instance setting; either explicit
+setting takes precedence over the default. Existing explicit enablement remains
+in effect after an upgrade, so disable it if these builds are still slow.
+
+Run a full build after changing the effective flag value. A full build activates
+a fresh release, removing old detail HTML from the active release when disabled;
+`--shared-only` preserves existing detail artifacts and cannot make this
+transition. Runtime detail hosting requires PHP routing (as provided by the
+checked-in Apache configuration or local PHP router). Static-only hosts should
+opt in before building/deploying. To restore static details, enable the flag and
+run another full build.
 
 ### Refresh only shared static pages
 

@@ -4215,6 +4215,9 @@ PHP;
             assertStringContains('Post Hidden', $hidden);
             assertStringNotContains('Reply body.', $hidden);
         } finally {
+            if (isset($pdo)) {
+                $pdo->exec("UPDATE posts SET is_hidden = 0 WHERE post_id = 'reply-001'");
+            }
             putenv($previous === false ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED'
                 : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $previous);
             $this->deleteTree($staticRoot);

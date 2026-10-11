@@ -66,8 +66,8 @@ Routine static builds spend substantial time rendering every thread and post eve
 
 ## Current Evidence
 
-- The existing [builder](../../src/ForumRewrite/Host/StaticArtifactBuilder.php) already supports skipping both detail-page batches.
-- The [feature flag registry](../../src/ForumRewrite/Support/FeatureFlags/FeatureFlagRegistry.php) and [CLI reference](../reference/v3_cli.md) currently default static detail pages to enabled.
+- The existing [builder](../../../src/ForumRewrite/Host/StaticArtifactBuilder.php) already supports skipping both detail-page batches.
+- The [feature flag registry](../../../src/ForumRewrite/Support/FeatureFlags/FeatureFlagRegistry.php) and [CLI reference](../../reference/v3_cli.md) currently default static detail pages to enabled.
 - Shared-only refresh avoids these batches, but requires an existing complete release and retains its detail artifacts; it does not address the default full-build behavior.
 
 ## Option A: Make runtime detail rendering the default
