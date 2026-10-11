@@ -165,6 +165,7 @@ state. Exit status is **0** when required capabilities are available, including
 when optional warnings remain; **1** means setup needs repair. It also works
 without PHP and never consumes interactive setup input. Use
 `./v3 check-dependencies --help` for usage without runtime checks.
+`./v3 dependency-check` is an alias with the same options and exit status.
 
 The report lists **✓ available**, **✗ unavailable**, **! optional limitations**,
 and **? not checked**, followed by a readiness result and separate recovery

@@ -15,6 +15,7 @@ This delivery covers only `./v3 start` and `./v3 check-dependencies`; broader wo
 - [x] Optional intl normalization with reduced-behavior guidance. Warnings explain combining-mark rejection; existing Unicode policy/risk tests pass without intl.
 - [x] End-to-end missing/disabled/restored, state-preservation, unattended, and local read/write verification. Repeatable shell and real-runtime HTTP/terminal tests cover both commands, untouched state, installer sentinels, actual thread/reply writes, and shutdown.
 - [x] Launcher prerequisites, platform setup instructions, command discovery, and readiness limits documented and verified. README/CLI help cover Bash 4.1+, `dirname`/`cat`, selected-runtime setup, Ubuntu 24.04/APT guidance, generic fallback, and manual retry; diagnostic help remains available without PHP/Git.
+- [x] Concise startup failures with grouped required extension installs, separate optional recovery, highlighted commands, and the `dependency-check` alias.
 - [x] Scannable diagnostic output: ✓ available, ✗ unavailable, ! optional limitations, and ? unchecked capabilities; readiness result before runtime/recovery details, separately highlighted setup commands, terminal colors, and plain redirected/`NO_COLOR` output. Verified both missing-PHP and missing-extension reports.
 
 ## Local startup and core runtime
@@ -56,3 +57,7 @@ This delivery covers only `./v3 start` and `./v3 check-dependencies`; broader wo
 - [ ] Preserve original arguments on retry; verify missing, declined, failed, unsupported, and restored cases.
 - [ ] Keep optional dependencies from blocking unrelated commands and help.
 - [ ] Verify failures occur before avoidable state changes; document partial changes and recovery for installation attempts.
+
+## Proposed next local-server slice
+
+- [ ] Explicit opt-in batch dependency installation followed by readiness verification: [Step 1 assessment](./local_server_dependency_install_step1_solution_assessment.md). Awaiting Step 1 review; no installer implemented.

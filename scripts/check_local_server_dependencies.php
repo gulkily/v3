@@ -12,9 +12,11 @@ $gitReady = ($argv[2] ?? '1') === '1';
 $platform = $argv[3] ?? 'generic';
 $output = $mode === 'report' ? STDOUT : STDERR;
 $detailOutput = $mode === 'report' ? STDERR : $output;
-$color = $mode === 'report' && function_exists('stream_isatty') && stream_isatty(STDOUT) && getenv('NO_COLOR') === false;
+$color = function_exists('stream_isatty') && stream_isatty($output) && getenv('NO_COLOR') === false;
 $paint = static fn (string $text, string $code): string => $color ? "\033[{$code}m{$text}\033[0m" : $text;
 $recovery = [];
+$startupFailures = [];
+$startupWarnings = [];
 $failed = false;
 $identified = false;
 $identify = static function () use ($detailOutput, &$identified, $paint): void {
@@ -25,15 +27,14 @@ $identify = static function () use ($detailOutput, &$identified, $paint): void {
         $identified = true;
     }
 };
-$result = static function (bool $available, string $name, string $guidance = '') use ($mode, $output, &$failed, $identify, &$recovery, $paint): void {
+$result = static function (bool $available, string $name, string $guidance = '') use ($mode, $output, &$failed, $identify, &$recovery, $paint, &$startupFailures): void {
     if (!$available) {
         $failed = true;
         if ($mode === 'report') {
             fwrite($output, '  ' . $paint("✗ FAIL: {$name}", '31') . "\n");
             $recovery[] = [$name, $guidance];
         } else {
-            $identify();
-            fwrite($output, "FAIL: {$name}. {$guidance}\n");
+            $startupFailures[] = [$name, $guidance];
         }
     } elseif ($mode === 'report') {
         fwrite($output, '  ' . $paint("✓ OK: {$name}", '32') . "\n");
@@ -118,14 +119,13 @@ if ($execReady) {
     $skip('Git execution from PHP', 'requires PHP shell execution');
 }
 
-$optional = static function (bool $available, string $name, string $guidance) use ($mode, $output, $identify, &$recovery, $paint): void {
+$optional = static function (bool $available, string $name, string $guidance) use ($mode, $output, $identify, &$recovery, $paint, &$startupWarnings): void {
     if (!$available) {
         if ($mode === 'report') {
             fwrite($output, '  ' . $paint("! WARN: Optional {$name} unavailable", '33') . "\n");
             $recovery[] = ['Optional ' . $name, $guidance];
         } else {
-            $identify();
-            fwrite($output, "WARN: Optional {$name} unavailable. {$guidance}\n");
+            $startupWarnings[] = [$name, $guidance];
         }
     } elseif ($mode === 'report') {
         fwrite($output, '  ' . $paint("✓ OK: Optional {$name}", '32') . "\n");
@@ -151,6 +151,51 @@ if ($mode === 'report') {
                 static fn (array $match): string => "\n  " . $paint($match[1], '1;36') . "\n  ", $guidance);
             fwrite($detailOutput, $paint($name, '1') . ":\n{$guidance}\n\n");
         }
+    }
+}
+
+if ($mode === 'startup' && ($startupFailures !== [] || $startupWarnings !== [])) {
+    if ($failed) {
+        fwrite($output, $paint('Cannot start v3: required PHP capabilities are unavailable.', '31') . "\n");
+    }
+    $packages = [];
+    foreach ($startupFailures as [$name, $guidance]) {
+        fwrite($output, '  ' . $paint("✗ FAIL: {$name}", '31') . "\n");
+        if (preg_match('/sudo apt-get install (php8\.3-[a-z0-9]+)/', $guidance, $match)) {
+            $packages[] = $match[1];
+        } elseif (str_starts_with($guidance, 'Install/enable')) {
+            fwrite($output, "    Install/enable this extension for the selected PHP CLI.\n");
+        } else {
+            fwrite($output, "    {$guidance}\n");
+        }
+    }
+    foreach ($startupWarnings as [$name, $guidance]) {
+        $impact = match ($name) {
+            'intl normalization' => 'combining marks are rejected',
+            'PCNTL signal support' => 'plain logging and launcher-managed shutdown remain available',
+            default => 'terminal enhancements are disabled; plain logging remains available',
+        };
+        fwrite($output, '  ' . $paint("! WARN: Optional {$name} unavailable", '33') . " ({$impact}).\n");
+    }
+    fwrite($output, "\nSelected PHP CLI: " . PHP_BINARY . ' (PHP ' . PHP_VERSION . ")\n"
+        . 'CLI configuration: ' . (php_ini_loaded_file() ?: 'no php.ini loaded') . "\n");
+    if ($packages !== []) {
+        fwrite($output, "\nInstall required extensions (Ubuntu 24.04):\n  "
+            . $paint('sudo apt-get install ' . implode(' ', array_unique($packages)), '1;36') . "\n");
+    }
+    $optionalInstall = false;
+    foreach ($startupWarnings as [$name, $guidance]) {
+        if (preg_match('/sudo apt-get install (php8\.3-[a-z0-9]+)/', $guidance, $match)) {
+            $optionalInstall = true;
+            fwrite($output, "\nOptional Unicode normalization:\n  " . $paint('sudo apt-get install ' . $match[1], '1;36') . "\n");
+        }
+    }
+    if ($packages !== [] || $optionalInstall) {
+        fwrite($output, "Run install commands manually; administrator privileges required (omit sudo as root).\n");
+    }
+    fwrite($output, "\nDetails: " . $paint('./v3 check-dependencies', '1;36') . "\n");
+    if ($failed) {
+        fwrite($output, "After setup, retry your ./v3 start command with the same options.\n");
     }
 }
 

@@ -71,6 +71,7 @@ limitations warn without blocking. Stop the launcher with Ctrl+C or SIGTERM.
 
 ```
 ./v3 check-dependencies [--help]
+./v3 dependency-check [--help]
 ```
 
 Uses the same checks as startup without starting the server or changing application
@@ -600,3 +601,5 @@ a static build or asset-fingerprint change to catch broken references
 before they ship.
 
 - `artifact_root` — directory to scan; defaults to `FORUM_PUBLIC_ARTIFACT_ROOT` or `public/`
+
+Startup dependency failures list missing capabilities, group required Ubuntu extension installs into one command, and show optional recovery separately. Commands are highlighted on terminals unless `NO_COLOR` is set. `dependency-check` is an alias for `check-dependencies`.
