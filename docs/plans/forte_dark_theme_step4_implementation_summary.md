@@ -24,3 +24,16 @@
 - Notes:
   - Light rules are untouched, so the light palette is unchanged by construction.
   - Hard-coded colors and the `color-scheme: light` declarations on inputs and dialogs remain; Stage 3 handles them.
+
+## Stage 3 - Route remaining colors through the palette
+- Changes:
+  - `public/assets/forte.css`: new tokens `--paned-hover-bg`, `--paned-highlight-bg`, `--paned-highlight-edge`, and `--paned-link`, with light values equal to the previous hard-coded colors and dark values in the dark section. Row/folder hover, new-reply highlight, and the summary-dialog footer link now use them.
+  - Removed five `color-scheme: light` declarations on compose inputs and dialogs so native controls follow the page scheme.
+  - Added `:root:not([data-forte-scheme])` to the light root rule, so a page with no marker (script blocked or failed) stays light even on a dark OS.
+  - Left as-is: the amber focus outline (`#f2b705`) and the agent badge text (`#dfe8ff`), both legible on dark; the dialog backdrop and title-bar text are neutral.
+- Verification:
+  - Chrome headless walk in dark (dark OS, Auto): board, thread with reply and reaction buttons, New Thread dialog with inputs, users, activity with detail pane, and profile. No light patches or unreadable text seen.
+  - Light values equal the previous literals, so light rendering is unchanged by construction.
+  - `activity.css` needs no change; it uses `--line` through `color-mix` and renders correctly under dark.
+- Notes:
+  - Not exercised visually: media-embed card inside a Forte thread, the content-summary dialog, username page, and reply-composer states. These stay on the Stage 4 walk.
