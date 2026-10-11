@@ -4472,6 +4472,81 @@ NODE;
         }
     }
 
+    public function testSignedInvitationRedemptionRechecksPolicyBeforeAcceptance(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $issuerKey = $this->createSigningKey('invitation-sponsor');
+        $recipientKey = $this->createSigningKey('forum-user');
+        $previous = getenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
+        try {
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true');
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $profiles = [];
+            foreach ([$issuerKey, $recipientKey] as $key) {
+                $_POST = ['public_key' => $key['public_key']];
+                $response = $this->renderMethod($app, 'POST', '/api/link_identity');
+                $_POST = [];
+                $profiles[] = [
+                    'identity_id' => $this->extractValue($response, 'identity_id'),
+                    'profile_slug' => $this->extractValue($response, 'profile_slug'),
+                    'thread_id' => $this->extractValue($response, 'bootstrap_thread_id'),
+                    'parent_id' => $this->extractValue($response, 'bootstrap_post_id'),
+                ];
+            }
+            [$issuer, $recipient] = $profiles;
+            $existing = $this->linkGeneratedIdentity($app, 'forum-user');
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            $writer->approveUser([
+                'approver_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+                'target_identity_id' => $existing['identity_id'], 'target_profile_slug' => $existing['profile_slug'],
+                'thread_id' => $existing['bootstrap_thread_id'], 'parent_id' => $existing['bootstrap_post_id'],
+            ]);
+            $writer->approveUser([
+                'approver_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+                'target_identity_id' => $issuer['identity_id'], 'target_profile_slug' => $issuer['profile_slug'],
+                'thread_id' => $issuer['thread_id'], 'parent_id' => $issuer['parent_id'],
+            ]);
+            $token = bin2hex(random_bytes(16));
+            $issue = $writer->prepareInvitation([
+                'issuer_identity_id' => $issuer['identity_id'], 'thread_id' => $issuer['thread_id'],
+                'parent_id' => $issuer['parent_id'], 'verification_hash' => 'sha256:' . hash('sha256', $token),
+                'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 3600),
+            ]);
+            $writer->finalizePreparedInvitation($issue + [
+                'author_identity_id' => $issuer['identity_id'],
+                'detached_signature' => $this->signCanonicalRecord($issuerKey['home'], $issue['canonical_record']),
+            ]);
+            $redeem = $writer->prepareInvitationRedemption([
+                'recipient_identity_id' => $recipient['identity_id'], 'thread_id' => $recipient['thread_id'],
+                'parent_id' => $recipient['parent_id'], 'invite_token' => $token,
+            ]);
+            $signed = $redeem + ['author_identity_id' => $recipient['identity_id'],
+                'detached_signature' => $this->signCanonicalRecord($recipientKey['home'], $redeem['canonical_record'])];
+            $before = $this->countCanonicalPostFiles($root);
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false');
+            try {
+                $writer->finalizePreparedInvitation($signed);
+                throw new RuntimeException('Expected cross-account denial.');
+            } catch (RuntimeException $exception) {
+                if (!str_contains($exception->getMessage(), 'same username or a root-approved operator')) {
+                    throw $exception;
+                }
+            }
+            assertSame($before, $this->countCanonicalPostFiles($root));
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true');
+            assertSame('ok', $writer->finalizePreparedInvitation($signed)['status']);
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false');
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            $profile = ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(), $recipient['identity_id']);
+            assertSame(1, (int) $profile['is_approved']);
+        } finally {
+            $_POST = [];
+            putenv($previous === false ? 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL' : 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=' . $previous);
+            $this->deleteTree($issuerKey['home']);
+            $this->deleteTree($recipientKey['home']);
+        }
+    }
+
     public function testAlreadyApprovedUserCannotBeApprovedAgain(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

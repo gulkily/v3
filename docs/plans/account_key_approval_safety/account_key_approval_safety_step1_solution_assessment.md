@@ -6,7 +6,7 @@ Please accumulate as much of this checklist as is reasonable into Step 1 of docs
 
 ## Understood Intent
 
-Consolidate the [approval visibility and safety checklist](backlog/account_key_approval_visibility_and_safety_checklist.md) into a cohesive release that reduces account impersonation while preserving convenient onboarding and owner key additions; reconsider the earlier flag-only boundary without committing to the whole roadmap.
+Consolidate the [approval visibility and safety checklist](../backlog/account_key_approval_visibility_and_safety_checklist.md) into a cohesive release that reduces account impersonation while preserving convenient onboarding and owner key additions; reconsider the earlier flag-only boundary without committing to the whole roadmap.
 
 ## Problem Statement
 

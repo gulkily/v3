@@ -669,7 +669,7 @@ class IncrementalReadModelUpdater
     private function loadPostsForProfileDerivation(PDO $pdo): array
     {
         $rows = $pdo->query(
-            'SELECT post_id, thread_id, parent_id, body, board_tags_json, author_identity_id, sequence_number
+            'SELECT post_id, created_at, thread_id, parent_id, body, board_tags_json, author_identity_id, sequence_number
              FROM posts ORDER BY sequence_number ASC'
         )->fetchAll();
         $posts = [];
@@ -681,6 +681,7 @@ class IncrementalReadModelUpdater
 
             $posts[] = [
                 'post_id' => (string) $row['post_id'],
+                'created_at' => (string) $row['created_at'],
                 'thread_id' => (string) $row['thread_id'],
                 'parent_id' => $row['parent_id'] !== null ? (string) $row['parent_id'] : null,
                 'body' => (string) $row['body'],
@@ -806,6 +807,7 @@ class IncrementalReadModelUpdater
      */
     private function invitationApprovalCandidates(array $posts): array
     {
+        $posts = \ForumRewrite\Invitation\InvitationReplayOrder::sortPosts($posts);
         $issued = [];
         $candidates = [];
         foreach ($posts as $post) {

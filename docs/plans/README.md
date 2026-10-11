@@ -6,6 +6,7 @@ or standalone plans remain at this level until they reach that threshold.
 
 ## Feature folders
 
+- [Account key approval safety](account_key_approval_safety/)
 - [Agent reply task queue merge](agent_reply_task_queue_merge/)
 - [Agent response direct preflight](agent_response_direct_preflight/)
 - [Agent response dropdown viewport fit](agent_response_dropdown_viewport_fit/)

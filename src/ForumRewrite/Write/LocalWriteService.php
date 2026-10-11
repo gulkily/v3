@@ -31,6 +31,7 @@ use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\UnicodeTextPolicy;
+use ForumRewrite\Security\ApprovalPolicy;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
 use ForumRewrite\SiteProfileRegistry;
@@ -318,6 +319,9 @@ class LocalWriteService
             $totalStartedAt = hrtime(true);
             $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
             $prepared = $this->loadPreparedPost($prepareToken);
+            if (!in_array($prepared['kind'] ?? '', ['', 'thread', 'reply'], true)) {
+                throw new RuntimeException('Protocol records require their dedicated finalization endpoint.');
+            }
 
             if (strtotime((string) $prepared['expires_at']) < time()) {
                 throw new RuntimeException('Prepared post has expired.');
@@ -353,6 +357,7 @@ class LocalWriteService
             }
 
             $record = (new PostRecordParser())->parse($canonicalRecord);
+            $this->normalizeBoardTags(implode(' ', $record->boardTags));
             if ($record->postId !== $postId || CanonicalPathResolver::datedPost($record->postId, $record->createdAt) !== $recordPath) {
                 throw new RuntimeException('Prepared post canonical record does not match target path.');
             }
@@ -1019,8 +1024,9 @@ class LocalWriteService
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
             $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
 
-            if ($approverIdentityId === $targetIdentityId) {
-                throw new RuntimeException('Self-approval is not allowed.');
+            $context = $this->approvalContext($approverIdentityId, $targetIdentityId, $threadId, $parentId);
+            if ($context['target_profile_slug'] !== $targetProfileSlug) {
+                throw new RuntimeException('Approval target profile mismatch.');
             }
 
             $thread = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($threadId));
@@ -1085,8 +1091,9 @@ class LocalWriteService
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
             $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
 
-            if ($approverIdentityId === $targetIdentityId) {
-                throw new RuntimeException('Self-approval is not allowed.');
+            $context = $this->approvalContext($approverIdentityId, $targetIdentityId, $threadId, $parentId);
+            if ($context['target_profile_slug'] !== $targetProfileSlug) {
+                throw new RuntimeException('Approval target profile mismatch.');
             }
 
             $thread = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($threadId));
@@ -1166,12 +1173,7 @@ class LocalWriteService
             $targetIdentityId = $this->requireOpenPgpIdentityId((string) ($prepared['target_identity_id'] ?? ''), 'target_identity_id');
             $targetProfileSlug = $this->requireAsciiToken((string) ($prepared['target_profile_slug'] ?? ''), 'target_profile_slug');
 
-            if (!$this->isApprovedIdentity($authorIdentityId)) {
-                throw new RuntimeException('Only approved users can approve other users.');
-            }
-            if ($this->isApprovedIdentity($targetIdentityId)) {
-                throw new RuntimeException('User is already approved.');
-            }
+            $context = $this->approvalContext($authorIdentityId, $targetIdentityId, $threadId, (string) $prepared['parent_id']);
             if ($this->postTargetExists($postId)) {
                 throw new RuntimeException('Prepared post target already exists.');
             }
@@ -1363,6 +1365,7 @@ class LocalWriteService
                     || strtotime((string) $entry['issued']->expiresAt) <= time()) {
                     throw new RuntimeException('Invitation is invalid, expired, revoked, or already used.');
                 }
+                $context = $this->approvalContext((string) $entry['issued']->post->authorIdentityId, $authorIdentityId, (string) $record->post->threadId, (string) $record->post->parentId);
             }
             $this->writeFile($recordPath, $canonicalRecord);
             $this->writeFile($recordPath . '.asc', $signature);
@@ -1404,6 +1407,7 @@ class LocalWriteService
             $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
             $postId = $this->generateRecordId('reply');
             $createdAt = $this->canonicalTimestampNow();
+            $context = $this->approvalContext((string) $entry['issued']->post->authorIdentityId, $recipientIdentityId, $threadId, $parentId);
             $body = "Invitation-ID: {$entry['issued']->invitationId}\n"
                 . "Invitation-Action: redeem\n"
                 . "Verification-Hash: {$entry['issued']->verificationHash}\n\n";
@@ -1503,7 +1507,7 @@ class LocalWriteService
         return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
             $this->assertWritableRepository();
             $operatorIdentityId = $this->requireOpenPgpIdentityId($operatorIdentityId, 'operator_identity_id');
-            if (!$this->isApprovedIdentity($operatorIdentityId)) {
+            if (!$this->isApprovedIdentity($operatorIdentityId) || !ApprovalPolicy::isOperator($this->repositoryRoot, $operatorIdentityId)) {
                 throw new RuntimeException('Feature flag changes require an approved operator identity.');
             }
             $key = $this->requireFeatureFlagKey((string) ($input['key'] ?? ''));
@@ -1562,7 +1566,7 @@ class LocalWriteService
             if ($operatorIdentityId !== (string) ($prepared['operator_identity_id'] ?? '')) {
                 throw new RuntimeException('Prepared feature-flag change operator identity mismatch.');
             }
-            if (!$this->isApprovedIdentity($operatorIdentityId)) {
+            if (!$this->isApprovedIdentity($operatorIdentityId) || !ApprovalPolicy::isOperator($this->repositoryRoot, $operatorIdentityId)) {
                 throw new RuntimeException('Feature flag changes require an approved operator identity.');
             }
             $canonicalRecord = (string) ($input['canonical_record'] ?? '');
@@ -2045,6 +2049,26 @@ class LocalWriteService
     protected function databasePath(): string
     {
         return $this->databasePath;
+    }
+
+    private function approvalContext(string $actorId, string $targetId, string $threadId, string $parentId): array
+    {
+        if (!is_file($this->databasePath) || $this->staleMarker()->exists()) {
+            throw new RuntimeException('Approval state is stale. Refresh or rebuild the read model before retrying.');
+        }
+        $pdo = $this->readModelPdo();
+        $metadata = ReadModelMetadata::readMetadata($pdo);
+        if (!ReadModelMetadata::hasExpectedSchemaIdentity($metadata)
+            || realpath($metadata['repository_root'] ?? '') !== realpath($this->repositoryRoot)
+            || ($metadata['repository_head'] ?? '') !== ReadModelMetadata::repositoryHead($this->repositoryRoot)) {
+            throw new RuntimeException('Approval state is stale. Refresh or rebuild the read model before retrying.');
+        }
+        $context = (new ApprovalPolicy($pdo, $this->repositoryRoot))->evaluate($actorId, $targetId);
+        ApprovalPolicy::assertAllowed($context);
+        if ($context['target_thread_id'] !== $threadId || $context['target_post_id'] !== $parentId) {
+            throw new RuntimeException('Approval target bootstrap thread is invalid.');
+        }
+        return $context;
     }
 
     private function readModelPdo(): \PDO
@@ -2790,6 +2814,10 @@ class LocalWriteService
         $normalized = preg_replace('/\s+/', ' ', $normalized) ?? '';
         $normalized = trim($normalized);
 
+        if (in_array('identity', explode(' ', $normalized), true)) {
+            throw new RuntimeException('Identity protocol records require their dedicated endpoint.');
+        }
+
         return $normalized !== '' ? $normalized : 'general';
     }
 
@@ -2952,7 +2980,9 @@ class LocalWriteService
             $records[] = $parser->parse($contents);
         }
 
-        usort($records, static fn ($left, $right): int => [$left->post->createdAt, $left->post->postId] <=> [$right->post->createdAt, $right->post->postId]);
+        usort($records, static fn ($left, $right): int =>
+            \ForumRewrite\Invitation\InvitationReplayOrder::key($left->post->createdAt, $left->post->body, $left->post->postId)
+            <=> \ForumRewrite\Invitation\InvitationReplayOrder::key($right->post->createdAt, $right->post->body, $right->post->postId));
         return new InvitationLedger($records);
     }
 

@@ -1352,6 +1352,7 @@ final class ReadModelBuilder
      */
     private function invitationApprovalCandidates(array $posts): array
     {
+        $posts = \ForumRewrite\Invitation\InvitationReplayOrder::sortPosts($posts);
         $issued = [];
         $candidates = [];
         foreach ($posts as $post) {
