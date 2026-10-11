@@ -32,8 +32,18 @@ local_server_dependencies_check() {
   local mode="$1" failed=0 git_ready=1 runtime version_id version binary platform
   local output_fd=2
   [[ "${mode}" != report ]] || output_fd=1
+  if (( BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 1) )); then
+    printf '%s\n' 'FAIL: Local-server startup requires Bash 4.1+ for managed shutdown. Install/select a newer Bash and retry with the same options.' >&"${output_fd}"
+    failed=1
+  elif [[ "${mode}" == report ]]; then
+    printf '%s\n' 'OK: Bash 4.1+ launcher'
+  fi
+  platform="$(php_setup_platform /etc/os-release)"
   if ! command -v git >/dev/null 2>&1; then
     printf '%s\n' 'FAIL: Git is not available on PATH. Install Git or repair PATH, then retry the same command.' >&"${output_fd}"
+    if [[ "${platform}" == ubuntu-24.04 ]]; then
+      printf '%s\n' 'Ubuntu 24.04/APT: sudo apt-get install git (manual, administrator privileges; omit sudo in a root shell).' >&"${output_fd}"
+    fi
     failed=1
     git_ready=0
   elif ! git --version >/dev/null 2>&1; then
@@ -64,7 +74,6 @@ local_server_dependencies_check() {
   if [[ "${mode}" == report ]]; then
     printf 'OK: PHP %s (%s), minimum 8.1\n' "${version}" "${binary}"
   fi
-  platform="$(php_setup_platform /etc/os-release)"
   if ! php "${ROOT}/scripts/check_local_server_dependencies.php" "${mode}" "${git_ready}" "${platform}"; then
     failed=1
   fi
@@ -72,6 +81,13 @@ local_server_dependencies_check() {
     printf '%s\n' 'WARN: Optional stty is not available on PATH; terminal layout/control uses plain logging. Install terminal utilities only if you want terminal enhancements.' >&"${output_fd}"
   elif [[ "${mode}" == report ]]; then
     printf '%s\n' 'OK: Optional stty executable (terminal access depends on the session)'
+  fi
+  if [[ "${mode}" == report ]]; then
+    if (( failed )); then
+      printf '%s\n' 'Local-server prerequisites are incomplete. Repair setup manually and retry.'
+    else
+      printf '%s\n' 'Local-server prerequisites are available. Checkout, database, permissions, and listening address are not validated.'
+    fi
   fi
   return "${failed}"
 }

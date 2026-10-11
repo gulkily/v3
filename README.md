@@ -93,21 +93,24 @@ internet message boards, unrelated to this codebase's implementation —
 
 ### PHP setup
 
-Local startup requires the PHP command-line runtime (`php`) on your `PATH`.
+Local startup requires PHP CLI **8.1+**, Git, PDO/PDO SQLite, mbstring, and PHP
+process execution for the server and local Git operations. The selected `php`
+executable must be on your `PATH`; extensions must be enabled for that same CLI.
 If it is missing, install PHP CLI using your system's package manager or PHP
 installation instructions. If PHP is already installed, add the directory
 containing its executable to `PATH` in the terminal where you run v3.
 
-Check availability with `php --version`, then retry `./v3 start` with your
-original options. This setup guide is readable directly from the checkout
-without running PHP. Startup reports missing PHP but does not install software.
+Check availability with `php --version` and `./v3 check-dependencies`, then retry
+`./v3 start` with your original options. Both commands explain missing or disabled
+capabilities and manual recovery. This guide is readable directly from the
+checkout without running PHP; v3 does not install software.
 
-On Ubuntu 24.04 with APT, install the matching PHP CLI, SQLite/PDO SQLite,
+On Ubuntu 24.04 with APT, install Git and the matching PHP CLI, SQLite/PDO SQLite,
 and mbstring packages manually:
 
 ```bash
 sudo apt-get update
-sudo apt-get install php8.3-cli php8.3-sqlite3 php8.3-mbstring
+sudo apt-get install git php8.3-cli php8.3-sqlite3 php8.3-mbstring
 ```
 
 These commands change system packages and require administrator privileges;
@@ -116,11 +119,60 @@ package-manager or permission issue before retrying. Then check `php --version`
 and `php -m` for `PDO`, `pdo_sqlite`, and `mbstring` in your launching terminal.
 Run v3 as your usual user after setup.
 
+If PHP is already installed, the report identifies its executable and loaded
+configuration. Use `php --ini` to find CLI settings and `php -m` to check enabled
+extensions; changing another PHP installation or a web-server-only configuration
+will not repair this CLI. A standalone `sqlite3` executable does not replace PDO
+SQLite. If PHP process functions are disabled or execution is restricted, review
+the CLI's `disable_functions` and host policy, or use another supported
+environment. These checks do not require remote Git credentials.
+
 Startup displays this recipe only when it recognizes Ubuntu 24.04 and finds
 `apt-get`. Other environments receive general manual setup guidance; install
 PHP CLI with PDO SQLite and mbstring support using your platform's instructions.
 Missing or ambiguous platform information also uses the general guidance.
 Startup never prompts, changes PATH or shell profiles, or retries automatically.
+
+### Launcher and optional support
+
+The launcher requires Bash **4.1+** and standard `dirname` and `cat` utilities.
+Its `#!/usr/bin/env bash` interpreter must be available on `PATH`. If Bash is
+missing, the launcher cannot print its own guidance: install/select Bash using
+your platform's setup instructions, verify `bash --version`, and retry. With a
+newer Bash outside `PATH`, use `/path/to/bash ./v3 check-dependencies` and
+`/path/to/bash ./v3 start` with your original options. Missing `dirname` or `cat`
+must likewise be repaired through your platform's standard utilities setup;
+the launcher uses them before it can provide all diagnostics.
+
+`stty`, PCNTL signal support, and `shell_exec` for terminal cosmetics are optional.
+Without them, output uses plain logging and launcher-managed shutdown remains
+available; stop the launcher with Ctrl+C or SIGTERM. Do not relax host execution
+policy solely to enable terminal cosmetics. PHP intl is also optional: existing
+Unicode behavior rejects combining marks when normalization is unavailable.
+For Ubuntu 24.04/PHP 8.3, enable normalization manually with
+`sudo apt-get install php8.3-intl`; for another runtime, enable its matching intl
+extension and recheck the selected CLI.
+
+### Check local-server dependencies
+
+```bash
+./v3 check-dependencies
+```
+
+Reports required and optional local-server capabilities without starting the
+server, bootstrapping a repository, rebuilding a read model, or writing application
+state. Exit status is **0** when required capabilities are available, including
+when optional warnings remain; **1** means setup needs repair. It also works
+without PHP and never consumes interactive setup input. Use
+`./v3 check-dependencies --help` for usage without runtime checks.
+
+`./v3 start` uses the same assessment before loading application code or creating
+logs/state. A passing dependency report does not validate checkout/database
+health, application permissions, configuration, or whether the listening port is
+available; those failures remain separate operational errors. Checks cover only
+the local server. Other commands and production deployment have their own
+prerequisites; Ubuntu 24.04/APT has specific setup guidance, while other or
+unrecognized environments receive generic instructions.
 
 ### Start locally
 
@@ -372,6 +424,19 @@ Run the current parser, rebuild, and app smoke tests:
 ```bash
 ./v3 test
 ```
+
+Standalone local-server dependency regressions:
+
+```bash
+bash tests/missing_php_startup_test.sh
+bash tests/local_server_dependency_checks_test.sh
+python3 tests/local_server_dependency_runtime_test.py
+```
+
+The real-runtime test uses Python 3's standard library, PHP CLI, temporary
+projects/configurations, and HTTP/terminal checks. It changes no system packages
+or real application state. Missing shared-extension cases are skipped when the
+runtime compiled that extension statically.
 
 The custom test runner reports tests that take at least 5 seconds by default.
 Override the cutoff with `FORUM_TEST_SLOW_REPORT_THRESHOLD_SECONDS`, for example

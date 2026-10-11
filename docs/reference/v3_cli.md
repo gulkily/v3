@@ -1,8 +1,9 @@
 # `v3` CLI Reference
 
-`./v3` is a thin dispatcher over the PHP scripts in `scripts/`. Every subcommand
-below can also be invoked directly as `php scripts/<script>.php ...`; the `./v3`
-form is the shorthand used elsewhere in this repo's docs.
+`./v3` dispatches to scripts in `scripts/`. Use the launcher for local startup
+and dependency checks: it handles executable/version checks and server shutdown.
+Many other PHP commands can also be invoked directly as
+`php scripts/<script>.php ...`.
 
 Run `./v3 help`, `./v3 --help`, or `./v3 -h` to print the command list.
 Running `./v3` with no arguments also prints it (with exit code 1).
@@ -53,13 +54,36 @@ rewritten, so later syncs use the ordinary subtree pull workflow.
 ## Start the local dev server
 
 ```
-./v3 start [--listen-all|host:port]
+./v3 start [--listen-all|host:port] [--verbose|--quiet] [--log-file=/path/dev.log]
 ```
 
 Starts the PHP built-in dev server on `127.0.0.1:8000` by default.
+Checks local-server prerequisites before application loading, logs, or bootstrap.
+Missing required capabilities return 1 with manual recovery guidance; optional
+limitations warn without blocking. Stop the launcher with Ctrl+C or SIGTERM.
 
 - `--listen-all` — bind `0.0.0.0:8000` instead of `127.0.0.1:8000`
 - `host:port` — bind an explicit address or bare port number instead of the default
+- `--verbose` / `--quiet` — show all requests / server errors only
+- `--log-file=...` — append plain request logs to the chosen file
+
+## Check local-server prerequisites
+
+```
+./v3 check-dependencies [--help]
+```
+
+Uses the same checks as startup without starting the server or changing application
+state. Reports Bash 4.1+, Git, PHP CLI 8.1+, PDO/PDO SQLite, mbstring, and PHP
+process execution; intl, PCNTL, terminal shell execution, and `stty` are optional.
+Returns 0 when required capabilities pass (even with warnings), or 1 for missing,
+disabled, or unusable required capabilities. `-h`/`--help` returns 0 without
+checking PHP or Git; other arguments are rejected.
+
+Follow manual recovery guidance and retry with the same startup options. This
+command never prompts or installs software, and does not validate repository,
+database, permissions, listening address, other-command, or deployment readiness.
+See [local setup and launcher prerequisites](../../README.md#php-setup).
 
 ## Run the test suite
 

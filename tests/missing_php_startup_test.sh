@@ -23,7 +23,7 @@ if grep -Eq 'exec:|php:.*not found' "${FIXTURE}/err"; then
   fail 'shell-level PHP error remains'
 fi
 grep -Fq '### PHP setup' "${ROOT}/README.md" || fail 'setup reference is missing'
-for command in help '--help' 'fdp sync --help'; do
+for command in help '--help' 'fdp sync --help' 'check-dependencies --help' 'check-dependencies -h'; do
   read -r -a arguments <<<"${command}"
   PATH="${FIXTURE}/bin" "${ROOT}/v3" "${arguments[@]}" >"${FIXTURE}/out" 2>"${FIXTURE}/err"
   [[ -s "${FIXTURE}/out" && ! -s "${FIXTURE}/err" ]] || fail "help failed: ${command}"

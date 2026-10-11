@@ -14,7 +14,7 @@ This delivery covers only `./v3 start` and `./v3 check-dependencies`; broader wo
 - [x] Optional terminal/PCNTL support with plain logging and reliable shutdown. Verified terminal and redirected output plus SIGINT/SIGTERM cleanup without `stty`, PCNTL functions, or `shell_exec`.
 - [x] Optional intl normalization with reduced-behavior guidance. Warnings explain combining-mark rejection; existing Unicode policy/risk tests pass without intl.
 - [x] End-to-end missing/disabled/restored, state-preservation, unattended, and local read/write verification. Repeatable shell and real-runtime HTTP/terminal tests cover both commands, untouched state, installer sentinels, actual thread/reply writes, and shutdown.
-- [ ] Launcher prerequisites, platform setup instructions, command discovery, and readiness limits documented and verified.
+- [x] Launcher prerequisites, platform setup instructions, command discovery, and readiness limits documented and verified. README/CLI help cover Bash 4.1+, `dirname`/`cat`, selected-runtime setup, Ubuntu 24.04/APT guidance, generic fallback, and manual retry; diagnostic help remains available without PHP/Git.
 
 ## Local startup and core runtime
 

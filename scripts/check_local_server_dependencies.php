@@ -96,14 +96,15 @@ if ($execReady) {
     }
 }
 
-$optional = static function (bool $available, string $name, string $guidance) use ($mode, $output): void {
+$optional = static function (bool $available, string $name, string $guidance) use ($mode, $output, $identify): void {
     if (!$available) {
+        $identify();
         fwrite($output, "WARN: Optional {$name} unavailable. {$guidance}\n");
     } elseif ($mode === 'report') {
         fwrite($output, "OK: Optional {$name}\n");
     }
 };
-$optional(class_exists(Normalizer::class, false), 'intl normalization', 'Unicode remains usable, but combining marks are rejected without normalization support. Install/enable intl for the selected PHP CLI for normalization.');
+$optional(class_exists(Normalizer::class, false), 'intl normalization', 'Unicode remains usable, but combining marks are rejected without normalization support. ' . $extensionGuidance('intl', 'intl'));
 $signalFunctions = ['pcntl_async_signals', 'pcntl_signal'];
 $signalsReady = array_filter($signalFunctions, static fn (string $name): bool => !function_exists($name)) === [];
 foreach (['SIGINT', 'SIGTERM', 'SIGWINCH', 'SIG_DFL'] as $constant) {
