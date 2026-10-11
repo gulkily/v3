@@ -329,14 +329,11 @@ class IncrementalReadModelUpdater
             return;
         }
         $targets = [];
-        $repository = new CanonicalRecordRepository($this->repositoryRoot);
-        foreach (glob($this->repositoryRoot . '/records/post-reactions/*.txt') ?: [] as $path) {
-            try {
-                $record = $repository->loadPostReaction('records/post-reactions/' . basename($path));
-            } catch (CanonicalRecordParseException) {
-                continue;
-            }
-            if (in_array($record->authorIdentityId, $identityIds, true)) {
+        $recordsByPost = [];
+        $identityLookup = array_fill_keys($identityIds, true);
+        foreach ($this->loadPostReactionRecords(null) as $record) {
+            $recordsByPost[$record->postId][] = $record;
+            if (isset($identityLookup[$record->authorIdentityId ?? ''])) {
                 $targets[$record->postId] = true;
             }
         }
@@ -346,7 +343,7 @@ class IncrementalReadModelUpdater
             $stmt->execute([$postId]);
             $author = $stmt->fetchColumn();
             if ($author !== false) {
-                $this->updatePostReactions($pdo, $postId, $this->derivePostReactionState($postId, $author, $this->loadPostReactionRecords($postId), $approved));
+                $this->updatePostReactions($pdo, $postId, $this->derivePostReactionState($postId, $author, $recordsByPost[$postId], $approved));
             }
         }
     }
@@ -1211,56 +1208,30 @@ class IncrementalReadModelUpdater
      */
     private function refreshApprovalSensitiveThreadScores(PDO $pdo, array $changedIdentityIds): void
     {
-        $affectedThreadIds = $this->loadThreadIdsForLabelAuthors($changedIdentityIds);
+        $identityLookup = array_fill_keys($changedIdentityIds, true);
+        $affectedThreadIds = [];
+        $recordsByThread = [];
+        foreach ($this->loadThreadLabelRecords(null) as $record) {
+            $recordsByThread[$record->threadId][] = $record;
+            if (isset($identityLookup[$record->authorIdentityId ?? ''])) {
+                $affectedThreadIds[$record->threadId] = true;
+            }
+        }
         if ($affectedThreadIds === []) {
             return;
         }
 
         $approvedIdentityIds = $this->loadApprovedIdentityIds($pdo);
-        foreach ($affectedThreadIds as $threadId) {
+        foreach (array_keys($affectedThreadIds) as $threadId) {
             if (!$this->threadExists($pdo, $threadId)) {
                 continue;
             }
 
-            $records = $this->loadThreadLabelRecords($threadId);
+            $records = $recordsByThread[$threadId];
             $rootSeed = $this->loadRootImportedSeed($threadId);
             $labelState = $this->deriveThreadLabelState($threadId, $records, $approvedIdentityIds, $rootSeed['score'], $rootSeed['vote_count']);
             $this->updateThreadScoreTotal($pdo, $threadId, $labelState['score_total']);
         }
-    }
-
-    /**
-     * @param list<string> $identityIds
-     * @return list<string>
-     */
-    private function loadThreadIdsForLabelAuthors(array $identityIds): array
-    {
-        if ($identityIds === []) {
-            return [];
-        }
-
-        $identityLookup = array_fill_keys($identityIds, true);
-        $repository = new CanonicalRecordRepository($this->repositoryRoot);
-        $threadIds = [];
-
-        foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
-            try {
-                $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path));
-            } catch (CanonicalRecordParseException) {
-                continue;
-            }
-
-            if ($record->authorIdentityId === null || !isset($identityLookup[$record->authorIdentityId])) {
-                continue;
-            }
-
-            $threadIds[$record->threadId] = true;
-        }
-
-        $result = array_keys($threadIds);
-        sort($result);
-
-        return $result;
     }
 
     private function threadExists(PDO $pdo, string $threadId): bool
@@ -1341,7 +1312,7 @@ class IncrementalReadModelUpdater
     /**
      * @return list<ThreadLabelRecord>
      */
-    private function loadThreadLabelRecords(string $threadId): array
+    private function loadThreadLabelRecords(?string $threadId): array
     {
         $repository = new CanonicalRecordRepository($this->repositoryRoot);
         $records = [];
@@ -1352,7 +1323,7 @@ class IncrementalReadModelUpdater
                 continue;
             }
 
-            if ($record->threadId !== $threadId) {
+            if ($threadId !== null && $record->threadId !== $threadId) {
                 continue;
             }
 
@@ -1468,7 +1439,7 @@ class IncrementalReadModelUpdater
     /**
      * @return list<PostReactionRecord>
      */
-    private function loadPostReactionRecords(string $postId): array
+    private function loadPostReactionRecords(?string $postId): array
     {
         $repository = new CanonicalRecordRepository($this->repositoryRoot);
         $records = [];
@@ -1479,7 +1450,7 @@ class IncrementalReadModelUpdater
                 continue;
             }
 
-            if ($record->postId !== $postId) {
+            if ($postId !== null && $record->postId !== $postId) {
                 continue;
             }
 

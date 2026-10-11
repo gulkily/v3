@@ -110,7 +110,8 @@ function usageText(): string
 {
     return "Usage:\n"
         . "  php scripts/inject_approval.php seed <identity_id> [seed_reason] [repository_root] [database_path]\n"
-        . "  php scripts/inject_approval.php approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]\n";
+        . "  php scripts/inject_approval.php approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]\n"
+        . "Seed applies synchronously without rebuilding; matching seeds can be retried after explicit repair.\n";
 }
 
 function normalizeIdentityId(string $identityId): string

@@ -51,6 +51,9 @@ final class ReadModelMetadata
     {
         $base = $repositoryRoot . '/records';
         $files = [];
+        if (!is_dir($base)) {
+            return hash('sha256', json_encode($files, JSON_THROW_ON_ERROR));
+        }
         $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($base, \FilesystemIterator::SKIP_DOTS));
         foreach ($iterator as $file) {
             if ($file->isFile()) {

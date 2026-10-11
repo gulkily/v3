@@ -155,6 +155,7 @@ Usage:
   ./v3 task-queue cron [--log=/var/log/forum-task-queue.log]
   ./v3 approve <identity_id> [seed_reason] [repository_root] [database_path]
   ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
+    Seed commands apply immediately on a current read model, without a full rebuild.
   ./v3 approval audit [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--review-only] [--summary] [--json]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
 

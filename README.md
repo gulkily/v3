@@ -285,6 +285,38 @@ Approval helper examples:
 ./v3 approval audit --repository-root=/path/repository --database-path=/path/read-model.sqlite3 --json
 ```
 
+`./v3 approve` is an alias for `./v3 approval seed`. On a current read model,
+both apply the seed synchronously without a full rebuild: success means the next
+request sees updated approval, attribution, access, activity, and scores, including
+existing approvals unlocked by the new seed. Generated pages and active static
+releases are invalidated; PHP serves current state immediately. Existing offline
+snapshot copies are retired and the snapshot endpoint can recreate them from the
+current model. Already-open pages and downloaded offline copies are not pushed an
+update.
+
+Use the same repository/database and `FORUM_PUBLIC_ARTIFACT_ROOT` /
+`FORUM_STATIC_HTML_ROOT` as the web instance (the static root defaults to the active
+site profile). Git-backed instances require matching read-model HEAD and clean
+canonical records; unrelated staged files are preserved. Non-Git instances use a
+recorded canonical-content fingerprint. Older non-Git indexes without that evidence
+need an explicit read-model repair once.
+
+Missing, stale, incompatible, or out-of-date read models fail without automatically
+rebuilding. Errors state whether the seed was written and committed. Resolve the
+reported canonical-write, permissions, or cache problem, then use the instance paths
+printed by the error to repair and retry:
+
+```bash
+./v3 rebuild /path/repository /path/read-model.sqlite3
+./v3 approve openpgp-<fingerprint> "same seed reason" /path/repository /path/read-model.sqlite3
+```
+
+Repair is an exceptional recovery operation, not a step after ordinary approval.
+Retrying a matching seed refreshes state and caches without creating another seed
+or commit; a seed left uncommitted by a failed Git operation is committed on retry.
+An existing seed with a different reason is rejected without changing it. Seed
+writes preserve root attribution and do not create user approval replies.
+
 The approval audit reads existing state without rebuilding or changing approvals.
 It reports currently approved keys and their attributed approver, including grants
 derived from invitations. Root-seeded, operator-approved, same-username, and
