@@ -91,6 +91,19 @@ internet message boards, unrelated to this codebase's implementation —
 
 ## Local Run
 
+### PHP setup
+
+Local startup requires the PHP command-line runtime (`php`) on your `PATH`.
+If it is missing, install PHP CLI using your system's package manager or PHP
+installation instructions. If PHP is already installed, add the directory
+containing its executable to `PATH` in the terminal where you run v3.
+
+Check availability with `php --version`, then retry `./v3 start` with your
+original options. This setup guide is readable directly from the checkout
+without running PHP. Startup reports missing PHP but does not install software.
+
+### Start locally
+
 The default local runtime now bootstraps and uses `state/local_repository` automatically. On first run it copies the committed fixture seed into that writable git repo, so thread/reply/bootstrap writes work without setting `FORUM_REPOSITORY_ROOT`.
 
 Rebuild the SQLite read model:

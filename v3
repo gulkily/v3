@@ -4,6 +4,16 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMMAND="${1:-}"
 
+missing_php_startup_guidance() {
+  cat >&2 <<EOF
+Cannot start v3: PHP CLI is not available on PATH.
+Install the PHP command-line runtime, or add your existing PHP executable's
+directory to PATH. Check that 'php --version' works in this terminal.
+Setup guide: ${ROOT}/README.md (PHP setup, #php-setup)
+Then retry your ./v3 start command with the same options.
+EOF
+}
+
 fdp_usage() {
   cat <<'EOF'
 Usage:
@@ -172,6 +182,10 @@ fi
 case "${COMMAND}" in
   start)
     shift
+    if ! command -v php >/dev/null 2>&1; then
+      missing_php_startup_guidance
+      exit 1
+    fi
     ADDRESS_ARGUMENT="127.0.0.1:8000"
     DEV_SERVER_ARGS=()
     for ARGUMENT in "$@"; do

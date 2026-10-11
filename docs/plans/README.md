@@ -37,6 +37,7 @@ or standalone plans remain at this level until they reach that threshold.
 - [MIT Rap Club media embeds](mitrapclub_media_embeds/)
 - [MIT Rap Club structural identity](mitrapclub_structural_identity/)
 - [MIT Rap Club website](mit_rap_club_website/)
+- [Missing PHP startup guidance](missing_php_startup_guidance/)
 - [Multi-site refactor P0](multi_site_refactor_p0/)
 - [Multi-site refactor P1](multi_site_refactor_p1/)
 - [Multi-site refactor P2 browser offline identity](multi_site_refactor_p2_browser_offline_identity/)
