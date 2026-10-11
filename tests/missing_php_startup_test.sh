@@ -29,6 +29,62 @@ for command in help '--help' 'fdp sync --help'; do
   [[ -s "${FIXTURE}/out" && ! -s "${FIXTURE}/err" ]] || fail "help failed: ${command}"
 done
 
+# Platform fixtures exercise the internal helper without launcher test overrides.
+source "${ROOT}/scripts/php_setup_guidance.sh"
+check_platform() {
+  local expected="$1"
+  shift
+  printf '%s\n' "$@" >"${FIXTURE}/release"
+  [[ "$(PATH="${FIXTURE}/bin" php_setup_platform "${FIXTURE}/release")" == "${expected}" ]] \
+    || fail "incorrect platform for: $*"
+}
+cat >"${FIXTURE}/bin/uname" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' Linux
+EOF
+cat >"${FIXTURE}/bin/apt-get" <<'EOF'
+#!/usr/bin/env bash
+printf 'unexpected installation\n' >"${V3_TEST_INSTALL_MARKER}"
+exit 99
+EOF
+cp "${FIXTURE}/bin/apt-get" "${FIXTURE}/bin/sudo"
+chmod +x "${FIXTURE}/bin/"{uname,apt-get,sudo}
+export V3_TEST_INSTALL_MARKER="${FIXTURE}/installation-attempt"
+check_platform ubuntu-24.04 'ID=ubuntu' 'VERSION_ID="24.04"'
+check_platform ubuntu-24.04 "ID='ubuntu'" "VERSION_ID='24.04'"
+check_platform generic 'ID=ubuntu' 'VERSION_ID=22.04'
+check_platform generic 'ID=debian' 'VERSION_ID=24.04'
+check_platform generic 'ID=ubuntu'
+check_platform generic 'ID=ubuntu' 'ID=ubuntu' 'VERSION_ID=24.04'
+check_platform generic 'ID=ubuntu' 'VERSION_ID=24.04' 'VERSION_ID=24.04'
+check_platform generic 'ID="ubuntu' 'VERSION_ID=24.04'
+check_platform generic 'ID=$(touch injected)' 'VERSION_ID=24.04'
+check_platform generic
+[[ "$(PATH="${FIXTURE}/bin" php_setup_platform "${FIXTURE}/missing")" == generic ]] || fail 'missing release file'
+[[ "$(PATH="${FIXTURE}/bin" php_setup_platform "${FIXTURE}/bin")" == generic ]] || fail 'non-file release input'
+# Simulate a read failure even when the suite runs as root.
+printf '%s\n' 'ID=ubuntu' 'VERSION_ID=24.04' >"${FIXTURE}/release"
+(
+  read() { line=''; return 1; }
+  [[ "$(PATH="${FIXTURE}/bin" php_setup_platform "${FIXTURE}/release")" == generic ]]
+) || fail 'release read failure'
+(
+  uname() { return 1; }
+  [[ "$(php_setup_platform "${FIXTURE}/release")" == generic ]]
+) || fail 'failed kernel detection'
+(
+  uname() { printf '%s\n' Darwin; }
+  [[ "$(php_setup_platform "${FIXTURE}/release")" == generic ]]
+) || fail 'unsupported kernel'
+rm "${FIXTURE}/bin/apt-get"
+[[ "$(PATH="${FIXTURE}/bin" php_setup_platform "${FIXTURE}/release")" == generic ]] || fail 'missing APT'
+cp "${FIXTURE}/bin/sudo" "${FIXTURE}/bin/apt-get"
+# A piped invocation must finish without consuming input or running installers.
+if printf 'yes\n' | PATH="${FIXTURE}/bin" "${ROOT}/v3" start --quiet >"${FIXTURE}/out" 2>"${FIXTURE}/err"; then
+  fail 'piped missing-PHP startup succeeded'
+fi
+[[ ! -s "${FIXTURE}/out" && ! -e "${V3_TEST_INSTALL_MARKER}" ]] || fail 'unexpected output or installation'
+grep -Fq 'retry' "${FIXTURE}/err" || fail 'piped recovery guidance missing'
 # Capture each argument on its own line; a log-file path includes spaces.
 cat >"${FIXTURE}/bin/php" <<'EOF'
 #!/usr/bin/env bash
