@@ -144,3 +144,5 @@ continue with docs/plans/backlog/account_key_approval_visibility_and_safety_chec
 when we import another instance, we end up with a lot of unapproved accounts
     this is because root approvals are gone
         we need to figure out a way to make this process smoother
+
+add provisions for calling remove-record from web ui
