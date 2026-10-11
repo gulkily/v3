@@ -8,6 +8,7 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
+use ForumRewrite\Write\LocalWriteService;
 
 final class ApprovalSeedCommandTest
 {
@@ -18,15 +19,86 @@ final class ApprovalSeedCommandTest
         foreach ([['approve'], ['approval', 'seed']] as $command) {
             $this->withFixture(function (string $root, string $db, string $public, string $static) use ($command): void {
                 [$code, $out, $err] = $this->runSeed($root, $db, $public, $static, $command);
-                assertSame(0, $code, $err);
+                if ($code !== 0) { throw new RuntimeException($err); }
+                assertSame(0, $code);
                 assertStringContains('Seeded approval for ' . self::ID, $out);
                 $pdo = new PDO('sqlite:' . $db);
                 assertSame(1, (int) $pdo->query('SELECT is_approved FROM profiles')->fetchColumn());
                 assertSame('root', $pdo->query('SELECT approved_by_label FROM profiles')->fetchColumn());
+                assertSame('write_incremental', ReadModelMetadata::readMetadata($pdo)['rebuild_reason']);
                 assertSame(ReadModelMetadata::repositoryHead($root), ReadModelMetadata::readMetadata($pdo)['repository_head']);
                 assertSame('test seed', (new CanonicalRecordRepository($root))->loadApprovalSeed($this->seedPath())->seedReason);
             });
         }
+    }
+
+    public function testSeedRefreshMatchesRebuildForTransitiveApprovalScoresAndAttribution(): void
+    {
+        $this->withFixture(function (string $root, string $db, string $public): void {
+            $target = $this->addApprovalChain($root);
+            $this->rebuild($root, $db);
+            $pdo = new PDO('sqlite:' . $db);
+            $postCount = $pdo->query('SELECT COUNT(*) FROM posts')->fetchColumn();
+            $service = new LocalWriteService($root, $db, $public, new CanonicalRecordRepository($root));
+            $result = $service->seedApprovedIdentity(self::ID, 'test seed');
+            assertTrue(isset($result['timings']['read_model_approval_seed_incremental']));
+            assertSame(2, (int) $pdo->query('SELECT COUNT(*) FROM profiles WHERE is_approved = 1')->fetchColumn());
+            assertSame(1, (int) $pdo->query("SELECT score_total FROM threads WHERE root_post_id = 'root-001'")->fetchColumn());
+            assertSame(1, (int) $pdo->query("SELECT approved_flag_count FROM posts WHERE post_id = 'reply-001'")->fetchColumn());
+            assertSame($postCount, $pdo->query('SELECT COUNT(*) FROM posts')->fetchColumn());
+            $this->assertParity($root, $db);
+            $service->seedApprovedIdentity($target, 'promote to root');
+            assertSame(2, (int) $pdo->query("SELECT COUNT(*) FROM profiles WHERE approved_by_label = 'root'")->fetchColumn());
+            $this->assertParity($root, $db);
+        });
+    }
+
+    public function testNonGitSeedUsesRecordedFreshnessEvidence(): void
+    {
+        $this->withFixture(function (string $root, string $db, string $public, string $static): void {
+            [$code, , $err] = $this->runSeed($root, $db, $public, $static);
+            if ($code !== 0) { throw new RuntimeException($err); }
+            $metadata = ReadModelMetadata::readMetadata(new PDO('sqlite:' . $db));
+            assertSame('write_incremental', $metadata['rebuild_reason']);
+            assertSame(ReadModelMetadata::canonicalFingerprint($root), $metadata['canonical_fingerprint']);
+            $this->assertParity($root, $db);
+        }, false);
+    }
+
+    private function addApprovalChain(string $root): string
+    {
+        $fingerprint = str_repeat('b', 40);
+        $target = 'openpgp:' . $fingerprint;
+        copy($root . '/records/public-keys/openpgp-' . strtoupper(substr(self::ID, 8)) . '.asc', $root . '/records/public-keys/openpgp-' . strtoupper($fingerprint) . '.asc');
+        $identity = file_get_contents($root . '/records/identity/identity-' . str_replace(':', '-', self::ID) . '.txt');
+        $identity = str_replace([substr(self::ID, 8), strtoupper(substr(self::ID, 8)), 'root-001'], [$fingerprint, strtoupper($fingerprint), 'target-root'], $identity);
+        file_put_contents($root . '/records/identity/identity-openpgp-' . $fingerprint . '.txt', $identity);
+        file_put_contents($root . '/records/posts/target-root.txt', "Post-ID: target-root\nCreated-At: 2026-04-11T00:00:00Z\nBoard-Tags: identity internal\n\nTarget bootstrap.\n");
+        file_put_contents($root . '/records/posts/early-approval.txt', "Post-ID: early-approval\nCreated-At: 2026-04-12T00:00:00Z\nBoard-Tags: identity approval\nThread-ID: target-root\nParent-ID: target-root\nAuthor-Identity-ID: " . self::ID . "\n\nApprove-Identity-ID: {$target}\n");
+        file_put_contents($root . '/records/thread-labels/seed-like.txt', "Record-ID: seed-like\nCreated-At: 2026-04-13T00:00:00Z\nThread-ID: root-001\nOperation: add\nLabels: like\nAuthor-Identity-ID: {$target}\n\n");
+        mkdir($root . '/records/post-reactions');
+        file_put_contents($root . '/records/post-reactions/seed-flag.txt', "Record-ID: seed-flag\nCreated-At: 2026-04-13T00:00:00Z\nPost-ID: reply-001\nOperation: add\nTags: flag\nAuthor-Identity-ID: {$target}\n\n");
+        $this->git($root, ['add', 'records']);
+        $this->git($root, ['commit', '-m', 'Add dormant approval and reactions']);
+        return $target;
+    }
+
+    private function assertParity(string $root, string $db): void
+    {
+        $fresh = dirname($db) . '/fresh.sqlite3';
+        $this->rebuild($root, $fresh);
+        $actual = new PDO('sqlite:' . $db);
+        $expected = new PDO('sqlite:' . $fresh);
+        foreach (['profiles' => 'identity_id', 'posts' => 'post_id', 'threads' => 'root_post_id', 'activity' => 'id', 'username_routes' => 'username_token'] as $table => $order) {
+            assertSame($expected->query("SELECT * FROM {$table} ORDER BY {$order}")->fetchAll(PDO::FETCH_ASSOC), $actual->query("SELECT * FROM {$table} ORDER BY {$order}")->fetchAll(PDO::FETCH_ASSOC));
+        }
+    }
+
+    private function git(string $root, array $args): string
+    {
+        [$code, $out, $err] = $this->process(['git', ...$args], $root);
+        if ($code !== 0) { throw new RuntimeException($err); }
+        return trim($out);
     }
 
     private function seedPath(): string

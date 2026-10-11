@@ -1002,6 +1002,88 @@ class LocalWriteService
         }
     }
 
+    /** @return array<string,mixed> */
+    public function seedApprovedIdentity(string $identityId, string $seedReason): array
+    {
+        return $this->withTimedWriteLock(function () use ($identityId, $seedReason): array {
+            $this->assertWritableRepository();
+            if (!preg_match('/^openpgp:[a-f0-9]{40}$/', $identityId) || preg_match('/[\r\n]/', $seedReason)) {
+                throw new RuntimeException('Invalid seed identity or reason. Seed not written.');
+            }
+            $path = CanonicalPathResolver::approvalSeed(substr($identityId, 8));
+            $absolute = $this->repositoryRoot . '/' . $path;
+            $contents = "Approved-Identity-ID: {$identityId}\nSeed-Reason: {$seedReason}\n\nSeed this identity as approved.\n";
+            (new \ForumRewrite\Canonical\ApprovalSeedRecordParser())->parse($contents);
+            $exists = is_file($absolute);
+            if ($exists && $this->canonicalRepository->loadApprovalSeed($path)->seedReason !== $seedReason) {
+                throw new RuntimeException('Approval seed already exists with a different reason; existing seed preserved.');
+            }
+            $this->assertApprovalSeedReadModelReady();
+            $commitSha = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+            $persisted = $exists;
+            $started = hrtime(true);
+            try {
+                if (!$exists) {
+                    if (!is_dir(dirname($absolute)) && !mkdir(dirname($absolute), 0777, true) && !is_dir(dirname($absolute))) {
+                        throw new RuntimeException('Unable to create approval seed directory.');
+                    }
+                    if (file_put_contents($absolute, $contents) !== strlen($contents)) {
+                        throw new RuntimeException('Unable to write approval seed.');
+                    }
+                    $persisted = true;
+                    if ($commitSha !== 'no-git') {
+                        $this->runGitCommand(['add', '--', $path], 'Unable to stage approval seed');
+                        $this->runGitCommand([
+                            '-c', 'user.name=Forum Rewrite', '-c', 'user.email=forum-rewrite@example.invalid',
+                            'commit', '--only', '-m', 'Seed approval ' . $identityId, '--', $path,
+                        ], 'Unable to commit approval seed');
+                        $commitSha = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+                    }
+                }
+                $result = $this->incrementalReadModelUpdater()->applyApprovalSeedWrite($commitSha);
+                // Include the target on retries, where there may be no state delta.
+                $identities = array_unique([$identityId, ...$result['changed_identity_ids']]);
+                $query = $this->readModelPdo()->prepare('SELECT profile_slug, bootstrap_thread_id, bootstrap_post_id FROM profiles WHERE identity_id = ?');
+                foreach ($identities as $id) {
+                    $query->execute([$id]);
+                    $profile = $query->fetch();
+                    if (is_array($profile)) {
+                        $this->invalidator()->invalidateIdentityLink($profile['profile_slug'], $profile['bootstrap_thread_id'], $profile['bootstrap_post_id']);
+                    }
+                }
+                return [
+                    'identity_id' => $identityId, 'commit_sha' => $commitSha,
+                    'timings' => ['read_model_approval_seed_incremental' => $this->elapsedMilliseconds($started)] + $result['timings'],
+                ];
+            } catch (\Throwable $error) {
+                if ($persisted) {
+                    $this->staleMarker()->mark(['reason' => 'approval_seed_refresh_failed', 'commit_sha' => $commitSha, 'message' => $error->getMessage()]);
+                }
+                throw new RuntimeException(($persisted ? 'Approval seed persisted; refresh incomplete. ' : 'Approval seed not written. ')
+                    . $error->getMessage() . ' Repair the read model explicitly, then retry the same seed command.', 0, $error);
+            }
+        });
+    }
+
+    private function assertApprovalSeedReadModelReady(): void
+    {
+        if (!$this->canIncrementallyUpdateReadModel()) {
+            throw new RuntimeException('Approval seed not written: read model is missing, stale, or incompatible. Repair it explicitly, then retry.');
+        }
+        $metadata = ReadModelMetadata::readMetadata($this->readModelPdo());
+        $head = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+        if ($head === 'git-error' || ($metadata['repository_head'] ?? '') !== $head) {
+            throw new RuntimeException('Approval seed not written: read model is behind repository HEAD. Repair it explicitly, then retry.');
+        }
+        if ($head === 'no-git') {
+            if (($metadata['canonical_fingerprint'] ?? '') !== ReadModelMetadata::canonicalFingerprint($this->repositoryRoot)) {
+                throw new RuntimeException('Approval seed not written: non-Git freshness evidence is missing or outdated. Repair the read model explicitly, then retry.');
+            }
+        } elseif ($this->runGitCommand(['status', '--porcelain', '--untracked-files=all', '--', 'records'], 'Unable to inspect canonical records') !== '') {
+            throw new RuntimeException('Approval seed not written: canonical records have uncommitted changes. Resolve them and repair the read model before retrying.');
+        }
+    }
+
     /**
      * @param array<string, mixed> $input
      * @return array<string, string>

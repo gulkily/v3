@@ -6,13 +6,12 @@ require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
-use ForumRewrite\ReadModel\ReadModelBuilder;
-use ForumRewrite\Support\ExecutionLock;
+use ForumRewrite\PresentationPathResolver;
+use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 use ForumRewrite\Write\LocalWriteService;
 
 $projectRoot = dirname(__DIR__);
-$defaultRepositoryRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot);
 $defaultDatabasePath = LocalRepositoryBootstrap::defaultDatabasePath($projectRoot);
 $command = $argv[1] ?? '';
 
@@ -24,17 +23,23 @@ try {
     if ($command === 'seed') {
         $identityId = normalizeCliIdentityId(requireCliArgument($argv, 2, 'identity_id'));
         $seedReason = trim((string) ($argv[3] ?? 'initial approved user'));
-        $repositoryRoot = $argv[4] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $defaultRepositoryRoot);
+        $repositoryRoot = $argv[4] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot));
         $databasePath = $argv[5] ?? (getenv('FORUM_DATABASE_PATH') ?: $defaultDatabasePath);
 
-        seedApprovedIdentity($repositoryRoot, $databasePath, $identityId, $seedReason);
+        $writer = new LocalWriteService(
+            $repositoryRoot, $databasePath,
+            getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'),
+            new CanonicalRecordRepository($repositoryRoot),
+            additionalArtifactRoots: [getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, SiteProfileRegistry::active())],
+        );
+        $writer->seedApprovedIdentity($identityId, $seedReason);
         fwrite(STDOUT, "Seeded approval for {$identityId}\n");
         exit(0);
     }
 
     $approverIdentityId = normalizeCliIdentityId(requireCliArgument($argv, 2, 'approver_identity_id'));
     $targetIdentityId = normalizeCliIdentityId(requireCliArgument($argv, 3, 'target_identity_id'));
-    $repositoryRoot = $argv[4] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $defaultRepositoryRoot);
+    $repositoryRoot = $argv[4] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot));
     $databasePath = $argv[5] ?? (getenv('FORUM_DATABASE_PATH') ?: $defaultDatabasePath);
     $artifactRoot = $argv[6] ?? (getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'));
 
@@ -62,41 +67,6 @@ function loadIdentityTarget(string $repositoryRoot, string $identityId): array
     ];
 }
 
-function seedApprovedIdentity(string $repositoryRoot, string $databasePath, string $identityId, string $seedReason): void
-{
-    $fingerprint = normalizeIdentityId($identityId);
-    $relativePath = CanonicalPathResolver::approvalSeed($fingerprint);
-    $path = $repositoryRoot . '/' . $relativePath;
-
-    if (is_file($path)) {
-        throw new RuntimeException('Approval seed already exists for ' . $identityId . '.');
-    }
-
-    $contents = "Approved-Identity-ID: {$identityId}\n"
-        . "Seed-Reason: {$seedReason}\n"
-        . "\nSeed this identity as approved.\n";
-
-    $directory = dirname($path);
-    if (!is_dir($directory)) {
-        mkdir($directory, 0777, true);
-    }
-
-    if (file_put_contents($path, $contents) === false) {
-        throw new RuntimeException('Unable to write approval seed file.');
-    }
-
-    if (is_dir($repositoryRoot . '/.git')) {
-        runGitCommand($repositoryRoot, ['add', '--', $relativePath], 'Unable to stage approval seed');
-        runGitCommand(
-            $repositoryRoot,
-            ['-c', 'user.name=Forum Rewrite', '-c', 'user.email=forum-rewrite@example.invalid', 'commit', '-m', 'Seed approval ' . $identityId],
-            'Unable to commit approval seed'
-        );
-    }
-
-    rebuildReadModel($repositoryRoot, $databasePath);
-}
-
 function approveExistingUser(
     string $repositoryRoot,
     string $databasePath,
@@ -121,41 +91,6 @@ function approveExistingUser(
         'thread_id' => $target['bootstrap_thread_id'],
         'parent_id' => $target['bootstrap_post_id'],
     ]);
-}
-
-function rebuildReadModel(string $repositoryRoot, string $databasePath): void
-{
-    (new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(
-        static function () use ($repositoryRoot, $databasePath): void {
-            $builder = new ReadModelBuilder(
-                $repositoryRoot,
-                $databasePath,
-                new CanonicalRecordRepository($repositoryRoot),
-                'manual_approval_injection',
-            );
-            $builder->rebuild();
-        }
-    );
-}
-
-/**
- * @param list<string> $args
- */
-function runGitCommand(string $repositoryRoot, array $args, string $failureMessage): string
-{
-    $command = 'git';
-    foreach ($args as $arg) {
-        $command .= ' ' . escapeshellarg($arg);
-    }
-
-    $output = [];
-    $exitCode = 0;
-    exec('cd ' . escapeshellarg($repositoryRoot) . ' && ' . $command . ' 2>&1', $output, $exitCode);
-    if ($exitCode !== 0) {
-        throw new RuntimeException($failureMessage . ': ' . implode("\n", $output));
-    }
-
-    return implode("\n", $output);
 }
 
 /**

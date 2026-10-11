@@ -1079,9 +1079,13 @@ PHP;
     {
         [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
         $this->deleteDirectoryContents($repositoryRoot . '/records/approval-seeds');
+        $this->runCommand($repositoryRoot, 'git add records && git commit -m ' . escapeshellarg('Prepare unapproved fixture'));
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($repositoryRoot, $databasePath, new \ForumRewrite\Canonical\CanonicalRecordRepository($repositoryRoot)))->rebuild();
 
         $command = sprintf(
-            'FORUM_SITE_ID=chouse FORUM_REPOSITORY_ROOT=%s FORUM_DATABASE_PATH=%s %s approval seed %s %s',
+            'FORUM_SITE_ID=chouse FORUM_PUBLIC_ARTIFACT_ROOT=%s FORUM_STATIC_HTML_ROOT=%s FORUM_REPOSITORY_ROOT=%s FORUM_DATABASE_PATH=%s %s approval seed %s %s',
+            escapeshellarg($artifactRoot),
+            escapeshellarg($projectRoot . '/static'),
             escapeshellarg($repositoryRoot),
             escapeshellarg($databasePath),
             escapeshellarg(__DIR__ . '/../v3'),
@@ -1103,9 +1107,13 @@ PHP;
     {
         [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
         $this->deleteDirectoryContents($repositoryRoot . '/records/approval-seeds');
+        $this->runCommand($repositoryRoot, 'git add records && git commit -m ' . escapeshellarg('Prepare unapproved fixture'));
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($repositoryRoot, $databasePath, new \ForumRewrite\Canonical\CanonicalRecordRepository($repositoryRoot)))->rebuild();
 
         $command = sprintf(
-            '%s %s %s %s %s %s',
+            'FORUM_PUBLIC_ARTIFACT_ROOT=%s FORUM_STATIC_HTML_ROOT=%s %s %s %s %s %s %s',
+            escapeshellarg($artifactRoot),
+            escapeshellarg($projectRoot . '/static'),
             escapeshellarg(__DIR__ . '/../v3'),
             'approve',
             escapeshellarg('openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'),
